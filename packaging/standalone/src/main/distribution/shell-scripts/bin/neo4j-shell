@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Copyright (c) 2002-2011 "Neo Technology,"
 # Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -19,8 +19,19 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-BASEDIR=`dirname "$0"`/..
-BASEDIR=`(cd "$BASEDIR"; pwd)`
+SHELL_SCRIPT=$0
+
+cd `dirname $SHELL_SCRIPT`
+SHELL_SCRIPT=`basename $SHELL_SCRIPT`
+
+while [ -L "$SHELL_SCRIPT" ]
+do
+  SHELL_SCRIPT=$( readlink $SHELL_SCRIPT )
+  cd `dirname $SHELL_SCRIPT`
+  SHELL_SCRIPT=`basename $SHELL_SCRIPT`
+done
+
+BASEDIR=`cd $( dirname $SHELL_SCRIPT )/.. && dirs -l +0`
 
 # OS specific support.  $var _must_ be set to either true or false.
 cygwin=false;

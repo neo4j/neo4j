@@ -70,7 +70,7 @@ cd $NEO4J_HOME
 
 getconfig ${NEO4J_INSTANCE}/conf/coord-wrapper.conf
 
-NEO4J_OPTS="-DconfigFile=conf\coord-wrapper.conf -Dneo4j.home=$NEO4J_HOME -Dneo4j.instance=$NEO4J_INSTANCE"
+NEO4J_OPTS="-DconfigFile=conf\coord-wrapper.conf -Dlog4j.configuration=file:conf/log4j.properties -Dneo4j.home=$NEO4J_HOME -Dneo4j.instance=$NEO4J_INSTANCE"
 JAVA_OPTS="-server ${wrapper_java_additional}"
 
 wrapper_user=`( egrep "^wrapper.user=" $NEO4J_INSTANCE/conf/neo4j-wrapper.conf ) | sed -e 's/^.*=//'`
@@ -312,6 +312,17 @@ stopit() {
 reportstatus() {
 
   checkstatus
+  detectos
+  exitonnojava
+
+  if [ $DIST_OS = "macosx" ] ; then
+    getlaunchdpid
+    if [ $LAUNCHDPID -gt 0 ] ; then
+      echo "Instance running via launchd with PID $LAUNCHDPID"
+      exit 0
+    fi
+    # We fall through here since if there is no launchd install we may be still running via script
+  fi
 
   if [ -z $NEO4J_PID ] ; then
     echo "Neo4j Coordinator is not running"

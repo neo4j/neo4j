@@ -18,7 +18,6 @@ rem You should have received a copy of the GNU General Public License
 rem along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 call:main %1
-pause
 goto:eof
 
 :main
@@ -75,9 +74,11 @@ set classpath="-DserverClasspath=lib/zoo*.jar;system/coordinator/lib/*.jar"
 set mainclass="-DserverMainClass=org.apache.zookeeper.server.quorum.QuorumPeerMain"
 set binPath="java "-DworkingDir=%~dps0.." -DconfigFile=conf\coord-wrapper.conf %classpath% %mainclass% -jar "%~dps0windows-service-wrapper-1.jar" %serviceName%"
 sc create %serviceName% binPath= %binPath% DisplayName= %serviceDisplayName% start= %serviceStartType%
+call:start
 goto:eof
 
 :remove
+call:stop
 sc delete %serviceName%
 goto:eof
 

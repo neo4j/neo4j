@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Copyright (c) 2002-2011 "Neo Technology,"
 # Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -18,8 +18,19 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-BASEDIR=`dirname "$0"`/..
-BASEDIR=`(cd "$BASEDIR"; pwd)`
+BACKUP_SCRIPT=$0
+
+cd `dirname $BACKUP_SCRIPT`
+BACKUP_SCRIPT=`basename $BACKUP_SCRIPT`
+
+while [ -L "$BACKUP_SCRIPT" ]
+do
+  BACKUP_SCRIPT=$( readlink $BACKUP_SCRIPT )
+  cd `dirname $BACKUP_SCRIPT`
+  BACKUP_SCRIPT=`basename $BACKUP_SCRIPT`
+done
+
+BASEDIR=`cd $( dirname $BACKUP_SCRIPT )/.. && dirs -l +0`
 
 # OS specific support.  $var _must_ be set to either true or false.
 cygwin=false;
@@ -80,6 +91,10 @@ for jar in "$REPO"/*.jar
 do
   LIBRARY_JARS="$LIBRARY_JARS":$jar
 done
+for jar in "$BASEDIR"/system/coordinator/lib/*.jar
+do
+  LIBRARY_JARS="$LIBRARY_JARS":$jar
+done
 # echo $LIBRARY_JARS
 
 CLASSPATH=$CLASSPATH_PREFIX${LIBRARY_JARS}
@@ -95,6 +110,9 @@ if $cygwin; then
   [ -n "$REPO" ] && REPO=`cygpath --path --windows "$REPO"`
 fi
 
+# The configuration file for log4j below is bogus; there is no other way
+# the configurator class option will be respected. 
+
 exec "$JAVACMD" $JAVA_OPTS \
   $EXTRA_JVM_ARGUMENTS \
   -classpath "$CLASSPATH" \
@@ -102,5 +120,7 @@ exec "$JAVACMD" $JAVA_OPTS \
   -Dapp.pid="$$" \
   -Dapp.repo="$REPO" \
   -Dbasedir="$BASEDIR" \
+  -Dlog4j.configuration=. \
+  -Dlog4j.configuratorClass=org.neo4j.kernel.ha.backup.BackupLoggerConfigurator \
   org.neo4j.backup.BackupTool \
   "$@"
