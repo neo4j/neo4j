@@ -18,6 +18,9 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+#Remember where we started from so that working dir is set correctly
+RUN_FROM=`pwd`
+
 BACKUP_SCRIPT=$0
 
 cd `dirname $BACKUP_SCRIPT`
@@ -109,6 +112,9 @@ if $cygwin; then
   [ -n "$BASEDIR" ] && BASEDIR=`cygpath --path --windows "$BASEDIR"`
   [ -n "$REPO" ] && REPO=`cygpath --path --windows "$REPO"`
 fi
+
+# Return to working dir
+cd "$RUN_FROM"
 
 # The configuration file for log4j below is bogus; there is no other way
 # the configurator class option will be respected. 
