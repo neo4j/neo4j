@@ -81,8 +81,8 @@ public class TestProperties extends AbstractNeo4jTestCase
     public void testLongPropertyValues() throws Exception
     {
         Node n = getGraphDb().createNode();
-        setPropertyAndAssertIt( n, -134217728l );
-        setPropertyAndAssertIt( n, -134217729l );
+        setPropertyAndAssertIt( n, -134217728L );
+        setPropertyAndAssertIt( n, -134217729L );
     }
 
     @Test
@@ -93,9 +93,91 @@ public class TestProperties extends AbstractNeo4jTestCase
         setPropertyAndAssertIt( n, -134217729 );
     }
     
-    private void setPropertyAndAssertIt( Node n, long l )
+    @Test
+    public void booleanRange() throws Exception
     {
-        n.setProperty( "key", l );
-        assertEquals( l, n.getProperty( "key" ) );
+        Node node = getGraphDb().createNode();
+        setPropertyAndAssertIt( node, false );
+        setPropertyAndAssertIt( node, true );
+    }
+    
+    @Test
+    public void byteRange() throws Exception
+    {
+        Node node = getGraphDb().createNode();
+        for ( byte i = Byte.MIN_VALUE; i < Byte.MAX_VALUE; i++ )
+        {
+            setPropertyAndAssertIt( node, i );
+        }
+    }
+    
+    @Test
+    public void charRange() throws Exception
+    {
+        Node node = getGraphDb().createNode();
+        for ( char i = Character.MIN_VALUE; i < Character.MAX_VALUE; i++ )
+        {
+            setPropertyAndAssertIt( node, i );
+        }
+    }
+    
+    @Test
+    public void shortRange() throws Exception
+    {
+        Node node = getGraphDb().createNode();
+        for ( short i = Short.MIN_VALUE; i < Short.MAX_VALUE; i++ )
+        {
+            setPropertyAndAssertIt( node, i );
+        }
+    }
+    
+    @Test
+    public void intRange() throws Exception
+    {
+        int step = 10001;
+        Node node = getGraphDb().createNode();
+        for ( int i = Integer.MIN_VALUE; i < Integer.MAX_VALUE-step; i += step )
+        {
+            setPropertyAndAssertIt( node, i );
+        }
+    }
+    
+    @Test
+    public void longRange() throws Exception
+    {
+        long step = 10000000000001L;
+        Node node = getGraphDb().createNode();
+        for ( long i = Long.MIN_VALUE; i < Long.MAX_VALUE-step; i += step )
+        {
+            setPropertyAndAssertIt( node, i );
+        }
+    }
+    
+    @Test
+    public void floatRange() throws Exception
+    {
+        float step = 1234567890123456789012345678901234.1234F;
+        Node node = getGraphDb().createNode();
+        for ( float i = Float.MIN_VALUE; i < Float.MAX_VALUE-step; i += step )
+        {
+            setPropertyAndAssertIt( node, i );
+        }
+    }
+    
+    @Test
+    public void doubleRange() throws Exception
+    {
+        double step = 12.345;
+        Node node = getGraphDb().createNode();
+        for ( double i = Double.MIN_VALUE; i < Double.MAX_VALUE; i += step, step *= 1.002D )
+        {
+            setPropertyAndAssertIt( node, i );
+        }
+    }
+    
+    private void setPropertyAndAssertIt( Node node, Object value )
+    {
+        node.setProperty( "key", value );
+        assertEquals( value, node.getProperty( "key" ) );
     }
 }
