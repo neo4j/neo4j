@@ -230,6 +230,29 @@ public class AppCommandParser
 		return this.options;
 	}
 	
+	public String option( String name, String defaultValue )
+	{
+	    String result = options.get( name );
+	    return result != null ? result : defaultValue;
+	}
+	
+	public Number optionAsNumber( String name, Number defaultValue )
+	{
+	    String value = option( name, null );
+	    if ( value != null )
+	    {
+	        if ( value.indexOf( ',' ) != -1 || value.indexOf( '.' ) != -1 )
+	        {
+	            return Double.valueOf( value );
+	        }
+	        else
+	        {
+	            return Integer.valueOf( value );
+	        }
+	    }
+	    return defaultValue;
+	}
+	
 	/**
 	 * @return the arguments (from {@link #getLine()}).
 	 */

@@ -130,7 +130,7 @@ public class ShellTest
         doc.add( "ls -avr", "KNOWS", "verbose list relationships" );
         doc.run();
         //TODO: implement support for removing root node and previous nodes in the history stack of PWD
-        //client.getServer().interpretLine( "rmrel -d 0", client.session(), client.getOutput() );
+        //client.getServer().interpretLine( "rmnode -f 0", client.session(), client.getOutput() );
 //        client.getServer().interpretLine( "cd", client.session(), client.getOutput() );
 //        client.getServer().interpretLine( "pwd", client.session(), client.getOutput() );
         server.shutdown();

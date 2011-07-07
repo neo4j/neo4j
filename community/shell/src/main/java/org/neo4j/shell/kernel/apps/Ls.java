@@ -21,18 +21,22 @@ package org.neo4j.shell.kernel.apps;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipExpander;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.OptionDefinition;
@@ -48,22 +52,19 @@ import org.neo4j.shell.ShellException;
 @Service.Implementation( App.class )
 public class Ls extends ReadOnlyGraphDatabaseApp
 {
-    /**
-     * Constructs a new "ls" application.
-     */
-    public Ls()
+    private static final int DEFAULT_MAX_RELS_PER_TYPE_LIMIT = 10;
+    
     {
-        super();
-        this.addOptionDefinition( "b", new OptionDefinition( OptionValueType.NONE,
+        addOptionDefinition( "b", new OptionDefinition( OptionValueType.NONE,
             "Brief summary instead of full content" ) );
-        this.addOptionDefinition( "v", new OptionDefinition( OptionValueType.NONE,
+        addOptionDefinition( "v", new OptionDefinition( OptionValueType.NONE,
             "Verbose mode" ) );
-        this.addOptionDefinition( "q", new OptionDefinition( OptionValueType.NONE, "Quiet mode" ) );
-        this.addOptionDefinition( "p", new OptionDefinition( OptionValueType.NONE,
+        addOptionDefinition( "q", new OptionDefinition( OptionValueType.NONE, "Quiet mode" ) );
+        addOptionDefinition( "p", new OptionDefinition( OptionValueType.NONE,
             "Lists properties" ) );
-        this.addOptionDefinition( "r", new OptionDefinition( OptionValueType.NONE,
+        addOptionDefinition( "r", new OptionDefinition( OptionValueType.NONE,
             "Lists relationships" ) );
-        this.addOptionDefinition( "f", new OptionDefinition( OptionValueType.MUST,
+        addOptionDefinition( "f", new OptionDefinition( OptionValueType.MUST,
             "Filters property keys/values and relationship types. Supplied either as a single value " +
             "or as a JSON string where both keys and values can contain regex. " +
             "Starting/ending {} brackets are optional. Examples:\n" +
@@ -71,11 +72,15 @@ public class Ls extends ReadOnlyGraphDatabaseApp
             "  \".*name:ma.*, age:''\"\n\tproperties with keys matching '.*name' and values matching 'ma.*' " +
             "gets listed,\n\tas well as the 'age' property. Also relationships matching '.*name' or 'age'\n\tgets listed\n" +
             "  \"KNOWS:out,LOVES:in\"\n\toutgoing KNOWS and incoming LOVES relationships gets listed" ) );
-        this.addOptionDefinition( "i", new OptionDefinition( OptionValueType.NONE,
+        addOptionDefinition( "i", new OptionDefinition( OptionValueType.NONE,
             "Filters are case-insensitive (case-sensitive by default)" ) );
-        this.addOptionDefinition( "l", new OptionDefinition( OptionValueType.NONE,
+        addOptionDefinition( "l", new OptionDefinition( OptionValueType.NONE,
             "Filters matches more loosely, i.e. it's considered a match if just " +
             "a part of a value matches the pattern, not necessarily the whole value" ) );
+        addOptionDefinition( "s", new OptionDefinition( OptionValueType.NONE,
+            "Sorts relationships by type." ) );
+        addOptionDefinition( "m", new OptionDefinition( OptionValueType.MAY,
+            "Display a maximum of M relationships per type (default " + DEFAULT_MAX_RELS_PER_TYPE_LIMIT + " if no value given)" ) );
     }
 
     @Override
@@ -129,8 +134,8 @@ public class Ls extends ReadOnlyGraphDatabaseApp
         {
             if ( thing.isNode() )
             {
-                displayRelationships( thing, session, out, verbose, quiet,
-                        Direction.BOTH, filterMap, caseInsensitiveFilters, looseFilters, brief );
+                displayRelationships( parser, thing, session, out, verbose, quiet,
+                        filterMap, caseInsensitiveFilters, looseFilters, brief );
             }
             else
             {
@@ -166,25 +171,6 @@ public class Ls extends ReadOnlyGraphDatabaseApp
         return list;
     }
 
-    private Map<String, Collection<Relationship>> readAllRelationships(
-            Iterable<Relationship> source )
-    {
-        Map<String, Collection<Relationship>> map =
-            new TreeMap<String, Collection<Relationship>>();
-        for ( Relationship rel : source )
-        {
-            String type = rel.getType().name().toLowerCase();
-            Collection<Relationship> rels = map.get( type );
-            if ( rels == null )
-            {
-                rels = new ArrayList<Relationship>();
-                map.put( type, rels );
-            }
-            rels.add( rel );
-        }
-        return map;
-    }
-    
     private void displayProperties( NodeOrRelationship thing, Output out,
         boolean verbose, boolean quiet, Map<String, Object> filterMap,
         boolean caseInsensitiveFilters, boolean looseFilters, boolean brief )
@@ -223,39 +209,150 @@ public class Ls extends ReadOnlyGraphDatabaseApp
         }
     }
 
-    private void displayRelationships( NodeOrRelationship thing,
-        Session session, Output out, boolean verbose, boolean quiet, Direction direction,
+    private void displayRelationships( AppCommandParser parser, NodeOrRelationship thing,
+        Session session, Output out, boolean verbose, boolean quiet,
         Map<String, Object> filterMap, boolean caseInsensitiveFilters,
         boolean looseFilters, boolean brief ) throws ShellException, RemoteException
     {
-        RelationshipExpander expander = toExpander( getServer().getDb(), direction, filterMap,
-                caseInsensitiveFilters, looseFilters );
-        Map<String, Collection<Relationship>> relationships =
-                readAllRelationships( expander != null ? expander.expand( thing.asNode() ) : Collections.<Relationship>emptyList() );
+        boolean sortByType = parser.options().containsKey( "s" );
         Node node = thing.asNode();
-        for ( Map.Entry<String, Collection<Relationship>> entry : relationships.entrySet() )
+        Iterable<Relationship> relationships = getRelationships( node, filterMap,
+                caseInsensitiveFilters, looseFilters, sortByType|brief );
+        if ( brief )
         {
-            if ( brief )
+            Iterator<Relationship> iterator = relationships.iterator();
+            if ( !iterator.hasNext() )
             {
-                Relationship firstRel = entry.getValue().iterator().next();
-                String relDisplay = withArrows( firstRel, getDisplayName( getServer(), session,
-                        firstRel, false, true ), thing.asNode() );
-                out.println( getDisplayName( getServer(), session, thing, true ) + relDisplay +
-                        " x" + entry.getValue().size() );
+                return;
+            }
+
+            Relationship sampleRelationship = iterator.next();
+            RelationshipType lastType = sampleRelationship.getType();
+            int currentCounter = 1;
+            while ( iterator.hasNext() )
+            {
+                Relationship rel = iterator.next();
+                if ( !rel.isType( lastType ) )
+                {
+                    displayBriefRelationships( thing, session, out, sampleRelationship, currentCounter );
+                    sampleRelationship = rel;
+                    lastType = sampleRelationship.getType();
+                    currentCounter = 1;
+                }
+                else
+                {
+                    currentCounter++;
+                }
+            }
+            displayBriefRelationships( thing, session, out, sampleRelationship, currentCounter );
+        }
+        else
+        {
+            Iterator<Relationship> iterator = relationships.iterator();
+            if ( parser.options().containsKey( "m" ) )
+            {
+                iterator = wrapInLimitingIterator( parser, iterator, filterMap, caseInsensitiveFilters, looseFilters );
+            }
+            
+            while ( iterator.hasNext() )
+            {
+                Relationship rel = iterator.next();
+                StringBuffer buf = new StringBuffer( getDisplayName(
+                        getServer(), session, thing, true ) );
+                String relDisplay = quiet ? "" : getDisplayName( getServer(), session, rel, verbose, true );
+                buf.append( withArrows( rel, relDisplay, thing.asNode() ) );
+                buf.append( getDisplayName( getServer(), session, rel.getOtherNode( node ), true ) );
+                out.println( buf );
+            }
+        }
+    }
+    
+    private Iterator<Relationship> wrapInLimitingIterator( AppCommandParser parser,
+            Iterator<Relationship> iterator, Map<String, Object> filterMap, boolean caseInsensitiveFilters,
+            boolean looseFilters ) throws ShellException
+    {
+        final AtomicBoolean handBreak = new AtomicBoolean();
+        int maxRelsPerType = parser.optionAsNumber( "m", DEFAULT_MAX_RELS_PER_TYPE_LIMIT ).intValue();
+        Map<String, Direction> types = filterMapToTypes( getServer().getDb(),
+                Direction.BOTH, filterMap, caseInsensitiveFilters, looseFilters );
+        return new FilteringIterator<Relationship>( iterator,
+                new LimitPerTypeFilter( maxRelsPerType, types, handBreak ) )
+        {
+            @Override
+            protected Relationship fetchNextOrNull()
+            {
+                return handBreak.get() ? null : super.fetchNextOrNull();
+            }
+        };
+    }
+
+    private static class LimitPerTypeFilter implements Predicate<Relationship>
+    {
+        private final int maxRelsPerType;
+        private final Map<String, AtomicInteger> encounteredRelationships = new HashMap<String, AtomicInteger>();
+        private int typesMaxedOut = 0;
+        private final AtomicBoolean iterationHalted;
+
+        public LimitPerTypeFilter( int maxRelsPerType, Map<String, Direction> types, AtomicBoolean handBreak )
+        {
+            this.maxRelsPerType = maxRelsPerType;
+            this.iterationHalted = handBreak;
+            for ( String type : types.keySet() )
+            {
+                encounteredRelationships.put( type, new AtomicInteger() );
+            }
+        }
+
+        @Override
+        public boolean accept( Relationship item )
+        {
+            AtomicInteger counter = encounteredRelationships.get( item.getType().name() );
+            int count = counter.get();
+            if ( count < maxRelsPerType )
+            {
+                if ( counter.incrementAndGet() == maxRelsPerType )
+                {
+                    counter.incrementAndGet();
+                    if ( (++typesMaxedOut) >= encounteredRelationships.size() )
+                    {
+                        iterationHalted.set( true );
+                    }
+                    return true;
+                }
+                return true;
+            }
+            return false;
+        }
+    }
+
+    private Iterable<Relationship> getRelationships( final Node node, Map<String, Object> filterMap,
+            boolean caseInsensitiveFilters, boolean looseFilters, boolean sortByType ) throws ShellException
+    {
+        if ( sortByType )
+        {
+            return toSortedExpander( getServer().getDb(), Direction.BOTH, filterMap,
+                    caseInsensitiveFilters, looseFilters ).expand( node );
+        }
+        else
+        {
+            if ( filterMap.isEmpty() )
+            {
+                return node.getRelationships();
             }
             else
             {
-                for ( Relationship rel : entry.getValue() )
-                {
-                    StringBuffer buf = new StringBuffer( getDisplayName(
-                            getServer(), session, thing, true ) );
-                    String relDisplay = quiet ? "" : getDisplayName( getServer(), session, rel, verbose, true );
-                    buf.append( withArrows( rel, relDisplay, thing.asNode() ) );
-                    buf.append( getDisplayName( getServer(), session, rel.getOtherNode( node ), true ) );
-                    out.println( buf );
-                }
+                return toExpander( getServer().getDb(), Direction.BOTH, filterMap, caseInsensitiveFilters, looseFilters ).expand( node );
             }
         }
+    }
+
+    private void displayBriefRelationships( NodeOrRelationship thing, Session session, Output out,
+            Relationship sampleRelationship, int count ) throws ShellException,
+            RemoteException
+    {
+        String relDisplay = withArrows( sampleRelationship, getDisplayName( getServer(), session,
+                sampleRelationship, false, true ), thing.asNode() );
+        out.println( getDisplayName( getServer(), session, thing, true ) + relDisplay + " x" + count );
     }
 
     private static String getNiceType( Object value )

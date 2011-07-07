@@ -30,6 +30,7 @@ import java.util.regex.Pattern;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -65,17 +66,22 @@ public class TestApps extends AbstractShellTest
     @Test
     public void canSetPropertiesAndLsWithFilters() throws Exception
     {
-        Relationship[] relationships = createRelationshipChain( 2 );
+        RelationshipType type1 = DynamicRelationshipType.withName( "KNOWS" );
+        RelationshipType type2 = DynamicRelationshipType.withName( "LOVES" );
+        Relationship[] relationships = createRelationshipChain( type1, 2 );
         Node node = relationships[0].getEndNode();
+        createRelationshipChain( node, type2, 1 );
         executeCommand( "cd " + node.getId() );
         executeCommand( "ls", "<-", "->" );
         executeCommand( "ls -p", "!Neo" );
         setProperty( node, "name", "Neo" );
         executeCommand( "ls -p", "Neo" );
-        executeCommand( "ls", "<-", "->", "Neo" );
+        executeCommand( "ls", "<-", "->", "Neo", type1.name(), type2.name() );
         executeCommand( "ls -r", "<-", "->", "!Neo" );
-        executeCommand( "ls -rf .*:out", "!<-", "->", "!Neo" );
-        executeCommand( "ls -rf .*:in", "<-", "!->", "!Neo" );
+        executeCommand( "ls -rf .*:out", "!<-", "->", "!Neo", type1.name(), type2.name() );
+        executeCommand( "ls -rf .*:in", "<-", "!->", "!Neo", type1.name(), "!" + type2.name() );
+        executeCommand( "ls -rf KN.*:in", "<-", "!->", type1.name(), "!" + type2.name() );
+        executeCommand( "ls -rf LOVES:in", "!<-", "!->", "!" + type1.name(), "!" + type2.name() );
         executeCommand( "ls -pf something", "!<-", "!->", "!Neo" );
         executeCommand( "ls -pf name", "!<-", "!->", "Neo" );
         executeCommand( "ls -pf name:Something", "!<-", "!->", "!Neo" );

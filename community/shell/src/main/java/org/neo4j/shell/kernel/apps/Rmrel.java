@@ -94,9 +94,9 @@ public class Rmrel extends GraphDatabaseApp
         boolean deleteOtherNodeIfEmpty = parser.options().containsKey( "d" );
         if ( deleteOtherNodeIfEmpty && !otherNode.hasRelationship() )
         {
-            otherNode.delete();
             out.println( "Also deleted " + getDisplayName( getServer(), session, otherNode, false ) +
                     " due to it not having any relationships left" );
+            otherNode.delete();
         }
         return null;
     }

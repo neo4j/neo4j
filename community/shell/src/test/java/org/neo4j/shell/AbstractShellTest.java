@@ -40,6 +40,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -71,9 +72,28 @@ public abstract class AbstractShellTest
     @Before
     public void doBefore()
     {
+        clearDb();
         shellClient = new SameJvmClient( shellServer );
     }
     
+    private void clearDb()
+    {
+        Transaction tx = db.beginTx();
+        for ( Node node : db.getAllNodes() )
+        {
+            for ( Relationship rel : node.getRelationships( Direction.OUTGOING ) )
+            {
+                rel.delete();
+            }
+            if ( !node.equals( db.getReferenceNode() ) )
+            {
+                node.delete();
+            }
+        }
+        tx.success();
+        tx.finish();
+    }
+
     @After
     public void doAfter()
     {
@@ -223,18 +243,24 @@ public abstract class AbstractShellTest
     
     protected Relationship[] createRelationshipChain( int length )
     {
-        return createRelationshipChain( db.getReferenceNode(), length );
+        return createRelationshipChain( RELATIONSHIP_TYPE, length );
     }
     
-    protected Relationship[] createRelationshipChain( Node startingFromNode, int length )
+    protected Relationship[] createRelationshipChain( RelationshipType type, int length )
+    {
+        return createRelationshipChain( db.getReferenceNode(), type, length );
+    }
+    
+    protected Relationship[] createRelationshipChain( Node startingFromNode, RelationshipType type,
+            int length )
     {
         Relationship[] rels = new Relationship[length];
         Transaction tx = db.beginTx();
-        Node firstNode = db.getReferenceNode();
+        Node firstNode = startingFromNode;
         for ( int i = 0; i < rels.length; i++ )
         {
             Node secondNode = db.createNode();
-            rels[i] = firstNode.createRelationshipTo( secondNode, RELATIONSHIP_TYPE );
+            rels[i] = firstNode.createRelationshipTo( secondNode, type );
             firstNode = secondNode;
         }
         tx.success();
