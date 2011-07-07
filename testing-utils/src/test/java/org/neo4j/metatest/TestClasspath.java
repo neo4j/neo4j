@@ -19,12 +19,12 @@
  */
 package org.neo4j.metatest;
 
+import org.junit.Test;
+import org.neo4j.kernel.impl.annotations.Documented;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-
-import org.junit.Test;
-import org.neo4j.kernel.impl.annotations.Documented;
 
 /**
  * Tests the classpath for the tests
@@ -45,7 +45,7 @@ public class TestClasspath
     @Test
     public void canLoadSubProcess() throws Exception
     {
-        assertNotNull( Class.forName( "org.neo4j.test.SubProcess" ) );
+        assertNotNull( Class.forName( "org.neo4j.test.subprocess.SubProcess" ) );
     }
 
     @Test
