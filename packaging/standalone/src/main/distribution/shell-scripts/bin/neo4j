@@ -54,8 +54,15 @@ function getconfig {
 }
 
 NEO4J_SCRIPT=$0
-while [ -L "$NEO4J_SCRIPT" ] ; do
+
+cd `dirname $NEO4J_SCRIPT`
+NEO4J_SCRIPT=`basename $NEO4J_SCRIPT`
+
+while [ -L "$NEO4J_SCRIPT" ]
+do
   NEO4J_SCRIPT=$( readlink $NEO4J_SCRIPT )
+  cd `dirname $NEO4J_SCRIPT`
+  NEO4J_SCRIPT=`basename $NEO4J_SCRIPT`
 done
 NEO4J_HOME=`cd $( dirname $NEO4J_SCRIPT )/.. && dirs -l +0`
 NEO4J_INSTANCE=$NEO4J_HOME
