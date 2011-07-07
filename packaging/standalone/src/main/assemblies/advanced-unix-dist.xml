@@ -79,6 +79,8 @@
   <dependencySets>
     <dependencySet>
       <outputDirectory>/lib</outputDirectory>
+      <directoryMode>0755</directoryMode>
+      <fileMode>0755</fileMode>
       <unpack>false</unpack>
       <useProjectArtifact>false</useProjectArtifact>
       <includes>
@@ -97,7 +99,7 @@
         <exclude>*:pom:*</exclude>
         <exclude>org.neo4j:neo4j:jar</exclude>
         <exclude>org.neo4j:neo4j-udc:jar:neo4j</exclude>
-        <exclude>org.neo4j:windows-service-wrapper:*</exclude>
+        <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
 
         <exclude>org.neo4j:neo4j-backup</exclude>
         <exclude>org.neo4j:neo4j-com</exclude>
@@ -109,6 +111,8 @@
     </dependencySet>
     <dependencySet>
       <outputDirectory>system/lib</outputDirectory>
+      <directoryMode>0755</directoryMode>
+      <fileMode>0755</fileMode>
       <unpack>false</unpack>
       <useProjectArtifact>false</useProjectArtifact>
       <excludes>
@@ -127,7 +131,7 @@
         <exclude>org.neo4j:neo4j-enterprise</exclude>
         <exclude>*:neo4j-server-enterprise</exclude>
         <exclude>org.scala-lang:scala-library</exclude>
-        <exclude>org.neo4j:windows-service-wrapper:*</exclude>
+        <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
       </excludes>
     </dependencySet>
     <!-- java examples -->

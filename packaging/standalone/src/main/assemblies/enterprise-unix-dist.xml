@@ -78,6 +78,8 @@
   <dependencySets>
     <dependencySet>
       <outputDirectory>/lib</outputDirectory>
+      <directoryMode>0755</directoryMode>
+      <fileMode>0755</fileMode>
       <unpack>false</unpack>
       <useProjectArtifact>false</useProjectArtifact>
       <includes>
@@ -100,15 +102,16 @@
         <exclude>*:pom:*</exclude>
         <exclude>org.neo4j:neo4j:jar</exclude>
         <exclude>org.neo4j:neo4j-udc:jar:neo4j</exclude>
-        <exclude>org.neo4j:windows-service-wrapper:*</exclude>
+        <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
         
         <exclude>org.neo4j:neo4j-advanced</exclude>
         <exclude>org.neo4j:neo4j-community</exclude>
-        <exclude>org.slf4j:log4j-over-slf4j</exclude>
       </excludes>
     </dependencySet>
     <dependencySet>
       <outputDirectory>system/lib</outputDirectory>
+      <directoryMode>0755</directoryMode>
+      <fileMode>0755</fileMode>
       <unpack>false</unpack>
       <useProjectArtifact>false</useProjectArtifact>
       <excludes>
@@ -128,11 +131,13 @@
         <exclude>org.slf4j:log4j-over-slf4j</exclude>
         <exclude>commons-logging:*</exclude>
         <exclude>org.scala-lang:scala-library</exclude>
-        <exclude>org.neo4j:windows-service-wrapper:*</exclude>
+        <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
       </excludes>
     </dependencySet>
     <dependencySet>
       <outputDirectory>system/coordinator/lib</outputDirectory>
+      <directoryMode>0755</directoryMode>
+      <fileMode>0755</fileMode>
       <unpack>false</unpack>
       <useProjectArtifact>false</useProjectArtifact>
       <includes>
