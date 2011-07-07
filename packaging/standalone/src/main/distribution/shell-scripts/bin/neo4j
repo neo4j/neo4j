@@ -34,10 +34,10 @@
 function getconfig {
   if [ -e $1 ]; then
     while read line; do
-      if [[ ${line} =~ ^([^#\s][^=]+)=(.+)$ ]]; then
+      if [[ ${line} =~ "^([^#\s][^=]+)=(.+)$" ]]; then
         key=`echo ${BASH_REMATCH[1]} | sed 's/\./_/g'`
         value="${BASH_REMATCH[2]}"
-        if [[ ${key} =~ ^(.*)_([0-9]+)$ ]]; then
+        if [[ ${key} =~ "^(.*)_([0-9]+)$" ]]; then
           key=${BASH_REMATCH[1]}
           if [[ ${!key} ]]; then
             export ${key}="${!key} ${value}"
@@ -234,15 +234,15 @@ getlaunchdpid() {
     # There and running
     LAUNCHDPID=$(($LAUNCHDPID))
   fi
-    
 }
 
 startit() {
 
+  detectos
   exitonnojava
   checkstatus
 
-  if [[ $DIST_OS -eq "macosx" ]] ; then
+  if [ $DIST_OS = "macosx" ] ; then
     getlaunchdpid
     if [ $LAUNCHDPID -eq 0 ] ; then
       echo "Detected installation in launchd, starting it..."
@@ -259,7 +259,6 @@ startit() {
     printf "Starting neo4j-service..."
 
     buildclasspath
-    detectos
 
     if [ $UID == 0 ] ; then
       su $NEO4J_USER -c "$JAVACMD -cp $CLASSPATH $JAVA_OPTS $NEO4J_OPTS org.neo4j.server.Bootstrapper >> $NEO4J_INSTANCE/data/log/console.log 2>&1 & echo \$! > $PID_FILE "
@@ -315,10 +314,11 @@ startit() {
 
 stopit() {
 
+  detectos
   checkstatus
   checkwriteaccess
-  
-  if [[ $DIST_OS -eq "macosx" ]] ; then
+
+  if [ $DIST_OS = "macosx" ] ; then
     getlaunchdpid
     if [ $LAUNCHDPID -gt 0 ] ; then
       echo "Instance running via launchd with PID $LAUNCHDPID, stopping it..."
@@ -392,8 +392,6 @@ modify_user_config() {
   else
     echo "wrapper.user.created=${created}" >> ${NEO4J_INSTANCE}/conf/neo4j-wrapper.conf
   fi
-
-
 }
 
 # Creates a user on the system
@@ -412,7 +410,7 @@ remove_user() {
       * ) echo "OK, we'll let that user live, for now." 
         ;;
     esac
-  else 
+  else
     echo "Neo4j was running as user \"${wrapper_user}\", which remains."
   fi
 }
