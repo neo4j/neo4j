@@ -87,7 +87,7 @@ function parseConfig {
 
 COORD_SCRIPT=$0
 
-cd `dirname "$COORD_SCRIPT"`
+cd "`dirname "$COORD_SCRIPT"`"
 COORD_SCRIPT=`basename "$COORD_SCRIPT"`
 
 while [ -L "$COORD_SCRIPT" ]
