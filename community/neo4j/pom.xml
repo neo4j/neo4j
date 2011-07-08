@@ -81,6 +81,7 @@
       <artifactId>neo4j-kernel</artifactId>
       <version>1.5-SNAPSHOT</version>
       <type>test-jar</type>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
