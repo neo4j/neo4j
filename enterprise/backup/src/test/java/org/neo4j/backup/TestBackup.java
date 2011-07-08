@@ -20,6 +20,7 @@
 package org.neo4j.backup;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
@@ -28,12 +29,14 @@ import java.io.File;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.com.ComException;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.kernel.AbstractGraphDatabase;
@@ -41,13 +44,14 @@ import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.test.DbRepresentation;
+import org.neo4j.test.subprocess.SubProcess;
 
 public class TestBackup
 {
     private final String serverPath = "target/var/serverdb";
     private final String otherServerPath = serverPath + "2";
     private final String backupPath = "target/var/backuedup-serverdb";
-    
+
     @Before
     public void before() throws Exception
     {
@@ -55,9 +59,9 @@ public class TestBackup
         FileUtils.deleteDirectory( new File( otherServerPath ) );
         FileUtils.deleteDirectory( new File( backupPath ) );
     }
-    
+
     // TODO MP: What happens if the server database keeps growing, virtually making the files endless?
-    
+
     @Test
     public void makeSureFullFailsWhenDbExists() throws Exception
     {
@@ -76,7 +80,7 @@ public class TestBackup
         }
         shutdownServer( server );
     }
-    
+
     @Test
     public void makeSureIncrementalFailsWhenNoDb() throws Exception
     {
@@ -94,7 +98,7 @@ public class TestBackup
         }
         shutdownServer( server );
     }
-    
+
     @Test
     public void fullThenIncremental() throws Exception
     {
@@ -111,25 +115,25 @@ public class TestBackup
         assertEquals( furtherRepresentation, DbRepresentation.of( backupPath ) );
         shutdownServer( server );
     }
-    
+
     @Test
     public void makeSureStoreIdIsEnforced() throws Exception
     {
         // Create data set X on server A
         DbRepresentation initialDataSetRepresentation = createInitialDataSet( serverPath );
         ServerInterface server = startServer( serverPath );
-        
+
         // Grab initial backup from server A
         OnlineBackup backup = OnlineBackup.from( "localhost" );
         backup.full( backupPath );
         assertEquals( initialDataSetRepresentation, DbRepresentation.of( backupPath ) );
         shutdownServer( server );
-        
-        // Create data set X+Y on server B 
+
+        // Create data set X+Y on server B
         createInitialDataSet( otherServerPath );
         addMoreData( otherServerPath );
         server = startServer( otherServerPath );
-        
+
         // Try to grab incremental backup from server B.
         // Data should be OK, but store id check should prevent that.
         try
@@ -141,7 +145,7 @@ public class TestBackup
         { // Good
         }
         shutdownServer( server );
-        
+
         // Just make sure incremental backup can be received properly from
         // server A, even after a failed attempt from server B
         DbRepresentation furtherRepresentation = addMoreData( serverPath );
@@ -211,7 +215,7 @@ public class TestBackup
         db.shutdown();
         return result;
     }
-    
+
     @Test
     public void multipleIncrementals() throws Exception
     {
@@ -220,7 +224,7 @@ public class TestBackup
         OnlineBackup backup = OnlineBackup.from( "localhost" );
         backup.full( backupPath );
         long lastCommittedTxForLucene = getLastCommittedTx( backupPath );
-        
+
         for ( int i = 0; i < 5; i++ )
         {
             Transaction tx = db.beginTx();
@@ -245,6 +249,76 @@ public class TestBackup
         finally
         {
             db.shutdown();
+        }
+    }
+
+    @Ignore( "Not fixed yet - Fails on Mac OS X (only?)" )
+    @Test
+    public void shouldRetainFileLocksAfterFullBackupOnLiveDatabase() throws Exception
+    {
+        GraphDatabaseService db = new EmbeddedGraphDatabase( serverPath, stringMap( ENABLE_ONLINE_BACKUP, "true" ) );
+        try
+        {
+            assertStoreIsLocked( serverPath );
+            OnlineBackup.from( "localhost" ).full( backupPath );
+            assertStoreIsLocked( serverPath );
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
+    private static void assertStoreIsLocked( String path )
+    {
+        StartupChecker proc = new LockProcess().start( path );
+        try
+        {
+            assertFalse( "Could start up database, store is not locked", proc.startupOk() );
+        }
+        finally
+        {
+            SubProcess.stop( proc );
+        }
+    }
+
+    public interface StartupChecker
+    {
+        boolean startupOk();
+    }
+
+    @SuppressWarnings( "serial" )
+    private static class LockProcess extends SubProcess<StartupChecker, String> implements StartupChecker
+    {
+        private volatile Object state;
+
+        @Override
+        public boolean startupOk()
+        {
+            Object result;
+            do
+            {
+                result = state;
+            }
+            while ( result == null );
+            return !( state instanceof Exception );
+        }
+
+        @Override
+        protected void startup( String path ) throws Throwable
+        {
+            GraphDatabaseService db;
+            try
+            {
+                db = new EmbeddedGraphDatabase( path );
+            }
+            catch ( TransactionFailureException ex )
+            {
+                state = ex;
+                return;
+            }
+            db.shutdown();
+            state = new Object();
         }
     }
 }
