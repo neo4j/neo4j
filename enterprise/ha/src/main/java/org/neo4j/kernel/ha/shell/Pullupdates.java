@@ -34,6 +34,11 @@ public class Pullupdates extends ReadOnlyGraphDatabaseApp
     protected String exec( AppCommandParser parser, Session session, Output out )
             throws ShellException, RemoteException
     {
+        if ( !(getServer().getDb() instanceof HighlyAvailableGraphDatabase) )
+        {
+            throw new ShellException( "Your database isn't started in HA mode" );
+        }
+        
         ((HighlyAvailableGraphDatabase) getServer().getDb()).pullUpdates();
         return null;
     }
