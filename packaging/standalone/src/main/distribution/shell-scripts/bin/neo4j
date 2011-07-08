@@ -89,7 +89,7 @@ function parseConfig {
 
 NEO4J_SCRIPT=$0
 
-cd `dirname "$NEO4J_SCRIPT"`
+cd "`dirname "$NEO4J_SCRIPT"`"
 NEO4J_SCRIPT=`basename "$NEO4J_SCRIPT"`
 
 while [ -L "$NEO4J_SCRIPT" ]
