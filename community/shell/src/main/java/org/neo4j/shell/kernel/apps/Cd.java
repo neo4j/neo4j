@@ -303,6 +303,7 @@ public class Cd extends ReadOnlyGraphDatabaseApp
         if ( current.isNode() )
         {
             Node currentNode = current.asNode();
+            long startTime = System.currentTimeMillis();
             for ( Relationship rel : currentNode.getRelationships() )
             {
                 if ( newId.isNode() )
@@ -319,6 +320,11 @@ public class Cd extends ReadOnlyGraphDatabaseApp
                     {
                         return true;
                     }
+                }
+                if ( System.currentTimeMillis()-startTime > 350 )
+                {
+                    // DOn't spend too long time in here
+                    return true;
                 }
             }
         }
