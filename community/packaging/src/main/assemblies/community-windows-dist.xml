@@ -29,7 +29,7 @@
 
     <!-- filter plain text -->
     <fileSet>
-      <directory>src/main/distribution/text/community</directory>
+      <directory>src/main/distribution/community</directory>
       <outputDirectory>/</outputDirectory>
       <lineEnding>dos</lineEnding>
       <filtered>true</filtered>
