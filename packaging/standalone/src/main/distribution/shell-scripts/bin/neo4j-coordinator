@@ -32,8 +32,29 @@
 #   - keys of the form KEY.# (where # is a number) are concatenated
 #     into a single environment variable named KEY
 function getconfig {
-  if [ -e $1 ]; then
-    while read line; do
+  if [ -e "$1" ]; then
+    while read line ; do
+      if [[ ${line} =~ ^([^#\s][^=]+)=(.+)$ ]]; then
+        key=`echo ${BASH_REMATCH[1]} | sed 's/\./_/g'`
+        value="${BASH_REMATCH[2]}"
+        if [[ ${key} =~ ^(.*)_([0-9]+)$ ]]; then
+          key=${BASH_REMATCH[1]}
+          if [[ ${!key} ]]; then
+            export ${key}="${!key} ${value}"
+          else
+            export ${key}="$value"
+          fi
+        else
+          export ${key}="${value}"
+        fi
+      fi
+    done < "$1"
+  fi
+}
+
+function getconfigquoted {
+  if [ -e "$1" ]; then
+    while read line ; do
       if [[ ${line} =~ "^([^#\s][^=]+)=(.+)$" ]]; then
         key=`echo ${BASH_REMATCH[1]} | sed 's/\./_/g'`
         value="${BASH_REMATCH[2]}"
@@ -48,32 +69,44 @@ function getconfig {
           export ${key}="${value}"
         fi
       fi
+    done < "$1"
+  fi
+}
 
-    done < $1
+
+function parseConfig {
+  if [ ${BASH_VERSINFO[0]} -eq 3 ] ; then 
+    if [ ${BASH_VERSINFO[1]} -lt 2 ] ; then
+    getconfigquoted "${NEO4J_INSTANCE}/conf/coord-wrapper.conf"
+    return
+    fi
+  else
+    getconfig "${NEO4J_INSTANCE}/conf/coord-wrapper.conf"
   fi
 }
 
 COORD_SCRIPT=$0
 
-cd `dirname $COORD_SCRIPT`
-COORD_SCRIPT=`basename $COORD_SCRIPT`
+cd `dirname "$COORD_SCRIPT"`
+COORD_SCRIPT=`basename "$COORD_SCRIPT"`
 
 while [ -L "$COORD_SCRIPT" ]
 do
-  COORD_SCRIPT=$( readlink $COORD_SCRIPT )
-  cd `dirname $COORD_SCRIPT`
-  COORD_SCRIPT=`basename $COORD_SCRIPT`
+  COORD_SCRIPT=$( readlink "$COORD_SCRIPT" )
+  cd "$(dirname "$COORD_SCRIPT")"
+  COORD_SCRIPT=`basename "$COORD_SCRIPT"`
 done
-NEO4J_HOME=`cd $( dirname $COORD_SCRIPT )/.. && dirs -l +0`
+NEO4J_HOME=`cd $( dirname "$COORD_SCRIPT" )/.. && dirs -l +0`
 NEO4J_INSTANCE=$NEO4J_HOME
-cd $NEO4J_HOME
 
-getconfig ${NEO4J_INSTANCE}/conf/coord-wrapper.conf
+cd "$NEO4J_HOME"
+
+parseConfig
 
 NEO4J_OPTS="-DconfigFile=conf\coord-wrapper.conf -Dlog4j.configuration=file:conf/log4j.properties -Dneo4j.home=$NEO4J_HOME -Dneo4j.instance=$NEO4J_INSTANCE"
 JAVA_OPTS="-server ${wrapper_java_additional}"
 
-wrapper_user=`( egrep "^wrapper.user=" $NEO4J_INSTANCE/conf/neo4j-wrapper.conf ) | sed -e 's/^.*=//'`
+wrapper_user=`( egrep "^wrapper.user=" "$NEO4J_INSTANCE/conf/neo4j-wrapper.conf" ) | sed -e 's/^.*=//'`
 if [ -z "${wrapper_user}" ]; then
   NEO4J_USER=`id -un`
 else
@@ -88,6 +121,7 @@ TIMEOUT=20
 
 PID_FILE=${NEO4J_INSTANCE}/data/neo4j-coord.pid
 
+# Detect java and set JAVACMD on successful find.
 findjava() {
   # OS specific support.  $var _must_ be set to either true or false.
   cygwin=false;
@@ -188,22 +222,22 @@ buildclasspath() {
 
   ALL_JARS=""
   for jar in "$LIBDIR"/zoo*.jar "$SYSLIBDIR"/*.jar ; do
-    [ -z $ALL_JARS ] && ALL_JARS=$jar || ALL_JARS="$ALL_JARS":$jar
+    [ -z "$ALL_JARS" ] && ALL_JARS="$jar" || ALL_JARS="$ALL_JARS":"$jar"
   done
 
   CLASSPATH=${ALL_JARS}
 }
 
 checkstatus() {
-  if [ -e $PID_FILE ] ; then
-    NEO4J_PID=$( cat $PID_FILE )
+  if [ -e "$PID_FILE" ] ; then
+    NEO4J_PID=$( cat "$PID_FILE" )
     kill -0 $NEO4J_PID 2>/dev/null || NEO4J_PID=
   fi
 }
 
 checkwriteaccess() {
     if [ $UID != 0 ] ; then
-    if [ ! -w $NEO4J_INSTANCE/data ] ; then
+    if [ ! -w "$NEO4J_INSTANCE/data" ] ; then
       echo "ERROR: No write access to data/ directory, run either as user $NEO4J_USER or root"
       exit 1
     fi
@@ -249,13 +283,19 @@ startit() {
     buildclasspath
 
     if [ $UID == 0 ] ; then
-      su $NEO4J_USER -c "$JAVACMD -cp $CLASSPATH $JAVA_OPTS $NEO4J_OPTS org.apache.zookeeper.server.quorum.QuorumPeerMain conf/coord.cfg >> $NEO4J_INSTANCE/data/log/coord-console.log 2>&1 & echo \$! > $PID_FILE "
+      su $NEO4J_USER -c "$JAVACMD -cp '$CLASSPATH' $JAVA_OPTS -DconfigFile=conf\coord-wrapper.conf \
+      -Dlog4j.configuration=file:conf/log4j.properties \
+      -Dneo4j.home=\"${NEO4J_HOME}\" -Dneo4j.instance=\"${NEO4J_INSTANCE}\" \
+      org.apache.zookeeper.server.quorum.QuorumPeerMain conf/coord.cfg >> \"$NEO4J_INSTANCE/data/log/coord-console.log\" 2>&1 & echo \$! > \"$PID_FILE\" "
     else
       checkwriteaccess
       echo "WARNING: not changing user"
-      $JAVACMD -cp $CLASSPATH $JAVA_OPTS $NEO4J_OPTS org.apache.zookeeper.server.quorum.QuorumPeerMain conf/coord.cfg >> $NEO4J_INSTANCE/data/log/coord-console.log 2>&1 & echo $! > $PID_FILE
+      $JAVACMD -cp "${CLASSPATH}" $JAVA_OPTS -DconfigFile=conf\coord-wrapper.conf \
+      -Dlog4j.configuration=file:conf/log4j.properties \
+      -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}" \
+      org.apache.zookeeper.server.quorum.QuorumPeerMain conf/coord.cfg >> "${NEO4J_INSTANCE}/data/log/coord-console.log" 2>&1 & echo $! > "$PID_FILE"
     fi
-    STARTED_PID=$( cat $PID_FILE )
+    STARTED_PID=$( cat "$PID_FILE" )
 
     printf " process [$STARTED_PID]... waiting for coordinator to be ready."
 
@@ -266,7 +306,7 @@ startit() {
 
     echo " BAD."
     echo "Coordinator may have failed to start, please check the logs."
-    rm $PID_FILE
+    rm "$PID_FILE"
     exit 1
   else
     echo "Coordinator already running with pid $NEO4J_PID"
@@ -293,7 +333,7 @@ stopit() {
 
   if [ -z $NEO4J_PID ] ; then
     echo "ERROR: coordinator not running"
-    [ -e $PID_FILE ] && rm $PID_FILE
+    [ -e "$PID_FILE" ] && rm "$PID_FILE"
   else
     printf "Stopping Neo4j Coordinator [$NEO4J_PID]..."
     x=0
@@ -305,7 +345,7 @@ stopit() {
       x=$[$x+1]
     done
 	  [  $x -eq $TIMEOUT ] && ( echo " force shutdown" ;  kill -9 $NEO4J_PID >/dev/null ) || echo " done"
-	  [ -e $PID_FILE ] && rm  $PID_FILE
+	  [ -e "$PID_FILE" ] && rm  "$PID_FILE"
   fi
 }
 
@@ -341,7 +381,10 @@ console() {
     exitonnojava
     buildclasspath
 
-    $JAVACMD -cp $CLASSPATH $JAVA_OPTS $NEO4J_OPTS org.apache.zookeeper.server.quorum.QuorumPeerMain conf/coord.cfg
+    $JAVACMD -cp "${CLASSPATH}" $JAVA_OPTS -DconfigFile=conf\coord-wrapper.conf \
+      -Dlog4j.configuration=file:conf/log4j.properties \
+      -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}" \
+      org.apache.zookeeper.server.quorum.QuorumPeerMain conf/coord.cfg
 
   else
     echo "Coordinator already running with pid $NEO4J_PID"
@@ -355,16 +398,16 @@ console() {
 # pass in "true" for created to mark that the user was created (instead than pre-existing)
 modify_user_config() {
   created=${2:-"false"}
-  if `grep -q "wrapper\.user=" ${NEO4J_INSTANCE}/conf/coord-wrapper.conf` ; then
-    sed -i -e "s/^.*wrapper\.user=.*$/wrapper\.user=$1/" ${NEO4J_INSTANCE}/conf/coord-wrapper.conf
+  if `grep -q "wrapper\.user=" "$NEO4J_INSTANCE/conf/coord-wrapper.conf"` ; then
+    sed -i -e "s/^.*wrapper\.user=.*$/wrapper\.user=$1/" "$NEO4J_INSTANCE/conf/coord-wrapper.conf"
   else
-    echo "wrapper.user=$1" >> ${NEO4J_INSTANCE}/conf/coord-wrapper.conf
+    echo "wrapper.user=$1" >> "$NEO4J_INSTANCE/conf/coord-wrapper.conf"
   fi
 
-  if `grep -q "wrapper\.user\.created=" ${NEO4J_INSTANCE}/conf/coord-wrapper.conf` ; then
-    sed -i -e "s/^.*wrapper\.user\.created=.*$/wrapper\.user\.created=${created}/" ${NEO4J_INSTANCE}/conf/coord-wrapper.conf
+  if `grep -q "wrapper\.user\.created=" "$NEO4J_INSTANCE/conf/coord-wrapper.conf"` ; then
+    sed -i -e "s/^.*wrapper\.user\.created=.*$/wrapper\.user\.created=${created}/" "$NEO4J_INSTANCE/conf/coord-wrapper.conf"
   else
-    echo "wrapper.user.created=${created}" >> ${NEO4J_INSTANCE}/conf/coord-wrapper.conf
+    echo "wrapper.user.created=${created}" >> "$NEO4J_INSTANCE/conf/coord-wrapper.conf"
   fi
 }
 
@@ -429,12 +472,12 @@ installservice() {
               ;;
             esac
           fi
-          ln -s ${SCRIPT_NAME} "/etc/init.d/${SERVICE_NAME}"
+          ln -s "${SCRIPT_NAME}" "/etc/init.d/${SERVICE_NAME}"
           update-rc.d ${SERVICE_NAME} defaults
         fi
       fi
     elif [[ $DIST_OS -eq "macosx" ]] ; then
-      sed -e "s^NEO4J_INSTANCE^${NEO4J_INSTANCE}^" <${NEO4J_INSTANCE}/bin/org.neo4j.coord.plist >${LAUNCHD_DIR}/org.neo4j.coord.plist
+      sed -e "s^NEO4J_INSTANCE^${NEO4J_INSTANCE}^" <"${NEO4J_INSTANCE}/bin/org.neo4j.coord.plist" >"${LAUNCHD_DIR}/org.neo4j.coord.plist"
       launchctl load -w ${LAUNCHD_DIR}/org.neo4j.coord.plist
       launchctl start org.neo4j.coord
     else

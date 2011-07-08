@@ -32,8 +32,29 @@
 #   - keys of the form KEY.# (where # is a number) are concatenated
 #     into a single environment variable named KEY
 function getconfig {
-  if [ -e $1 ]; then
-    while read line; do
+  if [ -e "$1" ]; then
+    while read line ; do
+      if [[ ${line} =~ ^([^#\s][^=]+)=(.+)$ ]]; then
+        key=`echo ${BASH_REMATCH[1]} | sed 's/\./_/g'`
+        value="${BASH_REMATCH[2]}"
+        if [[ ${key} =~ ^(.*)_([0-9]+)$ ]]; then
+          key=${BASH_REMATCH[1]}
+          if [[ ${!key} ]]; then
+            export ${key}="${!key} ${value}"
+          else
+            export ${key}="$value"
+          fi
+        else
+          export ${key}="${value}"
+        fi
+      fi
+    done < "$1"
+  fi
+}
+
+function getconfigquoted {
+  if [ -e "$1" ]; then
+    while read line ; do
       if [[ ${line} =~ "^([^#\s][^=]+)=(.+)$" ]]; then
         key=`echo ${BASH_REMATCH[1]} | sed 's/\./_/g'`
         value="${BASH_REMATCH[2]}"
@@ -48,31 +69,43 @@ function getconfig {
           export ${key}="${value}"
         fi
       fi
+    done < "$1"
+  fi
+}
 
-    done < $1
+
+function parseConfig {
+  if [ ${BASH_VERSINFO[0]} -eq 3 ] ; then 
+    if [ ${BASH_VERSINFO[1]} -lt 2 ] ; then
+      getconfigquoted "${NEO4J_INSTANCE}/conf/neo4j-wrapper.conf"
+      getconfigquoted "${NEO4J_INSTANCE}/conf/neo4j-server.properties"
+      return
+    fi
+  else
+    getconfig "${NEO4J_INSTANCE}/conf/neo4j-wrapper.conf"
+    getconfig "${NEO4J_INSTANCE}/conf/neo4j-server.properties"
   fi
 }
 
 NEO4J_SCRIPT=$0
 
-cd `dirname $NEO4J_SCRIPT`
-NEO4J_SCRIPT=`basename $NEO4J_SCRIPT`
+cd `dirname "$NEO4J_SCRIPT"`
+NEO4J_SCRIPT=`basename "$NEO4J_SCRIPT"`
 
 while [ -L "$NEO4J_SCRIPT" ]
 do
-  NEO4J_SCRIPT=$( readlink $NEO4J_SCRIPT )
-  cd `dirname $NEO4J_SCRIPT`
-  NEO4J_SCRIPT=`basename $NEO4J_SCRIPT`
+  NEO4J_SCRIPT=$( readlink "$NEO4J_SCRIPT" )
+  cd "$(dirname "$NEO4J_SCRIPT")"
+  NEO4J_SCRIPT=`basename "$NEO4J_SCRIPT"`
 done
-NEO4J_HOME=`cd $( dirname $NEO4J_SCRIPT )/.. && dirs -l +0`
+NEO4J_HOME=`cd $( dirname "$NEO4J_SCRIPT" )/.. && dirs -l +0`
 NEO4J_INSTANCE=$NEO4J_HOME
 
-cd $NEO4J_HOME
+cd "$NEO4J_HOME"
 
-getconfig ${NEO4J_INSTANCE}/conf/neo4j-wrapper.conf
-getconfig ${NEO4J_INSTANCE}/conf/neo4j-server.properties
+parseConfig
 
-NEO4J_OPTS="-Dlog4j.configuration=file:conf/log4j.properties -Dorg.neo4j.server.properties=${NEO4J_INSTANCE}/conf/neo4j-server.properties -Djava.util.logging.config.file=${NEO4J_INSTANCE}/conf/logging.properties -Dneo4j.home=$NEO4J_HOME -Dneo4j.instance=$NEO4J_INSTANCE"
+NEO4J_OPTS="-Dlog4j.configuration=file:conf/log4j.properties -Dorg.neo4j.server.properties="${NEO4J_INSTANCE}"/conf/neo4j-server.properties -Djava.util.logging.config.file="${NEO4J_INSTANCE}/conf/logging.properties" -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}""
 JAVA_OPTS="-server ${wrapper_java_additional}"
 #NEO4J_SERVER_PORT=`( egrep "^org.neo4j.server.webserver.port" $NEO4J_INSTANCE/conf/neo4j-server.properties || echo 7474 ) | sed -e 's/.*=//'`
 NEO4J_SERVER_PORT=${org_neo4j_server_webserver_port:=7474}
@@ -192,20 +225,20 @@ buildclasspath() {
 
   ALL_JARS=""
   for jar in "$LIBDIR"/*.jar "$SYSLIBDIR"/*.jar ; do
-    [ -z $ALL_JARS ] && ALL_JARS=$jar || ALL_JARS="$ALL_JARS":$jar
+    [ -z "$ALL_JARS" ] && ALL_JARS="$jar" || ALL_JARS="$ALL_JARS":"$jar"
   done
 
   # add any plugin jars
   for jar in "$NEO4J_HOME"/plugins/*.jar ; do
-    if [ -e $jar ] ; then
-      ALL_JARS="$ALL_JARS":$jar
+    if [ -e "$jar" ] ; then
+      ALL_JARS="$ALL_JARS":"$jar"
     fi
   done
 
   if [ -e "$NEO4J_HOME"/system/coordinator/lib ]; then
     for jar in "$NEO4J_HOME"/system/coordinator/lib/*.jar ; do
-      if [ -e $jar ] ; then
-        ALL_JARS="$ALL_JARS":$jar
+      if [ -e "$jar" ] ; then
+        ALL_JARS="$ALL_JARS":"$jar"
       fi
     done
   fi
@@ -214,15 +247,15 @@ buildclasspath() {
 }
 
 checkstatus() {
-  if [ -e $PID_FILE ] ; then
-    NEO4J_PID=$( cat $PID_FILE )
+  if [ -e "$PID_FILE" ] ; then
+    NEO4J_PID=$( cat "$PID_FILE" )
     kill -0 $NEO4J_PID 2>/dev/null || NEO4J_PID=
   fi
 }
 
 checkwriteaccess() {
     if [ $UID != 0 ] ; then
-    if [ ! -w $NEO4J_INSTANCE/data ] ; then
+    if [ ! -w "$NEO4J_INSTANCE/data" ] ; then
       echo "ERROR: No write access to data/ directory, run either as user $NEO4J_USER or root"
       exit 1
     fi
@@ -268,13 +301,21 @@ startit() {
     buildclasspath
 
     if [ $UID == 0 ] ; then
-      su $NEO4J_USER -c "$JAVACMD -cp $CLASSPATH $JAVA_OPTS $NEO4J_OPTS org.neo4j.server.Bootstrapper >> $NEO4J_INSTANCE/data/log/console.log 2>&1 & echo \$! > $PID_FILE "
+      su $NEO4J_USER -c "$JAVACMD -cp '$CLASSPATH' $JAVA_OPTS -Dlog4j.configuration=file:conf/log4j.properties \
+        -Dorg.neo4j.server.properties=\"${NEO4J_INSTANCE}/conf/neo4j-server.properties\" \
+        -Djava.util.logging.config.file=\"${NEO4J_INSTANCE}/conf/logging.properties\" \
+        -Dneo4j.home=\"${NEO4J_HOME}\" -Dneo4j.instance=\"${NEO4J_INSTANCE}\" \
+        org.neo4j.server.Bootstrapper >> \"$NEO4J_INSTANCE/data/log/console.log\" 2>&1 & echo \$! > \"$PID_FILE\" "
     else
       checkwriteaccess
       echo "WARNING: not changing user"
-      $JAVACMD -cp $CLASSPATH $JAVA_OPTS $NEO4J_OPTS org.neo4j.server.Bootstrapper >> $NEO4J_INSTANCE/data/log/console.log 2>&1 & echo $! > $PID_FILE
+      $JAVACMD -cp "${CLASSPATH}" $JAVA_OPTS -Dlog4j.configuration=file:conf/log4j.properties \
+        -Dorg.neo4j.server.properties="${NEO4J_INSTANCE}/conf/neo4j-server.properties" \
+        -Djava.util.logging.config.file="${NEO4J_INSTANCE}/conf/logging.properties" \
+        -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}" \
+        org.neo4j.server.Bootstrapper >> "${NEO4J_INSTANCE}/data/log/console.log" 2>&1 & echo $! > "${PID_FILE}"
     fi
-    STARTED_PID=$( cat $PID_FILE )
+    STARTED_PID=$( cat "$PID_FILE" )
 
     printf " process [$STARTED_PID]... waiting for server to be ready."
 
@@ -297,7 +338,7 @@ startit() {
 
     if kill -0 $STARTED_PID 2>/dev/null ; then
       if [ "$newpid" != "$STARTED_PID" ] ; then
-	    rm $PID_FILE
+	    rm "$PID_FILE"
         kill -9 $STARTED_PID
         echo " BAD."
         echo " another server-process is running with [$newpid]"
@@ -310,7 +351,7 @@ startit() {
 
     echo " BAD."
     echo "Server may have failed to start, please check the logs."
-    rm $PID_FILE
+    rm "$PID_FILE"
     exit 1
   else
     echo "Server already running with pid $NEO4J_PID"
@@ -337,7 +378,7 @@ stopit() {
 
   if [ -z $NEO4J_PID ] ; then
     echo "ERROR: server not running"
-    [ -e $PID_FILE ] && rm $PID_FILE
+    [ -e "$PID_FILE" ] && rm "$PID_FILE"
   else
     printf "Stopping neo4j-service [$NEO4J_PID]..."
     x=0
@@ -349,7 +390,7 @@ stopit() {
       x=$[$x+1]
     done
 	  [  $x -eq $TIMEOUT ] && ( echo " force shutdown" ;  kill -9 $NEO4J_PID >/dev/null ) || echo " done"
-	  [ -e $PID_FILE ] && rm  $PID_FILE
+	  [ -e "$PID_FILE" ] && rm  "$PID_FILE"
   fi
 }
 
@@ -385,7 +426,11 @@ console() {
     exitonnojava
     buildclasspath
 
-    $JAVACMD -cp $CLASSPATH $JAVA_OPTS $NEO4J_OPTS org.neo4j.server.Bootstrapper
+           $JAVACMD -cp "${CLASSPATH}" $JAVA_OPTS -Dlog4j.configuration=file:conf/log4j.properties \
+        -Dorg.neo4j.server.properties="${NEO4J_INSTANCE}/conf/neo4j-server.properties" \
+        -Djava.util.logging.config.file="${NEO4J_INSTANCE}/conf/logging.properties" \
+        -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}" \
+        org.neo4j.server.Bootstrapper
 
   else
     echo "Server already running with pid $NEO4J_PID"
@@ -399,16 +444,16 @@ console() {
 # pass in "true" for created to mark that the user was created (instead than pre-existing)
 modify_user_config() {
   created=${2:-"false"}
-  if `grep -q "wrapper\.user=" ${NEO4J_INSTANCE}/conf/neo4j-wrapper.conf` ; then
-    sed -i -e "s/^.*wrapper\.user=.*$/wrapper\.user=$1/" ${NEO4J_INSTANCE}/conf/neo4j-wrapper.conf
+  if `grep -q "wrapper\.user=" "$NEO4J_INSTANCE/conf/neo4j-wrapper.conf"` ; then
+    sed -i -e "s/^.*wrapper\.user=.*$/wrapper\.user=$1/" "$NEO4J_INSTANCE/conf/neo4j-wrapper.conf"
   else
-    echo "wrapper.user=$1" >> ${NEO4J_INSTANCE}/conf/neo4j-wrapper.conf
+    echo "wrapper.user=$1" >> "$NEO4J_INSTANCE/conf/neo4j-wrapper.conf"
   fi
 
-  if `grep -q "wrapper\.user\.created=" ${NEO4J_INSTANCE}/conf/neo4j-wrapper.conf` ; then
-    sed -i -e "s/^.*wrapper\.user\.created=.*$/wrapper\.user\.created=${created}/" ${NEO4J_INSTANCE}/conf/neo4j-wrapper.conf
+  if `grep -q "wrapper\.user\.created=" "$NEO4J_INSTANCE/conf/neo4j-wrapper.conf"` ; then
+    sed -i -e "s/^.*wrapper\.user\.created=.*$/wrapper\.user\.created=${created}/" "$NEO4J_INSTANCE/conf/neo4j-wrapper.conf"
   else
-    echo "wrapper.user.created=${created}" >> ${NEO4J_INSTANCE}/conf/neo4j-wrapper.conf
+    echo "wrapper.user.created=${created}" >> "$NEO4J_INSTANCE/conf/neo4j-wrapper.conf"
   fi
 }
 
@@ -478,13 +523,13 @@ installservice() {
           else
             modify_user_config $proposed_user
           fi
-          ln -s ${SCRIPT_NAME} "/etc/init.d/${SERVICE_NAME}"
+          ln -s "${SCRIPT_NAME}" "/etc/init.d/${SERVICE_NAME}"
           update-rc.d ${SERVICE_NAME} defaults
-          chown -R $proposed_user: $NEO4J_HOME/data
+          chown -R $proposed_user: "$NEO4J_HOME/data"
         fi
       fi
     elif [[ $DIST_OS -eq "macosx" ]] ; then
-      sed -e "s^NEO4J_INSTANCE^${NEO4J_INSTANCE}^" <${NEO4J_INSTANCE}/bin/org.neo4j.server.plist >${LAUNCHD_DIR}/org.neo4j.server.plist
+      sed -e "s^NEO4J_INSTANCE^${NEO4J_INSTANCE}^" <"${NEO4J_INSTANCE}/bin/org.neo4j.server.plist" >"${LAUNCHD_DIR}/org.neo4j.server.plist"
       launchctl load -w ${LAUNCHD_DIR}/org.neo4j.server.plist
       launchctl start org.neo4j.server
     else
