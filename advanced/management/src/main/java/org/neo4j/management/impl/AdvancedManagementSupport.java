@@ -22,6 +22,7 @@ package org.neo4j.management.impl;
 import javax.management.DynamicMBean;
 import javax.management.ObjectName;
 
+import org.neo4j.jmx.impl.ConfigurationBean;
 import org.neo4j.jmx.impl.KernelBean;
 import org.neo4j.jmx.impl.ManagementSupport;
 

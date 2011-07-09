@@ -47,9 +47,9 @@ import javax.rmi.ssl.SslRMIClientSocketFactory;
 
 import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.Primitives;
+import org.neo4j.jmx.impl.ConfigurationBean;
 import org.neo4j.jmx.impl.JmxExtension;
 import org.neo4j.kernel.KernelData;
-import org.neo4j.management.impl.ConfigurationBean;
 import org.neo4j.management.impl.KernelProxy;
 
 public final class Neo4jManager extends KernelProxy implements Kernel
