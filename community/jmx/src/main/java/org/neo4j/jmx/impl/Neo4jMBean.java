@@ -19,6 +19,7 @@
  */
 package org.neo4j.jmx.impl;
 
+import javax.management.DynamicMBean;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanFeatureInfo;
 import javax.management.MBeanInfo;
@@ -50,11 +51,20 @@ public abstract class Neo4jMBean extends StandardMBean
         this.objectName = management.getObjectName();
     }
 
+    /** Constructor for {@link KernelBean} */
     Neo4jMBean( Class<Kernel> beanInterface, KernelData kernel, ManagementSupport support )
             throws NotCompliantMBeanException
     {
         super( beanInterface );
         this.objectName = support.createObjectName( kernel.instanceId(), beanInterface );
+    }
+
+    /** Constructor for {@link ConfigurationBean} */
+    Neo4jMBean( String beanName, KernelData kernel, ManagementSupport support )
+            throws NotCompliantMBeanException
+    {
+        super( DynamicMBean.class );
+        this.objectName = support.createObjectName( kernel.instanceId(), beanName );
     }
 
     @Override

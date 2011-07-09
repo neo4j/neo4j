@@ -50,6 +50,16 @@ public final class JmxExtension extends KernelExtension<JmxExtension.JmxData>
         ManagementSupport support = ManagementSupport.load();
         MBeanServer mbs = support.getMBeanServer();
         List<Neo4jMBean> beans = new LinkedList<Neo4jMBean>();
+        try
+        {
+            Neo4jMBean bean = new KernelBean( kernel, support );
+            mbs.registerMBean( bean, bean.objectName );
+            beans.add( 0, bean );
+        }
+        catch ( Exception e )
+        {
+            log.info( "Failed to register Kernel JMX Bean" );
+        }
         for ( ManagementBeanProvider provider : Service.load( ManagementBeanProvider.class ) )
         {
             try
@@ -68,13 +78,13 @@ public final class JmxExtension extends KernelExtension<JmxExtension.JmxData>
         }
         try
         {
-            Neo4jMBean bean = new KernelBean( kernel, support );
+            Neo4jMBean bean = new ConfigurationBean( kernel, support );
             mbs.registerMBean( bean, bean.objectName );
             beans.add( 0, bean );
         }
         catch ( Exception e )
         {
-            log.info( "Failed to register Kernel JMX Bean" );
+            log.info( "Failed to register Configuration JMX Bean" );
         }
         return new JmxData( kernel, support, beans.toArray( new Neo4jMBean[beans.size()] ) );
     }
