@@ -29,7 +29,6 @@ import java.io.File;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.com.ComException;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -252,7 +251,6 @@ public class TestBackup
         }
     }
 
-    @Ignore( "Not fixed yet - Fails on Mac OS X (only?)" )
     @Test
     public void shouldRetainFileLocksAfterFullBackupOnLiveDatabase() throws Exception
     {
@@ -271,10 +269,19 @@ public class TestBackup
 
     private static void assertStoreIsLocked( String path )
     {
+        try
+        {
+            new EmbeddedGraphDatabase( path ).shutdown();
+            fail( "Could start up database in same process, store not locked" );
+        }
+        catch ( TransactionFailureException ex )
+        {
+            // expected
+        }
         StartupChecker proc = new LockProcess().start( path );
         try
         {
-            assertFalse( "Could start up database, store is not locked", proc.startupOk() );
+            assertFalse( "Could start up database in subprocess, store is not locked", proc.startupOk() );
         }
         finally
         {
@@ -317,8 +324,8 @@ public class TestBackup
                 state = ex;
                 return;
             }
-            db.shutdown();
             state = new Object();
+            db.shutdown();
         }
     }
 }
