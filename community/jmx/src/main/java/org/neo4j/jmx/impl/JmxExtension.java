@@ -54,7 +54,7 @@ public final class JmxExtension extends KernelExtension<JmxExtension.JmxData>
         {
             Neo4jMBean bean = new KernelBean( kernel, support );
             mbs.registerMBean( bean, bean.objectName );
-            beans.add( 0, bean );
+            beans.add( bean );
         }
         catch ( Exception e )
         {
@@ -80,7 +80,7 @@ public final class JmxExtension extends KernelExtension<JmxExtension.JmxData>
         {
             Neo4jMBean bean = new ConfigurationBean( kernel, support );
             mbs.registerMBean( bean, bean.objectName );
-            beans.add( 0, bean );
+            beans.add( bean );
         }
         catch ( Exception e )
         {
