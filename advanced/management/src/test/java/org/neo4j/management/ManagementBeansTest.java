@@ -29,6 +29,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.jmx.Kernel;
+import org.neo4j.jmx.Primitives;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
@@ -61,6 +62,14 @@ public class ManagementBeansTest
         // END SNIPPET: getKernel
         assertNotNull( "kernel bean is null", kernel );
         assertNotNull( "MBeanQuery of kernel bean is null", kernel.getMBeanQuery() );
+    }
+
+    @Test
+    public void canAccessPrimitivesBean() throws Exception
+    {
+        Primitives primitives = graphDb.getManagementBean( Primitives.class );
+        assertNotNull( "primitives bean is null", primitives );
+        primitives.getNumberOfNodeIdsInUse();
     }
 
     @Test
