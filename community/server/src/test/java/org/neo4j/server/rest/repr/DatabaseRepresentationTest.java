@@ -39,7 +39,7 @@ public class DatabaseRepresentationTest
         when( mockDb.getReferenceNode() ).thenReturn( mockNode );
         DatabaseRepresentation representation = new DatabaseRepresentation( mockDb );
 
-        Map<String, Object> map = RepresentationTestBase.serialize( representation );
+        Map<String, Object> map = RepresentationTestAccess.serialize( representation );
 
         assertTrue( map.containsKey( "relationship_types" ) );
 

@@ -24,6 +24,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -34,7 +35,7 @@ import java.util.Map;
 import org.junit.Test;
 import org.neo4j.graphdb.PropertyContainer;
 
-public class PropertiesRepresentationTest extends RepresentationTestBase
+public class PropertiesRepresentationTest
 {
     @Test
     public void shouldContainAddedPropertiesWhenCreatedFromPropertyContainer()

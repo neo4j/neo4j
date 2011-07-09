@@ -17,7 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.web;
+package org.neo4j.test.server;
+
+import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 
 import java.net.URI;
 import java.util.List;
@@ -25,12 +27,10 @@ import java.util.Map;
 
 import javax.ws.rs.core.Response;
 
-import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ExtensionInjector;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.RepresentationFormat;
-import org.neo4j.server.rest.repr.RepresentationTestBase;
 
 public class EntityOutputFormat extends OutputFormat
 {
@@ -42,16 +42,18 @@ public class EntityOutputFormat extends OutputFormat
     }
 
     @Override
-    protected Response response( Response.ResponseBuilder response, Representation representation )
+    protected Response response( Response.ResponseBuilder response,
+            @SuppressWarnings( "hiding" ) Representation representation )
     {
         this.representation = representation;
 
         return super.response( response, representation );
     }
 
-    public Map<String, Object> getResultAsMap() throws BadInputException
+    @SuppressWarnings( "unchecked" )
+    public Map<String, Object> getResultAsMap()
     {
-        return (Map<String, Object>) RepresentationTestBase.serialize( representation );
+        return (Map<String, Object>) serialize( representation );
     }
 
     public Representation getRepresentation()
@@ -59,8 +61,9 @@ public class EntityOutputFormat extends OutputFormat
         return representation;
     }
 
-    public List<Object> getResultAsList() throws BadInputException
+    @SuppressWarnings( "unchecked" )
+    public List<Object> getResultAsList()
     {
-        return (List<Object>) RepresentationTestBase.serialize( representation );
+        return (List<Object>) serialize( representation );
     }
 }

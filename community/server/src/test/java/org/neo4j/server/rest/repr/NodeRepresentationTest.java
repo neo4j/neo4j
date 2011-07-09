@@ -22,6 +22,9 @@ package org.neo4j.server.rest.repr;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
+import static org.neo4j.server.rest.repr.RepresentationTestBase.assertUriMatches;
+import static org.neo4j.server.rest.repr.RepresentationTestBase.uriPattern;
 
 import java.util.Collections;
 import java.util.Map;
@@ -29,7 +32,7 @@ import java.util.Map;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 
-public class NodeRepresentationTest extends RepresentationTestBase
+public class NodeRepresentationTest
 {
     @Test
     public void shouldHaveSelfLink() throws BadInputException
@@ -144,6 +147,6 @@ public class NodeRepresentationTest extends RepresentationTestBase
                 .toString() );
         assertUriMatches( uriPattern( "/properties/\\{key\\}" ), (String) noderep.get( "property" ) );
         assertUriMatches( uriPattern( "/traverse/\\{returnType\\}" ), (String) noderep.get( "traverse" ) );
-        assertNotNull( (Map<String, Object>) noderep.get( "data" ) );
+        assertNotNull( noderep.get( "data" ) );
     }
 }

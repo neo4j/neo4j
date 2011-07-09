@@ -37,7 +37,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
-import org.neo4j.server.rest.web.EntityOutputFormat;
+import org.neo4j.test.server.EntityOutputFormat;
 
 public class DiscoveryServiceTest
 {

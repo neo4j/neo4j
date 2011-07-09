@@ -28,7 +28,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.server.rest.repr.RepresentationTestBase.serialize;
+import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 
 import java.io.File;
 import java.io.IOException;

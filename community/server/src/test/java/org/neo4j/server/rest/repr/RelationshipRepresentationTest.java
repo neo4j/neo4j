@@ -22,6 +22,10 @@ package org.neo4j.server.rest.repr;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
+import static org.neo4j.server.rest.repr.RepresentationTestBase.NODE_URI_PATTERN;
+import static org.neo4j.server.rest.repr.RepresentationTestBase.RELATIONSHIP_URI_PATTERN;
+import static org.neo4j.server.rest.repr.RepresentationTestBase.assertUriMatches;
 
 import java.util.Collections;
 import java.util.Map;
@@ -31,7 +35,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 
-public class RelationshipRepresentationTest extends RepresentationTestBase
+public class RelationshipRepresentationTest
 {
     @Test
     public void shouldHaveSelfLink() throws BadInputException
@@ -112,10 +116,10 @@ public class RelationshipRepresentationTest extends RepresentationTestBase
                 .toString() );
         assertUriMatches( NODE_URI_PATTERN, relrep.get( "end" )
                 .toString() );
-        assertNotNull( (String) relrep.get( "type" ) );
+        assertNotNull( relrep.get( "type" ) );
         assertUriMatches( RELATIONSHIP_URI_PATTERN + "/properties", relrep.get( "properties" )
                 .toString() );
         assertUriMatches( RELATIONSHIP_URI_PATTERN + "/properties/\\{key\\}", (String) relrep.get( "property" ) );
-        assertNotNull( (Map<String, Object>) relrep.get( "data" ) );
+        assertNotNull( relrep.get( "data" ) );
     }
 }
