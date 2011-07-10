@@ -28,6 +28,7 @@ import org.neo4j.kernel.ha.MasterServer;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
+import org.neo4j.shell.ShellException;
 import org.neo4j.shell.kernel.apps.ReadOnlyGraphDatabaseApp;
 
 public class Hainfo extends ReadOnlyGraphDatabaseApp
@@ -35,6 +36,10 @@ public class Hainfo extends ReadOnlyGraphDatabaseApp
     @Override
     protected String exec( AppCommandParser parser, Session session, Output out ) throws Exception
     {
+        if ( !(getServer().getDb() instanceof HighlyAvailableGraphDatabase) )
+        {
+            throw new ShellException( "Your database isn't started in HA mode" );
+        }
         HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) getServer().getDb();
         MasterServer master = db.getMasterServerIfMaster();
         out.println( "I'm currently " + (db.isMaster() ? "master" : "slave") );

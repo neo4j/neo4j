@@ -17,29 +17,30 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha.shell;
+package org.neo4j.kernel.ha.backup;
 
-import java.rmi.RemoteException;
 
-import org.neo4j.kernel.HighlyAvailableGraphDatabase;
-import org.neo4j.shell.AppCommandParser;
-import org.neo4j.shell.Output;
-import org.neo4j.shell.Session;
-import org.neo4j.shell.ShellException;
-import org.neo4j.shell.kernel.apps.ReadOnlyGraphDatabaseApp;
+import java.net.URL;
 
-public class Pullupdates extends ReadOnlyGraphDatabaseApp
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
+import org.apache.log4j.SimpleLayout;
+import org.apache.log4j.spi.Configurator;
+import org.apache.log4j.spi.LoggerRepository;
+
+/**
+ * Simple log4j configurator that ignores the URL and just logs ERROR to
+ * System.err
+ * Useful for HA backups where Zookeeper needs a logger but we don't want to
+ * depend on externally provided configuration.
+ */
+public class BackupLoggerConfigurator implements Configurator
 {
     @Override
-    protected String exec( AppCommandParser parser, Session session, Output out )
-            throws ShellException, RemoteException
+    public void doConfigure( URL url, LoggerRepository repository )
     {
-        if ( !(getServer().getDb() instanceof HighlyAvailableGraphDatabase) )
-        {
-            throw new ShellException( "Your database isn't started in HA mode" );
-        }
-        
-        ((HighlyAvailableGraphDatabase) getServer().getDb()).pullUpdates();
-        return null;
+        repository.getRootLogger().setLevel( Level.ERROR );
+        repository.getRootLogger().addAppender(
+                new ConsoleAppender( new SimpleLayout(), "System.err" ) );
     }
 }
