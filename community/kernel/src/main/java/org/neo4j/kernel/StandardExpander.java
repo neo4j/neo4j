@@ -930,7 +930,7 @@ public abstract class StandardExpander implements Expander
     public StandardExpander addRelationsipFilter(
             Predicate<? super Relationship> filter )
     {
-        return new FilteringExpander( this, new RelationshipFilter( filter ) );
+        return addRelationshipFilter(filter);
     }
 
     static StandardExpander wrap( RelationshipExpander expander )
