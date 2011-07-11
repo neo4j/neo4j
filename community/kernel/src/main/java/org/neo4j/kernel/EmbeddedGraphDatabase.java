@@ -48,7 +48,7 @@ import org.neo4j.graphdb.index.IndexManager;
  *
  * For more information, see {@link GraphDatabaseService}.
  */
-public final class EmbeddedGraphDatabase extends AbstractGraphDatabase implements GraphDatabaseService
+public final class EmbeddedGraphDatabase extends AbstractGraphDatabase
 {
     private final EmbeddedGraphDbImpl graphDbImpl;
 
