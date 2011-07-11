@@ -917,6 +917,7 @@ public class RestfulGraphDatabaseTest
         assertNotNull( map.get( "node_index" ) );
         assertNotNull( map.get( "extensions_info" ) );
         assertNotNull( map.get( "relationship_index" ) );
+        assertNotNull( map.get( "batch" ) );
         assertEquals( response.getMetadata()
                 .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
     }

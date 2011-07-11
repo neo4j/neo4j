@@ -86,10 +86,33 @@ public class GetOnRootFunctionalTest
         assertNotNull( map.get( "node_index" ) );
         assertNotNull( map.get( "relationship_index" ) );
         assertNotNull( map.get( "extensions_info" ) );
+        assertNotNull( map.get( "batch" ) );
         response.close();
 
-        String referenceNodeUri = (String) map.get( "reference_node" );
-        response = RestRequest.req().get(referenceNodeUri);
+        // Make sure advertised urls work
+        
+        response = RestRequest.req().get(
+        		(String) map.get( "reference_node" ));
+        assertEquals( 200, response.getStatus() );
+        response.close();
+        
+        response = RestRequest.req().get(
+        		(String) map.get( "node_index" ));
+        assertEquals( 204, response.getStatus() );
+        response.close();
+        
+        response = RestRequest.req().get(
+        		(String) map.get( "relationship_index" ));
+        assertEquals( 204, response.getStatus() );
+        response.close();
+        
+        response = RestRequest.req().get(
+        		(String) map.get( "extensions_info" ));
+        assertEquals( 200, response.getStatus() );
+        response.close();
+        
+        response = RestRequest.req().post(
+        		(String) map.get( "batch" ), "[]");
         assertEquals( 200, response.getStatus() );
         response.close();
     }
