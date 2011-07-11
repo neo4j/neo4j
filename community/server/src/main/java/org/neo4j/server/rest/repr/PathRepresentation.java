@@ -24,7 +24,8 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.IterableWrapper;
 
-public class PathRepresentation<P extends Path> extends ObjectRepresentation //implements ExtensibleRepresentation
+public class PathRepresentation<P extends Path> extends ObjectRepresentation // implements
+                                                                             // ExtensibleRepresentation
 {
     private final P path;
 
@@ -49,7 +50,7 @@ public class PathRepresentation<P extends Path> extends ObjectRepresentation //i
         return result.toString();
     }
     */
-    
+
     protected P getPath()
     {
         return path;
@@ -76,15 +77,15 @@ public class PathRepresentation<P extends Path> extends ObjectRepresentation //i
     @Mapping( "nodes" )
     public ListRepresentation nodes()
     {
-        return new ListRepresentation( RepresentationType.NODE, new IterableWrapper<Representation, Node>(
-                path.nodes() )
-        {
-            @Override
-            protected Representation underlyingObjectToObject( Node node )
-            {
-                return ValueRepresentation.uri( NodeRepresentation.path( node ) );
-            }
-        } );
+        return new ListRepresentation( RepresentationType.NODE,
+                new IterableWrapper<Representation, Node>( path.nodes() )
+                {
+                    @Override
+                    protected Representation underlyingObjectToObject( Node node )
+                    {
+                        return ValueRepresentation.uri( NodeRepresentation.path( node ) );
+                    }
+                } );
     }
 
     @Mapping( "relationships" )

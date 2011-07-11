@@ -47,7 +47,7 @@ public abstract class IndexRepresentation extends MappingRepresentation implemen
 
     public String relativeUriFor( String key, String value, long entityId )
     {
-        return path() + URIHelper.encode(key) + "/" + URIHelper.encode(value) + "/" + Long.toString( entityId );
+        return path() + URIHelper.encode( key ) + "/" + URIHelper.encode( value ) + "/" + Long.toString( entityId );
     }
 
     @Override
@@ -58,7 +58,7 @@ public abstract class IndexRepresentation extends MappingRepresentation implemen
 
     private String path()
     {
-        return "index/" + propertyContainerType() + "/" +  name + "/";
+        return "index/" + propertyContainerType() + "/" + name + "/";
     }
 
     protected abstract String propertyContainerType();

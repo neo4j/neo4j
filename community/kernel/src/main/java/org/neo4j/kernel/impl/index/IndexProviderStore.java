@@ -135,7 +135,6 @@ public class IndexProviderStore
     public synchronized void setLastCommittedTx( long txId )
     {
         this.lastCommittedTx = txId;
-//        writeOut();
     }
     
     public long getLastCommittedTx()
@@ -167,6 +166,7 @@ public class IndexProviderStore
             return;
         }
         
+        writeOut();
         try
         {
             fileChannel.close();

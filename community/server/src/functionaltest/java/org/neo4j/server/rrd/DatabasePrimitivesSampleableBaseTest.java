@@ -34,28 +34,32 @@ public class DatabasePrimitivesSampleableBaseTest
 {
 
     @Test
-    public void shouldSurviveDatabaseSwitch() throws MalformedObjectNameException, IOException {
-        
+    public void shouldSurviveDatabaseSwitch() throws MalformedObjectNameException, IOException
+    {
+
         EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( createTempDir().getAbsolutePath() );
-        Database database = new Database(db);
-        DatabasePrimitivesSampleableBase sampleable = new NodeIdsInUseSampleable( database ); 
-        
-        assertTrue("There should be a single node in use.", sampleable.getValue() == 1);
-        
-        try {
+        Database database = new Database( db );
+        DatabasePrimitivesSampleableBase sampleable = new NodeIdsInUseSampleable( database );
+
+        assertTrue( "There should be a single node in use.", sampleable.getValue() == 1 );
+
+        try
+        {
             database.graph.shutdown();
             sampleable.getValue();
-            throw new RuntimeException("Expected UnableToSampleException to be thrown.");
-        } catch(UnableToSampleException e) {
+            throw new RuntimeException( "Expected UnableToSampleException to be thrown." );
+        }
+        catch ( UnableToSampleException e )
+        {
             // Skip
         }
-        
+
         database.graph = new EmbeddedGraphDatabase( createTempDir().getAbsolutePath() );
-        
-        assertTrue("There should be a single node in use.", sampleable.getValue() == 1);
-        
+
+        assertTrue( "There should be a single node in use.", sampleable.getValue() == 1 );
+
         database.shutdown();
-        
+
     }
-    
+
 }

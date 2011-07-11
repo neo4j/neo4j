@@ -22,12 +22,18 @@ package org.neo4j.server;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-public class AddressResolver {
+public class AddressResolver
+{
 
-    public String getHostname() {
-        try {
-            return InetAddress.getLocalHost().getCanonicalHostName();
-        } catch (UnknownHostException e) {
+    public String getHostname()
+    {
+        try
+        {
+            return InetAddress.getLocalHost()
+                    .getCanonicalHostName();
+        }
+        catch ( UnknownHostException e )
+        {
             return "localhost";
         }
     }

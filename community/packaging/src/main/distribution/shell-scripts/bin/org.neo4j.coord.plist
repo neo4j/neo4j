@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>org.neo4j.coord</string>
+	<key>WorkingDirectory</key>
+	<string>NEO4J_INSTANCE</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>NEO4J_INSTANCE/bin/neo4j-coordinator</string>
+		<string>console</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>OnDemand</key>
+	<true/>
+</dict>
+</plist>

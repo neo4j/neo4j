@@ -28,10 +28,10 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.graphdb.index.ReadOnlyIndex;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.graphdb.index.ReadableIndex;
 
 /**
  * Default implementation of the AutoIndexer, binding to the beforeCommit hook
@@ -55,7 +55,7 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
     }
 
     @Override
-    public ReadOnlyIndex<T> getAutoIndex()
+    public ReadableIndex<T> getAutoIndex()
     {
         return new IndexWrapper<T>( getIndexInternal() );
     }
@@ -267,7 +267,7 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
      * @param <K> The type of database primitive this index holds
      */
     private static class IndexWrapper<K extends PropertyContainer> implements
-            ReadOnlyIndex<K>
+            ReadableIndex<K>
     {
         private final Index<K> delegate;
 
@@ -275,7 +275,7 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
         {
             this.delegate = delegate;
         }
-        
+
         @Override
         public String getName()
         {
@@ -304,6 +304,85 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
         public IndexHits<K> query( Object queryOrQueryObject )
         {
             return delegate.query( queryOrQueryObject );
+        }
+    }
+
+    /**
+     * A simple wrapper that makes a read only index into a read-write
+     * index with the unsupported operations throwing
+     * UnsupportedOperationException
+     * Useful primarily for returning the actually read-write but
+     * publicly read-only auto indexes from the get by name methods of the index
+     * manager.
+     */
+    static class ReadOnlyIndexToIndexAdapter<T extends PropertyContainer>
+            implements Index<T>
+    {
+        private final ReadableIndex<T> delegate;
+
+        public ReadOnlyIndexToIndexAdapter( ReadableIndex<T> delegate )
+        {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public String getName()
+        {
+            return delegate.getName();
+        }
+
+        @Override
+        public Class<T> getEntityType()
+        {
+            return delegate.getEntityType();
+        }
+
+        @Override
+        public IndexHits<T> get( String key, Object value )
+        {
+            return delegate.get( key, value );
+        }
+
+        @Override
+        public IndexHits<T> query( String key, Object queryOrQueryObject )
+        {
+            return delegate.query( key, queryOrQueryObject );
+        }
+
+        @Override
+        public IndexHits<T> query( Object queryOrQueryObject )
+        {
+            return delegate.query( queryOrQueryObject );
+        }
+
+        @Override
+        public void add( T entity, String key, Object value )
+        {
+            throw new UnsupportedOperationException( "read only index" );
+        }
+
+        @Override
+        public void remove( T entity, String key, Object value )
+        {
+            throw new UnsupportedOperationException( "read only index" );
+        }
+
+        @Override
+        public void remove( T entity, String key )
+        {
+            throw new UnsupportedOperationException( "read only index" );
+        }
+
+        @Override
+        public void remove( T entity )
+        {
+            throw new UnsupportedOperationException( "read only index" );
+        }
+
+        @Override
+        public void delete()
+        {
+            throw new UnsupportedOperationException( "read only index" );
         }
     }
 }

@@ -45,12 +45,11 @@ import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.plugins.PluginFunctionalTestHelper.RegExp;
 import org.neo4j.server.rest.FunctionalTestHelper;
+import org.neo4j.server.rest.JaxRsResponse;
+import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.NodeRepresentationTest;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
-
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
 
 @SuppressWarnings( "unchecked" )
 public class PluginFunctionalTest
@@ -77,7 +76,7 @@ public class PluginFunctionalTest
     {
         server.stop();
     }
-    
+
     @Test
     public void canGetGraphDatabaseExtensionList() throws Exception
     {
@@ -102,7 +101,8 @@ public class PluginFunctionalTest
         map = (Map<String, Object>) map.get( FunctionalTestPlugin.class.getSimpleName() );
 
         assertThat( (String) map.get( FunctionalTestPlugin.GET_REFERENCE_NODE ), RegExp.endsWith( String.format(
-                "/ext/%s/graphdb/%s", FunctionalTestPlugin.class.getSimpleName(), FunctionalTestPlugin.GET_REFERENCE_NODE ) ) );
+                "/ext/%s/graphdb/%s", FunctionalTestPlugin.class.getSimpleName(),
+                FunctionalTestPlugin.GET_REFERENCE_NODE ) ) );
     }
 
     @Test
@@ -292,7 +292,8 @@ public class PluginFunctionalTest
                 .createNode() ) );
 
         String uri = (String) map.get( "createRelationships" );
-        List<Map<String, Object>> response = PluginFunctionalTestHelper.makePostList( uri, MapUtil.map( "type", "KNOWS", "nodes", nodes ) );
+        List<Map<String, Object>> response = PluginFunctionalTestHelper.makePostList( uri,
+                MapUtil.map( "type", "KNOWS", "nodes", nodes ) );
         assertEquals( nodes.size(), response.size() );
         verifyRelationships( response );
     }
@@ -340,10 +341,7 @@ public class PluginFunctionalTest
 
         String postBody = "strings[]=aaa&strings[]=bbb&strings[]=ccc";
 
-        Client.create().resource( methodUri )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .entity( postBody, MediaType.APPLICATION_FORM_URLENCODED )
-                .post( ClientResponse.class );
+        RestRequest.req().post( methodUri ,postBody,MediaType.APPLICATION_FORM_URLENCODED_TYPE);
 
         List<String> strings = Arrays.asList( "aaa", "bbb", "ccc" );
 
@@ -351,7 +349,7 @@ public class PluginFunctionalTest
 
         assertThat( FunctionalTestPlugin.stringList, is( stringsList ) );
     }
-    
+
     @Test
     public void shouldHandleUrlEncodedListsAndInt() throws Exception
     {
@@ -359,10 +357,7 @@ public class PluginFunctionalTest
 
         String postBody = "strings[]=aaa&strings[]=bbb&strings[]=ccc&count=3";
 
-        Client.create().resource( methodUri )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .entity( postBody, MediaType.APPLICATION_FORM_URLENCODED )
-                .post( ClientResponse.class );
+        RestRequest.req().post(methodUri,postBody,MediaType.APPLICATION_FORM_URLENCODED_TYPE);
 
         List<String> strings = Arrays.asList( "aaa", "bbb", "ccc" );
 
@@ -427,18 +422,15 @@ public class PluginFunctionalTest
     }
 
     @Test
-    public void shouldHandleNullPath() throws Exception
-    {
+    public void shouldHandleNullPath() throws Exception {
         long n = functionalTestHelper.getGraphDbHelper()
                 .createNode();
 
-        String url = getPluginMethodUri( functionalTestHelper.nodeUri( n ), "pathToReference" );
+        String url = getPluginMethodUri(functionalTestHelper.nodeUri(n), "pathToReference");
 
-        ClientResponse response = Client.create().resource( url )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .post( ClientResponse.class );
+        JaxRsResponse response = new RestRequest().post(url, null);
 
-        assertThat( response.getStatus(), is( 204 ) );
+        assertThat(response.getStatus(), is(204));
         response.close();
     }
 

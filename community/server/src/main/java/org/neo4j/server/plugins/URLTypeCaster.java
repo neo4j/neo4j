@@ -29,12 +29,12 @@ import org.neo4j.server.rest.repr.BadInputException;
 class URLTypeCaster extends TypeCaster
 {
     @Override
-    Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
-            throws BadInputException
+    Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name ) throws BadInputException
     {
         try
         {
-            return parameters.getUri( name ).toURL();
+            return parameters.getUri( name )
+                    .toURL();
         }
         catch ( MalformedURLException e )
         {
@@ -43,8 +43,7 @@ class URLTypeCaster extends TypeCaster
     }
 
     @Override
-    Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
-            throws BadInputException
+    Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name ) throws BadInputException
     {
         URI[] uris = parameters.getUriList( name );
         URL[] urls = new URL[uris.length];

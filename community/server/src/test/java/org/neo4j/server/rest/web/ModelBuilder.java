@@ -27,36 +27,43 @@ import org.neo4j.server.rest.domain.JsonHelper;
 
 /**
  * Helps generate testable data models, using a RestfulGraphDatabase.
- *
+ * 
  */
 public class ModelBuilder
 {
-    public static DomainModel generateMatrix( RestfulGraphDatabase rgd ) {
+    public static DomainModel generateMatrix( RestfulGraphDatabase rgd )
+    {
         String key = "key_get";
         String value = "value";
 
         DomainModel dm = new DomainModel();
 
         DomainEntity thomas = new DomainEntity();
-        thomas.properties.put("name", "Thomas Anderson");
-        thomas.location = (URI) rgd.createNode( "{\"name\":\"" + "Thomas Anderson" + "\"}" ).getMetadata().getFirst(
-                "Location" );
-        dm.add(thomas);
+        thomas.properties.put( "name", "Thomas Anderson" );
+        thomas.location = (URI) rgd.createNode( "{\"name\":\"" + "Thomas Anderson" + "\"}" )
+                .getMetadata()
+                .getFirst( "Location" );
+        dm.add( thomas );
 
         DomainEntity agent = new DomainEntity();
-        agent.properties.put("name", "Agent Smith");
-        agent.location = (URI) rgd.createNode( "{\"name\":\"" + "Agent Smith" + "\"}" ).getMetadata().getFirst(
-                "Location" );
-        dm.add(agent);
+        agent.properties.put( "name", "Agent Smith" );
+        agent.location = (URI) rgd.createNode( "{\"name\":\"" + "Agent Smith" + "\"}" )
+                .getMetadata()
+                .getFirst( "Location" );
+        dm.add( agent );
 
         dm.nodeIndexName = "matrixal-nodes";
-        dm.indexedNodeKeyValues.put(key, value);
-        dm.indexedNodeUriToEntityMap.put( (URI) rgd.addToNodeIndex( dm.nodeIndexName, key, value,
-                JsonHelper.createJsonFrom( thomas.location.toString() ) ).getMetadata().getFirst(
-                "Location" ), thomas );
-        dm.indexedNodeUriToEntityMap.put( (URI) rgd.addToNodeIndex( dm.nodeIndexName, key, value,
-                JsonHelper.createJsonFrom( agent.location.toString() ) ).getMetadata().getFirst(
-                "Location" ), agent);
+        dm.indexedNodeKeyValues.put( key, value );
+        dm.indexedNodeUriToEntityMap.put(
+                (URI) rgd.addToNodeIndex( dm.nodeIndexName, key, value,
+                        JsonHelper.createJsonFrom( thomas.location.toString() ) )
+                        .getMetadata()
+                        .getFirst( "Location" ), thomas );
+        dm.indexedNodeUriToEntityMap.put(
+                (URI) rgd.addToNodeIndex( dm.nodeIndexName, key, value,
+                        JsonHelper.createJsonFrom( agent.location.toString() ) )
+                        .getMetadata()
+                        .getFirst( "Location" ), agent );
 
         return dm;
     }
@@ -64,21 +71,22 @@ public class ModelBuilder
     public static class DomainEntity
     {
         public URI location;
-        public Map<String,String> properties = new HashMap<String, String>();
+        public Map<String, String> properties = new HashMap<String, String>();
     }
 
-    public static class DomainModel {
+    public static class DomainModel
+    {
         public Map<URI, DomainEntity> nodeUriToEntityMap = new HashMap<URI, DomainEntity>();
         String nodeIndexName = "nodes";
-        public Map<String,String> indexedNodeKeyValues = new HashMap<String, String>();
+        public Map<String, String> indexedNodeKeyValues = new HashMap<String, String>();
         public Map<URI, DomainEntity> indexedNodeUriToEntityMap = new HashMap<URI, DomainEntity>();
         String relationshipIndexName = "relationships";
         public Map<URI, DomainEntity> indexedRelationshipUriToEntityMap = new HashMap<URI, DomainEntity>();
-        public Map<String,String> indexedRelationshipKeyValues = new HashMap<String, String>();
+        public Map<String, String> indexedRelationshipKeyValues = new HashMap<String, String>();
 
-        public void add(DomainEntity de)
+        public void add( DomainEntity de )
         {
-            nodeUriToEntityMap.put(de.location, de);
+            nodeUriToEntityMap.put( de.location, de );
         }
     }
 }

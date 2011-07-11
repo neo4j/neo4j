@@ -29,7 +29,8 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.plugins.PluginManager;
 
-public interface NeoServer {
+public interface NeoServer
+{
     void start();
 
     Configuration getConfiguration();

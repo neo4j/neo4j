@@ -55,8 +55,7 @@ public class BatchOperationService
     private final WebServer webServer;
     private final Database database;
 
-    public BatchOperationService( @Context Database database,
-            @Context WebServer webServer, @Context InputFormat input,
+    public BatchOperationService( @Context Database database, @Context WebServer webServer, @Context InputFormat input,
             @Context OutputFormat output )
     {
         this.input = input;
@@ -67,8 +66,7 @@ public class BatchOperationService
 
     @POST
     @SuppressWarnings( "unchecked" )
-    public Response performBatchOperations( @Context UriInfo uriInfo,
-            String body )
+    public Response performBatchOperations( @Context UriInfo uriInfo, String body )
     {
 
         AbstractGraphDatabase db = database.graph;
@@ -78,8 +76,7 @@ public class BatchOperationService
         {
 
             List<Object> operations = input.readList( body );
-            BatchOperationResults results = new BatchOperationResults(
-                    operations.size() );
+            BatchOperationResults results = new BatchOperationResults( operations.size() );
 
             for ( Object rawOperation : operations )
             {
@@ -88,9 +85,12 @@ public class BatchOperationService
 
             tx.success();
 
-            return Response.ok().entity( results.toJSON().getBytes( "UTF-8" ) ).header(
-                    HttpHeaders.CONTENT_ENCODING, "UTF-8" ).type(
-                    MediaType.APPLICATION_JSON ).build();
+            return Response.ok()
+                    .entity( results.toJSON()
+                            .getBytes( "UTF-8" ) )
+                    .header( HttpHeaders.CONTENT_ENCODING, "UTF-8" )
+                    .type( MediaType.APPLICATION_JSON )
+                    .build();
         }
         catch ( Exception e )
         {
@@ -103,63 +103,66 @@ public class BatchOperationService
         }
     }
 
-    private void performJob( BatchOperationResults results,
-            UriInfo uriInfo, Map<String, Object> desc )
+    private void performJob( BatchOperationResults results, UriInfo uriInfo, Map<String, Object> desc )
             throws IOException, ServletException
     {
-        
+
         InternalJettyServletRequest req = new InternalJettyServletRequest();
         InternalJettyServletResponse res = new InternalJettyServletResponse();
-        
+
         String method = (String) desc.get( METHOD_KEY );
         String path = (String) desc.get( TO_KEY );
-        String body = desc.containsKey( BODY_KEY ) ? JsonHelper.createJsonFrom( desc.get( BODY_KEY ) )
-                : "";
-        Integer id = desc.containsKey( ID_KEY ) ? (Integer) desc.get( ID_KEY )
-                : null;
-        
+        String body = desc.containsKey( BODY_KEY ) ? JsonHelper.createJsonFrom( desc.get( BODY_KEY ) ) : "";
+        Integer id = desc.containsKey( ID_KEY ) ? (Integer) desc.get( ID_KEY ) : null;
+
         // Replace {[ID]} placeholders with location values
         Map<Integer, String> locations = results.getLocations();
         path = replaceLocationPlaceholders( path, locations );
         body = replaceLocationPlaceholders( body, locations );
-        
+
         URI targetUri = calculateTargetUri( uriInfo, path );
 
-        req.setup( method, targetUri.toString(), body);
+        req.setup( method, targetUri.toString(), body );
         res.setup();
 
-        webServer.invokeDirectly(targetUri.getPath(), req, res);
+        webServer.invokeDirectly( targetUri.getPath(), req, res );
 
         if ( is2XXStatusCode( res.getStatus() ) )
         {
-            results.addOperationResult( path, id,
-                    res.getOutputStream().toString(),
-                    res.getHeader( "Location" ) );
+            results.addOperationResult( path, id, res.getOutputStream()
+                    .toString(), res.getHeader( "Location" ) );
         }
         else
         {
             throw new RuntimeException( res.getReason() );
         }
     }
-    
-    private URI calculateTargetUri(UriInfo serverUriInfo, String requestedPath) {
+
+    private URI calculateTargetUri( UriInfo serverUriInfo, String requestedPath )
+    {
         URI baseUri = serverUriInfo.getBaseUri();
-        
-        if(requestedPath.startsWith( baseUri.toString() )) {
-            requestedPath = requestedPath.substring( baseUri.toString().length() );
+
+        if ( requestedPath.startsWith( baseUri.toString() ) )
+        {
+            requestedPath = requestedPath.substring( baseUri.toString()
+                    .length() );
         }
 
-        if(!requestedPath.startsWith( "/" )) {
+        if ( !requestedPath.startsWith( "/" ) )
+        {
             requestedPath = "/" + requestedPath;
         }
-        
-        return baseUri.resolve("." + requestedPath);
+
+        return baseUri.resolve( "." + requestedPath );
     }
-    
-    private String replaceLocationPlaceholders(String str, Map<Integer, String> locations) {
-        // TODO: Potential memory-hog on big requests, write smarter implementation.
-        for(Integer jobId : locations.keySet()) {
-            str = str.replace( "{"+jobId+"}", locations.get( jobId ) );   
+
+    private String replaceLocationPlaceholders( String str, Map<Integer, String> locations )
+    {
+        // TODO: Potential memory-hog on big requests, write smarter
+        // implementation.
+        for ( Integer jobId : locations.keySet() )
+        {
+            str = str.replace( "{" + jobId + "}", locations.get( jobId ) );
         }
         return str;
     }

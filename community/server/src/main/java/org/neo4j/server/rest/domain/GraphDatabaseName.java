@@ -19,23 +19,30 @@
  */
 package org.neo4j.server.rest.domain;
 
-public class GraphDatabaseName {
-	public static final GraphDatabaseName NO_NAME = new GraphDatabaseName("org.neo4j.rest.domain.GraphDatabaseName.NO_NAME");
-	private final String name;
+public class GraphDatabaseName
+{
+    public static final GraphDatabaseName NO_NAME = new GraphDatabaseName(
+            "org.neo4j.rest.domain.GraphDatabaseName.NO_NAME" );
+    private final String name;
 
-	public GraphDatabaseName(String name) {
-		this.name = name;
-	}
-	
-	public String getName() {
-		return name;
-	}
-	
-	public String toString() {
-		return getName();
-	}
-	
-	public boolean equals(Object obj) {
-		return obj instanceof GraphDatabaseName && ((GraphDatabaseName)obj).getName().equals(name);
-	}
+    public GraphDatabaseName( String name )
+    {
+        this.name = name;
+    }
+
+    public String getName()
+    {
+        return name;
+    }
+
+    public String toString()
+    {
+        return getName();
+    }
+
+    public boolean equals( Object obj )
+    {
+        return obj instanceof GraphDatabaseName && ( (GraphDatabaseName) obj ).getName()
+                .equals( name );
+    }
 }

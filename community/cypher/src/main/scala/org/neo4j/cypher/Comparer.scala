@@ -41,7 +41,7 @@ trait Comparer {
     case (null, _) => 1
     case (_, null) => -1
     case (left, right) => {
-      throw new SyntaxError("Don't know how to compare that. Left: " + left.toString + "; Right: " + right.toString)
+      throw new SyntaxException("Don't know how to compare that. Left: " + left.toString + "; Right: " + right.toString)
     }
   }
 

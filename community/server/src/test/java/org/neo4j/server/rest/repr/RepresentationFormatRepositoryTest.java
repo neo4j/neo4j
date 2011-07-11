@@ -27,8 +27,7 @@ import org.junit.Test;
 
 public class RepresentationFormatRepositoryTest
 {
-    private final RepresentationFormatRepository repository = new RepresentationFormatRepository(
-            null );
+    private final RepresentationFormatRepository repository = new RepresentationFormatRepository( null );
 
     @Test
     public void canProvideJsonFormat() throws Exception

@@ -21,11 +21,11 @@ package org.neo4j.shell.impl;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.regex.Pattern;
 
 import org.neo4j.helpers.Service;
@@ -48,7 +48,7 @@ import org.neo4j.shell.apps.Alias;
 public abstract class AbstractAppServer extends AbstractServer
 	implements AppShellServer
 {
-    private final Map<String, App> apps = new HashMap<String, App>();
+    private final Map<String, App> apps = new TreeMap<String, App>();
 
 	/**
 	 * Constructs a new server.

@@ -40,14 +40,16 @@ public class NeoServerShutdownLoggingFunctionalTest
         server = ServerHelper.createServer();
         ServerHelper.cleanTheDatabase( server );
     }
-    
+
     @After
-    public void shutdownTheServer() {
-        if(server != null) {
+    public void shutdownTheServer()
+    {
+        if ( server != null )
+        {
             server.stop();
         }
     }
-    
+
     @Test
     public void shouldLogShutdown() throws Exception
     {

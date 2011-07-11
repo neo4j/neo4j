@@ -19,6 +19,7 @@
  */
 package org.neo4j.test.subprocess;
 
+import java.io.PrintStream;
 
 @SuppressWarnings( "restriction" )
 public class DebugInterface
@@ -56,5 +57,13 @@ public class DebugInterface
     public DebuggedThread thread()
     {
         return new DebuggedThread( debug, event.thread() );
+    }
+
+    public void printStackTrace( PrintStream out )
+    {
+        for ( StackTraceElement trace : thread().getStackTrace() )
+        {
+            out.println( "\tat " + trace );
+        }
     }
 }

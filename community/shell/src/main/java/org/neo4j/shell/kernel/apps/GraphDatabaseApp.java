@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.Direction;
@@ -41,6 +42,7 @@ import org.neo4j.graphdb.RelationshipExpander;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.OrderedByTypeExpander;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
@@ -94,8 +96,15 @@ public abstract class GraphDatabaseApp extends AbstractApp
         NodeOrRelationship result = null;
         if ( currentThing == null )
         {
-            result = NodeOrRelationship.wrap(
-                server.getDb().getReferenceNode() );
+            try
+            {
+                result = NodeOrRelationship.wrap(
+                    server.getDb().getReferenceNode() );
+            }
+            catch ( NotFoundException e )
+            {
+                throw new ShellException( "Reference node not found" );
+            }
             setCurrent( session, result );
         }
         else
@@ -105,7 +114,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
         }
         return result;
     }
-
+    
     protected NodeOrRelationship getCurrent( Session session )
         throws ShellException
     {
@@ -117,6 +126,11 @@ public abstract class GraphDatabaseApp extends AbstractApp
         String currentThing = ( String ) safeGet( session, CURRENT_KEY );
         return currentThing != null && currentThing.equals(
                 thing.getTypedId().toString() );
+    }
+    
+    protected static void clearCurrent( Session session )
+    {
+        safeSet( session, CURRENT_KEY, new TypedId( NodeOrRelationship.TYPE_NODE, 0 ).toString() );
     }
 
     protected static void setCurrent( Session session,
@@ -255,6 +269,11 @@ public abstract class GraphDatabaseApp extends AbstractApp
     {
         NodeOrRelationship current = getCurrent( server, session );
         return current.isNode() ? "(me)" : "<me>";
+    }
+    
+    public static String getDisplayNameForNonExistent()
+    {
+        return "(?)";
     }
 
     /**
@@ -424,6 +443,18 @@ public abstract class GraphDatabaseApp extends AbstractApp
             patternOrNull.matcher( value ).matches();
     }
 
+    protected static <T extends Enum<T>> String niceEnumAlternatives( Class<T> enumClass )
+    {
+        StringBuilder builder = new StringBuilder( "[" );
+        int count = 0;
+        for ( T enumConstant : enumClass.getEnumConstants() )
+        {
+            builder.append( (count++ == 0 ? "" : ", ") );
+            builder.append( enumConstant.name() );
+        }
+        return builder.append( "]" ).toString();
+    }
+    
     protected static <T extends Enum<T>> T parseEnum(
         Class<T> enumClass, String name, T defaultValue, Pair<String, T>... additionalPairs )
     {
@@ -590,22 +621,21 @@ public abstract class GraphDatabaseApp extends AbstractApp
         return buffer.length() > 0 ? buffer.toString() : null;
     }
     
-    protected static RelationshipExpander toExpander( GraphDatabaseService db, Direction defaultDirection,
-            Map<String, Object> relationshipTypes, boolean caseInsensitiveFilters, boolean looseFilters ) throws ShellException
+    protected static Map<String, Direction> filterMapToTypes( GraphDatabaseService db,
+            Direction defaultDirection, Map<String, Object> filterMap, boolean caseInsensitiveFilters,
+            boolean looseFilters ) throws ShellException
     {
-        defaultDirection = defaultDirection != null ? defaultDirection : Direction.BOTH;
-        Expander expander = Traversal.emptyExpander();
-        boolean addedSomething = false;
+        Map<String, Direction> matches = new TreeMap<String, Direction>();
         for ( RelationshipType type : db.getRelationshipTypes() )
         {
             Direction direction = null;
-            if ( relationshipTypes == null || relationshipTypes.isEmpty() )
+            if ( filterMap == null || filterMap.isEmpty() )
             {
                 direction = defaultDirection;
             }
             else
             {
-                for ( Map.Entry<String, Object> entry : relationshipTypes.entrySet() )
+                for ( Map.Entry<String, Object> entry : filterMap.entrySet() )
                 {
                     if ( matches( newPattern( entry.getKey(), caseInsensitiveFilters ),
                         type.name(), caseInsensitiveFilters, looseFilters ) )
@@ -619,14 +649,38 @@ public abstract class GraphDatabaseApp extends AbstractApp
             // It matches
             if ( direction != null )
             {
-                expander = expander.add( type, direction );
-                addedSomething = true;
+                matches.put( type.name(), direction );
             }
         }
-        
-        if ( !relationshipTypes.isEmpty() && !addedSomething )
+        return matches.isEmpty() ? null : matches;
+    }
+    
+    protected static RelationshipExpander toExpander( GraphDatabaseService db, Direction defaultDirection,
+            Map<String, Object> relationshipTypes, boolean caseInsensitiveFilters, boolean looseFilters ) throws ShellException
+    {
+        defaultDirection = defaultDirection != null ? defaultDirection : Direction.BOTH;
+        Map<String, Direction> matches = filterMapToTypes( db, defaultDirection, relationshipTypes,
+                caseInsensitiveFilters, looseFilters );
+        Expander expander = Traversal.emptyExpander();
+        for ( Map.Entry<String, Direction> entry : matches.entrySet() )
         {
-            return null;
+            expander = expander.add( DynamicRelationshipType.withName( entry.getKey() ),
+                    entry.getValue() );
+        }
+        return expander;
+    }
+    
+    protected static RelationshipExpander toSortedExpander( GraphDatabaseService db, Direction defaultDirection,
+            Map<String, Object> relationshipTypes, boolean caseInsensitiveFilters, boolean looseFilters ) throws ShellException
+    {
+        defaultDirection = defaultDirection != null ? defaultDirection : Direction.BOTH;
+        Map<String, Direction> matches = filterMapToTypes( db, defaultDirection, relationshipTypes,
+                caseInsensitiveFilters, looseFilters );
+        Expander expander = new OrderedByTypeExpander();
+        for ( Map.Entry<String, Direction> entry : matches.entrySet() )
+        {
+            expander = expander.add( DynamicRelationshipType.withName( entry.getKey() ),
+                    entry.getValue() );
         }
         return expander;
     }

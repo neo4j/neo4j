@@ -27,7 +27,7 @@ case class NodeIdentifier(subName: String) extends Identifier(subName)
 
 case class RelationshipIdentifier(subName: String) extends Identifier(subName)
 
-case class RelationshipTypeIdentifier(subName: String) extends Identifier(subName + ":TYPE")
+case class RelationshipTypeIdentifier(subName: String) extends Identifier(subName + "~TYPE")
 
 case class PropertyIdentifier(entity: String, property: String) extends Identifier(entity + "." + property)
 

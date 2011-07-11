@@ -397,4 +397,12 @@ public abstract class XaDataSource
     {
         throw new UnsupportedOperationException( getClass().getName() );
     }
+
+    /**
+     * Returns previous value
+     */
+    public boolean setRecovered( boolean recovered )
+    {
+        return false;
+    }
 }

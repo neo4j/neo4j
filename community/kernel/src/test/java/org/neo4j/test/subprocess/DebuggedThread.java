@@ -19,6 +19,8 @@
  */
 package org.neo4j.test.subprocess;
 
+import java.util.Iterator;
+import java.util.List;
 
 @SuppressWarnings( "restriction" )
 public class DebuggedThread
@@ -44,5 +46,50 @@ public class DebuggedThread
         thread.resume();
         debug.resume( thread );
         return this;
+    }
+
+    public String getLocal( int offset, String name )
+    {
+        try
+        {
+            com.sun.jdi.StackFrame frame = thread.frames().get( offset );
+            com.sun.jdi.LocalVariable variable = frame.visibleVariableByName( name );
+            return frame.getValue( variable ).toString();
+        }
+        catch ( Exception e )
+        {
+            return null;
+        }
+    }
+
+    public StackTraceElement[] getStackTrace()
+    {
+        try
+        {
+            List<com.sun.jdi.StackFrame> frames = thread.frames();
+            StackTraceElement[] trace = new StackTraceElement[frames.size()];
+            Iterator<com.sun.jdi.StackFrame> iter = frames.iterator();
+            for ( int i = 0; iter.hasNext(); i++ )
+            {
+                com.sun.jdi.Location loc = iter.next().location();
+                com.sun.jdi.Method method = loc.method();
+                String fileName;
+                try
+                {
+                    fileName = loc.sourceName();
+                }
+                catch ( com.sun.jdi.AbsentInformationException e )
+                {
+                    fileName = null;
+                }
+                trace[i] = new StackTraceElement( method.declaringType().name(), method.name(), fileName,
+                        loc.lineNumber() );
+            }
+            return trace;
+        }
+        catch ( com.sun.jdi.IncompatibleThreadStateException e )
+        {
+            return new StackTraceElement[0];
+        }
     }
 }

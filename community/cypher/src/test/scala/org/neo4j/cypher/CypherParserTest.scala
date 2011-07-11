@@ -29,9 +29,17 @@ import parser.{ConsoleCypherParser, CypherParser}
 class CypherParserTest extends JUnitSuite {
   def testQuery(query: String, expectedQuery: Query) {
     val parser = new CypherParser()
-    val executionTree = parser.parse(query)
 
-    assertEquals(expectedQuery, executionTree)
+    try{
+      val executionTree = parser.parse(query)
+
+      assertEquals(expectedQuery, executionTree)
+    } catch {
+      case x => {
+        println(query)
+        throw x
+      }
+    }
   }
 
   @Test def shouldParseEasiestPossibleQuery() {
@@ -77,10 +85,10 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def keywordsShouldBeCaseInsensitive() {
     testQuery(
-      "START start = (1) RETURN start",
+      "START s = (1) RETURN s",
       Query(
-        Return(EntityOutput("start")),
-        Start(NodeById("start", 1))))
+        Return(EntityOutput("s")),
+        Start(NodeById("s", 1))))
   }
 
   @Test def shouldParseMultipleNodes() {
@@ -234,7 +242,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def relatedTo() {
     testQuery(
-      "start a = (1) match (a) -[:KNOWS]-> (b) return a, b",
+      "start a = (1) match a -[:KNOWS]-> (b) return a, b",
       Query(
         Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
@@ -243,7 +251,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def relatedToWithoutRelType() {
     testQuery(
-      "start a = (1) match (a) --> (b) return a, b",
+      "start a = (1) match a --> (b) return a, b",
       Query(
         Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
@@ -252,7 +260,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def relatedToWithoutRelTypeButWithRelVariable() {
     testQuery(
-      "start a = (1) match (a) -[r]-> (b) return r",
+      "start a = (1) match a -[r]-> (b) return r",
       Query(
         Return(EntityOutput("r")),
         Start(NodeById("a", 1)),
@@ -261,7 +269,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def relatedToTheOtherWay() {
     testQuery(
-      "start a = (1) match (a) <-[:KNOWS]- (b) return a, b",
+      "start a = (1) match a <-[:KNOWS]- (b) return a, b",
       Query(
         Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
@@ -289,7 +297,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def relatedToWithRelationOutput() {
     testQuery(
-      "start a = (1) match (a) -[rel,:KNOWS]-> (b) return rel",
+      "start a = (1) match a -[rel:KNOWS]-> (b) return rel",
       Query(
         Return(EntityOutput("rel")),
         Start(NodeById("a", 1)),
@@ -298,7 +306,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def relatedToWithoutEndName() {
     testQuery(
-      "start a = (1) match (a) -[:MARRIED]-> () return a",
+      "start a = (1) match a -[:MARRIED]-> () return a",
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
@@ -307,7 +315,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def relatedInTwoSteps() {
     testQuery(
-      "start a = (1) match (a) -[:KNOWS]-> (b) -[:FRIEND]-> (c) return c",
+      "start a = (1) match a -[:KNOWS]-> b -[:FRIEND]-> (c) return c",
       Query(
         Return(EntityOutput("c")),
         Start(NodeById("a", 1)),
@@ -318,7 +326,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def djangoRelationshipType() {
     testQuery(
-      "start a = (1) match (a) -[:`<<KNOWS>>`]-> (b) return c",
+      "start a = (1) match a -[:`<<KNOWS>>`]-> b return c",
       Query(
         Return(EntityOutput("c")),
         Start(NodeById("a", 1)),
@@ -327,7 +335,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def countTheNumberOfHits() {
     testQuery(
-      "start a = (1) match (a) --> (b) return a, b, count(*)",
+      "start a = (1) match a --> b return a, b, count(*)",
       Query(
         Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
@@ -335,9 +343,19 @@ class CypherParserTest extends JUnitSuite {
         Aggregation(CountStar())))
   }
 
+    @Test def distinct() {
+    testQuery(
+      "start a = (1) match a --> b return distinct a, b",
+      Query(
+        Return(EntityOutput("a"), EntityOutput("b")),
+        Start(NodeById("a", 1)),
+        Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
+        Aggregation()))
+  }
+
   @Test def sumTheAgesOfPeople() {
     testQuery(
-      "start a = (1) match (a) --> (b) return a, b, sum(a.age)",
+      "start a = (1) match a --> b return a, b, sum(a.age)",
       Query(
         Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
@@ -347,7 +365,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def avgTheAgesOfPeople() {
     testQuery(
-      "start a = (1) match (a) --> (b) return a, b, avg(a.age)",
+      "start a = (1) match a --> b return a, b, avg(a.age)",
       Query(
         Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
@@ -357,7 +375,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def minTheAgesOfPeople() {
     testQuery(
-      "start a = (1) match (a) --> (b) return a, b, min(a.age)",
+      "start a = (1) match (a) --> b return a, b, min(a.age)",
       Query(
         Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
@@ -367,7 +385,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def maxTheAgesOfPeople() {
     testQuery(
-      "start a = (1) match (a) --> (b) return a, b, max(a.age)",
+      "start a = (1) match a --> b return a, b, max(a.age)",
       Query(
         Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
@@ -487,7 +505,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def relationshipType() {
     testQuery(
-      "start n=(1) match (n)-[r]->(x) where r:TYPE = \"something\" return r",
+      "start n=(1) match n-[r]->(x) where r~TYPE = \"something\" return r",
       Query(
         Return(EntityOutput("r")),
         Start(NodeById("n", 1)),
@@ -497,7 +515,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def relationshipTypeOut() {
     testQuery(
-      "start n=(1) match (n)-[r]->(x) return r:TYPE",
+      "start n=(1) match n-[r]->(x) return r~TYPE",
 
       Query(
         Return(RelationshipTypeOutput("r")),

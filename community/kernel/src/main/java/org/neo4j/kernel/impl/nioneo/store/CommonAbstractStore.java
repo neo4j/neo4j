@@ -548,7 +548,7 @@ public abstract class CommonAbstractStore
 
     private boolean isRecovered = false;
 
-    protected boolean isInRecoveryMode()
+    public boolean isInRecoveryMode()
     {
         return isRecovered;
     }

@@ -37,6 +37,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
@@ -54,11 +55,11 @@ public class TestBatchInsert
         REL_TYPE4,
         REL_TYPE5
     }
-    
-    private static RelationshipType[] relTypeArray = { 
+
+    private static RelationshipType[] relTypeArray = {
         RelTypes.REL_TYPE1, RelTypes.REL_TYPE2, RelTypes.REL_TYPE3,
         RelTypes.REL_TYPE4, RelTypes.REL_TYPE5 };
-    
+
     static
     {
         properties.put( "key0", "SDSDASSDLKSDSAKLSLDAKSLKDLSDAKLDSLA" );
@@ -71,7 +72,7 @@ public class TestBatchInsert
         properties.put( "key7", true );
         properties.put( "key8", (char) 8 );
         properties.put( "key10", new String[] {
-            "SDSDASSDLKSDSAKLSLDAKSLKDLSDAKLDSLA", "dsasda", "dssadsad" 
+            "SDSDASSDLKSDSAKLSLDAKSLKDLSDAKLDSLA", "dsasda", "dssadsad"
         } );
         properties.put( "key11", new int[] {1,2,3,4,5,6,7,8,9 } );
         properties.put( "key12", new short[] {1,2,3,4,5,6,7,8,9} );
@@ -82,21 +83,21 @@ public class TestBatchInsert
         properties.put( "key17", new boolean[] {true,false,true,false} );
         properties.put( "key18", new char[] {1,2,3,4,5,6,7,8,9} );
     }
-    
+
     private BatchInserter newBatchInserter()
     {
         String storePath = AbstractNeo4jTestCase.getStorePath( "neo-batch" );
         AbstractNeo4jTestCase.deleteFileOrDirectory( new File( storePath ) );
         return new BatchInserterImpl( storePath );
     }
-    
+
     @Test
     public void testSimple()
     {
         BatchInserter graphDb = newBatchInserter();
         long node1 = graphDb.createNode( null );
         long node2 = graphDb.createNode( null );
-        long rel1 = graphDb.createRelationship( node1, node2, RelTypes.BATCH_TEST, 
+        long rel1 = graphDb.createRelationship( node1, node2, RelTypes.BATCH_TEST,
             null );
         SimpleRelationship rel = graphDb.getRelationshipById( rel1 );
         assertEquals( rel.getStartNode(), node1 );
@@ -104,7 +105,7 @@ public class TestBatchInsert
         assertEquals( RelTypes.BATCH_TEST.name(), rel.getType().name() );
         graphDb.shutdown();
     }
-    
+
     @Test
     public void testMore()
     {
@@ -115,7 +116,7 @@ public class TestBatchInsert
         for ( int i = 0; i < 25; i++ )
         {
             endNodes[i] = graphDb.createNode( properties );
-            rels.add( graphDb.createRelationship( startNode, endNodes[i], 
+            rels.add( graphDb.createRelationship( startNode, endNodes[i],
                 relTypeArray[i % 5], properties ) );
         }
         for ( SimpleRelationship rel : graphDb.getRelationships( startNode ) )
@@ -126,7 +127,7 @@ public class TestBatchInsert
         graphDb.setNodeProperties( startNode, properties );
         graphDb.shutdown();
     }
-    
+
     @Test
     public void makeSureLoopsCanBeCreated()
     {
@@ -156,7 +157,7 @@ public class TestBatchInsert
         }
         String storeDir = ((BatchInserterImpl)graphDb).getStore();
         graphDb.shutdown();
-        
+
         GraphDatabaseService db = new EmbeddedGraphDatabase( storeDir );
         Node realStartNode = db.getNodeById( startNode );
         Relationship realSelfRelationship = db.getRelationshipById( selfRelationship );
@@ -166,17 +167,17 @@ public class TestBatchInsert
         assertEquals( asSet( realSelfRelationship, realRelationship ), asSet( realStartNode.getRelationships() ) );
         db.shutdown();
     }
-    
+
     private static <T> Set<T> asSet( T... items )
     {
         return new HashSet<T>( Arrays.asList( items ) );
     }
-    
+
     private static <T> Set<T> asSet( Iterable<T> items )
     {
         return new HashSet<T>( IteratorUtil.asCollection( items ) );
     }
-    
+
     private void setProperties( Node node )
     {
         for ( String key : properties.keySet() )
@@ -192,7 +193,7 @@ public class TestBatchInsert
             rel.setProperty( key, properties.get( key ) );
         }
     }
-    
+
     @Test
     public void testWithGraphDbService()
     {
@@ -206,10 +207,10 @@ public class TestBatchInsert
         {
             endNodes[i] = graphDb.createNode();
             setProperties( endNodes[i] );
-            Relationship rel = startNode.createRelationshipTo( endNodes[i], 
-                relTypeArray[i % 5] ); 
+            Relationship rel = startNode.createRelationshipTo( endNodes[i],
+                relTypeArray[i % 5] );
             rels.add( rel );
-            setProperties( rel ); 
+            setProperties( rel );
         }
         for ( Relationship rel : startNode.getRelationships() )
         {
@@ -219,7 +220,7 @@ public class TestBatchInsert
         setProperties( startNode );
         graphDb.shutdown();
     }
-    
+
     @Test
     public void testGraphDbServiceGetRelationships()
     {
@@ -229,28 +230,58 @@ public class TestBatchInsert
         for ( int i = 0; i < 5; i++ )
         {
             Node endNode = graphDb.createNode();
-            startNode.createRelationshipTo( endNode, relTypeArray[i] ); 
+            startNode.createRelationshipTo( endNode, relTypeArray[i] );
         }
         for ( int i = 0; i < 5; i++ )
         {
-            assertTrue( startNode.getSingleRelationship( 
+            assertTrue( startNode.getSingleRelationship(
                 relTypeArray[i], Direction.OUTGOING ) != null );
         }
         for ( int i = 0; i < 5; i++ )
         {
-            Iterator<Relationship> relItr = 
-                startNode.getRelationships( relTypeArray[i], 
+            Iterator<Relationship> relItr =
+                startNode.getRelationships( relTypeArray[i],
                     Direction.OUTGOING ).iterator();
             relItr.next();
             assertTrue( !relItr.hasNext() );
         }
         for ( int i = 0; i < 5; i++ )
         {
-            Iterator<Relationship> relItr = 
+            Iterator<Relationship> relItr =
                 startNode.getRelationships( relTypeArray[i] ).iterator();
             relItr.next();
             assertTrue( !relItr.hasNext() );
         }
         graphDb.shutdown();
+    }
+
+    @Test
+    public void createBatchNodeAndRelationshipsDeleteAllInEmbedded() throws Exception
+    {
+        /*
+         *    ()--[REL_TYPE1]-->(node)--[BATCH_TEST]->()
+         */
+
+        BatchInserter inserter = newBatchInserter();
+        String storeDir = ( (BatchInserterImpl) inserter ).getStore();
+        long nodeId = inserter.createNode( null );
+        inserter.createRelationship( nodeId, inserter.createNode( null ),
+                RelTypes.BATCH_TEST, null );
+        inserter.createRelationship( inserter.createNode( null ), nodeId,
+                RelTypes.REL_TYPE1, null );
+        inserter.shutdown();
+
+        // Delete node and all its relationships
+        GraphDatabaseService db = new EmbeddedGraphDatabase( storeDir );
+        Transaction tx = db.beginTx();
+        Node node = db.getNodeById( nodeId );
+        for ( Relationship relationship : node.getRelationships() )
+        {
+            relationship.delete();
+        }
+        node.delete();
+        tx.success();
+        tx.finish();
+        db.shutdown();
     }
 }

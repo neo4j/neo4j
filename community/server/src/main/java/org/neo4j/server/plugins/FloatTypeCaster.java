@@ -25,15 +25,13 @@ import org.neo4j.server.rest.repr.BadInputException;
 class FloatTypeCaster extends TypeCaster
 {
     @Override
-    Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
-            throws BadInputException
+    Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name ) throws BadInputException
     {
         return parameters.getFloat( name );
     }
 
     @Override
-    Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
-            throws BadInputException
+    Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name ) throws BadInputException
     {
         return parameters.getFloatList( name );
     }

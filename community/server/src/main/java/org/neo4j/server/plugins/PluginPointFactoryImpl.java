@@ -41,76 +41,77 @@ import org.neo4j.graphdb.RelationshipType;
 class PluginPointFactoryImpl implements PluginPointFactory
 {
 
-    public PluginPoint createFrom( ServerPlugin plugin, Method method,
-                                   Class<?> discovery )
+    public PluginPoint createFrom( ServerPlugin plugin, Method method, Class<?> discovery )
     {
         ResultConverter result = ResultConverter.get( method.getGenericReturnType() );
         Type[] types = method.getGenericParameterTypes();
         Annotation[][] annotations = method.getParameterAnnotations();
         SourceExtractor sourceExtractor = null;
-        DataExtractor[] extractors = new DataExtractor[ types.length ];
+        DataExtractor[] extractors = new DataExtractor[types.length];
         for ( int i = 0; i < types.length; i++ )
         {
             Description description = null;
             Parameter param = null;
             Source source = null;
-            for ( Annotation annotation : annotations[ i ] )
+            for ( Annotation annotation : annotations[i] )
             {
                 if ( annotation instanceof Description )
                 {
-                    description = (Description)annotation;
-                } else if ( annotation instanceof Parameter )
+                    description = (Description) annotation;
+                }
+                else if ( annotation instanceof Parameter )
                 {
-                    param = (Parameter)annotation;
-                } else if ( annotation instanceof Source )
+                    param = (Parameter) annotation;
+                }
+                else if ( annotation instanceof Source )
                 {
-                    source = (Source)annotation;
+                    source = (Source) annotation;
                 }
             }
             if ( param != null && source != null )
             {
-                throw new IllegalStateException(
-                        String.format(
-                                "Method parameter %d of %s cannot be retrieved as both Parameter and Source",
-                                Integer.valueOf( i ), method ) );
-            } else if ( source != null )
+                throw new IllegalStateException( String.format(
+                        "Method parameter %d of %s cannot be retrieved as both Parameter and Source",
+                        Integer.valueOf( i ), method ) );
+            }
+            else if ( source != null )
             {
-                if ( types[ i ] != discovery )
+                if ( types[i] != discovery )
                 {
-                    throw new IllegalStateException(
-                            "Source parameter type (" + types[i] + ") must equal the discovery type ("+discovery.getName()+")." );
+                    throw new IllegalStateException( "Source parameter type (" + types[i]
+                                                     + ") must equal the discovery type (" + discovery.getName() + ")." );
                 }
                 if ( sourceExtractor != null )
                 {
-                    throw new IllegalStateException(
-                            "Server Extension methods may have at most one Source parameter." );
+                    throw new IllegalStateException( "Server Extension methods may have at most one Source parameter." );
                 }
-                extractors[ i ] = sourceExtractor = new SourceExtractor( source, description );
-            } else if ( param != null )
+                extractors[i] = sourceExtractor = new SourceExtractor( source, description );
+            }
+            else if ( param != null )
             {
-                extractors[ i ] = parameterExtractor( types[ i ], param, description );
-            } else
+                extractors[i] = parameterExtractor( types[i], param, description );
+            }
+            else
             {
                 throw new IllegalStateException(
                         "Parameters of Server Extension methods must be annotated as either Source or Parameter." );
             }
         }
-        return new PluginMethod( nameOf( method ), discovery, plugin, result, method,
-                extractors, method.getAnnotation( Description.class ) );
+        return new PluginMethod( nameOf( method ), discovery, plugin, result, method, extractors,
+                method.getAnnotation( Description.class ) );
     }
 
-    private static ParameterExtractor parameterExtractor( Type type, Parameter parameter,
-                                                          Description description )
+    private static ParameterExtractor parameterExtractor( Type type, Parameter parameter, Description description )
     {
         if ( type instanceof ParameterizedType )
         {
-            ParameterizedType paramType = (ParameterizedType)type;
-            Class<?> raw = (Class<?>)paramType.getRawType();
-            Type componentType = paramType.getActualTypeArguments()[ 0 ];
+            ParameterizedType paramType = (ParameterizedType) type;
+            Class<?> raw = (Class<?>) paramType.getRawType();
+            Type componentType = paramType.getActualTypeArguments()[0];
             Class<?> component = null;
             if ( componentType instanceof Class<?> )
             {
-                component = (Class<?>)componentType;
+                component = (Class<?>) componentType;
             }
             if ( Set.class == raw )
             {
@@ -126,7 +127,8 @@ class PluginPointFactoryImpl implements PluginPointFactory
                         }
                     };
                 }
-            } else if ( List.class == raw || Collection.class == raw || Iterable.class == raw )
+            }
+            else if ( List.class == raw || Collection.class == raw || Iterable.class == raw )
             {
                 TypeCaster caster = TYPES.get( component );
                 if ( caster != null )
@@ -141,16 +143,16 @@ class PluginPointFactoryImpl implements PluginPointFactory
                     };
                 }
             }
-        } else if ( type instanceof Class<?> )
+        }
+        else if ( type instanceof Class<?> )
         {
-            Class<?> raw = (Class<?>)type;
+            Class<?> raw = (Class<?>) type;
             if ( raw.isArray() )
             {
                 TypeCaster caster = TYPES.get( raw.getComponentType() );
                 if ( caster != null )
                 {
-                    return new ListParameterExtractor( caster, raw.getComponentType(), parameter,
-                            description )
+                    return new ListParameterExtractor( caster, raw.getComponentType(), parameter, description )
                     {
                         @Override
                         Object convert( Object[] result )
@@ -159,7 +161,8 @@ class PluginPointFactoryImpl implements PluginPointFactory
                         }
                     };
                 }
-            } else
+            }
+            else
             {
                 TypeCaster caster = TYPES.get( raw );
                 if ( caster != null )
@@ -167,17 +170,17 @@ class PluginPointFactoryImpl implements PluginPointFactory
                     return new ParameterExtractor( caster, raw, parameter, description );
                 }
             }
-        } else if ( type instanceof GenericArrayType )
+        }
+        else if ( type instanceof GenericArrayType )
         {
-            GenericArrayType array = (GenericArrayType)type;
+            GenericArrayType array = (GenericArrayType) type;
             Type component = array.getGenericComponentType();
             if ( component instanceof Class<?> )
             {
                 TypeCaster caster = TYPES.get( component );
                 if ( caster != null )
                 {
-                    return new ListParameterExtractor( caster, (Class<?>)component, parameter,
-                            description )
+                    return new ListParameterExtractor( caster, (Class<?>) component, parameter, description )
                     {
                         @Override
                         Object convert( Object[] result )

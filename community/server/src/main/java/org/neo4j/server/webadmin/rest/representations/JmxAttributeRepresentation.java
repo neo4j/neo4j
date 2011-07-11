@@ -35,9 +35,8 @@ public class JmxAttributeRepresentation extends ObjectRepresentation
     protected ObjectName objectName;
     protected MBeanAttributeInfo attrInfo;
     protected MBeanServer jmxServer = ManagementFactory.getPlatformMBeanServer();
-    
-    public JmxAttributeRepresentation( ObjectName objectName,
-            MBeanAttributeInfo attrInfo )
+
+    public JmxAttributeRepresentation( ObjectName objectName, MBeanAttributeInfo attrInfo )
     {
         super( "jmxAttribute" );
         this.objectName = objectName;
@@ -91,8 +90,7 @@ public class JmxAttributeRepresentation extends ObjectRepresentation
         try
         {
             JmxAttributeRepresentationDispatcher representationDispatcher = new JmxAttributeRepresentationDispatcher();
-            Object value = jmxServer.getAttribute( objectName,
-                    attrInfo.getName() );
+            Object value = jmxServer.getAttribute( objectName, attrInfo.getName() );
             return representationDispatcher.dispatch( value, "" );
         }
         catch ( Exception e )

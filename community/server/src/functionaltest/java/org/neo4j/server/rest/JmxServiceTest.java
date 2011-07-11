@@ -19,14 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-
-import java.io.IOException;
-
-import javax.ws.rs.core.MediaType;
-
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -34,8 +26,13 @@ import org.junit.Test;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.helpers.ServerHelper;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import java.io.IOException;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+
+
 
 public class JmxServiceTest
 {
@@ -62,17 +59,14 @@ public class JmxServiceTest
     }
 
     @Test
-    public void shouldRespondWithTheWebAdminClientSettings() throws Exception
-    {
+    public void shouldRespondWithTheWebAdminClientSettings() throws Exception {
         String url = functionalTestHelper.mangementUri() + "/server/jmx";
-        ClientResponse resp = Client.create().resource( url )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .get( ClientResponse.class );
-        String json = resp.getEntity( String.class );
+        JaxRsResponse resp = RestRequest.req().get(url);
+        String json = resp.getEntity(String.class);
 
-        assertEquals( json, 200, resp.getStatus() );
-        assertThat( json, containsString( "resources" ) );
-        assertThat( json, containsString( "jmx/domain/{domain}/{objectName}" ) );
+        assertEquals(json, 200, resp.getStatus());
+        assertThat(json, containsString("resources"));
+        assertThat(json, containsString("jmx/domain/{domain}/{objectName}"));
         resp.close();
     }
 }

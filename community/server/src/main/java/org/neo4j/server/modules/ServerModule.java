@@ -22,13 +22,15 @@ package org.neo4j.server.modules;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 
 /**
- *  An interface which the NeoServer uses to initialise server modules (e.g. JAX-RS, static content, webadmin)
+ * An interface which the NeoServer uses to initialise server modules (e.g.
+ * JAX-RS, static content, webadmin)
  */
-public interface ServerModule {
+public interface ServerModule
+{
 
     /**
      * Start a module within the server
-     *
+     * 
      * @param neoServer The NeoServer that owns the module
      */
     public void start( NeoServerWithEmbeddedWebServer neoServer );

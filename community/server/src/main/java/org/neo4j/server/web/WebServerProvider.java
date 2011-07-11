@@ -27,7 +27,7 @@ public class WebServerProvider extends AbstractInjectableProvider<WebServer>
 {
 
     private final WebServer server;
-    
+
     public WebServerProvider( WebServer server )
     {
         super( WebServer.class );

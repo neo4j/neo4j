@@ -102,23 +102,7 @@ through various frameworks.
 Zookeeper is hardwired to use the log4j logging framework. The bundled 'conf/log4j.properties' applies for this use only and uses a rolling appender and outputs logs by default to the
 'data/log' directory.
 
-YAJSW, the wrapper implementation used for managing the neo4j service, utilizes a variety of
-libraries that log output and it also does its own logging. This set of messages is configured
-in 'conf/wrapper-logging.properties' following the standard +java.util.logging+ conventions.
-By default nothing is outputted but in case
-debugging is needed here you can set things up to see where any trouble may be.
-
 == Other configuration options ==
-
-=== Setting a custom Java command ===
-
-To set a custom Java executable instead of the default java command, in 'conf/neo4j-wrapper.conf' set
-[source]
-----
-wrapper.java.command=/path/to/jre/java
-----
-
-NOTE: On Windows systems, absolute locations including drive letters need to read '"c:/jre6/bin/java.exe"'
 
 === Enabling logging from the garbage collector ===
 
@@ -128,6 +112,6 @@ executable by setting in 'conf/neo4j-wrapper.conf' the value
 ----
 wrapper.java.additional.3=-Xloggc:data/log/neo4j-gc.log
 ----
-This line is already present and needs uncommenting. Note also that logging is not directed to console, since the wrapper swallows all output.
+This line is already present and needs uncommenting. Note also that logging is not directed to console ;
 You will find the logging statements in 'data/log/ne4j-gc.log' or whatever directory you set at the option.
 

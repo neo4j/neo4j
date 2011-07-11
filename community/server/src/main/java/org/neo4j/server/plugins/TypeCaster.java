@@ -32,6 +32,6 @@ abstract class TypeCaster
         throw new BadInputException( "Cannot convert to primitive array: " + result );
     }
 
-    abstract Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
-            String name ) throws BadInputException;
+    abstract Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
+            throws BadInputException;
 }

@@ -22,6 +22,9 @@ package org.neo4j.server.rest.repr;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
+import static org.neo4j.server.rest.repr.RepresentationTestBase.assertUriMatches;
+import static org.neo4j.server.rest.repr.RepresentationTestBase.uriPattern;
 
 import java.util.Collections;
 import java.util.Map;
@@ -29,7 +32,7 @@ import java.util.Map;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 
-public class NodeRepresentationTest extends RepresentationTestBase
+public class NodeRepresentationTest
 {
     @Test
     public void shouldHaveSelfLink() throws BadInputException
@@ -46,15 +49,13 @@ public class NodeRepresentationTest extends RepresentationTestBase
     @Test
     public void shouldHaveIncomingRelationshipsLink() throws BadInputException
     {
-        assertUriMatches( uriPattern( "/relationships/in" ),
-                noderep( 1234 ).incomingRelationshipsUri() );
+        assertUriMatches( uriPattern( "/relationships/in" ), noderep( 1234 ).incomingRelationshipsUri() );
     }
 
     @Test
     public void shouldHaveOutgoingRelationshipsLink() throws BadInputException
     {
-        assertUriMatches( uriPattern( "/relationships/out" ),
-                noderep( 1234 ).outgoingRelationshipsUri() );
+        assertUriMatches( uriPattern( "/relationships/out" ), noderep( 1234 ).outgoingRelationshipsUri() );
     }
 
     @Test
@@ -93,15 +94,13 @@ public class NodeRepresentationTest extends RepresentationTestBase
     @Test
     public void shouldHavePropertyLinkTemplate() throws BadInputException
     {
-        assertUriMatches( uriPattern( "/properties/\\{key\\}" ),
-                noderep( 1234 ).propertyUriTemplate() );
+        assertUriMatches( uriPattern( "/properties/\\{key\\}" ), noderep( 1234 ).propertyUriTemplate() );
     }
 
     @Test
     public void shouldHaveTraverseLinkTemplate() throws BadInputException
     {
-        assertUriMatches( uriPattern( "/traverse/\\{returnType\\}" ),
-                noderep( 1234 ).traverseUriTemplate() );
+        assertUriMatches( uriPattern( "/traverse/\\{returnType\\}" ), noderep( 1234 ).traverseUriTemplate() );
     }
 
     @Test
@@ -128,25 +127,26 @@ public class NodeRepresentationTest extends RepresentationTestBase
     @SuppressWarnings( "unchecked" )
     public static void verifySerialisation( Map<String, Object> noderep )
     {
-        assertUriMatches( uriPattern( "" ), noderep.get( "self" ).toString() );
-        assertUriMatches( uriPattern( "/relationships" ),
-                noderep.get( "create_relationship" ).toString() );
-        assertUriMatches( uriPattern( "/relationships/all" ),
-                noderep.get( "all_relationships" ).toString() );
-        assertUriMatches( uriPattern( "/relationships/in" ),
-                noderep.get( "incoming_relationships" ).toString() );
-        assertUriMatches( uriPattern( "/relationships/out" ),
-                noderep.get( "outgoing_relationships" ).toString() );
+        assertUriMatches( uriPattern( "" ), noderep.get( "self" )
+                .toString() );
+        assertUriMatches( uriPattern( "/relationships" ), noderep.get( "create_relationship" )
+                .toString() );
+        assertUriMatches( uriPattern( "/relationships/all" ), noderep.get( "all_relationships" )
+                .toString() );
+        assertUriMatches( uriPattern( "/relationships/in" ), noderep.get( "incoming_relationships" )
+                .toString() );
+        assertUriMatches( uriPattern( "/relationships/out" ), noderep.get( "outgoing_relationships" )
+                .toString() );
         assertUriMatches( uriPattern( "/relationships/all/\\{-list\\|&\\|types\\}" ),
                 (String) noderep.get( "all_typed_relationships" ) );
         assertUriMatches( uriPattern( "/relationships/in/\\{-list\\|&\\|types\\}" ),
                 (String) noderep.get( "incoming_typed_relationships" ) );
         assertUriMatches( uriPattern( "/relationships/out/\\{-list\\|&\\|types\\}" ),
                 (String) noderep.get( "outgoing_typed_relationships" ) );
-        assertUriMatches( uriPattern( "/properties" ), noderep.get( "properties" ).toString() );
+        assertUriMatches( uriPattern( "/properties" ), noderep.get( "properties" )
+                .toString() );
         assertUriMatches( uriPattern( "/properties/\\{key\\}" ), (String) noderep.get( "property" ) );
-        assertUriMatches( uriPattern( "/traverse/\\{returnType\\}" ),
-                (String) noderep.get( "traverse" ) );
-        assertNotNull( (Map<String, Object>) noderep.get( "data" ) );
+        assertUriMatches( uriPattern( "/traverse/\\{returnType\\}" ), (String) noderep.get( "traverse" ) );
+        assertNotNull( noderep.get( "data" ) );
     }
 }

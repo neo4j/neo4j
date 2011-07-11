@@ -51,15 +51,15 @@ public class GremlinSession implements ScriptSession
     public GremlinSession( Database database )
     {
         this.database = database;
-        PrintStream out = new PrintStream(new BufferedOutputStream( baos ));
+        PrintStream out = new PrintStream( new BufferedOutputStream( baos ) );
 
-        io = new IO( System.in, out, out);
+        io = new IO( System.in, out, out );
 
         Map<String, Object> bindings = new HashMap<String, Object>();
         bindings.put( "g", getGremlinWrappedGraph() );
         bindings.put( "out", out );
 
-        initialBindings = new ArrayList<String>(bindings.keySet());
+        initialBindings = new ArrayList<String>( bindings.keySet() );
 
         try
         {
@@ -82,16 +82,19 @@ public class GremlinSession implements ScriptSession
     /**
      * Take some gremlin script, evaluate it in the context of this gremlin
      * session, and return the result.
-     *
+     * 
      * @param script
-     * @return the return string of the evaluation result, or the exception message.
+     * @return the return string of the evaluation result, or the exception
+     *         message.
      */
     @Override
     public String evaluate( String script )
     {
-        try {
+        try
+        {
 
-            if( script.equals( INIT_FUNCTION )) {
+            if ( script.equals( INIT_FUNCTION ) )
+            {
                 return init();
             }
 
@@ -99,26 +102,30 @@ public class GremlinSession implements ScriptSession
             String result = baos.toString();
             resetIO();
             return result;
-        } catch(GroovyRuntimeException ex) {
+        }
+        catch ( GroovyRuntimeException ex )
+        {
             return ex.getMessage();
         }
 
     }
 
-    private String init() {
+    private String init()
+    {
         StringBuffer out = new StringBuffer();
-        out.append("\n");
-        out.append("         \\,,,/\n");
-        out.append("         (o o)\n");
-        out.append("-----oOOo-(_)-oOOo-----\n");
-        out.append("\n");
+        out.append( "\n" );
+        out.append( "         \\,,,/\n" );
+        out.append( "         (o o)\n" );
+        out.append( "-----oOOo-(_)-oOOo-----\n" );
+        out.append( "\n" );
 
-        out.append("Available variables:\n");
-        for(String variable : initialBindings) {
-            out.append("  " + variable + "\t= ");
-            out.append(evaluate(variable));
+        out.append( "Available variables:\n" );
+        for ( String variable : initialBindings )
+        {
+            out.append( "  " + variable + "\t= " );
+            out.append( evaluate( variable ) );
         }
-        out.append("\n");
+        out.append( "\n" );
 
         return out.toString();
     }
@@ -128,8 +135,7 @@ public class GremlinSession implements ScriptSession
         baos.reset();
     }
 
-    private TransactionalGraph getGremlinWrappedGraph()
-            throws DatabaseBlockedException
+    private TransactionalGraph getGremlinWrappedGraph() throws DatabaseBlockedException
     {
         return new Neo4jGraph( database.graph );
     }

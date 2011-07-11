@@ -35,8 +35,8 @@
     <neo4j.3rdparty.version>@3RDPARTYVERSION@</neo4j.3rdparty.version>
     
     <!-- plugin versions -->
-    <neo4j-gremlin-plugin.version>0.1-SNAPSHOT</neo4j-gremlin-plugin.version>
-    <neo4j-cypher-plugin.version>0.1-SNAPSHOT</neo4j-cypher-plugin.version>
+    <neo4j-gremlin-plugin.version>@GREMLINVERSION@</neo4j-gremlin-plugin.version>
+    <neo4j-cypher-plugin.version>@CYPHERPLUGINVERSION@</neo4j-cypher-plugin.version>
 
     <!-- conf/neo4j-server.properties filter properties -->
     <org.neo4j.database.location>data/graph.db</org.neo4j.database.location>
@@ -183,42 +183,6 @@ terms of the relevant Commercial Agreement.
                   <outputDirectory>${project.build.directory}/upgrade</outputDirectory>
                   <includes>*.*,**/*.*</includes>
                   <excludes>META-INF/**</excludes>
-                 </artifactItem>
-               </artifactItems>
-             </configuration>
-          </execution>
-          <execution>
-            <id>unpack-wrapper</id>
-            <phase>generate-resources</phase>
-            <goals><goal>unpack</goal></goals>
-             <configuration>
-               <artifactItems>
-                 <artifactItem>
-                  <groupId>org.neo4j.3rdparty</groupId>
-                  <artifactId>yajsw-neo4j</artifactId>
-                  <version>${neo4j.3rdparty.version}</version>
-                  <classifier>wrapper</classifier>
-                  <type>zip</type>
-                  <outputDirectory>${project.build.directory}/wrapper</outputDirectory>
-                  <includes>*.*,**/*.*</includes>
-                 </artifactItem>
-               </artifactItems>
-             </configuration>
-          </execution>
-          <execution>
-            <id>unpack-wrapperlibs</id>
-            <phase>generate-resources</phase>
-            <goals><goal>unpack</goal></goals>
-             <configuration>
-               <artifactItems>
-                 <artifactItem>
-                  <groupId>org.neo4j.3rdparty</groupId>
-                  <artifactId>yajsw-neo4j</artifactId>
-                  <version>${neo4j.3rdparty.version}</version>
-                  <classifier>wrapperlibs</classifier>
-                  <type>zip</type>
-                  <outputDirectory>${project.build.directory}/wrapperlibs</outputDirectory>
-                  <includes>*.*,**/*.*</includes>
                  </artifactItem>
                </artifactItems>
              </configuration>

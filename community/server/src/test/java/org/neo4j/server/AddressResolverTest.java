@@ -25,12 +25,13 @@ import java.net.InetAddress;
 
 import org.junit.Test;
 
-
 public class AddressResolverTest
 {
     @Test
-    public void givenNoOverrdingConfigurationShouldDefaultToLookingUpHostname() throws Exception {
+    public void givenNoOverrdingConfigurationShouldDefaultToLookingUpHostname() throws Exception
+    {
         AddressResolver resolver = new AddressResolver();
-        assertEquals(InetAddress.getLocalHost().getCanonicalHostName(), resolver.getHostname());
+        assertEquals( InetAddress.getLocalHost()
+                .getCanonicalHostName(), resolver.getHostname() );
     }
 }

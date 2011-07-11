@@ -29,7 +29,7 @@ public class HtmlHelper
 {
     private final static String STYLE_LOCATION = "http://resources.neo4j.org/style/";
     private final static String HTML_JAVASCRIPT_LOCATION = "/webadmin/htmlbrowse.js";
-    
+
     public static String from( final Object object, final ObjectType objectType )
     {
         StringBuilder builder = start( objectType, null );
@@ -51,18 +51,11 @@ public class HtmlHelper
         {
             builder.append( additionalCodeInHead );
         }
-        builder.append( "<meta content=\"text/html; charset=utf-8\" http-equiv=\"Content-Type\">\n"
-                        + "<link href='"
-                        + STYLE_LOCATION
-                        + "rest.css' rel='stylesheet' type='text/css'>\n"
-                        + "<script type='text/javascript' src='"
-                        + HTML_JAVASCRIPT_LOCATION
-                        + "'></script>\n"
-                        + "</head>\n<body onload='javascript:neo4jHtmlBrowse.start();' id='"
-                        + title.toLowerCase()
-                        + "'>\n"
-                        + "<div id='content'>"
-                        + "<div id='header'>"
+        builder.append( "<meta content=\"text/html; charset=utf-8\" http-equiv=\"Content-Type\">\n" + "<link href='"
+                        + STYLE_LOCATION + "rest.css' rel='stylesheet' type='text/css'>\n"
+                        + "<script type='text/javascript' src='" + HTML_JAVASCRIPT_LOCATION + "'></script>\n"
+                        + "</head>\n<body onload='javascript:neo4jHtmlBrowse.start();' id='" + title.toLowerCase()
+                        + "'>\n" + "<div id='content'>" + "<div id='header'>"
                         + "<h1><a title='Neo4j REST interface' href='/'><span>Neo4j REST interface</span></a></h1>"
                         + "</div>" + "\n<div id='page-body'>\n" );
         return builder;
@@ -70,8 +63,7 @@ public class HtmlHelper
 
     public static String end( final StringBuilder builder )
     {
-        builder.append( "<div class='break'>&nbsp;</div>"
-                        + "</div></div></body></html>" );
+        builder.append( "<div class='break'>&nbsp;</div>" + "</div></div></body></html>" );
         return builder.toString();
     }
 
@@ -145,8 +137,7 @@ public class HtmlHelper
         }
         else
         {
-            builder.append( object != null ? embedInLinkIfClickable( object.toString() )
-                    : "" );
+            builder.append( object != null ? embedInLinkIfClickable( object.toString() ) : "" );
         }
     }
 
@@ -206,8 +197,9 @@ public class HtmlHelper
 
         String getCaption()
         {
-            return name().substring( 0, 1 ).toUpperCase() +
-            name().substring( 1 ).toLowerCase();
+            return name().substring( 0, 1 )
+                    .toUpperCase() + name().substring( 1 )
+                    .toLowerCase();
         }
 
         String getHtmlClass()

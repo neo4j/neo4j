@@ -22,6 +22,7 @@ package org.neo4j.index.impl.lucene;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,8 +38,10 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.index.ReadOnlyIndex;
 import org.neo4j.graphdb.index.AutoIndexer;
+import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.ReadableIndex;
+import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.util.FileUtils;
@@ -403,7 +406,7 @@ public class TestAutoIndexing
 
         newTransaction();
 
-        ReadOnlyIndex<Node> autoIndex = graphDb.index().getNodeAutoIndexer().getAutoIndex();
+        ReadableIndex<Node> autoIndex = graphDb.index().getNodeAutoIndexer().getAutoIndex();
         assertEquals( node1, autoIndex.get( "propName", "node1" ).getSingle() );
         assertEquals( node2, autoIndex.get( "propName", "node2" ).getSingle() );
         assertFalse( graphDb.index().getRelationshipAutoIndexer().getAutoIndex().get(
@@ -549,7 +552,7 @@ public class TestAutoIndexing
         }
 
         // Verify
-        ReadOnlyIndex<Node> nodeAutoIndex = nodeAutoIndexer.getAutoIndex();
+        ReadableIndex<Node> nodeAutoIndex = nodeAutoIndexer.getAutoIndex();
         // node1 is completely gone
         assertFalse( nodeAutoIndex.get( "nodeProp1", "nodeProp1Value" ).hasNext() );
         assertFalse( nodeAutoIndex.get( "nodeProp1", "nodeProp1Value2" ).hasNext() );
@@ -566,5 +569,60 @@ public class TestAutoIndexing
         // Finally, node4 is removed because the property was removed.
         assertFalse( nodeAutoIndex.get( "nodeProp2", "nodeProp4Value" ).hasNext() );
         // END SNIPPET: Mutations
+    }
+
+    @Test
+    public void testGettingAutoIndexByNameReturnsSomethingReadOnly()
+    {
+        // Create the node and relationship autoindexes
+        graphDb.index().getNodeAutoIndexer().setEnabled( true );
+        graphDb.index().getNodeAutoIndexer().startAutoIndexingProperty(
+                "nodeProp" );
+        graphDb.index().getRelationshipAutoIndexer().setEnabled( true );
+        graphDb.index().getRelationshipAutoIndexer().startAutoIndexingProperty(
+                "relProp" );
+
+        newTransaction();
+
+        Node node1 = graphDb.createNode();
+        Node node2 = graphDb.createNode();
+        Relationship rel = node1.createRelationshipTo( node2,
+                DynamicRelationshipType.withName( "FOO" ) );
+        node1.setProperty( "nodeProp", "nodePropValue" );
+        rel.setProperty( "relProp", "relPropValue" );
+
+        newTransaction();
+
+        assertEquals( 1, graphDb.index().nodeIndexNames().length );
+        assertEquals( 1, graphDb.index().relationshipIndexNames().length );
+
+        assertEquals( "node_auto_index", graphDb.index().nodeIndexNames()[0] );
+        assertEquals( "relationship_auto_index",
+                graphDb.index().relationshipIndexNames()[0] );
+
+        Index<Node> nodeIndex = graphDb.index().forNodes( "node_auto_index" );
+        RelationshipIndex relIndex = graphDb.index().forRelationships(
+                "relationship_auto_index" );
+        assertEquals( node1,
+                nodeIndex.get( "nodeProp", "nodePropValue" ).getSingle() );
+        assertEquals( rel,
+                relIndex.get( "relProp", "relPropValue" ).getSingle() );
+        try
+        {
+            nodeIndex.add( null, null, null );
+            fail("Auto indexes should not allow external manipulation");
+        }
+        catch ( UnsupportedOperationException e )
+        { // good
+        }
+
+        try
+        {
+            relIndex.add( null, null, null );
+            fail( "Auto indexes should not allow external manipulation" );
+        }
+        catch ( UnsupportedOperationException e )
+        { // good
+        }
     }
 }

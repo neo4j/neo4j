@@ -62,8 +62,10 @@ public class PropertyFileBuilder
     {
         File temporaryConfigFile = createTempPropertyFile();
 
-        String dbDir = ServerTestUtils.createTempDir().getAbsolutePath();
-        String rrdbDir = ServerTestUtils.createTempDir().getAbsolutePath();
+        String dbDir = ServerTestUtils.createTempDir()
+                .getAbsolutePath();
+        String rrdbDir = ServerTestUtils.createTempDir()
+                .getAbsolutePath();
         writePropertyToFile( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir, temporaryConfigFile );
         if ( portNo != null )
         {
@@ -81,7 +83,6 @@ public class PropertyFileBuilder
         {
             writePropertyToFile( t.name, t.value, temporaryConfigFile );
         }
-
 
         return temporaryConfigFile;
     }

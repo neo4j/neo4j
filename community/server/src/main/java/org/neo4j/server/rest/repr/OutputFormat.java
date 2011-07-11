@@ -84,7 +84,7 @@ public class OutputFormat
     {
         return response( Response.status( Status.INTERNAL_SERVER_ERROR ), new ExceptionRepresentation( exception ) );
     }
-    
+
     private URI uri( EntityRepresentation representation ) throws BadInputException
     {
         return URI.create( format( representation.selfUri() ) );

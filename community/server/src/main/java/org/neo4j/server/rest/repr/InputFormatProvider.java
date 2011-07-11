@@ -42,12 +42,14 @@ public final class InputFormatProvider extends AbstractInjectableProvider<InputF
     {
         try
         {
-            return repository.inputFormat( context.getRequest().getMediaType() );
+            return repository.inputFormat( context.getRequest()
+                    .getMediaType() );
         }
         catch ( MediaTypeNotSupportedException e )
         {
-            throw new WebApplicationException(
-                    Response.status( Status.UNSUPPORTED_MEDIA_TYPE ).entity( e.getMessage() ).build() );
+            throw new WebApplicationException( Response.status( Status.UNSUPPORTED_MEDIA_TYPE )
+                    .entity( e.getMessage() )
+                    .build() );
         }
     }
 }

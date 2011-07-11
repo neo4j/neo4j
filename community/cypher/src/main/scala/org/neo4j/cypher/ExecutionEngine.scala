@@ -30,7 +30,7 @@ class ExecutionEngine(graph: GraphDatabaseService) {
   checkScalaVersion()
 
 
-  @throws(classOf[SyntaxError])
+  @throws(classOf[SyntaxException])
   def execute(query: Query): ExecutionResult = query match {
     case Query(returns, start, matching, where, aggregation, sort, slice) => {
       var pipe = createSourcePumps(start).reduceLeft(_ ++ _)

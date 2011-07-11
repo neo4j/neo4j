@@ -33,6 +33,7 @@ import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.graphdb.index.RelationshipAutoIndexer;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
@@ -47,7 +48,7 @@ class IndexManagerImpl implements IndexManager
 
     private final EmbeddedGraphDbImpl graphDbImpl;
     private final AutoIndexer<Node> nodeAutoIndexer;
-    private final AutoIndexer<Relationship> relAutoIndexer;
+    private final RelationshipAutoIndexer relAutoIndexer;
 
 
     IndexManagerImpl( EmbeddedGraphDbImpl graphDbImpl, IndexStore indexStore )
@@ -245,15 +246,37 @@ class IndexManagerImpl implements IndexManager
 
     public Index<Node> forNodes( String indexName )
     {
-        Map<String, String> config = getOrCreateIndexConfig( Node.class, indexName, null );
-        return getIndexProvider( config.get( PROVIDER ) ).nodeIndex( indexName, config );
+        return forNodes( indexName, null );
     }
 
-    public Index<Node> forNodes( String indexName, Map<String, String> customConfiguration )
+    public Index<Node> forNodes( String indexName,
+            Map<String, String> customConfiguration )
     {
-        Map<String, String> config = getOrCreateIndexConfig( Node.class, indexName,
+        Index<Node> toReturn = getOrCreateNodeIndex( indexName,
                 customConfiguration );
-        return getIndexProvider( config.get( PROVIDER ) ).nodeIndex( indexName, config );
+        if (NodeAutoIndexerImpl.NODE_AUTO_INDEX.equals(indexName))
+        {
+            toReturn = new AbstractAutoIndexerImpl.ReadOnlyIndexToIndexAdapter<Node>( toReturn );
+        }
+        return toReturn;
+    }
+
+    Index<Node> getOrCreateNodeIndex(
+            String indexName, Map<String, String> customConfiguration )
+    {
+        Map<String, String> config = getOrCreateIndexConfig( Node.class,
+                indexName, customConfiguration );
+        return getIndexProvider( config.get( PROVIDER ) ).nodeIndex( indexName,
+                config );
+    }
+
+    RelationshipIndex getOrCreateRelationshipIndex( String indexName,
+            Map<String, String> customConfiguration )
+    {
+        Map<String, String> config = getOrCreateIndexConfig(
+                Relationship.class, indexName, customConfiguration );
+        return getIndexProvider( config.get( PROVIDER ) ).relationshipIndex(
+                indexName, config );
     }
 
     public String[] nodeIndexNames()
@@ -268,18 +291,20 @@ class IndexManagerImpl implements IndexManager
 
     public RelationshipIndex forRelationships( String indexName )
     {
-        Map<String, String> config = getOrCreateIndexConfig( Relationship.class, indexName, null );
-        return getIndexProvider( config.get( PROVIDER ) ).relationshipIndex( indexName,
-                config );
+        return forRelationships( indexName, null );
     }
 
     public RelationshipIndex forRelationships( String indexName,
             Map<String, String> customConfiguration )
     {
-        Map<String, String> config = getOrCreateIndexConfig( Relationship.class, indexName,
+        RelationshipIndex toReturn = getOrCreateRelationshipIndex( indexName,
                 customConfiguration );
-        return getIndexProvider( config.get( PROVIDER ) ).relationshipIndex( indexName,
-                config );
+        if ( RelationshipAutoIndexerImpl.RELATIONSHIP_AUTO_INDEX.equals( indexName ) )
+        {
+            toReturn = new RelationshipAutoIndexerImpl.RelationshipReadOnlyIndexToIndexAdapter(
+                    toReturn );
+        }
+        return toReturn;
     }
 
     public String[] relationshipIndexNames()
@@ -337,7 +362,7 @@ class IndexManagerImpl implements IndexManager
         return nodeAutoIndexer;
     }
 
-    public AutoIndexer<Relationship> getRelationshipAutoIndexer()
+    public RelationshipAutoIndexer getRelationshipAutoIndexer()
     {
         return relAutoIndexer;
     }

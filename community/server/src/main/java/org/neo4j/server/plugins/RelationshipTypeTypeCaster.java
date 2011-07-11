@@ -27,8 +27,7 @@ import org.neo4j.server.rest.repr.BadInputException;
 class RelationshipTypeTypeCaster extends TypeCaster
 {
     @Override
-    Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
-            throws BadInputException
+    Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name ) throws BadInputException
     {
         String typeName = parameters.getString( name );
         if ( typeName == null ) return null;
@@ -36,8 +35,7 @@ class RelationshipTypeTypeCaster extends TypeCaster
     }
 
     @Override
-    Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
-            throws BadInputException
+    Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name ) throws BadInputException
     {
         String[] strings = parameters.getStringList( name );
         if ( strings == null ) return null;

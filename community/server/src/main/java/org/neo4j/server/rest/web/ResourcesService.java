@@ -30,62 +30,87 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 
-@Path("/resource")
-public class ResourcesService {
+@Path( "/resource" )
+public class ResourcesService
+{
     final static String JAVASCRIPT_BODY;
-    static {
+    static
+    {
         // FIXME This is so very ugly, it's because when running it with maven
         // it won't add the src/main/resources to the classpath
         String body = null;
-        try {
-            body = readResourceAsString("htmlbrowse.js");
-        } catch (Exception e) {
-            body = readFileAsString("src/main/resources/htmlbrowse.js");
+        try
+        {
+            body = readResourceAsString( "htmlbrowse.js" );
+        }
+        catch ( Exception e )
+        {
+            body = readFileAsString( "src/main/resources/htmlbrowse.js" );
         }
         JAVASCRIPT_BODY = body;
     }
 
-    public ResourcesService(@Context UriInfo uriInfo) {
+    public ResourcesService( @Context UriInfo uriInfo )
+    {
     }
 
     @GET
-    @Path("htmlbrowse.js")
-    public String getHtmlBrowseJavascript() {
+    @Path( "htmlbrowse.js" )
+    public String getHtmlBrowseJavascript()
+    {
         return JAVASCRIPT_BODY;
     }
 
-    private static String readFileAsString(String file) {
-        try {
-            return readAsString(new FileInputStream(file));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+    private static String readFileAsString( String file )
+    {
+        try
+        {
+            return readAsString( new FileInputStream( file ) );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
         }
     }
 
-    private static String readResourceAsString(String resource) {
-        return readAsString(ClassLoader.getSystemResourceAsStream(resource));
+    private static String readResourceAsString( String resource )
+    {
+        return readAsString( ClassLoader.getSystemResourceAsStream( resource ) );
     }
 
-    private static String readAsString(InputStream input) {
+    private static String readAsString( InputStream input )
+    {
         final char[] buffer = new char[0x10000];
         StringBuilder out = new StringBuilder();
         Reader reader = null;
-        try {
-            reader = new InputStreamReader(input, "UTF-8" );
+        try
+        {
+            reader = new InputStreamReader( input, "UTF-8" );
             int read;
-            do {
-                read = reader.read(buffer, 0, buffer.length);
-                if (read > 0) {
-                    out.append(buffer, 0, read);
+            do
+            {
+                read = reader.read( buffer, 0, buffer.length );
+                if ( read > 0 )
+                {
+                    out.append( buffer, 0, read );
                 }
-            } while (read >= 0);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (reader != null) {
-                try {
+            }
+            while ( read >= 0 );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+        finally
+        {
+            if ( reader != null )
+            {
+                try
+                {
                     reader.close();
-                } catch (IOException e) {
+                }
+                catch ( IOException e )
+                {
                     // OK
                 }
             }

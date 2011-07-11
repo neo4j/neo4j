@@ -22,6 +22,9 @@ package org.neo4j.kernel.impl.nioneo.store;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.helpers.collection.IteratorUtil.lastOrNull;
+import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -30,11 +33,20 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
@@ -291,7 +303,7 @@ public class TestIdGenerator
                 idGenerator.freeId( 0 );
                 fail( "freeId after close should throw exception" );
             }
-            catch ( IllegalArgumentException e )
+            catch ( IllegalStateException e )
             { // good
             }
             idGenerator = new IdGeneratorImpl( idGeneratorFile(), 2, 1000 );
@@ -312,7 +324,7 @@ public class TestIdGenerator
                 idGenerator.freeId( 0 );
                 fail( "freeId after close should throw exception" );
             }
-            catch ( IllegalArgumentException e )
+            catch ( IllegalStateException e )
             { // good
             }
         }
@@ -574,5 +586,70 @@ public class TestIdGenerator
         idGenerator = new IdGeneratorImpl( idGeneratorFile(), 1, IdType.NODE.getMaxValue() );
         assertEquals( magicMinusOne-1, idGenerator.nextId() );
         assertEquals( magicMinusOne+2, idGenerator.nextId() );
+    }
+    
+    @Test
+    public void commandsGetWrittenOnceSoThatFreedIdsGetsAddedOnlyOnce() throws Exception
+    {
+        String storeDir = "target/var/free-id-once";
+        deleteRecursively( new File( storeDir ) );
+        GraphDatabaseService db = new EmbeddedGraphDatabase( storeDir );
+        RelationshipType type = withName( "SOME_TYPE" );
+        Node rootNode = db.getReferenceNode();
+        
+        // This transaction will, if some commands may be executed more than once,
+        // add the freed ids to the defrag list more than once - making the id generator
+        // return the same id more than once during the next session.
+        Set<Long> createdNodeIds = new HashSet<Long>();
+        Set<Long> createdRelationshipIds = new HashSet<Long>();
+        Transaction tx = db.beginTx();
+        for ( int i = 0; i < 20; i++ )
+        {
+            Node otherNode = db.createNode();
+            Relationship relationship = rootNode.createRelationshipTo( otherNode, type );
+            if ( i%5 == 0 )
+            {
+                otherNode.delete();
+                relationship.delete();
+            }
+            else
+            {
+                createdNodeIds.add( otherNode.getId() );
+                createdRelationshipIds.add( relationship.getId() );
+            }
+        }
+        tx.success();
+        tx.finish();
+        db.shutdown();
+        
+        // After a clean shutdown, create new nodes and relationships and see so that
+        // all ids are unique.
+        db = new EmbeddedGraphDatabase( storeDir );
+        rootNode = db.getReferenceNode();
+        tx = db.beginTx();
+        for ( int i = 0; i < 100; i++ )
+        {
+            Node otherNode = db.createNode();
+            if ( !createdNodeIds.add( otherNode.getId() ) )
+            {
+                fail( "Managed to create a node with an id that was already in use" );
+            }
+            Relationship relationship = rootNode.createRelationshipTo( otherNode, type );
+            if ( !createdRelationshipIds.add( relationship.getId() ) )
+            {
+                fail( "Managed to create a relationship with an id that was already in use" );
+            }
+        }
+        tx.success();
+        tx.finish();
+        
+        // Verify by loading everything from scratch
+        ((AbstractGraphDatabase)db).getConfig().getGraphDbModule().getNodeManager().clearCache();
+        for ( Node node : db.getAllNodes() )
+        {
+            lastOrNull( node.getRelationships() );
+        }
+        
+        db.shutdown();
     }
 }

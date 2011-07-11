@@ -42,17 +42,18 @@ public class RrdSamplerTest
 
         verify( sample ).setValue( "myTest", 15 );
     }
-    
+
     @Test
-    public void shouldIgnoreUnableToSampleExceptions() throws MalformedObjectNameException {
+    public void shouldIgnoreUnableToSampleExceptions() throws MalformedObjectNameException
+    {
         Sampleable failingSampleable = new FailingSamplable( "myTest", 15 );
-        
+
         Sample sample = mock( Sample.class );
 
         RrdSampler sampler = new RrdSampler( sample, failingSampleable );
-        
+
         sampler.updateSample();
-        
+
         verify( sample, never() ).setValue( "myTest", 15 );
     }
 
@@ -77,7 +78,7 @@ public class RrdSamplerTest
             return value;
         }
     }
-    
+
     private class FailingSamplable implements Sampleable
     {
         private String name;

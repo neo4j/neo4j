@@ -30,7 +30,7 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 public class GremlinSessionTest
 {
     private static final String TARGET_TEMPDB = "target/tempdb";
-    private static final String NEWLINE = System.getProperty("line.separator");
+    private static final String NEWLINE = System.getProperty( "line.separator" );
     private ScriptSession session;
     private Database database;
 
@@ -39,9 +39,9 @@ public class GremlinSessionTest
     {
         String result = session.evaluate( "g" );
 
-        assertEquals( String.format( "neo4jgraph[%s]"+NEWLINE,database.graph.toString()), result  );
+        assertEquals( String.format( "neo4jgraph[%s]" + NEWLINE, database.graph.toString() ), result );
     }
-    
+
     @Test
     public void multiLineTest()
     {
@@ -50,17 +50,18 @@ public class GremlinSessionTest
         result = session.evaluate( "}" );
         result = session.evaluate( "i = 2" );
 
-        assertEquals( "2"+NEWLINE, result  );
+        assertEquals( "2" + NEWLINE, result );
     }
+
     @Test
     public void canCreateNodesInGremlinLand()
     {
         String result = session.evaluate( "g.addVertex(null)" );
 
-        assertEquals( "v[1]"+NEWLINE, result );
+        assertEquals( "v[1]" + NEWLINE, result );
         result = session.evaluate( "g.V >> 2" );
 
-        assertEquals( "v[0]"+NEWLINE+"v[1]"+NEWLINE, result );
+        assertEquals( "v[0]" + NEWLINE + "v[1]" + NEWLINE, result );
     }
 
     @Before
@@ -76,4 +77,3 @@ public class GremlinSessionTest
         this.database.shutdown();
     }
 }
-

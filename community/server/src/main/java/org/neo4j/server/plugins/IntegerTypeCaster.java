@@ -25,15 +25,13 @@ import org.neo4j.server.rest.repr.BadInputException;
 class IntegerTypeCaster extends TypeCaster
 {
     @Override
-    Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
-            throws BadInputException
+    Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name ) throws BadInputException
     {
         return parameters.getInteger( name );
     }
 
     @Override
-    Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name )
-            throws BadInputException
+    Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name ) throws BadInputException
     {
         return parameters.getIntegerList( name );
     }

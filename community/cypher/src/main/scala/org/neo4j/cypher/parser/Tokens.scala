@@ -19,24 +19,41 @@ package org.neo4j.cypher.parser
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 import scala.util.parsing.combinator._
+import org.neo4j.cypher.SyntaxException
 
 trait Tokens extends JavaTokenParsers {
-  def ignoreCase(str:String): Parser[String] = ("""(?i)\Q""" + str + """\E""").r
+  val keywords = List("start", "where", "return", "limit", "skip", "order", "by")
 
-  def identity:Parser[String] = (ident | escapedIdentity)
+  def ignoreCase(str: String): Parser[String] = ("""(?i)\Q""" + str + """\E""").r
 
-  def escapedIdentity:Parser[String] = ("`(``|[^`])*`").r ^^ { case str => stripQuotes(str).replace("``", "`") }
+  def identity: Parser[String] = (nonKeywordIdentifier | escapedIdentity)
+
+  def nonKeywordIdentifier: Parser[String] = ident ^^ {
+    case str => if (keywords.contains(str.toLowerCase)) {
+      throw new SyntaxException(str + " is a reserved keyword and may not be used here.")
+    } else {
+      str
+    }
+  }
+
+
+  def escapedIdentity: Parser[String] = ("`(``|[^`])*`").r ^^ {
+    case str => stripQuotes(str).replace("``", "`")
+  }
 
   def stripQuotes(s: String) = s.substring(1, s.length - 1)
 
   def positiveNumber: Parser[String] = """\d+""".r
 
-  def string: Parser[String] = (stringLiteral | apostropheString)  ^^ { case str => stripQuotes(str) }
+  def string: Parser[String] = (stringLiteral | apostropheString) ^^ {
+    case str => stripQuotes(str)
+  }
 
-  def apostropheString:Parser[String] = ("\'"+"""([^'\p{Cntrl}\\]|\\[\\/bfnrt]|\\u[a-fA-F0-9]{4})*"""+"\'").r
+  def apostropheString: Parser[String] = ("\'" + """([^'\p{Cntrl}\\]|\\[\\/bfnrt]|\\u[a-fA-F0-9]{4})*""" + "\'").r
 
-  def regularLiteral = ("/"+"""([^"\p{Cntrl}\\]|\\[\\/bfnrt]|\\u[a-fA-F0-9]{4})*"""+"/").r
+  def regularLiteral = ("/" + """([^"\p{Cntrl}\\]|\\[\\/bfnrt]|\\u[a-fA-F0-9]{4})*""" + "/").r
 }
 
 

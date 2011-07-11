@@ -19,6 +19,24 @@
  */
 package org.neo4j.server;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.server.ServerTestUtils.createTempDir;
+import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
+import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
+import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Properties;
+
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
@@ -35,24 +53,6 @@ import org.neo4j.server.rest.paging.LeaseManagerProvider;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
 import org.neo4j.server.web.Jetty6WebServer;
-
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Properties;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.server.ServerTestUtils.createTempDir;
-import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
-import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
-import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
 
 public class ServerBuilder
 {
@@ -76,7 +76,7 @@ public class ServerBuilder
     private WhatToDo action;
     private List<Class<? extends ServerModule>> serverModules = null;
     private Clock clock = null;
-    
+
     public static ServerBuilder server()
     {
         return new ServerBuilder();
@@ -102,8 +102,8 @@ public class ServerBuilder
             startupHealthCheck = mock( StartupHealthCheck.class );
             when( startupHealthCheck.run() ).thenReturn( true );
         }
-        
-        if(clock != null) 
+
+        if ( clock != null )
         {
             LeaseManagerProvider.setClock( clock );
         }

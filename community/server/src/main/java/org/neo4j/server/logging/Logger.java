@@ -27,64 +27,77 @@ public class Logger
 
     java.util.logging.Logger logger;
 
-    public static Logger getLogger(Class<?> clazz) {
-        return new Logger(clazz);
+    public static Logger getLogger( Class<?> clazz )
+    {
+        return new Logger( clazz );
     }
 
-    public static Logger getLogger(String logger) {
-        return new Logger(logger);
+    public static Logger getLogger( String logger )
+    {
+        return new Logger( logger );
     }
 
-    public Logger(Class<?> clazz) {
+    public Logger( Class<?> clazz )
+    {
         this( clazz.getCanonicalName() );
     }
 
-    public Logger(String str) {
-        logger = java.util.logging.Logger.getLogger(str);
+    public Logger( String str )
+    {
+        logger = java.util.logging.Logger.getLogger( str );
     }
 
     public void log( Level priority, String message, Throwable throwable )
     {
-        logger.log(priority, message, throwable);
+        logger.log( priority, message, throwable );
     }
 
-    public void log(Level level, String message, Object... parameters) {
+    public void log( Level level, String message, Object... parameters )
+    {
 
         if ( logger.isLoggable( level ) )
         {
-            logger.log(level, String.format(message, parameters));
+            logger.log( level, String.format( message, parameters ) );
         }
     }
 
-    public void fatal(String message, Object... parameters) {
+    public void fatal( String message, Object... parameters )
+    {
         log( Level.SEVERE, message, parameters );
     }
 
-    public void error(String message, Object... parameters) {
+    public void error( String message, Object... parameters )
+    {
         log( Level.SEVERE, message, parameters );
     }
 
-    public void error(Throwable e) {
+    public void error( Throwable e )
+    {
         log( Level.SEVERE, "", e );
     }
 
-    public void warn(Throwable e) {
+    public void warn( Throwable e )
+    {
         log( Level.WARNING, "", e );
     }
 
-    public void warn(String message, Object... parameters) {
+    public void warn( String message, Object... parameters )
+    {
         log( Level.WARNING, message, parameters );
     }
 
-    public void info(String message, Object... parameters) {
-        log(Level.INFO, message, parameters);
+    public void info( String message, Object... parameters )
+    {
+        log( Level.INFO, message, parameters );
     }
 
-    public void debug(String message, Object... parameters) {
+    public void debug( String message, Object... parameters )
+    {
         log( Level.FINE, message, parameters );
     }
 
-    public void trace(String message, Object... parameters) {
+    public void trace( String message, Object... parameters )
+    {
         log( Level.FINEST, message, parameters );
     }
 }

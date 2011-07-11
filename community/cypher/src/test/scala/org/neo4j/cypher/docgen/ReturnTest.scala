@@ -21,10 +21,10 @@ package org.neo4j.cypher.docgen
 
 import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.graphdb.RelationshipType
+import org.neo4j.graphdb.{Node, RelationshipType}
 
 class ReturnTest extends DocumentingTestBase {
-  def graphDescription = List("A KNOWS B")
+  def graphDescription = List("A KNOWS B", "A BLOCKS B")
 
   def section = "Return"
 
@@ -43,7 +43,7 @@ class ReturnTest extends DocumentingTestBase {
     testQuery(
       title = "Return relationships",
       text = "To return a relationship, just include it in the return list.",
-      queryText = """start n=(%A%) match (n)-[r]->(c) return r""",
+      queryText = """start n=(%A%) match (n)-[r:KNOWS]->(c) return r""",
       returns = """The relationship.""",
       (p) => assertEquals(1, p.size))
   }
@@ -83,9 +83,18 @@ like this:""",
   @Test def relationship_type() {
     testQuery(
       title = "Relationship type",
-      text = """When you want to output the relationship type, and not the whole relationship, you can use :TYPE.""",
-      queryText = """start n=(%A%) match (n)-[r]->() return r:TYPE""",
+      text = """When you want to output the relationship type, and not the whole relationship, you can use ~TYPE.""",
+      queryText = """start n=(%A%) match (n)-[r]->() return r~TYPE""",
       returns = """The relationship type of r.""",
-      (p) => assertEquals("KNOWS", p.columnAs[RelationshipType]("r:TYPE").toList.head.name))
+      (p) => assertEquals("KNOWS", p.columnAs[RelationshipType]("r~TYPE").toList.head.name))
+  }
+
+  @Test def distinct_output() {
+    testQuery(
+      title = "Unique results",
+      text = """DISTINCT retrieves only unique rows depending on the columns that have been selected to output.""",
+      queryText = """start a=(%A%) match (a)-->(b) return distinct b""",
+      returns = """The node named B, but only once.""",
+      (p) => assertEquals(List(node("B")), p.columnAs[Node]("b").toList))
   }
 }

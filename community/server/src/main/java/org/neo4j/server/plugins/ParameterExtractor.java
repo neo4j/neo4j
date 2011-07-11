@@ -30,8 +30,7 @@ class ParameterExtractor extends DataExtractor
     final String description;
     final TypeCaster caster;
 
-    ParameterExtractor( TypeCaster caster, Class<?> type, Parameter param,
-                        Description description )
+    ParameterExtractor( TypeCaster caster, Class<?> type, Parameter param, Description description )
     {
         this.caster = caster;
         this.type = type;
@@ -41,8 +40,7 @@ class ParameterExtractor extends DataExtractor
     }
 
     @Override
-    Object extract( AbstractGraphDatabase graphDb, Object source, ParameterList parameters )
-            throws BadInputException
+    Object extract( AbstractGraphDatabase graphDb, Object source, ParameterList parameters ) throws BadInputException
     {
         Object result = caster.get( graphDb, parameters, name );
         if ( optional || result != null ) return result;

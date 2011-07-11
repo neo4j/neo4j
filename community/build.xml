@@ -28,7 +28,7 @@
 		<compileProject projectName="lucene-index" pom="pom.xml"/>
 		<compileProject projectName="graph-algo" pom="pom.xml"/>
 		<compileProject projectName="graph-matching" pom="pom.xml"/>
-		<compileProject projectName="cypher" pom="pom.xml"/>
+		<compileProject projectName="cypher" pom="pom.tom"/>
 		<compileProject projectName="neo4j" pom="pom.xml"/>
 		<compileProject projectName="neo4j-community" pom="pom.xml"/>
 		<compileProject projectName="shell" pom="pom.xml"/>
@@ -63,6 +63,8 @@
 		<replace file="packaging/pom-with-build-number.xml" token="1.4-SNAPSHOT" value="${buildNumber}"/>
 		<replace file="packaging/pom-with-build-number.xml" token="@MANUALVERSION@" value="1.4-SNAPSHOT"/>	
 		<replace file="packaging/pom-with-build-number.xml" token="@3RDPARTYVERSION@" value="1.4-SNAPSHOT"/>				
+		<replace file="packaging/pom-with-build-number.xml" token="@GREMLINVERSION@" value="1.4-SNAPSHOT"/>	
+		<replace file="packaging/pom-with-build-number.xml" token="@CYPHERPLUGINVERSION@" value="1.4-SNAPSHOT"/>
 		<exec executable="mvn" dir="packaging" failonerror="true">
 			<arg value="clean"/>
 			<arg value="package"/>

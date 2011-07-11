@@ -24,8 +24,7 @@ import java.util.List;
 
 import org.neo4j.server.plugins.ParameterDescriptionConsumer;
 
-public final class ExtensionPointRepresentation extends ObjectRepresentation implements
-        ParameterDescriptionConsumer
+public final class ExtensionPointRepresentation extends ObjectRepresentation implements ParameterDescriptionConsumer
 {
     private final RepresentationType extended;
     private final String name;
@@ -47,8 +46,7 @@ public final class ExtensionPointRepresentation extends ObjectRepresentation imp
     }
 
     @Override
-    public void describeListParameter( String name, Class<?> type, boolean optional,
-            String description )
+    public void describeListParameter( String name, Class<?> type, boolean optional, String description )
     {
         parameters.add( new ParameterRepresentation( name, type, optional, description, true ) );
     }
@@ -95,8 +93,7 @@ public final class ExtensionPointRepresentation extends ObjectRepresentation imp
         private final boolean optional;
         private final boolean list;
 
-        ParameterRepresentation( String name, Class<?> type, boolean optional, String description,
-                boolean list )
+        ParameterRepresentation( String name, Class<?> type, boolean optional, String description, boolean list )
         {
             super( RepresentationType.PLUGIN_PARAMETER );
             this.name = name;

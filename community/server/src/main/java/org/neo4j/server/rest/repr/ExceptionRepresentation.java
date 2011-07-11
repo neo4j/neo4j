@@ -29,14 +29,14 @@ class ExceptionRepresentation extends MappingRepresentation
         this.exception = exception;
     }
 
-    
     @Override
     protected void serialize( MappingSerializer serializer )
     {
         String message = exception.getMessage();
-        if(message != null) {
+        if ( message != null )
+        {
             serializer.putString( "message", message );
-        } 
+        }
         serializer.putString( "exception", exception.toString() );
         StackTraceElement[] trace = exception.getStackTrace();
         if ( trace != null )

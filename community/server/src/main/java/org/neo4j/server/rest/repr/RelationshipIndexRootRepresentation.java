@@ -38,7 +38,8 @@ public class RelationshipIndexRootRepresentation extends MappingRepresentation
         for ( String indexName : indexManager.relationshipIndexNames() )
         {
             RelationshipIndex index = indexManager.forRelationships( indexName );
-            serializer.putMapping( indexName, new RelationshipIndexRepresentation( indexName, indexManager.getConfiguration( index ) ) );
+            serializer.putMapping( indexName,
+                    new RelationshipIndexRepresentation( indexName, indexManager.getConfiguration( index ) ) );
         }
     }
 }

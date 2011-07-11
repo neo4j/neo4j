@@ -33,9 +33,8 @@ class PluginMethod extends PluginPoint
     private final DataExtractor[] extractors;
     private final ResultConverter result;
 
-    PluginMethod( String name, Class<?> discovery, ServerPlugin plugin,
-                  ResultConverter result, Method method, DataExtractor[] extractors,
-                  Description description )
+    PluginMethod( String name, Class<?> discovery, ServerPlugin plugin, ResultConverter result, Method method,
+            DataExtractor[] extractors, Description description )
     {
         super( discovery, name, description == null ? "" : description.value() );
         this.plugin = plugin;
@@ -44,14 +43,9 @@ class PluginMethod extends PluginPoint
         this.extractors = extractors;
     }
 
-
-
-
-
     @Override
     public Representation invoke( AbstractGraphDatabase graphDb, Object source, ParameterList params )
-            throws BadPluginInvocationException, PluginInvocationFailureException,
-            BadInputException
+            throws BadPluginInvocationException, PluginInvocationFailureException, BadInputException
     {
         Object[] arguments = new Object[extractors.length];
         for ( int i = 0; i < arguments.length; i++ )
@@ -65,7 +59,8 @@ class PluginMethod extends PluginPoint
             if ( returned == null )
             {
                 return Representation.emptyRepresentation();
-            } else
+            }
+            else
             {
                 return result.convert( returned );
             }
@@ -75,8 +70,7 @@ class PluginMethod extends PluginPoint
             Throwable targetExc = exc.getTargetException();
             for ( Class<?> excType : method.getExceptionTypes() )
             {
-                if ( excType.isInstance( targetExc ) )
-                    throw new BadPluginInvocationException( targetExc );
+                if ( excType.isInstance( targetExc ) ) throw new BadPluginInvocationException( targetExc );
             }
             throw new PluginInvocationFailureException( targetExc );
         }

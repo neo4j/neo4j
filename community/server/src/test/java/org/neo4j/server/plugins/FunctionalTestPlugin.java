@@ -82,24 +82,24 @@ public class FunctionalTestPlugin extends ServerPlugin
     public Iterable<Relationship> getRelationshipsBetween( final @Source Node start,
             final @Parameter( name = "other" ) Node end )
     {
-        return new FilteringIterable<Relationship>( start.getRelationships(),
-                new Predicate<Relationship>()
-                {
-                    @Override
-                    public boolean accept( Relationship item )
-                    {
-                        return item.getOtherNode( start ).equals( end );
-                    }
-                } );
+        return new FilteringIterable<Relationship>( start.getRelationships(), new Predicate<Relationship>()
+        {
+            @Override
+            public boolean accept( Relationship item )
+            {
+                return item.getOtherNode( start )
+                        .equals( end );
+            }
+        } );
     }
 
     @PluginTarget( Node.class )
     public Iterable<Relationship> createRelationships( @Source Node start,
-            @Parameter( name = "type" ) RelationshipType type,
-            @Parameter( name = "nodes" ) Iterable<Node> nodes )
+            @Parameter( name = "type" ) RelationshipType type, @Parameter( name = "nodes" ) Iterable<Node> nodes )
     {
         List<Relationship> result = new ArrayList<Relationship>();
-        Transaction tx = start.getGraphDatabase().beginTx();
+        Transaction tx = start.getGraphDatabase()
+                .beginTx();
         try
         {
             for ( Node end : nodes )
@@ -125,13 +125,12 @@ public class FunctionalTestPlugin extends ServerPlugin
             return start;
         }
 
-        return start.getGraphDatabase().getNodeById( id );
+        return start.getGraphDatabase()
+                .getNodeById( id );
     }
 
     @PluginTarget( GraphDatabaseService.class )
-    public Node methodWithIntParam(
-            @Source GraphDatabaseService db,
-            @Parameter( name = "id", optional = false ) int id )
+    public Node methodWithIntParam( @Source GraphDatabaseService db, @Parameter( name = "id", optional = false ) int id )
     {
         return db.getNodeById( id );
     }
@@ -143,15 +142,12 @@ public class FunctionalTestPlugin extends ServerPlugin
     }
 
     @PluginTarget( GraphDatabaseService.class )
-    public Node methodWithAllParams(
-            @Source GraphDatabaseService db,
-            @Parameter( name = "id", optional = false ) String a,
-            @Parameter( name = "id2", optional = false ) Byte b,
+    public Node methodWithAllParams( @Source GraphDatabaseService db,
+            @Parameter( name = "id", optional = false ) String a, @Parameter( name = "id2", optional = false ) Byte b,
             @Parameter( name = "id3", optional = false ) Character c,
             @Parameter( name = "id4", optional = false ) Short d,
             @Parameter( name = "id5", optional = false ) Integer e,
-            @Parameter( name = "id6", optional = false ) Long f,
-            @Parameter( name = "id7", optional = false ) Float g,
+            @Parameter( name = "id6", optional = false ) Long f, @Parameter( name = "id7", optional = false ) Float g,
             @Parameter( name = "id8", optional = false ) Double h,
             @Parameter( name = "id9", optional = false ) Boolean i )
     {
@@ -187,7 +183,7 @@ public class FunctionalTestPlugin extends ServerPlugin
     @PluginTarget( GraphDatabaseService.class )
     public Node methodWithListAndInt( @Source GraphDatabaseService db,
             @Parameter( name = "strings", optional = false ) List<String> params,
-            @Parameter( name = "count", optional = false ) int i)
+            @Parameter( name = "count", optional = false ) int i )
     {
         stringList = params;
         _integer = i;
@@ -196,7 +192,7 @@ public class FunctionalTestPlugin extends ServerPlugin
 
     @PluginTarget( GraphDatabaseService.class )
     public Node methodWithArray( @Source GraphDatabaseService db,
-                                 @Parameter( name = "strings", optional = false ) String[] params )
+            @Parameter( name = "strings", optional = false ) String[] params )
     {
         stringArray = params;
         return db.getReferenceNode();
@@ -222,6 +218,7 @@ public class FunctionalTestPlugin extends ServerPlugin
     public Path pathToReference( @Source Node me )
     {
         PathFinder<Path> finder = GraphAlgoFactory.shortestPath( Traversal.expanderForAllTypes(), 6 );
-        return finder.findSinglePath( me.getGraphDatabase().getReferenceNode(), me );
+        return finder.findSinglePath( me.getGraphDatabase()
+                .getReferenceNode(), me );
     }
 }

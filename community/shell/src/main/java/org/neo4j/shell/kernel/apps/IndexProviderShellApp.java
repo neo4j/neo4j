@@ -48,22 +48,22 @@ public class IndexProviderShellApp extends GraphDatabaseApp
 {
     {
         addOptionDefinition( "g", new OptionDefinition( OptionValueType.NONE,
-                "Get nodes for the given key and value" ) );
+                "Get entities for the given key and value" ) );
         addOptionDefinition( "q", new OptionDefinition( OptionValueType.NONE,
-                "Get nodes for the given query" ) );
+                "Get entities for the given query" ) );
         addOptionDefinition( "i", new OptionDefinition( OptionValueType.NONE,
-                "Index the current node with a key and (optionally) value. " +
+                "Index the current entity with a key and (optionally) value. " +
                 "If no value is given the property value for the key is " +
                 "used" ) );
         addOptionDefinition( "r", new OptionDefinition( OptionValueType.NONE,
-                "Removes a key-value pair for the current node from the index. " +
-                "If no value is given the property value for the key is used" ) );
+                "Removes a key-value pair for the current entity from the index. " +
+                "Key and value are optional" ) );
         addOptionDefinition( "c", OPTION_DEF_FOR_C );
         addOptionDefinition( "cd", new OptionDefinition( OptionValueType.NONE,
                 "Does a 'cd' command to the returned node. " +
                 "Could also be done using the -c option. (Implies -g)" ) );
         addOptionDefinition( "ls", new OptionDefinition( OptionValueType.NONE,
-                "Does a 'ls' command on the returned nodes. " +
+                "Does a 'ls' command on the returned entities. " +
                 "Could also be done using the -c option. (Implies -g)" ) );
         addOptionDefinition( "create", new OptionDefinition( OptionValueType.NONE,
                 "Creates a new index with a set of configuration parameters" ) );
@@ -141,7 +141,7 @@ public class IndexProviderShellApp extends GraphDatabaseApp
                 commandsToRun.addAll( Arrays.asList( commandToRun.split( Pattern.quote( "&&" ) ) ) );
             }
             
-            if ( getIndex( parser.arguments().get( 0 ), getEntityType( parser ), out ) == null )
+            if ( getIndex( getIndexName( parser ), getEntityType( parser ), out ) == null )
             {
                 return null;
             }
@@ -166,7 +166,7 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         }
         else if ( remove )
         {
-            if ( getIndex( parser.arguments().get( 0 ), Node.class, out ) == null )
+            if ( getIndex( getIndexName( parser ), Node.class, out ) == null )
             {
                 return null;
             }
@@ -196,6 +196,11 @@ public class IndexProviderShellApp extends GraphDatabaseApp
         
         return null;
     }
+
+    private String getIndexName( AppCommandParser parser ) throws ShellException
+    {
+        return parser.argument( 0, "Index name not supplied" );
+    }
     
     private void listIndexes( Output out ) throws RemoteException
     {
@@ -214,7 +219,7 @@ public class IndexProviderShellApp extends GraphDatabaseApp
 
     private void deleteIndex( AppCommandParser parser, Output out ) throws RemoteException, ShellException
     {
-        Index<? extends PropertyContainer> index = getIndex( parser.arguments().get( 0 ), getEntityType( parser ), out );
+        Index<? extends PropertyContainer> index = getIndex( getIndexName( parser ), getEntityType( parser ), out );
         if ( index != null )
         {
             index.delete();
@@ -223,8 +228,8 @@ public class IndexProviderShellApp extends GraphDatabaseApp
 
     private void setConfig( AppCommandParser parser, Output out ) throws ShellException, RemoteException
     {
-        String indexName = parser.arguments().get( 0 );
-        String key = parser.arguments().get( 1 );
+        String indexName = getIndexName( parser );
+        String key = parser.argument( 1, "Key not supplied" );
         String value = parser.arguments().size() > 2 ? parser.arguments().get( 2 ) : null;
         
         Class<? extends PropertyContainer> entityType = getEntityType( parser );
@@ -246,7 +251,7 @@ public class IndexProviderShellApp extends GraphDatabaseApp
 
     private void createIndex( AppCommandParser parser, Output out ) throws RemoteException, ShellException
     {
-        String indexName = parser.arguments().get( 0 );
+        String indexName = getIndexName( parser );
         Class<? extends PropertyContainer> entityType = getEntityType( parser );
         if ( getIndex( indexName, entityType, null ) != null )
         {
@@ -296,7 +301,7 @@ public class IndexProviderShellApp extends GraphDatabaseApp
     private void displayConfig( AppCommandParser parser, Output out )
             throws RemoteException, ShellException
     {
-        String indexName = parser.arguments().get( 0 );
+        String indexName = getIndexName( parser );
         Index<? extends PropertyContainer> index = getIndex( indexName, getEntityType( parser ), out );
         if ( index == null )
         {
@@ -342,18 +347,18 @@ public class IndexProviderShellApp extends GraphDatabaseApp
 
     private IndexHits<PropertyContainer> get( AppCommandParser parser, Output out ) throws ShellException, RemoteException
     {
-        String index = parser.arguments().get( 0 );
-        String key = parser.arguments().get( 1 );
-        String value = parser.arguments().get( 2 );
+        String index = getIndexName( parser );
+        String key = parser.argument( 1, "Key not supplied" );
+        String value = parser.argument( 2, "Value not supplied" );
         Index theIndex = getIndex( index, getEntityType( parser ), out );
         return theIndex.get( key, value );
     }
 
     private IndexHits<PropertyContainer> query( AppCommandParser parser, Output out ) throws RemoteException, ShellException
     {
-        String index = parser.arguments().get( 0 );
-        String query1 = parser.arguments().get( 1 );
-        String query2 = parser.arguments().size() > 2 ? parser.arguments().get( 2 ) : null;
+        String index = getIndexName( parser );
+        String query1 = parser.argument( 1, "Key not supplied" );
+        String query2 = parser.argumentWithDefault( 2, null );
         Index theIndex = getIndex( index, getEntityType( parser ), out );
         return query2 != null ? theIndex.query( query1, query2 ) : theIndex.query( query1 );
     }
@@ -361,8 +366,8 @@ public class IndexProviderShellApp extends GraphDatabaseApp
     private void index( AppCommandParser parser, Session session, Output out ) throws ShellException, RemoteException
     {
         NodeOrRelationship current = getCurrent( session );
-        String index = parser.arguments().get( 0 );
-        String key = parser.arguments().get( 1 );
+        String index = getIndexName( parser );
+        String key = parser.argument( 1, "Key not supplied" );
         Object value = parser.arguments().size() > 2 ? parser.arguments().get( 2 ) : current.getProperty( key, null );
         if ( value == null )
         {
@@ -376,17 +381,28 @@ public class IndexProviderShellApp extends GraphDatabaseApp
     private void remove( AppCommandParser parser, Session session, Output out ) throws ShellException, RemoteException
     {
         NodeOrRelationship current = getCurrent( session );
-        String index = parser.arguments().get( 0 );
-        String key = parser.arguments().get( 1 );
-        Object value = parser.arguments().size() > 2 ? parser.arguments().get( 2 ) : current.getProperty( key, null );
-        if ( value == null )
+        String index = getIndexName( parser );
+        String key = parser.argumentWithDefault( 1, null );
+        Object value = null;
+        if ( key != null )
         {
-            throw new ShellException( "No value to remove" );
+            value = parser.argumentWithDefault( 2, null );
         }
         Index theIndex = getIndex( index, current.isNode() ? Node.class : Relationship.class, out );
         if ( theIndex != null )
         {
-            theIndex.remove( current.asPropertyContainer(), key, value );
+            if ( key != null && value != null )
+            {
+                theIndex.remove( current.asPropertyContainer(), key, value );
+            }
+            else if ( key != null )
+            {
+                theIndex.remove( current.asPropertyContainer(), key );
+            }
+            else
+            {
+                theIndex.remove( current.asPropertyContainer() );
+            }
         }
     }
 }

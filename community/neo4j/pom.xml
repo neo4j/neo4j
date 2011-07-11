@@ -9,7 +9,7 @@
 
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j</artifactId>
-  <version>1.4-SNAPSHOT</version>
+  <version>1.5-SNAPSHOT</version>
   <name>Neo4j Community</name>
   <packaging>jar</packaging>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -29,37 +29,37 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.4-SNAPSHOT</version>
+      <version>1.5-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-lucene-index</artifactId>
-      <version>1.4-SNAPSHOT</version>
+      <version>1.5-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-graph-algo</artifactId>
-      <version>1.4-SNAPSHOT</version>
+      <version>1.5-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-udc</artifactId>
-      <version>1.4-SNAPSHOT</version>
+      <version>1.5-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-graph-matching</artifactId>
-      <version>1.4-SNAPSHOT</version>
+      <version>1.5-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher</artifactId>
-      <version>1.4-SNAPSHOT</version>
+      <version>1.5-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-jmx</artifactId>
-      <version>1.4-SNAPSHOT</version>
+      <version>1.5-SNAPSHOT</version>
     </dependency>
     <!-- Needed for the javadoc generation! -->
     <dependency>
@@ -69,6 +69,19 @@
     <dependency>
       <groupId>org.osgi</groupId>
       <artifactId>osgi_R4_compendium</artifactId>
+    </dependency>
+    <!-- For the tests specified by this package -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>1.5-SNAPSHOT</version>
+      <type>test-jar</type>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -287,6 +300,41 @@ the relevant Commercial Agreement.
       </plugin>
     </plugins>
   </reporting>
+  
+  <profiles>
+    <profile><!-- used for testing -->
+      <id>Linux-dependency-tools.jar</id>
+      <activation>
+        <os><name>Linux</name></os>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>com.sun.tools</groupId>
+          <artifactId>tools</artifactId>
+          <version>1.6</version>
+          <scope>system</scope>
+          <systemPath>${java.home}/../lib/tools.jar</systemPath>
+          <optional>true</optional>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile><!-- used for testing -->
+      <id>Windows-dependency-tools.jar</id>
+      <activation>
+        <os><family>Windows</family></os>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>com.sun.tools</groupId>
+          <artifactId>tools</artifactId>
+          <version>1.6</version>
+          <scope>system</scope>
+          <systemPath>${java.home}\\..\\lib\\tools.jar</systemPath>
+          <optional>true</optional>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
 
   <distributionManagement>
     <site>

@@ -965,9 +965,10 @@ public class DatabaseActions
         }
         else
         {
-            leases.remove(traverserId);
+            leases.remove( traverserId );
             // Yuck.
-            throw new NotFoundException(String.format("The results for paged traverser with id [%s] have been fully enumerated", traverserId));  
+            throw new NotFoundException( String.format(
+                    "The results for paged traverser with id [%s] have been fully enumerated", traverserId ) );
         }
 
         return new ListRepresentation( returnType.repType, result );
@@ -984,14 +985,16 @@ public class DatabaseActions
         return leases.createLease( leaseTime, traverser )
                 .getId();
     }
-    
-    
+
     public boolean removePagedTraverse( String traverserId )
     {
         Lease lease = leases.getLeaseById( traverserId );
-        if( lease == null) {
+        if ( lease == null )
+        {
             return false;
-        } else {
+        }
+        else
+        {
             leases.remove( lease.getId() );
             return true;
         }

@@ -41,8 +41,9 @@ public class RESTApiModule implements ServerModule
         {
             URI restApiUri = restApiUri( neoServer );
 
-            neoServer.getWebServer().addJAXRSPackages( listFrom( new String[] { Configurator.REST_API_PACKAGE } ),
-                    restApiUri.toString() );
+            neoServer.getWebServer()
+                    .addJAXRSPackages( listFrom( new String[] { Configurator.REST_API_PACKAGE } ),
+                            restApiUri.toString() );
             loadPlugins( neoServer );
 
             log.info( "Mounted REST API at [%s]", restApiUri.toString() );
@@ -60,8 +61,8 @@ public class RESTApiModule implements ServerModule
 
     private URI restApiUri( NeoServerWithEmbeddedWebServer neoServer ) throws URISyntaxException
     {
-            return new URI( neoServer.getConfiguration().getString( Configurator.REST_API_PATH_PROPERTY_KEY,
-                    Configurator.DEFAULT_DATA_API_PATH ) );
+        return new URI( neoServer.getConfiguration()
+                .getString( Configurator.REST_API_PATH_PROPERTY_KEY, Configurator.DEFAULT_DATA_API_PATH ) );
     }
 
     private void loadPlugins( NeoServerWithEmbeddedWebServer neoServer )

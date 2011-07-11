@@ -272,13 +272,13 @@ public class IdGeneratorImpl implements IdGenerator
             return;
         }
         
-        if ( id < 0 || id >= nextFreeId.get() )
-        {
-            throw new IllegalArgumentException( "Illegal id[" + id + "]" );
-        }
         if ( fileChannel == null )
         {
             throw new IllegalStateException( "Generator closed " + fileName );
+        }
+        if ( id < 0 || id >= nextFreeId.get() )
+        {
+            throw new IllegalArgumentException( "Illegal id[" + id + "]" );
         }
         releasedIdList.add( id );
         defraggedIdCount++;

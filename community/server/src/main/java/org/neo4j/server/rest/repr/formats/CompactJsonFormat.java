@@ -44,41 +44,43 @@ import org.neo4j.server.rest.repr.RepresentationFormat;
 @Service.Implementation( RepresentationFormat.class )
 public class CompactJsonFormat extends RepresentationFormat
 {
-    public static final MediaType MEDIA_TYPE = new MediaType( MediaType.APPLICATION_JSON_TYPE.getType(), MediaType.APPLICATION_JSON_TYPE.getSubtype(),
-                    MapUtil.stringMap( "compact","true" ) );
+    public static final MediaType MEDIA_TYPE = new MediaType( MediaType.APPLICATION_JSON_TYPE.getType(),
+            MediaType.APPLICATION_JSON_TYPE.getSubtype(), MapUtil.stringMap( "compact", "true" ) );
 
     public CompactJsonFormat()
     {
         super( MEDIA_TYPE );
     }
-    
+
     private enum MappingTemplate
     {
-        NODE( Representation.NODE ) 
+        NODE( Representation.NODE )
         {
             @Override
             String render( Map<String, Object> serialized )
             {
-                
-                return JsonHelper.createJsonFrom( MapUtil.map( "self", serialized.get( "self" ), "data", serialized.get( "data" )));
+
+                return JsonHelper.createJsonFrom( MapUtil.map( "self", serialized.get( "self" ), "data",
+                        serialized.get( "data" ) ) );
             }
         },
-        RELATIONSHIP( Representation.RELATIONSHIP ) 
+        RELATIONSHIP( Representation.RELATIONSHIP )
         {
             @Override
             String render( Map<String, Object> serialized )
             {
-                
-                return JsonHelper.createJsonFrom( MapUtil.map( "self", serialized.get( "self" ), "data", serialized.get( "data" )));
+
+                return JsonHelper.createJsonFrom( MapUtil.map( "self", serialized.get( "self" ), "data",
+                        serialized.get( "data" ) ) );
             }
         },
-        STRING( Representation.STRING ) 
+        STRING( Representation.STRING )
         {
             @Override
             String render( Map<String, Object> serialized )
             {
-                
-                return JsonHelper.createJsonFrom( serialized);
+
+                return JsonHelper.createJsonFrom( serialized );
             }
         },
         EXCEPTION( Representation.EXCEPTION )
@@ -89,9 +91,10 @@ public class CompactJsonFormat extends RepresentationFormat
             {
                 return JsonHelper.createJsonFrom( data );
             }
-            
+
         };
         private final String key;
+
         private MappingTemplate( String key )
         {
             this.key = key;
@@ -103,6 +106,7 @@ public class CompactJsonFormat extends RepresentationFormat
             for ( MappingTemplate template : values() )
                 TEMPLATES.put( template.key, template );
         }
+
         abstract String render( Map<String, Object> data );
     }
 
@@ -115,20 +119,20 @@ public class CompactJsonFormat extends RepresentationFormat
             super( new HashMap<String, Object>(), true );
             this.template = template;
         }
-        
+
         protected MappingWriter newMapping( String type, String key )
         {
             Map<String, Object> map = new HashMap<String, Object>();
             data.put( key, map );
             return new MapWrappingWriter( map, interactive );
         }
-        
+
         @Override
         protected void writeValue( String type, String key, Object value )
         {
             data.put( key, value );
         }
-        
+
         @Override
         protected ListWriter newList( String type, String key )
         {
@@ -136,13 +140,14 @@ public class CompactJsonFormat extends RepresentationFormat
             data.put( key, list );
             return new ListWrappingWriter( list, interactive );
         }
+
         String complete()
         {
             return template.render( this.data );
         }
 
     }
-    
+
     @Override
     protected ListWriter serializeList( String type )
     {
@@ -161,9 +166,9 @@ public class CompactJsonFormat extends RepresentationFormat
         MappingTemplate template = MappingTemplate.TEMPLATES.get( type );
         if ( template == null )
         {
-            throw new WebApplicationException(
-                    Response.status( Response.Status.NOT_ACCEPTABLE ).entity(
-                            "Cannot represent \"" + type + "\" as compactJson" ).build() );
+            throw new WebApplicationException( Response.status( Response.Status.NOT_ACCEPTABLE )
+                    .entity( "Cannot represent \"" + type + "\" as compactJson" )
+                    .build() );
         }
         return new CompactJsonWriter( template );
     }

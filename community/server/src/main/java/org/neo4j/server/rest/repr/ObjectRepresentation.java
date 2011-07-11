@@ -52,8 +52,7 @@ public abstract class ObjectRepresentation extends MappingRepresentation
         super( type );
     }
 
-    private static Map<String, PropertyGetter> serialization(
-            Class<? extends ObjectRepresentation> type )
+    private static Map<String, PropertyGetter> serialization( Class<? extends ObjectRepresentation> type )
     {
         Map<String, PropertyGetter> serialization = serializations.get( type );
         if ( serialization == null )
@@ -119,13 +118,11 @@ public abstract class ObjectRepresentation extends MappingRepresentation
         {
             if ( method.getParameterTypes().length != 0 )
             {
-                throw new IllegalStateException(
-                        "Property getter method may not have any parameters." );
+                throw new IllegalStateException( "Property getter method may not have any parameters." );
             }
             if ( !Representation.class.isAssignableFrom( (Class<?>) method.getReturnType() ) )
             {
-                throw new IllegalStateException(
-                        "Property getter must return Representation object." );
+                throw new IllegalStateException( "Property getter must return Representation object." );
             }
         }
 
@@ -143,7 +140,8 @@ public abstract class ObjectRepresentation extends MappingRepresentation
     {
         for ( Map.Entry<String, PropertyGetter> property : serialization.entrySet() )
         {
-            property.getValue().putTo( serializer, this, property.getKey() );
+            property.getValue()
+                    .putTo( serializer, this, property.getKey() );
         }
         extraData( serializer );
     }

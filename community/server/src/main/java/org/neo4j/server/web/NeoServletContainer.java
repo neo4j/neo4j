@@ -43,19 +43,22 @@ import com.sun.jersey.spi.container.WebApplication;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
 import com.sun.jersey.spi.container.servlet.WebConfig;
 
-@SuppressWarnings("serial")
-public class NeoServletContainer extends ServletContainer {
+@SuppressWarnings( "serial" )
+public class NeoServletContainer extends ServletContainer
+{
     private final NeoServer server;
     private final Collection<Injectable<?>> injectables;
 
-    public NeoServletContainer( NeoServer server, Collection<Injectable<?>> injectables ) {
+    public NeoServletContainer( NeoServer server, Collection<Injectable<?>> injectables )
+    {
         this.server = server;
         this.injectables = injectables;
     }
 
     @Override
-    protected void configure(WebConfig wc, ResourceConfig rc, WebApplication wa) {
-        super.configure(wc, rc, wa);
+    protected void configure( WebConfig wc, ResourceConfig rc, WebApplication wa )
+    {
+        super.configure( wc, rc, wa );
 
         Set<Object> singletons = rc.getSingletons();
         singletons.add( new LeaseManagerProvider() );
@@ -63,16 +66,20 @@ public class NeoServletContainer extends ServletContainer {
         singletons.add( new GraphDatabaseServiceProvider( server.getDatabase().graph ) );
         singletons.add( new NeoServerProvider( server ) );
         singletons.add( new ConfigurationProvider( server.getConfiguration() ) );
-        
-        if(server.getDatabase().rrdDb() != null) {
-            singletons.add( new RrdDbProvider( server.getDatabase().rrdDb() ) );
+
+        if ( server.getDatabase()
+                .rrdDb() != null )
+        {
+            singletons.add( new RrdDbProvider( server.getDatabase()
+                    .rrdDb() ) );
         }
-        
-        if(server instanceof NeoServerWithEmbeddedWebServer) {
-            singletons.add( new WebServerProvider(((NeoServerWithEmbeddedWebServer)server).getWebServer()) );
+
+        if ( server instanceof NeoServerWithEmbeddedWebServer )
+        {
+            singletons.add( new WebServerProvider( ( (NeoServerWithEmbeddedWebServer) server ).getWebServer() ) );
         }
-        
-        RepresentationFormatRepository repository = new RepresentationFormatRepository(server.getExtensionManager());
+
+        RepresentationFormatRepository repository = new RepresentationFormatRepository( server.getExtensionManager() );
         singletons.add( new InputFormatProvider( repository ) );
         singletons.add( new OutputFormatProvider( repository ) );
         singletons.add( new PluginInvocatorProvider( server.getExtensionManager() ) );

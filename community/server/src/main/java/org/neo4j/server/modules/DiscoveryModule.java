@@ -25,18 +25,21 @@ import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.Logger;
 
-public class DiscoveryModule implements ServerModule {
+public class DiscoveryModule implements ServerModule
+{
 
-    private static final Logger log = Logger.getLogger(DiscoveryModule.class);
+    private static final Logger log = Logger.getLogger( DiscoveryModule.class );
     private static final String ROOT_PATH = "/";
 
     public void start( NeoServerWithEmbeddedWebServer neoServer )
     {
-        neoServer.getWebServer().addJAXRSPackages(listFrom(new String[] { Configurator.DISCOVERY_API_PACKAGE }), ROOT_PATH);
-        log.info("Mounted discovery module at [%s]", ROOT_PATH);
+        neoServer.getWebServer()
+                .addJAXRSPackages( listFrom( new String[] { Configurator.DISCOVERY_API_PACKAGE } ), ROOT_PATH );
+        log.info( "Mounted discovery module at [%s]", ROOT_PATH );
     }
 
-    public void stop() {
+    public void stop()
+    {
         // Do nothing.
     }
 }

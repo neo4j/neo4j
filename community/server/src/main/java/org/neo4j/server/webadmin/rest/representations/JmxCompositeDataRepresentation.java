@@ -41,14 +41,15 @@ public class JmxCompositeDataRepresentation extends ObjectRepresentation
     @Mapping( "type" )
     public ValueRepresentation getType()
     {
-        return ValueRepresentation.string( data.getCompositeType().getTypeName() );
+        return ValueRepresentation.string( data.getCompositeType()
+                .getTypeName() );
     }
-
 
     @Mapping( "description" )
     public ValueRepresentation getDescription()
     {
-        return ValueRepresentation.string( data.getCompositeType().getDescription() );
+        return ValueRepresentation.string( data.getCompositeType()
+                .getDescription() );
     }
 
     @Mapping( "value" )
@@ -57,13 +58,14 @@ public class JmxCompositeDataRepresentation extends ObjectRepresentation
 
         JmxAttributeRepresentationDispatcher representationDispatcher = new JmxAttributeRepresentationDispatcher();
         ArrayList<Representation> values = new ArrayList<Representation>();
-        for ( Object key : data.getCompositeType().keySet() )
+        for ( Object key : data.getCompositeType()
+                .keySet() )
         {
             String name = key.toString();
-            String description = data.getCompositeType().getDescription( name );
-            
-            
-            Representation value = representationDispatcher.dispatch( data.get( name ) , "");
+            String description = data.getCompositeType()
+                    .getDescription( name );
+
+            Representation value = representationDispatcher.dispatch( data.get( name ), "" );
 
             values.add( new NameDescriptionValueRepresentation( name, description, value ) );
         }

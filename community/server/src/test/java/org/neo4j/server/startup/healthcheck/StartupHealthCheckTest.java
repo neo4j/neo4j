@@ -30,91 +30,113 @@ import java.util.Properties;
 import org.junit.Test;
 import org.neo4j.server.logging.InMemoryAppender;
 
-
-public class StartupHealthCheckTest {
+public class StartupHealthCheckTest
+{
 
     @Test
-    public void shouldPassWithNoRules() {
+    public void shouldPassWithNoRules()
+    {
         StartupHealthCheck check = new StartupHealthCheck();
-        assertTrue(check.run());
+        assertTrue( check.run() );
     }
-    
+
     @Test
-    public void shouldRunAllHealthChecksToCompletionIfNonFail() {
-        StartupHealthCheck check = new StartupHealthCheck(getPassingRules());
-        assertTrue(check.run());
+    public void shouldRunAllHealthChecksToCompletionIfNonFail()
+    {
+        StartupHealthCheck check = new StartupHealthCheck( getPassingRules() );
+        assertTrue( check.run() );
     }
-    
+
     @Test
-    public void shouldFailIfOneOrMoreHealthChecksFail() {
-        StartupHealthCheck check = new StartupHealthCheck(getWithOneFailingRule());
-        assertFalse(check.run());
+    public void shouldFailIfOneOrMoreHealthChecksFail()
+    {
+        StartupHealthCheck check = new StartupHealthCheck( getWithOneFailingRule() );
+        assertFalse( check.run() );
     }
-    
+
     @Test
-    public void shouldLogFailedRule() {
-        StartupHealthCheck check = new StartupHealthCheck(getWithOneFailingRule());
-        InMemoryAppender appender = new InMemoryAppender(StartupHealthCheck.log);
+    public void shouldLogFailedRule()
+    {
+        StartupHealthCheck check = new StartupHealthCheck( getWithOneFailingRule() );
+        InMemoryAppender appender = new InMemoryAppender( StartupHealthCheck.log );
         check.run();
-        
-        // Previously we tested on "SEVERE: blah blah" but that's a string depending
+
+        // Previously we tested on "SEVERE: blah blah" but that's a string
+        // depending
         // on the regional settings of the OS.
         assertThat( appender.toString(), containsString( ": blah blah" ) );
     }
-    
+
     @Test
-    public void shouldAdvertiseFailedRule() {
-        StartupHealthCheck check = new StartupHealthCheck(getWithOneFailingRule());
+    public void shouldAdvertiseFailedRule()
+    {
+        StartupHealthCheck check = new StartupHealthCheck( getWithOneFailingRule() );
         check.run();
-        assertNotNull(check.failedRule()); 
+        assertNotNull( check.failedRule() );
     }
-    
-    private StartupHealthCheckRule[] getWithOneFailingRule() {
+
+    private StartupHealthCheckRule[] getWithOneFailingRule()
+    {
         StartupHealthCheckRule[] rules = new StartupHealthCheckRule[5];
-        
-        for(int i = 0; i < rules.length; i++) {
-            rules[i] = new StartupHealthCheckRule() {
+
+        for ( int i = 0; i < rules.length; i++ )
+        {
+            rules[i] = new StartupHealthCheckRule()
+            {
                 @Override
-                public boolean execute(Properties properties) {
+                public boolean execute( Properties properties )
+                {
                     return true;
                 }
 
                 @Override
-                public String getFailureMessage() {
+                public String getFailureMessage()
+                {
                     return "blah blah";
-                }};
+                }
+            };
         }
-        
-        rules[rules.length / 2] = new StartupHealthCheckRule() {
+
+        rules[rules.length / 2] = new StartupHealthCheckRule()
+        {
             @Override
-            public boolean execute(Properties properties) {
+            public boolean execute( Properties properties )
+            {
                 return false;
             }
 
             @Override
-            public String getFailureMessage() {
+            public String getFailureMessage()
+            {
                 return "blah blah";
-            }};
-        
+            }
+        };
+
         return rules;
     }
 
-    private StartupHealthCheckRule[] getPassingRules() {
+    private StartupHealthCheckRule[] getPassingRules()
+    {
         StartupHealthCheckRule[] rules = new StartupHealthCheckRule[5];
-        
-        for(int i = 0; i < rules.length; i++) {
-            rules[i] = new StartupHealthCheckRule() {
+
+        for ( int i = 0; i < rules.length; i++ )
+        {
+            rules[i] = new StartupHealthCheckRule()
+            {
                 @Override
-                public boolean execute(Properties properties) {
+                public boolean execute( Properties properties )
+                {
                     return true;
                 }
 
                 @Override
-                public String getFailureMessage() {
+                public String getFailureMessage()
+                {
                     return "blah blah";
-                }};
+                }
+            };
         }
-        
+
         return rules;
     }
 }

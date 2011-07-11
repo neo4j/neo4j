@@ -33,7 +33,7 @@ import javax.ws.rs.core.UriInfo;
 
 import org.junit.Test;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
-import org.neo4j.server.rest.web.EntityOutputFormat;
+import org.neo4j.test.server.EntityOutputFormat;
 
 public class RootServiceTest
 {
@@ -49,11 +49,14 @@ public class RootServiceTest
         Response serviceDefinition = svc.getServiceDefinition( uriInfo, output );
 
         assertEquals( 200, serviceDefinition.getStatus() );
-        Map<String,Object> result = (Map<String, Object>)output.getResultAsMap().get( "services" );
+        Map<String, Object> result = (Map<String, Object>) output.getResultAsMap()
+                .get( "services" );
 
-
-        assertThat( result.get( "console" ).toString(), containsString( String.format( "%sserver/console", uri.toString() ) ) );
-        assertThat( result.get( "jmx" ).toString(), containsString( String.format( "%sserver/jmx", uri.toString() ) ) );
-        assertThat( result.get( "monitor" ).toString(), containsString( String.format( "%sserver/monitor", uri.toString() ) ) );
+        assertThat( result.get( "console" )
+                .toString(), containsString( String.format( "%sserver/console", uri.toString() ) ) );
+        assertThat( result.get( "jmx" )
+                .toString(), containsString( String.format( "%sserver/jmx", uri.toString() ) ) );
+        assertThat( result.get( "monitor" )
+                .toString(), containsString( String.format( "%sserver/monitor", uri.toString() ) ) );
     }
 }

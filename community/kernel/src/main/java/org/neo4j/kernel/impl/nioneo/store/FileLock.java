@@ -35,7 +35,7 @@ public abstract class FileLock
         {
             return null;
         }
-        
+
         return new FileLock()
         {
             @Override
@@ -45,7 +45,7 @@ public abstract class FileLock
             }
         };
     }
-    
+
     public static FileLock getOsSpecificFileLock( String fileName, FileChannel channel )
             throws IOException
     {
@@ -54,19 +54,31 @@ public abstract class FileLock
             // Only grab one lock, say for the "neostore" file
             if ( fileName.endsWith( "neostore" ) )
             {
-                return getWindowsFileLock( new File( fileName ).getParentFile() );
+                return getLockFileBasedFileLock( new File( fileName ).getParentFile() );
             }
-            
+
             // For the rest just return placebo locks
             return new PlaceboFileLock();
+        }
+        else if ( fileName.endsWith( "neostore" ) && Config.osIsMacOS() )
+        {
+            FileLock regular = wrapOrNull( channel.tryLock() );
+            if ( regular == null ) return null;
+            FileLock extra = getLockFileBasedFileLock( new File( fileName ).getParentFile() );
+            if ( extra == null )
+            {
+                regular.release();
+                return null;
+            }
+            return new DoubleFileLock( regular, extra );
         }
         else
         {
             return wrapOrNull( channel.tryLock() );
         }
     }
-    
-    private static FileLock getWindowsFileLock( File storeDir ) throws IOException
+
+    private static FileLock getLockFileBasedFileLock( File storeDir ) throws IOException
     {
         File lockFile = new File( storeDir, "lock" );
         if ( !lockFile.exists() )
@@ -80,7 +92,7 @@ public abstract class FileLock
         java.nio.channels.FileLock fileChannelLock = null;
         try
         {
-            fileChannelLock = fileChannel.tryLock(); 
+            fileChannelLock = fileChannel.tryLock();
         }
         catch ( OverlappingFileLockException e )
         {
@@ -95,7 +107,7 @@ public abstract class FileLock
     }
 
     public abstract void release() throws IOException;
-    
+
     private static class PlaceboFileLock extends FileLock
     {
         @Override
@@ -103,7 +115,26 @@ public abstract class FileLock
         {
         }
     }
-    
+
+    private static class DoubleFileLock extends FileLock
+    {
+        private final FileLock regular;
+        private final FileLock extra;
+
+        DoubleFileLock( FileLock regular, FileLock extra )
+        {
+            this.regular = regular;
+            this.extra = extra;
+        }
+
+        @Override
+        public void release() throws IOException
+        {
+            regular.release();
+            extra.release();
+        }
+    }
+
     private static class WindowsFileLock extends FileLock
     {
         private final File lockFile;

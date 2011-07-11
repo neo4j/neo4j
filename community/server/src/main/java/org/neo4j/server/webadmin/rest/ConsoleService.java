@@ -47,17 +47,14 @@ public class ConsoleService implements AdvertisableService
     private final Database database;
     private final OutputFormat output;
 
-    public ConsoleService( SessionFactory sessionFactory, Database database,
-            OutputFormat output )
+    public ConsoleService( SessionFactory sessionFactory, Database database, OutputFormat output )
     {
         this.sessionFactory = sessionFactory;
         this.database = database;
         this.output = output;
     }
 
-    public ConsoleService( @Context Database database,
-                           @Context HttpServletRequest req,
-                           @Context OutputFormat output )
+    public ConsoleService( @Context Database database, @Context HttpServletRequest req, @Context OutputFormat output )
     {
         this( new SessionFactoryImpl( req.getSession( true ) ), database, output );
     }
@@ -100,20 +97,21 @@ public class ConsoleService implements AdvertisableService
 
         if ( !args.containsKey( "command" ) )
         {
-            return Response.status( Status.BAD_REQUEST ).entity(
-                    "Expected command argument not present." ).build();
+            return Response.status( Status.BAD_REQUEST )
+                    .entity( "Expected command argument not present." )
+                    .build();
         }
 
         ScriptSession scriptSession = getSession( args );
         log.trace( scriptSession.toString() );
 
-        String result = scriptSession.evaluate( (String)args.get( "command" ) );
+        String result = scriptSession.evaluate( (String) args.get( "command" ) );
 
         return output.ok( ValueRepresentation.string( result ) );
     }
 
     private ScriptSession getSession( Map<String, Object> args )
     {
-        return sessionFactory.createSession( (String)args.get( "engine" ), database );
+        return sessionFactory.createSession( (String) args.get( "engine" ), database );
     }
 }

@@ -101,7 +101,7 @@ public class PagedTraverserTest
 
         int iterations = iterateThroughPagedTraverser( traversalPager );
 
-        assertEquals(10, iterations);
+        assertEquals( 10, iterations );
         assertNull( traversalPager.next() );
 
     }
@@ -126,7 +126,7 @@ public class PagedTraverserTest
 
         int iterations = iterateThroughPagedTraverser( traversalPager );
 
-        assertEquals(15, iterations);
+        assertEquals( 15, iterations );
         assertNull( traversalPager.next() );
     }
 

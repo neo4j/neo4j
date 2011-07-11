@@ -21,7 +21,7 @@ package org.neo4j.shell.kernel.apps;
 
 import java.rmi.RemoteException;
 
-import org.neo4j.cypher.SyntaxError;
+import org.neo4j.cypher.SyntaxException;
 import org.neo4j.cypher.commands.Query;
 import org.neo4j.cypher.javacompat.CypherParser;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
@@ -40,14 +40,9 @@ import org.neo4j.shell.ShellException;
 @Service.Implementation( App.class )
 public class Start extends GraphDatabaseApp
 {
-    /**
-     * Constructs a new "q" application.
-     */
     public Start()
     {
         super();
-//        this.addOptionDefinition( "o", new OptionDefinition( OptionValueType.NONE,
-//            "To override if the key already exists" ) );
     }
 
     @Override
@@ -62,9 +57,9 @@ public class Start extends GraphDatabaseApp
         throws ShellException, RemoteException
     {
         String query = "start";
-        for (String i : parser.arguments()) 
+        for ( String argument : parser.arguments() )
         {
-            query += " " + i.replace( "'", "\"" );
+            query += " " + argument;
         }
         CypherParser qparser = new CypherParser();
         ExecutionEngine engine = new ExecutionEngine( getServer().getDb() );
@@ -72,13 +67,12 @@ public class Start extends GraphDatabaseApp
         {
             Query cquery = qparser.parse( query );
             ExecutionResult result = engine.execute( cquery );
-            out.print( result.toString());
+            out.println( result.toString() );
         }
-        catch ( SyntaxError e )
+        catch ( SyntaxException e )
         {
             throw ShellException.wrapCause( e );
         }
-        //out.println( query );
         return null;
     }
 }

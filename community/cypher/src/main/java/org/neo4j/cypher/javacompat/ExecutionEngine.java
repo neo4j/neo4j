@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.javacompat;
 
+import org.neo4j.cypher.SyntaxException;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.cypher.SyntaxError;
 import org.neo4j.cypher.commands.Query;
 
 /**
@@ -43,10 +43,10 @@ public class ExecutionEngine
      * Executes a {@link Query} and returns an iterable that contains the result set
      * @param query The query to execute
      * @return A ExecutionResult that contains the result set
-     * @throws SyntaxError If the Query contains errors,
-     * a SyntaxError exception might be thrown
+     * @throws org.neo4j.cypher.SyntaxException If the Query contains errors,
+     * a SyntaxException exception might be thrown
      */
-    public ExecutionResult execute( Query query ) throws SyntaxError
+    public ExecutionResult execute( Query query ) throws SyntaxException
     {
         return new ExecutionResult(inner.execute( query ));
     }

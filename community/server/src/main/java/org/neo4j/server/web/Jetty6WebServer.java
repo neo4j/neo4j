@@ -19,8 +19,22 @@
  */
 package org.neo4j.server.web;
 
-import com.sun.jersey.api.core.ResourceConfig;
-import com.sun.jersey.spi.container.servlet.ServletContainer;
+import static java.lang.String.format;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.SessionManager;
@@ -36,35 +50,28 @@ import org.neo4j.server.NeoServer;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.web.AllowAjaxFilter;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
-
-import static java.lang.String.format;
+import com.sun.jersey.api.core.ResourceConfig;
+import com.sun.jersey.spi.container.servlet.ServletContainer;
 
 public class Jetty6WebServer implements WebServer
 {
     public static final Logger log = Logger.getLogger( Jetty6WebServer.class );
     public static final int DEFAULT_PORT = 80;
-    private static final int JETTY_DEFAULT_MAX_THREADS = 10 * Runtime.getRuntime().availableProcessors();
 
     private Server jetty;
     private int jettyPort = DEFAULT_PORT;
-    private Integer jettyMaxThreads;
 
     private final HashMap<String, String> staticContent = new HashMap<String, String>();
     private final HashMap<String, ServletHolder> jaxRSPackages = new HashMap<String, ServletHolder>();
 
     private NeoServer server;
+    private int jettyMaxThreads = tenThreadsPerProcessor();
+
+    private int tenThreadsPerProcessor()
+    {
+        return 10 * Runtime.getRuntime()
+                .availableProcessors();
+    }
 
     @Override
     public void setNeoServer( NeoServer server )
@@ -75,7 +82,7 @@ public class Jetty6WebServer implements WebServer
     @Override
     public void start()
     {
-        if (jetty == null)
+        if ( jetty == null )
         {
             throw new IllegalStateException( "Jetty not initialized." );
         }
@@ -92,30 +99,32 @@ public class Jetty6WebServer implements WebServer
     {
         SessionManager sm = new HashSessionManager();
 
-        final SortedSet<String> mountpoints = new TreeSet<String>(new Comparator<String>() {
-            @Override public int compare(final String o1, final String o2) {
-                return o2.compareTo(o1);
+        final SortedSet<String> mountpoints = new TreeSet<String>( new Comparator<String>()
+        {
+            @Override
+            public int compare( final String o1, final String o2 )
+            {
+                return o2.compareTo( o1 );
             }
-        });
+        } );
 
-        mountpoints.addAll(staticContent.keySet());
-        mountpoints.addAll(jaxRSPackages.keySet());
+        mountpoints.addAll( staticContent.keySet() );
+        mountpoints.addAll( jaxRSPackages.keySet() );
 
-        for (String contentKey : mountpoints)
+        for ( String contentKey : mountpoints )
         {
             final boolean isStatic = staticContent.containsKey( contentKey );
             final boolean isJaxrs = jaxRSPackages.containsKey( contentKey );
 
-            if (isStatic && isJaxrs)
+            if ( isStatic && isJaxrs )
             {
-                throw new RuntimeException(
-                        format( "content-key '%s' is mapped twice (static and jaxrs)", contentKey ) );
+                throw new RuntimeException( format( "content-key '%s' is mapped twice (static and jaxrs)", contentKey ) );
             }
-            else if (isStatic)
+            else if ( isStatic )
             {
                 loadStaticContent( sm, contentKey );
             }
-            else if (isJaxrs)
+            else if ( isJaxrs )
             {
                 loadJAXRSPackage( sm, contentKey );
             }
@@ -129,16 +138,10 @@ public class Jetty6WebServer implements WebServer
     @Override
     public void init()
     {
-        if (jetty == null)
+        if ( jetty == null )
         {
             jetty = new Server( jettyPort );
-            if ( jettyMaxThreads != null )
-            {
-                jetty.setThreadPool( new QueuedThreadPool( jettyMaxThreads ) );
-            } else 
-            {
-                jetty.setThreadPool( new QueuedThreadPool( JETTY_DEFAULT_MAX_THREADS ) );
-            }
+            jetty.setThreadPool( new QueuedThreadPool( jettyMaxThreads ) );
         }
     }
 
@@ -191,7 +194,8 @@ public class Jetty6WebServer implements WebServer
         ServletContainer container = new NeoServletContainer( server, server.getInjectables( packageNames ) );
         ServletHolder servletHolder = new ServletHolder( container );
         servletHolder.setInitParameter( "com.sun.jersey.config.property.packages", toCommaSeparatedList( packageNames ) );
-        servletHolder.setInitParameter( ResourceConfig.PROPERTY_CONTAINER_RESPONSE_FILTERS, AllowAjaxFilter.class.getName() );
+        servletHolder.setInitParameter( ResourceConfig.PROPERTY_CONTAINER_RESPONSE_FILTERS,
+                AllowAjaxFilter.class.getName() );
         log.debug( "Adding JAXRS packages %s at [%s]", packageNames, mountPoint );
 
         jaxRSPackages.put( mountPoint, servletHolder );
@@ -305,7 +309,8 @@ public class Jetty6WebServer implements WebServer
         return result.substring( 0, result.length() - 2 );
     }
 
-    @Override public Server getJetty()
+    @Override
+    public Server getJetty()
     {
         return jetty;
     }

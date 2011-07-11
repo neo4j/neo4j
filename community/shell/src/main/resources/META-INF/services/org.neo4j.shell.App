@@ -11,6 +11,7 @@ org.neo4j.shell.kernel.apps.Pwd
 org.neo4j.shell.kernel.apps.Start
 org.neo4j.shell.kernel.apps.Rm
 org.neo4j.shell.kernel.apps.Rmrel
+org.neo4j.shell.kernel.apps.Rmnode
 org.neo4j.shell.kernel.apps.Set
 org.neo4j.shell.kernel.apps.Trav
 org.neo4j.shell.kernel.apps.Index

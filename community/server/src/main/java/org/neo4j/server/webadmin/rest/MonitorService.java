@@ -69,7 +69,6 @@ public class MonitorService implements AdvertisableService
     public static final long MAX_TIMESPAN = 1000l * 60l * 60l * 24l * 365l * 5;
     public static final long DEFAULT_TIMESPAN = 1000 * 60 * 60 * 24;
 
-
     @GET
     public Response getServiceDefinition()
     {
@@ -98,24 +97,25 @@ public class MonitorService implements AdvertisableService
 
     @GET
     @Path( DATA_SPAN_PATH )
-    public Response getData( @PathParam( "start" ) long start,
-                             @PathParam( "stop" ) long stop )
+    public Response getData( @PathParam( "start" ) long start, @PathParam( "stop" ) long stop )
     {
         if ( start >= stop || ( stop - start ) > MAX_TIMESPAN )
         {
-            String message = String.format( "Start time must be before stop time, and the total time span can be no bigger than %dms. Time span was %dms.", MAX_TIMESPAN, ( stop - start ) );
+            String message = String.format(
+                    "Start time must be before stop time, and the total time span can be no bigger than %dms. Time span was %dms.",
+                    MAX_TIMESPAN, ( stop - start ) );
             return output.badRequest( new IllegalArgumentException( message ) );
         }
 
         try
         {
 
-            FetchRequest request = rrdDb.createFetchRequest(
-                    ConsolFun.AVERAGE, start, stop,
-                    getResolutionFor( stop - start ) );
+            FetchRequest request = rrdDb.createFetchRequest( ConsolFun.AVERAGE, start, stop, getResolutionFor( stop
+                                                                                                               - start ) );
 
             return output.ok( new RrdDataRepresentation( request.fetchData() ) );
-        } catch ( Exception e )
+        }
+        catch ( Exception e )
         {
             return output.serverError( e );
         }
@@ -123,7 +123,7 @@ public class MonitorService implements AdvertisableService
 
     private long getResolutionFor( long timespan )
     {
-        long preferred = (long)Math.floor( timespan / ( RrdFactory.STEPS_PER_ARCHIVE * 2 ) );
+        long preferred = (long) Math.floor( timespan / ( RrdFactory.STEPS_PER_ARCHIVE * 2 ) );
 
         // Don't allow resolutions smaller than the actual minimum resolution
         return preferred > RrdFactory.STEP_SIZE ? preferred : RrdFactory.STEP_SIZE;

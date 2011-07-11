@@ -30,8 +30,7 @@ import org.junit.Test;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.FunctionalTestHelper;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
+import org.neo4j.server.rest.JaxRsResponse;
 
 public class NeoServerDefaultPortFunctionalTest
 {
@@ -60,16 +59,12 @@ public class NeoServerDefaultPortFunctionalTest
     }
 
     @Test
-    public void shouldDefaultToSensiblePortIfNoneSpecifiedInConfig() throws Exception
-    {
+    public void shouldDefaultToSensiblePortIfNoneSpecifiedInConfig() throws Exception {
 
-        FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper( server );
+        FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server);
 
-        ClientResponse response = Client.create()
-                .resource( functionalTestHelper.getWebadminUri() )
-                .get( ClientResponse.class );
+        JaxRsResponse response = functionalTestHelper.get(functionalTestHelper.getWebadminUri());
 
-        assertThat( response.getStatus(), is( 200 ) );
-        response.close();
+        assertThat(response.getStatus(), is(200));
     }
 }

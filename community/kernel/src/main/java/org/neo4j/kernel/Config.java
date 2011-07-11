@@ -278,6 +278,12 @@ public class Config
         return nameOs.startsWith( "Windows" );
     }
 
+    public static boolean osIsMacOS()
+    {
+        String nameOs = System.getProperty( "os.name" );
+        return nameOs.equalsIgnoreCase( "Mac OS X" );
+    }
+
     void setPersistenceSource( String name, boolean create )
     {
         persistenceSourceName = name;

@@ -55,27 +55,28 @@ public final class PluginManager implements ExtensionInjector, PluginInvocator
             try
             {
                 plugin.loadServerExtender( extender );
-            } catch ( Exception ex )
+            }
+            catch ( Exception ex )
             {
                 log.warn( "Failed to load plugin [%s]: %s", plugin.toString(), ex.getMessage() );
                 continue;
-            } catch ( LinkageError err )
+            }
+            catch ( LinkageError err )
             {
                 log.warn( "Failed to load plugin [%s]: %s", plugin.toString(), err.getMessage() );
                 continue;
             }
-            Pair<ServerPlugin, ServerExtender> old = extensions.put( plugin.name, Pair.of(
-                    plugin, extender ) );
+            Pair<ServerPlugin, ServerExtender> old = extensions.put( plugin.name, Pair.of( plugin, extender ) );
             if ( old != null )
             {
-                log.warn( String.format(
-                        "Extension naming conflict \"%s\" between \"%s\" and \"%s\"",
-                        plugin.name, old.first().getClass(), plugin.getClass() ) );
+                log.warn( String.format( "Extension naming conflict \"%s\" between \"%s\" and \"%s\"", plugin.name,
+                        old.first()
+                                .getClass(), plugin.getClass() ) );
             }
         }
         for ( Pair<ServerPlugin, ServerExtender> extension : extensions.values() )
         {
-            log.info( String.format( "Loaded server plugin \"%s\"", extension.first().name ));
+            log.info( String.format( "Loaded server plugin \"%s\"", extension.first().name ) );
             this.extensions.put( extension.first().name, extension.other() );
         }
     }
@@ -87,7 +88,8 @@ public final class PluginManager implements ExtensionInjector, PluginInvocator
         for ( Map.Entry<String, ServerExtender> extension : extensions.entrySet() )
         {
             List<String> methods = new ArrayList<String>();
-            for ( PluginPoint method : extension.getValue().getExtensionsFor( type ) )
+            for ( PluginPoint method : extension.getValue()
+                    .getExtensionsFor( type ) )
             {
                 methods.add( method.name() );
             }
@@ -99,8 +101,7 @@ public final class PluginManager implements ExtensionInjector, PluginInvocator
         return result;
     }
 
-    private PluginPoint extension( String name, Class<?> type, String method )
-            throws PluginLookupException
+    private PluginPoint extension( String name, Class<?> type, String method ) throws PluginLookupException
     {
         ServerExtender extender = extensions.get( name );
         if ( extender == null )
@@ -119,14 +120,14 @@ public final class PluginManager implements ExtensionInjector, PluginInvocator
 
     private ExtensionPointRepresentation describe( PluginPoint extension )
     {
-        ExtensionPointRepresentation representation = new ExtensionPointRepresentation( extension.name(), extension.forType(), extension.getDescription() );
+        ExtensionPointRepresentation representation = new ExtensionPointRepresentation( extension.name(),
+                extension.forType(), extension.getDescription() );
         extension.describeParameters( representation );
         return representation;
     }
 
     @Override
-    public List<ExtensionPointRepresentation> describeAll( String name )
-            throws PluginLookupException
+    public List<ExtensionPointRepresentation> describeAll( String name ) throws PluginLookupException
     {
         ServerExtender extender = extensions.get( name );
         if ( extender == null )
@@ -142,24 +143,28 @@ public final class PluginManager implements ExtensionInjector, PluginInvocator
     }
 
     @Override
-    public <T> Representation invoke( AbstractGraphDatabase graphDb, String name, Class<T> type,
-                                      String method, T context, ParameterList params ) throws PluginLookupException,
-            BadInputException, PluginInvocationFailureException, BadPluginInvocationException
+    public <T> Representation invoke( AbstractGraphDatabase graphDb, String name, Class<T> type, String method,
+            T context, ParameterList params ) throws PluginLookupException, BadInputException,
+            PluginInvocationFailureException, BadPluginInvocationException
     {
         PluginPoint plugin = extension( name, type, method );
         try
         {
             return plugin.invoke( graphDb, context, params );
-        } catch ( BadInputException e )
+        }
+        catch ( BadInputException e )
         {
             throw e;
-        } catch ( BadPluginInvocationException e )
+        }
+        catch ( BadPluginInvocationException e )
         {
             throw e;
-        } catch ( PluginInvocationFailureException e )
+        }
+        catch ( PluginInvocationFailureException e )
         {
             throw e;
-        } catch ( Exception e )
+        }
+        catch ( Exception e )
         {
             throw new PluginInvocationFailureException( e );
         }

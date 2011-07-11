@@ -26,17 +26,21 @@ import org.neo4j.server.rrd.Job;
 import org.neo4j.server.rrd.JobScheduler;
 import org.neo4j.server.rrd.ScheduledJob;
 
-public class RoundRobinJobScheduler implements JobScheduler {
-    
+public class RoundRobinJobScheduler implements JobScheduler
+{
+
     private List<ScheduledJob> scheduledJobs = new LinkedList<ScheduledJob>();
 
-    public void scheduleToRunEveryXSeconds(Job job, String jobName, int runEveryXSeconds) {
-        ScheduledJob scheduledJob = new ScheduledJob(job, jobName, 3);
-        scheduledJobs.add(scheduledJob);
+    public void scheduleToRunEveryXSeconds( Job job, String jobName, int runEveryXSeconds )
+    {
+        ScheduledJob scheduledJob = new ScheduledJob( job, jobName, 3 );
+        scheduledJobs.add( scheduledJob );
     }
 
-    public void stopJobs() {
-        for (ScheduledJob job : scheduledJobs) {
+    public void stopJobs()
+    {
+        for ( ScheduledJob job : scheduledJobs )
+        {
             job.kill();
         }
     }

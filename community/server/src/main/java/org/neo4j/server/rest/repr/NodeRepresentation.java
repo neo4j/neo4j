@@ -22,8 +22,8 @@ package org.neo4j.server.rest.repr;
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.collection.IterableWrapper;
 
-public final class NodeRepresentation extends ObjectRepresentation implements
-        ExtensibleRepresentation, EntityRepresentation
+public final class NodeRepresentation extends ObjectRepresentation implements ExtensibleRepresentation,
+        EntityRepresentation
 {
     private final Node node;
 
@@ -119,7 +119,7 @@ public final class NodeRepresentation extends ObjectRepresentation implements
     {
         return ValueRepresentation.template( path( "/traverse/{returnType}" ) );
     }
-    
+
     @Mapping( "paged_traverse" )
     public ValueRepresentation pagedTraverseUriTemplate()
     {
@@ -134,23 +134,21 @@ public final class NodeRepresentation extends ObjectRepresentation implements
         new PropertiesRepresentation( node ).serialize( properties );
         if ( writer.isInteractive() )
         {
-            serializer.putList(
-                    "relationship_types",
-                    ListRepresentation.relationshipTypes( node.getGraphDatabase().getRelationshipTypes() ) );
+            serializer.putList( "relationship_types", ListRepresentation.relationshipTypes( node.getGraphDatabase()
+                    .getRelationshipTypes() ) );
         }
         properties.done();
     }
 
     public static ListRepresentation list( Iterable<Node> nodes )
     {
-        return new ListRepresentation( RepresentationType.NODE,
-                new IterableWrapper<Representation, Node>( nodes )
-                {
-                    @Override
-                    protected Representation underlyingObjectToObject( Node node )
-                    {
-                        return new NodeRepresentation( node );
-                    }
-                } );
+        return new ListRepresentation( RepresentationType.NODE, new IterableWrapper<Representation, Node>( nodes )
+        {
+            @Override
+            protected Representation underlyingObjectToObject( Node node )
+            {
+                return new NodeRepresentation( node );
+            }
+        } );
     }
 }

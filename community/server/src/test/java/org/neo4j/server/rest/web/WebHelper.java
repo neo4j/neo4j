@@ -27,41 +27,51 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 
-public class WebHelper {
+public class WebHelper
+{
     private final URI baseUri;
     private GraphDbHelper helper;
 
-    public WebHelper(URI baseUri, Database database) {
+    public WebHelper( URI baseUri, Database database )
+    {
         this.baseUri = baseUri;
-        this.helper = new GraphDbHelper(database);
+        this.helper = new GraphDbHelper( database );
 
     }
 
-    public URI createNode() throws DatabaseBlockedException {
+    public URI createNode() throws DatabaseBlockedException
+    {
         long nodeId = helper.createNode();
-        try {
-            return new URI(baseUri.toString() + "/" + nodeId);
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
+        try
+        {
+            return new URI( baseUri.toString() + "/" + nodeId );
+        }
+        catch ( URISyntaxException e )
+        {
+            throw new RuntimeException( e );
         }
     }
 
-    public URI createNodeWithProperties(Map<String, Object> props) throws DatabaseBlockedException {
+    public URI createNodeWithProperties( Map<String, Object> props ) throws DatabaseBlockedException
+    {
         URI nodeUri = createNode();
-        setNodeProperties(nodeUri, props);
+        setNodeProperties( nodeUri, props );
         return nodeUri;
     }
 
-    private void setNodeProperties(URI nodeUri, Map<String, Object> props) throws DatabaseBlockedException {
-        helper.setNodeProperties(extractNodeId(nodeUri), props);
+    private void setNodeProperties( URI nodeUri, Map<String, Object> props ) throws DatabaseBlockedException
+    {
+        helper.setNodeProperties( extractNodeId( nodeUri ), props );
     }
 
-    private long extractNodeId(URI nodeUri) {
+    private long extractNodeId( URI nodeUri )
+    {
         String path = nodeUri.getPath();
-        if (path.startsWith("/")) {
-            path = path.substring(1);
+        if ( path.startsWith( "/" ) )
+        {
+            path = path.substring( 1 );
         }
 
-        return Long.parseLong(path);
+        return Long.parseLong( path );
     }
 }

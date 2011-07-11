@@ -24,10 +24,18 @@ public class PropertyDatas
     private static abstract class PrimitivePropertyData implements PropertyData
     {
         private final int index;
+        private final long id;
         
-        PrimitivePropertyData( int index )
+        PrimitivePropertyData( int index, long id )
         {
             this.index = index;
+            this.id = id;
+        }
+        
+        @Override
+        public long getId()
+        {
+            return id;
         }
         
         @Override
@@ -46,147 +54,212 @@ public class PropertyDatas
     
     private static class BooleanPropertyData extends PrimitivePropertyData
     {
-        // [viii,iiii][iiii,iiii]...and 6 more bytes of id...
-        private final long idAndValue;
-
+        private final boolean value;
+        
         private BooleanPropertyData( int index, long id, boolean value )
         {
-            super( index );
-            this.idAndValue = id | ((long)((value?1:0))<<63);
-        }
-        
-        @Override
-        public long getId()
-        {
-            return idAndValue&0x7FFFFFFFFFFFFFFFL;
+            super( index, id );
+            this.value = value;
         }
 
+        @SuppressWarnings( "boxing" )
         @Override
         public Object getValue()
         {
-            return (idAndValue&0x8000000000000000L) != 0;
+            return value;
         }
     }
+    
+//    private static class LowBooleanPropertyData extends PrimitivePropertyData
+//    {
+//        // [viii,iiii][iiii,iiii]...and 6 more bytes of id...
+//        private final long idAndValue;
+//
+//        private BooleanPropertyData( int index, long id, boolean value )
+//        {
+//            super( index );
+//            this.idAndValue = id | ((long)((value?1:0))<<63);
+//        }
+//        
+//        @Override
+//        public long getId()
+//        {
+//            return idAndValue&0x7FFFFFFFFFFFFFFFL;
+//        }
+//
+//        @Override
+//        public Object getValue()
+//        {
+//            return (idAndValue&0x8000000000000000L) != 0;
+//        }
+//    }
     
     private static class BytePropertyData extends PrimitivePropertyData
     {
-        // [vvvv,vvvv][iiii,iiii]...and 6 more bytes of id...
-        private final long idAndValue;
-
+        private final byte value;
+        
         private BytePropertyData( int index, long id, byte value )
         {
-            super( index );
-            this.idAndValue = id | (((long)value)<<56);
-        }
-        
-        @Override
-        public long getId()
-        {
-            return idAndValue&0x00FFFFFFFFFFFFFFL;
+            super( index, id );
+            this.value = value;
         }
 
+        @SuppressWarnings( "boxing" )
         @Override
         public Object getValue()
         {
-            return (byte)((idAndValue&0xFF00000000000000L)>>56);
+            return value;
         }
     }
+    
+//    private static class LowBytePropertyData extends PrimitivePropertyData
+//    {
+//        // [vvvv,vvvv][iiii,iiii]...and 6 more bytes of id...
+//        private final long idAndValue;
+//
+//        private BytePropertyData( int index, long id, byte value )
+//        {
+//            super( index );
+//            this.idAndValue = id | (((long)value)<<56);
+//        }
+//        
+//        @Override
+//        public long getId()
+//        {
+//            return idAndValue&0x00FFFFFFFFFFFFFFL;
+//        }
+//
+//        @Override
+//        public Object getValue()
+//        {
+//            return (byte)((idAndValue&0xFF00000000000000L)>>56);
+//        }
+//    }
     
     private static class ShortPropertyData extends PrimitivePropertyData
     {
-        private final long idAndValue;
-
-        // [vvvv,vvvv][vvvv,vvvv][iiii,iiii]...and 5 more bytes of id...
+        private final short value;
+        
         private ShortPropertyData( int index, long id, short value )
         {
-            super( index );
-            this.idAndValue = id | (((long)value)<<48);
-        }
-        
-        @Override
-        public long getId()
-        {
-            return idAndValue&0x0000FFFFFFFFFFFFL;
+            super( index, id );
+            this.value = value;
         }
 
+        @SuppressWarnings( "boxing" )
         @Override
         public Object getValue()
         {
-            return (short)((idAndValue&0xFFFF000000000000L)>>48);
+            return value;
         }
     }
+    
+//    private static class LowShortPropertyData extends PrimitivePropertyData
+//    {
+//        private final long idAndValue;
+//
+//        // [vvvv,vvvv][vvvv,vvvv][iiii,iiii]...and 5 more bytes of id...
+//        private ShortPropertyData( int index, long id, short value )
+//        {
+//            super( index );
+//            this.idAndValue = id | (((long)value)<<48);
+//        }
+//        
+//        @Override
+//        public long getId()
+//        {
+//            return idAndValue&0x0000FFFFFFFFFFFFL;
+//        }
+//
+//        @Override
+//        public Object getValue()
+//        {
+//            return (short)((idAndValue&0xFFFF000000000000L)>>48);
+//        }
+//    }
     
     private static class CharPropertyData extends PrimitivePropertyData
     {
-        private final long idAndValue;
-
-        // [vvvv,vvvv][vvvv,vvvv][iiii,iiii]...and 5 more bytes of id...
+        private final char value;
+        
         private CharPropertyData( int index, long id, char value )
         {
-            super( index );
-            this.idAndValue = id | (((long)value)<<48);
-        }
-        
-        @Override
-        public long getId()
-        {
-            return idAndValue&0x0000FFFFFFFFFFFFL;
+            super( index, id );
+            this.value = value;
         }
 
+        @SuppressWarnings( "boxing" )
         @Override
         public Object getValue()
         {
-            return (char)((idAndValue&0xFFFF000000000000L)>>48);
+            return value;
         }
     }
     
-    private static class LowIntPropertyData extends PrimitivePropertyData
-    {
-        // A value fitting in here must be less than this
-        private static final int LIMIT = (int) Math.pow( 2, 28 );
-        
-        // Property ID is max 36 bits so there are 28 bits left for an int.
-        // Wether it fits or not is decided by the called of this constructor.
-        // [vvvv,vvvv][vvvv,vvvv][vvvv,vvvv][vvvv,iiii][iiii,iiii]...3 more bytes id...
-        private final long idAndValue;
-
-        private LowIntPropertyData( int index, long id, int value )
-        {
-            super( index );
-            this.idAndValue = id | (((long)value)<<36);
-        }
-
-        @Override
-        public long getId()
-        {
-            return idAndValue&0xFFFFFFFFFL;
-        }
-
-        @Override
-        public Object getValue()
-        {
-            return (int)((idAndValue&0xFFFFFFF000000000L)>>36);
-        }
-    }
+//    private static class LowCharPropertyData extends PrimitivePropertyData
+//    {
+//        private final long idAndValue;
+//
+//        // [vvvv,vvvv][vvvv,vvvv][iiii,iiii]...and 5 more bytes of id...
+//        private CharPropertyData( int index, long id, char value )
+//        {
+//            super( index );
+//            this.idAndValue = id | (((long)value)<<48);
+//        }
+//        
+//        @Override
+//        public long getId()
+//        {
+//            return idAndValue&0x0000FFFFFFFFFFFFL;
+//        }
+//
+//        @Override
+//        public Object getValue()
+//        {
+//            return (char)((idAndValue&0xFFFF000000000000L)>>48);
+//        }
+//    }
+    
+//    private static class LowIntPropertyData extends PrimitivePropertyData
+//    {
+//        // A value fitting in here must be less than this
+//        private static final int LIMIT = (int) Math.pow( 2, 28 );
+//        
+//        // Property ID is max 36 bits so there are 28 bits left for an int.
+//        // Wether it fits or not is decided by the called of this constructor.
+//        // [vvvv,vvvv][vvvv,vvvv][vvvv,vvvv][vvvv,iiii][iiii,iiii]...3 more bytes id...
+//        private final long idAndValue;
+//
+//        private LowIntPropertyData( int index, long id, int value )
+//        {
+//            super( index );
+//            this.idAndValue = id | (((long)value)<<36);
+//        }
+//
+//        @Override
+//        public long getId()
+//        {
+//            return idAndValue&0xFFFFFFFFFL;
+//        }
+//
+//        @Override
+//        public Object getValue()
+//        {
+//            return (int)((idAndValue&0xFFFFFFF000000000L)>>36);
+//        }
+//    }
     
     private static class IntPropertyData extends PrimitivePropertyData
     {
-        private final long id;
         private final int value;
 
         private IntPropertyData( int index, long id, int value )
         {
-            super( index );
-            this.id = id;
+            super( index, id );
             this.value = value;
         }
-        
-        @Override
-        public long getId()
-        {
-            return id;
-        }
 
+        @SuppressWarnings( "boxing" )
         @Override
         public Object getValue()
         {
@@ -194,50 +267,43 @@ public class PropertyDatas
         }
     }
     
-    private static class LowLongPropertyData extends PrimitivePropertyData
-    {
-        // A value fitting in here must be less than this
-        private static final long LIMIT = (long) Math.pow( 2, 28 );
-        
-        private final long idAndValue;
-
-        private LowLongPropertyData( int index, long id, long value )
-        {
-            super( index );
-            this.idAndValue = id | (value<<36);
-        }
-        
-        @Override
-        public long getId()
-        {
-            return idAndValue&0xFFFFFFFFFL;
-        }
-
-        @Override
-        public Object getValue()
-        {
-            return (idAndValue&0xFFFFFFF000000000L)>>36;
-        }
-    }
+//    private static class LowLongPropertyData extends PrimitivePropertyData
+//    {
+//        // A value fitting in here must be less than this
+//        private static final long LIMIT = (long) Math.pow( 2, 28 );
+//        
+//        private final long idAndValue;
+//
+//        private LowLongPropertyData( int index, long id, long value )
+//        {
+//            super( index );
+//            this.idAndValue = id | (value<<36);
+//        }
+//        
+//        @Override
+//        public long getId()
+//        {
+//            return idAndValue&0xFFFFFFFFFL;
+//        }
+//
+//        @Override
+//        public Object getValue()
+//        {
+//            return (idAndValue&0xFFFFFFF000000000L)>>36;
+//        }
+//    }
     
     private static class LongPropertyData extends PrimitivePropertyData
     {
-        private final long id;
         private final long value;
 
         private LongPropertyData( int index, long id, long value )
         {
-            super( index );
-            this.id = id;
+            super( index, id );
             this.value = value;
         }
-        
-        @Override
-        public long getId()
-        {
-            return id;
-        }
 
+        @SuppressWarnings( "boxing" )
         @Override
         public Object getValue()
         {
@@ -245,24 +311,14 @@ public class PropertyDatas
         }
     }
     
-    // TODO LowFloatPropertyData?
-    
     private static class FloatPropertyData extends PrimitivePropertyData
     {
-        private final long id;
         private final float value;
 
         private FloatPropertyData( int index, long id, float value )
         {
-            super( index );
-            this.id = id;
+            super( index, id );
             this.value = value;
-        }
-        
-        @Override
-        public long getId()
-        {
-            return id;
         }
 
         @Override
@@ -272,26 +328,17 @@ public class PropertyDatas
         }
     }
 
-    // TODO LowDoublePropertyData?
-    
     private static class DoublePropertyData extends PrimitivePropertyData
     {
-        private final long id;
         private final double value;
 
         private DoublePropertyData( int index, long id, double value )
         {
-            super( index );
-            this.id = id;
+            super( index, id );
             this.value = value;
         }
-        
-        @Override
-        public long getId()
-        {
-            return id;
-        }
 
+        @SuppressWarnings( "boxing" )
         @Override
         public Object getValue()
         {
@@ -358,16 +405,12 @@ public class PropertyDatas
 
     public static PropertyData forInt( int index, long id, int value )
     {
-        return value >= 0 && value < LowIntPropertyData.LIMIT ?
-                new LowIntPropertyData( index, id, value ) :
-                new IntPropertyData( index, id, value );
+        return new IntPropertyData( index, id, value );
     }
 
     public static PropertyData forLong( int index, long id, long value )
     {
-        return value >= 0 && value < LowLongPropertyData.LIMIT ?
-                new LowLongPropertyData( index, id, value ) :
-                new LongPropertyData( index, id, value );
+        return new LongPropertyData( index, id, value );
     }
 
     public static PropertyData forFloat( int index, long id, float value )

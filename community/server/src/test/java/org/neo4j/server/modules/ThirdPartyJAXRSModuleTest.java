@@ -36,24 +36,24 @@ import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 import org.neo4j.server.web.WebServer;
 
-
-public class ThirdPartyJAXRSModuleTest {
+public class ThirdPartyJAXRSModuleTest
+{
     @Test
-    public void shouldReportThirdPartyPackagesAtSpecifiedMount() throws Exception {
-        WebServer webServer = mock(WebServer.class);
+    public void shouldReportThirdPartyPackagesAtSpecifiedMount() throws Exception
+    {
+        WebServer webServer = mock( WebServer.class );
 
-        NeoServerWithEmbeddedWebServer neoServer = mock(NeoServerWithEmbeddedWebServer.class);
-        when(neoServer.baseUri()).thenReturn(new URI("http://localhost:7575"));
-        when(neoServer.getWebServer()).thenReturn(webServer);
+        NeoServerWithEmbeddedWebServer neoServer = mock( NeoServerWithEmbeddedWebServer.class );
+        when( neoServer.baseUri() ).thenReturn( new URI( "http://localhost:7575" ) );
+        when( neoServer.getWebServer() ).thenReturn( webServer );
 
-        Configurator configurator = mock(PropertyFileConfigurator.class);
+        Configurator configurator = mock( PropertyFileConfigurator.class );
         HashSet<ThirdPartyJaxRsPackage> jaxRsPackages = new HashSet<ThirdPartyJaxRsPackage>();
         String path = "/third/party/package";
-        jaxRsPackages.add(new ThirdPartyJaxRsPackage("org.example.neo4j", path));
-        when(configurator.getThirdpartyJaxRsClasses()).thenReturn(jaxRsPackages);
+        jaxRsPackages.add( new ThirdPartyJaxRsPackage( "org.example.neo4j", path ) );
+        when( configurator.getThirdpartyJaxRsClasses() ).thenReturn( jaxRsPackages );
 
-        when(neoServer.getConfigurator()).thenReturn(configurator);
-
+        when( neoServer.getConfigurator() ).thenReturn( configurator );
 
         ThirdPartyJAXRSModule module = new ThirdPartyJAXRSModule();
         module.start( neoServer );

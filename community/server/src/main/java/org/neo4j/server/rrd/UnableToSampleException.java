@@ -21,8 +21,7 @@ package org.neo4j.server.rrd;
 
 public class UnableToSampleException extends RuntimeException
 {
-    
-    private static final long serialVersionUID = 112443232112435425L;
 
+    private static final long serialVersionUID = 112443232112435425L;
 
 }

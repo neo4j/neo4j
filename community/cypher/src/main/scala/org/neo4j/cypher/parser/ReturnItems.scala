@@ -38,7 +38,7 @@ trait ReturnItems extends JavaTokenParsers with Tokens {
     case c ~ "." ~ p ~ "?" => NullablePropertyOutput(c, p)
   }
 
-  def relationshipTypeOutput: Parser[ReturnItem] = identity <~ ":TYPE" ^^ {
+  def relationshipTypeOutput: Parser[ReturnItem] = identity <~ "~TYPE" ^^ {
     case c => RelationshipTypeOutput(c)
   }
 

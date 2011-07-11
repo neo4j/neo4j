@@ -91,6 +91,9 @@ public class Trav extends ReadOnlyGraphDatabaseApp
                 "Depth limit" ) );
         this.addOptionDefinition( "e", new OptionDefinition( OptionValueType.MUST,
                 "Custom javascript evaluator" ) );
+        this.addOptionDefinition( "u", new OptionDefinition( OptionValueType.MUST,
+                "Uniqueness of the entities encountered during traversal " +
+                niceEnumAlternatives( Uniqueness.class ) ) );
     }
 
     @Override

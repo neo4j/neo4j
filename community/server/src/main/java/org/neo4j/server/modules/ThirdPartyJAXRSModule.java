@@ -25,19 +25,24 @@ import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 import org.neo4j.server.logging.Logger;
 
-public class ThirdPartyJAXRSModule implements ServerModule {
+public class ThirdPartyJAXRSModule implements ServerModule
+{
 
-    private final Logger log = Logger.getLogger(ThirdPartyJAXRSModule.class);
+    private final Logger log = Logger.getLogger( ThirdPartyJAXRSModule.class );
 
     public void start( NeoServerWithEmbeddedWebServer neoServer )
     {
-        for (ThirdPartyJaxRsPackage tpp : neoServer.getConfigurator().getThirdpartyJaxRsClasses()) {
-            neoServer.getWebServer().addJAXRSPackages(listFrom(new String[] { tpp.getPackageName() }), tpp.getMountPoint());
-            log.info("Mounted third-party JAX-RS package [%s] at [%s]", tpp.getPackageName(), tpp.getMountPoint());
+        for ( ThirdPartyJaxRsPackage tpp : neoServer.getConfigurator()
+                .getThirdpartyJaxRsClasses() )
+        {
+            neoServer.getWebServer()
+                    .addJAXRSPackages( listFrom( new String[] { tpp.getPackageName() } ), tpp.getMountPoint() );
+            log.info( "Mounted third-party JAX-RS package [%s] at [%s]", tpp.getPackageName(), tpp.getMountPoint() );
         }
     }
 
-    public void stop() {
+    public void stop()
+    {
 
         // Do nothing.
     }

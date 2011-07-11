@@ -31,10 +31,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.logging.InMemoryAppender;
+import org.neo4j.server.rest.JaxRsResponse;
+import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.web.Jetty6WebServer;
 
 import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
 
 public class NeoServerStartupLoggingFunctionalTest
 {
@@ -71,8 +72,7 @@ public class NeoServerStartupLoggingFunctionalTest
         // Check the server is alive
         Client nonRedirectingClient = Client.create();
         nonRedirectingClient.setFollowRedirects( false );
-        ClientResponse response = nonRedirectingClient.resource( "http://localhost:" + server.getWebServerPort() + "/" )
-                .get( ClientResponse.class );
+        final JaxRsResponse response = new RestRequest(server.baseUri(), nonRedirectingClient).get();
         assertThat( response.getStatus(), is( greaterThan( 199 ) ) );
 
     }

@@ -24,15 +24,13 @@ import org.neo4j.server.rest.repr.BadInputException;
 
 abstract class ListParameterExtractor extends ParameterExtractor
 {
-    ListParameterExtractor( TypeCaster caster, Class<?> type, Parameter param,
-                            Description description )
+    ListParameterExtractor( TypeCaster caster, Class<?> type, Parameter param, Description description )
     {
         super( caster, type, param, description );
     }
 
     @Override
-    Object extract( AbstractGraphDatabase graphDb, Object source, ParameterList parameters )
-            throws BadInputException
+    Object extract( AbstractGraphDatabase graphDb, Object source, ParameterList parameters ) throws BadInputException
     {
         Object[] result = caster.getList( graphDb, parameters, name );
         if ( result != null )

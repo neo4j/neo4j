@@ -35,7 +35,7 @@ class SymbolTableTest extends JUnitSuite {
   }
 
 
-  @Test(expected = classOf[SyntaxError]) def shouldNotOverwriteSymbolsWithNewType() {
+  @Test(expected = classOf[SyntaxException]) def shouldNotOverwriteSymbolsWithNewType() {
     val table1 = new SymbolTable(NodeIdentifier("x"))
     val table2 = new SymbolTable(RelationshipIdentifier("x"))
 
@@ -67,13 +67,13 @@ class SymbolTableTest extends JUnitSuite {
 
     assertEquals(Set(NodeIdentifier("x"),PropertyIdentifier("x","name")), result.identifiers)
   }
-  @Test(expected = classOf[SyntaxError]) def shouldFailForUnboundConcreteIdentifiers() {
+  @Test(expected = classOf[SyntaxException]) def shouldFailForUnboundConcreteIdentifiers() {
     val table1 = new SymbolTable()
     val table2 = new SymbolTable(UnboundIdentifier("x",Some(PropertyIdentifier("x","name"))))
 
     table1 ++ table2
   }
-  @Test(expected = classOf[SyntaxError]) def shouldFailForUnbound() {
+  @Test(expected = classOf[SyntaxException]) def shouldFailForUnbound() {
     val table1 = new SymbolTable()
     val table2 = new SymbolTable(UnboundIdentifier("x",None))
 

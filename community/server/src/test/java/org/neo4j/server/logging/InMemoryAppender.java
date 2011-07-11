@@ -25,7 +25,8 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.SimpleFormatter;
 
-public class InMemoryAppender {
+public class InMemoryAppender
+{
     private StringWriter stringWriter = new StringWriter();
     private Handler stringHandler;
     private final java.util.logging.Logger julLogger;
@@ -39,40 +40,53 @@ public class InMemoryAppender {
     private InMemoryAppender( Logger logger, Level level )
     {
         this.level = level;
-        julLogger = java.util.logging.Logger.getLogger( this.getClass().toString() );
+        julLogger = java.util.logging.Logger.getLogger( this.getClass()
+                .toString() );
         changeLogger( logger, julLogger );
         reset();
     }
 
     private void changeLogger( Logger logger, java.util.logging.Logger julLogger )
     {
-        Field loggerField = findLoggerField(logger);
-        try {
-            loggerField.setAccessible(true);
+        Field loggerField = findLoggerField( logger );
+        try
+        {
+            loggerField.setAccessible( true );
             loggerField.set( logger, julLogger );
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
         }
     }
 
-    private Field findLoggerField(Logger logger) {
-        try {
-            return logger.getClass().getDeclaredField("logger");
-        } catch (Exception e) {
-            throw new RuntimeException("The field [logger] must be present for testing", e);
+    private Field findLoggerField( Logger logger )
+    {
+        try
+        {
+            return logger.getClass()
+                    .getDeclaredField( "logger" );
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( "The field [logger] must be present for testing", e );
         }
     }
 
     @Override
-    public String toString() {
+    public String toString()
+    {
         return stringWriter.toString();
     }
 
-    public void reset() {
+    public void reset()
+    {
         stringWriter = new StringWriter();
-        stringHandler = new Handler() {
+        stringHandler = new Handler()
+        {
             @Override
-            public void publish(java.util.logging.LogRecord record) {
+            public void publish( java.util.logging.LogRecord record )
+            {
                 stringWriter.append( getFormatter().format( record ) );
             };
 

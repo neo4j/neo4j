@@ -24,33 +24,42 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class JAXRSHelper {
-    public static List<String> listFrom(String[] strings) {
+public class JAXRSHelper
+{
+    public static List<String> listFrom( String[] strings )
+    {
         ArrayList<String> al = new ArrayList<String>();
 
-        if (strings != null) {
-            al.addAll(Arrays.asList(strings));
+        if ( strings != null )
+        {
+            al.addAll( Arrays.asList( strings ) );
         }
 
         return al;
     }
-    
-    public static URI generateUriFor(URI baseUri, String serviceName) {
-        if (serviceName.startsWith("/")) {
-            serviceName = serviceName.substring(1);
+
+    public static URI generateUriFor( URI baseUri, String serviceName )
+    {
+        if ( serviceName.startsWith( "/" ) )
+        {
+            serviceName = serviceName.substring( 1 );
         }
         StringBuilder sb = new StringBuilder();
-        try {
+        try
+        {
             String baseUriString = baseUri.toString();
-            sb.append(baseUriString);
-            if(!baseUriString.endsWith("/")) {
-                sb.append("/");
+            sb.append( baseUriString );
+            if ( !baseUriString.endsWith( "/" ) )
+            {
+                sb.append( "/" );
             }
-            sb.append(serviceName);
+            sb.append( serviceName );
 
-            return new URI(sb.toString());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+            return new URI( sb.toString() );
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
         }
     }
 }

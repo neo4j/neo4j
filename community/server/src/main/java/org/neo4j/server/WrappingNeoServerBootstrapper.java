@@ -38,31 +38,31 @@ import org.neo4j.server.modules.WebAdminModule;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
 
 /**
- * A bootstrapper for the Neo4j Server that takes an
- * already instantiated {@link AbstractGraphDatabase}, and optional
- * configuration, and launches a server using that database.
+ * A bootstrapper for the Neo4j Server that takes an already instantiated
+ * {@link AbstractGraphDatabase}, and optional configuration, and launches a
+ * server using that database.
  * <p>
- * Use this to start up a full Neo4j server from within an application
- * that already uses the {@link EmbeddedGraphDatabase} or the
- * {@link HighlyAvailableGraphDatabase}. This gives your application
- * the full benifits of the servers REST API, the web administration
- * interface and statistics tracking.
+ * Use this to start up a full Neo4j server from within an application that
+ * already uses the {@link EmbeddedGraphDatabase} or the
+ * {@link HighlyAvailableGraphDatabase}. This gives your application the full
+ * benifits of the servers REST API, the web administration interface and
+ * statistics tracking.
  * <p>
  * Example:
  * 
  * <pre>
- * {@code
- * WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(myDatabase);
- * srv.start(); // Launches the server at default URL, http://localhost:7474
+ * {
+ *     &#064;code WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper( myDatabase );
+ *     srv.start(); // Launches the server at default URL, http://localhost:7474
  * 
- * // Run your application as long as you please
+ *     // Run your application as long as you please
  * 
- * srv.stop();
+ *     srv.stop();
  * }
  * </pre>
  * 
- * If you want to change configuration, pass in the optional Configurator arg
- * to the constructor. You can write your own implementation or use
+ * If you want to change configuration, pass in the optional Configurator arg to
+ * the constructor. You can write your own implementation or use
  * {@link EmbeddedServerConfigurator}.
  */
 public class WrappingNeoServerBootstrapper extends Bootstrapper
@@ -74,20 +74,24 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
 
     /**
      * Create an instance with default settings.
+     * 
      * @param db
      */
-    public WrappingNeoServerBootstrapper(AbstractGraphDatabase db) {
-        this(db, new EmbeddedServerConfigurator(db));
+    public WrappingNeoServerBootstrapper( AbstractGraphDatabase db )
+    {
+        this( db, new EmbeddedServerConfigurator( db ) );
     }
 
     /**
-     * Create an instance with custom documentation. {@link EmbeddedServerConfigurator}
-     * is written to fit well here, see its' documentation.
+     * Create an instance with custom documentation.
+     * {@link EmbeddedServerConfigurator} is written to fit well here, see its'
+     * documentation.
      * 
      * @param db
      * @param configurator
      */
-    public WrappingNeoServerBootstrapper(AbstractGraphDatabase db, Configurator configurator) {
+    public WrappingNeoServerBootstrapper( AbstractGraphDatabase db, Configurator configurator )
+    {
         this.db = db;
         this.configurator = configurator;
     }
@@ -95,7 +99,7 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
     @Override
     public Iterable<StartupHealthCheckRule> getHealthCheckRules()
     {
-        return Arrays.asList( );
+        return Arrays.asList();
     }
 
     @Override
@@ -107,26 +111,30 @@ public class WrappingNeoServerBootstrapper extends Bootstrapper
     }
 
     @Override
-    public int stop( int stopArg ) {
+    public int stop( int stopArg )
+    {
         try
         {
             if ( server != null )
             {
                 server.stopServer();
-                server.getDatabase().rrdDb().close();
+                server.getDatabase()
+                        .rrdDb()
+                        .close();
             }
             return 0;
         }
         catch ( Exception e )
         {
-            log.error( "Failed to cleanly shutdown Neo Server on port [%d]. Reason [%s] ",
-                    server.getWebServerPort(), e.getMessage() );
+            log.error( "Failed to cleanly shutdown Neo Server on port [%d]. Reason [%s] ", server.getWebServerPort(),
+                    e.getMessage() );
             return 1;
         }
     }
-    
+
     @Override
-    protected void addShutdownHook() {
+    protected void addShutdownHook()
+    {
         // No-op
     }
 

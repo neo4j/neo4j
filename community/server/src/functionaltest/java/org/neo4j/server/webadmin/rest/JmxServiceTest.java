@@ -38,7 +38,7 @@ public class JmxServiceTest
 {
     public JmxService jmxService;
     private final URI uri = URI.create( "http://peteriscool.com:6666/" );
-    
+
     @Test
     public void correctRepresentation() throws URISyntaxException, UnsupportedEncodingException
     {
@@ -46,12 +46,11 @@ public class JmxServiceTest
 
         assertEquals( 200, resp.getStatus() );
 
-        String json = new String((byte[])resp.getEntity(), "UTF-8");
+        String json = new String( (byte[]) resp.getEntity(), "UTF-8" );
         assertThat( json, containsString( "resources" ) );
         assertThat( json, containsString( uri.toString() ) );
         assertThat( json, containsString( "jmx/domain/{domain}/{objectName}" ) );
     }
-
 
     @Test
     public void shouldListDomainsCorrectly() throws Exception

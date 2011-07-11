@@ -317,6 +317,7 @@ public class XaLogicalLog
         try
         {
             LogIoUtils.writePrepare( writeBuffer, identifier );
+            writeBuffer.writeOut();
         }
         catch ( IOException e )
         {
@@ -379,10 +380,18 @@ public class XaLogicalLog
     // [DONE][identifier] called from XaResourceManager during internal recovery
     synchronized void doneInternal( int identifier ) throws IOException
     {
-        buffer.clear();
-        LogIoUtils.writeDone( buffer, identifier );
-        buffer.flip();
-        fileChannel.write( buffer );
+        if ( writeBuffer != null )
+        {   // For 2PC
+            LogIoUtils.writeDone( writeBuffer, identifier );
+        }
+        else
+        {   // For 1PC
+            buffer.clear();
+            LogIoUtils.writeDone( buffer, identifier );
+            buffer.flip();
+            fileChannel.write( buffer );
+        }
+        
         xidIdentMap.remove( identifier );
         // force to make sure done record is there if 2PC tx and global log
         // marks tx as committed

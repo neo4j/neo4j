@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.rest.domain;
 
-@SuppressWarnings("serial")
+@SuppressWarnings( "serial" )
 public class JsonBuildRuntimeException extends RuntimeException
 {
 

@@ -30,7 +30,7 @@ public class SessionFactoryImpl implements SessionFactory
 {
     private HttpSession httpSession;
 
-    public SessionFactoryImpl(HttpSession httpSession)
+    public SessionFactoryImpl( HttpSession httpSession )
     {
         this.httpSession = httpSession;
     }
@@ -38,10 +38,11 @@ public class SessionFactoryImpl implements SessionFactory
     @Override
     public ScriptSession createSession( String engineName, Database database )
     {
-        if(engineName.equals("cypher"))
+        if ( engineName.equals( "cypher" ) )
         {
-            return new CypherSession(database.graph);
-        } else
+            return new CypherSession( database.graph );
+        }
+        else
         {
             Object session = httpSession.getAttribute( "consoleSession" );
             if ( session == null )

@@ -24,5 +24,5 @@ import org.neo4j.server.webadmin.console.ScriptSession;
 
 public interface SessionFactory
 {
-    ScriptSession createSession(String engineName, Database database);
+    ScriptSession createSession( String engineName, Database database );
 }

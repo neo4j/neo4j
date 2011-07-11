@@ -17,22 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest;
+package org.neo4j.test.subprocess;
 
-import com.sun.jersey.api.client.ClientResponse;
-
-public class HttpResponse implements  TestResponse
+@SuppressWarnings( "serial" )
+public final class KillSubProcess extends Exception
 {
-    private final ClientResponse inner;
-
-    public HttpResponse(ClientResponse inner )
+    public static KillSubProcess withExitCode( int exitCode )
     {
-        this.inner = inner;
+        return new KillSubProcess( exitCode );
+    }
+
+    final int exitCode;
+
+    private KillSubProcess( int exitCode )
+    {
+        this.exitCode = exitCode;
     }
 
     @Override
-    public int getStatus()
+    public synchronized Throwable fillInStackTrace()
     {
-        return inner.getStatus();
+        return this;
     }
 }

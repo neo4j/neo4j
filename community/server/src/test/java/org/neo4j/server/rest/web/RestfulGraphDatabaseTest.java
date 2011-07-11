@@ -67,6 +67,7 @@ import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 import org.neo4j.server.rest.web.RestfulGraphDatabase.AmpersandSeparatedCollection;
+import org.neo4j.test.server.EntityOutputFormat;
 
 public class RestfulGraphDatabaseTest
 {

@@ -27,11 +27,11 @@ import java.util.Map;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-
 /**
- * This class decorates another RepresentationFormat (called inner here), and tries to use
- * inner to parse stuff. If it fails, it will throw an appropriate exception, and not just
- * blow up with an exception that leads to HTTP STATUS 500
+ * This class decorates another RepresentationFormat (called inner here), and
+ * tries to use inner to parse stuff. If it fails, it will throw an appropriate
+ * exception, and not just blow up with an exception that leads to HTTP STATUS
+ * 500
  */
 public class DefaultFormat extends RepresentationFormat
 {
@@ -39,8 +39,7 @@ public class DefaultFormat extends RepresentationFormat
     private final Collection<MediaType> supported;
     private final MediaType[] requested;
 
-    public DefaultFormat( RepresentationFormat inner,
-                          Collection<MediaType> supported, MediaType... requested )
+    public DefaultFormat( RepresentationFormat inner, Collection<MediaType> supported, MediaType... requested )
     {
         super( MediaType.APPLICATION_JSON_TYPE );
 
@@ -85,7 +84,8 @@ public class DefaultFormat extends RepresentationFormat
         try
         {
             return inner.readValue( input );
-        } catch ( BadInputException e )
+        }
+        catch ( BadInputException e )
         {
             throw newMediaTypeNotSupportedException();
         }
@@ -102,7 +102,8 @@ public class DefaultFormat extends RepresentationFormat
         try
         {
             return inner.readMap( input );
-        } catch ( BadInputException e )
+        }
+        catch ( BadInputException e )
         {
             throw newMediaTypeNotSupportedException();
         }
@@ -114,7 +115,8 @@ public class DefaultFormat extends RepresentationFormat
         try
         {
             return inner.readList( input );
-        } catch ( BadInputException e )
+        }
+        catch ( BadInputException e )
         {
             throw newMediaTypeNotSupportedException();
         }
@@ -126,7 +128,8 @@ public class DefaultFormat extends RepresentationFormat
         try
         {
             return inner.readUri( input );
-        } catch ( BadInputException e )
+        }
+        catch ( BadInputException e )
         {
             throw newMediaTypeNotSupportedException();
         }

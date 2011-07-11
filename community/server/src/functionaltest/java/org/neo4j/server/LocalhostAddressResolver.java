@@ -19,9 +19,10 @@
  */
 package org.neo4j.server;
 
-
-public class LocalhostAddressResolver extends AddressResolver {
-    public String getHostname() {
-            return "localhost";   
+public class LocalhostAddressResolver extends AddressResolver
+{
+    public String getHostname()
+    {
+        return "localhost";
     }
 }

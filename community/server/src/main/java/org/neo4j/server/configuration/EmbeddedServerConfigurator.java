@@ -28,20 +28,22 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
 
 /**
- * Used by the {@link WrappingNeoServerBootstrapper}, passing the minimum
- * amount of required configuration on to the neo4j server. 
+ * Used by the {@link WrappingNeoServerBootstrapper}, passing the minimum amount
+ * of required configuration on to the neo4j server.
  * <p>
- * If you want to change configuration for your {@link WrappingNeoServerBootstrapper},
- * create an instance of this class, and add configuration like so:
+ * If you want to change configuration for your
+ * {@link WrappingNeoServerBootstrapper}, create an instance of this class, and
+ * add configuration like so:
  * 
  * <pre>
- * {@code
- * EmbeddedServerConfigurator conf = new EmbeddedServerConfigurator(myDb);
- * conf.configuration().addProperty( WEBSERVER_PORT_PROPERTY_KEY, 8080 );
+ * {
+ *     &#064;code EmbeddedServerConfigurator conf = new EmbeddedServerConfigurator( myDb );
+ *     conf.configuration()
+ *             .addProperty( WEBSERVER_PORT_PROPERTY_KEY, 8080 );
  * }
  * </pre>
  * 
- * See the neo4j manual for information about what configuration directives the 
+ * See the neo4j manual for information about what configuration directives the
  * server takes, or take a look at the static strings in {@link Configurator}.
  */
 public class EmbeddedServerConfigurator implements Configurator
@@ -49,11 +51,12 @@ public class EmbeddedServerConfigurator implements Configurator
 
     private MapBasedConfiguration config = new MapBasedConfiguration();
     private Set<ThirdPartyJaxRsPackage> jaxRsPackages = new HashSet<ThirdPartyJaxRsPackage>();
-    
-    public EmbeddedServerConfigurator(AbstractGraphDatabase db) {
+
+    public EmbeddedServerConfigurator( AbstractGraphDatabase db )
+    {
         config.addProperty( DATABASE_LOCATION_PROPERTY_KEY, db.getStoreDir() );
     }
-    
+
     @Override
     public Configuration configuration()
     {

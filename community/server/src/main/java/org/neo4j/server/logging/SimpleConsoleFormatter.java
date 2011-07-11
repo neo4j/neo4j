@@ -64,7 +64,8 @@ public class SimpleConsoleFormatter extends Formatter
         sb.append( record.getLoggerName() );
         sb.append( " " );
         String message = formatMessage( record );
-        sb.append( record.getLevel().getLocalizedName() );
+        sb.append( record.getLevel()
+                .getLocalizedName() );
         sb.append( ": " );
         sb.append( message );
         sb.append( lineSeparator );
@@ -74,14 +75,15 @@ public class SimpleConsoleFormatter extends Formatter
             {
                 StringWriter sw = new StringWriter();
                 PrintWriter pw = new PrintWriter( sw );
-                record.getThrown().printStackTrace( pw );
+                record.getThrown()
+                        .printStackTrace( pw );
                 pw.close();
                 sb.append( sw.toString() );
             }
             catch ( Exception ex )
             {
+            }
         }
-    }
         return sb.toString();
     }
 

@@ -41,7 +41,7 @@ import org.neo4j.graphdb.Relationship;
  * @param <T> The type of entities this index manages. It may be either
  * {@link Node}s or {@link Relationship}s.
  */
-public interface Index<T extends PropertyContainer> extends ReadOnlyIndex<T>
+public interface Index<T extends PropertyContainer> extends ReadableIndex<T>
 {
     /**
      * Adds a key/value pair for {@code entity} to the index. If that key/value

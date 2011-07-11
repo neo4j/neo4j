@@ -48,18 +48,16 @@ public class ConsoleServiceTest implements SessionFactory
     @Test
     public void retrievesTheReferenceNode() throws UnsupportedEncodingException
     {
-        Response evaluatedGremlinResponse = consoleService.exec( new JsonFormat(),
-                "{ \"command\" : \"g.v(0)\" }" );
+        Response evaluatedGremlinResponse = consoleService.exec( new JsonFormat(), "{ \"command\" : \"g.v(0)\" }" );
 
         assertEquals( 200, evaluatedGremlinResponse.getStatus() );
         String response = decode( evaluatedGremlinResponse );
         assertThat( response, containsString( "v[0]" ) );
     }
 
-    private String decode( final Response evaluatedGremlinResponse )
-            throws UnsupportedEncodingException
+    private String decode( final Response evaluatedGremlinResponse ) throws UnsupportedEncodingException
     {
-        return new String( (byte[])evaluatedGremlinResponse.getEntity(), "UTF-8" );
+        return new String( (byte[]) evaluatedGremlinResponse.getEntity(), "UTF-8" );
     }
 
     @Test
@@ -93,8 +91,7 @@ public class ConsoleServiceTest implements SessionFactory
     public void setUp() throws Exception
     {
         this.database = new Database( new ImpermanentGraphDatabase() );
-        this.consoleService = new ConsoleService( this, database, new OutputFormat(
-                new JsonFormat(), uri, null ) );
+        this.consoleService = new ConsoleService( this, database, new OutputFormat( new JsonFormat(), uri, null ) );
     }
 
     @After

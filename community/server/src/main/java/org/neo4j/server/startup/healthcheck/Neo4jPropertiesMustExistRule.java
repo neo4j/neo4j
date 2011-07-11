@@ -32,10 +32,11 @@ public class Neo4jPropertiesMustExistRule implements StartupHealthCheckRule
     private boolean ran = false;
     protected String failureMessage = EMPTY_STRING;
 
-    public boolean execute(Properties properties) {
+    public boolean execute( Properties properties )
+    {
         ran = true;
 
-        String configFilename = properties.getProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY);
+        String configFilename = properties.getProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY );
 
         Properties configProperties = new Properties();
         FileInputStream inputStream = null;
@@ -46,7 +47,7 @@ public class Neo4jPropertiesMustExistRule implements StartupHealthCheckRule
         }
         catch ( IOException e )
         {
-            failureMessage = String.format("Failed to load configuration properties from [%s]", configFilename);
+            failureMessage = String.format( "Failed to load configuration properties from [%s]", configFilename );
             return false;
         }
         finally
@@ -58,7 +59,7 @@ public class Neo4jPropertiesMustExistRule implements StartupHealthCheckRule
                     inputStream.close();
                 }
                 catch ( IOException e )
-                {   // Couldn't close it
+                { // Couldn't close it
                 }
             }
         }
@@ -73,14 +74,19 @@ public class Neo4jPropertiesMustExistRule implements StartupHealthCheckRule
         return true;
     }
 
-    public String getFailureMessage() {
-        if(passed) {
+    public String getFailureMessage()
+    {
+        if ( passed )
+        {
             return EMPTY_STRING;
         }
 
-        if(!ran) {
-            return String.format("%s has not been run", getClass().getName());
-        } else {
+        if ( !ran )
+        {
+            return String.format( "%s has not been run", getClass().getName() );
+        }
+        else
+        {
             return failureMessage;
         }
     }

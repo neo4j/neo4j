@@ -23,8 +23,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 
 import com.sun.jersey.api.core.HttpContext;
 
-public class GraphDatabaseServiceProvider extends
-        AbstractInjectableProvider<GraphDatabaseService>
+public class GraphDatabaseServiceProvider extends AbstractInjectableProvider<GraphDatabaseService>
 {
     public GraphDatabaseService db;
 

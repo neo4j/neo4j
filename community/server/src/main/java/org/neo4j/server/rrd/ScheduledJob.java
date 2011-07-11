@@ -42,9 +42,12 @@ public class ScheduledJob
     {
         public void run()
         {
-            try {
+            try
+            {
                 job.run();
-            } catch(Exception e) {
+            }
+            catch ( Exception e )
+            {
                 logger.warn( e );
             }
         }

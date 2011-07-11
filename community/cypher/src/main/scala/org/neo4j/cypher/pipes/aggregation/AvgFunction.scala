@@ -20,7 +20,7 @@
 package org.neo4j.cypher.pipes.aggregation
 
 import org.neo4j.cypher.commands.ReturnItem
-import org.neo4j.cypher.SyntaxError
+import org.neo4j.cypher.SyntaxException
 
 class AvgFunction(returnItem: ReturnItem) extends AggregationFunction with Plus {
   private var count: Int = 0
@@ -37,7 +37,7 @@ class AvgFunction(returnItem: ReturnItem) extends AggregationFunction with Plus 
         count = count + 1
         sofar = plus(sofar, number)
       }
-      case _ => throw new SyntaxError("AVG can only handle values of Number type, or null.")
+      case _ => throw new SyntaxException("AVG can only handle values of Number type, or null.")
     }
   }
 }

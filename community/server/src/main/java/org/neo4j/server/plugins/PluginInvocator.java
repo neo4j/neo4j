@@ -29,15 +29,13 @@ import org.neo4j.server.rest.repr.Representation;
 
 public interface PluginInvocator
 {
-    <T> Representation invoke( AbstractGraphDatabase graphDb, String name, Class<T> type,
-            String method, T context, ParameterList params ) throws PluginLookupException,
-            BadInputException, PluginInvocationFailureException, BadPluginInvocationException;
+    <T> Representation invoke( AbstractGraphDatabase graphDb, String name, Class<T> type, String method, T context,
+            ParameterList params ) throws PluginLookupException, BadInputException, PluginInvocationFailureException,
+            BadPluginInvocationException;
 
-    ExtensionPointRepresentation describe( String name, Class<?> type, String method )
-            throws PluginLookupException;
+    ExtensionPointRepresentation describe( String name, Class<?> type, String method ) throws PluginLookupException;
 
-    List<ExtensionPointRepresentation> describeAll( String extensionName )
-            throws PluginLookupException;
+    List<ExtensionPointRepresentation> describeAll( String extensionName ) throws PluginLookupException;
 
     Set<String> extensionNames();
 }

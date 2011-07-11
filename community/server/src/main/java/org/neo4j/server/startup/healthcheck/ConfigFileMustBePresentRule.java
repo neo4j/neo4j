@@ -24,41 +24,50 @@ import java.util.Properties;
 
 import org.neo4j.server.configuration.Configurator;
 
-public class ConfigFileMustBePresentRule implements StartupHealthCheckRule {
+public class ConfigFileMustBePresentRule implements StartupHealthCheckRule
+{
     private static final String EMPTY_STRING = "";
     private boolean passed = false;
     private boolean ran = false;
     private String failureMessage = EMPTY_STRING;
 
-    public boolean execute(Properties properties) {
+    public boolean execute( Properties properties )
+    {
         ran = true;
 
-        String configFilename = properties.getProperty(Configurator.NEO_SERVER_CONFIG_FILE_KEY);
-        
-        if(configFilename == null) {
-            failureMessage = String.format("Property [%s] has not been set.", Configurator.NEO_SERVER_CONFIG_FILE_KEY);
-            
+        String configFilename = properties.getProperty( Configurator.NEO_SERVER_CONFIG_FILE_KEY );
+
+        if ( configFilename == null )
+        {
+            failureMessage = String.format( "Property [%s] has not been set.", Configurator.NEO_SERVER_CONFIG_FILE_KEY );
+
             return false;
         }
-        
-        File configFile = new File(configFilename);
-        if(!configFile.exists()) {
-            failureMessage = String.format("No configuration file at [%s]", configFile.getAbsoluteFile());
+
+        File configFile = new File( configFilename );
+        if ( !configFile.exists() )
+        {
+            failureMessage = String.format( "No configuration file at [%s]", configFile.getAbsoluteFile() );
             return false;
         }
-        
+
         passed = true;
         return passed;
     }
 
-    public String getFailureMessage() {
-        if(passed) {
+    public String getFailureMessage()
+    {
+        if ( passed )
+        {
             return EMPTY_STRING;
         }
-        
-        if(!ran) {
-            return String.format("%s has not been run", getClass().getName());
-        } else {
+
+        if ( !ran )
+        {
+            return String.format( "%s has not been run", getClass().getName() );
+        }
+        else
+        {
             return failureMessage;
         }
     }

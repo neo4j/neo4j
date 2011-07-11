@@ -19,26 +19,7 @@
  */
 package org.neo4j.server.rest;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasKey;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.List;
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.helpers.ServerHelper;
@@ -46,9 +27,16 @@ import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.TestData;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+import javax.ws.rs.core.MediaType;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.List;
+import java.util.Map;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasKey;
+import static org.junit.Assert.*;
 
 public class ManageNodeFunctionalTest
 {
@@ -78,7 +66,7 @@ public class ManageNodeFunctionalTest
     {
         server.stop();
     }
-    
+
     public @Rule
     TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
 
@@ -89,7 +77,7 @@ public class ManageNodeFunctionalTest
     @Test
     public void shouldGet201WhenCreatingNode() throws Exception
     {
-        ClientResponse response = gen.get()
+        JaxRsResponse response = gen.get()
                 .expectedStatus( 201 )
                 .expectedHeader( "Location" )
                 .post( functionalTestHelper.nodeUri() )
@@ -106,7 +94,7 @@ public class ManageNodeFunctionalTest
     @Test
     public void shouldGet201WhenCreatingNodeWithProperties() throws Exception
     {
-        ClientResponse response = gen.get()
+        JaxRsResponse response = gen.get()
                 .payload( "{\"foo\" : \"bar\"}" )
                 .expectedStatus( 201 )
                 .expectedHeader( "Location" )
@@ -120,8 +108,9 @@ public class ManageNodeFunctionalTest
 
     /**
      * Property values can not be null.
-     *
-     * This example shows the response you get when trying to set a property to null.
+     * 
+     * This example shows the response you get when trying to set a property to
+     * null.
      */
     @Documented
     @Test
@@ -136,40 +125,31 @@ public class ManageNodeFunctionalTest
     @Test
     public void shouldGet400WhenCreatingNodeMalformedProperties() throws Exception
     {
-        ClientResponse response = sendCreateRequestToServer( "this:::isNot::JSON}" );
+        JaxRsResponse response = sendCreateRequestToServer("this:::isNot::JSON}");
         assertEquals( 400, response.getStatus() );
     }
 
     @Test
     public void shouldGet400WhenCreatingNodeUnsupportedNestedPropertyValues() throws Exception
     {
-        ClientResponse response = sendCreateRequestToServer( "{\"foo\" : {\"bar\" : \"baz\"}}" );
+        JaxRsResponse response = sendCreateRequestToServer("{\"foo\" : {\"bar\" : \"baz\"}}");
         assertEquals( 400, response.getStatus() );
     }
 
-    private ClientResponse sendCreateRequestToServer( final String json )
+    private JaxRsResponse sendCreateRequestToServer(final String json)
     {
-        WebResource resource = Client.create().resource( functionalTestHelper.dataUri() + "node/" );
-        ClientResponse response = resource.type( MediaType.APPLICATION_JSON )
-                .accept( MediaType.APPLICATION_JSON )
-                .entity( json )
-                .post( ClientResponse.class );
-        return response;
+        return RestRequest.req().post( functionalTestHelper.dataUri() + "node/" , json );
     }
 
-    private ClientResponse sendCreateRequestToServer()
+    private JaxRsResponse sendCreateRequestToServer()
     {
-        WebResource resource = Client.create().resource( functionalTestHelper.dataUri() + "node/" );
-        ClientResponse response = resource.type( MediaType.APPLICATION_FORM_URLENCODED )
-                .accept( MediaType.APPLICATION_JSON )
-                .post( ClientResponse.class );
-        return response;
+        return RestRequest.req().post( functionalTestHelper.dataUri() + "node/" , null, MediaType.APPLICATION_JSON_TYPE );
     }
 
     @Test
     public void shouldGetValidLocationHeaderWhenCreatingNode() throws Exception
     {
-        ClientResponse response = sendCreateRequestToServer();
+        JaxRsResponse response = sendCreateRequestToServer();
         assertNotNull( response.getLocation() );
         assertTrue( response.getLocation()
                 .toString()
@@ -179,7 +159,7 @@ public class ManageNodeFunctionalTest
     @Test
     public void shouldGetASingleContentLengthHeaderWhenCreatingANode()
     {
-        ClientResponse response = sendCreateRequestToServer();
+        JaxRsResponse response = sendCreateRequestToServer();
         List<String> contentLentgthHeaders = response.getHeaders()
                 .get( "Content-Length" );
         assertNotNull( contentLentgthHeaders );
@@ -189,14 +169,14 @@ public class ManageNodeFunctionalTest
     @Test
     public void shouldBeJSONContentTypeOnResponse()
     {
-        ClientResponse response = sendCreateRequestToServer();
+        JaxRsResponse response = sendCreateRequestToServer();
         assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
     }
 
     @Test
     public void shouldGetValidNodeRepresentationWhenCreatingNode() throws Exception
     {
-        ClientResponse response = sendCreateRequestToServer();
+        JaxRsResponse response = sendCreateRequestToServer();
         String entity = response.getEntity( String.class );
 
         Map<String, Object> map = JsonHelper.jsonToMap( entity );
@@ -221,7 +201,7 @@ public class ManageNodeFunctionalTest
     @Test
     public void shouldRespondWith404AndSensibleEntityBodyWhenNodeToBeDeletedCannotBeFound() throws Exception
     {
-        ClientResponse response = sendDeleteRequestToServer( NON_EXISTENT_NODE_ID );
+        JaxRsResponse response = sendDeleteRequestToServer(NON_EXISTENT_NODE_ID);
         assertEquals( 404, response.getStatus() );
 
         Map<String, Object> jsonMap = JsonHelper.jsonToMap( response.getEntity( String.class ) );
@@ -231,7 +211,7 @@ public class ManageNodeFunctionalTest
 
     /**
      * Nodes with relationships can not be deleted.
-     *
+     * 
      * The relationships on a node has to be deleted before the node can be
      * deleted.
      */
@@ -241,7 +221,7 @@ public class ManageNodeFunctionalTest
     {
         long id = helper.createNode();
         helper.createRelationship( "LOVES", id, helper.createNode() );
-        ClientResponse response = sendDeleteRequestToServer( id );
+        JaxRsResponse response = sendDeleteRequestToServer(id);
         assertEquals( 409, response.getStatus() );
         Map<String, Object> jsonMap = JsonHelper.jsonToMap( response.getEntity( String.class ) );
         assertThat( jsonMap, hasKey( "message" ) );
@@ -256,7 +236,7 @@ public class ManageNodeFunctionalTest
     public void shouldRespondWith400IfInvalidJsonSentAsNodePropertiesDuringNodeCreation() throws URISyntaxException
     {
         String mangledJsonArray = "{\"myprop\":[1,2,\"three\"]}";
-        ClientResponse response = sendCreateRequestToServer( mangledJsonArray );
+        JaxRsResponse response = sendCreateRequestToServer(mangledJsonArray);
         assertEquals( 400, response.getStatus() );
         assertEquals( "text/plain", response.getType()
                 .toString() );
@@ -264,46 +244,33 @@ public class ManageNodeFunctionalTest
     }
 
     @Test
-    public void shouldRespondWith400IfInvalidJsonSentAsNodeProperty() throws URISyntaxException
-    {
+    public void shouldRespondWith400IfInvalidJsonSentAsNodeProperty() throws URISyntaxException {
         URI nodeLocation = sendCreateRequestToServer().getLocation();
 
         String mangledJsonArray = "[1,2,\"three\"]";
-        ClientResponse response = Client.create().resource( new URI( nodeLocation.toString() + "/properties/myprop" ) )
-                .type( MediaType.APPLICATION_JSON )
-                .accept( MediaType.APPLICATION_JSON )
-                .entity( mangledJsonArray )
-                .put( ClientResponse.class );
-        assertEquals( 400, response.getStatus() );
-        assertEquals( "text/plain", response.getType()
-                .toString() );
-        assertThat( response.getEntity( String.class ), containsString( mangledJsonArray ) );
+        JaxRsResponse response = RestRequest.req().put(nodeLocation.toString() + "/properties/myprop", mangledJsonArray);
+        assertEquals(400, response.getStatus());
+        assertEquals("text/plain", response.getType()
+                .toString());
+        assertThat(response.getEntity(String.class), containsString(mangledJsonArray));
         response.close();
     }
 
     @Test
-    public void shouldRespondWith400IfInvalidJsonSentAsNodeProperties() throws URISyntaxException
-    {
+    public void shouldRespondWith400IfInvalidJsonSentAsNodeProperties() throws URISyntaxException {
         URI nodeLocation = sendCreateRequestToServer().getLocation();
 
         String mangledJsonProperties = "{\"a\":\"b\", \"c\":[1,2,\"three\"]}";
-        ClientResponse response = Client.create().resource( new URI( nodeLocation.toString() + "/properties" ) )
-                .type( MediaType.APPLICATION_JSON )
-                .accept( MediaType.APPLICATION_JSON )
-                .entity( mangledJsonProperties )
-                .put( ClientResponse.class );
-        assertEquals( 400, response.getStatus() );
-        assertEquals( "text/plain", response.getType()
-                .toString() );
-        assertThat( response.getEntity( String.class ), containsString( mangledJsonProperties ) );
+        JaxRsResponse response = RestRequest.req().put(nodeLocation.toString() + "/properties", mangledJsonProperties);
+        assertEquals(400, response.getStatus());
+        assertEquals("text/plain", response.getType()
+                .toString());
+        assertThat(response.getEntity(String.class), containsString(mangledJsonProperties));
         response.close();
     }
 
-    private ClientResponse sendDeleteRequestToServer( final long id ) throws Exception
+    private JaxRsResponse sendDeleteRequestToServer(final long id) throws Exception
     {
-        return Client.create()
-                .resource( new URI( functionalTestHelper.dataUri() + "node/" + id ) )
-                .accept( MediaType.APPLICATION_JSON_TYPE )
-                .delete( ClientResponse.class );
+        return RestRequest.req().delete(functionalTestHelper.dataUri() + "node/" + id);
     }
 }

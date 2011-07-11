@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.javacompat;
 
-import org.neo4j.cypher.SyntaxError;
+import org.neo4j.cypher.SyntaxException;
 import org.neo4j.cypher.commands.Query;
 
 /**
@@ -34,16 +34,16 @@ public class CypherParser
         inner = new org.neo4j.cypher.parser.CypherParser();
     }
 
-    public Query parse( String query ) throws SyntaxError
+    public Query parse( String query ) throws SyntaxException
     {
         return inner.parse( query );
     }
 
-    public static Query parseStrict(String query) throws SyntaxError {
+    public static Query parseStrict(String query) throws SyntaxException {
         return new org.neo4j.cypher.parser.CypherParser().parse( query );
     }
 
-    public static Query parseConsole(String query) throws SyntaxError {
+    public static Query parseConsole(String query) throws SyntaxException {
         return new org.neo4j.cypher.parser.ConsoleCypherParser().parse( query );
     }
 }

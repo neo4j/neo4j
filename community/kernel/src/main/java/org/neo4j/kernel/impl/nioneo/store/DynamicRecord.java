@@ -141,7 +141,7 @@ public class DynamicRecord extends Abstract64BitRecord
         if ( inUse() )
         {
             buf.append( "," ).append( prevBlock ).append( "," ).append(
-                isLight ? null : data.length ).append( "," ).append( nextBlock )
+                isLight || data == null ? null : data.length ).append( "," ).append( nextBlock )
                 .append( "]" );
         }
         return buf.toString();

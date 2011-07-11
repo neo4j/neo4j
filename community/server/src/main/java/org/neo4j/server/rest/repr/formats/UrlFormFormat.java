@@ -94,9 +94,10 @@ public class UrlFormFormat extends RepresentationFormat
 
             try
             {
-                key = ensureThatKeyDoesNotHavePhPStyleParenthesesAtTheEnd(URLDecoder.decode( fields[ 0 ], "UTF-8" ));
-                value = URLDecoder.decode( fields[ 1 ], "UTF-8" );
-            } catch ( UnsupportedEncodingException e )
+                key = ensureThatKeyDoesNotHavePhPStyleParenthesesAtTheEnd( URLDecoder.decode( fields[0], "UTF-8" ) );
+                value = URLDecoder.decode( fields[1], "UTF-8" );
+            }
+            catch ( UnsupportedEncodingException e )
             {
                 throw new BadInputException( e );
             }
@@ -105,30 +106,32 @@ public class UrlFormFormat extends RepresentationFormat
             if ( old == null )
             {
                 result.put( key, value );
-            } else
+            }
+            else
             {
                 List<Object> list;
                 if ( old instanceof List<?> )
                 {
-                    list = (List<Object>)old;
-                } else
+                    list = (List<Object>) old;
+                }
+                else
                 {
                     list = new ArrayList<Object>();
-                    result.put(key,list);
+                    result.put( key, list );
                     list.add( old );
                 }
                 list.add( value );
             }
         }
 
-
         return result;
     }
 
     private String ensureThatKeyDoesNotHavePhPStyleParenthesesAtTheEnd( String key )
     {
-        if(key.endsWith( "[]" )) {
-             return key.substring( 0, key.length() -2 );
+        if ( key.endsWith( "[]" ) )
+        {
+            return key.substring( 0, key.length() - 2 );
         }
         return key;
     }

@@ -24,6 +24,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -34,15 +35,14 @@ import java.util.Map;
 import org.junit.Test;
 import org.neo4j.graphdb.PropertyContainer;
 
-public class PropertiesRepresentationTest extends RepresentationTestBase
+public class PropertiesRepresentationTest
 {
     @Test
     public void shouldContainAddedPropertiesWhenCreatedFromPropertyContainer()
     {
         Map<String, Object> values = new HashMap<String, Object>();
         values.put( "foo", "bar" );
-        Map<String, Object> serialized = serialize( new PropertiesRepresentation(
-                container( values ) ) );
+        Map<String, Object> serialized = serialize( new PropertiesRepresentation( container( values ) ) );
         assertEquals( "bar", serialized.get( "foo" ) );
     }
 
@@ -85,8 +85,7 @@ public class PropertiesRepresentationTest extends RepresentationTestBase
     @Test
     public void shouldBeAbleToSignalEmptiness()
     {
-        PropertiesRepresentation properties = new PropertiesRepresentation(
-                container( new HashMap<String, Object>() ) );
+        PropertiesRepresentation properties = new PropertiesRepresentation( container( new HashMap<String, Object>() ) );
         Map<String, Object> values = new HashMap<String, Object>();
         values.put( "key", "value" );
         assertTrue( properties.isEmpty() );
@@ -97,8 +96,7 @@ public class PropertiesRepresentationTest extends RepresentationTestBase
     private void assertEqualContent( List<?> expected, List<?> actual )
     {
         assertEquals( expected.size(), actual.size() );
-        for ( Iterator<?> ex = expected.iterator(), ac = actual.iterator(); ex.hasNext()
-                                                                            && ac.hasNext(); )
+        for ( Iterator<?> ex = expected.iterator(), ac = actual.iterator(); ex.hasNext() && ac.hasNext(); )
         {
             assertEquals( ex.next(), ac.next() );
         }

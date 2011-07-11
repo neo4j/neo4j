@@ -55,18 +55,20 @@ public class HtmlFormat extends RepresentationFormat
             String render( Map<String, Object> serialized )
             {
                 String javascript = "";
-                StringBuilder builder = HtmlHelper.start( HtmlHelper.ObjectType.NODE,
-                        javascript );
-                HtmlHelper.append(
-                        builder,
-                        Collections.singletonMap( "data", serialized.get( "data" ) ),
+                StringBuilder builder = HtmlHelper.start( HtmlHelper.ObjectType.NODE, javascript );
+                HtmlHelper.append( builder, Collections.singletonMap( "data", serialized.get( "data" ) ),
                         HtmlHelper.ObjectType.NODE );
                 builder.append( "<form action='javascript:neo4jHtmlBrowse.getRelationships();'><fieldset><legend>Get relationships</legend>\n" );
-                builder.append( "<label for='direction'>with direction</label>\n"
-                        + "<select id='direction'>" );
-                builder.append( "<option value='" ).append( serialized.get( "all_typed_relationships" ) ).append( "'>all</option>" );
-                builder.append( "<option value='" ).append( serialized.get( "incoming_typed_relationships" ) ).append( "'>in</option>" );
-                builder.append( "<option value='" ).append( serialized.get( "outgoing_typed_relationships" ) ).append( "'>out</option>" );
+                builder.append( "<label for='direction'>with direction</label>\n" + "<select id='direction'>" );
+                builder.append( "<option value='" )
+                        .append( serialized.get( "all_typed_relationships" ) )
+                        .append( "'>all</option>" );
+                builder.append( "<option value='" )
+                        .append( serialized.get( "incoming_typed_relationships" ) )
+                        .append( "'>in</option>" );
+                builder.append( "<option value='" )
+                        .append( serialized.get( "outgoing_typed_relationships" ) )
+                        .append( "'>out</option>" );
                 builder.append( "</select>\n" );
                 builder.append( "<label for='types'>for type(s)</label><select id='types' multiple='multiple'>" );
 
@@ -74,15 +76,16 @@ public class HtmlFormat extends RepresentationFormat
                 {
                     for ( String relationshipType : (List<String>) serialized.get( "relationship_types" ) )
                     {
-                        builder.append( "<option selected='selected' value='" ).append( relationshipType ).append( "'>" );
-                        builder.append( relationshipType ).append( "</option>" );
+                        builder.append( "<option selected='selected' value='" )
+                                .append( relationshipType )
+                                .append( "'>" );
+                        builder.append( relationshipType )
+                                .append( "</option>" );
                     }
                 }
                 catch ( DatabaseBlockedException e )
                 {
-                    throw new RuntimeException(
-                            "Unable to render, database is blocked, see nested exception.",
-                            e );
+                    throw new RuntimeException( "Unable to render, database is blocked, see nested exception.", e );
                 }
                 builder.append( "</select>\n" );
                 builder.append( "<button>Get</button>\n" );
@@ -123,8 +126,7 @@ public class HtmlFormat extends RepresentationFormat
             String render( Map<String, Object> serialized )
             {
                 Map<Object, Object> map = new HashMap<Object, Object>();
-                transfer( serialized, map, "index", "reference_node", "node_index",
-                        "relationship_index"/*, "extensions_info"*/);
+                transfer( serialized, map, "index", "reference_node", "node_index", "relationship_index"/*, "extensions_info"*/);
                 return HtmlHelper.from( map, HtmlHelper.ObjectType.ROOT );
             }
         },
@@ -138,20 +140,25 @@ public class HtmlFormat extends RepresentationFormat
                 Object subjectOrNull = serialized.get( "message" );
                 if ( subjectOrNull != null )
                 {
-                    entity.append( "<p><pre>" ).append( subjectOrNull ).append( "</pre></p>" );
+                    entity.append( "<p><pre>" )
+                            .append( subjectOrNull )
+                            .append( "</pre></p>" );
                 }
-                entity.append( "<p><pre>" ).append( serialized.get( "exception" ) );
+                entity.append( "<p><pre>" )
+                        .append( serialized.get( "exception" ) );
                 List<Object> tb = (List<Object>) serialized.get( "stacktrace" );
                 if ( tb != null )
                 {
                     for ( Object el : tb )
                         entity.append( "\n\tat " + el );
                 }
-                entity.append( "</pre></p>" ).append( "</body></html>" );
+                entity.append( "</pre></p>" )
+                        .append( "</body></html>" );
                 return entity.toString();
             }
         };
         private final String key;
+
         private MappingTemplate( String key )
         {
             this.key = key;
@@ -166,7 +173,6 @@ public class HtmlFormat extends RepresentationFormat
 
         abstract String render( Map<String, Object> data );
     }
-
 
     private enum ListTemplate
     {
@@ -200,8 +206,7 @@ public class HtmlFormat extends RepresentationFormat
             {
                 if ( data.isEmpty() )
                 {
-                    StringBuilder builder = HtmlHelper.start( HtmlHelper.ObjectType.RELATIONSHIP,
-                            null );
+                    StringBuilder builder = HtmlHelper.start( HtmlHelper.ObjectType.RELATIONSHIP, null );
                     HtmlHelper.appendMessage( builder, "No relationships found" );
                     return HtmlHelper.end( builder );
                 }
@@ -248,14 +253,27 @@ public class HtmlFormat extends RepresentationFormat
                 Map<?, ?> indexMap = (Map<?, ?>) indexMapObject;
                 String keyId = "key_" + counter;
                 String valueId = "value_" + counter;
-                builder.append( "<form action='javascript:neo4jHtmlBrowse.search(\"" ).append(
-                        indexMap.get( "template" ) ).append( "\",\"" ).append( keyId ).append(
-                        "\",\"" ).append( valueId ).append( "\");'><fieldset><legend> name: " ).append( indexName ).append(" (configuration: ").append(
-                        indexMap.get( "type" ) ).append( ")</legend>\n" );
-                builder.append( "<label for='" ).append( keyId ).append( "'>Key</label><input id='" ).append(
-                        keyId ).append( "'>\n" );
-                builder.append( "<label for='" ).append( valueId ).append(
-                        "'>Value</label><input id='" ).append( valueId ).append( "'>\n" );
+                builder.append( "<form action='javascript:neo4jHtmlBrowse.search(\"" )
+                        .append( indexMap.get( "template" ) )
+                        .append( "\",\"" )
+                        .append( keyId )
+                        .append( "\",\"" )
+                        .append( valueId )
+                        .append( "\");'><fieldset><legend> name: " )
+                        .append( indexName )
+                        .append( " (configuration: " )
+                        .append( indexMap.get( "type" ) )
+                        .append( ")</legend>\n" );
+                builder.append( "<label for='" )
+                        .append( keyId )
+                        .append( "'>Key</label><input id='" )
+                        .append( keyId )
+                        .append( "'>\n" );
+                builder.append( "<label for='" )
+                        .append( valueId )
+                        .append( "'>Value</label><input id='" )
+                        .append( valueId )
+                        .append( "'>\n" );
                 builder.append( "<button>Search</button>\n" );
                 builder.append( "</fieldset></form>\n" );
                 builder.append( "</li>\n" );
@@ -323,9 +341,9 @@ public class HtmlFormat extends RepresentationFormat
         }
         else
         {
-            throw new WebApplicationException(
-                    Response.status( Response.Status.NOT_ACCEPTABLE ).entity(
-                            "Cannot represent \"" + type + "\" as html" ).build() );
+            throw new WebApplicationException( Response.status( Response.Status.NOT_ACCEPTABLE )
+                    .entity( "Cannot represent \"" + type + "\" as html" )
+                    .build() );
         }
     }
 
@@ -335,9 +353,9 @@ public class HtmlFormat extends RepresentationFormat
         MappingTemplate template = MappingTemplate.TEMPLATES.get( type );
         if ( template == null )
         {
-            throw new WebApplicationException(
-                    Response.status( Response.Status.NOT_ACCEPTABLE ).entity(
-                            "Cannot represent \"" + type + "\" as html" ).build() );
+            throw new WebApplicationException( Response.status( Response.Status.NOT_ACCEPTABLE )
+                    .entity( "Cannot represent \"" + type + "\" as html" )
+                    .build() );
         }
         return new HtmlMap( template );
     }
@@ -345,40 +363,40 @@ public class HtmlFormat extends RepresentationFormat
     @Override
     protected String serializeValue( String type, Object value )
     {
-        throw new WebApplicationException(
-                Response.status( Response.Status.NOT_ACCEPTABLE ).entity(
-                        "Cannot represent \"" + type + "\" as html" ).build() );
+        throw new WebApplicationException( Response.status( Response.Status.NOT_ACCEPTABLE )
+                .entity( "Cannot represent \"" + type + "\" as html" )
+                .build() );
     }
 
     @Override
     public List<Object> readList( String input ) throws BadInputException
     {
-        throw new WebApplicationException(
-                Response.status( Response.Status.UNSUPPORTED_MEDIA_TYPE ).entity(
-                        "Cannot read html" ).build() );
+        throw new WebApplicationException( Response.status( Response.Status.UNSUPPORTED_MEDIA_TYPE )
+                .entity( "Cannot read html" )
+                .build() );
     }
 
     @Override
     public Map<String, Object> readMap( String input ) throws BadInputException
     {
-        throw new WebApplicationException(
-                Response.status( Response.Status.UNSUPPORTED_MEDIA_TYPE ).entity(
-                        "Cannot read html" ).build() );
+        throw new WebApplicationException( Response.status( Response.Status.UNSUPPORTED_MEDIA_TYPE )
+                .entity( "Cannot read html" )
+                .build() );
     }
 
     @Override
     public URI readUri( String input ) throws BadInputException
     {
-        throw new WebApplicationException(
-                Response.status( Response.Status.UNSUPPORTED_MEDIA_TYPE ).entity(
-                        "Cannot read html" ).build() );
+        throw new WebApplicationException( Response.status( Response.Status.UNSUPPORTED_MEDIA_TYPE )
+                .entity( "Cannot read html" )
+                .build() );
     }
 
     @Override
     public Object readValue( String input ) throws BadInputException
     {
-        throw new WebApplicationException(
-                Response.status( Response.Status.UNSUPPORTED_MEDIA_TYPE ).entity(
-                        "Cannot read html" ).build() );
+        throw new WebApplicationException( Response.status( Response.Status.UNSUPPORTED_MEDIA_TYPE )
+                .entity( "Cannot read html" )
+                .build() );
     }
 }

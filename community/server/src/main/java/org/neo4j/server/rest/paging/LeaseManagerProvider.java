@@ -26,25 +26,26 @@ import com.sun.jersey.api.core.HttpContext;
 public class LeaseManagerProvider extends AbstractInjectableProvider<LeaseManager>
 {
     private static final LeaseManager leaseManager = new LeaseManager( new RealClock() );
-    
-    public static void setClock(Clock clock) {
-        leaseManager.setClock(clock);
+
+    public static void setClock( Clock clock )
+    {
+        leaseManager.setClock( clock );
     }
-    
+
     static Clock getClock()
     {
         return leaseManager.getClock();
     }
-    
+
     public LeaseManagerProvider()
     {
-        super(LeaseManager.class);
+        super( LeaseManager.class );
     }
 
     @Override
     public LeaseManager getValue( HttpContext arg0 )
     {
-        
+
         return leaseManager;
     }
 }

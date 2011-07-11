@@ -42,13 +42,15 @@ public final class OutputFormatProvider extends AbstractInjectableProvider<Outpu
     {
         try
         {
-            return repository.outputFormat( context.getRequest().getAcceptableMediaTypes(),
-                    context.getRequest().getBaseUri() );
+            return repository.outputFormat( context.getRequest()
+                    .getAcceptableMediaTypes(), context.getRequest()
+                    .getBaseUri() );
         }
         catch ( MediaTypeNotSupportedException e )
         {
-            throw new WebApplicationException( Response.status( Status.NOT_ACCEPTABLE ).entity(
-                    e.getMessage() ).build() );
+            throw new WebApplicationException( Response.status( Status.NOT_ACCEPTABLE )
+                    .entity( e.getMessage() )
+                    .build() );
         }
     }
 }

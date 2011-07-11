@@ -27,18 +27,21 @@ import cuke4duke.spring.StepDefinitions;
 public class ServerControlSteps
 {
     private final ServerIntegrationTestFacade serverFacade;
-    
-    public ServerControlSteps(ServerIntegrationTestFacade serverFacade) {
+
+    public ServerControlSteps( ServerIntegrationTestFacade serverFacade )
+    {
         this.serverFacade = serverFacade;
     }
-    
-    @Given("^I have a neo4j server running$")
-    public void iHaveANeo4jServerRunning() throws Exception {
+
+    @Given( "^I have a neo4j server running$" )
+    public void iHaveANeo4jServerRunning() throws Exception
+    {
         serverFacade.ensureServerIsRunning();
     }
-    
+
     @After
-    public void cleanup(){
+    public void cleanup()
+    {
         serverFacade.cleanup();
     }
 }

@@ -90,9 +90,7 @@ public class JsonFormatTest
                 serializer.putString( "key", "expected string" );
             }
         } );
-        assertEquals(
-                JsonHelper.createJsonFrom( Collections.singletonMap( "key", "expected string" ) ),
-                entity );
+        assertEquals( JsonHelper.createJsonFrom( Collections.singletonMap( "key", "expected string" ) ), entity );
     }
 
     @Test
@@ -107,8 +105,8 @@ public class JsonFormatTest
             }
         } );
 
-        assertEquals( JsonHelper.createJsonFrom( Collections.singletonMap( "URL",
-                "http://localhost/subpath" ) ), entity );
+        assertEquals( JsonHelper.createJsonFrom( Collections.singletonMap( "URL", "http://localhost/subpath" ) ),
+                entity );
     }
 
     @Test
@@ -129,7 +127,8 @@ public class JsonFormatTest
                 } );
             }
         } );
-        assertEquals( JsonHelper.createJsonFrom( Collections.singletonMap( "nested",
-                Collections.singletonMap( "data", "expected data" ) ) ), entity );
+        assertEquals(
+                JsonHelper.createJsonFrom( Collections.singletonMap( "nested",
+                        Collections.singletonMap( "data", "expected data" ) ) ), entity );
     }
 }

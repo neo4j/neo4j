@@ -43,7 +43,9 @@ public class NodeIdsInUseSampleableTest
     @Test
     public void emptyDbHasZeroNodesInUse() throws IOException, MalformedObjectNameException
     {
-        assertThat( sampleable.getValue(), is( 1L ) ); //Reference node is always created in empty dbs
+        assertThat( sampleable.getValue(), is( 1L ) ); // Reference node is
+                                                       // always created in
+                                                       // empty dbs
     }
 
     @Test
@@ -67,7 +69,7 @@ public class NodeIdsInUseSampleableTest
     @Before
     public void setUp() throws Exception
     {
-        db = new Database(new ImpermanentGraphDatabase());
+        db = new Database( new ImpermanentGraphDatabase() );
         sampleable = new NodeIdsInUseSampleable( db );
     }
 

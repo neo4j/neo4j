@@ -45,7 +45,7 @@ class MatchTest extends DocumentingTestBase
   {
     testQuery(
       title = "Outgoing relationships",
-      text = "When the direction of a relationship is interesting, it is shown by using --> or <-- ",
+      text = "When the direction of a relationship is interesting, it is shown by using `-->` or `<--`, like this: ",
       queryText = """start n=(%A%) match (n)-->(x) return x""",
       returns = """All nodes that A has outgoing relationships to.""",
       (p) => assertEquals(List(node("B"), node("C")), p.columnAs[Node]("x").toList)
@@ -80,8 +80,8 @@ class MatchTest extends DocumentingTestBase
     testQuery(
       title = "Match by relationship type and use an identifier",
       text = "If you both want to introduce an identifier to hold the relationship, and specify the relationship type you want, " +
-        "just separate them with a comma.",
-      queryText = """start n=(%A%) match (n)-[r, :BLOCKS]->() return r""",
+        "just add them both, like this.",
+      queryText = """start n=(%A%) match (n)-[r:BLOCKS]->() return r""",
       returns = """All BLOCK relationship going out from A.""",
       (p) => assertEquals(1, p.size)
     )
