@@ -18,6 +18,11 @@ time but they also require that a _full backup_ has taken place before they are 
 
 Regardless of the mode a backup is created, the resulting files represent a consistent database snapshot and they can be used to boot up a Neo4j instance.
 
+[WARNING]
+Due to certain limitations and bugs in the JVM around file locking on some platforms performing full backups could leave a running instance to a graph database in a vulnerable state.
+You are therefore adviced not to perform any full backups against a running graph database until a workaround has been found.
+Instead of doing the initial full backup shut down the database, copy the database directory to your backup location and your database again start again.
+Incremental backups after that to that location are safe to perform.
 
 The database to be backed up is specified using a URI with syntax
 
