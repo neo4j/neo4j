@@ -230,6 +230,34 @@ public class IndexNodeFunctionalTest
         Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue(entity);
         assertEquals(1, hits.size());
     }
+    
+    /**
+     * Find node by query.
+     * 
+     * The query language used here depends on what type of index you are
+     * querying. The default index type is Lucene, in which case you
+     * should use the Lucene query language here.
+     * 
+     * See: http://lucene.apache.org/java/3_1_0/queryparsersyntax.html
+     */
+    @Documented
+    @Test
+    public void shouldAddToIndexAndRetrieveItByQuery() throws PropertyValueException
+    {
+        String indexName = "bobTheIndex";
+        String key = "bobsKey";
+        String value = "bobsValue";
+        long node = helper.createNode();
+        helper.addNodeToIndex( indexName, key, value, node );
+
+        String entity = gen.get()
+                .expectedStatus(200)
+                .get(functionalTestHelper.indexNodeUri(indexName) + "?query=" + key + ":" + value)
+                .entity();
+        
+        Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue(entity);
+        assertEquals(1, hits.size());
+    }
 
     /**
      * POST ${org.neo4j.server.rest.web}/index/node/{indexName}/{key}/{value}
@@ -334,21 +362,6 @@ public class IndexNodeFunctionalTest
             counter++;
         }
         assertEquals( 2, counter );
-        response.close();
-    }
-
-    @Test
-    public void shouldGet200WhenQueryingIndex() throws PropertyValueException
-    {
-        String indexName = "bobTheIndex";
-        String key = "bobsKey";
-        String value = "bobsValue";
-        long node = helper.createNode();
-        helper.addNodeToIndex( indexName, key, value, node );
-
-        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.indexNodeUri(indexName) + "?query=" + key + ":" + value);
-
-        assertEquals( 200, response.getStatus() );
         response.close();
     }
 
