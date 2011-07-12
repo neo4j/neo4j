@@ -36,8 +36,10 @@ import javax.ws.rs.core.Response.Status;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.helpers.ServerHelper;
@@ -46,6 +48,7 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.URIHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
+import org.neo4j.test.TestData;
 
 
 
@@ -55,7 +58,8 @@ public class IndexRelationshipFunctionalTest
     private static FunctionalTestHelper functionalTestHelper;
     private static GraphDbHelper helper;
     private static RestRequest request;
-
+    public @Rule TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
+    
     @BeforeClass
     public static void setupServer() throws IOException
     {
@@ -300,6 +304,32 @@ public class IndexRelationshipFunctionalTest
         assertEquals(200, response.getStatus());
     }
 
+
+    
+    /**
+     * Find relationship by query from an automatic index.
+     */
+    @Documented
+    @Test
+    public void shouldAddToAutoIndexAndRetrieveItByQuery() throws PropertyValueException
+    {
+        String key = "bobsKey";
+        String value = "bobsValue";
+        Map<String, Object> props = new HashMap<String, Object>();
+        props.put(key, value);
+        
+        helper.enableRelationshipAutoIndexingFor(key);
+        helper.setRelationshipProperties(helper.createRelationship("sometype"), props);
+
+        String entity = gen.get()
+                .expectedStatus(200)
+                .get(functionalTestHelper.relationshipAutoIndexUri() + "?query=" + key + ":" + value)
+                .entity();
+        
+        Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue(entity);
+        assertEquals(1, hits.size());
+    }
+    
     @Test
     public void shouldBeAbleToRemoveIndexing() throws DatabaseBlockedException, JsonParseException
     {

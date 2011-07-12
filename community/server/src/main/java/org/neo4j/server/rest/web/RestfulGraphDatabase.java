@@ -802,6 +802,24 @@ public class RestfulGraphDatabase
             return output.serverError( e );
         }
     }
+    
+    @GET
+    @Path( PATH_AUTO_RELATIONSHIP_INDEX )
+    public Response getIndexedRelationshipsByQuery( @QueryParam( "query" ) String query )
+    {
+        try
+        {
+            return output.ok( actions.getAutoIndexedRelationshipsByQuery( query ) );
+        }
+        catch ( NotFoundException nfe )
+        {
+            return output.notFound( nfe );
+        }
+        catch ( Exception e )
+        {
+            return output.serverError( e );
+        }
+    }
 
     @GET
     @Path( PATH_NAMED_RELATIONSHIP_INDEX )

@@ -46,6 +46,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.ReadableIndex;
+import org.neo4j.graphdb.index.ReadableRelationshipIndex;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.IterableWrapper;
@@ -873,7 +874,7 @@ public class DatabaseActions
         }
     }
 
-	public Representation getAutoIndexedNodesByQuery(String query) {
+	public ListRepresentation getAutoIndexedNodesByQuery(String query) {
         ReadableIndex<Node> index = graphDb.index().getNodeAutoIndexer().getAutoIndex();
         List<Representation> representations = new ArrayList<Representation>();
 
@@ -949,6 +950,29 @@ public class DatabaseActions
             tx.finish();
         }
     }
+
+	public ListRepresentation getAutoIndexedRelationshipsByQuery(String query) {
+        ReadableRelationshipIndex index = graphDb.index().getRelationshipAutoIndexer().getAutoIndex();
+        List<Representation> representations = new ArrayList<Representation>();
+
+        if ( query != null )
+        {
+        	Transaction tx = graphDb.beginTx();
+	        try
+	        {
+                for ( Relationship rel : index.query( query ) )
+                {
+                    representations.add( new RelationshipRepresentation( rel ) );
+                }
+	            tx.success();
+	        }
+	        finally
+	        {
+	            tx.finish();
+	        }
+        }
+        return new ListRepresentation( RepresentationType.NODE, representations );
+	}
 
     // Traversal
 

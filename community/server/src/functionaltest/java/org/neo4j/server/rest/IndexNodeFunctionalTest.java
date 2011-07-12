@@ -52,6 +52,7 @@ public class IndexNodeFunctionalTest
     private static NeoServerWithEmbeddedWebServer server;
     private static FunctionalTestHelper functionalTestHelper;
     private static GraphDbHelper helper;
+    public @Rule TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
 
     @BeforeClass
     public static void setupServer() throws IOException
@@ -72,9 +73,6 @@ public class IndexNodeFunctionalTest
     {
         server.stop();
     }
-
-    public @Rule
-    TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
 
     /**
      * List node indexes (empty result). This is an example covering the case
