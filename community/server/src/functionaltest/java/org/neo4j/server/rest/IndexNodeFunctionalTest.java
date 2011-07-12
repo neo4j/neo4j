@@ -79,10 +79,6 @@ public class IndexNodeFunctionalTest
     /**
      * List node indexes (empty result). This is an example covering the case
      * where no node index exists.
-     * 
-     * ...
-     * 
-     * GET ${org.neo4j.server.rest.web}/index/node/
      */
     @Documented
     @Test
@@ -95,12 +91,6 @@ public class IndexNodeFunctionalTest
 
     /**
      * List node indexes.
-     * 
-     * ...
-     * 
-     * GET ${org.neo4j.server.rest.web}/index/node/
-     * 
-     * @throws PropertyValueException
      */
     @Documented
     @Test
@@ -118,11 +108,12 @@ public class IndexNodeFunctionalTest
     }
 
     /**
-     * POST ${org.neo4j.server.rest.web}/index/node { "name":"index-name" }
+     * Create node index
+     * 
+     * NOTE: Instead of creating the index this way, you can 
+     * simply start to use it, and it will be created automatically.
      */
-    @TestData.Title( "Create node index" )
-    @Documented( "NOTE: Instead of creating the index this way, " + "you can simply start to use it, "
-                 + "and it will be created automatically." )
+    @Documented
     @Test
     public void shouldCreateANamedNodeIndex() throws JsonParseException
     {
@@ -146,15 +137,6 @@ public class IndexNodeFunctionalTest
      * defaults, you can just start indexing nodes/relationships, as
      * non-existent indexes will automatically be created as you do. See
      * <<indexing-create-advanced>> for more information on index configuration.
-     * 
-     * ...
-     * 
-     * POST ${org.neo4j.server.rest.web}/index/node { "name":"index-name",
-     * "config":{"type":"fulltext","provider":"lucene"} }
-     * 
-     * @throws Exception
-     * @throws ClientHandlerException
-     * @throws PropertyValueException
      */
     @Documented
     @Test
@@ -181,10 +163,6 @@ public class IndexNodeFunctionalTest
      * same key/value/item combination twice, two index entries are created. To
      * do update-type operations, you need to delete the old entry before adding
      * a new one.
-     * 
-     * ...
-     * 
-     * POST ${org.neo4j.server.rest.web}/index/node/{indexName}/{key}/{value}
      */
     @Documented
     @Test
