@@ -663,8 +663,12 @@ public class RestfulGraphDatabase
     @Consumes( MediaType.APPLICATION_JSON )
     public Response deleteNodeIndex( @PathParam( "indexName" ) String indexName )
     {
-        actions.removeNodeIndex( indexName );
-        return output.noContent();
+    	try {
+	        actions.removeNodeIndex( indexName );
+	        return output.noContent();
+    	} catch(UnsupportedOperationException e) {
+    		return output.forbidden(e);
+    	}
     }
 
     @DELETE
@@ -672,8 +676,12 @@ public class RestfulGraphDatabase
     @Consumes( MediaType.APPLICATION_JSON )
     public Response deleteRelationshipIndex( @PathParam( "indexName" ) String indexName )
     {
-        actions.removeRelationshipIndex( indexName );
-        return output.noContent();
+    	try {
+	        actions.removeRelationshipIndex( indexName );
+	        return output.noContent();
+    	} catch(UnsupportedOperationException e) {
+    		return output.forbidden(e);
+    	}
     }
 
     @POST
@@ -686,8 +694,12 @@ public class RestfulGraphDatabase
         {
             return output.created( actions.addToNodeIndex( indexName, key, value,
                     extractNodeId( input.readUri( objectUri )
-                            .toString() ) ) );
-        }
+                            .toString() ) ) );   
+		}
+        catch(UnsupportedOperationException e) 
+        {
+			return output.forbidden(e);
+		}
         catch ( BadInputException e )
         {
             return output.badRequest( e );
@@ -709,6 +721,10 @@ public class RestfulGraphDatabase
                     extractNodeId( input.readUri( objectUri )
                             .toString() ) ) );
         }
+        catch(UnsupportedOperationException e) 
+        {
+			return output.forbidden(e);
+		}
         catch ( BadInputException e )
         {
             return output.badRequest( e );
@@ -869,6 +885,10 @@ public class RestfulGraphDatabase
             actions.removeFromNodeIndex( indexName, key, value, id );
             return nothing();
         }
+        catch(UnsupportedOperationException e) 
+        {
+			return output.forbidden(e);
+		}
         catch ( NotFoundException nfe )
         {
             return output.notFound( nfe );
@@ -889,6 +909,10 @@ public class RestfulGraphDatabase
             actions.removeFromNodeIndexNoValue( indexName, key, id );
             return nothing();
         }
+        catch(UnsupportedOperationException e) 
+        {
+			return output.forbidden(e);
+		}
         catch ( NotFoundException nfe )
         {
             return output.notFound( nfe );
@@ -909,6 +933,10 @@ public class RestfulGraphDatabase
             actions.removeFromNodeIndexNoKeyValue( indexName, id );
             return nothing();
         }
+        catch(UnsupportedOperationException e) 
+        {
+			return output.forbidden(e);
+		}
         catch ( NotFoundException nfe )
         {
             return output.notFound( nfe );
@@ -929,6 +957,10 @@ public class RestfulGraphDatabase
             actions.removeFromRelationshipIndex( indexName, key, value, id );
             return nothing();
         }
+        catch(UnsupportedOperationException e) 
+        {
+			return output.forbidden(e);
+		}
         catch ( NotFoundException nfe )
         {
             return output.notFound( nfe );
@@ -949,6 +981,10 @@ public class RestfulGraphDatabase
             actions.removeFromRelationshipIndexNoValue( indexName, key, id );
             return nothing();
         }
+        catch(UnsupportedOperationException e) 
+        {
+			return output.forbidden(e);
+		}
         catch ( NotFoundException nfe )
         {
             return output.notFound( nfe );
@@ -969,6 +1005,10 @@ public class RestfulGraphDatabase
             actions.removeFromRelationshipIndexNoKeyValue( indexName, id );
             return nothing();
         }
+        catch(UnsupportedOperationException e) 
+        {
+			return output.forbidden(e);
+		}
         catch ( NotFoundException nfe )
         {
             return output.notFound( nfe );

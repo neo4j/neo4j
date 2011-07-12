@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import org.junit.AfterClass;
@@ -303,32 +304,6 @@ public class IndexRelationshipFunctionalTest
 
         assertEquals(200, response.getStatus());
     }
-
-
-    
-    /**
-     * Find relationship by query from an automatic index.
-     */
-    @Documented
-    @Test
-    public void shouldAddToAutoIndexAndRetrieveItByQuery() throws PropertyValueException
-    {
-        String key = "bobsKey";
-        String value = "bobsValue";
-        Map<String, Object> props = new HashMap<String, Object>();
-        props.put(key, value);
-        
-        helper.enableRelationshipAutoIndexingFor(key);
-        helper.setRelationshipProperties(helper.createRelationship("sometype"), props);
-
-        String entity = gen.get()
-                .expectedStatus(200)
-                .get(functionalTestHelper.relationshipAutoIndexUri() + "?query=" + key + ":" + value)
-                .entity();
-        
-        Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue(entity);
-        assertEquals(1, hits.size());
-    }
     
     @Test
     public void shouldBeAbleToRemoveIndexing() throws DatabaseBlockedException, JsonParseException
@@ -381,6 +356,19 @@ public class IndexRelationshipFunctionalTest
                 .size() );
         assertEquals( 0, helper.getIndexedRelationships( indexName, key2, value2 )
                 .size() );
+    }
+    
+    @Test
+    public void shouldReturn204WhenRemovingRelationshipIndexes() throws DatabaseBlockedException, JsonParseException
+    {
+
+        String indexName = "blah";
+        helper.createRelationshipIndex( indexName );
+
+        // Remove the index
+        JaxRsResponse response = RestRequest.req().delete(functionalTestHelper.indexRelationshipUri(indexName));
+
+        assertEquals(204, response.getStatus());
     }
 
     @Test
@@ -435,4 +423,72 @@ public class IndexRelationshipFunctionalTest
         );
         assertEquals( 400, response.getStatus() );
     }
+    
+    //
+    // AUTO INDEXES
+    //
+    
+    /**
+     * Find relationship by query from an automatic index.
+     */
+    @Documented
+    @Test
+    public void shouldRetrieveFromAutoIndexByQuery() throws PropertyValueException
+    {
+        String key = "bobsKey";
+        String value = "bobsValue";
+        Map<String, Object> props = new HashMap<String, Object>();
+        props.put(key, value);
+        
+        helper.enableRelationshipAutoIndexingFor(key);
+        helper.setRelationshipProperties(helper.createRelationship("sometype"), props);
+
+        String entity = gen.get()
+                .expectedStatus(200)
+                .get(functionalTestHelper.relationshipAutoIndexUri() + "?query=" + key + ":" + value)
+                .entity();
+        
+        Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue(entity);
+        assertEquals(1, hits.size());
+    }
+    
+    @Test
+    public void shouldNotBeAbleToRemoveAutoIndex() throws DatabaseBlockedException, JsonParseException
+    {
+    	String indexName = server.getDatabase().graph.index().getRelationshipAutoIndexer().getAutoIndex().getName();
+    	Response r = RestRequest.req().delete(functionalTestHelper.relationshipIndexUri() + indexName);
+    	assertEquals(403, r.getStatus());
+    }
+    
+    @Test
+    public void shouldNotAddToAutoIndex() throws Exception {
+        String indexName = server.getDatabase().graph.index().getRelationshipAutoIndexer().getAutoIndex().getName();
+        String key = "key";
+        String value = "the value";
+        value = URIHelper.encode(value);
+        long relId = helper.createRelationship("taa");
+
+        Response r = RestRequest.req().post(
+        		functionalTestHelper.indexRelationshipUri(indexName, key, value), 
+        		JsonHelper.createJsonFrom(functionalTestHelper.relationshipUri(relId)));
+    	assertEquals(403, r.getStatus());
+    }
+    
+    @Test
+    public void shouldNotBeAbleToRemoveAutoIndexedItems() throws DatabaseBlockedException, JsonParseException
+    {
+        final RestRequest request = RestRequest.req();
+        String indexName = server.getDatabase().graph.index().getRelationshipAutoIndexer().getAutoIndex().getName();
+        long relId = helper.createRelationship("sometype");
+        
+        Response r = request.delete( functionalTestHelper.relationshipIndexUri() + indexName + "/key/value/" + relId );
+        assertEquals( 403, r.getStatus() );
+       
+        r = request.delete(functionalTestHelper.relationshipIndexUri() + indexName + "/key/" + relId);
+        assertEquals( 403, r.getStatus() );
+        
+        r = request.delete(functionalTestHelper.relationshipIndexUri() + indexName + "/" + relId);
+        assertEquals( 403, r.getStatus() );
+    }
+    
 }

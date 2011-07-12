@@ -34,6 +34,7 @@ import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.TestData;
 
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import java.io.IOException;
 import java.net.URI;
@@ -234,32 +235,6 @@ public class IndexNodeFunctionalTest
         Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue(entity);
         assertEquals(1, hits.size());
     }
-    
-    /**
-     * Find node by query from an automatic index.
-     * 
-     * See Find node by query for the actual query syntax.
-     */
-    @Documented
-    @Test
-    public void shouldAddToAutoIndexAndRetrieveItByQuery() throws PropertyValueException
-    {
-        String key = "bobsKey";
-        String value = "bobsValue";
-        Map<String, Object> props = new HashMap<String, Object>();
-        props.put(key, value);
-        
-        helper.enableNodeAutoIndexingFor(key);
-        helper.createNode(props);
-
-        String entity = gen.get()
-                .expectedStatus(200)
-                .get(functionalTestHelper.nodeAutoIndexUri() + "?query=" + key + ":" + value)
-                .entity();
-        
-        Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue(entity);
-        assertEquals(1, hits.size());
-    }
 
     /**
      * POST ${org.neo4j.server.rest.web}/index/node/{indexName}/{key}/{value}
@@ -391,20 +366,7 @@ public class IndexNodeFunctionalTest
                 .expectedStatus( 204 )
                 .delete( functionalTestHelper.indexNodeUri( indexName ) );
     }
-
-    @Test
-    public void shouldReturn204WhenRemovingRelationshipIndexes() throws DatabaseBlockedException, JsonParseException
-    {
-
-        String indexName = "blah";
-        helper.createRelationshipIndex( indexName );
-
-        // Remove the index
-        JaxRsResponse response = RestRequest.req().delete(functionalTestHelper.indexRelationshipUri(indexName));
-
-        assertEquals(204, response.getStatus());
-    }
-
+    
     @Test
     public void shouldBeAbleToRemoveIndexing() throws DatabaseBlockedException, JsonParseException
     {
@@ -495,4 +457,73 @@ public class IndexNodeFunctionalTest
         assertEquals(400, response.getStatus() );
         response.close();
     }
+    
+    //
+    // AUTO INDEXES
+    //
+    
+    /**
+     * Find node by query from an automatic index.
+     * 
+     * See Find node by query for the actual query syntax.
+     */
+    @Documented
+    @Test
+    public void shouldRetrieveFromAutoIndexByQuery() throws PropertyValueException
+    {
+        String key = "bobsKey";
+        String value = "bobsValue";
+        Map<String, Object> props = new HashMap<String, Object>();
+        props.put(key, value);
+        
+        helper.enableNodeAutoIndexingFor(key);
+        helper.createNode(props);
+
+        String entity = gen.get()
+                .expectedStatus(200)
+                .get(functionalTestHelper.nodeAutoIndexUri() + "?query=" + key + ":" + value)
+                .entity();
+        
+        Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue(entity);
+        assertEquals(1, hits.size());
+    }
+
+    @Test
+    public void shouldNotBeAbleToRemoveAutoIndex() throws DatabaseBlockedException, JsonParseException
+    {
+    	String indexName = server.getDatabase().graph.index().getNodeAutoIndexer().getAutoIndex().getName();
+    	Response r = RestRequest.req().delete(functionalTestHelper.nodeIndexUri() + indexName);
+    	assertEquals(403, r.getStatus());
+    }
+    
+    @Test
+    public void shouldNotAddToAutoIndex() throws Exception {
+        String indexName = server.getDatabase().graph.index().getNodeAutoIndexer().getAutoIndex().getName();
+        String key = "key";
+        String value = "the value";
+        value = URIHelper.encode(value);
+        int nodeId = 0;
+
+        Response r = RestRequest.req().post(
+        		functionalTestHelper.indexNodeUri(indexName, key, value), 
+        		JsonHelper.createJsonFrom(functionalTestHelper.nodeUri(nodeId)));
+    	assertEquals(403, r.getStatus());
+    }
+    
+    @Test
+    public void shouldNotBeAbleToRemoveAutoIndexedItems() throws DatabaseBlockedException, JsonParseException
+    {
+        final RestRequest request = RestRequest.req();
+        String indexName = server.getDatabase().graph.index().getNodeAutoIndexer().getAutoIndex().getName();
+        
+        Response r = request.delete( functionalTestHelper.nodeIndexUri() + indexName + "/key/value/0" );
+        assertEquals( 403, r.getStatus() );
+       
+        r = request.delete(functionalTestHelper.nodeIndexUri() + indexName + "/key/0");
+        assertEquals( 403, r.getStatus() );
+        
+        r = request.delete(functionalTestHelper.nodeIndexUri() + indexName + "/0");
+        assertEquals( 403, r.getStatus() );
+    }
+
 }
