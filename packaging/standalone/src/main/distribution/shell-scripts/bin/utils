@@ -248,6 +248,7 @@ remove_user() {
     read -p "It appears that user \"${wrapper_user}\" was created during install. Remove that user now? [yN] " yn
     case $yn in
       [Yy]* ) deluser $wrapper_user
+              modify_user_config "" created=true
         ;;
       * ) echo "OK, we'll let that user live, for now." 
         ;;
@@ -260,7 +261,7 @@ remove_user() {
 removeservice() {
     detectos
     checkstatus
-    
+
     PLIST_FILE=$LAUNCHD_NAME.plist
 
     if [[ -d "/etc/init.d" ]]; then
@@ -289,5 +290,4 @@ removeservice() {
     else
       echo "Sorry, don't know how to install on ${DIST_OS}."
     fi
-
 }

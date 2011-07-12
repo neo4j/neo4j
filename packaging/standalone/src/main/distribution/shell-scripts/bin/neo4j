@@ -47,7 +47,7 @@ function findBaseDirAndCdThere {
 }
 
 function parseConfig {
-  if [ ${BASH_VERSINFO[0]} -eq 3 ] ; then 
+  if [ ${BASH_VERSINFO[0]} -eq 3 ] ; then
     if [ ${BASH_VERSINFO[1]} -lt 2 ] ; then
       getconfigquoted "${NEO4J_INSTANCE}/conf/neo4j-wrapper.conf"
       getconfigquoted "${NEO4J_INSTANCE}/conf/neo4j-server.properties"
@@ -308,39 +308,6 @@ installservice() {
       fi
     fi
 }
-
-removeservice() {
-    checkstatus
-
-    if [[ -d "/etc/init.d" ]]; then
-      if [[ -e "/etc/init.d/${SERVICE_NAME}" ]]; then
-        if [  $UID != 0 ] ; then
-          eval echo  'Must be root to perform this action.'
-          exit 1
-        else
-          if [ ! -z $NEO4J_PID ] ; then
-            stopit
-          fi
-	  update-rc.d -f ${SERVICE_NAME} remove
-          rm /etc/init.d/${SERVICE_NAME}
-        fi
-        # remove effective user, if created by install-script
-        remove_user
-      else
-        echo "${SERVICE_NAME} not installed."
-      fi
-
-    elif [[ $DIST_OS -eq "macosx" ]] ; then
-      if [[ -e ${LAUNCHD_DIR}/org.neo4j.server.plist ]]; then
-        launchctl unload -w ${LAUNCHD_DIR}/org.neo4j.server.plist
-        rm ${LAUNCHD_DIR}/org.neo4j.server.plist
-      fi
-    else
-      echo "Sorry, don't know how to install on ${DIST_OS}."
-    fi
-
-}
-
 
 showinfo() {
   reportstatus
