@@ -236,6 +236,32 @@ public class IndexNodeFunctionalTest
         Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue(entity);
         assertEquals(1, hits.size());
     }
+    
+    /**
+     * Find node by query from an automatic index.
+     * 
+     * See Find node by query for the actual query syntax.
+     */
+    @Documented
+    @Test
+    public void shouldAddToAutoIndexAndRetrieveItByQuery() throws PropertyValueException
+    {
+        String key = "bobsKey";
+        String value = "bobsValue";
+        Map<String, Object> props = new HashMap<String, Object>();
+        props.put(key, value);
+        
+        helper.enableNodeAutoIndexingFor(key);
+        helper.createNode(props);
+
+        String entity = gen.get()
+                .expectedStatus(200)
+                .get(functionalTestHelper.nodeAutoIndexUri() + "?query=" + key + ":" + value)
+                .entity();
+        
+        Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue(entity);
+        assertEquals(1, hits.size());
+    }
 
     /**
      * POST ${org.neo4j.server.rest.web}/index/node/{indexName}/{key}/{value}
