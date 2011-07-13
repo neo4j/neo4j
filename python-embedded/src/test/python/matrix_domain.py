@@ -26,8 +26,12 @@ import unit_tests, datetime
 
 from neo4j import Node, Relationship, Property
 
+class Friendship(Relationship):
+
+    introduced = Property(datetime.datetime, default=None)
+    
 class Person(Node):
-    friends = Relationship('Person', type="KNOWS")
+    friends = Friendship('Person',type='KNOWS')
     name = Property(str, indexed=True)
     birthday = Property(datetime.datetime, default=None)
 
@@ -51,6 +55,18 @@ class SomeTests(unit_tests.GraphDatabaseTest):
         friends = list(smith.friends)
         self.assertEqual(1, len(friends))
         self.assertEqual(cypher, friends[0])
+        
+    def test_access_relationship(self):
+        with self.graphdb.transaction:
+            cypher = Person(self.graphdb, name="Cypher",
+                            birthday=datetime.datetime(1972,10,16))
+            smith = Person(self.graphdb, name="Agent Smith",
+                           birthday=datetime.datetime(1996,01,01))
+            cypher.friends.add(smith, introduced=datetime.datetime(1999,01,01))
+        friendships = list(smith.friends.rels)
+        self.assertEqual(1, len(friendships))
+        self.assertEqual(datetime.datetime(1999,01,01), friendships[0].introduced)
+        
 
 if __name__ == '__main__':
     unit_tests.unittest.main()

@@ -58,8 +58,9 @@ class DatabaseWrapper(object):
         self.__graphdb = None
 
 class Neo4jFeatures(BaseDatabaseFeatures):
-    # TODO
-    pass
+    
+    def __init__(self):
+      pass
 
 class Neo4jOperations(BaseDatabaseOperations):
     # TODO

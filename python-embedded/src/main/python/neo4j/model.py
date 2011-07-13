@@ -114,12 +114,15 @@ class Relationship(Neo4jEntity):
         def _index(Relationship, graphdb):
             return graphdb.index().forRelationships(Relationship.__name__)
 
-    def __new__(Relationship, target, type=None, direction=None):
+    def __new__(Relationship, target_type, type=None, direction=None):
         # TODO: return a Factory of something else?
-        return Factory(Relationship, (target, type, direction))
+        return Factory(Relationship, (target_type, type, direction))
 
-    def __init__(self, source, name, target, type=None, direction=None):
+    def __init__(self, source_type, name, target_type, type=None, direction=None):
         pass
+        
+    def add(self, node):
+      pass
 
 def transactional(method):
     def transactional(self, *args, **kwargs):

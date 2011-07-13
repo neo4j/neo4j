@@ -162,7 +162,13 @@ else: # imported as a module
             dirname, join = os.path.dirname, os.path.join
             path = dirname(dirname(dirname(dirname(os.path.abspath(__file__)))))
             path = join(path,'target','testdata',testcase.__module__)
-            self.graphdb = neo4j.GraphDatabase(join(path,testcase.__name__))
+            
+            if os.path.exists(path):
+              import shutil
+              shutil.rmtree(path)
+            path = join(path,testcase.__name__)
+            
+            self.graphdb = neo4j.GraphDatabase(path)
         def tearDown(self):
             graphdb = getattr(self,'graphdb',None)
             if graphdb is not None:
