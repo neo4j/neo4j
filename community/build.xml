@@ -28,7 +28,7 @@
 		<compileProject projectName="lucene-index" pom="pom.xml"/>
 		<compileProject projectName="graph-algo" pom="pom.xml"/>
 		<compileProject projectName="graph-matching" pom="pom.xml"/>
-		<compileProject projectName="cypher" pom="pom.tom"/>
+		<compileProject projectName="cypher" pom="pom.xml"/>
 		<compileProject projectName="neo4j" pom="pom.xml"/>
 		<compileProject projectName="neo4j-community" pom="pom.xml"/>
 		<compileProject projectName="shell" pom="pom.xml"/>
