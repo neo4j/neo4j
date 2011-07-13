@@ -21,6 +21,7 @@ package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
 
 import java.io.IOException;
@@ -34,6 +35,9 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -112,8 +116,8 @@ public class IndexNodeFunctionalTest
 
     /**
      * Create node index
-     * 
-     * NOTE: Instead of creating the index this way, you can 
+     *
+     * NOTE: Instead of creating the index this way, you can
      * simply start to use it, and it will be created automatically.
      */
     @Documented
@@ -132,7 +136,40 @@ public class IndexNodeFunctionalTest
                 .post( functionalTestHelper.nodeIndexUri() );
 
         assertEquals( expectedIndexes, helper.getNodeIndexes().length );
-        assertEquals( indexName, helper.getNodeIndexes()[0] );
+        assertThat( helper.getNodeIndexes(), arrayContains( indexName ) );
+    }
+
+    private Matcher<String[]> arrayContains( final String element )
+    {
+        return new TypeSafeMatcher<String[]>()
+        {
+            private String[] array;
+
+            @Override
+            public void describeTo( Description descr )
+            {
+                descr.appendText( "The array " ).appendText( Arrays.toString( array ) )
+                        .appendText( " does not contain <" ).appendText( element ).appendText( ">" );
+            }
+
+            @Override
+            public boolean matchesSafely( @SuppressWarnings( "hiding" ) String[] array )
+            {
+                this.array = array;
+                for ( String string : array )
+                {
+                    if ( element == null )
+                    {
+                        if ( string == null ) return true;
+                    }
+                    else if ( element.equals( string ) )
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        };
     }
 
     /**
@@ -153,16 +190,16 @@ public class IndexNodeFunctionalTest
                 .post( functionalTestHelper.nodeIndexUri() );
 
         assertEquals( 1, helper.getNodeIndexes().length );
-        assertEquals( "fulltext", helper.getNodeIndexes()[0] );
+        assertThat( helper.getNodeIndexes(), arrayContains( "fulltext" ) );
     }
 
     /**
      * Add node to index.
-     * 
+     *
      * Associates a node with the given key/value pair in the given index.
-     * 
+     *
      * NOTE: Spaces in the URI have to be escaped.
-     * 
+     *
      * CAUTION: This does *not* overwrite previous entries. If you index the
      * same key/value/item combination twice, two index entries are created. To
      * do update-type operations, you need to delete the old entry before adding
@@ -190,7 +227,7 @@ public class IndexNodeFunctionalTest
 
     /**
      * Find node by exact match.
-     * 
+     *
      * NOTE: Spaces in the URI have to be escaped.
      */
     @Documented
@@ -212,14 +249,14 @@ public class IndexNodeFunctionalTest
         Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue(entity);
         assertEquals(1, hits.size());
     }
-    
+
     /**
      * Find node by query.
-     * 
+     *
      * The query language used here depends on what type of index you are
      * querying. The default index type is Lucene, in which case you
      * should use the Lucene query language here.
-     * 
+     *
      * See: http://lucene.apache.org/java/3_1_0/queryparsersyntax.html
      */
     @Documented
@@ -236,7 +273,7 @@ public class IndexNodeFunctionalTest
                 .expectedStatus(200)
                 .get(functionalTestHelper.indexNodeUri(indexName) + "?query=" + key + ":" + value)
                 .entity();
-        
+
         Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue(entity);
         assertEquals(1, hits.size());
     }
@@ -371,15 +408,15 @@ public class IndexNodeFunctionalTest
                 .expectedStatus( 204 )
                 .delete( functionalTestHelper.indexNodeUri( indexName ) );
     }
-    
+
     //
     // REMOVING ENTRIES
     //
-    
+
     /**
      * Remove all entries with a given node from an index.
      */
-    @Documented   
+    @Documented
     @Test
     public void shouldBeAbleToRemoveIndexingById() throws DatabaseBlockedException, JsonParseException
     {
@@ -393,11 +430,11 @@ public class IndexNodeFunctionalTest
         helper.addNodeToIndex( indexName, key1, value2, node );
         helper.addNodeToIndex( indexName, key2, value1, node );
         helper.addNodeToIndex( indexName, key2, value2, node );
-        
+
         gen.get()
         	.expectedStatus( 204 )
         	.delete( functionalTestHelper.indexNodeUri( indexName ) + "/" + node);
-        
+
         assertEquals( 0, helper.getIndexedNodes( indexName, key1, value1 )
                 .size() );
         assertEquals( 0, helper.getIndexedNodes( indexName, key1, value2 )
@@ -407,14 +444,14 @@ public class IndexNodeFunctionalTest
         assertEquals( 0, helper.getIndexedNodes( indexName, key2, value2 )
                 .size() );
     }
-    
+
     /**
      * Remove all entries with a given node and key from an index.
      */
-    @Documented   
+    @Documented
     @Test
     public void shouldBeAbleToRemoveIndexingByIdAndKey() throws DatabaseBlockedException, JsonParseException
-    {  
+    {
     	String key1 = "kvkey1";
         String key2 = "kvkey2";
         String value1 = "value1";
@@ -425,11 +462,11 @@ public class IndexNodeFunctionalTest
         helper.addNodeToIndex( indexName, key1, value2, node );
         helper.addNodeToIndex( indexName, key2, value1, node );
         helper.addNodeToIndex( indexName, key2, value2, node );
-        
+
         gen.get()
         	.expectedStatus( 204 )
         	.delete( functionalTestHelper.nodeIndexUri() + indexName + "/" + key2 + "/" + node);
-        
+
         assertEquals( 1, helper.getIndexedNodes( indexName, key1, value1 )
                 .size() );
         assertEquals( 1, helper.getIndexedNodes( indexName, key1, value2 )
@@ -439,15 +476,15 @@ public class IndexNodeFunctionalTest
         assertEquals( 0, helper.getIndexedNodes( indexName, key2, value2 )
                 .size() );
     }
-    
+
     /**
      * Remove all entries with a given node, key and value from an index.
      */
-    @Documented   
+    @Documented
     @Test
     public void shouldBeAbleToRemoveIndexingByIdAndKeyAndValue() throws DatabaseBlockedException, JsonParseException
     {
-    	
+
     	String key1 = "kvkey1";
         String key2 = "kvkey2";
         String value1 = "value1";
@@ -458,11 +495,11 @@ public class IndexNodeFunctionalTest
         helper.addNodeToIndex( indexName, key1, value2, node );
         helper.addNodeToIndex( indexName, key2, value1, node );
         helper.addNodeToIndex( indexName, key2, value2, node );
-        
+
         gen.get()
         	.expectedStatus( 204 )
         	.delete( functionalTestHelper.nodeIndexUri() + indexName + "/" + key1 + "/" + value1 + "/" + node );
-        
+
         assertEquals( 0, helper.getIndexedNodes( indexName, key1, value1 )
                 .size() );
         assertEquals( 1, helper.getIndexedNodes( indexName, key1, value2 )
@@ -471,7 +508,7 @@ public class IndexNodeFunctionalTest
                 .size() );
         assertEquals( 1, helper.getIndexedNodes( indexName, key2, value2 )
                 .size() );
-        
+
     }
 
     @Test
@@ -513,14 +550,14 @@ public class IndexNodeFunctionalTest
         assertEquals(400, response.getStatus() );
         response.close();
     }
-    
+
     //
     // AUTO INDEXES
     //
-    
+
     /**
      * Find node by query from an automatic index.
-     * 
+     *
      * See Find node by query for the actual query syntax.
      */
     @Documented
@@ -531,7 +568,7 @@ public class IndexNodeFunctionalTest
         String value = "bobsValue";
         Map<String, Object> props = new HashMap<String, Object>();
         props.put(key, value);
-        
+
         helper.enableNodeAutoIndexingFor(key);
         helper.createNode(props);
 
@@ -539,7 +576,7 @@ public class IndexNodeFunctionalTest
                 .expectedStatus(200)
                 .get(functionalTestHelper.nodeAutoIndexUri() + "?query=" + key + ":" + value)
                 .entity();
-        
+
         Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue(entity);
         assertEquals(1, hits.size());
     }
@@ -555,7 +592,7 @@ public class IndexNodeFunctionalTest
         String value = "bobsValue";
         Map<String, Object> props = new HashMap<String, Object>();
         props.put(key, value);
-        
+
         helper.enableNodeAutoIndexingFor(key);
         helper.createNode(props);
 
@@ -563,11 +600,11 @@ public class IndexNodeFunctionalTest
                 .expectedStatus(200)
                 .get(functionalTestHelper.nodeAutoIndexUri() + key + "/" + value)
                 .entity();
-        
+
         Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue(entity);
         assertEquals(1, hits.size());
     }
-    
+
     @Test
     public void shouldNotBeAbleToRemoveAutoIndex() throws DatabaseBlockedException, JsonParseException
     {
@@ -575,7 +612,7 @@ public class IndexNodeFunctionalTest
     	Response r = RestRequest.req().delete(functionalTestHelper.nodeIndexUri() + indexName);
     	assertEquals(403, r.getStatus());
     }
-    
+
     @Test
     public void shouldNotAddToAutoIndex() throws Exception {
         String indexName = server.getDatabase().graph.index().getNodeAutoIndexer().getAutoIndex().getName();
@@ -585,23 +622,23 @@ public class IndexNodeFunctionalTest
         int nodeId = 0;
 
         Response r = RestRequest.req().post(
-        		functionalTestHelper.indexNodeUri(indexName, key, value), 
+        		functionalTestHelper.indexNodeUri(indexName, key, value),
         		JsonHelper.createJsonFrom(functionalTestHelper.nodeUri(nodeId)));
     	assertEquals(403, r.getStatus());
     }
-    
+
     @Test
     public void shouldNotBeAbleToRemoveAutoIndexedItems() throws DatabaseBlockedException, JsonParseException
     {
         final RestRequest request = RestRequest.req();
         String indexName = server.getDatabase().graph.index().getNodeAutoIndexer().getAutoIndex().getName();
-        
+
         Response r = request.delete( functionalTestHelper.nodeIndexUri() + indexName + "/key/value/0" );
         assertEquals( 403, r.getStatus() );
-       
+
         r = request.delete(functionalTestHelper.nodeIndexUri() + indexName + "/key/0");
         assertEquals( 403, r.getStatus() );
-        
+
         r = request.delete(functionalTestHelper.nodeIndexUri() + indexName + "/0");
         assertEquals( 403, r.getStatus() );
     }
