@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Copyright (c) 2002-2011 "Neo Technology,"
 # Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -18,9 +18,22 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+#Remember where we started from so that working dir is set correctly
+RUN_FROM=`pwd`
 
-BASEDIR=`dirname "$0"`/..
-BASEDIR=`(cd "$BASEDIR"; pwd)`
+SHELL_SCRIPT=$0
+
+cd `dirname $SHELL_SCRIPT`
+SHELL_SCRIPT=`basename $SHELL_SCRIPT`
+
+while [ -L "$SHELL_SCRIPT" ]
+do
+  SHELL_SCRIPT=$( readlink $SHELL_SCRIPT )
+  cd `dirname $SHELL_SCRIPT`
+  SHELL_SCRIPT=`basename $SHELL_SCRIPT`
+done
+
+BASEDIR=`cd $( dirname $SHELL_SCRIPT )/.. && dirs -l +0`
 
 # OS specific support.  $var _must_ be set to either true or false.
 cygwin=false;
@@ -95,6 +108,9 @@ if $cygwin; then
   [ -n "$BASEDIR" ] && BASEDIR=`cygpath --path --windows "$BASEDIR"`
   [ -n "$REPO" ] && REPO=`cygpath --path --windows "$REPO"`
 fi
+
+# Return to working dir
+cd "$RUN_FROM"
 
 exec "$JAVACMD" $JAVA_OPTS \
   $EXTRA_JVM_ARGUMENTS \

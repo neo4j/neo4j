@@ -137,7 +137,7 @@
         <exclude>org.neo4j:neo4j-enterprise</exclude>
         <exclude>*:neo4j-server-enterprise</exclude>
         <exclude>org.scala-lang:scala-library</exclude>
-        <exclude>org.neo4j:windows-service-wrapper:*</exclude>
+        <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
       </excludes>
     </dependencySet>
     <!-- java examples -->

@@ -74,6 +74,10 @@ set LIBPATH=""
 pushd "%REPO%"
 for %%G in (*.jar) do call:APPEND_TO_LIBPATH %%G
 popd
+set REPO=%BASEDIR%\system\coordinator\lib
+pushd "%REPO%"
+for %%G in (*.jar) do call:APPEND_TO_LIBPATH %%G
+popd 
 goto LIBPATH_END
 
 : APPEND_TO_LIBPATH
@@ -92,7 +96,7 @@ goto endInit
 @REM Reaching here means variables are defined and arguments have been captured
 :endInit
 
-%JAVACMD% %JAVA_OPTS% %EXTRA_JVM_ARGUMENTS% -classpath %CLASSPATH_PREFIX%;%CLASSPATH% -Dapp.name="neo4j-backup" -Dapp.repo="%REPO%" -Dbasedir="%BASEDIR%" org.neo4j.backup.BackupTool %CMD_LINE_ARGS%
+%JAVACMD% %JAVA_OPTS% %EXTRA_JVM_ARGUMENTS% -classpath %CLASSPATH_PREFIX%;%CLASSPATH% -Dapp.name="neo4j-backup" -Dapp.repo="%REPO%" -Dbasedir="%BASEDIR%" -Dlog4j.configuration=. -Dlog4j.configuratorClass=org.neo4j.kernel.ha.backup.BackupLoggerConfigurator org.neo4j.backup.BackupTool %CMD_LINE_ARGS%
 if ERRORLEVEL 1 goto error
 goto end
 

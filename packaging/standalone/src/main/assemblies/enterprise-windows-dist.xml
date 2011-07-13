@@ -80,7 +80,7 @@
   		<unpack>false</unpack>
   		<useProjectArtifact>false</useProjectArtifact>
   		<includes>
-  			<include>*:windows-service-wrapper:*</include>
+          <include>org.neo4j.app:windows-service-wrapper:*</include>
   		</includes>
   	</dependencySet>
     <dependencySet>
@@ -96,7 +96,7 @@
         <include>org.apache.lucene:lucene-core</include>
         <include>org.apache.zookeeper:zookeeper</include>
         <include>org.slf4j:slf4j-api</include>
-        <include>org.slf4j:log4j-over-slf4j</include>
+        <!-- include>org.slf4j:log4j-over-slf4j</include-->
         <include>org.scala-lang:scala-library</include>
       </includes>
       <excludes>
@@ -107,7 +107,7 @@
         <exclude>*:pom:*</exclude>
         <exclude>org.neo4j:neo4j:jar</exclude>
         <exclude>org.neo4j:neo4j-udc:jar:neo4j</exclude>
-        <exclude>org.neo4j:windows-service-wrapper:*</exclude>
+        <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
         
         <exclude>org.neo4j:neo4j-advanced</exclude>
         <exclude>org.neo4j:neo4j-community</exclude>
@@ -133,7 +133,7 @@
         <exclude>org.slf4j:slf4j-api</exclude>
         <exclude>org.slf4j:log4j-over-slf4j</exclude>
         <exclude>org.scala-lang:scala-library</exclude>
-        <exclude>org.neo4j:windows-service-wrapper:*</exclude>
+        <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
       </excludes>
     </dependencySet>
     <dependencySet>
