@@ -597,8 +597,11 @@ class NodeImpl extends Primitive
                         continue;
                     }
                     RelIdArray src = getRelIdArray( type );
-                    RelIdArray remove = cowRelationshipRemoveMap.get( type );
-                    putRelIdArray( RelIdArray.from( src, null, remove ) );
+                    if ( src != null )
+                    {
+                        RelIdArray remove = cowRelationshipRemoveMap.get( type );
+                        putRelIdArray( RelIdArray.from( src, null, remove ) );
+                    }
                 }
             }
         }
