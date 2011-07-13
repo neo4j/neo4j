@@ -66,11 +66,13 @@ import org.neo4j.server.rest.repr.DatabaseRepresentation;
 import org.neo4j.server.rest.repr.IndexRepresentation;
 import org.neo4j.server.rest.repr.IndexedEntityRepresentation;
 import org.neo4j.server.rest.repr.ListRepresentation;
+import org.neo4j.server.rest.repr.NodeAutoIndexRepresentation;
 import org.neo4j.server.rest.repr.NodeIndexRepresentation;
 import org.neo4j.server.rest.repr.NodeIndexRootRepresentation;
 import org.neo4j.server.rest.repr.NodeRepresentation;
 import org.neo4j.server.rest.repr.PathRepresentation;
 import org.neo4j.server.rest.repr.PropertiesRepresentation;
+import org.neo4j.server.rest.repr.RelationshipAutoIndexRepresentation;
 import org.neo4j.server.rest.repr.RelationshipIndexRepresentation;
 import org.neo4j.server.rest.repr.RelationshipIndexRootRepresentation;
 import org.neo4j.server.rest.repr.RelationshipRepresentation;
@@ -817,7 +819,7 @@ public class DatabaseActions
                 Collections.<String, String>emptyMap() ) );
     }
 
-    public ListRepresentation getIndexedNodesByExactMatch( String indexName, String key, String value )
+    public ListRepresentation getIndexedNodes( String indexName, String key, String value )
     {
         if ( !graphDb.index()
                 .existsForNodes( indexName ) ) throw new NotFoundException();
@@ -873,6 +875,27 @@ public class DatabaseActions
             tx.finish();
         }
     }
+
+	public Representation getAutoIndexedNodes(String key, String value) {
+		
+        List<Representation> representations = new ArrayList<Representation>();
+        ReadableIndex<Node> index = graphDb.index().getNodeAutoIndexer().getAutoIndex();
+
+        Transaction tx = graphDb.beginTx();
+        try
+        {
+            for ( Node node : index.get( key, value ) )
+            {
+                representations.add( new NodeRepresentation( node ) );
+            }
+            tx.success();
+            return new ListRepresentation( RepresentationType.NODE, representations );
+        }
+        finally
+        {
+            tx.finish();
+        }
+	}
 
 	public ListRepresentation getAutoIndexedNodesByQuery(String query) {
         ReadableIndex<Node> index = graphDb.index().getNodeAutoIndexer().getAutoIndex();
@@ -951,6 +974,27 @@ public class DatabaseActions
         }
     }
 
+	public Representation getAutoIndexedRelationships(String key, String value) {
+		
+        List<Representation> representations = new ArrayList<Representation>();
+        ReadableRelationshipIndex index = graphDb.index().getRelationshipAutoIndexer().getAutoIndex();
+
+        Transaction tx = graphDb.beginTx();
+        try
+        {
+            for ( Relationship rel : index.get( key, value ) )
+            {
+                representations.add( new RelationshipRepresentation( rel ) );
+            }
+            tx.success();
+            return new ListRepresentation( RepresentationType.RELATIONSHIP, representations );
+        }
+        finally
+        {
+            tx.finish();
+        }
+	}
+
 	public ListRepresentation getAutoIndexedRelationshipsByQuery(String query) {
         ReadableRelationshipIndex index = graphDb.index().getRelationshipAutoIndexer().getAutoIndex();
         List<Representation> representations = new ArrayList<Representation>();
@@ -971,7 +1015,7 @@ public class DatabaseActions
 	            tx.finish();
 	        }
         }
-        return new ListRepresentation( RepresentationType.NODE, representations );
+        return new ListRepresentation( RepresentationType.RELATIONSHIP, representations );
 	}
 
     // Traversal

@@ -101,8 +101,11 @@ public class RestfulGraphDatabase
     protected static final String PATH_RELATIONSHIP_INDEX_REMOVE_KEY = PATH_NAMED_RELATIONSHIP_INDEX + "/{key}/{id}";
     protected static final String PATH_RELATIONSHIP_INDEX_REMOVE = PATH_NAMED_RELATIONSHIP_INDEX + "/{id}";
 
-    protected static final String PATH_AUTO_NODE_INDEX = "index/auto/node";
-    protected static final String PATH_AUTO_RELATIONSHIP_INDEX = "index/auto/relationship";
+    public static final String PATH_AUTO_NODE_INDEX = "index/auto/node";
+    protected static final String PATH_AUTO_NODE_INDEX_GET = PATH_AUTO_NODE_INDEX + "/{key}/{value}";
+    
+    public static final String PATH_AUTO_RELATIONSHIP_INDEX = "index/auto/relationship";
+    protected static final String PATH_AUTO_RELATIONSHIP_INDEX_GET = PATH_AUTO_RELATIONSHIP_INDEX + "/{key}/{value}";
     
     private static final String SIXTY_SECONDS = "60";
     private static final String FIFTY = "50";
@@ -642,7 +645,7 @@ public class RestfulGraphDatabase
 
     @GET
     @Path( PATH_AUTO_NODE_INDEX )
-    public Response getIndexedNodesByQuery( @QueryParam( "query" ) String query )
+    public Response getAutoIndexedNodesByQuery( @QueryParam( "query" ) String query )
     {
         try
         {
@@ -769,7 +772,26 @@ public class RestfulGraphDatabase
     {
         try
         {
-            return output.ok( actions.getIndexedNodesByExactMatch( indexName, key, value ) );
+            return output.ok( actions.getIndexedNodes( indexName, key, value ) );
+        }
+        catch ( NotFoundException nfe )
+        {
+            return output.notFound( nfe );
+        }
+        catch ( Exception e )
+        {
+            return output.serverError( e );
+        }
+    }
+
+    @GET
+    @Path( PATH_AUTO_NODE_INDEX_GET )
+    public Response getIndexedNodes( @PathParam( "key" ) String key,
+            @PathParam( "value" ) String value )
+    {
+        try
+        {
+            return output.ok( actions.getAutoIndexedNodes( key, value ) );
         }
         catch ( NotFoundException nfe )
         {
@@ -820,8 +842,26 @@ public class RestfulGraphDatabase
     }
     
     @GET
+    @Path( PATH_AUTO_RELATIONSHIP_INDEX_GET )
+    public Response getIndexedRelationships( @PathParam( "key" ) String key, @PathParam( "value" ) String value )
+    {
+        try
+        {
+            return output.ok( actions.getAutoIndexedRelationships( key, value ) );
+        }
+        catch ( NotFoundException nfe )
+        {
+            return output.notFound( nfe );
+        }
+        catch ( Exception e )
+        {
+            return output.serverError( e );
+        }
+    }
+    
+    @GET
     @Path( PATH_AUTO_RELATIONSHIP_INDEX )
-    public Response getIndexedRelationshipsByQuery( @QueryParam( "query" ) String query )
+    public Response getAutoIndexedRelationshipsByQuery( @QueryParam( "query" ) String query )
     {
         try
         {

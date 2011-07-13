@@ -117,6 +117,7 @@ public class IndexNodeFunctionalTest
     public void shouldCreateANamedNodeIndex() throws JsonParseException
     {
         String indexName = "favorites";
+        int expectedIndexes = helper.getNodeIndexes().length + 1;
         Map<String, String> indexSpecification = new HashMap<String, String>();
         indexSpecification.put( "name", indexName );
 
@@ -126,7 +127,7 @@ public class IndexNodeFunctionalTest
                 .expectedHeader( "Location" )
                 .post( functionalTestHelper.nodeIndexUri() );
 
-        assertEquals( 1, helper.getNodeIndexes().length );
+        assertEquals( expectedIndexes, helper.getNodeIndexes().length );
         assertEquals( indexName, helper.getNodeIndexes()[0] );
     }
 
@@ -367,10 +368,17 @@ public class IndexNodeFunctionalTest
                 .delete( functionalTestHelper.indexNodeUri( indexName ) );
     }
     
+    //
+    // REMOVING ENTRIES
+    //
+    
+    /**
+     * Remove all entries with a given node from an index.
+     */
+    @Documented   
     @Test
-    public void shouldBeAbleToRemoveIndexing() throws DatabaseBlockedException, JsonParseException
+    public void shouldBeAbleToRemoveIndexingById() throws DatabaseBlockedException, JsonParseException
     {
-        final RestRequest request = RestRequest.req();
         String key1 = "kvkey1";
         String key2 = "kvkey2";
         String value1 = "value1";
@@ -381,33 +389,11 @@ public class IndexNodeFunctionalTest
         helper.addNodeToIndex( indexName, key1, value2, node );
         helper.addNodeToIndex( indexName, key2, value1, node );
         helper.addNodeToIndex( indexName, key2, value2, node );
-        assertEquals( 1, helper.getIndexedNodes( indexName, key1, value1 )
-                .size() );
-        assertEquals( 1, helper.getIndexedNodes( indexName, key1, value2 )
-                .size() );
-        assertEquals( 1, helper.getIndexedNodes( indexName, key2, value1 )
-                .size() );
-        assertEquals( 1, helper.getIndexedNodes( indexName, key2, value2 )
-                .size() );
-        request.delete( functionalTestHelper.nodeIndexUri() + indexName + "/" + key1 + "/" + value1 + "/" + node );
-        assertEquals( 0, helper.getIndexedNodes( indexName, key1, value1 )
-                .size() );
-        assertEquals( 1, helper.getIndexedNodes( indexName, key1, value2 )
-                .size() );
-        assertEquals( 1, helper.getIndexedNodes( indexName, key2, value1 )
-                .size() );
-        assertEquals( 1, helper.getIndexedNodes( indexName, key2, value2 )
-                .size() );
-        request.delete(functionalTestHelper.nodeIndexUri() + indexName + "/" + key2 + "/" + node);
-        assertEquals( 0, helper.getIndexedNodes( indexName, key1, value1 )
-                .size() );
-        assertEquals( 1, helper.getIndexedNodes( indexName, key1, value2 )
-                .size() );
-        assertEquals( 0, helper.getIndexedNodes( indexName, key2, value1 )
-                .size() );
-        assertEquals( 0, helper.getIndexedNodes( indexName, key2, value2 )
-                .size() );
-        request.delete(functionalTestHelper.nodeIndexUri() + indexName + "/" + node);
+        
+        gen.get()
+        	.expectedStatus( 204 )
+        	.delete( functionalTestHelper.indexNodeUri( indexName ) + "/" + node);
+        
         assertEquals( 0, helper.getIndexedNodes( indexName, key1, value1 )
                 .size() );
         assertEquals( 0, helper.getIndexedNodes( indexName, key1, value2 )
@@ -416,6 +402,72 @@ public class IndexNodeFunctionalTest
                 .size() );
         assertEquals( 0, helper.getIndexedNodes( indexName, key2, value2 )
                 .size() );
+    }
+    
+    /**
+     * Remove all entries with a given node and key from an index.
+     */
+    @Documented   
+    @Test
+    public void shouldBeAbleToRemoveIndexingByIdAndKey() throws DatabaseBlockedException, JsonParseException
+    {  
+    	String key1 = "kvkey1";
+        String key2 = "kvkey2";
+        String value1 = "value1";
+        String value2 = "value2";
+        String indexName = "kvnode";
+        long node = helper.createNode( MapUtil.map( key1, value1, key1, value2, key2, value1, key2, value2 ) );
+        helper.addNodeToIndex( indexName, key1, value1, node );
+        helper.addNodeToIndex( indexName, key1, value2, node );
+        helper.addNodeToIndex( indexName, key2, value1, node );
+        helper.addNodeToIndex( indexName, key2, value2, node );
+        
+        gen.get()
+        	.expectedStatus( 204 )
+        	.delete( functionalTestHelper.nodeIndexUri() + indexName + "/" + key2 + "/" + node);
+        
+        assertEquals( 1, helper.getIndexedNodes( indexName, key1, value1 )
+                .size() );
+        assertEquals( 1, helper.getIndexedNodes( indexName, key1, value2 )
+                .size() );
+        assertEquals( 0, helper.getIndexedNodes( indexName, key2, value1 )
+                .size() );
+        assertEquals( 0, helper.getIndexedNodes( indexName, key2, value2 )
+                .size() );
+    }
+    
+    /**
+     * Remove all entries with a given node, key and value from an index.
+     */
+    @Documented   
+    @Test
+    public void shouldBeAbleToRemoveIndexingByIdAndKeyAndValue() throws DatabaseBlockedException, JsonParseException
+    {
+    	
+    	String key1 = "kvkey1";
+        String key2 = "kvkey2";
+        String value1 = "value1";
+        String value2 = "value2";
+        String indexName = "kvnode";
+        long node = helper.createNode( MapUtil.map( key1, value1, key1, value2, key2, value1, key2, value2 ) );
+        helper.addNodeToIndex( indexName, key1, value1, node );
+        helper.addNodeToIndex( indexName, key1, value2, node );
+        helper.addNodeToIndex( indexName, key2, value1, node );
+        helper.addNodeToIndex( indexName, key2, value2, node );
+        
+        gen.get()
+        	.expectedStatus( 204 )
+        	.delete( functionalTestHelper.nodeIndexUri() + indexName + "/" + key1 + "/" + value1 + "/" + node );
+        
+        assertEquals( 0, helper.getIndexedNodes( indexName, key1, value1 )
+                .size() );
+        assertEquals( 1, helper.getIndexedNodes( indexName, key1, value2 )
+                .size() );
+        assertEquals( 1, helper.getIndexedNodes( indexName, key2, value1 )
+                .size() );
+        assertEquals( 1, helper.getIndexedNodes( indexName, key2, value2 )
+                .size() );
+        
     }
 
     @Test
@@ -488,6 +540,30 @@ public class IndexNodeFunctionalTest
         assertEquals(1, hits.size());
     }
 
+    /**
+     * Find node by exact match from an automatic index.
+     */
+    @Documented
+    @Test
+    public void shouldRetrieveFromAutoIndexByExactMatch() throws PropertyValueException
+    {
+        String key = "bobsKey";
+        String value = "bobsValue";
+        Map<String, Object> props = new HashMap<String, Object>();
+        props.put(key, value);
+        
+        helper.enableNodeAutoIndexingFor(key);
+        helper.createNode(props);
+
+        String entity = gen.get()
+                .expectedStatus(200)
+                .get(functionalTestHelper.nodeAutoIndexUri() + key + "/" + value)
+                .entity();
+        
+        Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue(entity);
+        assertEquals(1, hits.size());
+    }
+    
     @Test
     public void shouldNotBeAbleToRemoveAutoIndex() throws DatabaseBlockedException, JsonParseException
     {

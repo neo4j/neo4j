@@ -37,6 +37,7 @@ import javax.ws.rs.core.Response.Status;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
@@ -86,6 +87,11 @@ public class IndexRelationshipFunctionalTest
      * GET ${org.neo4j.server.rest.web}/index/relationship/
      */
     @Test
+    @Ignore
+    /*
+     * This cannot currently be tested, because there is an automatic index
+     * present, which is always returned.
+     */
     public void shouldGetEmptyListOfRelationshipIndexesWhenNoneExist()
     {
         JaxRsResponse response = httpGetIndexRelationshipRoot();
@@ -113,6 +119,7 @@ public class IndexRelationshipFunctionalTest
     public void shouldCreateANamedRelationshipIndex() throws JsonParseException
     {
         String indexName = "favorites";
+        int expectedIndexes = helper.getRelationshipIndexes().length + 1;
         Map<String, String> indexSpecification = new HashMap<String, String>();
         indexSpecification.put( "name", indexName );
         JaxRsResponse response = httpPostIndexRelationshipRoot( JsonHelper.createJsonFrom( indexSpecification ) );
@@ -120,7 +127,7 @@ public class IndexRelationshipFunctionalTest
         assertNotNull( response.getHeaders()
                 .get( "Location" )
                 .get( 0 ) );
-        assertEquals( 1, helper.getRelationshipIndexes().length );
+        assertEquals( expectedIndexes, helper.getRelationshipIndexes().length );
         assertNotNull( helper.getRelationshipIndex( indexName ) );
     }
 
@@ -446,6 +453,30 @@ public class IndexRelationshipFunctionalTest
         String entity = gen.get()
                 .expectedStatus(200)
                 .get(functionalTestHelper.relationshipAutoIndexUri() + "?query=" + key + ":" + value)
+                .entity();
+        
+        Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue(entity);
+        assertEquals(1, hits.size());
+    }
+    
+    /**
+     * Find relationship by exact match from an automatic index.
+     */
+    @Documented
+    @Test
+    public void shouldRetrieveFromAutoIndexByExactMatch() throws PropertyValueException
+    {
+        String key = "bobsKey";
+        String value = "bobsValue";
+        Map<String, Object> props = new HashMap<String, Object>();
+        props.put(key, value);
+        
+        helper.enableRelationshipAutoIndexingFor(key);
+        helper.setRelationshipProperties(helper.createRelationship("sometype"), props);
+
+        String entity = gen.get()
+                .expectedStatus(200)
+                .get(functionalTestHelper.relationshipAutoIndexUri() + key + "/" + value)
                 .entity();
         
         Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue(entity);

@@ -100,9 +100,19 @@ include::list-node-indexes-(empty-result).txt[]
 
 include::add-node-to-index.txt[]
 
+include::remove-all-entries-with-a-given-node-from-an-index.txt[]
+
+include::remove-all-entries-with-a-given-node-and-key-from-an-index.txt[]
+
+include::remove-all-entries-with-a-given-node,-key-and-value-from-an-index.txt[]
+
 include::find-node-by-exact-match.txt[]
 
+include::find-node-by-exact-match-from-an-automatic-index.txt[]
+
 include::find-node-by-query.txt[]
+
+include::find-node-by-query-from-an-automatic-index.txt[]
 
 [[rest-api-traverse]]
 == Traversals ==
