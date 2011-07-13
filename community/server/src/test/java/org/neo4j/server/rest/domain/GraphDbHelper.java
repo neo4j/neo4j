@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.collection.MapUtil;
@@ -253,6 +254,18 @@ public class GraphDbHelper
         {
             tx.finish();
         }
+    }
+    
+    public void enableNodeAutoIndexingFor(String key) {
+    	AutoIndexer<Node> nodeAutoIndexer = database.graph.index().getNodeAutoIndexer();
+    	nodeAutoIndexer.startAutoIndexingProperty( key );
+    	nodeAutoIndexer.setEnabled( true );
+    }
+    
+    public void enableRelationshipAutoIndexingFor(String key) {
+    	AutoIndexer<Relationship> relAutoIndexer = database.graph.index().getRelationshipAutoIndexer();
+    	relAutoIndexer.startAutoIndexingProperty( key );
+    	relAutoIndexer.setEnabled( true );
     }
 
     public Collection<Long> queryIndexedNodes( String indexName, String key, Object value )

@@ -64,6 +64,11 @@ public class OutputFormat
         return response( Response.status( Status.BAD_REQUEST ), new ExceptionRepresentation( exception ) );
     }
 
+    public Response forbidden( Throwable exception )
+    {
+        return response( Response.status( Status.FORBIDDEN ), new ExceptionRepresentation( exception ) );
+    }
+
     public Response notFound( Throwable exception )
     {
         return response( Response.status( Status.NOT_FOUND ), new ExceptionRepresentation( exception ) );
