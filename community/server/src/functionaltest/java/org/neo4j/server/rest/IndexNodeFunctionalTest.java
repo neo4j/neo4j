@@ -63,7 +63,7 @@ public class IndexNodeFunctionalTest
     private static GraphDbHelper helper;
     public @Rule TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
 
-    private static int readOnlyIndexesCreated = 0;
+    private static boolean autoIndexCreated = false;
 
     @BeforeClass
     public static void setupServer() throws IOException
@@ -93,7 +93,7 @@ public class IndexNodeFunctionalTest
     @Test
     public void shouldGetEmptyListOfNodeIndexesWhenNoneExist() throws PropertyValueException
     {
-        if ( readOnlyIndexesCreated == 0 )
+        if ( !autoIndexCreated )
         {
         gen.get()
                 .expectedStatus( 204 )
@@ -104,7 +104,7 @@ public class IndexNodeFunctionalTest
             String entity = gen.get().expectedStatus( 200 ).get(
                     functionalTestHelper.nodeIndexUri() ).entity();
             Map<String, Object> map = JsonHelper.jsonToMap( entity );
-            assertEquals( readOnlyIndexesCreated, map.size() );
+            assertEquals( 1, map.size() );
         }
     }
 
@@ -123,7 +123,14 @@ public class IndexNodeFunctionalTest
                 .entity();
         Map<String, Object> map = JsonHelper.jsonToMap( entity );
         assertNotNull( map.get( indexName ) );
-        assertEquals( readOnlyIndexesCreated + 1, map.size() );
+        if ( autoIndexCreated )
+        {
+            assertEquals( 2, map.size() );
+        }
+        else
+        {
+            assertEquals( 1, map.size() );
+        }
     }
 
     /**
@@ -201,8 +208,14 @@ public class IndexNodeFunctionalTest
                 .expectedHeader( "Location" )
                 .post( functionalTestHelper.nodeIndexUri() );
 
-        assertEquals( readOnlyIndexesCreated + 1,
-                helper.getNodeIndexes().length );
+        if ( autoIndexCreated )
+        {
+            assertEquals( 2, helper.getNodeIndexes().length );
+        }
+        else
+        {
+            assertEquals( 1, helper.getNodeIndexes().length );
+        }
         assertThat( helper.getNodeIndexes(), arrayContains( "fulltext" ) );
     }
 
@@ -596,7 +609,7 @@ public class IndexNodeFunctionalTest
 
         Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue(entity);
         assertEquals(1, hits.size());
-        readOnlyIndexesCreated++;
+        autoIndexCreated = true;
     }
 
     /**
@@ -621,7 +634,7 @@ public class IndexNodeFunctionalTest
 
         Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue(entity);
         assertEquals(1, hits.size());
-        readOnlyIndexesCreated++;
+        autoIndexCreated = true;
     }
 
     @Test
