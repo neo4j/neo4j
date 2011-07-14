@@ -20,7 +20,6 @@
 package org.neo4j.server.rest.repr;
 
 import java.util.Collections;
-import java.util.Map;
 
 import org.neo4j.server.rest.web.RestfulGraphDatabase;
 

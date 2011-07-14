@@ -38,6 +38,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.core.LockReleaser;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxModule;
@@ -102,14 +103,13 @@ class GraphDbInstance
         params.put( "create", String.valueOf( create ) );
         String logicalLog = storeDir + separator + "nioneo_logical.log";
         params.put( "logical_log", logicalLog );
-        byte resourceId[] = UTF8.encode( "414141" );
         params.put( LockManager.class, config.getLockManager() );
         params.put( LockReleaser.class, config.getLockReleaser() );
 
         kernelExtensionLoader.configureKernelExtensions();
 
         config.getTxModule().registerDataSource( Config.DEFAULT_DATA_SOURCE_NAME,
-                Config.NIO_NEO_DB_CLASS, resourceId, params );
+                Config.NIO_NEO_DB_CLASS, NeoStoreXaDataSource.BRANCH_ID, params );
         // hack for lucene index recovery if in path
         if ( !config.isReadOnly() || config.isBackupSlave() )
         {
