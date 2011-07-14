@@ -21,41 +21,11 @@
 """Neo4j Python utilities.
 """
 
-def iterator(method):
-    global iterator
 
-    class Iterator(object):
-        def __init__(self, iterator):
-            self.__iter = iterator
-        def __iter__(self):
-            return iter(self.__iter)
-        def single(self):
-            iterator = iter(self.__iter)
-            for item in iterator:
-                break
-            else: # empty iterator
-                return None
-            for item in iterator:
-                raise ValueError("Too many items in the iterator")
-            try:
-                iterator.close()
-            except:
-                pass
-            return item
-        single = property(single)
-
-    try:
-        from functools import update_wrapper
-    except:
-        def iterator(method):
-            def wrapper(*args,**kwargs):
-                return Iterator(method(*args,**kwargs))
-            return wrapper
-    else:
-        def iterator(method):
-            def wrapper(*args,**kwargs):
-                return Iterator(method(*args,**kwargs))
-            return update_wrapper(wrapper, method)
-
-    return iterator(method)
+try:
+    from functools import update_wrapper
+except:
+    # No-op update_wrapper
+    def update_wrapper(wrapper, method):
+        return wrapper
         

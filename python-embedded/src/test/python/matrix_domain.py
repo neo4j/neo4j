@@ -40,7 +40,9 @@ class SomeTests(unit_tests.GraphDatabaseTest):
         with self.graphdb.transaction:
             Person(self.graphdb, name='Thomas Anderson',
                    birthday=datetime.datetime(1978,05,21))
-        neo = Person.find(self.graphdb, name='Thomas Anderson').single
+            Person(self.graphdb, name='Thomas Olsson',
+                   birthday=datetime.datetime(1978,05,21))
+        neo = Person.filter(self.graphdb, name='Thomas Anderson').single
         self.assertFalse(neo is None)
         self.assertEqual('Thomas Anderson', neo.name)
         self.assertEqual(datetime.datetime(1978,05,21), neo.birthday)
@@ -63,7 +65,7 @@ class SomeTests(unit_tests.GraphDatabaseTest):
             smith = Person(self.graphdb, name="Agent Smith",
                            birthday=datetime.datetime(1996,01,01))
             cypher.friends.add(smith, introduced=datetime.datetime(1999,01,01))
-        friendships = list(smith.friends.rels)
+        friendships = list(smith.friends.rels())
         self.assertEqual(1, len(friendships))
         self.assertEqual(datetime.datetime(1999,01,01), friendships[0].introduced)
         

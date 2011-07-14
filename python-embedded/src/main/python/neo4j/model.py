@@ -24,7 +24,7 @@
 __all__ = 'Node', 'Relationship', 'Property', 'transactional'
 
 from neo4j._backend import Object, strings, integers
-from neo4j.util import iterator
+from neo4j.util import update_wrapper
 
 import datetime, time
 
@@ -54,42 +54,108 @@ class Factory(object):
         obj = object.__new__(self.__type)
         obj.__init__(type, name, *self.__args, **self.__params)
         return obj
+   
+   
+# Decorator used in query set
+# methods that can take a graphdb
+# instance as their first argument.
+def can_set_graph(method):
+    
+    def wrapper(self, graph, *args, **kwargs):
+        queryset = method(self, *args, **kwargs)
+        queryset._graph = graph
+        return queryset
+        
+    return update_wrapper(wrapper, method)
 
-@iterator
-def lookup_results(Type, hits, filters):
-    try:
-        for node in hits:
-            for predicate in filters:
-                if not predicate(node): break
-            else:
-                yield Neo4jEntity.__new__(Type, node)
-    finally:
+class QuerySet(object):
+    ''' 
+    Immutable query set for searching
+    nodes and relationships.
+    '''
+    
+    def __init__(self, Entity, graph=None, lookups=[], filters=[]):
+        self._lookups = lookups
+        self._filters = filters
+        self._Entity = Entity
+        self._graph = graph
+    
+    @can_set_graph
+    def filter(self, **query):
+        lookups = list(self._lookups)
+        filters = list(self._filters)
+        
+        for key in query:
+            attribute = getattr(self._Entity, key.split('__',1)[0])
+            if attribute is None:
+                raise AttributeError("'%s' has no property matching '%s'"
+                                     % (self._Entity.__name__, key))
+            attribute.query(key, query[key], lookups, filters)
+        
+        return self._create(self._Entity, self._graph, lookups, filters)
+
+    def __iter__(self):
+        if not self._graph:
+            raise RuntimeError("You have to provide a graph database instance to the query set before you can retrieve results.")
+        
+        if len(self._lookups) > 0:
+            index_query = " AND ".join(self._lookups)
+        else: 
+            index_query = "*:*"
+            
+        hits = self._index(self._graph).query(index_query)
+        
         try:
-            hits.close()
+            for entity in hits:
+                for predicate in self._filters:
+                    if not predicate(entity): break
+                else:
+                    yield Neo4jEntity.__new__(self._Entity, entity)
+        finally:
+            try:
+                hits.close()
+            except:
+                pass
+                
+    def single(self):
+        iterator = iter(self)
+        for item in iterator:
+            break
+        else: # empty iterator
+            return None
+        for item in iterator:
+            raise ValueError("Query yielded in more than one result.")
+        try:
+            iterator.close()
         except:
             pass
+        return item
+    single = property(single)
+                
+        
+class NodeQuerySet(QuerySet):
+    
+    def _index(self, graphdb):
+        return graphdb.index().forNodes(self._Entity.__name__)
+        
+    def _create(self, *args):
+        
+        return NodeQuerySet(*args)
 
 class Node(Neo4jEntity):
     __node = property(get_entity)
-    class __metaclass__(type):
+    
+    class __metaclass__(type, NodeQuerySet):
+    
         def __new__(Node,name,bases,body):
             Node = type.__new__(Node,name,bases,body)
             for attr, value in body.items():
                 if isinstance(value, Factory):
                     setattr(Node, attr, value.create(Node, attr))
             return Node
-        def find(Node, graphdb, **query):
-            lookup = []; filters = []
-            for key in query:
-                attribute = getattr(Node, key.split('__',1)[0])
-                if attribute is None:
-                    raise AttributeError("'%s' has no property matching '%s'"
-                                         % (Node.__name__, key))
-                attribute.query(key, query[key], lookup, filters)
-            hits = Node._index(graphdb).query(" AND ".join(lookup))
-            return lookup_results(Node, hits, filters)
-        def _index(Node, graphdb):
-            return graphdb.index().forNodes(Node.__name__)
+            
+        def __init__(Node,name,bases,body):
+            NodeQuerySet.__init__(Node, Node)
 
     def __new__(Node, graphdb, **properties):
         node = Neo4jEntity.__new__(Node, graphdb.createNode())
@@ -115,14 +181,7 @@ class Relationship(Neo4jEntity):
             return graphdb.index().forRelationships(Relationship.__name__)
 
     def __new__(Relationship, target_type, type=None, direction=None):
-        # TODO: return a Factory of something else?
-        return Factory(Relationship, (target_type, type, direction))
-
-    def __init__(self, source_type, name, target_type, type=None, direction=None):
-        pass
-        
-    def add(self, node):
-      pass
+        return Factory(RelatedNodes, (target_type, type, direction))
 
 def transactional(method):
     def transactional(self, *args, **kwargs):
@@ -135,6 +194,35 @@ def transactional(method):
             tx.finish()
     return transactional
 
+
+class RelatedNodes(Object):
+    '''
+    This is the actual class used to manage
+    relationships on nodes. The relationship
+    class "turns into" this if it is instantiated
+    normally. This allows DSL like:
+    
+    >>> class Person(Node):
+    >>>     friends = Relationship('Person')
+    >>>
+        
+    while still allowing real Relationship instances
+    to actually represent single relationships.
+    '''
+    
+    def __init__(self, source_type, name, target_type, type=None, direction=None):
+        self._source_type = source_type
+        self._target_type = target_type
+        self._field_name = name
+        self.type = type
+        self.direction = direction
+    
+    def add(self, targetNode, **kwargs):
+        pass
+        
+    def rels(self):
+        pass
+    
 
 class Property(Object):
     def __new__(PropType,type=None,indexed=False,default=lambda:None,**params):
