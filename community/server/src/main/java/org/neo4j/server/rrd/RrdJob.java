@@ -38,6 +38,7 @@ public class RrdJob implements Job
         // Guard against getting run in too rapid succession.
         if ( ( new Date().getTime() - lastRun ) >= MIN_STEP_TIME )
         {
+        	lastRun = new Date().getTime();
             sampler.updateSample();
         }
     }
