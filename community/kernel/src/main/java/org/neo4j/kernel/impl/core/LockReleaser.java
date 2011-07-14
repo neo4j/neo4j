@@ -305,9 +305,14 @@ public class LockReleaser
     {
         Transaction tx = getTransaction();
         // propertyIndex
+        releaseLocks( tx );
+    }
+
+    public void commitCows()
+    {
+        Transaction tx = getTransaction();
         propertyIndexManager.commit( tx );
         releaseCows( tx, Status.STATUS_COMMITTED );
-        releaseLocks( tx );
     }
 
     public void rollback()
