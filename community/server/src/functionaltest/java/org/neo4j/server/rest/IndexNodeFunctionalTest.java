@@ -63,6 +63,8 @@ public class IndexNodeFunctionalTest
     private static GraphDbHelper helper;
     public @Rule TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
 
+    private static int readOnlyIndexesCreated = 0;
+
     @BeforeClass
     public static void setupServer() throws IOException
     {
@@ -89,11 +91,21 @@ public class IndexNodeFunctionalTest
      */
     @Documented
     @Test
-    public void shouldGetEmptyListOfNodeIndexesWhenNoneExist()
+    public void shouldGetEmptyListOfNodeIndexesWhenNoneExist() throws PropertyValueException
     {
+        if ( readOnlyIndexesCreated == 0 )
+        {
         gen.get()
                 .expectedStatus( 204 )
                 .get( functionalTestHelper.nodeIndexUri() );
+        }
+        else
+        {
+            String entity = gen.get().expectedStatus( 200 ).get(
+                    functionalTestHelper.nodeIndexUri() ).entity();
+            Map<String, Object> map = JsonHelper.jsonToMap( entity );
+            assertEquals( readOnlyIndexesCreated, map.size() );
+        }
     }
 
     /**
@@ -111,7 +123,7 @@ public class IndexNodeFunctionalTest
                 .entity();
         Map<String, Object> map = JsonHelper.jsonToMap( entity );
         assertNotNull( map.get( indexName ) );
-        assertEquals( 1, map.size() );
+        assertEquals( readOnlyIndexesCreated + 1, map.size() );
     }
 
     /**
@@ -189,7 +201,8 @@ public class IndexNodeFunctionalTest
                 .expectedHeader( "Location" )
                 .post( functionalTestHelper.nodeIndexUri() );
 
-        assertEquals( 1, helper.getNodeIndexes().length );
+        assertEquals( readOnlyIndexesCreated + 1,
+                helper.getNodeIndexes().length );
         assertThat( helper.getNodeIndexes(), arrayContains( "fulltext" ) );
     }
 
@@ -207,7 +220,8 @@ public class IndexNodeFunctionalTest
      */
     @Documented
     @Test
-    public void shouldAddToIndex() throws Exception {
+    public void shouldAddToIndex() throws Exception
+    {
         String indexName = "favorites";
         String key = "key";
         String value = "the value";
@@ -232,7 +246,8 @@ public class IndexNodeFunctionalTest
      */
     @Documented
     @Test
-    public void shouldAddToIndexAndRetrieveItByExactMatch() throws Exception {
+    public void shouldAddToIndexAndRetrieveItByExactMatch() throws Exception
+    {
         String indexName = "favorites";
         String key = "key";
         String value = "the value";
@@ -283,8 +298,9 @@ public class IndexNodeFunctionalTest
      * "http://uri.for.node.to.index"
      */
     @Test
-    public void shouldRespondWith201CreatedWhenIndexingJsonNodeUri() throws DatabaseBlockedException,
-            JsonParseException {
+    public void shouldRespondWith201CreatedWhenIndexingJsonNodeUri()
+            throws DatabaseBlockedException, JsonParseException
+    {
         long nodeId = helper.createNode();
         String key = "key";
         String value = "value";
@@ -299,7 +315,9 @@ public class IndexNodeFunctionalTest
     }
 
     @Test
-    public void shouldGetNodeRepresentationFromIndexUri() throws DatabaseBlockedException, JsonParseException {
+    public void shouldGetNodeRepresentationFromIndexUri()
+            throws DatabaseBlockedException, JsonParseException
+    {
         long nodeId = helper.createNode();
         String key = "key2";
         String value = "value";
@@ -484,7 +502,6 @@ public class IndexNodeFunctionalTest
     @Test
     public void shouldBeAbleToRemoveIndexingByIdAndKeyAndValue() throws DatabaseBlockedException, JsonParseException
     {
-
     	String key1 = "kvkey1";
         String key2 = "kvkey2";
         String value1 = "value1";
@@ -579,6 +596,7 @@ public class IndexNodeFunctionalTest
 
         Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue(entity);
         assertEquals(1, hits.size());
+        readOnlyIndexesCreated++;
     }
 
     /**
@@ -603,6 +621,7 @@ public class IndexNodeFunctionalTest
 
         Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue(entity);
         assertEquals(1, hits.size());
+        readOnlyIndexesCreated++;
     }
 
     @Test
