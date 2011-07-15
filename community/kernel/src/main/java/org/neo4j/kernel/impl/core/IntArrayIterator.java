@@ -134,8 +134,15 @@ class IntArrayIterator implements Iterable<Relationship>,
                             RelTypeElementIterator itr = newRels.get( type );
                             if ( itr == null || itr.isSrcEmpty() )
                             {
-                                itr = itr == null ? new FastRelTypeElement( type, fromNode, ids, direction ) :
-                                        itr.setSrc( ids );
+                                if ( itr == null )
+                                {
+                                    RelIdArray remove = nodeManager.getCowRelationshipRemoveMap( fromNode, type );
+                                    itr = RelTypeElement.create( type, fromNode, ids, null, remove, direction );
+                                }
+                                else
+                                {
+                                    itr = itr.setSrc( ids );
+                                }
                                 newRels.put( type, itr );
                             }
                         }

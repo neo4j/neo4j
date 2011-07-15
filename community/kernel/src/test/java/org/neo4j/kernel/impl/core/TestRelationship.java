@@ -23,10 +23,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
@@ -37,10 +41,12 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class TestRelationship extends AbstractNeo4jTestCase
 {
@@ -826,5 +832,45 @@ public class TestRelationship extends AbstractNeo4jTestCase
         }
         assertEquals( 40000, count );
         graphDB.shutdown();
+    }
+
+    @Test
+    public void deleteRelationshipFromNotFullyLoadedNode() throws Exception
+    {
+        int grabSize = 10;
+        GraphDatabaseService db = new ImpermanentGraphDatabase(
+                "target/test-data/test-db", stringMap( "relationship_grab_size", "" + grabSize ) );
+        Transaction tx = db.beginTx();
+        Node node1 = db.createNode();
+        Node node2 = db.createNode();
+        Node node3 = db.createNode();
+        RelationshipType type1 = DynamicRelationshipType.withName( "type1" );
+        RelationshipType type2 = DynamicRelationshipType.withName( "type2" );
+        node1.createRelationshipTo( node3, type1 );
+        Collection<Relationship> type2Relationships = new HashSet<Relationship>();
+        for ( int i = 0; i < grabSize; i++ )
+        {
+            type2Relationships.add( node1.createRelationshipTo( node2, type2 ) );
+        }
+        tx.success();
+        tx.finish();
+        
+        ((AbstractGraphDatabase)db).getConfig().getGraphDbModule().getNodeManager().clearCache();
+        tx = db.beginTx();
+        node1 = db.getNodeById( node1.getId() );
+        node2 = db.getNodeById( node2.getId() );
+        node3 = db.getNodeById( node3.getId() );
+        
+        // Will load <grabsize> relationhsips, not all, and not relationships of type1
+        // since it's the last one (the 11'th) in the chain.
+        node1.getRelationships().iterator().next();
+        
+        node3.getRelationships().iterator().next().delete();
+        assertEquals( type2Relationships, addToCollection( node1.getRelationships(), new HashSet<Relationship>() ) );
+        
+        tx.success();
+        tx.finish();
+        assertEquals( type2Relationships, addToCollection( node1.getRelationships(), new HashSet<Relationship>() ) );
+        db.shutdown();
     }
 }
