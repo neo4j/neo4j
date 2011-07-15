@@ -76,17 +76,25 @@ public class ServerHelper
                 for ( String indexName : server.getDatabase().graph.index()
                         .nodeIndexNames() )
                 {
-                    server.getDatabase().graph.index()
-                            .forNodes( indexName )
-                            .delete();
+                	try{
+	                    server.getDatabase().graph.index()
+	                            .forNodes( indexName )
+	                            .delete();
+                	} catch(UnsupportedOperationException e) {
+                		// Encountered a read-only index.
+                	}
                 }
 
                 for ( String indexName : server.getDatabase().graph.index()
                         .relationshipIndexNames() )
                 {
-                    server.getDatabase().graph.index()
-                            .forRelationships( indexName )
-                            .delete();
+                	try {
+	                    server.getDatabase().graph.index()
+	                            .forRelationships( indexName )
+	                            .delete();
+                	} catch(UnsupportedOperationException e) {
+                		// Encountered a read-only index.
+                	}
                 }
             }
         } ).execute();

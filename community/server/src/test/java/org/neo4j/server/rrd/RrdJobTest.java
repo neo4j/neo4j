@@ -19,27 +19,33 @@
  */
 package org.neo4j.server.rrd;
 
-public class RrdJob implements Job {
-    private static final long MIN_STEP_TIME = 1000;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.stub;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
-    private RrdSampler sampler;
-    private long lastRun = 0;
-    private TimeSource timeSource;
+import org.junit.Test;
 
-    public RrdJob(RrdSampler sampler) {
-        this(sampler, new SystemBackedTimeSource());
+public class RrdJobTest {
+
+    @Test
+    public void testGuardsAgainstQuickRuns() throws Exception {
+
+        RrdSampler sampler = mock(RrdSampler.class);
+        TimeSource time = mock(TimeSource.class);
+        stub(time.getTime())
+            .toReturn(10000l).toReturn(10000l) // First call (getTime gets called twice)
+            .toReturn(10000l) // Second call
+            .toReturn(12000l); // Third call
+
+        RrdJob job = new RrdJob(sampler, time);
+
+        job.run();
+        job.run();
+        job.run();
+
+        verify(sampler, times(2)).updateSample();
+
     }
 
-    public RrdJob(RrdSampler sampler, TimeSource timeSource) {
-        this.sampler = sampler;
-        this.timeSource = timeSource;
-    }
-
-    public void run() {
-        // Guard against getting run in too rapid succession.
-        if ((timeSource.getTime() - lastRun) >= MIN_STEP_TIME) {
-            lastRun = timeSource.getTime();
-            sampler.updateSample();
-        }
-    }
 }

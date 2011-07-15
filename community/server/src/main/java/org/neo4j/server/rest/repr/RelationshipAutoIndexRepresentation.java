@@ -17,29 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rrd;
+package org.neo4j.server.rest.repr;
 
-public class RrdJob implements Job {
-    private static final long MIN_STEP_TIME = 1000;
+import java.util.Collections;
 
-    private RrdSampler sampler;
-    private long lastRun = 0;
-    private TimeSource timeSource;
+import org.neo4j.server.rest.web.RestfulGraphDatabase;
 
-    public RrdJob(RrdSampler sampler) {
-        this(sampler, new SystemBackedTimeSource());
+public class RelationshipAutoIndexRepresentation extends IndexRepresentation {
+
+	public RelationshipAutoIndexRepresentation() {
+		super("", Collections.EMPTY_MAP);
+	}
+
+	@Override
+    protected String path()
+    {
+        return RestfulGraphDatabase.PATH_AUTO_RELATIONSHIP_INDEX + "/";
     }
+	
+	@Override
+	protected String propertyContainerType() {
+		return null;
+	}
 
-    public RrdJob(RrdSampler sampler, TimeSource timeSource) {
-        this.sampler = sampler;
-        this.timeSource = timeSource;
-    }
-
-    public void run() {
-        // Guard against getting run in too rapid succession.
-        if ((timeSource.getTime() - lastRun) >= MIN_STEP_TIME) {
-            lastRun = timeSource.getTime();
-            sampler.updateSample();
-        }
-    }
 }

@@ -19,27 +19,12 @@
  */
 package org.neo4j.server.rrd;
 
-public class RrdJob implements Job {
-    private static final long MIN_STEP_TIME = 1000;
+public class SystemBackedTimeSource implements TimeSource {
 
-    private RrdSampler sampler;
-    private long lastRun = 0;
-    private TimeSource timeSource;
-
-    public RrdJob(RrdSampler sampler) {
-        this(sampler, new SystemBackedTimeSource());
+    @Override
+    public long getTime() 
+    {
+        return System.currentTimeMillis();
     }
 
-    public RrdJob(RrdSampler sampler, TimeSource timeSource) {
-        this.sampler = sampler;
-        this.timeSource = timeSource;
-    }
-
-    public void run() {
-        // Guard against getting run in too rapid succession.
-        if ((timeSource.getTime() - lastRun) >= MIN_STEP_TIME) {
-            lastRun = timeSource.getTime();
-            sampler.updateSample();
-        }
-    }
 }

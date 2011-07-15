@@ -34,6 +34,7 @@ import java.util.logging.Logger;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.ClosableIterable;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.core.LockReleaser;
@@ -68,6 +69,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public class NeoStoreXaDataSource extends LogBackedXaDataSource
 {
+    public static final byte BRANCH_ID[] = UTF8.encode( "414141" );
     private static final String REBUILD_IDGENERATORS_FAST = "rebuild_idgenerators_fast";
 
     private static Logger logger = Logger.getLogger(

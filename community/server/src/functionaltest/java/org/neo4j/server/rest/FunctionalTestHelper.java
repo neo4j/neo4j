@@ -117,6 +117,16 @@ public final class FunctionalTestHelper
     {
         return dataUri() + "index/";
     }
+    
+    String nodeAutoIndexUri()
+    {
+        return indexUri() + "auto/node/";
+    }
+    
+    String relationshipAutoIndexUri()
+    {
+        return indexUri() + "auto/relationship/";
+    }
 
     String nodeIndexUri()
     {

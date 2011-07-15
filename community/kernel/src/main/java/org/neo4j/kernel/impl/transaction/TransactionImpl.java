@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -39,6 +40,7 @@ import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 
 class TransactionImpl implements Transaction
 {
@@ -183,7 +185,7 @@ class TransactionImpl implements Transaction
                 }
                 if ( sameRmXid != null ) // should we join?
                 {
-                    resourceList.add( new ResourceElement( sameRmXid, xaRes ) );
+                    addResourceToList( sameRmXid, xaRes );
                     xaRes.start( sameRmXid, XAResource.TMJOIN );
                 }
                 else
@@ -192,7 +194,7 @@ class TransactionImpl implements Transaction
                     // ResourceElement re = resourceList.getFirst();
                     byte branchId[] = txManager.getBranchId( xaRes );
                     Xid xid = new XidImpl( globalId, branchId );
-                    resourceList.add( new ResourceElement( xid, xaRes ) );
+                    addResourceToList( xid, xaRes );
                     xaRes.start( xid, XAResource.TMNOFLAGS );
                     try
                     {
@@ -224,6 +226,19 @@ class TransactionImpl implements Transaction
         }
         throw new IllegalStateException( "Tx status is: "
             + txManager.getTxStatusAsString( status ) );
+    }
+
+    private void addResourceToList( Xid xid, XAResource xaRes )
+    {
+        ResourceElement element = new ResourceElement( xid, xaRes );
+        if ( Arrays.equals( NeoStoreXaDataSource.BRANCH_ID, xid.getBranchQualifier() ) )
+        {
+            resourceList.addFirst( element );
+        }
+        else
+        {
+            resourceList.add( element );
+        }
     }
 
     public synchronized boolean delistResource( XAResource xaRes, int flag )

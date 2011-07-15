@@ -45,6 +45,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.graphdb.index.ReadableIndex;
+import org.neo4j.graphdb.index.ReadableRelationshipIndex;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.IterableWrapper;
@@ -815,7 +817,7 @@ public class DatabaseActions
                 Collections.<String, String>emptyMap() ) );
     }
 
-    public ListRepresentation getIndexedNodesByExactMatch( String indexName, String key, String value )
+    public ListRepresentation getIndexedNodes( String indexName, String key, String value )
     {
         if ( !graphDb.index()
                 .existsForNodes( indexName ) ) throw new NotFoundException();
@@ -872,6 +874,50 @@ public class DatabaseActions
         }
     }
 
+	public Representation getAutoIndexedNodes(String key, String value) {
+		
+        List<Representation> representations = new ArrayList<Representation>();
+        ReadableIndex<Node> index = graphDb.index().getNodeAutoIndexer().getAutoIndex();
+
+        Transaction tx = graphDb.beginTx();
+        try
+        {
+            for ( Node node : index.get( key, value ) )
+            {
+                representations.add( new NodeRepresentation( node ) );
+            }
+            tx.success();
+            return new ListRepresentation( RepresentationType.NODE, representations );
+        }
+        finally
+        {
+            tx.finish();
+        }
+	}
+
+	public ListRepresentation getAutoIndexedNodesByQuery(String query) {
+        ReadableIndex<Node> index = graphDb.index().getNodeAutoIndexer().getAutoIndex();
+        List<Representation> representations = new ArrayList<Representation>();
+
+        if ( query != null )
+        {
+        	Transaction tx = graphDb.beginTx();
+	        try
+	        {
+                for ( Node node : index.query( query ) )
+                {
+                    representations.add( new NodeRepresentation( node ) );
+                }
+	            tx.success();
+	        }
+	        finally
+	        {
+	            tx.finish();
+	        }
+        }
+        return new ListRepresentation( RepresentationType.NODE, representations );
+	}
+
     public ListRepresentation getIndexedRelationships( String indexName, String key, String value )
     {
         if ( !graphDb.index()
@@ -925,6 +971,50 @@ public class DatabaseActions
             tx.finish();
         }
     }
+
+	public Representation getAutoIndexedRelationships(String key, String value) {
+		
+        List<Representation> representations = new ArrayList<Representation>();
+        ReadableRelationshipIndex index = graphDb.index().getRelationshipAutoIndexer().getAutoIndex();
+
+        Transaction tx = graphDb.beginTx();
+        try
+        {
+            for ( Relationship rel : index.get( key, value ) )
+            {
+                representations.add( new RelationshipRepresentation( rel ) );
+            }
+            tx.success();
+            return new ListRepresentation( RepresentationType.RELATIONSHIP, representations );
+        }
+        finally
+        {
+            tx.finish();
+        }
+	}
+
+	public ListRepresentation getAutoIndexedRelationshipsByQuery(String query) {
+        ReadableRelationshipIndex index = graphDb.index().getRelationshipAutoIndexer().getAutoIndex();
+        List<Representation> representations = new ArrayList<Representation>();
+
+        if ( query != null )
+        {
+        	Transaction tx = graphDb.beginTx();
+	        try
+	        {
+                for ( Relationship rel : index.query( query ) )
+                {
+                    representations.add( new RelationshipRepresentation( rel ) );
+                }
+	            tx.success();
+	        }
+	        finally
+	        {
+	            tx.finish();
+	        }
+        }
+        return new ListRepresentation( RepresentationType.RELATIONSHIP, representations );
+	}
 
     // Traversal
 

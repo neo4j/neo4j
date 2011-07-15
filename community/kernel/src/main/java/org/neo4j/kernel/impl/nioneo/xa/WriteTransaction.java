@@ -443,7 +443,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             executeCreated( propCommands, relCommands, nodeCommands );
             executeModified( propCommands, relCommands, nodeCommands );
             executeDeleted( propCommands, relCommands, nodeCommands );
-
+            lockReleaser.commitCows();
             neoStore.setLastCommittedTx( getCommitTxId() );
         }
         finally

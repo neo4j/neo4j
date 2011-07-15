@@ -1,3 +1,7 @@
+1.5.M01
+--------------------
+o Fixed bug in statistics sampling
+
 1.4.M05 (2011-06-23)
 --------------------
 o REST paging now supported
