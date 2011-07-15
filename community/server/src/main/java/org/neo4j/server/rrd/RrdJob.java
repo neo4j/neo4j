@@ -29,7 +29,7 @@ public class RrdJob implements Job
     
     public RrdJob( RrdSampler sampler )
     {
-    	this(sampler, new DateBackedTimeSource());
+    	this(sampler, new SystemBackedTimeSource());
     }
     
     public RrdJob( RrdSampler sampler, TimeSource timeSource )
