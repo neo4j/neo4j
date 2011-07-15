@@ -19,21 +19,23 @@
  */
 package org.neo4j.kernel.impl.event;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import java.io.File;
-
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
-
 import org.junit.Test;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.helpers.UTF8;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+
+import javax.transaction.Transaction;
+import javax.transaction.TransactionManager;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.Scanner;
+
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class TestKernelPanic
 {
@@ -67,7 +69,7 @@ public class TestKernelPanic
         catch ( Throwable t )
         {
             // ok
-            for ( int i = 0; i < 10 && panic.panic == false; i++ )
+            for ( int i = 0; i < 10 && !panic.panic; i++ )
             {
                 Thread.sleep( 1000 );
             }
@@ -77,10 +79,21 @@ public class TestKernelPanic
             graphDb.unregisterKernelEventHandler( panic );
         }
         assertTrue( panic.panic );
-        
+        assertMessageLogContains(path,"at org.neo4j.kernel.impl.event.TestKernelPanic.panicTest");
         graphDb.shutdown();
     }
-    
+
+    private void assertMessageLogContains(String path, String exceptionString) throws FileNotFoundException {
+        final File logFile = new File(path, "messages.log");
+        assertTrue("exists "+logFile,logFile.exists() && logFile.isFile());
+        final Scanner scanner = new Scanner(logFile).useDelimiter("\n");
+        for (String line : IteratorUtil.asIterable(scanner)) {
+            System.err.println("line = " + line);
+            if (line.contains(exceptionString)) return;
+        }
+        fail(logFile+" did not contain: "+exceptionString);
+    }
+
     private static class Panic implements KernelEventHandler
     {
         boolean panic = false;
