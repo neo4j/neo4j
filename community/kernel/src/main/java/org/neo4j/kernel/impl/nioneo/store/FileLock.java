@@ -60,7 +60,7 @@ public abstract class FileLock
             // For the rest just return placebo locks
             return new PlaceboFileLock();
         }
-        else if ( fileName.endsWith( "neostore" ) && Config.osIsMacOS() )
+        else if ( fileName.endsWith( "neostore" ) )
         {
             FileLock regular = wrapOrNull( channel.tryLock() );
             if ( regular == null ) return null;
