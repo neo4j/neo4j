@@ -54,18 +54,24 @@ tag=JavaQuery
 classifier=test-sources
 ----
 
-:leveloffset: 2
-
+[[cypher-identifiers]]
 == Identifiers ==
-When you reference parts of the pattern, you do so by naming them. 
 
-  start identifier=(0) return identifier
+When you reference parts of the pattern, you do so by naming them.
 
-Identifiers are can be lower or upper case, and may contain underscore.
-If other characters are needed, you can use the ` sign. Same rules apply to
-property names.
+[source]
+----
+start identifier=(0) return identifier
+----
 
-  start a=(0) return a.`property.with.periods`
+Identifiers can be lower or upper case, and may contain underscore.
+If other characters are needed, you can use the +`+ sign.
+The same rules apply to property names.
+
+[source]
+----
+start a=(0) return a.`property.with.periods`
+----
 
 :leveloffset: 2
 
