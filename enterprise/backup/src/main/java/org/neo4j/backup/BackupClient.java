@@ -35,7 +35,7 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
 {
     public BackupClient( String hostNameOrIp, int port, GraphDatabaseService graphDb )
     {
-        super( hostNameOrIp, port, graphDb );
+        super( hostNameOrIp, port, graphDb, BackupServer.FRAME_LENGTH, 40 );
     }
     
     public Response<Void> fullBackup( StoreWriter storeWriter )
