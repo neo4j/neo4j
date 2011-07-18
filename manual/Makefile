@@ -73,7 +73,7 @@ ASCIIDOC_FLAGS = $(V) $(VERS) $(GITVERS) $(IMPDIR)
 
 A2X_FLAGS = $(K) $(ASCIIDOC_FLAGS)
 
-.PHONY: all dist docbook help clean pdf latexpdf html offline-html singlehtml text cleanup annotated manpages upgrade installfilter
+.PHONY: all dist docbook help clean pdf latexpdf html offline-html singlehtml text cleanup annotated manpages upgrade installfilter html-check
 
 help:
 	@echo "Please use 'make <target>' where <target> is one of"
@@ -90,7 +90,7 @@ help:
 	@echo "To set the version, use 'VERSION=[the version]'".
 	@echo "To set the importdir, use 'IMPORTDIR=[the importdir]'".
 
-dist: installfilter pdf html offline-html annotated text manpages upgrade cleanup
+dist: installfilter pdf html html-check offline-html annotated text manpages upgrade cleanup
 
 clean:
 	-rm -rf $(BUILDDIR)/*
@@ -129,6 +129,13 @@ copyimages:
 	#
 	cp -fr $(IMPORTDIR)/*/*/images/* $(SRCDIR)/images/
 
+html-check:  html
+	#
+	#
+	# Checking that identifiers exist where they should.
+	#
+	$(CURDIR)/src/build/htmlcheck.sh $(CHUNKEDHTMLDIR)
+
 docbook:  manpages copyimages
 	#
 	#
@@ -157,7 +164,7 @@ docbook-html:  manpages copyimages
 	#
 	mkdir -p $(BUILDDIR)
 	asciidoc $(ASCIIDOC_FLAGS) --backend docbook --attribute docinfo1 --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --conf-file=$(CONFDIR)/linkedimages.conf --out-file $(DOCBOOKFILEHTML) $(SRCFILE)
-	# replacing svg files with png files by dirty hack
+	# replacing svg files with png files by ugly hack
 	sed -i 's/.svg"/.png"/g' $(DOCBOOKFILEHTML)
 	xmllint --nonet --noout --xinclude --postvalid $(DOCBOOKFILEHTML)
 
