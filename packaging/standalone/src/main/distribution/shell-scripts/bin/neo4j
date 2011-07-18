@@ -53,10 +53,9 @@ function parseConfig {
       getconfigquoted "${NEO4J_INSTANCE}/conf/neo4j-server.properties"
       return
     fi
-  else
-    getconfig "${NEO4J_INSTANCE}/conf/neo4j-wrapper.conf"
-    getconfig "${NEO4J_INSTANCE}/conf/neo4j-server.properties"
   fi
+  getconfig "${NEO4J_INSTANCE}/conf/neo4j-wrapper.conf"
+  getconfig "${NEO4J_INSTANCE}/conf/neo4j-server.properties"
 }
 
 findBaseDirAndCdThere

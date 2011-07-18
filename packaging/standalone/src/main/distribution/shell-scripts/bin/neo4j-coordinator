@@ -49,12 +49,11 @@ function findBaseDirAndCdThere {
 function parseConfig {
   if [ ${BASH_VERSINFO[0]} -eq 3 ] ; then
     if [ ${BASH_VERSINFO[1]} -lt 2 ] ; then
-    getconfigquoted "${NEO4J_INSTANCE}/conf/coord-wrapper.conf"
-    return
+      getconfigquoted "${NEO4J_INSTANCE}/conf/coord-wrapper.conf"
+      return
     fi
-  else
-    getconfig "${NEO4J_INSTANCE}/conf/coord-wrapper.conf"
   fi
+  getconfig "${NEO4J_INSTANCE}/conf/coord-wrapper.conf"
 }
 
 findBaseDirAndCdThere
