@@ -9,8 +9,8 @@ function work {
 
     deploy neo4j-udc docs javadoc sources test-sources tests neo4j
 
-    deploy neo4j docs javadoc
-    deploy neo4j-community docs javadoc
+    deploy neo4j docs javadoc sources test-sources
+    deploy neo4j-community docs javadoc sources test-sources
     
     deploy neo4j-cypher sources test-sources tests docs
     
