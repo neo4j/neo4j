@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -320,6 +321,51 @@ public class BatchOperationFunctionalTest
         assertTrue(((String) result.get("location")).length() > 0);
     }
 
+    @Ignore
+    @Test
+    public void shouldBeAbleToCreateEmptyArrayProperties() throws Exception {
+
+        int originalNodeCount = helper.getNumberOfNodes();
+
+        JaxRsResponse response = RestRequest.req().post(functionalTestHelper.dataUri() + "batch", new PrettyJSON()
+            .array()
+                .object()
+                    .key("method") .value("POST")
+                    .key("to")     .value("/node")
+                    .key("body")   
+                        .object()
+                            .key("age")  .array().endArray()
+                        .endObject()
+                .endObject()
+            .endArray()
+            .toString());
+
+        assertEquals(200, response.getStatus());
+        assertEquals(originalNodeCount + 1, helper.getNumberOfNodes());
+    }
+    
+    @Test
+    public void shouldForwardUnderlyingErrors() throws Exception {
+
+        JaxRsResponse response = RestRequest.req().post(functionalTestHelper.dataUri() + "batch", new PrettyJSON()
+            .array()
+                .object()
+                    .key("method") .value("POST")
+                    .key("to")     .value("/node")
+                    .key("body")   
+                        .object()
+                            .key("age")  .array().value(true).value("hello").endArray()
+                        .endObject()
+                .endObject()
+            .endArray()
+            .toString());
+
+        assertEquals(400, response.getStatus());
+        Map<String, Object> res = JsonHelper.jsonToMap(response.getEntity());
+
+        assertTrue(((String)res.get("message")).startsWith("Invalid JSON array in POST body"));
+    }
+    
     @Test
     public void shouldRollbackAllWhenGivenIncorrectRequest() throws JsonParseException, ClientHandlerException,
             UniformInterfaceException {

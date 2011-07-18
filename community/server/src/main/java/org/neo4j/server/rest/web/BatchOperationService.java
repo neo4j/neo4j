@@ -134,7 +134,8 @@ public class BatchOperationService
         }
         else
         {
-            throw new RuntimeException( res.getReason() );
+            throw new RuntimeException( res.getOutputStream()
+                    .toString() );
         }
     }
 
