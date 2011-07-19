@@ -24,7 +24,6 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.impl.core.RelTypeElementIterator;
 
 public class RelIdArray
 {
@@ -35,33 +34,46 @@ public class RelIdArray
     private static final DirectionWrapper[] DIRECTIONS_FOR_BOTH =
             new DirectionWrapper[] { DirectionWrapper.OUTGOING, DirectionWrapper.INCOMING, DirectionWrapper.BOTH };
     
-    public static final RelIdArray EMPTY = new RelIdArray( "" )
+    public static class EmptyRelIdArray extends RelIdArray
     {
-        private RelIdIterator emptyIterator = new RelIdIterator( null, new DirectionWrapper[0] )
-        {
-            @Override
-            public boolean hasNext()
-            {
-                return false;
-            }
-
-            @Override
-            protected boolean nextBlock()
-            {
-                return false;
-            }
-            
-            public void doAnotherRound()
-            {
-            }
-        };
+        private final RelIdIterator emptyIterator;
         
+        public EmptyRelIdArray( String type )
+        {
+            super( type );
+            emptyIterator = new RelIdIterator( this, new DirectionWrapper[0] )
+            {
+                @Override
+                public boolean hasNext()
+                {
+                    return false;
+                }
+
+                @Override
+                protected boolean nextBlock()
+                {
+                    return false;
+                }
+                
+                public void doAnotherRound()
+                {
+                }
+                
+                public boolean isPlacebo()
+                {
+                    return true;
+                }
+            };
+        }
+
         @Override
         public RelIdIterator iterator( DirectionWrapper direction )
         {
             return emptyIterator;
         }
     };
+    
+    public static RelIdArray EMPTY = new EmptyRelIdArray( "" );
     
     private final String type;
     private IdBlock lastOutBlock;
@@ -618,6 +630,21 @@ public class RelIdArray
             }
         }
         
+        public String getType()
+        {
+            return ids.getType();
+        }
+        
+        public RelIdArray getIds()
+        {
+            return ids;
+        }
+        
+        public boolean isPlacebo()
+        {
+            return false;
+        }
+        
         public void updateSource( RelIdArray newSource )
         {
             this.ids = newSource;
@@ -814,7 +841,7 @@ public class RelIdArray
 
     /**
      * Optimization in the lazy loading of relationships for a node.
-     * {@link RelTypeElementIterator#updateSrc(RelIdArray)} is only called if
+     * {@link RelIdIterator#updateSource(RelIdArray)} is only called if
      * this returns true, i.e if a {@link RelIdArray} or {@link IdBlock} might have
      * gotten upgraded to handle f.ex loops or high id ranges so that the
      * {@link RelIdIterator} gets updated accordingly.

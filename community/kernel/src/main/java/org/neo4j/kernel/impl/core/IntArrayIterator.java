@@ -19,44 +19,40 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.neo4j.kernel.impl.core.RelTypeElementIterator.EMPTY;
-
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
+import org.neo4j.kernel.impl.util.RelIdArray.RelIdIterator;
 
-class IntArrayIterator implements Iterable<Relationship>,
-    Iterator<Relationship>
+class IntArrayIterator extends PrefetchingIterator<Relationship> implements Iterable<Relationship>
 {
-    private Iterator<RelTypeElementIterator> typeIterator;
-    private RelTypeElementIterator currentTypeIterator = null;
+    private Iterator<RelIdIterator> typeIterator;
+    private RelIdIterator currentTypeIterator;
     private final NodeImpl fromNode;
     private final DirectionWrapper direction;
-    private Relationship nextElement = null;
     private final NodeManager nodeManager;
     private final RelationshipType types[];
-
-    private final List<RelTypeElementIterator> rels;
+    private final List<RelIdIterator> rels;
     
     // This is just for optimization
     private boolean isFullyLoaded;
 
-    IntArrayIterator( List<RelTypeElementIterator> rels, NodeImpl fromNode,
+    IntArrayIterator( List<RelIdIterator> rels, NodeImpl fromNode,
         DirectionWrapper direction, NodeManager nodeManager, RelationshipType[] types,
         boolean isFullyLoaded )
     {
         this.rels = rels;
         this.isFullyLoaded = isFullyLoaded;
         this.typeIterator = rels.iterator();
-        this.currentTypeIterator = typeIterator.hasNext() ? typeIterator.next() : EMPTY;
+        this.currentTypeIterator = typeIterator.hasNext() ? typeIterator.next() : RelIdArray.EMPTY.iterator( direction );
         this.fromNode = fromNode;
         this.direction = direction;
         this.nodeManager = nodeManager;
@@ -68,28 +64,24 @@ class IntArrayIterator implements Iterable<Relationship>,
         return this;
     }
 
-    public boolean hasNext()
+    @Override
+    protected Relationship fetchNextOrNull()
     {
-        if ( nextElement != null )
-        {
-            return true;
-        }
         do
         {
-            if ( currentTypeIterator.hasNext( nodeManager ) )
+            if ( currentTypeIterator.hasNext() )
             {
-                long nextId = currentTypeIterator.next( nodeManager );
+                long nextId = currentTypeIterator.next();
                 try
                 {
-                    nextElement = new RelationshipProxy( nextId, nodeManager );
-                    return true;
+                    return new RelationshipProxy( nextId, nodeManager );
                 }
                 catch ( NotFoundException e )
                 { // ok deleted 
                 }
             }
             
-            while ( !currentTypeIterator.hasNext( nodeManager ) )
+            while ( !currentTypeIterator.hasNext() )
             {
                 if ( typeIterator.hasNext() )
                 {
@@ -103,24 +95,25 @@ class IntArrayIterator implements Iterable<Relationship>,
                         // isn't fully loaded when starting iterating.
                         !isFullyLoaded )
                 {
-                    Map<String, RelTypeElementIterator> newRels = new HashMap<String, RelTypeElementIterator>();
-                    for ( RelTypeElementIterator itr : rels )
+                    Map<String,RelIdIterator> newRels = new HashMap<String,RelIdIterator>();
+                    for ( RelIdIterator itr : rels )
                     {
-                        RelTypeElementIterator newItr = itr;
-                        RelIdArray newSrc = fromNode.getRelationshipIds( itr.getType() );
+                        RelIdIterator newItr = itr;
+                        String type = itr.getIds().getType();
+                        RelIdArray newSrc = fromNode.getRelationshipIds( type );
                         if ( newSrc != null )
                         {
-                            if ( itr.isSrcEmpty() )
+                            if ( itr.isPlacebo() )
                             {
-                                newItr = itr.setSrc( newSrc );
+                                newItr = newSrc.iterator( direction );
                             }
                             else if ( newSrc.couldBeNeedingUpdate() )
                             {
-                                itr.updateSrc( newSrc );
+                                itr.updateSource( newSrc );
                             }
-                            newItr.notifyAboutMoreRelationships();
+                            newItr.doAnotherRound();
                         }
-                        newRels.put( newItr.getType(), newItr );
+                        newRels.put( type, newItr );
                     }
                     
                     // If we wanted relationships of any type check if there are
@@ -131,18 +124,17 @@ class IntArrayIterator implements Iterable<Relationship>,
                         for ( RelIdArray ids : fromNode.getRelationshipIds() )
                         {
                             String type = ids.getType();
-                            RelTypeElementIterator itr = newRels.get( type );
-                            if ( itr == null || itr.isSrcEmpty() )
+                            RelIdIterator itr = newRels.get( type );
+                            if ( itr == null )
                             {
-                                if ( itr == null )
-                                {
-                                    RelIdArray remove = nodeManager.getCowRelationshipRemoveMap( fromNode, type );
-                                    itr = RelTypeElement.create( type, fromNode, ids, null, remove, direction );
-                                }
-                                else
-                                {
-                                    itr = itr.setSrc( ids );
-                                }
+                                RelIdArray remove = nodeManager.getCowRelationshipRemoveMap( fromNode, type );
+                                itr = remove == null ? ids.iterator( direction ) :
+                                        RelIdArray.from( ids, null, remove ).iterator( direction );
+                                newRels.put( type, itr );
+                            }
+                            else if ( itr.isPlacebo() )
+                            {
+                                itr.updateSource( ids );
                                 newRels.put( type, itr );
                             }
                         }
@@ -152,7 +144,7 @@ class IntArrayIterator implements Iterable<Relationship>,
                     rels.addAll( newRels.values() );
                     
                     typeIterator = rels.iterator();
-                    currentTypeIterator = typeIterator.hasNext() ? typeIterator.next() : RelTypeElementIterator.EMPTY;
+                    currentTypeIterator = typeIterator.hasNext() ? typeIterator.next() : RelIdArray.EMPTY.iterator( direction );
                     isFullyLoaded = !fromNode.hasMoreRelationshipsToLoad();
                 }
                 else
@@ -160,25 +152,8 @@ class IntArrayIterator implements Iterable<Relationship>,
                     break;
                 }
             }
-         } while ( currentTypeIterator.hasNext( nodeManager ) );
+         } while ( currentTypeIterator.hasNext() );
         // no next element found
-        return false;
-    }
-
-    public Relationship next()
-    {
-        hasNext();
-        if ( nextElement != null )
-        {
-            Relationship elementToReturn = nextElement;
-            nextElement = null;
-            return elementToReturn;
-        }
-        throw new NoSuchElementException();
-    }
-
-    public void remove()
-    {
-        throw new UnsupportedOperationException();
+        return null;
     }
 }
