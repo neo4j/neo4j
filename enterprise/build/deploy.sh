@@ -6,7 +6,7 @@ mvnrepo=https://repo.neo4j.org/content/repositories/snapshots
 
 function work {
     deploy_defaults neo4j-com neo4j-ha neo4j-backup
-    deploy neo4j-enterprise docs javadoc
+    deploy neo4j-enterprise docs javadoc sources test-sources
     deploy neo4j-server-enterprise docs javadoc sources test-sources tests
 }
 
