@@ -6,7 +6,7 @@ mvnrepo=https://repo.neo4j.org/content/repositories/snapshots
 
 function work {
     deploy_defaults neo4j-management
-    deploy neo4j-advanced docs javadoc
+    deploy neo4j-advanced docs javadoc sources test-sources
     deploy neo4j-server-advanced docs javadoc sources test-sources tests
 }
 
