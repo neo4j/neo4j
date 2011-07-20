@@ -21,8 +21,9 @@
 """Python bindings for the Neo4j Graph Database.
 """
 
-__all__ = 'GraphDatabase', 'Node', 'Relationship', 'Property',\
-          'incoming', 'outgoing', 'any',
+__all__ = 'GraphDatabase', 'Node', 'Relationship',\
+          'Property', 'incoming', 'outgoing', 'any',\
+          'Incoming', 'Outgoing', 'Any'
 
 from neo4j._backend import GraphDatabase
 
@@ -65,8 +66,4 @@ try:
     from neo4j.algo import *
 except:
     pass
-# Bind the API to the underlying implementation
-incoming = _backend.Direction(_backend.Direction.INCOMING)
-outgoing = _backend.Direction(_backend.Direction.OUTGOING)
-any      = _backend.Direction(_backend.Direction.ANY)
-del _backend
+

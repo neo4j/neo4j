@@ -26,33 +26,21 @@ import unit_tests, datetime
 
 from neo4j import *
 
-class Friendship(Relationship):
-
-    introduced = Property(datetime.datetime, default=None)
-    
-class Person(Node):
-    friends = Friendship('Person',type='KNOWS')
-    name = Property(str, indexed=True)
-    birthday = Property(datetime.datetime, default=None)
-
 class SomeTests(unit_tests.GraphDatabaseTest):
     def test_basic_traversal(self):
         with self.graphdb.transaction:
-            cypher = Person(self.graphdb, name="Cypher",
-                            birthday=datetime.datetime(1972,10,16))
-            smith = Person(self.graphdb, name="Agent Smith",
-                           birthday=datetime.datetime(1996,01,01))
-            cypher.friends.add(smith)
-        cypher = Person.filter(self.graphdb, name='Cypher').single()
+            source = self.graphdb.node(message='hello')
+            target = self.graphdb.node(message='world')
+            relationship = source.related_to(target, message="graphy")
         
-        paths = list(cypher / Any('KNOWS'))
+        paths = list(source / Any('related_to'))
+        
         self.assertEqual(1, len(paths))
         
-        smithpath = paths[0]
-        self.assertTrue(isinstance(smith, Path), "Traversals should yield path instances.")
+        targetpath = paths[0]
         
-        smith = smithpath.endNode()
-        self.assertTrue(isinstance(smith, Person))
+        target = targetpath.endNode()
+        self.assertEquals(target['message'], 'world')
         
 
 if __name__ == '__main__':

@@ -55,8 +55,15 @@ try:
     import java
 except: # this isn't jython (and doesn't have the java module)
     import jpype, os
-    jpype.startJVM(jpype.getDefaultJVMPath(),
-                   '-Djava.class.path=' + os.getenv('CLASSPATH','.'))
+
+    jvmargs = ['-Djava.class.path=' + os.getenv('CLASSPATH','.')]
+    
+    debug = True
+    if debug:
+        jvmargs = jvmargs + ['-Xdebug', '-Xnoagent', '-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=8000']
+        
+    jpype.startJVM(jpype.getDefaultJVMPath(), *jvmargs)
+    
     graphdb = jpype.JPackage('org.neo4j.graphdb')
     kernel  = jpype.JPackage('org.neo4j.kernel')
     Direction = graphdb.Direction
@@ -65,7 +72,13 @@ except: # this isn't jython (and doesn't have the java module)
     GraphDatabaseService = graphdb.GraphDatabaseService
     Node = graphdb.Node
     Relationship = graphdb.Relationship
+    
     EmbeddedGraphDatabase = kernel.EmbeddedGraphDatabase
+    
+    TraversalDescriptionImpl = kernel.impl.traversal.TraversalDescriptionImpl
+    Evaluation = graphdb.traversal.Evaluation
+    Evaluator = graphdb.traversal.Evaluator
+    
     HashMap = jpype.JPackage('java.util').HashMap
     rel_type = graphdb.DynamicRelationshipType.withName
     del graphdb, kernel # to get a consistent namespace
@@ -84,10 +97,20 @@ except: # this isn't jython (and doesn't have the java module)
         return from_java(value)
     def to_java(value):
         return value
+        
+    def implements(*interfaces):
+      class InterfaceProxy(object):
+          def __new__(cls, *args, **kwargs):
+              inst = super(InterfaceProxy, cls).__new__(cls, *args, **kwargs)
+              inst.__init__(*args, **kwargs)
+              return jpype.JProxy(interfaces, inst=inst)
+      return InterfaceProxy
 else:
     from org.neo4j.kernel import EmbeddedGraphDatabase
+    from org.neo4j.kernel.impl.traversal import TraversalDescriptionImpl
     from org.neo4j.graphdb import Direction, DynamicRelationshipType,\
         PropertyContainer, Transaction, GraphDatabaseService, Node, Relationship
+    from org.neo4j.graphdb.traversal import Evaluation, Evaluator
     from java.util import HashMap
     rel_type = DynamicRelationshipType.withName
 
@@ -188,3 +211,5 @@ class Relationships(object):
                 rel[key] = val
         if len(rels) == 1: return rels[0]
         return rels
+        
+

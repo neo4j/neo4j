@@ -21,49 +21,28 @@
 """Neo4j domain modeling support for Python.
 """
 
-__all__ = 'Node', 'Relationship', 'Property', 'transactional'
+__all__ = 'Node', 'Relationship', 'Property',\
+          'transactional'
 
 from neo4j._backend import Object, strings, integers
 from neo4j.util import update_wrapper
+from neo4j.traversal import BoundPathTraversal
 
+from itertools import chain
 import datetime, time
-
-class Neo4jEntity(Object):
-    def __new__(Neo4jEntity, entity):
-        instance = object.__new__(Neo4jEntity)
-        instance.__entity = entity
-        return instance
-    
-# BEGIN: name mangling hackery
-    def _get_entity(self):
-        return self.__entity
-get_entity = Neo4jEntity._get_entity; del Neo4jEntity._get_entity
-# END: name mangling hackery
-
-class Factory(object):
-    def __init__(self, type, args, params=None):
-        self.__type = type
-        self.__args = args
-        if params is None: params = {}
-        self.__params = params
-    def __str__(self):
-        return "%s(%s,%s)" % (self.__type.__name__, ', '.join(self.__args),
-                              ', '.join(('%s=%s' % (k,v)) for k,v in
-                                        self.__params.items()))
-    def create(self, type, name):
-        obj = object.__new__(self.__type)
-        obj.__init__(type, name, *self.__args, **self.__params)
-        return obj
    
+
+# QUERY SETS
    
+
 # Decorator used in query set
 # methods that can take a graphdb
 # instance as their first argument.
-def can_set_graph(method):
+def can_set_db(method):
     
-    def wrapper(self, graph, *args, **kwargs):
+    def wrapper(self, db, *args, **kwargs):
         queryset = method(self, *args, **kwargs)
-        queryset._graph = graph
+        queryset.set_db(db)
         return queryset
         
     return update_wrapper(wrapper, method)
@@ -74,36 +53,27 @@ class QuerySet(object):
     nodes and relationships.
     '''
     
-    def __init__(self, Entity, graph=None, lookups=[], filters=[]):
+    def __init__(self, Entity, db=None, start_nodes=[], lookups=[], filters=[]):
+        self._start_nodes = start_nodes
         self._lookups = lookups
         self._filters = filters
         self._Entity = Entity
-        self._graph = graph
-    
-    @can_set_graph
-    def filter(self, **query):
-        lookups = list(self._lookups)
-        filters = list(self._filters)
-        
-        for key in query:
-            attribute = getattr(self._Entity, key.split('__',1)[0])
-            if attribute is None:
-                raise AttributeError("'%s' has no property matching '%s'"
-                                     % (self._Entity.__name__, key))
-            attribute.query(key, query[key], lookups, filters)
-        
-        return self._create(self._Entity, self._graph, lookups, filters)
+        self.set_db(db)
 
     def __iter__(self):
-        if not self._graph:
+        if self.get_db() == None:
             raise RuntimeError("You have to provide a graph database instance to the query set before you can retrieve results.")
+        
+        hits = self._start_nodes
         
         if len(self._lookups) > 0:
             index_query = " AND ".join(self._lookups)
-        else: 
+        elif len(hits) == 0:
             index_query = "*:*"
-            
-        hits = self._index(self._graph).query(index_query)
+        else: index_query = False
+          
+        if index_query:
+            hits = chain(hits, self._index(self.get_db()).query(index_query))
         
         try:
             for entity in hits:
@@ -116,6 +86,26 @@ class QuerySet(object):
                 hits.close()
             except:
                 pass
+                
+    def set_db(self, db):
+        self._db = db
+        
+    def get_db(self):
+        return self._db
+    
+    @can_set_db
+    def filter(self, **query):
+        lookups = list(self._lookups)
+        filters = list(self._filters)
+        
+        for key in query:
+            attribute = getattr(self._Entity, key.split('__',1)[0])
+            if attribute is None:
+                raise AttributeError("'%s' has no property matching '%s'"
+                                     % (self._Entity.__name__, key))
+            attribute.query(key, query[key], lookups, filters)
+        
+        return self._create(self._Entity, self.get_db(), self._start_nodes, lookups, filters)
                 
     def single(self):
         iterator = iter(self)
@@ -130,92 +120,49 @@ class QuerySet(object):
         except:
             pass
         return item
-    single = property(single)
                 
         
 class NodeQuerySet(QuerySet):
     
-    def _index(self, graphdb):
-        return graphdb.index().forNodes(self._Entity.__name__)
+    def _index(self, db):
+        return db.index().forNodes(self._Entity.__name__)
         
     def _create(self, *args):
-        
         return NodeQuerySet(*args)
 
-class Node(Neo4jEntity):
-    __node = property(get_entity)
-    
-    class __metaclass__(type, NodeQuerySet):
-    
-        def __new__(Node,name,bases,body):
-            Node = type.__new__(Node,name,bases,body)
-            for attr, value in body.items():
-                if isinstance(value, Factory):
-                    setattr(Node, attr, value.create(Node, attr))
-            return Node
-            
-        def __init__(Node,name,bases,body):
-            NodeQuerySet.__init__(Node, Node)
 
-    def __new__(Node, graphdb, **properties):
-        node = Neo4jEntity.__new__(Node, graphdb.createNode())
-        for key, value in properties.items():
-            descr = getattr(Node, key)
-            if descr:
-                descr.__set__(node, value)
-            else:
-                raise AttributeError("Node type '%s' has no attribute '%s'"
-                                     % (Node.__name__, key))
-        return node
+# FIELDS
 
-class Relationship(Neo4jEntity):
-    __relationship = property(get_entity)
-    class __metaclass__(type):
-        def __new__(Relationship,name,bases,body):
-            Relationship = type.__new__(Relationship,name,bases,body)
-            for attr, value in body.items():
-                if isinstance(value, Factory):
-                    setattr(Relationship,attr,value.create(Relationship,attr))
-            return Relationship
-        def _index(Relationship, graphdb):
-            return graphdb.index().forRelationships(Relationship.__name__)
-
-    def __new__(Relationship, target_type, type=None, direction=None):
-        return Factory(RelatedNodes, (target_type, type, direction))
-
-def transactional(method):
-    def transactional(self, *args, **kwargs):
-        tx = get_entity(self).getGraphDatabase().beginTx()
-        try:
-            result = method(self, *args, **kwargs)
-            tx.success()
-            return result
-        finally:
-            tx.finish()
-    return transactional
-
-
-class RelatedNodes(Object):
+class RelatedNodesMeta(object):
+    '''
+    This describes a relationship type that a Node can have.
+    '''
+    def __init__(self, *args):
+        self._args = list(args)
+        self._field_name = args[1]
+        
+    def __get__(self, obj, Owner=None):
+        if obj is None: return self
+        db = get_entity(obj).getGraphDatabase()
+        related_nodes = RelatedNodes(*([db, obj] + self._args))
+        
+        setattr(obj, self._field_name, related_nodes)
+        return related_nodes
+        
+class RelatedNodes(NodeQuerySet):
     '''
     This is the actual class used to manage
-    relationships on nodes. The relationship
-    class "turns into" this if it is instantiated
-    normally. This allows DSL like:
-    
-    >>> class Person(Node):
-    >>>     friends = Relationship('Person')
-    >>>
-        
-    while still allowing real Relationship instances
-    to actually represent single relationships.
+    relationships on Nodes.
     '''
-    
-    def __init__(self, source_type, name, target_type, type=None, direction=None):
-        self._source_type = source_type
-        self._target_type = target_type
+    def __init__(self, db, obj, Entity, name, targets, type, direction):
+        self._Entity = Entity
+        self._obj = obj
+        self._targets = targets
         self._field_name = name
         self.type = type
         self.direction = direction
+        NodeQuerySet.__init__(self, Entity, db, 
+                              start_nodes=[obj])
     
     def add(self, targetNode, **kwargs):
         pass
@@ -342,4 +289,113 @@ class DateProperty(Property):
             raise ValueError("Invalid property type: '%s' is not a datetime"
                              % type(value).__name__)
         return int(time.mktime(value.timetuple()))
+        
+class TypeProperty(Property):
+
+    def __init__(self, Entity, name, indexed, default):
+        self.__name = name
+        self.__default = ".".join((Entity.__module__,Entity.__name__))
+    __index = None
+
+    def get(self, value):
+        return self.__default
+    def set(self, value):
+        return self.__default        
+        
+# ENTITIES
+
+def transactional(method):
+    def transactional(self, *args, **kwargs):
+        tx = get_entity(self).getGraphDatabase().beginTx()
+        try:
+            result = method(self, *args, **kwargs)
+            tx.success()
+            return result
+        finally:
+            tx.finish()
+    return transactional
+    
+
+class Neo4jEntity(Object):
+    def __new__(Neo4jEntity, entity):
+        instance = object.__new__(Neo4jEntity)
+        instance.__entity = entity
+        return instance
+    
+# BEGIN: name mangling hackery
+    def _get_entity(self):
+        return self.__entity
+get_entity = Neo4jEntity._get_entity; del Neo4jEntity._get_entity
+# END: name mangling hackery
+
+
+class Factory(object):
+    def __init__(self, type, args, params=None):
+        self.__type = type
+        self.__args = args
+        if params is None: params = {}
+        self.__params = params
+    def __str__(self):
+        return "%s(%s,%s)" % (self.__type.__name__, ', '.join(self.__args),
+                              ', '.join(('%s=%s' % (k,v)) for k,v in
+                                        self.__params.items()))
+    def create(self, type, name):
+        obj = object.__new__(self.__type)
+        obj.__init__(type, name, *self.__args, **self.__params)
+        return obj
+        
+
+class Node(Neo4jEntity):
+    __node = property(get_entity)
+    
+    _type = TypeProperty()
+    
+    class __metaclass__(type, NodeQuerySet):
+    
+        def __new__(Node,name,bases,body):
+            Node = type.__new__(Node,name,bases,body)
+            for attr, value in body.items():
+                if isinstance(value, Factory):
+                    setattr(Node, attr, value.create(Node, attr))
+                   
+            return Node
+            
+        def __init__(Node,name,bases,body):
+            NodeQuerySet.__init__(Node, Node)
+
+    def __new__(Node, db, **properties):
+        node = Neo4jEntity.__new__(Node, db.createNode())
+        for key, value in properties.items():
+            descr = getattr(Node, key)
+            if descr:
+                descr.__set__(node, value)
+            else:
+                raise AttributeError("Node type '%s' has no attribute '%s'"
+                                     % (Node.__name__, key))
+        return node
+        
+    # Traversal DSL
+    
+    def __div__(self, other):
+        return self.__node.__div__( other )
+    __truediv__ = __div__
+
+
+class Relationship(Neo4jEntity):
+    __relationship = property(get_entity)
+    class __metaclass__(type):
+    
+        def __new__(Relationship,name,bases,body):
+            Relationship = type.__new__(Relationship,name,bases,body)
+            for attr, value in body.items():
+                if isinstance(value, Factory):
+                    setattr(Relationship,attr,value.create(Relationship,attr))
+            return Relationship
+            
+        def _index(Relationship, graphdb):
+            return graphdb.index().forRelationships(Relationship.__name__)
+
+    def __new__(Relationship, target_type, type=None, direction=None):
+        return Factory(RelatedNodesMeta, (target_type, type, direction))
+
 

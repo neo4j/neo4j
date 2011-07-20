@@ -21,30 +21,123 @@
 """Neo4j traversal dsl for Python.
 """
 
-class PathTraversal(object):
-    def __init__(self, *path):
-        self.__path = path
+from neo4j import _backend
+
+# Bind the API to the underlying implementation
+incoming = _backend.Direction(_backend.Direction.INCOMING)
+outgoing = _backend.Direction(_backend.Direction.OUTGOING)
+any      = _backend.Direction(_backend.Direction.ANY)
+
+del _backend
+
+from neo4j._backend import Evaluator, TraversalDescriptionImpl, implements, Evaluation, rel_type
+
+class PathEvaluator(implements(Evaluator)):
+
+    def __init__(self, pattern):
+        self._pattern = pattern
+        self._pattern_length = len(self._pattern)
+    
+    def evaluate(self, path):
+        segment = path.length()
+        
+        if segment == 0:
+            return Evaluation.EXCLUDE_AND_CONTINUE
+        
+        if segment <= self._pattern_length:
+          if self._pattern[segment-1].evaluate(path) == True:
+              if segment == self._pattern_length:
+                  return Evaluation.INCLUDE_AND_PRUNE
+              else:
+                  return Evaluation.EXCLUDE_AND_CONTINUE
+
+        return Evaluation.EXCLUDE_AND_PRUNE
+
+
+class PathPattern(object):
+    ''' Main class in the traversal dsl. This acts
+    as the base class for all filters, and is the
+    class that implements the logic for joining
+    filters together.
+    '''
+    def __init__(self, *pattern):
+        self._pattern = pattern
+        
     def __div__(self, other):
-        if isinstance(other, PathTraversal):
-            other = other.__path
+        if isinstance(other, PathPattern):
+            other = other._pattern
         elif isinstance(other, (list,tuple)):
             other = tuple(other)
         else:
             other = other,
-        return PathTraversal(*(self.__path + other))
+        return PathPattern(*(self._pattern + other))
     __truediv__ = __div__
+    
     def __repr__(self):
-        return ' / '.join([repr(item) for item in self.__path])
+        return ' / '.join([repr(item) for item in self._pattern])
+        
+    def description(self):
+        desc = TraversalDescriptionImpl()
+        return desc.evaluator(PathEvaluator(self._pattern))
 
-root = PathTraversal()
 
 class BoundPathTraversal(object):
-    def __init__(self, node, path):
+    ''' Ties a path pattern to a single node, 
+    and exposes methods to traverse the node
+    using the pattern.
+    '''
+    def __init__(self, node, pattern):
         self.__node = node
-        if not isinstance(path, PathTraversal): path = PathTraversal(path)
-        self.__path = path
+        if not isinstance(pattern, PathPattern): 
+            pattern = PathPattern(pattern)
+        self._pattern = pattern
+        
     def __div__(self, other):
-        return BoundPathTraversal( self.__node, self.__path.__div__(other) )
+        return BoundPathTraversal( self.__node, self._pattern.__div__(other) )
     __truediv__ = __div__
+    
     def __repr__(self):
-        return '%r / %r' % (self.__node, self.__path)
+        return '%r / %r' % (self.__node, self._pattern)
+        
+    def __iter__(self):    
+        return self.traverse(self.__node)
+            
+    def traverse(self, node):
+        for path in self._pattern.description().traverse(node).iterator():
+            yield path
+        
+        
+# Pattern filters
+
+class RelationshipFilter(PathPattern):
+    def __init__(self, reltype, direction, **filters):
+        if not isinstance(reltype, (str, unicode)):
+            reltype = reltype.name()
+        self.type = reltype
+        self.direction = direction
+        self.filters = filters
+        self._pattern = self,
+     
+    def __repr__(self):
+        return "%s(%s)" % (self.__class__.__name__, self.type)
+        
+    def evaluate(self, path):
+        rel = path.lastRelationship()
+        if self.type == rel.getType().name():
+            return True
+        return False
+        
+class Any(RelationshipFilter):
+    def __init__(self, reltype=None, **kwargs):
+        super(Any, self).__init__(reltype, any, **kwargs)
+        
+        
+class Incoming(RelationshipFilter):
+    def __init__(self, reltype=None, **kwargs):
+        super(Incoming, self).__init__(reltype, incoming, **kwargs)
+        
+
+class Outgoing(RelationshipFilter):
+    def __init__(self, reltype=None, **kwargs):
+        super(Outgoing, self).__init__(reltype, outgoing, **kwargs)
+        

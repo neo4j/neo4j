@@ -42,7 +42,7 @@ class SomeTests(unit_tests.GraphDatabaseTest):
                    birthday=datetime.datetime(1978,05,21))
             Person(self.graphdb, name='Thomas Olsson',
                    birthday=datetime.datetime(1978,05,21))
-        neo = Person.filter(self.graphdb, name='Thomas Anderson').single
+        neo = Person.filter(self.graphdb, name='Thomas Anderson').single()
         self.assertFalse(neo is None)
         self.assertEqual('Thomas Anderson', neo.name)
         self.assertEqual(datetime.datetime(1978,05,21), neo.birthday)
