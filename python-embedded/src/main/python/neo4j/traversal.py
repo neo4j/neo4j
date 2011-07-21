@@ -136,6 +136,13 @@ def matches_reltypes(rel, reltypes):
         if expected == reltype:
             return True
     return False
+    
+def matches_direction(path, direction):
+    if direction is any:
+        return True
+    rel = path.last_relationship
+    return rel.end == path.end and direction is outgoing
+
         
 # Filters
 
@@ -158,7 +165,8 @@ class SegmentPattern(PathPattern):
         
     def evaluate(self, path):
         rel = path.last_relationship
-        if matches_reltypes(rel, self.types) and \
+        if matches_direction(path, self.direction) and \
+           matches_reltypes(rel, self.types) and \
            matches_properties(rel, self.relprops) and \
            matches_properties(path.end, self.nodeprops):
             return True
@@ -185,12 +193,12 @@ class Any(SegmentPattern):
         super(Any, self).__init__(reltype, any, **kwargs)
         
         
-class Incoming(SegmentPattern):
+class In(SegmentPattern):
     def __init__(self, reltype=None, **kwargs):
-        super(Incoming, self).__init__(reltype, incoming, **kwargs)
+        super(In, self).__init__(reltype, incoming, **kwargs)
         
 
-class Outgoing(SegmentPattern):
+class Out(SegmentPattern):
     def __init__(self, reltype=None, **kwargs):
-        super(Outgoing, self).__init__(reltype, outgoing, **kwargs)
+        super(Out, self).__init__(reltype, outgoing, **kwargs)
         

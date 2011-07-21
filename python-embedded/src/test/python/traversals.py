@@ -107,6 +107,15 @@ class SomeTests(unit_tests.GraphDatabaseTest):
             self.assertEqual(2, len(list(path.nodes())))
             break
             
+    def test_direction_traversal(self):
+        source = self.create_data()
+        
+        t = source / In()
+        self.assertEqual(0, len(list(t)))
+        
+        t = source / Out(message='blah')
+        self.assertEqual(1, len(list(t)))
+            
             
     def create_data(self):
         with self.graphdb.transaction:

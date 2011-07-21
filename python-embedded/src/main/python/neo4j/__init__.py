@@ -22,8 +22,7 @@
 """
 
 __all__ = 'GraphDatabase', 'Node', 'Relationship',\
-          'Property', 'incoming', 'outgoing', 'any',\
-          'Incoming', 'Outgoing', 'Any'
+          'Property', 'In', 'Out', 'Any'
 
 from neo4j._backend import GraphDatabase
 

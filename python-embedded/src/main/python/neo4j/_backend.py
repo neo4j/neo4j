@@ -181,7 +181,12 @@ class Node(extends(Node)):
 
 
 class Relationship(extends(Relationship)):
-    pass
+    
+    @property
+    def start(self): return self.getStartNode()
+    
+    @property
+    def end(self):   return self.getEndNode()
 
 
 class PropertyContainer(extends(PropertyContainer)):
