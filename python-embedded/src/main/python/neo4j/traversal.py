@@ -39,19 +39,19 @@ class PathEvaluator(implements(Evaluator)):
         self._pattern_length = len(self._pattern)
     
     def evaluate(self, path):
-        segment = path.length()
+        segment_no = path.length()
         
-        if segment == 0:
+        if segment_no == 0:
             return Evaluation.EXCLUDE_AND_CONTINUE
         
-        if segment <= self._pattern_length:
-          if self._pattern[segment-1].evaluate(path) == True:
-              if segment == self._pattern_length:
+        if segment_no <= self._pattern_length:
+          if self._pattern[segment_no-1].evaluate(path) == True:
+              if segment_no == self._pattern_length:
                   return Evaluation.INCLUDE_AND_PRUNE
               else:
                   return Evaluation.EXCLUDE_AND_CONTINUE
 
-        return Evaluation.EXCLUDE_AND_PRUNE
+        return Evaluation.EXCLUDE_AND_PRUNE        
 
 
 class PathPattern(object):
@@ -155,6 +155,23 @@ class SegmentPattern(PathPattern):
         
         self._set_types(typedef)
         self._pattern = self,
+
+# TODO:        
+#        self._length = 1
+#        self._variable_length = False
+        
+#    def __getitem__(self, items):
+#        ''' We use indexing to define
+#        how many segments this pattern
+#        should match. 
+#        '''
+#        if isinstance(items, int):
+#            # Fixed length
+#            self._length = items
+#        elif isinstance(items, slice):
+#            self._length = items
+#            self._variable_length = True
+#        return self
      
     def __repr__(self):
         return "%s(%s)" % (self.__class__.__name__, self.type)
