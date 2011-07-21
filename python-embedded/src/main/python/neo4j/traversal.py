@@ -127,17 +127,26 @@ def matches_properties(e, properties):
             return False
             
     return True
+    
+def matches_reltypes(rel, reltypes):
+    if len(reltypes) == 0:
+        return True
+    expected = rel.getType().name()
+    for reltype in reltypes:
+        if expected == reltype:
+            return True
+    return False
         
 # Filters
 
 class SegmentPattern(PathPattern):
-    def __init__(self, reltype, direction, **relprops):
-        if not isinstance(reltype, (str, unicode)):
-            reltype = reltype.name()
-        self.type = reltype
+    def __init__(self, typedef, direction, **relprops):
+       
         self.direction = direction
         self.relprops = relprops
         self.nodeprops = {}
+        
+        self._set_types(typedef)
         self._pattern = self,
      
     def __repr__(self):
@@ -149,11 +158,27 @@ class SegmentPattern(PathPattern):
         
     def evaluate(self, path):
         rel = path.last_relationship
-        if self.type == rel.getType().name() and \
+        if matches_reltypes(rel, self.types) and \
            matches_properties(rel, self.relprops) and \
            matches_properties(path.end, self.nodeprops):
             return True
         return False
+        
+    def _set_types(self, typedef):
+        self.types = []
+        
+        if typedef is None: return
+          
+        if not isinstance(typedef, (list,tuple)):
+            typedef = typedef,
+        
+        for t in typedef:
+            
+            if not isinstance(t, (str, unicode)):
+                self.types.append(t.name())
+            else:
+                self.types.append(t)
+        
         
 class Any(SegmentPattern):
     def __init__(self, reltype=None, **kwargs):

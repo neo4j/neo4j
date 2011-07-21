@@ -68,14 +68,59 @@ class SomeTests(unit_tests.GraphDatabaseTest):
             self.assertEquals(path.end['message'], 'world')
             self.assertEqual(2, len(list(path.nodes())))
             
+    def test_deep_traversal(self):
+        source = self.create_data()
+        
+        traverser = source / Any('related_to') / Any('related_to')(message='blaj')
+        
+        self.assertEqual(1, len(list(traverser)))
+        
+        for path in traverser:
+            relationship = path.last_relationship
+            self.assertEquals(path.start['message'], 'hello')
+            self.assertEquals(path.end['message'], 'blaj')
+            self.assertEqual(3, len(list(path.nodes())))
+            
+    def test_all_reltype_traversal(self):
+        source = self.create_data()
+        
+        traverser = source / Any()(name='lulwut')
+        
+        self.assertEqual(1, len(list(traverser)))
+        
+        for path in traverser:
+            relationship = path.last_relationship
+            self.assertEquals(path.start['message'], 'hello')
+            self.assertEquals(path.end['name'], 'lulwut')
+            self.assertEqual(2, len(list(path.nodes())))
+            
+    def test_multi_reltype_traversal(self):
+        source = self.create_data()
+        
+        traverser = source / Any(('otherrel','thirdrel'))        
+        self.assertEqual(2, len(list(traverser)))
+        
+        for path in traverser:
+            relationship = path.last_relationship
+            self.assertEquals(path.start['message'], 'hello')
+            self.assertEquals(path.end['name'], 'strange')
+            self.assertEqual(2, len(list(path.nodes())))
+            break
+            
+            
     def create_data(self):
         with self.graphdb.transaction:
             source = self.graphdb.node(message='hello')
             target = self.graphdb.node(message='world')
+            othernode = self.graphdb.node(name='strange')
+            thirdnode = self.graphdb.node(name='lulwut')
             toomuch = self.graphdb.node(message='blaj')
+            
             source.related_to(target, message="blah")
             source.related_to(target, message="graphy")
             source.related_to(target)
+            source.otherrel(othernode)
+            source.thirdrel(thirdnode)
             
             target.related_to(toomuch)
         return source
