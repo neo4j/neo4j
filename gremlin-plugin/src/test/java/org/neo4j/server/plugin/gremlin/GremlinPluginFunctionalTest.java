@@ -72,6 +72,52 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     }
 
     /**
+     * Send a Gremlin Script, URL-encoded with UTF-8 encoding, e.g.
+     * the equivalent of the Gremlin Script `g.v(me).outE.inV`
+     * with additional parameters as { "me" : 123 }.
+     */
+    @Test
+    @Title("Send a Gremlin Script with variables in a JSON Map - URL encoded")
+    @Documented
+    @Graph( value = { "I know you" } )
+    public void testGremlinPostWithVariablesURLEncoded() throws UnsupportedEncodingException
+    {
+        final String script = "g.v(me).outE.inV";
+        final String params = "{ \"me\" : "+data.get().get("I").getId()+" }";
+        String response = gen.get()
+        .expectedStatus(Status.OK.getStatusCode())
+        .payload( "script=" + URLEncoder.encode(script, "UTF-8") +
+                  "&params=" + URLEncoder.encode(params, "UTF-8")
+        )
+        .payloadType( MediaType.APPLICATION_FORM_URLENCODED_TYPE )
+        .post( ENDPOINT )
+        .entity();
+        assertTrue(response.contains( "you" ));
+    }
+
+    /**
+     * Send a Gremlin Script, as JSON payload and additional parameters, e.g.
+     * { "script" : "g.v(me).outE.inV", "params" : { "me" : 123 } }
+     */
+    @Test
+    @Title("Send a Gremlin Script with variables in a JSON Map")
+    @Documented
+    @Graph( value = { "I know you" } )
+    public void testGremlinPostWithVariablesAsJson() throws UnsupportedEncodingException
+    {
+        final String script = "g.v(me).outE.inV";
+        final String params = "{ \\\"me\\\" : "+data.get().get("I").getId()+" }";
+        final String payload = String.format("{ \"script\" : \"%s\", \"params\" : \"%s\" }", script, params);
+        String response = gen.get()
+        .expectedStatus(Status.OK.getStatusCode())
+        .payload(payload)
+        .payloadType(MediaType.APPLICATION_JSON_TYPE)
+        .post( ENDPOINT )
+        .entity();
+        assertTrue(response.contains( "you" ));
+    }
+
+    /**
      * Import a graph form a http://graphml.graphdrawing.org/[GraphML] file
      * can be achieved through the Gremlin GraphMLReader.
      * The following script imports 3 nodes into Neo4j
@@ -95,9 +141,10 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     }
     
     
+
     /**
-     * The following script returns a sorted list 
-     * of all nodes connected via outgoing relationships 
+     * The following script returns a sorted list
+     * of all nodes connected via outgoing relationships
      * to node 1, sorted by their `name`-property.
      */
     @Test
@@ -116,7 +163,7 @@ public class GremlinPluginFunctionalTest implements GraphHolder
         assertTrue(response.contains( "him" ));
         assertTrue(response.indexOf( "you" ) > response.indexOf( "him" ));
     }
-    
+
     /**
      * To send a Script JSON encoded, set the payload Content-Type Header.
      * In this example, find all the things that my friends like,
