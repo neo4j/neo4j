@@ -19,21 +19,7 @@
  */
 package org.neo4j.server.plugin.gremlin;
 
-import static org.junit.Assert.assertTrue;
-
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.util.Map;
-
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response.Status;
-
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -45,6 +31,14 @@ import org.neo4j.test.GraphHolder;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestData;
 import org.neo4j.test.TestData.Title;
+
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response.Status;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.util.Map;
+
+import static org.junit.Assert.assertTrue;
 
 public class GremlinPluginFunctionalTest implements GraphHolder
 {

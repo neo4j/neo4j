@@ -19,15 +19,10 @@
  */
 package org.neo4j.server.plugin.gremlin;
 
-import static org.junit.Assert.*;
-
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
+import com.tinkerpop.blueprints.pgm.Graph;
+import com.tinkerpop.blueprints.pgm.Vertex;
+import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
 import junit.framework.Assert;
-
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -40,9 +35,12 @@ import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
-import com.tinkerpop.blueprints.pgm.Graph;
-import com.tinkerpop.blueprints.pgm.Vertex;
-import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import static org.junit.Assert.assertTrue;
 
 public class GremlinPluginTest
 {
@@ -107,7 +105,7 @@ public class GremlinPluginTest
     @Test
     public void testExecuteScriptVertex() throws Exception
     {
-        JSONObject object = (JSONObject) parser.parse( json.format( GremlinPluginTest.executeTestScript( "g.v(1)" ) ) );
+        JSONObject object = (JSONObject) parser.parse( json.format( GremlinPluginTest.executeTestScript( "g.v(1)", null) ) );
         Assert.assertEquals( 29l,
                 ( (JSONObject) object.get( "data" ) ).get( "age" ) );
         Assert.assertEquals( "marko",
@@ -119,13 +117,13 @@ public class GremlinPluginTest
     {
         assertTrue(json.format( GremlinPluginTest.executeTestScript( ""+
         		"t = new Table();" +
-        		"g.v(1).out('knows').as('friends').table(t)>> -1;t;" ) ).contains("josh"));
+        		"g.v(1).out('knows').as('friends').table(t)>> -1;t;", null) ).contains("josh"));
     }
 
     @Test
     public void testExecuteScriptVertices() throws Exception
     {
-        JSONArray array = (JSONArray) parser.parse( json.format( GremlinPluginTest.executeTestScript( "g.V" ) ) );
+        JSONArray array = (JSONArray) parser.parse( json.format( GremlinPluginTest.executeTestScript( "g.V", null) ) );
         List<String> ids = new ArrayList<String>( Arrays.asList( "1", "2", "3",
                 "4", "5", "6" ) );
         Assert.assertEquals( array.size(), 6 );
@@ -171,7 +169,7 @@ public class GremlinPluginTest
     @Test
     public void testExecuteScriptEdges() throws Exception
     {
-        JSONArray array = (JSONArray) parser.parse( json.format( GremlinPluginTest.executeTestScript( "g.E" ) ) );
+        JSONArray array = (JSONArray) parser.parse( json.format( GremlinPluginTest.executeTestScript( "g.E", null) ) );
         List<String> ids = new ArrayList<String>( Arrays.asList( "0", "1", "2",
                 "3", "4", "5" ) );
         Assert.assertEquals( array.size(), 6 );
@@ -190,7 +188,7 @@ public class GremlinPluginTest
     @Test
     public void testExecuteScriptGraph() throws Exception
     {
-        String ret = (String) parser.parse( json.format( GremlinPluginTest.executeTestScript( "g" ) ) );
+        String ret = (String) parser.parse( json.format( GremlinPluginTest.executeTestScript( "g", null) ) );
         Assert.assertEquals( ret, "ImpermanentGraphDatabase [target/db]" );
     }
 
@@ -199,7 +197,7 @@ public class GremlinPluginTest
     {
         Assert.assertEquals(
                 1l,
-                parser.parse( json.format( GremlinPluginTest.executeTestScript( "1" ) ) ) );
+                parser.parse( json.format( GremlinPluginTest.executeTestScript( "1", null) ) ) );
     }
 
     @Test
@@ -207,7 +205,7 @@ public class GremlinPluginTest
     {
         Assert.assertEquals(
                 "[ 1, 2, 5, 6, 8 ]",
-                json.format( GremlinPluginTest.executeTestScript( "[1,2,5,6,8]" ) ) );
+                json.format( GremlinPluginTest.executeTestScript( "[1,2,5,6,8]", null) ) );
     }
 
     @Test
@@ -215,14 +213,22 @@ public class GremlinPluginTest
     {
         Assert.assertEquals(
                 "\"null\"",
-                json.format( GremlinPluginTest.executeTestScript( "for(i in 1..2){g.v(0)}" ) ) );
+                json.format( GremlinPluginTest.executeTestScript( "for(i in 1..2){g.v(0)}", null) ) );
+    }
+
+    @Test
+    public void testExecuteScriptParams()
+    {
+        Assert.assertEquals(
+                "1",
+                json.format( GremlinPluginTest.executeTestScript( "x", "{\"x\" : 1}") ) );
     }
 
     @Test
     public void testMultilineScriptWithLinebreaks()
     {
         Assert.assertEquals( "2",
-                json.format( GremlinPluginTest.executeTestScript( "1;\n2" ) ) );
+                json.format( GremlinPluginTest.executeTestScript( "1;\n2", null) ) );
     }
 
     @Test
@@ -231,7 +237,7 @@ public class GremlinPluginTest
         Assert.assertTrue(
                 json.format( GremlinPluginTest.executeTestScript( ""
                                                                   + "GraphMLReader.inputGraph(g, new URL(\""+exampleURI +"\").openStream());"
-                                                                  + "g.v(1).outE.inV.name.paths" ) ).contains( "1-knows->2" ) );
+                                                                  + "g.v(1).outE.inV.name.paths", null) ).contains( "1-knows->2" ) );
     }
 
     @Test
@@ -248,19 +254,19 @@ public class GremlinPluginTest
                             x + "",
                             json.format( GremlinPluginTest.executeTestScript( "x="
                                                                               + x
-                                                                              + "; x" ) ) );
+                                                                              + "; x", null) ) );
                 }
             }.start();
         }
     }
 
-    private static Representation executeTestScript( final String script )
+    private static Representation executeTestScript(final String script, String params)
     {
         Transaction tx = null;
         try
         {
             tx = neo4j.beginTx();
-            return plugin.executeScript( neo4j, script );
+            return plugin.executeScript( neo4j, script, params );
         }
         finally
         {
@@ -272,7 +278,7 @@ public class GremlinPluginTest
     @Test
     public void testExecuteScriptGetVerticesBySpecifiedName() throws Exception
     {
-        JSONObject object = (JSONObject) parser.parse( json.format( GremlinPluginTest.executeTestScript( "g.V[[name:'marko']] >> 1" ) ) );
+        JSONObject object = (JSONObject) parser.parse( json.format( GremlinPluginTest.executeTestScript( "g.V[[name:'marko']] >> 1", null) ) );
         Assert.assertEquals(
                 ( (JSONObject) object.get( "data" ) ).get( "name" ), "marko" );
         Assert.assertEquals(

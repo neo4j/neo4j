@@ -19,57 +19,51 @@
  */
 package org.neo4j.server.rest.repr;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.server.plugin.gremlin.GremlinPlugin;
-
-import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
 import com.tinkerpop.gremlin.pipes.util.Table;
 import com.tinkerpop.gremlin.pipes.util.Table.Row;
+import org.neo4j.server.plugin.gremlin.GremlinToRepresentationConverter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class GremlinTableRepresentation extends ObjectRepresentation
 {
 
     private final Table queryResult;
-    private final Neo4jGraph graph;
+    private final GremlinToRepresentationConverter converter = new GremlinToRepresentationConverter();
 
-    public GremlinTableRepresentation( Table result, Neo4jGraph graph )
+    public GremlinTableRepresentation(Table result)
     {
         super( RepresentationType.STRING );
         this.queryResult = result;
-        this.graph = graph;
     }
 
     @Mapping( "columns" )
     public Representation columns()
     {
-
         return ListRepresentation.string( queryResult.getColumnNames() );
     }
 
     @Mapping( "data" )
     public Representation data()
     {
-//        // rows
         List<Representation> rows = new ArrayList<Representation>();
         for (  Row  row : queryResult )
         {
-            List<Representation> fields = new ArrayList<Representation>();
-            // columns
-            for ( String column : queryResult.getColumnNames() )
-            {
-                Representation rowRep = GremlinPlugin.getRepresentation( graph, row.getColumn( column ) );
-                fields.add( rowRep );
-
-            }
-            rows.add( new ListRepresentation( "row", fields ) );
+            rows.add( new ListRepresentation( "row", convertRow(row)) );
         }
         return new ListRepresentation( "data", rows );
     }
 
-    
+    private List<Representation> convertRow(Row row) {
+        List<Representation> fields = new ArrayList<Representation>();
+        for ( String column : queryResult.getColumnNames() )
+        {
+            final Object fieldValue = row.getColumn(column);
+            Representation fieldRepresentation = converter.convert(fieldValue);
+            fields.add( fieldRepresentation );
 
+        }
+        return fields;
+    }
 }
