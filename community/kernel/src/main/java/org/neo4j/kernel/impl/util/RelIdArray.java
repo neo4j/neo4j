@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import java.util.HashSet;
+import java.util.Collection;
 import java.util.NoSuchElementException;
-import java.util.Set;
 
 import org.neo4j.graphdb.Direction;
 
@@ -777,7 +776,7 @@ public class RelIdArray
         }
     }
     
-    public static RelIdArray from( RelIdArray src, RelIdArray add, RelIdArray remove )
+    public static RelIdArray from( RelIdArray src, RelIdArray add, Collection<Long> remove )
     {
         if ( remove == null )
         {
@@ -801,12 +800,11 @@ public class RelIdArray
                 return null;
             }
             RelIdArray newArray = null;
-            Set<Long> removedSet = remove.asSet();
             if ( src != null )
             {
                 newArray = src.newSimilarInstance();
                 newArray.addAll( src );
-                evictExcluded( newArray, removedSet );
+                evictExcluded( newArray, remove );
             }
             else
             {
@@ -818,7 +816,7 @@ public class RelIdArray
                 for ( RelIdIteratorImpl fromIterator = (RelIdIteratorImpl) add.iterator( DirectionWrapper.BOTH ); fromIterator.hasNext();)
                 {
                     long value = fromIterator.next();
-                    if ( !removedSet.contains( value ) )
+                    if ( !remove.contains( value ) )
                     {
                         newArray.add( value, fromIterator.currentDirection );
                     }
@@ -828,7 +826,7 @@ public class RelIdArray
         }
     }
 
-    private static void evictExcluded( RelIdArray ids, Set<Long> excluded )
+    private static void evictExcluded( RelIdArray ids, Collection<Long> excluded )
     {
         for ( RelIdIteratorImpl iterator = (RelIdIteratorImpl) DirectionWrapper.BOTH.iterator( ids ); iterator.hasNext(); )
         {
@@ -855,16 +853,6 @@ public class RelIdArray
                 }
             }
         }
-    }
-    
-    public Set<Long> asSet()
-    {
-        Set<Long> set = new HashSet<Long>();
-        for ( RelIdIterator iterator = DirectionWrapper.BOTH.iterator( this ); iterator.hasNext(); )
-        {
-            set.add( iterator.next() );
-        }
-        return set;
     }
 
     /**

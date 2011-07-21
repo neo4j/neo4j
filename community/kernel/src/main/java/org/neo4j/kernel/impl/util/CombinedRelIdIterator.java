@@ -36,14 +36,14 @@ public class CombinedRelIdIterator implements RelIdIterator
     private long nextElement;
     
     public CombinedRelIdIterator( String type, DirectionWrapper direction, RelIdArray src,
-            RelIdArray add, RelIdArray remove )
+            RelIdArray add, Collection<Long> remove )
     {
         this.type = type;
         this.direction = direction;
         this.srcIterator = src != null ? src.iterator( direction ) : RelIdArray.EMPTY.iterator( direction );
         this.addIterator = add != null ? add.iterator( direction ) : RelIdArray.EMPTY.iterator( direction );
         this.currentIterator = srcIterator;
-        this.removed = remove != null ? remove.asSet() : null;
+        this.removed = remove;
     }
     
     @Override

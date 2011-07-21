@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -85,7 +87,7 @@ public class LockReleaser
         boolean deleted = false;
 
         ArrayMap<String,RelIdArray> relationshipAddMap = null;
-        ArrayMap<String,RelIdArray> relationshipRemoveMap = null;
+        ArrayMap<String,Collection<Long>> relationshipRemoveMap = null;
         ArrayMap<Integer,PropertyData> propertyAddMap = null;
         ArrayMap<Integer,PropertyData> propertyRemoveMap = null;
     }
@@ -199,7 +201,7 @@ public class LockReleaser
         }
     }
 
-    public RelIdArray getCowRelationshipRemoveMap( NodeImpl node, String type )
+    public Collection<Long> getCowRelationshipRemoveMap( NodeImpl node, String type )
     {
         PrimitiveElement primitiveElement = cowMap.get( getTransaction() );
         if ( primitiveElement != null )
@@ -215,7 +217,7 @@ public class LockReleaser
         return null;
     }
 
-    public RelIdArray getCowRelationshipRemoveMap( NodeImpl node, String type,
+    public Collection<Long> getCowRelationshipRemoveMap( NodeImpl node, String type,
         boolean create )
     {
         if ( !create )
@@ -233,12 +235,12 @@ public class LockReleaser
         }
         if ( element.relationshipRemoveMap == null )
         {
-            element.relationshipRemoveMap = new ArrayMap<String,RelIdArray>();
+            element.relationshipRemoveMap = new ArrayMap<String,Collection<Long>>();
         }
-        RelIdArray set = element.relationshipRemoveMap.get( type );
+        Collection<Long> set = element.relationshipRemoveMap.get( type );
         if ( set == null )
         {
-            set = new RelIdArray( null );
+            set = new HashSet<Long>();
             element.relationshipRemoveMap.put( type, set );
         }
         return set;
@@ -827,11 +829,9 @@ public class LockReleaser
             {
                 for ( String type : nodeElement.relationshipRemoveMap.keySet() )
                 {
-                    RelIdArray deletedRels =
-                        nodeElement.relationshipRemoveMap.get( type );
-                    for ( RelIdIterator iterator = deletedRels.iterator( DirectionWrapper.BOTH ); iterator.hasNext(); )
+                    Collection<Long> deletedRels = nodeElement.relationshipRemoveMap.get( type );
+                    for ( long relId : deletedRels )
                     {
-                        long relId = iterator.next();
                         if ( nodeManager.relCreated( relId ) )
                         {
                             continue;

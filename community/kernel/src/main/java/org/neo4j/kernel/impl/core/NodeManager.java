@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
@@ -881,12 +882,12 @@ public class NodeManager
         persistenceManager.relRemoveProperty( rel.getId(), propertyId );
     }
 
-    public RelIdArray getCowRelationshipRemoveMap( NodeImpl node, String type )
+    public Collection<Long> getCowRelationshipRemoveMap( NodeImpl node, String type )
     {
         return lockReleaser.getCowRelationshipRemoveMap( node, type );
     }
 
-    public RelIdArray getCowRelationshipRemoveMap( NodeImpl node, String type,
+    public Collection<Long> getCowRelationshipRemoveMap( NodeImpl node, String type,
         boolean create )
     {
         return lockReleaser.getCowRelationshipRemoveMap( node, type, create );

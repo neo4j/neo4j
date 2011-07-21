@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -127,7 +128,7 @@ class IntArrayIterator extends PrefetchingIterator<Relationship> implements Iter
                             RelIdIterator itr = newRels.get( type );
                             if ( itr == null )
                             {
-                                RelIdArray remove = nodeManager.getCowRelationshipRemoveMap( fromNode, type );
+                                Collection<Long> remove = nodeManager.getCowRelationshipRemoveMap( fromNode, type );
                                 itr = remove == null ? ids.iterator( direction ) :
                                         RelIdArray.from( ids, null, remove ).iterator( direction );
                                 newRels.put( type, itr );

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import static org.neo4j.kernel.impl.util.RelIdArray.empty;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -126,7 +127,7 @@ class NodeImpl extends Primitive
         for ( RelIdArray src : relationships )
         {
             String type = src.getType();
-            RelIdArray remove = null;
+            Collection<Long> remove = null;
             RelIdArray add = null;
             RelIdIterator iterator = null;
             if ( hasModifications )
@@ -150,7 +151,7 @@ class NodeImpl extends Primitive
             {
                 if ( getRelIdArray( type ) == null )
                 {
-                    RelIdArray remove = nodeManager.getCowRelationshipRemoveMap( this, type );
+                    Collection<Long> remove = nodeManager.getCowRelationshipRemoveMap( this, type );
                     RelIdArray add = addMap.get( type );
                     relTypeList.add( new CombinedRelIdIterator( type, direction, null, add, remove ) );
                 }
@@ -169,7 +170,7 @@ class NodeImpl extends Primitive
         {
             String typeName = type.name();
             RelIdArray src = getRelIdArray( typeName );
-            RelIdArray remove = null;
+            Collection<Long> remove = null;
             RelIdArray add = null;
             RelIdIterator iterator = null;
             if ( hasModifications )
@@ -307,9 +308,9 @@ class NodeImpl extends Primitive
     // a relationship delete is invoked.
     void removeRelationship( NodeManager nodeManager, RelationshipType type, long relId )
     {
-        RelIdArray relationshipSet = nodeManager.getCowRelationshipRemoveMap(
+        Collection<Long> relationshipSet = nodeManager.getCowRelationshipRemoveMap(
             this, type.name(), true );
-        relationshipSet.add( relId, DirectionWrapper.OUTGOING );
+        relationshipSet.add( relId );
     }
 
     private void ensureRelationshipMapNotNull( NodeManager nodeManager )
@@ -577,7 +578,7 @@ class NodeImpl extends Primitive
 
     protected void commitRelationshipMaps(
         ArrayMap<String,RelIdArray> cowRelationshipAddMap,
-        ArrayMap<String,RelIdArray> cowRelationshipRemoveMap )
+        ArrayMap<String,Collection<Long>> cowRelationshipRemoveMap )
     {
         if ( relationships == null )
         {
@@ -592,7 +593,7 @@ class NodeImpl extends Primitive
                 for ( String type : cowRelationshipAddMap.keySet() )
                 {
                     RelIdArray add = cowRelationshipAddMap.get( type );
-                    RelIdArray remove = null;
+                    Collection<Long> remove = null;
                     if ( cowRelationshipRemoveMap != null )
                     {
                         remove = cowRelationshipRemoveMap.get( type );
@@ -613,7 +614,7 @@ class NodeImpl extends Primitive
                     RelIdArray src = getRelIdArray( type );
                     if ( src != null )
                     {
-                        RelIdArray remove = cowRelationshipRemoveMap.get( type );
+                        Collection<Long> remove = cowRelationshipRemoveMap.get( type );
                         putRelIdArray( RelIdArray.from( src, null, remove ) );
                     }
                 }

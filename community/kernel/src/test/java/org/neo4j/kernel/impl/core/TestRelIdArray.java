@@ -90,9 +90,9 @@ public class TestRelIdArray
         add.add( 5, OUTGOING );
         add.add( 6, OUTGOING );
         add.add( 7, OUTGOING );
-        RelIdArray remove = new RelIdArray( null );
-        remove.add( 2, OUTGOING );
-        remove.add( 6, OUTGOING );
+        Collection<Long> remove = new HashSet<Long>();
+        remove.add( 2L );
+        remove.add( 6L );
         List<Long> allIds = asList( RelIdArray.from( source, add, remove ) );
         Collections.sort( allIds );
         assertEquals( Arrays.asList( 1L, 3L, 4L, 5L, 7L ), allIds );
