@@ -27,16 +27,8 @@ import unit_tests, datetime
 from neo4j import *
 
 class SomeTests(unit_tests.GraphDatabaseTest):
-    def test_basic_traversal(self):
-        with self.graphdb.transaction:
-            source = self.graphdb.node(message='hello')
-            target = self.graphdb.node(message='world')
-            toomuch = self.graphdb.node(message='blaj')
-            source.related_to(target, message="blah")
-            source.related_to(target, message="graphy")
-            source.related_to(target)
-            
-            target.related_to(toomuch)
+    def test_traverse_with_rel_filter(self):
+        source = self.create_data()
         
         traverser = source / Any('related_to', message='graphy')
         self.assertEqual(1, len(list(traverser)))
@@ -61,7 +53,32 @@ class SomeTests(unit_tests.GraphDatabaseTest):
             
         for rel in traverser.relationships():
             self.assertEquals(rel['message'], 'graphy')
+            
+    def test_traverse_with_node_filter(self):
+        source = self.create_data()
         
+        traverser = source / Any('related_to')(message='world')
+        
+        self.assertEqual(1, len(list(traverser)))
+        
+        for path in traverser:
+            relationship = path.last_relationship
+            self.assertEquals(relationship['message'], 'blah')
+            self.assertEquals(path.start['message'], 'hello')
+            self.assertEquals(path.end['message'], 'world')
+            self.assertEqual(2, len(list(path.nodes())))
+            
+    def create_data(self):
+        with self.graphdb.transaction:
+            source = self.graphdb.node(message='hello')
+            target = self.graphdb.node(message='world')
+            toomuch = self.graphdb.node(message='blaj')
+            source.related_to(target, message="blah")
+            source.related_to(target, message="graphy")
+            source.related_to(target)
+            
+            target.related_to(toomuch)
+        return source
 
 if __name__ == '__main__':
     unit_tests.unittest.main()

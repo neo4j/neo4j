@@ -100,8 +100,12 @@ class BoundPathTraversal(object):
     def __repr__(self):
         return '%r / %r' % (self.__node, self._pattern)
         
-    def __iter__(self):    
-        return iter(self.traverser())
+    def __iter__(self):
+        seen_nodes = set()
+        for path in self.traverser():
+            if path.end not in seen_nodes:
+                seen_nodes.add(path.end)
+                yield path
         
     @property
     def nodes(self):
@@ -126,36 +130,42 @@ def matches_properties(e, properties):
         
 # Filters
 
-class RelationshipFilter(PathPattern):
-    def __init__(self, reltype, direction, **props):
+class SegmentPattern(PathPattern):
+    def __init__(self, reltype, direction, **relprops):
         if not isinstance(reltype, (str, unicode)):
             reltype = reltype.name()
         self.type = reltype
         self.direction = direction
-        self.props = props
+        self.relprops = relprops
+        self.nodeprops = {}
         self._pattern = self,
      
     def __repr__(self):
         return "%s(%s)" % (self.__class__.__name__, self.type)
         
+    def __call__(self, **nodeprops):
+        self.nodeprops = nodeprops
+        return self
+        
     def evaluate(self, path):
         rel = path.last_relationship
         if self.type == rel.getType().name() and \
-           matches_properties(rel, self.props):
+           matches_properties(rel, self.relprops) and \
+           matches_properties(path.end, self.nodeprops):
             return True
         return False
         
-class Any(RelationshipFilter):
+class Any(SegmentPattern):
     def __init__(self, reltype=None, **kwargs):
         super(Any, self).__init__(reltype, any, **kwargs)
         
         
-class Incoming(RelationshipFilter):
+class Incoming(SegmentPattern):
     def __init__(self, reltype=None, **kwargs):
         super(Incoming, self).__init__(reltype, incoming, **kwargs)
         
 
-class Outgoing(RelationshipFilter):
+class Outgoing(SegmentPattern):
     def __init__(self, reltype=None, **kwargs):
         super(Outgoing, self).__init__(reltype, outgoing, **kwargs)
         

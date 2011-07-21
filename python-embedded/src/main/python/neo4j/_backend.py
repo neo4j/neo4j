@@ -36,7 +36,7 @@ def extends(CLASS):
                 overrides = []
                 for key, value in body.items():
                     if key not in ('__module__','__new__'):
-                        setattr(CLASS, key, value))
+                        setattr(CLASS, key, value)
                         
                 return type(name, (object,), body)
     
@@ -111,7 +111,7 @@ except: # this isn't jython (and doesn't have the java module)
         return from_java(value)
     def to_java(value):
         return value
-        
+    
     def implements(*interfaces):
       class InterfaceProxy(object):
           def __new__(cls, *args, **kwargs):
