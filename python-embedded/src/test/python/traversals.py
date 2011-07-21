@@ -31,16 +31,36 @@ class SomeTests(unit_tests.GraphDatabaseTest):
         with self.graphdb.transaction:
             source = self.graphdb.node(message='hello')
             target = self.graphdb.node(message='world')
-            relationship = source.related_to(target, message="graphy")
+            toomuch = self.graphdb.node(message='blaj')
+            source.related_to(target, message="blah")
+            source.related_to(target, message="graphy")
+            source.related_to(target)
+            
+            target.related_to(toomuch)
         
-        paths = list(source / Any('related_to'))
+        traverser = source / Any('related_to', message='graphy')
+        self.assertEqual(1, len(list(traverser)))
         
-        self.assertEqual(1, len(paths))
-        
-        targetpath = paths[0]
-        
-        target = targetpath.endNode()
-        self.assertEquals(target['message'], 'world')
+        for path in traverser:
+            relationship = path.last_relationship
+            self.assertEquals(relationship['message'], 'graphy')
+            self.assertEquals(path.start['message'], 'hello')
+            self.assertEquals(path.end['message'], 'world')
+            
+            nodes = list(path.nodes())
+            self.assertEqual(2, len(nodes))
+            self.assertEquals(nodes[0]['message'], 'hello')
+            self.assertEquals(nodes[1]['message'], 'world')
+            
+            rels = list(path.relationships())
+            self.assertEqual(1, len(rels))
+            self.assertEquals(rels[0]['message'], 'graphy')
+          
+        for node in traverser.nodes():
+            self.assertEquals(node['message'], 'world')
+            
+        for rel in traverser.relationships():
+            self.assertEquals(rel['message'], 'graphy')
         
 
 if __name__ == '__main__':

@@ -30,7 +30,7 @@ any      = _backend.Direction(_backend.Direction.ANY)
 
 del _backend
 
-from neo4j._backend import Evaluator, TraversalDescriptionImpl, implements, Evaluation, rel_type
+from neo4j._backend import Evaluator, TraversalDescriptionImpl, implements, Evaluation, rel_type, Uniqueness
 
 class PathEvaluator(implements(Evaluator)):
 
@@ -78,6 +78,7 @@ class PathPattern(object):
         
     def description(self):
         desc = TraversalDescriptionImpl()
+        desc = desc.uniqueness(Uniqueness.RELATIONSHIP_GLOBAL)
         return desc.evaluator(PathEvaluator(self._pattern))
 
 
@@ -100,30 +101,47 @@ class BoundPathTraversal(object):
         return '%r / %r' % (self.__node, self._pattern)
         
     def __iter__(self):    
-        return self.traverse(self.__node)
+        return iter(self.traverser())
+        
+    @property
+    def nodes(self):
+        return self.traverser().nodes
             
-    def traverse(self, node):
-        for path in self._pattern.description().traverse(node).iterator():
-            yield path
+    @property
+    def relationships(self):
+        return self.traverser().relationships
+        
+    def traverser(self):
+        return self._pattern.description().traverse(self.__node)
         
         
-# Pattern filters
+# Filter utils
+
+def matches_properties(e, properties):
+    for key, value in properties.items():
+        if not e.hasProperty(key) or e.getProperty(key) != value:
+            return False
+            
+    return True
+        
+# Filters
 
 class RelationshipFilter(PathPattern):
-    def __init__(self, reltype, direction, **filters):
+    def __init__(self, reltype, direction, **props):
         if not isinstance(reltype, (str, unicode)):
             reltype = reltype.name()
         self.type = reltype
         self.direction = direction
-        self.filters = filters
+        self.props = props
         self._pattern = self,
      
     def __repr__(self):
         return "%s(%s)" % (self.__class__.__name__, self.type)
         
     def evaluate(self, path):
-        rel = path.lastRelationship()
-        if self.type == rel.getType().name():
+        rel = path.last_relationship
+        if self.type == rel.getType().name() and \
+           matches_properties(rel, self.props):
             return True
         return False
         

@@ -23,15 +23,23 @@
 import sys, neo4j
 
 def extends(CLASS):
+    ## This lets us extend java classes "in place",
+    ## adding methods and attributes to the original
+    ## java classes, using the normal python class
+    ## system as a DSL.
+    
     class MetaClass(type):
         def __new__(Class, name, bases, body):
             if bases == ():
                 return type.__new__(Class, name, (object,), body)
             else:
+                overrides = []
                 for key, value in body.items():
                     if key not in ('__module__','__new__'):
-                        setattr(CLASS, key, value)
+                        setattr(CLASS, key, value))
+                        
                 return type(name, (object,), body)
+    
     return MetaClass(getattr(CLASS,'__name__','Class'),(),{})
 
 if sys.version_info >= (3,):
@@ -58,30 +66,36 @@ except: # this isn't jython (and doesn't have the java module)
 
     jvmargs = ['-Djava.class.path=' + os.getenv('CLASSPATH','.')]
     
-    debug = True
+    debug = False
     if debug:
         jvmargs = jvmargs + ['-Xdebug', '-Xnoagent', '-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=8000']
         
     jpype.startJVM(jpype.getDefaultJVMPath(), *jvmargs)
     
     graphdb = jpype.JPackage('org.neo4j.graphdb')
-    kernel  = jpype.JPackage('org.neo4j.kernel')
     Direction = graphdb.Direction
     PropertyContainer = graphdb.PropertyContainer
     Transaction = graphdb.Transaction
     GraphDatabaseService = graphdb.GraphDatabaseService
     Node = graphdb.Node
     Relationship = graphdb.Relationship
-    
-    EmbeddedGraphDatabase = kernel.EmbeddedGraphDatabase
-    
-    TraversalDescriptionImpl = kernel.impl.traversal.TraversalDescriptionImpl
+    Path = graphdb.Path
     Evaluation = graphdb.traversal.Evaluation
     Evaluator = graphdb.traversal.Evaluator
+    rel_type = graphdb.DynamicRelationshipType.withName
+    
+    kernel  = jpype.JPackage('org.neo4j.kernel')
+    EmbeddedGraphDatabase = kernel.EmbeddedGraphDatabase
+    TraversalDescriptionImpl = kernel.impl.traversal.TraversalDescriptionImpl
+    TraverserImpl = kernel.impl.traversal.TraverserImpl
+    Uniqueness = kernel.Uniqueness
+    
+    helpers = jpype.JPackage('org.neo4j.helpers')
+    IterableWrapper = helpers.collection.IterableWrapper
     
     HashMap = jpype.JPackage('java.util').HashMap
-    rel_type = graphdb.DynamicRelationshipType.withName
-    del graphdb, kernel # to get a consistent namespace
+    
+    del graphdb, kernel, helpers # to get a consistent namespace
 
     def from_java(value):
         global from_java
@@ -106,11 +120,12 @@ except: # this isn't jython (and doesn't have the java module)
               return jpype.JProxy(interfaces, inst=inst)
       return InterfaceProxy
 else:
-    from org.neo4j.kernel import EmbeddedGraphDatabase
-    from org.neo4j.kernel.impl.traversal import TraversalDescriptionImpl
+    from org.neo4j.kernel import EmbeddedGraphDatabase, Uniqueness
+    from org.neo4j.kernel.impl.traversal import TraversalDescriptionImpl, TraverserImpl
     from org.neo4j.graphdb import Direction, DynamicRelationshipType,\
-        PropertyContainer, Transaction, GraphDatabaseService, Node, Relationship
+        PropertyContainer, Transaction, GraphDatabaseService, Node, Relationship, Path
     from org.neo4j.graphdb.traversal import Evaluation, Evaluator
+    from org.neo4j.helpers.collection import IterableWrapper
     from java.util import HashMap
     rel_type = DynamicRelationshipType.withName
 
@@ -143,6 +158,10 @@ class DirectionalType(object):
         return "%r.%s" % (self.__dir, self.__type.name())
 
 
+#
+# Pythonification of the core API
+#
+
 GraphDatabase = extends(GraphDatabaseService)
 def __new__(GraphDatabase, resourceUri, **settings):
     config = HashMap()
@@ -160,6 +179,7 @@ class Node(extends(Node)):
         return neo4j.BoundPathTraversal(self, other)
     __truediv__ = __div__
 
+
 class Relationship(extends(Relationship)):
     pass
 
@@ -169,6 +189,27 @@ class PropertyContainer(extends(PropertyContainer)):
         return from_java(self.getProperty(key))
     def __setitem__(self, key, value):
         self.setProperty(key, to_java(value))
+
+
+class Path(extends(Path)):
+
+    @property
+    def start(self): return self.startNode()
+    
+    @property
+    def end(self):   return self.endNode()
+    
+    @property
+    def last_relationship(self): return self.lastRelationship()
+    
+    def __repr__(self): return self.toString()
+    
+    def __len__(self):  return self.length()
+    
+    def __iter__(self):
+        for entity in self.iterator():
+            yield entity 
+            
 
 class Transaction(extends(Transaction)):
     def __enter__(self):
@@ -180,8 +221,20 @@ class Transaction(extends(Transaction)):
             else:
                 self.success()
         finally:
-            self.finish()
+            self.finish()  
+           
+class TraverserImpl(extends(TraverserImpl)):
+    
+    def __iter__(self): 
+        return self.iterator()
+      
 
+class IterableWrapper(extends(IterableWrapper)):
+    
+    def __iter__(self): 
+        return self.iterator()
+        
+        
 class Relationships(object):
     def __init__(self, node, rel_type):
         self.__node = node
