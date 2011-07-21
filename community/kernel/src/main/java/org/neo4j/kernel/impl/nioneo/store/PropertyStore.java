@@ -549,7 +549,7 @@ public class PropertyStore extends AbstractStore implements Store
         else
         {
             throw new IllegalArgumentException( "Unknown property type on: "
-                + value );
+                + value + ", " + value.getClass() );
         }
     }
 
