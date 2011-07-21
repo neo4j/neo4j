@@ -36,7 +36,7 @@ import java.util.List;
 import org.junit.Test;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
-import org.neo4j.kernel.impl.util.RelIdArray.RelIdIterator;
+import org.neo4j.kernel.impl.util.RelIdIterator;
 
 // TODO Add some tests for loops, i.e. add with direction BOTH.
 public class TestRelIdArray

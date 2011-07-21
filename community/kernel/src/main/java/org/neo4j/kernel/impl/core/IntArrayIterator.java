@@ -30,7 +30,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
-import org.neo4j.kernel.impl.util.RelIdArray.RelIdIterator;
+import org.neo4j.kernel.impl.util.RelIdIterator;
 
 class IntArrayIterator extends PrefetchingIterator<Relationship> implements Iterable<Relationship>
 {

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.neo4j.kernel.impl.util.RelIdArray.empty;
+
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -39,9 +41,10 @@ import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.CombinedRelIdIterator;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
-import org.neo4j.kernel.impl.util.RelIdArray.RelIdIterator;
+import org.neo4j.kernel.impl.util.RelIdIterator;
 
 class NodeImpl extends Primitive
 {
@@ -125,6 +128,7 @@ class NodeImpl extends Primitive
             String type = src.getType();
             RelIdArray remove = null;
             RelIdArray add = null;
+            RelIdIterator iterator = null;
             if ( hasModifications )
             {
                 remove = nodeManager.getCowRelationshipRemoveMap( this, type );
@@ -132,8 +136,13 @@ class NodeImpl extends Primitive
                 {
                     add = addMap.get( type );
                 }
+                iterator = new CombinedRelIdIterator( type, direction, src, add, remove );
             }
-            relTypeList.add( RelIdArray.from( src, add, remove ).iterator( direction ) );
+            else
+            {
+                iterator = src.iterator( direction );
+            }
+            relTypeList.add( iterator );
         }
         if ( addMap != null )
         {
@@ -143,7 +152,7 @@ class NodeImpl extends Primitive
                 {
                     RelIdArray remove = nodeManager.getCowRelationshipRemoveMap( this, type );
                     RelIdArray add = addMap.get( type );
-                    relTypeList.add( RelIdArray.from( null, add, remove ).iterator( direction ) );
+                    relTypeList.add( new CombinedRelIdIterator( type, direction, null, add, remove ) );
                 }
             }
         }
@@ -154,19 +163,26 @@ class NodeImpl extends Primitive
         DirectionWrapper direction, RelationshipType... types)
     {
         ensureRelationshipMapNotNull( nodeManager );
-        List<RelIdIterator> relTypeList = new LinkedList<RelIdArray.RelIdIterator>();
+        List<RelIdIterator> relTypeList = new LinkedList<RelIdIterator>();
         boolean hasModifications = nodeManager.getLockReleaser().hasRelationshipModifications( this );
         for ( RelationshipType type : types )
         {
-            RelIdArray src = getRelIdArray( type.name() );
+            String typeName = type.name();
+            RelIdArray src = getRelIdArray( typeName );
             RelIdArray remove = null;
             RelIdArray add = null;
+            RelIdIterator iterator = null;
             if ( hasModifications )
             {
-                remove = nodeManager.getCowRelationshipRemoveMap( this, type.name() );
-                add = nodeManager.getCowRelationshipAddMap( this, type.name() );
+                remove = nodeManager.getCowRelationshipRemoveMap( this, typeName );
+                add = nodeManager.getCowRelationshipAddMap( this, typeName );
+                iterator = new CombinedRelIdIterator( typeName, direction, src, add, remove );
             }
-            relTypeList.add( RelIdArray.from( src != null ? src : new RelIdArray.EmptyRelIdArray( type.name() ), add, remove ).iterator( direction ) );
+            else
+            {
+                iterator = src != null ? src.iterator( direction ) : empty( typeName ).iterator( direction );
+            }
+            relTypeList.add( iterator );
         }
         return relTypeList;
     }

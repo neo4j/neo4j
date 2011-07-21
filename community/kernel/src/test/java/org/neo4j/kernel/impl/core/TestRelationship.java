@@ -24,7 +24,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 
 import java.io.File;
 import java.io.IOException;
@@ -872,5 +874,29 @@ public class TestRelationship extends AbstractNeo4jTestCase
         tx.finish();
         assertEquals( type2Relationships, addToCollection( node1.getRelationships(), new HashSet<Relationship>() ) );
         db.shutdown();
+    }
+    
+    @Test
+    public void createRelationshipAfterClearedCache()
+    {
+        // Assumes relationship grab size 100
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
+        int expectedCount = 0;
+        for ( int i = 0; i < 150; i++ )
+        {
+            node1.createRelationshipTo( node2, TEST );
+            expectedCount++;
+        }
+        newTransaction();
+        getNodeManager().clearCache();
+        for ( int i = 0; i < 50; i++ )
+        {
+            node1.createRelationshipTo( node2, TEST );
+            expectedCount++;
+        }
+        assertEquals( expectedCount, count( node1.getRelationships() ) );
+        newTransaction();
+        assertEquals( expectedCount, count( node1.getRelationships() ) );
     }
 }

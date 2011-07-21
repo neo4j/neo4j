@@ -38,10 +38,10 @@ public class RelIdArray
     {
         private final RelIdIterator emptyIterator;
         
-        public EmptyRelIdArray( String type )
+        private EmptyRelIdArray( String type )
         {
             super( type );
-            emptyIterator = new RelIdIterator( this, new DirectionWrapper[0] )
+            emptyIterator = new RelIdIteratorImpl( this, new DirectionWrapper[0] )
             {
                 @Override
                 public boolean hasNext()
@@ -72,6 +72,11 @@ public class RelIdArray
             return emptyIterator;
         }
     };
+    
+    public static RelIdArray empty( String type )
+    {
+        return new EmptyRelIdArray( type );
+    }
     
     public static RelIdArray EMPTY = new EmptyRelIdArray( "" );
     
@@ -264,7 +269,7 @@ public class RelIdArray
             @Override
             RelIdIterator iterator( RelIdArray ids )
             {
-                return new RelIdIterator( ids, DIRECTIONS_FOR_OUTGOING );
+                return new RelIdIteratorImpl( ids, DIRECTIONS_FOR_OUTGOING );
             }
 
             @Override
@@ -284,7 +289,7 @@ public class RelIdArray
             @Override
             RelIdIterator iterator( RelIdArray ids )
             {
-                return new RelIdIterator( ids, DIRECTIONS_FOR_INCOMING );
+                return new RelIdIteratorImpl( ids, DIRECTIONS_FOR_INCOMING );
             }
 
             @Override
@@ -304,7 +309,7 @@ public class RelIdArray
             @Override
             RelIdIterator iterator( RelIdArray ids )
             {
-                return new RelIdIterator( ids, DIRECTIONS_FOR_BOTH );
+                return new RelIdIteratorImpl( ids, DIRECTIONS_FOR_BOTH );
             }
 
             @Override
@@ -595,7 +600,7 @@ public class RelIdArray
         }
     }
     
-    public static class RelIdIterator
+    public static class RelIdIteratorImpl implements RelIdIterator
     {
         private final DirectionWrapper[] directions;
         private int directionPosition = -1;
@@ -607,7 +612,7 @@ public class RelIdArray
         private boolean nextElementDetermined;
         private RelIdArray ids;
         
-        RelIdIterator( RelIdArray ids, DirectionWrapper[] directions )
+        RelIdIteratorImpl( RelIdArray ids, DirectionWrapper[] directions )
         {
             this.ids = ids;
             this.directions = directions;
@@ -630,21 +635,37 @@ public class RelIdArray
             }
         }
         
+        /* (non-Javadoc)
+         * @see org.neo4j.kernel.impl.util.RelIdIterator#getType()
+         */
+        @Override
         public String getType()
         {
             return ids.getType();
         }
         
+        /* (non-Javadoc)
+         * @see org.neo4j.kernel.impl.util.RelIdIterator#getIds()
+         */
+        @Override
         public RelIdArray getIds()
         {
             return ids;
         }
         
+        /* (non-Javadoc)
+         * @see org.neo4j.kernel.impl.util.RelIdIterator#isPlacebo()
+         */
+        @Override
         public boolean isPlacebo()
         {
             return false;
         }
         
+        /* (non-Javadoc)
+         * @see org.neo4j.kernel.impl.util.RelIdIterator#updateSource(org.neo4j.kernel.impl.util.RelIdArray)
+         */
+        @Override
         public void updateSource( RelIdArray newSource )
         {
             this.ids = newSource;
@@ -660,6 +681,10 @@ public class RelIdArray
             }
         }
         
+        /* (non-Javadoc)
+         * @see org.neo4j.kernel.impl.util.RelIdIterator#hasNext()
+         */
+        @Override
         public boolean hasNext()
         {
             if ( nextElementDetermined )
@@ -705,11 +730,10 @@ public class RelIdArray
             return findNextBlock();
         }
         
-        /**
-         * Tells this iterator to try another round with all its directions
-         * starting from each their previous states. Called from IntArrayIterator,
-         * when it finds out it has gotten more relationships of this type.
+        /* (non-Javadoc)
+         * @see org.neo4j.kernel.impl.util.RelIdIterator#doAnotherRound()
          */
+        @Override
         public void doAnotherRound()
         {
             directionPosition = -1;
@@ -738,6 +762,10 @@ public class RelIdArray
             return false;
         }
         
+        /* (non-Javadoc)
+         * @see org.neo4j.kernel.impl.util.RelIdIterator#next()
+         */
+        @Override
         public long next()
         {
             if ( !hasNext() )
@@ -787,7 +815,7 @@ public class RelIdArray
             if ( add != null )
             {
                 newArray = newArray.upgradeIfNeeded( add );
-                for ( RelIdIterator fromIterator = add.iterator( DirectionWrapper.BOTH ); fromIterator.hasNext();)
+                for ( RelIdIteratorImpl fromIterator = (RelIdIteratorImpl) add.iterator( DirectionWrapper.BOTH ); fromIterator.hasNext();)
                 {
                     long value = fromIterator.next();
                     if ( !removedSet.contains( value ) )
@@ -802,7 +830,7 @@ public class RelIdArray
 
     private static void evictExcluded( RelIdArray ids, Set<Long> excluded )
     {
-        for ( RelIdIterator iterator = DirectionWrapper.BOTH.iterator( ids ); iterator.hasNext(); )
+        for ( RelIdIteratorImpl iterator = (RelIdIteratorImpl) DirectionWrapper.BOTH.iterator( ids ); iterator.hasNext(); )
         {
             long value = iterator.next();
             if ( excluded.contains( value ) )
@@ -829,7 +857,7 @@ public class RelIdArray
         }
     }
     
-    private Set<Long> asSet()
+    public Set<Long> asSet()
     {
         Set<Long> set = new HashSet<Long>();
         for ( RelIdIterator iterator = DirectionWrapper.BOTH.iterator( this ); iterator.hasNext(); )
