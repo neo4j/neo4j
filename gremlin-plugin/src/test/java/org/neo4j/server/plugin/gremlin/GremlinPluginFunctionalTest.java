@@ -70,6 +70,8 @@ public class GremlinPluginFunctionalTest implements GraphHolder
         .entity();
         assertTrue(response.contains( "you" ));
     }
+    
+    
 
     /**
      * Send a Gremlin Script, URL-encoded with UTF-8 encoding, e.g.
@@ -141,6 +143,28 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     }
     
     
+    /**
+     * To set variables in the bindings for the Gremlin Script
+     * Engine on the server, you can include a +params+ parameter
+     * with a String representing a JSON map of variables to set 
+     * to initial values. These can then be accessed as normal 
+     * variables within the script.
+     */
+    @Test
+    @Documented
+    @Title("Set script variables")
+    public void setVariables() throws UnsupportedEncodingException
+    {
+        String response = gen.get()
+        .expectedStatus( Status.OK.getStatusCode() )
+        .payload( "{\"script\":\"meaning_of_life\"," +
+                "\"params\":\"{\\\"meaning_of_life\\\" : 42}}\"}" )
+        .payloadType( MediaType.APPLICATION_JSON_TYPE )
+        .post( ENDPOINT )
+        .entity();
+        assertTrue(response.contains( "42" ));
+    }
+    
 
     /**
      * The following script returns a sorted list
@@ -175,7 +199,7 @@ public class GremlinPluginFunctionalTest implements GraphHolder
      * +>> -1+.
      */
     @Test
-    @Title("Send a Gremlin Script - JSON encoded with table result")
+    @Title("Send a Gremlin Script - JSON encoded with table results")
     @Documented
     @Graph( value = { "I know Joe", "I like cats", "Joe like cats", "Joe like dogs" } )
     public void testGremlinPostJSONWithTableResult()
