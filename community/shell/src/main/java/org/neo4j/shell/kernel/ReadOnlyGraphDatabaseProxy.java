@@ -582,6 +582,12 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, IndexMa
         {
             readOnly();
         }
+
+        @Override
+        public boolean isWriteable()
+        {
+            return false;
+        }
     }
 
     class ReadOnlyNodeIndexProxy extends ReadOnlyIndexProxy<Node, Index<Node>>

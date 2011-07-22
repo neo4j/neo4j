@@ -105,8 +105,17 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         index.add( node, "key", "value" );
         assertThat( index.query( "key:value" ), contains( node ) );
     }
-    
-    
+
+    @Test
+    public void makeSureLuceneIndexesReportAsWriteable()
+    {
+        Index<Node> index = nodeIndex( "write-me",
+                LuceneIndexImplementation.FULLTEXT_CONFIG );
+        Node node = graphDb.createNode();
+        index.add( node, "key", "value" );
+        assertTrue( index.isWriteable() );
+    }
+
     @Test
     public void testStartupInExistingDirectory() {
 		File dir = new File("target" + File.separator + "temp" + File.separator);
@@ -150,7 +159,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     {
         makeSureAdditionsCanBeRemoved( false );
     }
-    
+
     @Test
     public void makeSureYouCanAskIfAnIndexExistsOrNot()
     {
@@ -302,7 +311,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         }
 
         index.remove( node, key, new String[]{value2, value3} );
-        
+
         for ( int i = 0; i < 2; i++ )
         {
             assertThat( index.get( key, value1 ), contains( node ) );
@@ -324,7 +333,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         Node node2 = graphDb.createNode();
         index.add( node1, key, value1 );
         index.add( node2, key, value2 );
-        
+
         for ( int i = 0; i < 2; i++ )
         {
             assertThat( index.query( key, "neo*" ), contains( node1 ) );
@@ -350,7 +359,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         index.add( neo, "sex", "male" );
         index.add( trinity, "username", "trinity@matrix" );
         index.add( trinity, "sex", "female" );
-        
+
         for ( int i = 0; i < 2; i++ )
         {
             assertThat( index.query( "username:*@matrix AND sex:male" ), contains( neo ) );
@@ -469,7 +478,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
             restartTx();
         }
-        
+
         index.delete();
     }
 
@@ -501,7 +510,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         Relationship rel2 = startNode.createRelationshipTo( endNode2, type );
         index.add( rel1, "name", "something" );
         index.add( rel2, "name", "something" );
-        
+
         for ( int i = 0; i < 2; i++ )
         {
             assertThat( index.query( "name:something" ), contains( rel1, rel2 ) );
@@ -511,10 +520,10 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
             assertThat( index.get( "name", "something", null, endNode1 ), contains( rel1 ) );
             assertThat( index.get( "name", "something", startNode, endNode2 ), contains( rel2 ) );
             assertThat( index.get( null, null, startNode, endNode1 ), contains( rel1 ) );
-            
+
             restartTx();
         }
-        
+
         rel2.delete();
         rel1.delete();
         startNode.delete();
@@ -580,7 +589,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         index.add( eva, title, "Secretary" );
         index.add( eva, sex, "female" );
         index.add( eva, other, "ddd" );
-        
+
         for ( int i = 0; i < 2; i++ )
         {
             assertContainsInOrder( index.query( new QueryContext( "name:*" ).sort( name, title ) ), adam2, adam, eva, jack );
@@ -592,7 +601,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
             restartTx();
         }
     }
-    
+
     @Test
     public void testNumericValuesExactIndex() throws Exception
     {
@@ -604,7 +613,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     {
         testNumericValues( nodeIndex( "numeric-ft", LuceneIndexImplementation.FULLTEXT_CONFIG ) );
     }
-    
+
     private void testNumericValues( Index<Node> index )
     {
         Node node10 = graphDb.createNode();
@@ -615,7 +624,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         index.add( node10, key, numeric( 10 ) );
         index.add( node6, key, numeric( 6 ) );
         index.add( node31, key, numeric( 31 ) );
-        
+
         for ( int i = 0; i < 2; i++ )
         {
             assertThat( index.query( NumericRangeQuery.newIntRange( key, 4, 40, true, true ) ), contains( node10, node6, node31 ) );
@@ -623,7 +632,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
             assertThat( index.query( NumericRangeQuery.newIntRange( key, 6, 15, false, true ) ), contains( node10 ) );
             restartTx();
         }
-        
+
         index.remove( node6, key, numeric( 6 ) );
         assertThat( index.query( NumericRangeQuery.newIntRange( key, 4, 40, true, true ) ), contains( node10, node31 ) );
         restartTx();
@@ -661,7 +670,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         restartTx();
         assertThat( index.query( NumericRangeQuery.newIntRange( key, 0, 20, false, false ) ), contains( node2 ) );
     }
-    
+
     @Test
     public void sortNumericValues() throws Exception
     {
@@ -674,7 +683,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         index.add( node2, key, numeric( 15 ) );
         index.add( node3, key, numeric( 10 ) );
         restartTx();
-        
+
         assertContainsInOrder( index.query( numericRange( key, 5, 15 ).sortNumeric( key, false ) ), node1, node3, node2 );
     }
 
@@ -684,7 +693,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         Index<Node> index = nodeIndex( "nums", LuceneIndexImplementation.EXACT_CONFIG );
         Node node1 = graphDb.createNode();
         index.add( node1, "key", 10 );
-        
+
         for ( int i = 0; i < 2; i++ )
         {
             assertEquals( node1, index.get( "key", 10 ).getSingle() );
@@ -700,14 +709,14 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     {
         // Since index creation is done outside of the normal transactions,
         // a rollback will not roll back index creation.
-        
+
         nodeIndex( "immediate-index", LuceneIndexImplementation.FULLTEXT_CONFIG );
         assertTrue( graphDb.index().existsForNodes( "immediate-index" ) );
         rollbackTx();
         assertTrue( graphDb.index().existsForNodes( "immediate-index" ) );
         nodeIndex( "immediate-index", LuceneIndexImplementation.EXACT_CONFIG );
     }
-    
+
     @Test
     public void makeSureFulltextConfigIsCaseInsensitiveByDefault()
     {
@@ -727,7 +736,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
             restartTx();
         }
     }
-    
+
     @Test
     public void makeSureFulltextIndexCanBeCaseSensitive()
     {
@@ -749,7 +758,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
             restartTx();
         }
     }
-    
+
     @Test
     public void makeSureCustomAnalyzerCanBeUsed()
     {
@@ -765,7 +774,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         assertTrue( CustomAnalyzer.called );
         assertThat( index.query( key, "[A TO Z]" ), contains( node ) );
     }
-    
+
     @Test
     public void makeSureCustomAnalyzerCanBeUsed2()
     {
@@ -781,7 +790,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         assertTrue( CustomAnalyzer.called );
         assertThat( index.query( key, "[A TO Z]" ), contains( node ) );
     }
-    
+
     @Test
     public void makeSureIndexNameAndConfigCanBeReachedFromIndex()
     {
@@ -789,13 +798,13 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         Index<Node> nodeIndex = nodeIndex( indexName, LuceneIndexImplementation.EXACT_CONFIG );
         assertEquals( indexName, nodeIndex.getName() );
         assertEquals( LuceneIndexImplementation.EXACT_CONFIG, graphDb.index().getConfiguration( nodeIndex ) );
-        
+
         String indexName2 = "my-index-2";
         Index<Relationship> relIndex = relationshipIndex( indexName2, LuceneIndexImplementation.FULLTEXT_CONFIG );
         assertEquals( indexName2, relIndex.getName() );
         assertEquals( LuceneIndexImplementation.FULLTEXT_CONFIG, graphDb.index().getConfiguration( relIndex ) );
     }
-    
+
     @Test
     public void testStringQueryVsQueryObject() throws IOException
     {
@@ -811,7 +820,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         }
         assertNull( index.query( new TermQuery( new Term( "name", "Mattias" ) ) ).getSingle() );
     }
-    
+
     @SuppressWarnings( "unchecked" )
     private <T extends PropertyContainer> void testAbandonedIds( EntityCreator<T> creator,
             Index<T> index )
@@ -827,45 +836,45 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         index.add( b, key, value );
         index.add( c, key, value );
         restartTx();
-        
+
         creator.delete( b );
         restartTx();
-        
+
         IteratorUtil.count( (Iterator<Node>) index.get( key, value ) );
         rollbackTx();
         beginTx();
-        
+
         IteratorUtil.count( (Iterator<Node>) index.get( key, value ) );
         index.add( c, "something", "whatever" );
         restartTx();
-        
+
         IteratorUtil.count( (Iterator<Node>) index.get( key, value ) );
     }
-    
+
     @Test
     public void testAbandonedNodeIds()
     {
         testAbandonedIds( NODE_CREATOR, nodeIndex( "abandoned", LuceneIndexImplementation.EXACT_CONFIG ) );
     }
-    
+
     @Test
     public void testAbandonedNodeIdsFulltext()
     {
         testAbandonedIds( NODE_CREATOR, nodeIndex( "abandonedf", LuceneIndexImplementation.FULLTEXT_CONFIG ) );
     }
-    
+
     @Test
     public void testAbandonedRelIds()
     {
         testAbandonedIds( RELATIONSHIP_CREATOR, relationshipIndex( "abandoned", LuceneIndexImplementation.EXACT_CONFIG ) );
     }
-    
+
     @Test
     public void testAbandonedRelIdsFulltext()
     {
         testAbandonedIds( RELATIONSHIP_CREATOR, relationshipIndex( "abandonedf", LuceneIndexImplementation.FULLTEXT_CONFIG ) );
     }
-    
+
     @Test
     public void makeSureYouCanRemoveFromRelationshipIndex()
     {
@@ -883,7 +892,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
             restartTx();
         }
     }
-    
+
     @Test
     public void makeSureYouCanGetEntityTypeFromIndex()
     {
@@ -892,7 +901,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         assertEquals( Node.class, nodeIndex.getEntityType() );
         assertEquals( Relationship.class, relIndex.getEntityType() );
     }
-    
+
     @Test
     public void makeSureConfigurationCanBeModified()
     {
@@ -920,7 +929,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         assertEquals( newValue, graphDb.index().removeConfiguration( index, key ) );
         assertNull( graphDb.index().getConfiguration( index ).get( key ) );
     }
-    
+
     @Test
     public void makeSureSlightDifferencesInIndexConfigCanBeSupplied()
     {
@@ -936,7 +945,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         catch ( IllegalArgumentException e ) { /* */ }
         nodeIndex( name, MapUtil.stringMap( new HashMap<String, String>( config ), "whatever", "something" ) );
     }
-    
+
     @Test
     public void testScoring()
     {
@@ -945,10 +954,10 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         Node node2 = graphDb.createNode();
         String key = "text";
         // Where the heck did I get this sentence from?
-        index.add( node1, key, "a time where no one was really awake" ); 
+        index.add( node1, key, "a time where no one was really awake" );
         index.add( node2, key, "once upon a time there was" );
         restartTx();
-        
+
         IndexHits<Node> hits = index.query( key, new QueryContext( "once upon a time was" ).sort( Sort.RELEVANCE ) );
         Node hit1 = hits.next();
         float score1 = hits.currentScore();
@@ -958,7 +967,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         assertEquals( node1, hit2 );
         assertTrue( score1 > score2 );
     }
-    
+
     @Test
     public void testTopHits()
     {
@@ -980,7 +989,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         index.add( rel4, key, rel4.getProperty( key ) );
         index.add( rel6, key, rel6.getProperty( key ) );
         String query = "one two three four five six seven";
-        
+
         for ( int i = 0; i < 2; i++ )
         {
             assertContainsInOrder( index.query( key, new QueryContext( query ).top( 3 ).sort(
@@ -988,7 +997,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
             restartTx();
         }
     }
-    
+
     @Test
     public void testSimilarity()
     {
@@ -999,7 +1008,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         restartTx();
         assertContains( index.get( "key", "value" ), node );
     }
-    
+
     @Test
     public void testCombinedHitsSizeProblem()
     {
@@ -1016,7 +1025,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         IndexHits<Node> hits = index.get( key, value );
         assertEquals( 3, hits.size() );
     }
-    
+
     @SuppressWarnings( "unchecked" )
     private <T extends PropertyContainer> void testRemoveWithoutKey(
             EntityCreator<T> creator, Index<T> index ) throws Exception
@@ -1024,7 +1033,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         String key1 = "key1";
         String key2 = "key2";
         String value = "value";
-        
+
         T entity1 = creator.create();
         index.add( entity1, key1, value );
         index.add( entity1, key2, value );
@@ -1032,7 +1041,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         index.add( entity2, key1, value );
         index.add( entity2, key2, value );
         restartTx();
-        
+
         assertContains( index.get( key1, value ), entity1, entity2 );
         assertContains( index.get( key2, value ), entity1, entity2 );
         index.remove( entity1, key2 );
@@ -1046,21 +1055,21 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
             restartTx();
         }
     }
-    
+
     @Test
     public void testRemoveWithoutKeyNodes() throws Exception
     {
-        testRemoveWithoutKey( NODE_CREATOR, nodeIndex( "remove-wo-k", 
+        testRemoveWithoutKey( NODE_CREATOR, nodeIndex( "remove-wo-k",
                 LuceneIndexImplementation.EXACT_CONFIG ) );
     }
-    
+
     @Test
     public void testRemoveWithoutKeyRelationships() throws Exception
     {
         testRemoveWithoutKey( RELATIONSHIP_CREATOR, relationshipIndex( "remove-wo-k",
                 LuceneIndexImplementation.EXACT_CONFIG ) );
     }
-    
+
     @SuppressWarnings( "unchecked" )
     private <T extends PropertyContainer> void testRemoveWithoutKeyValue(
             EntityCreator<T> creator, Index<T> index ) throws Exception
@@ -1069,7 +1078,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         String value1 = "value1";
         String key2 = "key2";
         String value2 = "value2";
-        
+
         T entity1 = creator.create();
         index.add( entity1, key1, value1 );
         index.add( entity1, key2, value2 );
@@ -1077,14 +1086,14 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         index.add( entity2, key1, value1 );
         index.add( entity2, key2, value2 );
         restartTx();
-        
+
         assertContains( index.get( key1, value1 ), entity1, entity2 );
         assertContains( index.get( key2, value2 ), entity1, entity2 );
         index.remove( entity1 );
         assertContains( index.get( key1, value1 ), entity2 );
         assertContains( index.get( key2, value2 ), entity2 );
         index.add( entity1, key1, value1 );
-        
+
         for ( int i = 0; i < 2; i++ )
         {
             assertContains( index.get( key1, value1 ), entity1, entity2 );
@@ -1092,21 +1101,21 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
             restartTx();
         }
     }
-    
+
     @Test
     public void testRemoveWithoutKeyValueNodes() throws Exception
     {
-        testRemoveWithoutKeyValue( NODE_CREATOR, nodeIndex( "remove-wo-kv", 
+        testRemoveWithoutKeyValue( NODE_CREATOR, nodeIndex( "remove-wo-kv",
                 LuceneIndexImplementation.EXACT_CONFIG ) );
     }
-    
+
     @Test
     public void testRemoveWithoutKeyValueRelationships() throws Exception
     {
         testRemoveWithoutKeyValue( RELATIONSHIP_CREATOR, relationshipIndex( "remove-wo-kv",
                 LuceneIndexImplementation.EXACT_CONFIG ) );
     }
-    
+
     @SuppressWarnings( "unchecked" )
     private <T extends PropertyContainer> void testRemoveWithoutKeyFulltext(
             EntityCreator<T> creator, Index<T> index ) throws Exception
@@ -1116,7 +1125,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         String value1 = "value one";
         String value2 = "other value";
         String value = "value";
-        
+
         T entity1 = creator.create();
         index.add( entity1, key1, value1 );
         index.add( entity1, key2, value1 );
@@ -1126,7 +1135,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         index.add( entity2, key2, value1 );
         index.add( entity2, key2, value2 );
         restartTx();
-        
+
         assertContains( index.query( key1, value ), entity1, entity2 );
         assertContains( index.query( key2, value ), entity1, entity2 );
         index.remove( entity1, key2 );
@@ -1140,21 +1149,21 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
             restartTx();
         }
     }
-    
+
     @Test
     public void testRemoveWithoutKeyFulltextNode() throws Exception
     {
         testRemoveWithoutKeyFulltext( NODE_CREATOR,
                 nodeIndex( "remove-wo-k-f", LuceneIndexImplementation.FULLTEXT_CONFIG ) );
     }
-        
+
     @Test
     public void testRemoveWithoutKeyFulltextRelationship() throws Exception
     {
         testRemoveWithoutKeyFulltext( RELATIONSHIP_CREATOR,
                 relationshipIndex( "remove-wo-k-f", LuceneIndexImplementation.FULLTEXT_CONFIG ) );
     }
-    
+
     @SuppressWarnings( "unchecked" )
     private <T extends PropertyContainer> void testRemoveWithoutKeyValueFulltext(
             EntityCreator<T> creator, Index<T> index ) throws Exception
@@ -1164,7 +1173,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         String value1 = value + " one";
         String key2 = "key2";
         String value2 = value + " two";
-        
+
         T entity1 = creator.create();
         index.add( entity1, key1, value1 );
         index.add( entity1, key2, value2 );
@@ -1172,7 +1181,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         index.add( entity2, key1, value1 );
         index.add( entity2, key2, value2 );
         restartTx();
-        
+
         assertContains( index.query( key1, value ), entity1, entity2 );
         assertContains( index.query( key2, value ), entity1, entity2 );
         index.remove( entity1 );
@@ -1186,21 +1195,21 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
             restartTx();
         }
     }
-    
+
     @Test
     public void testRemoveWithoutKeyValueFulltextNode() throws Exception
     {
         testRemoveWithoutKeyValueFulltext( NODE_CREATOR,
                 nodeIndex( "remove-wo-kv-f", LuceneIndexImplementation.FULLTEXT_CONFIG ) );
     }
-        
+
     @Test
     public void testRemoveWithoutKeyValueFulltextRelationship() throws Exception
     {
         testRemoveWithoutKeyValueFulltext( RELATIONSHIP_CREATOR,
                 relationshipIndex( "remove-wo-kv-f", LuceneIndexImplementation.FULLTEXT_CONFIG ) );
     }
-    
+
     @Test
     public void testSortingWithTopHitsInPartCommittedPartLocal()
     {
@@ -1210,13 +1219,13 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         Node third = graphDb.createNode();
         Node fourth = graphDb.createNode();
         String key = "key";
-        
+
         index.add( third, key, "ccc" );
         index.add( second, key, "bbb" );
         restartTx();
         index.add( fourth, key, "ddd" );
         index.add( first, key, "aaa" );
-        
+
         assertContainsInOrder( index.query( key, new QueryContext( "*" ).sort( key ) ), first, second, third, fourth );
         assertContainsInOrder( index.query( key, new QueryContext( "*" ).sort( key ).top( 2 ) ), first, second );
     }
@@ -1239,7 +1248,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
             restartTx();
         }
     }
-    
+
     @Test
     public void notAbleToIndexWithNullKey() throws Exception
     {
@@ -1262,7 +1271,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         index.add( node, key, value );
         return node;
     }
-    
+
     @Test
     public void testRemoveNodeFromIndex()
     {
@@ -1276,7 +1285,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         Node node2 = createAndIndexNode( index, key, value );
         assertEquals( node2, index.get( key, value ).getSingle() );
     }
-    
+
     @Test
     public void canQueryWithWildcardEvenIfAlternativeRemovalMethodsUsedInSameTx1() throws Exception
     {

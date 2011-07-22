@@ -24,7 +24,7 @@ import org.neo4j.graphdb.PropertyContainer;
 /**
  * An index that allows for read only operations. Can also be seen as a chopped
  * down version of {@link Index} that disallows mutating operations.
- * 
+ *
  * @param <T> The Primitive this Index holds
  */
 public interface ReadableIndex<T extends PropertyContainer>
@@ -76,4 +76,13 @@ public interface ReadableIndex<T extends PropertyContainer>
      * called before disposing of the result.
      */
     IndexHits<T> query( Object queryOrQueryObject );
+
+    /**
+     * A ReadableIndex is possible to support mutating operations as well. This
+     * method returns true iff such operations are supported by the
+     * implementation.
+     * 
+     * @return true iff mutating operations are supported.
+     */
+    boolean isWriteable();
 }

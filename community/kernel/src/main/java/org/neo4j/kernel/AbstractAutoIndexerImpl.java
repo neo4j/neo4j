@@ -230,6 +230,12 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
         {
             return delegate.query( queryOrQueryObject );
         }
+
+        @Override
+        public boolean isWriteable()
+        {
+            return false;
+        }
     }
 
     /**
@@ -308,6 +314,12 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
         public void delete()
         {
             throw new UnsupportedOperationException( "read only index" );
+        }
+
+        @Override
+        public boolean isWriteable()
+        {
+            return false;
         }
     }
 }

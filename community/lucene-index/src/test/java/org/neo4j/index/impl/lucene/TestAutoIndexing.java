@@ -149,6 +149,16 @@ public class TestAutoIndexing
     }
 
     @Test
+    public void testAutoIndexesReportReadOnly()
+    {
+        AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
+        assertFalse( autoIndexer.getAutoIndex().isWriteable() );
+        autoIndexer.startAutoIndexingProperty( "test_uuid" );
+        autoIndexer.setEnabled( true );
+        assertFalse( autoIndexer.getAutoIndex().isWriteable() );
+    }
+
+    @Test
     public void testChangesAreVisibleInTransaction()
     {
         AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
