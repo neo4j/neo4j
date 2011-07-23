@@ -45,14 +45,16 @@ public abstract class ParameterList
         return Collections.unmodifiableMap( data );
     }
 
-    private static abstract class Converter<T> {
-        abstract T convert( AbstractGraphDatabase graphDb, Object value ) throws BadInputException;
+    private static abstract class Converter<T>
+    {
+        abstract T convert( AbstractGraphDatabase graphDb, Object value )
+                throws BadInputException;
 
         abstract T[] newArray( int size );
     }
 
-    private <T> T[] getList( String name, AbstractGraphDatabase graphDb, Converter<T> converter )
-            throws BadInputException
+    private <T> T[] getList( String name, AbstractGraphDatabase graphDb,
+            Converter<T> converter ) throws BadInputException
     {
         Object value = data.get( name );
         if ( value == null ) return null;
@@ -90,7 +92,8 @@ public abstract class ParameterList
         return getList( name, null, new Converter<String>()
         {
             @Override
-            String convert( AbstractGraphDatabase graphDb, Object value ) throws BadInputException
+            String convert( AbstractGraphDatabase graphDb, Object value )
+                    throws BadInputException
             {
                 return convertString( value );
             }
@@ -103,7 +106,8 @@ public abstract class ParameterList
         } );
     }
 
-    protected abstract String convertString( Object value ) throws BadInputException;
+    protected abstract String convertString( Object value )
+            throws BadInputException;
 
     public Integer getInteger( String name ) throws BadInputException
     {
@@ -117,7 +121,8 @@ public abstract class ParameterList
         return getList( name, null, new Converter<Integer>()
         {
             @Override
-            Integer convert( AbstractGraphDatabase graphDb, Object value ) throws BadInputException
+            Integer convert( AbstractGraphDatabase graphDb, Object value )
+                    throws BadInputException
             {
                 return convertInteger( value );
             }
@@ -130,7 +135,8 @@ public abstract class ParameterList
         } );
     }
 
-    protected abstract Integer convertInteger( Object value ) throws BadInputException;
+    protected abstract Integer convertInteger( Object value )
+            throws BadInputException;
 
     public Long getLong( String name ) throws BadInputException
     {
@@ -144,7 +150,8 @@ public abstract class ParameterList
         return getList( name, null, new Converter<Long>()
         {
             @Override
-            Long convert( AbstractGraphDatabase graphDb, Object value ) throws BadInputException
+            Long convert( AbstractGraphDatabase graphDb, Object value )
+                    throws BadInputException
             {
                 return convertLong( value );
             }
@@ -157,7 +164,8 @@ public abstract class ParameterList
         } );
     }
 
-    protected abstract Long convertLong( Object value ) throws BadInputException;
+    protected abstract Long convertLong( Object value )
+            throws BadInputException;
 
     public Byte getByte( String name ) throws BadInputException
     {
@@ -171,7 +179,8 @@ public abstract class ParameterList
         return getList( name, null, new Converter<Byte>()
         {
             @Override
-            Byte convert( AbstractGraphDatabase graphDb, Object value ) throws BadInputException
+            Byte convert( AbstractGraphDatabase graphDb, Object value )
+                    throws BadInputException
             {
                 return convertByte( value );
             }
@@ -184,7 +193,8 @@ public abstract class ParameterList
         } );
     }
 
-    protected abstract Byte convertByte( Object value ) throws BadInputException;
+    protected abstract Byte convertByte( Object value )
+            throws BadInputException;
 
     public Character getCharacter( String name ) throws BadInputException
     {
@@ -212,7 +222,8 @@ public abstract class ParameterList
         } );
     }
 
-    protected abstract Character convertCharacter( Object value ) throws BadInputException;
+    protected abstract Character convertCharacter( Object value )
+            throws BadInputException;
 
     public Boolean getBoolean( String name ) throws BadInputException
     {
@@ -226,7 +237,8 @@ public abstract class ParameterList
         return getList( name, null, new Converter<Boolean>()
         {
             @Override
-            Boolean convert( AbstractGraphDatabase graphDb, Object value ) throws BadInputException
+            Boolean convert( AbstractGraphDatabase graphDb, Object value )
+                    throws BadInputException
             {
                 return convertBoolean( value );
             }
@@ -239,7 +251,8 @@ public abstract class ParameterList
         } );
     }
 
-    protected abstract Boolean convertBoolean( Object value ) throws BadInputException;
+    protected abstract Boolean convertBoolean( Object value )
+            throws BadInputException;
 
     public Short getShort( String name ) throws BadInputException
     {
@@ -253,7 +266,8 @@ public abstract class ParameterList
         return getList( name, null, new Converter<Short>()
         {
             @Override
-            Short convert( AbstractGraphDatabase graphDb, Object value ) throws BadInputException
+            Short convert( AbstractGraphDatabase graphDb, Object value )
+                    throws BadInputException
             {
                 return convertShort( value );
             }
@@ -266,7 +280,8 @@ public abstract class ParameterList
         } );
     }
 
-    protected abstract Short convertShort( Object value ) throws BadInputException;
+    protected abstract Short convertShort( Object value )
+            throws BadInputException;
 
     public Float getFloat( String name ) throws BadInputException
     {
@@ -280,7 +295,8 @@ public abstract class ParameterList
         return getList( name, null, new Converter<Float>()
         {
             @Override
-            Float convert( AbstractGraphDatabase graphDb, Object value ) throws BadInputException
+            Float convert( AbstractGraphDatabase graphDb, Object value )
+                    throws BadInputException
             {
                 return convertFloat( value );
             }
@@ -293,7 +309,8 @@ public abstract class ParameterList
         } );
     }
 
-    protected abstract Float convertFloat( Object value ) throws BadInputException;
+    protected abstract Float convertFloat( Object value )
+            throws BadInputException;
 
     public Double getDouble( String name ) throws BadInputException
     {
@@ -307,7 +324,8 @@ public abstract class ParameterList
         return getList( name, null, new Converter<Double>()
         {
             @Override
-            Double convert( AbstractGraphDatabase graphDb, Object value ) throws BadInputException
+            Double convert( AbstractGraphDatabase graphDb, Object value )
+                    throws BadInputException
             {
                 return convertDouble( value );
             }
@@ -320,9 +338,11 @@ public abstract class ParameterList
         } );
     }
 
-    protected abstract Double convertDouble( Object value ) throws BadInputException;
+    protected abstract Double convertDouble( Object value )
+            throws BadInputException;
 
-    public Node getNode( AbstractGraphDatabase graphDb, String name ) throws BadInputException
+    public Node getNode( AbstractGraphDatabase graphDb, String name )
+            throws BadInputException
     {
         Object value = data.get( name );
         if ( value == null ) return null;
@@ -335,7 +355,8 @@ public abstract class ParameterList
         return getList( name, graphDb, new Converter<Node>()
         {
             @Override
-            Node convert( AbstractGraphDatabase graphDb, Object value ) throws BadInputException
+            Node convert( AbstractGraphDatabase graphDb, Object value )
+                    throws BadInputException
             {
                 return convertNode( graphDb, value );
             }
@@ -348,19 +369,19 @@ public abstract class ParameterList
         } );
     }
 
-    protected abstract Node convertNode( AbstractGraphDatabase graphDb, Object value )
-            throws BadInputException;
+    protected abstract Node convertNode( AbstractGraphDatabase graphDb,
+            Object value ) throws BadInputException;
 
-    public Relationship getRelationship( AbstractGraphDatabase graphDb, String name )
-            throws BadInputException
+    public Relationship getRelationship( AbstractGraphDatabase graphDb,
+            String name ) throws BadInputException
     {
         Object value = data.get( name );
         if ( value == null ) return null;
         return convertRelationship( graphDb, value );
     }
 
-    public Relationship[] getRelationshipList( AbstractGraphDatabase graphDb, String name )
-            throws BadInputException
+    public Relationship[] getRelationshipList( AbstractGraphDatabase graphDb,
+            String name ) throws BadInputException
     {
         return getList( name, graphDb, new Converter<Relationship>()
         {
@@ -379,7 +400,8 @@ public abstract class ParameterList
         } );
     }
 
-    protected abstract Relationship convertRelationship( AbstractGraphDatabase graphDb, Object value )
+    protected abstract Relationship convertRelationship(
+            AbstractGraphDatabase graphDb, Object value )
             throws BadInputException;
 
     public URI getUri( String name ) throws BadInputException
@@ -394,7 +416,8 @@ public abstract class ParameterList
         return getList( name, null, new Converter<URI>()
         {
             @Override
-            URI convert( AbstractGraphDatabase graphDb, Object value ) throws BadInputException
+            URI convert( AbstractGraphDatabase graphDb, Object value )
+                    throws BadInputException
             {
                 return convertURI( value );
             }
@@ -417,5 +440,21 @@ public abstract class ParameterList
         {
             throw new BadInputException( e );
         }
+    }
+
+    public Map getMap( String name ) throws BadInputException
+    {
+        Object value = data.get( name );
+        if ( value instanceof Map )
+        {
+            return (Map) value;
+        }
+        else if ( value instanceof String )
+        {
+            throw new BadInputException(
+                    "Maps encoded as Strings not supported" );
+        }
+        throw new BadInputException( "Unknown map encoding: " + value );
+
     }
 }

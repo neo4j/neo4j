@@ -214,6 +214,7 @@ class PluginPointFactoryImpl implements PluginPointFactory
         put( TYPES, new BooleanTypeCaster(), boolean.class, Boolean.class );
         put( TYPES, new FloatTypeCaster(), float.class, Float.class );
         put( TYPES, new DoubleTypeCaster(), double.class, Double.class );
+        put( TYPES, new MapTypeCaster(), Map.class, Double.class );
         put( TYPES, new NodeTypeCaster(), Node.class );
         put( TYPES, new RelationshipTypeCaster(), Relationship.class );
         put( TYPES, new RelationshipTypeTypeCaster(), RelationshipType.class );
