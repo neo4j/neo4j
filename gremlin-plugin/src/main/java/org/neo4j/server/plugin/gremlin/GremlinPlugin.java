@@ -43,69 +43,76 @@ import java.util.Map;
  * and much, much more.
  */
 
-@Description("A server side Gremlin plugin for the Neo4j REST server")
-public class GremlinPlugin extends ServerPlugin {
+@Description( "A server side Gremlin plugin for the Neo4j REST server" )
+public class GremlinPlugin extends ServerPlugin
+{
 
     private final String g = "g";
     private volatile ScriptEngine engine;
-    private final EngineReplacementDecision engineReplacementDecision = new CountingEngineReplacementDecision(500);
+    private final EngineReplacementDecision engineReplacementDecision = new CountingEngineReplacementDecision(
+            500 );
     private final GremlinToRepresentationConverter gremlinToRepresentationConverter = new GremlinToRepresentationConverter();
 
-    private ScriptEngine createQueryEngine() {
-        return new ScriptEngineManager().getEngineByName("gremlin");
+    private ScriptEngine createQueryEngine()
+    {
+        return new ScriptEngineManager().getEngineByName( "gremlin" );
     }
 
-    @Name("execute_script")
-    @Description("execute a Gremlin script with 'g' set to the Neo4jGraph and 'results' containing the results. Only results of one object type is supported.")
-    @PluginTarget(GraphDatabaseService.class)
+    @Name( "execute_script" )
+    @Description( "execute a Gremlin script with 'g' set to the Neo4jGraph and 'results' containing the results. Only results of one object type is supported." )
+    @PluginTarget( GraphDatabaseService.class )
     public Representation executeScript(
             @Source final GraphDatabaseService neo4j,
-            @Description("The Gremlin script") @Parameter(name = "script", optional = false) final String script,
-            @Description("JSON Map of additional parameters for script variables") @Parameter(name = "params", optional = true) final String params) {
+            @Description( "The Gremlin script" ) @Parameter( name = "script", optional = false ) final String script,
+            @Description( "JSON Map of additional parameters for script variables" ) @Parameter( name = "params", optional = true ) final Map params )
+    {
 
-        try {
-            engineReplacementDecision.beforeExecution(script);
+        try
+        {
+            engineReplacementDecision.beforeExecution( script );
 
-            final Bindings bindings = createBindings(neo4j, params);
+            final Bindings bindings = createBindings( neo4j, params );
 
-            final Object result = engine().eval(script, bindings);
-            return gremlinToRepresentationConverter.convert(result);
-        } catch (final ScriptException e) {
-            return ValueRepresentation.string(e.getMessage());
+            final Object result = engine().eval( script, bindings );
+            return gremlinToRepresentationConverter.convert( result );
+        }
+        catch ( final ScriptException e )
+        {
+            return ValueRepresentation.string( e.getMessage() );
         }
     }
 
-    private Bindings createBindings(GraphDatabaseService neo4j, String params) {
-        final Bindings bindings = createInitialBinding(neo4j);
-        bindings.putAll(parseParams(params));
+    private Bindings createBindings( GraphDatabaseService neo4j, Map params )
+    {
+        final Bindings bindings = createInitialBinding( neo4j );
+        if ( params != null )
+        {
+            bindings.putAll( params );
+        }
         return bindings;
     }
 
-    private Map<String, Object> parseParams(String params) {
-        if (params == null || params.isEmpty()) return Collections.emptyMap();
-        try {
-            return new JsonFormat().readMap(params);
-        } catch (BadInputException e) {
-            throw new RuntimeException("Error parsing JSON parameter map",e);
-        }
-    }
-
-    private Bindings createInitialBinding(GraphDatabaseService neo4j) {
+    private Bindings createInitialBinding( GraphDatabaseService neo4j )
+    {
         final Bindings bindings = new SimpleBindings();
-        final Neo4jGraph graph = new Neo4jGraph(neo4j);
-        bindings.put(g, graph);
+        final Neo4jGraph graph = new Neo4jGraph( neo4j );
+        bindings.put( g, graph );
         return bindings;
     }
 
-    private ScriptEngine engine() {
-        if (this.engine == null || engineReplacementDecision.mustReplaceEngine()) {
+    private ScriptEngine engine()
+    {
+        if ( this.engine == null
+             || engineReplacementDecision.mustReplaceEngine() )
+        {
             this.engine = createQueryEngine();
         }
         return this.engine;
     }
 
-    public Representation getRepresentation(final Object data) {
-        return gremlinToRepresentationConverter.convert(data);
+    public Representation getRepresentation( final Object data )
+    {
+        return gremlinToRepresentationConverter.convert( data );
     }
 
 }

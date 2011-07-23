@@ -26,6 +26,7 @@ import junit.framework.Assert;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -39,6 +40,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertTrue;
 
@@ -217,11 +219,11 @@ public class GremlinPluginTest
     }
 
     @Test
-    public void testExecuteScriptParams()
+    public void testExecuteScriptParams() throws ParseException
     {
         Assert.assertEquals(
                 "1",
-                json.format( GremlinPluginTest.executeTestScript( "x", "{\"x\" : 1}") ) );
+                json.format( GremlinPluginTest.executeTestScript( "x", (Map)parser.parse( "{\"x\" : 1}")) ) );
     }
 
     @Test
@@ -260,7 +262,7 @@ public class GremlinPluginTest
         }
     }
 
-    private static Representation executeTestScript(final String script, String params)
+    private static Representation executeTestScript(final String script, Map params)
     {
         Transaction tx = null;
         try
