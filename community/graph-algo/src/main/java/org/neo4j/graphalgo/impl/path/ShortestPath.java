@@ -138,8 +138,8 @@ public class ShortestPath implements PathFinder<Path>
         
         while ( startData.hasNext() || endData.hasNext() )
         {
-            goOneStep( startData, endData, hits, startData );
-            goOneStep( endData, startData, hits, startData );
+            goOneStep( startData, endData, hits, startData, stopAsap );
+            goOneStep( endData, startData, hits, startData, stopAsap );
         }
         
         Collection<Hit> least = hits.least();
@@ -175,7 +175,7 @@ public class ShortestPath implements PathFinder<Path>
     }
 
     private void goOneStep( DirectionData directionData, DirectionData otherSide, Hits hits,
-            DirectionData startSide )
+            DirectionData startSide, boolean stopAsap )
     {
         if ( !directionData.hasNext() )
         {
@@ -214,7 +214,7 @@ public class ShortestPath implements PathFinder<Path>
                         directionData == startSide ? directionData : otherSide;
                 DirectionData endSideData =
                         directionData == startSide ? otherSide : directionData;
-                if ( hits.add( new Hit( startSideData, endSideData, nextNode ), depth ) >= maxResultCount )
+                if ( hits.add( new Hit( startSideData, endSideData, nextNode ), depth ) >= maxResultCount || stopAsap )
                 {
                     directionData.stop = true;
                     otherSide.stop = true;

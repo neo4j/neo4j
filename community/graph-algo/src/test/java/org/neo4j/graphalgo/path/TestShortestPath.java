@@ -20,6 +20,7 @@
 package org.neo4j.graphalgo.path;
 
 import static common.SimpleGraphBuilder.KEY_ID;
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphalgo.GraphAlgoFactory.shortestPath;
@@ -71,6 +72,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         PathFinder<Path> finder = instantiatePathFinder( 1 );
         Iterable<Path> paths = finder.findAllPaths( graph.getNode( "s" ), graph.getNode( "t" ) );
         assertPaths( paths, "s,t", "s,t" );
+        assertPaths( asList( finder.findSinglePath( graph.getNode( "s" ), graph.getNode( "t" ) ) ), "s,t" );
     }
     
     @Test
