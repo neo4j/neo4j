@@ -19,17 +19,25 @@
  */
 package org.neo4j.server.plugin.gremlin;
 
-import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
+import java.util.Map;
+
+import javax.script.Bindings;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
+import javax.script.SimpleBindings;
+
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.server.plugins.*;
-import org.neo4j.server.rest.repr.BadInputException;
+import org.neo4j.server.plugins.Description;
+import org.neo4j.server.plugins.Name;
+import org.neo4j.server.plugins.Parameter;
+import org.neo4j.server.plugins.PluginTarget;
+import org.neo4j.server.plugins.ServerPlugin;
+import org.neo4j.server.plugins.Source;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.ValueRepresentation;
-import org.neo4j.server.rest.repr.formats.JsonFormat;
 
-import javax.script.*;
-import java.util.Collections;
-import java.util.Map;
+import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
 
 /* This is a class that will represent a server side
  * Gremlin plugin and will return JSON
