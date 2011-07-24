@@ -454,7 +454,7 @@ public abstract class ParameterList
             throw new BadInputException(
                     "Maps encoded as Strings not supported" );
         }
-        throw new BadInputException( "Unknown map encoding: " + value );
+        return null;
 
     }
 }
