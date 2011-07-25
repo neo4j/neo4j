@@ -3,7 +3,7 @@
   <parent>
     <artifactId>parent-central</artifactId>
     <groupId>org.neo4j</groupId>
-    <version>21</version>
+    <version>22</version>
   </parent>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-backup</artifactId>
@@ -73,27 +73,6 @@ terms of the relevant Commercial Agreement.
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <developers>
-    <developer>
-      <id>mattias</id>
-      <name>Mattias Persson</name>
-      <email>mattias [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-    <developer>
-      <id>johans</id>
-      <name>Johan Svensson</name>
-      <email>johan [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-  </developers>
 
   <distributionManagement>
     <site>

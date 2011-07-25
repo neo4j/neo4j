@@ -3,7 +3,7 @@
   <parent>
     <artifactId>parent-central</artifactId>
     <groupId>org.neo4j</groupId>
-    <version>21</version>
+    <version>22</version>
   </parent>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-com</artifactId>
@@ -50,13 +50,6 @@ terms of the relevant Commercial Agreement.
        </configuration>
      </plugin>
     </plugins>
-    <extensions>
-      <extension>
-        <groupId>org.apache.maven.wagon</groupId>
-         <artifactId>wagon-ssh-external</artifactId>
-         <version>1.0-beta-7</version>
-      </extension>
-    </extensions>
   </build>
 
   <dependencies>
