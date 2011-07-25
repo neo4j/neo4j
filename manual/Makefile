@@ -73,7 +73,7 @@ ASCIIDOC_FLAGS = $(V) $(VERS) $(GITVERS) $(IMPDIR)
 
 A2X_FLAGS = $(K) $(ASCIIDOC_FLAGS)
 
-.PHONY: all dist docbook help clean pdf latexpdf html offline-html singlehtml text cleanup annotated manpages upgrade installfilter html-check
+.PHONY: all dist docbook help clean pdf latexpdf html offline-html singlehtml text cleanup annotated manpages upgrade installfilter html-check text-check
 
 help:
 	@echo "Please use 'make <target>' where <target> is one of"
@@ -90,7 +90,7 @@ help:
 	@echo "To set the version, use 'VERSION=[the version]'".
 	@echo "To set the importdir, use 'IMPORTDIR=[the importdir]'".
 
-dist: installfilter pdf html html-check offline-html annotated text manpages upgrade cleanup
+dist: installfilter pdf html html-check offline-html annotated text text-check manpages upgrade cleanup
 
 clean:
 	-rm -rf $(BUILDDIR)/*
@@ -135,6 +135,13 @@ html-check:  html
 	# Checking that identifiers exist where they should.
 	#
 	$(CURDIR)/src/build/htmlcheck.sh $(CHUNKEDHTMLDIR)
+
+text-check: text
+	#
+	#
+	# Checking that snippets are in place.
+	#
+	$(CURDIR)/src/build/textcheck.sh $(TEXTFILE)
 
 docbook:  manpages copyimages
 	#

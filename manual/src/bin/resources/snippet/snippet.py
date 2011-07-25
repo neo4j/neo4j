@@ -59,14 +59,18 @@ def snippet(source=None, component=None, classifier="test-sources", tag=None,
                     buff.append('')
             if START in line: emit = True
         # END SNIPPET: self-test
+
     finally:
         sourceFile.close()
-    
+
+    if not buff:
+        raise ValueError('Missing snippet for tag "' + tag + '" in file "' + source + '" in component "' + component +'" with classifier "' + classifier + '".')
     for line in buff:
         if line:
             yield line[mindent:]
         else:
             yield '\n'
+
 
 if __name__ == '__main__':
     import traceback
