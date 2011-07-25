@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-central</artifactId>
-    <version>21</version>
+    <version>22</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
@@ -153,7 +153,7 @@ terms of the relevant Commercial Agreement.
         <dependency>
           <groupId>com.sun.tools</groupId>
           <artifactId>tools</artifactId>
-          <version>1.6</version>
+          <version>${sun.tools.version}</version>
           <scope>system</scope>
           <systemPath>${java.home}/../lib/tools.jar</systemPath>
           <optional>true</optional>
@@ -169,7 +169,7 @@ terms of the relevant Commercial Agreement.
         <dependency>
           <groupId>com.sun.tools</groupId>
           <artifactId>tools</artifactId>
-          <version>1.6</version>
+          <version>${sun.tools.version}</version>
           <scope>system</scope>
           <systemPath>${java.home}\\..\\lib\\tools.jar</systemPath>
           <optional>true</optional>
@@ -177,36 +177,6 @@ terms of the relevant Commercial Agreement.
       </dependencies>
     </profile>
   </profiles>
-
-  <developers>
-    <developer>
-      <id>tobias</id>
-      <name>Tobias Ivarsson</name>
-      <email>tobias.ivarsson [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-    <developer>
-      <id>mattias</id>
-      <name>Mattias Persson</name>
-      <email>mattias [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-    <developer>
-      <id>johans</id>
-      <name>Johan Svensson</name>
-      <email>johan [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-  </developers>
 
   <distributionManagement>
     <site>
@@ -216,3 +186,4 @@ terms of the relevant Commercial Agreement.
   </distributionManagement>
 
 </project>
+

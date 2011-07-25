@@ -71,17 +71,21 @@ public abstract class Client<M> implements ChannelPipelineFactory
     private final ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>> channelPool;
     private final GraphDatabaseService graphDb;
     private StoreId myStoreId;
+    private final int frameLength;
+    private final int readTimeout;
 
-    public Client( String hostNameOrIp, int port, GraphDatabaseService graphDb )
+    public Client( String hostNameOrIp, int port, GraphDatabaseService graphDb, int frameLength, int readTimeout )
     {
-        this( hostNameOrIp, port, graphDb, DEFAULT_MAX_NUMBER_OF_CONCURRENT_REQUESTS_PER_CLIENT,
-                DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS, DEFAULT_MAX_NUMBER_OF_UNUSED_CHANNELS );
+        this( hostNameOrIp, port, graphDb, frameLength, readTimeout, DEFAULT_MAX_NUMBER_OF_CONCURRENT_REQUESTS_PER_CLIENT,
+                DEFAULT_MAX_NUMBER_OF_UNUSED_CHANNELS );
     }
     
-    public Client( String hostNameOrIp, int port, GraphDatabaseService graphDb, int maxConcurrentTransactions,
-            int readResponseTimeoutSeconds, int maxUnusedPoolSize )
+    public Client( String hostNameOrIp, int port, GraphDatabaseService graphDb, int frameLength,
+            int readTimeout, int maxConcurrentTransactions, int maxUnusedPoolSize )
     {
         this.graphDb = graphDb;
+        this.frameLength = frameLength;
+        this.readTimeout = readTimeout;
         channelPool = new ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>>(
                 maxConcurrentTransactions, maxUnusedPoolSize )
         {
@@ -143,7 +147,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
             channelContext.second().clear();
             
             ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( channelContext.second(),
-                    channel, Protocol.MAX_FRAME_LENGTH );
+                    channel, frameLength );
             chunkingBuffer.writeByte( type.id() );
             writeContext( type, context, chunkingBuffer );
             serializer.write( chunkingBuffer, channelContext.third() );
@@ -154,7 +158,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
             BlockingReadHandler<ChannelBuffer> reader = (BlockingReadHandler<ChannelBuffer>)
                     channel.getPipeline().get( "blockingHandler" );
             final Triplet<Channel, ChannelBuffer, ByteBuffer> finalChannelContext = channelContext;
-            DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader, DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS )
+            DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader, readTimeout )
             {
                 @Override
                 protected ChannelBuffer readNext()
@@ -252,7 +256,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
     public ChannelPipeline getPipeline() throws Exception
     {
         ChannelPipeline pipeline = Channels.pipeline();
-        addLengthFieldPipes( pipeline );
+        addLengthFieldPipes( pipeline, frameLength );
         BlockingReadHandler<ChannelBuffer> reader = new BlockingReadHandler<ChannelBuffer>(
                 new ArrayBlockingQueue<ChannelEvent>( 3, false ) );
         pipeline.addLast( "blockingHandler", reader );

@@ -84,7 +84,8 @@ public class MasterClient extends Client<Master> implements Master
 
     public MasterClient( String hostNameOrIp, int port, GraphDatabaseService graphDb )
     {
-        super( hostNameOrIp, port, graphDb );
+        super( hostNameOrIp, port, graphDb, MasterServer.FRAME_LENGTH,
+                Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS );
     }
 
     public MasterClient( Machine machine, GraphDatabaseService graphDb )

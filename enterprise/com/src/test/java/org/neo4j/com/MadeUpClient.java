@@ -31,7 +31,8 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
 
     public MadeUpClient( int port, StoreId storeIdToExpect )
     {
-        super( "localhost", port, new NotYetExistingGraphDatabase( "target/something" ) );
+        super( "localhost", port, new NotYetExistingGraphDatabase( "target/something" ),
+                Protocol.DEFAULT_FRAME_LENGTH, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS );
         this.storeIdToExpect = storeIdToExpect;
     }
 

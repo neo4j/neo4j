@@ -79,15 +79,18 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
     private final StringLogger msgLog;
     private final Map<Channel, PartialRequest> partialRequests =
             Collections.synchronizedMap( new HashMap<Channel, PartialRequest>() );
+    private final int frameLength;
 
-    public Server( M realMaster, final int port, String storeDir )
+    public Server( M realMaster, final int port, String storeDir, int frameLength )
     {
-        this( realMaster, port, storeDir, DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS );
+        this( realMaster, port, storeDir, frameLength, DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS );
     }
     
-    public Server( M realMaster, final int port, String storeDir, int maxNumberOfConcurrentTransactions )
+    public Server( M realMaster, final int port, String storeDir, int frameLength,
+            int maxNumberOfConcurrentTransactions )
     {
         this.realMaster = realMaster;
+        this.frameLength = frameLength;
         this.msgLog = StringLogger.getLogger( storeDir );
         executor = Executors.newCachedThreadPool();
         channelFactory = new NioServerSocketChannelFactory(
@@ -124,7 +127,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
     public ChannelPipeline getPipeline() throws Exception
     {
         ChannelPipeline pipeline = Channels.pipeline();
-        addLengthFieldPipes( pipeline );
+        addLengthFieldPipes( pipeline, frameLength );
         pipeline.addLast( "serverHandler", new ServerHandler() );
         return pipeline;
     }
@@ -200,7 +203,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
             }
 
             bufferToWriteTo.clear();
-            final ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( bufferToWriteTo, channel, MAX_FRAME_LENGTH );
+            final ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( bufferToWriteTo, channel, frameLength );
             executor.submit( responseWriter( type, channel, context, chunkingBuffer, bufferToReadFrom, targetBuffers.other() ) );
         }
     }
