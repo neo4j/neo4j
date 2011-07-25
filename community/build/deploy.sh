@@ -2,7 +2,8 @@
 # depends libxml-simple-perl
 
 tcrepo=http://builder.neo4j.org/guestAuth/repository/download/bt18/lastSuccessful
-mvnrepo=https://repo.neo4j.org/content/repositories/snapshots
+# mvnrepo=https://repo.neo4j.org/content/repositories/snapshots
+mvnrepo=http://build-repo.neo4j.org/repository/snapshots/
 
 function work {
     deploy_defaults neo4j-graph-algo neo4j-jmx neo4j-kernel neo4j-lucene-index neo4j-shell server-api neo4j-graph-matching
