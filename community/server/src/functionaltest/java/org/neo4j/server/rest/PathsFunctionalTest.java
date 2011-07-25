@@ -19,6 +19,14 @@
  */
 package org.neo4j.server.rest;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.util.Collection;
+import java.util.Map;
+
+import javax.ws.rs.core.Response.Status;
+
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -32,13 +40,6 @@ import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphDescription.REL;
 import org.neo4j.test.TestData.Title;
 
-import javax.ws.rs.core.Response.Status;
-import java.util.Collection;
-import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 public class PathsFunctionalTest extends AbstractRestFunctionalTestBase
 {
     private static final String NODES = "http://localhost:7474/db/data/node/";
@@ -49,7 +50,7 @@ public class PathsFunctionalTest extends AbstractRestFunctionalTestBase
      */
     @Test
     @Graph( value = { "a to c", "a to d", "c to b", "d to e", "b to f", "c to f", "f to g", "d to g", "e to g",
-            "c to g" } )
+    "c to g" } )
     @Documented
     @Title( "Find all shortest paths" )
     public void shouldBeAbleToFindAllShortestPaths() throws PropertyValueException
@@ -59,10 +60,10 @@ public class PathsFunctionalTest extends AbstractRestFunctionalTestBase
         long a = nodeId( data.get(), "a" );
         long g = nodeId( data.get(), "g" );
         String response = gen.get()
-                .expectedStatus( Status.OK.getStatusCode() )
-                .payload( getAllShortestPathPayLoad( g ) )
-                .post( "http://localhost:7474/db/data/node/" + a + "/paths" )
-                .entity();
+        .expectedStatus( Status.OK.getStatusCode() )
+        .payload( getAllShortestPathPayLoad( g ) )
+        .post( "http://localhost:7474/db/data/node/" + a + "/paths" )
+        .entity();
         Collection<?> result = (Collection<?>) JsonHelper.jsonToSingleValue( response );
         assertEquals( 2, result.size() );
         for ( Object representation : result )
@@ -83,17 +84,17 @@ public class PathsFunctionalTest extends AbstractRestFunctionalTestBase
     @Title( "Find one of the shortest paths between nodes" )
     @Test
     @Graph( value = { "a to c", "a to d", "c to b", "d to e", "b to f", "c to f", "f to g", "d to g", "e to g",
-            "c to g" } )
+    "c to g" } )
     @Documented
     public void shouldBeAbleToFetchSingleShortestPath() throws JsonParseException
     {
         long a = nodeId( data.get(), "a" );
         long g = nodeId( data.get(), "g" );
         String response = gen.get()
-                .expectedStatus( Status.OK.getStatusCode() )
-                .payload( getAllShortestPathPayLoad( g ) )
-                .post( "http://localhost:7474/db/data/node/" + a + "/path" )
-                .entity();
+        .expectedStatus( Status.OK.getStatusCode() )
+        .payload( getAllShortestPathPayLoad( g ) )
+        .post( "http://localhost:7474/db/data/node/" + a + "/path" )
+        .entity();
         // Get single shortest path
 
         Map<?, ?> path = JsonHelper.jsonToMap( response );
@@ -103,21 +104,21 @@ public class PathsFunctionalTest extends AbstractRestFunctionalTestBase
         assertThatPathHasLength( path, 2 );
     }
 
-    private void assertThatPathStartsWith( Map<?, ?> path, long start )
+    private void assertThatPathStartsWith( final Map<?, ?> path, final long start )
     {
         assertTrue( "Path should start with " + start + "\nBut it was " + path, path.get( "start" )
                 .toString()
                 .endsWith( "/node/" + start ) );
     }
 
-    private void assertThatPathEndsWith( Map<?, ?> path, long start )
+    private void assertThatPathEndsWith( final Map<?, ?> path, final long start )
     {
         assertTrue( "Path should end with " + start + "\nBut it was " + path, path.get( "end" )
                 .toString()
                 .endsWith( "/node/" + start ) );
     }
 
-    private void assertThatPathHasLength( Map<?, ?> path, int length )
+    private void assertThatPathHasLength( final Map<?, ?> path, final int length )
     {
         Object actual = path.get( "length" );
 
@@ -147,24 +148,24 @@ public class PathsFunctionalTest extends AbstractRestFunctionalTestBase
             @REL( start = "e", end = "x", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.DOUBLE ) } ),
             @REL( start = "e", end = "f", type = "to", properties = { @PROP( key = "cost", value = "2", type = GraphDescription.PropType.DOUBLE ) } ),
             @REL( start = "x", end = "y", type = "to", properties = { @PROP( key = "cost", value = "2", type = GraphDescription.PropType.DOUBLE ) } ) } )
-    @Title( "Execute a Dijkstra algorithm with weights on relationships" )
-    public void shouldGetCorrectDijkstraPathsWithWeights() throws Exception
-    {
+            @Title( "Execute a Dijkstra algorithm with weights on relationships" )
+            public void shouldGetCorrectDijkstraPathsWithWeights() throws Exception
+            {
         // Get cheapest paths using Dijkstra
         long start = nodeId( data.get(), "start" );
         long x = nodeId( data.get(), "x" );
         String response = gen.get()
-                .expectedStatus( Status.OK.getStatusCode() )
-                .payload( getAllPathsUsingDijkstraPayLoad( x, false ) )
-                .post( "http://localhost:7474/db/data/node/" + start + "/path" )
-                .entity();
+        .expectedStatus( Status.OK.getStatusCode() )
+        .payload( getAllPathsUsingDijkstraPayLoad( x, false ) )
+        .post( "http://localhost:7474/db/data/node/" + start + "/path" )
+        .entity();
         //
         Map<?, ?> path = JsonHelper.jsonToMap( response );
         assertThatPathStartsWith( path, start );
         assertThatPathEndsWith( path, x );
         assertThatPathHasLength( path, 6 );
         assertEquals( 6.0, path.get( "weight" ) );
-    }
+            }
 
     /**
      * The following is executing a Dijkstra search on a graph with equal
@@ -189,67 +190,69 @@ public class PathsFunctionalTest extends AbstractRestFunctionalTestBase
             @REL( start = "e", end = "x", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.DOUBLE ) } ),
             @REL( start = "e", end = "f", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.DOUBLE ) } ),
             @REL( start = "x", end = "y", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.DOUBLE ) } ) } )
-    @Title( "Execute a Dijkstra algorithm with similar weights on relationships" )
-    public void shouldGetCorrectDijkstraPathsWithWeightsWithDefaultCost() throws Exception
-    {
+            @Title( "Execute a Dijkstra algorithm with similar weights on relationships" )
+            public void shouldGetCorrectDijkstraPathsWithWeightsWithDefaultCost() throws Exception
+            {
         // Get cheapest paths using Dijkstra
         long start = nodeId( data.get(), "start" );
         long x = nodeId( data.get(), "x" );
         String response = gen.get()
-                .expectedStatus( Status.OK.getStatusCode() )
-                .payload( getAllPathsUsingDijkstraPayLoad( x, false ) )
-                .post( "http://localhost:7474/db/data/node/" + start + "/path" )
-                .entity();
+        .expectedStatus( Status.OK.getStatusCode() )
+        .payload( getAllPathsUsingDijkstraPayLoad( x, false ) )
+        .post( "http://localhost:7474/db/data/node/" + start + "/path" )
+        .entity();
         //
         Map<?, ?> path = JsonHelper.jsonToMap( response );
         assertThatPathStartsWith( path, start );
         assertThatPathEndsWith( path, x );
         assertThatPathHasLength( path, 2 );
         assertEquals( 2.0, path.get( "weight" ) );
-    }
+            }
 
     @Test
     @Graph( value = { "a to c", "a to d", "c to b", "d to e", "b to f", "c to f", "f to g", "d to g", "e to g",
-            "c to g" } )
+    "c to g" } )
     public void shouldReturn404WhenFailingToFindASinglePath() throws JsonParseException
     {
         long a = nodeId( data.get(), "a" );
         long g = nodeId( data.get(), "g" );
         String noHitsJson = "{\"to\":\""
-                            + nodeUri( g )
-                            + "\", \"max_depth\":1, \"relationships\":{\"type\":\"dummy\", \"direction\":\"in\"}, \"algorithm\":\"shortestPath\"}";
+            + nodeUri( g )
+            + "\", \"max_depth\":1, \"relationships\":{\"type\":\"dummy\", \"direction\":\"in\"}, \"algorithm\":\"shortestPath\"}";
         String entity = gen.get()
-                .expectedStatus( Status.NOT_FOUND.getStatusCode() )
-                .payload( noHitsJson )
-                .post( "http://localhost:7474/db/data/node/" + a + "/path" )
-                .entity();
+        .expectedStatus( Status.NOT_FOUND.getStatusCode() )
+        .payload( noHitsJson )
+        .post( "http://localhost:7474/db/data/node/" + a + "/path" )
+        .entity();
         System.out.println( entity );
     }
 
-    private long nodeId( Map<String, Node> map, String string )
+    private long nodeId( final Map<String, Node> map, final String string )
     {
         return map.get( string )
-                .getId();
+        .getId();
     }
 
-    private String nodeUri( long l )
+    private String nodeUri( final long l )
     {
         return NODES + l;
     }
 
-    private String getAllShortestPathPayLoad( long to )
+    private String getAllShortestPathPayLoad( final long to )
     {
-        return "{\"to\":\""
-               + nodeUri( to )
-               + "\", \"max_depth\":3, \"relationships\":{\"type\":\"to\", \"direction\":\"out\"}, \"algorithm\":\"shortestPath\"}";
+        String json = "{\"to\":\""
+            + nodeUri( to )
+            + "\", \"max_depth\":3, \"relationships\":{\"type\":\"to\", \"direction\":\"out\"}, \"algorithm\":\"shortestPath\"}";
+        return JSONPrettifier.parse( json );
     }
 
     //
-    private String getAllPathsUsingDijkstraPayLoad( long to, boolean includeDefaultCost )
+    private String getAllPathsUsingDijkstraPayLoad( final long to, final boolean includeDefaultCost )
     {
-        return "{\"to\":\"" + nodeUri( to ) + "\"" + ", \"cost_property\":\"cost\""
-               + ( includeDefaultCost ? ", \"default_cost\":1" : "" )
-               + ", \"relationships\":{\"type\":\"to\", \"direction\":\"out\"}, \"algorithm\":\"dijkstra\"}";
+        String json = "{\"to\":\"" + nodeUri( to ) + "\"" + ", \"cost_property\":\"cost\""
+        + ( includeDefaultCost ? ", \"default_cost\":1" : "" )
+        + ", \"relationships\":{\"type\":\"to\", \"direction\":\"out\"}, \"algorithm\":\"dijkstra\"}";
+        return JSONPrettifier.parse( json );
     }
 
 }

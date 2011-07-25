@@ -46,6 +46,7 @@ import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.DocsGenerator;
 import org.neo4j.server.rest.DocsGenerator.ResponseEntity;
 import org.neo4j.server.rest.FunctionalTestHelper;
+import org.neo4j.server.rest.JSONPrettifier;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -68,8 +69,8 @@ public class PagedTraverserFunctionalTest
     public static void setupServer() throws IOException
     {
         server = ServerBuilder.server()
-                .withFakeClock()
-                .build();
+        .withFakeClock()
+        .build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper( server );
     }
@@ -114,12 +115,12 @@ public class PagedTraverserFunctionalTest
         theStartNode = createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
 
         ResponseEntity entity = docGenerator.get()
-                .expectedType( MediaType.APPLICATION_JSON_TYPE )
-                .expectedHeader( "Location" )
-                .expectedStatus( 201 )
-                .payload( traverserDescription() )
-                .payloadType( MediaType.APPLICATION_JSON_TYPE )
-                .post( functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node" );
+        .expectedType( MediaType.APPLICATION_JSON_TYPE )
+        .expectedHeader( "Location" )
+        .expectedStatus( 201 )
+        .payload( traverserDescription() )
+        .payloadType( MediaType.APPLICATION_JSON_TYPE )
+        .post( functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node" );
         assertEquals( 201, entity.response()
                 .getStatus() );
         assertThat( entity.response()
@@ -160,10 +161,10 @@ public class PagedTraverserFunctionalTest
         {
 
             docGenerator.get()
-                    .expectedType( MediaType.APPLICATION_JSON_TYPE )
-                    .expectedStatus( 200 )
-                    .payload( traverserDescription() )
-                    .get( traverserLocation.toString() );
+            .expectedType( MediaType.APPLICATION_JSON_TYPE )
+            .expectedStatus( 200 )
+            .payload( traverserDescription() )
+            .get( traverserLocation.toString() );
         }
 
         JaxRsResponse response = new RestRequest(traverserLocation).get();
@@ -258,7 +259,7 @@ public class PagedTraverserFunctionalTest
         int negativeLeaseTime = -9;
         JaxRsResponse response = RestRequest.req().post(
                 functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?leaseTime="
-                        + String.valueOf( negativeLeaseTime ) , traverserDescription() );
+                + String.valueOf( negativeLeaseTime ) , traverserDescription() );
 
         assertEquals( 400, response.getStatus() );
     }
@@ -271,7 +272,7 @@ public class PagedTraverserFunctionalTest
         int negativePageSize = -99;
         JaxRsResponse response = RestRequest.req().post(
                 functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?pageSize="
-                        + String.valueOf( negativePageSize ) ,
+                + String.valueOf( negativePageSize ) ,
                 traverserDescription() );
 
         assertEquals( 400, response.getStatus() );
@@ -292,35 +293,35 @@ public class PagedTraverserFunctionalTest
         assertEquals( 404, deleteResponse.getStatus() );
     }
 
-    private JaxRsResponse createPagedTraverserWithTimeoutInMinutesAndPageSize(int leaseTime, int pageSize)
+    private JaxRsResponse createPagedTraverserWithTimeoutInMinutesAndPageSize(final int leaseTime, final int pageSize)
     {
         String description = traverserDescription();
 
         return RestRequest.req().post(
                 functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?leaseTime="
-                        + String.valueOf( leaseTime ) + "&pageSize=" + pageSize , description );
+                + String.valueOf( leaseTime ) + "&pageSize=" + pageSize , description );
     }
 
-    private JaxRsResponse createPagedTraverserWithTimeoutInMinutes(int leaseTime)
+    private JaxRsResponse createPagedTraverserWithTimeoutInMinutes(final int leaseTime)
     {
         ResponseEntity responseEntity = docGenerator.get()
-                .expectedType( MediaType.APPLICATION_JSON_TYPE )
-                .expectedStatus( 201 )
-                .payload( traverserDescription() )
-                .post( functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?leaseTime="
-                       + String.valueOf( leaseTime ) );
+        .expectedType( MediaType.APPLICATION_JSON_TYPE )
+        .expectedStatus( 201 )
+        .payload( traverserDescription() )
+        .post( functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?leaseTime="
+                + String.valueOf( leaseTime ) );
 
         return responseEntity.response();
     }
 
-    private JaxRsResponse createPagedTraverserWithPageSize(int pageSize)
+    private JaxRsResponse createPagedTraverserWithPageSize(final int pageSize)
     {
         ResponseEntity responseEntity = docGenerator.get()
-                .expectedType( MediaType.APPLICATION_JSON_TYPE )
-                .expectedStatus( 201 )
-                .payload( traverserDescription() )
-                .post( functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?pageSize="
-                       + String.valueOf( pageSize ) );
+        .expectedType( MediaType.APPLICATION_JSON_TYPE )
+        .expectedStatus( 201 )
+        .payload( traverserDescription() )
+        .post( functionalTestHelper.nodeUri( theStartNode.getId() ) + "/paged/traverse/node?pageSize="
+                + String.valueOf( pageSize ) );
 
         return responseEntity.response();
     }
@@ -335,15 +336,16 @@ public class PagedTraverserFunctionalTest
     private String traverserDescription()
     {
         String description = "{"
-                             + "\"prune_evaluator\":{\"language\":\"builtin\",\"name\":\"none\"},"
-                             + "\"return_filter\":{\"language\":\"javascript\",\"body\":\"position.endNode().getProperty('name').contains('1');\"},"
-                             + "\"order\":\"depth_first\","
-                             + "\"relationships\":{\"type\":\"NEXT\",\"direction\":\"out\"}" + "}";
+            + "\"prune_evaluator\":{\"language\":\"builtin\",\"name\":\"none\"},"
+            + "\"return_filter\":{\"language\":\"javascript\",\"body\":\"position.endNode().getProperty('name').contains('1');\"},"
+            + "\"order\":\"depth_first\","
+            + "\"relationships\":{\"type\":\"NEXT\",\"direction\":\"out\"}"
+            + "}";
 
-        return description;
+        return JSONPrettifier.parse( description );
     }
 
-    private Node createLinkedList( int listLength, Database db )
+    private Node createLinkedList( final int listLength, final Database db )
     {
         Transaction tx = db.graph.beginTx();
         Node startNode = null;
