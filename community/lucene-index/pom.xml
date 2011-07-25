@@ -3,7 +3,7 @@
   <parent>
     <artifactId>parent-central</artifactId>
     <groupId>org.neo4j</groupId>
-    <version>21</version>
+    <version>22</version>
   </parent>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-lucene-index</artifactId>
@@ -63,13 +63,6 @@ the relevant Commercial Agreement.
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
-    <!-- lucene has downgraded the simple patch for OSGi
-    <dependency>
-      <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-core</artifactId>
-      <version>3.0.1</version>
-    </dependency>
-    -->
     <dependency>
       <groupId>${lucene.groupId}</groupId>
       <artifactId>${lucene.artifactId}</artifactId>
@@ -90,13 +83,6 @@ the relevant Commercial Agreement.
         </configuration>
       </plugin>
     </plugins>
-    <extensions>
-      <extension>
-        <groupId>org.apache.maven.wagon</groupId>
-         <artifactId>wagon-ssh-external</artifactId>
-         <version>1.0-beta-6</version>
-      </extension>
-    </extensions>
   </build>
 
   <reporting>

@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>21</version>
+    <version>22</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -31,9 +31,6 @@
       servers to be running at http://localhost:7474/ -->
     <testWithExternalServer>false</testWithExternalServer>
 
-    <!-- For cucumber "feature" tests -->
-    <cuke4duke.version>0.4.3</cuke4duke.version>
-    <pico.version>2.11.2</pico.version>
     <!-- Override this with something like -DcukeArgs=features/webadmin/console.feature:12 -->
     <cukeArgs>src/features</cukeArgs>
 
@@ -65,12 +62,6 @@ the relevant Commercial Agreement.
       </comments>
     </license>
   </licenses>
-
-  <issueManagement>
-    <system>Trac</system>
-    <url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=${short-name}
-    </url>
-  </issueManagement>
 
   <dependencies>
     <dependency>
@@ -252,14 +243,10 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>cuke4duke</groupId>
       <artifactId>cuke4duke</artifactId>
-      <version>${cuke4duke.version}</version>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.picocontainer</groupId>
       <artifactId>picocontainer</artifactId>
-      <version>${pico.version}</version>
-      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -336,16 +323,10 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.8.2</version>
-      <type>jar</type>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-all</artifactId>
-      <version>1.1</version>
-      <type>jar</type>
-      <scope>test</scope>
     </dependency>
 
   </dependencies>
@@ -545,7 +526,6 @@ the relevant Commercial Agreement.
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.6</version>
         <configuration>
           <systemPropertyVariables>
             <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
@@ -742,7 +722,6 @@ the relevant Commercial Agreement.
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-antrun-plugin</artifactId>
-            <version>1.6</version>
 
             <configuration>
               <target>
@@ -825,14 +804,12 @@ the relevant Commercial Agreement.
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>appassembler-maven-plugin</artifactId>
-            <version>1.0</version>
             <executions>
               <execution><id>generate-jsw-scripts</id><phase>none</phase></execution>
             </executions>
           </plugin>
           <plugin>
             <artifactId>maven-assembly-plugin</artifactId>
-            <version>2.2</version>
             <executions>
               <execution><id>static-web</id><phase>none</phase></execution>
               <execution><id>site</id><phase>none</phase></execution>
@@ -840,7 +817,6 @@ the relevant Commercial Agreement.
           </plugin>
           <plugin>
 	        <artifactId>maven-site-plugin</artifactId>
-	        <version>2.1.1</version>
 	        <executions>
 	          <execution><id>create-site</id><phase>none</phase></execution>
 	        </executions>
@@ -969,45 +945,6 @@ the relevant Commercial Agreement.
       <url>http://cukes.info/maven</url>
     </pluginRepository>
   </pluginRepositories>
-
-  <developers>
-    <developer>
-      <id>jimwebber</id>
-      <name>Jim Webber</name>
-      <email>jim [at] neotechnology.com</email>
-      <timezone>+0</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-    <developer>
-      <id>akollegger</id>
-      <name>Andreas Kollegger</name>
-      <email>andreas.kollegger [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-    <developer>
-      <id>andres</id>
-      <name>Andrés Taylor</name>
-      <email>andres.taylor [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-    <developer>
-      <id>peter</id>
-      <name>Peter Neubauer</name>
-      <email>peter [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-  </developers>
 
   <distributionManagement>
     <site>

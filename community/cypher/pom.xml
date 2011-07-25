@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-central</artifactId>
-    <version>21</version>
+    <version>22</version>
   </parent>
 
   <properties>
@@ -56,7 +56,7 @@
     <artifactId>scalatest_2.9.0</artifactId>
     <version>1.6.1</version>
     <scope>test</scope>
-</dependency>
+    </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
@@ -89,7 +89,6 @@
       <plugin>
         <groupId>org.scala-tools</groupId>
         <artifactId>maven-scala-plugin</artifactId>
-        <version>2.15.2</version>
         <executions>
           <execution>
             <id>compile</id>

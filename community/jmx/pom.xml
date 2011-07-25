@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-central</artifactId>
-    <version>21</version>
+    <version>22</version>
   </parent>
 
   <groupId>org.neo4j</groupId>
@@ -46,63 +46,6 @@ the relevant Commercial Agreement.
     </license>
   </licenses>
 
-  <developers>
-    <developer>
-      <id>emil</id>
-      <name>Emil Eifrem</name>
-      <email>emil [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-    <developer>
-      <id>tobias</id>
-      <name>Tobias Ivarsson</name>
-      <email>tobias.ivarsson [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-    <developer>
-      <id>mattias</id>
-      <name>Mattias Persson</name>
-      <email>mattias [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-    <developer>
-      <id>jimwebber</id>
-      <name>Jim Webber</name>
-      <email>jim [at] neotechnology.com</email>
-      <timezone>+0</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-    <developer>
-      <id>peter</id>
-      <name>Peter Neubauer</name>
-      <email>peter [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-    <developer>
-      <id>johans</id>
-      <name>Johan Svensson</name>
-      <email>johan [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-  </developers>
-  
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
@@ -123,16 +66,6 @@ the relevant Commercial Agreement.
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <build>
-    <extensions>
-      <extension>
-        <groupId>org.apache.maven.wagon</groupId>
-         <artifactId>wagon-ssh-external</artifactId>
-         <version>1.0-beta-6</version>
-      </extension>
-    </extensions>
-  </build>
 
   <distributionManagement>
     <site>

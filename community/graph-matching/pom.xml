@@ -3,9 +3,9 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-central</artifactId>
-    <version>21</version>
+    <version>22</version>
   </parent>
-  
+
   <properties>
     <bundle.namespace>org.neo4j.management</bundle.namespace>
     <short-name>graph-matching</short-name>
@@ -44,36 +44,6 @@
     </license>
   </licenses>
 
-  <developers>
-    <developer>
-      <id>johans</id>
-      <name>Johan Svensson</name>
-      <email>johan [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-    <developer>
-      <id>mattias</id>
-      <name>Mattias Persson</name>
-      <email>mattias [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-    <developer>
-      <id>henrik</id>
-      <name>Henrik Larsson</name>
-      <email>henrik [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-  </developers>
-
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
@@ -94,3 +64,4 @@
   </distributionManagement>
 
 </project>
+

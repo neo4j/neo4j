@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-central</artifactId>
-    <version>21</version>
+    <version>22</version>
   </parent>
 
   <groupId>org.neo4j</groupId>
@@ -94,24 +94,4 @@ the relevant Commercial Agreement.
     </site>
   </distributionManagement>
 
-  <developers>
-    <developer>
-      <id>andres</id>
-      <name>Andrés Taylor</name>
-      <email>andres.taylor [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-    <developer>
-      <id>tobias</id>
-      <name>Tobias Ivarsson</name>
-      <email>tobias [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-  </developers>
 </project>

@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-central</artifactId>
-    <version>21</version>
+    <version>22</version>
   </parent>
 
   <properties>
@@ -20,36 +20,6 @@
   <name>Neo4j - Graph Algorithms</name>
   <description>Graph algorithms for Neo4j.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
-
-  <developers>
-    <developer>
-      <id>patrik</id>
-      <name>Patrik Larsson</name>
-      <email>patrik [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-    <developer>
-      <id>mattias</id>
-      <name>Mattias Persson</name>
-      <email>mattias [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-    <developer>
-      <id>tobias</id>
-      <name>Tobias Ivarsson</name>
-      <email>tobias [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-  </developers>
 
   <scm>
     <url>https://github.com/neo4j/community/tree/master/graph-algo</url>

@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-central</artifactId>
-    <version>21</version>
+    <version>22</version>
   </parent>
 
   <groupId>org.neo4j</groupId>
@@ -104,23 +104,6 @@ the relevant Commercial Agreement.
       </comments>
     </license>
   </licenses>
-
-  <issueManagement>
-    <system>Trac</system>
-    <url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=neo4j</url>
-  </issueManagement>
-
-  <developers>
-    <developer>
-      <id>andersn</id>
-      <name>Anders Nawroth</name>
-      <email>anders [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-  </developers>
 
   <build>
     <plugins>
@@ -311,7 +294,7 @@ the relevant Commercial Agreement.
         <dependency>
           <groupId>com.sun.tools</groupId>
           <artifactId>tools</artifactId>
-          <version>1.6</version>
+          <version>${sun.tools.version}</version>
           <scope>system</scope>
           <systemPath>${java.home}/../lib/tools.jar</systemPath>
           <optional>true</optional>
@@ -327,7 +310,7 @@ the relevant Commercial Agreement.
         <dependency>
           <groupId>com.sun.tools</groupId>
           <artifactId>tools</artifactId>
-          <version>1.6</version>
+          <version>${sun.tools.version}</version>
           <scope>system</scope>
           <systemPath>${java.home}\\..\\lib\\tools.jar</systemPath>
           <optional>true</optional>

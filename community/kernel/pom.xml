@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-central</artifactId>
-    <version>21</version>
+    <version>22</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -51,11 +51,6 @@ the relevant Commercial Agreement.
     </license>
   </licenses>
 
-  <issueManagement>
-    <system>Trac</system>
-    <url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=${short-name}</url>
-  </issueManagement>
-
   <profiles>
     <profile>
       <id>git-windows</id>
@@ -75,7 +70,7 @@ the relevant Commercial Agreement.
         <dependency>
           <groupId>com.sun.tools</groupId>
           <artifactId>tools</artifactId>
-          <version>1.6</version>
+          <version>${sun.tools.version}</version>
           <scope>system</scope>
           <systemPath>${java.home}/../lib/tools.jar</systemPath>
           <optional>true</optional>
@@ -91,7 +86,7 @@ the relevant Commercial Agreement.
         <dependency>
           <groupId>com.sun.tools</groupId>
           <artifactId>tools</artifactId>
-          <version>1.6</version>
+          <version>${sun.tools.version}</version>
           <scope>system</scope>
           <systemPath>${java.home}\\..\\lib\\tools.jar</systemPath>
           <optional>true</optional>
@@ -99,45 +94,6 @@ the relevant Commercial Agreement.
       </dependencies>
     </profile>
   </profiles>
-
-  <developers>
-    <developer>
-      <id>emil</id>
-      <name>Emil Eifrem</name>
-      <email>emil [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-    <developer>
-      <id>tobias</id>
-      <name>Tobias Ivarsson</name>
-      <email>tobias.ivarsson [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-    <developer>
-      <id>mattias</id>
-      <name>Mattias Persson</name>
-      <email>mattias [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-    <developer>
-      <id>johans</id>
-      <name>Johan Svensson</name>
-      <email>johan [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-  </developers>
 
   <build>
     <plugins>
@@ -240,13 +196,6 @@ public class ComponentVersion extends Version
         </executions>
       </plugin>
     </plugins>
-    <extensions>
-      <extension>
-        <groupId>org.apache.maven.wagon</groupId>
-         <artifactId>wagon-ssh-external</artifactId>
-         <version>1.0-beta-6</version>
-      </extension>
-    </extensions>
   </build>
 
   <dependencies>

@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-central</artifactId>
-    <version>21</version>
+    <version>22</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -56,32 +56,6 @@ the relevant Commercial Agreement.
       </comments>
     </license>
   </licenses>
-
-  <issueManagement>
-    <system>Trac</system>
-    <url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=${short-name}</url>
-  </issueManagement>
-
-  <contributors>
-    <contributor>
-      <name>Peter Neubauer</name>
-      <email>peter [at] neotechnology.com</email>
-      <organization>Neo Technology</organization>
-      <organizationUrl>http://www.neotechnology.com</organizationUrl>
-      <timezone>+1</timezone>
-    </contributor>
-  </contributors>
-  <developers>
-    <developer>
-      <id>mattias</id>
-      <name>Mattias Persson</name>
-      <email>mattias [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-  </developers>
 
   <build>
     <plugins>

@@ -9,7 +9,7 @@
   <parent>
     <groupId>org.neo4j.examples</groupId>
     <artifactId>examples-pom</artifactId>
-    <version>21</version>
+    <version>22</version>
   </parent>
   
   <scm>
@@ -70,11 +70,6 @@
         </comments>
     </license>
   </licenses>
-
-  <issueManagement>
-    <system>Trac</system>
-    <url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=neo4j</url>
-  </issueManagement>
 
   <build>
     <plugins>

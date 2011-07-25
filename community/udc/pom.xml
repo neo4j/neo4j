@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-central</artifactId>
-    <version>21</version>
+    <version>22</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
@@ -127,13 +127,6 @@ the relevant Commercial Agreement.
         </executions>
       </plugin>
     </plugins>
-    <extensions>
-      <extension>
-        <groupId>org.apache.maven.wagon</groupId>
-         <artifactId>wagon-ssh-external</artifactId>
-         <version>1.0-beta-6</version>
-      </extension>
-    </extensions>
   </build>
 
   <dependencies>
@@ -183,27 +176,6 @@ the relevant Commercial Agreement.
       <scope>test</scope>
     </dependency>
  </dependencies>
-
-  <developers>
-    <developer>
-      <id>akollegger</id>
-      <name>Andreas Kollegger</name>
-      <email>andreas.kollegger [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-    <developer>
-      <id>andres</id>
-      <name>Andrés Taylor</name>
-      <email>andres.taylor [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-  </developers>
 
   <reporting>
     <plugins>

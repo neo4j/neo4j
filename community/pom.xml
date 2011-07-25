@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-central</artifactId>
-    <version>21</version>
+    <version>22</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -42,16 +42,6 @@
     <module>server</module>
     <module>server-examples</module>
   </modules>
-
-  <build>
-    <extensions>
-      <extension>
-        <groupId>org.apache.maven.wagon</groupId>
-         <artifactId>wagon-ssh-external</artifactId>
-         <version>1.0-beta-7</version>
-      </extension>
-    </extensions>
-  </build>
 
   <licenses>
     <license>

@@ -4,7 +4,7 @@
   <parent>
     <artifactId>assembly-pom</artifactId>
     <groupId>org.neo4j.assembly</groupId>
-    <version>21</version>
+    <version>22</version>
   </parent>
 
   <groupId>org.neo4j.assembly</groupId>
@@ -82,7 +82,6 @@ terms of the relevant Commercial Agreement.
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>properties-maven-plugin</artifactId>
-        <version>1.0-alpha-2</version>
         <executions>
           <execution>
             <phase>initialize</phase>
@@ -360,27 +359,6 @@ terms of the relevant Commercial Agreement.
     </dependency>
     
   </dependencies>
-
-  <developers>
-    <developer>
-      <id>akollegger</id>
-      <name>Andreas Kollegger</name>
-      <email>andreas.kollegger [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-    <developer>
-      <id>andres</id>
-      <name>Andrés Taylor</name>
-      <email>andres.taylor [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-  </developers>
 
   <distributionManagement>
     <site>
