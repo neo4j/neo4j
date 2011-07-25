@@ -31,6 +31,7 @@ MANPAGES         = $(BUILDDIR)/manpages
 UPGRADE          = $(BUILDDIR)/upgrade
 FILTERSRC        = $(CURDIR)/src/bin/resources
 FILTERDEST       = ~/.asciidoc/filters
+SCRIPTDIR        = $(CURDIR)/src/build
 
 ifdef VERBOSE
 	V = -v
@@ -134,14 +135,14 @@ html-check:  html
 	#
 	# Checking that identifiers exist where they should.
 	#
-	$(CURDIR)/src/build/htmlcheck.sh $(CHUNKEDHTMLDIR)
+	$(SCRIPTDIR)/htmlcheck.sh $(CHUNKEDHTMLDIR)
 
 text-check: text
 	#
 	#
 	# Checking that snippets are in place.
 	#
-	$(CURDIR)/src/build/textcheck.sh $(TEXTFILE)
+	$(SCRIPTDIR)/textcheck.sh $(TEXTFILE)
 
 docbook:  manpages copyimages
 	#
@@ -157,16 +158,19 @@ docbook-shortinfo:  manpages copyimages
 	#
 	#
 	# Building docbook output with short info.
+	# Checking for missing include files.
+	# Checking DocBook validity.
 	#
 	#
 	mkdir -p $(BUILDDIR)
-	asciidoc $(ASCIIDOC_FLAGS) --backend docbook --attribute docinfo1 --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --out-file $(DOCBOOKSHORTINFOFILE) $(SRCFILE)
+	asciidoc $(ASCIIDOC_FLAGS) --backend docbook --attribute docinfo1 --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --out-file $(DOCBOOKSHORTINFOFILE) $(SRCFILE) 2>&1 | $(SCRIPTDIR)/outputcheck.sh
 	xmllint --nonet --noout --xinclude --postvalid $(DOCBOOKSHORTINFOFILE)
 
 docbook-html:  manpages copyimages
 	#
 	#
 	# Building docbook output with short info for html outputs.
+	# Checking DocBook validity.
 	#
 	#
 	mkdir -p $(BUILDDIR)
