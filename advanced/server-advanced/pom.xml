@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>21</version>
+    <version>22</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -28,15 +28,12 @@
     <testWithExternalServer>false</testWithExternalServer>
 
     <!-- For cucumber "feature" tests -->
-    <cuke4duke.version>0.4.3</cuke4duke.version>
-    <pico.version>2.11.2</pico.version>
     <cukeArgs />
 
     <webdriver.version>2.0b1</webdriver.version>
     <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
 
     <neo4j.version>1.5-SNAPSHOT</neo4j.version>
-    <neo4js.version>0.8</neo4js.version>
   </properties>
 
   <packaging>bundle</packaging>
@@ -65,11 +62,6 @@ terms of the relevant Commercial Agreement.
     </license>
   </licenses>
 
-  <issueManagement>
-    <system>Trac</system>
-    <url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=${short-name}</url>
-  </issueManagement>
-
   <dependencies>
     <dependency>
       <groupId>org.neo4j.app</groupId>
@@ -81,15 +73,6 @@ terms of the relevant Commercial Agreement.
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-advanced</artifactId>
       <version>1.5-SNAPSHOT</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.neo4j.drivers</groupId>
-      <artifactId>neo4js</artifactId>
-      <version>${neo4js.version}</version>
-      <type>jar</type>
-      <scope>provided</scope>
-      <optional>true</optional>
     </dependency>
 
     <!-- Test dependencies -->
@@ -110,15 +93,11 @@ terms of the relevant Commercial Agreement.
     <dependency>
       <groupId>cuke4duke</groupId>
       <artifactId>cuke4duke</artifactId>
-      <version>${cuke4duke.version}</version>
-      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.picocontainer</groupId>
       <artifactId>picocontainer</artifactId>
-      <version>${pico.version}</version>
-      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -188,16 +167,10 @@ terms of the relevant Commercial Agreement.
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.8.2</version>
-      <type>jar</type>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-all</artifactId>
-      <version>1.1</version>
-      <type>jar</type>
-      <scope>test</scope>
     </dependency>
 
   </dependencies>
@@ -245,30 +218,6 @@ terms of the relevant Commercial Agreement.
             </systemProperty>
           </systemProperties>
         </configuration>
-      </plugin>
-
-      <plugin>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>unpack</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>unpack</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.neo4j.drivers</groupId>
-                  <artifactId>neo4js</artifactId>
-                  <type>jar</type>
-                  <outputDirectory>${project.build.outputDirectory}/lib</outputDirectory>
-                  <includes>*.js</includes>
-                </artifactItem>
-              </artifactItems>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
 
       <plugin>
@@ -377,7 +326,6 @@ terms of the relevant Commercial Agreement.
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.6</version>
         <configuration>
           <systemPropertyVariables>
             <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
@@ -544,7 +492,6 @@ terms of the relevant Commercial Agreement.
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-antrun-plugin</artifactId>
-            <version>1.6</version>
 
             <configuration>
               <target>
@@ -711,45 +658,6 @@ terms of the relevant Commercial Agreement.
     </pluginRepository>
   </pluginRepositories>
 
-  <developers>
-    <developer>
-      <id>jimwebber</id>
-      <name>Jim Webber</name>
-      <email>jim [at] neotechnology.com</email>
-      <timezone>+0</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-    <developer>
-      <id>akollegger</id>
-      <name>Andreas Kollegger</name>
-      <email>andreas.kollegger [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-    <developer>
-      <id>andres</id>
-      <name>Andrés Taylor</name>
-      <email>andres.taylor [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-    <developer>
-      <id>peter</id>
-      <name>Peter Neubauer</name>
-      <email>peter [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-  </developers>
-
   <distributionManagement>
     <site>
       <id>neo4j-site</id>
@@ -758,3 +666,4 @@ terms of the relevant Commercial Agreement.
   </distributionManagement>
 
 </project>
+
