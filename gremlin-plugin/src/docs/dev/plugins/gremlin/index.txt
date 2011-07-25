@@ -16,7 +16,7 @@ example for responses tailored to specific needs.
 
 include::send-a-gremlin-script---url-encoded.txt[]
 
-include::load-a-sample-graph-graph.txt[]
+include::load-a-sample-graph.txt[]
 
 include::sort-a-result-using-raw-groovy-operations.txt[]
 
