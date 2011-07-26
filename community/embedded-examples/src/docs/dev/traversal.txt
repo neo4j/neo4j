@@ -186,7 +186,15 @@ source=org/neo4j/examples/orderedpath/OrderedPathTest.java
 tag=createGraph
 ----
 
-image::ordered-path.png[title="The example graph", scaledwidth="5cm"]
+["dot", "example-ordered-path.svg"]
+----
+A -> B [label="REL1" color="EDGEHIGHLIGHT" fontcolor="EDGEHIGHLIGHT"]
+A -> C [label="REL2"]
+B -> C [label="REL2" color="EDGEHIGHLIGHT" fontcolor="EDGEHIGHLIGHT"]
+C -> D [label="REL3" color="EDGEHIGHLIGHT" fontcolor="EDGEHIGHLIGHT"]
+----
+
+// generate graphviz dot from code ?
 
 Now, the order of relationships (+REL1+ -> +REL2+ -> +REL3+) is stored in an +ArrayList+.
 Upon traversal, the +Evaluator+ can check against it to ensure that only paths are included and returned that have the predefined order of relationships:
