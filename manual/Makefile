@@ -91,7 +91,7 @@ help:
 	@echo "To set the version, use 'VERSION=[the version]'".
 	@echo "To set the importdir, use 'IMPORTDIR=[the importdir]'".
 
-dist: installfilter pdf html html-check offline-html annotated text text-check manpages upgrade cleanup
+dist: installfilter html html-check text text-check offline-html annotated pdf manpages upgrade cleanup
 
 clean:
 	-rm -rf $(BUILDDIR)/*
@@ -163,7 +163,7 @@ docbook-shortinfo:  manpages copyimages
 	#
 	#
 	mkdir -p $(BUILDDIR)
-	asciidoc $(ASCIIDOC_FLAGS) --backend docbook --attribute docinfo1 --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --out-file $(DOCBOOKSHORTINFOFILE) $(SRCFILE) 2>&1 | $(SCRIPTDIR)/outputcheck.sh
+	asciidoc $(ASCIIDOC_FLAGS) --backend docbook --attribute docinfo1 --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --out-file $(DOCBOOKSHORTINFOFILE) $(SRCFILE) 2>&1 | $(SCRIPTDIR)/outputcheck-includefiles.sh
 	xmllint --nonet --noout --xinclude --postvalid $(DOCBOOKSHORTINFOFILE)
 
 docbook-html:  manpages copyimages
@@ -208,9 +208,10 @@ html: manpages copyimages docbook-html
 	#
 	#
 	# Building html output.
+	# Checking for missing images/resources.
 	#
 	#
-	a2x $(V) -L -f chunked -D $(BUILDDIR) --xsl-file=$(CONFDIR)/chunked.xsl -r $(IMGDIR) -r $(CSSDIR) --xsltproc-opts "--stringparam admon.graphics 1" --xsltproc-opts "--xinclude" --xsltproc-opts "--stringparam chunk.section.depth 1" --xsltproc-opts "--stringparam toc.section.depth 1" $(DOCBOOKFILEHTML)
+	a2x $(V) -L -f chunked -D $(BUILDDIR) --xsl-file=$(CONFDIR)/chunked.xsl -r $(IMGDIR) -r $(CSSDIR) --xsltproc-opts "--stringparam admon.graphics 1" --xsltproc-opts "--xinclude" --xsltproc-opts "--stringparam chunk.section.depth 1" --xsltproc-opts "--stringparam toc.section.depth 1" $(DOCBOOKFILEHTML) 2>&1 | $(SCRIPTDIR)/outputcheck-images.sh
 	rm -rf $(CHUNKEDHTMLDIR)
 	mv $(CHUNKEDSHORTINFOTARGET) $(CHUNKEDHTMLDIR)
 	cp -fr $(JSDIR) $(CHUNKEDHTMLDIR)/js
