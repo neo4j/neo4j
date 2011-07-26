@@ -7,7 +7,7 @@
   </parent>
 
   <properties>
-    <bundle.namespace>org.neo4j.management</bundle.namespace>
+    <bundle.namespace>org.neo4j.graphmatching</bundle.namespace>
     <short-name>graph-matching</short-name>
     <license-text.header>GPL-3-header.txt</license-text.header>
   </properties>
