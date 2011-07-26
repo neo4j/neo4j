@@ -46,12 +46,15 @@ A Traversal is how you query a Graph, navigating from starting Nodes to related 
 ["dot", "graphdb-traversal.svg", "meta"]
 ----
 Traversal [fillcolor="NODEHIGHLIGHT"]
+"Graph" [fillcolor="NODE2HIGHLIGHT"]
+Paths [fillcolor="NODE2HIGHLIGHT"]
+Algorithm [fillcolor="NODE2HIGHLIGHT"]
 Relationships -> Nodes [label="organize"]
 "Graph" -> Nodes [label="records data in"]
 "Graph" -> Relationships [label="records data in"]
-Traversal -> "Graph" [label="navigates" weight=2.0]
-Traversal -> Paths [label="identifies" weight=2.0]
-Traversal -> Algorithm [label="expresses"]
+Traversal -> "Graph" [label="navigates" weight=2.0 color="EDGEHIGHLIGHT" fontcolor="EDGEHIGHLIGHT"]
+Traversal -> Paths [label="identifies" weight=2.0 color="EDGEHIGHLIGHT" fontcolor="EDGEHIGHLIGHT"]
+Traversal -> Algorithm [label="expresses" color="EDGEHIGHLIGHT" fontcolor="EDGEHIGHLIGHT"]
 Paths -> Nodes [label="order" weight=2.0]
 ----
 
