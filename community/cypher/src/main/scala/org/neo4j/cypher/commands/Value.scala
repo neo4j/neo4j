@@ -21,6 +21,7 @@ package org.neo4j.cypher.commands
 
 import org.neo4j.graphdb.{NotFoundException, Relationship, PropertyContainer}
 import org.neo4j.cypher.{SyntaxException, SymbolTable}
+import org.neo4j.cypher.pipes.aggregation.{CountFunction, AggregationFunction}
 
 abstract sealed class Value {
   def value(m: Map[String, Any]): Any
@@ -36,6 +37,21 @@ case class Literal(v: Any) extends Value {
   def identifier: Identifier = LiteralIdentifier(v.toString)
 
   def checkAvailable(symbols: SymbolTable) {}
+}
+
+case class AggregationValue(functionName: String, inner: Value) extends Value {
+  def value(m: Map[String, Any]) = m(identifier.name)
+
+  def identifier: Identifier = AggregationIdentifier(functionName+"("+inner.identifier.name+")")
+
+  def checkAvailable(symbols: SymbolTable) {
+    inner.checkAvailable(symbols)
+  }
+
+  def createAggregationFunction: AggregationFunction = functionName match {
+    case "count" => new CountFunction(inner)
+    case _ => throw new UnsupportedOperationException("No such function "+functionName)
+  }
 }
 
 case class NullablePropertyValue(subEntity: String, subProperty: String) extends PropertyValue(subEntity, subProperty) {

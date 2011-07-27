@@ -23,11 +23,11 @@ package org.neo4j.cypher.parser
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
 
-trait ReturnItems extends JavaTokenParsers with Tokens {
+trait ReturnItems extends JavaTokenParsers with Tokens with Values {
   def returnItem: Parser[ReturnItem] = nullablePropertyOutput | relationshipTypeOutput | propertyOutput | nodeOutput
 
-  def nodeOutput: Parser[ReturnItem] = identity ^^ {
-    case x => ValueReturnItem(EntityValue(x))
+  def nodeOutput: Parser[ReturnItem] = entityValue ^^ {
+    case x => ValueReturnItem(x)
   }
 
   def propertyOutput: Parser[ReturnItem] = identity ~ "." ~ identity ^^ {
@@ -46,8 +46,12 @@ trait ReturnItems extends JavaTokenParsers with Tokens {
     case c => c.toLowerCase
   }
 
+  def aggregationValueFunction: Parser[AggregationItem] = "count" ~ "(" ~ ( nullableProperty | value | entityValue )~ ")" ^^ {
+    case "count" ~ "(" ~ inner ~ ")" => ValueAggregationItem(AggregationValue("count",inner))
+  }
+
+
   def aggregationFunction: Parser[AggregationItem] = lowerCaseIdent ~ "(" ~ returnItem ~ ")" ^^ {
-    case "count" ~ "(" ~ inner ~ ")" => Count(inner)
     case "min" ~ "(" ~ inner ~ ")" => Min(inner)
     case "max" ~ "(" ~ inner ~ ")" => Max(inner)
     case "sum" ~ "(" ~ inner ~ ")" => Sum(inner)
@@ -58,7 +62,7 @@ trait ReturnItems extends JavaTokenParsers with Tokens {
     case "(*)" => CountStar()
   }
 
-  def aggregate:Parser[AggregationItem] = countStar | aggregationFunction
+  def aggregate:Parser[AggregationItem] = countStar | aggregationValueFunction | aggregationFunction
 }
 
 

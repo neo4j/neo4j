@@ -26,8 +26,6 @@ import scala.collection.JavaConverters._
 import org.neo4j.cypher.commands._
 import org.neo4j.cypher.{SyntaxException, SymbolTable}
 import org.scalatest.junit.JUnitSuite
-
-
 class AggregationPipeTest extends JUnitSuite {
   @Test def shouldReturnColumnsFromReturnItems() {
     val source = new FakePipe(List(), new SymbolTable(NodeIdentifier("foo")))
@@ -45,7 +43,7 @@ class AggregationPipeTest extends JUnitSuite {
     val source = new FakePipe(List(), new SymbolTable(NodeIdentifier("foo")))
 
     val returnItems = List(ValueReturnItem(EntityValue("name")))
-    val grouping = List(Count(ValueReturnItem(EntityValue("none-existing-identifier"))))
+    val grouping = List(ValueAggregationItem(AggregationValue("count",EntityValue("none-existing-identifier"))))
     new AggregationPipe(source, returnItems, grouping)
   }
 
@@ -74,7 +72,7 @@ class AggregationPipeTest extends JUnitSuite {
       Map("name" -> "Michael", "age" -> 31)), new SymbolTable(NodeIdentifier("name")))
 
     val returnItems = List()
-    val grouping = List(Count(ValueReturnItem(EntityValue("name"))))
+    val grouping = List(ValueAggregationItem(AggregationValue("count",(EntityValue("name")))))
     val aggregationPipe = new AggregationPipe(source, returnItems, grouping)
 
     assertEquals(List(Map("count(name)" -> 3)), aggregationPipe.toList)

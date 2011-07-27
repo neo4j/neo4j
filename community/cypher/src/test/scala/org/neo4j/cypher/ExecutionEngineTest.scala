@@ -545,7 +545,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val query = Query(
       Return(ValueReturnItem(PropertyValue("node", "y"))),
       Start(NodeById("node", n1.getId, n2.getId, n3.getId)),
-      Aggregation(Count(ValueReturnItem(NullablePropertyValue("node", "x")))))
+      Aggregation(ValueAggregationItem(AggregationValue("count",NullablePropertyValue("node", "x")))))
 
     val result = execute(query)
 

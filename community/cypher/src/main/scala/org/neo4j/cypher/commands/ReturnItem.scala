@@ -41,23 +41,33 @@ case class ValueReturnItem(value: Value) extends ReturnItem(value.identifier) {
   }
 }
 
+
+case class ValueAggregationItem(value: AggregationValue) extends AggregationItem(value.identifier.name) {
+
+  def assertDependencies(source: Pipe) {
+    value.checkAvailable(source.symbols)
+  }
+   def createAggregationFunction: AggregationFunction = value.createAggregationFunction
+}
+
 abstract sealed class AggregationItem(name: String) extends ReturnItem(AggregationIdentifier(name)) {
   def apply(m: Map[String, Any]): Map[String, Any] = m
 
   def createAggregationFunction: AggregationFunction
 }
 
+
 case class CountStar() extends AggregationItem("count(*)") {
   def createAggregationFunction: AggregationFunction = new CountStarFunction
 
   def assertDependencies(source: Pipe) {}
 }
-
+/*
 case class Count(inner: ReturnItem)
   extends AggregationItem("count(" + inner.columnName + ")") with InnerReturnItem {
   def createAggregationFunction = new CountFunction(inner)
 }
-
+*/
 case class Sum(inner: ReturnItem)
   extends AggregationItem("sum(" + inner.columnName + ")") with InnerReturnItem {
   def createAggregationFunction = new SumFunction(inner)

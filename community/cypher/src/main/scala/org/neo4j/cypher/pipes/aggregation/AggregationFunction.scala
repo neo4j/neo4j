@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.pipes.aggregation
 
-import org.neo4j.cypher.commands.ReturnItem
+import org.neo4j.cypher.commands.Value
 
 /**
  * Base class for aggregation functions. The function is stateful
@@ -48,11 +48,11 @@ class CountStarFunction extends AggregationFunction {
   def result: Int = count
 }
 
-class CountFunction(returnItem:ReturnItem) extends AggregationFunction {
+class CountFunction(inner:Value) extends AggregationFunction {
   var count = 0
 
   def apply(data: Map[String, Any]) {
-    returnItem(data)(returnItem.columnName) match {
+    inner.value(data) match {
       case null =>
       case _ => count = count + 1
     }

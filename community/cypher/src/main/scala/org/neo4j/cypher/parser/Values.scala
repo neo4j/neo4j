@@ -23,9 +23,19 @@ import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
 
 trait Values extends JavaTokenParsers with Tokens {
+
+  def entityValue : Parser[Value] = identity ^^ {
+    case x => EntityValue(x)
+  }
+
+
   def value: Parser[Value] = (boolean | relationshipType | property | stringValue | decimal)
 
   def property: Parser[Value] = identity ~ "." ~ identity ^^ {  case v ~ "." ~ p => PropertyValue(v,p) }
+
+  def nullableProperty: Parser[Value] = property ~ "?" ^^ {
+    case PropertyValue(e,p) ~ "?" => NullablePropertyValue(e, p)
+  }
 
   def stringValue: Parser[Value] = string ^^ { case str => Literal(str) }
 
