@@ -128,6 +128,7 @@ curl http://localhost:7474/db/data/ext/GetAll/graphdb/get_all_nodes
 
 To use it, just +POST+ to this URL, with parameters as specified in the description and encoded as JSON data content.
 F.ex for calling the +shortest path+ extension (URI gotten from a +GET+ to http://localhost:7474/db/data/node/123):
+[source,bash]
 ----
 curl -X POST http://localhost:7474/db/data/ext/GetAll/node/123/shortestPath -H "Content-Type: application/json" -d '{"target":"http://localhost:7474/db/data/node/456&depth=5"}'
 ---- 

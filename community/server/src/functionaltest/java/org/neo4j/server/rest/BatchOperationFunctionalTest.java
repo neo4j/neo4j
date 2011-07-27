@@ -89,7 +89,7 @@ public class BatchOperationFunctionalTest
      * and all changes will be undone.
      * 
      * Each job description should contain a +path+ attribute, with a value
-     * relative to the data API root (so http://localhost/db/data/node becomes
+     * relative to the data API root (so http://localhost:7474/db/data/node becomes
      * just /node), and a +method+ attribute containing HTTP verb to use.
      * 
      * Optionally you may provide a +body+ attribute, and an +id+ attribute to
