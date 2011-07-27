@@ -280,7 +280,7 @@ class CypherParserTest extends JUnitSuite {
     testQuery(
       "start a = (1) return a.name",
       Query(
-        Return(PropertyOutput("a", "name")),
+        Return(ValueReturnItem(PropertyValue("a", "name"))),
         Start(NodeById("a", 1))))
   }
 
@@ -288,7 +288,7 @@ class CypherParserTest extends JUnitSuite {
     testQuery(
       "start a = (1) where a.name = \"andres\" and a.lastname = \"taylor\" return a.name",
       Query(
-        Return(PropertyOutput("a", "name")),
+        Return(ValueReturnItem(PropertyValue("a", "name"))),
         Start(NodeById("a", 1)),
         And(
           Equals(PropertyValue("a", "name"), Literal("andres")),
@@ -360,7 +360,7 @@ class CypherParserTest extends JUnitSuite {
         Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
         Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
-        Aggregation(Sum(PropertyOutput("a", "age")))))
+        Aggregation(Sum(ValueReturnItem(PropertyValue("a", "age"))))))
   }
 
   @Test def avgTheAgesOfPeople() {
@@ -370,7 +370,7 @@ class CypherParserTest extends JUnitSuite {
         Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
         Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
-        Aggregation(Avg(PropertyOutput("a", "age")))))
+        Aggregation(Avg(ValueReturnItem(PropertyValue("a", "age"))))))
   }
 
   @Test def minTheAgesOfPeople() {
@@ -380,7 +380,7 @@ class CypherParserTest extends JUnitSuite {
         Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
         Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
-        Aggregation(Min(PropertyOutput("a", "age")))))
+        Aggregation(Min(ValueReturnItem(PropertyValue("a", "age"))))))
   }
 
   @Test def maxTheAgesOfPeople() {
@@ -390,7 +390,7 @@ class CypherParserTest extends JUnitSuite {
         Return(EntityOutput("a"), EntityOutput("b")),
         Start(NodeById("a", 1)),
         Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
-        Aggregation(Max(PropertyOutput("a", "age")))))
+        Aggregation(Max(ValueReturnItem(PropertyValue("a", "age"))))))
   }
 
   @Test def singleColumnSorting() {
@@ -399,7 +399,7 @@ class CypherParserTest extends JUnitSuite {
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
-        Sort(SortItem(PropertyOutput("a", "name"), true))))
+        Sort(SortItem(ValueReturnItem(PropertyValue("a", "name")), true))))
   }
 
   @Test def sortOnAggregatedColumn() {
@@ -408,7 +408,7 @@ class CypherParserTest extends JUnitSuite {
       Query(
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
-        Sort(SortItem(Avg(PropertyOutput("a", "name")), true))))
+        Sort(SortItem(Avg(ValueReturnItem(PropertyValue("a", "name"))), true))))
   }
 
   @Test def shouldHandleTwoSortColumns() {
@@ -418,8 +418,8 @@ class CypherParserTest extends JUnitSuite {
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
         Sort(
-          SortItem(PropertyOutput("a", "name"), true),
-          SortItem(PropertyOutput("a", "age"), true))))
+          SortItem(ValueReturnItem(PropertyValue("a", "name")), true),
+          SortItem(ValueReturnItem(PropertyValue("a", "age")), true))))
   }
 
   @Test def shouldHandleTwoSortColumnsAscending() {
@@ -429,8 +429,8 @@ class CypherParserTest extends JUnitSuite {
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
         Sort(
-          SortItem(PropertyOutput("a", "name"), true),
-          SortItem(PropertyOutput("a", "age"), true))))
+          SortItem(ValueReturnItem(PropertyValue("a", "name")), true),
+          SortItem(ValueReturnItem(PropertyValue("a", "age")), true))))
   }
 
   @Test def orderByDescending() {
@@ -440,7 +440,7 @@ class CypherParserTest extends JUnitSuite {
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
         Sort(
-          SortItem(PropertyOutput("a", "name"), false))))
+          SortItem(ValueReturnItem(PropertyValue("a", "name")), false))))
   }
 
   @Test def orderByDesc() {
@@ -450,7 +450,7 @@ class CypherParserTest extends JUnitSuite {
         Return(EntityOutput("a")),
         Start(NodeById("a", 1)),
         Sort(
-          SortItem(PropertyOutput("a", "name"), false))))
+          SortItem(ValueReturnItem(PropertyValue("a", "name")), false))))
   }
 
   @Test def nullableProperty() {

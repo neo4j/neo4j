@@ -19,21 +19,38 @@
  */
 package org.neo4j.cypher.commands
 
-import org.neo4j.graphdb.{Relationship, PropertyContainer}
+import org.neo4j.graphdb.{NotFoundException, Relationship, PropertyContainer}
+import org.neo4j.cypher.{SyntaxException, SymbolTable}
 
 abstract sealed class Value {
   def value(m: Map[String, Any]): Any
+  def identifier : Identifier
+  def checkAvailable(symbols:SymbolTable)
 }
 
 case class Literal(v: Any) extends Value {
   def value(m: Map[String, Any]) = v
+  def identifier: Identifier = LiteralIdentifier(v.toString)
+  def checkAvailable(symbols: SymbolTable) {}
 }
 
-case class PropertyValue(identifier: String, property: String) extends Value {
-  def value(m: Map[String, Any]): Any = m(identifier).asInstanceOf[PropertyContainer].getProperty(property)
+case class PropertyValue(entity: String, property: String) extends Value {
+  def value(m: Map[String, Any]): Any = {
+    val propertyContainer =  m(entity).asInstanceOf[PropertyContainer]
+    try {
+      propertyContainer.getProperty(property)
+    } catch {
+      case x: NotFoundException => throw new SyntaxException("%s.%s does not exist on %s".format(entity,property,propertyContainer), x)
+    }
+  }
+
+  def identifier: Identifier = PropertyIdentifier(entity,property)
+  def checkAvailable(symbols: SymbolTable) { symbols.assertHas(entity) }
 }
 
-case class RelationshipTypeValue(identifier:String) extends Value {
-  def value(m: Map[String, Any]): Any = m(identifier).asInstanceOf[Relationship].getType.toString
+case class RelationshipTypeValue(relationship:String) extends Value {
+  def value(m: Map[String, Any]): Any = m(relationship).asInstanceOf[Relationship].getType.name()
+  def identifier: Identifier = RelationshipTypeIdentifier(relationship)
+  def checkAvailable(symbols: SymbolTable) { symbols.assertHas(relationship) }
 }
 

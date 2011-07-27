@@ -23,6 +23,8 @@ sealed abstract class Identifier(val name: String)
 
 case class UnboundIdentifier(subName: String, wrapped:Option[Identifier]) extends Identifier(subName)
 
+case class LiteralIdentifier(subName: String) extends Identifier(subName)
+
 case class NodeIdentifier(subName: String) extends Identifier(subName)
 
 case class RelationshipIdentifier(subName: String) extends Identifier(subName)

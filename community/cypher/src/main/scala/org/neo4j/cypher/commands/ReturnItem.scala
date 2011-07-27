@@ -36,6 +36,14 @@ abstract sealed class ReturnItem(val identifier: Identifier) extends (Map[String
   def concreteReturnItem = this
 }
 
+case class ValueReturnItem(value: Value) extends ReturnItem(value.identifier) {
+  def apply(m: Map[String, Any]): Map[String, Any] = Map(columnName -> value.value(m))
+
+  def assertDependencies(source: Pipe) {
+    value.checkAvailable(source.symbols)
+  }
+}
+
 case class EntityOutput(name: String) extends ReturnItem(UnboundIdentifier(name, None)) {
   def apply(m: Map[String, Any]): Map[String, Any] = Map(name -> m.getOrElse(name, throw new NotFoundException))
 
@@ -49,9 +57,9 @@ case class PropertyOutput(entity: String, property: String) extends ReturnItem(P
     val node = m.getOrElse(entity, throw new NotFoundException("%s not found.".format(entity))).asInstanceOf[PropertyContainer]
 
     try {
-    Map(entity + "." + property -> node.getProperty(property))
+      Map(entity + "." + property -> node.getProperty(property))
     } catch {
-      case x:NotFoundException => throw new SyntaxException("%s does not exist on %s".format(this.columnName, node), x)
+      case x: NotFoundException => throw new SyntaxException("%s does not exist on %s".format(this.columnName, node), x)
     }
   }
 
@@ -135,5 +143,6 @@ trait InnerReturnItem extends AggregationItem {
   def assertDependencies(source: Pipe) {
     inner.assertDependencies(source)
   }
+
   override def concreteReturnItem = inner
 }
