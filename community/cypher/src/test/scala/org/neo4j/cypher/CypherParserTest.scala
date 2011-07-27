@@ -457,7 +457,7 @@ class CypherParserTest extends JUnitSuite {
     testQuery(
       "start a = (1) return a.name?",
       Query(
-        Return(NullablePropertyOutput("a", "name")),
+        Return(ValueReturnItem(NullablePropertyValue("a", "name"))),
         Start(NodeById("a", 1))))
   }
 

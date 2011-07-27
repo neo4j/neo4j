@@ -24,33 +24,50 @@ import org.neo4j.cypher.{SyntaxException, SymbolTable}
 
 abstract sealed class Value {
   def value(m: Map[String, Any]): Any
-  def identifier : Identifier
-  def checkAvailable(symbols:SymbolTable)
+
+  def identifier: Identifier
+
+  def checkAvailable(symbols: SymbolTable)
 }
 
 case class Literal(v: Any) extends Value {
   def value(m: Map[String, Any]) = v
+
   def identifier: Identifier = LiteralIdentifier(v.toString)
+
   def checkAvailable(symbols: SymbolTable) {}
 }
 
+case class NullablePropertyValue(subEntity: String, subProperty: String) extends PropertyValue(subEntity, subProperty) {
+  protected override def handleNotFound(propertyContainer: PropertyContainer, x: NotFoundException): Any = null
+}
+
 case class PropertyValue(entity: String, property: String) extends Value {
+  protected def handleNotFound(propertyContainer: PropertyContainer, x: NotFoundException): Any = throw new SyntaxException("%s.%s does not exist on %s".format(entity, property, propertyContainer), x)
+
   def value(m: Map[String, Any]): Any = {
-    val propertyContainer =  m(entity).asInstanceOf[PropertyContainer]
+    val propertyContainer = m(entity).asInstanceOf[PropertyContainer]
     try {
       propertyContainer.getProperty(property)
     } catch {
-      case x: NotFoundException => throw new SyntaxException("%s.%s does not exist on %s".format(entity,property,propertyContainer), x)
+      case x: NotFoundException => handleNotFound(propertyContainer, x)
     }
   }
 
-  def identifier: Identifier = PropertyIdentifier(entity,property)
-  def checkAvailable(symbols: SymbolTable) { symbols.assertHas(entity) }
+  def identifier: Identifier = PropertyIdentifier(entity, property)
+
+  def checkAvailable(symbols: SymbolTable) {
+    symbols.assertHas(entity)
+  }
 }
 
-case class RelationshipTypeValue(relationship:String) extends Value {
+case class RelationshipTypeValue(relationship: String) extends Value {
   def value(m: Map[String, Any]): Any = m(relationship).asInstanceOf[Relationship].getType.name()
+
   def identifier: Identifier = RelationshipTypeIdentifier(relationship)
-  def checkAvailable(symbols: SymbolTable) { symbols.assertHas(relationship) }
+
+  def checkAvailable(symbols: SymbolTable) {
+    symbols.assertHas(relationship)
+  }
 }
 
