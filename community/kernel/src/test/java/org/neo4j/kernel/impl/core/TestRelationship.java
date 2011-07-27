@@ -893,6 +893,47 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
+    public void commitToNotFullyLoadedNode() throws Exception
+    {
+        int grabSize = 10;
+        GraphDatabaseService db = new ImpermanentGraphDatabase(
+                "target/test-data/test-db2", stringMap(
+                        "relationship_grab_size", "" + grabSize ) );
+        Transaction tx = db.beginTx();
+        Node node1 = db.createNode();
+        Node node2 = db.createNode();
+        RelationshipType type = DynamicRelationshipType.withName( "type" );
+        for ( int i = 0; i < grabSize + 2; i++ )
+        {
+            node1.createRelationshipTo( node2, type );
+        }
+        tx.success();
+        tx.finish();
+
+        ( (AbstractGraphDatabase) db ).getConfig().getGraphDbModule().getNodeManager().clearCache();
+
+        tx = db.beginTx();
+
+        node1.getRelationships().iterator().next().delete();
+        node1.setProperty( "foo", "bar" );
+        int relCount = 0;
+        for ( Relationship rel : node2.getRelationships() )
+        {
+            relCount++;
+        }
+        assertEquals( relCount, grabSize + 1 );
+        relCount = 0;
+        for (Relationship rel : node1.getRelationships())
+        {
+            relCount++;
+        }
+        assertEquals( relCount, grabSize + 1 );
+        assertEquals( "bar", node1.getProperty( "foo" ) );
+        tx.success();
+        tx.finish();
+    }
+
+    @Test
     public void createRelationshipAfterClearedCache()
     {
         // Assumes relationship grab size 100
