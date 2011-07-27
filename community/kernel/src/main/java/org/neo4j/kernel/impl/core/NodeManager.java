@@ -854,10 +854,13 @@ public class NodeManager
 
     PropertyData nodeAddProperty( NodeImpl node, PropertyIndex index, Object value )
     {
-        for ( PropertyTracker<Node> nodePropertyTracker : nodePropertyTrackers )
+        if ( !nodePropertyTrackers.isEmpty() )
         {
-            nodePropertyTracker.propertyAdded( getNodeById( node.getId() ),
-                    index.getKey(), value );
+            for ( PropertyTracker<Node> nodePropertyTracker : nodePropertyTrackers )
+            {
+                nodePropertyTracker.propertyAdded( getNodeById( node.getId() ),
+                        index.getKey(), value );
+            }
         }
         return persistenceManager.nodeAddProperty( node.getId(), index, value );
     }
@@ -865,11 +868,15 @@ public class NodeManager
     PropertyData nodeChangeProperty( NodeImpl node, PropertyData property,
             Object value )
     {
-        for ( PropertyTracker<Node> nodePropertyTracker : nodePropertyTrackers )
+        if ( !nodePropertyTrackers.isEmpty() )
         {
-            nodePropertyTracker.propertyChanged( getNodeById( node.getId() ),
-                    getIndexFor( property.getIndex() ).getKey(),
-                    property.getValue(), value );
+            for ( PropertyTracker<Node> nodePropertyTracker : nodePropertyTrackers )
+            {
+                nodePropertyTracker.propertyChanged(
+                        getNodeById( node.getId() ),
+                        getIndexFor( property.getIndex() ).getKey(),
+                        property.getValue(), value );
+            }
         }
         return persistenceManager.nodeChangeProperty( node.getId(),
                 property.getId(), value );
@@ -877,11 +884,15 @@ public class NodeManager
 
     void nodeRemoveProperty( NodeImpl node, PropertyData property )
     {
-        for ( PropertyTracker<Node> nodePropertyTracker : nodePropertyTrackers )
+        if ( !nodePropertyTrackers.isEmpty() )
         {
-            nodePropertyTracker.propertyRemoved( getNodeById( node.getId() ),
-                    getIndexFor( property.getIndex() ).getKey(),
-                    property.getValue() );
+            for ( PropertyTracker<Node> nodePropertyTracker : nodePropertyTrackers )
+            {
+                nodePropertyTracker.propertyRemoved(
+                        getNodeById( node.getId() ),
+                        getIndexFor( property.getIndex() ).getKey(),
+                        property.getValue() );
+            }
         }
         persistenceManager.nodeRemoveProperty( node.getId(), property.getId() );
     }
@@ -896,11 +907,14 @@ public class NodeManager
     PropertyData relAddProperty( RelationshipImpl rel, PropertyIndex index,
         Object value )
     {
-        for ( PropertyTracker<Relationship> relPropertyTracker : relationshipPropertyTrackers )
+        if ( !relationshipPropertyTrackers.isEmpty() )
         {
-            relPropertyTracker.propertyAdded(
-                    getRelationshipById( rel.getId() ),
-                    index.getKey(), value );
+            for ( PropertyTracker<Relationship> relPropertyTracker : relationshipPropertyTrackers )
+            {
+                relPropertyTracker.propertyAdded(
+                        getRelationshipById( rel.getId() ), index.getKey(),
+                        value );
+            }
         }
         return persistenceManager.relAddProperty( rel.getId(), index, value );
     }
@@ -908,13 +922,15 @@ public class NodeManager
     PropertyData relChangeProperty( RelationshipImpl rel,
             PropertyData property, Object value )
     {
-        for ( PropertyTracker<Relationship> relPropertyTracker : relationshipPropertyTrackers )
+        if ( !relationshipPropertyTrackers.isEmpty() )
         {
-            relPropertyTracker.propertyChanged(
-                    getRelationshipById( rel.getId() ),
-                    getIndexFor( property.getIndex() ).getKey(),
-                    property.getValue(), value
-                    );
+            for ( PropertyTracker<Relationship> relPropertyTracker : relationshipPropertyTrackers )
+            {
+                relPropertyTracker.propertyChanged(
+                        getRelationshipById( rel.getId() ),
+                        getIndexFor( property.getIndex() ).getKey(),
+                        property.getValue(), value );
+            }
         }
         return persistenceManager.relChangeProperty( rel.getId(),
                 property.getId(), value );
@@ -922,12 +938,15 @@ public class NodeManager
 
     void relRemoveProperty( RelationshipImpl rel, PropertyData property )
     {
-        for ( PropertyTracker<Relationship> relPropertyTracker : relationshipPropertyTrackers )
+        if ( !relationshipPropertyTrackers.isEmpty() )
         {
-            relPropertyTracker.propertyRemoved(
-                    getRelationshipById( rel.getId() ),
-                    getIndexFor( property.getIndex() ).getKey(),
-                    property.getValue() );
+            for ( PropertyTracker<Relationship> relPropertyTracker : relationshipPropertyTrackers )
+            {
+                relPropertyTracker.propertyRemoved(
+                        getRelationshipById( rel.getId() ),
+                        getIndexFor( property.getIndex() ).getKey(),
+                        property.getValue() );
+            }
         }
         persistenceManager.relRemoveProperty( rel.getId(), property.getId() );
     }
