@@ -331,7 +331,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
   @Test def shouldBeAbleToOutputNullForMissingProperties() {
     val query = Query(
-      Return(NullablePropertyOutput("node", "name")),
+      Return(ValueReturnItem(NullablePropertyValue("node", "name"))),
       Start(NodeById("node", 0)))
 
     val result = execute(query)
@@ -548,7 +548,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val query = Query(
       Return(ValueReturnItem(PropertyValue("node", "y"))),
       Start(NodeById("node", n1.getId, n2.getId, n3.getId)),
-      Aggregation(Count(NullablePropertyOutput("node", "x"))))
+      Aggregation(Count(ValueReturnItem(NullablePropertyValue("node", "x")))))
 
     val result = execute(query)
 
@@ -567,7 +567,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val query = Query(
       Return(ValueReturnItem(PropertyValue("node", "y"))),
       Start(NodeById("node", n1.getId, n2.getId, n3.getId)),
-      Aggregation(Sum(NullablePropertyOutput("node", "x"))))
+      Aggregation(Sum(ValueReturnItem(NullablePropertyValue("node", "x")))))
 
     val result = execute(query)
 

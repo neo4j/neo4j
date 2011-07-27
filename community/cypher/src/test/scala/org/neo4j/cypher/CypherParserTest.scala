@@ -554,7 +554,7 @@ class CypherParserTest extends JUnitSuite {
     val executionTree = parser.parse(query)
 
     assertEquals(Query(
-      Return(NullablePropertyOutput("a", "name")),
+      Return(ValueReturnItem(NullablePropertyValue("a", "name"))),
       Start(NodeById("a", 1))),
       executionTree)
   }
