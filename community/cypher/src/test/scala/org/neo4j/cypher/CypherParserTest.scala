@@ -518,7 +518,7 @@ class CypherParserTest extends JUnitSuite {
       "start n=(1) match n-[r]->(x) return r~TYPE",
 
       Query(
-        Return(RelationshipTypeOutput("r")),
+        Return(ValueReturnItem(RelationshipTypeValue("r"))),
         Start(NodeById("n", 1)),
         Match(RelatedTo("n", "x", Some("r"), None, Direction.OUTGOING))))
   }

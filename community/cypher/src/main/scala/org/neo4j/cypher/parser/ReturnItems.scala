@@ -31,7 +31,7 @@ trait ReturnItems extends JavaTokenParsers with Tokens {
   }
 
   def propertyOutput: Parser[ReturnItem] = identity ~ "." ~ identity ^^ {
-    case c ~ "." ~ p => ValueReturnItem(PropertyValue(c,p))// PropertyOutput(c, p)
+    case c ~ "." ~ p => ValueReturnItem(PropertyValue(c,p))
   }
 
   def nullablePropertyOutput: Parser[ReturnItem] = identity ~ "." ~ identity ~ "?" ^^ {
@@ -39,7 +39,7 @@ trait ReturnItems extends JavaTokenParsers with Tokens {
   }
 
   def relationshipTypeOutput: Parser[ReturnItem] = identity <~ "~TYPE" ^^ {
-    case c => RelationshipTypeOutput(c)
+    case c => ValueReturnItem(RelationshipTypeValue(c))
   }
 
   private def lowerCaseIdent = ident ^^ {

@@ -26,7 +26,7 @@ import org.junit.{Ignore, Test}
 import parser.CypherParser
 import scala.collection.JavaConverters._
 import org.junit.matchers.JUnitMatchers._
-import org.neo4j.graphdb.{RelationshipType, Relationship, Direction, Node}
+import org.neo4j.graphdb.{Relationship, Direction, Node}
 
 class ExecutionEngineTest extends ExecutionEngineTestBase {
 
@@ -513,16 +513,13 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     relate("A" -> "HATES" -> "C")
 
     val query = Query(
-      Return(RelationshipTypeOutput("r")),
+      Return(ValueReturnItem(RelationshipTypeValue("r"))),
       Start(NodeById("n", 1)),
       Match(RelatedTo("n", "x", Some("r"), None, Direction.OUTGOING)))
 
     val result = execute(query)
 
-    val KNOWS = relType("KNOWS")
-    val HATES = relType("HATES")
-
-    assertEquals(List(KNOWS, HATES), result.columnAs[RelationshipType]("r~TYPE").toList)
+    assertEquals(List("KNOWS", "HATES"), result.columnAs[String]("r~TYPE").toList)
   }
 
   @Test def shouldAggregateOnProperties() {
