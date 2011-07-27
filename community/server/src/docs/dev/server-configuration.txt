@@ -96,6 +96,18 @@ On the other hand, if you want to completely silence the console output, set:
 java.util.logging.ConsoleHandler.level=OFF
 ----
 
+By default log files are rotated at approximately 10Mb and named consecutively neo4j.<id>.<rotation sequence #>.log
+To change the naming scheme, rotation frequency and backlog size modify
+
+[source]
+----
+java.util.logging.FileHandler.pattern
+java.util.logging.FileHandler.limit
+java.util.logging.FileHandler.count
+----
+
+respectively to your needs. Details are available at the Javadoc for +http://download.oracle.com/javase/6/docs/api/java/util/logging/FileHandler.html[java.util.logging.FileHandler]+.
+
 Apart from log statements originating from the Neo4j server, other libraries report their messages
 through various frameworks.
 
