@@ -1,6 +1,6 @@
 [[server-performance]]
-Tuning the server performance
-=============================
+Server Performance Tuning
+=========================
 
 At the heart of the Neo4j server is a regular Neo4j storage engine instance.
 That engine can be tuned in the same way as the other embedded configurations, using the same file format.
