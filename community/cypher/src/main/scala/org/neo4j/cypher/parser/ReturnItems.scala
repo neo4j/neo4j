@@ -27,7 +27,7 @@ trait ReturnItems extends JavaTokenParsers with Tokens {
   def returnItem: Parser[ReturnItem] = nullablePropertyOutput | relationshipTypeOutput | propertyOutput | nodeOutput
 
   def nodeOutput: Parser[ReturnItem] = identity ^^ {
-    EntityOutput(_)
+    case x => ValueReturnItem(EntityValue(x))
   }
 
   def propertyOutput: Parser[ReturnItem] = identity ~ "." ~ identity ^^ {

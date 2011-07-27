@@ -20,7 +20,6 @@
 package org.neo4j.cypher.commands
 
 import org.neo4j.cypher.pipes.Pipe
-import org.neo4j.graphdb.NotFoundException
 import org.neo4j.cypher.pipes.aggregation._
 abstract sealed class ReturnItem(val identifier: Identifier) extends (Map[String, Any] => Map[String, Any]) {
   def assertDependencies(source: Pipe)
@@ -39,14 +38,6 @@ case class ValueReturnItem(value: Value) extends ReturnItem(value.identifier) {
 
   def assertDependencies(source: Pipe) {
     value.checkAvailable(source.symbols)
-  }
-}
-
-case class EntityOutput(name: String) extends ReturnItem(UnboundIdentifier(name, None)) {
-  def apply(m: Map[String, Any]): Map[String, Any] = Map(name -> m.getOrElse(name, throw new NotFoundException))
-
-  def assertDependencies(source: Pipe) {
-    source.symbols.assertHas(name)
   }
 }
 

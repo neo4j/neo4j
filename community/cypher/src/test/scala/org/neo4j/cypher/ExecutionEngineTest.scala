@@ -32,7 +32,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
   @Test def shouldGetReferenceNode() {
     val query = Query(
-      Return(EntityOutput("node")),
+      Return(ValueReturnItem(EntityValue("node"))),
       Start(NodeById("node", 0)))
 
     val result = execute(query)
@@ -41,7 +41,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
   @Test def shouldFilterOnGreaterThan() {
     val query = Query(
-      Return(EntityOutput("node")),
+      Return(ValueReturnItem(EntityValue("node"))),
       Start(NodeById("node", 0)),
       LessThan(Literal(0), Literal(1))
     )
@@ -54,7 +54,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val n1 = createNode(Map("name" -> "Andres"))
     val n2 = createNode(Map("name" -> "Jim"))
     val query = Query(
-      Return(EntityOutput("node")),
+      Return(ValueReturnItem(EntityValue("node"))),
       Start(NodeById("node", n1.getId, n2.getId)),
       RegularExpression(PropertyValue("node", "name"), "And.*")
     )
@@ -67,7 +67,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val node: Node = createNode()
 
     val query = Query(
-      Return(EntityOutput("node")),
+      Return(ValueReturnItem(EntityValue("node"))),
       Start(NodeById("node", node.getId)))
 
     val result = execute(query)
@@ -80,7 +80,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val rel: Relationship = relate(refNode, node, "yo")
 
     val query = Query(
-      Return(EntityOutput("rel")),
+      Return(ValueReturnItem(EntityValue("rel"))),
       Start(RelationshipById("rel", rel.getId)))
 
     val result = execute(query)
@@ -91,7 +91,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val node: Node = createNode()
 
     val query = Query(
-      Return(EntityOutput("node")),
+      Return(ValueReturnItem(EntityValue("node"))),
       Start(NodeById("node", refNode.getId, node.getId)))
 
     val result = execute(query)
@@ -120,7 +120,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     relate(start, a2, "x")
 
     val query = Query(
-      Return(EntityOutput("a")),
+      Return(ValueReturnItem(EntityValue("a"))),
       Start(NodeById("start", start.getId)),
       Match(RelatedTo("start", "a", None, Some("x"), Direction.BOTH)),
       Equals(PropertyValue("a", "name"), Literal(name)))
@@ -137,7 +137,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     relate(start, b, "KNOWS", Map("name" -> "woot"))
 
     val query = Query(
-      Return(EntityOutput("a")),
+      Return(ValueReturnItem(EntityValue("a"))),
       Start(NodeById("start", start.getId)),
       Match(RelatedTo("start", "a", Some("r"), Some("KNOWS"), Direction.BOTH)),
       Equals(PropertyValue("r", "name"), Literal("monkey")))
@@ -152,7 +152,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val n2: Node = createNode()
 
     val query = Query(
-      Return(EntityOutput("n1"), EntityOutput("n2")),
+      Return(ValueReturnItem(EntityValue("n1")), ValueReturnItem(EntityValue("n2"))),
       Start(
         NodeById("n1", n1.getId),
         NodeById("n2", n2.getId)))
@@ -168,7 +168,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     relate(n1, n2, "KNOWS")
 
     val query = Query(
-      Return(EntityOutput("n1"), EntityOutput("n2")),
+      Return(ValueReturnItem(EntityValue("n1")), ValueReturnItem(EntityValue("n2"))),
       Start(NodeById("n1", n1.getId)),
       Match(RelatedTo("n1", "n2", None, Some("KNOWS"), Direction.OUTGOING)))
 
@@ -185,7 +185,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     relate(n1, n3, "KNOWS")
 
     val query = Query(
-      Return(EntityOutput("x")),
+      Return(ValueReturnItem(EntityValue("x"))),
       Start(NodeById("start", n1.getId)),
       Match(RelatedTo("start", "x", None, Some("KNOWS"), Direction.OUTGOING)))
 
@@ -202,7 +202,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     relate(n1, n3, "KNOWS")
 
     val query = Query(
-      Return(EntityOutput("x"), EntityOutput("start")),
+      Return(ValueReturnItem(EntityValue("x")), ValueReturnItem(EntityValue("start"))),
       Start(NodeById("start", n1.getId)),
       Match(RelatedTo("start", "x", None, Some("KNOWS"), Direction.OUTGOING)))
 
@@ -215,7 +215,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
   @Test def doesNotFailOnVisualizingEmptyOutput() {
     val query = Query(
-      Return(EntityOutput("start")),
+      Return(ValueReturnItem(EntityValue("start"))),
       Start(NodeById("start", refNode.getId)),
       Equals(Literal(1), Literal(0)))
 
@@ -232,7 +232,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     relate(n2, n3, "FRIEND")
 
     val query = Query(
-      Return(EntityOutput("b")),
+      Return(ValueReturnItem(EntityValue("b"))),
       Start(NodeById("start", n1.getId)),
       Match(
         RelatedTo("start", "a", None, Some("KNOWS"), Direction.OUTGOING),
@@ -251,7 +251,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     indexNode(n, idxName, key, value)
 
     val query = Query(
-      Return(EntityOutput("n")),
+      Return(ValueReturnItem(EntityValue("n"))),
       Start(NodeByIndex("n", idxName, key, value)))
 
     val result = execute(query)
@@ -267,7 +267,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     indexNode(n, idxName, key, value)
 
     val query = Query(
-      Return(EntityOutput("n")),
+      Return(ValueReturnItem(EntityValue("n"))),
       Start(NodeByIndexQuery("n", idxName, key + ":" + value)))
 
     val result = execute(query)
@@ -283,7 +283,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     indexNode(n, idxName, key, value)
 
     val query = Query(
-      Return(EntityOutput("n")),
+      Return(ValueReturnItem(EntityValue("n"))),
       Start(NodeByIndexQuery("n", idxName, key + ":andr*")))
 
     val result = execute(query)
@@ -296,7 +296,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val n2 = createNode(Map("name" -> "girl"))
 
     val query = Query(
-      Return(EntityOutput("n")),
+      Return(ValueReturnItem(EntityValue("n"))),
       Start(NodeById("n", n1.getId, n2.getId)),
       Or(
         Equals(PropertyValue("n", "name"), Literal("boy")),
@@ -314,7 +314,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val n3 = createNode(Map("animal" -> "cow", "food" -> "banana"))
 
     val query = Query(
-      Return(EntityOutput("n")),
+      Return(ValueReturnItem(EntityValue("n"))),
       Start(NodeById("n", n1.getId, n2.getId, n3.getId)),
       Or(
         And(
@@ -351,7 +351,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     relate(n4, n3, "A")
 
     val query = Query(
-      Return(EntityOutput("n"), EntityOutput("x")),
+      Return(ValueReturnItem(EntityValue("n")), ValueReturnItem(EntityValue("x"))),
       Start(NodeById("n", n1.getId, n4.getId)),
       Match(RelatedTo("n", "x", None, None, Direction.OUTGOING)),
       Equals(PropertyValue("n", "animal"), PropertyValue("x", "animal")))
@@ -373,7 +373,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val n5 = createNode(Map("x" -> 50.toByte))
 
     val query = Query(
-      Return(EntityOutput("n")),
+      Return(ValueReturnItem(EntityValue("n"))),
       Start(NodeById("n", n1.getId, n2.getId, n3.getId, n4.getId, n5.getId)),
       LessThan(PropertyValue("n", "x"), Literal(100)))
 
@@ -387,7 +387,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val n2 = createNode(Map("x" -> 'C'))
 
     val query = Query(
-      Return(EntityOutput("n")),
+      Return(ValueReturnItem(EntityValue("n"))),
       Start(NodeById("n", n1.getId, n2.getId)),
       And(
         LessThan(PropertyValue("n", "x"), Literal("Z")),
@@ -405,7 +405,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     relate(refNode, b, "A")
 
     val query = Query(
-      Return(EntityOutput("a")),
+      Return(ValueReturnItem(EntityValue("a"))),
       Start(NodeById("a", refNode.getId)),
       Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
       Aggregation(CountStar()))
@@ -419,7 +419,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     createNodes("A", "B", "C", "D", "E")
 
     val query = Query(
-      Return(EntityOutput("start")),
+      Return(ValueReturnItem(EntityValue("start"))),
       Start(NodeById("start", nodeIds: _*)),
       Slice(None, Some(2)))
 
@@ -432,7 +432,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val nodes = createNodes("A", "B", "C", "D", "E")
 
     val query = Query(
-      Return(EntityOutput("start")),
+      Return(ValueReturnItem(EntityValue("start"))),
       Start(NodeById("start", nodeIds: _*)),
       Sort(SortItem(ValueReturnItem(PropertyValue("start", "name")), true)),
       Slice(Some(2), None))
@@ -446,7 +446,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val nodes = createNodes("A", "B", "C", "D", "E")
 
     val query = Query(
-      Return(EntityOutput("start")),
+      Return(ValueReturnItem(EntityValue("start"))),
       Start(NodeById("start", nodeIds: _*)),
       Sort(SortItem(ValueReturnItem(PropertyValue("start", "name")), true)),
       Slice(Some(2), Some(2)))
@@ -497,7 +497,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     relate("A" -> "HATES" -> "C")
 
     val query = Query(
-      Return(EntityOutput("x")),
+      Return(ValueReturnItem(EntityValue("x"))),
       Start(NodeById("n", 1)),
       Match(RelatedTo("n", "x", Some("r"), None, Direction.OUTGOING)),
       Equals(RelationshipTypeValue("r"), Literal("KNOWS")))
@@ -578,7 +578,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     relate("A" -> "HATES" -> "C")
 
     val query = Query(
-      Return(EntityOutput("x")),
+      Return(ValueReturnItem(EntityValue("x"))),
       Start(NodeById("n", 1)),
       Match(RelatedTo("n", "x", Some("r"), None, Direction.OUTGOING)),
       Or(Equals(RelationshipTypeValue("r"), Literal("KNOWS")), Equals(RelationshipTypeValue("r"), Literal("HATES"))))

@@ -71,3 +71,12 @@ case class RelationshipTypeValue(relationship: String) extends Value {
   }
 }
 
+case class EntityValue(entityName:String) extends Value {
+  def value(m: Map[String, Any]): Any = m.getOrElse(entityName, throw new NotFoundException)
+
+  def identifier: Identifier = UnboundIdentifier(entityName, None)
+
+  def checkAvailable(symbols: SymbolTable) {
+     symbols.assertHas(entityName)
+  }
+}

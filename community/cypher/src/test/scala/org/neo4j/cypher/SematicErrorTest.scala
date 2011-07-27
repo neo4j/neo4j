@@ -29,7 +29,7 @@ class SematicErrorTest extends ExecutionEngineTestBase {
     val node: Node = createNode()
 
     val query = Query(
-      Return(EntityOutput("bar")),
+      Return(ValueReturnItem(EntityValue("bar"))),
       Start(NodeById("foo", node.getId)))
 
     expectedError(query, """Unbound Identifier UnboundIdentifier(bar,None) not resolved!""")
@@ -39,7 +39,7 @@ class SematicErrorTest extends ExecutionEngineTestBase {
     val node: Node = createNode()
 
     val query = Query(
-      Return(EntityOutput("foo")),
+      Return(ValueReturnItem(EntityValue("foo"))),
       Start(NodeById("foo", node.getId)),
       Match(RelatedTo("a", "b", None, None, Direction.BOTH)))
 
@@ -50,7 +50,7 @@ class SematicErrorTest extends ExecutionEngineTestBase {
     val node: Node = createNode()
 
     val query = Query(
-      Return(EntityOutput("foo")),
+      Return(ValueReturnItem(EntityValue("foo"))),
       Start(NodeById("foo", node.getId)),
       Match(RelatedTo("a", "b", Some("foo"), None, Direction.BOTH)))
 
