@@ -64,7 +64,7 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     {
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
-        .payload( "script=" + URLEncoder.encode( "i = g.v("+data.get().get( "I" ).getId() +");i.outE.inV", "UTF-8") )
+        .payload( "script=" + URLEncoder.encode( "i = g.v("+data.get().get( "I" ).getId() +");i.out", "UTF-8") )
         .payloadType( MediaType.APPLICATION_FORM_URLENCODED_TYPE )
         .post( ENDPOINT )
         .entity();
@@ -84,7 +84,7 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     @Graph( value = { "I know you" } )
     public void testGremlinPostWithVariablesURLEncoded() throws UnsupportedEncodingException
     {
-        final String script = "g.v(me).outE.inV";
+        final String script = "g.v(me).out";
         final String params = "{ \"me\" : "+data.get().get("I").getId()+" }";
         String response = gen.get()
         .expectedStatus(Status.OK.getStatusCode())
@@ -108,7 +108,7 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     @Graph( value = { "I know you" } )
     public void testGremlinPostWithVariablesAsJson() throws UnsupportedEncodingException
     {
-        final String script = "g.v(me).outE.inV";
+        final String script = "g.v(me).out";
         final String params = "{ \"me\" : "+data.get().get("I").getId()+" }";
         final String payload = String.format("{ \"script\" : \"%s\", \"params\" : %s }", script, params);
         String response = gen.get()
@@ -180,7 +180,7 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     {
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
-        .payload( "{\"script\":\"g.v("+data.get().get( "I" ).getId()+").outE.inV.sort{it.name}.toList()\"}" )
+        .payload( "{\"script\":\"g.v("+data.get().get( "I" ).getId()+").out.sort{it.name}.toList()\"}" )
         .payloadType( MediaType.APPLICATION_JSON_TYPE )
         .post( ENDPOINT )
         .entity();
