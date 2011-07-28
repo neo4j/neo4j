@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -931,6 +932,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         assertEquals( "bar", node1.getProperty( "foo" ) );
         tx.success();
         tx.finish();
+        db.shutdown();
     }
 
     @Test
@@ -955,5 +957,64 @@ public class TestRelationship extends AbstractNeo4jTestCase
         assertEquals( expectedCount, count( node1.getRelationships() ) );
         newTransaction();
         assertEquals( expectedCount, count( node1.getRelationships() ) );
+    }
+
+    @Test
+    @Ignore
+    public void grabSizeWithTwoTypesDeleteAndCount()
+    {
+        int grabSize = 2;
+        GraphDatabaseService db = new ImpermanentGraphDatabase(
+                "target/test-data/test-db4", stringMap(
+                        "relationship_grab_size", "" + grabSize ) );
+        Transaction tx = db.beginTx();
+        Node node1 = db.createNode();
+        Node node2 = db.createNode();
+
+        int count = 0;
+        RelationshipType type1 = DynamicRelationshipType.withName( "type" );
+        RelationshipType type2 = DynamicRelationshipType.withName( "bar" );
+        // Create more than grab size
+        for ( int i = 0; i < 11; i++ )
+        {
+            node1.createRelationshipTo( node2, type1 );
+            count++;
+        }
+        for ( int i = 0; i < 10; i++ )
+        {
+            node1.createRelationshipTo( node2, type2 );
+            count++;
+        }
+        tx.success();
+        tx.finish();
+
+        tx = db.beginTx();
+
+        ( (AbstractGraphDatabase) db ).getConfig().getGraphDbModule().getNodeManager().clearCache();
+
+        /*
+         *  Both the creation and the deletion are necessary
+         *  and the type HAS to be be the first one used in the above
+         *  transaction. If create is type1 and delete is type2, it passes.
+         *  If create is type2 and delete is type1, NoSuchElementException
+         *  is thrown.
+         */
+        node1.createRelationshipTo( node2, type1 );
+        count++;
+
+        Relationship rel1 = node1.getRelationships( type1 ).iterator().next();
+        System.out.println( "Deleting : " + rel1 );
+        rel1.delete();
+        count--;
+
+        int finalCount = 0;
+        for ( Relationship rel : node1.getRelationships() )
+        {
+            finalCount++;
+        }
+        assertEquals( count, finalCount );
+        tx.success();
+        tx.finish();
+        db.shutdown();
     }
 }
