@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import commands.{Match, UnboundIdentifier, Identifier}
+import commands.{UnboundIdentifier, Identifier}
 import scala.Some
 
 class SymbolTable(val identifiers: Set[Identifier]) {
@@ -45,6 +45,7 @@ class SymbolTable(val identifiers: Set[Identifier]) {
         case _ => newIdentifier
       }
     }
+
     def handleMatched(newIdentifier: Identifier, existingIdentifier: Identifier): Identifier = {
       newIdentifier match {
         case UnboundIdentifier(name, None) => existingIdentifier

@@ -21,7 +21,7 @@ package org.neo4j.cypher.commands
 
 import org.neo4j.cypher.pipes.Pipe
 import org.neo4j.cypher.pipes.aggregation._
-abstract sealed class ReturnItem(val identifier: Identifier) extends (Map[String, Any] => Map[String, Any]) {
+abstract sealed class ReturnItem(val identifier: Identifier) extends (Map[String, Any] => Any) {
   def assertDependencies(source: Pipe)
 
   def columnName = identifier match {
@@ -34,7 +34,7 @@ abstract sealed class ReturnItem(val identifier: Identifier) extends (Map[String
 }
 
 case class ValueReturnItem(value: Value) extends ReturnItem(value.identifier) {
-  def apply(m: Map[String, Any]): Map[String, Any] = Map(columnName -> value.apply(m))
+  def apply(m: Map[String, Any]): Any = value(m) // Map(columnName -> value(m))
 
   def assertDependencies(source: Pipe) {
     value.checkAvailable(source.symbols)
