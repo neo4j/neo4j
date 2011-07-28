@@ -4,6 +4,23 @@ The Neo4j Graph Database
 
 This chapter will introduce more details on the data model and behavior of Neo4j.
 
+[[graphdb-neo4j-nodes]]
+== Nodes ==
+
+The fundamental units that form a graph are nodes and relationships.
+In Neo4j, both nodes and relationships can contain <<graphdb-neo4j-properties,properties>>.
+
+Nodes are often used to represent _entities,_ but depending on the domain relationships may be used for that purpose as well.
+
+Let's start out with a really simple graph, containing only a single node with one property:
+
+["dot", "graphdb-nodes.svg"]
+----
+"name: Marko"
+----
+
+
+[[graphdb-neo4j-relationships]]
 == Relationships ==
 
 Relationships between nodes are a key part of a graph database.
@@ -51,6 +68,7 @@ Note that a node can have relationships to itself as well:
 ----
 
 To further enhance graph traversal all relationships have a relationship type.
+Note that the word _type_ might be misleading here, you could rather think of it as a _label_.
 The following example shows a simple social network with two relationship types.
 
 ["dot", "graphdb-rels-twitter.svg"]
@@ -97,6 +115,7 @@ Depending on what you are looking for, you will use the direction and type of re
 |========================================================
 
 
+[[graphdb-neo4j-properties]]
 == Properties ==
 
 Properties are key-value pairs where the key is a string.
