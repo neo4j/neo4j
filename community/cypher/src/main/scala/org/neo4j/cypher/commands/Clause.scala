@@ -54,7 +54,7 @@ case class Has(property: PropertyValue) extends Clause {
 
 case class RegularExpression(a: Value, str: String) extends Clause {
   def isMatch(m: Map[String, Any]): Boolean = {
-    val value = a.value(m).asInstanceOf[String]
+    val value = a.apply(m).asInstanceOf[String]
     str.r.pattern.matcher(value).matches()
   }
 }

@@ -21,7 +21,7 @@ package org.neo4j.cypher.pipes.aggregation
 
 import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.cypher.commands.{EntityValue, ValueReturnItem}
+import org.neo4j.cypher.commands.EntityValue
 
 class AvgFunctionTest {
   @Test def singleOne() {
@@ -67,7 +67,7 @@ class AvgFunctionTest {
   }
 
   def avgOn(values: Any*): Any = {
-    val func = new AvgFunction(ValueReturnItem(EntityValue("x")))
+    val func = new AvgFunction(EntityValue("x"))
 
     values.foreach(value => {
       func(Map("x" -> value))

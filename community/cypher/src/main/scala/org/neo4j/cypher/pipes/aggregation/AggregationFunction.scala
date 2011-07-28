@@ -48,11 +48,11 @@ class CountStarFunction extends AggregationFunction {
   def result: Int = count
 }
 
-class CountFunction(inner:Value) extends AggregationFunction {
+class CountFunction(value:Value) extends AggregationFunction {
   var count = 0
 
   def apply(data: Map[String, Any]) {
-    inner.value(data) match {
+    value(data) match {
       case null =>
       case _ => count = count + 1
     }

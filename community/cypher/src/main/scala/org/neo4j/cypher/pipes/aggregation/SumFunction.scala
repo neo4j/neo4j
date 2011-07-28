@@ -20,9 +20,9 @@
 package org.neo4j.cypher.pipes.aggregation
 
 import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.commands.ReturnItem
+import org.neo4j.cypher.commands.Value
 
-class SumFunction(returnItem:ReturnItem) extends AggregationFunction with Plus {
+class SumFunction(value:Value) extends AggregationFunction with Plus {
   private var soFar: Any = null
 
   def result: Any = soFar match {
@@ -31,12 +31,12 @@ class SumFunction(returnItem:ReturnItem) extends AggregationFunction with Plus {
   }
 
   def apply(data: Map[String, Any]) {
-    val value = returnItem(data)(returnItem.columnName)
+    val number = value(data)
 
-    if(value != null && !value.isInstanceOf[Number]) {
+    if(number != null && !number.isInstanceOf[Number]) {
       throw new SyntaxException("Sum can only handle values of Number type, or null.")
     }
 
-    soFar = plus(soFar, value)
+    soFar = plus(soFar, number)
   }
 }

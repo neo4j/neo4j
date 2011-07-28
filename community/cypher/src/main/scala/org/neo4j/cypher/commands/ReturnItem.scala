@@ -34,7 +34,7 @@ abstract sealed class ReturnItem(val identifier: Identifier) extends (Map[String
 }
 
 case class ValueReturnItem(value: Value) extends ReturnItem(value.identifier) {
-  def apply(m: Map[String, Any]): Map[String, Any] = Map(columnName -> value.value(m))
+  def apply(m: Map[String, Any]): Map[String, Any] = Map(columnName -> value.apply(m))
 
   def assertDependencies(source: Pipe) {
     value.checkAvailable(source.symbols)
@@ -61,34 +61,6 @@ case class CountStar() extends AggregationItem("count(*)") {
   def createAggregationFunction: AggregationFunction = new CountStarFunction
 
   def assertDependencies(source: Pipe) {}
-}
-/*
-case class Count(inner: ReturnItem)
-  extends AggregationItem("count(" + inner.columnName + ")") with InnerReturnItem {
-  def createAggregationFunction = new CountFunction(inner)
-}
-*/
-case class Sum(inner: ReturnItem)
-  extends AggregationItem("sum(" + inner.columnName + ")") with InnerReturnItem {
-  def createAggregationFunction = new SumFunction(inner)
-}
-
-case class Avg(inner: ReturnItem)
-  extends AggregationItem("avg(" + inner.columnName + ")") with InnerReturnItem {
-
-  def createAggregationFunction = new AvgFunction(inner)
-}
-
-case class Max(inner: ReturnItem)
-  extends AggregationItem("max(" + inner.columnName + ")") with InnerReturnItem {
-
-  def createAggregationFunction = new MaxFunction(inner)
-}
-
-case class Min(inner: ReturnItem)
-  extends AggregationItem("min(" + inner.columnName + ")") with InnerReturnItem {
-
-  def createAggregationFunction = new MinFunction(inner)
 }
 
 trait InnerReturnItem extends AggregationItem {

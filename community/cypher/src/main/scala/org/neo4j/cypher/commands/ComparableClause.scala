@@ -26,8 +26,8 @@ abstract sealed class ComparableClause(a: Value, b: Value) extends Clause with C
   def compare(comparisonResult: Int): Boolean
 
   def isMatch(m: Map[String, Any]): Boolean = {
-    val left: Any = a.value(m)
-    val right: Any = b.value(m)
+    val left: Any = a.apply(m)
+    val right: Any = b.apply(m)
 
     val comparisonResult: Int = compare(left, right)
 

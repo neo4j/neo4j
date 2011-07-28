@@ -24,7 +24,7 @@ import org.junit.Assert._
 import org.junit.Test
 import org.neo4j.cypher.SyntaxException
 import org.scalatest.junit.JUnitSuite
-import org.neo4j.cypher.commands.{EntityValue, ValueReturnItem}
+import org.neo4j.cypher.commands.EntityValue
 
 class SumFunctionTest extends JUnitSuite {
   @Test def singleValueReturnsThatNumber() {
@@ -74,7 +74,7 @@ class SumFunctionTest extends JUnitSuite {
   }
 
   def sumOn(values: Any*): Any = {
-    val func = new SumFunction(ValueReturnItem(EntityValue("x")))
+    val func = new SumFunction(EntityValue("x"))
 
     values.foreach(value => {
       func(Map("x" -> value))

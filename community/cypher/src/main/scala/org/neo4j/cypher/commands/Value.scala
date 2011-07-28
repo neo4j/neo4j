@@ -21,10 +21,10 @@ package org.neo4j.cypher.commands
 
 import org.neo4j.graphdb.{NotFoundException, Relationship, PropertyContainer}
 import org.neo4j.cypher.{SyntaxException, SymbolTable}
-import org.neo4j.cypher.pipes.aggregation.{CountFunction, AggregationFunction}
+import org.neo4j.cypher.pipes.aggregation._
 
 abstract sealed class Value {
-  def value(m: Map[String, Any]): Any
+  def apply(m: Map[String, Any]): Any
 
   def identifier: Identifier
 
@@ -32,15 +32,15 @@ abstract sealed class Value {
 }
 
 case class Literal(v: Any) extends Value {
-  def value(m: Map[String, Any]) = v
+  def apply(m: Map[String, Any]) = v
 
   def identifier: Identifier = LiteralIdentifier(v.toString)
 
   def checkAvailable(symbols: SymbolTable) {}
 }
 
-case class AggregationValue(functionName: String, inner: Value) extends Value {
-  def value(m: Map[String, Any]) = m(identifier.name)
+abstract class AggregationValue(functionName: String, inner: Value) extends Value {
+  def apply(m: Map[String, Any]) = m(identifier.name)
 
   def identifier: Identifier = AggregationIdentifier(functionName+"("+inner.identifier.name+")")
 
@@ -48,10 +48,27 @@ case class AggregationValue(functionName: String, inner: Value) extends Value {
     inner.checkAvailable(symbols)
   }
 
-  def createAggregationFunction: AggregationFunction = functionName match {
-    case "count" => new CountFunction(inner)
-    case _ => throw new UnsupportedOperationException("No such function "+functionName)
-  }
+  def createAggregationFunction: AggregationFunction
+}
+
+case class Count(anInner: Value) extends AggregationValue("count",anInner) {
+  def createAggregationFunction = new CountFunction(anInner)
+}
+
+case class Sum(anInner: Value) extends AggregationValue("sum",anInner) {
+  def createAggregationFunction = new SumFunction(anInner)
+}
+
+case class Min(anInner: Value) extends AggregationValue("min",anInner) {
+  def createAggregationFunction = new MinFunction(anInner)
+}
+
+case class Max(anInner: Value) extends AggregationValue("max",anInner) {
+  def createAggregationFunction = new MaxFunction(anInner)
+}
+
+case class Avg(anInner: Value) extends AggregationValue("avg",anInner) {
+  def createAggregationFunction = new AvgFunction(anInner)
 }
 
 case class NullablePropertyValue(subEntity: String, subProperty: String) extends PropertyValue(subEntity, subProperty) {
@@ -61,7 +78,7 @@ case class NullablePropertyValue(subEntity: String, subProperty: String) extends
 case class PropertyValue(entity: String, property: String) extends Value {
   protected def handleNotFound(propertyContainer: PropertyContainer, x: NotFoundException): Any = throw new SyntaxException("%s.%s does not exist on %s".format(entity, property, propertyContainer), x)
 
-  def value(m: Map[String, Any]): Any = {
+  def apply(m: Map[String, Any]): Any = {
     val propertyContainer = m(entity).asInstanceOf[PropertyContainer]
     try {
       propertyContainer.getProperty(property)
@@ -78,7 +95,7 @@ case class PropertyValue(entity: String, property: String) extends Value {
 }
 
 case class RelationshipTypeValue(relationship: String) extends Value {
-  def value(m: Map[String, Any]): Any = m(relationship).asInstanceOf[Relationship].getType.name()
+  def apply(m: Map[String, Any]): Any = m(relationship).asInstanceOf[Relationship].getType.name()
 
   def identifier: Identifier = RelationshipTypeIdentifier(relationship)
 
@@ -88,7 +105,7 @@ case class RelationshipTypeValue(relationship: String) extends Value {
 }
 
 case class EntityValue(entityName:String) extends Value {
-  def value(m: Map[String, Any]): Any = m.getOrElse(entityName, throw new NotFoundException)
+  def apply(m: Map[String, Any]): Any = m.getOrElse(entityName, throw new NotFoundException)
 
   def identifier: Identifier = UnboundIdentifier(entityName, None)
 

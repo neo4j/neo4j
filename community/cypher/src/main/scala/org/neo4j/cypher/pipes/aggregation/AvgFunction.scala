@@ -19,19 +19,17 @@
  */
 package org.neo4j.cypher.pipes.aggregation
 
-import org.neo4j.cypher.commands.ReturnItem
 import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.commands.Value
 
-class AvgFunction(returnItem: ReturnItem) extends AggregationFunction with Plus {
+class AvgFunction(value: Value) extends AggregationFunction with Plus {
   private var count: Int = 0
   private var sofar: Any = 0
 
   def result: Any = divide(sofar, count)
 
   def apply(data: Map[String, Any]) {
-    val value = returnItem(data)(returnItem.columnName)
-
-    value match {
+    value(data) match {
       case null =>
       case number: Number => {
         count = count + 1

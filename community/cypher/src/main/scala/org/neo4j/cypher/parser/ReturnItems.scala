@@ -34,22 +34,19 @@ trait ReturnItems extends JavaTokenParsers with Tokens with Values {
     case c => c.toLowerCase
   }
 
-  def aggregationValueFunction: Parser[AggregationItem] = "count" ~ "(" ~ ( returnValues )~ ")" ^^ {
-    case "count" ~ "(" ~ inner ~ ")" => ValueAggregationItem(AggregationValue("count",inner))
-  }
-
-  def aggregationFunction: Parser[AggregationItem] = lowerCaseIdent ~ "(" ~ returnItem ~ ")" ^^ {
-    case "min" ~ "(" ~ inner ~ ")" => Min(inner)
-    case "max" ~ "(" ~ inner ~ ")" => Max(inner)
-    case "sum" ~ "(" ~ inner ~ ")" => Sum(inner)
-    case "avg" ~ "(" ~ inner ~ ")" => Avg(inner)
+  def aggregationValueFunction: Parser[AggregationItem] = lowerCaseIdent ~ "(" ~ ( returnValues )~ ")" ^^ {
+    case "count" ~ "(" ~ inner ~ ")" => ValueAggregationItem(Count(inner))
+    case "sum" ~ "(" ~ inner ~ ")" => ValueAggregationItem(Sum(inner))
+    case "min" ~ "(" ~ inner ~ ")" => ValueAggregationItem(Min(inner))
+    case "max" ~ "(" ~ inner ~ ")" => ValueAggregationItem(Max(inner))
+    case "avg" ~ "(" ~ inner ~ ")" => ValueAggregationItem(Avg(inner))
   }
 
   def countStar: Parser[AggregationItem] = ignoreCase("count") ~> "(*)" ^^ {
     case "(*)" => CountStar()
   }
 
-  def aggregate:Parser[AggregationItem] = countStar | aggregationValueFunction | aggregationFunction
+  def aggregate:Parser[AggregationItem] = countStar  | aggregationValueFunction
 }
 
 

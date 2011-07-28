@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.pipes.aggregation
 
-import org.neo4j.cypher.commands.ReturnItem
 import org.neo4j.cypher.{SyntaxException, Comparer}
 import java.lang.Boolean
+import org.neo4j.cypher.commands.Value
 
 trait MinMax extends AggregationFunction with Comparer {
-  val returnItem: ReturnItem
+  val value: Value
 
   def keep(comparisonResult: Int): Boolean
 
@@ -33,16 +33,14 @@ trait MinMax extends AggregationFunction with Comparer {
   def result: Any = biggestSeen
 
   def apply(data: Map[String, Any]) {
-    val value = returnItem(data)(returnItem.columnName)
-
     try {
-      value match {
+      value(data) match {
         case null =>
-        case x: Comparable[_] => checkIfLargest(value)
+        case x: Comparable[_] => checkIfLargest(x)
         case _ => throw new SyntaxException("MIN/MAX can only handle values of Comparable type, or null.")
       }
     } catch {
-      case error => throw new SyntaxException("Identifier: %s - %s".format(returnItem.columnName, error.getMessage))
+      case error => throw new SyntaxException("Identifier: %s - %s".format(value.identifier, error.getMessage))
     }
   }
 
@@ -55,10 +53,10 @@ trait MinMax extends AggregationFunction with Comparer {
   }
 }
 
-class MaxFunction(val returnItem: ReturnItem) extends AggregationFunction with MinMax {
+class MaxFunction(val value: Value) extends AggregationFunction with MinMax {
   def keep(comparisonResult: Int) = comparisonResult < 0
 }
 
-class MinFunction(val returnItem: ReturnItem) extends AggregationFunction with MinMax {
+class MinFunction(val value: Value) extends AggregationFunction with MinMax {
   def keep(comparisonResult: Int) = comparisonResult > 0
 }

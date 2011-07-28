@@ -360,7 +360,7 @@ class CypherParserTest extends JUnitSuite {
         Return(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))),
         Start(NodeById("a", 1)),
         Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
-        Aggregation(Sum(ValueReturnItem(PropertyValue("a", "age"))))))
+        Aggregation(ValueAggregationItem(Sum(PropertyValue("a", "age"))))))
   }
 
   @Test def avgTheAgesOfPeople() {
@@ -370,7 +370,7 @@ class CypherParserTest extends JUnitSuite {
         Return(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))),
         Start(NodeById("a", 1)),
         Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
-        Aggregation(Avg(ValueReturnItem(PropertyValue("a", "age"))))))
+        Aggregation(ValueAggregationItem(Avg(PropertyValue("a", "age"))))))
   }
 
   @Test def minTheAgesOfPeople() {
@@ -380,7 +380,7 @@ class CypherParserTest extends JUnitSuite {
         Return(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))),
         Start(NodeById("a", 1)),
         Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
-        Aggregation(Min(ValueReturnItem(PropertyValue("a", "age"))))))
+        Aggregation(ValueAggregationItem(Min(PropertyValue("a", "age"))))))
   }
 
   @Test def maxTheAgesOfPeople() {
@@ -390,7 +390,7 @@ class CypherParserTest extends JUnitSuite {
         Return(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))),
         Start(NodeById("a", 1)),
         Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
-        Aggregation(Max(ValueReturnItem(PropertyValue("a", "age"))))))
+        Aggregation(ValueAggregationItem(Max((PropertyValue("a", "age")))))))
   }
 
   @Test def singleColumnSorting() {
@@ -408,7 +408,7 @@ class CypherParserTest extends JUnitSuite {
       Query(
         Return(ValueReturnItem(EntityValue("a"))),
         Start(NodeById("a", 1)),
-        Sort(SortItem(Avg(ValueReturnItem(PropertyValue("a", "name"))), true))))
+        Sort(SortItem(ValueAggregationItem(Avg(PropertyValue("a", "name"))), true))))
   }
 
   @Test def shouldHandleTwoSortColumns() {
@@ -529,7 +529,7 @@ class CypherParserTest extends JUnitSuite {
       Query(
         Return(ValueReturnItem(EntityValue("a"))),
         Start(NodeById("a", 1)),
-        Aggregation(ValueAggregationItem(AggregationValue("count",EntityValue("a"))))))
+        Aggregation(ValueAggregationItem(Count(EntityValue("a"))))))
   }
 
   @Test def shouldBeAbleToHandleStringLiteralsWithApostrophe() {

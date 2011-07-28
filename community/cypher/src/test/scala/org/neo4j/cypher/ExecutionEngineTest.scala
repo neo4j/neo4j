@@ -465,8 +465,8 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val query = Query(
       Return(ValueReturnItem(PropertyValue("n", "divison"))),
       Start(NodeById("n", n1.getId, n2.getId, n3.getId, n4.getId)),
-      Aggregation(Max(ValueReturnItem(PropertyValue("n", "age")))),
-      Sort(SortItem(Max(ValueReturnItem(PropertyValue("n", "age"))), true)))
+      Aggregation(ValueAggregationItem(Max(PropertyValue("n", "age")))),
+      Sort(SortItem(ValueAggregationItem(Max(PropertyValue("n", "age"))), true)))
 
     val result = execute(query)
 
@@ -545,7 +545,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val query = Query(
       Return(ValueReturnItem(PropertyValue("node", "y"))),
       Start(NodeById("node", n1.getId, n2.getId, n3.getId)),
-      Aggregation(ValueAggregationItem(AggregationValue("count",NullablePropertyValue("node", "x")))))
+      Aggregation(ValueAggregationItem(Count(NullablePropertyValue("node", "x")))))
 
     val result = execute(query)
 
@@ -564,7 +564,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val query = Query(
       Return(ValueReturnItem(PropertyValue("node", "y"))),
       Start(NodeById("node", n1.getId, n2.getId, n3.getId)),
-      Aggregation(Sum(ValueReturnItem(NullablePropertyValue("node", "x")))))
+      Aggregation(ValueAggregationItem(Sum(NullablePropertyValue("node", "x")))))
 
     val result = execute(query)
 
