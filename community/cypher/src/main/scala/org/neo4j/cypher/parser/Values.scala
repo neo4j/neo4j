@@ -28,7 +28,6 @@ trait Values extends JavaTokenParsers with Tokens {
     case x => EntityValue(x)
   }
 
-
   def value: Parser[Value] = (boolean | relationshipType | property | stringValue | decimal)
 
   def property: Parser[Value] = identity ~ "." ~ identity ^^ {  case v ~ "." ~ p => PropertyValue(v,p) }

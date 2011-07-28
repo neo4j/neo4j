@@ -24,32 +24,19 @@ import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
 
 trait ReturnItems extends JavaTokenParsers with Tokens with Values {
-  def returnItem: Parser[ReturnItem] = nullablePropertyOutput | relationshipTypeOutput | propertyOutput | nodeOutput
-
-  def nodeOutput: Parser[ReturnItem] = entityValue ^^ {
-    case x => ValueReturnItem(x)
+  def returnItem: Parser[ReturnItem] = returnValues ^^ {
+    case value => ValueReturnItem(value)
   }
 
-  def propertyOutput: Parser[ReturnItem] = identity ~ "." ~ identity ^^ {
-    case c ~ "." ~ p => ValueReturnItem(PropertyValue(c,p))
-  }
-
-  def nullablePropertyOutput: Parser[ReturnItem] = identity ~ "." ~ identity ~ "?" ^^ {
-    case c ~ "." ~ p ~ "?" => ValueReturnItem(NullablePropertyValue(c, p))
-  }
-
-  def relationshipTypeOutput: Parser[ReturnItem] = identity <~ "~TYPE" ^^ {
-    case c => ValueReturnItem(RelationshipTypeValue(c))
-  }
+  def returnValues: Parser[Value] = nullableProperty | value | entityValue
 
   private def lowerCaseIdent = ident ^^ {
     case c => c.toLowerCase
   }
 
-  def aggregationValueFunction: Parser[AggregationItem] = "count" ~ "(" ~ ( nullableProperty | value | entityValue )~ ")" ^^ {
+  def aggregationValueFunction: Parser[AggregationItem] = "count" ~ "(" ~ ( returnValues )~ ")" ^^ {
     case "count" ~ "(" ~ inner ~ ")" => ValueAggregationItem(AggregationValue("count",inner))
   }
-
 
   def aggregationFunction: Parser[AggregationItem] = lowerCaseIdent ~ "(" ~ returnItem ~ ")" ^^ {
     case "min" ~ "(" ~ inner ~ ")" => Min(inner)

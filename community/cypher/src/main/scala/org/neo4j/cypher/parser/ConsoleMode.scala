@@ -22,7 +22,10 @@ package org.neo4j.cypher.parser
 import org.neo4j.cypher.commands._
 
 trait ConsoleMode extends ReturnItems {
-  override  def propertyOutput:Parser[ReturnItem] = identity ~ "." ~ identity ^^ { case c ~ "." ~ p => ValueReturnItem(NullablePropertyValue(c,p)) }
+  override def returnValues: Parser[Value] = (nullableProperty | value | entityValue) ^^ {
+    case PropertyValue(v,p) => NullablePropertyValue(v,p)
+    case x => x
+  }
 }
 
 class ConsoleCypherParser extends CypherParser with ConsoleMode {
