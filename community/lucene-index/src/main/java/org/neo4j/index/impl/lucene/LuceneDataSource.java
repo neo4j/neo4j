@@ -60,6 +60,7 @@ import org.apache.lucene.util.Version;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.ClosableIterable;
@@ -86,7 +87,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
     public static final Version LUCENE_VERSION = Version.LUCENE_31;
     public static final String DEFAULT_NAME = "lucene-index";
     public static final byte[] DEFAULT_BRANCH_ID = UTF8.encode( "162374" );
-    
+
     /**
      * Default {@link Analyzer} for fulltext parsing.
      */
@@ -98,7 +99,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         {
             return new LowerCaseFilter( LUCENE_VERSION, new WhitespaceTokenizer( LUCENE_VERSION, reader ) );
         }
-        
+
         @Override
         public String toString()
         {
@@ -120,17 +121,17 @@ public class LuceneDataSource extends LogBackedXaDataSource
             return "WHITESPACE_ANALYZER";
         }
     };
-    
+
     public static final Analyzer KEYWORD_ANALYZER = new KeywordAnalyzer();
-    
-    private final Map<IndexIdentifier,Pair<IndexWriter, AtomicBoolean>> indexWriters = 
+
+    private final Map<IndexIdentifier,Pair<IndexWriter, AtomicBoolean>> indexWriters =
         new HashMap<IndexIdentifier,Pair<IndexWriter, AtomicBoolean>>();
-    private final Map<IndexIdentifier,IndexSearcherRef> indexSearchers = 
+    private final Map<IndexIdentifier,IndexSearcherRef> indexSearchers =
         new HashMap<IndexIdentifier,IndexSearcherRef>();
 
     private final XaContainer xaContainer;
     private final String baseStorePath;
-    private ReentrantReadWriteLock lock = new ReentrantReadWriteLock(); 
+    private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     final IndexStore indexStore;
     final IndexProviderStore providerStore;
     private final IndexTypeCache typeCache;
@@ -143,12 +144,12 @@ public class LuceneDataSource extends LogBackedXaDataSource
 
     /**
      * Constructs this data source.
-     * 
+     *
      * @param params XA parameters.
      * @throws InstantiationException if the data source couldn't be
      * instantiated
      */
-    public LuceneDataSource( Map<Object,Object> params ) 
+    public LuceneDataSource( Map<Object,Object> params )
         throws InstantiationException
     {
         super( params );
@@ -172,14 +173,14 @@ public class LuceneDataSource extends LogBackedXaDataSource
                 isReadOnly = Boolean.parseBoolean( (String) readOnly );
             }
         }
-                
+
         nodeEntityType = new EntityType()
         {
             public Document newDocument( Object entityId )
             {
                 return IndexType.newBaseDocument( (Long) entityId );
             }
-            
+
             public Class<? extends PropertyContainer> getType()
             {
                 return Node.class;
@@ -219,23 +220,23 @@ public class LuceneDataSource extends LogBackedXaDataSource
                 throw new RuntimeException( "Unable to open lucene log in " +
                         this.baseStorePath, e );
             }
-            
+
             xaContainer.getLogicalLog().setKeepLogs(
                     shouldKeepLog( (String) params.get( Config.KEEP_LOGICAL_LOGS ), DEFAULT_NAME ) );
             setLogicalLogAtCreationTime( xaContainer.getLogicalLog() );
         }
     }
-    
+
     IndexType getType( IndexIdentifier identifier )
     {
         return typeCache.getIndexType( identifier );
     }
-    
+
     Map<String, String> getConfig( IndexIdentifier identifier )
     {
         return indexStore.get( identifier.entityType.getType(), identifier.indexName );
     }
-    
+
     private void cleanWriteLocks( String directory )
     {
         File dir = new File( directory );
@@ -256,7 +257,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             }
         }
     }
-    
+
     static Pair<String, Boolean> getStoreDir( String dbStoreDir )
     {
         File dir = new File( new File( dbStoreDir ), "index" );
@@ -272,7 +273,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         }
         return Pair.of( dir.getAbsolutePath(), created );
     }
-    
+
     static IndexProviderStore newIndexStore( String dbStoreDir )
     {
         File file = new File( getStoreDir( dbStoreDir ).first() + File.separator + "lucene-store.db" );
@@ -286,7 +287,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         {
             return;
         }
-        
+
         for ( IndexSearcherRef searcher : indexSearchers.values() )
         {
             try
@@ -299,7 +300,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             }
         }
         indexSearchers.clear();
-        
+
         for ( Map.Entry<IndexIdentifier, Pair<IndexWriter, AtomicBoolean>> entry : indexWriters.entrySet() )
         {
             try
@@ -312,7 +313,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             }
         }
         indexWriters.clear();
-        
+
         if ( xaContainer != null )
         {
             xaContainer.close();
@@ -327,7 +328,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         return new LuceneXaConnection( baseStorePath, xaContainer
             .getResourceManager(), getBranchId() );
     }
-    
+
     private class LuceneCommandFactory extends XaCommandFactory
     {
         LuceneCommandFactory()
@@ -336,13 +337,13 @@ public class LuceneDataSource extends LogBackedXaDataSource
         }
 
         @Override
-        public XaCommand readCommand( ReadableByteChannel channel, 
+        public XaCommand readCommand( ReadableByteChannel channel,
             ByteBuffer buffer ) throws IOException
         {
             return LuceneCommand.readCommand( channel, buffer, LuceneDataSource.this );
         }
     }
-    
+
     private class LuceneTransactionFactory extends XaTransactionFactory
     {
         @Override
@@ -372,7 +373,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         {
             return providerStore.getVersion();
         }
-        
+
         @Override
         public long getAndSetNewVersion()
         {
@@ -385,34 +386,34 @@ public class LuceneDataSource extends LogBackedXaDataSource
             return providerStore.getLastCommittedTx();
         }
     }
-    
+
     void getReadLock()
     {
         lock.readLock().lock();
     }
-    
+
     void releaseReadLock()
     {
         lock.readLock().unlock();
     }
-    
+
     void getWriteLock()
     {
         lock.writeLock().lock();
     }
-    
+
     void releaseWriteLock()
     {
         lock.writeLock().unlock();
     }
-    
+
     /**
      * If nothing has changed underneath (since the searcher was last created
      * or refreshed) {@code null} is returned. But if something has changed a
      * refreshed searcher is returned. It makes use if the
      * {@link IndexReader#reopen()} which faster than opening an index from
      * scratch.
-     * 
+     *
      * @param searcher the {@link IndexSearcher} to refresh.
      * @return a refreshed version of the searcher or, if nothing has changed,
      * {@code null}.
@@ -437,7 +438,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             throw new RuntimeException( e );
         }
     }
-    
+
     static File getFileDirectory( String storeDir, byte entityType )
     {
         File path = new File( storeDir, "lucene" );
@@ -456,24 +457,24 @@ public class LuceneDataSource extends LogBackedXaDataSource
         }
         return new File( path, extra );
     }
-    
+
     static File getFileDirectory( String storeDir, IndexIdentifier identifier )
     {
         return new File( getFileDirectory( storeDir, identifier.entityTypeByte ),
                 identifier.indexName );
     }
-    
+
     static Directory getDirectory( String storeDir,
             IndexIdentifier identifier ) throws IOException
     {
         return FSDirectory.open( getFileDirectory( storeDir, identifier) );
     }
-    
+
     static TopFieldCollector scoringCollector( Sort sorting, int n ) throws IOException
     {
         return TopFieldCollector.create( sorting, n, false, true, false, true );
     }
-    
+
     synchronized IndexSearcherRef getIndexSearcher( IndexIdentifier identifier, boolean incRef )
     {
         try
@@ -547,7 +548,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             }
         }
     }
-    
+
     private static void deleteFileOrDirectory( File file )
     {
         if ( file.exists() )
@@ -562,7 +563,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             file.delete();
         }
     }
-    
+
     synchronized IndexWriter getIndexWriter( IndexIdentifier identifier )
     {
         if ( closed ) throw new IllegalStateException( "Index has been shut down" );
@@ -572,7 +573,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
         {
             return writer.first();
         }
-        
+
         try
         {
             Directory dir = getDirectory( baseStorePath, identifier );
@@ -587,12 +588,12 @@ public class LuceneDataSource extends LogBackedXaDataSource
             }
             IndexWriter indexWriter = new IndexWriter( dir, writerConfig );
             writer = Pair.of( indexWriter, new AtomicBoolean() );
-            
+
             // TODO We should tamper with this value and see how it affects the
             // general performance. Lucene docs says rather <10 for mixed
-            // reads/writes 
+            // reads/writes
 //            writer.setMergeFactor( 8 );
-            
+
             indexWriters.put( identifier, writer );
             return writer.first();
         }
@@ -601,7 +602,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             throw new RuntimeException( e );
         }
     }
-    
+
     private boolean directoryExists( Directory dir )
     {
         try
@@ -614,7 +615,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             return false;
         }
     }
-    
+
     static Document findDocument( IndexType type, IndexSearcher searcher, long entityId )
     {
         try
@@ -631,7 +632,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             throw new RuntimeException( e );
         }
     }
-    
+
     static boolean documentIsEmpty( Document document )
     {
         List<Fieldable> fields = document.getFields();
@@ -657,7 +658,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             throw new RuntimeException( "Unable to delete for " + query + " using" + writer, e );
         }
     }
-    
+
     private synchronized void closeWriter( IndexIdentifier identifier )
     {
         try
@@ -688,13 +689,13 @@ public class LuceneDataSource extends LogBackedXaDataSource
     {
         this.caching.setCapacity( identifier, key, maxNumberOfCachedEntries );
     }
-    
+
     Integer getCacheCapacity( IndexIdentifier identifier, String key )
     {
         LruCache<String, Collection<Long>> cache = this.caching.get( identifier, key );
         return cache != null ? cache.maxSize() : null;
     }
-    
+
     void invalidateCache( IndexIdentifier identifier, String key, Object value )
     {
         LruCache<String,Collection<Long>> cache = caching.get( identifier, key );
@@ -703,52 +704,54 @@ public class LuceneDataSource extends LogBackedXaDataSource
             cache.remove( value.toString() );
         }
     }
-    
+
     void invalidateCache( IndexIdentifier identifier )
     {
         this.caching.disable( identifier );
     }
-    
+
     @Override
     public long getCreationTime()
     {
         return providerStore.getCreationTime();
     }
-    
+
     @Override
     public long getRandomIdentifier()
     {
         return providerStore.getRandomNumber();
     }
-    
+
     @Override
     public long getCurrentLogVersion()
     {
         return providerStore.getVersion();
     }
-    
+
     @Override
     public long getLastCommittedTxId()
     {
         return providerStore.getLastCommittedTx();
     }
 
+    @Override
     public void setLastCommittedTxId( long txId )
     {
         providerStore.setLastCommittedTx( txId );
     }
-    
+
     @Override
     public XaContainer getXaContainer()
     {
         return this.xaContainer;
     }
-    
+
     @Override
     public ClosableIterable<File> listStoreFiles() throws IOException
     {
         final Collection<File> files = new ArrayList<File>();
         final Collection<SnapshotDeletionPolicy> snapshots = new ArrayList<SnapshotDeletionPolicy>();
+        makeSureAllIndexesAreInstantiated();
         for ( Map.Entry<IndexIdentifier, Pair<IndexWriter, AtomicBoolean>> writer : indexWriters.entrySet() )
         {
             SnapshotDeletionPolicy deletionPolicy = (SnapshotDeletionPolicy)
@@ -784,5 +787,25 @@ public class LuceneDataSource extends LogBackedXaDataSource
                 }
             }
         };
+    }
+
+    private void makeSureAllIndexesAreInstantiated()
+    {
+        for ( String name : indexStore.getNames( Node.class ) )
+        {
+            Map<String, String> config = indexStore.get( Node.class, name );
+            if ( config.get( IndexManager.PROVIDER ).equals( LuceneIndexImplementation.SERVICE_NAME ) )
+            {
+                getIndexWriter( new IndexIdentifier( LuceneCommand.NODE, nodeEntityType, name ) );
+            }
+        }
+        for ( String name : indexStore.getNames( Relationship.class ) )
+        {
+            Map<String, String> config = indexStore.get( Relationship.class, name );
+            if ( config.get( IndexManager.PROVIDER ).equals( LuceneIndexImplementation.SERVICE_NAME ) )
+            {
+                getIndexWriter( new IndexIdentifier( LuceneCommand.RELATIONSHIP, relationshipEntityType, name ) );
+            }
+        }
     }
 }
