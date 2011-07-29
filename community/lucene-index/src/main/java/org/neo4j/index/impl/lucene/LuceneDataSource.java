@@ -44,6 +44,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -757,11 +758,25 @@ public class LuceneDataSource extends LogBackedXaDataSource
             SnapshotDeletionPolicy deletionPolicy = (SnapshotDeletionPolicy)
                     writer.getValue().first().getConfig().getIndexDeletionPolicy();
             File indexDirectory = getFileDirectory( baseStorePath, writer.getKey() );
-            for ( String fileName : deletionPolicy.snapshot( SNAPSHOT_ID ).getFileNames() )
+            try
             {
-                files.add( new File( indexDirectory, fileName ) );
+                // Throws IllegalStateException if no commits yet
+                IndexCommit commit = deletionPolicy.snapshot( SNAPSHOT_ID );
+                for ( String fileName : commit.getFileNames() )
+                {
+                    files.add( new File( indexDirectory, fileName ) );
+                }
+                snapshots.add( deletionPolicy );
             }
-            snapshots.add( deletionPolicy );
+            catch ( IllegalStateException e )
+            {
+                // TODO Review this
+                /*
+                 * This is insane but happens if we try to snapshot an existing index
+                 * that has no commits. This is a bad API design - it should return null
+                 * or something. This is not exceptional.
+                 */
+            }
         }
         files.add( providerStore.getFile() );
         return new ClosableIterable<File>()
