@@ -242,37 +242,37 @@ class CypherParserTest extends JUnitSuite {
   @Test def relatedTo() {
     testQuery(
       "start a = (1) match a -[:KNOWS]-> (b) return a, b",
-      Query(
-        Return(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))),
-        Start(NodeById("a", 1)),
-        Match(RelatedTo("a", "b", None, Some("KNOWS"), Direction.OUTGOING))))
+      Query.
+        start(NodeById("a", 1)).
+        matches(RelatedTo("a", "b", None, Some("KNOWS"), Direction.OUTGOING)).
+        RETURN(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
   }
 
   @Test def relatedToWithoutRelType() {
     testQuery(
       "start a = (1) match a --> (b) return a, b",
-      Query(
-        Return(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))),
-        Start(NodeById("a", 1)),
-        Match(RelatedTo("a", "b", None, None, Direction.OUTGOING))))
+      Query.
+        start(NodeById("a", 1)).
+        matches(RelatedTo("a", "b", None, None, Direction.OUTGOING)).
+        RETURN(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
   }
 
   @Test def relatedToWithoutRelTypeButWithRelVariable() {
     testQuery(
       "start a = (1) match a -[r]-> (b) return r",
-      Query(
-        Return(ValueReturnItem(EntityValue("r"))),
-        Start(NodeById("a", 1)),
-        Match(RelatedTo("a", "b", Some("r"), None, Direction.OUTGOING))))
+      Query.
+        start(NodeById("a", 1)).
+        matches(RelatedTo("a", "b", Some("r"), None, Direction.OUTGOING)).
+        RETURN(ValueReturnItem(EntityValue("r"))))
   }
 
   @Test def relatedToTheOtherWay() {
     testQuery(
       "start a = (1) match a <-[:KNOWS]- (b) return a, b",
-      Query(
-        Return(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))),
-        Start(NodeById("a", 1)),
-        Match(RelatedTo("a", "b", None, Some("KNOWS"), Direction.INCOMING))))
+      Query.
+        start(NodeById("a", 1)).
+        matches(RelatedTo("a", "b", None, Some("KNOWS"), Direction.INCOMING)).
+        RETURN(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
   }
 
   @Test def shouldOutputVariables() {
@@ -297,39 +297,40 @@ class CypherParserTest extends JUnitSuite {
   @Test def relatedToWithRelationOutput() {
     testQuery(
       "start a = (1) match a -[rel:KNOWS]-> (b) return rel",
-      Query(
-        Return(ValueReturnItem(EntityValue("rel"))),
-        Start(NodeById("a", 1)),
-        Match(RelatedTo("a", "b", "rel", "KNOWS", Direction.OUTGOING))))
+      Query.
+        start(NodeById("a", 1)).
+        matches(RelatedTo("a", "b", "rel", "KNOWS", Direction.OUTGOING)).
+        RETURN(ValueReturnItem(EntityValue("rel"))))
   }
 
   @Test def relatedToWithoutEndName() {
     testQuery(
       "start a = (1) match a -[:MARRIED]-> () return a",
-      Query(
-        Return(ValueReturnItem(EntityValue("a"))),
-        Start(NodeById("a", 1)),
-        Match(RelatedTo("a", "___NODE1", None, Some("MARRIED"), Direction.OUTGOING))))
+      Query.
+        start(NodeById("a", 1)).
+        matches(RelatedTo("a", "___NODE1", None, Some("MARRIED"), Direction.OUTGOING)).
+        RETURN(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def relatedInTwoSteps() {
     testQuery(
       "start a = (1) match a -[:KNOWS]-> b -[:FRIEND]-> (c) return c",
-      Query(
-        Return(ValueReturnItem(EntityValue("c"))),
-        Start(NodeById("a", 1)),
-        Match(
+      Query.
+        start(NodeById("a", 1)).
+        matches(
           RelatedTo("a", "b", None, Some("KNOWS"), Direction.OUTGOING),
-          RelatedTo("b", "c", None, Some("FRIEND"), Direction.OUTGOING))))
+          RelatedTo("b", "c", None, Some("FRIEND"), Direction.OUTGOING)).
+        RETURN(ValueReturnItem(EntityValue("c")))
+    )
   }
 
   @Test def djangoRelationshipType() {
     testQuery(
       "start a = (1) match a -[:`<<KNOWS>>`]-> b return c",
-      Query(
-        Return(ValueReturnItem(EntityValue("c"))),
-        Start(NodeById("a", 1)),
-        Match(RelatedTo("a", "b", None, Some("<<KNOWS>>"), Direction.OUTGOING))))
+      Query.
+        start(NodeById("a", 1)).
+        matches(RelatedTo("a", "b", None, Some("<<KNOWS>>"), Direction.OUTGOING)).
+        RETURN(ValueReturnItem(EntityValue("c"))))
   }
 
   @Test def countTheNumberOfHits() {
@@ -516,10 +517,10 @@ class CypherParserTest extends JUnitSuite {
     testQuery(
       "start n=(1) match n-[r]->(x) return r~TYPE",
 
-      Query(
-        Return(ValueReturnItem(RelationshipTypeValue("r"))),
-        Start(NodeById("n", 1)),
-        Match(RelatedTo("n", "x", Some("r"), None, Direction.OUTGOING))))
+      Query.
+        start(NodeById("n", 1)).
+        matches(RelatedTo("n", "x", Some("r"), None, Direction.OUTGOING)).
+        RETURN(ValueReturnItem(RelationshipTypeValue("r"))))
   }
 
   @Test def countNonNullValues() {
