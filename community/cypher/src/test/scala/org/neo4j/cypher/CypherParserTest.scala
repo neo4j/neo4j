@@ -336,61 +336,61 @@ class CypherParserTest extends JUnitSuite {
   @Test def countTheNumberOfHits() {
     testQuery(
       "start a = (1) match a --> b return a, b, count(*)",
-      Query(
-        Return(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))),
-        Start(NodeById("a", 1)),
-        Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
-        Aggregation(CountStar())))
+      Query.
+        start(NodeById("a", 1)).
+        matches(RelatedTo("a", "b", None, None, Direction.OUTGOING)).
+        aggregation(CountStar()).
+        RETURN(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
   }
 
   @Test def distinct() {
     testQuery(
       "start a = (1) match a --> b return distinct a, b",
-      Query(
-        Return(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))),
-        Start(NodeById("a", 1)),
-        Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
-        Aggregation()))
+      Query.
+        start(NodeById("a", 1)).
+        matches(RelatedTo("a", "b", None, None, Direction.OUTGOING)).
+        aggregation().
+        RETURN(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
   }
 
   @Test def sumTheAgesOfPeople() {
     testQuery(
       "start a = (1) match a --> b return a, b, sum(a.age)",
-      Query(
-        Return(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))),
-        Start(NodeById("a", 1)),
-        Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
-        Aggregation(ValueAggregationItem(Sum(PropertyValue("a", "age"))))))
+      Query.
+        start(NodeById("a", 1)).
+        matches(RelatedTo("a", "b", None, None, Direction.OUTGOING)).
+        aggregation(ValueAggregationItem(Sum(PropertyValue("a", "age")))).
+        RETURN(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
   }
 
   @Test def avgTheAgesOfPeople() {
     testQuery(
       "start a = (1) match a --> b return a, b, avg(a.age)",
-      Query(
-        Return(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))),
-        Start(NodeById("a", 1)),
-        Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
-        Aggregation(ValueAggregationItem(Avg(PropertyValue("a", "age"))))))
+      Query.
+        start(NodeById("a", 1)).
+        matches(RelatedTo("a", "b", None, None, Direction.OUTGOING)).
+        aggregation(ValueAggregationItem(Avg(PropertyValue("a", "age")))).
+        RETURN(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
   }
 
   @Test def minTheAgesOfPeople() {
     testQuery(
       "start a = (1) match (a) --> b return a, b, min(a.age)",
-      Query(
-        Return(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))),
-        Start(NodeById("a", 1)),
-        Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
-        Aggregation(ValueAggregationItem(Min(PropertyValue("a", "age"))))))
+      Query.
+        start(NodeById("a", 1)).
+        matches(RelatedTo("a", "b", None, None, Direction.OUTGOING)).
+        aggregation(ValueAggregationItem(Min(PropertyValue("a", "age")))).
+        RETURN(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
   }
 
   @Test def maxTheAgesOfPeople() {
     testQuery(
       "start a = (1) match a --> b return a, b, max(a.age)",
-      Query(
-        Return(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))),
-        Start(NodeById("a", 1)),
-        Match(RelatedTo("a", "b", None, None, Direction.OUTGOING)),
-        Aggregation(ValueAggregationItem(Max((PropertyValue("a", "age")))))))
+      Query.
+        start(NodeById("a", 1)).
+        matches(RelatedTo("a", "b", None, None, Direction.OUTGOING)).
+        aggregation(ValueAggregationItem(Max((PropertyValue("a", "age"))))).
+        RETURN(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
   }
 
   @Test def singleColumnSorting() {
@@ -479,38 +479,39 @@ class CypherParserTest extends JUnitSuite {
   @Test def limit5() {
     testQuery(
       "start n=(1) return n limit 5",
-      Query(
-        Return(ValueReturnItem(EntityValue("n"))),
-        Start(NodeById("n", 1)),
-        Slice(None, Some(5))))
+      Query.
+        start(NodeById("n", 1)).
+        limit(5).
+        RETURN(ValueReturnItem(EntityValue("n"))))
   }
 
   @Test def skip5() {
     testQuery(
       "start n=(1) return n skip 5",
-      Query(
-        Return(ValueReturnItem(EntityValue("n"))),
-        Start(NodeById("n", 1)),
-        Slice(Some(5), None)))
+      Query.
+        start(NodeById("n", 1)).
+        skip(5).
+        RETURN(ValueReturnItem(EntityValue("n"))))
   }
 
   @Test def skip5limit5() {
     testQuery(
       "start n=(1) return n skip 5 limit 5",
-      Query(
-        Return(ValueReturnItem(EntityValue("n"))),
-        Start(NodeById("n", 1)),
-        Slice(Some(5), Some(5))))
+      Query.
+        start(NodeById("n", 1)),
+      limit(5).
+        skip(5).
+        RETURN(ValueReturnItem(EntityValue("n"))))
   }
 
   @Test def relationshipType() {
     testQuery(
       "start n=(1) match n-[r]->(x) where r~TYPE = \"something\" return r",
-      Query(
-        Return(ValueReturnItem(EntityValue("r"))),
-        Start(NodeById("n", 1)),
-        Match(RelatedTo("n", "x", Some("r"), None, Direction.OUTGOING)),
-        Equals(RelationshipTypeValue("r"), Literal("something"))))
+      Query.
+        start(NodeById("n", 1)).
+        matches(RelatedTo("n", "x", Some("r"), None, Direction.OUTGOING)).
+        where(Equals(RelationshipTypeValue("r"), Literal("something"))).
+        RETURN(ValueReturnItem(EntityValue("r"))))
   }
 
   @Test def relationshipTypeOut() {
