@@ -29,6 +29,7 @@ import java.io.File;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.com.ComException;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -144,7 +145,6 @@ public class TestBackup
         { // Good
         }
         shutdownServer( server );
-
         // Just make sure incremental backup can be received properly from
         // server A, even after a failed attempt from server B
         DbRepresentation furtherRepresentation = addMoreData( serverPath );
@@ -206,6 +206,8 @@ public class TestBackup
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         node.setProperty( "myKey", "myValue" );
+        Index<Node> nodeIndex = db.index().forNodes( "db-index" );
+        nodeIndex.add( node, "myKey", "myValue" );
         db.getReferenceNode().createRelationshipTo( node,
                 DynamicRelationshipType.withName( "KNOWS" ) );
         tx.success();
@@ -218,22 +220,65 @@ public class TestBackup
     @Test
     public void multipleIncrementals() throws Exception
     {
-        GraphDatabaseService db = new EmbeddedGraphDatabase( serverPath, stringMap( ENABLE_ONLINE_BACKUP, "true" ) );
-        Index<Node> index = db.index().forNodes( "yo" );
-        OnlineBackup backup = OnlineBackup.from( "localhost" );
-        backup.full( backupPath );
-        long lastCommittedTxForLucene = getLastCommittedTx( backupPath );
-
-        for ( int i = 0; i < 5; i++ )
+        GraphDatabaseService db = null;
+        try
         {
+            db = new EmbeddedGraphDatabase( serverPath,
+                    stringMap( ENABLE_ONLINE_BACKUP, "true" ) );
+
             Transaction tx = db.beginTx();
-            Node node = db.createNode();
-            index.add( node, "key", "value" + i );
-            tx.success(); tx.finish();
-            backup.incremental( backupPath );
-            assertEquals( lastCommittedTxForLucene+i+1, getLastCommittedTx( backupPath ) );
+            Index<Node> index = db.index().forNodes( "yo" );
+            index.add( db.createNode(), "justTo", "commitATx" );
+            tx.success();
+            tx.finish();
+
+            OnlineBackup backup = OnlineBackup.from( "localhost" );
+            backup.full( backupPath );
+            long lastCommittedTxForLucene = getLastCommittedTx( backupPath );
+
+            for ( int i = 0; i < 5; i++ )
+            {
+                tx = db.beginTx();
+                Node node = db.createNode();
+                index.add( node, "key", "value" + i );
+                tx.success();
+                tx.finish();
+                backup.incremental( backupPath );
+                assertEquals( lastCommittedTxForLucene + i + 1,
+                        getLastCommittedTx( backupPath ) );
+            }
         }
-        db.shutdown();
+        finally
+        {
+            if ( db != null )
+            {
+                db.shutdown();
+            }
+        }
+    }
+
+    @Test
+    @Ignore
+    public void backupIndexWithNoCommits() throws Exception
+    {
+        GraphDatabaseService db = null;
+        try
+        {
+            db = new EmbeddedGraphDatabase( serverPath,
+                    stringMap( ENABLE_ONLINE_BACKUP, "true" ) );
+
+            db.index().forNodes( "created-no-commits" );
+
+            OnlineBackup backup = OnlineBackup.from( "localhost" );
+            backup.full( backupPath );
+        }
+        finally
+        {
+            if ( db != null )
+            {
+                db.shutdown();
+            }
+        }
     }
 
     private long getLastCommittedTx( String path )
