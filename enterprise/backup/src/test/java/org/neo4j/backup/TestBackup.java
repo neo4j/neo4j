@@ -29,7 +29,6 @@ import java.io.File;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.com.ComException;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -258,7 +257,7 @@ public class TestBackup
     }
 
     @Test
-    @Ignore
+    // @Ignore
     public void backupIndexWithNoCommits() throws Exception
     {
         GraphDatabaseService db = null;
