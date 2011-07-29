@@ -23,14 +23,20 @@ import commands.{UnboundIdentifier, Identifier}
 import scala.Some
 
 class SymbolTable(val identifiers: Set[Identifier]) {
-  def this(identifier:Identifier)=this(Set(identifier))
-  def this(data:Seq[Identifier])=this(data.toSet)
-  def this() = this(Set[Identifier]())
-  def this(other:SymbolTable) = this(other.identifiers)
+  def this(identifier: Identifier) = this (Set(identifier))
 
-  def assertHas(name: String) {
-    if (get(name).isEmpty) {
-      throw new SyntaxException("Unknown identifier \"" + name + "\".")
+  def this(data: Seq[Identifier]) = this (data.toSet)
+
+  def this() = this (Set[Identifier]())
+
+  def this(other: SymbolTable) = this (other.identifiers)
+
+  def assertHas(expected: Identifier) {
+    val name = expected.name
+
+    val actual = getOrElse(name, () => throw new SyntaxException("Unknown identifier \"" + name + "\"."))
+    if (!expected.getClass.isAssignableFrom(actual.getClass)) {
+      throw new SyntaxException("Expected " + name + " to be of class " + expected.getClass + " but it was " + actual.getClass)
     }
   }
 
@@ -38,7 +44,15 @@ class SymbolTable(val identifiers: Set[Identifier]) {
 
   def get(name: String): Option[Identifier] = identifiers.find(_.name == name)
 
-  def merge(other: SymbolTable) : Set[Identifier] = {
+  def getOrElse(name: String, f: () => Identifier): Identifier = {
+    val option = get(name)
+    option match {
+      case Some(id) => id
+      case None => f()
+    }
+  }
+
+  def merge(other: SymbolTable): Set[Identifier] = {
     def handleUnmatched(newIdentifier: Identifier): Identifier = {
       newIdentifier match {
         case UnboundIdentifier(_, _) => throw new SyntaxException("Unbound Identifier " + newIdentifier + " not resolved!")
@@ -51,7 +65,7 @@ class SymbolTable(val identifiers: Set[Identifier]) {
         case UnboundIdentifier(name, None) => existingIdentifier
         case UnboundIdentifier(name, Some(wrapped)) => wrapped
         case _ => {
-          if (newIdentifier.getClass == existingIdentifier.getClass) {
+          if (newIdentifier.getClass.isAssignableFrom(existingIdentifier.getClass)) {
             existingIdentifier
           } else {
             throw new SyntaxException("Identifier " + existingIdentifier + " already defined with different type " + newIdentifier)
@@ -61,10 +75,12 @@ class SymbolTable(val identifiers: Set[Identifier]) {
     }
 
     identifiers ++
-    other.identifiers.map( newIdentifier => {
+      other.identifiers.map(newIdentifier => {
         get(newIdentifier.name) match {
           case None => handleUnmatched(newIdentifier)
-          case Some(existingIdentifier) => handleMatched(newIdentifier, existingIdentifier) } } )
+          case Some(existingIdentifier) => handleMatched(newIdentifier, existingIdentifier)
+        }
+      })
   }
 
   def ++(other: SymbolTable): SymbolTable = {

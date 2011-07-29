@@ -32,7 +32,7 @@ class SematicErrorTest extends ExecutionEngineTestBase {
       Return(ValueReturnItem(EntityValue("bar"))),
       Start(NodeById("foo", node.getId)))
 
-    expectedError(query, """Unbound Identifier UnboundIdentifier(bar,None) not resolved!""")
+    expectedError(query, """Unknown identifier "bar".""")
   }
 
   @Test def throwOnDisconnectedPattern() {

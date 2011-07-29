@@ -90,7 +90,7 @@ case class PropertyValue(entity: String, property: String) extends Value {
   def identifier: Identifier = PropertyIdentifier(entity, property)
 
   def checkAvailable(symbols: SymbolTable) {
-    symbols.assertHas(entity)
+    symbols.assertHas(PropertyContainerIdentifier(entity))
   }
 }
 
@@ -100,16 +100,16 @@ case class RelationshipTypeValue(relationship: String) extends Value {
   def identifier: Identifier = RelationshipTypeIdentifier(relationship)
 
   def checkAvailable(symbols: SymbolTable) {
-    symbols.assertHas(relationship)
+    symbols.assertHas(RelationshipIdentifier(relationship))
   }
 }
 
 case class EntityValue(entityName:String) extends Value {
   def apply(m: Map[String, Any]): Any = m.getOrElse(entityName, throw new NotFoundException)
 
-  def identifier: Identifier = UnboundIdentifier(entityName, None)
+  def identifier: Identifier = PropertyContainerIdentifier(entityName)
 
   def checkAvailable(symbols: SymbolTable) {
-     symbols.assertHas(entityName)
+     symbols.assertHas(PropertyContainerIdentifier(entityName))
   }
 }

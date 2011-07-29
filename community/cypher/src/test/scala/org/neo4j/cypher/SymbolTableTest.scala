@@ -53,30 +53,49 @@ class SymbolTableTest extends JUnitSuite {
 
   @Test def shouldResolveUnboundIdentifiers() {
     val table1 = new SymbolTable(NodeIdentifier("x"))
-    val table2 = new SymbolTable(UnboundIdentifier("x",None))
+    val table2 = new SymbolTable(UnboundIdentifier("x", None))
 
     val result = table1 ++ table2
 
     assertEquals(Set(NodeIdentifier("x")), result.identifiers)
   }
+
   @Test def shouldResolveUnboundConcreteIdentifiers() {
     val table1 = new SymbolTable(NodeIdentifier("x"))
-    val table2 = new SymbolTable(UnboundIdentifier("x",Some(PropertyIdentifier("x","name"))))
+    val table2 = new SymbolTable(UnboundIdentifier("x", Some(PropertyIdentifier("x", "name"))))
 
     val result = table1 ++ table2
 
-    assertEquals(Set(NodeIdentifier("x"),PropertyIdentifier("x","name")), result.identifiers)
+    assertEquals(Set(NodeIdentifier("x"), PropertyIdentifier("x", "name")), result.identifiers)
   }
+
   @Test(expected = classOf[SyntaxException]) def shouldFailForUnboundConcreteIdentifiers() {
     val table1 = new SymbolTable()
-    val table2 = new SymbolTable(UnboundIdentifier("x",Some(PropertyIdentifier("x","name"))))
+    val table2 = new SymbolTable(UnboundIdentifier("x", Some(PropertyIdentifier("x", "name"))))
 
     table1 ++ table2
   }
+
   @Test(expected = classOf[SyntaxException]) def shouldFailForUnbound() {
     val table1 = new SymbolTable()
-    val table2 = new SymbolTable(UnboundIdentifier("x",None))
+    val table2 = new SymbolTable(UnboundIdentifier("x", None))
 
     table1 ++ table2
+  }
+
+
+  @Test(expected = classOf[SyntaxException]) def shouldFailWhenExpectingAPropertyContainer() {
+    val table = new SymbolTable(LiteralIdentifier("x"))
+    table.assertHas(PropertyContainerIdentifier("x"))
+  }
+
+  @Test def shouldFindAMatchingIdentifier() {
+    val table = new SymbolTable(NodeIdentifier("x"))
+    table.assertHas(PropertyContainerIdentifier("x"))
+  }
+
+  @Test def shouldFindTheConcreteIdentifier() {
+    val table = new SymbolTable(LiteralIdentifier("x"))
+    table.assertHas(LiteralIdentifier("x"))
   }
 }

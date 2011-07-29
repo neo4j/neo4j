@@ -21,6 +21,7 @@ package org.neo4j.cypher.commands
 
 import org.neo4j.cypher.pipes.Pipe
 import org.neo4j.cypher.pipes.aggregation._
+
 abstract sealed class ReturnItem(val identifier: Identifier) extends (Map[String, Any] => Any) {
   def assertDependencies(source: Pipe)
 
