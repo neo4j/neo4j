@@ -524,10 +524,10 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val n2 = createNode(Map("x" -> 33))
     val n3 = createNode(Map("x" -> 42))
 
-    val query = Query(
-      Return(ValueReturnItem(PropertyValue("node", "x"))),
-      Start(NodeById("node", n1.getId, n2.getId, n3.getId)),
-      Aggregation(CountStar()))
+    val query = Query.
+      start(NodeById("node", n1.getId, n2.getId, n3.getId)).
+      aggregation(CountStar()).
+      RETURN(ValueReturnItem(PropertyValue("node", "x")))
 
     val result = execute(query)
 
@@ -539,10 +539,10 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val n2 = createNode(Map("y" -> "a"))
     val n3 = createNode(Map("y" -> "b", "x" -> 42))
 
-    val query = Query(
-      Return(ValueReturnItem(PropertyValue("node", "y"))),
-      Start(NodeById("node", n1.getId, n2.getId, n3.getId)),
-      Aggregation(ValueAggregationItem(Count(NullablePropertyValue("node", "x")))))
+    val query = Query.
+      start(NodeById("node", n1.getId, n2.getId, n3.getId)).
+      aggregation(ValueAggregationItem(Count(NullablePropertyValue("node", "x")))).
+      RETURN(ValueReturnItem(PropertyValue("node", "y")))
 
     val result = execute(query)
 
@@ -558,10 +558,10 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val n2 = createNode(Map("y" -> "a"))
     val n3 = createNode(Map("y" -> "a", "x" -> 42))
 
-    val query = Query(
-      Return(ValueReturnItem(PropertyValue("node", "y"))),
-      Start(NodeById("node", n1.getId, n2.getId, n3.getId)),
-      Aggregation(ValueAggregationItem(Sum(NullablePropertyValue("node", "x")))))
+    val query = Query.
+      start(NodeById("node", n1.getId, n2.getId, n3.getId)).
+      aggregation(ValueAggregationItem(Sum(NullablePropertyValue("node", "x")))).
+      RETURN(ValueReturnItem(PropertyValue("node", "y")))
 
     val result = execute(query)
 

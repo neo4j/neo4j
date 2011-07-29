@@ -526,10 +526,11 @@ class CypherParserTest extends JUnitSuite {
   @Test def countNonNullValues() {
     testQuery(
       "start a = (1) return a, count(a)",
-      Query(
-        Return(ValueReturnItem(EntityValue("a"))),
-        Start(NodeById("a", 1)),
-        Aggregation(ValueAggregationItem(Count(EntityValue("a"))))))
+      Query.
+        start(NodeById("a", 1)).
+        aggregation(ValueAggregationItem(Count(EntityValue("a")))).
+        RETURN(ValueReturnItem(EntityValue("a"))))
+
   }
 
   @Test def shouldBeAbleToHandleStringLiteralsWithApostrophe() {
