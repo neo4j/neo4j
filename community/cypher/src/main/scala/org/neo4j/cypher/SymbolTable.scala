@@ -53,34 +53,32 @@ class SymbolTable(val identifiers: Set[Identifier]) {
   }
 
   def merge(other: SymbolTable): Set[Identifier] = {
-    def handleUnmatched(newIdentifier: Identifier): Identifier = {
-      newIdentifier match {
-        case UnboundIdentifier(_, _) => throw new SyntaxException("Unbound Identifier " + newIdentifier + " not resolved!")
-        case _ => newIdentifier
+    val matchedIdentifiers = other.identifiers.map(newIdentifier => get(newIdentifier.name) match {
+      case None => handleUnmatched(newIdentifier)
+      case Some(existingIdentifier) => handleMatched(newIdentifier, existingIdentifier)
+    })
+
+    identifiers ++ matchedIdentifiers
+  }
+
+  private def handleMatched(newIdentifier: Identifier, existingIdentifier: Identifier): Identifier = {
+    newIdentifier match {
+      case UnboundIdentifier(name, None) => existingIdentifier
+      case UnboundIdentifier(name, Some(wrapped)) => wrapped
+      case _ => if (newIdentifier.getClass.isAssignableFrom(existingIdentifier.getClass)) {
+        existingIdentifier
+      } else {
+        throw new SyntaxException("Identifier " + existingIdentifier + " already defined with different type " + newIdentifier)
       }
     }
+  }
 
-    def handleMatched(newIdentifier: Identifier, existingIdentifier: Identifier): Identifier = {
-      newIdentifier match {
-        case UnboundIdentifier(name, None) => existingIdentifier
-        case UnboundIdentifier(name, Some(wrapped)) => wrapped
-        case _ => {
-          if (newIdentifier.getClass.isAssignableFrom(existingIdentifier.getClass)) {
-            existingIdentifier
-          } else {
-            throw new SyntaxException("Identifier " + existingIdentifier + " already defined with different type " + newIdentifier)
-          }
-        }
-      }
+
+  private def handleUnmatched(newIdentifier: Identifier): Identifier = {
+    newIdentifier match {
+      case UnboundIdentifier(_, _) => throw new SyntaxException("Unbound Identifier " + newIdentifier + " not resolved!")
+      case _ => newIdentifier
     }
-
-    identifiers ++
-      other.identifiers.map(newIdentifier => {
-        get(newIdentifier.name) match {
-          case None => handleUnmatched(newIdentifier)
-          case Some(existingIdentifier) => handleMatched(newIdentifier, existingIdentifier)
-        }
-      })
   }
 
   def ++(other: SymbolTable): SymbolTable = {
