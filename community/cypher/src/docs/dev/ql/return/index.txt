@@ -11,4 +11,5 @@ include::relationship-type.txt[]
 include::return-property.txt[]
 include::identifier-with-uncommon-characters.txt[]
 include::optional-properties.txt[]
+include::unique-results.txt[]
 
