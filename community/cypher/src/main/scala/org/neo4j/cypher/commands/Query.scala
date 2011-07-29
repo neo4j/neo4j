@@ -20,41 +20,31 @@
 package org.neo4j.cypher.commands
 
 
-
 object Query {
-  def apply(returns:Return, start:Start, where:Clause) = new Query(returns, start, None, Some(where), None, None, None)
-  def apply(returns:Return, start:Start, aggregation:Aggregation) = new Query(returns, start, None, None, Some(aggregation), None, None)
-  def apply(returns:Return, start:Start, sort:Sort) = new Query(returns, start, None, None, None, Some(sort), None)
+  def apply(returns: Return, start: Start, where: Clause) = new Query(returns, start, None, Some(where), None, None, None)
 
-  def apply(returns:Return, start:Start, aggregation:Aggregation, sort:Sort) = new Query(returns, start, None, None, Some(aggregation), Some(sort), None)
+  def apply(returns: Return, start: Start, aggregation: Aggregation) = new Query(returns, start, None, None, Some(aggregation), None, None)
+
+  def apply(returns: Return, start: Start, sort: Sort) = new Query(returns, start, None, None, None, Some(sort), None)
+
+  def apply(returns: Return, start: Start, aggregation: Aggregation, sort: Sort) = new Query(returns, start, None, None, Some(aggregation), Some(sort), None)
 
 
-  def apply(returns:Return, start:Start, matching:Match, where:Clause) = new Query(returns, start, Some(matching), Some(where), None, None, None)
-  def apply(returns:Return, start:Start, matching:Match, aggregation:Aggregation) = new Query(returns, start, Some(matching), None, Some(aggregation), None, None)
+  def apply(returns: Return, start: Start, matching: Match, where: Clause) = new Query(returns, start, Some(matching), Some(where), None, None, None)
 
-  def apply(returns:Return, start:Start, slice:Slice) = new Query(returns, start, None, None, None, None, Some(slice))
-  def apply(returns:Return, start:Start, sort:Sort, slice:Slice) = new Query(returns, start, None, None, None, Some(sort), Some(slice))
+  def apply(returns: Return, start: Start, matching: Match, aggregation: Aggregation) = new Query(returns, start, Some(matching), None, Some(aggregation), None, None)
 
-  def start(startItems:StartItem*) = new QueryBuilder(startItems)
+  def apply(returns: Return, start: Start, slice: Slice) = new Query(returns, start, None, None, None, None, Some(slice))
+
+  def apply(returns: Return, start: Start, sort: Sort, slice: Slice) = new Query(returns, start, None, None, None, Some(sort), Some(slice))
+
+  def start(startItems: StartItem*) = new QueryBuilder(startItems)
 }
 
-class QueryBuilder(startItems:Seq[StartItem]) {
-  var matching : Option[Match] = None
-  var where : Option[Clause] = None
-  var aggregation : Option[Aggregation] = None
-  var orderBy : Option[Sort] = None
-  var slice : Option[Slice] = None
 
-  def matches(patterns:Pattern*) : QueryBuilder = {
-    matching = Some(Match(patterns:_*))
-    this
-  }
 
-  def RETURN(returnItems:ReturnItem*) : Query = Query(Return(returnItems:_*), Start(startItems:_*), matching, where, aggregation, orderBy, slice)
-}
-
-case class Query(returns: Return, start: Start, matching:Option[Match], where: Option[Clause], aggregation: Option[Aggregation],
-                 sort:Option[Sort], slice:Option[Slice])
+case class Query(returns: Return, start: Start, matching: Option[Match], where: Option[Clause], aggregation: Option[Aggregation],
+                 sort: Option[Sort], slice: Option[Slice])
 
 case class Return(returnItems: ReturnItem*)
 
@@ -62,8 +52,8 @@ case class Start(startItems: StartItem*)
 
 case class Match(patterns: Pattern*)
 
-case class Aggregation(aggregationItems:AggregationItem*)
+case class Aggregation(aggregationItems: AggregationItem*)
 
-case class Sort(sortItems:SortItem*)
+case class Sort(sortItems: SortItem*)
 
-case class Slice(from:Option[Int], limit:Option[Int])
+case class Slice(from: Option[Int], limit: Option[Int])
