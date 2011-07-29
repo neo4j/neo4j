@@ -196,6 +196,7 @@ public class DbRepresentation implements Serializable
             result += properties.hashCode()*7;
             result += outRelationships.hashCode()*13;
             result += myId * 17;
+            result += index.hashCode() * 19;
             return result;
         }
 
