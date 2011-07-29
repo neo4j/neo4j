@@ -30,7 +30,7 @@ class CypherParserTest extends JUnitSuite {
   def testQuery(query: String, expectedQuery: Query) {
     val parser = new CypherParser()
 
-    try{
+    try {
       val executionTree = parser.parse(query)
 
       assertEquals(expectedQuery, executionTree)
@@ -43,68 +43,67 @@ class CypherParserTest extends JUnitSuite {
   }
 
   @Test def shouldParseEasiestPossibleQuery() {
-    testQuery(
-      "start s = (1) return s",
-      Query(
-        Return(ValueReturnItem(EntityValue("s"))),
-        Start(NodeById("s", 1))))
+    val q = Query.
+      start(NodeById("s", 1)).
+      RETURN(ValueReturnItem(EntityValue("s")))
+    testQuery("start s = (1) return s", q)
   }
 
   @Test def sourceIsAnIndex() {
     testQuery(
       """start a = (index, key, "value") return a""",
-      Query(
-        Return(ValueReturnItem(EntityValue("a"))),
-        Start(NodeByIndex("a", "index", "key", "value"))))
+      Query.
+        start(NodeByIndex("a", "index", "key", "value")).
+        RETURN(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def sourceIsAnIndexQuery() {
     testQuery(
       """start a = (index, "key:value") return a""",
-      Query(
-        Return(ValueReturnItem(EntityValue("a"))),
-        Start(NodeByIndexQuery("a", "index", "key:value"))))
+      Query.
+        start(NodeByIndexQuery("a", "index", "key:value")).
+        RETURN(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def shouldParseEasiestPossibleRelationshipQuery() {
     testQuery(
       "start s = <1> return s",
-      Query(
-        Return(ValueReturnItem(EntityValue("s"))),
-        Start(RelationshipById("s", 1))))
+      Query.
+        start(RelationshipById("s", 1)).
+        RETURN(ValueReturnItem(EntityValue("s"))))
   }
 
   @Test def sourceIsARelationshipIndex() {
     testQuery(
       """start a = <index, key, "value"> return a""",
-      Query(
-        Return(ValueReturnItem(EntityValue("a"))),
-        Start(RelationshipByIndex("a", "index", "key", "value"))))
+      Query.
+        start(RelationshipByIndex("a", "index", "key", "value")).
+        RETURN(ValueReturnItem(EntityValue("a"))))
   }
 
 
   @Test def keywordsShouldBeCaseInsensitive() {
     testQuery(
       "START s = (1) RETURN s",
-      Query(
-        Return(ValueReturnItem(EntityValue("s"))),
-        Start(NodeById("s", 1))))
+      Query.
+        start(NodeById("s", 1)).
+        RETURN(ValueReturnItem(EntityValue("s"))))
   }
 
   @Test def shouldParseMultipleNodes() {
     testQuery(
       "start s = (1,2,3) return s",
-      Query(
-        Return(ValueReturnItem(EntityValue("s"))),
-        Start(NodeById("s", 1, 2, 3))))
+      Query.
+        start(NodeById("s", 1, 2, 3)).
+        RETURN(ValueReturnItem(EntityValue("s"))))
   }
 
   @Test def shouldParseMultipleInputs() {
     testQuery(
       "start a = (1), b = (2) return a,b",
-      Query(
-        Return(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))),
-        Start(NodeById("a", 1), NodeById("b", 2))))
+      Query.
+        start(NodeById("a", 1), NodeById("b", 2)).
+        RETURN(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
   }
 
   @Test def shouldFilterOnProp() {
@@ -279,9 +278,9 @@ class CypherParserTest extends JUnitSuite {
   @Test def shouldOutputVariables() {
     testQuery(
       "start a = (1) return a.name",
-      Query(
-        Return(ValueReturnItem(PropertyValue("a", "name"))),
-        Start(NodeById("a", 1))))
+      Query.
+        start(NodeById("a", 1)).
+        RETURN(ValueReturnItem(PropertyValue("a", "name"))))
   }
 
   @Test def shouldHandleAndClauses() {
@@ -343,7 +342,7 @@ class CypherParserTest extends JUnitSuite {
         Aggregation(CountStar())))
   }
 
-    @Test def distinct() {
+  @Test def distinct() {
     testQuery(
       "start a = (1) match a --> b return distinct a, b",
       Query(
@@ -456,9 +455,9 @@ class CypherParserTest extends JUnitSuite {
   @Test def nullableProperty() {
     testQuery(
       "start a = (1) return a.name?",
-      Query(
-        Return(ValueReturnItem(NullablePropertyValue("a", "name"))),
-        Start(NodeById("a", 1))))
+      Query.
+        start(NodeById("a", 1)).
+        RETURN(ValueReturnItem(NullablePropertyValue("a", "name"))))
   }
 
   @Test def nestedBooleanOperatorsAndParentesis() {
@@ -535,17 +534,17 @@ class CypherParserTest extends JUnitSuite {
   @Test def shouldBeAbleToHandleStringLiteralsWithApostrophe() {
     testQuery(
       "start a = (index, key, 'value') return a",
-      Query(
-        Return(ValueReturnItem(EntityValue("a"))),
-        Start(NodeByIndex("a", "index", "key", "value"))))
+      Query.
+        start(NodeByIndex("a", "index", "key", "value")).
+        RETURN(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def shouldHandleQuotationsInsideApostrophes() {
     testQuery(
       "start a = (index, key, 'val\"ue') return a",
-      Query(
-        Return(ValueReturnItem(EntityValue("a"))),
-        Start(NodeByIndex("a", "index", "key", "val\"ue"))))
+      Query.
+        start(NodeByIndex("a", "index", "key", "val\"ue")).
+        RETURN(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def consoleModeParserShouldOutputNullableProperties() {
@@ -553,9 +552,10 @@ class CypherParserTest extends JUnitSuite {
     val parser = new ConsoleCypherParser()
     val executionTree = parser.parse(query)
 
-    assertEquals(Query(
-      Return(ValueReturnItem(NullablePropertyValue("a", "name"))),
-      Start(NodeById("a", 1))),
+    assertEquals(
+      Query.
+        start(NodeById("a", 1)).
+        RETURN(ValueReturnItem(NullablePropertyValue("a", "name"))),
       executionTree)
   }
 

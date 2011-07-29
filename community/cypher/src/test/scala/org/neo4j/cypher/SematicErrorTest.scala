@@ -28,9 +28,9 @@ class SematicErrorTest extends ExecutionEngineTestBase {
   @Test def returnNodeThatsNotThere() {
     val node: Node = createNode()
 
-    val query = Query(
-      Return(ValueReturnItem(EntityValue("bar"))),
-      Start(NodeById("foo", node.getId)))
+    val query = Query.
+      start(NodeById("foo", node.getId)).
+      RETURN(ValueReturnItem(EntityValue("bar")))
 
     expectedError(query, """Unknown identifier "bar".""")
   }

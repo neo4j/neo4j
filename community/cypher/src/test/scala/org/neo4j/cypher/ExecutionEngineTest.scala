@@ -31,9 +31,9 @@ import org.neo4j.graphdb.{Relationship, Direction, Node}
 class ExecutionEngineTest extends ExecutionEngineTestBase {
 
   @Test def shouldGetReferenceNode() {
-    val query = Query(
-      Return(ValueReturnItem(EntityValue("node"))),
-      Start(NodeById("node", 0)))
+    val query = Query.
+      start(NodeById("node", 0)).
+      RETURN(ValueReturnItem(EntityValue("node")))
 
     val result = execute(query)
     assertEquals(List(refNode), result.columnAs[Node]("node").toList)
@@ -66,9 +66,9 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
   @Test def shouldGetOtherNode() {
     val node: Node = createNode()
 
-    val query = Query(
-      Return(ValueReturnItem(EntityValue("node"))),
-      Start(NodeById("node", node.getId)))
+    val query = Query.
+      start(NodeById("node", node.getId)).
+      RETURN(ValueReturnItem(EntityValue("node")))
 
     val result = execute(query)
     assertEquals(List(node), result.columnAs[Node]("node").toList)
@@ -79,9 +79,9 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val node: Node = createNode()
     val rel: Relationship = relate(refNode, node, "yo")
 
-    val query = Query(
-      Return(ValueReturnItem(EntityValue("rel"))),
-      Start(RelationshipById("rel", rel.getId)))
+    val query = Query.
+      start(RelationshipById("rel", rel.getId)).
+      RETURN(ValueReturnItem(EntityValue("rel")))
 
     val result = execute(query)
     assertEquals(List(rel), result.columnAs[Relationship]("rel").toList)
@@ -90,9 +90,9 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
   @Test def shouldGetTwoNodes() {
     val node: Node = createNode()
 
-    val query = Query(
-      Return(ValueReturnItem(EntityValue("node"))),
-      Start(NodeById("node", refNode.getId, node.getId)))
+    val query = Query.
+      start(NodeById("node", refNode.getId, node.getId)).
+      RETURN(ValueReturnItem(EntityValue("node")))
 
     val result = execute(query)
     assertEquals(List(refNode, node), result.columnAs[Node]("node").toList)
@@ -102,9 +102,9 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val name = "Andres"
     val node: Node = createNode(Map("name" -> name))
 
-    val query = Query(
-      Return(ValueReturnItem(PropertyValue("node", "name"))),
-      Start(NodeById("node", node.getId)))
+    val query = Query.
+      start(NodeById("node", node.getId)).
+      RETURN(ValueReturnItem(PropertyValue("node", "name")))
 
     val result = execute(query)
     val list = result.columnAs[String]("node.name").toList
@@ -151,11 +151,9 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val n1: Node = createNode()
     val n2: Node = createNode()
 
-    val query = Query(
-      Return(ValueReturnItem(EntityValue("n1")), ValueReturnItem(EntityValue("n2"))),
-      Start(
-        NodeById("n1", n1.getId),
-        NodeById("n2", n2.getId)))
+    val query = Query.
+      start(NodeById("n1", n1.getId), NodeById("n2", n2.getId)).
+      RETURN(ValueReturnItem(EntityValue("n1")), ValueReturnItem(EntityValue("n2")))
 
     val result = execute(query)
 
@@ -250,9 +248,9 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val value = "andres"
     indexNode(n, idxName, key, value)
 
-    val query = Query(
-      Return(ValueReturnItem(EntityValue("n"))),
-      Start(NodeByIndex("n", idxName, key, value)))
+    val query = Query.
+      start(NodeByIndex("n", idxName, key, value)).
+      RETURN(ValueReturnItem(EntityValue("n")))
 
     val result = execute(query)
 
@@ -266,9 +264,9 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val value = "andres"
     indexNode(n, idxName, key, value)
 
-    val query = Query(
-      Return(ValueReturnItem(EntityValue("n"))),
-      Start(NodeByIndexQuery("n", idxName, key + ":" + value)))
+    val query = Query.
+      start(NodeByIndexQuery("n", idxName, key + ":" + value)).
+      RETURN(ValueReturnItem(EntityValue("n")))
 
     val result = execute(query)
 
@@ -282,9 +280,9 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val value = "andres"
     indexNode(n, idxName, key, value)
 
-    val query = Query(
-      Return(ValueReturnItem(EntityValue("n"))),
-      Start(NodeByIndexQuery("n", idxName, key + ":andr*")))
+    val query = Query.
+      start(NodeByIndexQuery("n", idxName, key + ":andr*")).
+      RETURN(ValueReturnItem(EntityValue("n")))
 
     val result = execute(query)
 
@@ -330,9 +328,9 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
   }
 
   @Test def shouldBeAbleToOutputNullForMissingProperties() {
-    val query = Query(
-      Return(ValueReturnItem(NullablePropertyValue("node", "name"))),
-      Start(NodeById("node", 0)))
+    val query = Query.
+      start(NodeById("node", 0)).
+      RETURN(ValueReturnItem(NullablePropertyValue("node", "name")))
 
     val result = execute(query)
     assertEquals(List(Map("node.name" -> null)), result.toList)
