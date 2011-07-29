@@ -498,8 +498,8 @@ class CypherParserTest extends JUnitSuite {
     testQuery(
       "start n=(1) return n skip 5 limit 5",
       Query.
-        start(NodeById("n", 1)),
-      limit(5).
+        start(NodeById("n", 1)).
+        limit(5).
         skip(5).
         RETURN(ValueReturnItem(EntityValue("n"))))
   }
