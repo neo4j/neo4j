@@ -40,11 +40,11 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
   }
 
   @Test def shouldFilterOnGreaterThan() {
-    val query = Query(
-      Return(ValueReturnItem(EntityValue("node"))),
-      Start(NodeById("node", 0)),
-      LessThan(Literal(0), Literal(1))
-    )
+    val query = Query.
+      start(NodeById("node", 0)).
+      where(LessThan(Literal(0), Literal(1))).
+      RETURN(ValueReturnItem(EntityValue("node")))
+
 
     val result = execute(query)
     assertEquals(List(refNode), result.columnAs[Node]("node").toList)
@@ -53,11 +53,10 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
   @Test def shouldFilterOnRegexp() {
     val n1 = createNode(Map("name" -> "Andres"))
     val n2 = createNode(Map("name" -> "Jim"))
-    val query = Query(
-      Return(ValueReturnItem(EntityValue("node"))),
-      Start(NodeById("node", n1.getId, n2.getId)),
-      RegularExpression(PropertyValue("node", "name"), "And.*")
-    )
+    val query = Query.
+      start(NodeById("node", n1.getId, n2.getId)).
+      where(RegularExpression(PropertyValue("node", "name"), "And.*")).
+      RETURN(ValueReturnItem(EntityValue("node")))
 
     val result = execute(query)
     assertEquals(List(n1), result.columnAs[Node]("node").toList)
@@ -212,10 +211,10 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
   }
 
   @Test def doesNotFailOnVisualizingEmptyOutput() {
-    val query = Query(
-      Return(ValueReturnItem(EntityValue("start"))),
-      Start(NodeById("start", refNode.getId)),
-      Equals(Literal(1), Literal(0)))
+    val query = Query.
+      start(NodeById("start", refNode.getId)).
+      where(Equals(Literal(1), Literal(0))).
+      RETURN(ValueReturnItem(EntityValue("start")))
 
     val result = execute(query)
 
@@ -293,12 +292,12 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val n1 = createNode(Map("name" -> "boy"))
     val n2 = createNode(Map("name" -> "girl"))
 
-    val query = Query(
-      Return(ValueReturnItem(EntityValue("n"))),
-      Start(NodeById("n", n1.getId, n2.getId)),
-      Or(
-        Equals(PropertyValue("n", "name"), Literal("boy")),
-        Equals(PropertyValue("n", "name"), Literal("girl"))))
+    val query = Query.
+      start(NodeById("n", n1.getId, n2.getId)).
+      where(Or(
+      Equals(PropertyValue("n", "name"), Literal("boy")),
+      Equals(PropertyValue("n", "name"), Literal("girl")))).
+      RETURN(ValueReturnItem(EntityValue("n")))
 
     val result = execute(query)
 
@@ -311,16 +310,16 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val n2 = createNode(Map("animal" -> "cow", "food" -> "grass"))
     val n3 = createNode(Map("animal" -> "cow", "food" -> "banana"))
 
-    val query = Query(
-      Return(ValueReturnItem(EntityValue("n"))),
-      Start(NodeById("n", n1.getId, n2.getId, n3.getId)),
-      Or(
-        And(
-          Equals(PropertyValue("n", "animal"), Literal("monkey")),
-          Equals(PropertyValue("n", "food"), Literal("banana"))),
-        And(
-          Equals(PropertyValue("n", "animal"), Literal("cow")),
-          Equals(PropertyValue("n", "food"), Literal("grass")))))
+    val query = Query.
+      start(NodeById("n", n1.getId, n2.getId, n3.getId)).
+      where(Or(
+      And(
+        Equals(PropertyValue("n", "animal"), Literal("monkey")),
+        Equals(PropertyValue("n", "food"), Literal("banana"))),
+      And(
+        Equals(PropertyValue("n", "animal"), Literal("cow")),
+        Equals(PropertyValue("n", "food"), Literal("grass"))))).
+      RETURN(ValueReturnItem(EntityValue("n")))
 
     val result = execute(query)
 
@@ -370,10 +369,10 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val n4 = createNode(Map("x" -> 50d))
     val n5 = createNode(Map("x" -> 50.toByte))
 
-    val query = Query(
-      Return(ValueReturnItem(EntityValue("n"))),
-      Start(NodeById("n", n1.getId, n2.getId, n3.getId, n4.getId, n5.getId)),
-      LessThan(PropertyValue("n", "x"), Literal(100)))
+    val query = Query.
+      start(NodeById("n", n1.getId, n2.getId, n3.getId, n4.getId, n5.getId)).
+      where(LessThan(PropertyValue("n", "x"), Literal(100))).
+      RETURN(ValueReturnItem(EntityValue("n")))
 
     val result = execute(query)
 
@@ -384,12 +383,12 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val n1 = createNode(Map("x" -> "Anders"))
     val n2 = createNode(Map("x" -> 'C'))
 
-    val query = Query(
-      Return(ValueReturnItem(EntityValue("n"))),
-      Start(NodeById("n", n1.getId, n2.getId)),
-      And(
-        LessThan(PropertyValue("n", "x"), Literal("Z")),
-        LessThan(PropertyValue("n", "x"), Literal('Z'))))
+    val query = Query.
+      start(NodeById("n", n1.getId, n2.getId)).
+      where(And(
+      LessThan(PropertyValue("n", "x"), Literal("Z")),
+      LessThan(PropertyValue("n", "x"), Literal('Z')))).
+      RETURN(ValueReturnItem(EntityValue("n")))
 
     val result = execute(query)
 

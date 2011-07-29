@@ -109,134 +109,134 @@ class CypherParserTest extends JUnitSuite {
   @Test def shouldFilterOnProp() {
     testQuery(
       "start a = (1) where a.name = \"andres\" return a",
-      Query(
-        Return(ValueReturnItem(EntityValue("a"))),
-        Start(NodeById("a", 1)),
-        Equals(PropertyValue("a", "name"), Literal("andres"))))
+      Query.
+        start(NodeById("a", 1)).
+        where(Equals(PropertyValue("a", "name"), Literal("andres"))).
+        RETURN(ValueReturnItem(EntityValue("a"))))
   }
 
 
   @Test def shouldFilterOutNodesWithoutA() {
     testQuery(
       "start a = (1) where a.name = \"andres\" return a",
-      Query(
-        Return(ValueReturnItem(EntityValue("a"))),
-        Start(NodeById("a", 1)),
-        Equals(PropertyValue("a", "name"), Literal("andres"))))
+      Query.
+        start(NodeById("a", 1)).
+        where(Equals(PropertyValue("a", "name"), Literal("andres"))).
+        RETURN(ValueReturnItem(EntityValue("a"))))
   }
 
 
   @Test def shouldFilterOnPropWithDecimals() {
     testQuery(
       "start a = (1) where a.foo = 3.1415 return a",
-      Query(
-        Return(ValueReturnItem(EntityValue("a"))),
-        Start(NodeById("a", 1)),
-        Equals(PropertyValue("a", "foo"), Literal(3.1415))))
+      Query.
+        start(NodeById("a", 1)).
+        where(Equals(PropertyValue("a", "foo"), Literal(3.1415))).
+        RETURN(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def shouldHandleNot() {
     testQuery(
       "start a = (1) where not(a.name = \"andres\") return a",
-      Query(
-        Return(ValueReturnItem(EntityValue("a"))),
-        Start(NodeById("a", 1)),
-        Not(Equals(PropertyValue("a", "name"), Literal("andres")))))
+      Query.
+        start(NodeById("a", 1)).
+        where(Not(Equals(PropertyValue("a", "name"), Literal("andres")))).
+        RETURN(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def shouldHandleNotEqualTo() {
     testQuery(
       "start a = (1) where a.name <> \"andres\" return a",
-      Query(
-        Return(ValueReturnItem(EntityValue("a"))),
-        Start(NodeById("a", 1)),
-        Not(Equals(PropertyValue("a", "name"), Literal("andres")))))
+      Query.
+        start(NodeById("a", 1)).
+        where(Not(Equals(PropertyValue("a", "name"), Literal("andres")))).
+        RETURN(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def shouldHandleLessThan() {
     testQuery(
       "start a = (1) where a.name < \"andres\" return a",
-      Query(
-        Return(ValueReturnItem(EntityValue("a"))),
-        Start(NodeById("a", 1)),
-        LessThan(PropertyValue("a", "name"), Literal("andres"))))
+      Query.
+        start(NodeById("a", 1)).
+        where(LessThan(PropertyValue("a", "name"), Literal("andres"))).
+        RETURN(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def shouldHandleGreaterThan() {
     testQuery(
       "start a = (1) where a.name > \"andres\" return a",
-      Query(
-        Return(ValueReturnItem(EntityValue("a"))),
-        Start(NodeById("a", 1)),
-        GreaterThan(PropertyValue("a", "name"), Literal("andres"))))
+      Query.
+        start(NodeById("a", 1)).
+        where(GreaterThan(PropertyValue("a", "name"), Literal("andres"))).
+        RETURN(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def shouldHandleLessThanOrEqual() {
     testQuery(
       "start a = (1) where a.name <= \"andres\" return a",
-      Query(
-        Return(ValueReturnItem(EntityValue("a"))),
-        Start(NodeById("a", 1)),
-        LessThanOrEqual(PropertyValue("a", "name"), Literal("andres"))))
+      Query.
+        start(NodeById("a", 1)).
+        where(LessThanOrEqual(PropertyValue("a", "name"), Literal("andres"))).
+        RETURN(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def shouldHandleRegularComparison() {
     testQuery(
       "start a = (1) where \"Andres\" =~ /And.*/ return a",
-      Query(
-        Return(ValueReturnItem(EntityValue("a"))),
-        Start(NodeById("a", 1)),
-        RegularExpression(Literal("Andres"), "And.*"))
+      Query.
+        start(NodeById("a", 1)).
+        where(RegularExpression(Literal("Andres"), "And.*")).
+        RETURN(ValueReturnItem(EntityValue("a")))
     )
   }
 
   @Test def shouldHandleGreaterThanOrEqual() {
     testQuery(
       "start a = (1) where a.name >= \"andres\" return a",
-      Query(
-        Return(ValueReturnItem(EntityValue("a"))),
-        Start(NodeById("a", 1)),
-        GreaterThanOrEqual(PropertyValue("a", "name"), Literal("andres"))))
+      Query.
+        start(NodeById("a", 1)).
+        where(GreaterThanOrEqual(PropertyValue("a", "name"), Literal("andres"))).
+        RETURN(ValueReturnItem(EntityValue("a"))))
   }
 
 
   @Test def booleanLiterals() {
     testQuery(
       "start a = (1) where true = false return a",
-      Query(
-        Return(ValueReturnItem(EntityValue("a"))),
-        Start(NodeById("a", 1)),
-        Equals(Literal(true), Literal(false))))
+      Query.
+        start(NodeById("a", 1)).
+        where(Equals(Literal(true), Literal(false))).
+        RETURN(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def shouldFilterOnNumericProp() {
     testQuery(
       "start a = (1) where 35 = a.age return a",
-      Query(
-        Return(ValueReturnItem(EntityValue("a"))),
-        Start(NodeById("a", 1)),
-        Equals(Literal(35), PropertyValue("a", "age"))))
+      Query.
+        start(NodeById("a", 1)).
+        where(Equals(Literal(35), PropertyValue("a", "age"))).
+        RETURN(ValueReturnItem(EntityValue("a"))))
   }
 
 
   @Test def shouldCreateNotEqualsQuery() {
     testQuery(
       "start a = (1) where 35 != a.age return a",
-      Query(
-        Return(ValueReturnItem(EntityValue("a"))),
-        Start(NodeById("a", 1)),
-        Not(Equals(Literal(35), PropertyValue("a", "age")))))
+      Query.
+        start(NodeById("a", 1)).
+        where(Not(Equals(Literal(35), PropertyValue("a", "age")))).
+        RETURN(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def multipleFilters() {
     testQuery(
       "start a = (1) where a.name = \"andres\" or a.name = \"mattias\" return a",
-      Query(
-        Return(ValueReturnItem(EntityValue("a"))),
-        Start(NodeById("a", 1)),
-        Or(
-          Equals(PropertyValue("a", "name"), Literal("andres")),
-          Equals(PropertyValue("a", "name"), Literal("mattias")))))
+      Query.
+        start(NodeById("a", 1)).
+        where(Or(
+        Equals(PropertyValue("a", "name"), Literal("andres")),
+        Equals(PropertyValue("a", "name"), Literal("mattias")))).
+        RETURN(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def relatedTo() {
@@ -286,12 +286,12 @@ class CypherParserTest extends JUnitSuite {
   @Test def shouldHandleAndClauses() {
     testQuery(
       "start a = (1) where a.name = \"andres\" and a.lastname = \"taylor\" return a.name",
-      Query(
-        Return(ValueReturnItem(PropertyValue("a", "name"))),
-        Start(NodeById("a", 1)),
-        And(
-          Equals(PropertyValue("a", "name"), Literal("andres")),
-          Equals(PropertyValue("a", "lastname"), Literal("taylor")))))
+      Query.
+        start(NodeById("a", 1)).
+        where(And(
+        Equals(PropertyValue("a", "name"), Literal("andres")),
+        Equals(PropertyValue("a", "lastname"), Literal("taylor")))).
+        RETURN(ValueReturnItem(PropertyValue("a", "name"))))
   }
 
   @Test def relatedToWithRelationOutput() {
@@ -318,8 +318,8 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         matches(
-          RelatedTo("a", "b", None, Some("KNOWS"), Direction.OUTGOING),
-          RelatedTo("b", "c", None, Some("FRIEND"), Direction.OUTGOING)).
+        RelatedTo("a", "b", None, Some("KNOWS"), Direction.OUTGOING),
+        RelatedTo("b", "c", None, Some("FRIEND"), Direction.OUTGOING)).
         RETURN(ValueReturnItem(EntityValue("c")))
     )
   }
@@ -464,16 +464,16 @@ class CypherParserTest extends JUnitSuite {
   @Test def nestedBooleanOperatorsAndParentesis() {
     testQuery(
       """start n = (1,2,3) where (n.animal = "monkey" and n.food = "banana") or (n.animal = "cow" and n.food="grass") return n""",
-      Query(
-        Return(ValueReturnItem(EntityValue("n"))),
-        Start(NodeById("n", 1, 2, 3)),
-        Or(
-          And(
-            Equals(PropertyValue("n", "animal"), Literal("monkey")),
-            Equals(PropertyValue("n", "food"), Literal("banana"))),
-          And(
-            Equals(PropertyValue("n", "animal"), Literal("cow")),
-            Equals(PropertyValue("n", "food"), Literal("grass"))))))
+      Query.
+        start(NodeById("n", 1, 2, 3)).
+        where(Or(
+        And(
+          Equals(PropertyValue("n", "animal"), Literal("monkey")),
+          Equals(PropertyValue("n", "food"), Literal("banana"))),
+        And(
+          Equals(PropertyValue("n", "animal"), Literal("cow")),
+          Equals(PropertyValue("n", "food"), Literal("grass"))))).
+        RETURN(ValueReturnItem(EntityValue("n"))))
   }
 
   @Test def limit5() {

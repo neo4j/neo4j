@@ -21,8 +21,6 @@ package org.neo4j.cypher.commands
 
 
 object Query {
-  def apply(returns: Return, start: Start, where: Clause) = new Query(returns, start, None, Some(where), None, None, None)
-
   def apply(returns: Return, start: Start, aggregation: Aggregation) = new Query(returns, start, None, None, Some(aggregation), None, None)
 
   def apply(returns: Return, start: Start, sort: Sort) = new Query(returns, start, None, None, None, Some(sort), None)
