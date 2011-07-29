@@ -396,61 +396,61 @@ class CypherParserTest extends JUnitSuite {
   @Test def singleColumnSorting() {
     testQuery(
       "start a = (1) return a order by a.name",
-      Query(
-        Return(ValueReturnItem(EntityValue("a"))),
-        Start(NodeById("a", 1)),
-        Sort(SortItem(ValueReturnItem(PropertyValue("a", "name")), true))))
+      Query.
+        start(NodeById("a", 1)).
+        orderBy(SortItem(ValueReturnItem(PropertyValue("a", "name")), true)).
+        RETURN(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def sortOnAggregatedColumn() {
     testQuery(
       "start a = (1) return a order by avg(a.name)",
-      Query(
-        Return(ValueReturnItem(EntityValue("a"))),
-        Start(NodeById("a", 1)),
-        Sort(SortItem(ValueAggregationItem(Avg(PropertyValue("a", "name"))), true))))
+      Query.
+        start(NodeById("a", 1)).
+        orderBy(SortItem(ValueAggregationItem(Avg(PropertyValue("a", "name"))), true)).
+        RETURN(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def shouldHandleTwoSortColumns() {
     testQuery(
       "start a = (1) return a order by a.name, a.age",
-      Query(
-        Return(ValueReturnItem(EntityValue("a"))),
-        Start(NodeById("a", 1)),
-        Sort(
-          SortItem(ValueReturnItem(PropertyValue("a", "name")), true),
-          SortItem(ValueReturnItem(PropertyValue("a", "age")), true))))
+      Query.
+        start(NodeById("a", 1)).
+        orderBy(
+        SortItem(ValueReturnItem(PropertyValue("a", "name")), true),
+        SortItem(ValueReturnItem(PropertyValue("a", "age")), true)).
+        RETURN(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def shouldHandleTwoSortColumnsAscending() {
     testQuery(
       "start a = (1) return a order by a.name ASCENDING, a.age ASC",
-      Query(
-        Return(ValueReturnItem(EntityValue("a"))),
-        Start(NodeById("a", 1)),
-        Sort(
-          SortItem(ValueReturnItem(PropertyValue("a", "name")), true),
-          SortItem(ValueReturnItem(PropertyValue("a", "age")), true))))
+      Query.
+        start(NodeById("a", 1)).
+        orderBy(
+        SortItem(ValueReturnItem(PropertyValue("a", "name")), true),
+        SortItem(ValueReturnItem(PropertyValue("a", "age")), true)).
+        RETURN(ValueReturnItem(EntityValue("a"))))
+
   }
 
   @Test def orderByDescending() {
     testQuery(
       "start a = (1) return a order by a.name DESCENDING",
-      Query(
-        Return(ValueReturnItem(EntityValue("a"))),
-        Start(NodeById("a", 1)),
-        Sort(
-          SortItem(ValueReturnItem(PropertyValue("a", "name")), false))))
+      Query.
+        start(NodeById("a", 1)).
+        orderBy(SortItem(ValueReturnItem(PropertyValue("a", "name")), false)).
+        RETURN(ValueReturnItem(EntityValue("a"))))
+
   }
 
   @Test def orderByDesc() {
     testQuery(
       "start a = (1) return a order by a.name desc",
-      Query(
-        Return(ValueReturnItem(EntityValue("a"))),
-        Start(NodeById("a", 1)),
-        Sort(
-          SortItem(ValueReturnItem(PropertyValue("a", "name")), false))))
+      Query.
+        start(NodeById("a", 1)).
+        orderBy(SortItem(ValueReturnItem(PropertyValue("a", "name")), false)).
+        RETURN(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def nullableProperty() {
