@@ -49,6 +49,7 @@ import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.IteratorUtil;
@@ -225,14 +226,10 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
                     targetBuffer.done();
                     responseWritten( type, channel, context );
                 }
-                // TODO Use Exceptions class
-                catch ( IOException e )
+                catch ( Throwable e )
                 {
-                    throw new RuntimeException( e );
-                }
-                catch ( RuntimeException e )
-                {
-                    throw e;
+                    msgLog.logMessage( "Error when server writing response", e );
+                    throw Exceptions.launderedException( e );
                 }
             }
         };
