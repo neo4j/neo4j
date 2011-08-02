@@ -59,15 +59,10 @@ public class CombinedRelIdIterator implements RelIdIterator
     }
 
     @Override
-    public boolean isPlacebo()
+    public RelIdIterator updateSource( RelIdArray newSource )
     {
-        return false;
-    }
-
-    @Override
-    public void updateSource( RelIdArray newSource )
-    {
-        this.srcIterator = newSource.iterator( direction );
+        srcIterator = srcIterator.updateSource( newSource );
+        return this;
     }
 
     @Override

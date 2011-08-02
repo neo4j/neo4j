@@ -99,22 +99,14 @@ class IntArrayIterator extends PrefetchingIterator<Relationship> implements Iter
                     Map<String,RelIdIterator> newRels = new HashMap<String,RelIdIterator>();
                     for ( RelIdIterator itr : rels )
                     {
-                        RelIdIterator newItr = itr;
-                        String type = itr.getIds().getType();
+                        String type = itr.getType();
                         RelIdArray newSrc = fromNode.getRelationshipIds( type );
                         if ( newSrc != null )
                         {
-                            if ( itr.isPlacebo() )
-                            {
-                                newItr = newSrc.iterator( direction );
-                            }
-                            else if ( newSrc.couldBeNeedingUpdate() )
-                            {
-                                itr.updateSource( newSrc );
-                            }
-                            newItr.doAnotherRound();
+                            itr = itr.updateSource( newSrc );
+                            itr.doAnotherRound();
                         }
-                        newRels.put( type, newItr );
+                        newRels.put( type, itr );
                     }
                     
                     // If we wanted relationships of any type check if there are
@@ -133,9 +125,9 @@ class IntArrayIterator extends PrefetchingIterator<Relationship> implements Iter
                                         RelIdArray.from( ids, null, remove ).iterator( direction );
                                 newRels.put( type, itr );
                             }
-                            else if ( itr.isPlacebo() )
+                            else
                             {
-                                itr.updateSource( ids );
+                                itr = itr.updateSource( ids );
                                 newRels.put( type, itr );
                             }
                         }

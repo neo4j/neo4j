@@ -25,9 +25,7 @@ public interface RelIdIterator
 
     RelIdArray getIds();
 
-    boolean isPlacebo();
-
-    void updateSource( RelIdArray newSource );
+    RelIdIterator updateSource( RelIdArray newSource );
 
     boolean hasNext();
 

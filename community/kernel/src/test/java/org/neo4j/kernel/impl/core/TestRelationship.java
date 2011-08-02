@@ -34,7 +34,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -350,7 +349,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         {
             getTransaction().success();
             getTransaction().finish();
-            fail( "deleting node with relaitonship should not commit." );
+            fail( "deleting node with relationship should not commit." );
         }
         catch ( Exception e )
         {
@@ -960,7 +959,6 @@ public class TestRelationship extends AbstractNeo4jTestCase
     }
 
     @Test
-    @Ignore
     public void grabSizeWithTwoTypesDeleteAndCount()
     {
         int grabSize = 2;
@@ -974,7 +972,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         int count = 0;
         RelationshipType type1 = DynamicRelationshipType.withName( "type" );
         RelationshipType type2 = DynamicRelationshipType.withName( "bar" );
-        // Create more than grab size
+        // Create more than one grab size
         for ( int i = 0; i < 11; i++ )
         {
             node1.createRelationshipTo( node2, type1 );
@@ -988,33 +986,28 @@ public class TestRelationship extends AbstractNeo4jTestCase
         tx.success();
         tx.finish();
 
-        tx = db.beginTx();
+        clearCacheAndCreateDeleteCount( db, node1, node2, type1, type2, count );
+        clearCacheAndCreateDeleteCount( db, node1, node2, type2, type1, count );
+        clearCacheAndCreateDeleteCount( db, node1, node2, type1, type1, count );
+        clearCacheAndCreateDeleteCount( db, node1, node2, type2, type2, count );
+        db.shutdown();
+    }
 
+    private void clearCacheAndCreateDeleteCount( GraphDatabaseService db, Node node1, Node node2,
+            RelationshipType createType, RelationshipType deleteType, int expectedCount )
+    {
+        Transaction tx = db.beginTx();
         ( (AbstractGraphDatabase) db ).getConfig().getGraphDbModule().getNodeManager().clearCache();
 
-        /*
-         *  Both the creation and the deletion are necessary
-         *  and the type HAS to be be the first one used in the above
-         *  transaction. If create is type1 and delete is type2, it passes.
-         *  If create is type2 and delete is type1, NoSuchElementException
-         *  is thrown.
-         */
-        node1.createRelationshipTo( node2, type1 );
-        count++;
-
-        Relationship rel1 = node1.getRelationships( type1 ).iterator().next();
-        System.out.println( "Deleting : " + rel1 );
+        node1.createRelationshipTo( node2, createType );
+        Relationship rel1 = node1.getRelationships( deleteType ).iterator().next();
         rel1.delete();
-        count--;
 
-        int finalCount = 0;
-        for ( Relationship rel : node1.getRelationships() )
-        {
-            finalCount++;
-        }
-        assertEquals( count, finalCount );
+        assertEquals( expectedCount, count( node1.getRelationships() ) );
+        assertEquals( expectedCount, count( node2.getRelationships() ) );
         tx.success();
         tx.finish();
-        db.shutdown();
+        assertEquals( expectedCount, count( node1.getRelationships() ) );
+        assertEquals( expectedCount, count( node2.getRelationships() ) );
     }
 }

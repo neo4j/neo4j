@@ -35,12 +35,17 @@ public class RelIdArray
     
     public static class EmptyRelIdArray extends RelIdArray
     {
-        private final RelIdIterator emptyIterator;
+        private static final DirectionWrapper[] EMPTY_DIRECTION_ARRAY = new DirectionWrapper[0];
         
         private EmptyRelIdArray( String type )
         {
             super( type );
-            emptyIterator = new RelIdIteratorImpl( this, new DirectionWrapper[0] )
+        }
+
+        @Override
+        public RelIdIterator iterator( final DirectionWrapper direction )
+        {
+            return new RelIdIteratorImpl( this, EMPTY_DIRECTION_ARRAY )
             {
                 @Override
                 public boolean hasNext()
@@ -58,17 +63,11 @@ public class RelIdArray
                 {
                 }
                 
-                public boolean isPlacebo()
+                public RelIdIterator updateSource( RelIdArray newSource )
                 {
-                    return true;
+                    return direction.iterator( newSource );
                 }
             };
-        }
-
-        @Override
-        public RelIdIterator iterator( DirectionWrapper direction )
-        {
-            return emptyIterator;
         }
     };
     
@@ -653,31 +652,26 @@ public class RelIdArray
         }
         
         /* (non-Javadoc)
-         * @see org.neo4j.kernel.impl.util.RelIdIterator#isPlacebo()
-         */
-        @Override
-        public boolean isPlacebo()
-        {
-            return false;
-        }
-        
-        /* (non-Javadoc)
          * @see org.neo4j.kernel.impl.util.RelIdIterator#updateSource(org.neo4j.kernel.impl.util.RelIdArray)
          */
         @Override
-        public void updateSource( RelIdArray newSource )
+        public RelIdIterator updateSource( RelIdArray newSource )
         {
-            this.ids = newSource;
-            
-            // Blocks may have gotten upgraded to support a linked list
-            // of blocks, so reestablish those references.
-            for ( int i = 0; i < states.length; i++ )
+            if ( ids != newSource || newSource.couldBeNeedingUpdate() )
             {
-                if ( states[i] != null )
+                ids = newSource;
+                
+                // Blocks may have gotten upgraded to support a linked list
+                // of blocks, so reestablish those references.
+                for ( int i = 0; i < states.length; i++ )
                 {
-                    states[i].update( directions[i].getLastBlock( ids ) );
+                    if ( states[i] != null )
+                    {
+                        states[i].update( directions[i].getLastBlock( ids ) );
+                    }
                 }
             }
+            return this;
         }
         
         /* (non-Javadoc)
