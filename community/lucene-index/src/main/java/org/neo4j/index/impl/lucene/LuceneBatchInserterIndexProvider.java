@@ -73,15 +73,23 @@ public class LuceneBatchInserterIndexProvider implements BatchInserterIndexProvi
             public Document newDocument( Object entityId )
             {
                 RelationshipId relId = null;
-                if(entityId instanceof Long) {
-                    SimpleRelationship relationship = inserter.getRelationshipById( (Long) entityId );
-                    relId = new RelationshipId( relationship.getId(), relationship.getStartNode(), relationship.getEndNode() );
-                } else if (entityId instanceof RelationshipId ) {
-                    relId = (RelationshipId) entityId;
-                } else {
-                    new IllegalArgumentException( "Ids of type "  + entityId.getClass() + " are not supported.");
+                if ( entityId instanceof Long )
+                {
+                    SimpleRelationship relationship = inserter
+                            .getRelationshipById( (Long) entityId );
+                    relId = new RelationshipId( relationship.getId(), relationship.getStartNode(),
+                            relationship.getEndNode() );
                 }
-                Document doc = IndexType.newBaseDocument( relId.id );                    
+                else if ( entityId instanceof RelationshipId )
+                {
+                    relId = (RelationshipId) entityId;
+                }
+                else
+                {
+                    throw new IllegalArgumentException( "Ids of type " + entityId.getClass()
+                            + " are not supported." );
+                }
+                Document doc = IndexType.newBaseDocument( relId.id );
                 doc.add( new Field( LuceneIndex.KEY_START_NODE_ID, "" + relId.startNode,
                         Store.YES, org.apache.lucene.document.Field.Index.NOT_ANALYZED ) );
                 doc.add( new Field( LuceneIndex.KEY_END_NODE_ID, "" + relId.endNode,
