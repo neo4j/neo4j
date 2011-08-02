@@ -1,0 +1,32 @@
+<project name="NeoCommunityQA" basedir="." default="build">
+		
+	<target name="build" description="Run the Neo4j community QA tests" depends="clean,setProperties,runCucumber"/>
+	
+	<target name="clean" description="Cleans the working copy">
+		<delete dir="target"/>
+		<mkdir dir="target"/>
+	</target>
+
+	<target name="setProperties" description="Sets the various properties required by cucumber">
+		<property name="neo4j_home" value="target/neo4j_home"/>
+		<property name="neo4j_product" value="community"/>
+		<property name="download_path" value="http://builder.neo4j.org/guestAuth/repository/download/bt85/.lastSuccessful"/>
+		<property name="" value=""/>
+		<get dest="target/" verbose="true">
+			<url url="${download_path}/reports/buildNumber.properties"/>
+		</get>
+		<property file="target/buildNumber.properties"/>
+		<property name="download_location" value="${download_path}/packages/neo4j-community-${buildNumber}-unix.tar.gz"/>						
+	</target>
+	
+	<target name="runCucumber" description="Runs the cucumber tests">
+		<exec executable="rake" failonerror="true">
+			<env key="NEO4J_HOME" value="${neo4j_home}"/>
+			<env key="NEO4J_PRODUCT" value="${neo4j_product}"/>
+			<env key="DOWNLOAD_LOCATION" value="${download_location}"/>
+			<env key="NEO4J_VERSION" value="${buildNumber}"/>
+		</exec>
+	</target>
+
+	
+</project>
