@@ -37,9 +37,9 @@ The following procedure should work on most popular Linux distributions:
 1. `cd $NEO4J_HOME`
 2. `sudo ./bin/neo4j install`
    * if asked, enter your password to gain super-user privileges
-3. `service neo4j-server status`
+3. `service neo4j-service status`
    * should indicate that the server is not running
-4. `service neo4j-server start`
+4. `service neo4j-service start`
    * will start the server
    
    During installation you will be given the option to select the user Neo4j will run as. You will be asked to supply a username (defaulting to `neo4j`) and if that user is not present on the system it will be created as a system account and the `$NEO4J_HOME/data` directory will be `chown`'ed to that user.
