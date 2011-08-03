@@ -135,6 +135,61 @@ public class ShellTest
 //        client.getServer().interpretLine( "pwd", client.session(), client.getOutput() );
         server.shutdown();
     }
+    
+    @Test
+    public void testMatrix() throws Exception
+    {
+        final GraphDatabaseShellServer server = new GraphDatabaseShellServer( "target/shell-matrix", false, "src/test/resources/autoindex.properties" );
+        ShellClient client = new SameJvmClient( server );
+        
+        Documenter doc = new Documenter("a matrix example", client);
+        doc.add("","","create Thomas Andersson");
+        doc.add("mkrel -t ROOT -c -v", "created", "create the node");
+        doc.add("cd 1", "", "go to the new node");
+        doc.add("set name \"Thomas Andersson\"", "", "set the name property");
+        doc.add("","","create Thomas direct friends");
+        doc.add("mkrel -t KNOWS -cv", "", "");
+        doc.add("cd 2", "", "go to the new node");
+        doc.add("set name \"Trinity\"", "", "set the name property");
+        doc.add("cd ..", "", "go back in the history stack");
+        doc.add("mkrel -t KNOWS -cv", "", "create Thomas direct friends");
+        doc.add("cd 3", "", "go to the new node");
+        doc.add("set name \"Morpheus\"", "", "set the name property");
+        doc.add("mkrel -t KNOWS -n 2", "", "create relationship to Trinity");
+
+        doc.add("ls -rv", "", "list the relationships of node 3");
+        doc.add("cd -r 2", "", "change the current position to relationship #2");
+        
+        doc.add( "set -t int age 3", "", "set the age property on the relationship" );
+        doc.add( "cd ..", "", "back to Morpheus" );
+        doc.add( "cd -r 3", "", "next relationsip" );
+        doc.add( "set -t int age 90", "", "set the age property on the relationship" );
+        doc.add( "cd start", "", "position to the start node of the current relationship" );
+        
+        doc.add( "","","We're now standing on Morpheus node, so let's create the rest of the friends." );
+        doc.add( "mkrel -t KNOWS -c", "", "new node" );
+        doc.add( "ls -r", "", "list relationships on the current node" );
+        doc.add( "cd 4", "", "go to Cypher" );
+        doc.add( "set name Cypher", "", "set the name" );
+        doc.add( "mkrel -ct KNOWS", "", "create new node from Cypher" );
+        //TODO: how to list outgoing relationships?
+        //doc.add( "ls -rd out", "", "list relationships" );
+        doc.add( "ls -r", "", "list relationships" );
+        doc.add( "cd 5", "", "go to the Agent Smith node" );
+        doc.add( "set name \"Agent Smith\"", "", "set the name" );
+        doc.add( "mkrel -cvt CODED_BY", "", "outgoing relationship and new node" );
+        doc.add( "cd 6", "", "go there" );
+        doc.add( "set name \"The Architect\"", "", "set the name" );
+        doc.add( "cd", "", "go to the first node in the history stack" );
+
+        doc.add( "","","Now, let's ask some questions" );
+        doc.add( "start morpheus = (node_auto_index, name, 'Morpheus') " +
+        		"match morpheus-[:KNOWS]-zionist " +
+        		"where not( zionist.age ) or zionist.age > 32 " +
+        		"return zionist.name order by zionist.name desc skip 1 limit 5","","Morpheus' friends, looking up Morpheus by name in the neo4j autoindex" );
+        doc.run();
+        server.shutdown();
+    }
 
     private void assertException( String command )
     {
