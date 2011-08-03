@@ -1,7 +1,7 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
 
 <xsl:template name="user.head.content">
-  <xsl:text disable-output-escaping="yes">
+<xsl:text disable-output-escaping="yes">
 <![CDATA[
 
 <!-- favicon -->
@@ -43,21 +43,12 @@
 
 <script type="text/javascript" src="js/jquery-1.6.2.min.js"></script>
 
-<!-- JGrowl -->
-
-<script type="text/javascript" src="js/jquery.jgrowl_minimized.js"></script>
-<link href="css/jquery.jgrowl.css" rel="stylesheet" type="text/css" />
-
 <!-- Image Scaler -->
 
 <script type="text/javascript" src="js/imagescaler.js"></script>
 
-<!-- Version Switcher -->
-
-<script type="text/javascript" src="js/versionswitcher.js"></script>
-
 ]]>
-  </xsl:text>
+</xsl:text>
 </xsl:template>
 
 </xsl:stylesheet>

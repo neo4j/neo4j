@@ -14,7 +14,7 @@
 
 <xsl:import href="html-params.xsl"/>
 
-<xsl:import href="head.xsl"/>
+<xsl:import href="head-offline.xsl"/>
 
 <xsl:import href="syntaxhighlight.xsl"/>
 
