@@ -322,4 +322,7 @@ Neo4j is configured for autoindexing in this case with
 
 in the neo4j configuration file.
 
+[[matrix-sample-session]]
+== A matrix shell session ==
+
 include::shell/a-matrix-example.txt[]
