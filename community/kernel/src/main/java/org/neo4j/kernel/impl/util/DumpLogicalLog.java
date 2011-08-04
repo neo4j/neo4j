@@ -166,7 +166,7 @@ public class DumpLogicalLog
         record.setInUse( inUse, type );
         if ( inUse )
         {
-            record.setPrevBlock( buffer.getLong() );
+            // record.setPrevBlock( buffer.getLong() );
             int nrOfBytes = buffer.getInt();
             record.setNextBlock( buffer.getLong() );
             buffer.clear();

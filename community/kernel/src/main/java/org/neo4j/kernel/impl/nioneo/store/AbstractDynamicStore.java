@@ -65,14 +65,14 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
      * This method will create a empty store with descriptor returned by the
      * {@link #getTypeAndVersionDescriptor()}. The internal id generator used
      * by this store will also be created.
-     * 
+     *
      * @param fileName
      *            The file name of the store that will be created
      * @param blockSize
      *            The number of bytes for each block
      * @param typeAndVersionDescriptor
      *            The type and version descriptor that identifies this store
-     * 
+     *
      * @throws IOException
      *             If fileName is null or if file exists or illegal block size
      */
@@ -144,6 +144,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
      * Loads this store validating version and id generator. Also the block size
      * is loaded (contained in first block)
      */
+    @Override
     protected void loadStorage()
     {
         try
@@ -161,7 +162,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
             blockSize = buffer.getInt();
             if ( blockSize <= 0 )
             {
-                throw new InvalidRecordException( "Illegal block size: " + 
+                throw new InvalidRecordException( "Illegal block size: " +
                     blockSize + " in " + getStorageFileName() );
             }
             if ( !expectedVersion.equals( UTF8.decode( version ) ) )
@@ -200,7 +201,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         {
             setStoreNotOk();
         }
-        finally 
+        finally
         {
             if ( !getStoreOk() )
             {
@@ -212,25 +213,25 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
                 }
             }
         }
-        
+
         setWindowPool( new PersistenceWindowPool( getStorageFileName(),
-            getBlockSize(), getFileChannel(), getMappedMem(), 
+            getBlockSize(), getFileChannel(), getMappedMem(),
             getIfMemoryMapped(), isReadOnly() && !isBackupSlave() ) );
     }
 
     /**
      * Returns the byte size of each block for this dynamic store
-     * 
+     *
      * @return The block size of this store
      */
     public int getBlockSize()
     {
         return blockSize;
     }
-    
+
     /**
      * Returns next free block.
-     * 
+     *
      * @return The next free block
      * @throws IOException
      *             If capacity exceeded or closed id generator
@@ -242,7 +243,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 
     /**
      * Makes a previously used block available again.
-     * 
+     *
      * @param blockId
      *            The id of the block to free
      * @throws IOException
@@ -252,10 +253,10 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
     {
         freeId( blockId );
     }
-    
+
     /**
      * Calculate the size of a dynamic record given the size of the data block.
-     * 
+     *
      * @param dataSize the size of the data block in bytes.
      * @return the size of a dynamic record.
      */
@@ -265,7 +266,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
     }
 
     // in_use(byte)+prev_block(int)+nr_of_bytes(int)+next_block(int)
-    protected static final int BLOCK_HEADER_SIZE = 1 + 4 + 4 + 4;
+    protected static final int BLOCK_HEADER_SIZE = 1 + /*+ 4*/4 + 4;
 
     public void updateRecord( DynamicRecord record )
     {
@@ -280,23 +281,27 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
             Buffer buffer = window.getOffsettedBuffer( blockId );
             if ( record.inUse() )
             {
-                long prevProp = record.getPrevBlock();
-                short prevModifier = prevProp == Record.NO_NEXT_BLOCK.intValue() ? 0 : (short)((prevProp & 0xF00000000L) >> 28);
-                
+                // long prevProp = record.getPrevBlock();
+                // long prevProp = 0l;
+                // short prevModifier = prevProp ==
+                // Record.NO_NEXT_BLOCK.intValue() ? 0 : (short)((prevProp &
+                // 0xF00000000L) >> 28);
+
                 long nextProp = record.getNextBlock();
                 int nextModifier = nextProp == Record.NO_NEXT_BLOCK.intValue() ? 0 : (int)((nextProp & 0xF00000000L) >> 8);
-                
+
                 // [    ,   x] in use
                 // [xxxx,    ] high prev block bits
-                short inUseUnsignedByte = (short)((Record.IN_USE.byteValue() | prevModifier));
-                
+                short inUseUnsignedByte = ( ( Record.IN_USE.byteValue() /* | prevModifier*/) );
+
                 // [    ,    ][xxxx,xxxx][xxxx,xxxx][xxxx,xxxx] nr of bytes
                 // [    ,xxxx][    ,    ][    ,    ][    ,    ] high next block bits
                 int nrOfBytesInt = record.getLength();
                 nrOfBytesInt |= nextModifier;
-                
-                assert record.getId() != record.getPrevBlock();
-                buffer.put( (byte)inUseUnsignedByte ).putInt( (int)prevProp ).putInt( nrOfBytesInt )
+
+                // assert record.getId() != record.getPrevBlock();
+                buffer.put( (byte) inUseUnsignedByte )/*.putInt( (int)prevProp )*/.putInt(
+                        nrOfBytesInt )
                     .putInt( (int)nextProp );
                 if ( !record.isLight() )
                 {
@@ -332,7 +337,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         assert src != null : "Null src argument";
         List<DynamicRecord> recordList = new LinkedList<DynamicRecord>();
         long nextBlock = startBlock;
-        long prevBlock = Record.NO_PREV_BLOCK.intValue();
+        // long prevBlock = Record.NO_PREV_BLOCK.intValue();
         int srcOffset = 0;
         int dataSize = getBlockSize() - BLOCK_HEADER_SIZE;
         do
@@ -340,14 +345,14 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
             DynamicRecord record = new DynamicRecord( nextBlock );
             record.setCreated();
             record.setInUse( true );
-            assert prevBlock != nextBlock;
-            record.setPrevBlock( prevBlock );
+            // assert prevBlock != nextBlock;
+            // record.setPrevBlock( prevBlock );
             if ( src.length - srcOffset > dataSize )
             {
                 byte data[] = new byte[dataSize];
                 System.arraycopy( src, srcOffset, data, 0, dataSize );
                 record.setData( data );
-                prevBlock = nextBlock;
+                // prevBlock = nextBlock;
                 nextBlock = nextBlockId();
                 record.setNextBlock( nextBlock );
                 srcOffset += dataSize;
@@ -373,7 +378,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         assert src != null : "Null src argument";
         List<DynamicRecord> recordList = new LinkedList<DynamicRecord>();
         long nextBlock = startBlock;
-        long prevBlock = Record.NO_PREV_BLOCK.intValue();
+        // long prevBlock = Record.NO_PREV_BLOCK.intValue();
         int srcOffset = 0;
         int dataSize = getBlockSize() - BLOCK_HEADER_SIZE;
         do
@@ -381,15 +386,15 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
             DynamicRecord record = new DynamicRecord( nextBlock );
             record.setCreated();
             record.setInUse( true );
-            assert prevBlock != nextBlock;
-            record.setPrevBlock( prevBlock );
+            // assert prevBlock != nextBlock;
+            // record.setPrevBlock( prevBlock );
             if ( (src.length - srcOffset) * 2 > dataSize )
             {
                 byte data[] = new byte[dataSize];
                 CharBuffer charBuf = ByteBuffer.wrap( data ).asCharBuffer();
                 charBuf.put( src, srcOffset, dataSize / 2 );
                 record.setData( data );
-                prevBlock = nextBlock;
+                // prevBlock = nextBlock;
                 nextBlock = nextBlockId();
                 record.setNextBlock( nextBlock );
                 srcOffset += dataSize / 2;
@@ -462,7 +467,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
     {
         DynamicRecord record = new DynamicRecord( blockId );
         Buffer buffer = window.getOffsettedBuffer( blockId );
-        
+
         // [    ,   x] in use
         // [xxxx,    ] high bits for prev block
         long inUseByte = buffer.get();
@@ -471,20 +476,20 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         {
             throw new InvalidRecordException( "Not in use, blockId[" + blockId + "]" );
         }
-        long prevBlock = buffer.getUnsignedInt();
-        long prevModifier = (inUseByte & 0xF0L) << 28;
-        
+        // long prevBlock = buffer.getUnsignedInt();
+        // long prevModifier = (inUseByte & 0xF0L) << 28;
+
         int dataSize = getBlockSize() - BLOCK_HEADER_SIZE;
-        
+
         // [    ,    ][xxxx,xxxx][xxxx,xxxx][xxxx,xxxx] number of bytes
         // [    ,xxxx][    ,    ][    ,    ][    ,    ] higher bits for next block
         long nrOfBytesInt = buffer.getInt();
-        
+
         int nrOfBytes = (int)(nrOfBytesInt & 0xFFFFFF);
-        
+
         long nextBlock = buffer.getUnsignedInt();
         long nextModifier = (nrOfBytesInt & 0xF000000L) << 8;
-        
+
         long longNextBlock = longFromIntAndMod( nextBlock, nextModifier );
         if ( longNextBlock != Record.NO_NEXT_BLOCK.intValue()
             && nrOfBytes < dataSize || nrOfBytes > dataSize )
@@ -495,7 +500,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         }
         record.setInUse( true );
         record.setLength( nrOfBytes );
-        record.setPrevBlock( longFromIntAndMod( prevBlock, prevModifier ) );
+        // record.setPrevBlock( longFromIntAndMod( prevBlock, prevModifier ) );
         record.setNextBlock( longNextBlock );
         if ( loadData )
         {
@@ -555,19 +560,20 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         }
         return 0;
     }
-    
+
     /**
      * Rebuilds the internal id generator keeping track of what blocks are free
      * or taken.
-     * 
+     *
      * @throws IOException
      *             If unable to rebuild the id generator
      */
+    @Override
     protected void rebuildIdGenerator()
     {
         if ( getBlockSize() <= 0 )
         {
-            throw new InvalidRecordException( "Illegal blockSize: " + 
+            throw new InvalidRecordException( "Illegal blockSize: " +
                 getBlockSize() );
         }
         logger.fine( "Rebuilding id generator for[" + getStorageFileName()
@@ -592,7 +598,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
             boolean fullRebuild = true;
             if ( getConfig() != null )
             {
-                String mode = (String) 
+                String mode = (String)
                     getConfig().get( "rebuild_idgenerators_fast" );
                 if ( mode != null && mode.toLowerCase().equals( "true" ) )
                 {
@@ -630,7 +636,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException( 
+            throw new UnderlyingStorageException(
                 "Unable to rebuild id generator " + getStorageFileName(), e );
         }
         setHighId( highId + 1 );
@@ -640,7 +646,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         {
             String storeDir = (String) getConfig().get( "store_dir" );
             StringLogger msgLog = StringLogger.getLogger( storeDir );
-            msgLog.logMessage( getStorageFileName() + " rebuild id generator, highId=" + getHighId() + 
+            msgLog.logMessage( getStorageFileName() + " rebuild id generator, highId=" + getHighId() +
                     " defragged count=" + defraggedCount, true );
         }
         closeIdGenerator();
@@ -653,7 +659,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 //        try
 //        {
 //            long highId = getFileChannel().size() / getBlockSize();
-//            
+//
 //            if ( highId > getHighId() )
 //            {
 //                setHighId( highId );
@@ -664,7 +670,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 //            throw new UnderlyingStorageException( e );
 //        }
 //    }
-    
+
     @Override
     protected long figureOutHighestIdInUse()
     {

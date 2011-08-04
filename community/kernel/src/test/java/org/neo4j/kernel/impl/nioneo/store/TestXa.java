@@ -65,7 +65,7 @@ public class TestXa extends AbstractNeo4jTestCase
 {
     public static IdGeneratorFactory ID_GENERATOR_FACTORY =
         CommonFactories.defaultIdGeneratorFactory();
-    
+
     private NeoStoreXaDataSource ds;
     private NeoStoreXaConnection xaCon;
     private Logger log;
@@ -104,7 +104,7 @@ public class TestXa extends AbstractNeo4jTestCase
             intToIndex.put( index.getKeyId(), index );
         }
     }
-    
+
     @Override
     protected boolean restartGraphDbBetweenTests()
     {
@@ -120,25 +120,25 @@ public class TestXa extends AbstractNeo4jTestCase
 
     private LockManager lockManager;
     private LockReleaser lockReleaser;
-    
+
     private String path()
     {
         String path = getStorePath( "xatest" );
         new File( path ).mkdirs();
         return path;
     }
-    
+
     private String file( String name )
     {
         return path() + File.separator + name;
     }
-    
+
     @BeforeClass
     public static void deleteFiles()
     {
         deleteFileOrDirectory( getStorePath( "xatest" ) );
     }
-    
+
     @Before
     public void setUpNeoStore() throws Exception
     {
@@ -320,7 +320,7 @@ public class TestXa extends AbstractNeo4jTestCase
     private void truncateLogicalLog( int size ) throws IOException
     {
         char active = '1';
-        FileChannel af = new RandomAccessFile( file( "nioneo_logical.log.active" ), 
+        FileChannel af = new RandomAccessFile( file( "nioneo_logical.log.active" ),
             "r" ).getChannel();
         ByteBuffer buffer = ByteBuffer.allocate( 1024 );
         af.read( buffer );
@@ -328,7 +328,7 @@ public class TestXa extends AbstractNeo4jTestCase
         buffer.flip();
         active = buffer.asCharBuffer().get();
         buffer.clear();
-        FileChannel fileChannel = new RandomAccessFile( file( "nioneo_logical.log." + 
+        FileChannel fileChannel = new RandomAccessFile( file( "nioneo_logical.log." +
             active ), "rw" ).getChannel();
         if ( fileChannel.size() > size )
         {
@@ -344,18 +344,18 @@ public class TestXa extends AbstractNeo4jTestCase
         fileChannel.force( false );
         fileChannel.close();
     }
-    
+
     public static Pair<Pair<File, File>, Pair<File, File>> copyLogicalLog( String storeDir ) throws IOException
     {
         char active = '1';
         File activeLog = new File( storeDir, "nioneo_logical.log.active" );
-        FileChannel af = new RandomAccessFile( activeLog, 
+        FileChannel af = new RandomAccessFile( activeLog,
             "r" ).getChannel();
         ByteBuffer buffer = ByteBuffer.allocate( 1024 );
         af.read( buffer );
         buffer.flip();
         File activeLogBackup = new File( storeDir, "nioneo_logical.log.bak.active" );
-        FileChannel activeCopy = new RandomAccessFile( 
+        FileChannel activeCopy = new RandomAccessFile(
                 activeLogBackup, "rw" ).getChannel();
         activeCopy.write( buffer );
         activeCopy.close();
@@ -363,10 +363,10 @@ public class TestXa extends AbstractNeo4jTestCase
         buffer.flip();
         active = buffer.asCharBuffer().get();
         buffer.clear();
-        File currentLog = new File( storeDir, "nioneo_logical.log." + 
+        File currentLog = new File( storeDir, "nioneo_logical.log." +
             active );
         FileChannel source = new RandomAccessFile( currentLog, "r" ).getChannel();
-        File currentLogBackup = new File( storeDir, "nioneo_logical.log.bak." + 
+        File currentLogBackup = new File( storeDir, "nioneo_logical.log.bak." +
             active );
         FileChannel dest = new RandomAccessFile( currentLogBackup, "rw" ).getChannel();
         int read = -1;
@@ -440,7 +440,7 @@ public class TestXa extends AbstractNeo4jTestCase
         assertEquals( 0, xaRes.recover( XAResource.TMNOFLAGS ).length );
         xaCon.clearAllTransactions();
     }
-    
+
     private NeoStoreXaDataSource newNeoStore() throws InstantiationException,
             IOException
     {
@@ -563,7 +563,7 @@ public class TestXa extends AbstractNeo4jTestCase
         xaRes = xaCon.getXaResource();
         assertEquals( 0, xaRes.recover( XAResource.TMNOFLAGS ).length );
         xaCon.clearAllTransactions();
-    } 
+    }
 
     @Test
     public void testBrokenCommand() throws Exception
@@ -590,7 +590,7 @@ public class TestXa extends AbstractNeo4jTestCase
         assertEquals( 0, xaRes.recover( XAResource.TMNOFLAGS ).length );
         xaCon.clearAllTransactions();
     }
-    
+
     @Test
     public void testBrokenPrepare() throws Exception
     {
@@ -611,7 +611,7 @@ public class TestXa extends AbstractNeo4jTestCase
         ds.close();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( path() );
-        truncateLogicalLog( 188 ); // master (w/ shortstring) says 155
+        truncateLogicalLog( 184 ); // master (w/ shortstring) says 155
         ds = newNeoStore();
 //        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
 //            lockManager, lockReleaser );
@@ -641,7 +641,7 @@ public class TestXa extends AbstractNeo4jTestCase
         ds.close();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( path() );
-        truncateLogicalLog( 224 ); // master (w/ shortstring) says 171
+        truncateLogicalLog( 220 ); // master (w/ shortstring) says 171
         ds = newNeoStore();
 //        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
 //             lockManager, lockReleaser );
@@ -650,7 +650,7 @@ public class TestXa extends AbstractNeo4jTestCase
         assertEquals( 1, xaRes.recover( XAResource.TMNOFLAGS ).length );
         xaCon.clearAllTransactions();
     }
-    
+
     @Test
     public void testLogVersion()
     {

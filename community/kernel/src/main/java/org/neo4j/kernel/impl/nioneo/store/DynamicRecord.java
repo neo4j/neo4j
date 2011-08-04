@@ -24,7 +24,7 @@ public class DynamicRecord extends Abstract64BitRecord
     private byte[] data = null;
     private char[] charData = null;
     private int length;
-    private long prevBlock = Record.NO_PREV_BLOCK.intValue();
+    // private long prevBlock = Record.NO_PREV_BLOCK.intValue();
     private long nextBlock = Record.NO_NEXT_BLOCK.intValue();
     private boolean isLight = false;
     private int type;
@@ -59,6 +59,7 @@ public class DynamicRecord extends Abstract64BitRecord
         this.length = length;
     }
 
+    @Override
     public void setInUse( boolean inUse )
     {
         super.setInUse( inUse );
@@ -112,15 +113,15 @@ public class DynamicRecord extends Abstract64BitRecord
         return charData;
     }
 
-    public long getPrevBlock()
-    {
-        return prevBlock;
-    }
-
-    public void setPrevBlock( long prevBlock )
-    {
-        this.prevBlock = prevBlock;
-    }
+    // public long getPrevBlock()
+    // {
+    // return prevBlock;
+    // }
+    //
+    // public void setPrevBlock( long prevBlock )
+    // {
+    // this.prevBlock = prevBlock;
+    // }
 
     public long getNextBlock()
     {
@@ -140,7 +141,7 @@ public class DynamicRecord extends Abstract64BitRecord
             inUse() );
         if ( inUse() )
         {
-            buf.append( "," ).append( prevBlock ).append( "," ).append(
+            buf.append( "," )./*append( prevBlock ).*/append( "," ).append(
                 isLight || data == null ? null : data.length ).append( "," ).append( nextBlock )
                 .append( "]" );
         }

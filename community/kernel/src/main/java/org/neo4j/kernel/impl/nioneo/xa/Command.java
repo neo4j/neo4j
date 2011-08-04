@@ -82,7 +82,7 @@ abstract class Command extends XaCommand
         {
             byte inUse = Record.IN_USE.byteValue();
             buffer.putLong( record.getId() ).putInt( record.getType() ).put(
-                inUse ).putLong( record.getPrevBlock() ).putInt(
+                    inUse )/*.putLong( record.getPrevBlock() )*/.putInt(
                 record.getLength() ).putLong( record.getNextBlock() );
             if ( !record.isLight() )
             {
@@ -125,7 +125,7 @@ abstract class Command extends XaCommand
         {
             inUse = true;
             buffer.clear();
-            buffer.limit( 20 );
+            buffer.limit( 12 );
             if ( byteChannel.read( buffer ) != buffer.limit() )
             {
                 return null;
@@ -140,7 +140,7 @@ abstract class Command extends XaCommand
         record.setInUse( inUse, type );
         if ( inUse )
         {
-            record.setPrevBlock( buffer.getLong() );
+            // record.setPrevBlock( buffer.getLong() );
             int nrOfBytes = buffer.getInt();
             record.setNextBlock( buffer.getLong() );
             buffer.clear();
