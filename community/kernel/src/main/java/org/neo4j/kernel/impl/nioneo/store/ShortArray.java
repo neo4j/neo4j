@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.lang.reflect.Array;
 
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.util.Bits;
-
 
 public enum ShortArray
 {
@@ -35,9 +35,21 @@ public enum ShortArray
         }
 
         @Override
-        void apply( Object value, Bits bytes )
+        void push( Object value, Bits bytes, long mask )
         {
-            bytes.or( ((Boolean)value) == Boolean.TRUE ? 1 : 0 );
+            bytes.or( ((Boolean)value).booleanValue() ? (byte)1 : (byte)0, mask );
+        }
+        
+        @Override
+        Object createArray( int ofLength )
+        {
+            return new boolean[ofLength];
+        }
+
+        @Override
+        void pull( Bits bits, Object array, int position, long mask )
+        {
+            Array.setBoolean( array, position, bits.getByte( (byte) mask ) != 0 );
         }
     },
     BYTE( 8 )
@@ -59,9 +71,22 @@ public enum ShortArray
         }
 
         @Override
-        void apply( Object value, Bits bytes )
+        void push( Object value, Bits bytes, long mask )
         {
-            bytes.or( ((Byte)value).byteValue() );
+            bytes.or( ((Byte)value).byteValue(), mask );
+        }
+        
+        @Override
+        Object createArray( int ofLength )
+        {
+            return new byte[ofLength];
+        }
+
+        @Override
+        void pull( Bits bits, Object array, int position, long mask )
+        {
+            byte value = bits.getByte( (byte) mask );
+            Array.setByte( array, position, value );
         }
     },
     SHORT( 16 )
@@ -83,9 +108,22 @@ public enum ShortArray
         }
         
         @Override
-        void apply( Object value, Bits bytes )
+        void push( Object value, Bits bytes, long mask )
         {
-            bytes.or( ((Short)value).shortValue() );
+            bytes.or( ((Short)value).shortValue(), mask );
+        }
+
+        @Override
+        Object createArray( int ofLength )
+        {
+            return new short[ofLength];
+        }
+
+        @Override
+        void pull( Bits bits, Object array, int position, long mask )
+        {
+            short value = bits.getShort( (short) mask );
+            Array.setShort( array, position, value );
         }
     },
     CHAR( 16 )
@@ -107,9 +145,22 @@ public enum ShortArray
         }
         
         @Override
-        void apply( Object value, Bits bytes )
+        void push( Object value, Bits bytes, long mask )
         {
-            bytes.or( ((Character)value).charValue() );
+            bytes.or( ((Character)value).charValue(), mask );
+        }
+
+        @Override
+        Object createArray( int ofLength )
+        {
+            return new char[ofLength];
+        }
+
+        @Override
+        void pull( Bits bits, Object array, int position, long mask )
+        {
+            int value = bits.getInt( (int) mask );
+            Array.setInt( array, position, value );
         }
     },
     INT( 32 )
@@ -131,9 +182,22 @@ public enum ShortArray
         }
 
         @Override
-        void apply( Object value, Bits bytes )
+        void push( Object value, Bits bytes, long mask )
         {
-            bytes.or( ((Integer)value).intValue() );
+            bytes.or( ((Integer)value).intValue(), mask );
+        }
+
+        @Override
+        Object createArray( int ofLength )
+        {
+            return new int[ofLength];
+        }
+
+        @Override
+        void pull( Bits bits, Object array, int position, long mask )
+        {
+            int value = bits.getInt( (int) mask );
+            Array.setInt( array, position, value );
         }
     },
     LONG( 64 )
@@ -155,9 +219,22 @@ public enum ShortArray
         }
 
         @Override
-        void apply( Object value, Bits bytes )
+        void push( Object value, Bits bytes, long mask )
         {
-            bytes.or( ((Long)value).longValue() );
+            bytes.or( ((Long)value).longValue(), mask );
+        }
+
+        @Override
+        Object createArray( int ofLength )
+        {
+            return new long[ofLength];
+        }
+
+        @Override
+        void pull( Bits bits, Object array, int position, long mask )
+        {
+            long value = bits.getLong( mask );
+            Array.setLong( array, position, value );
         }
     },
     FLOAT( 32 )
@@ -179,9 +256,22 @@ public enum ShortArray
         }
 
         @Override
-        void apply( Object value, Bits bytes )
+        void push( Object value, Bits bytes, long mask )
         {
-            bytes.or( Float.floatToIntBits( ((Float)value).floatValue() ) );
+            bytes.or( Float.floatToIntBits( ((Float)value).floatValue() ), mask );
+        }
+
+        @Override
+        Object createArray( int ofLength )
+        {
+            return new float[ofLength];
+        }
+
+        @Override
+        void pull( Bits bits, Object array, int position, long mask )
+        {
+            int value = bits.getInt( (int) mask );
+            Array.setFloat( array, position, Float.intBitsToFloat( value ) );
         }
     },
     DOUBLE( 64 )
@@ -203,9 +293,22 @@ public enum ShortArray
         }
         
         @Override
-        void apply( Object value, Bits bytes )
+        void push( Object value, Bits bytes, long mask )
         {
-            bytes.or( Double.doubleToLongBits( ((Double)value).doubleValue() ) );
+            bytes.or( Double.doubleToLongBits( ((Double)value).doubleValue() ), mask );
+        }
+
+        @Override
+        Object createArray( int ofLength )
+        {
+            return new double[ofLength];
+        }
+
+        @Override
+        void pull( Bits bits, Object array, int position, long mask )
+        {
+            long value = bits.getLong( mask );
+            Array.setDouble( array, position, Double.longBitsToDouble( value ) );
         }
     };
     
@@ -220,36 +323,58 @@ public enum ShortArray
     
     abstract int getRequiredBits( Object value );
     
-    abstract void apply( Object value, Bits bytes );
+    abstract void push( Object value, Bits bits, long mask );
     
-    public static void main( String[] args )
-    {
-        System.out.println( encode( new boolean[] { false, false, true, true,false, false, true, true,false, false, true, true,false, false, true, true}, null, 16 ) );
-    }
+    abstract Object createArray( int ofLength );
     
-    public static boolean encode( Object array, PropertyRecord record, int payloadSizeInBytes )
+    abstract void pull( Bits bits, Object array, int position, long mask );
+    
+    public static Pair<long[], Integer> encode( Object array, int payloadSizeInBytes )
     {
         ShortArray type = typeOf( array );
         int requiredBits = type.calculateRequiredBitsForArray( array );
         int arrayLength = Array.getLength( array );
-        if ( !willFit( requiredBits, arrayLength, payloadSizeInBytes ) )
+        if ( arrayLength > 32 || !willFit( requiredBits, arrayLength, payloadSizeInBytes ) )
         {
             // Too big array
-            return false;
+            return null;
         }
         
         Bits result = new Bits( payloadSizeInBytes );
+        long mask = Bits.rightOverspillMask( requiredBits );
         for ( int i = 0; i < arrayLength; i++ )
         {
-            type.apply( Array.get( array, i ), result );
-            result.shiftLeft( requiredBits );
+            if ( i > 0 )
+            {
+                result.shiftLeft( requiredBits );
+            }
+            type.push( Array.get( array, i ), result, mask );
         }
         long[] longs = result.getLongs();
         // Apply the header all the way to the left
-        longs[0] |= ((long)requiredBits) << ((payloadSizeInBytes*8)-HEADER_SIZE);
+        longs[0] |= ((long)requiredBits) << (64-HEADER_SIZE);
         // TODO Set it in propertyrecord
-        System.out.println( new Bits( longs ) );
-        return true;
+        int header = (type.ordinal()<<5) | (arrayLength);
+        return Pair.of( longs, header );
+    }
+    
+    public static Object decode( Pair<long[], Integer> data )
+    {
+        int typeId = (data.other().intValue() & 0xE0) >> 5;
+        ShortArray type = values()[typeId];
+        int arrayLength = data.other().byteValue() & 0x1F;
+        Object array = type.createArray( arrayLength );
+        
+        long[] longs = data.first();
+        int requiredBits = (int) ((longs[0] & 0xF800000000000000L) >>> (64-HEADER_SIZE));
+        Bits bits = new Bits( longs );
+        long mask = Bits.rightOverspillMask( requiredBits );
+        for ( int i = arrayLength-1; i >= 0; i-- )
+        {
+            type.pull( bits, array, i, mask );
+            bits.shiftRight( requiredBits );
+        }
+        return array;
     }
     
     private static boolean willFit( int requiredBits, int arrayLength, int payloadSizeInBytes )
@@ -278,6 +403,7 @@ public enum ShortArray
         {
             throw new IllegalArgumentException( "String arrays not allowed" );
         }
-        return valueOf( array.getClass().getComponentType().getSimpleName().toUpperCase() );
+        String name = array.getClass().getComponentType().getSimpleName();
+        return valueOf( name.toUpperCase() );
     }
 }

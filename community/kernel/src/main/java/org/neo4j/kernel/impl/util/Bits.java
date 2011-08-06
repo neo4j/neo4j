@@ -62,7 +62,7 @@ public class Bits
         long overspill = 0;
         for ( int i = longs.length-1; i >= 0; i-- )
         {
-            long nextOverspill = (longs[i] & overspillMask) >> (64-steps);
+            long nextOverspill = (longs[i] & overspillMask) >>> (64-steps);
             longs[i] = (longs[i] << steps) | overspill;
             overspill = nextOverspill;
         }
@@ -80,27 +80,42 @@ public class Bits
         }
     }
     
-    public void or( byte value )
+    public void or( byte value, long mask )
     {
-        longs[longs.length-1] |= value;
+        longs[longs.length-1] |= value & mask;
     }
     
-    public void or( short value )
+    public void or( short value, long mask )
     {
-        longs[longs.length-1] |= value;
+        longs[longs.length-1] |= value & mask;
     }
     
-    public void or( int value )
+    public void or( int value, long mask )
     {
-        longs[longs.length-1] |= value;
+        longs[longs.length-1] |= value & mask;
     }
     
-    public void or( long value )
+    public void or( long value, long mask )
     {
-        longs[longs.length-1] |= value;
+        longs[longs.length-1] |= value & mask;
     }
     
-    public long get( long mask )
+    public byte getByte( byte mask )
+    {
+        return (byte) (longs[longs.length-1] & mask);
+    }
+    
+    public short getShort( short mask )
+    {
+        return (short) (longs[longs.length-1] & mask);
+    }
+    
+    public int getInt( int mask )
+    {
+        return (int) (longs[longs.length-1] & mask);
+    }
+    
+    public long getLong( long mask )
     {
         return longs[longs.length-1] & mask;
     }
