@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.util;
 
+/**
+ * Got bits to store, shift and retrieve and they are more than what fits in a long?
+ * Use {@link Bits} then.
+ */
 public class Bits
 {
     // item[0] is most significant, last is least significant
@@ -124,7 +128,10 @@ public class Bits
     {
         return longs;
     }
-    
+
+    /**
+     * A very nice toString, showing each bit, divided into groups of bytes.
+     */
     @Override
     public String toString()
     {
