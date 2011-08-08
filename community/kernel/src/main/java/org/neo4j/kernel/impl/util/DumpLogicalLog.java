@@ -366,17 +366,18 @@ public class DumpLogicalLog
                 return null;
             }
             buffer.flip();
-            PropertyType type = getType( buffer.getInt() );
+            int header = buffer.getInt();
+            PropertyType type = PropertyType.getPropertyType( header, true );
             if ( type == null )
             {
                 return null;
             }
-            record.setType( type );
+            record.setHeader( header );
             record.setInUse( inUse );
             record.setKeyIndexId( buffer.getInt() );
-            record.setPropBlock( buffer.getLong() );
-            record.setPrevProp( buffer.getLong() );
             record.setNextProp( buffer.getLong() );
+            record.setPropBlock( readLongs( buffer, 2 ) );
+            record.setPrevProp( buffer.getLong() );
         }
         buffer.clear();
         buffer.limit( 4 );
@@ -396,6 +397,16 @@ public class DumpLogicalLog
             record.addValueRecord( dr );
         }
         return new Command( record );
+    }
+
+    private static long[] readLongs( ByteBuffer buffer, int count )
+    {
+        long[] result = new long[count];
+        for ( int i = 0; i < count; i++ )
+        {
+            result[i] = buffer.getLong();
+        }
+        return result;
     }
 
     private static PropertyType getType( int type )

@@ -25,44 +25,60 @@ import java.util.List;
 
 public class PropertyRecord extends Abstract64BitRecord
 {
+    /*  [ikkk,kkkk][kkkk,kkkk][kkkk,kkkk][hhhh,hhhh][hhhh,nnnn][nnnn,nnnn]*4[pppp,pppp]*16
+     *
+     * i: inuse
+     * k: key 
+     * h: header for payload
+     * n: next property
+     * p: payload (the actual property value)
+     */
+    
     private PropertyType type;
     private int keyIndexId = Record.NO_NEXT_BLOCK.intValue();
-    private long propBlock = Record.NO_NEXT_BLOCK.intValue();
-    private long prevProp = Record.NO_PREVIOUS_PROPERTY.intValue();
+    private int header;
+    private long[] propBlock;
     private long nextProp = Record.NO_NEXT_PROPERTY.intValue();
     private List<DynamicRecord> valueRecords = new ArrayList<DynamicRecord>();
-    private boolean isLight = false;
-    private long nodeRelId = -1;
-    private boolean nodeIdSet = false;
-    private boolean isChanged = false;
+    private boolean isLight;
+    private long entityId = -1;
+    private boolean nodeIdSet;
+    private boolean isChanged;
+    private long prevProp;
 
     public PropertyRecord( long id )
     {
         super( id );
     }
 
-    public void setType( PropertyType type )
+    public void setHeader( int header )
     {
-        this.type = type;
+        this.header = header;
+        type = PropertyType.getPropertyType( header, false );
+    }
+    
+    public int getHeader()
+    {
+        return header;
     }
 
     public void setNodeId( long nodeId )
     {
         nodeIdSet = true;
-        nodeRelId = nodeId;
+        entityId = nodeId;
     }
 
     public void setRelId( long relId )
     {
         nodeIdSet = false;
-        nodeRelId = relId;
+        entityId = relId;
     }
 
     public long getNodeId()
     {
         if ( nodeIdSet )
         {
-            return nodeRelId;
+            return entityId;
         }
         return -1;
     }
@@ -71,7 +87,7 @@ public class PropertyRecord extends Abstract64BitRecord
     {
         if ( !nodeIdSet )
         {
-            return nodeRelId;
+            return entityId;
         }
         return -1;
     }
@@ -100,7 +116,7 @@ public class PropertyRecord extends Abstract64BitRecord
 
     public PropertyType getType()
     {
-        return type;
+        return PropertyType.getPropertyType( header, false );
     }
 
     public int getKeyIndexId()
@@ -113,24 +129,25 @@ public class PropertyRecord extends Abstract64BitRecord
         this.keyIndexId = keyId;
     }
 
-    public long getPropBlock()
+    public long[] getPropBlock()
     {
         return propBlock;
     }
+    
+    public long getSinglePropBlock()
+    {
+        return propBlock[0];
+    }
 
-    public void setPropBlock( long propBlock )
+    public void setPropBlock( long[] propBlock )
     {
         this.propBlock = propBlock;
     }
-
-    public long getPrevProp()
+    
+    public void setSinglePropBlock( long propBlock )
     {
-        return prevProp;
-    }
-
-    public void setPrevProp( long prevProp )
-    {
-        this.prevProp = prevProp;
+        // TODO Not hardcoded to length 2
+        this.propBlock = new long[] { propBlock, 0 };
     }
 
     public long getNextProp()
@@ -160,7 +177,7 @@ public class PropertyRecord extends Abstract64BitRecord
         buf.append( "PropertyRecord[" ).append( getId() ).append( "," ).append(
             inUse() ).append( "," ).append( type ).append( "," ).append(
             keyIndexId ).append( "," ).append( propBlock ).append( "," )
-            .append( prevProp ).append( "," ).append( nextProp );
+            .append( "," ).append( nextProp );
         buf.append( ", Value[" );
         for ( DynamicRecord record : valueRecords )
         {
@@ -178,5 +195,15 @@ public class PropertyRecord extends Abstract64BitRecord
     public void setChanged()
     {
         isChanged = true;
+    }
+
+    public long getPrevProp()
+    {
+        return prevProp;
+    }
+    
+    public void setPrevProp( long prev )
+    {
+        prevProp = prev;
     }
 }

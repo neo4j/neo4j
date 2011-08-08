@@ -591,7 +591,7 @@ public enum LongerShortString
         if ( string.length() > 29 ) return Pair.of( false, null ); // Not handled by any encoding
         if ( string.equals( "" ) )
         {
-            target.setPropBlock( 0 );
+            target.setPropBlock( null );
             return Pair.of( true, NUMERICAL.name() );
         }
         // Keep track of the possible encodings that can be used for the string
@@ -774,7 +774,8 @@ public enum LongerShortString
             if ( c < 0 || c >= 256 ) return false;
             result = ( result << 8 ) | c;
         }
-        target.setPropBlock( result );
+        // TODO
+//        target.setPropBlock( result );
         return true;
     }
 
@@ -786,7 +787,8 @@ public enum LongerShortString
         {
             result = ( result << 8 ) | ( 0xFF & b );
         }
-        target.setPropBlock( result );
+        // TODO
+//        target.setPropBlock( result );
         return true;
     }
 
@@ -800,7 +802,8 @@ public enum LongerShortString
             if ( i != 0 ) result <<= step;
             result |= encTranslate( data[i] );
         }
-        target.setPropBlock( result );
+        // TODO
+//        target.setPropBlock( result );
         return true;
     }
 

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import org.neo4j.kernel.impl.nioneo.store.Buffer;
+
 /**
  * Got bits to store, shift and retrieve and they are more than what fits in a long?
  * Use {@link Bits} then.
@@ -27,15 +29,20 @@ public class Bits
 {
     // item[0] is most significant, last is least significant
     private final long[] longs;
+    private final int numberOfBytes;
     
     public Bits( int numberOfBytes )
     {
-        longs = new long[numberOfBytes/8];
+        int requiredLongs = numberOfBytes/8;
+        if ( numberOfBytes%8 > 0 ) requiredLongs++;
+        longs = new long[requiredLongs];
+        this.numberOfBytes = numberOfBytes;
     }
     
     public Bits( long[] longs )
     {
         this.longs = longs;
+        this.numberOfBytes = longs.length*8;
     }
     
     private long leftOverspillMask( int steps )
@@ -62,6 +69,16 @@ public class Bits
     
     public void shiftLeft( int steps )
     {
+        while ( steps >= 64 )
+        {
+            for ( int i = 0; i < longs.length-1; i++ )
+            {
+                longs[i] = longs[i+1];
+                longs[i+1] = 0;
+                steps -= 64;
+            }
+        }
+        
         long overspillMask = leftOverspillMask( steps );
         long overspill = 0;
         for ( int i = longs.length-1; i >= 0; i-- )
@@ -74,6 +91,16 @@ public class Bits
     
     public void shiftRight( int steps )
     {
+        while ( steps >= 64 )
+        {
+            for ( int i = longs.length-1; i > 0; i-- )
+            {
+                longs[i] = longs[i-1];
+                longs[i-1] = 0;
+                steps -= 64;
+            }
+        }
+        
         long overspillMask = rightOverspillMask( steps );
         long overspill = 0;
         for ( int i = 0; i < longs.length; i++ )
@@ -127,6 +154,53 @@ public class Bits
     public long[] getLongs()
     {
         return longs;
+    }
+    
+    public void apply( Buffer buffer )
+    {
+        int rest = numberOfBytes%8;
+        if ( rest > 0 )
+        {
+            // Uneven, extract the bytes from the first long
+            int steps = (rest-1)*8;
+            long mask = 0xFFL << steps;
+            long source = longs[0];
+            for ( int i = 0; i < rest; i++ )
+            {
+                byte value = (byte) ((source & mask) >>> steps);
+                buffer.put( value );
+                mask >>>= 8;
+                steps -= 8;
+            }
+        }
+        else
+        {
+            buffer.putLong( longs[0] );
+        }
+        
+        for ( int i = 1; i < longs.length; i++ )
+        {
+            buffer.putLong( longs[i] );
+        }
+    }
+    
+    public void read( Buffer buffer )
+    {
+        int rest = numberOfBytes%8;
+        while ( rest > 0 )
+        {
+            byte value = buffer.get();
+            shiftLeft( 8 );
+            or( value, 0xFF );
+            rest--;
+        }
+        
+        int longs = numberOfBytes/8;
+        for ( int i = 0; i < longs; i++ )
+        {
+            shiftLeft( 64 );
+            or( buffer.getLong(), 0xFFFFFFFFFFFFFFFFL );
+        }
     }
 
     /**

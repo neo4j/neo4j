@@ -20,12 +20,11 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Array;
 
 import org.junit.Test;
-import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.util.Bits;
 
 public class TestShortArray
 {
@@ -46,12 +45,14 @@ public class TestShortArray
     {
         assertCanEncodeAndDecodeToSameValue( value, DEFAULT_PAYLOAD_SIZE );
     }
-    
+
     private void assertCanEncodeAndDecodeToSameValue( Object value, int payloadSize )
     {
-        Pair<long[], Integer> result = ShortArray.encode( value, DEFAULT_PAYLOAD_SIZE );
-        Bits bits = new Bits( result.first() );
-        assertArraysEquals( value, ShortArray.decode( result ) );
+        PropertyRecord target = new PropertyRecord( 0 );
+        boolean encoded = ShortArray.encode( value, target, DEFAULT_PAYLOAD_SIZE );
+        assertTrue( encoded );
+//        Bits bits = new Bits( target.getPropBlock() );
+        assertArraysEquals( value, ShortArray.decode( target ) );
     }
 
     private void assertArraysEquals( Object value1, Object value2 )

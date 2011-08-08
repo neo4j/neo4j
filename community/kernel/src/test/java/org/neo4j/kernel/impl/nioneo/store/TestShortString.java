@@ -153,7 +153,7 @@ public class TestShortString
     {
         PropertyRecord target = new PropertyRecord( 0 );
         assertTrue( "Could not encode \"" + string + "\"", ShortString.encode( string, target ) );
-        long encoded = target.getPropBlock();
+        long encoded = target.getSinglePropBlock();
         String decoded = ShortString.decode( encoded );
         assertEquals( String.format(
                 "Decoded string does not match original, encoded: 0x%s, expected.length=%s, actual.length=%s",
@@ -163,7 +163,7 @@ public class TestShortString
     protected void assertCannotEncode( String string )
     {
         PropertyRecord target = new PropertyRecord( 0 );
-        long expected = target.getPropBlock();
+        long expected = target.getSinglePropBlock();
         assertFalse( "Should not be able to encode \"" + string + "\"", ShortString.encode( string, target ) );
         assertEquals( "PropertyRecord was changed even though encoding failed", expected, target.getPropBlock() );
     }
@@ -222,7 +222,7 @@ public class TestShortString
     private static String roundtrip( String string )
     {
         PropertyRecord target = new PropertyRecord( 0 );
-        if ( ShortString.encode( string, target ) ) return ShortString.decode( target.getPropBlock() );
+        if ( ShortString.encode( string, target ) ) return ShortString.decode( target.getSinglePropBlock() );
         return null;
     }
 

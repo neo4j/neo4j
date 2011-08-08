@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.lang.reflect.Array;
 
-import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.util.Bits;
 
 public enum ShortArray
@@ -329,7 +328,7 @@ public enum ShortArray
     
     abstract void pull( Bits bits, Object array, int position, long mask );
     
-    public static Pair<long[], Integer> encode( Object array, int payloadSizeInBytes )
+    public static boolean encode( Object array, PropertyRecord target, int payloadSizeInBytes )
     {
         ShortArray type = typeOf( array );
         int requiredBits = type.calculateRequiredBitsForArray( array );
@@ -337,7 +336,7 @@ public enum ShortArray
         if ( arrayLength > 32 || !willFit( requiredBits, arrayLength, payloadSizeInBytes ) )
         {
             // Too big array
-            return null;
+            return false;
         }
         
         Bits result = new Bits( payloadSizeInBytes );
@@ -355,17 +354,19 @@ public enum ShortArray
         longs[0] |= ((long)requiredBits) << (64-HEADER_SIZE);
         // TODO Set it in propertyrecord
         int header = (type.ordinal()<<5) | (arrayLength);
-        return Pair.of( longs, header );
+        target.setHeader( header );
+        target.setPropBlock( longs );
+        return true;
     }
     
-    public static Object decode( Pair<long[], Integer> data )
+    public static Object decode( PropertyRecord record )
     {
-        int typeId = (data.other().intValue() & 0xE0) >> 5;
+        int typeId = (record.getHeader() & 0xE0) >> 5;
         ShortArray type = values()[typeId];
-        int arrayLength = data.other().byteValue() & 0x1F;
+        int arrayLength = record.getHeader() & 0x1F;
         Object array = type.createArray( arrayLength );
         
-        long[] longs = data.first();
+        long[] longs = record.getPropBlock();
         int requiredBits = (int) ((longs[0] & 0xF800000000000000L) >>> (64-HEADER_SIZE));
         Bits bits = new Bits( longs );
         long mask = Bits.rightOverspillMask( requiredBits );

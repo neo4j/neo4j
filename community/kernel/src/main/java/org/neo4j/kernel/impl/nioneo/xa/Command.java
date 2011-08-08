@@ -621,16 +621,18 @@ abstract class Command extends XaCommand
             }
             else
             {
-                // means this records value has not change, only place in
+                // means this records value has not changed, only place in
                 // prop chain
                 buffer.putLong( -1 );
             }
             if ( record.inUse() )
             {
-                buffer.putInt( record.getType().intValue() ).putInt(
-                    record.getKeyIndexId() ).putLong( record.getPropBlock() )
-                    .putLong( record.getPrevProp() ).putLong(
-                        record.getNextProp() );
+                buffer.putInt( record.getHeader() ).putInt(
+                    record.getKeyIndexId() ).putLong( record.getNextProp() );
+                for ( long block : record.getPropBlock() )
+                {
+                    buffer.putLong( block );
+                }
             }
             if ( record.isLight() )
             {
@@ -694,17 +696,18 @@ abstract class Command extends XaCommand
                     return null;
                 }
                 buffer.flip();
-                PropertyType type = getType( buffer.getInt() );
+                int header = buffer.getInt();
+                PropertyType type = PropertyType.getPropertyType( header, true );
                 if ( type == null )
                 {
                     return null;
                 }
-                record.setType( type );
+                record.setHeader( header );
                 record.setInUse( inUse );
                 record.setKeyIndexId( buffer.getInt() );
-                record.setPropBlock( buffer.getLong() );
-                record.setPrevProp( buffer.getLong() );
                 record.setNextProp( buffer.getLong() );
+                record.setPropBlock( readLongs( buffer, 2 ) );
+                record.setPrevProp( buffer.getLong() );
             }
             buffer.clear();
             buffer.limit( 4 );
@@ -726,9 +729,14 @@ abstract class Command extends XaCommand
             return new PropertyCommand( neoStore == null ? null : neoStore.getPropertyStore(), record );
         }
 
-        private static PropertyType getType( int type )
+        private static long[] readLongs( ByteBuffer buffer, int count )
         {
-            return PropertyType.getPropertyType( type, true );
+            long[] result = new long[count];
+            for ( int i = 0; i < count; i++ )
+            {
+                result[i] = buffer.getLong();
+            }
+            return result;
         }
 
         @Override
