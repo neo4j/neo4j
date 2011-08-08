@@ -716,11 +716,6 @@ public class XaResourceManager
             throw new IOException( "Tried to apply transaction with txId=" + txId + 
                     " but last committed txId=" + lastCommittedTxId );
         }
-        else
-        {
-            msgLog.logMessage( "Tried to apply transaction with txId=" + txId + 
-                    " but last committed txId=" + lastCommittedTxId, true );
-        }
     }
     
     public synchronized long applyPreparedTransaction(
