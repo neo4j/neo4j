@@ -30,7 +30,7 @@ import java.util.Collection;
 
 import org.junit.Test;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.test.subprocess.SubProcess;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public class TestRecovery
 {
@@ -39,14 +39,15 @@ public class TestRecovery
     {
         String path = "target/test-data/recovery";
         deleteRecursively( new File( path ) );
-        DatabaseAsSubProcess process = new ServerProcess().start( path );
-        process.awaitStarted();
+        
         int numberOfTransactions = 10;
-        for ( int i = 0; i < numberOfTransactions; i++ )
-        {
-            process.createNode();
-        }
-        SubProcess.kill( process );
+        Process process = Runtime.getRuntime().exec( new String[] { "java", "-cp",
+                System.getProperty( "java.class.path" ),
+                DoSomeTransactionsThenWait.class.getName(), path, "" + numberOfTransactions } );
+        waitForFileToExist( path, "done" );
+
+        process.destroy();
+        process.waitFor();
         Collection<String> toLookFor = asList( "Injected one phase commit" );
         assertEquals( 0, countMentionsInMessagesLog( path, toLookFor ) );
         
@@ -54,9 +55,18 @@ public class TestRecovery
         assertEquals( numberOfTransactions, countMentionsInMessagesLog( path, toLookFor ) );
     }
 
+    private void waitForFileToExist( String path, String name ) throws Exception
+    {
+        File file = new File( path, name );
+        while ( !file.exists() )
+        {
+            Thread.sleep( 10 );
+        }
+    }
+
     public static int countMentionsInMessagesLog( String path, Collection<String> linesContaining ) throws Exception
     {
-        File messageLogFile = new File( path, "messages.log" );
+        File messageLogFile = new File( path, StringLogger.DEFAULT_NAME );
         BufferedReader reader = new BufferedReader( new FileReader( messageLogFile ) );
         String line = null;
         int counter = 0;
