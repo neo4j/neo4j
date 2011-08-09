@@ -40,7 +40,6 @@ function versionSwitcher( $ )
   var CONTENT_ELEMENT_LOAD = contentElements.join( ",div." ).replace( /^,/, " " );
   var url = window.location;
   var path = url.pathname;
-  var versionToInject = url.search.length > 1 ? url.search.substr( 1 ) : null;
   var pathinfo = getVersionAndPage( path );
   if ( !pathinfo ) return;
   var currentVersion = pathinfo.version;
@@ -56,19 +55,6 @@ function versionSwitcher( $ )
   // select the current option
   setSelector2CurrentVersion( versionSelector, currentVersion );
 
-  // handle browsing in a different version
-  if ( versionToInject && currentVersion != versionToInject )
-  {
-    loadNewVersion( versionToInject, function ( version )
-    {
-      currentVersion = version;
-      setSelector2CurrentVersion( versionSelector, currentVersion );
-    }, function ( version )
-    {
-      showMessage( 'Could not load version "' + version + '".', 'Error', 5000 );
-    } );
-  }
-
   // add the dropdown to the page
   contentElement.before( versionSelector );
 
@@ -77,10 +63,7 @@ function versionSwitcher( $ )
   {
     if ( this.selectedIndex === -1 ) return;
     var newVersion = this.options[this.selectedIndex].value;
-    loadNewVersion( newVersion, function( version )
-    {
-      showMessage( 'Version "' + version + '" was successfully loaded.', 'Success');
-    } );
+    loadNewVersion( newVersion );
   } );
 
   // PRIVATE FUNCTIONS
@@ -128,29 +111,37 @@ function versionSwitcher( $ )
   /**
    * Load page contents from a different version into the page.
    * Also loads navigation header/footer from that version.
-   * The success and failure parameters are optional functions that will 
-   * receive  the new version as their first argument.
    */
-  function loadNewVersion ( newVersion, success, failure )
+  function loadNewVersion ( newVersion )
+  {
+    redirect2NewVersion( newVersion );
+  }
+
+  /**
+   * Redirect to another version.
+   */
+  function redirect2NewVersion ( newVersion )
+  {
+    location.assign( "/chunked/" + newVersion + "/" + currentPage );
+  }
+
+  /**
+   * Load page contents from a different version into the page.
+   * Also loads navigation header/footer from that version.
+   */
+  function loadNewVersionIntoPage ( newVersion )
   {
     contentElement.load( "/chunked/" + newVersion + "/" + currentPage + CONTENT_ELEMENT_LOAD, function( response, status )
+
     {
       if ( status == "success" )
       {
-        if ( typeof success == 'function' )
-        {
-          success( newVersion );
-        }
         SyntaxHighlighter.highlight();
         // append version to URL to enable browsing of a different version
         fixNavigation ( $( "a.xref, div.toc a", contentElement ), newVersion );
         // load the navheader and navfooter as well
         loadPart( "navheader", newVersion, currentPage );
         loadPart( "navfooter", newVersion, currentPage );
-      }
-      else if ( typeof failure == 'function' ) 
-      {
-        failure( newVersion );
       }
     } );
   }
@@ -193,18 +184,6 @@ function versionSwitcher( $ )
         fixNavigation( $( "div." + partName + " a" ), newVersion );
       }
     } );
-  }
-
-  /**
-   * Show a message that will fade out automatically.
-   * Header text and time (to fade, in ms) are optional.
-   */
-  function showMessage ( text, header, time )
-  {
-    var options = {};
-    options.life = time ? time : 2000;
-    if ( header ) options.header = header;
-    $.jGrowl( text, options );
   }
 
   /**

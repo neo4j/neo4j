@@ -43,11 +43,6 @@
 
 <script type="text/javascript" src="js/jquery-1.6.2.min.js"></script>
 
-<!-- JGrowl -->
-
-<script type="text/javascript" src="js/jquery.jgrowl_minimized.js"></script>
-<link href="css/jquery.jgrowl.css" rel="stylesheet" type="text/css" />
-
 <!-- Image Scaler -->
 
 <script type="text/javascript" src="js/imagescaler.js"></script>
