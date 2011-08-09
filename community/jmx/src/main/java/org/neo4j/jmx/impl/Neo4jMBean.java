@@ -36,19 +36,19 @@ public abstract class Neo4jMBean extends StandardMBean
 {
     final ObjectName objectName;
 
-    protected Neo4jMBean( ManagementData management, boolean isMXBean )
+    protected Neo4jMBean( ManagementData management, boolean isMXBean, String... extraNaming )
     {
         super( management.provider.beanInterface, isMXBean );
         management.validate( getClass() );
-        this.objectName = management.getObjectName();
+        this.objectName = management.getObjectName( extraNaming );
     }
 
-    protected Neo4jMBean( ManagementData management )
+    protected Neo4jMBean( ManagementData management, String... extraNaming )
             throws NotCompliantMBeanException
     {
         super( management.provider.beanInterface );
         management.validate( getClass() );
-        this.objectName = management.getObjectName();
+        this.objectName = management.getObjectName( extraNaming );
     }
 
     /** Constructor for {@link KernelBean} */
@@ -64,7 +64,7 @@ public abstract class Neo4jMBean extends StandardMBean
             throws NotCompliantMBeanException
     {
         super( DynamicMBean.class );
-        this.objectName = support.createObjectName( kernel.instanceId(), beanName );
+        this.objectName = support.createObjectName( kernel.instanceId(), beanName, false );
     }
 
     @Override

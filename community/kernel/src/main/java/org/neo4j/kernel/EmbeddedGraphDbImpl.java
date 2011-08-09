@@ -24,6 +24,7 @@ import java.io.FileInputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -223,29 +224,32 @@ class EmbeddedGraphDbImpl
                 kernelPanicEventGenerator, rollbackHook, inputParams.get(Config.TXMANAGER_IMPLEMENTATION) );
     }
 
-    <T> T getManagementBean( Class<T> beanClass )
+    <T> Collection<T> getManagementBeans( Class<T> beanClass )
     {
         KernelExtension<?> jmx = Service.load( KernelExtension.class, "kernel jmx" );
         if ( jmx != null )
         {
-            Method getManagementBean = null;
+            Method getManagementBeans = null;
             Object state = jmx.getState( extensions );
             if ( state != null )
             {
                 try
                 {
-                    getManagementBean = state.getClass().getMethod( "getManagementBean", Class.class );
+                    getManagementBeans = state.getClass().getMethod( "getManagementBeans", Class.class );
                 }
                 catch ( Exception e )
                 {
                     // getManagementBean will be null
                 }
             }
-            if ( getManagementBean != null )
+            if ( getManagementBeans != null )
             {
                 try
                 {
-                    return beanClass.cast( getManagementBean.invoke( state, beanClass ) );
+                    @SuppressWarnings( "unchecked" ) Collection<T> result =
+                            (Collection<T>) getManagementBeans.invoke( state, beanClass );
+                    if ( result == null ) return Collections.emptySet();
+                    return result;
                 }
                 catch ( InvocationTargetException ex )
                 {

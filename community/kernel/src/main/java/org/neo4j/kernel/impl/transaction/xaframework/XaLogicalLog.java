@@ -1296,6 +1296,8 @@ public class XaLogicalLog
         scanIsComplete = true;
 //        log.info( "Tx[" + nextTxId + "] " + " applied successfully." );
         logRecoveryMessage( "Applied external tx and generated tx id=" + nextTxId );
+        
+        checkLogRotation();
 //        System.out.println( "applyTxWithoutTxId#end @ pos: " + writeBuffer.getFileChannelPosition() );
     }
 

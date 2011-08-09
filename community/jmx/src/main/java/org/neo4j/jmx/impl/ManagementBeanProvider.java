@@ -19,6 +19,8 @@
  */
 package org.neo4j.jmx.impl;
 
+import java.util.Collections;
+
 import javax.management.DynamicMBean;
 import javax.management.NotCompliantMBeanException;
 
@@ -36,25 +38,52 @@ public abstract class ManagementBeanProvider extends Service
         this.beanInterface = beanInterface;
     }
 
-    protected abstract Neo4jMBean createMBean( ManagementData management )
-            throws NotCompliantMBeanException;
+    protected Iterable<? extends Neo4jMBean> createMBeans( ManagementData management )
+            throws NotCompliantMBeanException
+    {
+        return Collections.singleton( createMBean( management ) );
+    }
+
+    protected Iterable<? extends Neo4jMBean> createMXBeans( ManagementData management )
+            throws NotCompliantMBeanException
+    {
+        Class<?> implClass;
+        try
+        {
+            implClass = getClass().getDeclaredMethod( "createMBeans", ManagementData.class ).getDeclaringClass();
+        }
+        catch ( Exception e )
+        {
+            implClass = ManagementBeanProvider.class; // Assume no override
+        }
+        if ( implClass != ManagementBeanProvider.class )
+        { // if createMBeans is overridden, delegate to it
+            return createMBeans( management );
+        }
+        else
+        { // otherwise delegate to the createMXBean method and create a list
+            return Collections.singleton( createMXBean( management ) );
+        }
+    }
+
+    protected abstract Neo4jMBean createMBean( ManagementData management ) throws NotCompliantMBeanException;
 
     protected Neo4jMBean createMXBean( ManagementData management ) throws NotCompliantMBeanException
     {
         return createMBean( management );
     }
 
-    final Neo4jMBean loadBean( KernelData kernel, ManagementSupport support )
+    final Iterable<? extends Neo4jMBean> loadBeans( KernelData kernel, ManagementSupport support )
     {
         try
         {
             if ( support.supportsMxBeans() )
             {
-                return createMXBean( new ManagementData( this, kernel, support ) );
+                return createMXBeans( new ManagementData( this, kernel, support ) );
             }
             else
             {
-                return createMBean( new ManagementData( this, kernel, support ) );
+                return createMBeans( new ManagementData( this, kernel, support ) );
             }
         }
         catch ( Exception e )

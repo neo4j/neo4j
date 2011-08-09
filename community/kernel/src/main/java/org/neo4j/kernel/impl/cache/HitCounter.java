@@ -17,13 +17,38 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction;
+package org.neo4j.kernel.impl.cache;
 
-public interface DatabaseAsSubProcess
+import org.neo4j.helpers.Counter;
+
+final class HitCounter
 {
-    void createNode();
-    
-    void shutdown();
+    private final Counter hits, miss;
 
-    void awaitStarted();
+    public HitCounter( Counter hits, Counter miss )
+    {
+        this.hits = hits;
+        this.miss = miss;
+    }
+
+    public <T> T count( T item )
+    {
+        ( ( item == null ) ? miss : hits ).inc();
+        return item;
+    }
+
+    public long getHitsCount()
+    {
+        return hits.count();
+    }
+
+    public long getMissCount()
+    {
+        return miss.count();
+    }
+
+    public static HitCounter create()
+    {
+        return new HitCounter( Counter.atomic(), Counter.atomic() );
+    }
 }

@@ -31,7 +31,7 @@ public class StrongReferenceCache<K,V> implements Cache<K,V>
     {
         this.name = name;
     }
-    
+
     public void clear()
     {
         cache.clear();
@@ -43,7 +43,7 @@ public class StrongReferenceCache<K,V> implements Cache<K,V>
 
     public V get( K key )
     {
-        return cache.get( key );
+        return counter.count( cache.get( key ) );
     }
 
     public String getName()
@@ -74,6 +74,20 @@ public class StrongReferenceCache<K,V> implements Cache<K,V>
     public V remove( K key )
     {
         return cache.remove( key );
+    }
+
+    private final HitCounter counter = HitCounter.create();
+
+    @Override
+    public long hitCount()
+    {
+        return counter.getHitsCount();
+    }
+
+    @Override
+    public long missCount()
+    {
+        return counter.getMissCount();
     }
 
     public void resize( int newSize )

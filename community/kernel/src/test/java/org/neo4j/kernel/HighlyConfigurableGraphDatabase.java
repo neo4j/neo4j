@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel;
 
+import java.util.Collection;
 import java.util.Map;
 
 import org.neo4j.graphdb.Node;
@@ -39,7 +40,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 public class HighlyConfigurableGraphDatabase extends AbstractGraphDatabase
 {
     private final EmbeddedGraphDbImpl impl;
-    
+
     public HighlyConfigurableGraphDatabase( String storeDir, Map<String, String> config,
             IdGeneratorFactory idGenerators, FileSystemAbstraction fileSystem )
     {
@@ -144,9 +145,9 @@ public class HighlyConfigurableGraphDatabase extends AbstractGraphDatabase
     }
 
     @Override
-    public <T> T getManagementBean( Class<T> type )
+    public <T> Collection<T> getManagementBeans( Class<T> type )
     {
-        return impl.getManagementBean( type );
+        return impl.getManagementBeans( type );
     }
 
     @Override

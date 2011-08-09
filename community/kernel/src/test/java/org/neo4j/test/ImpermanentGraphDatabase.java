@@ -21,6 +21,7 @@ package org.neo4j.test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,8 +41,8 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
  */
 public class ImpermanentGraphDatabase extends AbstractGraphDatabase
 {
-    private EmbeddedGraphDatabase inner;
-    private String storeDir;
+    private final EmbeddedGraphDatabase inner;
+    private final String storeDir;
 
     public ImpermanentGraphDatabase( String storeDir, Map<String, String> params )
     {
@@ -185,9 +186,9 @@ public class ImpermanentGraphDatabase extends AbstractGraphDatabase
     }
 
     @Override
-    public <T> T getManagementBean( Class<T> type )
+    public <T> Collection<T> getManagementBeans( Class<T> type )
     {
-        return inner.getManagementBean( type );
+        return inner.getManagementBeans( type );
     }
 
     @Override

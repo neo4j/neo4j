@@ -29,6 +29,7 @@ import java.util.Map;
 
 public class StringLogger
 {
+    public static final String DEFAULT_NAME = "messages.log";
     public static final StringLogger SYSTEM = 
         new StringLogger( new PrintWriter( System.out ) );
     private static final int DEFAULT_THRESHOLD_FOR_ROTATION_MB = 100;
@@ -95,7 +96,7 @@ public class StringLogger
     
     private static String defaultFileName( String storeDir )
     {
-        return new File( storeDir, "messages.log" ).getAbsolutePath();
+        return new File( storeDir, DEFAULT_NAME ).getAbsolutePath();
     }
     
     public void logMessage( String msg )

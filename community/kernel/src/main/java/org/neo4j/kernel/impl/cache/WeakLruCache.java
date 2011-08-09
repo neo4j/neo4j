@@ -29,38 +29,38 @@ public class WeakLruCache<K,V> extends ReferenceCache<K,V>
 {
     private final ConcurrentHashMap<K,WeakValue<K,V>> cache =
         new ConcurrentHashMap<K,WeakValue<K,V>>();
-    
-    private final WeakReferenceQueue<K,V> refQueue = 
+
+    private final WeakReferenceQueue<K,V> refQueue =
         new WeakReferenceQueue<K,V>();
-    
+
     private final String name;
-    
+
     public WeakLruCache( String name )
     {
         this.name = name;
     }
-    
+
     public void put( K key, V value )
     {
-        WeakValue<K,V> ref = 
-            new WeakValue<K,V>( key, value, (ReferenceQueue<V>) refQueue ); 
+        WeakValue<K,V> ref =
+            new WeakValue<K,V>( key, value, (ReferenceQueue<V>) refQueue );
         cache.put( key, ref );
         pollClearedValues();
     }
-    
+
     public void putAll( Map<K,V> map )
     {
         Map<K,WeakValue<K,V>> softMap = new HashMap<K,WeakValue<K,V>>( map.size() * 2 );
         for ( Map.Entry<K, V> entry : map.entrySet() )
         {
-            WeakValue<K,V> ref = 
+            WeakValue<K,V> ref =
                 new WeakValue<K,V>( entry.getKey(), entry.getValue(), (ReferenceQueue<V>) refQueue );
             softMap.put( entry.getKey(), ref );
         }
         cache.putAll( softMap );
         pollClearedValues();
     }
-    
+
     public V get( K key )
     {
         WeakReference<V> ref = cache.get( key );
@@ -70,11 +70,11 @@ public class WeakLruCache<K,V> extends ReferenceCache<K,V>
             {
                 cache.remove( key );
             }
-            return ref.get();
+            return counter.count( ref.get() );
         }
-        return null;
+        return counter.<V>count( null );
     }
-    
+
     public V remove( K key )
     {
         WeakReference<V> ref = cache.remove( key );
@@ -85,6 +85,7 @@ public class WeakLruCache<K,V> extends ReferenceCache<K,V>
         return null;
     }
 
+    @Override
     protected void pollClearedValues()
     {
         WeakValue<K,V> clearedValue = refQueue.safePoll();
@@ -94,15 +95,29 @@ public class WeakLruCache<K,V> extends ReferenceCache<K,V>
             clearedValue = refQueue.safePoll();
         }
     }
-    
+
     public int size()
     {
         return cache.size();
     }
-    
+
     public void clear()
     {
         cache.clear();
+    }
+
+    private final HitCounter counter = HitCounter.create();
+
+    @Override
+    public long hitCount()
+    {
+        return counter.getHitsCount();
+    }
+
+    @Override
+    public long missCount()
+    {
+        return counter.getMissCount();
     }
 
     public void elementCleaned( V value )

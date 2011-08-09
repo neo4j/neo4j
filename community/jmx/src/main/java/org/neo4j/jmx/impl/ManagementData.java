@@ -41,9 +41,9 @@ public final class ManagementData
         return kernel;
     }
 
-    ObjectName getObjectName()
+    ObjectName getObjectName( String... extraNaming )
     {
-        ObjectName name = support.createObjectName( kernel.instanceId(), provider.beanInterface );
+        ObjectName name = support.createObjectName( kernel.instanceId(), provider.beanInterface, extraNaming );
         if ( name == null )
         {
             throw new IllegalArgumentException( provider.beanInterface

@@ -20,40 +20,56 @@
 package org.neo4j.kernel.impl.cache;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 public class NoCache<K,V> implements Cache<K,V>
 {
     private final String name;
-    
+    private volatile long misses;
+    private static final AtomicLongFieldUpdater<NoCache> MISSES = AtomicLongFieldUpdater.newUpdater( NoCache.class,
+            "misses" );
+
     public NoCache( String name )
     {
         this.name = name;
     }
-    
+
     public void put( K key, V value )
     {
     }
-    
+
     public void putAll( Map<K,V> map )
     {
     }
-    
+
     public V get( K key )
     {
+        MISSES.incrementAndGet( this );
         return null;
     }
-    
+
     public V remove( K key )
     {
         return null;
     }
-    
-    
+
+    @Override
+    public long hitCount()
+    {
+        return 0;
+    }
+
+    @Override
+    public long missCount()
+    {
+        return misses;
+    }
+
     public int size()
     {
         return 0;
     }
-    
+
     public void clear()
     {
     }
