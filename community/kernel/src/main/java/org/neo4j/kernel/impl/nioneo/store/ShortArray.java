@@ -19,13 +19,15 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static java.util.Arrays.copyOf;
+
 import java.lang.reflect.Array;
 
 import org.neo4j.kernel.impl.util.Bits;
 
 public enum ShortArray
 {
-    BOOLEAN( 1 )
+    BOOLEAN( 1, Boolean.class )
     {
         @Override
         int getRequiredBits( Object value )
@@ -51,7 +53,7 @@ public enum ShortArray
             Array.setBoolean( array, position, bits.getByte( (byte) mask ) != 0 );
         }
     },
-    BYTE( 8 )
+    BYTE( 8, Byte.class )
     {
         @Override
         int getRequiredBits( Object value )
@@ -88,7 +90,7 @@ public enum ShortArray
             Array.setByte( array, position, value );
         }
     },
-    SHORT( 16 )
+    SHORT( 16, Short.class )
     {
         @Override
         int getRequiredBits( Object value )
@@ -125,7 +127,7 @@ public enum ShortArray
             Array.setShort( array, position, value );
         }
     },
-    CHAR( 16 )
+    CHAR( 16, Character.class )
     {
         @Override
         int getRequiredBits( Object value )
@@ -159,10 +161,10 @@ public enum ShortArray
         void pull( Bits bits, Object array, int position, long mask )
         {
             int value = bits.getInt( (int) mask );
-            Array.setInt( array, position, value );
+            Array.setChar( array, position, (char)value );
         }
     },
-    INT( 32 )
+    INT( 32, Integer.class )
     {
         @Override
         int getRequiredBits( Object value )
@@ -199,7 +201,7 @@ public enum ShortArray
             Array.setInt( array, position, value );
         }
     },
-    LONG( 64 )
+    LONG( 64, Long.class )
     {
         @Override
         int getRequiredBits( Object value )
@@ -236,7 +238,7 @@ public enum ShortArray
             Array.setLong( array, position, value );
         }
     },
-    FLOAT( 32 )
+    FLOAT( 32, Float.class )
     {
         @Override
         int getRequiredBits( Object value )
@@ -273,7 +275,7 @@ public enum ShortArray
             Array.setFloat( array, position, Float.intBitsToFloat( value ) );
         }
     },
-    DOUBLE( 64 )
+    DOUBLE( 64, Double.class )
     {
         @Override
         int getRequiredBits( Object value )
@@ -315,9 +317,12 @@ public enum ShortArray
     
     final int maxBits;
 
-    private ShortArray( int maxBits )
+    private final Class<?> boxedClass;
+
+    private ShortArray( int maxBits, Class<?> boxedClass )
     {
         this.maxBits = maxBits;
+        this.boxedClass = boxedClass;
     }
     
     abstract int getRequiredBits( Object value );
@@ -328,9 +333,19 @@ public enum ShortArray
     
     abstract void pull( Bits bits, Object array, int position, long mask );
     
+    boolean matches( Class<?> cls )
+    {
+        return boxedClass.equals( cls );
+    }
+    
     public static boolean encode( Object array, PropertyRecord target, int payloadSizeInBytes )
     {
         ShortArray type = typeOf( array );
+        if ( type == null )
+        {
+            return false;
+        }
+        
         int requiredBits = type.calculateRequiredBitsForArray( array );
         int arrayLength = Array.getLength( array );
         if ( arrayLength > 32 || !willFit( requiredBits, arrayLength, payloadSizeInBytes ) )
@@ -359,14 +374,14 @@ public enum ShortArray
     
     public static Object decode( PropertyRecord record )
     {
-        int typeId = (record.getHeader() & 0xE0) >> 5;
+        int typeId = (record.getHeader() & 0x3E0) >> 5;
         ShortArray type = values()[typeId];
         int arrayLength = record.getHeader() & 0x1F;
         Object array = type.createArray( arrayLength );
         
         long[] longs = record.getPropBlock();
         int requiredBits = (int) ((longs[0] & 0xF800000000000000L) >>> (64-HEADER_SIZE));
-        Bits bits = new Bits( longs );
+        Bits bits = new Bits( copyOf( longs, longs.length ) );
         long mask = Bits.rightOverspillMask( requiredBits );
         for ( int i = arrayLength-1; i >= 0; i-- )
         {
@@ -398,11 +413,21 @@ public enum ShortArray
     public static ShortArray typeOf( Object array )
     {
         Class<?> componentType = array.getClass().getComponentType();
-        if ( componentType.equals( String.class ) )
+        if ( componentType.isPrimitive() )
         {
-            throw new IllegalArgumentException( "String arrays not allowed" );
+            String name = componentType.getSimpleName();
+            return valueOf( name.toUpperCase() );
         }
-        String name = array.getClass().getComponentType().getSimpleName();
-        return valueOf( name.toUpperCase() );
+        else
+        {
+            for ( ShortArray type : values() )
+            {
+                if ( type.matches( componentType ) )
+                {
+                    return type;
+                }
+            }
+        }
+        return null;
     }
 }

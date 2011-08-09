@@ -36,6 +36,7 @@ import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.DebugInterface;
 import org.neo4j.test.subprocess.SubProcess;
 
+@Ignore
 public class SubProcessTest
 {
     private static final String MESSAGE = "message";

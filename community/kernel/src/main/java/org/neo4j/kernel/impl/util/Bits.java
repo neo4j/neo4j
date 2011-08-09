@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import java.util.Arrays;
+
 import org.neo4j.kernel.impl.nioneo.store.Buffer;
 
 /**
@@ -153,7 +155,7 @@ public class Bits
     
     public long getLong( long mask )
     {
-        return longs[longs.length-1] & mask;
+        return (longs[longs.length-1] & mask);
     }
     
     public long[] getLongs()
@@ -230,5 +232,11 @@ public class Bits
             builder.append( "]" );
         }
         return builder.toString();
+    }
+    
+    @Override
+    public Bits clone()
+    {
+        return new Bits( Arrays.copyOf( longs, longs.length ) );
     }
 }

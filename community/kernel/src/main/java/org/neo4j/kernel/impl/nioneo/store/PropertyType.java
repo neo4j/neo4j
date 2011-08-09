@@ -24,20 +24,6 @@ package org.neo4j.kernel.impl.nioneo.store;
  */
 public enum PropertyType
 {
-//    ILLEGAL( 0 )
-//    {
-//        @Override
-//        public Object getValue( PropertyRecord record, PropertyStore store )
-//        {
-//            throw new InvalidRecordException( "Invalid type: 0 for record " + record );
-//        }
-//
-//        @Override
-//        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
-//        {
-//            throw new InvalidRecordException( "Invalid type: 0 for record " + record );
-//        }
-//    },
     BOOL( 0 )
     {
         @Override
@@ -221,15 +207,14 @@ public enum PropertyType
         @Override
         public Object getValue( PropertyRecord record, PropertyStore store )
         {
-            // TODO Auto-generated method stub
-            return null;
+            return ShortArray.decode( record );
         }
 
         @Override
         public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
         {
-            // TODO Auto-generated method stub
-            return null;
+            return PropertyDatas.forStringOrArray( record.getKeyIndexId(), record.getId(),
+                    getValue( record, null ) );
         }
 
         @Override
@@ -241,6 +226,7 @@ public enum PropertyType
     ;
 
     private final int type;
+    private static int payloadSize = PropertyStore.DEFAULT_PAYLOAD_SIZE;
 
     PropertyType( int type )
     {
@@ -298,5 +284,29 @@ public enum PropertyType
         case 3: return SHORT_ARRAY;
         }
         throw new InvalidRecordException( "Unknown property type for header " + header );
+    }
+    
+    public static int getPayloadSize()
+    {
+        return payloadSize;
+    }
+    
+    public static int getPayloadSizeLongs()
+    {
+        return payloadSize >>> 3;
+    }
+    
+    public static void main( String[] args )
+    {
+        System.out.println( getPayloadSize() + ", " + getPayloadSizeLongs() );
+    }
+    
+    public static void setPayloadSize( int newPayloadSize )
+    {
+        if ( newPayloadSize%8 != 0 )
+        {
+            throw new RuntimeException( "Payload must be divisible by 8" );
+        }
+        payloadSize = newPayloadSize;
     }
 }

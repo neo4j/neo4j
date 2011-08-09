@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.neo4j.kernel.impl.nioneo.store.PropertyType.getPayloadSizeLongs;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -28,7 +30,7 @@ public class PropertyRecord extends Abstract64BitRecord
     private PropertyType type;
     private int keyIndexId = Record.NO_NEXT_BLOCK.intValue();
     private int header;
-    private long[] propBlock;
+    private long[] propBlock = new long[getPayloadSizeLongs()];
     private long nextProp = Record.NO_NEXT_PROPERTY.intValue();
     private long prevProp = Record.NO_NEXT_PROPERTY.intValue();
     private List<DynamicRecord> valueRecords = new ArrayList<DynamicRecord>();
@@ -137,8 +139,11 @@ public class PropertyRecord extends Abstract64BitRecord
     
     public void setSinglePropBlock( long propBlock )
     {
-        // TODO Not hardcoded to length 2
-        this.propBlock = new long[] { propBlock, 0 };
+        this.propBlock[0] = propBlock;
+        for ( int i = 1; i < this.propBlock.length; i++ )
+        {
+            this.propBlock[i] = 0;
+        }
     }
 
     public long getNextProp()

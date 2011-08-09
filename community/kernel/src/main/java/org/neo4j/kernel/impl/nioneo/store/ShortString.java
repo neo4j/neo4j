@@ -364,7 +364,7 @@ enum ShortString
         if ( string.length() > 15 ) return false; // Not handled by any encoding
         if ( string.equals( "" ) )
         {
-            target.setPropBlock( null );
+            applyInRecord( target, 0 );
             return true;
         }
         // Keep track of the possible encodings that can be used for the string
@@ -476,6 +476,12 @@ enum ShortString
         return false;
     }
 
+    private static void applyInRecord( PropertyRecord target, long propBlock )
+    {
+        target.setHeader( 0x2 << 10 );
+        target.setSinglePropBlock( propBlock );
+    }
+
     /**
      * Decode a short string represented as a long
      *
@@ -547,8 +553,7 @@ enum ShortString
             if ( c < 0 || c >= 256 ) return false;
             result = ( result << 8 ) | c;
         }
-        target.setSinglePropBlock( result );
-        target.setHeader( 0x2 << 10 );
+        applyInRecord( target, result );
         return true;
     }
 
@@ -560,8 +565,7 @@ enum ShortString
         {
             result = ( result << 8 ) | ( 0xFF & b );
         }
-        target.setSinglePropBlock( result );
-        target.setHeader( 0x2 << 10 );
+        applyInRecord( target, result );
         return true;
     }
 
@@ -575,8 +579,7 @@ enum ShortString
             if ( i != 0 ) result <<= step;
             result |= encTranslate( data[i] );
         }
-        target.setSinglePropBlock( result );
-        target.setHeader( 0x2 << 10 );
+        applyInRecord( target, result );
         return true;
     }
 

@@ -405,6 +405,7 @@ public class PropertyStore extends AbstractStore implements Store
 
         Bits bits = new Bits( 30 );
         bits.read( buffer );
+        Bits originalBits = bits.clone();
         
         // TODO not hardcoded to 2
         long[] propBlock = new long[2];
@@ -417,25 +418,30 @@ public class PropertyStore extends AbstractStore implements Store
         record.setPropBlock( propBlock );
         
         // TODO Remove this later
-        long prevProp = bits.getUnsignedInt( 0xFFFFFFFF );
+        long prevProp = bits.getLong( 0xFFFFFFFFL );
         bits.shiftRight( 32 );
-        long prevMod = bits.getByte( (byte)0xF );
+        long prevMod = (long)bits.getByte( (byte)0xF ) << 32;
         bits.shiftRight( 8 );
         record.setPrevProp( longFromIntAndMod( prevProp, prevMod ) );
         
-        long nextProp = bits.getUnsignedInt( 0xFFFFFFFF );
+        long nextProp = bits.getLong( 0xFFFFFFFFL );
         bits.shiftRight( 32 );
-        long nextMod = bits.getByte( (byte)0xF );
+        long nextMod = (long)bits.getByte( (byte)0xF ) << 32;
         bits.shiftRight( 4 );
         record.setNextProp( longFromIntAndMod( nextProp, nextMod ) );
         
-        record.setHeader( bits.getInt( 0xFFF ) );
+        int header = bits.getInt( 0xFFF );
         bits.shiftRight( 12 );
         
         record.setKeyIndexId( bits.getInt( 0x7FFFFF ) );
         bits.shiftRight( 23 );
         
         record.setInUse( bits.getByte( (byte) 0x1 ) == 1 );
+        if ( !record.inUse() )
+        {
+            throw new InvalidRecordException( "Record[" + id + "] not in use" );
+        }
+        record.setHeader( header );
         return record;
     }
 

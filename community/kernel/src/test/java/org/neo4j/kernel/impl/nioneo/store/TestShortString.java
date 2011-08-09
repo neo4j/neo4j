@@ -165,7 +165,7 @@ public class TestShortString
         PropertyRecord target = new PropertyRecord( 0 );
         long expected = target.getSinglePropBlock();
         assertFalse( "Should not be able to encode \"" + string + "\"", ShortString.encode( string, target ) );
-        assertEquals( "PropertyRecord was changed even though encoding failed", expected, target.getPropBlock() );
+        assertEquals( "PropertyRecord was changed even though encoding failed", expected, target.getSinglePropBlock() );
     }
 
     // === Micro benchmarking === [includes random tests]
