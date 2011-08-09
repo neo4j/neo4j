@@ -1249,8 +1249,10 @@ public class XaLogicalLog
                 nextTxId + " but expected transaction " +
                 (xaTf.getCurrentVersion() + 1) );
         }
-        msgLog.logMessage( "applyTxWithoutTxId log version: " + logVersion +
-            ", committing tx=" + nextTxId + ") @ pos " + writeBuffer.getFileChannelPosition(), true );
+        
+        logRecoveryMessage( "applyTxWithoutTxId log version: " + logVersion +
+                ", committing tx=" + nextTxId + ") @ pos " + writeBuffer.getFileChannelPosition() );
+        
         long logEntriesFound = 0;
         scanIsComplete = false;
         LogApplier logApplier = new LogApplier( byteChannel );
@@ -1293,7 +1295,9 @@ public class XaLogicalLog
         // xaTf.setLastCommittedTx( nextTxId ); // done in doCommit
         scanIsComplete = true;
 //        log.info( "Tx[" + nextTxId + "] " + " applied successfully." );
-        msgLog.logMessage( "Applied external tx and generated tx id=" + nextTxId, true );
+        logRecoveryMessage( "Applied external tx and generated tx id=" + nextTxId );
+        
+        checkLogRotation();
 //        System.out.println( "applyTxWithoutTxId#end @ pos: " + writeBuffer.getFileChannelPosition() );
     }
 

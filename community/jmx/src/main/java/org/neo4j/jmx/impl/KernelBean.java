@@ -41,13 +41,15 @@ public class KernelBean extends Neo4jMBean implements Kernel
     private final String kernelVersion;
     private final String storeDir;
     private final ObjectName query;
+    private final String instanceId;
 
     KernelBean( KernelData kernel, ManagementSupport support ) throws NotCompliantMBeanException
     {
         super( Kernel.class, kernel, support );
         NeoStoreXaDataSource datasource = getNeoDataSource( kernel );
         this.kernelVersion = kernel.version().toString();
-        this.query = support.createMBeanQuery( kernel.instanceId() );
+        this.instanceId = kernel.instanceId();
+        this.query = support.createMBeanQuery( instanceId );
         storeCreationDate = datasource.getCreationTime();
         storeLogVersion = datasource.getCurrentLogVersion();
         isReadOnly = datasource.isReadOnly();
@@ -65,6 +67,11 @@ public class KernelBean extends Neo4jMBean implements Kernel
         this.storeDir = storeDir;
 
         kernelStartTime = new Date().getTime();
+    }
+
+    String getInstanceId()
+    {
+        return instanceId;
     }
 
     public static NeoStoreXaDataSource getNeoDataSource( KernelData kernel )

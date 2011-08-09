@@ -447,7 +447,7 @@ Here are some pointers to get the most performance out of +BatchInserterIndex+:
 [[auto-indexing]]
 == Auto Indexing ==
 
-Neo4j provides the ability to have an index that automatically follows property values as they are added, deleted and changed on database primitives.
+Neo4j provides a single index for nodes and one for relationships in each database that automatically follow property values as they are added, deleted and changed on database primitives.
 This functionality is called _auto indexing_ and is controlled both from the database configuration Map and through its own API.
 
 [CAUTION]

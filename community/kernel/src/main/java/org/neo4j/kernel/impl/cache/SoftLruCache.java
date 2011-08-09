@@ -29,38 +29,38 @@ public class SoftLruCache<K,V> extends ReferenceCache<K,V>
 {
     private final ConcurrentHashMap<K,SoftValue<K,V>> cache =
         new ConcurrentHashMap<K,SoftValue<K,V>>();
-    
-    private final SoftReferenceQueue<K,V> refQueue = 
+
+    private final SoftReferenceQueue<K,V> refQueue =
         new SoftReferenceQueue<K,V>();
-    
+
     private final String name;
-    
+
     public SoftLruCache( String name )
     {
         this.name = name;
     }
-    
+
     public void put( K key, V value )
     {
-        SoftValue<K,V> ref = 
-            new SoftValue<K,V>( key, value, (ReferenceQueue<V>) refQueue ); 
+        SoftValue<K,V> ref =
+            new SoftValue<K,V>( key, value, (ReferenceQueue<V>) refQueue );
         cache.put( key, ref );
         pollClearedValues();
     }
-    
+
     public void putAll( Map<K,V> map )
     {
         Map<K,SoftValue<K,V>> softMap = new HashMap<K,SoftValue<K,V>>( map.size() * 2 );
         for ( Map.Entry<K, V> entry : map.entrySet() )
         {
-            SoftValue<K,V> ref = 
+            SoftValue<K,V> ref =
                 new SoftValue<K,V>( entry.getKey(), entry.getValue(), (ReferenceQueue<V>) refQueue );
             softMap.put( entry.getKey(), ref );
         }
         cache.putAll( softMap );
         pollClearedValues();
     }
-    
+
     public V get( K key )
     {
         SoftReference<V> ref = cache.get( key );
@@ -70,11 +70,11 @@ public class SoftLruCache<K,V> extends ReferenceCache<K,V>
             {
                 cache.remove( key );
             }
-            return ref.get();
+            return counter.count( ref.get() );
         }
-        return null;
+        return counter.<V>count( null );
     }
-    
+
     public V remove( K key )
     {
         SoftReference<V> ref = cache.remove( key );
@@ -84,7 +84,8 @@ public class SoftLruCache<K,V> extends ReferenceCache<K,V>
         }
         return null;
     }
-    
+
+    @Override
     protected void pollClearedValues()
     {
         SoftValue<K,V> clearedValue = refQueue.safePoll();
@@ -94,12 +95,12 @@ public class SoftLruCache<K,V> extends ReferenceCache<K,V>
             clearedValue = refQueue.safePoll();
         }
     }
-    
+
     public int size()
     {
         return cache.size();
     }
-    
+
     public void clear()
     {
         cache.clear();
@@ -112,6 +113,20 @@ public class SoftLruCache<K,V> extends ReferenceCache<K,V>
     public String getName()
     {
         return name;
+    }
+
+    private final HitCounter counter = HitCounter.create();
+
+    @Override
+    public long hitCount()
+    {
+        return counter.getHitsCount();
+    }
+
+    @Override
+    public long missCount()
+    {
+        return counter.getMissCount();
     }
 
     public boolean isAdaptive()

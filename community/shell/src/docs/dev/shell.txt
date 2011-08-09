@@ -294,7 +294,7 @@ include::shell/sample-session.txt[]
 This example is creating a graph of the characters in the Matrix via the shell and then executing Cypher queries against it:
 
 
-["dot", "matrix.svg", "meta"]
+["dot", "shell-matrix.svg"]
 ----
 root[label="root"]
 neo[label="Mr Andersson"]

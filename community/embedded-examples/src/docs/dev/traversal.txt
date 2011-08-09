@@ -6,7 +6,7 @@ Traversal
 
 This is the first node space we want to traverse into:
     
-image::matrix.png[title="Matrix node space view", scaledwidth="75%"]
+image::examples-matrix.png[title="Matrix node space view", scaledwidth="75%"]
 
 .Friends and friends of friends
 [snippet,java]

@@ -24,7 +24,7 @@ import java.util.Map;
 
 /**
  * Simple implementation of Least-recently-used cache.
- * 
+ *
  * The cache has a <CODE>maxSize</CODE> set and when the number of cached
  * elements exceeds that limit the least recently used element will be removed.
  */
@@ -34,11 +34,12 @@ public class LruCache<K,E> implements Cache<K,E>
     int maxSize = 1000;
     private boolean resizing = false;
     private boolean adaptive = false;
-    
+
     private final AdaptiveCacheManager cacheManager;
 
-    private Map<K,E> cache = new LinkedHashMap<K,E>( 500, 0.75f, true )
+    private final Map<K,E> cache = new LinkedHashMap<K,E>( 500, 0.75f, true )
     {
+        @Override
         protected boolean removeEldestEntry( Map.Entry<K,E> eldest )
         {
             // synchronization miss with old value on maxSize here is ok
@@ -74,7 +75,7 @@ public class LruCache<K,E> implements Cache<K,E>
     /**
      * Creates a LRU cache. If <CODE>maxSize < 1</CODE> an
      * IllegalArgumentException is thrown.
-     * 
+     *
      * @param name
      *            name of cache
      * @param maxSize
@@ -124,7 +125,7 @@ public class LruCache<K,E> implements Cache<K,E>
         {
             throw new IllegalArgumentException();
         }
-        return cache.get( key );
+        return counter.count( cache.get( key ) );
     }
 
     public synchronized void clear()
@@ -139,7 +140,7 @@ public class LruCache<K,E> implements Cache<K,E>
 
     /**
      * Returns the maximum size of this cache.
-     * 
+     *
      * @return maximum size
      */
     public int maxSize()
@@ -151,7 +152,7 @@ public class LruCache<K,E> implements Cache<K,E>
      * Changes the max size of the cache. If <CODE>newMaxSize</CODE> is
      * greater then <CODE>maxSize()</CODE> next invoke to <CODE>maxSize()</CODE>
      * will return <CODE>newMaxSize</CODE> and the entries in cache will not
-     * be modified. 
+     * be modified.
      * <p>
      * If <CODE>newMaxSize</CODE> is less then <CODE>size()</CODE>
      * the cache will shrink itself removing least recently used element until
@@ -160,7 +161,7 @@ public class LruCache<K,E> implements Cache<K,E>
      * <p>
      * If <CODE>newMaxSize</CODE> is less then <CODE>1</CODE> an
      * {@link IllegalArgumentException} is thrown.
-     * 
+     *
      * @param newMaxSize
      *            the new maximum size of the cache
      */
@@ -172,7 +173,7 @@ public class LruCache<K,E> implements Cache<K,E>
         }
         resizeInternal( newMaxSize );
     }
-    
+
     private void resizeInternal( int newMaxSize )
     {
         resizing = true;
@@ -227,5 +228,19 @@ public class LruCache<K,E> implements Cache<K,E>
     public void putAll( Map<K, E> map )
     {
         cache.putAll( map );
+    }
+
+    private final HitCounter counter = HitCounter.create();
+
+    @Override
+    public long hitCount()
+    {
+        return counter.getHitsCount();
+    }
+
+    @Override
+    public long missCount()
+    {
+        return counter.getMissCount();
     }
 }

@@ -37,14 +37,14 @@ public interface Cache<K,V>
 {
     /**
      * Returns the name of the cache.
-     * 
+     *
      * @return name of the cache
      */
     public String getName();
 
     /**
      * Adds <CODE>element</CODE> to cache.
-     * 
+     *
      * @param key
      *            the key for the element
      * @param element
@@ -56,7 +56,7 @@ public interface Cache<K,V>
      * Removes the element for <CODE>key</CODE> from cache and returns it. If
      * the no element for <CODE>key</CODE> exists <CODE>null</CODE> is
      * returned.
-     * 
+     *
      * @param key
      *            the key for the element
      * @return the removed element or <CODE>null</CODE> if element didn't
@@ -67,7 +67,7 @@ public interface Cache<K,V>
     /**
      * Returns the cached element for <CODE>key</CODE>. If the element isn't
      * in cache <CODE>null</CODE> is returned.
-     * 
+     *
      * @param key
      *            the key for the element
      * @return the cached element or <CODE>null</CODE> if element didn't exist
@@ -81,13 +81,13 @@ public interface Cache<K,V>
 
     /**
      * Returns the cache size.
-     * 
+     *
      * @return cache size
      */
     public int size();
 
     void elementCleaned( V value );
-    
+
     public int maxSize();
 
     public void resize( int newSize );
@@ -95,6 +95,10 @@ public interface Cache<K,V>
     public boolean isAdaptive();
 
     public void setAdaptiveStatus( boolean status );
-    
+
     public void putAll( Map<K,V> map );
+
+    public long hitCount();
+
+    public long missCount();
 }

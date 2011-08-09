@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -151,9 +152,9 @@ public final class EmbeddedGraphDatabase extends AbstractGraphDatabase
     }
 
     @Override
-    public <T> T getManagementBean( Class<T> type )
+    public <T> Collection<T> getManagementBeans( Class<T> type )
     {
-        return graphDbImpl.getManagementBean( type );
+        return graphDbImpl.getManagementBeans( type );
     }
 
     @Override

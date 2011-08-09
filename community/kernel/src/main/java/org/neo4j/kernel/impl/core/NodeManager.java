@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -680,20 +681,16 @@ public class NodeManager
         return persistenceManager.loadRelProperties( relationship.getId(), light );
     }
 
-    public int getNodeCacheSize()
-    {
-        return nodeCache.size();
-    }
-
-    public int getRelationshipCacheSize()
-    {
-        return relCache.size();
-    }
-
     public void clearCache()
     {
         nodeCache.clear();
         relCache.clear();
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public Iterable<? extends Cache<?, ?>> caches()
+    {
+        return Arrays.asList( nodeCache, relCache );
     }
 
     void setRollbackOnly()

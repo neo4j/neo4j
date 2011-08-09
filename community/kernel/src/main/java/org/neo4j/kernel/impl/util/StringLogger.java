@@ -29,37 +29,55 @@ import java.util.Map;
 
 public class StringLogger
 {
+    public static final String DEFAULT_NAME = "messages.log";
     public static final StringLogger SYSTEM = 
         new StringLogger( new PrintWriter( System.out ) );
+    private static final int DEFAULT_THRESHOLD_FOR_ROTATION_MB = 100;
+    private static final int NUMBER_OF_OLD_LOGS_TO_KEEP = 2;
     
-    private final PrintWriter out;
+    private PrintWriter out;
+    private final Integer rotationThreshold;
+    private final File file;
     
-    private StringLogger( String filename )
+    private StringLogger( String filename, int rotationThresholdMb )
     {
+        this.rotationThreshold = rotationThresholdMb*1024*1024;
         try
         {
-            File file = new File( filename );
+            file = new File( filename );
             if ( file.getParentFile() != null )
             {
                 file.getParentFile().mkdirs();
             }
-            out = new PrintWriter( new FileWriter( file, true ) );
+            instantiateWriter();
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
     }
+
+    private void instantiateWriter() throws IOException
+    {
+        out = new PrintWriter( new FileWriter( file, true ) );
+    }
     
     private StringLogger( PrintWriter writer )
     {
         this.out = writer;
+        this.rotationThreshold = null;
+        this.file = null;
     }
     
     private static final Map<String,StringLogger> loggers = 
         new HashMap<String, StringLogger>();
     
     public static StringLogger getLogger( String storeDir )
+    {
+        return getLogger( storeDir, DEFAULT_THRESHOLD_FOR_ROTATION_MB );
+    }
+    
+    public static StringLogger getLogger( String storeDir, int rotationThresholdMb )
     {
         if ( storeDir == null )
         {
@@ -70,7 +88,7 @@ public class StringLogger
         StringLogger logger = loggers.get( filename );
         if ( logger == null )
         {
-            logger = new StringLogger( filename );
+            logger = new StringLogger( filename, rotationThresholdMb );
             loggers.put( filename, logger );
         }
         return logger;
@@ -78,7 +96,7 @@ public class StringLogger
     
     private static String defaultFileName( String storeDir )
     {
-        return new File( storeDir, "messages.log" ).getAbsolutePath();
+        return new File( storeDir, DEFAULT_NAME ).getAbsolutePath();
     }
     
     public void logMessage( String msg )
@@ -91,16 +109,17 @@ public class StringLogger
         logMessage( msg, cause, false );
     }
     
-    public void logMessage( String msg, boolean flush )
+    public synchronized void logMessage( String msg, boolean flush )
     {
         out.println( new Date() + ": " + msg );
         if ( flush )
         {
             out.flush();
         }
+        checkRotation();
     } 
 
-    public void logMessage( String msg, Throwable cause, boolean flush )
+    public synchronized void logMessage( String msg, Throwable cause, boolean flush )
     {
         out.println( new Date() + ": " + msg + " " + cause.getMessage() );
         cause.printStackTrace( out );
@@ -108,8 +127,57 @@ public class StringLogger
         {
             out.flush();
         }
+        checkRotation();
     }
     
+    private void checkRotation()
+    {
+        if ( rotationThreshold != null && file.length() > rotationThreshold.intValue() )
+        {
+            doRotation();
+        }
+    }
+    
+    private void doRotation()
+    {
+        out.close();
+        moveAwayFile();
+        try
+        {
+            instantiateWriter();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    /**
+     * Will move:
+     * messages.log.1 -> messages.log.2
+     * messages.log   -> messages.log.1
+     * 
+     * Will delete (if exists):
+     * messages.log.2
+     */
+    private void moveAwayFile()
+    {
+        File oldLogFile = new File( file.getParentFile(), file.getName() + "." + NUMBER_OF_OLD_LOGS_TO_KEEP );
+        if ( oldLogFile.exists() )
+        {
+            oldLogFile.delete();
+        }
+        
+        for ( int i = NUMBER_OF_OLD_LOGS_TO_KEEP-1; i >= 0; i-- )
+        {
+            oldLogFile = new File( file.getParentFile(), file.getName() + (i == 0 ? "" : ("." + i)) );
+            if ( oldLogFile.exists() )
+            {
+                oldLogFile.renameTo( new File( file.getParentFile(), file.getName() + "." + (i+1) ) );
+            }
+        }
+    }
+
     public void flush()
     {
         out.flush();
