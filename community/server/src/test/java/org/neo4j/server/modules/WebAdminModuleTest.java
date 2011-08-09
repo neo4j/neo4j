@@ -25,6 +25,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.HashMap;
 
 import javax.management.ObjectName;
@@ -54,7 +55,7 @@ public class WebAdminModuleTest
         Kernel mockKernel = mock( Kernel.class );
         ObjectName mockObjectName = mock( ObjectName.class );
         when( mockKernel.getMBeanQuery() ).thenReturn( mockObjectName );
-        when( db.graph.getManagementBean( Kernel.class ) ).thenReturn( mockKernel );
+        when( db.graph.getManagementBeans( Kernel.class ) ).thenReturn( Collections.singleton( mockKernel ) );
 
         when( neoServer.getDatabase() ).thenReturn( db );
         when( neoServer.getConfiguration() ).thenReturn( new MapConfiguration( new HashMap<Object, Object>() ) );
