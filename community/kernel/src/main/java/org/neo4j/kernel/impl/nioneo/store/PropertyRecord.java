@@ -25,26 +25,17 @@ import java.util.List;
 
 public class PropertyRecord extends Abstract64BitRecord
 {
-    /*  [ikkk,kkkk][kkkk,kkkk][kkkk,kkkk][hhhh,hhhh][hhhh,nnnn][nnnn,nnnn]*4[pppp,pppp]*16
-     *
-     * i: inuse
-     * k: key 
-     * h: header for payload
-     * n: next property
-     * p: payload (the actual property value)
-     */
-    
     private PropertyType type;
     private int keyIndexId = Record.NO_NEXT_BLOCK.intValue();
     private int header;
     private long[] propBlock;
     private long nextProp = Record.NO_NEXT_PROPERTY.intValue();
+    private long prevProp = Record.NO_NEXT_PROPERTY.intValue();
     private List<DynamicRecord> valueRecords = new ArrayList<DynamicRecord>();
     private boolean isLight;
     private long entityId = -1;
     private boolean nodeIdSet;
     private boolean isChanged;
-    private long prevProp;
 
     public PropertyRecord( long id )
     {

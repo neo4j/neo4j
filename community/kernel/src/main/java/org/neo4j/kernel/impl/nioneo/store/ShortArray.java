@@ -350,10 +350,8 @@ public enum ShortArray
             type.push( Array.get( array, i ), result, mask );
         }
         long[] longs = result.getLongs();
-        // Apply the header all the way to the left
         longs[0] |= ((long)requiredBits) << (64-HEADER_SIZE);
-        // TODO Set it in propertyrecord
-        int header = (type.ordinal()<<5) | (arrayLength);
+        int header = (0x3 << 10) | (type.ordinal()<<5) | (arrayLength);
         target.setHeader( header );
         target.setPropBlock( longs );
         return true;

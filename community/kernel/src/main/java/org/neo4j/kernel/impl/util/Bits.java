@@ -106,7 +106,7 @@ public class Bits
         for ( int i = 0; i < longs.length; i++ )
         {
             long nextOverspill = (longs[i] & overspillMask);
-            longs[i] = (longs[i] >> steps) | (overspill << (64-steps));
+            longs[i] = (longs[i] >>> steps) | (overspill << (64-steps));
             overspill = nextOverspill;
         }
     }
@@ -144,6 +144,11 @@ public class Bits
     public int getInt( int mask )
     {
         return (int) (longs[longs.length-1] & mask);
+    }
+    
+    public long getUnsignedInt( int mask )
+    {
+        return getInt( mask ) & 0xFFFFFFFF;
     }
     
     public long getLong( long mask )

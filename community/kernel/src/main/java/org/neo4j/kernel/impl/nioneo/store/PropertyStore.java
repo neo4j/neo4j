@@ -48,9 +48,14 @@ public class PropertyStore extends AbstractStore implements Store
     // store version, each store ends with this string (byte encoded)
     private static final String VERSION = "PropertyStore v0.9.9";
 
-    // record header size
-    // in_use(byte)+type(int)+key_indexId(int)+prop_blockId(long)+
-    // prev_prop_id(int)+next_prop_id(int)
+    /*  [ikkk,kkkk][kkkk,kkkk][kkkk,kkkk][hhhh,hhhh][hhhh,nnnn][nnnn,nnnn]*4[pppp,pppp]*16
+    *
+    * i: inuse
+    * k: key 
+    * h: header for payload
+    * n: next property
+    * p: payload (the actual property value)
+    */
     public static final int RECORD_SIZE = 30;
 
     private DynamicStringStore stringPropertyStore;
@@ -412,13 +417,13 @@ public class PropertyStore extends AbstractStore implements Store
         record.setPropBlock( propBlock );
         
         // TODO Remove this later
-        long prevProp = bits.getInt( 0xFFFFFFFF );
+        long prevProp = bits.getUnsignedInt( 0xFFFFFFFF );
         bits.shiftRight( 32 );
         long prevMod = bits.getByte( (byte)0xF );
         bits.shiftRight( 8 );
         record.setPrevProp( longFromIntAndMod( prevProp, prevMod ) );
         
-        long nextProp = bits.getInt( 0xFFFFFFFF );
+        long nextProp = bits.getUnsignedInt( 0xFFFFFFFF );
         bits.shiftRight( 32 );
         long nextMod = bits.getByte( (byte)0xF );
         bits.shiftRight( 4 );
