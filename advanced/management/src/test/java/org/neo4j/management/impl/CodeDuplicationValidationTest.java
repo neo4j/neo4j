@@ -40,9 +40,9 @@ public class CodeDuplicationValidationTest
     private class DefaultManagementSupport extends ManagementSupport
     {
         @Override
-        protected ObjectName createObjectName( String instanceId, String beanName )
+        protected ObjectName createObjectName( String instanceId, String beanName, boolean query, String... extraNaming )
         {
-            return super.createObjectName( instanceId, beanName );
+            return super.createObjectName( instanceId, beanName, query, extraNaming );
         }
 
         @Override

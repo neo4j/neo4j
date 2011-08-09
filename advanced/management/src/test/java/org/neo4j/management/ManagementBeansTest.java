@@ -19,10 +19,12 @@
  */
 package org.neo4j.management;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.util.Collection;
 import java.util.Map;
 
 import org.junit.AfterClass;
@@ -95,7 +97,13 @@ public class ManagementBeansTest
     @Test
     public void canGetCacheBean() throws Exception
     {
-        assertNotNull( getManager().getCacheBean() );
+        Collection<Cache> beans = getManager().getCacheBeans();
+        assertNotNull( beans );
+        assertFalse( "No Cache beans found", beans.isEmpty() );
+        for ( Cache bean : beans )
+        {
+            assertNotNull( bean );
+        }
     }
 
     @Test

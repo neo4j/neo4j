@@ -19,57 +19,84 @@
  */
 package org.neo4j.management.impl;
 
+import java.util.Collection;
+import java.util.LinkedList;
+
 import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
+import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.management.Cache;
 
 @Service.Implementation( ManagementBeanProvider.class )
 public class CacheBean extends ManagementBeanProvider
 {
     public CacheBean()
     {
-        super( Cache.class );
+        super( org.neo4j.management.Cache.class );
+    }
+
+    @Override
+    protected Iterable<? extends Neo4jMBean> createMBeans( ManagementData management )
+            throws NotCompliantMBeanException
+    {
+        NodeManager nm = management.getKernelData().getConfig().getGraphDbModule().getNodeManager();
+        Collection<CacheManager> cacheBeans = new LinkedList<CacheBean.CacheManager>();
+        for ( Cache<?, ?> cache : nm.caches() )
+        {
+            cacheBeans.add( new CacheManager( management, nm, cache ) );
+        }
+        return cacheBeans;
     }
 
     @Override
     protected Neo4jMBean createMBean( ManagementData management ) throws NotCompliantMBeanException
     {
-        return new CacheManager( management );
+        throw new UnsupportedOperationException( "Uses createMBeans" );
     }
 
-    private class CacheManager extends Neo4jMBean implements Cache
+    private class CacheManager extends Neo4jMBean implements org.neo4j.management.Cache
     {
-        CacheManager( ManagementData management ) throws NotCompliantMBeanException
-        {
-            super( management );
-            this.nodeManager = management.getKernelData().getConfig().getGraphDbModule().getNodeManager();
-        }
-
+        private final Cache<?, ?> cache;
         private final NodeManager nodeManager;
+
+        CacheManager( ManagementData management, NodeManager nodeManager, Cache<?, ?> cache )
+                throws NotCompliantMBeanException
+        {
+            super( management, cache.getName() );
+            this.nodeManager = nodeManager;
+            this.cache = cache;
+        }
 
         public String getCacheType()
         {
             return nodeManager.getCacheType().getDescription();
         }
 
-        public int getNodeCacheSize()
-        {
-            return nodeManager.getNodeCacheSize();
-        }
-
-        public int getRelationshipCacheSize()
-        {
-            return nodeManager.getRelationshipCacheSize();
-        }
-
         public void clear()
         {
-            nodeManager.clearCache();
+            cache.clear();
+        }
+
+        @Override
+        public int getNumberOfCachedElements()
+        {
+            return cache.size();
+        }
+
+        @Override
+        public long getHitCount()
+        {
+            return cache.hitCount();
+        }
+
+        @Override
+        public long getMissCount()
+        {
+            return cache.missCount();
         }
     }
 }

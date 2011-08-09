@@ -19,8 +19,11 @@
  */
 package org.neo4j.management.impl;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Collection;
+import java.util.LinkedList;
 
 import javax.management.MBeanServerConnection;
 import javax.management.MBeanServerInvocationHandler;
@@ -38,6 +41,23 @@ abstract class BeanProxy
     public static <T> T load( MBeanServerConnection mbs, Class<T> beanInterface, ObjectName name )
     {
         return factory.makeProxy( mbs, beanInterface, name );
+    }
+
+    public static <T> Collection<T> loadAll( MBeanServerConnection mbs, Class<T> beanInterface, ObjectName query )
+    {
+        Collection<T> beans = new LinkedList<T>();
+        try
+        {
+            for ( ObjectName name : mbs.queryNames( query, null ) )
+            {
+                beans.add( factory.makeProxy( mbs, beanInterface, name ) );
+            }
+        }
+        catch ( IOException e )
+        {
+            // fall through and return the empty collection...
+        }
+        return beans;
     }
 
     static boolean supportsMxBeans()

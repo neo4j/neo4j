@@ -33,11 +33,22 @@ public interface Cache
     @Description( "The type of cache used by Neo4j" )
     String getCacheType();
 
+    /*
     @Description( "The number of Nodes currently in cache" )
     int getNodeCacheSize();
 
     @Description( "The number of Relationships currently in cache" )
     int getRelationshipCacheSize();
+    */
+
+    @Description( "The number of entities currently in this cache" )
+    int getNumberOfCachedElements();
+
+    @Description( "The number of times a cache query returned a result" )
+    long getHitCount();
+
+    @Description( "The number of times a cache query did not return a result" )
+    long getMissCount();
 
     @Description( value = "Clears the Neo4j caches", impact = MBeanOperationInfo.ACTION )
     void clear();

@@ -35,10 +35,9 @@ abstract class AdvancedManagementSupport extends ManagementSupport
     }
 
     @Override
-    protected final <T> T makeProxy( KernelBean kernel, Class<T> beanInterface )
+    protected final <T> T makeProxy( KernelBean kernel, ObjectName name, Class<T> beanInterface )
     {
-        return BeanProxy.load( getMBeanServer(), beanInterface,
-                KernelProxy.createObjectName( kernel.getMBeanQuery(), beanInterface ) );
+        return BeanProxy.load( getMBeanServer(), beanInterface, name );
     }
 
     @Override
@@ -49,8 +48,9 @@ abstract class AdvancedManagementSupport extends ManagementSupport
     }
 
     @Override
-    protected ObjectName createObjectName( String instanceId, String beanName )
+    protected ObjectName createObjectName( String instanceId, String beanName, boolean query, String... extraNaming )
     {
-        return KernelProxy.createObjectName( instanceId, beanName );
+        return query ? KernelProxy.createObjectNameQuery( instanceId, beanName, extraNaming ) : KernelProxy
+                .createObjectName( instanceId, beanName, extraNaming );
     }
 }
