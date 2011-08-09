@@ -72,7 +72,7 @@ public class SoftLruCache<K,V> extends ReferenceCache<K,V>
             }
             return counter.count( ref.get() );
         }
-        return counter.count( null );
+        return counter.<V>count( null );
     }
 
     public V remove( K key )
