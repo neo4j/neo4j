@@ -21,6 +21,8 @@ package org.neo4j.jmx.impl;
 
 import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
@@ -64,8 +66,7 @@ public final class JmxExtension extends KernelExtension<JmxExtension.JmxData>
         {
             try
             {
-                Neo4jMBean bean = provider.loadBean( kernel, support );
-                if ( bean != null )
+                for ( Neo4jMBean bean : provider.loadBeans( kernel, support ) )
                 {
                     mbs.registerMBean( bean, bean.objectName );
                     beans.add( bean );
@@ -125,20 +126,32 @@ public final class JmxExtension extends KernelExtension<JmxExtension.JmxData>
         }
 
         /**
-         * Used through reflection from kernel.
+         * Used through reflection {@link org.neo4j.kernel.EmbeddedGraphDbImpl#getManagementBeans(Class) from kernel}.
          */
-        public <T> T getManagementBean( Class<T> beanInterface )
+        public <T> Collection<T> getManagementBeans( Class<T> beanInterface )
         {
+            Collection<T> result = null;
             if ( support.getClass() != ManagementSupport.class && beans.length > 0 && beans[0] instanceof KernelBean )
             {
-                return support.makeProxy( ( (KernelBean) beans[0] ), beanInterface );
+                try
+                {
+                    result = support.getProxiesFor( beanInterface, (KernelBean) beans[0] );
+                }
+                catch ( UnsupportedOperationException ignore )
+                {
+                    result = null; // go to fall back
+                }
             }
-            // Fall back: if we cannot create proxy, we can search for instance
-            for ( Neo4jMBean bean : beans )
+            if ( result == null )
             {
-                if ( beanInterface.isInstance( bean ) ) return beanInterface.cast( bean );
+                // Fall back: if we cannot create proxy, we can search for instances
+                result = new ArrayList<T>();
+                for ( Neo4jMBean bean : beans )
+                {
+                    if ( beanInterface.isInstance( bean ) ) result.add( beanInterface.cast( bean ) );
+                }
             }
-            throw new UnsupportedOperationException( "Cannot access management beans" );
+            return result;
         }
     }
 

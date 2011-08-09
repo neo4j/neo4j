@@ -21,6 +21,8 @@ package org.neo4j.jmx.impl;
 
 import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Hashtable;
 
 import javax.management.MBeanServer;
@@ -58,9 +60,20 @@ public class ManagementSupport
      * @param beanInterface the bean type to create the proxy for.
      * @return a new proxy for the specified bean.
      */
-    protected <T> T makeProxy( KernelBean kernel, Class<T> beanInterface )
+    protected <T> T makeProxy( KernelBean kernel, ObjectName name, Class<T> beanInterface )
     {
         throw new UnsupportedOperationException( "Cannot create management bean proxies." );
+    }
+
+    final <T> Collection<T> getProxiesFor( Class<T> beanInterface, KernelBean kernel )
+    {
+        Collection<T> result = new ArrayList<T>();
+        ObjectName query = createObjectNameQuery( kernel.getInstanceId(), beanInterface );
+        for ( ObjectName name : getMBeanServer().queryNames( query, null ) )
+        {
+            result.add( makeProxy( kernel, name, beanInterface ) );
+        }
+        return result;
     }
 
     protected boolean supportsMxBeans()
@@ -71,7 +84,7 @@ public class ManagementSupport
     /**
      * Get the URI to which connections can be made to the {@link MBeanServer}
      * of this JVM.
-     * 
+     *
      * @param kernel the kernel that wishes to access the URI.
      * @return a URI that can be used for connecting to the {@link MBeanServer}
      *         of this JVM.
@@ -81,14 +94,19 @@ public class ManagementSupport
         return null;
     }
 
-    public final ObjectName createObjectName( String instanceId, Class<?> beanInterface )
+    public final ObjectName createObjectName( String instanceId, Class<?> beanInterface, String... extraNaming )
     {
-        return createObjectName( instanceId, getBeanName( beanInterface ) );
+        return createObjectName( instanceId, getBeanName( beanInterface ), false, extraNaming );
+    }
+
+    private final ObjectName createObjectNameQuery( String instanceId, Class<?> beanInterface )
+    {
+        return createObjectName( instanceId, getBeanName( beanInterface ), true );
     }
 
     public final ObjectName createMBeanQuery( String instanceId )
     {
-        return createObjectName( instanceId, "*" );
+        return createObjectName( instanceId, "*", false );
     }
 
     protected String getBeanName( Class<?> beanInterface )
@@ -96,11 +114,15 @@ public class ManagementSupport
         return beanName( beanInterface );
     }
 
-    protected ObjectName createObjectName( String instanceId, String beanName )
+    protected ObjectName createObjectName( String instanceId, String beanName, boolean query, String... extraNaming )
     {
         Hashtable<String, String> properties = new Hashtable<String, String>();
         properties.put( "instance", "kernel#" + instanceId );
         properties.put( "name", beanName );
+        for ( int i = 0; i < extraNaming.length; i++ )
+        {
+            properties.put( "name" + i, extraNaming[i] );
+        }
         try
         {
             return new ObjectName( "org.neo4j", properties );

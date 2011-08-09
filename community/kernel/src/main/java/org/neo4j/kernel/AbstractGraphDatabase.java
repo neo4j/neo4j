@@ -19,21 +19,52 @@
  */
 package org.neo4j.kernel;
 
+import java.util.Collection;
+import java.util.Iterator;
+
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.NotFoundException;
 
 /**
- * Exposes the methods getConfig() and getManagementBean() a.s.o.
+ * Exposes the methods {@link #getConfig()}() and {@link #getManagementBeans(Class)}() a.s.o.
  */
 public abstract class AbstractGraphDatabase implements GraphDatabaseService
 {
     public abstract String getStoreDir();
-    
+
     public abstract Config getConfig();
-    
-    public abstract <T> T getManagementBean( Class<T> type );
-    
+
+    /**
+     * Get a single management bean. Delegates to {@link #getSingleManagementBean(Class)}.
+     *
+     * @deprecated since Neo4j may now have multiple beans implementing the same bean interface, this method has been
+     *             deprecated in favor of {@link #getSingleManagementBean(Class)} and {@link #getManagementBeans(Class)}
+     *             . Version 1.5 of Neo4j will be the last version to contain this method.
+     */
+    @Deprecated
+    public final <T> T getManagementBean( Class<T> type )
+    {
+        return getSingleManagementBean( type );
+    }
+
+    public final <T> T getSingleManagementBean( Class<T> type )
+    {
+        Iterator<T> beans = getManagementBeans( type ).iterator();
+        if ( beans.hasNext() )
+        {
+            T bean = beans.next();
+            if ( beans.hasNext() )
+                throw new NotFoundException( "More than one management bean for " + type.getName() );
+            return bean;
+        }
+        return null;
+    }
+
+    public abstract <T> Collection<T> getManagementBeans( Class<T> type );
+
     public abstract boolean isReadOnly();
-    
+
+    @Override
     public String toString()
     {
         return getClass().getSimpleName() + " [" + getStoreDir() + "]";
