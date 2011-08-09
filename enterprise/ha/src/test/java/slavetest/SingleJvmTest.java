@@ -19,11 +19,14 @@
  */
 package slavetest;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.transaction.TestRecovery.countMentionsInMessagesLog;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -357,5 +360,20 @@ public class SingleJvmTest extends AbstractHaTest
             relCount++;
         }
         assertEquals( "wrong number of relationships", 2, relCount );
+    }
+    
+    @Test
+    public void mastersMessagesLogShouldNotContainMentionsAboutAppliedTransactions() throws Exception
+    {
+        initializeDbs( 1 );
+        for ( int i = 0; i < 5; i++ )
+        {
+            executeJob( new CommonJobs.CreateNodeJob(), 0 );
+        }
+        disableVerificationAfterTest();
+        shutdownDbs();
+        // Strings copied from XaLogicalLog#applyTransactionWithoutTxId
+        Collection<String> toLookFor = asList( "applyTxWithoutTxId log version", "Applied external tx and generated" );
+        assertEquals( 0, countMentionsInMessagesLog( dbPath( 0 ).getAbsolutePath(), toLookFor ) );
     }
 }

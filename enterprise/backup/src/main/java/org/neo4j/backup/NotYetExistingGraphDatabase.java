@@ -19,6 +19,8 @@
  */
 package org.neo4j.backup;
 
+import java.util.Collection;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -37,7 +39,7 @@ class NotYetExistingGraphDatabase extends AbstractGraphDatabase
     {
         this.storeDir = storeDir;
     }
-    
+
     public Node createNode()
     {
         throw new UnsupportedOperationException();
@@ -118,7 +120,7 @@ class NotYetExistingGraphDatabase extends AbstractGraphDatabase
     }
 
     @Override
-    public <T> T getManagementBean( Class<T> type )
+    public <T> Collection<T> getManagementBeans( Class<T> type )
     {
         throw new UnsupportedOperationException();
     }
