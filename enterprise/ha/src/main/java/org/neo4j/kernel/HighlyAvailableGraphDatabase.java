@@ -94,7 +94,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     private ScheduledExecutorService updatePuller;
     private volatile long updateTime = 0;
     private volatile RuntimeException causeOfShutdown;
-    private long startupTime;
+    private final long startupTime;
 
     private final List<KernelEventHandler> kernelEventHandlers =
             new CopyOnWriteArrayList<KernelEventHandler>();
@@ -413,9 +413,9 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     }
 
     @Override
-    public <T> T getManagementBean( Class<T> type )
+    public <T> Collection<T> getManagementBeans( Class<T> type )
     {
-        return localGraph().getManagementBean( type );
+        return localGraph().getManagementBeans( type );
     }
 
     protected synchronized void reevaluateMyself( Pair<Master, Machine> master, StoreId storeId )
@@ -813,7 +813,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         return localGraph().index();
     }
-    
+
     // Only for testing purposes, simulates a network outage almost
     public void shutdownBroker()
     {

@@ -19,6 +19,8 @@
  */
 package slavetest;
 
+import java.util.Collection;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -34,7 +36,7 @@ public class PlaceHolderGraphDatabaseService extends AbstractGraphDatabase
 {
     private volatile GraphDatabaseService db;
     private final String storeDir;
-    
+
     public PlaceHolderGraphDatabaseService( String storeDir )
     {
         this.storeDir = storeDir;
@@ -138,9 +140,9 @@ public class PlaceHolderGraphDatabaseService extends AbstractGraphDatabase
     }
 
     @Override
-    public <T> T getManagementBean( Class<T> type )
+    public <T> Collection<T> getManagementBeans( Class<T> type )
     {
-        return ((AbstractGraphDatabase) db).getManagementBean( type );
+        return ( (AbstractGraphDatabase) db ).getManagementBeans( type );
     }
 
     @Override
