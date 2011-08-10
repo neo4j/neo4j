@@ -129,7 +129,6 @@ public abstract class BreakPoint implements DebuggerDeadlockCallback
                     return;
                 }
                 
-                debug.printStackTrace( System.err );
                 debug.thread().suspend( null );
                 this.disable();
                 crashNotification.countDown();
