@@ -226,6 +226,8 @@ public enum PropertyType
     ;
 
     private final int type;
+    
+    // TODO In wait of a better place
     private static int payloadSize = PropertyStore.DEFAULT_PAYLOAD_SIZE;
 
     PropertyType( int type )
@@ -286,21 +288,19 @@ public enum PropertyType
         throw new InvalidRecordException( "Unknown property type for header " + header );
     }
     
+    // TODO In wait of a better place
     public static int getPayloadSize()
     {
         return payloadSize;
     }
     
+    // TODO In wait of a better place
     public static int getPayloadSizeLongs()
     {
         return payloadSize >>> 3;
     }
     
-    public static void main( String[] args )
-    {
-        System.out.println( getPayloadSize() + ", " + getPayloadSizeLongs() );
-    }
-    
+    // TODO In wait of a better place
     public static void setPayloadSize( int newPayloadSize )
     {
         if ( newPayloadSize%8 != 0 )

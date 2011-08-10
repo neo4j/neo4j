@@ -407,8 +407,7 @@ public class PropertyStore extends AbstractStore implements Store
         bits.read( buffer );
         Bits originalBits = bits.clone();
         
-        // TODO not hardcoded to 2
-        long[] propBlock = new long[2];
+        long[] propBlock = new long[PropertyType.getPayloadSizeLongs()];
         for ( int i = propBlock.length-1; i >= 0; i-- )
         {
             propBlock[i] = bits.getLong( 0xFFFFFFFFFFFFFFFFL );

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Array;
@@ -31,14 +32,42 @@ public class TestShortArray
     private static final int DEFAULT_PAYLOAD_SIZE = 16;
 
     @Test
-    public void canEncodeSomeSampleArrays() throws Exception
+    public void canEncodeSomeSampleArraysWithDefaultPayloadSize() throws Exception
     {
-        assertCanEncodeAndDecodeToSameValue( new boolean[] { true, false, true } );
+        assertCanEncodeAndDecodeToSameValue( new boolean[] { true, false, true, true, true, true, true, true, true, true, false, true } );
         assertCanEncodeAndDecodeToSameValue( new byte[] { -1, -10, 43, 127, 0, 4, 2, 3, 56, 47, 67, 43 } );
         assertCanEncodeAndDecodeToSameValue( new short[] { 1,2,3,45,5,6,7 } );
         assertCanEncodeAndDecodeToSameValue( new int[] { 1,2,3,4,5,6,7 } );
         assertCanEncodeAndDecodeToSameValue( new long[] { 1,2,3,4,5,6,7 } );
         assertCanEncodeAndDecodeToSameValue( new float[] { 0.34f, 0.21f } );
+    }
+    
+    @Test
+    public void canEncodeBiggerArraysWithBiggerPayloadSize() throws Exception
+    {
+        int[] intArray = intArray( 10, 2600 );
+        assertCanNotEncode( intArray );
+        assertCanEncodeAndDecodeToSameValue( intArray, 24 );
+    }
+
+    private void assertCanNotEncode( int[] intArray )
+    {
+        assertCanNotEncode( intArray, DEFAULT_PAYLOAD_SIZE );
+    }
+    
+    private void assertCanNotEncode( int[] intArray, int payloadSize )
+    {
+        assertFalse( ShortArray.encode( intArray, new PropertyRecord( 0 ), payloadSize ) );
+    }
+
+    private int[] intArray( int count, int stride )
+    {
+        int[] result = new int[count];
+        for ( int i = 0; i < count; i++ )
+        {
+            result[i] = i*stride;
+        }
+        return result;
     }
 
     private void assertCanEncodeAndDecodeToSameValue( Object value )
@@ -49,7 +78,7 @@ public class TestShortArray
     private void assertCanEncodeAndDecodeToSameValue( Object value, int payloadSize )
     {
         PropertyRecord target = new PropertyRecord( 0 );
-        boolean encoded = ShortArray.encode( value, target, DEFAULT_PAYLOAD_SIZE );
+        boolean encoded = ShortArray.encode( value, target, payloadSize );
         assertTrue( encoded );
 //        Bits bits = new Bits( target.getPropBlock() );
         assertArraysEquals( value, ShortArray.decode( target ) );
