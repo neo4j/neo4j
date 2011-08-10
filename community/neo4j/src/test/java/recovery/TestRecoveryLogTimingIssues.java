@@ -27,7 +27,6 @@ import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
