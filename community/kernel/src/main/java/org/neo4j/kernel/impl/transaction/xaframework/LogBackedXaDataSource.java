@@ -63,7 +63,7 @@ public abstract class LogBackedXaDataSource extends XaDataSource
     @Override
     public ReadableByteChannel getLogicalLog( long version ) throws IOException
     {
-        return logicalLog.getLogicalLog( version );
+        return logicalLog.getLogicalLogOrMyself( version, 0 );
     }
 
     @Override

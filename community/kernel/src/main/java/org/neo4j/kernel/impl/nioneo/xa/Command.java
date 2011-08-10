@@ -46,7 +46,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
  * Command implementations for all the commands that can be performed on a Neo
  * store.
  */
-abstract class Command extends XaCommand
+public abstract class Command extends XaCommand
 {
     static Logger logger = Logger.getLogger( Command.class.getName() );
 
@@ -226,7 +226,7 @@ abstract class Command extends XaCommand
             }
         }
 
-        static Command readCommand( NeoStore neoStore,
+        public static Command readCommand( NeoStore neoStore,
             ReadableByteChannel byteChannel, ByteBuffer buffer )
             throws IOException
         {
@@ -355,7 +355,7 @@ abstract class Command extends XaCommand
             }
         }
 
-        static Command readCommand( NeoStore neoStore,
+        public static Command readCommand( NeoStore neoStore,
             ReadableByteChannel byteChannel, ByteBuffer buffer )
             throws IOException
         {
@@ -489,7 +489,7 @@ abstract class Command extends XaCommand
             }
         }
 
-        static Command readCommand( NeoStore neoStore, ReadableByteChannel byteChannel,
+        public static Command readCommand( NeoStore neoStore, ReadableByteChannel byteChannel,
             ByteBuffer buffer ) throws IOException
         {
             // id+in_use(byte)+count(int)+key_blockId(int)+nr_key_records(int)
@@ -648,7 +648,7 @@ abstract class Command extends XaCommand
             }
         }
 
-        static Command readCommand( NeoStore neoStore,
+        public static Command readCommand( NeoStore neoStore,
             ReadableByteChannel byteChannel, ByteBuffer buffer )
             throws IOException
         {
@@ -805,7 +805,7 @@ abstract class Command extends XaCommand
             }
         }
 
-        static Command readCommand( NeoStore neoStore,
+        public static Command readCommand( NeoStore neoStore,
             ReadableByteChannel byteChannel, ByteBuffer buffer )
             throws IOException
         {
@@ -857,7 +857,7 @@ abstract class Command extends XaCommand
         }
     }
 
-    static Command readCommand( NeoStore neoStore, ReadableByteChannel byteChannel,
+    public static Command readCommand( NeoStore neoStore, ReadableByteChannel byteChannel,
         ByteBuffer buffer ) throws IOException
     {
         buffer.clear();

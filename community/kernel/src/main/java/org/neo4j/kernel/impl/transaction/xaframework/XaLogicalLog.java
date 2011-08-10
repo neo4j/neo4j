@@ -157,12 +157,12 @@ public class XaLogicalLog
                 File file = new File( newLog );
                 if ( file.exists() )
                 {
-                    fixCleanKill( newLog );
+                    renameLogFileToRightVersion( getLog1FileName(), file.length() );
                 }
                 file = new File( getLog2FileName() );
                 if ( file.exists() )
                 {
-                    fixCleanKill( file.getPath() );
+                    renameLogFileToRightVersion( getLog2FileName(), file.length() );
                 }
                 open( newLog );
                 setActiveLog( LOG1 );
@@ -176,7 +176,10 @@ public class XaLogicalLog
                         "Active marked as 1 but no " + newLog + " exist" );
                 }
                 File otherLog = new File( getLog2FileName() );
-                safeDeleteFile( otherLog );
+                if ( otherLog.exists() )
+                {
+                    fixDualLogFiles( getLog1FileName(), getLog2FileName() );
+                }
                 currentLog = LOG1;
                 open( newLog );
             }
@@ -189,7 +192,10 @@ public class XaLogicalLog
                         "Active marked as 2 but no " + newLog + " exist" );
                 }
                 File otherLog = new File( getLog1FileName() );
-                safeDeleteFile( otherLog );
+                if ( otherLog.exists() )
+                {
+                    fixDualLogFiles( getLog2FileName(), getLog1FileName() );
+                }
                 currentLog = LOG2;
                 open( newLog );
             }
@@ -210,35 +216,6 @@ public class XaLogicalLog
 	private LogBuffer instantiateCorrectWriteBuffer( FileChannel channel ) throws IOException
     {
         return logBufferFactory.create( channel );
-    }
-
-    private void safeDeleteFile( File file )
-    {
-        if ( file.exists() )
-        {
-            if ( !file.delete() )
-            {
-                log.warning( "Unable to delete " + file.getName() );
-            }
-        }
-    }
-
-    private void fixCleanKill( String fileName ) throws IOException
-    {
-        File file = new File( fileName );
-        if ( !keepLogs )
-        {
-            if ( !file.delete() )
-            {
-                throw new IllegalStateException(
-                    "Active marked as clean and unable to delete log " +
-                    fileName );
-            }
-        }
-        else
-        {
-            renameCurrentLogFileAndIncrementVersion( fileName, file.length() );
-        }
     }
 
     private void open( String fileToOpen ) throws IOException
@@ -598,8 +575,45 @@ public class XaLogicalLog
         }
     }
 
-    private void renameCurrentLogFileAndIncrementVersion( String logFileName,
-        long endPosition ) throws IOException
+    private void fixDualLogFiles( String activeLog, String oldLog ) throws IOException
+    {
+        FileChannel activeLogChannel = new RandomAccessFile( activeLog, "r" ).getChannel();
+        long[] activeLogHeader = LogIoUtils.readLogHeader( ByteBuffer.allocate( 16 ), activeLogChannel, false );
+        activeLogChannel.close();
+
+        FileChannel oldLogChannel = new RandomAccessFile( oldLog, "r" ).getChannel();
+        long[] oldLogHeader = LogIoUtils.readLogHeader( ByteBuffer.allocate( 16 ), oldLogChannel, false );
+        oldLogChannel.close();
+        
+        if ( oldLogHeader == null )
+        {
+            if ( !FileUtils.deleteFile( new File( oldLog ) ) )
+            {
+                throw new IOException( "Unable to delete " + oldLog );
+            }
+        }
+        else if ( activeLogHeader == null || activeLogHeader[0] > oldLogHeader[0] )
+        {
+            // we crashed in rotate after setActive but did not move the old log to the right name
+            // (and we do not know if keepLogs is true or not so play it safe by keeping it)
+            String newName = getFileName( oldLogHeader[0] );
+            if ( !FileUtils.renameFile( new File( oldLog ), new File( newName ) ) )
+            {
+                throw new IOException( "Unable to rename " + oldLog + " to " + newName );
+            }
+        }
+        else
+        {
+            assert activeLogHeader[0] < oldLogHeader[0];
+            // we crashed in rotate before setActive, do the rotate work again and delete old
+            if ( !FileUtils.deleteFile( new File( oldLog ) ) )
+            {
+                throw new IOException( "Unable to delete " + oldLog );
+            }
+        }
+    }
+    
+    private void renameLogFileToRightVersion( String logFileName, long endPosition ) throws IOException
     {
         File file = new File( logFileName );
         if ( !file.exists() )
@@ -607,38 +621,38 @@ public class XaLogicalLog
             throw new IOException( "Logical log[" + logFileName +
                 "] not found" );
         }
-        String newName = getFileName( xaTf.getAndSetNewVersion() );
+        
+        FileChannel channel = new RandomAccessFile( logFileName, "rw" ).getChannel();
+        long[] header = LogIoUtils.readLogHeader( ByteBuffer.allocate( 16 ), channel, false );
+        try
+        {
+            FileUtils.truncateFile( channel, endPosition );
+        }
+        catch ( IOException e )
+        {
+            log.log( Level.WARNING,
+                "Failed to truncate log at correct size", e );
+        }
+        channel.close();
+        String newName;
+        if ( header == null )
+        {
+            // header was never written
+            newName = getFileName( -1 ) + "_empty_header_log_" + System.currentTimeMillis();
+        }
+        else
+        {
+            newName = getFileName( header[0] );
+        }
         File newFile = new File( newName );
         boolean renamed = FileUtils.renameFile( file, newFile );
-
         if ( !renamed )
         {
             throw new IOException( "Failed to rename log to: " + newName );
         }
-        else
-        {
-            FileChannel channel = null;
-            try
-            {
-                channel = new RandomAccessFile( newName, "rw" ).getChannel();
-                FileUtils.truncateFile( channel, endPosition );
-            }
-            catch ( IOException e )
-            {
-                log.log( Level.WARNING,
-                    "Failed to truncate log at correct size", e );
-            }
-            finally
-            {
-                if ( channel != null )
-                {
-                    channel.close();
-                }
-            }
-        }
     }
 
-    private void deleteCurrentLogFile( String logFileName ) throws IOException
+    private void deleteLogFile( String logFileName ) throws IOException
     {
         File file = new File( logFileName );
         if ( !file.exists() )
@@ -659,7 +673,7 @@ public class XaLogicalLog
         if ( writeBuffer != null )
         {
             writeBuffer.force();
-            writeBuffer = null;
+//            writeBuffer = null;
         }
         fileChannel.close();
         fileChannel = null;
@@ -678,7 +692,7 @@ public class XaLogicalLog
             log.info( "Close invoked with " + xidIdentMap.size() +
                 " running transaction(s). " );
             writeBuffer.force();
-            writeBuffer = null;
+//            writeBuffer = null;
             fileChannel.close();
             log.info( "Dirty log: " + fileName + "." + currentLog +
                 " now closed. Recovery will be started automatically next " +
@@ -697,17 +711,17 @@ public class XaLogicalLog
             {
                 // special case going from old xa version with no log rotation
                 // and we started with a recovery
-                deleteCurrentLogFile( fileName );
+                deleteLogFile( fileName );
             }
             else
             {
-                deleteCurrentLogFile( fileName + "." + logWas );
+                deleteLogFile( fileName + "." + logWas );
             }
         }
         else
         {
-            renameCurrentLogFileAndIncrementVersion( fileName + "." +
-                logWas, endPosition );
+            renameLogFileToRightVersion( fileName + "." + logWas, endPosition );
+            xaTf.getAndSetNewVersion();
         }
         msgLog.logMessage( "Closed log " + fileName, true );
     }
@@ -1060,10 +1074,10 @@ public class XaLogicalLog
                 txId + "]" );// in log[" + version + "]" );
     }
 
-    private ReadableByteChannel getLogicalLogOrMyself( long version, long position )
+    public ReadableByteChannel getLogicalLogOrMyself( long version, long position )
             throws IOException
     {
-        if ( version < logVersion )
+        if ( backupSlave || version < logVersion )
         {
             return getLogicalLog( version, position );
         }
@@ -1083,7 +1097,7 @@ public class XaLogicalLog
         else
         {
             throw new RuntimeException( "Version[" + version +
-                    "] is higher then current log version[" + logVersion + "]" );
+                "] is higher then current log version[" + logVersion + "]" );
         }
     }
 
@@ -1424,14 +1438,13 @@ public class XaLogicalLog
         setActiveLog( newActiveLog );
         if ( keepLogs )
         {
-            renameCurrentLogFileAndIncrementVersion( currentLogFile,
-                endPosition );
+            renameLogFileToRightVersion( currentLogFile, endPosition );
         }
         else
         {
-            deleteCurrentLogFile( currentLogFile );
-            xaTf.getAndSetNewVersion();
+            deleteLogFile( currentLogFile );
         }
+        xaTf.getAndSetNewVersion();
         this.logVersion = xaTf.getCurrentVersion();
         if ( xaTf.getCurrentVersion() != ( currentVersion + 1 ) )
         {
@@ -1656,5 +1669,10 @@ public class XaLogicalLog
                 }
             }
         }
+    }
+
+    public long getCurrentLogVersion()
+    {
+        return logVersion;
     }
 }

@@ -113,7 +113,7 @@ class BufferedReadableByteChannel extends FileChannel
         }
         else
         {
-            fileChannel.position( bufferStartPosition );
+            fileChannel.position( fileChannel.size() );
             byteBuffer.position( (int) ( newPosition - bufferStartPosition ) );
         }
         position = newPosition;
@@ -122,7 +122,7 @@ class BufferedReadableByteChannel extends FileChannel
 
     public long size() throws IOException
     {
-        return bufferStartPosition + byteBuffer.limit();
+        return fileChannel.size() + byteBuffer.limit();
     }
 
     public FileChannel truncate( long size ) throws IOException

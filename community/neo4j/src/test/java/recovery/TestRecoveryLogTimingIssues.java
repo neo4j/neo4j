@@ -46,7 +46,6 @@ import org.neo4j.test.subprocess.BreakPoint;
  * @author Mattias Persson
  * @author Johan Svensson
  */
-@Ignore( "Until patches have been committed by Johan" )
 public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
 {
     private static final DynamicRelationshipType TYPE = withName( "TYPE" );
