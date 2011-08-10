@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.junit.After;
 import org.junit.Before;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.test.subprocess.BreakPoint;
@@ -36,16 +37,17 @@ import org.neo4j.test.subprocess.SubProcess;
 public class AbstractSubProcessTestBase
 {
     private final TargetDirectory target;
-    protected final Instance[] instances;
+    protected final Pair<Instance, BreakPoint[]>[] instances;
 
     public AbstractSubProcessTestBase()
     {
         this( 1 );
     }
 
+    @SuppressWarnings( "unchecked" )
     protected AbstractSubProcessTestBase( int instances )
     {
-        this.instances = new Instance[instances];
+        this.instances = new Pair[instances];
         this.target = TargetDirectory.forTest( getClass() );
     }
 
@@ -56,17 +58,17 @@ public class AbstractSubProcessTestBase
 
     protected final void run( Task task )
     {
-        for ( Instance instance : instances )
+        for ( Pair<Instance, BreakPoint[]> instance : instances )
         {
-            if ( instance != null ) instance.run( task );
+            if ( instance != null ) instance.first().run( task );
         }
     }
 
     protected final void restart()
     {
-        for ( Instance instance : instances )
+        for ( Pair<Instance, BreakPoint[]> instance : instances )
         {
-            if ( instance != null ) instance.restart();
+            if ( instance != null ) instance.first().restart();
         }
     }
 
@@ -89,11 +91,12 @@ public class AbstractSubProcessTestBase
         SubInstance prototype = new SubInstance();
         for ( int i = 0; i < instances.length; i++ )
         {
-            instances[i] = prototype.start( bootstrap( i ), breakpoints( i ) );
+            BreakPoint[] breakPoints = breakpoints( i );
+            instances[i] = Pair.of( prototype.start( bootstrap( i ), breakPoints ), breakPoints );
         }
-        for ( Instance instance : instances )
+        for ( Pair<Instance, BreakPoint[]> instance : instances )
         {
-            if ( instance != null ) instance.awaitStarted();
+            if ( instance != null ) instance.first().awaitStarted();
         }
     }
 
@@ -103,14 +106,25 @@ public class AbstractSubProcessTestBase
         {
             for ( int i = 0; i < instances.length; i++ )
             {
-                Instance instance = instances[i];
+                Pair<Instance, BreakPoint[]> instance = instances[i];
                 if ( instance != null )
                 {
                     Thread.currentThread().interrupt();
-                    SubProcess.kill( instance );
+                    SubProcess.kill( instance.first() );
                     Thread.interrupted();
                 }
                 instances[i] = null;
+            }
+        }
+    }
+    
+    protected void enableAllBreakPoints()
+    {
+        for ( Pair<Instance, BreakPoint[]> instance : instances )
+        {
+            for ( BreakPoint breakPoint : instance.other() )
+            {
+                breakPoint.enable();
             }
         }
     }
@@ -132,8 +146,8 @@ public class AbstractSubProcessTestBase
         {
             for ( int i = 0; i < instances.length; i++ )
             {
-                Instance instance = instances[i];
-                if ( instance != null ) SubProcess.stop( instance );
+                Pair<Instance, BreakPoint[]> instance = instances[i];
+                if ( instance != null ) SubProcess.stop( instance.first() );
                 instances[i] = null;
             }
         }
@@ -151,18 +165,18 @@ public class AbstractSubProcessTestBase
     }
 
     @SuppressWarnings( "serial" )
-    protected static class Bootstrapper implements Serializable
+    public static class Bootstrapper implements Serializable
     {
         protected final String storeDir;
         private final Map<String, String> dbConfiguration;
 
-        protected Bootstrapper( AbstractSubProcessTestBase test, int instance )
+        public Bootstrapper( AbstractSubProcessTestBase test, int instance )
                                                                                throws IOException
         {
             this( test, instance, Collections.EMPTY_MAP );
         }
 
-        protected Bootstrapper( AbstractSubProcessTestBase test, int instance,
+        public Bootstrapper( AbstractSubProcessTestBase test, int instance,
                 Map<String, String> dbConfiguration ) throws IOException
         {
             this.dbConfiguration = dbConfiguration;
@@ -177,6 +191,40 @@ public class AbstractSubProcessTestBase
         protected void shutdown( AbstractGraphDatabase graphdb, boolean normal )
         {
             graphdb.shutdown();
+        }
+    }
+    
+    protected static Bootstrapper killAwareBootstrapper( AbstractSubProcessTestBase test, int instance,
+            Map<String, String> dbConfiguration )
+    {
+        try
+        {
+            return new KillAwareBootstrapper( test, instance, dbConfiguration );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+    
+    public static class KillAwareBootstrapper extends Bootstrapper
+    {
+        public KillAwareBootstrapper( AbstractSubProcessTestBase test, int instance,
+                Map<String, String> dbConfiguration ) throws IOException
+        {
+            super( test, instance, dbConfiguration );
+        }
+
+        public KillAwareBootstrapper( AbstractSubProcessTestBase test, int instance )
+                throws IOException
+        {
+            super( test, instance );
+        }
+
+        @Override
+        protected void shutdown( AbstractGraphDatabase graphdb, boolean normal )
+        {
+            if ( normal ) super.shutdown( graphdb, normal );
         }
     }
 
@@ -226,7 +274,7 @@ public class AbstractSubProcessTestBase
                 this.failure = failure;
             }
         }
-
+        
         @Override
         public void awaitStarted() throws InterruptedException
         {
