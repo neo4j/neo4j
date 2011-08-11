@@ -84,7 +84,7 @@ class TransactionImpl implements Transaction
     }
 
     @Override
-    public synchronized String toString()
+    public String toString()
     {
         StringBuffer txString = new StringBuffer( "Transaction(" +
             eventIdentifier + ")[" + txManager.getTxStatusAsString( status ) +
