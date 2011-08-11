@@ -437,13 +437,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         }
     }
 
-    @Override
-    public void applyLog( ReadableByteChannel byteChannel ) throws IOException
-    {
-        logApplied = true;
-        super.applyLog( byteChannel );
-    }
-
     ReadTransaction getReadOnlyTransaction()
     {
         return new ReadTransaction( neoStore );
