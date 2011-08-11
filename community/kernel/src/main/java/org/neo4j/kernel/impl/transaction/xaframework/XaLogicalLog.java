@@ -1252,6 +1252,8 @@ public class XaLogicalLog
         LogEntry.OnePhaseCommit commit = new LogEntry.OnePhaseCommit(
                 xidIdent, nextTxId, masterId );
         LogIoUtils.writeLogEntry( commit, writeBuffer );
+        // need to manually force since xaRm.commit will not do it (transaction marked as recovered)
+        writeBuffer.force();
         Xid xid = startEntry.getXid();
         try
         {
