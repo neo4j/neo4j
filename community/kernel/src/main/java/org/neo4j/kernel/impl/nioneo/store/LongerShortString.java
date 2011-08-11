@@ -40,7 +40,7 @@ public enum LongerShortString
      *
      * <pre>
      *    -0 -1 -2 -3 -4 -5 -6 -7   -8 -9 -A -B -C -D -E -F
-     * 0-  0  1  2  3  4  5  6  7    8  9  +  ,  ' SP  .  -
+     * 0-  0  1  2  3  4  5  6  7    8  9 SP  .  -  +  ,  '
      * </pre>
      */
     NUMERICAL( 1, 0x0F, 4 )
@@ -51,20 +51,14 @@ public enum LongerShortString
             if ( b >= '0' && b <= '9' ) return b - '0';
             switch ( b )
             {
-            case 0:
-                return 0xA;
-            case 2:
-                return 0xB;
-            case 3:
-                return 0xC;
-            case 6:
-                return 0xD;
-            case 7:
-                return 0xE;
-            case 8:
-                return 0xF;
-            default:
-                throw cannotEncode( b );
+            // interm.    encoded
+            case 0: return 0xA;
+            case 2: return 0xB;
+            case 3: return 0xC;
+            case 6: return 0xD;
+            case 7: return 0xE;
+            case 8: return 0xF;
+            default: throw cannotEncode( b );
             }
         }
 
@@ -86,7 +80,7 @@ public enum LongerShortString
      *
      * <pre>
      *    -0 -1 -2 -3 -4 -5 -6 -7   -8 -9 -A -B -C -D -E -F
-     * 0-  0  1  2  3  4  5  6  7    8  9  +  ,  : SP  .  -
+     * 0-  0  1  2  3  4  5  6  7    8  9 SP  -  :  /  +  ,
      * </pre>
      */
     DATE( 2, 0x0F, 4 )
@@ -97,23 +91,13 @@ public enum LongerShortString
             if ( b >= '0' && b <= '9' ) return b - '0';
             switch ( b )
             {
-            case 0:
-                return 0xA;
-            case 2:
-                return 0xB;
-            case 3:
-                return 0xC;
-            case 4:
-                // TODO
-                return 0;
-            case 6:
-                return 0xD;
-            case 7:
-                return 0xE;
-            case 8:
-                return 0xF;
-            default:
-                throw cannotEncode( b );
+            case 0: return 0xA;
+            case 3: return 0xB;
+            case 4: return 0xC;
+            case 5: return 0xD;
+            case 6: return 0xE;
+            case 7: return 0xF;
+            default: throw cannotEncode( b );
             }
         }
 
@@ -126,8 +110,16 @@ public enum LongerShortString
         @Override
         char decTranslate( byte codePoint )
         {
-            if ( codePoint < 10 ) return (char) ( codePoint + '0' );
-            return decPunctuation( ( codePoint - 10 + 6 ) );
+            if ( codePoint < 0xA ) return (char) ( codePoint + '0' );
+            switch ( codePoint )
+            {
+            case 0xA: return ' ';
+            case 0xB: return '-';
+            case 0xC: return ':';
+            case 0xD: return '/';
+            case 0xE: return '+';
+            default: return ',';
+            }
         }
     },
     /**
@@ -212,32 +204,46 @@ public enum LongerShortString
         @Override
         int encPunctuation( byte b )
         {
-            return b == 0 ? 0x60 : b + 0x7a;
+            int encOffset = 0x60;
+            if ( b == 7 ) return encOffset;
+            
+            int offset = encOffset + 0x1B;
+            switch ( b )
+            {
+            case 1: return 0 + offset;
+            case 2: return 1 + offset;
+            case 3: return 2 + offset;
+            case 6: return 3 + offset;
+            case 9: return 4 + offset;
+            default: throw cannotEncode( b );
+            }
         }
 
         @Override
         char decTranslate( byte codePoint )
         {
-            if ( codePoint == 0 ) return ' ';
+            if ( codePoint == 0 ) return ',';
             if ( codePoint <= 0x1A ) return (char) ( codePoint + 'a' - 1 );
-            return decPunctuation( codePoint - 0x1A );
+            switch ( codePoint )
+            {
+            case 0x1E: return '+';
+            case 0x1F: return '@';
+            default: return decPunctuation( codePoint - 0x1A );
+            }
         }
     },
     /**
-     * Lower-case characters with punctuation.
+     * Lower-case characters, digits and punctuation.
      *
      * <pre>
-     * HEADER (binary): 0100 LENG PAD DATA... (0-20 chars) [5bit LENG] [3bit PAD] [5bit DATA]
-     * HEADER (binary): 0101 PAD DATA... (21 chars) [3bit PAD] [5bit DATA]
-     *
      *    -0 -1 -2 -3 -4 -5 -6 -7   -8 -9 -A -B -C -D -E -F
-     * 0- SP  a  b  c  d  e  f  g    h  i  j  k  l  m  n  o
-     * 1-  p  q  r  s  t  u  v  w    x  y  z  _  .  -  +  @
-     * 2-  0  1  2  3  4  5  6  7    8  9  0  :  /  ,  '
-     * 3-  
+     * 0-  ,  a  b  c  d  e  f  g    h  i  j  k  l  m  n  o
+     * 1-  p  q  r  s  t  u  v  w    x  y  z  0  1  2  3  4
+     * 2-  _  .  -  :  /  +  ,  '    @  |  ;  *  ?  &  %  #
+     * 3-  (  )  $  <  >                      5  6  7  8  9
      * </pre>
      */
-    EMAILSYM( 6, 0x1F, 6 )
+    URI( 6, 0x1F, 6 )
     {
         @Override
         int encTranslate( byte b )
@@ -304,15 +310,12 @@ public enum LongerShortString
     /**
      * Alpha-numerical characters space and underscore.
      *
-     * HEADER (binary): 0110 LENG PAD DATA... (17 chars) [5bit LENG] [1bit PAD] [6bit DATA]
-     * HEADER (binary): 0111 DATA... (18 chars) [6bit DATA]
-     *
      * <pre>
      *    -0 -1 -2 -3 -4 -5 -6 -7   -8 -9 -A -B -C -D -E -F
      * 0- SP  A  B  C  D  E  F  G    H  I  J  K  L  M  N  O
-     * 1-  P  Q  R  S  T  U  V  W    X  Y  Z  +  ,  .  -  /
-     * 2-  _  a  b  c  d  e  f  g    h  i  j  k  l  m  n  o
-     * 3-  p  q  r  s  t  u  v  w    x  y  z  '  :  @  '
+     * 1-  P  Q  R  S  T  U  V  W    X  Y  Z  _  .  -  :  /
+     * 2-  |  a  b  c  d  e  f  g    h  i  j  k  l  m  n  o
+     * 3-  p  q  r  s  t  u  v  w    x  y  z  +  ,  '  @  ;
      * </pre>
      */
     ALPHASYM( 8, 0x3F, 6 )
@@ -337,19 +340,18 @@ public enum LongerShortString
         {
             switch ( b )
             {
-            case 0:
-                return 0x00; // SPACE
-            case 1:
-                return 0x20; // UNDERSCORE
-            case 2: return 0;
-            case 3: return 0;
-            case 4: return 0;
-            case 5: return 0;
-            case 6: return 0;
-            case 7: return 0;
-            case 8: return 0;
-            default:
-                throw cannotEncode( b );
+            case 0: return 0x0;
+            case 1: return 0x1B;
+            case 2: return 0x1C;
+            case 3: return 0x1D;
+            case 4: return 0x1E;
+            case 5: return 0x1F;
+            case 6: return 0x3B;
+            case 7: return 0x3C;
+            case 8: return 0x3D;
+            case 9: return 0x3E;
+            case 10: return 0x3F;
+            default: throw cannotEncode( b );
             }
         }
     },
@@ -357,9 +359,6 @@ public enum LongerShortString
      * The most common European characters (latin-1 but with less punctuation).
      *
      * <pre>
-     * HEADER (binary): 0111 0LEN DATA... (1-8 chars) [7bit data]
-     * HEADER (binary): 1DATA... (9 chars) [7bit data]
-     *
      *    -0 -1 -2 -3 -4 -5 -6 -7   -8 -9 -A -B -C -D -E -F
      * 0-  À  Á  Â  Ã  Ä  Å  Æ  Ç    È  É  Ê  Ë  Ì  Í  Î  Ï
      * 1-  Ð  Ñ  Ò  Ó  Ô  Õ  Ö  .    Ø  Ù  Ú  Û  Ü  Ý  Þ  ß
@@ -436,7 +435,7 @@ public enum LongerShortString
     }
 
     /** Lookup table for decoding punctuation */
-    private static final char[] PUNCTUATION = { ' ', '_', '.', '-', ':', '/', ' ', '.', '-', '+', ',', '\'', };
+    private static final char[] PUNCTUATION = { ' ', '_', '.', '-', ':', '/', ' ', '.', '-', '+', ',', '\'', '@' };
 
     final char decPunctuation( int code )
     {
@@ -491,7 +490,7 @@ public enum LongerShortString
     /*
      * Intermediate code table
      *    -0 -1 -2 -3 -4 -5 -6 -7   -8 -9 -A -B -C -D -E -F
-     * 0- SP  _  .  -  :  /  +  ,    '  @
+     * 0- SP  _  .  -  :  /  +  ,    '  @  |  ;
      * 1-
      * 2-
      * 3-  0  1  2  3  4  5  6  7    8  9
@@ -559,7 +558,7 @@ public enum LongerShortString
                 break;
             case '.':
                 data[i] = 2;
-                possible.remove( ALPHANUM );
+                possible.removeAll( EnumSet.of( ALPHANUM, DATE ) );
                 break;
             case '-':
                 data[i] = 3;
@@ -571,28 +570,56 @@ public enum LongerShortString
                 break;
             case '/':
                 data[i] = 5;
-                possible.removeAll( EnumSet.of( ALPHANUM, NUMERICAL, DATE, EUROPEAN, EMAIL ) );
+                possible.removeAll( EnumSet.of( ALPHANUM, NUMERICAL, EUROPEAN, EMAIL ) );
                 break;
             case '+':
                 data[i] = 6;
-                possible.retainAll( EnumSet.of( NUMERICAL, DATE, EMAIL, EMAILSYM, ALPHASYM ) );
+                possible.retainAll( EnumSet.of( NUMERICAL, DATE, EMAIL, URI, ALPHASYM ) );
                 break;
             case ',':
                 data[i] = 7;
-                possible.retainAll( EnumSet.of( NUMERICAL, DATE, EMAIL, EMAILSYM, ALPHASYM ) );
+                possible.retainAll( EnumSet.of( NUMERICAL, DATE, EMAIL, URI, ALPHASYM ) );
                 break;
             case '\'':
                 data[i] = 8;
-                possible.retainAll( EnumSet.of( NUMERICAL, EMAILSYM, ALPHASYM ) );
+                possible.retainAll( EnumSet.of( NUMERICAL, URI, ALPHASYM ) );
                 break;
             case '@':
                 data[i] = 9;
-                possible.retainAll( EnumSet.of( EMAIL, EMAILSYM, ALPHASYM ) );
+                possible.retainAll( EnumSet.of( EMAIL, URI, ALPHASYM ) );
+                break;
+            case '|':
+                data[i] = 0xA;
+                possible.retainAll( EnumSet.of( ALPHASYM ) );
+                break;
+            // These are all for the URI encoding only (as of yet at least)
+            case ';': data[i] = 0xB;
+                //$FALL-THROUGH$
+            case '*': data[i] = 0xC;
+                //$FALL-THROUGH$
+            case '?': data[i] = 0xD;
+                //$FALL-THROUGH$
+            case '&': data[i] = 0xE;
+                //$FALL-THROUGH$
+            case '%': data[i] = 0xF;
+                //$FALL-THROUGH$
+            case '#': data[i] = 0x10;
+                //$FALL-THROUGH$
+            case '(': data[i] = 0x11;
+                //$FALL-THROUGH$
+            case ')': data[i] = 0x12;
+                //$FALL-THROUGH$
+            case '$': data[i] = 0x13;
+                //$FALL-THROUGH$
+            case '<': data[i] = 0x14;
+                //$FALL-THROUGH$
+            case '>': data[i] = 0x15;
+                possible.retainAll( EnumSet.of( URI ) );
                 break;
             default:
                 if ( ( c >= 'A' && c <= 'Z' ) )
                 {
-                    possible.removeAll( EnumSet.of( NUMERICAL, DATE, LOWER, EMAIL, EMAILSYM ) );
+                    possible.removeAll( EnumSet.of( NUMERICAL, DATE, LOWER, EMAIL, URI ) );
                 }
                 else if ( ( c >= 'a' && c <= 'z' ) )
                 {
@@ -657,7 +684,7 @@ public enum LongerShortString
         Bits bits = new Bits( copyOf( record.getPropBlock(), record.getPropBlock().length ) );
         if ( bits.getLong( 0xFFFFFFFFFFFFFFFFL ) == 0 ) return "";
         // [    ,  ee][ee  ,    ]
-        int encoding = (record.getHeader() & 0x3C) >> 6;
+        int encoding = (record.getHeader() & 0x3C0) >> 6;
         // [    ,    ][  ll,llll]
         int stringLength = record.getHeader() & 0x3F;
         
@@ -670,7 +697,7 @@ public enum LongerShortString
         case 3: table = UPPER; break;
         case 4: table = LOWER; break;
         case 5: table = EMAIL; break;
-        case 6: table = EMAILSYM; break;
+        case 6: table = URI; break;
         case 7: table = ALPHANUM; break;
         case 8: table = ALPHASYM; break;
         case 9: table = EUROPEAN; break;
@@ -697,14 +724,12 @@ public enum LongerShortString
     private static boolean encodeLatin1( String string, PropertyRecord target )
     { // see doEncode
         Bits bits = newBits();
-//        long result = 0x78 | ( string.length() - 1 );
-//        result <<= ( (BYTES-1) - string.length() ) * 8; // move the header to its place
         for ( int i = 0; i < string.length(); i++ )
         {
+            if ( i > 0 ) bits.shiftLeft( 8 );
             char c = string.charAt( i );
             if ( c < 0 || c >= 256 ) return false;
             bits.or( c, 0xFF );
-            bits.shiftLeft( 8 );
         }
         applyOnRecord( target, 10, string.length(), bits.getLongs() );
         return true;
@@ -714,10 +739,10 @@ public enum LongerShortString
     { // UTF-8 padded with null bytes
         if ( bytes.length > maxLength ) return false;
         Bits bits = newBits();
-        for ( byte b : bytes )
+        for ( int i = 0; i < bytes.length; i++ )
         {
-            bits.or( b, 0xFF );
-            bits.shiftLeft( 8 );
+            if ( i > 0 ) bits.shiftLeft( 8 );
+            bits.or( bytes[i], 0xFF );
         }
         applyOnRecord( target, 0, bytes.length, bits.getLongs() );
         return true;
@@ -743,7 +768,7 @@ public enum LongerShortString
         char[] result = new char[stringLength];
         for ( int i = result.length - 1; i >= 0; i-- )
         {
-            result[i] = (char) bits.getByte( (byte) 0xFF );
+            result[i] = (char) bits.getInt( 0xFF );
             bits.shiftRight( 8 );
         }
         return new String( result );
