@@ -22,7 +22,7 @@ package org.neo4j.test.subprocess;
 import java.io.PrintStream;
 import java.util.Iterator;
 import java.util.List;
-
+import java.util.concurrent.CountDownLatch;
 
 public abstract class BreakPoint implements DebuggerDeadlockCallback
 {
@@ -110,6 +110,29 @@ public abstract class BreakPoint implements DebuggerDeadlockCallback
             {
                 out.println( "Debugger stacktrace" );
                 debug.printStackTrace( out );
+            }
+        };
+    }
+    
+    public static BreakPoint thatCrashesTheProcess( final CountDownLatch crashNotification,
+            final int letNumberOfCallsPass, Class<?> type, String method, Class<?>... args )
+    {
+        return new BreakPoint( type, method, args )
+        {
+            private volatile int numberOfCalls;
+            
+            @Override
+            protected void callback( DebugInterface debug ) throws KillSubProcess
+            {
+                if ( ++numberOfCalls <= letNumberOfCallsPass )
+                {
+                    return;
+                }
+                
+                debug.thread().suspend( null );
+                this.disable();
+                crashNotification.countDown();
+                throw KillSubProcess.withExitCode( -1 );
             }
         };
     }

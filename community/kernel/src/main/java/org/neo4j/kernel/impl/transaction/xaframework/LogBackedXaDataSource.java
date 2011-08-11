@@ -49,12 +49,6 @@ public abstract class LogBackedXaDataSource extends XaDataSource
     }
 
     @Override
-    public void applyLog( ReadableByteChannel byteChannel ) throws IOException
-    {
-        logicalLog.applyLog( byteChannel );
-    }
-
-    @Override
     public boolean deleteLogicalLog( long version )
     {
         return logicalLog.deleteLogicalLog( version );
@@ -63,7 +57,7 @@ public abstract class LogBackedXaDataSource extends XaDataSource
     @Override
     public ReadableByteChannel getLogicalLog( long version ) throws IOException
     {
-        return logicalLog.getLogicalLog( version );
+        return logicalLog.getLogicalLogOrMyselfCommitted( version, 0 );
     }
 
     @Override
@@ -106,12 +100,6 @@ public abstract class LogBackedXaDataSource extends XaDataSource
     public void setLogicalLogTargetSize( long size )
     {
         logicalLog.setLogicalLogTargetSize( size );
-    }
-
-    @Override
-    public void makeBackupSlave()
-    {
-        logicalLog.makeBackupSlave();
     }
 
     @Override

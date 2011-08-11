@@ -145,7 +145,7 @@ public class TestRecoveryIssues extends AbstractSubProcessTestBase
         @Override
         public void run( AbstractGraphDatabase graphdb )
         {
-            throw new AssertionError( "Should not reach here - the brekpoint should avoid it" );
+            throw new AssertionError( "Should not reach here - the breakpoint should avoid it" );
         }
     }
 

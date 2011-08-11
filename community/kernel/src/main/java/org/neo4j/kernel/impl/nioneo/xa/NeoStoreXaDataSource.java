@@ -315,6 +315,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                 + "This can take a while for large stores..." );
             neoStore.flushAll();
             neoStore.makeStoreOk();
+            neoStore.setVersion( xaContainer.getLogicalLog().getCurrentLogVersion() );
             logger.fine( "Rebuild of id generators complete." );
         }
 
@@ -434,13 +435,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         {
             neoStore.setRecoveredStatus( false );
         }
-    }
-
-    @Override
-    public void applyLog( ReadableByteChannel byteChannel ) throws IOException
-    {
-        logApplied = true;
-        super.applyLog( byteChannel );
     }
 
     ReadTransaction getReadOnlyTransaction()
