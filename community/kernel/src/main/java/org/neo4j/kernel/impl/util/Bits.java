@@ -47,7 +47,7 @@ public class Bits
         this.numberOfBytes = longs.length*8;
     }
     
-    private long leftOverspillMask( int steps )
+    public static long leftOverflowMask( int steps )
     {
         long mask = 0L;
         for ( int i = 0; i < steps; i++ )
@@ -58,7 +58,7 @@ public class Bits
         return mask;
     }
     
-    public static long rightOverspillMask( int steps )
+    public static long rightOverflowMask( int steps )
     {
         long mask = 0L;
         for ( int i = 0; i < steps; i++ )
@@ -81,7 +81,7 @@ public class Bits
             }
         }
         
-        long overspillMask = leftOverspillMask( steps );
+        long overspillMask = leftOverflowMask( steps );
         long overspill = 0;
         for ( int i = longs.length-1; i >= 0; i-- )
         {
@@ -103,7 +103,7 @@ public class Bits
             }
         }
         
-        long overspillMask = rightOverspillMask( steps );
+        long overspillMask = rightOverflowMask( steps );
         long overspill = 0;
         for ( int i = 0; i < longs.length; i++ )
         {

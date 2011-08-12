@@ -355,7 +355,7 @@ public enum ShortArray
         }
         
         Bits result = new Bits( payloadSizeInBytes );
-        long mask = Bits.rightOverspillMask( requiredBits );
+        long mask = Bits.rightOverflowMask( requiredBits );
         for ( int i = 0; i < arrayLength; i++ )
         {
             if ( i > 0 )
@@ -382,7 +382,7 @@ public enum ShortArray
         long[] longs = record.getPropBlock();
         int requiredBits = (int) ((longs[0] & 0xF800000000000000L) >>> (64-HEADER_SIZE));
         Bits bits = new Bits( copyOf( longs, longs.length ) );
-        long mask = Bits.rightOverspillMask( requiredBits );
+        long mask = Bits.rightOverflowMask( requiredBits );
         for ( int i = arrayLength-1; i >= 0; i-- )
         {
             type.pull( bits, array, i, mask );

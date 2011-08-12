@@ -50,19 +50,31 @@ public class TestLongerShortString
     @Test
     public void canEncodeEmailAndUri() throws Exception
     {
-//        assertCanEncodeAndDecodeToSame( "mattias@neotechnology.com" );
-        assertCanEncodeAndDecodeToSame( "http://my.dom:7474/" );
+        assertCanEncodeAndDecodeToSame( "mattias@neotechnology.com" );
+        assertCanEncodeAndDecodeToSame( "http://domain:7474/" );
+        // With payload size 32 we can fit 32*8/6=42 characters w/ URI encoding
+        assertCanEncodeAndDecodeToSame( "http://neo4j.org/download?os=linux&v=1.4.1", 32 );
     }
     
     private void assertCanEncodeAndDecodeToSame( String string )
     {
+        assertCanEncodeAndDecodeToSame( string, PropertyStore.DEFAULT_PAYLOAD_SIZE );
+    }
+    
+    private void assertCanEncodeAndDecodeToSame( String string, int payloadSize )
+    {
         PropertyRecord target = new PropertyRecord( 0 );
-        assertTrue( LongerShortString.encode( string, target ) );
+        assertTrue( LongerShortString.encode( string, target, payloadSize ) );
         assertEquals( string, LongerShortString.decode( target ) );
     }
     
     private void assertCannotEncode( String string )
     {
-        assertFalse( LongerShortString.encode( string, new PropertyRecord( 0 ) ) );
+        assertCannotEncode( string, PropertyStore.DEFAULT_PAYLOAD_SIZE );
+    }
+    
+    private void assertCannotEncode( String string, int payloadSize )
+    {
+        assertFalse( LongerShortString.encode( string, new PropertyRecord( 0 ), payloadSize ) );
     }
 }

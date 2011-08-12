@@ -492,11 +492,7 @@ public class PropertyStore extends AbstractStore implements Store
         if ( value instanceof String )
         {
             String string = (String) value;
-            if ( ShortString.encode( string, record ) )
-            {
-//                record.setType( PropertyType.SHORT_STRING );
-                return;
-            }
+            if ( ShortString.encode( string, record ) ) return;
 
             long stringBlockId = nextStringBlockId();
             record.setSinglePropBlock( stringBlockId );
