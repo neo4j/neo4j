@@ -45,7 +45,7 @@ import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
  * Use this to start up a full Neo4j server from within an application that
  * already uses the {@link EmbeddedGraphDatabase} or the
  * {@link HighlyAvailableGraphDatabase}. This gives your application the full
- * benifits of the servers REST API, the web administration interface and
+ * benefits of the server's REST API, the Web administration interface and
  * statistics tracking.
  * <p>
  * Example:
