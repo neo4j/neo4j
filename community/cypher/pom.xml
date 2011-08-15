@@ -91,24 +91,19 @@
         <artifactId>maven-scala-plugin</artifactId>
         <executions>
           <execution>
-            <id>compile</id>
+            <id>scala-compile</id>
             <goals>
+              <goal>add-source</goal>
               <goal>compile</goal>
             </goals>
-            <phase>compile</phase>
+            <phase>process-resources</phase>
           </execution>
           <execution>
-            <id>test-compile</id>
+            <id>scala-test-compile</id>
             <goals>
               <goal>testCompile</goal>
             </goals>
-            <phase>test-compile</phase>
-          </execution>
-          <execution>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>compile</goal>
-            </goals>
+            <phase>process-test-resources</phase>
           </execution>
         </executions>
       </plugin>
@@ -142,6 +137,38 @@
         </executions>
       </plugin>
     </plugins>
+    <pluginManagement>
+      <plugins>
+        <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+        <plugin>
+          <groupId>org.eclipse.m2e</groupId>
+          <artifactId>lifecycle-mapping</artifactId>
+          <version>1.0.0</version>
+          <configuration>
+            <lifecycleMappingMetadata>
+              <pluginExecutions>
+                <pluginExecution>
+                  <pluginExecutionFilter>
+                    <groupId>org.scala-tools</groupId>
+                    <artifactId>maven-scala-plugin</artifactId>
+                    <versionRange>[2.15.2,)</versionRange>
+                    <goals>
+                      <goal>compile</goal>
+                      <goal>testCompile</goal>
+                    </goals>
+                  </pluginExecutionFilter>
+                  <action>
+                    <configurator>
+                      <id>org.maven.ide.eclipse.scala</id>
+                    </configurator>
+                  </action>
+                </pluginExecution>
+              </pluginExecutions>
+            </lifecycleMappingMetadata>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
 
   <reporting>
