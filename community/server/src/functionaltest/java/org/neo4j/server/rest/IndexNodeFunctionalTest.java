@@ -172,7 +172,7 @@ public class IndexNodeFunctionalTest
             }
 
             @Override
-            public boolean matchesSafely( @SuppressWarnings( "hiding" ) String[] array )
+            public boolean matchesSafely( String[] array )
             {
                 this.array = array;
                 for ( String string : array )
