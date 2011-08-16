@@ -271,7 +271,6 @@ public class GraphDbHelper
     public Collection<Long> queryIndexedNodes( String indexName, String key, Object value )
             throws DatabaseBlockedException
     {
-        // TODO: refactor this and getIndexedNodes to avoid dupe code
         Index<Node> index = database.getNodeIndex( indexName );
         Transaction tx = database.graph.beginTx();
         try

@@ -20,7 +20,11 @@
 package org.neo4j.server.rest;
 
 import java.io.IOException;
+import java.util.Arrays;
 
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.rest.domain.GraphDbHelper;
@@ -46,6 +50,42 @@ public final class FunctionalTestHelper
         this.helper = new GraphDbHelper( server.getDatabase() );
         this.server = server;
         this.request = new RestRequest(server.baseUri().resolve("db/data/"));
+    }
+    
+    public static Matcher<String[]> arrayContains( final String element )
+    {
+        return new TypeSafeMatcher<String[]>()
+        {
+            private String[] array;
+
+            @Override
+            public void describeTo( Description descr )
+            {
+                descr.appendText( "The array " )
+                        .appendText( Arrays.toString( array ) )
+                        .appendText( " does not contain <" )
+                        .appendText( element )
+                        .appendText( ">" );
+            }
+
+            @Override
+            public boolean matchesSafely( String[] array )
+            {
+                this.array = array;
+                for ( String string : array )
+                {
+                    if ( element == null )
+                    {
+                        if ( string == null ) return true;
+                    }
+                    else if ( element.equals( string ) )
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        };
     }
 
     public GraphDbHelper getGraphDbHelper()

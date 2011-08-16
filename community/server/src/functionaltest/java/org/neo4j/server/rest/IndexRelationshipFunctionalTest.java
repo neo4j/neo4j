@@ -31,7 +31,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import org.junit.AfterClass;
@@ -41,7 +40,6 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.helpers.ServerHelper;
@@ -51,7 +49,6 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.URIHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.TestData;
-
 
 
 public class IndexRelationshipFunctionalTest
@@ -430,96 +427,4 @@ public class IndexRelationshipFunctionalTest
         );
         assertEquals( 400, response.getStatus() );
     }
-    
-    //
-    // AUTO INDEXES
-    //
-    
-    /**
-     * Find relationship by query from an automatic index.
-     */
-    @Documented
-    @Test
-    public void shouldRetrieveFromAutoIndexByQuery() throws PropertyValueException
-    {
-        String key = "bobsKey";
-        String value = "bobsValue";
-        Map<String, Object> props = new HashMap<String, Object>();
-        props.put(key, value);
-        
-        helper.enableRelationshipAutoIndexingFor(key);
-        helper.setRelationshipProperties(helper.createRelationship("sometype"), props);
-
-        String entity = gen.get()
-                .expectedStatus(200)
-                .get(functionalTestHelper.relationshipAutoIndexUri() + "?query=" + key + ":" + value)
-                .entity();
-        
-        Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue(entity);
-        assertEquals(1, hits.size());
-    }
-    
-    /**
-     * Find relationship by exact match from an automatic index.
-     */
-    @Documented
-    @Test
-    public void shouldRetrieveFromAutoIndexByExactMatch() throws PropertyValueException
-    {
-        String key = "bobsKey";
-        String value = "bobsValue";
-        Map<String, Object> props = new HashMap<String, Object>();
-        props.put(key, value);
-        
-        helper.enableRelationshipAutoIndexingFor(key);
-        helper.setRelationshipProperties(helper.createRelationship("sometype"), props);
-
-        String entity = gen.get()
-                .expectedStatus(200)
-                .get(functionalTestHelper.relationshipAutoIndexUri() + key + "/" + value)
-                .entity();
-        
-        Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue(entity);
-        assertEquals(1, hits.size());
-    }
-    
-    @Test
-    public void shouldNotBeAbleToRemoveAutoIndex() throws DatabaseBlockedException, JsonParseException
-    {
-    	String indexName = server.getDatabase().graph.index().getRelationshipAutoIndexer().getAutoIndex().getName();
-    	Response r = RestRequest.req().delete(functionalTestHelper.relationshipIndexUri() + indexName);
-    	assertEquals(403, r.getStatus());
-    }
-    
-    @Test
-    public void shouldNotAddToAutoIndex() throws Exception {
-        String indexName = server.getDatabase().graph.index().getRelationshipAutoIndexer().getAutoIndex().getName();
-        String key = "key";
-        String value = "the value";
-        value = URIHelper.encode(value);
-        long relId = helper.createRelationship("taa");
-
-        Response r = RestRequest.req().post(
-        		functionalTestHelper.indexRelationshipUri(indexName, key, value), 
-        		JsonHelper.createJsonFrom(functionalTestHelper.relationshipUri(relId)));
-    	assertEquals(403, r.getStatus());
-    }
-    
-    @Test
-    public void shouldNotBeAbleToRemoveAutoIndexedItems() throws DatabaseBlockedException, JsonParseException
-    {
-        final RestRequest request = RestRequest.req();
-        String indexName = server.getDatabase().graph.index().getRelationshipAutoIndexer().getAutoIndex().getName();
-        long relId = helper.createRelationship("sometype");
-        
-        Response r = request.delete( functionalTestHelper.relationshipIndexUri() + indexName + "/key/value/" + relId );
-        assertEquals( 403, r.getStatus() );
-       
-        r = request.delete(functionalTestHelper.relationshipIndexUri() + indexName + "/key/" + relId);
-        assertEquals( 403, r.getStatus() );
-        
-        r = request.delete(functionalTestHelper.relationshipIndexUri() + indexName + "/" + relId);
-        assertEquals( 403, r.getStatus() );
-    }
-    
 }
