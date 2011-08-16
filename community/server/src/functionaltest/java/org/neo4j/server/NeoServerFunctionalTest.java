@@ -27,17 +27,16 @@ import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 
+import javax.ws.rs.core.MediaType;
+
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.FunctionalTestHelper;
-
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
-
-import javax.ws.rs.core.MediaType;
 
 public class NeoServerFunctionalTest
 {

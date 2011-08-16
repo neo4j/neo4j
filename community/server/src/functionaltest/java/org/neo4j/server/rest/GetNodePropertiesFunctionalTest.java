@@ -19,20 +19,25 @@
  */
 package org.neo4j.server.rest;
 
-import org.junit.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+import java.io.IOException;
+import java.util.Collections;
+
+import javax.ws.rs.core.MediaType;
+
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.TestData;
-
-import javax.ws.rs.core.MediaType;
-import java.io.IOException;
-import java.util.Collections;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 public class GetNodePropertiesFunctionalTest
 {

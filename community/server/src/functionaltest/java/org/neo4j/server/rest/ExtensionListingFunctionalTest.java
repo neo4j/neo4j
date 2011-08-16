@@ -19,6 +19,16 @@
  */
 package org.neo4j.server.rest;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasKey;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+
+import java.io.IOException;
+import java.net.URI;
+import java.util.Map;
+
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -27,14 +37,6 @@ import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.plugins.FunctionalTestPlugin;
 import org.neo4j.server.rest.domain.JsonHelper;
-
-import java.io.IOException;
-import java.net.URI;
-import java.util.Map;
-
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasKey;
-import static org.junit.Assert.*;
 
 
 

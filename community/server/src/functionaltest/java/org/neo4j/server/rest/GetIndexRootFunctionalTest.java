@@ -19,16 +19,16 @@
  */
 package org.neo4j.server.rest;
 
+import static org.junit.Assert.assertEquals;
+
+import java.io.IOException;
+
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.helpers.ServerHelper;
-
-import java.io.IOException;
-
-import static org.junit.Assert.assertEquals;
 
 public class GetIndexRootFunctionalTest
 {

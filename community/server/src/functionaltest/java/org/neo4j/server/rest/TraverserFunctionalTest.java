@@ -19,7 +19,24 @@
  */
 package org.neo4j.server.rest;
 
-import org.junit.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.ws.rs.core.Response.Status;
+
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -30,13 +47,6 @@ import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.TestData;
-
-import javax.ws.rs.core.Response.Status;
-import java.io.IOException;
-import java.util.*;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class TraverserFunctionalTest
 {

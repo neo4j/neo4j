@@ -19,14 +19,15 @@
  */
 package org.neo4j.server.rest;
 
-import com.sun.jersey.api.client.Client;
+import java.io.IOException;
+
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 
-import java.io.IOException;
+import com.sun.jersey.api.client.Client;
 
 public final class FunctionalTestHelper
 {

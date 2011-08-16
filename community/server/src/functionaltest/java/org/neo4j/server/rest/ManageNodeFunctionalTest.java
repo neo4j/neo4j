@@ -19,24 +19,32 @@
  */
 package org.neo4j.server.rest;
 
-import org.junit.*;
-import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.NeoServerWithEmbeddedWebServer;
-import org.neo4j.server.helpers.ServerHelper;
-import org.neo4j.server.rest.domain.GraphDbHelper;
-import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.test.TestData;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasKey;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
-import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasKey;
-import static org.junit.Assert.*;
+import javax.ws.rs.core.MediaType;
+
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.neo4j.kernel.impl.annotations.Documented;
+import org.neo4j.server.NeoServerWithEmbeddedWebServer;
+import org.neo4j.server.helpers.ServerHelper;
+import org.neo4j.server.rest.domain.GraphDbHelper;
+import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.test.TestData;
 
 public class ManageNodeFunctionalTest
 {
