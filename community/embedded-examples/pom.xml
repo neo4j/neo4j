@@ -1,16 +1,16 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.neo4j.examples</groupId>
+    <artifactId>examples-pom</artifactId>
+    <version>23</version>
+  </parent>
   <groupId>org.neo4j.examples</groupId>
   <artifactId>neo4j-examples</artifactId>
   <name>Neo4j Examples</name>
   <version>1.5-SNAPSHOT</version>
   <description>Neo4j Embedded Examples</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}/</url>
-  <parent>
-    <groupId>org.neo4j.examples</groupId>
-    <artifactId>examples-pom</artifactId>
-    <version>22</version>
-  </parent>
   
   <scm>
     <url>https://github.com/neo4j/community/tree/master/embedded-examples</url>
