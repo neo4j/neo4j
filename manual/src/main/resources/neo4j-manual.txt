@@ -93,9 +93,9 @@ include::tools/index.txt[]
 
 :leveloffset: 0
 
-[[troubleshooting]]
-Troubleshooting
-================
+[[help]]
+Getting Help
+============
 
 ////
 [partintro]
@@ -103,7 +103,7 @@ Troubleshooting
 
 :leveloffset: 1
 
-include::troubleshooting/index.txt[]
+include::help.txt[]
 
 :leveloffset: 0
 :numbered!:

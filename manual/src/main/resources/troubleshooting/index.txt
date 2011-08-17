@@ -1,5 +1,0 @@
-
-include::troubleshooting.txt[]
-
-include::community-support.txt[]
-

@@ -3,7 +3,16 @@
 Introduction
 ============
 
-This is a reference manual. 
+This is the reference manual for Neo4j version {neo4j-version}. 
+
+The main parts of the manual are:
+
+* <<reference-documentation>> 
+* <<tutorials>>
+* <<tools>>
+* <<help>>
+* <<manpages>>
+
 The material is practical, technical, and focused on answering specific questions. 
 It addresses how things work, what to do and what to avoid to successfully run Neo4j in a production environment. 
 After a brief introduction, each topic area assumes general familiarity as it addresses the particular details of Neo4j.
