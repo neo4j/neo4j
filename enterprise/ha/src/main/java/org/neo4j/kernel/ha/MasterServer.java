@@ -53,7 +53,7 @@ public class MasterServer extends Server<Master, Void>
     }
     
     @Override
-    protected void finishOffConnection( Channel channel, SlaveContext context )
+    protected void finishOffChannel( Channel channel, SlaveContext context )
     {
         getMaster().finishTransaction( context );
     }
@@ -61,7 +61,7 @@ public class MasterServer extends Server<Master, Void>
     @Override
     protected void responseWritten( RequestType<Master> type, Channel channel, SlaveContext context )
     {
-        if ( type == HaRequestType.FINISH || type == HaRequestType.PULL_UPDATES )
+        if ( type == HaRequestType.FINISH || !((HaRequestType)type).withinTx )
         {
             unmapSlave( channel, context );
         }

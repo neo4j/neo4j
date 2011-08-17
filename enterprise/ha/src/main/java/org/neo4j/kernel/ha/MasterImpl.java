@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,6 +41,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.AbstractGraphDatabase;
@@ -180,7 +179,7 @@ public class MasterImpl implements Master
         }
         catch ( Exception e )
         {
-            throw new RuntimeException( e );
+            throw Exceptions.launderedException( e );
         }
     }
 
@@ -197,8 +196,7 @@ public class MasterImpl implements Master
         }
         catch ( Exception e )
         {
-            e.printStackTrace();
-            throw new RuntimeException( e );
+            throw Exceptions.launderedException( e );
         }
     }
 
@@ -216,8 +214,7 @@ public class MasterImpl implements Master
         }
         catch ( Exception e )
         {
-            e.printStackTrace();
-            throw new RuntimeException( e );
+            throw Exceptions.launderedException( e );
         }
     }
 
@@ -395,31 +392,6 @@ public class MasterImpl implements Master
         return new SlaveContext( context.getSessionId(), context.machineId(),
                 context.getEventIdentifier(), txs.toArray( new Pair[0] ) );
 
-    }
-
-    private File getBaseDir()
-    {
-        File file = new File( ((AbstractGraphDatabase) graphDb).getStoreDir() );
-        try
-        {
-            return file.getCanonicalFile().getAbsoluteFile();
-        }
-        catch ( IOException e )
-        {
-            return file.getAbsoluteFile();
-        }
-    }
-
-    private String relativePath( File baseDir, File storeFile ) throws FileNotFoundException
-    {
-        String prefix = baseDir.getAbsolutePath();
-        String path = storeFile.getAbsolutePath();
-        if ( !path.startsWith( prefix ) )
-            throw new FileNotFoundException();
-        path = path.substring( prefix.length() );
-        if ( path.startsWith( File.separator ) )
-            return path.substring( 1 );
-        return path;
     }
 
     private static interface LockGrabber

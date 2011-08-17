@@ -50,7 +50,7 @@ class BackupServer extends Server<TheBackupInterface, Object>
     }
 
     @Override
-    protected void finishOffConnection( Channel channel, SlaveContext context )
+    protected void finishOffChannel( Channel channel, SlaveContext context )
     {
     }
 }

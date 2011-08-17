@@ -22,16 +22,11 @@ package org.neo4j.com;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -42,6 +37,7 @@ import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
+import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
@@ -65,22 +61,22 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
 {
     public static final int DEFAULT_BACKUP_PORT = 6362;
     
-    private final static int DEAD_CONNECTIONS_CHECK_INTERVAL = 3;
     protected final static int DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS = 200;
 
     private final ChannelFactory channelFactory;
     private final ServerBootstrap bootstrap;
     private final M realMaster;
     private final ChannelGroup channelGroup;
-    private final ScheduledExecutorService deadConnectionsPoller;
     private final Map<Channel, SlaveContext> connectedSlaveChannels = new HashMap<Channel, SlaveContext>();
     private final Map<Channel, Pair<ChannelBuffer, ByteBuffer>> channelBuffers =
             new HashMap<Channel, Pair<ChannelBuffer,ByteBuffer>>();
     private final ExecutorService executor;
+    private final ExecutorService masterCallExecutor;
     private final StringLogger msgLog;
     private final Map<Channel, PartialRequest> partialRequests =
             Collections.synchronizedMap( new HashMap<Channel, PartialRequest>() );
     private final int frameLength;
+    private final ExecutorService unfinishedTransactionExecutor;
 
     public Server( M realMaster, final int port, String storeDir, int frameLength )
     {
@@ -94,6 +90,8 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         this.frameLength = frameLength;
         this.msgLog = StringLogger.getLogger( storeDir );
         executor = Executors.newCachedThreadPool();
+        masterCallExecutor = Executors.newCachedThreadPool();
+        unfinishedTransactionExecutor = Executors.newSingleThreadExecutor();
         channelFactory = new NioServerSocketChannelFactory(
                 executor, executor, maxNumberOfConcurrentTransactions );
         bootstrap = new ServerBootstrap( channelFactory );
@@ -111,18 +109,8 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
             throw e;
         }
         channelGroup = new DefaultChannelGroup();
-        // Add the "server" channel
         channelGroup.add( channel );
         msgLog.logMessage( getClass().getSimpleName() + " communication server started and bound to " + port, true );
-
-        deadConnectionsPoller = new ScheduledThreadPoolExecutor( 1 );
-        deadConnectionsPoller.scheduleWithFixedDelay( new Runnable()
-        {
-            public void run()
-            {
-                checkForDeadChannels();
-            }
-        }, DEAD_CONNECTIONS_CHECK_INTERVAL, DEAD_CONNECTIONS_CHECK_INTERVAL, TimeUnit.SECONDS );
     }
 
     public ChannelPipeline getPipeline() throws Exception
@@ -144,31 +132,112 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
                 ChannelBuffer message = (ChannelBuffer) event.getMessage();
                 handleRequest( message, event.getChannel() );
             }
-            catch ( Exception e )
+            catch ( Throwable e )
             {
                 e.printStackTrace();
-                throw e;
+                if ( e instanceof Exception )
+                {
+                    throw (Exception) e;
+                }
+                throw new RuntimeException( e );
             }
+        }
+
+        @Override
+        public void channelClosed( ChannelHandlerContext ctx, ChannelStateEvent e )
+                throws Exception
+        {
+            tryToFinishOffChannel( ctx.getChannel() );
+        }
+
+        @Override
+        public void channelDisconnected( ChannelHandlerContext ctx, ChannelStateEvent e )
+                throws Exception
+        {
+            tryToFinishOffChannel( ctx.getChannel() );
         }
 
         @Override
         public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e ) throws Exception
         {
+            ctx.getChannel().close();
             e.getCause().printStackTrace();
         }
     }
+    
+    protected void tryToFinishOffChannel( Channel channel )
+    {
+        SlaveContext slave = null;
+        synchronized ( connectedSlaveChannels )
+        {
+            slave = connectedSlaveChannels.remove( channel );
+        }
+        if ( slave == null )
+        {
+            return;
+        }
+        tryToFinishOffChannel( channel, slave );
+    }
 
-    @SuppressWarnings( "unchecked" )
+    protected void tryToFinishOffChannel( Channel channel, SlaveContext slave )
+    {
+        try
+        {
+            finishOffChannel( channel, slave );
+        }
+        catch ( IllegalStateException e ) // From TxManager.resume (if the tx is already active)
+        {
+            unfinishedTransactionExecutor.submit( newTransactionFinisher( slave ) );
+        }
+        catch ( Throwable failure ) // Unknown error trying to finish off the tx
+        {
+            unfinishedTransactionExecutor.submit( newTransactionFinisher( slave ) );
+            msgLog.logMessage( "Could not finish off dead channel", failure );
+        }
+    }
+
+    private Runnable newTransactionFinisher( final SlaveContext slave )
+    {
+        return new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    finishOffChannel( null, slave );
+                }
+                catch ( Throwable e )
+                {
+                    // Introduce some delay here. it becomes like a busy wait if it never succeeds
+                    sleepNicely( 20 );
+                    unfinishedTransactionExecutor.submit( newTransactionFinisher( slave ) );
+                }
+            }
+
+            private void sleepNicely( int millis )
+            {
+                try
+                {
+                    Thread.sleep( millis );
+                }
+                catch ( InterruptedException e )
+                {
+                    Thread.interrupted();
+                }
+            }
+        };
+    }
+
     protected void handleRequest( ChannelBuffer buffer, final Channel channel ) throws IOException
     {
-        // TODO Too long method, refactor please
         byte continuation = buffer.readByte();
         if ( continuation == ChunkingChannelBuffer.CONTINUATION_MORE )
         {
             PartialRequest partialRequest = partialRequests.get( channel );
             if ( partialRequest == null )
             {
-                // This is the first chunk
+                // This is the first chunk in a multi-chunk request
                 RequestType<M> type = getRequestContext( buffer.readByte() );
                 SlaveContext context = readContext( buffer );
                 Pair<ChannelBuffer, ByteBuffer> targetBuffers = mapSlave( channel, context );
@@ -187,6 +256,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
             ChannelBuffer bufferToWriteTo = null;
             if ( partialRequest == null )
             {
+                // This is the one and single chunk in the request
                 type = getRequestContext( buffer.readByte() );
                 context = readContext( buffer );
                 targetBuffers = mapSlave( channel, context );
@@ -195,6 +265,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
             }
             else
             {
+                // This is the last chunk in a multi-chunk request
                 type = partialRequest.type;
                 context = partialRequest.context;
                 targetBuffers = partialRequest.buffers;
@@ -205,11 +276,11 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
 
             bufferToWriteTo.clear();
             final ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( bufferToWriteTo, channel, frameLength );
-            executor.submit( responseWriter( type, channel, context, chunkingBuffer, bufferToReadFrom, targetBuffers.other() ) );
+            masterCallExecutor.submit( masterCaller( type, channel, context, chunkingBuffer, bufferToReadFrom, targetBuffers.other() ) );
         }
     }
 
-    private Runnable responseWriter( final RequestType<M> type, final Channel channel, final SlaveContext context,
+    private Runnable masterCaller( final RequestType<M> type, final Channel channel, final SlaveContext context,
             final ChunkingChannelBuffer targetBuffer, final ChannelBuffer bufferToReadFrom, final ByteBuffer targetByteBuffer )
     {
         return new Runnable()
@@ -228,7 +299,8 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
                 }
                 catch ( Throwable e )
                 {
-                    msgLog.logMessage( "Error when server writing response", e );
+                    channel.close();
+                    tryToFinishOffChannel( channel, context );
                     throw Exceptions.launderedException( e );
                 }
             }
@@ -297,8 +369,14 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         {
             // Checking for machineId -1 excludes the "empty" slave contexts
             // which some communication points pass in as context.
-            if ( slave != null && slave.machineId() != slave.EMPTY.machineId() )
+            if ( slave != null && slave.machineId() != SlaveContext.EMPTY.machineId() )
             {
+                SlaveContext previous = connectedSlaveChannels.get( channel );
+                if ( previous != null && !previous.equals( slave ) )
+                {
+                    throw new RuntimeException( "Tried to map " + channel + " --> " + slave +
+                            ", but was already mapped to " + previous );
+                }
                 connectedSlaveChannels.put( channel, slave );
             }
             buffer = channelBuffers.get( channel );
@@ -317,6 +395,8 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         synchronized ( connectedSlaveChannels )
         {
             connectedSlaveChannels.remove( channel );
+            channelBuffers.remove( channel );
+            channelGroup.remove( channel );
         }
     }
     
@@ -328,7 +408,8 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
     public void shutdown()
     {
         // Close all open connections
-        deadConnectionsPoller.shutdown();
+        unfinishedTransactionExecutor.shutdown();
+        masterCallExecutor.shutdown();
         msgLog.logMessage( getClass().getSimpleName() + " shutdown, closing all channels", true );
         channelGroup.close().awaitUninterruptibly();
         executor.shutdown();
@@ -336,49 +417,8 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
 //        channelFactory.releaseExternalResources();
     }
 
-    private void checkForDeadChannels()
-    {
-        synchronized ( connectedSlaveChannels )
-        {
-            Collection<Channel> channelsToRemove = new ArrayList<Channel>();
-            for ( Map.Entry<Channel, SlaveContext> entry : connectedSlaveChannels.entrySet() )
-            {
-                if ( !channelIsOpen( entry.getKey() ) )
-                {
-                    msgLog.logMessage( "Found dead channel " + entry.getKey() + ", " + entry.getValue() );
-                    try
-                    {
-                        finishOffConnection( entry.getKey(), entry.getValue() );
-                    }
-                    catch ( Throwable failure )
-                    {
-                        msgLog.logMessage( "Could not finish off connection", failure );
-                        continue;
-                    }
-                    msgLog.logMessage( "Removed " + entry.getKey() + ", " + entry.getValue() );
-                    channelsToRemove.add( entry.getKey() );
-                }
-            }
-            for ( Channel channel : channelsToRemove )
-            {
-                connectedSlaveChannels.remove( channel );
-                channelBuffers.remove( channel );
-                partialRequests.remove( channel );
-            }
-        }
-    }
+    protected abstract void finishOffChannel( Channel channel, SlaveContext context );
 
-    protected abstract void finishOffConnection( Channel channel, SlaveContext context );
-
-    private boolean channelIsOpen( Channel channel )
-    {
-        /**
-         * "open" is defined as the lowest means of connectedness
-         * "connected" may be that data is actually sent or something
-         */
-        return channel.isConnected() && channel.isOpen();
-    }
-    
     public Map<Channel, SlaveContext> getConnectedSlaveChannels()
     {
         return connectedSlaveChannels;

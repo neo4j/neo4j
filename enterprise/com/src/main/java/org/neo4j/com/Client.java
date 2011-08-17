@@ -134,7 +134,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
         msgLog = StringLogger.getLogger( storeDir );
         msgLog.logMessage( "Client connected to " + hostNameOrIp + ":" + port, true );
     }
-
+    
     protected <R> Response<R> sendRequest( RequestType<M> type, SlaveContext context,
             Serializer serializer, Deserializer<R> deserializer )
     {
@@ -163,10 +163,20 @@ public abstract class Client<M> implements ChannelPipelineFactory
                 @Override
                 protected ChannelBuffer readNext()
                 {
-                    ChannelBuffer result = super.readNext();
+                    ChannelBuffer result = null;
+                    try
+                    {
+                        result = super.readNext();
+                    }
+                    catch ( ComException e )
+                    {
+                        disposeChannel( finalChannelContext );
+                        throw e;
+                    }
+                    
                     if ( result == null )
                     {
-                        channelPool.dispose( finalChannelContext );
+                        disposeChannel( finalChannelContext );
                         throw new ComException( "Channel has been closed" );
                     }
                     return result;
@@ -185,13 +195,13 @@ public abstract class Client<M> implements ChannelPipelineFactory
         {
             if ( channelContext != null )
             {
-                channelPool.dispose( channelContext );
+                disposeChannel( channelContext );
             }
             throw new ComException( e );
         }
         finally
         {
-            releaseChannel();
+            releaseChannel( type, channelContext );
         }
     }
 
@@ -242,17 +252,22 @@ public abstract class Client<M> implements ChannelPipelineFactory
             targetBuffer.writeLong( tx.other() );
         }
     }
-
+    
     private Triplet<Channel, ChannelBuffer, ByteBuffer> getChannel() throws Exception
     {
         return channelPool.acquire();
     }
 
-    private void releaseChannel()
+    protected void releaseChannel( RequestType<M> type, Triplet<Channel, ChannelBuffer, ByteBuffer> channel )
     {
         channelPool.release();
     }
 
+    protected void disposeChannel( Triplet<Channel, ChannelBuffer, ByteBuffer> channel )
+    {
+        channelPool.dispose( channel );
+    }
+    
     public ChannelPipeline getPipeline() throws Exception
     {
         ChannelPipeline pipeline = Channels.pipeline();
