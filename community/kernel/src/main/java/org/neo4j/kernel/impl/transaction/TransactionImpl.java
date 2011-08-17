@@ -54,7 +54,7 @@ class TransactionImpl implements Transaction
 
     private final byte globalId[];
     private int status = Status.STATUS_ACTIVE;
-    private boolean active = true;
+    private volatile boolean active = true;
     private boolean globalStartRecordWritten = false;
 
     private final LinkedList<ResourceElement> resourceList =
@@ -609,6 +609,11 @@ class TransactionImpl implements Transaction
             return "Xid[" + xid + "] XAResource[" + resource + "] Status["
                 + statusString + "]";
         }
+    }
+    
+    boolean isActive()
+    {
+        return active;
     }
 
     synchronized void markAsActive()

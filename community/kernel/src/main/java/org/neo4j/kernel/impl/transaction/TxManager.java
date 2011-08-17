@@ -921,6 +921,10 @@ public class TxManager extends AbstractTransactionManager
             TransactionImpl txImpl = (TransactionImpl) tx;
             if ( txImpl.getStatus() != Status.STATUS_NO_TRANSACTION )
             {
+                if ( txImpl.isActive() )
+                {
+                    throw new IllegalStateException( txImpl + " already active" );
+                }
                 txImpl.markAsActive();
                 txThreadMap.put( thread, txImpl );
             }
