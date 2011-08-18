@@ -37,33 +37,33 @@ public class Documenter
     public class DocOutput implements Output, Serializable
     {
         private static final long serialVersionUID = 1L;
-        private ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        private PrintWriter out = new PrintWriter( baos );
+        private final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        private final PrintWriter out = new PrintWriter( baos );
 
         @Override
-        public Appendable append( CharSequence csq, int start, int end )
-                throws IOException
+        public Appendable append( final CharSequence csq, final int start, final int end )
+        throws IOException
         {
             this.print( RemoteOutput.asString( csq ).substring( start, end ) );
             return this;
         }
 
         @Override
-        public Appendable append( char c ) throws IOException
+        public Appendable append( final char c ) throws IOException
         {
             this.print( c );
             return this;
         }
 
         @Override
-        public Appendable append( CharSequence csq ) throws IOException
+        public Appendable append( final CharSequence csq ) throws IOException
         {
             this.print( RemoteOutput.asString( csq ) );
             return this;
         }
 
         @Override
-        public void println( Serializable object ) throws RemoteException
+        public void println( final Serializable object ) throws RemoteException
         {
             out.println( object );
             out.flush();
@@ -77,7 +77,7 @@ public class Documenter
         }
 
         @Override
-        public void print( Serializable object ) throws RemoteException
+        public void print( final Serializable object ) throws RemoteException
         {
             out.print( object );
             out.flush();
@@ -90,7 +90,7 @@ public class Documenter
         public final String assertion;
         public final String comment;
 
-        public Job( String query, String assertion, String comment )
+        public Job( final String query, final String assertion, final String comment )
         {
             this.query = query;
             this.assertion = assertion;
@@ -102,14 +102,14 @@ public class Documenter
     private final Stack<Job> stack = new Stack<Documenter.Job>();
     private final ShellClient client;
 
-    public Documenter( String title, ShellClient client )
+    public Documenter( final String title, final ShellClient client )
     {
         this.title = title;
         this.client = client;
 
     }
 
-    public void add( String query, String assertion, String comment )
+    public void add( final String query, final String assertion, final String comment )
     {
         stack.push( new Job( query, assertion, comment ) );
     }
@@ -122,7 +122,7 @@ public class Documenter
             dir.mkdirs();
         }
         File file = new File( dir, this.title.toLowerCase().replace( " ", "-" )
-                                   + ".txt" );
+                + ".txt" );
         PrintWriter out = null;
         try
         {
@@ -133,8 +133,6 @@ public class Documenter
             // TODO Auto-generated catch block
             e1.printStackTrace();
         }
-        out.println("[source]");
-        out.println("-----");
         for ( Job job : stack )
         {
             try
@@ -157,16 +155,34 @@ public class Documenter
                 e.printStackTrace();
             }
         }
-        out.println("-----");
         out.flush();
         out.close();
 
     }
 
-    private void doc( Job job, PrintWriter out, String result )
+    private void doc( final Job job, final PrintWriter out, final String result )
     {
-            out.println( " # " + job.comment );
+        out.println();
+        out.println( "* " + job.comment );
+        if ( job.query != null && !job.query.isEmpty() )
+        {
+            out.println( "+" );
+            out.println( "_Command_" );
+            out.println( "+" );
+            out.println( "[source]" );
+            out.println( "-----" );
             out.println( " " + job.query );
+            out.println( "-----" );
+        }
+        if ( result != null && !result.isEmpty() )
+        {
+            out.println( "+" );
+            out.println( "_Result_" );
+            out.println( "+" );
+            out.println( "[source]" );
+            out.println( "-----" );
             out.println( " " + result.replace( "\n", "\n " ) );
+            out.println( "-----" );
+        }
     }
 }

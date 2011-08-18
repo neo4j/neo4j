@@ -5,8 +5,8 @@ Server Plugins
 .Quick info
 ***********
 * The server's functionality can be extended by adding plugins.
-  Plugins are user-specified code which extend the capabilities of the database, nodes, or relationships. 
-  The neo4j server will then advertise the plugin functionality within representations as clients interact via HTTP.
+* Plugins are user-specified code which extend the capabilities of the database, nodes, or relationships. 
+* The neo4j server will then advertise the plugin functionality within representations as clients interact via HTTP.
 ***********
 
 Plugins provide an easy way to extend the Neo4j REST API with new functionality, without the need to
@@ -51,6 +51,9 @@ tag=GetAll
 classifier=sources
 ----
 
+The full source code is found here:
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/server-examples/src/main/java/org/neo4j/examples/server/plugins/GetAll.java
+
 .Find the shortest path between two nodes plugin
 [snippet,java]
 ----
@@ -59,6 +62,10 @@ source=org/neo4j/examples/server/plugins/ShortestPath.java
 tag=ShortestPath
 classifier=sources
 ----
+
+The full source code is found here:
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/server-examples/src/main/java/org/neo4j/examples/server/plugins/ShortestPath.java
+
 
 To deploy the code, simply compile it into a .jar file and place it onto the server classpath (which by
 convention is the plugins directory under the Neo4j server home directory).
@@ -106,6 +113,8 @@ Extension names will be automatically assigned, based on method names, if not sp
   }
 }
 ----
+
+// generate the above output from a test
  
 Performing a +GET+ on one of the two extension URIs gives back the meta information about the service:
 
