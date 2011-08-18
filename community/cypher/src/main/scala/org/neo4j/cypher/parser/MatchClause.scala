@@ -64,7 +64,9 @@ trait MatchClause extends JavaTokenParsers with Tokens {
 
   def relatedNode:Parser[Option[String]] = opt("(") ~ opt(identity) ~ opt(")") ^^ {
     case None ~ None ~ None => throw new SyntaxException("Matching nodes without identifiers have to have parenthesis: ()")
-    case l ~ name ~ r => name
+    case None ~ name ~ None => name
+    case Some(l) ~ name ~ Some(r) => name
+    case l ~ Some(name) ~ r => throw new SyntaxException("Unfinished parenthesis around '" + name + "'")
   }
 
   def relatedTail = opt("<") ~ "-" ~ opt("[" ~> relationshipInfo  <~ "]") ~ "-" ~ opt(">") ~ relatedNode ^^ {

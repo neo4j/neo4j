@@ -105,6 +105,12 @@ class SyntaxExceptionTest extends JUnitSuite {
       "String literal expected")
   }
 
+    @Test def nodeParenthesisMustBeClosed() {
+    expectError(
+      "start s=(1) match s-->(x return x",
+      "Unfinished parenthesis around 'x'")
+  }
+
   @Test def handlesMultilineQueries() {
     val query = """start
     a=(0),
