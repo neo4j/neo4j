@@ -14,9 +14,6 @@ include::high-availability.txt[]
 
 include::server-embedded.txt[]
 
-include::server-plugins.txt[]
-
 include::server-performance.txt[]
 
-include::server-unmanaged-extensions.txt[]
 

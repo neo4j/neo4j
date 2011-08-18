@@ -37,10 +37,10 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 public class ShellTest
 {
-    private AppCommandParser parse( String line ) throws Exception
+    private AppCommandParser parse( final String line ) throws Exception
     {
         return new AppCommandParser( new GraphDatabaseShellServer( null ),
-            line );
+                line );
     }
 
     @Test
@@ -58,7 +58,7 @@ public class ShellTest
     public void testParserArguments() throws Exception
     {
         AppCommandParser parser = this
-            .parse( "set -t java.lang.Integer key value" );
+        .parse( "set -t java.lang.Integer key value" );
         assertEquals( "set", parser.getAppName() );
         assertTrue( parser.options().containsKey( "t" ) );
         assertEquals( "java.lang.Integer", parser.options().get( "t" ) );
@@ -74,7 +74,7 @@ public class ShellTest
     {
         int port = 8085;
         GraphDatabaseService graphDb = new EmbeddedGraphDatabase(
-            "target/shell-neo", stringMap( ENABLE_REMOTE_SHELL, "port=" + port ) );
+                "target/shell-neo", stringMap( ENABLE_REMOTE_SHELL, "port=" + port ) );
         ShellLobby.newClient( port );
         graphDb.shutdown();
     }
@@ -92,7 +92,7 @@ public class ShellTest
             graphDb.shutdown();
         }
     }
-    
+
     @Test
     public void canConnectAsAgent() throws Exception
     {
@@ -115,7 +115,7 @@ public class ShellTest
     {
         final GraphDatabaseShellServer server = new GraphDatabaseShellServer( "target/shell-neo", false, null );
         ShellClient client = new SameJvmClient( server );
-        
+
         Documenter doc = new Documenter("sample session", client);
         doc.add("pwd", "", "where are we?");
         doc.add("set name \"Jon\"", "", "On the current node, set the key \"name\" to value \"Jon\"");
@@ -124,31 +124,30 @@ public class ShellTest
         doc.add("ls", "1", "where are we?");
         doc.add("cd 1", "", "change to the newly created node");
         doc.add("ls -avr", "LIKES", "list relationships, including relationshship id");
-        
+
         doc.add( "mkrel -c -d i -t KNOWS --np \"{'name':'Bob'}\"", "", "create one more KNOWS relationship and the end node" );
         doc.add( "pwd", "0", "print current history stack" );
         doc.add( "ls -avr", "KNOWS", "verbose list relationships" );
         doc.run();
         //TODO: implement support for removing root node and previous nodes in the history stack of PWD
         //client.getServer().interpretLine( "rmnode -f 0", client.session(), client.getOutput() );
-//        client.getServer().interpretLine( "cd", client.session(), client.getOutput() );
-//        client.getServer().interpretLine( "pwd", client.session(), client.getOutput() );
+        //        client.getServer().interpretLine( "cd", client.session(), client.getOutput() );
+        //        client.getServer().interpretLine( "pwd", client.session(), client.getOutput() );
         server.shutdown();
     }
-    
+
     @Test
     public void testMatrix() throws Exception
     {
         final GraphDatabaseShellServer server = new GraphDatabaseShellServer( "target/shell-matrix", false, "src/test/resources/autoindex.properties" );
         ShellClient client = new SameJvmClient( server );
-        
+
         Documenter doc = new Documenter("a matrix example", client);
-        doc.add("","","create Thomas Andersson");
-        doc.add("mkrel -t ROOT -c -v", "created", "create the node");
+        doc.add( "mkrel -t ROOT -c -v", "created",
+        "create the Thomas Andersson node" );
         doc.add("cd 1", "", "go to the new node");
         doc.add("set name \"Thomas Andersson\"", "", "set the name property");
-        doc.add("","","create Thomas direct friends");
-        doc.add("mkrel -t KNOWS -cv", "", "");
+        doc.add( "mkrel -t KNOWS -cv", "", "create Thomas direct friends" );
         doc.add("cd 2", "", "go to the new node");
         doc.add("set name \"Trinity\"", "", "set the name property");
         doc.add("cd ..", "", "go back in the history stack");
@@ -159,13 +158,13 @@ public class ShellTest
 
         doc.add("ls -rv", "", "list the relationships of node 3");
         doc.add("cd -r 2", "", "change the current position to relationship #2");
-        
+
         doc.add( "set -t int age 3", "", "set the age property on the relationship" );
         doc.add( "cd ..", "", "back to Morpheus" );
         doc.add( "cd -r 3", "", "next relationsip" );
         doc.add( "set -t int age 90", "", "set the age property on the relationship" );
         doc.add( "cd start", "", "position to the start node of the current relationship" );
-        
+
         doc.add( "","","We're now standing on Morpheus node, so let's create the rest of the friends." );
         doc.add( "mkrel -t KNOWS -c", "", "new node" );
         doc.add( "ls -r", "", "list relationships on the current node" );
@@ -184,14 +183,16 @@ public class ShellTest
 
         doc.add( "","","Now, let's ask some questions" );
         doc.add( "start morpheus = (node_auto_index, name, 'Morpheus') " +
-        		"match morpheus-[:KNOWS]-zionist " +
-        		"where not( zionist.age ) or zionist.age > 32 " +
-        		"return zionist.name order by zionist.name desc skip 1 limit 5","","Morpheus' friends, looking up Morpheus by name in the neo4j autoindex" );
+                "match morpheus-[:KNOWS]-zionist " +
+                "where not( zionist.age ) or zionist.age > 32 " +
+ "return zionist.name order by zionist.name desc skip 1 limit 5",
+                "",
+                "Morpheus' friends, looking up Morpheus by name in the Neo4j autoindex" );
         doc.run();
         server.shutdown();
     }
 
-    private void assertException( String command )
+    private void assertException( final String command )
     {
         try
         {

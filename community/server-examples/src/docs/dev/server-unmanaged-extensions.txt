@@ -25,7 +25,7 @@ In your code, you get access to the underlying +GraphDatabaseService+ through th
 
 [source,java]
 --------
-public MyCoolService(@Context GraphDatabaseService database)
+public MyCoolService( @Context GraphDatabaseService database )
 {
   // Have fun here, but be safe!
 }
@@ -45,6 +45,10 @@ source=org/neo4j/examples/server/unmanaged/HelloWorldResource.java
 tag=HelloWorldResource
 classifier=sources
 ----
+
+The full source code is found here:
+https://github.com/neo4j/community/blob/{neo4j-git-tag}/server-examples/src/main/java/org/neo4j/examples/server/unmanaged/HelloWorldResource.java
+
 
 Build this code, and place the resulting jar file (and any custom dependencies) into the +$NEO4J_SERVER_HOME/plugins+ directory, and include this class in the +neo4j-server.properties+ file, like so:
 

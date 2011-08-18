@@ -236,7 +236,7 @@ public class LockManager
     }
 
     /**
-     * Utility method for debuggin. Dumps info about each lock to console.
+     * Utility method for debugging. Dumps info about each lock to console.
      */
     public void dumpAllLocks()
     {
