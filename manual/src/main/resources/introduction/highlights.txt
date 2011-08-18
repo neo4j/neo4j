@@ -1,29 +1,6 @@
-[preface]
-[[tutorial]]
-Introduction
-============
-
-This is a reference manual. 
-The material is practical, technical, and focused on answering specific questions. 
-It addresses how things work, what to do and what to avoid to successfully run Neo4j in a production environment. 
-After a brief introduction, each topic area assumes general familiarity as it addresses the particular details of Neo4j.
- 
-The goal is to be thumb-through and rule-of-thumb friendly.
-
-Each section should stand on its own, so you can hop right to whatever interests you.
-When possible, the sections distill "rules of thumb" which you can keep in mind whenever you wander out of the house without this manual in your back pocket.
-
-:leveloffset: 1
-
-[[introduction-who]]
-== Who should read this ==
-
-The topics should be relevant to architects, administrators, developers and operations personnel.
-You should already know about Neo4j and using graphs to store data.
-If you are completely new to Neo4j please check out http://neo4j.org first.
-
 [[introduction-highlights]]
-== Neo4j highlights ==
+Neo4j Highlights
+================
 
 As a robust, scalable and high-performance database, Neo4j is suitable for lightweight projects or full enterprise deployment.  
 
@@ -49,6 +26,5 @@ See <<ha>> to learn more.
 
 The graph database storage shines when storing richly-connected data. 
 Querying is performed through traversals, which can perform millions of "joins" per second.
-
 
 

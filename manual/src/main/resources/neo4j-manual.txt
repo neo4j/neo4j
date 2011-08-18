@@ -5,7 +5,34 @@ The Neo4j Manual v{revnumber}
 :neo4j-buildnumber: {revnumber}
 :neo4j-git-tag: {gitversion}
 
-include::introduction/introduction.txt[]
+include::preface/preface.txt[]
+
+:leveloffset: 0
+
+[[introduction]]
+Introduction
+============
+////
+[partintro]
+////
+
+:leveloffset: 1
+
+include::introduction/index.txt[]
+
+:leveloffset: 0
+
+[[tutorials]]
+Tutorials
+=========
+
+:leveloffset: 1
+
+include::{importdir}/neo4j-examples-docs-jar/dev/index.txt[]
+
+:leveloffset: 1
+
+include::{importdir}/neo4j-server-examples-docs-jar/dev/index.txt[]
 
 :leveloffset: 0
 
@@ -15,6 +42,7 @@ Reference Documentation
 ////
 [partintro]
 ////
+
 :leveloffset: 1
 
 include::installation-deployment/index.txt[]
@@ -26,6 +54,14 @@ include::{importdir}/neo4j-kernel-docs-jar/ops/index.txt[]
 :leveloffset: 1
 
 include::{importdir}/neo4j-kernel-docs-jar/dev/transactions.txt[]
+
+:leveloffset: 1
+
+include::{importdir}/neo4j-lucene-index-docs-jar/dev/index.txt[]
+
+:leveloffset: 1
+
+include::{importdir}/neo4j-graph-algo-docs-jar/dev/index.txt[]
 
 :leveloffset: 1
 
@@ -41,19 +77,11 @@ include::{importdir}/neo4j-server-docs-jar/dev/rest/index.txt[]
 
 :leveloffset: 2
 
-include::{importdir}/neo4j-gremlin-plugin-docs-jar/dev/plugins/gremlin/index.txt[]
+include::{importdir}/neo4j-cypher-plugin-docs-jar/dev/plugins/cypher/index.txt[]
 
 :leveloffset: 2
 
-include::{importdir}/neo4j-cypher-plugin-docs-jar/dev/plugins/cypher/index.txt[]
-
-:leveloffset: 1
-
-include::{importdir}/neo4j-lucene-index-docs-jar/dev/index.txt[]
-
-:leveloffset: 1
-
-include::{importdir}/neo4j-graph-algo-docs-jar/dev/index.txt[]
+include::{importdir}/neo4j-gremlin-plugin-docs-jar/dev/plugins/gremlin/index.txt[]
 
 :leveloffset: 1
 
@@ -62,20 +90,6 @@ include::{importdir}/neo4j-ha-docs-jar/dev/index.txt[]
 :leveloffset: 1
 
 include::operations/index.txt[]
-
-:leveloffset: 0
-
-[[tutorials]]
-Tutorials
-=========
-
-:leveloffset: 1
-
-include::tutorial/graphdb-concepts.txt[]
-
-:leveloffset: 1
-
-include::{importdir}/neo4j-examples-docs-jar/dev/index.txt[]
 
 :leveloffset: 0
 
