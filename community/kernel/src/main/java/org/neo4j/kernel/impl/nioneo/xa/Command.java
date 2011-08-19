@@ -627,8 +627,7 @@ public abstract class Command extends XaCommand
             }
             if ( record.inUse() )
             {
-                buffer.putInt( record.getHeader() ).putInt(
-                    record.getKeyIndexId() ).putLong( record.getNextProp() );
+                buffer.put( record.getCategory() ).putLong( record.getNextProp() ).putLong( record.getPrevProp() );
                 for ( long block : record.getPropBlock() )
                 {
                     buffer.putLong( block );
@@ -696,18 +695,15 @@ public abstract class Command extends XaCommand
                     return null;
                 }
                 buffer.flip();
-                int header = buffer.getInt();
-                PropertyType type = PropertyType.getPropertyType( header, true );
-                if ( type == null )
-                {
-                    return null;
-                }
-                record.setHeader( header );
+                byte category = buffer.get();
+                long nextProp = buffer.getLong();
+                long prevProp = buffer.getLong();
+                long[] propBlock = readLongs( buffer, PropertyType.getPayloadSizeLongs() );
+                record.setCategory( category );
                 record.setInUse( inUse );
-                record.setKeyIndexId( buffer.getInt() );
-                record.setNextProp( buffer.getLong() );
-                record.setPropBlock( readLongs( buffer, 2 ) );
-                record.setPrevProp( buffer.getLong() );
+                record.setNextProp( nextProp );
+                record.setPropBlock( propBlock );
+                record.setPrevProp( prevProp );
             }
             buffer.clear();
             buffer.limit( 4 );

@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.util.Bits;
 
 public enum ShortArray
 {
-    BOOLEAN( 1, Boolean.class )
+    BOOLEAN( PropertyType.BOOL, 1, Boolean.class )
     {
         @Override
         int getRequiredBits( Object value )
@@ -53,7 +53,7 @@ public enum ShortArray
             Array.setBoolean( array, position, bits.getByte( (byte) mask ) != 0 );
         }
     },
-    BYTE( 8, Byte.class )
+    BYTE( PropertyType.BYTE, 8, Byte.class )
     {
         @Override
         int getRequiredBits( Object value )
@@ -90,7 +90,7 @@ public enum ShortArray
             Array.setByte( array, position, value );
         }
     },
-    SHORT( 16, Short.class )
+    SHORT( PropertyType.SHORT, 16, Short.class )
     {
         @Override
         int getRequiredBits( Object value )
@@ -127,7 +127,7 @@ public enum ShortArray
             Array.setShort( array, position, value );
         }
     },
-    CHAR( 16, Character.class )
+    CHAR( PropertyType.CHAR, 16, Character.class )
     {
         @Override
         int getRequiredBits( Object value )
@@ -164,7 +164,7 @@ public enum ShortArray
             Array.setChar( array, position, (char)value );
         }
     },
-    INT( 32, Integer.class )
+    INT( PropertyType.INT, 32, Integer.class )
     {
         @Override
         int getRequiredBits( Object value )
@@ -201,7 +201,7 @@ public enum ShortArray
             Array.setInt( array, position, value );
         }
     },
-    LONG( 64, Long.class )
+    LONG( PropertyType.LONG, 64, Long.class )
     {
         @Override
         int getRequiredBits( Object value )
@@ -238,7 +238,7 @@ public enum ShortArray
             Array.setLong( array, position, value );
         }
     },
-    FLOAT( 32, Float.class )
+    FLOAT( PropertyType.FLOAT, 32, Float.class )
     {
         @Override
         int getRequiredBits( Object value )
@@ -275,7 +275,7 @@ public enum ShortArray
             Array.setFloat( array, position, Float.intBitsToFloat( value ) );
         }
     },
-    DOUBLE( 64, Double.class )
+    DOUBLE( PropertyType.DOUBLE, 64, Double.class )
     {
         @Override
         int getRequiredBits( Object value )
@@ -318,9 +318,11 @@ public enum ShortArray
     final int maxBits;
 
     private final Class<?> boxedClass;
+    private final PropertyType type;
 
-    private ShortArray( int maxBits, Class<?> boxedClass )
+    private ShortArray( PropertyType type, int maxBits, Class<?> boxedClass )
     {
+        this.type = type;
         this.maxBits = maxBits;
         this.boxedClass = boxedClass;
     }
@@ -338,7 +340,7 @@ public enum ShortArray
         return boxedClass.equals( cls );
     }
     
-    public static boolean encode( Object array, PropertyRecord target, int payloadSizeInBytes )
+    public static boolean encode( int keyId, Object array, PropertyRecord target, int payloadSizeInBytes )
     {
         ShortArray type = typeOf( array );
         if ( type == null )
@@ -365,22 +367,26 @@ public enum ShortArray
             type.push( Array.get( array, i ), result, mask );
         }
         long[] longs = result.getLongs();
-        longs[0] |= ((long)requiredBits) << (64-HEADER_SIZE);
-        int header = (0x3 << 10) | (type.ordinal()<<5) | (arrayLength);
-        target.setHeader( header );
+        // [kkkk,kkkk][kkkk,kkkk][kkkk,kkkk][tttt,llll][lbbb,bb  ]
+        longs[0] |= ((long)keyId) << 40;
+        longs[0] |= ((long)type.type.intValue()) << 36;
+        longs[0] |= ((long)arrayLength) << 31;
+        longs[0] |= ((long)requiredBits) << 26;
+        target.setCategory( PropertyType.SHORT_ARRAY.getCategory() );
         target.setPropBlock( longs );
         return true;
     }
     
     public static Object decode( PropertyRecord record )
     {
-        int typeId = (record.getHeader() & 0x3E0) >> 5;
+        long block = record.getPropBlock()[0];
+        int typeId = (int)((block & 0xF000000000L) >>> 36);
         ShortArray type = values()[typeId];
-        int arrayLength = record.getHeader() & 0x1F;
+        int arrayLength = (int)((block & 0xF80000000L) >>> 31);
         Object array = type.createArray( arrayLength );
         
         long[] longs = record.getPropBlock();
-        int requiredBits = (int) ((longs[0] & 0xF800000000000000L) >>> (64-HEADER_SIZE));
+        int requiredBits = (int)((longs[0] & 0x7C000000) >>> 26);
         Bits bits = new Bits( copyOf( longs, longs.length ) );
         long mask = Bits.rightOverflowMask( requiredBits );
         for ( int i = arrayLength-1; i >= 0; i-- )
@@ -394,7 +400,7 @@ public enum ShortArray
     private static boolean willFit( int requiredBits, int arrayLength, int payloadSizeInBytes )
     {
         int totalBitsRequired = requiredBits*arrayLength;
-        int maxBits = payloadSizeInBytes*8-5;
+        int maxBits = payloadSizeInBytes*8-24-4-5-5;
         return totalBitsRequired <= maxBits;
     }
 

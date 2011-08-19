@@ -22,14 +22,14 @@ package org.neo4j.kernel.impl.nioneo.store;
 import static org.neo4j.kernel.impl.nioneo.store.PropertyType.getPayloadSizeLongs;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
 public class PropertyRecord extends Abstract64BitRecord
 {
     private PropertyType type;
-    private int keyIndexId = Record.NO_NEXT_BLOCK.intValue();
-    private int header;
+    private byte category;
     private long[] propBlock = new long[getPayloadSizeLongs()];
     private long nextProp = Record.NO_NEXT_PROPERTY.intValue();
     private long prevProp = Record.NO_NEXT_PROPERTY.intValue();
@@ -43,16 +43,15 @@ public class PropertyRecord extends Abstract64BitRecord
     {
         super( id );
     }
-
-    public void setHeader( int header )
+    
+    public void setCategory( byte category )
     {
-        this.header = header;
-        type = PropertyType.getPropertyType( header, false );
+        this.category = category;
     }
     
-    public int getHeader()
+    public byte getCategory()
     {
-        return header;
+        return category;
     }
 
     public void setNodeId( long nodeId )
@@ -109,18 +108,19 @@ public class PropertyRecord extends Abstract64BitRecord
 
     public PropertyType getType()
     {
-        return PropertyType.getPropertyType( header, false );
+        return PropertyType.getPropertyType( category, propBlock[0], false );
     }
 
     public int getKeyIndexId()
     {
-        return keyIndexId;
+        // [kkkk,kkkk][kkkk,kkkk][kkkk,kkk ],[][][][][]
+        return (int)((propBlock[0] & 0xFFFFFE0000000000L) >> 39);
     }
 
-    public void setKeyIndexId( int keyId )
-    {
-        this.keyIndexId = keyId;
-    }
+//    public void setKeyIndexId( int keyId )
+//    {
+//        this.keyIndexId = keyId;
+//    }
 
     public long[] getPropBlock()
     {
@@ -134,9 +134,10 @@ public class PropertyRecord extends Abstract64BitRecord
 
     public void setPropBlock( long[] propBlock )
     {
-        this.propBlock = propBlock;
+        this.propBlock = propBlock.length < PropertyType.getPayloadSizeLongs() ?
+                Arrays.copyOf( propBlock, PropertyType.getPayloadSizeLongs() ) : propBlock;
     }
-    
+
     public void setSinglePropBlock( long propBlock )
     {
         this.propBlock[0] = propBlock;
@@ -171,8 +172,7 @@ public class PropertyRecord extends Abstract64BitRecord
     {
         StringBuffer buf = new StringBuffer();
         buf.append( "PropertyRecord[" ).append( getId() ).append( "," ).append(
-            inUse() ).append( "," ).append( type ).append( "," ).append(
-            keyIndexId ).append( "," ).append( propBlock ).append( "," )
+            inUse() ).append( "," ).append( type ).append( "," ).append( propBlock ).append( "," )
             .append( "," ).append( nextProp );
         buf.append( ", Value[" );
         for ( DynamicRecord record : valueRecords )

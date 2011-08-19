@@ -24,7 +24,7 @@ package org.neo4j.kernel.impl.nioneo.store;
  */
 public enum PropertyType
 {
-    BOOL( 0 )
+    BOOL( 0, 1 )
     {
         @Override
         public Object getValue( PropertyRecord record, PropertyStore store )
@@ -44,7 +44,7 @@ public enum PropertyType
                     getValue( record.getPropBlock()[0] ).booleanValue() );
         }
     },
-    BYTE( 1 )
+    BYTE( 1, 1 )
     {
         @Override
         public Object getValue( PropertyRecord record, PropertyStore store )
@@ -58,7 +58,7 @@ public enum PropertyType
             return PropertyDatas.forByte( record.getKeyIndexId(), record.getId(), (byte) record.getPropBlock()[0] );
         }
     },
-    SHORT( 2 )
+    SHORT( 2, 1 )
     {
         @Override
         public Object getValue( PropertyRecord record, PropertyStore store )
@@ -72,7 +72,7 @@ public enum PropertyType
             return PropertyDatas.forShort( record.getKeyIndexId(), record.getId(), (short) record.getPropBlock()[0] );
         }
     },
-    CHAR( 3 )
+    CHAR( 3, 1 )
     {
         @Override
         public Object getValue( PropertyRecord record, PropertyStore store )
@@ -86,7 +86,7 @@ public enum PropertyType
             return PropertyDatas.forChar( record.getKeyIndexId(), record.getId(), (char) record.getPropBlock()[0] );
         }
     },
-    INT( 4 )
+    INT( 4, 1 )
     {
         @Override
         public Object getValue( PropertyRecord record, PropertyStore store )
@@ -100,7 +100,7 @@ public enum PropertyType
             return PropertyDatas.forInt( record.getKeyIndexId(), record.getId(), (int) record.getPropBlock()[0] );
         }
     },
-    LONG( 5 )
+    LONG( 5, 1 )
     {
         @Override
         public Object getValue( PropertyRecord record, PropertyStore store )
@@ -111,10 +111,10 @@ public enum PropertyType
         @Override
         public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
         {
-            return PropertyDatas.forLong( record.getKeyIndexId(), record.getId(), record.getPropBlock()[0] );
+            return PropertyDatas.forLong( record.getKeyIndexId(), record.getId(), record.getPropBlock()[1] );
         }
     },
-    FLOAT( 6 )
+    FLOAT( 6, 1 )
     {
         @Override
         public Object getValue( PropertyRecord record, PropertyStore store )
@@ -133,12 +133,12 @@ public enum PropertyType
             return PropertyDatas.forFloat( record.getKeyIndexId(), record.getId(), getValue( record.getPropBlock()[0] ) );
         }
     },
-    DOUBLE( 7 )
+    DOUBLE( 7, 1 )
     {
         @Override
         public Object getValue( PropertyRecord record, PropertyStore store )
         {
-            return Double.valueOf( Double.longBitsToDouble( record.getPropBlock()[0] ) );
+            return Double.valueOf( Double.longBitsToDouble( record.getPropBlock()[1] ) );
         }
         
         private double getValue( long propBlock )
@@ -152,7 +152,7 @@ public enum PropertyType
             return PropertyDatas.forDouble( record.getKeyIndexId(), record.getId(), getValue( record.getPropBlock()[0] ) );
         }
     },
-    STRING( 8 )
+    STRING( 8, 1 )
     {
         @Override
         public Object getValue( PropertyRecord record, PropertyStore store )
@@ -167,7 +167,7 @@ public enum PropertyType
             return PropertyDatas.forStringOrArray( record.getKeyIndexId(), record.getId(), extractedValue );
         }
     },
-    ARRAY( 9 )
+    ARRAY( 9, 1 )
     {
         @Override
         public Object getValue( PropertyRecord record, PropertyStore store )
@@ -182,7 +182,7 @@ public enum PropertyType
             return PropertyDatas.forStringOrArray( record.getKeyIndexId(), record.getId(), extractedValue );
         }
     },
-    SHORT_STRING( -1 )
+    SHORT_STRING( -1, 2 )
     {
         @Override
         public Object getValue( PropertyRecord record, PropertyStore store )
@@ -196,13 +196,13 @@ public enum PropertyType
             return PropertyDatas.forStringOrArray( record.getKeyIndexId(), record.getId(), getValue( record, null ) );
         }
         
-        @Override
-        public int getHeader()
-        {
-            throw new UnsupportedOperationException( "Decided elsewhere" );
-        }
+//        @Override
+//        public int getHeader()
+//        {
+//            throw new UnsupportedOperationException( "Decided elsewhere" );
+//        }
     },
-    SHORT_ARRAY( -1 )
+    SHORT_ARRAY( -1, 3 )
     {
         @Override
         public Object getValue( PropertyRecord record, PropertyStore store )
@@ -217,11 +217,11 @@ public enum PropertyType
                     getValue( record, null ) );
         }
 
-        @Override
-        public int getHeader()
-        {
-            throw new UnsupportedOperationException( "Decided elsewhere" );
-        }
+//        @Override
+//        public int getHeader()
+//        {
+//            throw new UnsupportedOperationException( "Decided elsewhere" );
+//        }
     }
     ;
 
@@ -230,9 +230,12 @@ public enum PropertyType
     // TODO In wait of a better place
     private static int payloadSize = PropertyStore.DEFAULT_PAYLOAD_SIZE;
 
-    PropertyType( int type )
+    private final byte category;
+
+    PropertyType( int type, int category )
     {
         this.type = type;
+        this.category = (byte)category;
     }
 
     /**
@@ -245,27 +248,30 @@ public enum PropertyType
         return type;
     }
     
-    public int getHeader()
+//    public int getHeader()
+//    {
+//        return (0x1 << 10) | type;
+//    }
+    
+    public byte getCategory()
     {
-        return (0x1 << 10) | type;
+        return category;
     }
     
     public abstract Object getValue( PropertyRecord record, PropertyStore store );
     
     public abstract PropertyData newPropertyData( PropertyRecord record, Object extractedValue );
 
-    public static PropertyType getPropertyType( int header, boolean nullOnIllegal )
+    public static PropertyType getPropertyType( byte category, long propBlock, boolean nullOnIllegal )
     {
-        // use these bits from header [    ,xx  ][    ,    ]
-        int category = (header & 0xC00) >> 10;
         switch ( category )
         {
         case 0:
             if ( nullOnIllegal ) return null;
             break;
         case 1:
-            // use these bits from header [    ,    ][    ,xxxx]
-            int type = header & 0xF;
+            // [kkkk,kkkk][kkkk,kkkk][kkkk,kkkk][tttt,    ][][][][]
+            int type = (int)((propBlock&0x000000F000000000L)>>36);
             switch ( type )
             {
             case 0: return BOOL;
@@ -278,14 +284,12 @@ public enum PropertyType
             case 7: return DOUBLE;
             case 8: return STRING;
             case 9: return ARRAY;
-            case 10: return SHORT_STRING;
-            case 11: return SHORT_STRING;
             }
             break;
         case 2: return SHORT_STRING;
         case 3: return SHORT_ARRAY;
         }
-        throw new InvalidRecordException( "Unknown property type for header " + header );
+        throw new InvalidRecordException( "Unknown property type for header " + category + ", " + propBlock );
     }
     
     // TODO In wait of a better place

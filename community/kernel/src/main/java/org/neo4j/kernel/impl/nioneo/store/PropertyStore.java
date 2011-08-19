@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import static org.neo4j.kernel.Config.ARRAY_BLOCK_SIZE;
 import static org.neo4j.kernel.Config.STRING_BLOCK_SIZE;
+import static org.neo4j.kernel.impl.util.Bits.bits;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -43,20 +44,12 @@ import org.neo4j.kernel.impl.util.Bits;
 public class PropertyStore extends AbstractStore implements Store
 {
     public static final int DEFAULT_DATA_BLOCK_SIZE = 120;
-    public static final int DEFAULT_PAYLOAD_SIZE = 16;
+    public static final int DEFAULT_PAYLOAD_SIZE = 24;
 
     // store version, each store ends with this string (byte encoded)
     private static final String VERSION = "PropertyStore v0.9.9";
 
-    /*  [ikkk,kkkk][kkkk,kkkk][kkkk,kkkk][hhhh,hhhh][hhhh,nnnn][nnnn,nnnn]*4[pppp,pppp]*16
-    *
-    * i: inuse
-    * k: key 
-    * h: header for payload
-    * n: next property
-    * p: payload (the actual property value)
-    */
-    public static final int RECORD_SIZE = 30;
+    public static final int RECORD_SIZE = 5+DEFAULT_PAYLOAD_SIZE+5/*temporary for prev*/;
 
     private DynamicStringStore stringPropertyStore;
     private PropertyIndexStore propertyIndexStore;
@@ -278,32 +271,26 @@ public class PropertyStore extends AbstractStore implements Store
         Buffer buffer = window.getOffsettedBuffer( id );
         if ( record.inUse() )
         {
-            Bits bits = new Bits( 30 );
-            bits.or( Record.IN_USE.byteValue(), 0x1 );
+            Bits bits = new Bits( RECORD_SIZE );
+            bits.or( record.getCategory(), 0xF );
             
-            bits.shiftLeft( 23 );
-            bits.or( record.getKeyIndexId(), 0x7FFFFF );
-            
-            bits.shiftLeft( 12 );
-            bits.or( record.getHeader(), 0xFFF );
-
             short nextModifier = record.getNextProp() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((record.getNextProp() & 0xF00000000L) >> 32);
             bits.shiftLeft( 4 );
             bits.or( nextModifier, 0xF );
             bits.shiftLeft( 32 );
-            bits.or( record.getNextProp(), 0xFFFFFFFFL );
+            bits.or( (int)record.getNextProp() );
             
             // TODO Remove this later
             short prevModifier = record.getPrevProp() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((record.getPrevProp() & 0xF00000000L) >> 32);
             bits.shiftLeft( 8 );
             bits.or( prevModifier, 0xF );
             bits.shiftLeft( 32 );
-            bits.or( record.getPrevProp(), 0xFFFFFFFFL );
+            bits.or( (int)record.getPrevProp() );
             
             for ( long block : record.getPropBlock() )
             {
                 bits.shiftLeft( 64 );
-                bits.or( block, 0xFFFFFFFFFFFFFFFFL );
+                bits.or( block );
             }
             
             bits.apply( buffer );
@@ -403,9 +390,8 @@ public class PropertyStore extends AbstractStore implements Store
     {
         Buffer buffer = window.getOffsettedBuffer( id );
 
-        Bits bits = new Bits( 30 );
+        Bits bits = new Bits( RECORD_SIZE );
         bits.read( buffer );
-        Bits originalBits = bits.clone();
         
         long[] propBlock = new long[PropertyType.getPayloadSizeLongs()];
         for ( int i = propBlock.length-1; i >= 0; i-- )
@@ -429,18 +415,15 @@ public class PropertyStore extends AbstractStore implements Store
         bits.shiftRight( 4 );
         record.setNextProp( longFromIntAndMod( nextProp, nextMod ) );
         
-        int header = bits.getInt( 0xFFF );
-        bits.shiftRight( 12 );
+        byte category = bits.getByte( (byte)0xF );
+        record.setCategory( category );
+        bits.shiftRight( 3 );
         
-        record.setKeyIndexId( bits.getInt( 0x7FFFFF ) );
-        bits.shiftRight( 23 );
-        
-        record.setInUse( bits.getByte( (byte) 0x1 ) == 1 );
+        record.setInUse( category != 0 );
         if ( !record.inUse() )
         {
             throw new InvalidRecordException( "Record[" + id + "] not in use" );
         }
-        record.setHeader( header );
         return record;
     }
 
@@ -487,12 +470,12 @@ public class PropertyStore extends AbstractStore implements Store
         return arrayPropertyStore.allocateRecords( valueBlockId, array );
     }
 
-    public void encodeValue( PropertyRecord record, Object value )
+    public void encodeValue( PropertyRecord record, int keyId, Object value )
     {
         if ( value instanceof String )
         {
             String string = (String) value;
-            if ( ShortString.encode( string, record ) ) return;
+            if ( ShortString.encode( keyId, string, record ) ) return;
 
             long stringBlockId = nextStringBlockId();
             record.setSinglePropBlock( stringBlockId );
@@ -506,48 +489,62 @@ public class PropertyStore extends AbstractStore implements Store
                 valueRecord.setType( PropertyType.STRING.intValue() );
                 record.addValueRecord( valueRecord );
             }
-            record.setHeader( PropertyType.STRING.getHeader() );
+            record.setCategory( PropertyType.STRING.getCategory() );
         }
         else if ( value instanceof Integer )
         {
-            record.setSinglePropBlock( ((Integer) value).intValue() );
-            record.setHeader( PropertyType.INT.getHeader() );
+            Bits bits = bits32WithKeyAndType( keyId, PropertyType.INT ).or( ((Integer)value).intValue() );
+            record.setSinglePropBlock( bits.getLongs()[0] );
+            record.setCategory( PropertyType.INT.getCategory() );
         }
         else if ( value instanceof Boolean )
         {
-            record.setSinglePropBlock( (((Boolean) value).booleanValue() ? 1 : 0) );
-            record.setHeader( PropertyType.BOOL.getHeader() );
+            Bits bits = bits32WithKeyAndType( keyId, PropertyType.BOOL ).or( ((Boolean)value).booleanValue() ? 1 : 0, 0x1 );
+            record.setSinglePropBlock( bits.getLongs()[0] );
+            record.setCategory( PropertyType.BOOL.getCategory() );
         }
         else if ( value instanceof Float )
         {
-            record.setSinglePropBlock( Float.floatToRawIntBits( ((Float) value).floatValue() ) );
-            record.setHeader( PropertyType.FLOAT.getHeader() );
+            Bits bits = bits32WithKeyAndType( keyId, PropertyType.FLOAT ).or( Float.floatToRawIntBits( ((Float) value).floatValue() ) );
+            record.setSinglePropBlock( bits.getLongs()[0] );
+            record.setCategory( PropertyType.FLOAT.getCategory() );
         }
         else if ( value instanceof Long )
         {
-            record.setSinglePropBlock( ((Long) value).longValue() );
-            record.setHeader( PropertyType.LONG.getHeader() );
+            Bits bits = bits64WithKeyAndType( keyId, PropertyType.LONG ).or( ((Long)value).longValue() );
+            record.setPropBlock( bits.getLongs() );
+            record.setCategory( PropertyType.LONG.getCategory() );
         }
         else if ( value instanceof Double )
         {
-            record.setSinglePropBlock( Double.doubleToRawLongBits( ((Double) value).doubleValue() ) );
-            record.setHeader( PropertyType.DOUBLE.getHeader() );
+            Bits bits = bits64WithKeyAndType( keyId, PropertyType.DOUBLE ).or( Double.doubleToRawLongBits( ((Double)value).doubleValue() ) );
+            record.setPropBlock( bits.getLongs() );
+            record.setCategory( PropertyType.DOUBLE.getCategory() );
         }
         else if ( value instanceof Byte )
         {
-            record.setSinglePropBlock( ((Byte) value).byteValue() );
-            record.setHeader( PropertyType.BYTE.getHeader() );
+            Bits bits = bits32WithKeyAndType( keyId, PropertyType.BYTE ).or( ((Byte)value).byteValue() );
+            record.setSinglePropBlock( bits.getLongs()[0] );
+            record.setCategory( PropertyType.BYTE.getCategory() );
         }
         else if ( value instanceof Character )
         {
-            record.setSinglePropBlock( ((Character) value).charValue() );
-            record.setHeader( PropertyType.CHAR.getHeader() );
+            Bits bits = bits32WithKeyAndType( keyId, PropertyType.CHAR ).or( ((Character)value).charValue() );
+            record.setSinglePropBlock( bits.getLongs()[0] );
+            record.setCategory( PropertyType.CHAR.getCategory() );
+        }
+        else if ( value instanceof Short )
+        {
+            Bits bits = bits32WithKeyAndType( keyId, PropertyType.SHORT ).or( ((Short)value).shortValue() );
+            record.setSinglePropBlock( bits.getLongs()[0] );
+            record.setCategory( PropertyType.SHORT.getCategory() );
         }
         else if ( value.getClass().isArray() )
         {
-            if ( ShortArray.encode( value, record, DEFAULT_PAYLOAD_SIZE ) ) return;
+            if ( ShortArray.encode( keyId, value, record, DEFAULT_PAYLOAD_SIZE ) ) return;
             long arrayBlockId = nextArrayBlockId();
-            record.setSinglePropBlock( arrayBlockId );
+            Bits bits = bits32WithKeyAndType( keyId, PropertyType.ARRAY ).or( arrayBlockId, 0xFFFFFFFFFL );
+            record.setSinglePropBlock( bits.getLongs()[0] );
             Collection<DynamicRecord> arrayRecords = allocateArrayRecords(
                 arrayBlockId, value );
             for ( DynamicRecord valueRecord : arrayRecords )
@@ -555,12 +552,7 @@ public class PropertyStore extends AbstractStore implements Store
                 valueRecord.setType( PropertyType.ARRAY.intValue() );
                 record.addValueRecord( valueRecord );
             }
-            record.setHeader( PropertyType.ARRAY.getHeader() );
-        }
-        else if ( value instanceof Short )
-        {
-            record.setSinglePropBlock( ((Short) value).shortValue() );
-            record.setHeader( PropertyType.SHORT.getHeader() );
+            record.setCategory( PropertyType.ARRAY.getCategory() );
         }
         else
         {
@@ -569,6 +561,18 @@ public class PropertyStore extends AbstractStore implements Store
         }
     }
 
+    // TODO Assume only one prop per record for now
+    private Bits bits32WithKeyAndType( int keyId, PropertyType type )
+    {
+        return bits( 8 ).or( keyId, 0xFFFFFF ).shiftLeft( 4 ).or( type.intValue(), 0xF ).shiftLeft( 36 );
+    }
+
+    // TODO Assume only one prop per record for now
+    private Bits bits64WithKeyAndType( int keyId, PropertyType type )
+    {
+        return bits( 16 ).or( keyId, 0xFFFFFF ).shiftLeft( 4 ).or( type.intValue(), 0xF ).shiftLeft( 36+64 );
+    }
+    
     public Object getStringFor( PropertyRecord propRecord )
     {
         long recordToFind = propRecord.getSinglePropBlock();

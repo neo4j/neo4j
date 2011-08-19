@@ -57,7 +57,7 @@ public class TestShortArray
     
     private void assertCanNotEncode( int[] intArray, int payloadSize )
     {
-        assertFalse( ShortArray.encode( intArray, new PropertyRecord( 0 ), payloadSize ) );
+        assertFalse( ShortArray.encode( 0, intArray, new PropertyRecord( 0 ), payloadSize ) );
     }
 
     private int[] intArray( int count, int stride )
@@ -78,7 +78,7 @@ public class TestShortArray
     private void assertCanEncodeAndDecodeToSameValue( Object value, int payloadSize )
     {
         PropertyRecord target = new PropertyRecord( 0 );
-        boolean encoded = ShortArray.encode( value, target, payloadSize );
+        boolean encoded = ShortArray.encode( 0, value, target, payloadSize );
         assertTrue( encoded );
 //        Bits bits = new Bits( target.getPropBlock() );
         assertArraysEquals( value, ShortArray.decode( target ) );

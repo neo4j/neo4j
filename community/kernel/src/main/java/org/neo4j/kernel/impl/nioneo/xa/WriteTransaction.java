@@ -1183,7 +1183,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 }
             }
         }
-        getPropertyStore().encodeValue( propertyRecord, value );
+        getPropertyStore().encodeValue( propertyRecord, propertyRecord.getKeyIndexId(), value );
         addPropertyRecord( propertyRecord );
         return propertyRecord.newPropertyData( value );
     }
@@ -1237,7 +1237,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 }
             }
         }
-        getPropertyStore().encodeValue( propertyRecord, value );
+        getPropertyStore().encodeValue( propertyRecord, propertyRecord.getKeyIndexId(), value );
         addPropertyRecord( propertyRecord );
         return propertyRecord.newPropertyData( value );
     }
@@ -1279,8 +1279,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             propertyRecord.setNextProp( prevProp.getId() );
         }
         int keyIndexId = index.getKeyId();
-        propertyRecord.setKeyIndexId( keyIndexId );
-        getPropertyStore().encodeValue( propertyRecord, value );
+//        propertyRecord.setKeyIndexId( keyIndexId );
+        getPropertyStore().encodeValue( propertyRecord, keyIndexId, value );
         relRecord.setNextProp( propertyId );
         addPropertyRecord( propertyRecord );
         return propertyRecord;
@@ -1311,7 +1311,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         // encoding has to be set here before anything is change
         // (exception is thrown in encodeValue now and tx not marked
         // rollback only
-        getPropertyStore().encodeValue( propertyRecord, value );
+        getPropertyStore().encodeValue( propertyRecord, index.getKeyId(), value );
         if ( nodeRecord.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
         {
             PropertyRecord prevProp = getPropertyRecord(
@@ -1328,7 +1328,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             propertyRecord.setNextProp( prevProp.getId() );
         }
         int keyIndexId = index.getKeyId();
-        propertyRecord.setKeyIndexId( keyIndexId );
+//        propertyRecord.setKeyIndexId( keyIndexId );
         nodeRecord.setNextProp( propertyId );
         addPropertyRecord( propertyRecord );
         return propertyRecord;

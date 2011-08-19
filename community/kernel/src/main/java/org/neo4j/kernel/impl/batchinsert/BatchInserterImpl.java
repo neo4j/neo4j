@@ -411,8 +411,8 @@ public class BatchInserterImpl implements BatchInserter
             PropertyRecord propertyRecord = new PropertyRecord( propertyId );
             propertyRecord.setInUse( true );
             propertyRecord.setCreated();
-            propertyRecord.setKeyIndexId( keyId );
-            propStore.encodeValue( propertyRecord, entry.getValue() );
+//            propertyRecord.setKeyIndexId( keyId );
+            propStore.encodeValue( propertyRecord, keyId, entry.getValue() );
             if ( prevRecord != null )
             {
                 prevRecord.setPrevProp( propertyId );

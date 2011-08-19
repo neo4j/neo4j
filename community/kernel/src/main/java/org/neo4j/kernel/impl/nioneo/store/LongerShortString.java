@@ -431,9 +431,9 @@ public enum LongerShortString
         this.step = (short) step;
     }
     
-    int maxLength( int numberOfBytes )
+    int maxLength( int payloadSize )
     {
-        return (numberOfBytes << 3)/step;
+        return ((payloadSize << 3)-24-4-6)/step;
     }
 
     final IllegalArgumentException cannotEncode( byte b )
@@ -492,7 +492,7 @@ public enum LongerShortString
      * E-  à  á  â  ã  ä  å  æ  ç    è  é  ê  ë  ì  í  î  ï
      * F-  ð  ñ  ò  ó  ô  õ  ö       ø  ù  ú  û  ü  ý  þ  ÿ
      */
-    public static boolean encode( String string, PropertyRecord target, int payloadSize )
+    public static boolean encode( int keyId, String string, PropertyRecord target, int payloadSize )
     {
         // NUMERICAL can carry most characters, so compare to that
         int stringLength = string.length();
@@ -502,16 +502,16 @@ public enum LongerShortString
         if ( stringLength > NUMERICAL.maxLength( payloadSize ) || stringLength > 63 ) return false; // Not handled by any encoding
         if ( string.equals( "" ) )
         {
-            applyOnRecord( target, 0, 0, 0 );
+            applyOnRecord( keyId, target, 0, 0, new long[1] );
             return true;
         }
         // Keep track of the possible encodings that can be used for the string
         EnumSet<LongerShortString> possible = null;
         // First try encoding using Latin-1
         int maxBytes = PropertyType.getPayloadSize();
-        if ( stringLength <= maxBytes )
+        if ( stringLength <= (maxBytes-3-1-1) )
         {
-            if ( encodeLatin1( string, target, payloadSize ) ) return true;
+            if ( encodeLatin1( keyId, string, target, payloadSize ) ) return true;
             // If the string was short enough, but still didn't fit in latin-1
             // we know that no other encoding will work either, remember that
             // so that we can try UTF-8 at the end of this method
@@ -653,26 +653,22 @@ public enum LongerShortString
         for ( LongerShortString encoding : possible )
         {
             // Will return false if the data is too long for the encoding
-            if ( encoding.doEncode( data, target, payloadSize ) ) return true;
+            if ( encoding.doEncode( keyId, data, target, payloadSize ) ) return true;
         }
         if ( stringLength <= maxBytes )
         { // We might have a chance with UTF-8 - try it!
-            return encodeUTF8( string, target, maxBytes );
+            return encodeUTF8( keyId, string, target, maxBytes );
         }
         return false;
     }
 
-    private static void applyOnRecord( PropertyRecord target, int encoding, int stringLength, long data )
+    private static void applyOnRecord( int keyId, PropertyRecord target, int encoding, int stringLength, long[] data )
     {
-        long[] block = new long[PropertyType.getPayloadSizeLongs()];
-        block[block.length-1] = data;
-        applyOnRecord( target, encoding, stringLength, block );
-    }
-
-    private static void applyOnRecord( PropertyRecord target, int encoding, int stringLength, long[] data )
-    {
+        data[0] |= ((long)keyId << 40);
+        data[0] |= ((long)encoding << 36);
+        data[0] |= ((long)stringLength << 30);
         target.setPropBlock( data );
-        target.setHeader( (0x2 << 10) | (encoding << 6) | (stringLength) );
+//        target.setHeader( (0x2 << 10) | (encoding << 6) | (stringLength) );
     }
 
     /**
@@ -684,11 +680,11 @@ public enum LongerShortString
     public static String decode( PropertyRecord record )
     {
         Bits bits = new Bits( copyOf( record.getPropBlock(), record.getPropBlock().length ) );
-        if ( bits.getLong( 0xFFFFFFFFFFFFFFFFL ) == 0 ) return "";
-        // [    ,  ee][ee  ,    ]
-        int encoding = (record.getHeader() & 0x3C0) >> 6;
-        // [    ,    ][  ll,llll]
-        int stringLength = record.getHeader() & 0x3F;
+        long firstLong = bits.getLong( 0xFFFFFFFFFFFFFFFFL );
+        if ( firstLong == 0 ) return "";
+        // [kkkk,kkkk][kkkk,kkkk][kkkk,kkkk][eeee,llll][ll  ,    ]
+        int encoding = (int)((firstLong & 0xF000000000L) >>> 36);
+        int stringLength = (int)((firstLong & 0xFC0000000L) >>> 30);
         
         LongerShortString table;
         switch ( encoding )
@@ -723,7 +719,7 @@ public enum LongerShortString
         return new Bits( payloadSize );
     }
 
-    private static boolean encodeLatin1( String string, PropertyRecord target, int payloadSize )
+    private static boolean encodeLatin1( int keyId, String string, PropertyRecord target, int payloadSize )
     { // see doEncode
         Bits bits = newBits( payloadSize );
         for ( int i = 0; i < string.length(); i++ )
@@ -733,11 +729,11 @@ public enum LongerShortString
             if ( c < 0 || c >= 256 ) return false;
             bits.or( c, 0xFF );
         }
-        applyOnRecord( target, 10, string.length(), bits.getLongs() );
+        applyOnRecord( keyId, target, 10, string.length(), bits.getLongs() );
         return true;
     }
 
-    private static boolean encodeUTF8( String string, PropertyRecord target, int payloadSize )
+    private static boolean encodeUTF8( int keyId, String string, PropertyRecord target, int payloadSize )
     {
         try
         {
@@ -747,9 +743,9 @@ public enum LongerShortString
             for ( int i = 0; i < bytes.length; i++ )
             {
                 if ( i > 0 ) bits.shiftLeft( 8 );
-                bits.or( bytes[i], 0xFF );
+                bits.or( bytes[i] );
             }
-            applyOnRecord( target, 0, bytes.length, bits.getLongs() );
+            applyOnRecord( keyId, target, 0, bytes.length, bits.getLongs() );
             return true;
         }
         catch ( UnsupportedEncodingException e )
@@ -758,7 +754,7 @@ public enum LongerShortString
         }
     }
 
-    private boolean doEncode( byte[] data, PropertyRecord target, int payloadSize )
+    private boolean doEncode( int keyId, byte[] data, PropertyRecord target, int payloadSize )
     {
         if ( data.length > maxLength( payloadSize ) ) return false;
         Bits bits = newBits( payloadSize );
@@ -768,7 +764,7 @@ public enum LongerShortString
             int encodedChar = encTranslate( data[i] );
             bits.or( encodedChar, 0xFF );
         }
-        applyOnRecord( target, encodingHeader, data.length, bits.getLongs() );
+        applyOnRecord( keyId, target, encodingHeader, data.length, bits.getLongs() );
         return true;
     }
 

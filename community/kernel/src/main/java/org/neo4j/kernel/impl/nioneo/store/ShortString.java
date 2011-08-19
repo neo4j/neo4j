@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.nioneo.store;
 import java.io.UnsupportedEncodingException;
 import java.util.EnumSet;
 
+import org.neo4j.kernel.impl.util.Bits;
+
 /**
  * Supports encoding alphanumerical and <code>SP . - + , ' : / _</code>
  *
@@ -359,12 +361,12 @@ enum ShortString
      * E-  à  á  â  ã  ä  å  æ  ç    è  é  ê  ë  ì  í  î  ï
      * F-  ð  ñ  ò  ó  ô  õ  ö       ø  ù  ú  û  ü  ý  þ  ÿ
      */
-    public static boolean encode( String string, PropertyRecord target )
+    public static boolean encode( int keyId, String string, PropertyRecord target )
     {
         if ( string.length() > 15 ) return false; // Not handled by any encoding
         if ( string.equals( "" ) )
         {
-            applyInRecord( target, 0 );
+            applyInRecord( target, keyId, 0 );
             return true;
         }
         // Keep track of the possible encodings that can be used for the string
@@ -372,7 +374,7 @@ enum ShortString
         // First try encoding using Latin-1
         if ( string.length() < 8 )
         {
-            if ( encodeLatin1( string, target ) ) return true;
+            if ( encodeLatin1( keyId, string, target ) ) return true;
             // If the string was short enough, but still didn't fit in latin-1
             // we know that no other encoding will work either, remember that
             // so that we can try UTF-8 at the end of this method
@@ -460,13 +462,13 @@ enum ShortString
         for ( ShortString encoding : possible )
         {
             // Will return false if the data is too long for the encoding
-            if ( encoding.doEncode( data, target ) ) return true;
+            if ( encoding.doEncode( keyId, data, target ) ) return true;
         }
         if ( string.length() <= 6 )
         { // We might have a chance with UTF-8 - try it!
             try
             {
-                return encodeUTF8( string.getBytes( "UTF-8" ), target );
+                return encodeUTF8( keyId, string.getBytes( "UTF-8" ), target );
             }
             catch ( UnsupportedEncodingException e )
             {
@@ -476,10 +478,12 @@ enum ShortString
         return false;
     }
 
-    private static void applyInRecord( PropertyRecord target, long propBlock )
+    private static void applyInRecord( PropertyRecord target, int keyId, long propBlock )
     {
-        target.setHeader( 0x2 << 10 );
-        target.setSinglePropBlock( propBlock );
+        Bits bits = new Bits( 16 );
+        bits.or( keyId, 0xFFFFFF ).shiftLeft( 64 ).or( propBlock, 0xFFFFFFFFFFFFFFFFL );
+        target.setCategory( PropertyType.SHORT_STRING.getCategory() );
+        target.setPropBlock( bits.getLongs() );
     }
 
     /**
@@ -543,7 +547,7 @@ enum ShortString
         return new String( result );
     }
 
-    private static boolean encodeLatin1( String string, PropertyRecord target )
+    private static boolean encodeLatin1( int keyId, String string, PropertyRecord target )
     { // see doEncode
         long result = 0x78 | ( string.length() - 1 );
         result <<= ( 7 - string.length() ) * 8; // move the header to its place
@@ -553,11 +557,11 @@ enum ShortString
             if ( c < 0 || c >= 256 ) return false;
             result = ( result << 8 ) | c;
         }
-        applyInRecord( target, result );
+        applyInRecord( target, keyId, result );
         return true;
     }
 
-    private static boolean encodeUTF8( byte[] bytes, PropertyRecord target )
+    private static boolean encodeUTF8( int keyId, byte[] bytes, PropertyRecord target )
     { // UTF-8 padded with null bytes
         if ( bytes.length > 7 ) return false;
         long result = 0;
@@ -565,11 +569,11 @@ enum ShortString
         {
             result = ( result << 8 ) | ( 0xFF & b );
         }
-        applyInRecord( target, result );
+        applyInRecord( target, keyId, result );
         return true;
     }
 
-    private boolean doEncode( byte[] data, PropertyRecord target )
+    private boolean doEncode( int keyId, byte[] data, PropertyRecord target )
     {
         if ( data.length > max ) return false;
         long result = header( data.length );
@@ -579,7 +583,7 @@ enum ShortString
             if ( i != 0 ) result <<= step;
             result |= encTranslate( data[i] );
         }
-        applyInRecord( target, result );
+        applyInRecord( target, keyId, result );
         return true;
     }
 

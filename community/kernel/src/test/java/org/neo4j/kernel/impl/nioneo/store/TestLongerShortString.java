@@ -64,7 +64,7 @@ public class TestLongerShortString
     private void assertCanEncodeAndDecodeToSame( String string, int payloadSize )
     {
         PropertyRecord target = new PropertyRecord( 0 );
-        assertTrue( LongerShortString.encode( string, target, payloadSize ) );
+        assertTrue( LongerShortString.encode( 0, string, target, payloadSize ) );
         assertEquals( string, LongerShortString.decode( target ) );
     }
     
@@ -75,6 +75,6 @@ public class TestLongerShortString
     
     private void assertCannotEncode( String string, int payloadSize )
     {
-        assertFalse( LongerShortString.encode( string, new PropertyRecord( 0 ), payloadSize ) );
+        assertFalse( LongerShortString.encode( 0, string, new PropertyRecord( 0 ), payloadSize ) );
     }
 }

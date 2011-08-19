@@ -33,6 +33,11 @@ public class Bits
     private final long[] longs;
     private final int numberOfBytes;
     
+    public static Bits bits( int numberOfBytes )
+    {
+        return new Bits( numberOfBytes );
+    }
+    
     public Bits( int numberOfBytes )
     {
         int requiredLongs = numberOfBytes/8;
@@ -69,7 +74,7 @@ public class Bits
         return mask;
     }
     
-    public void shiftLeft( int steps )
+    public Bits shiftLeft( int steps )
     {
         while ( steps >= 64 )
         {
@@ -89,9 +94,10 @@ public class Bits
             longs[i] = (longs[i] << steps) | overspill;
             overspill = nextOverspill;
         }
+        return this;
     }
     
-    public void shiftRight( int steps )
+    public Bits shiftRight( int steps )
     {
         while ( steps >= 64 )
         {
@@ -111,26 +117,58 @@ public class Bits
             longs[i] = (longs[i] >>> steps) | (overspill << (64-steps));
             overspill = nextOverspill;
         }
+        return this;
     }
     
-    public void or( byte value, long mask )
+    public Bits or( byte value, long mask )
     {
         longs[longs.length-1] |= value & mask;
+        return this;
     }
     
-    public void or( short value, long mask )
+    public Bits or( byte value )
     {
-        longs[longs.length-1] |= value & mask;
+        return or( value, 0xFF );
     }
     
-    public void or( int value, long mask )
+    public Bits or( short value, long mask )
     {
         longs[longs.length-1] |= value & mask;
+        return this;
     }
     
-    public void or( long value, long mask )
+    public Bits or( short value )
+    {
+        return or( value, 0xFFFF );
+    }
+    
+    public static void main( String[] args )
+    {
+        Bits bits = bits( 8 );
+        bits.or( (int)-1 );
+        System.out.println( bits );
+    }
+    
+    public Bits or( int value, long mask )
     {
         longs[longs.length-1] |= value & mask;
+        return this;
+    }
+    
+    public Bits or( int value )
+    {
+        return or( value, 0xFFFFFFFFL );
+    }
+    
+    public Bits or( long value, long mask )
+    {
+        longs[longs.length-1] |= value & mask;
+        return this;
+    }
+    
+    public Bits or( long value )
+    {
+        return or( value, 0xFFFFFFFFFFFFFFFFL );
     }
     
     public byte getByte( byte mask )
@@ -163,7 +201,7 @@ public class Bits
         return longs;
     }
     
-    public void apply( Buffer buffer )
+    public Bits apply( Buffer buffer )
     {
         int rest = numberOfBytes%8;
         if ( rest > 0 )
@@ -189,9 +227,10 @@ public class Bits
         {
             buffer.putLong( longs[i] );
         }
+        return this;
     }
     
-    public void read( Buffer buffer )
+    public Bits read( Buffer buffer )
     {
         int rest = numberOfBytes%8;
         while ( rest > 0 )
@@ -208,6 +247,7 @@ public class Bits
             shiftLeft( 64 );
             or( buffer.getLong(), 0xFFFFFFFFFFFFFFFFL );
         }
+        return this;
     }
 
     /**
