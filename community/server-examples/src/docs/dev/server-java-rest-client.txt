@@ -1,0 +1,214 @@
+[[server-java-rest-client-example]]
+How to use the REST API from Java
+=================================
+
+== Creating a graph through the REST API from Java ==
+
+The REST API uses HTTP and JSON, so that it can be used from many languages and platforms.
+Still, when geting started it's useful to see some patterns that can be re-used.
+In this brief overview, we'll show you how to create and manipulate a simple graph through the REST API and also how to query it.
+
+For these examples, we've chosen the http://jersey.java.net/[Jersey] client components,
+which are easily http://jersey.java.net/nonav/documentation/latest/user-guide.html#chapter_deps[downloaded] via Maven.
+
+== Start the server ==
+
+Before we can perform any actions on the server, we need to start it as per <<server-installation>>.
+
+[snippet,java]
+----
+component=neo4j-server-examples
+source=org/neo4j/examples/server/CreateSimpleGraph.java
+tag=checkServer
+classifier=sources
+----
+
+If the status of the response is +200 OK+, then we know the server is running fine and we can continue.
+If the code fails to conenct to the server, then please have a look at <<server>>. 
+
+NOTE: If you get any other response than +200 OK+ (particularly +4xx+ or +5xx+ responses) then please check your configuration and look in the log files in the 'data/log' directory.
+
+== Creating a node ==
+
+The REST API uses +POST+ to create nodes.
+Encapsulating that in Java is straightforward using the Jersey client:
+
+[snippet,java]
+----
+component=neo4j-server-examples
+source=org/neo4j/examples/server/CreateSimpleGraph.java
+tag=createNode
+classifier=sources
+----
+
+If the call completes successfully, under the covers it will have sent a HTTP request containing a JSON payload to the server.
+The server will then have created a new node in the database and responded with a +201 Created+ response and a +Location+ header with the URI of the newly created node.
+
+In our example, we call this functionality twice to create two nodes in our database.
+
+== Adding properties ==
+
+Once we have nodes in our datatabase, we can use them to store useful data.
+In this case, we're going to store information about music in our database.
+Let's start by looking at the code that we use to create nodes and add properties.
+Here we've added nodes to represent "Joe Strummer" and a band called "The Clash".
+
+[snippet,java]
+----
+component=neo4j-server-examples
+source=org/neo4j/examples/server/CreateSimpleGraph.java
+tag=nodesAndProps
+classifier=sources
+----
+
+Inside the +addProperty+ method we determine the resource that represents properties for the node and decide on a name for that property.
+We then proceed to +PUT+ the value of that property to the server.
+
+[snippet,java]
+----
+component=neo4j-server-examples
+source=org/neo4j/examples/server/CreateSimpleGraph.java
+tag=addProp
+classifier=sources
+----
+
+If everything goes well, we'll get a +204 No Content+ back indicating that the server processed the request but didn't echo back the property value.
+
+== Adding relationships ==
+
+Now that we have nodes to represent Joe Strummer and The Clash, we can relate them.
+The REST API supports this through a +POST+ of a relationship representation to the start node of the relationship. 
+Correspondingly in Java we +POST+ some JSON to the URI of our node that represents Joe Strummer,
+to establish a relationship between that node and the node representing The Clash.
+
+[snippet,java]
+----
+component=neo4j-server-examples
+source=org/neo4j/examples/server/CreateSimpleGraph.java
+tag=addRel
+classifier=sources
+----
+
+Inside the +addRelationship+ method, we determine the URI of the Joe Strummer node's relationships, and then +POST+ a JSON description of our intended relationship.
+This description contains the destination node, a label for the relationship type, and any attributes for the relation as a
+JSON collection.
+
+[snippet,java]
+----
+component=neo4j-server-examples
+source=org/neo4j/examples/server/CreateSimpleGraph.java
+tag=insideAddRel
+classifier=sources
+----
+
+If all goes well, we receive a +201 Created+ status code and a +Location+ header which contains a URI of the newly created relation.
+
+== Add properties to a relationship ==
+
+Like nodes, relationships can have properties.
+Since we're big fans of both Joe Strummer and the Clash, we'll add a rating to the relationship so that others can see he's a 5-star singer with the band.
+
+[snippet,java]
+----
+component=neo4j-server-examples
+source=org/neo4j/examples/server/CreateSimpleGraph.java
+tag=addMetaToRel
+classifier=sources
+----
+
+Inside the +addMetadataToProperty+ method, we determine the URI of the properties of the relationship and +PUT+ our new values (since it's +PUT+ it will always overwrite existing values, so be careful).
+
+[snippet,java]
+----
+component=neo4j-server-examples
+source=org/neo4j/examples/server/CreateSimpleGraph.java
+tag=insideAddMetaToProp
+classifier=sources
+----
+
+Assuming all goes well, we'll get a +200 OK+ response back from the server (which we can check by calling
++ClientResponse.getStatus()+) and we've now established a very small graph that we can query.
+
+== Querying graphs ==
+
+As with the embedded version of the database, the Neo4j server uses graph traversals to look for data in graphs.
+Currently the Neo4j server expects a JSON payload describing the traversal to be +POST+-ed at the starting node for the traversal (though this is _likely to change_ in time to a +GET+-based approach).
+
+To start this process, we use a simple class that can turn itself into the equivalent JSON, ready for +POST+-ing to the server, and in this case we've hardcoded the traverser to look for all nodes with outgoing relationships with the type +"singer"+.
+
+[snippet,java]
+----
+component=neo4j-server-examples
+source=org/neo4j/examples/server/CreateSimpleGraph.java
+tag=traversalDesc
+classifier=sources
+----
+
+Once we have defined the parameters of our traversal, we just need to transfer it.
+We do this by determining the URI of the traversers for the start node, and then +POST+-ing the JSON representation
+of the traverser to it.
+
+[snippet,java]
+----
+component=neo4j-server-examples
+source=org/neo4j/examples/server/CreateSimpleGraph.java
+tag=traverse
+classifier=sources
+----
+
+Once that request has completed, we get back our dataset of singers and the bands they belong to:
+
+[source,javascript]
+----
+[ {
+  "outgoing_relationships" : "http://localhost:7474/db/data/node/82/relationships/out",
+  "data" : {
+    "band" : "The Clash",
+    "name" : "Joe Strummer"
+  },
+  "traverse" : "http://localhost:7474/db/data/node/82/traverse/{returnType}",
+  "all_typed_relationships" : "http://localhost:7474/db/data/node/82/relationships/all/{-list|&|types}",
+  "property" : "http://localhost:7474/db/data/node/82/properties/{key}",
+  "all_relationships" : "http://localhost:7474/db/data/node/82/relationships/all",
+  "self" : "http://localhost:7474/db/data/node/82",
+  "properties" : "http://localhost:7474/db/data/node/82/properties",
+  "outgoing_typed_relationships" : "http://localhost:7474/db/data/node/82/relationships/out/{-list|&|types}",
+  "incoming_relationships" : "http://localhost:7474/db/data/node/82/relationships/in",
+  "incoming_typed_relationships" : "http://localhost:7474/db/data/node/82/relationships/in/{-list|&|types}",
+  "create_relationship" : "http://localhost:7474/db/data/node/82/relationships"
+}, {
+  "outgoing_relationships" : "http://localhost:7474/db/data/node/83/relationships/out",
+  "data" : {
+  },
+  "traverse" : "http://localhost:7474/db/data/node/83/traverse/{returnType}",
+  "all_typed_relationships" : "http://localhost:7474/db/data/node/83/relationships/all/{-list|&|types}",
+  "property" : "http://localhost:7474/db/data/node/83/properties/{key}",
+  "all_relationships" : "http://localhost:7474/db/data/node/83/relationships/all",
+  "self" : "http://localhost:7474/db/data/node/83",
+  "properties" : "http://localhost:7474/db/data/node/83/properties",
+  "outgoing_typed_relationships" : "http://localhost:7474/db/data/node/83/relationships/out/{-list|&|types}",
+  "incoming_relationships" : "http://localhost:7474/db/data/node/83/relationships/in",
+  "incoming_typed_relationships" : "http://localhost:7474/db/data/node/83/relationships/in/{-list|&|types}",
+  "create_relationship" : "http://localhost:7474/db/data/node/83/relationships"
+} ]
+----
+
+== Phew, is that it? ==
+
+That's a flavor of what we can do with the REST API.
+Naturally any of the HTTP idioms we provide on the server can be easily wrapped, including removing nodes and relationships through +DELETE+.
+Still if you've gotten this far, then switching +.post()+ for +.delete()+ in the Jersey client code should be straightforward.
+
+== What's next? ==
+
+The HTTP API provides a good basis for implementers of client libraries, it's also great for HTTP and REST folks.
+In the future though we expect that idiomatic language bindings will appear to take advantage of the REST API while providing comfortable language-level constructs for developers to use, much as there are similar bindings for the embedded database.
+For a list of current Neo4j REST clients and embedded wrappers, see http://www.delicious.com/neo4j/drivers.
+
+== Appendix: the code ==
+
+ * https://github.com/neo4j/community/blob/{neo4j-git-tag}/server-examples/src/main/java/org/neo4j/examples/server/CreateSimpleGraph.java[CreateSimpleGraph.java]
+ * https://github.com/neo4j/community/blob/{neo4j-git-tag}/server-examples/src/main/java/org/neo4j/examples/server/Relationship.java[Relationship.java]
+ * https://github.com/neo4j/community/blob/{neo4j-git-tag}/server-examples/src/main/java/org/neo4j/examples/server/TraversalDescription.java[TraversalDescription.java]
+
+
