@@ -104,5 +104,11 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
         {
             return (byte) ordinal();
         }
+        
+        @Override
+        public boolean monitorChannelMapping()
+        {
+            return false;
+        }
     }
 }

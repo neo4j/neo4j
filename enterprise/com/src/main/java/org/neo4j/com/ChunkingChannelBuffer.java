@@ -506,11 +506,7 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
             throw new ComException( "This should not be possible because we waited for the future to be done" );
         }
         
-        if ( !future.isSuccess() )
-        {
-            future.getChannel().close();
-        }
-        if ( future.isCancelled() )
+        if ( !future.isSuccess() || future.isCancelled() )
         {
             future.getChannel().close();
         }

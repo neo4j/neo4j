@@ -129,5 +129,11 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
         {
             return (byte) ordinal();
         }
+        
+        @Override
+        public boolean monitorChannelMapping()
+        {
+            return false;
+        }
     }
 }

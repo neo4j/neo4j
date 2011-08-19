@@ -61,7 +61,7 @@ terms of the relevant Commercial Agreement.
     <dependency>
       <groupId>org.apache.servicemix.bundles</groupId>
       <artifactId>org.apache.servicemix.bundles.netty</artifactId>
-      <version>3.2.3.Final_1</version>
+      <version>3.2.5.Final_1</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

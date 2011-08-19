@@ -388,6 +388,11 @@ public class MasterClient extends Client<Master> implements Master
         {
             return this.includesSlaveContext;
         }
+        
+        public boolean monitorChannelMapping()
+        {
+            return withinTx;
+        }
     }
 
     protected static IdAllocation readIdAllocation( ChannelBuffer buffer )
