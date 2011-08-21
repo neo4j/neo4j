@@ -549,6 +549,16 @@ class CypherParserTest extends JUnitSuite {
         RETURN(ValueReturnItem(EntityValue("a"))))
   }
 
+  @Test def simplePathExample() {
+    testQuery(
+      "start a = (0) match p = ( a-->b ) return a",
+      Query.
+        start(NodeById("a", 0)).
+        matches(PathIdentifier("p", RelatedTo("a","b", None, None, Direction.OUTGOING))).
+        RETURN(ValueReturnItem(EntityValue("a"))))
+  }
+
+
   @Test def consoleModeParserShouldOutputNullableProperties() {
     val query = "start a = (1) return a.name"
     val parser = new ConsoleCypherParser()

@@ -30,3 +30,5 @@ object RelatedTo {
 }
 
 case class RelatedTo(left: String, right: String, relName: Option[String], relType: Option[String], direction: Direction) extends Pattern
+
+case class PathIdentifier(pathName:String, pathPattern: Pattern*) extends Pattern

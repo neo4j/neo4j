@@ -28,7 +28,13 @@ import org.neo4j.cypher.SyntaxException
 trait MatchClause extends JavaTokenParsers with Tokens {
   def matching: Parser[Match] = ignoreCase("match") ~> rep1sep(path, ",") ^^ { case matching:List[List[Pattern]] => Match(matching.flatten: _*) }
 
-  def path: Parser[List[Pattern]] = relatedNode ~ rep1(relatedTail) ^^ {
+  def path = pathSegment | pathIdentifier
+
+  def pathIdentifier : Parser[List[Pattern]] = identity ~ "=" ~ "(" ~ pathSegment ~ ")" ^^ {
+    case p ~ "=" ~ "(" ~ pathPiece ~ ")" => List(PathIdentifier(p, pathPiece: _*))
+  }
+
+  def pathSegment: Parser[List[Pattern]] = node ~ rep1(relatedTail) ^^ {
     case head ~ tails => {
       val namer = new NodeNamer
       var last = namer.name(head)
@@ -62,14 +68,16 @@ trait MatchClause extends JavaTokenParsers with Tokens {
     }
   }
 
-  def relatedNode:Parser[Option[String]] = opt("(") ~ opt(identity) ~ opt(")") ^^ {
-    case None ~ None ~ None => throw new SyntaxException("Matching nodes without identifiers have to have parenthesis: ()")
-    case None ~ name ~ None => name
-    case Some(l) ~ name ~ Some(r) => name
-    case l ~ Some(name) ~ r => throw new SyntaxException("Unfinished parenthesis around '" + name + "'")
+  def node:Parser[Option[String]] =  parensNode | relatedNode
+
+  def parensNode:Parser[Option[String]] = "(" ~> opt(identity) <~ ")"
+
+  def relatedNode:Parser[Option[String]] = opt(identity) ^^ {
+    case None => throw new SyntaxException("Matching nodes without identifiers have to have parenthesis: ()")
+    case x => x
   }
 
-  def relatedTail = opt("<") ~ "-" ~ opt("[" ~> relationshipInfo  <~ "]") ~ "-" ~ opt(">") ~ relatedNode ^^ {
+  def relatedTail = opt("<") ~ "-" ~ opt("[" ~> relationshipInfo  <~ "]") ~ "-" ~ opt(">") ~ node ^^ {
     case back ~ "-" ~ relInfo ~ "-" ~ forward ~ end => relInfo match {
       case Some((relName, relType)) => (back, relName, relType, forward, end)
       case None => (back, None, None, forward, end)
