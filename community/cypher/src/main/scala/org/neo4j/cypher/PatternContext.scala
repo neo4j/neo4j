@@ -27,9 +27,9 @@ import java.lang.UnsupportedOperationException
 import collection.Seq
 import org.neo4j.graphdb.{PropertyContainer, DynamicRelationshipType, Direction}
 
-class PatternContext(source: Pipe, matching: Match) {
+class PatternContext(source: Pipe, patterns: Seq[Pattern]) {
 
-  val patternSymbolTypes: Seq[Identifier] = matching.patterns.map(pattern => createSymbolType(pattern)).flatten
+  val patternSymbolTypes: Seq[Identifier] = patterns.map(pattern => createSymbolType(pattern)).flatten
 
   val symbolTable = source.symbols.add(patternSymbolTypes)
 
@@ -41,7 +41,7 @@ class PatternContext(source: Pipe, matching: Match) {
   createPatterns()
 
   private def createStartItemsPatterns() {
-    source.symbols.identifiers.foreach( identifier => identifier match {
+    source.symbols.identifiers.foreach(identifier => identifier match {
       case NodeIdentifier(identifier.name) => getOrCreateNode(identifier.name)
       case RelationshipIdentifier(identifier.name) => getOrCreateRelationship(identifier.name)
     })
@@ -49,7 +49,7 @@ class PatternContext(source: Pipe, matching: Match) {
 
 
   private def createPatterns() {
-    matching.patterns.foreach((pattern) => {
+    patterns.foreach((pattern) => {
       pattern match {
         case RelatedTo(left, right, relName, relationType, direction) => createRelationshipPattern(left, right, relationType, direction, relName)
       }
@@ -57,13 +57,10 @@ class PatternContext(source: Pipe, matching: Match) {
   }
 
   private def createSymbolType(pattern: Pattern): List[Identifier] = pattern match {
-    case RelatedTo(left, right, relName, relType, direction) => List(Some(NodeIdentifier(left)), Some(NodeIdentifier(right)), relName match {
-      case None => None
-      case Some(name) => Some(RelationshipIdentifier(name))
-    }).flatMap(_.toList)
+    case RelatedTo(left, right, relName, relType, direction) => List(NodeIdentifier(left), NodeIdentifier(right), RelationshipIdentifier(relName))
   }
 
-  private def createRelationshipPattern(left: String, right: String, relationType: Option[String], direction: Direction, relName: Option[String]) {
+  private def createRelationshipPattern(left: String, right: String, relationType: Option[String], direction: Direction, relName: String) {
     val leftPattern = getOrCreateNode(left)
     val rightPattern = getOrCreateNode(right)
     val rel = relationType match {
@@ -71,13 +68,8 @@ class PatternContext(source: Pipe, matching: Match) {
       case None => leftPattern.createRelationshipTo(rightPattern, direction)
     }
 
-    relName match {
-      case None =>
-      case Some(name) => {
-        addRelationship(name, rel)
-        rel.setLabel(name)
-      }
-    }
+    addRelationship(relName, rel)
+    rel.setLabel(relName)
   }
 
   private def getOrCreateNode(name: String): PatternNode = {

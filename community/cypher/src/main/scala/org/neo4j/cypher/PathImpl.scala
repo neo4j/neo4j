@@ -24,7 +24,7 @@ import java.lang.Iterable
 import org.neo4j.graphdb.{Relationship, PropertyContainer, Node}
 import scala.collection.JavaConverters._
 
-class PathImpl(pathEntities: PropertyContainer*) extends org.neo4j.graphdb.Path with Traversable[PropertyContainer] {
+case class PathImpl(pathEntities: PropertyContainer*) extends org.neo4j.graphdb.Path with Traversable[PropertyContainer] {
   assert( isProperPath )
 
   def isProperPath: Boolean = {

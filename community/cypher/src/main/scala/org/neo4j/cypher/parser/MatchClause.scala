@@ -26,20 +26,23 @@ import org.neo4j.cypher.SyntaxException
 
 
 trait MatchClause extends JavaTokenParsers with Tokens {
+
+  val namer = new NodeNamer
+
   def matching: Parser[Match] = ignoreCase("match") ~> rep1sep(path, ",") ^^ { case matching:List[List[Pattern]] => Match(matching.flatten: _*) }
 
   def path = pathSegment | pathIdentifier
 
   def pathIdentifier : Parser[List[Pattern]] = identity ~ "=" ~ "(" ~ pathSegment ~ ")" ^^ {
-    case p ~ "=" ~ "(" ~ pathPiece ~ ")" => List(PathIdentifier(p, pathPiece: _*))
+    case p ~ "=" ~ "(" ~ pathPiece ~ ")" => List(PathItem(p, pathPiece: _*))
   }
 
   def pathSegment: Parser[List[Pattern]] = node ~ rep1(relatedTail) ^^ {
     case head ~ tails => {
-      val namer = new NodeNamer
       var last = namer.name(head)
-      val list = tails.map((item) => item match { case (back, relName, relType, forward, end) => {
+      val list = tails.map((item) => item match { case (back, rel, relType, forward, end) => {
         val endName = namer.name(end)
+        val relName = namer.name(rel)
         val result: Pattern = RelatedTo(last, endName, relName, relType, getDirection(back, forward))
 
         last = endName
@@ -62,7 +65,7 @@ trait MatchClause extends JavaTokenParsers with Tokens {
     def name(s:Option[String]):String = s match {
       case None => {
         lastNodeNumber += 1
-        "___NODE" + lastNodeNumber
+        "  UNNAMED" + lastNodeNumber
       }
       case Some(x) => x
     }

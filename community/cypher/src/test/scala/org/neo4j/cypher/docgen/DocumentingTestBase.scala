@@ -81,6 +81,7 @@ abstract class DocumentingTestBase extends JUnitSuite {
     var query = queryText
     nodes.keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
     val q = parser.parse(query)
+    println(q)
     val result = engine.execute(q)
     assertions.foreach(_.apply(result))
 

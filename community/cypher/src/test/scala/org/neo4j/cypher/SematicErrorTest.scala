@@ -40,10 +40,10 @@ class SematicErrorTest extends ExecutionEngineTestBase {
 
     val query = Query.
       start(NodeById("foo", node.getId)).
-      matches(RelatedTo("a", "b", None, None, Direction.BOTH)).
+      matches(RelatedTo("a", "b", "rel", None, Direction.BOTH)).
       RETURN(ValueReturnItem(EntityValue("foo")))
 
-    expectedError(query, "All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These identifiers were found to be disconnected: a, b")
+    expectedError(query, "All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These identifiers were found to be disconnected: a, b, rel")
   }
 
   @Test def defineNodeAndTreatItAsARelationship() {
@@ -51,7 +51,7 @@ class SematicErrorTest extends ExecutionEngineTestBase {
 
     val query = Query.
       start(NodeById("foo", node.getId)).
-      matches(RelatedTo("a", "b", Some("foo"), None, Direction.BOTH)).
+      matches(RelatedTo("a", "b", "foo", None, Direction.BOTH)).
       RETURN(ValueReturnItem(EntityValue("foo")))
 
     expectedError(query, "Identifier NodeIdentifier(foo) already defined with different type RelationshipIdentifier(foo)")

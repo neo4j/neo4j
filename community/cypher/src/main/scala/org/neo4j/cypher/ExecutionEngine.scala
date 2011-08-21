@@ -37,7 +37,17 @@ class ExecutionEngine(graph: GraphDatabaseService) {
 
       matching match {
         case None =>
-        case Some(m) => pipe = new PatternPipe(pipe, m)
+        case Some(m) => {
+          val patterns = m.patterns.map( p=>p match {
+            case r:RelatedTo => List(r)
+            case p:PathItem => p.pathPattern.toList
+          }).flatten
+
+          pipe = new PatternPipe(pipe, patterns)
+
+          val paths = m.patterns.filter(_.isInstanceOf[PathItem])
+          paths.foreach( p=> pipe = new PathPipe(pipe, p.asInstanceOf[PathItem]) )
+        }
       }
 
       where match {
