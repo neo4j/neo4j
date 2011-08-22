@@ -32,6 +32,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -201,6 +202,22 @@ public class GremlinPluginFunctionalTest implements GraphHolder
         assertTrue(response.indexOf( "you" ) > response.indexOf( "him" ));
     }
 
+    //TODO: fix line breaks in the REST layer
+    @Test
+    @Ignore
+    public void testLineBreaks() throws UnsupportedEncodingException
+    {
+        String payload = "{\"script\":\"1;\n2\"}";
+        String response = gen.get()
+        .expectedStatus( Status.OK.getStatusCode() )
+        .payload( JSONPrettifier.parse( payload ) )
+        .payloadType( MediaType.APPLICATION_JSON_TYPE )
+        .post( ENDPOINT )
+        .entity();
+        assertTrue(response.contains( "2" ));
+    }
+
+    
     /**
      * To send a Script JSON encoded, set the payload Content-Type Header.
      * In this example, find all the things that my friends like,
