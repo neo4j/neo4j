@@ -131,7 +131,7 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     /**
      * Import a graph form a http://graphml.graphdrawing.org/[GraphML] file
      * can be achieved through the Gremlin GraphMLReader.
-     * The following script imports 3 nodes into Neo4j
+     * The following script imports a small graphml file from an URL into Neo4j
      * and then returns a list of all nodes in the graph.
      */
     @Test
@@ -140,7 +140,7 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     public void testGremlinImportGraph() throws UnsupportedEncodingException
     {
         String payload = "{\"script\":\"" +
-        "GraphMLReader.inputGraph(g, new URL('https://raw.github.com/neo4j/gremlin-plugin/master/src/data/graphml1.xml').openStream());" +
+        "g.loadGraphML('https://raw.github.com/neo4j/gremlin-plugin/master/src/data/graphml1.xml');" +
         "g.V\"}";
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
