@@ -211,6 +211,14 @@ public class GremlinPluginTest
     }
 
     @Test
+    public void executeScriptWithLineBreaks()
+    {
+        Assert.assertEquals(
+                "4",
+                json.format( GremlinPluginTest.executeTestScript( "t=4\nx=2\nt", null) ) );
+    }
+    
+    @Test
     public void testExecuteScriptNull()
     {
         Assert.assertEquals(
