@@ -28,12 +28,12 @@
   </parent>
 
   <groupId>org.neo4j</groupId>
-  <artifactId>neo4j-python</artifactId>
+  <artifactId>neo4j-python-embedded</artifactId>
   <version>0.2-SNAPSHOT</version>
-  <name>Neo4j Python bindings</name>
+  <name>Embedded Neo4j Python bindings</name>
   <packaging>pom</packaging>
   <description>
-    Python bindings for the Neo4j graph database.
+    Python bindings for the embedded Neo4j graph database.
   </description>
 
   <dependencies>
