@@ -202,12 +202,12 @@ public class GremlinPluginFunctionalTest implements GraphHolder
         assertTrue(response.indexOf( "you" ) > response.indexOf( "him" ));
     }
 
-    //TODO: fix line breaks in the REST layer
     @Test
-    @Ignore
     public void testLineBreaks() throws UnsupportedEncodingException
     {
-        String payload = "{\"script\":\"1;\n2\"}";
+        //be aware that the string is parsed in Java before hitting the wire,
+        //so escape the backslash once in order to get \n on the wire.
+        String payload = "{\"script\":\"1\\n2\"}";
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
         .payload( JSONPrettifier.parse( payload ) )
