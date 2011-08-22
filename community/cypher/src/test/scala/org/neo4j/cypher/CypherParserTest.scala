@@ -36,7 +36,6 @@ class CypherParserTest extends JUnitSuite {
       assertEquals(expectedQuery, executionTree)
     } catch {
       case x => {
-        println(query)
         throw x
       }
     }
