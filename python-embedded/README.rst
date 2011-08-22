@@ -1,4 +1,4 @@
-Python bindings for Neo4j
+Python bindings for embedded Neo4j
 =========================
 
 These are Python bindings for the Neo4j Graph Database.

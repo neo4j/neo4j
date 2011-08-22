@@ -18,7 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Python bindings for the Neo4j Graph Database.
+"""Python bindings for the embedded Neo4j Graph Database.
 """
 
 __all__ = 'GraphDatabase', 'Node', 'Relationship',\
@@ -57,12 +57,4 @@ class GraphDatabase(GraphDatabase):
         for key, val in properties.items():
             node[key] = val
         return node
-
-# modules imported per default
-from neo4j.model import *
-from neo4j.traversal import *
-try:
-    from neo4j.algo import *
-except:
-    pass
 

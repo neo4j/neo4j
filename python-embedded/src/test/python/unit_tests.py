@@ -101,13 +101,6 @@ if __name__ == '__main__':
             else:
                 modules[candidate] = None
 
-    try:
-        from neo4j_django_tests import *
-    except:
-        modules['django'] = traceback.format_exc()
-    else:
-        modules['django'] = None
-
     class ImportTestModules(unittest.TestCase):
         for _module in modules:
             if modules[_module] is None:
