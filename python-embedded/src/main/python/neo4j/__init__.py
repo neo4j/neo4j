@@ -26,6 +26,24 @@ __all__ = 'GraphDatabase', 'Node', 'Relationship',\
 
 from neo4j._backend import GraphDatabase
 
+class Nodes(object):
+    
+    def __init__(self, db):
+      self.db = db
+    
+    def __call__(self, **properties):
+        node = self.db.createNode()
+        for key, val in properties.items():
+            node[key] = val
+        return node
+        
+    def __getitem__(self, items):
+        if not isinstance(items, (int, long)):
+            raise TypeError("Only integer and long values allowed to lookup node ids.")
+            
+        self.db.getNodeById( items )
+        
+
 class GraphDatabase(GraphDatabase):
     from neo4j._backend import __new__
 
@@ -52,9 +70,9 @@ class GraphDatabase(GraphDatabase):
         transaction = property(contextmanager(transaction))
         del contextmanager # from the body of this class
 
-    def node(self, **properties):
-        node = self.createNode()
-        for key, val in properties.items():
-            node[key] = val
-        return node
+    @property
+    def node(self):
+        if not hasattr(self, '_node'):
+            self._node = Nodes(self)
+        return self._node
 

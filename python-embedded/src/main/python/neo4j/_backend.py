@@ -111,14 +111,6 @@ except: # this isn't jython (and doesn't have the java module)
         return from_java(value)
     def to_java(value):
         return value
-    
-    def implements(*interfaces):
-      class InterfaceProxy(object):
-          def __new__(cls, *args, **kwargs):
-              inst = super(InterfaceProxy, cls).__new__(cls, *args, **kwargs)
-              inst.__init__(*args, **kwargs)
-              return jpype.JProxy(interfaces, inst=inst)
-      return InterfaceProxy
 else:
     from org.neo4j.kernel import EmbeddedGraphDatabase, Uniqueness
     from org.neo4j.kernel.impl.traversal import TraversalDescriptionImpl, TraverserImpl
@@ -128,6 +120,9 @@ else:
     from org.neo4j.helpers.collection import IterableWrapper
     from java.util import HashMap
     rel_type = DynamicRelationshipType.withName
+
+    def override(func):
+        return func
 
     def from_java(value):
         return value
@@ -174,11 +169,9 @@ def __new__(GraphDatabase, resourceUri, **settings):
 
 class Node(extends(Node)):
     def __getattr__(node, attr):
+        if attr is 'rels':
+            return Relationships(node, None)
         return Relationships(node, rel_type(attr))
-    def __div__(self, other):
-        return neo4j.BoundPathTraversal(self, other)
-    __truediv__ = __div__
-
 
 class Relationship(extends(Relationship)):
     
@@ -188,13 +181,23 @@ class Relationship(extends(Relationship)):
     @property
     def end(self):   return self.getEndNode()
 
-
 class PropertyContainer(extends(PropertyContainer)):
     def __getitem__(self, key):
         return from_java(self.getProperty(key))
     def __setitem__(self, key, value):
         self.setProperty(key, to_java(value))
+  
+    def items(self):
+        for k in self.getPropertyKeys():
+            yield k, self[k]
 
+    def keys(self):
+        for k in self.getPropertyKeys():
+            yield k
+
+    def values(self):
+        for k, v in self.items():
+            yield v
 
 class Path(extends(Path)):
 
@@ -246,11 +249,16 @@ class Relationships(object):
         self.__type = rel_type
 
     def __repr__(self):
-        return "%r.%s" % (self.__node,self.__rel_type.name())
+        if self.__type is None:
+            return "%r.[All relationships]" % (self.__node)
+        return "%r.%s" % (self.__node,self.__type.name())
 
     def relationships(direction):
         def relationships(self):
-            it = self.__node.getRelationships(self.__type, direction).iterator()
+            if self.__type is not None:
+                it = self.__node.getRelationships(self.__type, direction).iterator()
+            else:
+                it = self.__node.getRelationships(direction).iterator()
             while it.hasNext(): yield it.next()
         return relationships
     __iter__ = relationships(Direction.BOTH)
