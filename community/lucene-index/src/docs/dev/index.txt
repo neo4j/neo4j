@@ -445,7 +445,7 @@ Here are some pointers to get the most performance out of +BatchInserterIndex+:
 
 
 [[auto-indexing]]
-== Auto Indexing ==
+== Automatic Indexing ==
 
 Neo4j provides a single index for nodes and one for relationships in each database that automatically follow property values as they are added, deleted and changed on database primitives.
 This functionality is called _auto indexing_ and is controlled both from the database configuration Map and through its own API.
@@ -509,7 +509,7 @@ the final configuration is the same regardless of the method used to reach it.
 
 
 [[auto-indexing-update-removal]]
-=== Updating the Auto Index ===
+=== Updating the Automatic Index ===
 Updates to the auto indexed properties happen of course automatically as you update them. Removal of properties from the auto index happens for two reasons.
 One is that you actually removed the property. The other is that you stopped autoindexing on a property. When the latter happens, any primitive you touch and
 it has that property, it is removed from the auto index, regardless of any operations on the property.
@@ -531,8 +531,9 @@ as you work with them. Make sure that the monitored set is what you want before 
 [[auto-indexing-low-level]]
 === Low level details ===
 
-Currently the AutoIndexer functionality is implemented as a http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/event/TransactionEventHandler.html[+TransactionEventHandler+]
+Currently the +AutoIndexer+ functionality is implemented as a http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/event/TransactionEventHandler.html[+TransactionEventHandler+]
 that executes on +beforeCommit()+ of every transaction. The http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/event/TransactionData.html[+TransactionData+]
 object is queried for all modified (added, deleted and changed) properties of the primitives supported by the +AutoIndexer+ and adds and removes it based on the current configuration.
 This means that the auto indexing happens on successful http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Transaction.html#finish%28%29[+finish()+]
 of the transaction and before that the changes are not visible.
+

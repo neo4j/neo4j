@@ -30,7 +30,6 @@ import javax.ws.rs.core.MediaType;
 
 import org.junit.After;
 import org.junit.Test;
-
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 

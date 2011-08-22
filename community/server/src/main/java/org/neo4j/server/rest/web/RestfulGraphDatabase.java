@@ -1013,7 +1013,7 @@ public class RestfulGraphDatabase
 
     @DELETE
     @Path( PATH_RELATIONSHIP_INDEX_REMOVE_KEY )
-    public Response deleteFromRelationshipIndexnoValue( @PathParam( "indexName" ) String indexName,
+    public Response deleteFromRelationshipIndexNoValue( @PathParam( "indexName" ) String indexName,
             @PathParam( "key" ) String key, @PathParam( "id" ) long id )
     {
         try

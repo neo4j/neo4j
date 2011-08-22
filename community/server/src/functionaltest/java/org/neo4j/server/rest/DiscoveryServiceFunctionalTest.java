@@ -19,7 +19,15 @@
  */
 package org.neo4j.server.rest;
 
-import com.sun.jersey.api.client.Client;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import java.io.IOException;
+import java.util.Map;
+
+import javax.ws.rs.core.MediaType;
+
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -28,11 +36,7 @@ import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 
-import javax.ws.rs.core.MediaType;
-import java.io.IOException;
-import java.util.Map;
-
-import static org.junit.Assert.*;
+import com.sun.jersey.api.client.Client;
 
 public class DiscoveryServiceFunctionalTest
 {

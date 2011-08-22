@@ -29,7 +29,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.FunctionalTestHelper;
-
 import org.neo4j.server.rest.JaxRsResponse;
 
 public class NeoServerDefaultPortFunctionalTest

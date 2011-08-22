@@ -30,7 +30,6 @@ import javax.ws.rs.core.Response;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.core.util.StringKeyObjectValueIgnoreCaseMultivaluedMap;
 
-@SuppressWarnings( "restriction" )
 public class JaxRsResponse extends Response
 {
 
