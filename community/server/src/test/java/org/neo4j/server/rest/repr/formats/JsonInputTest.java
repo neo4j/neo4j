@@ -71,9 +71,8 @@ public class JsonInputTest
     @Test
     public void canReadStringWithLineBreaks() throws Exception
     {
-        OutputFormat json = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ), null );
-        Map<String, Object> map = input.readMap( json.format( representation ) );
+        Map<String, Object> map = input.readMap( "{\"key\": \"v1\\nv2\"}" );
         assertNotNull( map );
-        assertEquals( map.get( "key1" ), "v1\nv2"  );
+        assertEquals( map.get( "key" ), "v1\nv2"  );
     }
 }
