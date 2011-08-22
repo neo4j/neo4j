@@ -44,7 +44,7 @@ class CypherParserTest extends JUnitSuite {
   @Test def shouldParseEasiestPossibleQuery() {
     val q = Query.
       start(NodeById("s", 1)).
-      RETURN(ValueReturnItem(EntityValue("s")))
+      returns(ValueReturnItem(EntityValue("s")))
     testQuery("start s = (1) return s", q)
   }
 
@@ -53,7 +53,7 @@ class CypherParserTest extends JUnitSuite {
       """start a = (index, key, "value") return a""",
       Query.
         start(NodeByIndex("a", "index", "key", "value")).
-        RETURN(ValueReturnItem(EntityValue("a"))))
+        returns(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def sourceIsAnIndexQuery() {
@@ -61,7 +61,7 @@ class CypherParserTest extends JUnitSuite {
       """start a = (index, "key:value") return a""",
       Query.
         start(NodeByIndexQuery("a", "index", "key:value")).
-        RETURN(ValueReturnItem(EntityValue("a"))))
+        returns(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def shouldParseEasiestPossibleRelationshipQuery() {
@@ -69,7 +69,7 @@ class CypherParserTest extends JUnitSuite {
       "start s = <1> return s",
       Query.
         start(RelationshipById("s", 1)).
-        RETURN(ValueReturnItem(EntityValue("s"))))
+        returns(ValueReturnItem(EntityValue("s"))))
   }
 
   @Test def sourceIsARelationshipIndex() {
@@ -77,7 +77,7 @@ class CypherParserTest extends JUnitSuite {
       """start a = <index, key, "value"> return a""",
       Query.
         start(RelationshipByIndex("a", "index", "key", "value")).
-        RETURN(ValueReturnItem(EntityValue("a"))))
+        returns(ValueReturnItem(EntityValue("a"))))
   }
 
 
@@ -86,7 +86,7 @@ class CypherParserTest extends JUnitSuite {
       "START s = (1) RETURN s",
       Query.
         start(NodeById("s", 1)).
-        RETURN(ValueReturnItem(EntityValue("s"))))
+        returns(ValueReturnItem(EntityValue("s"))))
   }
 
   @Test def shouldParseMultipleNodes() {
@@ -94,7 +94,7 @@ class CypherParserTest extends JUnitSuite {
       "start s = (1,2,3) return s",
       Query.
         start(NodeById("s", 1, 2, 3)).
-        RETURN(ValueReturnItem(EntityValue("s"))))
+        returns(ValueReturnItem(EntityValue("s"))))
   }
 
   @Test def shouldParseMultipleInputs() {
@@ -102,7 +102,7 @@ class CypherParserTest extends JUnitSuite {
       "start a = (1), b = (2) return a,b",
       Query.
         start(NodeById("a", 1), NodeById("b", 2)).
-        RETURN(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
+        returns(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
   }
 
   @Test def shouldFilterOnProp() {
@@ -111,7 +111,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         where(Equals(PropertyValue("a", "name"), Literal("andres"))).
-        RETURN(ValueReturnItem(EntityValue("a"))))
+        returns(ValueReturnItem(EntityValue("a"))))
   }
 
 
@@ -121,7 +121,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         where(Equals(PropertyValue("a", "name"), Literal("andres"))).
-        RETURN(ValueReturnItem(EntityValue("a"))))
+        returns(ValueReturnItem(EntityValue("a"))))
   }
 
 
@@ -131,7 +131,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         where(Equals(PropertyValue("a", "foo"), Literal(3.1415))).
-        RETURN(ValueReturnItem(EntityValue("a"))))
+        returns(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def shouldHandleNot() {
@@ -140,7 +140,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         where(Not(Equals(PropertyValue("a", "name"), Literal("andres")))).
-        RETURN(ValueReturnItem(EntityValue("a"))))
+        returns(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def shouldHandleNotEqualTo() {
@@ -149,7 +149,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         where(Not(Equals(PropertyValue("a", "name"), Literal("andres")))).
-        RETURN(ValueReturnItem(EntityValue("a"))))
+        returns(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def shouldHandleLessThan() {
@@ -158,7 +158,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         where(LessThan(PropertyValue("a", "name"), Literal("andres"))).
-        RETURN(ValueReturnItem(EntityValue("a"))))
+        returns(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def shouldHandleGreaterThan() {
@@ -167,7 +167,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         where(GreaterThan(PropertyValue("a", "name"), Literal("andres"))).
-        RETURN(ValueReturnItem(EntityValue("a"))))
+        returns(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def shouldHandleLessThanOrEqual() {
@@ -176,7 +176,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         where(LessThanOrEqual(PropertyValue("a", "name"), Literal("andres"))).
-        RETURN(ValueReturnItem(EntityValue("a"))))
+        returns(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def shouldHandleRegularComparison() {
@@ -185,7 +185,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         where(RegularExpression(Literal("Andres"), "And.*")).
-        RETURN(ValueReturnItem(EntityValue("a")))
+        returns(ValueReturnItem(EntityValue("a")))
     )
   }
 
@@ -195,7 +195,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         where(GreaterThanOrEqual(PropertyValue("a", "name"), Literal("andres"))).
-        RETURN(ValueReturnItem(EntityValue("a"))))
+        returns(ValueReturnItem(EntityValue("a"))))
   }
 
 
@@ -205,7 +205,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         where(Equals(Literal(true), Literal(false))).
-        RETURN(ValueReturnItem(EntityValue("a"))))
+        returns(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def shouldFilterOnNumericProp() {
@@ -214,7 +214,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         where(Equals(Literal(35), PropertyValue("a", "age"))).
-        RETURN(ValueReturnItem(EntityValue("a"))))
+        returns(ValueReturnItem(EntityValue("a"))))
   }
 
 
@@ -224,7 +224,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         where(Not(Equals(Literal(35), PropertyValue("a", "age")))).
-        RETURN(ValueReturnItem(EntityValue("a"))))
+        returns(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def multipleFilters() {
@@ -235,7 +235,7 @@ class CypherParserTest extends JUnitSuite {
         where(Or(
         Equals(PropertyValue("a", "name"), Literal("andres")),
         Equals(PropertyValue("a", "name"), Literal("mattias")))).
-        RETURN(ValueReturnItem(EntityValue("a"))))
+        returns(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def relatedTo() {
@@ -244,7 +244,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "  UNNAMED1", Some("KNOWS"), Direction.OUTGOING)).
-        RETURN(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
+        returns(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
   }
 
   @Test def relatedToWithoutRelType() {
@@ -253,7 +253,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING)).
-        RETURN(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
+        returns(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
   }
 
   @Test def relatedToWithoutRelTypeButWithRelVariable() {
@@ -262,7 +262,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "r", None, Direction.OUTGOING)).
-        RETURN(ValueReturnItem(EntityValue("r"))))
+        returns(ValueReturnItem(EntityValue("r"))))
   }
 
   @Test def relatedToTheOtherWay() {
@@ -271,7 +271,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "  UNNAMED1", Some("KNOWS"), Direction.INCOMING)).
-        RETURN(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
+        returns(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
   }
 
   @Test def shouldOutputVariables() {
@@ -279,7 +279,7 @@ class CypherParserTest extends JUnitSuite {
       "start a = (1) return a.name",
       Query.
         start(NodeById("a", 1)).
-        RETURN(ValueReturnItem(PropertyValue("a", "name"))))
+        returns(ValueReturnItem(PropertyValue("a", "name"))))
   }
 
   @Test def shouldHandleAndClauses() {
@@ -290,7 +290,7 @@ class CypherParserTest extends JUnitSuite {
         where(And(
         Equals(PropertyValue("a", "name"), Literal("andres")),
         Equals(PropertyValue("a", "lastname"), Literal("taylor")))).
-        RETURN(ValueReturnItem(PropertyValue("a", "name"))))
+        returns(ValueReturnItem(PropertyValue("a", "name"))))
   }
 
   @Test def relatedToWithRelationOutput() {
@@ -299,7 +299,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "rel", "KNOWS", Direction.OUTGOING)).
-        RETURN(ValueReturnItem(EntityValue("rel"))))
+        returns(ValueReturnItem(EntityValue("rel"))))
   }
 
   @Test def relatedToWithoutEndName() {
@@ -308,7 +308,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "  UNNAMED1", "  UNNAMED2", Some("MARRIED"), Direction.OUTGOING)).
-        RETURN(ValueReturnItem(EntityValue("a"))))
+        returns(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def relatedInTwoSteps() {
@@ -319,7 +319,7 @@ class CypherParserTest extends JUnitSuite {
         matches(
         RelatedTo("a", "b", "  UNNAMED1", Some("KNOWS"), Direction.OUTGOING),
         RelatedTo("b", "c", "  UNNAMED2", Some("FRIEND"), Direction.OUTGOING)).
-        RETURN(ValueReturnItem(EntityValue("c")))
+        returns(ValueReturnItem(EntityValue("c")))
     )
   }
 
@@ -329,7 +329,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "  UNNAMED1", Some("<<KNOWS>>"), Direction.OUTGOING)).
-        RETURN(ValueReturnItem(EntityValue("c"))))
+        returns(ValueReturnItem(EntityValue("c"))))
   }
 
   @Test def countTheNumberOfHits() {
@@ -339,7 +339,7 @@ class CypherParserTest extends JUnitSuite {
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING)).
         aggregation(CountStar()).
-        RETURN(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
+        returns(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
   }
 
   @Test def distinct() {
@@ -349,7 +349,7 @@ class CypherParserTest extends JUnitSuite {
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING)).
         aggregation().
-        RETURN(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
+        returns(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
   }
 
   @Test def sumTheAgesOfPeople() {
@@ -359,7 +359,7 @@ class CypherParserTest extends JUnitSuite {
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING)).
         aggregation(ValueAggregationItem(Sum(PropertyValue("a", "age")))).
-        RETURN(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
+        returns(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
   }
 
   @Test def avgTheAgesOfPeople() {
@@ -369,7 +369,7 @@ class CypherParserTest extends JUnitSuite {
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING)).
         aggregation(ValueAggregationItem(Avg(PropertyValue("a", "age")))).
-        RETURN(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
+        returns(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
   }
 
   @Test def minTheAgesOfPeople() {
@@ -379,7 +379,7 @@ class CypherParserTest extends JUnitSuite {
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING)).
         aggregation(ValueAggregationItem(Min(PropertyValue("a", "age")))).
-        RETURN(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
+        returns(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
   }
 
   @Test def maxTheAgesOfPeople() {
@@ -389,7 +389,7 @@ class CypherParserTest extends JUnitSuite {
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING)).
         aggregation(ValueAggregationItem(Max((PropertyValue("a", "age"))))).
-        RETURN(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
+        returns(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
   }
 
   @Test def singleColumnSorting() {
@@ -398,7 +398,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         orderBy(SortItem(ValueReturnItem(PropertyValue("a", "name")), true)).
-        RETURN(ValueReturnItem(EntityValue("a"))))
+        returns(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def sortOnAggregatedColumn() {
@@ -407,7 +407,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         orderBy(SortItem(ValueAggregationItem(Avg(PropertyValue("a", "name"))), true)).
-        RETURN(ValueReturnItem(EntityValue("a"))))
+        returns(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def shouldHandleTwoSortColumns() {
@@ -418,7 +418,7 @@ class CypherParserTest extends JUnitSuite {
         orderBy(
         SortItem(ValueReturnItem(PropertyValue("a", "name")), true),
         SortItem(ValueReturnItem(PropertyValue("a", "age")), true)).
-        RETURN(ValueReturnItem(EntityValue("a"))))
+        returns(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def shouldHandleTwoSortColumnsAscending() {
@@ -429,7 +429,7 @@ class CypherParserTest extends JUnitSuite {
         orderBy(
         SortItem(ValueReturnItem(PropertyValue("a", "name")), true),
         SortItem(ValueReturnItem(PropertyValue("a", "age")), true)).
-        RETURN(ValueReturnItem(EntityValue("a"))))
+        returns(ValueReturnItem(EntityValue("a"))))
 
   }
 
@@ -439,7 +439,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         orderBy(SortItem(ValueReturnItem(PropertyValue("a", "name")), false)).
-        RETURN(ValueReturnItem(EntityValue("a"))))
+        returns(ValueReturnItem(EntityValue("a"))))
 
   }
 
@@ -449,7 +449,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         orderBy(SortItem(ValueReturnItem(PropertyValue("a", "name")), false)).
-        RETURN(ValueReturnItem(EntityValue("a"))))
+        returns(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def nullableProperty() {
@@ -457,7 +457,7 @@ class CypherParserTest extends JUnitSuite {
       "start a = (1) return a.name?",
       Query.
         start(NodeById("a", 1)).
-        RETURN(ValueReturnItem(NullablePropertyValue("a", "name"))))
+        returns(ValueReturnItem(NullablePropertyValue("a", "name"))))
   }
 
   @Test def nestedBooleanOperatorsAndParentesis() {
@@ -472,7 +472,7 @@ class CypherParserTest extends JUnitSuite {
         And(
           Equals(PropertyValue("n", "animal"), Literal("cow")),
           Equals(PropertyValue("n", "food"), Literal("grass"))))).
-        RETURN(ValueReturnItem(EntityValue("n"))))
+        returns(ValueReturnItem(EntityValue("n"))))
   }
 
   @Test def limit5() {
@@ -481,7 +481,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("n", 1)).
         limit(5).
-        RETURN(ValueReturnItem(EntityValue("n"))))
+        returns(ValueReturnItem(EntityValue("n"))))
   }
 
   @Test def skip5() {
@@ -490,7 +490,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("n", 1)).
         skip(5).
-        RETURN(ValueReturnItem(EntityValue("n"))))
+        returns(ValueReturnItem(EntityValue("n"))))
   }
 
   @Test def skip5limit5() {
@@ -500,7 +500,7 @@ class CypherParserTest extends JUnitSuite {
         start(NodeById("n", 1)).
         limit(5).
         skip(5).
-        RETURN(ValueReturnItem(EntityValue("n"))))
+        returns(ValueReturnItem(EntityValue("n"))))
   }
 
   @Test def relationshipType() {
@@ -510,7 +510,7 @@ class CypherParserTest extends JUnitSuite {
         start(NodeById("n", 1)).
         matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING)).
         where(Equals(RelationshipTypeValue("r"), Literal("something"))).
-        RETURN(ValueReturnItem(EntityValue("r"))))
+        returns(ValueReturnItem(EntityValue("r"))))
   }
 
   @Test def relationshipTypeOut() {
@@ -520,7 +520,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("n", 1)).
         matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING)).
-        RETURN(ValueReturnItem(RelationshipTypeValue("r"))))
+        returns(ValueReturnItem(RelationshipTypeValue("r"))))
   }
 
   @Test def countNonNullValues() {
@@ -529,7 +529,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         aggregation(ValueAggregationItem(Count(EntityValue("a")))).
-        RETURN(ValueReturnItem(EntityValue("a"))))
+        returns(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def shouldBeAbleToHandleStringLiteralsWithApostrophe() {
@@ -537,7 +537,7 @@ class CypherParserTest extends JUnitSuite {
       "start a = (index, key, 'value') return a",
       Query.
         start(NodeByIndex("a", "index", "key", "value")).
-        RETURN(ValueReturnItem(EntityValue("a"))))
+        returns(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def shouldHandleQuotationsInsideApostrophes() {
@@ -545,7 +545,7 @@ class CypherParserTest extends JUnitSuite {
       "start a = (index, key, 'val\"ue') return a",
       Query.
         start(NodeByIndex("a", "index", "key", "val\"ue")).
-        RETURN(ValueReturnItem(EntityValue("a"))))
+        returns(ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def simplePathExample() {
@@ -554,7 +554,17 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 0)).
         matches(PathItem("p", RelatedTo("a","b", "  UNNAMED1", None, Direction.OUTGOING))).
-        RETURN(ValueReturnItem(EntityValue("a"))))
+        returns(ValueReturnItem(EntityValue("a"))))
+  }
+
+
+  @Test def pathsShouldBePossibleWithoutParenthesis() {
+    testQuery(
+      "start a = (0) match p = a-->b return a",
+      Query.
+        start(NodeById("a", 0)).
+        matches(PathItem("p", RelatedTo("a","b", "  UNNAMED1", None, Direction.OUTGOING))).
+        returns(ValueReturnItem(EntityValue("a"))))
   }
 
 
@@ -566,7 +576,7 @@ class CypherParserTest extends JUnitSuite {
     assertEquals(
       Query.
         start(NodeById("a", 1)).
-        RETURN(ValueReturnItem(NullablePropertyValue("a", "name"))),
+        returns(ValueReturnItem(NullablePropertyValue("a", "name"))),
       executionTree)
   }
 
