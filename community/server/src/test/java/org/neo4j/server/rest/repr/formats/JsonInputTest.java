@@ -22,13 +22,16 @@ package org.neo4j.server.rest.repr.formats;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import java.net.URI;
 import java.util.Map;
 
 import org.junit.Test;
+import org.neo4j.server.rest.repr.OutputFormat;
 
 public class JsonInputTest
 {
@@ -63,5 +66,13 @@ public class JsonInputTest
         assertThat( nested, instanceOf( Map.class ) );
         @SuppressWarnings( "unchecked" ) Map<String, String> nestedMap = (Map<String, String>) nested;
         assertThat( nestedMap, hasEntry( "key", "valuable" ) );
+    }
+    
+    @Test
+    public void canReadStringWithLineBreaks() throws Exception
+    {
+        Map<String, Object> map = input.readMap( "{\"key\": \"v1\\nv2\"}" );
+        assertNotNull( map );
+        assertEquals( map.get( "key" ), "v1\nv2"  );
     }
 }
