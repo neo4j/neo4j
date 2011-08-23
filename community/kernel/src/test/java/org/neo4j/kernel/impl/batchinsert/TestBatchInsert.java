@@ -284,4 +284,13 @@ public class TestBatchInsert
         tx.finish();
         db.shutdown();
     }
+    
+    @Test
+    public void messagesLogGetsClosed() throws Exception
+    {
+        BatchInserter inserter = newBatchInserter();
+        String storeDir = inserter.getStore();
+        inserter.shutdown();
+        assertTrue( new File( storeDir, "messages.log" ).delete() );
+    }
 }
