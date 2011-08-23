@@ -198,10 +198,11 @@ bulk import of large amounts of data.
 === Data size ===
 
 In Neo4j, data size is mainly limited by the address space of the primary keys for Nodes, 
-Relationships, and Properties. In Neo4j 1.0, Integer values are used for all of these, 
-permitting a single address space to contain 2ˆ32 (~ 4,000,000,000) objects of each sort 
-without needing to shard the graph. With Neo4j 1.2, the identifiers will be expanded to 
-type Long, permitting a virtually unlimited address space of 2ˆ64 addresses.
+Relationships, and Properties. Currently, the address space is as follows:
+
+* 2ˆ35 (~ 34 billion) nodes 
+* 2ˆ35 (~ 34 billion) relationships 
+* 2ˆ36 (~ 68 billion) properties 
 
 == Scaling ==
 
