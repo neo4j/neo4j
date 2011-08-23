@@ -39,11 +39,11 @@ class PatternPipe(source: Pipe, patterns: Seq[Pattern]) extends Pipe {
     source.foreach((row) => {
       row.foreach(bindStartPoint(_))
 
-      getPatternMatches(row).map(f)
+      getPatternMatches(row).foreach(f)
     })
   }
 
-  def bindStartPoint[U](startPoint: (String, Any)) {
+  def bindStartPoint(startPoint: (String, Any)) {
     startPoint match {
       case (identifier: String, node: Node) => patternContext.nodes(identifier).setAssociation(node)
       case (identifier: String, rel: Relationship) => patternContext.rels(identifier).setAssociation(rel)
