@@ -131,7 +131,7 @@ public class AutoIndexNodeFunctionalTest
                 .getName();
         Response r = RestRequest.req()
                 .delete( functionalTestHelper.nodeIndexUri() + indexName );
-        assertEquals( 403, r.getStatus() );
+        assertEquals( 405, r.getStatus() );
     }
 
     @Test
@@ -149,7 +149,7 @@ public class AutoIndexNodeFunctionalTest
         Response r = RestRequest.req()
                 .post( functionalTestHelper.indexNodeUri( indexName, key, value ),
                         JsonHelper.createJsonFrom( functionalTestHelper.nodeUri( nodeId ) ) );
-        assertEquals( 403, r.getStatus() );
+        assertEquals( 405, r.getStatus() );
     }
 
     @Test
@@ -162,12 +162,12 @@ public class AutoIndexNodeFunctionalTest
                 .getName();
 
         Response r = request.delete( functionalTestHelper.nodeIndexUri() + indexName + "/key/value/0" );
-        assertEquals( 403, r.getStatus() );
+        assertEquals( 405, r.getStatus() );
 
         r = request.delete( functionalTestHelper.nodeIndexUri() + indexName + "/key/0" );
-        assertEquals( 403, r.getStatus() );
+        assertEquals( 405, r.getStatus() );
 
         r = request.delete( functionalTestHelper.nodeIndexUri() + indexName + "/0" );
-        assertEquals( 403, r.getStatus() );
+        assertEquals( 405, r.getStatus() );
     }
 }
