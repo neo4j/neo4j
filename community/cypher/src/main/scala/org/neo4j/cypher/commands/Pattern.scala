@@ -26,7 +26,9 @@ abstract class Pattern
 
 object RelatedTo {
   def apply(left: String, right: String, relName: String, relType: String, direction: Direction) =
-    new RelatedTo(left, right, Some(relName), Some(relType), direction)
+    new RelatedTo(left, right, relName, Some(relType), direction)
 }
 
-case class RelatedTo(left: String, right: String, relName: Option[String], relType: Option[String], direction: Direction) extends Pattern
+case class RelatedTo(left: String, right: String, relName: String, relType: Option[String], direction: Direction) extends Pattern
+
+case class PathItem(pathName:String, pathPattern: Pattern*) extends Pattern

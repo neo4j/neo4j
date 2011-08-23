@@ -57,11 +57,17 @@ public enum Evaluation
                         (continues?EXCLUDE_AND_CONTINUE:EXCLUDE_AND_PRUNE);
     }
     
+    /**
+     * Include or exclude; always continue.
+     */
     public static Evaluation ofIncludes( boolean includes )
     {
         return includes?INCLUDE_AND_CONTINUE:EXCLUDE_AND_CONTINUE;
     }
     
+    /**
+     * Continue or prune; always include.
+     */
     public static Evaluation ofContinues( boolean continues )
     {
         return continues?INCLUDE_AND_CONTINUE:INCLUDE_AND_PRUNE;

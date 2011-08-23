@@ -22,8 +22,8 @@ package org.neo4j.cypher
 
 import org.scalatest.junit.JUnitSuite
 import parser.CypherParser
-import org.junit.Test
 import org.junit.Assert._
+import org.junit.{Ignore, Test}
 
 class SyntaxExceptionTest extends JUnitSuite {
   def expectError(query: String, expectedError: String) {
@@ -105,7 +105,7 @@ class SyntaxExceptionTest extends JUnitSuite {
       "String literal expected")
   }
 
-    @Test def nodeParenthesisMustBeClosed() {
+    @Ignore @Test def nodeParenthesisMustBeClosed() {
     expectError(
       "start s=(1) match s-->(x return x",
       "Unfinished parenthesis around 'x'")

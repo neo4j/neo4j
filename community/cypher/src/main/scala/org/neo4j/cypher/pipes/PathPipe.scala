@@ -17,38 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.shell.impl;
+package org.neo4j.cypher.pipes
 
-import org.neo4j.shell.Output;
-import org.neo4j.shell.ShellClient;
-import org.neo4j.shell.ShellServer;
+import org.neo4j.cypher.commands.{RelatedTo, PathItem, PathIdentifier}
+import org.neo4j.cypher.{PathImpl, SymbolTable}
+import org.neo4j.graphdb.PropertyContainer
 
-/**
- * An implementation of {@link ShellClient} optimized to use with a server
- * in the same JVM.
- */
-public class SameJvmClient extends AbstractClient
-{
-	private Output out = new SystemOutput();
-	private ShellServer server;
-	
-	/**
-	 * @param server the server to communicate with.
-	 */
-	public SameJvmClient( ShellServer server )
-	{
-		this.server = server;
-		init();
-	    updateTimeForMostRecentConnection();
-	}
-	
-	public Output getOutput()
-	{
-		return this.out;
-	}
+class PathPipe(source: Pipe, path: PathItem) extends Pipe {
+  def foreach[U](f: (Map[String, Any]) => U) {
 
-	public ShellServer getServer()
-	{
-		return this.server;
-	}
+
+    source.foreach(m => {
+      def get(x:String):PropertyContainer = m(x).asInstanceOf[PropertyContainer]
+
+      val p = path.pathPattern.flatMap(p => p match {
+        case RelatedTo(left, right, relName, x, xx) => Seq(get(left), get(relName), get(right))
+      })
+
+      val pathImpl = new PathImpl(p: _*)
+
+      f(m.+(path.pathName -> pathImpl))
+    })
+  }
+
+  val symbols: SymbolTable = source.symbols.add(Seq(PathIdentifier(path.pathName)))
 }

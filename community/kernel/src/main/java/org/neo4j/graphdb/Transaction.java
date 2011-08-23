@@ -69,15 +69,15 @@ public interface Transaction
     /**
      * Marks this transaction as failed, which means that it will
      * unconditionally be rolled back when {@link #finish()} is called. Once
-     * this method has been invoked, it doesn't matter how many times
-     * {@link #success()} is invoked -- the transaction will still be rolled
-     * back.
+     * this method has been invoked, it doesn't matter if
+     * {@link #success()} is invoked afterwards -- the transaction will still be 
+     * rolled back.
      */
     public void failure();
 
     /**
      * Marks this transaction as successful, which means that it will be
-     * commited upon invocation of {@link #finish()} unless {@link #failure()}
+     * committed upon invocation of {@link #finish()} unless {@link #failure()}
      * has or will be invoked before then.
      */
     public void success();

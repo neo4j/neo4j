@@ -527,13 +527,3 @@ classifier=test-sources
 [CAUTION]
 If you start the database with auto indexing enabled but different auto indexed properties than the last run, then already auto-indexed entities will be deleted
 as you work with them. Make sure that the monitored set is what you want before enabling the functionality.
-
-[[auto-indexing-low-level]]
-=== Low level details ===
-
-Currently the +AutoIndexer+ functionality is implemented as a http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/event/TransactionEventHandler.html[+TransactionEventHandler+]
-that executes on +beforeCommit()+ of every transaction. The http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/event/TransactionData.html[+TransactionData+]
-object is queried for all modified (added, deleted and changed) properties of the primitives supported by the +AutoIndexer+ and adds and removes it based on the current configuration.
-This means that the auto indexing happens on successful http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Transaction.html#finish%28%29[+finish()+]
-of the transaction and before that the changes are not visible.
-

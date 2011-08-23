@@ -22,16 +22,15 @@ package org.neo4j.cypher.docgen
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.graphdb.Node
-class MatchTest extends DocumentingTestBase
-{
+
+class MatchTest extends DocumentingTestBase {
   override def indexProps: List[String] = List("name")
 
   def graphDescription: List[String] = List("A KNOWS B", "A BLOCKS C", "D KNOWS A", "B KNOWS E", "C KNOWS E")
 
   def section: String = "MATCH"
 
-  @Test def allRelationships()
-  {
+  @Test def allRelationships() {
     testQuery(
       title = "Related nodes",
       text = "The symbol -- means related to, without regard to type or direction.",
@@ -41,8 +40,7 @@ class MatchTest extends DocumentingTestBase
     )
   }
 
-  @Test def allOutgoingRelationships()
-  {
+  @Test def allOutgoingRelationships() {
     testQuery(
       title = "Outgoing relationships",
       text = "When the direction of a relationship is interesting, it is shown by using `-->` or `<--`, like this: ",
@@ -52,8 +50,7 @@ class MatchTest extends DocumentingTestBase
     )
   }
 
-  @Test def allOutgoingRelationships2()
-  {
+  @Test def allOutgoingRelationships2() {
     testQuery(
       title = "Directed relationships and identifier",
       text = "If an identifier is needed, either for filtering on properties of the relationship, or to return the relationship, " +
@@ -64,8 +61,7 @@ class MatchTest extends DocumentingTestBase
     )
   }
 
-  @Test def relatedNodesByRelationshipType()
-  {
+  @Test def relatedNodesByRelationshipType() {
     testQuery(
       title = "Match by relationship type",
       text = "When you know the relationship type you want to match on, you can specify it by using a colon.",
@@ -75,8 +71,7 @@ class MatchTest extends DocumentingTestBase
     )
   }
 
-  @Test def relationshipsByType()
-  {
+  @Test def relationshipsByType() {
     testQuery(
       title = "Match by relationship type and use an identifier",
       text = "If you both want to introduce an identifier to hold the relationship, and specify the relationship type you want, " +
@@ -87,8 +82,7 @@ class MatchTest extends DocumentingTestBase
     )
   }
 
-  @Test def multiStepRelationships()
-  {
+  @Test def multiStepRelationships() {
     testQuery(
       title = "Multiple relationships",
       text = "Relationships can be expressed by using multiple statements in the form of ()--(), or they can be stringed together, " +
@@ -99,8 +93,7 @@ class MatchTest extends DocumentingTestBase
     )
   }
 
-  @Test def complexMatching()
-  {
+  @Test def complexMatching() {
     testQuery(
       title = "Complex matching",
       text = "Using Cypher, you can also express more complex patterns to match on, like a diamond shape pattern.",
@@ -108,7 +101,9 @@ class MatchTest extends DocumentingTestBase
 match (a)-[:KNOWS]->(b)-[:KNOWS]->(c), (a)-[:BLOCKS]-(d)-[:KNOWS]-(c)
 return a,b,c,d""",
       returns = """The four nodes in the path.""",
-      (p) => assertEquals(List(Map("a" -> node("A"), "b" -> node("B"), "c" -> node("E"), "d" -> node("C"))), p.toList)
+      p => {
+        assertEquals(List(Map("a" -> node("A"), "b" -> node("B"), "c" -> node("E"), "d" -> node("C"))), p.toList)
+      }
     )
   }
 

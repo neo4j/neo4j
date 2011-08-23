@@ -36,3 +36,5 @@ case class RelationshipTypeIdentifier(subName: String) extends Identifier(subNam
 case class PropertyIdentifier(entity: String, property: String) extends Identifier(entity + "." + property)
 
 case class AggregationIdentifier(subName: String) extends Identifier(subName)
+
+case class PathIdentifier(subName:String) extends PropertyContainerIdentifier(subName)

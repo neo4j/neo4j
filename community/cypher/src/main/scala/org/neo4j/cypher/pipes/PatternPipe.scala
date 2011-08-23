@@ -20,16 +20,16 @@ package org.neo4j.cypher.pipes
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import org.neo4j.cypher.commands.Match
 import collection.immutable.Map
 import org.neo4j.cypher.{SymbolTable, PatternContext}
 import org.neo4j.graphdb.{Relationship, Node}
 import org.neo4j.graphmatching.{PatternRelationship, PatternNode, PatternMatcher}
 import scala.collection.JavaConversions._
+import org.neo4j.cypher.commands.Pattern
 
-class PatternPipe(source: Pipe, matching: Match) extends Pipe {
+class PatternPipe(source: Pipe, patterns: Seq[Pattern]) extends Pipe {
 
-  val patternContext: PatternContext = new PatternContext(source, matching)
+  val patternContext: PatternContext = new PatternContext(source, patterns)
 
   val symbols: SymbolTable = patternContext.symbolTable
 

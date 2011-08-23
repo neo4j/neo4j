@@ -184,8 +184,7 @@ public class ShellTest
         doc.add( "","","Now, let's ask some questions" );
         doc.add( "start morpheus = (node_auto_index, name, 'Morpheus') " +
                 "match morpheus-[:KNOWS]-zionist " +
-                "where not( zionist.age ) or zionist.age > 32 " +
- "return zionist.name order by zionist.name desc skip 1 limit 5",
+                "return zionist.name",
                 "",
                 "Morpheus' friends, looking up Morpheus by name in the Neo4j autoindex" );
         doc.run();
