@@ -323,6 +323,8 @@ Neo4j is configured for autoindexing in this case with
 
 in the neo4j configuration file.
 
+The following is a sample shell session creating the Matrix graph and querying it.
+
 include::shell/a-matrix-example.txt[]
 
 
