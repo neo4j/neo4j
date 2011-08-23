@@ -20,7 +20,7 @@
     <cxf.version>2.3.1</cxf.version>
     <servlet-api.version>2.5</servlet-api.version>
     <neo4j.version>1.5-SNAPSHOT</neo4j.version>
-    <blueprints.version>0.7</blueprints.version>
+    <blueprints.version>0.9</blueprints.version>
     <jersey.server.version>1.6</jersey.server.version>
     <license-text.header>GPL-3-header.txt</license-text.header>
   </properties>
@@ -143,7 +143,13 @@ the relevant Commercial Agreement.
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>4.8.2</version>
-      <type>jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.googlecode.json-simple</groupId>
+      <artifactId>json-simple</artifactId>
+      <version>1.1</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

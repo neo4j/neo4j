@@ -236,10 +236,11 @@ public class GremlinPluginTest
     @Test
     public void testScriptWithPaths()
     {
+        Representation result = GremlinPluginTest.executeTestScript( ""
+                                                          + "g.loadGraphML(\""+exampleURI +"\");"
+                                                          + "g.v(1).out().name.paths", null);
         Assert.assertTrue(
-                json.format( GremlinPluginTest.executeTestScript( ""
-                                                                  + "GraphMLReader.inputGraph(g, new URL(\""+exampleURI +"\").openStream());"
-                                                                  + "g.v(1).outE.inV.name.paths", null) ).contains( "1-knows->2" ) );
+                json.format( result ).contains( "[v[1], v[2], vadas]" ) );
     }
 
     @Test

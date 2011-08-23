@@ -50,6 +50,9 @@ public class GremlinToRepresentationConverter {
     List<Representation> convertValuesToRepresentations(Iterable data) {
         final List<Representation> results = new ArrayList<Representation>();
         for (final Object value : data) {
+            if(value instanceof Iterable) {
+                convertValuesToRepresentations( (Iterable) value );
+            }
             final Representation representation = getSingleRepresentation(value);
             results.add(representation);
         }
