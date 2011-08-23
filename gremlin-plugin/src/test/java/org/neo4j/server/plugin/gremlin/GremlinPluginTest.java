@@ -233,16 +233,7 @@ public class GremlinPluginTest
                 json.format( GremlinPluginTest.executeTestScript( "1;\n2", null) ) );
     }
 
-    @Test
-    public void testScriptWithPaths()
-    {
-        Representation result = GremlinPluginTest.executeTestScript( ""
-                                                          + "g.loadGraphML(\""+exampleURI +"\");"
-                                                          + "g.v(1).out().name.paths", null);
-        Assert.assertTrue(
-                json.format( result ).contains( "[v[1], v[2], vadas]" ) );
-    }
-
+   
     @Test
     public void testMultiThread()
     {

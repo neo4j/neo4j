@@ -28,6 +28,8 @@ import java.util.Map;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
+import junit.framework.Assert;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -41,6 +43,7 @@ import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
 import org.neo4j.server.rest.DocsGenerator;
 import org.neo4j.server.rest.JSONPrettifier;
+import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphHolder;
@@ -201,6 +204,30 @@ public class GremlinPluginFunctionalTest implements GraphHolder
         assertTrue(response.contains( "him" ));
         assertTrue(response.indexOf( "you" ) > response.indexOf( "him" ));
     }
+    
+    /**
+     * The following script returns a sorted list
+     * of all nodes connected via outgoing relationships
+     * to node 1, sorted by their `name`-property.
+     */
+    @Test
+    @Title("Return paths from a Gremlin script")
+    @Documented
+    @Graph( value = { "I know you", "I know him" } )
+    public void testScriptWithPaths()
+    {
+        String payload = "{\"script\":\"g.v(" + data.get()
+        .get( "I" )
+        .getId() + ").out.name.paths\"}";
+        String response = gen.get()
+        .expectedStatus( Status.OK.getStatusCode() )
+        .payload( JSONPrettifier.parse( payload ) )
+        .payloadType( MediaType.APPLICATION_JSON_TYPE )
+        .post( ENDPOINT )
+        .entity();
+        assertTrue(response.contains( "[v[3], v[1], you]" ));
+    }
+
 
     @Test
     public void testLineBreaks() throws UnsupportedEncodingException
@@ -238,8 +265,8 @@ public class GremlinPluginFunctionalTest implements GraphHolder
             + data.get()
             .get( "I" )
             .getId()
-            + ");"
-            + "t= new Table();"
+            + ")\n"
+            + "t= new Table()\n"
             + "i.as('I').out('know').as('friend').out('like').as('likes').table(t,['friend','likes']){it.name}{it.name} >> -1;t;\"}";
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )

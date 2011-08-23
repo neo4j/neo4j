@@ -24,4 +24,8 @@ include::send-a-gremlin-script---json-encoded-with-table-results.txt[]
 
 include::set-script-variables.txt[]
 
+include::send-a-gremlin-script-with-variables-in-a-json-map.txt[]
+
+include::return-paths-from-a-gremlin-script.txt[]
+
 
