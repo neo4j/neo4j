@@ -112,6 +112,9 @@ include::find-node-by-exact-match-from-an-automatic-index.txt[]
 
 include::find-node-by-query.txt[]
 
+[[rest-api-auto-indexes]]
+== Indexes ==
+
 include::find-node-by-query-from-an-automatic-index.txt[]
 
 [[rest-api-traverse]]
