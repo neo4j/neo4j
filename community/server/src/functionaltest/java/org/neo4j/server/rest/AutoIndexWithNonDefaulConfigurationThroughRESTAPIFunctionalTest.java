@@ -66,7 +66,7 @@ public class AutoIndexWithNonDefaulConfigurationThroughRESTAPIFunctionalTest
     }
 
     /**
-     * Create an auto index for nodes with specific configuration
+     * Create an auto index for nodes with specific configuration.
      */
     @Documented
     @Test
@@ -82,7 +82,7 @@ public class AutoIndexWithNonDefaulConfigurationThroughRESTAPIFunctionalTest
     }
 
     /**
-     * Create an auto index for relationships with specific configuration
+     * Create an auto index for relationships with specific configuration.
      */
     @Documented
     @Test
