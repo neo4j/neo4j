@@ -76,6 +76,8 @@ public class ServerBuilder
     private WhatToDo action;
     private List<Class<? extends ServerModule>> serverModules = null;
     private Clock clock = null;
+    private String[] autoIndexedNodeKeys = null;
+    private String[] autoIndexedRelationshipKeys = null;
 
     public static ServerBuilder server()
     {
@@ -141,6 +143,22 @@ public class ServerBuilder
                 .size() > 0 )
         {
             writePropertiesToFile( Configurator.THIRD_PARTY_PACKAGES_KEY, thirdPartyPackages, temporaryConfigFile );
+        }
+
+        if ( autoIndexedNodeKeys != null && autoIndexedNodeKeys.length > 0 )
+        {
+            writePropertyToFile( "node_auto_indexing", "true", temporaryConfigFile );
+            String propertyKeys = org.apache.commons.lang.StringUtils.join( autoIndexedNodeKeys, "," );
+            writePropertyToFile( "node_keys_indexable", propertyKeys, temporaryConfigFile );
+        }
+        
+        if ( autoIndexedRelationshipKeys != null && autoIndexedRelationshipKeys.length > 0 )
+        {
+            
+            System.out.println("RELS HERE");
+            writePropertyToFile( "relationship_auto_indexing", "true", temporaryConfigFile );
+            String propertyKeys = org.apache.commons.lang.StringUtils.join( autoIndexedRelationshipKeys, "," );
+            writePropertyToFile( "relationship_keys_indexable", propertyKeys, temporaryConfigFile );
         }
     }
 
@@ -315,6 +333,18 @@ public class ServerBuilder
     public ServerBuilder withFakeClock()
     {
         clock = new FakeClock();
+        return this;
+    }
+
+    public ServerBuilder withAutoIndexingEnabledForNodes( String... keys )
+    {
+        autoIndexedNodeKeys = keys;
+        return this;
+    }
+    
+    public ServerBuilder withAutoIndexingEnabledForRelationships( String... keys )
+    {
+        autoIndexedRelationshipKeys = keys;
         return this;
     }
 }
