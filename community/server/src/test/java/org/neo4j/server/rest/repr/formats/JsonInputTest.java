@@ -27,11 +27,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-import java.net.URI;
 import java.util.Map;
 
 import org.junit.Test;
-import org.neo4j.server.rest.repr.OutputFormat;
 
 public class JsonInputTest
 {
