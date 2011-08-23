@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.commands
 
-import org.neo4j.graphdb.{NotFoundException, Relationship, PropertyContainer}
-import org.neo4j.cypher.{SyntaxException, SymbolTable}
 import org.neo4j.cypher.pipes.aggregation._
+import org.neo4j.cypher.{PathImpl, SyntaxException, SymbolTable}
+import org.neo4j.graphdb.{Path, NotFoundException, Relationship, PropertyContainer}
 
 abstract sealed class Value {
   def apply(m: Map[String, Any]): Any
@@ -103,6 +103,16 @@ case class RelationshipTypeValue(relationship: String) extends Value {
     symbols.assertHas(RelationshipIdentifier(relationship))
   }
 }
+
+case class PathLengthValue(pathName: String) extends Value {
+  def apply(m: Map[String, Any]): Any = m(pathName).asInstanceOf[Path].length()
+
+  def identifier: Identifier = PropertyIdentifier(pathName, "LENGTH")
+
+  def checkAvailable(symbols: SymbolTable) {
+  }
+}
+
 
 case class EntityValue(entityName:String) extends Value {
   def apply(m: Map[String, Any]): Any = m.getOrElse(entityName, throw new NotFoundException)

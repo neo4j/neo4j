@@ -600,14 +600,60 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     assertEquals(List(PathImpl(node("A"), r, node("B"))), result.columnAs[Path]("p").toList)
   }
 
+  @Test def shouldReturnAThreeNodePath() {
+    createNodes("A", "B", "C")
+    val r1 = relate("A" -> "KNOWS" -> "B")
+    val r2 = relate("B" -> "KNOWS" -> "C")
+
+
+    val query = Query.
+      start(NodeById("a",1)).
+      matches(PathItem("p",
+        RelatedTo("a", "b", "rel1", None, Direction.OUTGOING),
+        RelatedTo("b", "c", "rel2", None, Direction.OUTGOING) )).
+      returns(ValueReturnItem(EntityValue("p")))  //  new CypherParser().parse("start a=(1) match p=(a-->b) return p")
+
+    val result = execute(query)
+
+    assertEquals(List(PathImpl(node("A"), r1, node("B"), r2, node("C"))), result.columnAs[Path]("p").toList)
+  }
+
   @Test def shouldWalkAlternativeRelationships2() {
     val nodes: List[Node] = createNodes("A", "B", "C")
     relate("A" -> "KNOWS" -> "B")
     relate("A" -> "HATES" -> "C")
 
-    val result = parseAndExecute("start n=(1) match (n)-[r]->(x) where r~TYPE='KNOWS' or r~TYPE='HATES' return x")
+    val result = parseAndExecute("start n=(1) match (n)-[r]->(x) where r.TYPE='KNOWS' or r.TYPE='HATES' return x")
 
     assertEquals(nodes.slice(1, 3), result.columnAs[Node]("x").toList)
+  }
+
+  @Test def shouldNotReturnAnythingBecausePathLengthDoesntMatch() {
+    createNodes("A", "B")
+    relate("A" -> "KNOWS" -> "B")
+
+    val result = parseAndExecute("start n=(1) match p = n-->x where p.LENGTH=10 return x")
+
+    assertTrue("Result set should be empty, but it wasn't", result.isEmpty)
+  }
+
+  @Test def shouldPassThePathLengthTest() {
+    createNodes("A", "B")
+    relate("A" -> "KNOWS" -> "B")
+
+    val result = parseAndExecute("start n=(1) match p = n-->x where p.LENGTH=3 return x")
+
+    assertTrue("Result set should not be empty, but it was", !result.isEmpty)
+  }
+
+  @Test def shouldReturnPathLength() {
+    createNodes("A", "B")
+    relate("A" -> "KNOWS" -> "B")
+
+    val result = parseAndExecute("start n=(1) match p = n-->x return p.LENGTH")
+
+
+    assertEquals(List(3), result.columnAs[Int]("p.LENGTH").toList)
   }
 
   @Test def shouldThrowNiceErrorMessageWhenPropertyIsMissing() {

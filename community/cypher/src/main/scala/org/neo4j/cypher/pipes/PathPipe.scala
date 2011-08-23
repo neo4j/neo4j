@@ -26,17 +26,20 @@ import org.neo4j.graphdb.PropertyContainer
 class PathPipe(source: Pipe, path: PathItem) extends Pipe {
   def foreach[U](f: (Map[String, Any]) => U) {
 
-
     source.foreach(m => {
       def get(x:String):PropertyContainer = m(x).asInstanceOf[PropertyContainer]
 
-      val p = path.pathPattern.flatMap(p => p match {
-        case RelatedTo(left, right, relName, x, xx) => Seq(get(left), get(relName), get(right))
+      val firstNode = path.pathPattern.head match {
+        case RelatedTo(left, right, relName, x, xx) => left
+      }
+
+      val p = Seq(get(firstNode)) ++ path.pathPattern.flatMap(p => p match {
+        case RelatedTo(left, right, relName, x, xx) => Seq(get(relName), get(right))
       })
 
       val pathImpl = new PathImpl(p: _*)
 
-      f(m.+(path.pathName -> pathImpl))
+      f( m + (path.pathName -> pathImpl) )
     })
   }
 

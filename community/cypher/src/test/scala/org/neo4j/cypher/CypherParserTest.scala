@@ -505,7 +505,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def relationshipType() {
     testQuery(
-      "start n=(1) match n-[r]->(x) where r~TYPE = \"something\" return r",
+      "start n=(1) match n-[r]->(x) where r.TYPE = \"something\" return r",
       Query.
         start(NodeById("n", 1)).
         matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING)).
@@ -513,9 +513,19 @@ class CypherParserTest extends JUnitSuite {
         returns(ValueReturnItem(EntityValue("r"))))
   }
 
+  @Test def pathLength() {
+    testQuery(
+      "start n=(1) match p=(n-->x) where p.LENGTH = 10 return p",
+      Query.
+        start(NodeById("n", 1)).
+        matches(PathItem("p", RelatedTo("n", "x", "  UNNAMED1", None, Direction.OUTGOING))).
+        where(Equals(PathLengthValue("p"), Literal(10.0))).
+        returns(ValueReturnItem(EntityValue("p"))))
+  }
+
   @Test def relationshipTypeOut() {
     testQuery(
-      "start n=(1) match n-[r]->(x) return r~TYPE",
+      "start n=(1) match n-[r]->(x) return r.TYPE",
 
       Query.
         start(NodeById("n", 1)).
