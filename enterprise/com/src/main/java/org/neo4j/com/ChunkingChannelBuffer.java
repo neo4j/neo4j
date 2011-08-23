@@ -33,8 +33,10 @@ import org.jboss.netty.buffer.ChannelBufferFactory;
 import org.jboss.netty.buffer.ChannelBufferIndexFinder;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelFutureListener;
 
-public class ChunkingChannelBuffer implements ChannelBuffer
+public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListener
 {
     static final byte CONTINUATION_LAST = 0;
     static final byte CONTINUATION_MORE = 1;
@@ -492,12 +494,27 @@ public class ChunkingChannelBuffer implements ChannelBuffer
 
     private void writeCurrentChunk()
     {
-        channel.write( buffer );
+        ChannelFuture future = channel.write( buffer );
+        future.addListener( this );
+    }
+    
+    @Override
+    public void operationComplete( ChannelFuture future ) throws Exception
+    {
+        if ( !future.isDone() )
+        {
+            throw new ComException( "This should not be possible because we waited for the future to be done" );
+        }
+        
+        if ( !future.isSuccess() || future.isCancelled() )
+        {
+            future.getChannel().close();
+        }
     }
 
     public void done()
     {
-        if ( writable() )
+        if ( readable() /* Meaning that something has been written to it and can be read/sent */ )
         {
             writeCurrentChunk();
         }

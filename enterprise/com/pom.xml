@@ -1,9 +1,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
+    <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
-    <groupId>org.neo4j</groupId>
-    <version>22</version>
+    <version>23</version>
   </parent>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-com</artifactId>
@@ -61,7 +61,7 @@ terms of the relevant Commercial Agreement.
     <dependency>
       <groupId>org.apache.servicemix.bundles</groupId>
       <artifactId>org.apache.servicemix.bundles.netty</artifactId>
-      <version>3.2.3.Final_1</version>
+      <version>3.2.5.Final_1</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,6 +41,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.AbstractGraphDatabase;
@@ -86,23 +85,37 @@ public class MasterImpl implements Master
     {
         return this.graphDb;
     }
+    
+//    public boolean dumpOldLocks()
+//    {
+//        return graphDbConfig.getLockManager().dumpOldLocks();
+//    }
+    
+//    private void debug( SlaveContext slave, Transaction tx, String message )
+//    {
+//        System.out.println( slave + " " + tx + " " + message );
+//    }
 
     private <T extends PropertyContainer> Response<LockResult> acquireLock( SlaveContext context,
             LockGrabber lockGrabber, T... entities )
     {
         Transaction otherTx = suspendOtherAndResumeThis( context );
+//        Transaction tx = getTx( context );
         try
         {
             LockManager lockManager = graphDbConfig.getLockManager();
             LockReleaser lockReleaser = graphDbConfig.getLockReleaser();
             for ( T entity : entities )
             {
+//                debug( context, tx, "WANTS " + entity );
                 lockGrabber.grab( lockManager, lockReleaser, entity );
+//                debug( context, tx, "GOT " + entity );
             }
             return packResponse( context, new LockResult( LockStatus.OK_LOCKED ) );
         }
         catch ( DeadlockDetectedException e )
         {
+//            debug( context, tx, "DEADLOCK" );
             return packResponse( context, new LockResult( e.getMessage() ) );
         }
         catch ( IllegalResourceException e )
@@ -166,6 +179,7 @@ public class MasterImpl implements Master
                 if ( otherTx != null )
                 {
                     txManager.suspend();
+//                    debug( txId, otherTx, "SUSPENDED 1" );
                 }
                 if ( transaction == null )
                 {
@@ -174,31 +188,50 @@ public class MasterImpl implements Master
                 else
                 {
                     txManager.resume( transaction );
+//                    tryResume( txManager, transaction, "1", txId );
                 }
                 return otherTx;
             }
         }
         catch ( Exception e )
         {
-            throw new RuntimeException( e );
+            throw Exceptions.launderedException( e );
         }
     }
+
+//    private void tryResume( TransactionManager txManager,
+//            Transaction transaction, String extraMessage, SlaveContext context ) throws InvalidTransactionException,
+//            SystemException
+//    {
+//        try
+//        {
+//            txManager.resume( transaction );
+//            debug( context, transaction, "RESUMED " + extraMessage );
+//        }
+//        catch ( IllegalStateException e )
+//        {
+//            debug( context, transaction, "NOT RESUMED, was already active" );
+//            throw e;
+//        }
+//    }
 
     void suspendThisAndResumeOther( Transaction otherTx, SlaveContext txId )
     {
         try
         {
             TransactionManager txManager = graphDbConfig.getTxModule().getTxManager();
+//            Transaction tx = getTx( txId );
             txManager.suspend();
+//            debug( txId, tx, "SUSPENDED 2" );
             if ( otherTx != null )
             {
                 txManager.resume( otherTx );
+//                tryResume( txManager, otherTx, "2", txId );
             }
         }
         catch ( Exception e )
         {
-            e.printStackTrace();
-            throw new RuntimeException( e );
+            throw Exceptions.launderedException( e );
         }
     }
 
@@ -207,17 +240,19 @@ public class MasterImpl implements Master
         try
         {
             TransactionManager txManager = graphDbConfig.getTxModule().getTxManager();
+//            Transaction tx = transactions.remove( txId );
+//            debug( txId, tx, "ROLLING BACK" );
             txManager.rollback();
-            transactions.remove( txId );
+//            debug( txId, tx, "ROLLED BACK" );
             if ( otherTx != null )
             {
                 txManager.resume( otherTx );
+//                tryResume( txManager, otherTx, "3", txId );
             }
         }
         catch ( Exception e )
         {
-            e.printStackTrace();
-            throw new RuntimeException( e );
+            throw Exceptions.launderedException( e );
         }
     }
 
@@ -302,6 +337,7 @@ public class MasterImpl implements Master
 
     public Response<Void> finishTransaction( SlaveContext context )
     {
+//        System.out.println( "TRYING TO FINISH OFF " + context + ", " + transactions.get( context ) );
         Transaction otherTx = suspendOtherAndResumeThis( context );
         rollbackThisAndResumeOther( otherTx, context );
         return packResponse( context, null );
@@ -394,32 +430,6 @@ public class MasterImpl implements Master
         }
         return new SlaveContext( context.getSessionId(), context.machineId(),
                 context.getEventIdentifier(), txs.toArray( new Pair[0] ) );
-
-    }
-
-    private File getBaseDir()
-    {
-        File file = new File( ((AbstractGraphDatabase) graphDb).getStoreDir() );
-        try
-        {
-            return file.getCanonicalFile().getAbsoluteFile();
-        }
-        catch ( IOException e )
-        {
-            return file.getAbsoluteFile();
-        }
-    }
-
-    private String relativePath( File baseDir, File storeFile ) throws FileNotFoundException
-    {
-        String prefix = baseDir.getAbsolutePath();
-        String path = storeFile.getAbsolutePath();
-        if ( !path.startsWith( prefix ) )
-            throw new FileNotFoundException();
-        path = path.substring( prefix.length() );
-        if ( path.startsWith( File.separator ) )
-            return path.substring( 1 );
-        return path;
     }
 
     private static interface LockGrabber

@@ -44,7 +44,7 @@ public final class SlaveContext
         hash = (31 * hash) ^ machineId;
         this.hashCode = (int) ((hash >>> 32) ^ hash);
     }
-
+    
     public int machineId()
     {
         return machineId;

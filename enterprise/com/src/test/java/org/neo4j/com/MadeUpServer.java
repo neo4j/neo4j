@@ -48,7 +48,7 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
     }
 
     @Override
-    protected void finishOffConnection( Channel channel, SlaveContext context )
+    protected void finishOffChannel( Channel channel, SlaveContext context )
     {
     }
     
