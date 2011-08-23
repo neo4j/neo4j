@@ -224,7 +224,8 @@ public class IndexNodeFunctionalTest
      * 
      * The query language used here depends on what type of index you are
      * querying. The default index type is Lucene, in which case you should use
-     * the Lucene query language here.
+     * the Lucene query language here. Below and Example of a fuzzy search
+     * over multiple keys.
      * 
      * See: http://lucene.apache.org/java/3_1_0/queryparsersyntax.html
      */
@@ -233,14 +234,15 @@ public class IndexNodeFunctionalTest
     public void shouldAddToIndexAndRetrieveItByQuery() throws PropertyValueException
     {
         String indexName = "bobTheIndex";
-        String key = "bobsKey";
-        String value = "bobsValue";
+        String key = "Name";
+        String value = "Builder";
         long node = helper.createNode();
         helper.addNodeToIndex( indexName, key, value, node );
+        helper.addNodeToIndex( indexName, "Gender", "Male", node );
 
         String entity = gen.get()
                 .expectedStatus( 200 )
-                .get( functionalTestHelper.indexNodeUri( indexName ) + "?query=" + key + ":" + value )
+                .get( functionalTestHelper.indexNodeUri( indexName ) + "?query=Name:Build~0.1%20AND%20Gender:Male" )
                 .entity();
 
         Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
