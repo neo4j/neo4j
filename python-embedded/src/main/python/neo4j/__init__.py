@@ -22,10 +22,11 @@
 """
 
 __all__ = 'GraphDatabase', 'Traversal'\
+          'Evaluation',\
           'ANY', 'INCOMING', 'OUTGOING'
 
 from neo4j.core import GraphDatabase, ANY, INCOMING, OUTGOING
-from neo4j.traversal import Traversal
+from neo4j.traversal import Traversal, Evaluation
 
 class Nodes(object):
     

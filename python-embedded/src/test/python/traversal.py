@@ -22,7 +22,7 @@ from __future__ import with_statement
 
 import unit_tests
 import neo4j
-from neo4j import ANY, OUTGOING, INCOMING
+from neo4j import ANY, OUTGOING, INCOMING, Evaluation
 
 class GraphTest(unit_tests.GraphDatabaseTest):
 
@@ -69,6 +69,20 @@ class GraphTest(unit_tests.GraphDatabaseTest):
         res = list(t.nodes())
         self.assertEqual(len(res), 2)
         
+        
+    def test_dynamic_evaluator(self):
+        self.create_data()
+        
+        def myeval(path):
+            return Evaluation.INCLUDE_AND_CONTINUE
+        
+        t = neo4j.Traversal.description()\
+            .depthFirst()\
+            .evaluator(myeval)\
+            .traverse(self.source)
+            
+        res = list(t.nodes())
+        self.assertEqual(len(res), 2)
         
         
 if __name__ == '__main__':

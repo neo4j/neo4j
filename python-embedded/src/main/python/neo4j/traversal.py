@@ -1,9 +1,17 @@
 
-from _backend import extends, rel_type,\
+from _backend import extends, implements, rel_type,\
     Path, TraverserImpl, Traversal,\
-    TraversalDescriptionImpl, strings
-    
+    TraversalDescriptionImpl, strings,\
+    Evaluation, Evaluator
+        
 from core import ANY, DirectionalType
+
+class DynamicEvaluator(implements(Evaluator)):
+    def __init__(self, eval_method):
+        self._eval_method = eval_method
+
+    def evaluate(self, path):
+        return self._eval_method(path)
 
 #
 # Pythonification of the traversal API
@@ -38,7 +46,11 @@ class TraversalDescriptionImpl(extends(TraversalDescriptionImpl)):
             direction = reltype.dir
             reltype = reltype.type
         return self._super__relationships(reltype, direction)
-
+        
+    def evaluator(self, ev):
+        if hasattr(ev, '__call__'):
+            ev = DynamicEvaluator(ev)
+        return self._super__evaluator(ev)
            
 class TraverserImpl(extends(TraverserImpl)):
     

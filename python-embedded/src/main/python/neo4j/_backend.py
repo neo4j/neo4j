@@ -114,6 +114,15 @@ except: # this isn't jython (and doesn't have the java module)
         return from_java(value)
     def to_java(value):
         return value
+        
+    def implements(*interfaces):
+      class InterfaceProxy(object):
+          def __new__(cls, *args, **kwargs):
+              inst = super(InterfaceProxy, cls).__new__(cls, *args, **kwargs)
+              inst.__init__(*args, **kwargs)
+              return jpype.JProxy(interfaces, inst=inst)
+      return InterfaceProxy
+      
 else:
     from org.neo4j.kernel.impl.core import NodeProxy, RelationshipProxy
     from org.neo4j.kernel.impl.traversal import TraversalDescriptionImpl, TraverserImpl
@@ -129,4 +138,6 @@ else:
     def to_java(value):
         return value
         
+    def implements(*interfaces):
+        return interfaces
 
