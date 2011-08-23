@@ -72,9 +72,9 @@ class GraphTest(unit_tests.GraphDatabaseTest):
         self.assertEquals(message, "hello graphy world")
         self.assertEquals(rel.type.name(), 'related_to')
         
-        self.assertEquals(len(list(source.rels)), 2)
-        self.assertEquals(len(list(source.rels.incoming)), 1)
-        self.assertEquals(len(list(source.rels.outgoing)), 1)
+        self.assertEquals(len(list(source.relationships)), 2)
+        self.assertEquals(len(list(source.relationships.incoming)), 1)
+        self.assertEquals(len(list(source.relationships.outgoing)), 1)
         
         self.assertEquals(len(list(source.likes)), 1)
         self.assertEquals(len(list(source.likes.incoming)), 1)

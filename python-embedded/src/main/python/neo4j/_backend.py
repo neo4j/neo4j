@@ -27,17 +27,17 @@ def extends(CLASS):
     ## adding methods and attributes to the original
     ## java classes, using the normal python class
     ## system as a DSL.
-    
+     
     class MetaClass(type):
         def __new__(Class, name, bases, body):
             if bases == ():
                 return type.__new__(Class, name, (object,), body)
             else:
-                overrides = []
                 for key, value in body.items():
                     if key not in ('__module__','__new__'):
+                        if hasattr(CLASS, key):
+                            setattr(CLASS, "_super__%s" % key, getattr(CLASS, key))
                         setattr(CLASS, key, value)
-                        
                 return type(name, (object,), body)
     
     return MetaClass(getattr(CLASS,'__name__','Class'),(),{})
@@ -51,7 +51,7 @@ if sys.version_info >= (3,):
                 return type.__new__(Type, name, bases, body)
     Object = Type('Object', (object,), {})
     del Type # to get a consistent namespace regardless of version
-    strings = str
+    strings = str,
     integers = int,
 else:
     Object = object
@@ -86,9 +86,12 @@ except: # this isn't jython (and doesn't have the java module)
     
     kernel  = jpype.JPackage('org.neo4j.kernel')
     EmbeddedGraphDatabase = kernel.EmbeddedGraphDatabase
+    Traversal = kernel.Traversal
     TraversalDescriptionImpl = kernel.impl.traversal.TraversalDescriptionImpl
     TraverserImpl = kernel.impl.traversal.TraverserImpl
     Uniqueness = kernel.Uniqueness
+    NodeProxy = kernel.impl.core.NodeProxy
+    RelationshipProxy = kernel.impl.core.RelationshipProxy
     
     helpers = jpype.JPackage('org.neo4j.helpers')
     IterableWrapper = helpers.collection.IterableWrapper
@@ -112,7 +115,7 @@ except: # this isn't jython (and doesn't have the java module)
     def to_java(value):
         return value
 else:
-    from org.neo4j.kernel import EmbeddedGraphDatabase, Uniqueness
+    from org.neo4j.kernel.impl.core import NodeProxy, RelationshipProxy
     from org.neo4j.kernel.impl.traversal import TraversalDescriptionImpl, TraverserImpl
     from org.neo4j.graphdb import Direction, DynamicRelationshipType,\
         PropertyContainer, Transaction, GraphDatabaseService, Node, Relationship, Path
@@ -121,161 +124,9 @@ else:
     from java.util import HashMap
     rel_type = DynamicRelationshipType.withName
 
-    def override(func):
-        return func
-
     def from_java(value):
         return value
     def to_java(value):
         return value
-
-
-class Direction(Object):
-    class __metaclass__(type):
-        INCOMING = Direction.INCOMING
-        OUTGOING = Direction.OUTGOING
-        ANY=BOTH = Direction.BOTH
-
-    def __init__(self, direction):
-        self.__dir = direction
-
-    def __repr__(self):
-        return self.__dir.name().lower()
-
-    def __getattr__(self, attr):
-        return DirectionalType(rel_type(attr), self.__dir)
-
-class DirectionalType(object):
-    def __init__(self, reltype, direction):
-        self.__type = reltype
-        self.__dir = direction
-    def __repr__(self):
-        return "%r.%s" % (self.__dir, self.__type.name())
-
-
-#
-# Pythonification of the core API
-#
-
-GraphDatabase = extends(GraphDatabaseService)
-def __new__(GraphDatabase, resourceUri, **settings):
-    config = HashMap()
-    for key in settings:
-        value = settings[key]
-        if isinstance(value, str):
-            config.put(key, value)
-    return EmbeddedGraphDatabase(resourceUri, config)
-
-
-class Node(extends(Node)):
-    def __getattr__(node, attr):
-        if attr is 'rels':
-            return Relationships(node, None)
-        return Relationships(node, rel_type(attr))
-
-class Relationship(extends(Relationship)):
-    
-    @property
-    def start(self): return self.getStartNode()
-    
-    @property
-    def end(self):   return self.getEndNode()
-
-class PropertyContainer(extends(PropertyContainer)):
-    def __getitem__(self, key):
-        return from_java(self.getProperty(key))
-    def __setitem__(self, key, value):
-        self.setProperty(key, to_java(value))
-  
-    def items(self):
-        for k in self.getPropertyKeys():
-            yield k, self[k]
-
-    def keys(self):
-        for k in self.getPropertyKeys():
-            yield k
-
-    def values(self):
-        for k, v in self.items():
-            yield v
-
-class Path(extends(Path)):
-
-    @property
-    def start(self): return self.startNode()
-    
-    @property
-    def end(self):   return self.endNode()
-    
-    @property
-    def last_relationship(self): return self.lastRelationship()
-    
-    def __repr__(self): return self.toString()
-    
-    def __len__(self):  return self.length()
-    
-    def __iter__(self):
-        for entity in self.iterator():
-            yield entity 
-            
-
-class Transaction(extends(Transaction)):
-    def __enter__(self):
-        return self
-    def __exit__(self, exc, *stuff):
-        try:
-            if exc:
-                self.failure()
-            else:
-                self.success()
-        finally:
-            self.finish()  
-           
-class TraverserImpl(extends(TraverserImpl)):
-    
-    def __iter__(self): 
-        return self.iterator()
-      
-
-class IterableWrapper(extends(IterableWrapper)):
-    
-    def __iter__(self): 
-        return self.iterator()
-        
-        
-class Relationships(object):
-    def __init__(self, node, rel_type):
-        self.__node = node
-        self.__type = rel_type
-
-    def __repr__(self):
-        if self.__type is None:
-            return "%r.[All relationships]" % (self.__node)
-        return "%r.%s" % (self.__node,self.__type.name())
-
-    def relationships(direction):
-        def relationships(self):
-            if self.__type is not None:
-                it = self.__node.getRelationships(self.__type, direction).iterator()
-            else:
-                it = self.__node.getRelationships(direction).iterator()
-            while it.hasNext(): yield it.next()
-        return relationships
-    __iter__ = relationships(Direction.BOTH)
-    incoming = property(relationships(Direction.INCOMING))
-    outgoing = property(relationships(Direction.OUTGOING))
-    del relationships # (temporary helper) from the body of this class
-
-    def __call__(self, *nodes, **properties):
-        if not nodes: raise TypeError("No target node specified")
-        rels = []
-        node = self.__node; type = self.__type
-        for other in nodes:
-            rels.append( node.createRelationshipTo(other, type) )
-        for rel in rels:
-            for key, val in properties.items():
-                rel[key] = val
-        if len(rels) == 1: return rels[0]
-        return rels
         
 

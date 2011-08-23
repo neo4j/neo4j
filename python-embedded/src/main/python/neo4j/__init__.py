@@ -21,10 +21,11 @@
 """Python bindings for the embedded Neo4j Graph Database.
 """
 
-__all__ = 'GraphDatabase', 'Node', 'Relationship',\
-          'Property', 'In', 'Out', 'Any'
+__all__ = 'GraphDatabase', 'Traversal'\
+          'ANY', 'INCOMING', 'OUTGOING'
 
-from neo4j._backend import GraphDatabase
+from neo4j.core import GraphDatabase, ANY, INCOMING, OUTGOING
+from neo4j.traversal import Traversal
 
 class Nodes(object):
     
@@ -45,7 +46,7 @@ class Nodes(object):
         
 
 class GraphDatabase(GraphDatabase):
-    from neo4j._backend import __new__
+    from neo4j.core import __new__
 
     try:
         from contextlib import contextmanager
