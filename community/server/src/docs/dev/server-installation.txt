@@ -46,7 +46,7 @@ The following procedure should work on most popular Linux distributions:
    You are encouraged to create a dedicated user for running the service and for that reason it is suggested that you unpack the distribution package under `/opt` or your site specific optional packages directory. 
    Finally, note that if you chose to create a new user account, on uninstall you will be prompted to remove it from the system.
    
-== Macintosh Service ==
+== Mac OSX Service ==
 
 Neo4j can be installed as a Mac launchd job:
 
