@@ -307,7 +307,7 @@ root->neo[label="ROOT"]
 neo -> morpheus[label="KNOWS\nage=3"]
 morpheus->trinity[label="KNOWS\nage=90"]
 morpheus->cypher[label="KNOWS"]
-cypher -> agent[label="KNOWS"]
+agent -> cypher [dir="back" label="KNOWS"]
 agent -> architect[label="CODED_BY"]
 ----
 
