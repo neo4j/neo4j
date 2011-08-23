@@ -128,4 +128,8 @@ public class OutputFormat
         return Response.status( Status.NO_CONTENT )
                 .build();
     }
+
+    public Response methodNotAllowed(UnsupportedOperationException e) {
+        return response( Response.status(405), new ExceptionRepresentation( e ) );
+    }
 }

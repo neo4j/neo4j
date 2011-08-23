@@ -125,7 +125,7 @@ public class AutoIndexRelationshipFunctionalTest
     {
         String indexName = server.getDatabase().graph.index().getRelationshipAutoIndexer().getAutoIndex().getName();
         Response r = RestRequest.req().delete(functionalTestHelper.relationshipIndexUri() + indexName);
-        assertEquals(403, r.getStatus());
+        assertEquals(405, r.getStatus());
     }
 
     @Test
@@ -139,7 +139,7 @@ public class AutoIndexRelationshipFunctionalTest
         Response r = RestRequest.req().post(
                 functionalTestHelper.indexRelationshipUri(indexName, key, value), 
                 JsonHelper.createJsonFrom(functionalTestHelper.relationshipUri(relId)));
-        assertEquals(403, r.getStatus());
+        assertEquals(405, r.getStatus());
     }
 
     @Test
@@ -150,12 +150,12 @@ public class AutoIndexRelationshipFunctionalTest
         long relId = helper.createRelationship("sometype");
         
         Response r = request.delete( functionalTestHelper.relationshipIndexUri() + indexName + "/key/value/" + relId );
-        assertEquals( 403, r.getStatus() );
+        assertEquals( 405, r.getStatus() );
        
         r = request.delete(functionalTestHelper.relationshipIndexUri() + indexName + "/key/" + relId);
-        assertEquals( 403, r.getStatus() );
+        assertEquals( 405, r.getStatus() );
         
         r = request.delete(functionalTestHelper.relationshipIndexUri() + indexName + "/" + relId);
-        assertEquals( 403, r.getStatus() );
+        assertEquals( 405, r.getStatus() );
     }
 }

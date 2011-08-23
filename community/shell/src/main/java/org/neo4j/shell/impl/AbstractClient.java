@@ -72,7 +72,7 @@ public abstract class AbstractClient implements ShellClient
     
     public void grabPrompt()
     {
-        this.init();
+        init();
         while ( true )
         {
             try
@@ -149,7 +149,7 @@ public abstract class AbstractClient implements ShellClient
         return Boolean.parseBoolean( value.toString() );
     }
 
-    private void init()
+    protected void init()
     {
         try
         {
