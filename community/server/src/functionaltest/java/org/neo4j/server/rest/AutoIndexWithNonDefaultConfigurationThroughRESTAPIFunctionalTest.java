@@ -35,7 +35,7 @@ import org.neo4j.server.ServerBuilder;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.test.TestData;
 
-public class AutoIndexWithNonDefaulConfigurationThroughRESTAPIFunctionalTest
+public class AutoIndexWithNonDefaultConfigurationThroughRESTAPIFunctionalTest
 {
     private static NeoServerWithEmbeddedWebServer server;
     private static FunctionalTestHelper functionalTestHelper;
