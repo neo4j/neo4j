@@ -22,6 +22,19 @@ include::introduction/index.txt[]
 
 :leveloffset: 0
 
+[[capabilities]]
+Capabilities
+============
+////
+[partintro]
+////
+
+:leveloffset: 1
+
+include::capabilities/cap-details.txt[]
+
+:leveloffset: 0
+
 [[tutorials]]
 Tutorials
 =========
