@@ -265,6 +265,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
 
     protected void disposeChannel( Triplet<Channel, ChannelBuffer, ByteBuffer> channel )
     {
+        channelPool.release();
         channelPool.dispose( channel );
     }
     
