@@ -176,7 +176,9 @@ docbook-html:  manpages copyimages
 	mkdir -p $(BUILDDIR)
 	asciidoc $(ASCIIDOC_FLAGS) --backend docbook --attribute docinfo1 --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --conf-file=$(CONFDIR)/linkedimages.conf --out-file $(DOCBOOKFILEHTML) $(SRCFILE)
 	# replacing svg files with png files by ugly hack
-	perl -pi -e 's/.svg"/.png"/g' -- $(DOCBOOKFILEHTML)
+	sed -e 's/.svg"/.png"/g' <$(DOCBOOKFILEHTML) >$(DOCBOOKFILEHTML).tmp
+	rm $(DOCBOOKFILEHTML)
+	mv $(DOCBOOKFILEHTML).tmp $(DOCBOOKFILEHTML)
 	xmllint --nonet --noout --xinclude --postvalid $(DOCBOOKFILEHTML)
 
 pdf: docbook-shortinfo copyimages
