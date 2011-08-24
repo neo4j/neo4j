@@ -40,12 +40,32 @@ class Nodes(object):
         
     def __getitem__(self, items):
         if not isinstance(items, (int, long)):
-            raise TypeError("Only integer and long values allowed to lookup node ids.")
+            raise TypeError("Only integer and long values allowed as node ids.")
         try:
             return self.db.getNodeById( items )
         except Exception as e:
             raise KeyError(e.message())
+            
+    def __delitem__(self, item):
+        return self[item].delete()
+           
+
+class Relationships(object):
+    
+    def __init__(self, db):
+      self.db = db
         
+    def __getitem__(self, items):
+        if not isinstance(items, (int, long)):
+            raise TypeError("Only integer and long values allowed as relationship ids.")
+        try:
+            return self.db.getRelationshipById( items )
+        except Exception as e:
+            raise KeyError(e.message())
+            
+    def __delitem__(self, item):
+        return self[item].delete()
+
 
 class GraphDatabase(GraphDatabase):
     from neo4j.core import __new__
@@ -78,6 +98,12 @@ class GraphDatabase(GraphDatabase):
         if not hasattr(self, '_node'):
             self._node = Nodes(self)
         return self._node
+
+    @property
+    def relationship(self):
+        if not hasattr(self, '_relationship'):
+            self._relationship = Relationships(self)
+        return self._relationship
         
     @property
     def reference_node(self):

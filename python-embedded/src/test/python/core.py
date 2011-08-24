@@ -40,6 +40,17 @@ class GraphTest(unit_tests.GraphDatabaseTest):
         except Exception as e:
             self.assertTrue(isinstance(e, KeyError))
         
+    def test_delete_node_by_id(self):
+        with self.graphdb.transaction:
+            node = self.graphdb.node()
+            del self.graphdb.node[node.id]
+        
+        try:
+            self.graphdb.node[node.id]
+            self.assertEqual(True,False)
+        except Exception as e:
+            self.assertTrue(isinstance(e, KeyError))
+        
     def test_create_node_with_properties(self):
         with self.graphdb.transaction:
             node = self.graphdb.node(name='Thomas Anderson', age=42)
@@ -97,6 +108,41 @@ class GraphTest(unit_tests.GraphDatabaseTest):
         self.assertEquals(len(list(source.likes)), 1)
         self.assertEquals(len(list(source.likes.incoming)), 1)
         self.assertEquals(len(list(source.likes.outgoing)), 0)
+        
+    def test_get_relationship_by_id(self):
+        with self.graphdb.transaction:
+            node1 = self.graphdb.node()
+            node2 = self.graphdb.node()
+            rel = node1.Knows(node2)
+        r = self.graphdb.relationship[rel.id]
+        self.assertNotEqual(r, None)
+        
+    def test_delete_relationship(self):
+        with self.graphdb.transaction:
+            node1 = self.graphdb.node()
+            node2 = self.graphdb.node()
+            rel = node1.Knows(node2)
+            rel.delete()
+            
+        try:
+            self.graphdb.relationship[rel.id]
+            self.assertTrue(False)
+        except Exception as e:
+            self.assertTrue(isinstance(e, KeyError))
+        
+    def test_delete_relationship_by_id(self):
+        with self.graphdb.transaction:
+            node1 = self.graphdb.node()
+            node2 = self.graphdb.node()
+            rel = node1.Knows(node2)
+            
+            del self.graphdb.relationship[rel.id]
+            
+        try:
+            self.graphdb.relationship[rel.id]
+            self.assertTrue(False)
+        except Exception as e:
+            self.assertTrue(isinstance(e, KeyError))
 
 if __name__ == '__main__':
     unit_tests.unittest.main()

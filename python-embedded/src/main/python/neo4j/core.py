@@ -46,11 +46,11 @@ class DirectionalType(object):
 
 class NodeProxy(extends(NodeProxy)):
     def __getattr__(self, attr):
-        return Relationships(self, rel_type(attr))
+        return NodeRelationships(self, rel_type(attr))
     
     @property
     def relationships(self):
-        return Relationships(self, None)
+        return NodeRelationships(self, None)
 
 class RelationshipProxy(extends(RelationshipProxy)):
     
@@ -91,7 +91,14 @@ class Transaction(extends(Transaction)):
             self.finish()
             
             
-class Relationships(object):
+class NodeRelationships(object):
+    ''' Handles relationships of some
+    given type on a single node.
+    
+    Allows creating and iterating through
+    relationships.
+    '''
+
     def __init__(self, node, rel_type):
         self.__node = node
         self.__type = rel_type
