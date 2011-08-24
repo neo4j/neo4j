@@ -110,8 +110,7 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     }
 
     /**
-     * Send a Gremlin Script, as JSON payload and additional parameters, e.g.
-     * { "script" : "g.v(me).outE.inV", "params" : { "me" : 123 } }
+     * Send a Gremlin Script, as JSON payload and additional parameters
      */
     @Test
     @Title("Send a Gremlin Script with variables in a JSON Map")
