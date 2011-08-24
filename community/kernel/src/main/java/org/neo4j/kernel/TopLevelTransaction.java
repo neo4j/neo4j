@@ -29,8 +29,31 @@ import org.neo4j.graphdb.TransactionFailureException;
 
 public class TopLevelTransaction implements Transaction
 {
-    private boolean success = false;
+    private static class TransactionOutcome {
+        private boolean success = false;
+        private boolean failure = false;
+    
+        public void failed() {
+            failure = true;
+        }
+        
+        public void success() {
+            success = true;
+        }
+        
+        public boolean canCommit() {
+            return success && !failure;
+        }
+
+        public boolean triedToSucceed()
+        {
+            return success;
+        }
+        
+    }
+    
     private final TransactionManager transactionManager;
+    private final TransactionOutcome transactionOutcome = new TransactionOutcome();
 
     public TopLevelTransaction( TransactionManager transactionManager )
     {
@@ -39,7 +62,7 @@ public class TopLevelTransaction implements Transaction
 
     public void failure()
     {
-        this.success = false;
+        transactionOutcome.failed();
         try
         {
             transactionManager.getTransaction().setRollbackOnly();
@@ -53,14 +76,14 @@ public class TopLevelTransaction implements Transaction
 
     public void success()
     {
-        success = true;
+        transactionOutcome.success();
     }
     
     protected boolean isMarkedAsSuccessful()
     {
         try
         {
-            return success && transactionManager.getTransaction().getStatus() !=
+            return transactionOutcome.canCommit() && transactionManager.getTransaction().getStatus() !=
                     Status.STATUS_MARKED_ROLLBACK;
         }
         catch ( SystemException e )
@@ -68,7 +91,7 @@ public class TopLevelTransaction implements Transaction
             throw new RuntimeException( e );
         }
     }
-    
+
     protected TransactionManager getTransactionManager()
     {
         return this.transactionManager;
@@ -78,7 +101,7 @@ public class TopLevelTransaction implements Transaction
     {
         try
         {
-            if ( success )
+            if ( transactionOutcome.canCommit()  )
             {
                 if ( transactionManager.getTransaction() != null )
                 {
@@ -99,7 +122,7 @@ public class TopLevelTransaction implements Transaction
         }
         catch ( Exception e )
         {
-            if ( success )
+            if ( transactionOutcome.triedToSucceed() )
             {
                 throw new TransactionFailureException(
                     "Unable to commit transaction", e );
