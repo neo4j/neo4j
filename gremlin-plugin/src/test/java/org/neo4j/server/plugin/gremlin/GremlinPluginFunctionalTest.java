@@ -168,14 +168,14 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     public void setVariables() throws UnsupportedEncodingException
     {
         String payload = "{\"script\":\"meaning_of_life\","
-            + "\"params\":{\"meaning_of_life\" : 42}}";
+            + "\"params\":{\"meaning_of_life\" : 42.0}}";
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
                 .payload( JSONPrettifier.parse( payload ) )
         .payloadType( MediaType.APPLICATION_JSON_TYPE )
         .post( ENDPOINT )
         .entity();
-        assertTrue(response.contains( "42" ));
+        assertTrue(response.contains( "42.0" ));
     }
 
 
