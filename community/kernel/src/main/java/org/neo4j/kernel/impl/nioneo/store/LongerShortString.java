@@ -664,11 +664,12 @@ public enum LongerShortString
 
     private static void applyOnRecord( int keyId, PropertyRecord target, int encoding, int stringLength, long[] data )
     {
+        // TODO Make a utility OR:ing in the key/type in the propblock
         data[0] |= ((long)keyId << 40);
         data[0] |= ((long)encoding << 36);
         data[0] |= ((long)stringLength << 30);
+        
         target.setPropBlock( data );
-//        target.setHeader( (0x2 << 10) | (encoding << 6) | (stringLength) );
     }
 
     /**
@@ -680,7 +681,7 @@ public enum LongerShortString
     public static String decode( PropertyRecord record )
     {
         Bits bits = new Bits( copyOf( record.getPropBlock(), record.getPropBlock().length ) );
-        long firstLong = bits.getLong( 0xFFFFFFFFFFFFFFFFL );
+        long firstLong = bits.getLongs()[0];
         if ( firstLong == 0 ) return "";
         // [kkkk,kkkk][kkkk,kkkk][kkkk,kkkk][eeee,llll][ll  ,    ]
         int encoding = (int)((firstLong & 0xF000000000L) >>> 36);

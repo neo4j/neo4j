@@ -272,25 +272,16 @@ public class PropertyStore extends AbstractStore implements Store
         if ( record.inUse() )
         {
             Bits bits = new Bits( RECORD_SIZE );
-            bits.or( record.getCategory(), 0xF );
             
-            short nextModifier = record.getNextProp() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((record.getNextProp() & 0xF00000000L) >> 32);
-            bits.shiftLeft( 4 );
-            bits.or( nextModifier, 0xF );
-            bits.shiftLeft( 32 );
-            bits.or( (int)record.getNextProp() );
-            
-            // TODO Remove this later
             short prevModifier = record.getPrevProp() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((record.getPrevProp() & 0xF00000000L) >> 32);
-            bits.shiftLeft( 8 );
-            bits.or( prevModifier, 0xF );
-            bits.shiftLeft( 32 );
-            bits.or( (int)record.getPrevProp() );
+            short nextModifier = record.getNextProp() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((record.getNextProp() & 0xF00000000L) >> 32);
+            bits.or( prevModifier, 0xF ).shiftLeft( 4 ).or( nextModifier, 0xF );
+            bits.shiftLeft( 32 ).or( (int)record.getPrevProp() );
+            bits.shiftLeft( 32 ).or( (int)record.getNextProp() );
             
             for ( long block : record.getPropBlock() )
             {
-                bits.shiftLeft( 64 );
-                bits.or( block );
+                bits.shiftLeft( 64 ).or( block );
             }
             
             bits.apply( buffer );
@@ -394,36 +385,32 @@ public class PropertyStore extends AbstractStore implements Store
         bits.read( buffer );
         
         long[] propBlock = new long[PropertyType.getPayloadSizeLongs()];
+        boolean someBlockInUse = false;
         for ( int i = propBlock.length-1; i >= 0; i-- )
         {
             propBlock[i] = bits.getLong( 0xFFFFFFFFFFFFFFFFL );
             bits.shiftRight( 64 );
+            if ( propBlock[i] != 0 ) someBlockInUse = true;
         }
-        PropertyRecord record = new PropertyRecord( id );
-        record.setPropBlock( propBlock );
-        
-        // TODO Remove this later
-        long prevProp = bits.getLong( 0xFFFFFFFFL );
-        bits.shiftRight( 32 );
-        long prevMod = (long)bits.getByte( (byte)0xF ) << 32;
-        bits.shiftRight( 8 );
-        record.setPrevProp( longFromIntAndMod( prevProp, prevMod ) );
-        
-        long nextProp = bits.getLong( 0xFFFFFFFFL );
-        bits.shiftRight( 32 );
-        long nextMod = (long)bits.getByte( (byte)0xF ) << 32;
-        bits.shiftRight( 4 );
-        record.setNextProp( longFromIntAndMod( nextProp, nextMod ) );
-        
-        byte category = bits.getByte( (byte)0xF );
-        record.setCategory( category );
-        bits.shiftRight( 3 );
-        
-        record.setInUse( category != 0 );
-        if ( !record.inUse() )
+        if ( !someBlockInUse )
         {
             throw new InvalidRecordException( "Record[" + id + "] not in use" );
         }
+        
+        PropertyRecord record = new PropertyRecord( id );
+        record.setInUse( true );
+        record.setPropBlock( propBlock );
+        
+        long nextProp = bits.getLong( 0xFFFFFFFFL );
+        bits.shiftRight( 32 );
+        long prevProp = bits.getLong( 0xFFFFFFFFL );
+        bits.shiftRight( 32 );
+        long nextMod = (long)bits.getByte( (byte)0xF ) << 32;
+        bits.shiftRight( 4 );
+        long prevMod = (long)bits.getByte( (byte)0xF ) << 32;
+        record.setPrevProp( longFromIntAndMod( prevProp, prevMod ) );
+        record.setNextProp( longFromIntAndMod( nextProp, nextMod ) );
+        
         return record;
     }
 
@@ -475,7 +462,8 @@ public class PropertyStore extends AbstractStore implements Store
         if ( value instanceof String )
         {
             String string = (String) value;
-            if ( ShortString.encode( keyId, string, record ) ) return;
+//            if ( ShortString.encode( keyId, string, record ) ) return;
+            if ( LongerShortString.encode( keyId, string, record, PropertyType.getPayloadSize() ) ) return;
 
             long stringBlockId = nextStringBlockId();
             record.setSinglePropBlock( stringBlockId );
@@ -489,55 +477,46 @@ public class PropertyStore extends AbstractStore implements Store
                 valueRecord.setType( PropertyType.STRING.intValue() );
                 record.addValueRecord( valueRecord );
             }
-            record.setCategory( PropertyType.STRING.getCategory() );
         }
         else if ( value instanceof Integer )
         {
             Bits bits = bits32WithKeyAndType( keyId, PropertyType.INT ).or( ((Integer)value).intValue() );
             record.setSinglePropBlock( bits.getLongs()[0] );
-            record.setCategory( PropertyType.INT.getCategory() );
         }
         else if ( value instanceof Boolean )
         {
             Bits bits = bits32WithKeyAndType( keyId, PropertyType.BOOL ).or( ((Boolean)value).booleanValue() ? 1 : 0, 0x1 );
             record.setSinglePropBlock( bits.getLongs()[0] );
-            record.setCategory( PropertyType.BOOL.getCategory() );
         }
         else if ( value instanceof Float )
         {
             Bits bits = bits32WithKeyAndType( keyId, PropertyType.FLOAT ).or( Float.floatToRawIntBits( ((Float) value).floatValue() ) );
             record.setSinglePropBlock( bits.getLongs()[0] );
-            record.setCategory( PropertyType.FLOAT.getCategory() );
         }
         else if ( value instanceof Long )
         {
             Bits bits = bits64WithKeyAndType( keyId, PropertyType.LONG ).or( ((Long)value).longValue() );
             record.setPropBlock( bits.getLongs() );
-            record.setCategory( PropertyType.LONG.getCategory() );
         }
         else if ( value instanceof Double )
         {
             Bits bits = bits64WithKeyAndType( keyId, PropertyType.DOUBLE ).or( Double.doubleToRawLongBits( ((Double)value).doubleValue() ) );
             record.setPropBlock( bits.getLongs() );
-            record.setCategory( PropertyType.DOUBLE.getCategory() );
         }
         else if ( value instanceof Byte )
         {
             Bits bits = bits32WithKeyAndType( keyId, PropertyType.BYTE ).or( ((Byte)value).byteValue() );
             record.setSinglePropBlock( bits.getLongs()[0] );
-            record.setCategory( PropertyType.BYTE.getCategory() );
         }
         else if ( value instanceof Character )
         {
             Bits bits = bits32WithKeyAndType( keyId, PropertyType.CHAR ).or( ((Character)value).charValue() );
             record.setSinglePropBlock( bits.getLongs()[0] );
-            record.setCategory( PropertyType.CHAR.getCategory() );
         }
         else if ( value instanceof Short )
         {
             Bits bits = bits32WithKeyAndType( keyId, PropertyType.SHORT ).or( ((Short)value).shortValue() );
             record.setSinglePropBlock( bits.getLongs()[0] );
-            record.setCategory( PropertyType.SHORT.getCategory() );
         }
         else if ( value.getClass().isArray() )
         {
@@ -552,7 +531,6 @@ public class PropertyStore extends AbstractStore implements Store
                 valueRecord.setType( PropertyType.ARRAY.intValue() );
                 record.addValueRecord( valueRecord );
             }
-            record.setCategory( PropertyType.ARRAY.getCategory() );
         }
         else
         {

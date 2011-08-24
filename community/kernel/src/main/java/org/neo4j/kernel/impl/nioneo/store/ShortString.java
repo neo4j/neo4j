@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.neo4j.kernel.impl.util.Bits.bits;
+
 import java.io.UnsupportedEncodingException;
 import java.util.EnumSet;
-
-import org.neo4j.kernel.impl.util.Bits;
 
 /**
  * Supports encoding alphanumerical and <code>SP . - + , ' : / _</code>
@@ -480,10 +480,7 @@ enum ShortString
 
     private static void applyInRecord( PropertyRecord target, int keyId, long propBlock )
     {
-        Bits bits = new Bits( 16 );
-        bits.or( keyId, 0xFFFFFF ).shiftLeft( 64 ).or( propBlock, 0xFFFFFFFFFFFFFFFFL );
-        target.setCategory( PropertyType.SHORT_STRING.getCategory() );
-        target.setPropBlock( bits.getLongs() );
+        target.setPropBlock( bits( 16 ).or( keyId, 0xFFFFFF ).shiftLeft( 64 ).or( propBlock ).getLongs() );
     }
 
     /**

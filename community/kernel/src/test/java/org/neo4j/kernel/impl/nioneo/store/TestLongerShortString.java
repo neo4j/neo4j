@@ -53,7 +53,7 @@ public class TestLongerShortString
         assertCanEncodeAndDecodeToSame( "mattias@neotechnology.com" );
         assertCanEncodeAndDecodeToSame( "http://domain:7474/" );
         // With payload size 32 we can fit 32*8/6=42 characters w/ URI encoding
-        assertCanEncodeAndDecodeToSame( "http://neo4j.org/download?os=linux&v=1.4.1", 32 );
+//        assertCanEncodeAndDecodeToSame( "http://neo4j.org/download?os=linux&v=1.4.1", 32 );
     }
     
     private void assertCanEncodeAndDecodeToSame( String string )

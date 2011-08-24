@@ -24,7 +24,7 @@ package org.neo4j.kernel.impl.nioneo.store;
  */
 public enum PropertyType
 {
-    BOOL( 0, 1 )
+    BOOL( 0 )
     {
         @Override
         public Object getValue( PropertyRecord record, PropertyStore store )
@@ -44,7 +44,7 @@ public enum PropertyType
                     getValue( record.getPropBlock()[0] ).booleanValue() );
         }
     },
-    BYTE( 1, 1 )
+    BYTE( 1 )
     {
         @Override
         public Object getValue( PropertyRecord record, PropertyStore store )
@@ -58,7 +58,7 @@ public enum PropertyType
             return PropertyDatas.forByte( record.getKeyIndexId(), record.getId(), (byte) record.getPropBlock()[0] );
         }
     },
-    SHORT( 2, 1 )
+    SHORT( 2 )
     {
         @Override
         public Object getValue( PropertyRecord record, PropertyStore store )
@@ -72,7 +72,7 @@ public enum PropertyType
             return PropertyDatas.forShort( record.getKeyIndexId(), record.getId(), (short) record.getPropBlock()[0] );
         }
     },
-    CHAR( 3, 1 )
+    CHAR( 3 )
     {
         @Override
         public Object getValue( PropertyRecord record, PropertyStore store )
@@ -86,7 +86,7 @@ public enum PropertyType
             return PropertyDatas.forChar( record.getKeyIndexId(), record.getId(), (char) record.getPropBlock()[0] );
         }
     },
-    INT( 4, 1 )
+    INT( 4 )
     {
         @Override
         public Object getValue( PropertyRecord record, PropertyStore store )
@@ -100,7 +100,7 @@ public enum PropertyType
             return PropertyDatas.forInt( record.getKeyIndexId(), record.getId(), (int) record.getPropBlock()[0] );
         }
     },
-    LONG( 5, 1 )
+    LONG( 5 )
     {
         @Override
         public Object getValue( PropertyRecord record, PropertyStore store )
@@ -114,7 +114,7 @@ public enum PropertyType
             return PropertyDatas.forLong( record.getKeyIndexId(), record.getId(), record.getPropBlock()[1] );
         }
     },
-    FLOAT( 6, 1 )
+    FLOAT( 6 )
     {
         @Override
         public Object getValue( PropertyRecord record, PropertyStore store )
@@ -133,7 +133,7 @@ public enum PropertyType
             return PropertyDatas.forFloat( record.getKeyIndexId(), record.getId(), getValue( record.getPropBlock()[0] ) );
         }
     },
-    DOUBLE( 7, 1 )
+    DOUBLE( 7 )
     {
         @Override
         public Object getValue( PropertyRecord record, PropertyStore store )
@@ -152,7 +152,7 @@ public enum PropertyType
             return PropertyDatas.forDouble( record.getKeyIndexId(), record.getId(), getValue( record.getPropBlock()[0] ) );
         }
     },
-    STRING( 8, 1 )
+    STRING( 8 )
     {
         @Override
         public Object getValue( PropertyRecord record, PropertyStore store )
@@ -167,7 +167,7 @@ public enum PropertyType
             return PropertyDatas.forStringOrArray( record.getKeyIndexId(), record.getId(), extractedValue );
         }
     },
-    ARRAY( 9, 1 )
+    ARRAY( 9 )
     {
         @Override
         public Object getValue( PropertyRecord record, PropertyStore store )
@@ -182,12 +182,12 @@ public enum PropertyType
             return PropertyDatas.forStringOrArray( record.getKeyIndexId(), record.getId(), extractedValue );
         }
     },
-    SHORT_STRING( -1, 2 )
+    SHORT_STRING( 10 )
     {
         @Override
         public Object getValue( PropertyRecord record, PropertyStore store )
         {
-            return ShortString.decode( record.getPropBlock()[0] );
+            return LongerShortString.decode( record );
         }
 
         @Override
@@ -195,14 +195,8 @@ public enum PropertyType
         {
             return PropertyDatas.forStringOrArray( record.getKeyIndexId(), record.getId(), getValue( record, null ) );
         }
-        
-//        @Override
-//        public int getHeader()
-//        {
-//            throw new UnsupportedOperationException( "Decided elsewhere" );
-//        }
     },
-    SHORT_ARRAY( -1, 3 )
+    SHORT_ARRAY( 11 )
     {
         @Override
         public Object getValue( PropertyRecord record, PropertyStore store )
@@ -216,26 +210,16 @@ public enum PropertyType
             return PropertyDatas.forStringOrArray( record.getKeyIndexId(), record.getId(),
                     getValue( record, null ) );
         }
-
-//        @Override
-//        public int getHeader()
-//        {
-//            throw new UnsupportedOperationException( "Decided elsewhere" );
-//        }
-    }
-    ;
+    };
 
     private final int type;
     
     // TODO In wait of a better place
     private static int payloadSize = PropertyStore.DEFAULT_PAYLOAD_SIZE;
 
-    private final byte category;
-
-    PropertyType( int type, int category )
+    PropertyType( int type )
     {
         this.type = type;
-        this.category = (byte)category;
     }
 
     /**
@@ -248,48 +232,30 @@ public enum PropertyType
         return type;
     }
     
-//    public int getHeader()
-//    {
-//        return (0x1 << 10) | type;
-//    }
-    
-    public byte getCategory()
-    {
-        return category;
-    }
-    
     public abstract Object getValue( PropertyRecord record, PropertyStore store );
     
     public abstract PropertyData newPropertyData( PropertyRecord record, Object extractedValue );
 
-    public static PropertyType getPropertyType( byte category, long propBlock, boolean nullOnIllegal )
+    public static PropertyType getPropertyType( long propBlock, boolean nullOnIllegal )
     {
-        switch ( category )
+        // [kkkk,kkkk][kkkk,kkkk][kkkk,kkkk][tttt,    ][][][][]
+        int type = (int)((propBlock&0x000000F000000000L)>>36);
+        switch ( type )
         {
-        case 0:
-            if ( nullOnIllegal ) return null;
-            break;
-        case 1:
-            // [kkkk,kkkk][kkkk,kkkk][kkkk,kkkk][tttt,    ][][][][]
-            int type = (int)((propBlock&0x000000F000000000L)>>36);
-            switch ( type )
-            {
-            case 0: return BOOL;
-            case 1: return BYTE;
-            case 2: return SHORT;
-            case 3: return CHAR;
-            case 4: return INT;
-            case 5: return LONG;
-            case 6: return FLOAT;
-            case 7: return DOUBLE;
-            case 8: return STRING;
-            case 9: return ARRAY;
-            }
-            break;
-        case 2: return SHORT_STRING;
-        case 3: return SHORT_ARRAY;
+        case 0: return BOOL;
+        case 1: return BYTE;
+        case 2: return SHORT;
+        case 3: return CHAR;
+        case 4: return INT;
+        case 5: return LONG;
+        case 6: return FLOAT;
+        case 7: return DOUBLE;
+        case 8: return STRING;
+        case 9: return ARRAY;
+        case 10: return SHORT_STRING;
+        case 11: return SHORT_ARRAY;
+        default: throw new InvalidRecordException( "Unknown property type for type " + type );
         }
-        throw new InvalidRecordException( "Unknown property type for header " + category + ", " + propBlock );
     }
     
     // TODO In wait of a better place

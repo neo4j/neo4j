@@ -627,7 +627,7 @@ public abstract class Command extends XaCommand
             }
             if ( record.inUse() )
             {
-                buffer.put( record.getCategory() ).putLong( record.getNextProp() ).putLong( record.getPrevProp() );
+                buffer.putLong( record.getNextProp() ).putLong( record.getPrevProp() );
                 for ( long block : record.getPropBlock() )
                 {
                     buffer.putLong( block );
@@ -699,7 +699,6 @@ public abstract class Command extends XaCommand
                 long nextProp = buffer.getLong();
                 long prevProp = buffer.getLong();
                 long[] propBlock = readLongs( buffer, PropertyType.getPayloadSizeLongs() );
-                record.setCategory( category );
                 record.setInUse( inUse );
                 record.setNextProp( nextProp );
                 record.setPropBlock( propBlock );

@@ -29,7 +29,6 @@ import java.util.List;
 public class PropertyRecord extends Abstract64BitRecord
 {
     private PropertyType type;
-    private byte category;
     private long[] propBlock = new long[getPayloadSizeLongs()];
     private long nextProp = Record.NO_NEXT_PROPERTY.intValue();
     private long prevProp = Record.NO_NEXT_PROPERTY.intValue();
@@ -44,16 +43,6 @@ public class PropertyRecord extends Abstract64BitRecord
         super( id );
     }
     
-    public void setCategory( byte category )
-    {
-        this.category = category;
-    }
-    
-    public byte getCategory()
-    {
-        return category;
-    }
-
     public void setNodeId( long nodeId )
     {
         nodeIdSet = true;
@@ -108,7 +97,7 @@ public class PropertyRecord extends Abstract64BitRecord
 
     public PropertyType getType()
     {
-        return PropertyType.getPropertyType( category, propBlock[0], false );
+        return PropertyType.getPropertyType( propBlock[0], false );
     }
 
     public int getKeyIndexId()

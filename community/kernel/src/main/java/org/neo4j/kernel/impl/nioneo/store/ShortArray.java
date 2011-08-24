@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import static java.util.Arrays.copyOf;
+import static org.neo4j.kernel.impl.util.Bits.rightOverflowMask;
 
 import java.lang.reflect.Array;
 
@@ -313,8 +314,6 @@ public enum ShortArray
         }
     };
     
-    private static final int HEADER_SIZE = 5;
-    
     final int maxBits;
 
     private final Class<?> boxedClass;
@@ -367,12 +366,15 @@ public enum ShortArray
             type.push( Array.get( array, i ), result, mask );
         }
         long[] longs = result.getLongs();
-        // [kkkk,kkkk][kkkk,kkkk][kkkk,kkkk][tttt,llll][lbbb,bb  ]
-        longs[0] |= ((long)keyId) << 40;
-        longs[0] |= ((long)type.type.intValue()) << 36;
-        longs[0] |= ((long)arrayLength) << 31;
-        longs[0] |= ((long)requiredBits) << 26;
-        target.setCategory( PropertyType.SHORT_ARRAY.getCategory() );
+        // [kkkk,kkkk][kkkk,kkkk][kkkk,kkkk][tttt,yyyy][llll,llbb][bbbb
+        Bits bits = Bits.bits( 8 );
+        long header = bits.or( keyId )
+                .shiftLeft( 4 ).or( PropertyType.SHORT_ARRAY.intValue() )
+                .shiftLeft( 4 ).or( type.type.intValue() )
+                .shiftLeft( 6 ).or( arrayLength )
+                .shiftLeft( 6 ).or( requiredBits )
+                .shiftLeft( 20 ).getLongs()[0];
+        longs[0] |= header;
         target.setPropBlock( longs );
         return true;
     }
@@ -380,15 +382,16 @@ public enum ShortArray
     public static Object decode( PropertyRecord record )
     {
         long block = record.getPropBlock()[0];
-        int typeId = (int)((block & 0xF000000000L) >>> 36);
+        Bits headerBits = new Bits( new long[] { block } );
+        int requiredBits = headerBits.shiftRight( 20 ).getInt( (int) rightOverflowMask( 6 ) ); // 6 bits required bits
+        int arrayLength = headerBits.shiftRight( 6 ).getInt( (int) rightOverflowMask( 6 ) ); // 6 bits array length
+        int typeId = headerBits.shiftRight( 6 ).getInt( (int) rightOverflowMask( 4 ) ); // 4 bits type
         ShortArray type = values()[typeId];
-        int arrayLength = (int)((block & 0xF80000000L) >>> 31);
         Object array = type.createArray( arrayLength );
         
         long[] longs = record.getPropBlock();
-        int requiredBits = (int)((longs[0] & 0x7C000000) >>> 26);
         Bits bits = new Bits( copyOf( longs, longs.length ) );
-        long mask = Bits.rightOverflowMask( requiredBits );
+        long mask = rightOverflowMask( requiredBits );
         for ( int i = arrayLength-1; i >= 0; i-- )
         {
             type.pull( bits, array, i, mask );
@@ -400,7 +403,7 @@ public enum ShortArray
     private static boolean willFit( int requiredBits, int arrayLength, int payloadSizeInBytes )
     {
         int totalBitsRequired = requiredBits*arrayLength;
-        int maxBits = payloadSizeInBytes*8-24-4-5-5;
+        int maxBits = payloadSizeInBytes*8-24-4-6-6;
         return totalBitsRequired <= maxBits;
     }
 
