@@ -36,7 +36,7 @@ class TraversalTest(unit_tests.GraphDatabaseTest):
     def test_traverse_string_types(self):
         self.create_data()
         
-        t = self.graphdb.traversal\
+        t = self.graphdb.traversal()\
             .depthFirst()
         
         res = list(t\
@@ -61,7 +61,7 @@ class TraversalTest(unit_tests.GraphDatabaseTest):
     def test_traverse_programmatic_types(self):
         self.create_data()
         
-        t = self.graphdb.traversal\
+        t = self.graphdb.traversal()\
             .depthFirst()\
             .relationships(Direction.ANY.related_to)\
             .traverse(self.source)
@@ -79,7 +79,7 @@ class TraversalTest(unit_tests.GraphDatabaseTest):
         def include_all(path):
             return Evaluation.INCLUDE_AND_CONTINUE
         
-        t = self.graphdb.traversal\
+        t = self.graphdb.traversal()\
             .depthFirst()\
             .evaluator(include_all)\
             .traverse(self.source)
@@ -87,7 +87,7 @@ class TraversalTest(unit_tests.GraphDatabaseTest):
         res = list(t.nodes())
         self.assertEqual(len(res), 2)
         
-        t = self.graphdb.traversal\
+        t = self.graphdb.traversal()\
             .depthFirst()\
             .evaluator(exclude_all)\
             .traverse(self.source)
@@ -99,7 +99,7 @@ class TraversalTest(unit_tests.GraphDatabaseTest):
     def test_uniqueness(self):
         self.create_data()
         
-        t = self.graphdb.traversal\
+        t = self.graphdb.traversal()\
             .depthFirst()\
             .uniqueness(Uniqueness.NODE_PATH)\
             .traverse(self.source)

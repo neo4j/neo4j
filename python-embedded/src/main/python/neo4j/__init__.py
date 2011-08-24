@@ -26,11 +26,13 @@ __all__ = 'GraphDatabase',\
 
 from neo4j.core import GraphDatabase, Direction, NotFoundException
 from neo4j.traversal import Traversal, Evaluation, Uniqueness
+from neo4j.index import NodeIndexManager, RelationshipIndexManager
 
 class Nodes(object):
     
     def __init__(self, db):
       self.db = db
+      self.indexes = NodeIndexManager(db)
     
     def __call__(self, **properties):
         node = self.db.createNode()
@@ -54,6 +56,7 @@ class Relationships(object):
     
     def __init__(self, db):
       self.db = db
+      self.indexes = RelationshipIndexManager(db)
         
     def __getitem__(self, items):
         if not isinstance(items, (int, long)):
@@ -108,8 +111,7 @@ class GraphDatabase(GraphDatabase):
     @property
     def reference_node(self):
         return self.getReferenceNode()
-       
-    @property 
+    
     def traversal(self):
         return Traversal.description()
 
