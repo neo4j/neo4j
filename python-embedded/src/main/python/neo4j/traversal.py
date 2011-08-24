@@ -2,9 +2,9 @@
 from _backend import extends, implements, rel_type,\
     Path, TraverserImpl, Traversal,\
     TraversalDescriptionImpl, strings,\
-    Evaluation, Evaluator
+    Evaluation, Evaluator, Uniqueness
         
-from core import ANY, DirectionalType
+from core import Direction, DirectionalType
 
 class DynamicEvaluator(implements(Evaluator)):
     def __init__(self, eval_method):
@@ -39,7 +39,7 @@ class Path(extends(Path)):
       
 class TraversalDescriptionImpl(extends(TraversalDescriptionImpl)):
     
-    def relationships(self, reltype, direction=ANY):
+    def relationships(self, reltype, direction=Direction.ANY):
         if type(reltype) in strings:
             reltype = rel_type(reltype)
         elif isinstance(reltype, DirectionalType):

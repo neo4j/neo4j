@@ -21,12 +21,11 @@
 """Python bindings for the embedded Neo4j Graph Database.
 """
 
-__all__ = 'GraphDatabase', 'Traversal'\
-          'Evaluation',\
-          'ANY', 'INCOMING', 'OUTGOING'
+__all__ = 'GraphDatabase',\
+          'Direction', 'Evaluation', 'Uniqueness'
 
-from neo4j.core import GraphDatabase, ANY, INCOMING, OUTGOING
-from neo4j.traversal import Traversal, Evaluation
+from neo4j.core import GraphDatabase, Direction, NotFoundException
+from neo4j.traversal import Traversal, Evaluation, Uniqueness
 
 class Nodes(object):
     
@@ -42,8 +41,10 @@ class Nodes(object):
     def __getitem__(self, items):
         if not isinstance(items, (int, long)):
             raise TypeError("Only integer and long values allowed to lookup node ids.")
-            
-        self.db.getNodeById( items )
+        try:
+            return self.db.getNodeById( items )
+        except Exception as e:
+            raise KeyError(e.message())
         
 
 class GraphDatabase(GraphDatabase):
@@ -77,4 +78,12 @@ class GraphDatabase(GraphDatabase):
         if not hasattr(self, '_node'):
             self._node = Nodes(self)
         return self._node
+        
+    @property
+    def reference_node(self):
+        return self.getReferenceNode()
+       
+    @property 
+    def traversal(self):
+        return Traversal.description()
 

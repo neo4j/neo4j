@@ -1,9 +1,4 @@
-from _backend import extends, Object, HashMap,\
-     to_java, from_java,\
-     GraphDatabaseService, EmbeddedGraphDatabase,\
-     NodeProxy, RelationshipProxy, PropertyContainer,\
-     Transaction, Direction, rel_type,\
-     IterableWrapper
+from _backend import *
 
 #
 # Pythonification of the core API
@@ -19,18 +14,27 @@ def __new__(GraphDatabase, resourceUri, **settings):
             config.put(key, value)
     return EmbeddedGraphDatabase(resourceUri, config)
 
-
-ANY=BOTH = Direction.BOTH
-INCOMING = Direction.INCOMING
-OUTGOING = Direction.OUTGOING
+# Hack: We need this reference
+# so that we can set BOTH, INCOMING, 
+# and OUTGOING references on the direction
+# class created below.
+_javaDirection = Direction
 
 class Direction(extends(Direction)):
-
+    
     def __repr__(self):
         return self.name().lower()
 
     def __getattr__(self, attr):
         return DirectionalType(rel_type(attr), self)
+
+# Give the user references to the 
+# actual direction instances.
+Direction.BOTH = _javaDirection.BOTH
+Direction.ANY = _javaDirection.BOTH
+Direction.INCOMING = _javaDirection.INCOMING
+Direction.OUTGOING = _javaDirection.OUTGOING
+del _javaDirection
 
 class DirectionalType(object):
     def __init__(self, reltype, direction):
@@ -105,9 +109,9 @@ class Relationships(object):
                 it = self.__node.getRelationships(direction).iterator()
             while it.hasNext(): yield it.next()
         return relationships
-    __iter__ = relationships(ANY)
-    incoming = property(relationships(INCOMING))
-    outgoing = property(relationships(OUTGOING))
+    __iter__ = relationships(Direction.ANY)
+    incoming = property(relationships(Direction.INCOMING))
+    outgoing = property(relationships(Direction.OUTGOING))
     del relationships # (temporary helper) from the body of this class
 
     def __call__(self, *nodes, **properties):

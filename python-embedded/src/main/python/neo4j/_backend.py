@@ -28,7 +28,7 @@ def extends(CLASS):
     ## java classes, using the normal python class
     ## system as a DSL.
      
-    class MetaClass(type):
+    class ParentClass(type):
         def __new__(Class, name, bases, body):
             if bases == ():
                 return type.__new__(Class, name, (object,), body)
@@ -40,7 +40,7 @@ def extends(CLASS):
                         setattr(CLASS, key, value)
                 return type(name, (object,), body)
     
-    return MetaClass(getattr(CLASS,'__name__','Class'),(),{})
+    return ParentClass(getattr(CLASS,'__name__','Class'),(),{})
 
 if sys.version_info >= (3,):
     class Type(type):
@@ -82,6 +82,8 @@ except: # this isn't jython (and doesn't have the java module)
     Path = graphdb.Path
     Evaluation = graphdb.traversal.Evaluation
     Evaluator = graphdb.traversal.Evaluator
+    NotFoundException = graphdb.NotFoundException
+    
     rel_type = graphdb.DynamicRelationshipType.withName
     
     kernel  = jpype.JPackage('org.neo4j.kernel')
@@ -125,9 +127,10 @@ except: # this isn't jython (and doesn't have the java module)
       
 else:
     from org.neo4j.kernel.impl.core import NodeProxy, RelationshipProxy
+    from org.neo4j.kernel import Uniqueness
     from org.neo4j.kernel.impl.traversal import TraversalDescriptionImpl, TraverserImpl
     from org.neo4j.graphdb import Direction, DynamicRelationshipType,\
-        PropertyContainer, Transaction, GraphDatabaseService, Node, Relationship, Path
+        PropertyContainer, Transaction, GraphDatabaseService, Node, Relationship, Path, NotFoundException
     from org.neo4j.graphdb.traversal import Evaluation, Evaluator
     from org.neo4j.helpers.collection import IterableWrapper
     from java.util import HashMap

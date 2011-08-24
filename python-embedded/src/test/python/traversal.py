@@ -22,9 +22,9 @@ from __future__ import with_statement
 
 import unit_tests
 import neo4j
-from neo4j import ANY, OUTGOING, INCOMING, Evaluation
+from neo4j import Direction, Evaluation, Uniqueness
 
-class GraphTest(unit_tests.GraphDatabaseTest):
+class TraversalTest(unit_tests.GraphDatabaseTest):
 
     def create_data(self):
         with self.graphdb.transaction:
@@ -36,7 +36,7 @@ class GraphTest(unit_tests.GraphDatabaseTest):
     def test_traverse_string_types(self):
         self.create_data()
         
-        t = neo4j.Traversal.description()\
+        t = self.graphdb.traversal\
             .depthFirst()
         
         res = list(t\
@@ -46,13 +46,13 @@ class GraphTest(unit_tests.GraphDatabaseTest):
         self.assertEqual(len(res), 2)
         
         res = list(t\
-            .relationships('related_to', OUTGOING)\
+            .relationships('related_to', Direction.OUTGOING)\
             .traverse(self.source)\
             .nodes())
         self.assertEqual(len(res), 2)
         
         res = list(t\
-            .relationships('related_to', INCOMING)\
+            .relationships('related_to', Direction.INCOMING)\
             .traverse(self.source)\
             .nodes())
         self.assertEqual(len(res), 1)
@@ -61,9 +61,9 @@ class GraphTest(unit_tests.GraphDatabaseTest):
     def test_traverse_programmatic_types(self):
         self.create_data()
         
-        t = neo4j.Traversal.description()\
+        t = self.graphdb.traversal\
             .depthFirst()\
-            .relationships(ANY.related_to)\
+            .relationships(Direction.ANY.related_to)\
             .traverse(self.source)
             
         res = list(t.nodes())
@@ -73,16 +73,39 @@ class GraphTest(unit_tests.GraphDatabaseTest):
     def test_dynamic_evaluator(self):
         self.create_data()
         
-        def myeval(path):
+        def exclude_all(path):
+            return Evaluation.EXCLUDE_AND_CONTINUE
+        
+        def include_all(path):
             return Evaluation.INCLUDE_AND_CONTINUE
         
-        t = neo4j.Traversal.description()\
+        t = self.graphdb.traversal\
             .depthFirst()\
-            .evaluator(myeval)\
+            .evaluator(include_all)\
             .traverse(self.source)
             
         res = list(t.nodes())
         self.assertEqual(len(res), 2)
+        
+        t = self.graphdb.traversal\
+            .depthFirst()\
+            .evaluator(exclude_all)\
+            .traverse(self.source)
+            
+        res = list(t.nodes())
+        self.assertEqual(len(res), 0)
+        
+        
+    def test_uniqueness(self):
+        self.create_data()
+        
+        t = self.graphdb.traversal\
+            .depthFirst()\
+            .uniqueness(Uniqueness.NODE_PATH)\
+            .traverse(self.source)
+            
+        res = list(t.nodes())
+        self.assertEqual(len(res), 3)
         
         
 if __name__ == '__main__':

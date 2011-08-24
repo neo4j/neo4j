@@ -28,6 +28,18 @@ class GraphTest(unit_tests.GraphDatabaseTest):
             node = self.graphdb.node()
         self.assertNotEqual(node, None)
         
+    def test_delete_node(self):
+        with self.graphdb.transaction:
+            node = self.graphdb.node()
+            node_id = node.id
+            node.delete()
+        
+        try:
+            self.graphdb.node[node_id]
+            self.assertEqual(True,False)
+        except Exception as e:
+            self.assertTrue(isinstance(e, KeyError))
+        
     def test_create_node_with_properties(self):
         with self.graphdb.transaction:
             node = self.graphdb.node(name='Thomas Anderson', age=42)
@@ -54,7 +66,13 @@ class GraphTest(unit_tests.GraphDatabaseTest):
     def test_get_node_by_id(self):
         with self.graphdb.transaction:
             node = self.graphdb.node()
-        self.graphdb.node[node.id]
+        n = self.graphdb.node[node.id]
+        self.assertNotEqual(n, None)
+        
+    def test_get_reference_node(self):
+        
+        n = self.graphdb.reference_node
+        self.assertNotEqual(n, None)
         
     def test_can_create_relationship(self):
         with self.graphdb.transaction:
