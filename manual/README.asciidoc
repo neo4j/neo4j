@@ -69,4 +69,5 @@ Useful links when configuring the docbook toolchain:
 === With apt-get on Ubuntu ===
 
   sudo apt-get install asciidoc docbook graphviz w3m
+  sudo docbook-register
 
