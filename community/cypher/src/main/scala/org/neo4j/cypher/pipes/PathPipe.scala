@@ -17,18 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.commands
+package org.neo4j.cypher.pipes
 
-import org.neo4j.graphdb.Direction
-import scala.Some
+import org.neo4j.cypher.commands.{RelatedTo, PathItem, PathIdentifier}
+import org.neo4j.cypher.{PathImpl, SymbolTable}
+import org.neo4j.graphdb.PropertyContainer
 
-abstract class Pattern
+class PathPipe(source: Pipe, path: PathItem) extends Pipe {
+  def foreach[U](f: (Map[String, Any]) => U) {
 
-object RelatedTo {
-  def apply(left: String, right: String, relName: String, relType: String, direction: Direction) =
-    new RelatedTo(left, right, relName, Some(relType), direction)
+
+    source.foreach(m => {
+      def get(x:String):PropertyContainer = m(x).asInstanceOf[PropertyContainer]
+
+      val p = path.pathPattern.flatMap(p => p match {
+        case RelatedTo(left, right, relName, x, xx) => Seq(get(left), get(relName), get(right))
+      })
+
+      val pathImpl = new PathImpl(p: _*)
+
+      f(m.+(path.pathName -> pathImpl))
+    })
+  }
+
+  val symbols: SymbolTable = source.symbols.add(Seq(PathIdentifier(path.pathName)))
 }
-
-case class RelatedTo(left: String, right: String, relName: String, relType: Option[String], direction: Direction) extends Pattern
-
-case class PathItem(pathName:String, pathPattern: Pattern*) extends Pattern

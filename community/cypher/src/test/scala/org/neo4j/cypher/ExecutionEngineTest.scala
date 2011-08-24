@@ -26,7 +26,7 @@ import org.junit.{Ignore, Test}
 import parser.CypherParser
 import scala.collection.JavaConverters._
 import org.junit.matchers.JUnitMatchers._
-import org.neo4j.graphdb.{Relationship, Direction, Node}
+import org.neo4j.graphdb.{Path, Relationship, Direction, Node}
 
 class ExecutionEngineTest extends ExecutionEngineTestBase {
 
@@ -120,7 +120,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query.
       start(NodeById("start", start.getId)).
-      matches(RelatedTo("start", "a", None, Some("x"), Direction.BOTH)).
+      matches(RelatedTo("start", "a", "rel", Some("x"), Direction.BOTH)).
       where(Equals(PropertyValue("a", "name"), Literal(name))).
       RETURN(ValueReturnItem(EntityValue("a")))
 
@@ -137,7 +137,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query.
       start(NodeById("start", start.getId)).
-      matches(RelatedTo("start", "a", Some("r"), Some("KNOWS"), Direction.BOTH)).
+      matches(RelatedTo("start", "a", "r", Some("KNOWS"), Direction.BOTH)).
       where(Equals(PropertyValue("r", "name"), Literal("monkey"))).
       RETURN(ValueReturnItem(EntityValue("a")))
 
@@ -166,7 +166,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query.
       start(NodeById("n1", n1.getId)).
-      matches(RelatedTo("n1", "n2", None, Some("KNOWS"), Direction.OUTGOING)).
+      matches(RelatedTo("n1", "n2", "rel", Some("KNOWS"), Direction.OUTGOING)).
       RETURN(ValueReturnItem(EntityValue("n1")), ValueReturnItem(EntityValue("n2")))
 
     val result = execute(query)
@@ -183,7 +183,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query.
       start(NodeById("start", n1.getId)).
-      matches(RelatedTo("start", "x", None, Some("KNOWS"), Direction.OUTGOING)).
+      matches(RelatedTo("start", "x", "rel", Some("KNOWS"), Direction.OUTGOING)).
       RETURN(ValueReturnItem(EntityValue("x")))
 
     val result = execute(query)
@@ -200,7 +200,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query.
       start(NodeById("start", n1.getId)).
-      matches(RelatedTo("start", "x", None, Some("KNOWS"), Direction.OUTGOING)).
+      matches(RelatedTo("start", "x", "rel", Some("KNOWS"), Direction.OUTGOING)).
       RETURN(ValueReturnItem(EntityValue("x")), ValueReturnItem(EntityValue("start")))
 
     val result = execute(query)
@@ -231,8 +231,8 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val query = Query.
       start(NodeById("start", n1.getId)).
       matches(
-      RelatedTo("start", "a", None, Some("KNOWS"), Direction.OUTGOING),
-      RelatedTo("a", "b", None, Some("FRIEND"), Direction.OUTGOING)).
+      RelatedTo("start", "a", "rel", Some("KNOWS"), Direction.OUTGOING),
+      RelatedTo("a", "b", "rel2", Some("FRIEND"), Direction.OUTGOING)).
       RETURN(ValueReturnItem(EntityValue("b")))
 
     val result = execute(query)
@@ -349,7 +349,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query.
       start(NodeById("n", n1.getId, n4.getId)).
-      matches(RelatedTo("n", "x", None, None, Direction.OUTGOING)).
+      matches(RelatedTo("n", "x", "rel", None, Direction.OUTGOING)).
       where(Equals(PropertyValue("n", "animal"), PropertyValue("x", "animal"))).
       RETURN(ValueReturnItem(EntityValue("n")), ValueReturnItem(EntityValue("x")))
 
@@ -403,7 +403,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query.
       start(NodeById("a", refNode.getId)).
-      matches(RelatedTo("a", "b", None, None, Direction.OUTGOING)).
+      matches(RelatedTo("a", "b", "rel", None, Direction.OUTGOING)).
       aggregation(CountStar()).
       RETURN(ValueReturnItem(EntityValue("a")))
 
@@ -496,7 +496,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query.
       start(NodeById("n", 1)).
-      matches(RelatedTo("n", "x", Some("r"), None, Direction.OUTGOING)).
+      matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING)).
       where(Equals(RelationshipTypeValue("r"), Literal("KNOWS"))).
       RETURN(ValueReturnItem(EntityValue("x")))
 
@@ -512,7 +512,7 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query.
       start(NodeById("n", 1)).
-      matches(RelatedTo("n", "x", Some("r"), None, Direction.OUTGOING)).
+      matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING)).
       RETURN(ValueReturnItem(RelationshipTypeValue("r")))
 
     val result = execute(query)
@@ -577,13 +577,24 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
 
     val query = Query.
       start(NodeById("n", 1)).
-      matches(RelatedTo("n", "x", Some("r"), None, Direction.OUTGOING)).
+      matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING)).
       where(Or(Equals(RelationshipTypeValue("r"), Literal("KNOWS")), Equals(RelationshipTypeValue("r"), Literal("HATES")))).
       RETURN(ValueReturnItem(EntityValue("x")))
 
     val result = execute(query)
 
     assertEquals(nodes.slice(1, 3), result.columnAs[Node]("x").toList)
+  }
+
+  @Test def shouldReturnASimplePath() {
+    createNodes("A", "B")
+    val r = relate("A" -> "KNOWS" -> "B")
+
+    val query = new CypherParser().parse("start a=(1) match p=(a-->b) return p")
+
+    val result = execute(query)
+
+    assertEquals(List(PathImpl(node("A"), r, node("B"))), result.columnAs[Path]("p").toList)
   }
 
   @Test def shouldWalkAlternativeRelationships2() {
