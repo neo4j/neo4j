@@ -49,5 +49,5 @@ class QueryBuilder(startItems: Seq[StartItem]) {
     this
   }
 
-  def RETURN(returnItems: ReturnItem*): Query = Query(Return(returnItems: _*), Start(startItems: _*), matching, where, aggregation, orderBy, slice)
+  def returns(returnItems: ReturnItem*): Query = Query(Return(returnItems: _*), Start(startItems: _*), matching, where, aggregation, orderBy, slice)
 }

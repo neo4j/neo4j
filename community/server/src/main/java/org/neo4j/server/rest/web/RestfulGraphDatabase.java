@@ -670,7 +670,7 @@ public class RestfulGraphDatabase
 	        actions.removeNodeIndex( indexName );
 	        return output.noContent();
     	} catch(UnsupportedOperationException e) {
-    		return output.forbidden(e);
+    		return output.methodNotAllowed(e);
     	}
     }
 
@@ -683,7 +683,7 @@ public class RestfulGraphDatabase
 	        actions.removeRelationshipIndex( indexName );
 	        return output.noContent();
     	} catch(UnsupportedOperationException e) {
-    		return output.forbidden(e);
+    		return output.methodNotAllowed(e);
     	}
     }
 
@@ -701,7 +701,7 @@ public class RestfulGraphDatabase
 		}
         catch(UnsupportedOperationException e) 
         {
-			return output.forbidden(e);
+			return output.methodNotAllowed(e);
 		}
         catch ( BadInputException e )
         {
@@ -726,7 +726,7 @@ public class RestfulGraphDatabase
         }
         catch(UnsupportedOperationException e) 
         {
-			return output.forbidden(e);
+			return output.methodNotAllowed(e);
 		}
         catch ( BadInputException e )
         {
@@ -927,7 +927,7 @@ public class RestfulGraphDatabase
         }
         catch(UnsupportedOperationException e) 
         {
-			return output.forbidden(e);
+			return output.methodNotAllowed(e);
 		}
         catch ( NotFoundException nfe )
         {
@@ -951,7 +951,7 @@ public class RestfulGraphDatabase
         }
         catch(UnsupportedOperationException e) 
         {
-			return output.forbidden(e);
+			return output.methodNotAllowed(e);
 		}
         catch ( NotFoundException nfe )
         {
@@ -975,7 +975,7 @@ public class RestfulGraphDatabase
         }
         catch(UnsupportedOperationException e) 
         {
-			return output.forbidden(e);
+			return output.methodNotAllowed(e);
 		}
         catch ( NotFoundException nfe )
         {
@@ -999,7 +999,7 @@ public class RestfulGraphDatabase
         }
         catch(UnsupportedOperationException e) 
         {
-			return output.forbidden(e);
+			return output.methodNotAllowed(e);
 		}
         catch ( NotFoundException nfe )
         {
@@ -1023,7 +1023,7 @@ public class RestfulGraphDatabase
         }
         catch(UnsupportedOperationException e) 
         {
-			return output.forbidden(e);
+			return output.methodNotAllowed(e);
 		}
         catch ( NotFoundException nfe )
         {
@@ -1047,7 +1047,7 @@ public class RestfulGraphDatabase
         }
         catch(UnsupportedOperationException e) 
         {
-			return output.forbidden(e);
+			return output.methodNotAllowed(e);
 		}
         catch ( NotFoundException nfe )
         {

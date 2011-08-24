@@ -34,8 +34,8 @@ with OrderByClause
 with StringExtras {
 
   def query: Parser[Query] = start ~ opt(matching) ~ opt(where) ~ returns ~ opt(order) ~ opt(skip) ~ opt(limit) ^^ {
-    case start ~ matching ~ where ~ returns ~ sort ~ None ~ None => Query(returns._1, start, matching, where, returns._2, sort, None)
-    case start ~ matching ~ where ~ returns ~ sort ~ skip ~ limit => Query(returns._1, start, matching, where, returns._2, sort, Some(Slice(skip, limit)))
+    case start ~ matching ~ where ~ returns ~ order ~ None ~ None => Query(returns._1, start, matching, where, returns._2, order, None)
+    case start ~ matching ~ where ~ returns ~ order ~ skip ~ limit => Query(returns._1, start, matching, where, returns._2, order, Some(Slice(skip, limit)))
   }
 
   private def findErrorLine(idx: Int, message: Seq[String]): String =
@@ -63,6 +63,7 @@ with StringExtras {
     val MissingStartError = """string matching regex `\(\?i\)\\Qstart\\E' expected.*""".r
     val WholeNumberExpected = """string matching regex `\\d\+' expected.*""".r
     val StringExpected = """string matching regex `'\(\[\^'\\p\{Cntrl\}\\\\\]\|\\\\\[\\\\\/bfnrt\]\|\\\\u\[a-fA-F0-9\]\{4\}\)\*'' .*""".r
+
     parseAll(query, queryText) match {
       case Success(r, q) => r
       case NoSuccess(message, input) => message match {

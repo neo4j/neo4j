@@ -31,21 +31,25 @@ trait MatchClause extends JavaTokenParsers with Tokens {
 
   def matching: Parser[Match] = ignoreCase("match") ~> rep1sep(path, ",") ^^ { case matching:List[List[Pattern]] => Match(matching.flatten: _*) }
 
-  def path = pathSegment | pathIdentifier
+  def path = pathSegment | parenPath | noParenPath
 
-  def pathIdentifier : Parser[List[Pattern]] = identity ~ "=" ~ "(" ~ pathSegment ~ ")" ^^ {
-    case p ~ "=" ~ "(" ~ pathPiece ~ ")" => List(PathItem(p, pathPiece: _*))
+  def parenPath : Parser[List[Pattern]] = identity ~ "=" ~ "(" ~ pathSegment ~ ")" ^^ {
+    case p ~ "=" ~ "(" ~ pathSegment ~ ")" => List(PathItem(p, pathSegment: _*))
+  }
+
+  def noParenPath : Parser[List[Pattern]] = identity ~ "=" ~ pathSegment ^^ {
+    case p ~ "=" ~ pathSegment => List(PathItem(p, pathSegment: _*))
   }
 
   def pathSegment: Parser[List[Pattern]] = node ~ rep1(relatedTail) ^^ {
     case head ~ tails => {
-      var last = namer.name(head)
-      val list = tails.map((item) => item match { case (back, rel, relType, forward, end) => {
-        val endName = namer.name(end)
+      var fromNode = namer.name(head)
+      val list = tails.map(item => item match { case (back, rel, relType, forward, end) => {
+        val toNode = namer.name(end)
         val relName = namer.name(rel)
-        val result: Pattern = RelatedTo(last, endName, relName, relType, getDirection(back, forward))
+        val result: Pattern = RelatedTo(fromNode, toNode, relName, relType, getDirection(back, forward))
 
-        last = endName
+        fromNode = toNode
 
         result
       }})
@@ -59,6 +63,7 @@ trait MatchClause extends JavaTokenParsers with Tokens {
       case (false,true) => Direction.OUTGOING
       case _ => Direction.BOTH
     }
+
   class NodeNamer {
     var lastNodeNumber = 0
 

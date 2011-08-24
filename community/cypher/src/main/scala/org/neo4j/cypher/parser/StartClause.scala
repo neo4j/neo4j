@@ -22,7 +22,7 @@ package org.neo4j.cypher.parser
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
 trait StartClause extends JavaTokenParsers with Tokens {
-  def start: Parser[Start] = ignoreCase("start") ~> repsep(nodeByIds | nodeByIndex | nodeByIndexQuery | relsByIds | relsByIndex, ",") ^^ (Start(_: _*))
+  def start: Parser[Start] = ignoreCase("start") ~> rep1sep(nodeByIds | nodeByIndex | nodeByIndexQuery | relsByIds | relsByIndex, ",") ^^ (Start(_: _*))
 
   def nodeByIds = identity ~ "=" ~ "(" ~ rep1sep(wholeNumber, ",") ~ ")" ^^ {
     case varName ~ "=" ~ "(" ~ id ~ ")" => NodeById(varName, id.map(_.toLong).toSeq: _*)

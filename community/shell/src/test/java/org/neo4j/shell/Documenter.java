@@ -133,16 +133,21 @@ public class Documenter
             // TODO Auto-generated catch block
             e1.printStackTrace();
         }
+        out.println();
+        out.println( "[source, bash]" );
+        out.println( "-----" );
+
         for ( Job job : stack )
         {
             try
             {
                 DocOutput output = new DocOutput();
+                String prompt = client.getServer().interpretVariable( "PS1", client.session().get("PS1"), client.session() ).toString();
                 client.getServer().interpretLine( job.query, client.session(),
                         output );
                 String result = output.baos.toString();
                 assertTrue( result + "did not contain " + job.assertion, result.contains( job.assertion ) );
-                doc( job, out, result );
+                doc( job, out, result, prompt );
             }
             catch ( RemoteException e )
             {
@@ -155,34 +160,23 @@ public class Documenter
                 e.printStackTrace();
             }
         }
+        out.println( "-----" );
         out.flush();
         out.close();
 
     }
 
-    private void doc( final Job job, final PrintWriter out, final String result )
+    private void doc( final Job job, final PrintWriter out, final String result, String prompt )
     {
-        out.println();
-        out.println( "* " + job.comment );
         if ( job.query != null && !job.query.isEmpty() )
         {
-            out.println( "+" );
-            out.println( "_Command_" );
-            out.println( "+" );
-            out.println( "[source]" );
-            out.println( "-----" );
-            out.println( " " + job.query );
-            out.println( "-----" );
-        }
-        if ( result != null && !result.isEmpty() )
-        {
-            out.println( "+" );
-            out.println( "_Result_" );
-            out.println( "+" );
-            out.println( "[source]" );
-            out.println( "-----" );
-            out.println( " " + result.replace( "\n", "\n " ) );
-            out.println( "-----" );
+            out.println( " # " + job.comment );
+            out.println( " " + prompt + job.query );
+            if ( result != null && !result.isEmpty() )
+            {
+                out.println( " " + result.replace( "\n", "\n " ) );
+            }
+            out.println();
         }
     }
 }

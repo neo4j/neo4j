@@ -23,7 +23,11 @@ import org.neo4j.cypher.SymbolTable
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import org.neo4j.cypher.commands.{Identifier, RelationshipIdentifier, NodeIdentifier}
 
-class StartPipe[T <: PropertyContainer](name: String, source: Iterable[T]) extends Pipe {
+class StartPipe[T <: PropertyContainer](name: String, f: () => Iterable[T]) extends Pipe {
+  def this(name: String, sourceIterable: Iterable[T]) = this(name, () => sourceIterable)
+
+  def source : Iterable[T] = f()
+
   val symbolType: Identifier = source match {
     case nodes: Iterable[Node] => NodeIdentifier(name)
     case rels: Iterable[Relationship] => RelationshipIdentifier(name)

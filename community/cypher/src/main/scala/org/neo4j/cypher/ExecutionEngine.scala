@@ -24,6 +24,7 @@ import pipes._
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
 import collection.Seq
+import index.IndexHits
 import java.lang.{Error, Iterable}
 
 class ExecutionEngine(graph: GraphDatabaseService) {
@@ -38,15 +39,15 @@ class ExecutionEngine(graph: GraphDatabaseService) {
       matching match {
         case None =>
         case Some(m) => {
-          val patterns = m.patterns.map( p=>p match {
-            case r:RelatedTo => List(r)
-            case p:PathItem => p.pathPattern.toList
+          val patterns = m.patterns.map(p => p match {
+            case r: RelatedTo => List(r)
+            case p: PathItem => p.pathPattern.toList
           }).flatten
 
           pipe = new PatternPipe(pipe, patterns)
 
           val paths = m.patterns.filter(_.isInstanceOf[PathItem])
-          paths.foreach( p=> pipe = new PathPipe(pipe, p.asInstanceOf[PathItem]) )
+          paths.foreach(p => pipe = new PathPipe(pipe, p.asInstanceOf[PathItem]))
         }
       }
 
@@ -92,12 +93,16 @@ class ExecutionEngine(graph: GraphDatabaseService) {
     from.startItems.map((item) => {
       item match {
         case NodeByIndex(varName, idxName, key, value) => {
-          val indexHits: Iterable[Node] = graph.index.forNodes(idxName).get(key, value)
-          new StartPipe(varName, indexHits.asScala.toList)
+          new StartPipe(varName, () => {
+            val indexHits: Iterable[Node] = graph.index.forNodes(idxName).get(key, value)
+            indexHits.asScala
+          })
         }
         case NodeByIndexQuery(varName, idxName, query) => {
-          val indexHits: Iterable[Node] = graph.index.forNodes(idxName).query(query)
-          new StartPipe(varName, indexHits.asScala.toList)
+          new StartPipe(varName, ()=>{
+            val indexHits: Iterable[Node] = graph.index.forNodes(idxName).query(query)
+            indexHits.asScala
+          })
         }
         case NodeById(varName, ids@_*) => new StartPipe(varName, ids.map(graph.getNodeById))
         case RelationshipById(varName, ids@_*) => new StartPipe(varName, ids.map(graph.getRelationshipById))
