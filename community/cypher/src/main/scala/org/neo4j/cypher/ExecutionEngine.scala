@@ -24,22 +24,38 @@ import pipes._
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
 import collection.Seq
-import index.IndexHits
 import java.lang.{Error, Iterable}
 
-class ExecutionEngine(graph: GraphDatabaseService) {
+class ExecutionEngine(graph: GraphDatabaseService)
+{
   checkScalaVersion()
 
 
+  def extractReturnItems(returns: Return, aggregation: Option[Aggregation], sort: Option[Sort]): Seq[ReturnItem] =
+  {
+    val aggregation1 = aggregation.getOrElse(new Aggregation())
+    val sort1 = sort.getOrElse(new Sort())
+
+    val aggregationItems = aggregation1.aggregationItems.map(_.concreteReturnItem)
+    val sortItems = sort1.sortItems.map(_.returnItem.concreteReturnItem)
+
+    returns.returnItems ++ aggregationItems ++ sortItems
+  }
+
   @throws(classOf[SyntaxException])
-  def execute(query: Query): ExecutionResult = query match {
-    case Query(returns, start, matching, where, aggregation, sort, slice) => {
+  def execute(query: Query): ExecutionResult = query match
+  {
+    case Query(returns, start, matching, where, aggregation, sort, slice) =>
+    {
       var pipe = createSourcePumps(start).reduceLeft(_ ++ _)
 
-      matching match {
+      matching match
+      {
         case None =>
-        case Some(m) => {
-          val patterns = m.patterns.map(p => p match {
+        case Some(m) =>
+        {
+          val patterns = m.patterns.map(p => p match
+          {
             case r: RelatedTo => List(r)
             case p: PathItem => p.pathPattern.toList
           }).flatten
@@ -51,32 +67,36 @@ class ExecutionEngine(graph: GraphDatabaseService) {
         }
       }
 
-      where match {
+      where match
+      {
         case None =>
         case Some(w) => pipe = new FilterPipe(pipe, w)
       }
 
-      val allReturnItems = returns.returnItems ++
-        aggregation.getOrElse(new Aggregation()).aggregationItems.map(_.concreteReturnItem) ++
-        sort.getOrElse(new Sort()).sortItems.map(_.returnItem.concreteReturnItem)
+      val allReturnItems = extractReturnItems(returns, aggregation, sort)
 
       pipe = new TransformPipe(pipe, allReturnItems)
 
-      aggregation match {
+      aggregation match
+      {
         case None =>
-        case Some(aggr) => {
+        case Some(aggr) =>
+        {
           pipe = new AggregationPipe(pipe, returns.returnItems, aggr.aggregationItems)
         }
       }
 
-      sort match {
+      sort match
+      {
         case None =>
-        case Some(s) => {
+        case Some(s) =>
+        {
           pipe = new SortPipe(pipe, s.sortItems.toList)
         }
       }
 
-      slice match {
+      slice match
+      {
         case None =>
         case Some(x) => pipe = new SlicePipe(pipe, x.from, x.limit)
       }
@@ -85,32 +105,41 @@ class ExecutionEngine(graph: GraphDatabaseService) {
 
       val result = new ColumnFilterPipe(pipe, columns) with ExecutionResult
 
+
+
       result
     }
   }
 
   private def createSourcePumps(from: Start): Seq[Pipe] =
-    from.startItems.map((item) => {
-      item match {
-        case NodeByIndex(varName, idxName, key, value) => {
-          new StartPipe(varName, () => {
+    from.startItems.map(item =>
+      item match
+      {
+        case NodeByIndex(varName, idxName, key, value) =>
+        {
+          new StartPipe(varName, () =>
+          {
             val indexHits: Iterable[Node] = graph.index.forNodes(idxName).get(key, value)
             indexHits.asScala
           })
         }
-        case NodeByIndexQuery(varName, idxName, query) => {
-          new StartPipe(varName, ()=>{
+        case NodeByIndexQuery(varName, idxName, query) =>
+        {
+          new StartPipe(varName, () =>
+          {
             val indexHits: Iterable[Node] = graph.index.forNodes(idxName).query(query)
             indexHits.asScala
           })
         }
         case NodeById(varName, ids@_*) => new StartPipe(varName, ids.map(graph.getNodeById))
         case RelationshipById(varName, ids@_*) => new StartPipe(varName, ids.map(graph.getRelationshipById))
-      }
-    })
 
-  def checkScalaVersion() {
-    if (util.Properties.versionString.matches("^version 2.9.0")) {
+      })
+
+  def checkScalaVersion()
+  {
+    if ( util.Properties.versionString.matches("^version 2.9.0") )
+    {
       throw new Error("Cypher can only run with Scala 2.9.0. It looks like the Scala version is: " +
         util.Properties.versionString)
     }

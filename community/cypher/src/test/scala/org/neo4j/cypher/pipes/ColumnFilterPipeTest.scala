@@ -27,11 +27,11 @@ import org.neo4j.cypher.commands.{EntityValue, ValueReturnItem, NodeIdentifier}
 
 class ColumnFilterPipeTest extends JUnitSuite {
   @Test def shouldReturnColumnsFromReturnItems() {
-    val returnItems = List(ValueReturnItem(EntityValue("foo")))
-    val source = new FakePipe(List(Map("x" -> "x", "foo" -> "bar")), new SymbolTable(NodeIdentifier("foo")))
+    val returnItems = List(ValueReturnItem(EntityValue("extractReturnItems")))
+    val source = new FakePipe(List(Map("x" -> "x", "extractReturnItems" -> "bar")), new SymbolTable(NodeIdentifier("extractReturnItems")))
     val columnPipe = new ColumnFilterPipe(source, returnItems)
 
-    Assert.assertEquals(Set(NodeIdentifier("foo")), columnPipe.symbols.identifiers)
-    Assert.assertEquals(List(Map("foo" -> "bar")), columnPipe.toList)
+    Assert.assertEquals(Set(NodeIdentifier("extractReturnItems")), columnPipe.symbols.identifiers)
+    Assert.assertEquals(List(Map("extractReturnItems" -> "bar")), columnPipe.toList)
   }
 }

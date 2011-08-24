@@ -28,19 +28,19 @@ import org.neo4j.cypher.{SyntaxException, SymbolTable}
 import org.scalatest.junit.JUnitSuite
 class AggregationPipeTest extends JUnitSuite {
   @Test def shouldReturnColumnsFromReturnItems() {
-    val source = new FakePipe(List(), new SymbolTable(NodeIdentifier("foo")))
+    val source = new FakePipe(List(), new SymbolTable(NodeIdentifier("extractReturnItems")))
 
     val returnItems = List(ValueReturnItem(EntityValue("name")))
     val grouping = List(CountStar())
     val aggregationPipe = new AggregationPipe(source, returnItems, grouping)
 
     assertEquals(
-      Set(NodeIdentifier("foo"),AggregationIdentifier("count(*)")),
+      Set(NodeIdentifier("extractReturnItems"),AggregationIdentifier("count(*)")),
       aggregationPipe.symbols.identifiers)
   }
 
   @Test(expected = classOf[SyntaxException]) def shouldThrowSemanticException() {
-    val source = new FakePipe(List(), new SymbolTable(NodeIdentifier("foo")))
+    val source = new FakePipe(List(), new SymbolTable(NodeIdentifier("extractReturnItems")))
 
     val returnItems = List(ValueReturnItem(EntityValue("name")))
     val grouping = List(ValueAggregationItem(Count(EntityValue("none-existing-identifier"))))
@@ -52,7 +52,7 @@ class AggregationPipeTest extends JUnitSuite {
       Map("name" -> "Andres", "age" -> 36),
       Map("name" -> "Peter", "age" -> 38),
       Map("name" -> "Michael", "age" -> 36),
-      Map("name" -> "Michael", "age" -> 31)), new SymbolTable(NodeIdentifier("foo")))
+      Map("name" -> "Michael", "age" -> 31)), new SymbolTable(NodeIdentifier("extractReturnItems")))
 
     val returnItems = List(ValueReturnItem(EntityValue("name")))
     val grouping = List(CountStar())

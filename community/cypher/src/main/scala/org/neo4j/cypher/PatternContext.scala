@@ -29,7 +29,7 @@ import org.neo4j.graphdb.{PropertyContainer, DynamicRelationshipType, Direction}
 
 class PatternContext(source: Pipe, patterns: Seq[Pattern]) {
 
-  val patternSymbolTypes: Seq[Identifier] = patterns.map(pattern => createSymbolType(pattern)).flatten
+  val patternSymbolTypes: Seq[Identifier] = patterns.flatMap(createSymbolType)
 
   val symbolTable = source.symbols.add(patternSymbolTypes)
 

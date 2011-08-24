@@ -127,10 +127,10 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def shouldFilterOnPropWithDecimals() {
     testQuery(
-      "start a = (1) where a.foo = 3.1415 return a",
+      "start a = (1) where a.extractReturnItems = 3.1415 return a",
       Query.
         start(NodeById("a", 1)).
-        where(Equals(PropertyValue("a", "foo"), Literal(3.1415))).
+        where(Equals(PropertyValue("a", "extractReturnItems"), Literal(3.1415))).
         returns(ValueReturnItem(EntityValue("a"))))
   }
 
@@ -567,6 +567,17 @@ class CypherParserTest extends JUnitSuite {
         returns(ValueReturnItem(EntityValue("a"))))
   }
 
+  @Test def threeStepsPath() {
+    testQuery(
+      "start a = (0) match p = ( a-->b-->c ) return a",
+      Query.
+        start(NodeById("a", 0)).
+        matches(PathItem("p",
+          RelatedTo("a","b", "  UNNAMED1", None, Direction.OUTGOING),
+          RelatedTo("b","c", "  UNNAMED2", None, Direction.OUTGOING)
+      )).
+        returns(ValueReturnItem(EntityValue("a"))))
+  }
 
   @Test def pathsShouldBePossibleWithoutParenthesis() {
     testQuery(
