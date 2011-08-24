@@ -225,7 +225,8 @@ public class GremlinPluginFunctionalTest implements GraphHolder
         .payloadType( MediaType.APPLICATION_JSON_TYPE )
         .post( ENDPOINT )
         .entity();
-        assertTrue(response.contains( "[v[3], v[1], you]" ));
+        System.out.println(response);
+        assertTrue(response.contains( ", you]" ));
     }
 
 
@@ -265,8 +266,8 @@ public class GremlinPluginFunctionalTest implements GraphHolder
             + data.get()
             .get( "I" )
             .getId()
-            + ")\n"
-            + "t= new Table()\n"
+            + ");"
+            + "t= new Table();"
             + "i.as('I').out('know').as('friend').out('like').as('likes').table(t,['friend','likes']){it.name}{it.name} >> -1;t;\"}";
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
