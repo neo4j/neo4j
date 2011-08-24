@@ -62,9 +62,19 @@ class RelationshipProxy(extends(RelationshipProxy)):
 
 class PropertyContainer(extends(PropertyContainer)):
     def __getitem__(self, key):
-        return from_java(self.getProperty(key))
+        try:
+            return from_java(self.getProperty(key))
+        except Exception as e:
+            raise KeyError(e.message)
+            
     def __setitem__(self, key, value):
         self.setProperty(key, to_java(value))
+            
+    def __delitem__(self, key):
+        try:
+            return self.removeProperty(key)
+        except Exception as e:
+            raise KeyError(e.message)
   
     def items(self):
         for k in self.getPropertyKeys():

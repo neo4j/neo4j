@@ -74,6 +74,19 @@ class GraphTest(unit_tests.GraphDatabaseTest):
         self.assertEqual(len(values), 2)
         self.assertEqual(values[1],'Thomas Anderson')
         
+    def test_remove_properties(self):
+        with self.graphdb.transaction:
+            node = self.graphdb.node(name='Thomas Anderson', age=42)
+        
+            self.assertEqual(node['name'], 'Thomas Anderson')
+            del node['name']
+            
+            try:
+                node['name']
+                self.assertTrue(False)
+            except Exception as e:
+                self.assertTrue(isinstance(e, KeyError))
+                
     def test_get_node_by_id(self):
         with self.graphdb.transaction:
             node = self.graphdb.node()
