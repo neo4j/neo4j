@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.TreeSet;
 
 import javax.transaction.xa.Xid;
@@ -39,6 +40,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 
 public class DumpLogicalLog
 {
+    private static final String PREFIX = "_logical.log.v";
+
     public static void main( String args[] ) throws IOException
     {
         for ( String arg : args )
@@ -86,10 +89,10 @@ public class DumpLogicalLog
             {
                 public boolean accept( File dir, String name )
                 {
-                    return name.contains( "_logical.log.v" );
+                    return name.contains( PREFIX );
                 }
             } );
-            Collection<String> result = new TreeSet<String>();
+            Collection<String> result = new TreeSet<String>( sequentialComparator() );
             for ( int i = 0; i < files.length; i++ )
             {
                 result.add( files[i].getPath() );
@@ -100,6 +103,26 @@ public class DumpLogicalLog
         {
             return new String[] { string };
         }
+    }
+
+    private static Comparator<? super String> sequentialComparator()
+    {
+        return new Comparator<String>()
+        {
+            @Override
+            public int compare( String o1, String o2 )
+            {
+                return versionOf( o1 ).compareTo( versionOf( o2 ) );
+            }
+
+            private Integer versionOf( String string )
+            {
+                String toFind = PREFIX;
+                int index = string.indexOf( toFind );
+                if ( index == -1 ) throw new RuntimeException( string );
+                return Integer.valueOf( string.substring( index + toFind.length() ) );
+            }
+        };
     }
 
     private static boolean readEntry( FileChannel channel, ByteBuffer buf,
