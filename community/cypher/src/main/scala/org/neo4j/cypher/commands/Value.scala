@@ -20,12 +20,10 @@
 package org.neo4j.cypher.commands
 
 import org.neo4j.cypher.pipes.aggregation._
-import org.neo4j.cypher.{PathImpl, SyntaxException, SymbolTable}
+import org.neo4j.cypher.{SyntaxException, SymbolTable}
 import org.neo4j.graphdb.{Path, NotFoundException, Relationship, PropertyContainer}
 
-abstract sealed class Value {
-  def apply(m: Map[String, Any]): Any
-
+abstract sealed class Value extends (Map[String,Any]=>Any) {
   def identifier: Identifier
 
   def checkAvailable(symbols: SymbolTable)

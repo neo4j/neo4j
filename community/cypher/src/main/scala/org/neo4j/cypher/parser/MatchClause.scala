@@ -31,7 +31,7 @@ trait MatchClause extends JavaTokenParsers with Tokens {
 
   def matching: Parser[Match] = ignoreCase("match") ~> rep1sep(path, ",") ^^ { case matching:List[List[Pattern]] => Match(matching.flatten: _*) }
 
-  def path = pathSegment | parenPath | noParenPath
+  def path : Parser[List[Pattern]] = pathSegment | parenPath | noParenPath
 
   def parenPath : Parser[List[Pattern]] = identity ~ "=" ~ "(" ~ pathSegment ~ ")" ^^ {
     case p ~ "=" ~ "(" ~ pathSegment ~ ")" => List(PathItem(p, pathSegment: _*))

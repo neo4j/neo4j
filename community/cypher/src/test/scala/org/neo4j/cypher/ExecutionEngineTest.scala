@@ -669,7 +669,5 @@ class ExecutionEngineTest extends ExecutionEngineTestBase {
     val query = new CypherParser().parse(q)
     execute(query)
   }
-
-
 }
 
