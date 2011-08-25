@@ -24,12 +24,12 @@
 <script type="text/javascript" src="js/shBrushBash.js"></script>
 <script type="text/javascript" src="js/shBrushPlain.js"></script>
 <script type="text/javascript" src="js/shBrushXml.js"></script>
+<script type="text/javascript" src="js/shBrushGroovy.js"></script>
 
 <!-- activate when needed
 <script type="text/javascript" src="js/shBrushPython.js"></script>
 <script type="text/javascript" src="js/shBrushRuby.js"></script>
 <script type="text/javascript" src="js/shBrushCSharp.js"></script>
-<script type="text/javascript" src="js/shBrushGroovy.js"></script>
 -->
  
 <script type="text/javascript">
