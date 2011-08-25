@@ -73,33 +73,40 @@ class GraphStyle
 	protected void emitGraphStart( Appendable stream ) throws IOException
 	{
 		stream.append( "digraph Neo {\n" );
+		emitHeaders(stream);
+	}
+
+	protected void emitHeaders( Appendable stream ) throws IOException
+    {
         if ( configuration != null )
         {
             configuration.emitHeader( stream );
         }
-		stream.append( "  node [\n" );
-		if ( configuration != null )
-		{
-			configuration.emitHeaderNode( stream );
-		}
-		else
-		{
-			header().emitNode( stream );
-		}
-		stream.append( "  ]\n" );
-		stream.append( "  edge [\n" );
-		if ( configuration != null )
-		{
-			configuration.emitHeaderEdge( stream );
-		}
-		else
-		{
-			header().emitEdge( stream );
-		}
-		stream.append( "  ]\n" );
-	}
+        stream.append( "  node [\n" );
+        if ( configuration != null )
+        {
+            configuration.emitHeaderNode( stream );
+        }
+        else
+        {
+            header().emitNode( stream );
+        }
+        stream.append( "  ]\n" );
+        stream.append( "  edge [\n" );
+        if ( configuration != null )
+        {
+            configuration.emitHeaderEdge( stream );
+        }
+        else
+        {
+            header().emitEdge( stream );
+        }
+        stream.append( "  ]\n" );
 
-	final NodeStyle nodeStyle;
+        
+    }
+
+    final NodeStyle nodeStyle;
 	final RelationshipStyle edgeStyle;
 	private final DefaultStyleConfiguration configuration;
 	private static volatile Header header;
@@ -211,4 +218,6 @@ class GraphStyle
 			stream.append( "    " + key + " = \"" + header.get( key ) + "\"\n" );
 		}
 	}
+	
+
 }

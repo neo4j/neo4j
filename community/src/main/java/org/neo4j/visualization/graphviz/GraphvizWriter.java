@@ -48,7 +48,7 @@ public final class GraphvizWriter
 		this( new GraphStyle( configuration ) );
 	}
 
-	GraphvizWriter( GraphStyle style )
+	public GraphvizWriter( GraphStyle style )
 	{
 		this.style = style;
 	}
