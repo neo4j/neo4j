@@ -28,13 +28,10 @@ import java.util.Map;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
-import junit.framework.Assert;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -43,7 +40,6 @@ import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
 import org.neo4j.server.rest.DocsGenerator;
 import org.neo4j.server.rest.JSONPrettifier;
-import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphHolder;
@@ -327,7 +323,7 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     private String formatGroovy( String script )
     {
         return "_Raw script source_\n\n" +
-        		"[source, java]\n" +
+ "[source, groovy]\n" +
         		"----\n" +
         		script.replace( ";", "\n" ) +
         		"----\n";
