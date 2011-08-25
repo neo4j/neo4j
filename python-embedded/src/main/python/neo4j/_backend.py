@@ -84,6 +84,7 @@ except: # this isn't jython (and doesn't have the java module)
     Evaluator = graphdb.traversal.Evaluator
     NotFoundException = graphdb.NotFoundException
     Index = graphdb.index.Index
+    IndexHits = graphdb.index.IndexHits
     
     rel_type = graphdb.DynamicRelationshipType.withName
     
@@ -133,7 +134,7 @@ else:
     from org.neo4j.graphdb import Direction, DynamicRelationshipType,\
         PropertyContainer, Transaction, GraphDatabaseService, Node, Relationship, Path, NotFoundException
     from org.neo4j.graphdb.traversal import Evaluation, Evaluator
-    from org.neo4j.graphdb.index import Index
+    from org.neo4j.graphdb.index import Index, IndexHits
     from org.neo4j.helpers.collection import IterableWrapper
     from java.util import HashMap
     rel_type = DynamicRelationshipType.withName

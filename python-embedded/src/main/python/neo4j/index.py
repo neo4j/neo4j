@@ -1,5 +1,5 @@
 
-from _backend import extends, Index
+from _backend import extends, Index, IndexHits
 
 #
 # Pythonification of the index API
@@ -42,23 +42,76 @@ class IndexColumn(object):
         return self._idx.add(obj, self.key, value)
 
     def __getitem__(self, value):
-        return IndexHitsProxy(self._idx, self.key, value)
+        return IndexCell(self._idx, self.key, value)
         
     def __delitem__(self, item):
         self._idx.remove(item, self.key)
         
-class IndexHitsProxy(object):
-
+class IndexCell(object):
+    ''' This class supports the
+    del idx['key']['value'][item]
+    semantics.
+    
+    For everything else, it delegates
+    to IndexHits, with some wrapping
+    code.
+    
+    The reason is that we don't want to
+    bother executing an unnecessary index
+    search when we do deletes.
+    '''
+  
     def __init__(self, idx, key, value):
         self._idx = idx
         self.key = key
         self.value = value
 
+    def __len__(self):
+        return self._get_hits(False).__len__()
+
     def __iter__(self):
-        return self._idx.get(self.key, self.value).iterator()
+        return self._get_hits().iterator()
+
+    def __getitem__(self, item):
+        return self._get_hits().__getitem__(item)
         
     def __delitem__(self, item):
         self._idx.remove(item, self.key, self.value)
+        
+    def close(self):
+        if hasattr(self, '_cached_hits'):
+            self._cached_hits.close()
+            del self._cached_hits
+        
+    def _get_hits(self, close=True):
+        if close:
+            self.close()
+        
+        if not hasattr(self, '_cached_hits'):
+            self._cached_hits = self._idx.get(self.key, self.value)
+        return self._cached_hits
+
+
+class IndexHits(extends(IndexHits)):
+
+    def __len__(self):
+        return self.size() if self.size() > 0 else 0
+
+    def __getitem__(self, item):
+        if isinstance(item, slice):
+            i = 0
+            needles = range(*item.indices(len(self)))
+            needle = needles.pop(0)
+            for hit in self:
+                if i == needle:    
+                    yield hit
+                    
+                    if len(needles) == 0:
+                        return
+                        
+                    needle = needles.pop(0)
+                i += 1
+
 
 class Index(extends(Index)):
 

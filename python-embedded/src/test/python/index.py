@@ -61,6 +61,30 @@ class IndexTest(unit_tests.GraphDatabaseTest):
         ret = list(idx.query('akey:avalue'))[0]
         self.assertEqual(ret.id, n.id)
             
+    def test_slice_query_result(self):
+        with self.graphdb.transaction:
+        
+            idx = self.graphdb.node.indexes.create('test')
+            for x in range(50):
+                idx['akey']['avalue'] = self.graphdb.node()
+            
+        it = idx.query('akey:avalue')
+        
+        self.assertTrue(len(list(it[:10])), 10)
+        it.close()
+            
+    def test_slice_get_result(self):
+        with self.graphdb.transaction:
+        
+            idx = self.graphdb.node.indexes.create('test')
+            for x in range(50):
+                idx['akey']['avalue'] = self.graphdb.node()
+            
+        it = idx['akey']['avalue']
+        
+        self.assertTrue(len(list(it[:10])), 10)
+        it.close()
+            
     def test_remove_node_from_index(self):
         with self.graphdb.transaction:
             n = self.graphdb.node()
