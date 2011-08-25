@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>21</version>
+    <version>23</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -172,7 +172,6 @@ the relevant Commercial Agreement.
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>2.0.2</version>
         <configuration>
           <source>1.6</source>
           <target>1.6</target>
