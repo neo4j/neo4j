@@ -30,9 +30,11 @@ from neo4j.index import NodeIndexManager, RelationshipIndexManager
 
 class Nodes(object):
     
-    def __init__(self, db):
-      self.db = db
-      self.indexes = NodeIndexManager(db)
+    def __get__(self, instance, Class):
+        if not hasattr(self, 'db'):
+            self.db = instance
+            self.indexes = NodeIndexManager(instance)
+        return self
     
     def __call__(self, **properties):
         node = self.db.createNode()
@@ -45,7 +47,7 @@ class Nodes(object):
             raise TypeError("Only integer and long values allowed as node ids.")
         try:
             return self.db.getNodeById( items )
-        except Exception as e:
+        except Exception, e:
             raise KeyError(e.message())
             
     def __delitem__(self, item):
@@ -54,16 +56,18 @@ class Nodes(object):
 
 class Relationships(object):
     
-    def __init__(self, db):
-      self.db = db
-      self.indexes = RelationshipIndexManager(db)
+    def __get__(self, instance, Class):
+        if not hasattr(self, 'db'):
+            self.db = instance
+            self.indexes = RelationshipIndexManager(instance)
+        return self
         
     def __getitem__(self, items):
         if not isinstance(items, (int, long)):
             raise TypeError("Only integer and long values allowed as relationship ids.")
         try:
             return self.db.getRelationshipById( items )
-        except Exception as e:
+        except Exception, e:
             raise KeyError(e.message())
             
     def __delitem__(self, item):
@@ -96,17 +100,8 @@ class GraphDatabase(GraphDatabase):
         transaction = property(contextmanager(transaction))
         del contextmanager # from the body of this class
 
-    @property
-    def node(self):
-        if not hasattr(self, '_node'):
-            self._node = Nodes(self)
-        return self._node
-
-    @property
-    def relationship(self):
-        if not hasattr(self, '_relationship'):
-            self._relationship = Relationships(self)
-        return self._relationship
+    node = Nodes()
+    relationship = Relationships()
         
     @property
     def reference_node(self):

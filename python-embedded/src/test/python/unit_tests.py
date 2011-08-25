@@ -162,6 +162,7 @@ else: # imported as a module
             path = join(path,testcase.__name__)
             
             self.graphdb = neo4j.GraphDatabase(path)
+            print repr(self.graphdb)
         def tearDown(self):
             graphdb = getattr(self,'graphdb',None)
             if graphdb is not None:

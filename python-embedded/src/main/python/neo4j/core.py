@@ -49,7 +49,7 @@ class NodeProxy(extends(NodeProxy)):
         return NodeRelationships(self, rel_type(attr))
     
     @property
-    def relationships(self):
+    def rels(self):
         return NodeRelationships(self, None)
 
 class RelationshipProxy(extends(RelationshipProxy)):
@@ -64,7 +64,7 @@ class PropertyContainer(extends(PropertyContainer)):
     def __getitem__(self, key):
         try:
             return from_java(self.getProperty(key))
-        except Exception as e:
+        except Exception, e:
             raise KeyError(e.message)
             
     def __setitem__(self, key, value):
@@ -73,7 +73,7 @@ class PropertyContainer(extends(PropertyContainer)):
     def __delitem__(self, key):
         try:
             return self.removeProperty(key)
-        except Exception as e:
+        except Exception, e:
             raise KeyError(e.message)
   
     def items(self):

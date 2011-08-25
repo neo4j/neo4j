@@ -59,7 +59,7 @@ class IndexTest(unit_tests.GraphDatabaseTest):
         try:
             self.graphdb.node.indexes.get('test1')
             self.assertTrue(False)
-        except Exception as e:
+        except Exception, e:
             self.assertTrue(isinstance(e, ValueError))
             
     def test_query_for_node(self):

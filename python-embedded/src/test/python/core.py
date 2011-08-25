@@ -37,7 +37,7 @@ class GraphTest(unit_tests.GraphDatabaseTest):
         try:
             self.graphdb.node[node_id]
             self.assertEqual(True,False)
-        except Exception as e:
+        except Exception, e:
             self.assertTrue(isinstance(e, KeyError))
         
     def test_delete_node_by_id(self):
@@ -48,7 +48,7 @@ class GraphTest(unit_tests.GraphDatabaseTest):
         try:
             self.graphdb.node[node.id]
             self.assertEqual(True,False)
-        except Exception as e:
+        except Exception, e:
             self.assertTrue(isinstance(e, KeyError))
         
     def test_create_node_with_properties(self):
@@ -84,7 +84,7 @@ class GraphTest(unit_tests.GraphDatabaseTest):
             try:
                 node['name']
                 self.assertTrue(False)
-            except Exception as e:
+            except Exception, e:
                 self.assertTrue(isinstance(e, KeyError))
                 
     def test_get_node_by_id(self):
@@ -114,9 +114,9 @@ class GraphTest(unit_tests.GraphDatabaseTest):
         self.assertEquals(message, "hello graphy world")
         self.assertEquals(rel.type.name(), 'related_to')
         
-        self.assertEquals(len(list(source.relationships)), 2)
-        self.assertEquals(len(list(source.relationships.incoming)), 1)
-        self.assertEquals(len(list(source.relationships.outgoing)), 1)
+        self.assertEquals(len(list(source.rels)), 2)
+        self.assertEquals(len(list(source.rels.incoming)), 1)
+        self.assertEquals(len(list(source.rels.outgoing)), 1)
         
         self.assertEquals(len(list(source.likes)), 1)
         self.assertEquals(len(list(source.likes.incoming)), 1)
@@ -140,7 +140,7 @@ class GraphTest(unit_tests.GraphDatabaseTest):
         try:
             self.graphdb.relationship[rel.id]
             self.assertTrue(False)
-        except Exception as e:
+        except Exception, e:
             self.assertTrue(isinstance(e, KeyError))
         
     def test_delete_relationship_by_id(self):
@@ -154,7 +154,7 @@ class GraphTest(unit_tests.GraphDatabaseTest):
         try:
             self.graphdb.relationship[rel.id]
             self.assertTrue(False)
-        except Exception as e:
+        except Exception, e:
             self.assertTrue(isinstance(e, KeyError))
 
 if __name__ == '__main__':
