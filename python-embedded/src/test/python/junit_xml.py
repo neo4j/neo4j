@@ -29,7 +29,6 @@ import sys
 import time
 import traceback
 import unittest
-import collections
 from StringIO import StringIO
 from xml.sax import saxutils
 
@@ -69,7 +68,7 @@ class JUnitXMLTestResult(unittest.TestResult):
         self.xml_dir = xml_dir
 
         # The module name of the first test ran
-        self.tests = collections.defaultdict(TestList)
+        self.tests = {}
 
         # Start time
         self.start = None
@@ -90,8 +89,13 @@ class JUnitXMLTestResult(unittest.TestResult):
         args = [test, took, self.stdout.getvalue(), self.stderr.getvalue()]
         self.stdout.truncate(0)
         self.stderr.truncate(0)
-        tests = self.tests[ '.'.join(test.id().split('.')[:-1]) ]
+        
+        testsuite = '.'.join(test.id().split('.')[:-1])
+        if testsuite not in self.tests:
+            self.tests[testsuite] = TestList()
+        tests = self.tests[testsuite]
         tests.took += took
+        
         if self.error:
             tests.errors += 1
             args.extend(['error', self.error])
@@ -164,7 +168,7 @@ class TestInfo(object):
     def from_testcase(cls, testcase, took, out, err, type=None, exc_info=None):
         name = testcase.id().split('.')[-1]
         return cls(name, took, type, exc_info, out, err)
-
+    
     def write_xml(self, stream):
         stream.write('  <testcase name="%s" time="%.3f"' % (self.name,
                                                             self.took))

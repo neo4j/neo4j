@@ -1,0 +1,10 @@
+[[python-embedded]]
+Python embedded client
+======================
+
+include::introduction.txt[]
+
+[[python-embedded-installation]]
+== Installation ==
+
+include::installation.txt[]
