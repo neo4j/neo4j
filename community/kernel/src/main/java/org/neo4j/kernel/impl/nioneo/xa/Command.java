@@ -77,12 +77,12 @@ public abstract class Command extends XaCommand
     static void writeDynamicRecord( LogBuffer buffer, DynamicRecord record )
         throws IOException
     {
-        // id+type+in_use(byte)+prev_block(long)+nr_of_bytes(int)+next_block(long)
+        // id+type+in_use(byte)+nr_of_bytes(int)+next_block(long)
         if ( record.inUse() )
         {
             byte inUse = Record.IN_USE.byteValue();
             buffer.putLong( record.getId() ).putInt( record.getType() ).put(
-                    inUse )/*.putLong( record.getPrevBlock() )*/.putInt(
+                    inUse ).putInt(
                 record.getLength() ).putLong( record.getNextBlock() );
             if ( !record.isLight() )
             {
@@ -109,7 +109,7 @@ public abstract class Command extends XaCommand
     static DynamicRecord readDynamicRecord( ReadableByteChannel byteChannel,
         ByteBuffer buffer ) throws IOException
     {
-        // id+type+in_use(byte)+prev_block(long)+nr_of_bytes(int)+next_block(long)
+        // id+type+in_use(byte)+nr_of_bytes(int)+next_block(long)
         buffer.clear();
         buffer.limit( 13 );
         if ( byteChannel.read( buffer ) != buffer.limit() )
@@ -689,13 +689,13 @@ public abstract class Command extends XaCommand
             if ( inUse )
             {
                 buffer.clear();
-                buffer.limit( 32 );
+                buffer.limit( 16 + PropertyType.getPayloadSize() );
                 if ( byteChannel.read( buffer ) != buffer.limit() )
                 {
                     return null;
                 }
                 buffer.flip();
-                byte category = buffer.get();
+                // /*byte category = */buffer.get();
                 long nextProp = buffer.getLong();
                 long prevProp = buffer.getLong();
                 long[] propBlock = readLongs( buffer, PropertyType.getPayloadSizeLongs() );

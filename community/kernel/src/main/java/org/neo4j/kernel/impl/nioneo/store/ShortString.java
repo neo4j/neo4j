@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.neo4j.kernel.impl.util.Bits.bits;
-
 import java.io.UnsupportedEncodingException;
 import java.util.EnumSet;
 
@@ -478,9 +476,16 @@ enum ShortString
         return false;
     }
 
-    private static void applyInRecord( PropertyRecord target, int keyId, long propBlock )
+    private static void applyInRecord( PropertyRecord target, int keyId,
+            long propBlock )
     {
-        target.setPropBlock( bits( 16 ).or( keyId, 0xFFFFFF ).shiftLeft( 64 ).or( propBlock ).getLongs() );
+//        long data = 0;
+//        data |= ( (long) keyId << 40 );
+//        data |= ( (long) PropertyType.SHORT_STRING.intValue() << 36 );
+//        data |= ( (long) encoding << 32 );
+//        data |= ( (long) stringLength << 28 );
+//
+//        target.setSinglePropBlock( data );
     }
 
     /**

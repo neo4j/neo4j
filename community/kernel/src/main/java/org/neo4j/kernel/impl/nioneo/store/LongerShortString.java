@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.util.Bits;
 
 /**
  * Supports encoding alphanumerical and <code>SP . - + , ' : / _</code>
- * 
+ *
  * (This version assumes 14bytes property block, instead of 8bytes)
  *
  * @author Tobias Ivarsson <tobias.ivarsson@neotechnology.com>
@@ -206,7 +206,7 @@ public enum LongerShortString
         {
             int encOffset = 0x60;
             if ( b == 7 ) return encOffset;
-            
+
             int offset = encOffset + 0x1B;
             switch ( b )
             {
@@ -238,7 +238,7 @@ public enum LongerShortString
      * <pre>
      *    -0 -1 -2 -3 -4 -5 -6 -7   -8 -9 -A -B -C -D -E -F
      * 0- SP  a  b  c  d  e  f  g    h  i  j  k  l  m  n  o
-     * 1-  p  q  r  s  t  u  v  w    x  y  z 
+     * 1-  p  q  r  s  t  u  v  w    x  y  z
      * 2-  0  1  2  3  4  5  6  7    8  9  _  .  -  :  /  +
      * 3-  ,  '  @  |  ;  *  ?  &    %  #  (  )  $  <  >  =
      * </pre>
@@ -419,7 +419,7 @@ public enum LongerShortString
             }
         }
     };
-    
+
     final int encodingHeader;
     final short mask;
     final short step;
@@ -430,7 +430,7 @@ public enum LongerShortString
         this.mask = (short) Bits.rightOverflowMask( step );
         this.step = (short) step;
     }
-    
+
     int maxLength( int payloadSize )
     {
         return ((payloadSize << 3)-24-4-6)/step;
@@ -666,9 +666,10 @@ public enum LongerShortString
     {
         // TODO Make a utility OR:ing in the key/type in the propblock
         data[0] |= ((long)keyId << 40);
-        data[0] |= ((long)encoding << 36);
-        data[0] |= ((long)stringLength << 30);
-        
+        data[0] |= ( (long) PropertyType.SHORT_STRING.intValue() << 36 );
+        data[0] |= ( (long) encoding << 32 );
+        data[0] |= ( (long) stringLength << 26 );
+
         target.setPropBlock( data );
     }
 
@@ -682,11 +683,13 @@ public enum LongerShortString
     {
         Bits bits = new Bits( copyOf( record.getPropBlock(), record.getPropBlock().length ) );
         long firstLong = bits.getLongs()[0];
-        if ( firstLong == 0 ) return "";
-        // [kkkk,kkkk][kkkk,kkkk][kkkk,kkkk][eeee,llll][ll  ,    ]
-        int encoding = (int)((firstLong & 0xF000000000L) >>> 36);
-        int stringLength = (int)((firstLong & 0xFC0000000L) >>> 30);
-        
+        if ( ( firstLong & 0xFFFFFF0FFFFFFFFFL ) == 0 ) return "";
+        /*
+         *  [kkkk,kkkk][kkkk,kkkk][kkkk,kkkk][tttt, eeee][llll,ll  ][    ,    ][    ,    ][    ,    ]
+         */
+        int encoding = (int) ( ( firstLong & 0xF00000000L ) >>> 32 );
+        int stringLength = (int) ( ( firstLong & 0xFC000000L ) >>> 26 );
+
         LongerShortString table;
         switch ( encoding )
         {
@@ -714,7 +717,7 @@ public enum LongerShortString
         }
         return new String( result );
     }
-    
+
     private static Bits newBits( int payloadSize )
     {
         return new Bits( payloadSize );

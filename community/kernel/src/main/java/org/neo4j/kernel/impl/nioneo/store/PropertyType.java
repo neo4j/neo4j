@@ -31,10 +31,10 @@ public enum PropertyType
         {
             return getValue( record.getPropBlock()[0] );
         }
-        
+
         private Boolean getValue( long propBlock )
         {
-            return propBlock == 1 ? Boolean.TRUE : Boolean.FALSE;
+            return ( propBlock & 0x1 ) == 1 ? Boolean.TRUE : Boolean.FALSE;
         }
 
         @Override
@@ -121,7 +121,7 @@ public enum PropertyType
         {
             return Float.valueOf( getValue( record.getPropBlock()[0] ) );
         }
-        
+
         private float getValue( long propBlock )
         {
             return Float.intBitsToFloat( (int) propBlock );
@@ -140,7 +140,7 @@ public enum PropertyType
         {
             return Double.valueOf( Double.longBitsToDouble( record.getPropBlock()[1] ) );
         }
-        
+
         private double getValue( long propBlock )
         {
             return Double.longBitsToDouble( propBlock );
@@ -149,7 +149,8 @@ public enum PropertyType
         @Override
         public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
         {
-            return PropertyDatas.forDouble( record.getKeyIndexId(), record.getId(), getValue( record.getPropBlock()[0] ) );
+            return PropertyDatas.forDouble( record.getKeyIndexId(),
+                    record.getId(), getValue( record.getPropBlock()[1] ) );
         }
     },
     STRING( 8 )
@@ -213,7 +214,7 @@ public enum PropertyType
     };
 
     private final int type;
-    
+
     // TODO In wait of a better place
     private static int payloadSize = PropertyStore.DEFAULT_PAYLOAD_SIZE;
 
@@ -231,9 +232,9 @@ public enum PropertyType
     {
         return type;
     }
-    
+
     public abstract Object getValue( PropertyRecord record, PropertyStore store );
-    
+
     public abstract PropertyData newPropertyData( PropertyRecord record, Object extractedValue );
 
     public static PropertyType getPropertyType( long propBlock, boolean nullOnIllegal )
@@ -257,19 +258,19 @@ public enum PropertyType
         default: throw new InvalidRecordException( "Unknown property type for type " + type );
         }
     }
-    
+
     // TODO In wait of a better place
     public static int getPayloadSize()
     {
         return payloadSize;
     }
-    
+
     // TODO In wait of a better place
     public static int getPayloadSizeLongs()
     {
         return payloadSize >>> 3;
     }
-    
+
     // TODO In wait of a better place
     public static void setPayloadSize( int newPayloadSize )
     {

@@ -1327,7 +1327,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             prevProp.setPrevProp( propertyId );
             propertyRecord.setNextProp( prevProp.getId() );
         }
-        int keyIndexId = index.getKeyId();
+        // int keyIndexId = index.getKeyId();
 //        propertyRecord.setKeyIndexId( keyIndexId );
         nodeRecord.setNextProp( propertyId );
         addPropertyRecord( propertyRecord );

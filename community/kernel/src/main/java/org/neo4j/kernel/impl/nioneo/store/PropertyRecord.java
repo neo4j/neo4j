@@ -42,7 +42,7 @@ public class PropertyRecord extends Abstract64BitRecord
     {
         super( id );
     }
-    
+
     public void setNodeId( long nodeId )
     {
         nodeIdSet = true;
@@ -103,7 +103,7 @@ public class PropertyRecord extends Abstract64BitRecord
     public int getKeyIndexId()
     {
         // [kkkk,kkkk][kkkk,kkkk][kkkk,kkk ],[][][][][]
-        return (int)((propBlock[0] & 0xFFFFFE0000000000L) >> 39);
+        return (int) ( propBlock[0] >> 40 );
     }
 
 //    public void setKeyIndexId( int keyId )
@@ -115,7 +115,7 @@ public class PropertyRecord extends Abstract64BitRecord
     {
         return propBlock;
     }
-    
+
     public long getSinglePropBlock()
     {
         return propBlock[0];
@@ -150,12 +150,12 @@ public class PropertyRecord extends Abstract64BitRecord
     {
         return getType().newPropertyData( this, null );
     }
-    
+
     public PropertyData newPropertyData( Object extractedValue )
     {
         return getType().newPropertyData( this, extractedValue );
     }
-    
+
     @Override
     public String toString()
     {
@@ -171,12 +171,12 @@ public class PropertyRecord extends Abstract64BitRecord
         buf.append( "]]" );
         return buf.toString();
     }
-    
+
     public boolean isChanged()
     {
         return isChanged;
     }
-    
+
     public void setChanged()
     {
         isChanged = true;
@@ -186,7 +186,7 @@ public class PropertyRecord extends Abstract64BitRecord
     {
         return prevProp;
     }
-    
+
     public void setPrevProp( long prev )
     {
         prevProp = prev;

@@ -611,7 +611,7 @@ public class TestXa extends AbstractNeo4jTestCase
         ds.close();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( path() );
-        truncateLogicalLog( 184 ); // master (w/ shortstring) says 155
+        truncateLogicalLog( 168 );
         ds = newNeoStore();
 //        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
 //            lockManager, lockReleaser );
@@ -641,7 +641,7 @@ public class TestXa extends AbstractNeo4jTestCase
         ds.close();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( path() );
-        truncateLogicalLog( 220 ); // master (w/ shortstring) says 171
+        truncateLogicalLog( 185 );
         ds = newNeoStore();
 //        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
 //             lockManager, lockReleaser );
