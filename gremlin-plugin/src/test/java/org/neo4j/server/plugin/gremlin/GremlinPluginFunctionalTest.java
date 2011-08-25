@@ -326,7 +326,7 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     
     private String formatGroovy( String script )
     {
-        return "+Raw script source+\n\n" +
+        return "_Raw script source_\n\n" +
         		"[source, java]\n" +
         		"----\n" +
         		script.replace( ";", "\n" ) +
