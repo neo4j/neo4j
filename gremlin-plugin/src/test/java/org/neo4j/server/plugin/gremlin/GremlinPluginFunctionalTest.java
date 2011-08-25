@@ -278,6 +278,63 @@ public class GremlinPluginFunctionalTest implements GraphHolder
         //there is nothing returned at all.
         assertTrue(response.contains( "cats" ));
     }
+    
+    /**
+     * This example demonstrates that you via the Groovy runtime
+     * embedded with the server have full access to all of the servers
+     * Java APIs.
+     * The below example 
+     * creates Nodes in the database both via the Blueprints and the Neo4j API
+     * indexes the nodes via the native Neo4j Indexing API
+     * constructs a custom Lucene sorting and searching
+     * returns a Neo4j IndexHits result iterator.
+     */
+    @Test
+    @Title("Send an arbitrary Groovy script - Lucene sorting")
+    @Documented
+    public void sendArbtiraryGroovy()
+    {
+        String script = "" +
+                "import org.neo4j.graphdb.index.*;" +
+                "import org.neo4j.index.lucene.*;" +
+                "import org.apache.lucene.search.*;" +
+                "neo4j = g.getRawGraph();" +
+                "tx = neo4j.beginTx();" +
+                "meVertex = g.addVertex([name:'me']);" +
+                "meNode = meVertex.getRawVertex();" +
+                "youNode = neo4j.createNode();" +
+                "youNode.setProperty('name','you');" +
+                "idxManager = neo4j.index();" +
+                "personIndex = idxManager.forNodes('persons');" +
+                "personIndex.add(meNode,'name',meVertex.name);" +
+                "personIndex.add(youNode,'name',youNode.getProperty('name'));" +
+                "tx.success();" +
+                "tx.finish();" +
+                "query = new QueryContext( 'name:*' ).sort( new Sort(new SortField( 'name',SortField.STRING, true ) ) );" +
+                "results = personIndex.query( query );";
+        String payload = "{\"script\":\""+script+"\"}";
+        String response = gen.get()
+        .expectedStatus( Status.OK.getStatusCode() )
+                .payload( JSONPrettifier.parse( payload ) )
+        .payloadType( MediaType.APPLICATION_JSON_TYPE )
+        .description( formatGroovy(script) )
+        .post( ENDPOINT )
+        .entity();
+        assertTrue(response.contains( "me" ));
+    }
+    
+    
+    private String formatGroovy( String script )
+    {
+        return "+Raw script source+\n\n" +
+        		"[source, java]\n" +
+        		"----\n" +
+        		script.replace( ";", "\n" ) +
+        		"----\n";
+    }
+
+
+
     @BeforeClass
     public static void startDatabase()
     {

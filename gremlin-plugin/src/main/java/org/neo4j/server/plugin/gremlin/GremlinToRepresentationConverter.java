@@ -23,6 +23,9 @@ import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jEdge;
 import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
 import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jVertex;
 import com.tinkerpop.gremlin.pipes.util.Table;
+
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.server.rest.repr.*;
 
 import java.util.ArrayList;
@@ -70,12 +73,18 @@ public class GremlinToRepresentationConverter {
             return new NodeRepresentation(((Neo4jVertex) result).getRawVertex());
         } else if (result instanceof Neo4jEdge) {
             return new RelationshipRepresentation(((Neo4jEdge) result).getRawEdge());
+        } else if (result instanceof Node) {
+            return new NodeRepresentation((Node) result);
+        } else if (result instanceof Relationship) {
+            return new RelationshipRepresentation( (Relationship) result);
         } else if (result instanceof Neo4jGraph) {
             return ValueRepresentation.string(((Neo4jGraph) result).getRawGraph().toString());
         } else if (result instanceof Double || result instanceof Float) {
             return ValueRepresentation.number(((Number) result).doubleValue());
-        } else if (result instanceof Long || result instanceof Integer) {
-            return ValueRepresentation.number(((Number) result).longValue());
+        } else if (result instanceof Long) {
+            return ValueRepresentation.number(((Long) result).longValue());
+        } else if (result instanceof Integer) {
+            return ValueRepresentation.number(((Integer) result).intValue());
         } else {
             return ValueRepresentation.string(result.toString());
         }

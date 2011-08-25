@@ -198,7 +198,7 @@ public class GremlinPluginTest
     public void testExecuteScriptLong() throws Exception
     {
         Assert.assertEquals(
-                1l,
+                1L,
                 parser.parse( json.format( GremlinPluginTest.executeTestScript( "1", null) ) ) );
     }
 
@@ -233,7 +233,6 @@ public class GremlinPluginTest
                 json.format( GremlinPluginTest.executeTestScript( "1;\n2", null) ) );
     }
 
-   
     @Test
     public void testMultiThread()
     {
