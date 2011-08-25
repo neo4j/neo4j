@@ -28,27 +28,20 @@ import scala.collection.JavaConverters._
 import org.scalatest.junit.JUnitSuite
 
 
-abstract class ExecutionEngineTestBase extends JUnitSuite {
+trait GraphDatabaseTestBase extends JUnitSuite {
   var graph: AbstractGraphDatabase = null
-  var engine: ExecutionEngine = null
   var refNode: Node = null
   var nodes: List[Node] = null
 
   @Before
-  def init() {
+  def baseInit() {
     graph = new ImpermanentGraphDatabase()
-    engine = new ExecutionEngine(graph)
     refNode = graph.getReferenceNode
   }
 
   @After
   def cleanUp() {
     graph.shutdown()
-  }
-
-  def execute(query: Query) = {
-    val result = engine.execute(query)
-    result
   }
 
   def indexNode(n: Node, idxName: String, key: String, value: String) {
