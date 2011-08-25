@@ -154,3 +154,51 @@ Primitive [shape="record" label="Primitive |{boolean|byte|short|int|long|float|d
 
 For further details on float/double values, see http://java.sun.com/docs/books/jls/third_edition/html/typesValues.html#4.2.3[Java Language Specification].
 
+[[graphdb-neo4j-traversal]]
+== Traversal ==
+
+NOTE: This section is work in progress, stay tuned for the real content!
+
+["dot", "graphdb-traversal-description.svg", "meta", scaledwidth="100%"]
+----
+"Traversal Description" [fillcolor="NODEHIGHLIGHT"]
+Expander -> "Traversal Description" [label="what to traverse"]
+Order -> "Traversal Description" [label="where to go next"]
+Uniqueness -> "Traversal Description" [label="avoid duplicates"]
+Evaluator -> "Traversal Description" [label="return and prune policy"]
+
+"Depth First" [TEXTNODE]
+"Breadth First" [TEXTNODE]
+"Relationship Type" [TEXTNODE]
+"Direction" [TEXTNODE]
+"Unique Nodes" [TEXTNODE]
+"Unique Relationships" [TEXTNODE]
+"Unique Paths" [TEXTNODE]
+"Include/Exclude" [TEXTNODE]
+"Prune/Continue" [TEXTNODE]
+
+"Depth First" -> Order [dir="back"]
+"Breadth First" -> Order [dir="back"]
+
+Expander -> "Relationship Type"
+"Direction" -> Expander [dir="back"]
+
+"Unique Nodes" -> Uniqueness [dir="back"]
+"Unique Relationships" -> Uniqueness [dir="back"]
+"Unique Paths" -> Uniqueness [dir="back"]
+
+"Include/Exclude" -> Evaluator [dir="back"]
+Evaluator -> "Prune/Continue"
+
+Traverser [fillcolor="NODE2HIGHLIGHT"]
+"A Node" [fillcolor="NODEHIGHLIGHT"]
+"Traversal Description" -> Traverser [dir="back" label="applies" weight=3.0]
+"A Node" -> Traverser [label="starting point of"]
+Traverser -> Paths [label="result as"]
+Traverser -> Nodes [label="result as"]
+Traverser -> Relationships [label="result as"]
+
+{ rank="same"; Traverser; "A Node" }
+
+----
+

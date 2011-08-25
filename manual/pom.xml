@@ -136,13 +136,6 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.neo4j.app</groupId>
-      <artifactId>neo4j-server</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>docs</classifier>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
       <groupId>org.neo4j.examples</groupId>
       <artifactId>neo4j-server-examples</artifactId>
       <version>${neo4j.version}</version>
@@ -375,11 +368,6 @@
         <configuration>
           <tag>${releaseVersion}</tag>
         </configuration>
-      </plugin>
-      <plugin>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <!-- fix issue with appassembler -->
-        <version>2.4</version>
       </plugin>
     </plugins>
   </build>

@@ -19,6 +19,7 @@ nodeshape=box
 nodestyle=filled,rounded
 #nodeheight=0.37
 nodesep=0.4
+textnode=shape=plaintext,style=diagonals,height=0.2,margin=0.0,0.0
 
 arrowhead=vee
 arrowsize=0.75
@@ -35,6 +36,7 @@ indata=${indata//NODEHIGHLIGHT/$nodehighlight}
 indata=${indata//NODE2HIGHLIGHT/$nodehighlight2}
 indata=${indata//EDGEHIGHLIGHT/$edgehighlight}
 indata=${indata//BOXCOLOR/$boxcolor}
+indata=${indata//TEXTNODE/$textnode}
 
 svgfile=$1
 pngfile="${svgfile%.svg}.png"
@@ -42,7 +44,7 @@ pngfile="${svgfile%.svg}.png"
 prepend="digraph g{ \
   node [shape=\"$nodeshape\" fillcolor=\"$nodefillcolor\" style=\"$nodestyle\" \
     fontsize=$nodefontsize fontname=\"$nodefont\"]
-  edge [arrowhead=\"$arrowhead\" arrowsize=$arrowsize fontsize=$edgefontsize fontname=\"$edgefont\"] \
+  edge [arrowhead=\"$arrowhead\" arrowtail=\"$arrowhead\" arrowsize=$arrowsize fontsize=$edgefontsize fontname=\"$edgefont\"] \
   nodesep=$nodesep \
   fontname=\"$graphfont\" "
 

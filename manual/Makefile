@@ -91,7 +91,7 @@ help:
 	@echo "To set the version, use 'VERSION=[the version]'".
 	@echo "To set the importdir, use 'IMPORTDIR=[the importdir]'".
 
-dist: installfilter html html-check text text-check annotated offline-html pdf manpages upgrade cleanup
+dist: installfilter  offline-html html html-check text text-check annotated pdf manpages upgrade cleanup
 
 clean:
 	-rm -rf $(BUILDDIR)/*
