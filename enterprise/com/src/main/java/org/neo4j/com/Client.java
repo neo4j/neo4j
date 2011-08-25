@@ -157,31 +157,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
             @SuppressWarnings( "unchecked" )
             BlockingReadHandler<ChannelBuffer> reader = (BlockingReadHandler<ChannelBuffer>)
                     channel.getPipeline().get( "blockingHandler" );
-            final Triplet<Channel, ChannelBuffer, ByteBuffer> finalChannelContext = channelContext;
-            DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader, readTimeout )
-            {
-                @Override
-                protected ChannelBuffer readNext()
-                {
-                    ChannelBuffer result = null;
-                    try
-                    {
-                        result = super.readNext();
-                    }
-                    catch ( ComException e )
-                    {
-                        disposeChannel( finalChannelContext );
-                        throw e;
-                    }
-                    
-                    if ( result == null )
-                    {
-                        disposeChannel( finalChannelContext );
-                        throw new ComException( "Channel has been closed" );
-                    }
-                    return result;
-                }
-            };
+            DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader, readTimeout );
             R response = deserializer.read( dechunkingBuffer, channelContext.third() );
             StoreId storeId = readStoreId( dechunkingBuffer, channelContext.third() );
             if ( shouldCheckStoreId( type ) )
@@ -195,7 +171,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
         {
             if ( channelContext != null )
             {
-                disposeChannel( channelContext );
+                closeChannel( channelContext );
             }
             throw new ComException( e );
         }
@@ -263,10 +239,9 @@ public abstract class Client<M> implements ChannelPipelineFactory
         channelPool.release();
     }
 
-    protected void disposeChannel( Triplet<Channel, ChannelBuffer, ByteBuffer> channel )
+    protected void closeChannel( Triplet<Channel, ChannelBuffer, ByteBuffer> channel )
     {
-        channelPool.release();
-        channelPool.dispose( channel );
+        channel.first().close().awaitUninterruptibly();
     }
     
     public ChannelPipeline getPipeline() throws Exception
