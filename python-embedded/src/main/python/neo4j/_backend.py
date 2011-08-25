@@ -117,6 +117,11 @@ except: # this isn't jython (and doesn't have the java module)
             return value
         return from_java(value)
     def to_java(value):
+        if isinstance(value, dict):
+            pyDict = value
+            value = HashMap()
+            for k,v in pyDict.items():
+                value.put(k,v)
         return value
         
     def implements(*interfaces):

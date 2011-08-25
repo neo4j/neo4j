@@ -26,6 +26,17 @@ from neo4j import Direction, Evaluation, Uniqueness
 
 class IndexTest(unit_tests.GraphDatabaseTest):
 
+    def test_create_fulltext_index(self):
+        with self.graphdb.transaction:
+        
+            idx = self.graphdb.node.indexes.create('test', type='fulltext', provider='lucene')
+            idx['akey']['A name of some kind.'] = self.graphdb.node()
+            
+        it = idx.query("akey:name")
+        
+        self.assertTrue(len(it), 1)
+        it.close()
+
     def test_index_node(self):
         with self.graphdb.transaction:
             n = self.graphdb.node()

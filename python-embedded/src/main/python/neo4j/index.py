@@ -1,5 +1,5 @@
 
-from _backend import extends, Index, IndexHits
+from _backend import extends, Index, IndexHits, to_java
 
 #
 # Pythonification of the index API
@@ -10,8 +10,8 @@ class NodeIndexManager(object):
     def __init__(self, db):
         self._index = db.index()
         
-    def create(self, name):
-        return self._index.forNodes(name)
+    def create(self, name, **config):
+        return self._index.forNodes(name, to_java(config))
         
     def get(self, name):
         if self._index.existsForNodes(name):
@@ -23,8 +23,8 @@ class RelationshipIndexManager(object):
     def __init__(self, db):
         self._index = db.index()
         
-    def create(self, name):
-        return self._index.forRelationships(name)
+    def create(self, name, **config):
+        return self._index.forRelationships(name, to_java(config))
         
     def get(self, name):
         if self._index.existsForRelationships(name):
