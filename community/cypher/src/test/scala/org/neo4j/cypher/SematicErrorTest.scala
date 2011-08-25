@@ -24,7 +24,7 @@ import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.graphdb.{Direction, Node}
 
-class SematicErrorTest extends ExecutionEngineTestBase {
+class SematicErrorTest extends ExecutionEngineHelper {
   @Test def returnNodeThatsNotThere() {
     val node: Node = createNode()
 

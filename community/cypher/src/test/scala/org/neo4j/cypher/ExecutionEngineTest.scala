@@ -22,13 +22,13 @@ package org.neo4j.cypher
 import org.neo4j.cypher.commands._
 import org.junit.Assert._
 import java.lang.String
-import org.junit.{Ignore, Test}
 import parser.CypherParser
 import scala.collection.JavaConverters._
 import org.junit.matchers.JUnitMatchers._
 import org.neo4j.graphdb.{Path, Relationship, Direction, Node}
+import org.junit.{Ignore, Test}
 
-class ExecutionEngineTest extends ExecutionEngineTestBase {
+class ExecutionEngineTest extends ExecutionEngineHelper {
 
   @Test def shouldGetReferenceNode() {
     val query = Query.
