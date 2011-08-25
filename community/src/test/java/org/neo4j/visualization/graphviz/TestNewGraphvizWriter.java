@@ -65,7 +65,7 @@ public class TestNewGraphvizWriter
 		try
 		{
 			final Node emil = neo.createNode();
-			emil.setProperty( "name", "Emil Eifrém" );
+			emil.setProperty( "name", "Emil Eifr√©m" );
 			emil.setProperty( "age", 30 );
 			final Node tobias = neo.createNode();
 			tobias.setProperty( "name", "Tobias \"thobe\" Ivarsson" );
