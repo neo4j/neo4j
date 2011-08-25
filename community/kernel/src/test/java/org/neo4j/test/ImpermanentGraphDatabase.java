@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -51,9 +52,10 @@ public class ImpermanentGraphDatabase extends AbstractGraphDatabase
         inner = new EmbeddedGraphDatabase( storeDir, params );
     }
 
-    public ImpermanentGraphDatabase( Map<String, String> params ) throws IOException
+    public ImpermanentGraphDatabase( Map<String, String> params )
+                                                                 throws IOException
     {
-        this(createTempDir(), params);
+        this( createTempDir(), params );
     }
 
     public ImpermanentGraphDatabase() throws IOException
@@ -66,14 +68,14 @@ public class ImpermanentGraphDatabase extends AbstractGraphDatabase
         this( storeDir, new HashMap<String, String>() );
     }
 
-
     private static String createTempDir() throws IOException
     {
 
         File d = File.createTempFile( "neo4j-test", "dir" );
         if ( !d.delete() )
         {
-            throw new RuntimeException( "temp config directory pre-delete failed" );
+            throw new RuntimeException(
+                    "temp config directory pre-delete failed" );
         }
         if ( !d.mkdirs() )
         {
@@ -99,7 +101,8 @@ public class ImpermanentGraphDatabase extends AbstractGraphDatabase
         }
         if ( !file.delete() )
         {
-            throw new RuntimeException( "Couldn't empty database. Offending file:" + file );
+            throw new RuntimeException(
+                    "Couldn't empty database. Offending file:" + file );
         }
     }
 
@@ -195,5 +198,33 @@ public class ImpermanentGraphDatabase extends AbstractGraphDatabase
     public boolean isReadOnly()
     {
         return inner.isReadOnly();
+    }
+
+    public void cleanContent()
+    {
+        Transaction tx = inner.beginTx();
+        try
+        {
+            for ( Node node : inner.getAllNodes() )
+            {
+                for ( Relationship rel : node.getRelationships( Direction.OUTGOING ) )
+                {
+                    rel.delete();
+                }
+                if ( !node.hasRelationship() )
+                {
+                    node.delete();
+                }
+            }
+            tx.success();
+        }
+        catch ( Exception e )
+        {
+            tx.failure();
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
 }
