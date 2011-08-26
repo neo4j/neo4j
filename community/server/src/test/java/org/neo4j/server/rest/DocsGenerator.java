@@ -23,9 +23,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -40,8 +42,12 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.TestData.Producer;
+import org.neo4j.visualization.graphviz.AsciiDocStyle;
+import org.neo4j.visualization.graphviz.GraphvizWriter;
+import org.neo4j.walk.Walker;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientRequest;
@@ -86,6 +92,7 @@ public class DocsGenerator
     private MediaType payloadMediaType = MediaType.APPLICATION_JSON_TYPE;
     private final List<String> expectedHeaderFields = new ArrayList<String>();
     private String payload;
+    private GraphDatabaseService graph;
 
     /**
      * Creates a documented test case. Finish building it by using one of these:
@@ -109,6 +116,12 @@ public class DocsGenerator
     private DocsGenerator( final String title )
     {
         this.title = title;
+    }
+    
+    public DocsGenerator setGraph(GraphDatabaseService graph)
+    {
+        this.graph = graph;
+        return this;
     }
 
     /**
@@ -511,6 +524,11 @@ public class DocsGenerator
                 line( fw, data.description );
                 line( fw, "" );
             }
+            if( graph != null) {
+                line(fw, "[\"dot\", \""+name+".svg\", \"neoviz\"]");
+                fw.append( createGraphViz( graph ));
+                line(fw, "" );
+            }
             line( fw, "_Example request_" );
             line( fw, "" );
             line( fw, "* *+" + data.method + "+*  +" + data.uri + "+" );
@@ -576,4 +594,24 @@ public class DocsGenerator
         fw.append( string );
         fw.append( "\n" );
     }
+    
+    private String createGraphViz( GraphDatabaseService graphDatabaseService )
+    {
+        OutputStream out = new ByteArrayOutputStream();
+        GraphvizWriter writer = new GraphvizWriter(new AsciiDocStyle());
+        try
+        {
+            writer.emit( out, Walker.fullGraph( graphDatabaseService ) );
+        }
+        catch ( IOException e )
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return "----\n" +
+                out.toString() +
+                "----\n";
+    }
+    
+
 }
