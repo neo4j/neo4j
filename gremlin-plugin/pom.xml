@@ -104,12 +104,6 @@ the relevant Commercial Agreement.
       <version>${blueprints.version}</version>
       <scope>provided</scope>
     </dependency>
-    <!--end neo4j -->
-
-
-    <!-- <dependency> <groupId>com.tinkerpop</groupId> <artifactId>pipes</artifactId> <version>0.4</version> </dependency> <dependency> <groupId>org.codehaus.groovy</groupId> <artifactId>groovy</artifactId> <version>1.7.5</version> <scope>provided</scope> </dependency> <dependency> <groupId>javax.script</groupId> 
-      <artifactId>script-api</artifactId> <version>1.0</version> </dependency> -->
-    <!--end neo4j -->
 
     <!-- Jackson Dependencies -->
     <dependency>
@@ -150,6 +144,12 @@ the relevant Commercial Agreement.
       <groupId>com.googlecode.json-simple</groupId>
       <artifactId>json-simple</artifactId>
       <version>1.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-graphviz</artifactId>
+      <version>0.2-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
