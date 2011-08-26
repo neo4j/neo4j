@@ -339,7 +339,7 @@ public class GremlinPluginFunctionalTest implements GraphHolder
             script += "\n";
         }
         return "_Raw script source_\n\n" +
-        		"[source, java]\n" +
+ "[source, groovy]\n" +
         		"----\n" +
         		script +
         		"----\n";
