@@ -46,6 +46,7 @@ import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
+import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.TestData;
 
 public class TraverserFunctionalTest
@@ -56,6 +57,7 @@ public class TraverserFunctionalTest
     private long child1_l2;
     private long child1_l3;
     private long child2_l3;
+    private long child2_l4;
 
     private static NeoServerWithEmbeddedWebServer server;
     private static FunctionalTestHelper functionalTestHelper;
@@ -74,6 +76,7 @@ public class TraverserFunctionalTest
     {
         ServerHelper.cleanTheDatabase( server );
         createSmallGraph();
+        gen.get().setGraph( server.getDatabase().graph );
     }
 
     @AfterClass
@@ -98,7 +101,8 @@ public class TraverserFunctionalTest
         child1_l3 = helper.createNode( MapUtil.map( "name", "Peter" ) );
         helper.createRelationship( "knows", child1_l2, child1_l3 );
         child2_l3 = helper.createNode( MapUtil.map( "name", "Tobias" ) );
-        helper.createRelationship( "loves", child1_l2, child2_l3 );
+        child2_l4 = helper.createNode( MapUtil.map( "name", "Sara" ) );
+        helper.createRelationship( "loves", child2_l4, child2_l3 );
         tx.success();
         tx.finish();
     }
@@ -126,6 +130,7 @@ public class TraverserFunctionalTest
     }
 
     @Test
+    @Documented
     public void shouldGetSomeHitsWhenTraversingWithDefaultDescription() throws PropertyValueException
     {
         JaxRsResponse response = traverse(startNode, "");
@@ -160,6 +165,7 @@ public class TraverserFunctionalTest
      * set to 3.
      */
     @Documented
+    //@Graph(value = { "Root knows Mattias", "Root knows Johan", "Johan knows Emil", "Emil knows Tobias", "Tobias loves Sara" })
     @Test
     public void shouldGetExpectedHitsWhenTraversingWithDescription() throws PropertyValueException
     {
