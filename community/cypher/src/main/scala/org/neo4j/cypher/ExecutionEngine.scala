@@ -116,21 +116,19 @@ class ExecutionEngine(graph: GraphDatabaseService)
       item match
       {
         case NodeByIndex(varName, idxName, key, value) =>
-        {
           new StartPipe(varName, () =>
           {
             val indexHits: Iterable[Node] = graph.index.forNodes(idxName).get(key, value)
             indexHits.asScala
           })
-        }
+
         case NodeByIndexQuery(varName, idxName, query) =>
-        {
           new StartPipe(varName, () =>
           {
             val indexHits: Iterable[Node] = graph.index.forNodes(idxName).query(query)
             indexHits.asScala
           })
-        }
+
         case NodeById(varName, ids@_*) => new StartPipe(varName, ids.map(graph.getNodeById))
         case RelationshipById(varName, ids@_*) => new StartPipe(varName, ids.map(graph.getRelationshipById))
 
