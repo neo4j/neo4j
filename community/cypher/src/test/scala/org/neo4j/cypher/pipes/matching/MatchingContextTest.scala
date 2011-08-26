@@ -25,8 +25,12 @@ import org.neo4j.cypher.GraphDatabaseTestBase
 import org.scalatest.Assertions
 import org.neo4j.cypher.commands.{RelatedTo, Pattern}
 import org.neo4j.graphdb.Direction
-import org.junit.Assert._
 
+
+/*
+A few of the tests cast the result to a set before comparing with the expected values. This is because
+Set doesn't care about ordering, but Seq does. The tests should not care about ordering
+ */
 class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
 
   @Test def singleHopSingleMatch() {
@@ -39,7 +43,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
 
     val result = matchingContext.getMatches(Map("a" -> a)).toList
 
-    assert(Seq(Map("a" -> a, "b" -> b, "r" -> r)) === result)
+    assert(result === Seq(Map("a" -> a, "b" -> b, "r" -> r)))
   }
 
   @Test def singleHopDoubleMatch() {
@@ -54,11 +58,10 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
 
     val result = matchingContext.getMatches(Map("a" -> a)).toList
 
-    assert(Seq(
+    assert(result === Seq(
       Map("a" -> a, "b" -> b, "r" -> r1),
       Map("a" -> a, "b" -> c, "r" -> r2)
-    ) === result)
-
+    ))
   }
 
   @Test def doubleHopDoubleMatch() {
@@ -76,8 +79,35 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
 
     val result = matchingContext.getMatches(Map("a" -> a)).toList
 
-    assertTrue(result.contains(Map("a" -> a, "b" -> c, "c" -> b, "r1" -> r2, "r2" -> r1)))
-    assertTrue(result.contains(Map("a" -> a, "b" -> b, "c" -> c, "r1" -> r1, "r2" -> r2)))
+    assert(result.toSet === Set(
+      Map("a" -> a, "b" -> c, "c" -> b, "r1" -> r2, "r2" -> r1),
+      Map("a" -> a, "b" -> b, "c" -> c, "r1" -> r1, "r2" -> r2)))
   }
 
+  @Test def theDreadedDiamondTest() {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+    val d = createNode()
+
+    val r1 = relate(a, b, "x")
+    val r2 = relate(a, c, "x")
+    val r3 = relate(b, d, "x")
+    val r4 = relate(c, d, "x")
+
+    val patterns: Seq[Pattern] = Seq(
+      RelatedTo("a", "b", "r1", None, Direction.OUTGOING),
+      RelatedTo("a", "c", "r2", None, Direction.OUTGOING),
+      RelatedTo("b", "d", "r3", None, Direction.OUTGOING),
+      RelatedTo("c", "d", "r4", None, Direction.OUTGOING)
+    )
+
+    val matchingContext = new MatchingContext(patterns)
+
+    val result = matchingContext.getMatches(Map("a" -> a)).toList
+
+    assert( result.toSet === Set(
+      Map("a" -> a, "b" -> b, "c" -> c, "d" -> d, "r1" -> r1, "r2" -> r2, "r3" -> r3, "r4" -> r4),
+      Map("a" -> a, "b" -> c, "c" -> b, "d" -> d, "r1" -> r2, "r2" -> r1, "r3" -> r4, "r4" -> r3)) )
+  }
 }
