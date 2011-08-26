@@ -48,7 +48,7 @@ function versionSwitcher( $ )
 
   var contentElement = $( CONTENT_ELEMENT );
 
-  var versionSelector = $( '<select style="position: absolute; right: 5%;" name="version-selector"></select>' );
+  var versionSelector = $( '<select id="version-selector" name="version-selector"></select>' );
 
   loadVersionsIntoSelector( availableDocVersions, versionSelector );
 

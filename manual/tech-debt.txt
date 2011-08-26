@@ -1,0 +1,2 @@
+* the output should be checked for graphviz syntax errors
+

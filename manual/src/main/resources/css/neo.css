@@ -23,3 +23,220 @@ body #toolbar_item command_help {
   font-size: 14px !important;
 }
 
+html
+{
+  background: url("header-bg.png") repeat-x;
+}
+
+html body
+{
+  background: url("logo.gif") no-repeat 100% 24px;
+  margin: 0 5%;
+  position: absolute;
+  width: 90%;
+  padding-top: 14px;
+}
+
+body, div.navheader th, div.navheader td, div.navfooter td
+{
+  font-family: "Lucida Bright", Cambria, serif;
+}
+
+
+h1, h2, h3, h4, h5, h6,
+div.toc p b,
+div.important th, div.info th, div.tip th,
+div.warning th, div.note th, div.caution th,
+p.legalnotice-title,
+div.refnamediv p,
+div.sidebar p.title,
+th,
+td p strong
+{
+  color: #15708E;
+  font-family: Candara, Myriad Pro, Myriad, "Lucida Sans","Trebuchet MS",sans-serif;
+}
+
+body h4.title
+{
+  margin-bottom: 0;
+}
+
+td p strong
+{
+  font-size: 1.067em;
+}
+
+div.navheader table
+{
+  position: absolute;
+  top: 112px;
+  right: 1em;
+  width: 4em;
+}
+
+#version-selector
+{
+  position: absolute; 
+  right: 1em; 
+  top: 140px;
+}
+
+body h2.title, body h1.title, div.refnamediv p
+{
+  color: #ffffff;
+  border-bottom: none;
+  margin-top: 2.2em;
+  margin-bottom: .7em;
+}
+
+body h1.title
+{
+  margin-top: 0;
+  padding-top: 0;
+  margin-bottom: 0;
+}
+
+div.part h1.title
+{
+  margin-top: 1.5em;
+}
+
+div.titlepage h3.corpauthor
+{
+  color: #ffffff;
+}
+
+div.titlepage h3.corpauthor a.ulink, div.titlepage h3.corpauthor a.ulink:link, 
+div.titlepage h3.corpauthor a.ulink:visited, div.titlepage h3.corpauthor a.ulink:hover
+div.titlepage h3.corpauthor a.ulink:focus, div.titlepage h3.corpauthor a.ulink:active 
+{
+  color: #dddddd;
+  text-decoration: none;
+  font-style: normal;
+  padding-left: 0.6em;
+}
+
+div.refnamediv h2
+{
+  display: none;
+}
+
+div.refnamediv p
+{
+  font-size: 1em;
+  font-weight: bold;
+  margin-top: 3em;
+  margin-bottom: 2em;
+  width: 60%;
+  line-height: 1.2;
+}
+
+p, li, dt, div.navheader th, div.navheader td, div.navfooter td
+{
+  font-family: "Lucida Bright", Cambria, serif;
+  font-size: .9375em;
+}
+
+p, ul, ol
+{
+  margin-top: 0;
+  margin-bottom: 1em;
+}
+
+div.toc p, div.list-of-figures p, div.list-of-tables p
+{
+  margin-top: 1.5em;
+}
+
+div.toc p b, div.list-of-figures p b, div.list-of-tables p b, div.sidebar p b
+{
+  font-style: normal;
+  font-weight: bold;
+}
+
+p.copyright
+{
+  margin-top: 20px;
+}
+
+code.literal
+{
+  font-family: Consolas, Monaco, monospace;
+  font-size: .933em;
+}
+
+td code.literal
+{
+  font-size: .867em;
+}
+
+li
+{
+  line-height: 1.3em;
+}
+
+p
+{
+  line-height: 1.6em;
+  max-width: 45em;
+}
+
+ul, ol
+{
+  max-width: 38em;
+}
+
+div.sidebar
+{
+  max-width: 30em;
+  padding: 0.67em 1em;
+  background: #c1d5d9 url("content-bg.png") repeat-x;
+}
+
+div.sidebar p.title
+{
+  margin: 0;
+}
+div.sidebar ul
+{
+  margin-top: 0.3em;
+  margin-bottom: 0.3em;
+}
+
+p b, div.figure p.title b, div.table p.title b
+{
+  font-style: italic;
+  font-weight: normal;
+}
+
+div.important td p, div.info td p, div.tip td p,
+div.warning td p, div.note td p, div.caution td p
+{
+  max-width: 43.5em;
+}
+
+div.important, div.info, div.tip,
+div.warning, div.note, div.caution
+{
+  margin-top: 1em;
+}
+
+div.legalnotice
+{
+  padding-top: 3em;
+}
+
+p.legalnotice-title b
+{
+  color: #ffffff;
+  font-size: 1.5em;
+  font-style: normal;
+  font-weight: bold;
+}
+
+p.legalnotice-title
+{
+  margin-bottom: 2em;
+}
+

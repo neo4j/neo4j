@@ -217,6 +217,7 @@ html: manpages copyimages docbook-html
 	rm -rf $(CHUNKEDHTMLDIR)
 	mv $(CHUNKEDSHORTINFOTARGET) $(CHUNKEDHTMLDIR)
 	cp -fr $(JSDIR) $(CHUNKEDHTMLDIR)/js
+	cp -fr $(CSSDIR)/* $(CHUNKEDHTMLDIR)/css
 
 offline-html:  manpages copyimages docbook-html
 	#
@@ -228,6 +229,7 @@ offline-html:  manpages copyimages docbook-html
 	rm -rf $(CHUNKEDOFFLINEHTMLDIR)
 	mv $(CHUNKEDSHORTINFOTARGET) $(CHUNKEDOFFLINEHTMLDIR)
 	cp -fr $(JSDIR) $(CHUNKEDOFFLINEHTMLDIR)/js
+	cp -fr $(CSSDIR)/* $(CHUNKEDOFFLINEHTMLDIR)/css/
 
 # currently builds docbook format first
 singlehtml:  manpages copyimages
@@ -250,6 +252,7 @@ annotated:  manpages copyimages
 	mkdir -p $(ANNOTATEDDIR)
 	a2x $(A2X_FLAGS) -L -a showcomments -f xhtml -D $(ANNOTATEDDIR) --conf-file=$(CONFDIR)/xhtml.conf --asciidoc-opts "--conf-file=$(CONFDIR)/asciidoc.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/docbook45.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/linkedimages.conf" --xsl-file=$(CONFDIR)/xhtml.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
 	cp -fr $(SRCDIR)/js $(ANNOTATEDDIR)/js
+	cp -fr $(SRCDIR)/css/* $(ANNOTATEDDIR)/css
 
 text: docbook-shortinfo
 	#
