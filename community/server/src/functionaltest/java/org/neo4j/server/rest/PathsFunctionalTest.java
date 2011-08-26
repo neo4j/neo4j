@@ -42,7 +42,6 @@ import org.neo4j.test.TestData.Title;
 
 public class PathsFunctionalTest extends AbstractRestFunctionalTestBase
 {
-    private static final String NODES = "http://localhost:7474/db/data/node/";
 
     /**
      * The +shortestPath+ algorithm can find multiple paths between the same
