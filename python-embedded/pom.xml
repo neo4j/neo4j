@@ -72,6 +72,8 @@
               <executable>${python}</executable>
               <workingDirectory>src/test/python</workingDirectory>
               <arguments>
+                <!--argument>-J-Xdebug</argument>
+                <argument>-J-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=1044</argument-->
                 <argument>unit_tests.py</argument>
                 <argument>--classpath</argument><classpath/>
                 <argument>--junit</argument>

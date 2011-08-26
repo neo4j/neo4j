@@ -27,14 +27,13 @@ __all__ = 'GraphDatabase',\
 from neo4j.core import GraphDatabase, Direction, NotFoundException
 from neo4j.traversal import Traversal, Evaluation, Uniqueness
 from neo4j.index import NodeIndexManager, RelationshipIndexManager
+from neo4j.util import rethrow_current_exception_as
 
 class Nodes(object):
     
-    def __get__(self, instance, Class):
-        if not hasattr(self, 'db'):
-            self.db = instance
-            self.indexes = NodeIndexManager(instance)
-        return self
+    def __init__(self, db):
+        self.db = db
+        self.indexes = NodeIndexManager(db)
     
     def __call__(self, **properties):
         node = self.db.createNode()
@@ -47,8 +46,8 @@ class Nodes(object):
             raise TypeError("Only integer and long values allowed as node ids.")
         try:
             return self.db.getNodeById( items )
-        except Exception, e:
-            raise KeyError(e.message())
+        except:
+            rethrow_current_exception_as(KeyError)
             
     def __delitem__(self, item):
         return self[item].delete()
@@ -56,27 +55,26 @@ class Nodes(object):
 
 class Relationships(object):
     
-    def __get__(self, instance, Class):
-        if not hasattr(self, 'db'):
-            self.db = instance
-            self.indexes = RelationshipIndexManager(instance)
-        return self
+    def __init__(self, db):
+        self.db = db
+        self.indexes = RelationshipIndexManager(db)
         
     def __getitem__(self, items):
         if not isinstance(items, (int, long)):
             raise TypeError("Only integer and long values allowed as relationship ids.")
         try:
             return self.db.getRelationshipById( items )
-        except Exception, e:
-            raise KeyError(e.message())
+        except:
+            rethrow_current_exception_as(KeyError)
             
     def __delitem__(self, item):
         return self[item].delete()
 
 
 class GraphDatabase(GraphDatabase):
-    from neo4j.core import __new__
-
+    
+    from core import __new__
+    
     try:
         from contextlib import contextmanager
     except:
@@ -99,9 +97,18 @@ class GraphDatabase(GraphDatabase):
 ''')
         transaction = property(contextmanager(transaction))
         del contextmanager # from the body of this class
-
-    node = Nodes()
-    relationship = Relationships()
+    
+    @property
+    def node(self):
+        # TODO: Figure out a way to cache
+        # this that works in Jython.
+        return Nodes(self)
+        
+    @property
+    def relationship(self):
+        # TODO: Figure out a way to cache
+        # this that works in Jython.
+        return Relationships(self)
         
     @property
     def reference_node(self):
@@ -109,4 +116,5 @@ class GraphDatabase(GraphDatabase):
     
     def traversal(self):
         return Traversal.description()
+        
 

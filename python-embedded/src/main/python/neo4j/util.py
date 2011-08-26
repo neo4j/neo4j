@@ -22,10 +22,22 @@
 """
 
 
+from sys import exc_info
+
 try:
     from functools import update_wrapper
 except:
     # No-op update_wrapper
     def update_wrapper(wrapper, method):
         return wrapper
+        
+def rethrow_current_exception_as(ErrorClass):
+    # Because exceptions that come out of
+    # jython don't subclass exception, but
+    # the ones from JPype do, and because
+    # they behave slightly differently,
+    # we use this boilerplate,.
+    t, e, trace = exc_info()
+    msg = e.message() if hasattr(e.message, '__call__') else e.message
+    raise ErrorClass(msg)
         

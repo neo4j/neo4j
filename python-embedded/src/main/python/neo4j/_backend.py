@@ -90,6 +90,7 @@ except: # this isn't jython (and doesn't have the java module)
     
     kernel  = jpype.JPackage('org.neo4j.kernel')
     EmbeddedGraphDatabase = kernel.EmbeddedGraphDatabase
+    EmbeddedGraphDbImpl = kernel.EmbeddedGraphDbImpl
     Traversal = kernel.Traversal
     TraversalDescriptionImpl = kernel.impl.traversal.TraversalDescriptionImpl
     TraverserImpl = kernel.impl.traversal.TraverserImpl
@@ -99,6 +100,7 @@ except: # this isn't jython (and doesn't have the java module)
     
     helpers = jpype.JPackage('org.neo4j.helpers')
     IterableWrapper = helpers.collection.IterableWrapper
+    PrefetchingIterator = helpers.collection.PrefetchingIterator
     
     HashMap = jpype.JPackage('java.util').HashMap
     
@@ -131,6 +133,9 @@ except: # this isn't jython (and doesn't have the java module)
                 inst.__init__(*args, **kwargs)
                 return jpype.JProxy((interface,), inst=inst)
         return InterfaceProxy
+        
+    def create_embedded_db(*args):
+        return EmbeddedGraphDatabase(*args)
       
 else:
     from org.neo4j.kernel.impl.core import NodeProxy, RelationshipProxy
@@ -151,5 +156,3 @@ else:
         
     def implements(interface):
         return interface
-        
-

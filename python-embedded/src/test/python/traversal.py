@@ -83,8 +83,9 @@ class TraversalTest(unit_tests.GraphDatabaseTest):
             .depthFirst()\
             .evaluator(include_all)\
             .traverse(self.source)
-            
+
         res = list(t.nodes())
+            
         self.assertEqual(len(res), 2)
         
         t = self.graphdb.traversal()\

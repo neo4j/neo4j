@@ -1,9 +1,10 @@
 from _backend import *
 
+from util import rethrow_current_exception_as
+
 #
 # Pythonification of the core API
 #
-
 
 GraphDatabase = extends(GraphDatabaseService)
 def __new__(GraphDatabase, resourceUri, **settings):
@@ -14,12 +15,7 @@ def __new__(GraphDatabase, resourceUri, **settings):
             config.put(key, value)
     return EmbeddedGraphDatabase(resourceUri, config)
 
-# Hack: We need this reference
-# so that we can set BOTH, INCOMING, 
-# and OUTGOING references on the direction
-# class created below.
 _javaDirection = Direction
-
 class Direction(extends(Direction)):
     
     def __repr__(self):
@@ -64,8 +60,8 @@ class PropertyContainer(extends(PropertyContainer)):
     def __getitem__(self, key):
         try:
             return from_java(self.getProperty(key))
-        except Exception, e:
-            raise KeyError(e.message)
+        except:
+            rethrow_current_exception_as(KeyError)
             
     def __setitem__(self, key, value):
         self.setProperty(key, to_java(value))
@@ -147,4 +143,6 @@ class NodeRelationships(object):
 class IterableWrapper(extends(IterableWrapper)):
     
     def __iter__(self): 
-        return self.iterator()
+        it = self.iterator()
+        while it.hasNext():
+            yield it.next() 

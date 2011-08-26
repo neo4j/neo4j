@@ -53,6 +53,4 @@ class TraversalDescriptionImpl(extends(TraversalDescriptionImpl)):
         return self._super__evaluator(ev)
            
 class TraverserImpl(extends(TraverserImpl)):
-    
-    def __iter__(self): 
-        return self.iterator()
+    pass
