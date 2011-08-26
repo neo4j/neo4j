@@ -23,5 +23,8 @@
 
 <xsl:param name="use.id.as.filename" select="1"></xsl:param>
 
+<!-- don't generate annoying title attributes all over the place -->
+<xsl:template name="generate.html.title"/>
+
 </xsl:stylesheet>
 
