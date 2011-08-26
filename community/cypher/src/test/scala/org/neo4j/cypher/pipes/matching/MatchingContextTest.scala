@@ -18,28 +18,66 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-//package org.neo4j.cypher.pipes.matching
-//
-//import org.junit.Test
-//import org.neo4j.cypher.GraphDatabaseTestBase
-//import org.scalatest.Assertions
-//import org.neo4j.cypher.commands.{RelatedTo, Pattern}
-//import org.neo4j.graphdb.Direction
-//
-//class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
-//
-//  @Test def singleHop() {
-//    val a = createNode()
-//    val b = createNode()
-//    val r = relate(a,b, "rel")
-//
-//    val patterns : Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.OUTGOING))
-//    val matchingContext = new MatchingContext(patterns)
-//
-//    val result : Seq[Map[String, Any]] = matchingContext.getMatches(Map("a" -> a))
-//
-//    assert( Seq(Map("a"->a, "b"->b, "r"->r)) === result)
-//
-//  }
-//
-//}
+package org.neo4j.cypher.pipes.matching
+
+import org.junit.Test
+import org.neo4j.cypher.GraphDatabaseTestBase
+import org.scalatest.Assertions
+import org.neo4j.cypher.commands.{RelatedTo, Pattern}
+import org.neo4j.graphdb.Direction
+import org.junit.Assert._
+
+class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
+
+  @Test def singleHopSingleMatch() {
+    val a = createNode()
+    val b = createNode()
+    val r = relate(a, b, "rel")
+
+    val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.OUTGOING))
+    val matchingContext = new MatchingContext(patterns)
+
+    val result = matchingContext.getMatches(Map("a" -> a)).toList
+
+    assert(Seq(Map("a" -> a, "b" -> b, "r" -> r)) === result)
+  }
+
+  @Test def singleHopDoubleMatch() {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+    val r1 = relate(a, b, "rel")
+    val r2 = relate(a, c, "rel")
+
+    val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.OUTGOING))
+    val matchingContext = new MatchingContext(patterns)
+
+    val result = matchingContext.getMatches(Map("a" -> a)).toList
+
+    assert(Seq(
+      Map("a" -> a, "b" -> b, "r" -> r1),
+      Map("a" -> a, "b" -> c, "r" -> r2)
+    ) === result)
+
+  }
+
+  @Test def doubleHopDoubleMatch() {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+    val r1 = relate(a, b, "rel")
+    val r2 = relate(a, c, "rel")
+
+    val patterns: Seq[Pattern] = Seq(
+      RelatedTo("a", "b", "r1", None, Direction.OUTGOING),
+      RelatedTo("a", "c", "r2", None, Direction.OUTGOING)
+    )
+    val matchingContext = new MatchingContext(patterns)
+
+    val result = matchingContext.getMatches(Map("a" -> a)).toList
+
+    assertTrue(result.contains(Map("a" -> a, "b" -> c, "c" -> b, "r1" -> r2, "r2" -> r1)))
+    assertTrue(result.contains(Map("a" -> a, "b" -> b, "c" -> c, "r1" -> r1, "r2" -> r2)))
+  }
+
+}
