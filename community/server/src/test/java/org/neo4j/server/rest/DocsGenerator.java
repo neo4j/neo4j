@@ -595,7 +595,7 @@ public class DocsGenerator
         fw.append( "\n" );
     }
     
-    private String createGraphViz( GraphDatabaseService graphDatabaseService )
+    public String createGraphViz( GraphDatabaseService graphDatabaseService )
     {
         OutputStream out = new ByteArrayOutputStream();
         GraphvizWriter writer = new GraphvizWriter(new AsciiDocStyle());
