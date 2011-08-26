@@ -23,7 +23,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.List;
+
 import org.junit.Test;
+import org.neo4j.kernel.impl.nioneo.store.TestShortString.Charset;
 
 public class TestLongerShortString
 {
@@ -48,12 +51,30 @@ public class TestLongerShortString
     }
     
     @Test
+    public void testRandomStrings() throws Exception
+    {
+        for ( int i = 0; i < 1000; i++ )
+        {
+            for ( Charset charset : Charset.values() )
+            {
+                List<String> list = TestShortString.randomStrings( 100, charset, 30 );
+                for ( String string : list )
+                {
+                    PropertyRecord record = new PropertyRecord( 0 );
+                    if ( LongerShortString.encode( 10, string, record, PropertyStore.DEFAULT_PAYLOAD_SIZE ) )
+                    {
+                        assertEquals( string, LongerShortString.decode( record ) );
+                    }
+                }
+            }
+        }
+    }
+    
+    @Test
     public void canEncodeEmailAndUri() throws Exception
     {
         assertCanEncodeAndDecodeToSame( "mattias@neotechnology.com" );
         assertCanEncodeAndDecodeToSame( "http://domain:7474/" );
-        // With payload size 32 we can fit 32*8/6=42 characters w/ URI encoding
-//        assertCanEncodeAndDecodeToSame( "http://neo4j.org/download?os=linux&v=1.4.1", 32 );
     }
     
     private void assertCanEncodeAndDecodeToSame( String string )

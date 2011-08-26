@@ -321,8 +321,8 @@ public enum LongerShortString
      *    -0 -1 -2 -3 -4 -5 -6 -7   -8 -9 -A -B -C -D -E -F
      * 0- SP  A  B  C  D  E  F  G    H  I  J  K  L  M  N  O
      * 1-  P  Q  R  S  T  U  V  W    X  Y  Z  _  .  -  :  /
-     * 2-  |  a  b  c  d  e  f  g    h  i  j  k  l  m  n  o
-     * 3-  p  q  r  s  t  u  v  w    x  y  z  +  ,  '  @  ;
+     * 2-  ;  a  b  c  d  e  f  g    h  i  j  k  l  m  n  o
+     * 3-  p  q  r  s  t  u  v  w    x  y  z  +  ,  '  @  |
      * </pre>
      */
     ALPHASYM( 8, 6 )
@@ -330,7 +330,12 @@ public enum LongerShortString
         @Override
         char decTranslate( byte codePoint )
         {
-            return EUROPEAN.decTranslate( (byte) ( codePoint + 0x40 ) );
+            if ( codePoint == 0x0 ) return ' ';
+            if ( codePoint <= 0x1A ) return (char)('A' + codePoint - 0x1);
+            if ( codePoint <= 0x1F ) return decPunctuation( codePoint - 0x1B + 1 );
+            if ( codePoint == 0x20 ) return ';';
+            if ( codePoint <= 0x3A ) return (char)('a' + codePoint - 0x21);
+            return decPunctuation( codePoint - 0x3B + 9 );
         }
 
         @Override
@@ -339,7 +344,8 @@ public enum LongerShortString
             // Punctuation is in the same places as European
             if ( b < 0x20 ) return encPunctuation( b ); // Punctuation
             // But the rest is transposed by 0x40
-            return EUROPEAN.encTranslate( b ) - 0x40;
+//            return EUROPEAN.encTranslate( b ) - 0x40;
+            return b - 0x40;
         }
 
         @Override
@@ -347,17 +353,20 @@ public enum LongerShortString
         {
             switch ( b )
             {
-            case 0: return 0x0;
-            case 1: return 0x1B;
-            case 2: return 0x1C;
-            case 3: return 0x1D;
-            case 4: return 0x1E;
-            case 5: return 0x1F;
-            case 6: return 0x3B;
-            case 7: return 0x3C;
-            case 8: return 0x3D;
-            case 9: return 0x3E;
-            case 10: return 0x3F;
+            case 0x0: return 0x0;
+            case 0x1: return 0x1B;
+            case 0x2: return 0x1C;
+            case 0x3: return 0x1D;
+            case 0x4: return 0x1E;
+            case 0x5: return 0x1F;
+            
+            case 0x6: return 0x3B;
+            case 0x7: return 0x3C;
+            case 0x8: return 0x3D;
+            case 0x9: return 0x3E;
+            case 0xA: return 0x3F;
+            
+            case 0xB: return 0x20;
             default: throw cannotEncode( b );
             }
         }

@@ -230,7 +230,7 @@ public class TestShortString
         return null;
     }
 
-    private static List<String> randomStrings( int count, Charset charset, int maxLen )
+    public static List<String> randomStrings( int count, Charset charset, int maxLen )
     {
         List<String> result = new ArrayList<String>( count );
         for ( int i = 0; i < count; i++ )
@@ -242,7 +242,7 @@ public class TestShortString
 
     private static Random random = new Random();
 
-    enum Charset
+    public static enum Charset
     {
         UNIFORM_ASCII
         {

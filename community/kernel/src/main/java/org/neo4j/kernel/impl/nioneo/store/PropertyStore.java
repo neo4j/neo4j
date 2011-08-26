@@ -44,7 +44,7 @@ import org.neo4j.kernel.impl.util.Bits;
 public class PropertyStore extends AbstractStore implements Store
 {
     public static final int DEFAULT_DATA_BLOCK_SIZE = 120;
-    public static final int DEFAULT_PAYLOAD_SIZE = 24;
+    public static final int DEFAULT_PAYLOAD_SIZE = 32;
 
     // store version, each store ends with this string (byte encoded)
     private static final String VERSION = "PropertyStore v0.9.9";
