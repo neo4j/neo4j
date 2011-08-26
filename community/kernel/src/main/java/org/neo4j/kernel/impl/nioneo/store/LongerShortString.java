@@ -742,7 +742,7 @@ public enum LongerShortString
         try
         {
             byte[] bytes = string.getBytes( "UTF-8" );
-            if ( bytes.length > payloadSize ) return false;
+            if ( bytes.length > payloadSize-3-2 ) return false;
             Bits bits = newBits( payloadSize );
             for ( int i = 0; i < bytes.length; i++ )
             {
