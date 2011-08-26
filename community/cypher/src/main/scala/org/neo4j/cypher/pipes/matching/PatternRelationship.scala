@@ -35,7 +35,7 @@ class PatternRelationship(key: String, leftNode: PatternNode, rightNode: Pattern
       case None => realNode.getRelationships(getDirection(node))
     }).asScala.map(new SingleGraphRelationship(_)).toSeq
   }
-  private def getDirection(node: PatternNode): Direction = {
+  protected def getDirection(node: PatternNode): Direction = {
     dir match {
       case Direction.OUTGOING => if (node == leftNode) Direction.OUTGOING else Direction.INCOMING
       case Direction.INCOMING => if (node == rightNode) Direction.OUTGOING else Direction.INCOMING
@@ -43,13 +43,25 @@ class PatternRelationship(key: String, leftNode: PatternNode, rightNode: Pattern
     }
   }
 
+  override def toString = String.format("PatternRelationship[key=%s, left=%s, right=%s]", key, leftNode, rightNode)
 }
 
 class VariableLengthPatternRelationship(pathName: String, val start: PatternNode, val end: PatternNode, minHops: Int, maxHops: Int, relType: Option[String], dir: Direction)
   extends PatternRelationship(pathName, start, end, relType, dir) {
 
   override def getGraphRelationships(node: PatternNode, realNode: Node): Seq[GraphRelationship] = {
-    val traversalDescription: TraversalDescription = Traversal.description().evaluator(Evaluators.includingDepths(minHops, maxHops))
+    val baseTraversalDescription: TraversalDescription = Traversal.description()
+      .evaluator(Evaluators.includingDepths(minHops, maxHops))
+
+    val traversalDescription = relType match {
+      case Some(typeName) => baseTraversalDescription.expand(Traversal.expanderForTypes(DynamicRelationshipType.withName(typeName), getDirection(node)))
+      case None => baseTraversalDescription.expand(Traversal.expanderForAllTypes(getDirection(node)))
+    }
+
     traversalDescription.traverse(realNode).asScala.toSeq.map(p => VariableLengthGraphRelationship(p))
   }
+
+  override def toString = String.format("VariableLengthPatternRelationship[pathName=%s, start=%s, end=%s]", key, start, end)
+
 }
+

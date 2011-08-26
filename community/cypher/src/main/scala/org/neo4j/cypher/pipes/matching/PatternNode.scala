@@ -29,7 +29,10 @@ class PatternNode(key: String) extends PatternElement(key) with PinnablePatternE
 
   def getGraphRelationships(node: Node, pRel: PatternRelationship, history:Seq[MatchingPair]): Seq[GraphRelationship] = {
     val relationships = pRel.getGraphRelationships(this, node)
-    relationships.filterNot( gr => gr match { case SingleGraphRelationship(r) => history.exists(h => h.matches(r)) }).toSeq
+    relationships.filterNot( gr => gr match {
+      case SingleGraphRelationship(r) => history.exists(h => h.matches(r))
+      case VariableLengthGraphRelationship(p) => history.exists(h => h.matches(p))
+    }).toSeq
   }
 
   def relateTo(key: String, other: PatternNode, relType: Option[String], dir: Direction): PatternRelationship = {
@@ -46,4 +49,6 @@ class PatternNode(key: String) extends PatternElement(key) with PinnablePatternE
     end.relationships.add(rel)
     rel
   }
+
+  override def toString = String.format("PatternNode[key=%s]", key)
 }
