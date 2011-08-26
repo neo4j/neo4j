@@ -110,4 +110,19 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
       Map("a" -> a, "b" -> b, "c" -> c, "d" -> d, "r1" -> r1, "r2" -> r2, "r3" -> r3, "r4" -> r4),
       Map("a" -> a, "b" -> c, "c" -> b, "d" -> d, "r1" -> r2, "r2" -> r1, "r3" -> r4, "r4" -> r3)) )
   }
+
+
+  @Test def pinnedNodeMakesNoMatches() {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+    relate(a, b, "rel")
+
+    val patterns: Seq[Pattern] = Seq(RelatedTo("a", "c", "r", "rel", Direction.OUTGOING))
+    val matchingContext = new MatchingContext(patterns)
+
+    val result = matchingContext.getMatches(Map("a" -> a, "c"->c)).toList
+
+    assert(result === Seq(  ))
+  }
 }

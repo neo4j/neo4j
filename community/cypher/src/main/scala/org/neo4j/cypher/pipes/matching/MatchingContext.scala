@@ -32,7 +32,7 @@ class MatchingContext(patterns : Seq[Pattern]) {
 
     pinnedPatternNode.pin(pinnedNode.asInstanceOf[Node])
 
-    new PatternMatcher(pinnedPatternNode)
+    new PatternMatcher(pinnedPatternNode, bindings)
 
   }
 

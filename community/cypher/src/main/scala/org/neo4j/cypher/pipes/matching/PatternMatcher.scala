@@ -21,10 +21,34 @@ package org.neo4j.cypher.pipes.matching
 
 import org.neo4j.graphdb.Node
 
-class PatternMatcher(startPoint: PatternNode) extends Traversable[Map[String, Any]] {
+class PatternMatcher(startPoint: PatternNode, bindings: Map[String, Any]) extends Traversable[Map[String, Any]] {
 
   def foreach[U](f: (Map[String, Any]) => U) {
-    traverse(startPoint, startPoint.pinnedEntity.get, Seq(), Seq(), f)
+    traverse(MatchingPair(startPoint, startPoint.pinnedEntity.get), Seq(), Seq(), f)
+  }
+
+  private def traverse[U](current: MatchingPair,
+                          history: Seq[MatchingPair],
+                          future: Seq[MatchingPair],
+                          yielder: Map[String, Any] => U) {
+
+    val patternNode: PatternNode = current.patternElement.asInstanceOf[PatternNode]
+    val node: Node = current.entity.asInstanceOf[Node]
+
+    bindings.get(patternNode.key) match {
+      case Some(pinnedNode) => if (pinnedNode != node) return
+      case None =>
+    }
+
+    patternNode.getPRels(history).toList match {
+      case pRel :: tail => visitNext(patternNode, node, pRel, history,
+        future ++ Seq(MatchingPair(patternNode, node)), yielder)
+
+      case List() => future.toList match {
+        case List() => yieldThis(yielder, history ++ Seq(MatchingPair(patternNode, node)))
+        case next :: rest => traverse(next, history ++ Seq(MatchingPair(patternNode, node)), rest, yielder)
+      }
+    }
   }
 
   private def visitNext[U](patternNode: PatternNode,
@@ -39,7 +63,7 @@ class PatternMatcher(startPoint: PatternNode) extends Traversable[Map[String, An
       val nextNode = rel.getOtherNode(node)
       val nextPNode = pRel.getOtherNode(patternNode)
       val newHistory = history ++ Seq(MatchingPair(patternNode, node), MatchingPair(pRel, rel))
-      traverse(nextPNode, nextNode, newHistory, future, yielder)
+      traverse(MatchingPair(nextPNode, nextNode), newHistory, future, yielder)
     })
 
   }
@@ -50,29 +74,5 @@ class PatternMatcher(startPoint: PatternNode) extends Traversable[Map[String, An
     }).toMap
 
     yielder(resultMap)
-  }
-
-  private def traverse[U](pair: MatchingPair,
-                          history: Seq[MatchingPair],
-                          future: Seq[MatchingPair],
-                          yielder: Map[String, Any] => U) {
-    traverse(pair.patternElement.asInstanceOf[PatternNode], pair.entity.asInstanceOf[Node], history, future, yielder)
-  }
-
-  private def traverse[U](patternNode: PatternNode,
-                          node: Node,
-                          history: Seq[MatchingPair],
-                          future: Seq[MatchingPair],
-                          yielder: Map[String, Any] => U) {
-
-    patternNode.getPRels(history).toList match {
-      case pRel :: tail => visitNext(patternNode, node, pRel, history,
-        future ++ Seq(MatchingPair(patternNode, node)), yielder)
-
-      case List() => future.toList match {
-        case List() => yieldThis(yielder, history ++ Seq(MatchingPair(patternNode, node)))
-        case pair :: tail => traverse(pair, history ++ Seq(MatchingPair(patternNode, node)), tail, yielder)
-      }
-    }
   }
 }
