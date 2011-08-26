@@ -46,18 +46,17 @@ import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
-import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.TestData;
 
 public class TraverserFunctionalTest
 {
     private long startNode;
-    private long child1_l1;
-    private long child2_l1;
-    private long child1_l2;
-    private long child1_l3;
-    private long child2_l3;
-    private long child2_l4;
+    private long mattias;
+    private long johan;
+    private long emil;
+    private long peter;
+    private long tobias;
+    private long sara;
 
     private static NeoServerWithEmbeddedWebServer server;
     private static FunctionalTestHelper functionalTestHelper;
@@ -92,17 +91,18 @@ public class TraverserFunctionalTest
     {
         Transaction tx = server.getDatabase().graph.beginTx();
         startNode = helper.createNode( MapUtil.map( "name", "Root" ) );
-        child1_l1 = helper.createNode( MapUtil.map( "name", "Mattias" ) );
-        helper.createRelationship( "knows", startNode, child1_l1 );
-        child2_l1 = helper.createNode( MapUtil.map( "name", "Johan" ) );
-        helper.createRelationship( "knows", startNode, child2_l1 );
-        child1_l2 = helper.createNode( MapUtil.map( "name", "Emil" ) );
-        helper.createRelationship( "knows", child2_l1, child1_l2 );
-        child1_l3 = helper.createNode( MapUtil.map( "name", "Peter" ) );
-        helper.createRelationship( "knows", child1_l2, child1_l3 );
-        child2_l3 = helper.createNode( MapUtil.map( "name", "Tobias" ) );
-        child2_l4 = helper.createNode( MapUtil.map( "name", "Sara" ) );
-        helper.createRelationship( "loves", child2_l4, child2_l3 );
+        mattias = helper.createNode( MapUtil.map( "name", "Mattias" ) );
+        helper.createRelationship( "knows", startNode, mattias );
+        johan = helper.createNode( MapUtil.map( "name", "Johan" ) );
+        helper.createRelationship( "knows", startNode, johan );
+        emil = helper.createNode( MapUtil.map( "name", "Emil" ) );
+        helper.createRelationship( "knows", johan, emil );
+        peter = helper.createNode( MapUtil.map( "name", "Peter" ) );
+        tobias = helper.createNode( MapUtil.map( "name", "Tobias" ) );
+        helper.createRelationship( "knows", emil, peter );
+        helper.createRelationship( "knows", emil, tobias );
+        sara = helper.createNode( MapUtil.map( "name", "Sara" ) );
+        helper.createRelationship( "loves", sara, tobias );
         tx.success();
         tx.finish();
     }
@@ -136,7 +136,7 @@ public class TraverserFunctionalTest
         JaxRsResponse response = traverse(startNode, "");
         assertEquals( Status.OK.getStatusCode(), response.getStatus() );
         String entity = response.getEntity( String.class );
-        expectNodes( entity, child1_l1, child2_l1 );
+        expectNodes( entity, mattias, johan );
         response.close();
     }
 
@@ -165,7 +165,6 @@ public class TraverserFunctionalTest
      * set to 3.
      */
     @Documented
-    //@Graph(value = { "Root knows Mattias", "Root knows Johan", "Johan knows Emil", "Emil knows Tobias", "Tobias loves Sara" })
     @Test
     public void shouldGetExpectedHitsWhenTraversingWithDescription() throws PropertyValueException
     {
@@ -182,7 +181,7 @@ public class TraverserFunctionalTest
                 .payload( description )
                 .post( functionalTestHelper.nodeUri( startNode ) + "/traverse/node" )
                 .entity();
-        expectNodes( entity, startNode, child1_l1, child1_l3, child2_l3 );
+        expectNodes( entity, startNode, mattias, peter, tobias );
     }
 
     @Test
