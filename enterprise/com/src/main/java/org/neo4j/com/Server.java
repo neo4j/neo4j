@@ -80,10 +80,14 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
     private final Map<Channel, PartialRequest> partialRequests =
             Collections.synchronizedMap( new HashMap<Channel, PartialRequest>() );
     private final int frameLength;
+    
+    // Executor for channels that we know should be finished, but can't due to being
+    // active at the moment.
     private final ExecutorService unfinishedTransactionExecutor;
     
-    // This is because there's a bug in Netty causing some channelClosed/channelDisconnected events
-    // to not be sent. This is merely a safety net
+    // This is because there's a bug in Netty causing some channelClosed/channelDisconnected
+    // events to not be sent. This is merely a safety net to catch the remained of the closed
+    // channels that netty doesn't tell us about.
     private final ScheduledExecutorService silentChannelExecutor;
     
     public Server( M realMaster, final int port, String storeDir, int frameLength )
@@ -99,7 +103,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         this.msgLog = StringLogger.getLogger( storeDir );
         executor = Executors.newCachedThreadPool();
         masterCallExecutor = Executors.newCachedThreadPool();
-        unfinishedTransactionExecutor = Executors.newSingleThreadExecutor();
+        unfinishedTransactionExecutor = Executors.newScheduledThreadPool( 2 );
         channelFactory = new NioServerSocketChannelFactory(
                 executor, executor, maxNumberOfConcurrentTransactions );
         silentChannelExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -136,14 +140,12 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
                 Map<Channel, Boolean/*starting to get old?*/> channels = new HashMap<Channel, Boolean>();
                 synchronized ( connectedSlaveChannels )
                 {
-//                    System.out.println( "EXAMINING " + connectedSlaveChannels.size() + " CHANNELS" );
                     for ( Map.Entry<Channel, Pair<SlaveContext, AtomicLong>> channel : connectedSlaveChannels.entrySet() )
                     {   // Has this channel been silent for a while?
                         long age = System.currentTimeMillis()-channel.getValue().other().get();
-//                        System.out.println( "TEST EXAM " + channel.getKey() + " " + age );
                         if ( age > 30*1000 )
                         {
-//                            System.out.println( "VERY SILENT CHANNEL " + channel );
+                            msgLog.logMessage( "Found a silent channel " + channel + ", " + age );
                             channels.put( channel.getKey(), Boolean.TRUE );
                         }
                         else if ( age > 5*1000 )
@@ -154,10 +156,8 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
                 }
                 for ( Map.Entry<Channel, Boolean> channel : channels.entrySet() )
                 {
-//                    System.out.println( "EXAMINING SILENT CHANNEL " + channel );
                     if ( channel.getValue() || !channel.getKey().isOpen() || !channel.getKey().isConnected() || !channel.getKey().isBound() )
                     {
-//                        System.out.println( "FOUND SILENT CHANNEL " + channel );
                         tryToFinishOffChannel( channel.getKey() );
                     }
                 }
@@ -186,7 +186,6 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
             }
             catch ( Throwable e )
             {
-//                System.out.println( "messageReceived ERROR" );
                 ctx.getChannel().close();
                 tryToFinishOffChannel( ctx.getChannel() );
                 e.printStackTrace();
@@ -202,16 +201,20 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         public void channelClosed( ChannelHandlerContext ctx, ChannelStateEvent e )
                 throws Exception
         {
-//            System.out.println( "CHANNEL CLOSED " + ctx.getChannel() );
-            tryToFinishOffChannel( ctx.getChannel() );
+            if ( !ctx.getChannel().isOpen() )
+            {
+                tryToFinishOffChannel( ctx.getChannel() );
+            }
         }
 
         @Override
         public void channelDisconnected( ChannelHandlerContext ctx, ChannelStateEvent e )
                 throws Exception
         {
-//            System.out.println( "CHANNEL DISCONNECTED " + ctx.getChannel() );
-            tryToFinishOffChannel( ctx.getChannel() );
+            if ( !ctx.getChannel().isConnected() )
+            {
+                tryToFinishOffChannel( ctx.getChannel() );
+            }
         }
 
         @Override
@@ -231,7 +234,6 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         }
         if ( slave == null )
         {
-//            System.out.println( "NO SLAVE FOR CHANNEL " + channel );
             return;
         }
         tryToFinishOffChannel( channel, slave.first() );
@@ -268,7 +270,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
                 catch ( Throwable e )
                 {
                     // Introduce some delay here. it becomes like a busy wait if it never succeeds
-                    sleepNicely( 20 );
+                    sleepNicely( 200 );
                     unfinishedTransactionExecutor.submit( newTransactionFinisher( slave ) );
                 }
             }
@@ -357,7 +359,6 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
                 }
                 catch ( Throwable e )
                 {
-//                    System.out.println( "MASTER CALL ERROR " + context );
                     channel.close();
                     tryToFinishOffChannel( channel, context );
                     throw Exceptions.launderedException( e );
@@ -446,7 +447,6 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
                 {
                     connectedSlaveChannels.put( channel, Pair.of( slave, new AtomicLong( System.currentTimeMillis() ) ) );
                 }
-//                System.out.println( "MAPPED " + channel + " " + slave );
             }
             buffer = channelBuffers.get( channel );
             if ( buffer == null )
@@ -466,7 +466,6 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
             connectedSlaveChannels.remove( channel );
             channelBuffers.remove( channel );
             channelGroup.remove( channel );
-//            System.out.println( "UNMAPPED " + channel + " " + slave );
         }
     }
     

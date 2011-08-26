@@ -54,7 +54,12 @@ public class DechunkingChannelBuffer implements ChannelBuffer
     {
         try
         {
-            return reader.read( timeoutSeconds, TimeUnit.SECONDS );
+            ChannelBuffer result = reader.read( timeoutSeconds, TimeUnit.SECONDS );
+            if ( result == null )
+            {
+                throw new ComException( "Channel has been closed" );
+            }
+            return result;
         }
         catch ( IOException e )
         {

@@ -25,6 +25,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
@@ -71,14 +75,60 @@ public class MasterImpl implements Master
     private final Config graphDbConfig;
     private final StringLogger msgLog;
 
-    private final Map<SlaveContext, Transaction> transactions = Collections
-            .synchronizedMap( new HashMap<SlaveContext, Transaction>() );
+    private final Map<SlaveContext, Pair<Transaction, AtomicLong/*Time since last suspended*/>> transactions = Collections
+            .synchronizedMap( new HashMap<SlaveContext, Pair<Transaction, AtomicLong>>() );
+    private final ScheduledExecutorService unfinishedTransactionsExecutor;
 
     public MasterImpl( GraphDatabaseService db )
     {
         this.graphDb = db;
         this.graphDbConfig = ((AbstractGraphDatabase) db).getConfig();
         this.msgLog = StringLogger.getLogger( ((AbstractGraphDatabase) db ).getStoreDir() );
+        this.unfinishedTransactionsExecutor = Executors.newSingleThreadScheduledExecutor();
+        this.unfinishedTransactionsExecutor.scheduleWithFixedDelay( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    Map<SlaveContext, Pair<Transaction, AtomicLong>> safeTransactions = null;
+                    synchronized ( transactions )
+                    {
+                        safeTransactions = new HashMap<SlaveContext, Pair<Transaction,AtomicLong>>( transactions );
+                    }
+                    
+                    for ( Map.Entry<SlaveContext, Pair<Transaction, AtomicLong>> entry : safeTransactions.entrySet() )
+                    {
+                        long time = entry.getValue().other().get();
+                        if ( time != 0 && System.currentTimeMillis()-time >= 30*1000 )
+                        {
+                            long displayableTime = (time == 0 ? 0 : (System.currentTimeMillis()-time));
+                            msgLog.logMessage( "Found old tx " + entry.getKey() + ", " + entry.getValue().first() + ", " + displayableTime );
+                            try
+                            {
+                                Transaction otherTx = suspendOtherAndResumeThis( entry.getKey() );
+                                rollbackThisAndResumeOther( otherTx, entry.getKey() );
+                                msgLog.logMessage( "Rolled back old tx " + entry.getKey() + ", " + entry.getValue().first() + ", " + displayableTime );
+                            }
+                            catch ( IllegalStateException e )
+                            {
+                                // Expected for waiting transactions
+                            }
+                            catch ( Throwable t )
+                            {
+                                // Not really expected
+                                msgLog.logMessage( "Unable to roll back old tx " + entry.getKey() + ", " + entry.getValue().first() + ", " + displayableTime );
+                            }
+                        }
+                    }
+                }
+                catch ( Throwable t )
+                {
+                    // The show must go on
+                }
+            }
+        }, 5, 5, TimeUnit.SECONDS );
     }
 
     public GraphDatabaseService getGraphDb()
@@ -86,36 +136,22 @@ public class MasterImpl implements Master
         return this.graphDb;
     }
     
-//    public boolean dumpOldLocks()
-//    {
-//        return graphDbConfig.getLockManager().dumpOldLocks();
-//    }
-    
-//    private void debug( SlaveContext slave, Transaction tx, String message )
-//    {
-//        System.out.println( slave + " " + tx + " " + message );
-//    }
-
     private <T extends PropertyContainer> Response<LockResult> acquireLock( SlaveContext context,
             LockGrabber lockGrabber, T... entities )
     {
         Transaction otherTx = suspendOtherAndResumeThis( context );
-//        Transaction tx = getTx( context );
         try
         {
             LockManager lockManager = graphDbConfig.getLockManager();
             LockReleaser lockReleaser = graphDbConfig.getLockReleaser();
             for ( T entity : entities )
             {
-//                debug( context, tx, "WANTS " + entity );
                 lockGrabber.grab( lockManager, lockReleaser, entity );
-//                debug( context, tx, "GOT " + entity );
             }
             return packResponse( context, new LockResult( LockStatus.OK_LOCKED ) );
         }
         catch ( DeadlockDetectedException e )
         {
-//            debug( context, tx, "DEADLOCK" );
             return packResponse( context, new LockResult( e.getMessage() ) );
         }
         catch ( IllegalResourceException e )
@@ -138,9 +174,29 @@ public class MasterImpl implements Master
         return MasterUtil.packResponse( graphDb, context, response, filter );
     }
 
+    private Transaction getTxAndUpdateTimestamp( SlaveContext txId )
+    {
+        Pair<Transaction, AtomicLong> result = transactions.get( txId );
+        
+        // update time stamp to current time so that we know that this tx just completed
+        // a request and can now again start to be monitored, so that it can be
+        // rolled back if it's getting old.
+        result.other().set( System.currentTimeMillis() );
+        return result.first();
+    }
+    
     private Transaction getTx( SlaveContext txId )
     {
-        return transactions.get( txId );
+        Pair<Transaction, AtomicLong> result = transactions.get( txId );
+        if ( result != null )
+        {
+            // set time stamp to zero so that we don't even try to finish it off
+            // if getting old. This is because if the tx is active and old then
+            // it means it's waiting for a lock and we cannot do anything about it.
+            result.other().set( 0 );
+            return result.first();
+        }
+        return null;
     }
 
     private Transaction beginTx( SlaveContext txId )
@@ -150,7 +206,7 @@ public class MasterImpl implements Master
             TransactionManager txManager = graphDbConfig.getTxModule().getTxManager();
             txManager.begin();
             Transaction tx = txManager.getTransaction();
-            transactions.put( txId, tx );
+            transactions.put( txId, Pair.of( tx, new AtomicLong() ) );
             return tx;
         }
         catch ( NotSupportedException e )
@@ -179,7 +235,6 @@ public class MasterImpl implements Master
                 if ( otherTx != null )
                 {
                     txManager.suspend();
-//                    debug( txId, otherTx, "SUSPENDED 1" );
                 }
                 if ( transaction == null )
                 {
@@ -188,7 +243,6 @@ public class MasterImpl implements Master
                 else
                 {
                     txManager.resume( transaction );
-//                    tryResume( txManager, transaction, "1", txId );
                 }
                 return otherTx;
             }
@@ -199,34 +253,16 @@ public class MasterImpl implements Master
         }
     }
 
-//    private void tryResume( TransactionManager txManager,
-//            Transaction transaction, String extraMessage, SlaveContext context ) throws InvalidTransactionException,
-//            SystemException
-//    {
-//        try
-//        {
-//            txManager.resume( transaction );
-//            debug( context, transaction, "RESUMED " + extraMessage );
-//        }
-//        catch ( IllegalStateException e )
-//        {
-//            debug( context, transaction, "NOT RESUMED, was already active" );
-//            throw e;
-//        }
-//    }
-
     void suspendThisAndResumeOther( Transaction otherTx, SlaveContext txId )
     {
         try
         {
             TransactionManager txManager = graphDbConfig.getTxModule().getTxManager();
-//            Transaction tx = getTx( txId );
+            getTxAndUpdateTimestamp( txId );
             txManager.suspend();
-//            debug( txId, tx, "SUSPENDED 2" );
             if ( otherTx != null )
             {
                 txManager.resume( otherTx );
-//                tryResume( txManager, otherTx, "2", txId );
             }
         }
         catch ( Exception e )
@@ -240,14 +276,11 @@ public class MasterImpl implements Master
         try
         {
             TransactionManager txManager = graphDbConfig.getTxModule().getTxManager();
-//            Transaction tx = transactions.remove( txId );
-//            debug( txId, tx, "ROLLING BACK" );
             txManager.rollback();
-//            debug( txId, tx, "ROLLED BACK" );
+            transactions.remove( txId );
             if ( otherTx != null )
             {
                 txManager.resume( otherTx );
-//                tryResume( txManager, otherTx, "3", txId );
             }
         }
         catch ( Exception e )
@@ -402,6 +435,12 @@ public class MasterImpl implements Master
 
         return packResponse( context, null );
     }
+    
+    @Override
+    public void shutdown()
+    {
+        unfinishedTransactionsExecutor.shutdown();
+    }
 
     private SlaveContext makeSureThereIsAtLeastOneKernelTx( SlaveContext context )
     {
@@ -421,7 +460,6 @@ public class MasterImpl implements Master
                 }
                 // Put back slave one tx so that it gets one transaction
                 txs.add( Pair.of( resourceName, dataSource.getLastCommittedTxId() - 1 ) );
-//                System.out.println( "Pushed in one extra tx " + dataSource.getLastCommittedTxId() );
             }
             else
             {

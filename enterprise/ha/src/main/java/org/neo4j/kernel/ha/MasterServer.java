@@ -41,32 +41,11 @@ public class MasterServer extends Server<Master, Void>
 {
     static final int FRAME_LENGTH = Protocol.DEFAULT_FRAME_LENGTH;
     
-//    private final ScheduledExecutorService stats;
-//    private final Master realMaster2;
-    
     public MasterServer( Master realMaster, final int port, String storeDir )
     {
         super( realMaster, port, storeDir, FRAME_LENGTH );
-//        realMaster2 = realMaster;
-//        stats = Executors.newSingleThreadScheduledExecutor();
-//        stats.scheduleWithFixedDelay( oldLocksDumper(), 10, 10, TimeUnit.SECONDS );
     }
     
-//    private Runnable oldLocksDumper()
-//    {
-//        return new Runnable()
-//        {
-//            @Override
-//            public void run()
-//            {
-//                if ( ((MasterImpl)realMaster2).dumpOldLocks() )
-//                {
-//                    System.out.println( "OLD LOCKS" );
-//                }
-//            }
-//        };
-//    }
-
     @Override
     protected RequestType<Master> getRequestContext( byte id )
     {
@@ -86,6 +65,13 @@ public class MasterServer extends Server<Master, Void>
         {
             unmapSlave( channel, context );
         }
+    }
+    
+    @Override
+    public void shutdown()
+    {
+        super.shutdown();
+        getMaster().shutdown();
     }
 
     public Map<Integer, Collection<SlaveContext>> getSlaveInformation()

@@ -53,4 +53,6 @@ public interface Master
     Response<Integer> getMasterIdForCommittedTx( long txId );
 
     Response<Void> copyStore( SlaveContext context, StoreWriter writer );
+    
+    void shutdown();
 }
