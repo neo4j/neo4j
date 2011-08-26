@@ -20,11 +20,11 @@
 
 package org.neo4j.cypher.pipes.matching
 
-import org.junit.Test
 import org.neo4j.cypher.GraphDatabaseTestBase
 import org.scalatest.Assertions
-import org.neo4j.cypher.commands.{RelatedTo, Pattern}
 import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.commands.{VariableLengthPath, RelatedTo, Pattern}
+import org.junit.{Ignore, Test}
 
 
 /*
@@ -177,4 +177,19 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
 
     assert(matchingContext.getMatches(Map("a" -> a)).toList === Seq(Map("a" -> a, "b" -> b, "r" -> r1)))
   }
+
+  @Test @Ignore def variableLengthPath() {
+
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+    relate(a, b, "rel")
+    relate(b, c, "rel")
+
+    val patterns: Seq[Pattern] = Seq(VariableLengthPath("p", "a", "c", 1, 2, "t1", Direction.OUTGOING))
+    val matchingContext = new MatchingContext(patterns)
+
+    assert(matchingContext.getMatches(Map("a" -> a)).toSet === Set(Map("a" -> a, "c" -> b), Map("a" -> a, "c" -> c)))
+  }
+
 }

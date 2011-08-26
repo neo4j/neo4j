@@ -19,18 +19,29 @@
  */
 package org.neo4j.cypher.pipes.matching
 
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.graphdb.{Path, Node, Relationship}
+import java.lang.IllegalArgumentException
 
 abstract class GraphRelationship {
   def getOtherNode(node:Node): Node
 }
 
 case class SingleGraphRelationship(rel: Relationship) extends GraphRelationship {
-  def getOtherNode(node: Node) = {
-    rel.getOtherNode(node)
-  }
+  def getOtherNode(node: Node): Node = rel.getOtherNode(node)
 
   override def canEqual(that: Any) = that.isInstanceOf[SingleGraphRelationship] || that.isInstanceOf[Relationship]
 
   override def equals(obj: Any) = obj == this || obj == rel
+}
+
+case class VariableLengthGraphRelationship(path: Path) extends GraphRelationship {
+  def getOtherNode(node: Node): Node = {
+    if (path.startNode() == node) path.endNode()
+    else if (path.endNode() == node) path.startNode()
+    else throw new IllegalArgumentException("Node is not start nor end of path.")
+  }
+
+  override def canEqual(that: Any) = that.isInstanceOf[VariableLengthGraphRelationship] || that.isInstanceOf[Path]
+
+  override def equals(obj: Any) = obj == this || obj == path
 }
