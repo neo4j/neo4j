@@ -38,6 +38,7 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
 {
 
     private static ImpermanentGraphDatabase graphdb;
+    protected static final String NODES = "http://localhost:7474/db/data/node/";
 
     public @Rule
     TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
@@ -67,8 +68,10 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
     @Before
     public void startServer()
     {
+        graphdb.cleanContent();
         server = new WrappingNeoServerBootstrapper( graphdb );
         server.start();
+        gen.get().setGraph( graphdb );
     }
 
     @After
