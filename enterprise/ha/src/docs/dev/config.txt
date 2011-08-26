@@ -65,3 +65,8 @@ Note that while the +HighlyAvailableGraphDatabase+ supports the same API as the 
 | ha.pull_interval      | interval for polling master from a slave, in seconds | 30 | no
 |========================================================================================
 
+[CAUTION]
+Neo4j's HA setup depends on ZooKeeper which makes certain assumptions about the state of the underlying operating system. In particular ZooKeeper expects 
+that the system time on each machine is set correctly, synchronized with respect to each other. If this is not true, then Neo4j HA will appear to misbehave, caused by seemingly random ZooKeeper hiccups.
+
+
