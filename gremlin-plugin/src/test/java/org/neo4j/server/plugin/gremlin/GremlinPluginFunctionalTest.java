@@ -28,13 +28,10 @@ import java.util.Map;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
-import junit.framework.Assert;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -43,7 +40,6 @@ import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
 import org.neo4j.server.rest.DocsGenerator;
 import org.neo4j.server.rest.JSONPrettifier;
-import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphHolder;
@@ -64,8 +60,7 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     private static WrappingNeoServerBootstrapper server;
 
     /**
-     * Send a Gremlin Script, URL-encoded with UTF-8 encoding, e.g.
-     * the equivalent of the Gremlin Script `i = g.v(1);i.outE.inV`
+     * Scripts can be sent as URL-encoded
      */
     @Test
     @Title("Send a Gremlin Script - URL encoded")
@@ -73,9 +68,11 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     @Graph( value = { "I know you" } )
     public void testGremlinPostURLEncoded() throws UnsupportedEncodingException
     {
+        String script = "i = g.v("+data.get().get( "I" ).getId() +");i.out";
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
-        .payload( "script=" + URLEncoder.encode( "i = g.v("+data.get().get( "I" ).getId() +");i.out", "UTF-8") )
+        .description( formatGroovy( script ) )
+        .payload( "script=" + URLEncoder.encode( script, "UTF-8") )
         .payloadType( MediaType.APPLICATION_FORM_URLENCODED_TYPE )
         .post( ENDPOINT )
         .entity();
@@ -85,19 +82,18 @@ public class GremlinPluginFunctionalTest implements GraphHolder
 
 
     /**
-     * Send a Gremlin Script, URL-encoded with UTF-8 encoding, e.g.
-     * the equivalent of the Gremlin Script `g.v(me).outE.inV`
-     * with additional parameters as { "me" : 123 }.
+     * Send a Gremlin Script, URL-encoded with UTF-8 encoding,
+     * with additional parameters.
      */
-    //TODO: enable this. Needs SimpleJSON as dependency to ParameterList and Server-API @Test
     @Title("Send a Gremlin Script with variables in a JSON Map - URL encoded")
     @Documented
     @Graph( value = { "I know you" } )
     public void testGremlinPostWithVariablesURLEncoded() throws UnsupportedEncodingException
     {
-        final String script = "g.v(me).out";
+        final String script = "g.v(me).out;";
         final String params = "{ \"me\" : "+data.get().get("I").getId()+" }";
         String response = gen.get()
+        .description( formatGroovy( script ) )
         .expectedStatus(Status.OK.getStatusCode())
         .payload( "script=" + URLEncoder.encode(script, "UTF-8")+
                 "&params=" + URLEncoder.encode(params, "UTF-8")
@@ -122,6 +118,7 @@ public class GremlinPluginFunctionalTest implements GraphHolder
         final String params = "{ \"me\" : "+data.get().get("I").getId()+" }";
         final String payload = String.format("{ \"script\" : \"%s\", \"params\" : %s }", script, params);
         String response = gen.get()
+        .description( formatGroovy( script ) )
         .expectedStatus( Status.OK.getStatusCode() )
                 .payload( JSONPrettifier.parse( payload ) )
         .payloadType( MediaType.APPLICATION_JSON_TYPE )
@@ -133,18 +130,21 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     /**
      * Import a graph form a http://graphml.graphdrawing.org/[GraphML] file
      * can be achieved through the Gremlin GraphMLReader.
-     * The following script imports a small graphml file from an URL into Neo4j
-     * and then returns a list of all nodes in the graph.
+     * The following script imports a small GraphML file from an URL into Neo4j, resulting
+     * in the depicted graph. It then
+     *  returns a list of all nodes in the graph.
      */
     @Test
     @Documented
     @Title( "Load a sample graph" )
     public void testGremlinImportGraph() throws UnsupportedEncodingException
     {
+        String script = "g.loadGraphML('https://raw.github.com/neo4j/gremlin-plugin/master/src/data/graphml1.xml');" +
+                "g.V;";
         String payload = "{\"script\":\"" +
-        "g.loadGraphML('https://raw.github.com/neo4j/gremlin-plugin/master/src/data/graphml1.xml');" +
-        "g.V\"}";
+        script  +"\"}";
         String response = gen.get()
+        .description( formatGroovy( script ) )
         .expectedStatus( Status.OK.getStatusCode() )
                 .payload( JSONPrettifier.parse( payload ) )
         .payloadType( MediaType.APPLICATION_JSON_TYPE )
@@ -190,10 +190,12 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     @Graph( value = { "I know you", "I know him" } )
     public void testSortResults() throws UnsupportedEncodingException
     {
-        String payload = "{\"script\":\"g.v(" + data.get()
+        String script = "g.v(" + data.get()
         .get( "I" )
-        .getId() + ").out.sort{it.name}.toList()\"}";
+        .getId() + ").out.sort{it.name}.toList()";
+        String payload = "{\"script\":\""+script +"\"}";
         String response = gen.get()
+        .description( formatGroovy( script ) )
         .expectedStatus( Status.OK.getStatusCode() )
         .payload( JSONPrettifier.parse( payload ) )
         .payloadType( MediaType.APPLICATION_JSON_TYPE )
@@ -215,9 +217,10 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     @Graph( value = { "I know you", "I know him" } )
     public void testScriptWithPaths()
     {
-        String payload = "{\"script\":\"g.v(" + data.get()
+        String script = "g.v(" + data.get()
         .get( "I" )
-        .getId() + ").out.name.paths\"}";
+        .getId() + ").out.name.paths";
+        String payload = "{\"script\":\""+script+"\"}";
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
         .payload( JSONPrettifier.parse( payload ) )
@@ -261,25 +264,28 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     @Graph( value = { "I know Joe", "I like cats", "Joe like cats", "Joe like dogs" } )
     public void testGremlinPostJSONWithTableResult()
     {
-        String payload = "{\"script\":\"i = g.v("
+        String script = "i = g.v("
             + data.get()
             .get( "I" )
             .getId()
             + ");"
             + "t= new Table();"
-            + "i.as('I').out('know').as('friend').out('like').as('likes').table(t,['friend','likes']){it.name}{it.name} >> -1;t;\"}";
+            + "i.as('I').out('know').as('friend').out('like').as('likes').table(t,['friend','likes']){it.name}{it.name} >> -1;t;";
+        String payload = "{\"script\":\""+script +"\"}";
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
                 .payload( JSONPrettifier.parse( payload ) )
         .payloadType( MediaType.APPLICATION_JSON_TYPE )
+        .description( formatGroovy( script ) )
         .post( ENDPOINT )
+        
         .entity();
-        System.out.println(response);
-        //there is nothing returned at all.
         assertTrue(response.contains( "cats" ));
     }
     
     /**
+     * Send an arbitrary Groovy script - Lucene sorting.
+     * 
      * This example demonstrates that you via the Groovy runtime
      * embedded with the server have full access to all of the servers
      * Java APIs.
@@ -290,8 +296,8 @@ public class GremlinPluginFunctionalTest implements GraphHolder
      * returns a Neo4j IndexHits result iterator.
      */
     @Test
-    @Title("Send an arbitrary Groovy script - Lucene sorting")
     @Documented
+    @Graph( value = { "I know Joe", "I like cats", "Joe like cats", "Joe like dogs" } )
     public void sendArbtiraryGroovy()
     {
         String script = "" +
@@ -321,15 +327,21 @@ public class GremlinPluginFunctionalTest implements GraphHolder
         .post( ENDPOINT )
         .entity();
         assertTrue(response.contains( "me" ));
+        
     }
     
     
     private String formatGroovy( String script )
     {
+        script = script.replace( ";", "\n" );
+        if( !script.endsWith( "\n" ) )
+        {
+            script += "\n";
+        }
         return "_Raw script source_\n\n" +
         		"[source, java]\n" +
         		"----\n" +
-        		script.replace( ";", "\n" ) +
+        		script +
         		"----\n";
     }
 
@@ -354,9 +366,11 @@ public class GremlinPluginFunctionalTest implements GraphHolder
 
     @Before
     public void startServer() {
+        ((ImpermanentGraphDatabase)graphdb).cleanContent();
         server = new WrappingNeoServerBootstrapper(
                 graphdb );
         server.start();
+        gen.get().setGraph( graphdb );
     }
 
     @After
