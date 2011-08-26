@@ -60,7 +60,7 @@ class ExecutionEngine(graph: GraphDatabaseService)
             case p: PathItem => p.pathPattern.toList
           }).flatten
 
-          pipe = new PatternPipe(pipe, patterns)
+          pipe = new MatchPipe(pipe, patterns)
 
           val paths = m.patterns.filter(_.isInstanceOf[PathItem])
           paths.foreach(p => pipe = new PathPipe(pipe, p.asInstanceOf[PathItem]))

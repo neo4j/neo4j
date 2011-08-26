@@ -19,11 +19,25 @@
  */
 package org.neo4j.cypher.pipes.matching
 
-import org.neo4j.graphdb.{Relationship, Direction}
+import org.neo4j.graphdb.{DynamicRelationshipType, Node, Relationship, Direction}
 
 class PatternRelationship(key: String, leftNode: PatternNode, rightNode: PatternNode, relType: Option[String], dir: Direction)
   extends PatternElement(key)
   with PinnablePatternElement[Relationship] {
 
-  def getOtherNode(node:PatternNode) = if(leftNode==node) rightNode else leftNode
+  def getOtherNode(node: PatternNode) = if(leftNode==node) rightNode else leftNode
+  def getRealRelationships(node: PatternNode, realNode: Node): java.lang.Iterable[Relationship] = {
+    relType match {
+      case Some(typeName) => realNode.getRelationships(getDirection(node), DynamicRelationshipType.withName(typeName))
+      case None => realNode.getRelationships(getDirection(node))
+    }
+  }
+  private def getDirection(node: PatternNode): Direction = {
+    dir match {
+      case Direction.OUTGOING => if (node == leftNode) Direction.OUTGOING else Direction.INCOMING
+      case Direction.INCOMING => if (node == rightNode) Direction.OUTGOING else Direction.INCOMING
+      case Direction.BOTH => Direction.BOTH
+    }
+  }
+
 }

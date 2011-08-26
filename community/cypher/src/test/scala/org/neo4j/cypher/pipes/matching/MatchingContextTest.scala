@@ -112,7 +112,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
   }
 
 
-  @Test def pinnedNodeMakesNoMatches() {
+  @Test def pinnedNodeMakesNoMatchesInDisjunctGraph() {
     val a = createNode()
     val b = createNode()
     val c = createNode()
@@ -124,5 +124,57 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     val result = matchingContext.getMatches(Map("a" -> a, "c"->c)).toList
 
     assert(result === Seq(  ))
+  }
+
+  @Test def pinnedNodeMakesNoMatches() {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+    val d = createNode()
+
+    val r1 = relate(a, b, "x")
+    val r2 = relate(a, c, "x")
+    val r3 = relate(b, d, "x")
+    val r4 = relate(c, d, "x")
+
+    val patterns: Seq[Pattern] = Seq(
+      RelatedTo("a", "b", "r1", None, Direction.OUTGOING),
+      RelatedTo("a", "c", "r2", None, Direction.OUTGOING),
+      RelatedTo("b", "d", "r3", None, Direction.OUTGOING),
+      RelatedTo("c", "d", "r4", None, Direction.OUTGOING)
+    )
+
+    val matchingContext = new MatchingContext(patterns)
+
+    val result = matchingContext.getMatches(Map("a" -> a, "b" -> b)).toList
+
+    assert( result.toSet === Set(
+      Map("a" -> a, "b" -> b, "c" -> c, "d" -> d, "r1" -> r1, "r2" -> r2, "r3" -> r3, "r4" -> r4)) )
+  }
+
+  @Test def directionConstraintFiltersMatches() {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+    val r1 = relate(a, b, "rel")
+    val r2 = relate(c, a, "rel")
+
+    val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.OUTGOING))
+    val matchingContext = new MatchingContext(patterns)
+
+    assert(matchingContext.getMatches(Map("a" -> a)).toList === Seq(Map("a" -> a, "b" -> b, "r" -> r1)))
+    assert(matchingContext.getMatches(Map("b" -> a)).toList === Seq(Map("b" -> a, "a" -> c, "r" -> r2)))
+  }
+
+  @Test def typeConstraintFiltersMatches() {
+    val a = createNode()
+    val b = createNode()
+    val r1 = relate(a, b, "t1")
+    relate(a, b, "t2")
+
+    val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "t1", Direction.OUTGOING))
+    val matchingContext = new MatchingContext(patterns)
+
+    assert(matchingContext.getMatches(Map("a" -> a)).toList === Seq(Map("a" -> a, "b" -> b, "r" -> r1)))
   }
 }

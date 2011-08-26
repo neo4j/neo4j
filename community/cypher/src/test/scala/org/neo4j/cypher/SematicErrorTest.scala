@@ -20,9 +20,9 @@
 package org.neo4j.cypher
 
 import commands._
-import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.graphdb.{Direction, Node}
+import org.junit.{Ignore, Test}
 
 class SematicErrorTest extends ExecutionEngineHelper {
   @Test def returnNodeThatsNotThere() {
@@ -35,7 +35,7 @@ class SematicErrorTest extends ExecutionEngineHelper {
     expectedError(query, """Unknown identifier "bar".""")
   }
 
-  @Test def throwOnDisconnectedPattern() {
+  @Test @Ignore def throwOnDisconnectedPattern() {
     val node: Node = createNode()
 
     val query = Query.

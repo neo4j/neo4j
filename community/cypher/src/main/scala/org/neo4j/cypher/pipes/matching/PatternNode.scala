@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.pipes.matching
 
-import org.neo4j.graphdb.{Relationship, Direction, Node}
 import scala.collection.JavaConverters._
+import org.neo4j.graphdb.{DynamicRelationshipType, Relationship, Direction, Node}
 
 class PatternNode(key: String) extends PatternElement(key) with PinnablePatternElement[Node] {
   val relationships = scala.collection.mutable.Set[PatternRelationship]()
@@ -28,7 +28,8 @@ class PatternNode(key: String) extends PatternElement(key) with PinnablePatternE
   def getPRels(history: Seq[MatchingPair]): Seq[PatternRelationship] = relationships.filterNot( r => history.exists(_.matches(r)) ).toSeq
 
   def getRealRelationships(node: Node, pRel: PatternRelationship, history:Seq[MatchingPair]): Seq[Relationship] = {
-    node.getRelationships.asScala.filterNot( r => history.exists(_.matches(r)) ).toSeq
+    val relationships = pRel.getRealRelationships(this, node)
+    relationships.asScala.filterNot( r => history.exists(_.matches(r)) ).toSeq
   }
 
   def relateTo(key: String, other: PatternNode, relType: Option[String], dir: Direction): PatternRelationship = {

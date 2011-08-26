@@ -17,18 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-//package org.neo4j.cypher.pipes
-//
-//import matching.MatchingContext
-//import org.neo4j.cypher.{PathImpl, SymbolTable}
-//import org.neo4j.graphdb.PropertyContainer
-//import org.neo4j.cypher.commands.{Pattern, RelatedTo, PathItem, PathIdentifier}
-//
-//class MatchPipe(source: Pipe, patterns: Seq[Pattern]) extends Pipe {
-//  val matchingContext = new MatchingContext(patterns)
-//  val symbols = source.symbols
-//
-//  def foreach[U](f: (Map[String, Any]) => U) {
-//    source.foreach(f)
-//  }
-//}
+package org.neo4j.cypher.pipes
+
+import matching.MatchingContext
+import org.neo4j.cypher.SymbolTable
+import org.neo4j.cypher.commands._
+
+class MatchPipe(source: Pipe, patterns: Seq[Pattern]) extends Pipe {
+  val matchingContext = new MatchingContext(patterns)
+  val symbols = source.symbols ++ new SymbolTable(patterns.flatMap(_ match {
+    case RelatedTo(left, right, rel, relType, dir) => Seq(NodeIdentifier(left), NodeIdentifier(right), RelationshipIdentifier(rel))
+  }))
+
+  def foreach[U](f: (Map[String, Any]) => U) {
+    source.foreach(sourcePipeRow => {
+      matchingContext.getMatches(sourcePipeRow).foreach(patternMatch => f(patternMatch ++ sourcePipeRow))
+    })
+  }
+}
