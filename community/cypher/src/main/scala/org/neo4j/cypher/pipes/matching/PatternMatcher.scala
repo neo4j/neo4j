@@ -58,7 +58,7 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, Any]) extend
                            future: Seq[MatchingPair],
                            yielder: (Map[String, Any]) => U) {
 
-    val notVisitedRelationships = patternNode.getRealRelationships(node, pRel, history)
+    val notVisitedRelationships = patternNode.getGraphRelationships(node, pRel, history)
     notVisitedRelationships.foreach(rel => {
       val nextNode = rel.getOtherNode(node)
       val nextPNode = pRel.getOtherNode(patternNode)
@@ -70,7 +70,10 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, Any]) extend
 
   private def yieldThis[U](yielder: Map[String, Any] => U, history: Seq[Any]) {
     val resultMap = history.map(_ match {
-      case MatchingPair(p, e) => (p.key, e)
+      case MatchingPair(p, e) => (p.key, e match {
+        case SingleGraphRelationship(r) => r
+        case n:Node => n
+      })
     }).toMap
 
     yielder(resultMap)

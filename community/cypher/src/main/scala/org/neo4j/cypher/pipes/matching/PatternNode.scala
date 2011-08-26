@@ -27,9 +27,9 @@ class PatternNode(key: String) extends PatternElement(key) with PinnablePatternE
 
   def getPRels(history: Seq[MatchingPair]): Seq[PatternRelationship] = relationships.filterNot( r => history.exists(_.matches(r)) ).toSeq
 
-  def getRealRelationships(node: Node, pRel: PatternRelationship, history:Seq[MatchingPair]): Seq[Relationship] = {
-    val relationships = pRel.getRealRelationships(this, node)
-    relationships.asScala.filterNot( r => history.exists(_.matches(r)) ).toSeq
+  def getGraphRelationships(node: Node, pRel: PatternRelationship, history:Seq[MatchingPair]): Seq[GraphRelationship] = {
+    val relationships = pRel.getGraphRelationships(this, node)
+    relationships.filterNot( gr => gr match { case SingleGraphRelationship(r) => history.exists(h => h.matches(r)) }).toSeq
   }
 
   def relateTo(key: String, other: PatternNode, relType: Option[String], dir: Direction): PatternRelationship = {
