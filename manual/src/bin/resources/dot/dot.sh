@@ -7,15 +7,24 @@ then
   nodehighlight2=aquamarine
   edgehighlight=mediumblue
   boxcolor=black
+  nodeshape=box
+elif [[ "$2" == "neoviz" ]]
+then
+  nodefillcolor=ivory1
+  nodehighlight=khaki1
+  nodehighlight2=lemonchiffon1
+  edgehighlight=mediumblue
+  boxcolor=black
+  nodeshape=Mrecord
 else
   nodefillcolor=ivory1
   nodehighlight=khaki1
   nodehighlight2=lemonchiffon1
   edgehighlight=mediumblue
   boxcolor=black
+  nodeshape=box
 fi
 
-nodeshape=box
 nodestyle=filled,rounded
 #nodeheight=0.37
 nodesep=0.4
