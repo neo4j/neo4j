@@ -25,7 +25,6 @@ public class AsciiDocStyle extends GraphStyle
 {
     protected void emitGraphStart( Appendable stream ) throws IOException
     {
-        emitHeaders(stream);
     }
     protected void emitGraphEnd( Appendable stream ) throws IOException
     {
