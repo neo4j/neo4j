@@ -21,6 +21,8 @@ package org.neo4j.server.plugin.gremlin;
 
 import static org.junit.Assert.assertTrue;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.Map;
@@ -152,6 +154,35 @@ public class GremlinPluginFunctionalTest implements GraphHolder
         .entity();
         assertTrue(response.contains( "you" ));
         assertTrue(response.contains( "him" ));
+    }
+    
+    /**
+     * Exporting a graph can be done by simple emitting the appropriate
+     * String.
+     */
+    @Test
+    @Documented
+    @Title( "Emit a sample graph" )
+    @Graph( value = { "I know you", "I know him" } )
+    public void emitGraph() throws UnsupportedEncodingException
+    {
+        data.get();
+        String script = "writer = new GraphMLWriter(g);" +
+        		"out = new java.io.ByteArrayOutputStream();" +
+        		"writer.outputGraph(out);" +
+        		"result = out.toString();";
+        String payload = "{\"script\":\"" +
+        script  +"\"}";
+        String response = gen.get()
+        .description( formatGroovy( script ) )
+        .expectedStatus( Status.OK.getStatusCode() )
+                .payload( JSONPrettifier.parse( payload ) )
+        .payloadType( MediaType.APPLICATION_JSON_TYPE )
+        .post( ENDPOINT )
+        .entity();
+        System.out.println(response);
+        assertTrue(response.contains( "graphml" ));
+        assertTrue(response.contains( "you" ));
     }
 
 
