@@ -92,20 +92,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
             {
                 String key = entry.getKey();
                 Object value = entry.getValue();
-                boolean isValueContext = value instanceof ValueContext;
-                value = isValueContext ? ((ValueContext) value).getCorrectValue() : value;
-                for ( Object oneValue : IoPrimitiveUtils.asArray( value ) )
-                {
-                    oneValue = isValueContext ? oneValue : oneValue.toString();
-                    type.addToDocument( document, key, oneValue );
-                    if ( createdNow )
-                    {
-                        // If we know that the index was created this session
-                        // then we can go ahead and add stuff to the cache directly
-                        // when adding to the index.
-                        addToCache( entityId, key, oneValue );
-                    }
-                }
+                addSingleProperty(entityId, document, key, value);
             }
             writer.addDocument( document );
             if ( ++updateCount == commitBatchSize )
@@ -119,7 +106,23 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
             throw new RuntimeException( e );
         }
     }
-    
+
+    private void addSingleProperty( long entityId, Document document, String key, Object value ) {
+        for ( Object oneValue : IoPrimitiveUtils.asArray(value) )
+        {
+            boolean isValueContext = oneValue instanceof ValueContext;
+            oneValue = isValueContext ? ((ValueContext) oneValue).getCorrectValue() : oneValue.toString();
+            type.addToDocument( document, key, oneValue );
+            if ( createdNow )
+            {
+                // If we know that the index was created this session
+                // then we can go ahead and add stuff to the cache directly
+                // when adding to the index.
+                addToCache( entityId, key, oneValue );
+            }
+        }
+    }
+
     private void addToCache( long entityId, String key, Object value )
     {
         if ( this.cache == null )

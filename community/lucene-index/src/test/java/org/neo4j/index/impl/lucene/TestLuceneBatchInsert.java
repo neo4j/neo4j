@@ -21,12 +21,16 @@ package org.neo4j.index.impl.lucene;
 
 import static java.lang.System.currentTimeMillis;
 import static org.apache.lucene.search.NumericRangeQuery.newIntRange;
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.index.Neo4jTestCase.assertContains;
+import static org.neo4j.index.impl.lucene.Contains.contains;
+import static org.neo4j.index.impl.lucene.IsEmpty.isEmpty;
 import static org.neo4j.index.impl.lucene.LuceneIndexImplementation.EXACT_CONFIG;
 import static org.neo4j.index.lucene.ValueContext.numeric;
 
@@ -38,7 +42,6 @@ import java.util.Iterator;
 import java.util.Map;
 
 import junit.framework.Assert;
-
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -49,8 +52,10 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.BatchInserterIndex;
 import org.neo4j.graphdb.index.BatchInserterIndexProvider;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.index.Neo4jTestCase;
+import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
@@ -304,11 +309,68 @@ public class TestLuceneBatchInsert
         assertContains( idx.query( "number", newIntRange( "number", 21, 45, false, true ) ), n1 );
         db.shutdown();
     }
+
+    @Test
+    public void testNumericValueArrays()
+    {
+        String path = new File( PATH, "8" ).getAbsolutePath();
+        BatchInserter inserter = new BatchInserterImpl( path );
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider(
+                inserter );
+        BatchInserterIndex batchIndex = provider.nodeIndex( "mine", EXACT_CONFIG );
+
+        long nodeId1 = inserter.createNode( null );
+        batchIndex.add( nodeId1, map( "number", new ValueContext[]{ numeric( 45 ), numeric( 98 ) } ) );
+        long nodeId2 = inserter.createNode( null );
+        batchIndex.add( nodeId2, map( "number", new ValueContext[]{ numeric( 47 ), numeric( 100 ) } ) );
+
+        IndexHits<Long> batchIndexResult1 = batchIndex.query( "number", newIntRange( "number", 47, 98, true, true ) );
+        assertThat( batchIndexResult1, contains(nodeId1, nodeId2));
+        assertThat( batchIndexResult1.size(), is( 2 ));
+
+        IndexHits<Long> batchIndexResult2 = batchIndex.query( "number", newIntRange( "number", 44, 46, true, true ) );
+        assertThat( batchIndexResult2, contains(nodeId1));
+        assertThat( batchIndexResult2.size(), is( 1 ) );
+
+        IndexHits<Long> batchIndexResult3 = batchIndex.query( "number", newIntRange( "number", 99, 101, true, true ) );
+        assertThat( batchIndexResult3, contains( nodeId2 ) );
+        assertThat( batchIndexResult3.size(), is( 1 ) );
+
+        IndexHits<Long> batchIndexResult4 = batchIndex.query( "number", newIntRange( "number", 47, 98, false, false ) );
+        assertThat( batchIndexResult4, isEmpty() );
+
+        provider.shutdown();
+        inserter.shutdown();
+
+        GraphDatabaseService db = new EmbeddedGraphDatabase( path );
+        Node node1 = db.getNodeById( nodeId1 );
+        Node node2 = db.getNodeById( nodeId2 );
+        Index<Node> index = db.index().forNodes( "mine" );
+
+
+        IndexHits<Node> indexResult1 = index.query( "number", newIntRange( "number", 47, 98, true, true ) );
+        assertThat(indexResult1, contains(node1, node2));
+        assertThat( indexResult1.size(), is( 2 ));
+
+        IndexHits<Node> indexResult2 = index.query( "number", newIntRange( "number", 44, 46, true, true ) );
+        assertThat(indexResult2, contains(node1));
+        assertThat( indexResult2.size(), is( 1 ) );
+
+        IndexHits<Node> indexResult3 = index.query( "number", newIntRange( "number", 99, 101, true, true ) );
+        assertThat( indexResult3, contains( node2 ) );
+        assertThat( indexResult3.size(), is( 1 ) );
+
+        IndexHits<Node> indexResult4 = index.query( "number", newIntRange( "number", 47, 98, false, false ) );
+        assertThat( indexResult4, isEmpty() );
+
+        
+        db.shutdown();
+    }
     
     @Test
     public void indexNumbers() throws Exception
     {
-        BatchInserter inserter = new BatchInserterImpl( new File( PATH, "8" ).getAbsolutePath() );
+        BatchInserter inserter = new BatchInserterImpl( new File( PATH, "9" ).getAbsolutePath() );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider(
                 inserter );
         BatchInserterIndex index = provider.nodeIndex( "mine", EXACT_CONFIG );

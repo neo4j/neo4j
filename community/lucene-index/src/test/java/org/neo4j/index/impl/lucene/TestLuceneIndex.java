@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import static org.apache.lucene.search.NumericRangeQuery.newIntRange;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertEquals;
@@ -637,6 +638,33 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         assertThat( index.query( NumericRangeQuery.newIntRange( key, 4, 40, true, true ) ), contains( node10, node31 ) );
         restartTx();
         assertThat( index.query( NumericRangeQuery.newIntRange( key, 4, 40, true, true ) ), contains( node10, node31 ) );
+    }
+
+    @Test
+    public void testNumericValueArrays()
+    {
+        Index<Node> index = nodeIndex( "numeric-array", LuceneIndexImplementation.EXACT_CONFIG );
+
+        Node node1 = graphDb.createNode();
+        index.add( node1, "number", new ValueContext[]{ numeric( 45 ), numeric( 98 ) } );
+        Node node2 = graphDb.createNode();
+        index.add( node2, "number", new ValueContext[]{ numeric( 47 ), numeric( 100 ) } );
+
+
+        IndexHits<Node> indexResult1 = index.query( "number", newIntRange( "number", 47, 98, true, true ) );
+        assertThat( indexResult1, contains( node1, node2 ) );
+        assertThat( indexResult1.size(), is( 2 ));
+
+        IndexHits<Node> indexResult2 = index.query( "number", newIntRange( "number", 44, 46, true, true ) );
+        assertThat( indexResult2, contains( node1 ) );
+        assertThat( indexResult2.size(), is( 1 ) );
+
+        IndexHits<Node> indexResult3 = index.query( "number", newIntRange( "number", 99, 101, true, true ) );
+        assertThat( indexResult3, contains( node2 ) );
+        assertThat( indexResult3.size(), is( 1 ) );
+
+        IndexHits<Node> indexResult4 = index.query( "number", newIntRange( "number", 47, 98, false, false ) );
+        assertThat( indexResult4, isEmpty() );
     }
 
     @Test
