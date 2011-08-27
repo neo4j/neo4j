@@ -57,23 +57,23 @@ public class CypherPluginFunctionalTest implements GraphHolder
     private static WrappingNeoServerBootstrapper server;
 
     /**
-     * Send a Query.
-     * 
      * A simple query returning all nodes connected to node 1,
      * returning the node and the name property, if it exists,
      * otherwise `null`:
      */
     @Test
     @Documented
+    @Title("Send a Query")
     @Graph( value = { "I know you", "I know him" } )
     public void testPropertyColumn() throws UnsupportedEncodingException
     {
+        String script = "start x  = ("+data.get().get( "I" ).getId() +") match (x) --> (n) return n.name?, n.age?";
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
-        .payload( "{\"query\": \"start x  = ("+data.get().get( "I" ).getId() +") match (x) --> (n) return n.name?, n.age?\"}")
+        .payload( "{\"query\": \""+script +"\"}")
+        .description( formatCypher( script ) )
         .post( ENDPOINT )
         .entity();
-        System.out.println(response);
         assertTrue(response.contains( "you" ));
         assertTrue(response.contains( "him" ));
         assertTrue(!response.contains( "\"x\"" ));
@@ -102,10 +102,20 @@ public class CypherPluginFunctionalTest implements GraphHolder
         server = new WrappingNeoServerBootstrapper(
                 graphdb );
         server.start();
+        gen.get().setGraph( graphdb );
     }
     
     @After
     public void shutdownServer() {
         server.stop();
+    }
+    
+    private String formatCypher( String script )
+    {
+        return "_Cypher query_\n\n" +
+ "[source, sql]\n" +
+                "----\n" +
+                script +
+                "\n----\n";
     }
 }

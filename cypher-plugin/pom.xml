@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>21</version>
+    <version>23</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -131,6 +131,12 @@ the relevant Commercial Agreement.
       <artifactId>junit</artifactId>
       <version>4.8.2</version>
       <type>jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-graphviz</artifactId>
+      <version>0.2-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
