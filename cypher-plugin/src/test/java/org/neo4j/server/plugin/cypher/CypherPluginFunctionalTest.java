@@ -99,6 +99,7 @@ public class CypherPluginFunctionalTest implements GraphHolder
     
     @Before
     public void startServer() {
+        graphdb.cleanContent();
         server = new WrappingNeoServerBootstrapper(
                 graphdb );
         server.start();
