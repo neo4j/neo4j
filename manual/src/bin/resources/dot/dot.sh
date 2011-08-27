@@ -1,5 +1,8 @@
 #!/bin/bash
 
+nodefontsize=10
+edgefontsize=$nodefontsize
+
 if [[ "$2" == "meta" ]]
 then
   nodefillcolor=slategray1
@@ -16,6 +19,7 @@ then
   edgehighlight=mediumblue
   boxcolor=black
   nodeshape=Mrecord
+  nodefontsize=8
 else
   nodefillcolor=ivory1
   nodehighlight=khaki1
@@ -24,6 +28,8 @@ else
   boxcolor=black
   nodeshape=box
 fi
+
+maxsize="graph [size=\"7.0,9,0\"]"
 
 nodestyle=filled,rounded
 #nodeheight=0.37
@@ -37,8 +43,6 @@ graphfont=Sans
 nodefont=$graphfont
 edgefont=$graphfont
 
-nodefontsize=10
-edgefontsize=$nodefontsize
 
 indata=$(cat);
 indata=${indata//NODEHIGHLIGHT/$nodehighlight}
@@ -50,7 +54,7 @@ indata=${indata//TEXTNODE/$textnode}
 svgfile=$1
 pngfile="${svgfile%.svg}.png"
 
-prepend="digraph g{ \
+prepend="digraph g{ $maxsize\
   node [shape=\"$nodeshape\" fillcolor=\"$nodefillcolor\" style=\"$nodestyle\" \
     fontsize=$nodefontsize fontname=\"$nodefont\"]
   edge [arrowhead=\"$arrowhead\" arrowtail=\"$arrowhead\" arrowsize=$arrowsize fontsize=$edgefontsize fontname=\"$edgefont\"] \
