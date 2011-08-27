@@ -21,6 +21,7 @@ package org.neo4j.cypher.pipes.matching
 
 import org.neo4j.graphdb.{Path, Node, Relationship}
 import java.lang.IllegalArgumentException
+import scala.collection.JavaConverters._
 
 abstract class GraphRelationship {
   def getOtherNode(node:Node): Node
@@ -34,7 +35,8 @@ case class SingleGraphRelationship(rel: Relationship) extends GraphRelationship 
     that.isInstanceOf[VariableLengthGraphRelationship]
 
   override def equals(obj: Any) = obj match {
-    case VariableLengthGraphRelationship(p) => if (p.length() != 1) false else p.lastRelationship() == rel
+    case VariableLengthGraphRelationship(p) => p.relationships().asScala.exists(_ == rel)
+    case p:Path => p.relationships().asScala.exists(_ == rel)
     case x => x == this || x == rel
   }
 
@@ -52,7 +54,10 @@ case class VariableLengthGraphRelationship(path: Path) extends GraphRelationship
     that.isInstanceOf[Path] ||
     that.isInstanceOf[SingleGraphRelationship]
 
-  override def equals(obj: Any) = obj == this || obj == path
+  override def equals(obj: Any) = obj match {
+    case r:Relationship => path.relationships().asScala.exists(_ == r)
+    case x => obj == this || obj == path
+  }
 
   override def toString = String.format("VariableLengthGraphRelationship[path=%s]", path)
 }

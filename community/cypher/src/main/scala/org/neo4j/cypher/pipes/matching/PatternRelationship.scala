@@ -20,9 +20,9 @@
 package org.neo4j.cypher.pipes.matching
 
 import scala.collection.JavaConverters._
-import org.neo4j.kernel.Traversal
 import org.neo4j.graphdb.traversal.{TraversalDescription, Evaluators}
 import org.neo4j.graphdb._
+import org.neo4j.kernel.{Uniqueness, Traversal}
 
 class PatternRelationship(key: String, leftNode: PatternNode, rightNode: PatternNode, relType: Option[String], dir: Direction)
   extends PatternElement(key)
@@ -52,12 +52,15 @@ class VariableLengthPatternRelationship(pathName: String, val start: PatternNode
   override def getGraphRelationships(node: PatternNode, realNode: Node): Seq[GraphRelationship] = {
     val baseTraversalDescription: TraversalDescription = Traversal.description()
       .evaluator(Evaluators.includingDepths(minHops, maxHops))
+      .uniqueness(Uniqueness.RELATIONSHIP_PATH)
 
     val traversalDescription = relType match {
       case Some(typeName) => baseTraversalDescription.expand(Traversal.expanderForTypes(DynamicRelationshipType.withName(typeName), getDirection(node)))
       case None => baseTraversalDescription.expand(Traversal.expanderForAllTypes(getDirection(node)))
     }
-
+//    for (p: Path <- traversalDescription.traverse(realNode).asScala.foreach()) {
+//      println(String.format("  found path match: %s", p))
+//    }
     traversalDescription.traverse(realNode).asScala.toSeq.map(p => VariableLengthGraphRelationship(p))
   }
 

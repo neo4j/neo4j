@@ -31,7 +31,7 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, Any]) extend
                           history: Seq[MatchingPair],
                           future: Seq[MatchingPair],
                           yielder: Map[String, Any] => U) {
-    println(String.format("traverse(current=%s | history=%s | future=%s)", current, history, future))
+//    println(String.format("traverse(current=%s | history=%s | future=%s)", current, history, future))
 
     val patternNode: PatternNode = current.patternElement.asInstanceOf[PatternNode]
     val node: Node = current.entity.asInstanceOf[Node]
@@ -56,14 +56,13 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, Any]) extend
                            history: Seq[MatchingPair],
                            future: Seq[MatchingPair],
                            yielder: (Map[String, Any]) => U) {
-    println(String.format("visitNext(current=%s | pRel=%s | history=%s | future=%s)", current, pRel, history, future))
+//    println(String.format("visitNext(current=%s | pRel=%s | history=%s | future=%s)", current, pRel, history, future))
 
     val patternNode: PatternNode = current.patternElement.asInstanceOf[PatternNode]
     val node: Node = current.entity.asInstanceOf[Node]
 
     val notVisitedRelationships = patternNode.getGraphRelationships(node, pRel, history)
     notVisitedRelationships.foreach(rel => {
-      println(String.format("following real relationship: %s\n", rel))
       val nextNode = rel.getOtherNode(node)
       val nextPNode = pRel.getOtherNode(patternNode)
       val newHistory = history ++ Seq(current, MatchingPair(pRel, rel))
@@ -73,14 +72,18 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, Any]) extend
   }
 
   private def yieldThis[U](yielder: Map[String, Any] => U, history: Seq[Any]) {
-    println(String.format("yield(history=%s)", history))
     val resultMap = history.flatMap(_ match {
       case MatchingPair(p,e) => (p,e) match {
         case (pe:PatternNode, entity:Node) => Seq(pe.key -> entity)
         case (pe:PatternRelationship, entity:SingleGraphRelationship) => Seq(pe.key -> entity.rel)
-        case (pe:VariableLengthPatternRelationship, entity:VariableLengthGraphRelationship) => Seq(pe.start.key -> entity.path.startNode(), pe.end.key -> entity.path.endNode())
+        case (pe:VariableLengthPatternRelationship, entity:VariableLengthGraphRelationship) => Seq(
+            pe.start.key -> entity.path.startNode(),
+            pe.end.key -> entity.path.endNode()
+          //          pe.key -> entity.path
+        )
       }
     }).toMap
+//    println(String.format("yield(history=%s) => %s", history, resultMap))
 
     yielder(resultMap)
   }
