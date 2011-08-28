@@ -20,6 +20,7 @@ then
   boxcolor=black
   nodeshape=Mrecord
   nodefontsize=8
+  edgefontsize=$nodefontsize
 else
   nodefillcolor=ivory1
   nodehighlight=khaki1
@@ -52,7 +53,7 @@ indata=${indata//BOXCOLOR/$boxcolor}
 indata=${indata//TEXTNODE/$textnode}
 
 svgfile=$1
-pngfile="${svgfile%.svg}.png"
+pngfile="${svgfile}.png"
 
 prepend="digraph g{ $maxsize\
   node [shape=\"$nodeshape\" fillcolor=\"$nodefillcolor\" style=\"$nodestyle\" \

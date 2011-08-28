@@ -176,7 +176,7 @@ docbook-html:  manpages copyimages
 	mkdir -p $(BUILDDIR)
 	asciidoc $(ASCIIDOC_FLAGS) --backend docbook --attribute docinfo1 --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --conf-file=$(CONFDIR)/linkedimages.conf --out-file $(DOCBOOKFILEHTML) $(SRCFILE)
 	# replacing svg files with png files by ugly hack
-	sed -e 's/.svg"/.png"/g' <$(DOCBOOKFILEHTML) >$(DOCBOOKFILEHTML).tmp
+	sed -e 's/.svg"/.svg.png"/g' <$(DOCBOOKFILEHTML) >$(DOCBOOKFILEHTML).tmp
 	rm $(DOCBOOKFILEHTML)
 	mv $(DOCBOOKFILEHTML).tmp $(DOCBOOKFILEHTML)
 	xmllint --nonet --noout --xinclude --postvalid $(DOCBOOKFILEHTML)
@@ -218,6 +218,7 @@ html: manpages copyimages docbook-html
 	mv $(CHUNKEDSHORTINFOTARGET) $(CHUNKEDHTMLDIR)
 	cp -fr $(JSDIR) $(CHUNKEDHTMLDIR)/js
 	cp -fr $(CSSDIR)/* $(CHUNKEDHTMLDIR)/css
+	cp -fr $(SRCDIR)/images/*.svg $(CHUNKEDHTMLDIR)/images
 
 offline-html:  manpages copyimages docbook-html
 	#
@@ -230,6 +231,7 @@ offline-html:  manpages copyimages docbook-html
 	mv $(CHUNKEDSHORTINFOTARGET) $(CHUNKEDOFFLINEHTMLDIR)
 	cp -fr $(JSDIR) $(CHUNKEDOFFLINEHTMLDIR)/js
 	cp -fr $(CSSDIR)/* $(CHUNKEDOFFLINEHTMLDIR)/css/
+	cp -fr $(SRCDIR)/images/*.svg $(CHUNKEDOFFLINEHTMLDIR)/images
 
 # currently builds docbook format first
 singlehtml:  manpages copyimages
@@ -253,6 +255,7 @@ annotated:  manpages copyimages
 	a2x $(A2X_FLAGS) -L -a showcomments -f xhtml -D $(ANNOTATEDDIR) --conf-file=$(CONFDIR)/xhtml.conf --asciidoc-opts "--conf-file=$(CONFDIR)/asciidoc.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/docbook45.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/linkedimages.conf" --xsl-file=$(CONFDIR)/xhtml.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
 	cp -fr $(SRCDIR)/js $(ANNOTATEDDIR)/js
 	cp -fr $(SRCDIR)/css/* $(ANNOTATEDDIR)/css
+	cp -fr $(SRCDIR)/images/*.svg $(ANNOTATEDDIR)/images
 
 text: docbook-shortinfo
 	#
