@@ -33,7 +33,6 @@ public class PropertyRecord extends Abstract64BitRecord
     private long nextProp = Record.NO_NEXT_PROPERTY.intValue();
     private long prevProp = Record.NO_NEXT_PROPERTY.intValue();
     private List<DynamicRecord> valueRecords = new ArrayList<DynamicRecord>();
-    private boolean isLight;
     private long entityId = -1;
     private boolean nodeIdSet;
     private boolean isChanged;
@@ -73,25 +72,18 @@ public class PropertyRecord extends Abstract64BitRecord
         return -1;
     }
 
-    void setIsLight( boolean status )
-    {
-        isLight = status;
-    }
-
     public boolean isLight()
     {
-        return isLight;
+        return valueRecords.size() == 0;
     }
 
     public Collection<DynamicRecord> getValueRecords()
     {
-        assert !isLight;
         return valueRecords;
     }
 
     public void addValueRecord( DynamicRecord record )
     {
-        assert !isLight;
         valueRecords.add( record );
     }
 

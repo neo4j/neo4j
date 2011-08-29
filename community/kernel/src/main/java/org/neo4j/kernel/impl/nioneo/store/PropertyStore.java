@@ -302,7 +302,6 @@ public class PropertyStore extends AbstractStore implements Store
         try
         {
             PropertyRecord record = getRecord( id, window );
-            record.setIsLight( true );
             return record;
         }
         finally
@@ -313,7 +312,6 @@ public class PropertyStore extends AbstractStore implements Store
 
     public void makeHeavy( PropertyRecord record )
     {
-        record.setIsLight( false );
         if ( record.getType() == PropertyType.STRING )
         {
             Collection<DynamicRecord> stringRecords = stringPropertyStore.getLightRecords( record.getSinglePropBlock() & 0xFFFFFFFFFL );
@@ -349,7 +347,6 @@ public class PropertyStore extends AbstractStore implements Store
         if ( record.getType() == PropertyType.STRING )
         {
             Collection<DynamicRecord> stringRecords = stringPropertyStore.getLightRecords( record.getSinglePropBlock() & 0xFFFFFFFFFL );
-            record.setIsLight( false );
             for ( DynamicRecord stringRecord : stringRecords )
             {
                 stringRecord.setType( PropertyType.STRING.intValue() );
@@ -359,7 +356,6 @@ public class PropertyStore extends AbstractStore implements Store
         else if ( record.getType() == PropertyType.ARRAY )
         {
             Collection<DynamicRecord> arrayRecords = arrayPropertyStore.getLightRecords( record.getSinglePropBlock() & 0xFFFFFFFFFL );
-            record.setIsLight( false );
             for ( DynamicRecord arrayRecord : arrayRecords )
             {
                 arrayRecord.setType( PropertyType.ARRAY.intValue() );
