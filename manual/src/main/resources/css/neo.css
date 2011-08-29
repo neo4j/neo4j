@@ -42,7 +42,6 @@ body, div.navheader th, div.navheader td, div.navfooter td
   font-family: "Lucida Bright", Cambria, serif;
 }
 
-
 h1, h2, h3, h4, h5, h6,
 div.toc p b,
 div.important th, div.info th, div.tip th,
@@ -67,19 +66,18 @@ td p strong
   font-size: 1.067em;
 }
 
-div.navheader table
+div.navheader
 {
   position: absolute;
+  right: 26px;
   top: 112px;
-  right: 1em;
   width: 4em;
+  text-align: right;
 }
 
-#version-selector
+div.navheader hr
 {
-  position: absolute; 
-  right: 1em; 
-  top: 140px;
+  display: none;
 }
 
 body h2.title, body h1.title, div.refnamediv p
