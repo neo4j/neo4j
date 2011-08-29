@@ -1,7 +1,7 @@
 Python bindings for embedded Neo4j
 =========================
 
-These are Python bindings for the Neo4j Graph Database.
+These are Python bindings for the embedded Neo4j Graph Database.
 
 Installation
 ------------

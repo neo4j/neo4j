@@ -31,7 +31,7 @@
   <artifactId>neo4j-python-embedded</artifactId>
   <version>0.2-SNAPSHOT</version>
   <name>Embedded Neo4j Python bindings</name>
-  <packaging>pom</packaging>
+  <packaging>jar</packaging>
   <description>
     Python bindings for the embedded Neo4j graph database.
   </description>
@@ -62,6 +62,10 @@
   </properties>
 
   <build>
+  
+    <sourceDirectory>src/main/python</sourceDirectory>
+    <testSourceDirectory>src/test/python</testSourceDirectory>
+  
     <plugins>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
@@ -72,6 +76,7 @@
               <executable>${python}</executable>
               <workingDirectory>src/test/python</workingDirectory>
               <arguments>
+                <!-- Uncomment this to enable remote JVM debugging under jython -->
                 <!--argument>-J-Xdebug</argument>
                 <argument>-J-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=1044</argument-->
                 <argument>unit_tests.py</argument>
@@ -90,6 +95,19 @@
           </execution>
         </executions>
       </plugin>
+      
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>2.1.2</version>
+        <configuration>    
+          <attach>true</attach>
+          <includes>
+            <include>**/*.py</include>
+          </includes>
+        </configuration>
+      </plugin>
+      
     </plugins>
   </build>
 
