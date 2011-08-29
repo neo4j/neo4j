@@ -234,6 +234,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
         Triplet<Channel, ChannelBuffer, ByteBuffer> result = channelPool.acquire( type.allowCreateNewChannel() );
         if ( result == null )
         {
+            msgLog.logMessage( "Unable to acquire new channel for " + type );
             throw new ComException( "Unable to acquire new channel for " + type );
         }
         return result;

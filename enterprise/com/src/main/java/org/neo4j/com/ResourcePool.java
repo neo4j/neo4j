@@ -87,6 +87,7 @@ public abstract class ResourcePool<R>
         R resource = current.get( thread );
         if ( resource == null )
         {
+            if ( !allowCreateNew ) return null;
             resources.acquireUninterruptibly();
             List<R> garbage = null;
             synchronized ( unused )
@@ -102,7 +103,6 @@ public abstract class ResourcePool<R>
             }
             if ( resource == null )
             {
-                if ( !allowCreateNew ) return null;
                 resource = create();
             }
             current.put( thread, resource );
