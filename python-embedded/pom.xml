@@ -23,8 +23,8 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.neo4j</groupId>
-    <artifactId>parent-central</artifactId>
-    <version>18</version>
+    <artifactId>parent-pom</artifactId>
+    <version>23</version>
   </parent>
 
   <groupId>org.neo4j</groupId>
@@ -35,6 +35,26 @@
   <description>
     Python bindings for the embedded Neo4j graph database.
   </description>
+
+  <licenses>
+    <license>
+      <name>GNU General Public License, Version 3</name>
+      <url>http://www.gnu.org/licenses/gpl-3.0-standalone.html</url>
+      <comments>The software ("Software") developed and owned by Network Engine for
+Objects in Lund AB (referred to in this notice as "Neo Technology") is
+licensed under the GNU GENERAL PUBLIC LICENSE Version 3 to all third
+parties and that license is included below.
+
+However, if you have executed an End User Software License and Services
+Agreement or an OEM Software License and Support Services Agreement, or
+another commercial license agreement with Neo Technology or one of its
+affiliates (each, a "Commercial Agreement"), the terms of the license in
+such Commercial Agreement will supersede the GNU GENERAL PUBLIC LICENSE
+Version 3 and you may use the Software solely pursuant to the terms of
+the relevant Commercial Agreement.
+      </comments>
+    </license>
+  </licenses>
 
   <dependencies>
     <dependency>
@@ -58,6 +78,7 @@
   </profiles>
 
   <properties>
+    <license-text.header>GPL-3-header.txt</license-text.header>
     <python>python</python>
   </properties>
 
@@ -106,6 +127,27 @@
             <include>**/*.py</include>
           </includes>
         </configuration>
+      </plugin>
+      
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>2.2-beta-2</version>
+        <executions>
+          <execution>
+            <id>python-distribution</id>
+            <phase>package</phase>
+            <configuration>
+              <attach>true</attach>
+              <appendAssemblyId>true</appendAssemblyId>
+              <descriptors>
+                <descriptor>src/main/assembly/python-distribution.xml</descriptor>
+              </descriptors>
+            </configuration>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
       
     </plugins>
