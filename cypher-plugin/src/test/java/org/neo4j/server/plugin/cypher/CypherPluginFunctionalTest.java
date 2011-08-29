@@ -114,7 +114,7 @@ public class CypherPluginFunctionalTest implements GraphHolder
     private String formatCypher( String script )
     {
         return "_Cypher query_\n\n" +
- "[source, sql]\n" +
+                "[source, sql]\n" +
                 "----\n" +
                 script +
                 "\n----\n";
