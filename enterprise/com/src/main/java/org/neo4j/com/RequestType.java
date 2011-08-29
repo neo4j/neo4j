@@ -28,4 +28,6 @@ public interface RequestType<M>
     byte id();
     
     boolean monitorChannelMapping();
+    
+    boolean allowCreateNewChannel();
 }

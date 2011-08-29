@@ -81,7 +81,7 @@ public abstract class ResourcePool<R>
         resources.setPermits( maxResources );
     }
 
-    public final R acquire()
+    public final R acquire( boolean allowCreateNew )
     {
         Thread thread = Thread.currentThread();
         R resource = current.get( thread );
@@ -102,6 +102,7 @@ public abstract class ResourcePool<R>
             }
             if ( resource == null )
             {
+                if ( !allowCreateNew ) return null;
                 resource = create();
             }
             current.put( thread, resource );

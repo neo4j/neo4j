@@ -142,7 +142,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
         try
         {
             // Send 'em over the wire
-            channelContext = getChannel();
+            channelContext = getChannel( type );
             Channel channel = channelContext.first();
             channelContext.second().clear();
             
@@ -229,9 +229,14 @@ public abstract class Client<M> implements ChannelPipelineFactory
         }
     }
     
-    private Triplet<Channel, ChannelBuffer, ByteBuffer> getChannel() throws Exception
+    private Triplet<Channel, ChannelBuffer, ByteBuffer> getChannel( RequestType<M> type ) throws Exception
     {
-        return channelPool.acquire();
+        Triplet<Channel, ChannelBuffer, ByteBuffer> result = channelPool.acquire( type.allowCreateNewChannel() );
+        if ( result == null )
+        {
+            throw new ComException( "Unable to acquire new channel for " + type );
+        }
+        return result;
     }
 
     protected void releaseChannel( RequestType<M> type, Triplet<Channel, ChannelBuffer, ByteBuffer> channel )

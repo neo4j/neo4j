@@ -263,7 +263,7 @@ public class MasterClient extends Client<Master> implements Master
                 result.writeLong( idAllocation.getHighestIdInUse() );
                 result.writeLong( idAllocation.getDefragCount() );
             }
-        }, false, false ),
+        }, false, true ),
         CREATE_RELATIONSHIP_TYPE( new MasterCaller<Master, Integer>()
         {
             public Response<Integer> callMaster( Master master, SlaveContext context,
@@ -314,7 +314,7 @@ public class MasterClient extends Client<Master> implements Master
                 return master.commitSingleResourceTransaction( context, resource,
                         TxExtractor.create( reader ) );
             }
-        }, LONG_SERIALIZER, true, true ),
+        }, LONG_SERIALIZER, true, true, false ),
         PULL_UPDATES( new MasterCaller<Master, Void>()
         {
             public Response<Void> callMaster( Master master, SlaveContext context,
@@ -359,14 +359,22 @@ public class MasterClient extends Client<Master> implements Master
         final ObjectSerializer serializer;
         private final boolean includesSlaveContext;
         final boolean withinTx;
+        private final boolean allowCreateNewChannel;
 
         private <T> HaRequestType( MasterCaller caller, ObjectSerializer<T> serializer,
                 boolean includesSlaveContext, boolean withinTx )
+        {
+            this( caller, serializer, includesSlaveContext, withinTx, true );
+        }
+        
+        private <T> HaRequestType( MasterCaller caller, ObjectSerializer<T> serializer,
+                boolean includesSlaveContext, boolean withinTx, boolean allowCreateNewChannel )
         {
             this.caller = caller;
             this.serializer = serializer;
             this.includesSlaveContext = includesSlaveContext;
             this.withinTx = withinTx;
+            this.allowCreateNewChannel = allowCreateNewChannel;
         }
         
         public ObjectSerializer getObjectSerializer()
@@ -389,9 +397,16 @@ public class MasterClient extends Client<Master> implements Master
             return this.includesSlaveContext;
         }
         
+        @Override
         public boolean monitorChannelMapping()
         {
             return withinTx;
+        }
+        
+        @Override
+        public boolean allowCreateNewChannel()
+        {
+            return allowCreateNewChannel;
         }
     }
 

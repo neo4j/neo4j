@@ -135,5 +135,11 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
         {
             return false;
         }
+        
+        @Override
+        public boolean allowCreateNewChannel()
+        {
+            return true;
+        }
     }
 }

@@ -44,17 +44,17 @@ public class TestResourcePool
             }
         };
         
-        Something somethingFirst = pool.acquire();
+        Something somethingFirst = pool.acquire( true );
         somethingFirst.doStuff();
         pool.release();
         
-        Something something = pool.acquire();
+        Something something = pool.acquire( true );
         assertEquals( somethingFirst, something );
         something.doStuff();
         something.close();
         pool.release();
         
-        Something somethingElse = pool.acquire();
+        Something somethingElse = pool.acquire( true );
         assertFalse( something == somethingElse );
         somethingElse.doStuff();
     }
