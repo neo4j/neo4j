@@ -49,8 +49,7 @@ div.warning th, div.note th, div.caution th,
 p.legalnotice-title,
 div.refnamediv p,
 div.sidebar p.title,
-th,
-td p strong
+th
 {
   color: #15708E;
   font-family: Candara, Myriad Pro, Myriad, "Lucida Sans","Trebuchet MS",sans-serif;
@@ -80,7 +79,12 @@ div.navheader hr
   display: none;
 }
 
-body h2.title, body h1.title, div.refnamediv p
+div.refentry body h2.title, div.refentry body h1.title, div.refentry div.refnamediv p,
+body > div.section h1, body > div.section h2,
+body > div.part h1, body > div.part h2,
+body > div.chapter h1, body > div.chapter h2,
+body > div.book h1,
+body > div.preface h2
 {
   color: #ffffff;
   border-bottom: none;
@@ -88,7 +92,7 @@ body h2.title, body h1.title, div.refnamediv p
   margin-bottom: .7em;
 }
 
-body h1.title
+body > div.book h1.title
 {
   margin-top: 0;
   padding-top: 0;
@@ -103,6 +107,17 @@ div.part h1.title
 div.titlepage h3.corpauthor
 {
   color: #ffffff;
+}
+
+div.refnamediv
+{
+  padding-top: 24px;
+  margin-bottom: 24px;
+}
+
+div.refsynopsisdiv h2, div.refsect1 h2
+{
+  border-bottom: none;
 }
 
 div.titlepage h3.corpauthor a.ulink, div.titlepage h3.corpauthor a.ulink:link, 
@@ -236,5 +251,52 @@ p.legalnotice-title b
 p.legalnotice-title
 {
   margin-bottom: 2em;
+}
+
+div.table table, div.informaltable table
+{
+  border-collapse: collapse;
+}
+
+td, th
+{
+  padding: 3px 4px 1px 4px;
+}
+
+div.table table, div.informaltable table,
+div.table table th, div.informaltable table th,
+div.table table td, div.informaltable table td,
+div.table table tr, div.informaltable table tr,
+div.table table tbody, div.informaltable table tbody,
+div.table table thead, div.informaltable table thead,
+div.table table tfoot, div.informaltable table tfoot
+{
+  border: 1px solid #666666;
+}
+
+div.table table thead, div.informaltable table thead
+{
+  border-bottom-width: 2px
+}
+
+div.table table tfoot, div.informaltable table tfoot
+{
+  border-top-width: 2px;
+}
+
+div.table table, div.informaltable table
+{
+  background: #d7e3e6 url("table-bg.png");
+}
+
+div.table table th, div.informaltable table th
+{
+  color: #333333;
+}
+
+div.informaltable span.strong strong
+{
+  font-weight: normal;
+  font-style: italic;
 }
 
