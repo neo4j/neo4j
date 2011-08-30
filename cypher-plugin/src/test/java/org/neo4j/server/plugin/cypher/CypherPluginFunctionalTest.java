@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.plugin.cypher;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Map;
@@ -114,7 +114,7 @@ public class CypherPluginFunctionalTest implements GraphHolder
     private String formatCypher( String script )
     {
         return "_Cypher query_\n\n" +
-                "[source, sql]\n" +
+ "[source,cypher]\n" +
                 "----\n" +
                 script +
                 "\n----\n";
