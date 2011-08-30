@@ -2,18 +2,18 @@
 Traversals are performed from a start node.
 The traversal is controlled by the URI and the body sent with the request.
 
-responseType:: The kind of objects in the response is determined by 'traverse/\{returnType}' in the URL.
+returnType:: The kind of objects in the response is determined by 'traverse/\{returnType}' in the URL.
  +returnType+ can have one of these values:
  * +node+
  * +relationship+
- * +path+
- * +fullpath+
+ * +path+ - contains full representations of start and end node, the rest are URIs
+ * +fullpath+ - contains full representations of all nodes and relationships
 
 To decide how the graph should be traversed you can use these parameters in the request body:
 
 order:: Decides in which order to visit nodes. Possible values:
- * +breadth_first+
- * +depth_first+
+ * +breadth_first+ - see http://en.wikipedia.org/wiki/Breadth-first_search[Breadth-first search]
+ * +depth_first+ - see http://en.wikipedia.org/wiki/Depth-first_search[Depth-first search]
 relationships:: Decides which relationship types and directions should be followed.
  The direction can be one of:
  * +all+

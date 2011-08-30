@@ -159,7 +159,9 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <execute/>
+                    <configurator>
+                      <id>org.maven.ide.eclipse.scala</id>
+                    </configurator>
                   </action>
                 </pluginExecution>
                 <pluginExecution>
