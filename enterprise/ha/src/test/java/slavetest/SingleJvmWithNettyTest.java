@@ -19,11 +19,18 @@
  */
 package slavetest;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.util.concurrent.CountDownLatch;
 
 import org.junit.Test;
 import org.neo4j.com.Protocol;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.AbstractBroker;
@@ -73,5 +80,66 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
                         "cannot instantiate master server on slave" );
             }
         };
+    }
+
+    @Test
+    public void makeSureLogMessagesIsWrittenEvenAfterInternalRestart() throws Exception
+    {
+        initializeDbs( 1 );
+        final CountDownLatch latch1 = new CountDownLatch( 1 );
+        final GraphDatabaseService slave = getSlave( 0 );
+        Thread t1 = new Thread()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    Transaction tx = slave.beginTx();
+                    slave.createNode();
+                    latch1.await();
+                    tx.success();
+                    tx.finish();
+                }
+                catch ( InterruptedException e )
+                {
+                    throw new RuntimeException( e );
+                }
+            }
+        };
+        t1.start();
+
+        Thread t2 = new Thread()
+        {
+            @Override
+            public void run()
+            {
+                Transaction tx = slave.beginTx();
+                slave.createNode();
+                latch1.countDown();
+                tx.success();
+                tx.finish();
+            }
+        };
+        t2.start();
+        
+        t1.join();
+        t2.join();
+        
+        assertEquals( 2, countOccurences( "Opened a new channel", new File( dbPath( 1 ), "messages.log" ) ) );
+    }
+
+    private int countOccurences( String string, File file ) throws Exception
+    {
+        BufferedReader reader = new BufferedReader( new FileReader( file ) );
+        String line = null;
+        int counter = 0;
+        while ( (line = reader.readLine()) != null )
+        {
+            System.out.println( line );
+            if ( line.contains( string ) ) counter++;
+        }
+        reader.close();
+        return counter;
     }
 }
