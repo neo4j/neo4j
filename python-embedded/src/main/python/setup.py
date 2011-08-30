@@ -18,25 +18,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from distutils.core import setup, Command
-from os.path import abspath, dirname, join as pathjoin
+#!/usr/bin/env python
 
-class depend(Command):
-    pass
+from distutils.core import setup
 
-def dependencies(pom,seen=None):
-    if seen is None: seen = {} # don't download the same dependency twice
-    # 1. Get parent pom (recursively)
-    # 2. Get dependency management from parent pom
-    # 3. Get all dependencies for this project (pom and jar)
-    # 4. For each dependency, call this function recursively
-    # --- for now - fake it by forking to mvn :) ---
-    import subprocess
-    subprocess.call(["mvn", "dependency:copy-dependencies"], cwd=dirname(pom))
-    print pathjoin(dirname(pom),"target","dependency")
+if __name__ == "__main__":
 
-if __name__ == '__main__':
-    #setup(cmdclass={'depend':depend},)
-    pom = pathjoin(dirname(dirname(dirname(dirname(abspath(__file__))))),
-                   'pom.xml')
-    dependencies(pom)
+    setup(
+        name='neo4j-embedded',
+        version='0.2',
+        description='Bindings for the embedded version of the neo4j graph database.',
+        author='Neo Technology',
+        packages=[
+            'neo4j',
+            'neo4j.javalib',
+        ],
+        package_data = {
+            # Include our java dependencies
+            '': ['*.jar'],
+        },
+    )

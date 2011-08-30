@@ -64,7 +64,23 @@ try:
 except: # this isn't jython (and doesn't have the java module)
     import jpype, os
 
-    jvmargs = ['-Djava.class.path=' + os.getenv('CLASSPATH','.')]
+    # Classpath set by environment var
+    classpath = os.getenv('CLASSPATH',None)
+    if classpath is None:
+    
+        # Classpath set by finding bundled jars
+        jars = []
+        from pkg_resources import resource_listdir, resource_filename
+        for name in resource_listdir(__name__, 'javalib'):
+            if name.endswith('.jar'):
+                jars.append(resource_filename(__name__, "javalib/%s" % name))
+        if len(jars) > 0:
+            classpath = ':'.join(jars)
+        else:
+            # Last resort
+            classpath = '.'
+
+    jvmargs = ['-Djava.class.path=' + classpath]
     
     debug = False
     if debug:

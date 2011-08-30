@@ -49,7 +49,7 @@
   </fileSets>
   <dependencySets>
     <dependencySet>
-      <outputDirectory>/lib</outputDirectory>
+      <outputDirectory>/neo4j/javalib</outputDirectory>
     </dependencySet>
   </dependencySets>
 </assembly>
