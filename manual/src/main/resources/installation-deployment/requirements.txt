@@ -40,3 +40,9 @@ Neo4j is Java-based.
 Java:: 1.6+
 Operating Systems:: Linux, Windows XP, Mac OS X
 
+== JDK Version ==
+
+The Neo4j runtime is continuously tested with 
+
+* http://www.oracle.com/technetwork/java/javase/downloads/index.html[Oracle Java Runtime Environment JRE 1.6]
+
