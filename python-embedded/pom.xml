@@ -152,31 +152,6 @@ the relevant Commercial Agreement.
         </executions>
       </plugin>
       
-      <!-- Build python egg from assembled distribution -->
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <version>1.6</version>
-        <executions>
-          <execution>
-            <id>produce-egg</id>
-            <phase>package</phase>
-            <configuration>
-              <target>
-                <unzip src='${basedir}/target/${project.build.finalName}-python-dist.zip' 
-                       dest='${basedir}/target/' />
-                <exec dir='${basedir}/target/neo4j-embedded' executable='python'>
-                    <arg value='setup.py'/>
-                    <arg value='bdist'/>
-                </exec>
-              </target>
-            </configuration>
-            <goals>
-              <goal>run</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      
     </plugins>
   </build>
 

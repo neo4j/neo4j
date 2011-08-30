@@ -6,19 +6,18 @@ These are Python bindings for the embedded Neo4j Graph Database.
 Prerequisites
 -------------
 
-The neo4j embedded database is a java application, which means you have two options for using these bindings:
+The neo4j embedded database is a java application, which means you have to provide an interface to communicate with java-land. You can use:
 
- - Use Jython http://www.jython.org/
- - Use Python with JPype installed http://jpype.sourceforge.net/
+ - CPython with JPype installed http://jpype.sourceforge.net/
+ - [Coming in the next few days] Jython http://www.jython.org/
 
 Installation from source
 ------------------------
 
-This is the source distribution of this project. To install into a python environment, use the maven build tool to produce the python distribution:
+This is the source distribution of this project. To install into a python environment, use the maven build tool to produce the python distribution, then install the distribution normally:
 
     mvn package
-    
-You will find the finished package in target/neo4j-python-embedded-[VERSION]-python-dist
-
-See the README bundled with the produced distribution for next installation steps.
+    unzip target/neo4j-python-embedded-[VERSION]-python-dist.zip
+    cd target/neo4j-embedded
+    python setup.py install
 
