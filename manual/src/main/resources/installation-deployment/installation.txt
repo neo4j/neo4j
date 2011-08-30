@@ -56,3 +56,15 @@ NOTE: The listed dependencies do not contain the implementation, but pulls it in
 
 _Where +$\{neo4j-version}+ is the intended version and the +artifactId+ is one of +neo4j+, +neo4j-advanced+, +neo4j-enterprise+._
 
+== Server Installation ==
+
+=== OS X ===
+
+Via http://mxcl.github.com/homebrew/[homebrew], you can simply do
+
+[source, bash]
+----
+brew update
+brew install neo4j
+neo4j start
+----
