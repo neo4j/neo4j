@@ -87,6 +87,7 @@ the relevant Commercial Agreement.
     <sourceDirectory>src/main/python</sourceDirectory>
     <testSourceDirectory>src/test/python</testSourceDirectory>
   
+    <!-- Test execution -->
     <plugins>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
@@ -117,8 +118,8 @@ the relevant Commercial Agreement.
         </executions>
       </plugin>
       
+      <!-- Produce source jars, for our documentation -->
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
         <version>2.1.2</version>
         <configuration>    
@@ -129,6 +130,7 @@ the relevant Commercial Agreement.
         </configuration>
       </plugin>
       
+      <!-- Assemble python distribution -->
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
         <version>2.2-beta-2</version>
@@ -145,6 +147,31 @@ the relevant Commercial Agreement.
             </configuration>
             <goals>
               <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      
+      <!-- Build python egg from assembled distribution -->
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <version>1.6</version>
+        <executions>
+          <execution>
+            <id>produce-egg</id>
+            <phase>package</phase>
+            <configuration>
+              <target>
+                <unzip src='${basedir}/target/${project.build.finalName}-python-dist.zip' 
+                       dest='${basedir}/target/' />
+                <exec dir='${basedir}/target/neo4j-embedded' executable='python'>
+                    <arg value='setup.py'/>
+                    <arg value='bdist'/>
+                </exec>
+              </target>
+            </configuration>
+            <goals>
+              <goal>run</goal>
             </goals>
           </execution>
         </executions>

@@ -21,6 +21,7 @@
 -->
 <assembly>
   <id>python-dist</id>
+  <baseDirectory>neo4j-embedded</baseDirectory>
   <formats>
     <format>zip</format>
   </formats>
