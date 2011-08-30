@@ -77,6 +77,14 @@ public class TestLongerShortString
         assertCanEncodeAndDecodeToSame( "http://domain:7474/" );
     }
     
+    @Test
+    public void canEncodeLower() throws Exception
+    {
+        assertCanEncodeAndDecodeToSame( "folder/generators/templates/controller.ext" );
+        assertCanEncodeAndDecodeToSame( "folder/generators/templates/controller.extr" );
+        assertCannotEncode( "folder/generators/templates/controller.extra" );
+    }
+    
     private void assertCanEncodeAndDecodeToSame( String string )
     {
         assertCanEncodeAndDecodeToSame( string, PropertyStore.DEFAULT_PAYLOAD_SIZE );
