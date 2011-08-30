@@ -54,44 +54,45 @@ public class CypherPluginFunctionalTest implements GraphHolder
     public @Rule
     TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
             this, true ) );
-    
+
     public @Rule
     TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
     private static WrappingNeoServerBootstrapper server;
 
     /**
-     * A simple query returning all nodes connected to node 1,
-     * returning the node and the name property, if it exists,
-     * otherwise `null`:
+     * A simple query returning all nodes connected to node 1, returning the
+     * node and the name property, if it exists, otherwise `null`:
      */
     @Test
     @Documented
-    @Title("Send a Query")
-    @Graph( nodes = { @NODE( name = "I", setNameProperty = true ), @NODE( name = "you", setNameProperty = true ),
-            @NODE( name = "him", setNameProperty = true, properties = {@PROP( key = "age", value = "25", type = GraphDescription.PropType.INTEGER )} )}, relationships = {
-                    @REL( start = "I", end = "him", type = "him", properties = {} ),
-                    @REL( start = "I", end = "you", type = "know", properties = {} )}
-                     )
+    @Title( "Send a Query" )
+    @Graph( nodes = {
+            @NODE( name = "I", setNameProperty = true ),
+            @NODE( name = "you", setNameProperty = true ),
+            @NODE( name = "him", setNameProperty = true, properties = { 
+                    @PROP( key = "age", value = "25", type = GraphDescription.PropType.INTEGER ) } ) }, 
+            relationships = {
+            @REL( start = "I", end = "him", type = "him", properties = {} ),
+            @REL( start = "I", end = "you", type = "know", properties = {} ) } )
     public void testPropertyColumn() throws UnsupportedEncodingException
     {
-        String script = "start x  = ("+data.get().get( "I" ).getId() +") match (x) --> (n) return n.name?, n.age?";
-        String response = gen.get()
-        .expectedStatus( Status.OK.getStatusCode() )
-        .payload( "{\"query\": \""+script +"\"}")
-        .description( formatCypher( script ) )
-        .post( ENDPOINT )
-        .entity();
-        assertTrue(response.contains( "you" ));
-        assertTrue(response.contains( "him" ));
-        assertTrue(response.contains( "25" ));
-        assertTrue(!response.contains( "\"x\"" ));
+        String script = "start x  = (" + data.get().get( "I" ).getId()
+                        + ") match (x) --> (n) return n.name?, n.age?";
+        String response = gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
+                "{\"query\": \"" + script + "\"}" ).description(
+                formatCypher( script ) ).post( ENDPOINT ).entity();
+        assertTrue( response.contains( "you" ) );
+        assertTrue( response.contains( "him" ) );
+        assertTrue( response.contains( "25" ) );
+        assertTrue( !response.contains( "\"x\"" ) );
     }
 
     @BeforeClass
     public static void startDatabase()
     {
-        graphdb = new ImpermanentGraphDatabase("target/db"+System.currentTimeMillis());
-        
+        graphdb = new ImpermanentGraphDatabase( "target/db"
+                                                + System.currentTimeMillis() );
+
     }
 
     @AfterClass
@@ -104,27 +105,25 @@ public class CypherPluginFunctionalTest implements GraphHolder
     {
         return graphdb;
     }
-    
+
     @Before
-    public void startServer() {
+    public void startServer()
+    {
         graphdb.cleanContent();
-        server = new WrappingNeoServerBootstrapper(
-                graphdb );
+        server = new WrappingNeoServerBootstrapper( graphdb );
         server.start();
         gen.get().setGraph( graphdb );
     }
-    
+
     @After
-    public void shutdownServer() {
+    public void shutdownServer()
+    {
         server.stop();
     }
-    
+
     private String formatCypher( String script )
     {
-        return "_Cypher query_\n\n" +
- "[source,cypher]\n" +
-                "----\n" +
-                script +
-                "\n----\n";
+        return "_Cypher query_\n\n" + "[source,cypher]\n" + "----\n" + script
+               + "\n----\n";
     }
 }
