@@ -84,12 +84,31 @@ body > div.section h1, body > div.section h2,
 body > div.part h1, body > div.part h2,
 body > div.chapter h1, body > div.chapter h2,
 body > div.book h1,
-body > div.preface h2
+body > div.preface h2,
+body > div.appendix h2
 {
   color: #ffffff;
   border-bottom: none;
   margin-top: 2.2em;
   margin-bottom: .7em;
+}
+
+div.legalnotice
+{
+  padding-top: 3em;
+}
+
+p.legalnotice-title b
+{
+  color: #ffffff;
+  font-size: 1.5em;
+  font-style: normal;
+  font-weight: bold;
+}
+
+p.legalnotice-title
+{
+  margin-bottom: 2em;
 }
 
 body > div.book h1.title
@@ -235,24 +254,6 @@ div.warning, div.note, div.caution
   margin-top: 1em;
 }
 
-div.legalnotice
-{
-  padding-top: 3em;
-}
-
-p.legalnotice-title b
-{
-  color: #ffffff;
-  font-size: 1.5em;
-  font-style: normal;
-  font-weight: bold;
-}
-
-p.legalnotice-title
-{
-  margin-bottom: 2em;
-}
-
 div.table table, div.informaltable table
 {
   border-collapse: collapse;
@@ -299,4 +300,10 @@ div.informaltable span.strong strong
   font-weight: normal;
   font-style: italic;
 }
+
+div.informalfigure a img, div.figure a img
+{
+  border: none;
+}
+
 
