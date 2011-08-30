@@ -72,7 +72,7 @@ public class CypherPluginFunctionalTest implements GraphHolder
             @NODE( name = "him", setNameProperty = true, properties = { 
                     @PROP( key = "age", value = "25", type = GraphDescription.PropType.INTEGER ) } ) }, 
             relationships = {
-            @REL( start = "I", end = "him", type = "him", properties = {} ),
+            @REL( start = "I", end = "him", type = "know", properties = {} ),
             @REL( start = "I", end = "you", type = "know", properties = {} ) } )
     public void testPropertyColumn() throws UnsupportedEncodingException
     {
