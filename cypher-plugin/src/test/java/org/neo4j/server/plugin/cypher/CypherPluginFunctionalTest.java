@@ -39,6 +39,9 @@ import org.neo4j.server.WrappingNeoServerBootstrapper;
 import org.neo4j.server.rest.DocsGenerator;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
+import org.neo4j.test.GraphDescription.NODE;
+import org.neo4j.test.GraphDescription.PROP;
+import org.neo4j.test.GraphDescription.REL;
 import org.neo4j.test.GraphHolder;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestData;
@@ -64,7 +67,11 @@ public class CypherPluginFunctionalTest implements GraphHolder
     @Test
     @Documented
     @Title("Send a Query")
-    @Graph( value = { "I know you", "I know him" } )
+    @Graph( nodes = { @NODE( name = "I", setNameProperty = true ), @NODE( name = "you", setNameProperty = true ),
+            @NODE( name = "him", setNameProperty = true, properties = {@PROP( key = "age", value = "25", type = GraphDescription.PropType.INTEGER )} )}, relationships = {
+                    @REL( start = "I", end = "him", type = "him", properties = {} ),
+                    @REL( start = "I", end = "you", type = "know", properties = {} )}
+                     )
     public void testPropertyColumn() throws UnsupportedEncodingException
     {
         String script = "start x  = ("+data.get().get( "I" ).getId() +") match (x) --> (n) return n.name?, n.age?";
@@ -76,6 +83,7 @@ public class CypherPluginFunctionalTest implements GraphHolder
         .entity();
         assertTrue(response.contains( "you" ));
         assertTrue(response.contains( "him" ));
+        assertTrue(response.contains( "25" ));
         assertTrue(!response.contains( "\"x\"" ));
     }
 
