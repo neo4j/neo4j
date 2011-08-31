@@ -48,7 +48,7 @@ function versionSwitcher( $ )
 
   var contentElement = $( CONTENT_ELEMENT );
 
-  var versionSelector = $( '<select style="position: absolute; right: 5%;" name="version-selector"></select>' );
+  var versionSelector = $( '<select id="version-selector" name="version-selector"></select>' );
 
   loadVersionsIntoSelector( availableDocVersions, versionSelector );
 
@@ -56,7 +56,7 @@ function versionSwitcher( $ )
   setSelector2CurrentVersion( versionSelector, currentVersion );
 
   // add the dropdown to the page
-  contentElement.before( versionSelector );
+  $("div.navheader").append( versionSelector );
 
   // handle changes in the dropdown
   versionSelector.change( function()
@@ -78,12 +78,11 @@ function versionSwitcher( $ )
     $.each( availableDocVersions, function( index, version )
     {
       // add options in disabled state, then enable if the head request was successful
-      var newOption = new Option( version, version );
-      newOption.disabled = true;
+      var newOption = $( '<option disabled="disabled" value="' + version + '">' + version + '</option>' );
       versionSelector.append( newOption );
       checkExistence( version, currentPage, function () 
       {
-        newOption.disabled = false;
+        newOption.removeAttr( 'disabled' );
       } );
     } );
   }

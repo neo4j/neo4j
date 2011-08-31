@@ -1,0 +1,145 @@
+[[manual-meta-docs]]
+Neo4j Manual Meta Docs
+======================
+
+For how to build the manual see:
+https://github.com/neo4j/manual/blob/master/README.asciidoc[readme]
+
+The documents use the asciidoc format, see:
+
+* http://www.methods.co.nz/asciidoc/[Aciidoc Reference]
+* http://powerman.name/doc/asciidoc[AsciiDoc cheatsheet]
+
+The cheatsheet is really useful!
+
+Overall Flow
+============
+
+Each (sub)project has its own documentation, which will produce a 'docs.jar' file.
+
+
+
+== Headings and document structure ==
+
+Each document starts over with headings from level zero (the document title).
+Each document should have an id.
+In some cases sections in the document need to have id's as well, this depends on where they fit in the overall structure.
+To be able to link to content, it has to have an id.
+Missing id's in mandatory places will fail the build.
+
+This is how a document should begin:
+
+----
+[[unique-id-verbose-is-ok]]
+The Document Title
+==================
+----
+
+To push the headings down to the right level in the output, the +leveloffset+ 
+attribute is used when including the document inside of another document.
+
+Subsequent headings in a document should use the following syntax:
+
+----
+== Subheading ==
+
+... content here ...
+
+=== Subsubheading ===
+
+content here ...
+
+----
+
+== Writing ==
+
+Put one sentence on each line. This makes it easy to move around content,
+and also easy to spot (too) long sentences.
+
+== Gotchas ==
+
+* A chapter can't be empty. (the build will fail on the docbook xml validity check)
+* The document title should be "underlined" by the same
+  number of +=+ as there are characters in the title.
+* Always leave a blank line at the end of documents
+  (or the title of the next document might end up in the last
+  paragraph of the document)
+* As +{}+ are used for Asciidoc attributes, everything inside will be treated as an attribute.
+  What you have to do is to escape the opening brace: +\\{+.
+  If you don't the braces and the text inside them will be removed without any warning being issued!
+
+== Links ==
+
+To link to other parts of the manual the id of the target is used.
+This is how such a reference looks:
+
+----
+<<target-id>>
+----
+
+[NOTE]
+This tag will generate output like "Chapter 9, Transaction Management".
+So just write "see \<<the-id>>" and similar.
+
+If you need to link to another document with your own link text, this is what to do:
+
+----
+<<target-id, my much better text for the link>>
+----
+
+NOTE: Writing your own link text means you're going to keep it in sync with the title of target text in the future, in case that changes.
+
+External links are added like this:
+
+----
+http://neo4j.org/[Link text here]
+----
+
+== Text Formatting ==
+
+* Path: \'my/path/' renders as 'my/path/'
+
+== Attributes ==
+
+Common attributes you can use in documents:
+* \{neo4j-version}
+* \{neo4j-git-tag}
+
+These can substitute part of URLs that point to for example APIdocs or source code.
+Note that neo4j-git-tag also handles the case of snapshot/master.
+
+== Comments ==
+
+There's a separate build including comments.
+The comments show up with a yellow background.
+It's located at http://docs.neo4j.org/annotated /.
+You can also use this page to search for content, as the full manual is on a single page.
+WARNING: Don't share links to this page, as we want people to use the Disqus feature available in the normal chunked version.
+
+Here's how to write a comment:
+
+----
+// this is a comment
+----
+
+The comments are not visible in the normal build.
+Comment blocks won't be included in the output of any build at all.
+Here's a comment block:
+
+----
+////
+Note that includes in here will still be processed, but not make it into the output.
+////
+----
+
+
+== Toolchain ==
+
+Useful links when configuring the docbook toolchain:
+
+* http://www.docbook.org/tdg/en/html/docbook.html
+* http://www.sagehill.net/docbookxsl/index.html
+* http://docbook.sourceforge.net/release/xsl/1.76.1/doc/html/index.html
+* http://docbook.sourceforge.net/release/xsl/1.76.1/doc/fo/index.html
+
+

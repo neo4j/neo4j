@@ -22,17 +22,6 @@ include::introduction/index.txt[]
 
 :leveloffset: 0
 
-[[capabilities]]
-Capabilities
-============
-////
-[partintro]
-////
-
-:leveloffset: 1
-
-include::capabilities/cap-details.txt[]
-
 :leveloffset: 0
 
 [[tutorials]]
@@ -73,6 +62,10 @@ include::installation-deployment/index.txt[]
 :leveloffset: 1
 
 include::{importdir}/neo4j-kernel-docs-jar/ops/index.txt[]
+
+:leveloffset: 1
+
+include::capabilities/cap-details.txt[]
 
 :leveloffset: 1
 

@@ -1,0 +1,3 @@
+* the output should be checked for graphviz syntax errors
+* external links (ulink in docbook jargon) should be checked for validity
+

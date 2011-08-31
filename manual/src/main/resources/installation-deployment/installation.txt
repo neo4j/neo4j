@@ -21,7 +21,7 @@ TIP: Follow the links in the table for details on dependency configuration with 
 |Enterprise  |http://search.maven.org/#search\|gav\|1\|g%3A%22org.neo4j%22%20AND%20a%3A%22neo4j-enterprise%22[org.neo4j:neo4j-enterprise] |adding online backup and High Availability clustering |AGPLv3
 |=======================
 
-NOTE: The listed dependeices do not contain the implementation, but pulls it in transitively.
+NOTE: The listed dependencies do not contain the implementation, but pulls it in transitively.
 
 For more information regarding licensing, see the http://neo4j.org/licensing-guide/[Licensing Guide].
 
