@@ -109,8 +109,8 @@ public abstract class CommonAbstractStore
      */
     protected abstract void rebuildIdGenerator();
 
-    // default node store id generator grab size
-    protected static final int DEFAULT_ID_GRAB_SIZE = 1024;
+    // default id generator grab size
+    protected static final int DEFAULT_ID_GRAB_SIZE = 50000;
 
     private final String storageFileName;
     private final IdGeneratorFactory idGeneratorFactory;

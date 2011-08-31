@@ -96,6 +96,7 @@ public class IdGeneratorImpl implements IdGenerator
     private ByteBuffer writeBuffer = null;
 
     private final long max;
+    private final boolean aggressiveReuse;
 
     /**
      * Opens the id generator represented by <CODE>fileName</CODE>. The
@@ -117,11 +118,14 @@ public class IdGeneratorImpl implements IdGenerator
      *            The number of defragged ids to keep in memory
      * @param max is the highest possible id to be returned by this id generator from
      * {@link #nextId()}.
+     * @param aggressiveReuse will reuse ids during the same session, not requiring
+     * a restart to be able reuse ids freed with {@link #freeId(long)}.
      * @throws UnderlyingStorageException
      *             If no such file exist or if the id generator is sticky
      */
-    public IdGeneratorImpl( String fileName, int grabSize, long max )
+    public IdGeneratorImpl( String fileName, int grabSize, long max, boolean aggressiveReuse )
     {
+        this.aggressiveReuse = aggressiveReuse;
         if ( grabSize < 1 )
         {
             throw new IllegalArgumentException( "Illegal grabSize: " + grabSize );
@@ -149,10 +153,8 @@ public class IdGeneratorImpl implements IdGenerator
     {
         assertStillOpen();
         long nextDefragId = nextIdFromDefragList();
-        if ( nextDefragId != -1 )
-        {
-            return nextDefragId;
-        }
+        if ( nextDefragId != -1 ) return nextDefragId;
+        
         long id = nextFreeId.get();
         if ( id == INTEGER_MINUS_ONE )
         {
@@ -175,6 +177,12 @@ public class IdGeneratorImpl implements IdGenerator
     
     private long nextIdFromDefragList()
     {
+        if ( aggressiveReuse )
+        {
+            Long id = releasedIdList.poll();
+            if ( id != null ) return id.longValue();
+        }
+        
         if ( defragedIdList.size() > 0 )
         {
             long id = defragedIdList.removeFirst();
@@ -196,7 +204,7 @@ public class IdGeneratorImpl implements IdGenerator
         }
     }
     
-    public IdRange nextIdBatch( int size )
+    public synchronized IdRange nextIdBatch( int size )
     {
         assertStillOpen();
         

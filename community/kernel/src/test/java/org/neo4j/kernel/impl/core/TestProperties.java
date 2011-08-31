@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.core;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
@@ -142,6 +143,7 @@ public class TestProperties extends AbstractNeo4jTestCase
         }
     }
     
+    @Ignore
     @Test
     public void longRange() throws Exception
     {
@@ -164,6 +166,7 @@ public class TestProperties extends AbstractNeo4jTestCase
         }
     }
     
+    @Ignore
     @Test
     public void doubleRange() throws Exception
     {
