@@ -367,9 +367,9 @@ public class GremlinPluginFunctionalTest implements GraphHolder
      * have different roles in different groups apart
      * from the membership.
      * The association of a User, a Group and a Role can
-     * be referred to as a HyperEdge. However, it can be easily modeled
+     * be referred to as a _HyperEdge_. However, it can be easily modeled
      * in a property graph as a node that captures this n-ary
-     * relationship, as depicted below.
+     * relationship, as depicted below in the +U1G2R1+ node.
      * 
      * To find out in what roles a user is for a particular
      * groups (here 'Group2'), 
@@ -377,36 +377,32 @@ public class GremlinPluginFunctionalTest implements GraphHolder
      * and provide answers.
      */
     @Test
-    @Title("hyperedges - find user roles in groups")
+    @Title("HyperEdges - find user roles in groups")
     @Documented
-    @Graph( value = { 
-            "Root root Users", 
-            "Root root Groups", 
-            "Root root Roles", 
-            "Users isA User1",
+    @Graph( value = {  
             "User1 in Group1", 
             "User1 in Group2",
             "Group2 canHave Role2", 
             "Group2 canHave Role1", 
             "Group1 canHave Role1", 
             "Group1 canHave Role2", 
-            "Groups isA Group1", 
-            "Groups isA Group2", 
-            "Roles isA Role1", 
-            "Roles isA Role2",
+            "Group1 isA Group", 
+            "Group2 isA Group", 
+            "Role1 isA Role", 
+            "Role2 isA Role",
             "User1 hasRoleInGroup U1G2R1",
-            "Role1 roleIn U1G2R1",
-            "Group2 groupIn U1G2R1",
+            "U1G2R1 hasRole Role1",
+            "U1G2R1 hasGroup Group2",
             "User1 hasRoleInGroup U1G1R2",
-            "Role2 roleIn U1G1R2",
-            "Group1 groupIn U1G1R2"} )
+            "U1G1R2 hasRole Role2",
+            "U1G1R2 hasGroup Group1"} )
     public void findGroups()
     {
         String script = "" +
                 "g.v(" +data.get().get( "User1" ).getId() + ")" +
-                		".out('hasRoleInGroup').as('role')." +
-                		"in('groupIn').filter{it.name=='Group2'}." +
-                		"back('role').in('roleIn').name";
+                		".out('hasRoleInGroup').as('hyperedge')." +
+                		"out('hasGroup').filter{it.name=='Group2'}." +
+                		"back('hyperedge').out('hasRole').name";
         String payload = "{\"script\":\""+script+"\"}";
         data.get();
         String response = gen.get()
