@@ -62,7 +62,4 @@ Auto-recompile coffeescript and HAML files:
 
 Then go to http://localhost:7474/webadmin/dev.html 
 
-The dev.html file loads each individual js file, unminified, which makes debugging
-a lot easier. Please note however, that for your changes to be seen in the normal
-http://localhost:7474/webadmin/ you need to run the normal webadmin build at the 
-top of this section.
+The dev.html file loads each individual js file, unminified, which makes debugging a lot easier. Please note however, that for your changes to be seen in the normal http://localhost:7474/webadmin/ you need to run the normal webadmin build at the top of this section.
