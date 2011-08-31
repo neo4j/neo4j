@@ -39,6 +39,7 @@
     <module>shell</module>
     <module>embedded-examples</module>
     <module>server-api</module>
+    <module>graphviz</module>
     <module>server</module>
     <module>server-examples</module>
   </modules>
