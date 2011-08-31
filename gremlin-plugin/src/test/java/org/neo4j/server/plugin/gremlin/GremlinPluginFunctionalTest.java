@@ -359,6 +359,57 @@ public class GremlinPluginFunctionalTest implements GraphHolder
         
     }
     
+    /**
+     * Find Groups.
+     * 
+     * Image a user being part of different groups.
+     * A group can have different roles, and a user can
+     * have different roles in different groups.
+     * To find out in what roles a suer is for a particular
+     * groups, the following script can give an answer.
+     */
+    @Test
+    @Title("find groups")
+    @Documented
+    @Graph( value = { 
+            "Root to Users", 
+            "Root to Groups", 
+            "Root to Roles", 
+            "Users isA User1",
+            "User1 in Group1", 
+            "User1 in Group2",
+            "Group2 canHave Role2", 
+            "Group2 canHave Role1", 
+            "Group1 canHave Role1", 
+            "Group1 canHave Role2", 
+            "Groups isA Group1", 
+            "Groups isA Group2", 
+            "Roles isA Role1", 
+            "Roles isA Role2",
+            "User1 hasRoleIn U1G2R1",
+            "Role1 roleIn U1G2R1",
+            "Group2 groupIn U1G2R1",
+            "User1 hasRoleIn U1G1R2",
+            "Role2 roleIn U1G1R2",
+            "Group1 groupIn U1G1R2"} )
+    public void findGroups()
+    {
+        String script = "" +
+                "g.v(" +data.get().get( "User1" ).getId() + ")" +
+                		".out('hasRoleIn').as('role').in('groupIn').filter{it.name=='Group2'}.back('role').in('roleIn').name";
+        String payload = "{\"script\":\""+script+"\"}";
+        data.get();
+        String response = gen.get()
+        .expectedStatus( Status.OK.getStatusCode() )
+                .payload( JSONPrettifier.parse( payload ) )
+        .payloadType( MediaType.APPLICATION_JSON_TYPE )
+        .description( formatGroovy(script) )
+        .post( ENDPOINT )
+        .entity();
+        assertTrue(response.contains( "Role1" ));
+        
+    }
+    
     
     private String formatGroovy( String script )
     {

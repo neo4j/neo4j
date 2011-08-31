@@ -31,3 +31,5 @@ include::return-paths-from-a-gremlin-script.txt[]
 include::send-an-arbitrary-groovy-script---lucene-sorting.txt[]
 
 include::emit-a-sample-graph.txt[]
+
+include::find-groups.txt[]
