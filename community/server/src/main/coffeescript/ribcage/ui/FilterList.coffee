@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 define(
   ['ribcage/View'
-   './filterList'
+   './filterListTemplate'
    './filterListSelect'
    'lib/backbone'], 
   (View, template, selectTemplate) ->
