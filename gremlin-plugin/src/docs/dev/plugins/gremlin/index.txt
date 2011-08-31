@@ -32,4 +32,4 @@ include::send-an-arbitrary-groovy-script---lucene-sorting.txt[]
 
 include::emit-a-sample-graph.txt[]
 
-include::find-groups.txt[]
+include::hyperedges---find-user-roles-in-groups.txt[]

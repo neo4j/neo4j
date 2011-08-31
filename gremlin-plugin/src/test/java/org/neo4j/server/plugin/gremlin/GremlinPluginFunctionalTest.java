@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.plugin.gremlin;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.UnsupportedEncodingException;
@@ -360,21 +361,28 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     }
     
     /**
-     * Find Groups.
-     * 
-     * Image a user being part of different groups.
+     * Imagine a user being part of different groups.
      * A group can have different roles, and a user can
-     * have different roles in different groups.
-     * To find out in what roles a suer is for a particular
-     * groups, the following script can give an answer.
+     * be part of different groups. He also can
+     * have different roles in different groups apart
+     * from the membership.
+     * The association of a User, a Group and a Role can
+     * be referred to as a HyperEdge. However, it can be easily modeled
+     * in a property graph as a node that captures this n-ary
+     * relationship, as depicted below.
+     * 
+     * To find out in what roles a user is for a particular
+     * groups (here 'Group2'), 
+     * the following script can traverse this HyperEdge node
+     * and provide answers.
      */
     @Test
-    @Title("find groups")
+    @Title("hyperedges - find user roles in groups")
     @Documented
     @Graph( value = { 
-            "Root to Users", 
-            "Root to Groups", 
-            "Root to Roles", 
+            "Root root Users", 
+            "Root root Groups", 
+            "Root root Roles", 
             "Users isA User1",
             "User1 in Group1", 
             "User1 in Group2",
@@ -386,17 +394,19 @@ public class GremlinPluginFunctionalTest implements GraphHolder
             "Groups isA Group2", 
             "Roles isA Role1", 
             "Roles isA Role2",
-            "User1 hasRoleIn U1G2R1",
+            "User1 hasRoleInGroup U1G2R1",
             "Role1 roleIn U1G2R1",
             "Group2 groupIn U1G2R1",
-            "User1 hasRoleIn U1G1R2",
+            "User1 hasRoleInGroup U1G1R2",
             "Role2 roleIn U1G1R2",
             "Group1 groupIn U1G1R2"} )
     public void findGroups()
     {
         String script = "" +
                 "g.v(" +data.get().get( "User1" ).getId() + ")" +
-                		".out('hasRoleIn').as('role').in('groupIn').filter{it.name=='Group2'}.back('role').in('roleIn').name";
+                		".out('hasRoleInGroup').as('role')." +
+                		"in('groupIn').filter{it.name=='Group2'}." +
+                		"back('role').in('roleIn').name";
         String payload = "{\"script\":\""+script+"\"}";
         data.get();
         String response = gen.get()
@@ -407,6 +417,7 @@ public class GremlinPluginFunctionalTest implements GraphHolder
         .post( ENDPOINT )
         .entity();
         assertTrue(response.contains( "Role1" ));
+        assertFalse(response.contains( "Role2" ));
         
     }
     
