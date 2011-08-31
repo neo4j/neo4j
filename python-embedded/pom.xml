@@ -60,7 +60,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
-      <version>1.4</version>
+      <version>1.5-SNAPSHOT</version>
     </dependency>
   </dependencies>
 
@@ -72,7 +72,7 @@ the relevant Commercial Agreement.
     </profile>
     <profile><id>jython-test</id>
       <properties>
-        <python>jython</python>
+        <python>/home/jake/Workspaces/Neo4j/jython/dist/bin/jython</python>
       </properties>
     </profile>
   </profiles>

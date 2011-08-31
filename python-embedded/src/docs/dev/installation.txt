@@ -1,2 +1,5 @@
-This is how you install this stuff.
+First, make sure you are using either Jython, or, if you are using CPython, have JPype (http://jpype.sourceforge.net/) installed.
 
+Then, get a copy of neo4j.py (https://github.com/neo4j/neo4j-python), and install it:
+
+    setup.py install

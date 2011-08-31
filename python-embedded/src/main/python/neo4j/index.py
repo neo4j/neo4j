@@ -1,5 +1,6 @@
 
 from _backend import extends, Index, IndexHits, to_java
+from neo4j.util import rethrow_current_exception_as
 
 #
 # Pythonification of the index API
@@ -70,7 +71,9 @@ class IndexCell(object):
         return self._get_hits(False).__len__()
 
     def __iter__(self):
-        return self._get_hits().iterator()
+        it = self._get_hits().iterator()
+        while it.hasNext():
+            yield it.next()
 
     def __getitem__(self, item):
         return self._get_hits().__getitem__(item)

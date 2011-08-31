@@ -43,9 +43,10 @@ class IndexTest(unit_tests.GraphDatabaseTest):
             
             idx = self.graphdb.node.indexes.create('test')
             idx['akey']['avalue'] = n
-            
+        
         ret = list(idx['akey']['avalue'])[0]
         self.assertEqual(ret.id, n.id)
+        
 
     def test_remove_node_index(self):
         with self.graphdb.transaction:

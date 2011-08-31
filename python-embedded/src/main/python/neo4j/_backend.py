@@ -163,6 +163,7 @@ else:
     from org.neo4j.graphdb.index import Index, IndexHits
     from org.neo4j.helpers.collection import IterableWrapper
     from java.util import HashMap
+    
     rel_type = DynamicRelationshipType.withName
 
     def from_java(value):
@@ -172,3 +173,4 @@ else:
         
     def implements(interface):
         return interface
+    
