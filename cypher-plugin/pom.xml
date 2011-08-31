@@ -136,7 +136,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-graphviz</artifactId>
-      <version>0.2-SNAPSHOT</version>
+      <version>${neo4j.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
