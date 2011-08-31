@@ -11,7 +11,7 @@
   
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-graphviz</artifactId>
-  <version>0.2-SNAPSHOT</version>
+  <version>1.5-SNAPSHOT</version>
   <description></description>
   
   <properties>
@@ -45,8 +45,8 @@ the relevant Commercial Agreement.
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j</artifactId>
-      <version>1.3</version>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>1.5-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
