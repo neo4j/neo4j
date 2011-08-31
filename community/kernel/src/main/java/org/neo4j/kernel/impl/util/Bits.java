@@ -334,6 +334,21 @@ public class Bits
         return longs;
     }
     
+    public byte[] asBytes()
+    {
+        byte[] result = new byte[numberOfBytes];
+        int i = 0;
+        for ( long block : longs )
+        {
+            long mask = leftOverflowMask( 8 );
+            for ( int j = 0; j < 8; j++, mask >>>= 8 )
+            {
+                result[i++] = (byte) ((block & mask) >>> (64-8*j-8));
+            }
+        }
+        return result;
+    }
+    
     /**
      * Writes all bits to {@code buffer}.
      * @param buffer the {@link Buffer} to write to.
