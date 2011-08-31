@@ -81,7 +81,7 @@ public class DocumentationProcessor extends AnnotationProcessor
             {
                 warn( annotated, annotation, "Cannot extract JavaDoc documentation comment for " + annotated );
                 // return;
-                javadoc = "blurb";
+                javadoc = "Documentation not available.";
             }
             if ( !manipulator.updateAnnotationValue( annotated, annotation, "value", javadoc ) )
             {
