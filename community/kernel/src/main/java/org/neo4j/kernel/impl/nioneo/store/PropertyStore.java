@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import static org.neo4j.kernel.Config.ARRAY_BLOCK_SIZE;
 import static org.neo4j.kernel.Config.STRING_BLOCK_SIZE;
-import static org.neo4j.kernel.impl.util.Bits.bits;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -254,9 +253,9 @@ public class PropertyStore extends AbstractStore implements Store
     {
         long id = record.getId();
         Buffer buffer = window.getOffsettedBuffer( id );
+        Bits bits = Bits.bits( RECORD_SIZE );
         if ( record.inUse() )
         {
-            Bits bits = Bits.bits( RECORD_SIZE );
 
             short prevModifier = record.getPrevProp() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((record.getPrevProp() & 0xF00000000L) >> 32);
             short nextModifier = record.getNextProp() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((record.getNextProp() & 0xF00000000L) >> 32);
@@ -303,16 +302,15 @@ public class PropertyStore extends AbstractStore implements Store
                 bits.shiftLeft( 64 ).or( 0l );
                 longsPushed++;
             }
-            bits.apply( buffer );
         }
         else
         {
-            buffer.put( Record.NOT_IN_USE.byteValue() );
             if ( !isInRecoveryMode() )
             {
                 freeId( id );
             }
         }
+        bits.apply( buffer );
     }
 
     public PropertyRecord getLightRecord( long id )
@@ -513,7 +511,7 @@ public class PropertyStore extends AbstractStore implements Store
             Bits bits = bits32WithKeyAndType( keyId, PropertyType.STRING );
             long stringBlockId = nextStringBlockId();
             bits.or( stringBlockId, 0xFFFFFFFFFL );
-            block.getValueBlocks()[0] = bits.getLongs()[0];
+            block.setSingleBlock( bits.getLongs()[0] );
             int length = string.length();
             char[] chars = new char[length];
             string.getChars( 0, length, chars, 0 );
@@ -588,13 +586,15 @@ public class PropertyStore extends AbstractStore implements Store
     // TODO Assume only one prop per record for now
     private Bits bits32WithKeyAndType( int keyId, PropertyType type )
     {
-        return bits( 8 ).or( keyId, 0xFFFFFF ).shiftLeft( 4 ).or( type.intValue(), 0xF ).shiftLeft( 36 );
+        return Bits.bits( 8 ).or( keyId, 0xFFFFFF ).shiftLeft( 4 ).or(
+                type.intValue(), 0xF ).shiftLeft( 36 );
     }
 
     // TODO Assume only one prop per record for now
     private Bits bits64WithKeyAndType( int keyId, PropertyType type )
     {
-        return bits( 16 ).or( keyId, 0xFFFFFF ).shiftLeft( 4 ).or( type.intValue(), 0xF ).shiftLeft( 36+64 );
+        return Bits.bits( 16 ).or( keyId, 0xFFFFFF ).shiftLeft( 4 ).or(
+                type.intValue(), 0xF ).shiftLeft( 36 + 64 );
     }
 
     public Object getStringFor( PropertyBlock propRecord )

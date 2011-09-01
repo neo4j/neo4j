@@ -129,7 +129,7 @@ public class PropertyRecord extends Abstract64BitRecord
 
     public void removeBlock( int indexId )
     {
-
+        blockRecords.remove( getPropertyBlock( indexId ) );
     }
 
     public int[] getKeyIndexIds()

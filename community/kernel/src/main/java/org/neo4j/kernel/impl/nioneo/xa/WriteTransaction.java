@@ -1123,6 +1123,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
              */
             return;
         }
+        propRecord.setInUse( false );
         long prevProp = propRecord.getPrevProp();
         long nextProp = propRecord.getNextProp();
         if ( nodeRecord.getNextProp() == propertyId )
