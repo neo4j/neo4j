@@ -265,8 +265,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         return dataSize + BLOCK_HEADER_SIZE;
     }
 
-    // in_use(byte)+prev_block(int)+nr_of_bytes(int)+next_block(int)
-    protected static final int BLOCK_HEADER_SIZE = 1 + /*+ 4*/4 + 4;
+    // in_use(byte)+nr_of_bytes(int)+next_block(int)
+    protected static final int BLOCK_HEADER_SIZE = 1 + 4 + 4;
 
     public void updateRecord( DynamicRecord record )
     {
@@ -281,12 +281,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
             Buffer buffer = window.getOffsettedBuffer( blockId );
             if ( record.inUse() )
             {
-                // long prevProp = record.getPrevBlock();
-                // long prevProp = 0l;
-                // short prevModifier = prevProp ==
-                // Record.NO_NEXT_BLOCK.intValue() ? 0 : (short)((prevProp &
-                // 0xF00000000L) >> 28);
-
                 long nextProp = record.getNextBlock();
                 int nextModifier = nextProp == Record.NO_NEXT_BLOCK.intValue() ? 0 : (int)((nextProp & 0xF00000000L) >> 8);
 

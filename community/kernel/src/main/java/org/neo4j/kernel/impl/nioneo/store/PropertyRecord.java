@@ -41,7 +41,7 @@ public class PropertyRecord extends Abstract64BitRecord
     private long nextProp = Record.NO_NEXT_PROPERTY.intValue();
     private long prevProp = Record.NO_NEXT_PROPERTY.intValue();
     private final List<PropertyBlock> blockRecords = new ArrayList<PropertyBlock>(
-            3 );
+            4 );
     private long entityId = -1;
     private boolean nodeIdSet;
     private boolean isChanged;
@@ -91,7 +91,10 @@ public class PropertyRecord extends Abstract64BitRecord
         int result = 0;
         for ( PropertyBlock block : blockRecords )
         {
-            result += block.getSize();
+            if ( block.inUse() )
+            {
+                result += block.getSize();
+            }
         }
         return result;
     }
@@ -127,10 +130,12 @@ public class PropertyRecord extends Abstract64BitRecord
         return Collections.unmodifiableList( blockRecords );
     }
 
+    /*
     public void removeBlock( int indexId )
     {
-        blockRecords.remove( getPropertyBlock( indexId ) );
+        // blockRecords.remove( getPropertyBlock( indexId ) );
     }
+    */
 
     public int[] getKeyIndexIds()
     {
@@ -162,7 +167,7 @@ public class PropertyRecord extends Abstract64BitRecord
     {
         for ( PropertyBlock block : blockRecords )
         {
-            if ( block.getKeyIndexId() == keyIndex )
+            if ( block.getKeyIndexId() == keyIndex && block.inUse() )
             {
                 return block;
             }

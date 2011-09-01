@@ -256,52 +256,11 @@ public class PropertyStore extends AbstractStore implements Store
         Bits bits = Bits.bits( RECORD_SIZE );
         if ( record.inUse() )
         {
-
             short prevModifier = record.getPrevProp() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((record.getPrevProp() & 0xF00000000L) >> 32);
             short nextModifier = record.getNextProp() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((record.getNextProp() & 0xF00000000L) >> 32);
             bits.or( prevModifier, 0xF ).shiftLeft( 4 ).or( nextModifier, 0xF );
             bits.shiftLeft( 32 ).or( (int)record.getPrevProp() );
             bits.shiftLeft( 32 ).or( (int)record.getNextProp() );
-
-            int longsPushed = 0;
-            for ( PropertyBlock block : record.getPropertyBlocks() )
-            {
-                if ( !block.inUse() )
-                {
-                    bits.shiftLeft( 64 ).or( 0 );
-                    longsPushed++;
-                    continue;
-                }
-                for ( long propBlockValue : block.getValueBlocks() )
-                {
-                    longsPushed++;
-                    bits.shiftLeft( 64 ).or( propBlockValue );
-                }
-                if ( !block.isLight() )
-                {
-                    for ( DynamicRecord valueRecord : block.getValueRecords() )
-                    {
-                        if ( valueRecord.getType() == PropertyType.STRING.intValue() )
-                        {
-                            stringPropertyStore.updateRecord( valueRecord );
-                        }
-                        else if ( valueRecord.getType() == PropertyType.ARRAY.intValue() )
-                        {
-                            arrayPropertyStore.updateRecord( valueRecord );
-                        }
-                        else
-                        {
-                            throw new InvalidRecordException(
-                                    "Unknown dynamic record" );
-                        }
-                    }
-                }
-            }
-            while ( longsPushed < PropertyType.getPayloadSizeLongs() )
-            {
-                bits.shiftLeft( 64 ).or( 0l );
-                longsPushed++;
-            }
         }
         else
         {
@@ -309,6 +268,42 @@ public class PropertyStore extends AbstractStore implements Store
             {
                 freeId( id );
             }
+        }
+        int longsPushed = 0;
+        for ( PropertyBlock block : record.getPropertyBlocks() )
+        {
+            if ( block.inUse() )
+            {
+                for ( long propBlockValue : block.getValueBlocks() )
+                {
+                    longsPushed++;
+                    bits.shiftLeft( 64 ).or( propBlockValue );
+                }
+            }
+            if ( !block.isLight() )
+            {
+                for ( DynamicRecord valueRecord : block.getValueRecords() )
+                {
+                    if ( valueRecord.getType() == PropertyType.STRING.intValue() )
+                    {
+                        stringPropertyStore.updateRecord( valueRecord );
+                    }
+                    else if ( valueRecord.getType() == PropertyType.ARRAY.intValue() )
+                    {
+                        arrayPropertyStore.updateRecord( valueRecord );
+                    }
+                    else
+                    {
+                        throw new InvalidRecordException(
+                                "Unknown dynamic record" );
+                    }
+                }
+            }
+        }
+        while ( longsPushed < PropertyType.getPayloadSizeLongs() )
+        {
+            bits.shiftLeft( 64 ).or( 0l );
+            longsPushed++;
         }
         bits.apply( buffer );
     }

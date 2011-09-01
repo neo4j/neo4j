@@ -941,8 +941,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         {
             getPropertyStore().makeHeavy( block );
         }
-
-        propRecord.setInUse( false );
+        block.setInUse( false );
         // TODO: update count on property index record
         for ( DynamicRecord valueRecord : block.getValueRecords() )
         {
@@ -951,11 +950,12 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 valueRecord.setInUse( false, block.getType().intValue() );
             }
         }
-        propRecord.removeBlock( propertyData.getIndex() );
+        // propRecord.removeBlock( propertyData.getIndex() );
         if ( propRecord.size() > 0 )
         {
             return;
         }
+        propRecord.setInUse( false );
         long prevProp = propRecord.getPrevProp();
         long nextProp = propRecord.getNextProp();
         if ( relRecord.getNextProp() == propertyId )
@@ -1115,7 +1115,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 valueRecord.setInUse( false, block.getType().intValue() );
             }
         }
-        propRecord.removeBlock( propertyData.getIndex() );
+        // propRecord.removeBlock( propertyData.getIndex() );
         if (propRecord.size() > 0)
         {
             /*
@@ -1285,6 +1285,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 }
             }
         }
+
         getPropertyStore().encodeValue( block, propertyData.getIndex(), value );
         addPropertyRecord( propertyRecord );
         return block.newPropertyData( propertyRecord, value );
@@ -1345,7 +1346,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             host.setCreated();
             host.setRelId( relId );
             // Link it in if there already exist some
-            if ( relRecord.getNextProp() != Record.NO_NEXT_RELATIONSHIP.intValue() )
+            if ( relRecord.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
             {
                 PropertyRecord prevProp = getPropertyRecord( relRecord.getNextProp() );
                 if ( prevProp == null )
