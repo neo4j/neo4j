@@ -67,9 +67,9 @@ public class IdGeneratorImpl implements IdGenerator
     // rebuilt (go through the node, relationship, property, rel type etc files)
     private static final byte CLEAN_GENERATOR = (byte) 0;
     private static final byte STICKY_GENERATOR = (byte) 1;
-    
+
     public static final long INTEGER_MINUS_ONE = 0xFFFFFFFFL;  // 4294967295L;
-    
+
     // number of defragged ids to grab from file in batch (also used for write)
     private int grabSize = -1;
     private AtomicLong nextFreeId = new AtomicLong( -1 );
@@ -85,10 +85,10 @@ public class IdGeneratorImpl implements IdGenerator
     private final String fileName;
     private FileChannel fileChannel = null;
     // in memory defragged ids read from file (and from freeId)
-    private final LinkedList<Long> defragedIdList = 
+    private final LinkedList<Long> defragedIdList =
         new LinkedList<Long>();
     // in memory newly free defragged ids that havn't been flushed to disk yet
-    private final LinkedList<Long> releasedIdList = 
+    private final LinkedList<Long> releasedIdList =
         new LinkedList<Long>();
     // buffer used in readIdBatch()
     private ByteBuffer readBuffer = null;
@@ -110,7 +110,7 @@ public class IdGeneratorImpl implements IdGenerator
      * session (sticky) an <CODE>IOException</CODE> will be thrown. When this
      * happens one has to rebuild the id generator from the (node/rel/prop)
      * store file.
-     * 
+     *
      * @param fileName
      *            The file name (and path if needed) for the id generator to be
      *            opened
@@ -143,7 +143,7 @@ public class IdGeneratorImpl implements IdGenerator
      * else the next free id that hasn't been used yet is returned. If no id
      * exist the capacity is exceeded (all values <= max are taken) and a
      * {@link UnderlyingStorageException} will be thrown.
-     * 
+     *
      * @return The next free id
      * @throws UnderlyingStorageException
      *             If the capacity is exceeded
@@ -154,7 +154,7 @@ public class IdGeneratorImpl implements IdGenerator
         assertStillOpen();
         long nextDefragId = nextIdFromDefragList();
         if ( nextDefragId != -1 ) return nextDefragId;
-        
+
         long id = nextFreeId.get();
         if ( id == INTEGER_MINUS_ONE )
         {
@@ -174,15 +174,19 @@ public class IdGeneratorImpl implements IdGenerator
             throw new UnderlyingStorageException( "Id capacity exceeded" );
         }
     }
-    
+
     private long nextIdFromDefragList()
     {
         if ( aggressiveReuse )
         {
             Long id = releasedIdList.poll();
-            if ( id != null ) return id.longValue();
+            if ( id != null )
+            {
+                defraggedIdCount--;
+                return id.longValue();
+            }
         }
-        
+
         if ( defragedIdList.size() > 0 )
         {
             long id = defragedIdList.removeFirst();
@@ -203,11 +207,11 @@ public class IdGeneratorImpl implements IdGenerator
             throw new IllegalStateException( "Closed id generator " + fileName );
         }
     }
-    
+
     public synchronized IdRange nextIdBatch( int size )
     {
         assertStillOpen();
-        
+
         // Get from defrag list
         int count = 0;
         long[] defragIds = new long[size];
@@ -220,12 +224,12 @@ public class IdGeneratorImpl implements IdGenerator
             }
             defragIds[count++] = id;
         }
-        
+
         // Shrink the array to actual size
         long[] tmpArray = defragIds;
         defragIds = new long[count];
         System.arraycopy( tmpArray, 0, defragIds, 0, count );
-        
+
         int sizeLeftForRange = size-count;
         long start = nextFreeId.get();
         long newHighId = start + sizeLeftForRange;
@@ -237,7 +241,7 @@ public class IdGeneratorImpl implements IdGenerator
     /**
      * Sets the next free "high" id. This method should be called when an id
      * generator has been rebuilt. {@code id} must not be higher than {@code max}.
-     * 
+     *
      * @param id
      *            The next free id
      */
@@ -250,7 +254,7 @@ public class IdGeneratorImpl implements IdGenerator
     /**
      * Returns the next "high" id that will be returned if no defragged ids
      * exist.
-     * 
+     *
      * @return The next free "high" id
      */
     public long getHighId()
@@ -267,7 +271,7 @@ public class IdGeneratorImpl implements IdGenerator
      * if id is greater than the highest returned id. However as stated in the
      * class documentation above the id isn't validated to see if it really is
      * free.
-     * 
+     *
      * @param id
      *            The id to be made available again
      * @throws IOException
@@ -279,7 +283,7 @@ public class IdGeneratorImpl implements IdGenerator
         {
             return;
         }
-        
+
         if ( fileChannel == null )
         {
             throw new IllegalStateException( "Generator closed " + fileName );
@@ -304,7 +308,7 @@ public class IdGeneratorImpl implements IdGenerator
      * An invoke to the <CODE>nextId</CODE> or <CODE>freeId</CODE> after
      * this method has been invoked will result in an <CODE>IOException</CODE>
      * since the highest returned id has been set to a negative value.
-     * 
+     *
      * @throws IOException
      *             If unable to close this id generator
      */
@@ -379,14 +383,14 @@ public class IdGeneratorImpl implements IdGenerator
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException( 
+            throw new UnderlyingStorageException(
                 "Unable to close id generator " + fileName, e );
         }
     }
 
     /**
      * Returns the file associated with this id generator.
-     * 
+     *
      * @return The id generator's file name
      */
     public String getFileName()
@@ -396,7 +400,7 @@ public class IdGeneratorImpl implements IdGenerator
 
     /**
      * Creates a new id generator.
-     * 
+     *
      * @param fileName
      *            The name of the id generator
      * @throws IOException
@@ -427,7 +431,7 @@ public class IdGeneratorImpl implements IdGenerator
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException( 
+            throw new UnderlyingStorageException(
                 "Unable to create id generator" + fileName, e );
         }
     }
@@ -467,7 +471,7 @@ public class IdGeneratorImpl implements IdGenerator
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException( 
+            throw new UnderlyingStorageException(
                 "Unable to init id generator " + fileName, e );
         }
     }
@@ -549,7 +553,7 @@ public class IdGeneratorImpl implements IdGenerator
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException( 
+            throw new UnderlyingStorageException(
                 "Unable to write defragged id " + " batch", e );
         }
     }
@@ -559,7 +563,7 @@ public class IdGeneratorImpl implements IdGenerator
      * console. Do not call while running store using this id generator since it
      * could corrupt the id generator (not thread safe). This method will close
      * the id generator after being invoked.
-     * 
+     *
      * @throws IOException
      *             If problem dumping free ids
      */
