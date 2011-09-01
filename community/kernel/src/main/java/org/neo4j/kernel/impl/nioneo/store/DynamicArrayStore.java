@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
 
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.util.Bits;
 
 /**
  * Dynamic store that stores strings.
@@ -34,41 +36,10 @@ class DynamicArrayStore extends AbstractDynamicStore
     // store version, each store ends with this string (byte encoded)
     private static final String VERSION = "ArrayPropertyStore v0.9.9";
 
-    private static enum ArrayType
-    {
-        ILLEGAL( 0 ), 
-        INT( 1 ), 
-        STRING( 2 ), 
-        BOOL( 3 ), 
-        DOUBLE( 4 ),
-        FLOAT( 5 ), 
-        LONG( 6 ), 
-        BYTE( 7 ), 
-        CHAR( 8 ), 
-        SHORT( 10 );
-
-        private int type;
-
-        ArrayType( int type )
-        {
-            this.type = type;
-        }
-
-        public byte byteValue()
-        {
-            return (byte) type;
-        }
-    }
-
     public DynamicArrayStore( String fileName, Map<?,?> config, IdType idType )
     {
         super( fileName, config, idType );
     }
-
-//    public DynamicArrayStore( String fileName )
-//    {
-//        super( fileName );
-//    }
 
     public String getTypeAndVersionDescriptor()
     {
@@ -81,56 +52,26 @@ class DynamicArrayStore extends AbstractDynamicStore
         createEmptyStore( fileName, blockSize, VERSION, idGeneratorFactory, IdType.ARRAY_BLOCK );
     }
 
-    private Collection<DynamicRecord> allocateFromInt( long startBlock,
-        int[] array )
+    private Collection<DynamicRecord> allocateFromNumbers( long startBlock, Object array )
     {
-        int size = array.length * 4 + 1;
-        ByteBuffer buf = ByteBuffer.allocate( size );
-        buf.put( ArrayType.INT.byteValue() );
-        for ( int i : array )
+        ShortArray type = ShortArray.typeOf( array );
+        int arrayLength = Array.getLength( array );
+        int requiredBits = type.calculateRequiredBitsForArray( array );
+        int totalBits = requiredBits*arrayLength;
+        int bytes = (totalBits-1)/8+1;
+        int bitsUsedInLastByte = totalBits%8;
+        bitsUsedInLastByte = bitsUsedInLastByte == 0 ? 8 : bitsUsedInLastByte;
+        bytes += 3; // type + rest + requiredBits header. TODO no need to use full bytes
+        Bits bits = Bits.bits( bytes );
+        int length = arrayLength;
+        for ( int i = length-1; i >= 0; i-- )
         {
-            buf.putInt( i );
+            type.pushRight( Array.get( array, i ), bits, requiredBits ); 
         }
-        return allocateRecords( startBlock, buf.array() );
-    }
-
-    private Collection<DynamicRecord> allocateFromInt( long startBlock,
-        Integer[] array )
-    {
-        int size = array.length * 4 + 1;
-        ByteBuffer buf = ByteBuffer.allocate( size );
-        buf.put( ArrayType.INT.byteValue() );
-        for ( int i : array )
-        {
-            buf.putInt( i );
-        }
-        return allocateRecords( startBlock, buf.array() );
-    }
-
-    private Collection<DynamicRecord> allocateFromShort( long startBlock,
-        short[] array )
-    {
-        int size = array.length * 2 + 1;
-        ByteBuffer buf = ByteBuffer.allocate( size );
-        buf.put( ArrayType.SHORT.byteValue() );
-        for ( short i : array )
-        {
-            buf.putShort( i );
-        }
-        return allocateRecords( startBlock, buf.array() );
-    }
-
-    private Collection<DynamicRecord> allocateFromShort( long startBlock,
-        Short[] array )
-    {
-        int size = array.length * 2 + 1;
-        ByteBuffer buf = ByteBuffer.allocate( size );
-        buf.put( ArrayType.SHORT.byteValue() );
-        for ( short i : array )
-        {
-            buf.putShort( i );
-        }
-        return allocateRecords( startBlock, buf.array() );
+        bits.pushRight( (byte)requiredBits );
+        bits.pushRight( (byte)bitsUsedInLastByte );
+        bits.pushRight( (byte)type.intValue() );
+        return allocateRecords( startBlock, bits.asLeftBytes() );
     }
 
     private Collection<DynamicRecord> allocateFromString( long startBlock,
@@ -142,7 +83,7 @@ class DynamicArrayStore extends AbstractDynamicStore
             size += 4 + str.length() * 2;
         }
         ByteBuffer buf = ByteBuffer.allocate( size );
-        buf.put( ArrayType.STRING.byteValue() );
+        buf.put( (byte) PropertyType.STRING.intValue() );
         buf.putInt( array.length );
         for ( String str : array )
         {
@@ -158,293 +99,31 @@ class DynamicArrayStore extends AbstractDynamicStore
         return allocateRecords( startBlock, buf.array() );
     }
 
-    private Collection<DynamicRecord> allocateFromBool( long startBlock,
-        boolean[] array )
+    public Collection<DynamicRecord> allocateRecords( long startBlock, Object array )
     {
-        int size = 5 + array.length / 8;
-        if ( array.length % 8 > 0 )
+        if ( !array.getClass().isArray() )
         {
-            size++;
+            throw new IllegalArgumentException( array + " not an array" );
         }
-        ByteBuffer buf = ByteBuffer.allocate( size );
-        buf.put( ArrayType.BOOL.byteValue() );
-        buf.putInt( array.length );
-        byte currentValue = 0;
-        int byteItr = 0;
-        for ( boolean b : array )
-        {
-            if ( b )
-            {
-                currentValue += 1 << byteItr;
-            }
-            byteItr++;
-            if ( byteItr == 8 )
-            {
-                buf.put( currentValue );
-                byteItr = 0;
-                currentValue = 0;
-            }
-        }
-        if ( byteItr != 0 )
-        {
-            buf.put( currentValue );
-        }
-        return allocateRecords( startBlock, buf.array() );
-    }
-
-    private Collection<DynamicRecord> allocateFromBool( long startBlock,
-        Boolean[] array )
-    {
-        int size = 5 + array.length / 8;
-        if ( array.length % 8 > 0 )
-        {
-            size++;
-        }
-        ByteBuffer buf = ByteBuffer.allocate( size );
-        buf.put( ArrayType.BOOL.byteValue() );
-        buf.putInt( array.length );
-        byte currentValue = 0;
-        int byteItr = 0;
-        for ( Boolean b : array )
-        {
-            if ( b )
-            {
-                currentValue += 1 << byteItr;
-            }
-            byteItr++;
-            if ( byteItr == 8 )
-            {
-                buf.put( currentValue );
-                byteItr = 0;
-                currentValue = 0;
-            }
-        }
-        if ( byteItr != 0 )
-        {
-            buf.put( currentValue );
-        }
-        return allocateRecords( startBlock, buf.array() );
-    }
-
-    private Collection<DynamicRecord> allocateFromDouble( long startBlock,
-        double[] array )
-    {
-        int size = array.length * 8 + 1;
-        ByteBuffer buf = ByteBuffer.allocate( size );
-        buf.put( ArrayType.DOUBLE.byteValue() );
-        for ( double d : array )
-        {
-            buf.putDouble( d );
-        }
-        return allocateRecords( startBlock, buf.array() );
-    }
-
-    private Collection<DynamicRecord> allocateFromDouble( long startBlock,
-        Double[] array )
-    {
-        int size = array.length * 8 + 1;
-        ByteBuffer buf = ByteBuffer.allocate( size );
-        buf.put( ArrayType.DOUBLE.byteValue() );
-        for ( double d : array )
-        {
-            buf.putDouble( d );
-        }
-        return allocateRecords( startBlock, buf.array() );
-    }
-
-    private Collection<DynamicRecord> allocateFromFloat( long startBlock,
-        float[] array )
-    {
-        int size = array.length * 4 + 1;
-        ByteBuffer buf = ByteBuffer.allocate( size );
-        buf.put( ArrayType.FLOAT.byteValue() );
-        for ( float f : array )
-        {
-            buf.putFloat( f );
-        }
-        return allocateRecords( startBlock, buf.array() );
-    }
-
-    private Collection<DynamicRecord> allocateFromFloat( long startBlock,
-        Float[] array )
-    {
-        int size = array.length * 4 + 1;
-        ByteBuffer buf = ByteBuffer.allocate( size );
-        buf.put( ArrayType.FLOAT.byteValue() );
-        for ( float f : array )
-        {
-            buf.putFloat( f );
-        }
-        return allocateRecords( startBlock, buf.array() );
-    }
-
-    private Collection<DynamicRecord> allocateFromLong( long startBlock,
-        long[] array )
-    {
-        int size = array.length * 8 + 1;
-        ByteBuffer buf = ByteBuffer.allocate( size );
-        buf.put( ArrayType.LONG.byteValue() );
-        for ( long l : array )
-        {
-            buf.putLong( l );
-        }
-        return allocateRecords( startBlock, buf.array() );
-    }
-
-    private Collection<DynamicRecord> allocateFromLong( long startBlock,
-        Long[] array )
-    {
-        int size = array.length * 8 + 1;
-        ByteBuffer buf = ByteBuffer.allocate( size );
-        buf.put( ArrayType.LONG.byteValue() );
-        for ( long l : array )
-        {
-            buf.putLong( l );
-        }
-        return allocateRecords( startBlock, buf.array() );
-    }
-
-    private Collection<DynamicRecord> allocateFromByte( long startBlock,
-        byte[] array )
-    {
-        int size = array.length + 1;
-        ByteBuffer buf = ByteBuffer.allocate( size );
-        buf.put( ArrayType.BYTE.byteValue() );
-        buf.put( array );
-        return allocateRecords( startBlock, buf.array() );
-    }
-
-    private Collection<DynamicRecord> allocateFromByte( long startBlock,
-        Byte[] array )
-    {
-        int size = array.length + 1;
-        ByteBuffer buf = ByteBuffer.allocate( size );
-        buf.put( ArrayType.BYTE.byteValue() );
-        for ( byte b : array )
-        {
-            buf.put( b );
-        }
-        return allocateRecords( startBlock, buf.array() );
-    }
-
-    private Collection<DynamicRecord> allocateFromChar( long startBlock,
-        char[] array )
-    {
-        int size = array.length * 2 + 1;
-        ByteBuffer buf = ByteBuffer.allocate( size );
-        buf.put( ArrayType.CHAR.byteValue() );
-        for ( char c : array )
-        {
-            buf.putChar( c );
-        }
-        return allocateRecords( startBlock, buf.array() );
-    }
-
-    private Collection<DynamicRecord> allocateFromChar( long startBlock,
-        Character[] array )
-    {
-        int size = array.length * 2 + 1;
-        ByteBuffer buf = ByteBuffer.allocate( size );
-        buf.put( ArrayType.CHAR.byteValue() );
-        for ( char c : array )
-        {
-            buf.putChar( c );
-        }
-        return allocateRecords( startBlock, buf.array() );
-    }
-
-    public Collection<DynamicRecord> allocateRecords( long startBlock,
-        Object array )
-    {
-        if ( array instanceof int[] )
-        {
-            return allocateFromInt( startBlock, (int[]) array );
-        }
-        if ( array instanceof Integer[] )
-        {
-            return allocateFromInt( startBlock, (Integer[]) array );
-        }
-        if ( array instanceof String[] )
+        
+        Class<?> type = array.getClass().getComponentType();
+        if ( type.equals( String.class ) )
         {
             return allocateFromString( startBlock, (String[]) array );
         }
-        if ( array instanceof boolean[] )
+        else
         {
-            return allocateFromBool( startBlock, (boolean[]) array );
+            return allocateFromNumbers( startBlock, array );
         }
-        if ( array instanceof Boolean[] )
-        {
-            return allocateFromBool( startBlock, (Boolean[]) array );
-        }
-        if ( array instanceof double[] )
-        {
-            return allocateFromDouble( startBlock, (double[]) array );
-        }
-        if ( array instanceof Double[] )
-        {
-            return allocateFromDouble( startBlock, (Double[]) array );
-        }
-        if ( array instanceof float[] )
-        {
-            return allocateFromFloat( startBlock, (float[]) array );
-        }
-        if ( array instanceof Float[] )
-        {
-            return allocateFromFloat( startBlock, (Float[]) array );
-        }
-        if ( array instanceof long[] )
-        {
-            return allocateFromLong( startBlock, (long[]) array );
-        }
-        if ( array instanceof Long[] )
-        {
-            return allocateFromLong( startBlock, (Long[]) array );
-        }
-        if ( array instanceof byte[] )
-        {
-            return allocateFromByte( startBlock, (byte[]) array );
-        }
-        if ( array instanceof Byte[] )
-        {
-            return allocateFromByte( startBlock, (Byte[]) array );
-        }
-        if ( array instanceof char[] )
-        {
-            return allocateFromChar( startBlock, (char[]) array );
-        }
-        if ( array instanceof Character[] )
-        {
-            return allocateFromChar( startBlock, (Character[]) array );
-        }
-        if ( array instanceof short[] )
-        {
-            return allocateFromShort( startBlock, (short[]) array );
-        }
-        if ( array instanceof Short[] )
-        {
-            return allocateFromShort( startBlock, (Short[]) array );
-        }
-        throw new IllegalArgumentException( array + 
-            " not a valid array type." );
     }
 
     public Object getRightArray( byte[] bArray )
     {
-        ByteBuffer buf = ByteBuffer.wrap( bArray );
-        byte type = buf.get();
-        if ( type == ArrayType.INT.byteValue() )
+        byte typeId = bArray[0];
+        if ( typeId == PropertyType.STRING.intValue() )
         {
-            int size = (bArray.length - 1) / 4;
-            assert (bArray.length - 1) % 4 == 0;
-            int[] array = new int[size];
-            for ( int i = 0; i < size; i++ )
-            {
-                array[i] = buf.getInt();
-            }
-            return array;
-        }
-        if ( type == ArrayType.STRING.byteValue() )
-        {
+            ByteBuffer buf = ByteBuffer.wrap( bArray );
+            buf.get(); // get rid of the type byte (which we've already read)
             String[] array = new String[buf.getInt()];
             for ( int i = 0; i < array.length; i++ )
             {
@@ -458,86 +137,22 @@ class DynamicArrayStore extends AbstractDynamicStore
             }
             return array;
         }
-        if ( type == ArrayType.BOOL.byteValue() )
+        else
         {
-            boolean[] array = new boolean[buf.getInt()];
-            int byteItr = 1;
-            byte currentValue = buf.get();
-            for ( int i = 0; i < array.length; i++ )
+            ShortArray type = ShortArray.typeOf( typeId );
+            Bits bits = Bits.bitsFromBytesLeft( bArray );
+            bits.pullLeftByte(); // type, we already got it 
+            int bitsUsedInLastByte = bits.pullLeftByte();
+            int requiredBits = bits.pullLeftByte();
+            if ( requiredBits == 0 ) return type.createArray( 0 );
+            int length = ((bArray.length-3)*8-(8-bitsUsedInLastByte))/requiredBits;
+            Object result = type.createArray( length );
+            for ( int i = 0; i < length; i++ )
             {
-                array[i] = (currentValue & byteItr) > 0 ? true : false;
-                byteItr *= 2;
-                if ( byteItr == 256 )
-                {
-                    byteItr = 0;
-                    currentValue = buf.get();
-                }
+                type.pullLeft( bits, result, i, requiredBits );
             }
-            return array;
+            return result;
         }
-        if ( type == ArrayType.DOUBLE.byteValue() )
-        {
-            int size = (bArray.length - 1) / 8;
-            assert (bArray.length - 1) % 8 == 0;
-            double[] array = new double[size];
-            for ( int i = 0; i < size; i++ )
-            {
-                array[i] = buf.getDouble();
-            }
-            return array;
-        }
-        if ( type == ArrayType.FLOAT.byteValue() )
-        {
-            int size = (bArray.length - 1) / 4;
-            assert (bArray.length - 1) % 4 == 0;
-            float[] array = new float[size];
-            for ( int i = 0; i < size; i++ )
-            {
-                array[i] = buf.getFloat();
-            }
-            return array;
-        }
-        if ( type == ArrayType.LONG.byteValue() )
-        {
-            int size = (bArray.length - 1) / 8;
-            assert (bArray.length - 1) % 8 == 0;
-            long[] array = new long[size];
-            for ( int i = 0; i < size; i++ )
-            {
-                array[i] = buf.getLong();
-            }
-            return array;
-        }
-        if ( type == ArrayType.BYTE.byteValue() )
-        {
-            int size = (bArray.length - 1);
-            byte[] array = new byte[size];
-            buf.get( array );
-            return array;
-        }
-        if ( type == ArrayType.CHAR.byteValue() )
-        {
-            int size = (bArray.length - 1) / 2;
-            assert (bArray.length - 1) % 2 == 0;
-            char[] array = new char[size];
-            for ( int i = 0; i < size; i++ )
-            {
-                array[i] = buf.getChar();
-            }
-            return array;
-        }
-        if ( type == ArrayType.SHORT.byteValue() )
-        {
-            int size = (bArray.length - 1) / 2;
-            assert (bArray.length - 1) % 2 == 0;
-            short[] array = new short[size];
-            for ( short i = 0; i < size; i++ )
-            {
-                array[i] = buf.getShort();
-            }
-            return array;
-        }
-        throw new InvalidRecordException( "Unknown array type[" + type + "]" );
     }
 
     @Override

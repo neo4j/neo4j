@@ -35,21 +35,39 @@ public class Bits
     
     public static Bits bits( int numberOfBytes )
     {
-        return new Bits( numberOfBytes );
+        int requiredLongs = (numberOfBytes-1)/8+1;
+        return new Bits( new long[requiredLongs], numberOfBytes );
     }
     
-    public Bits( int numberOfBytes )
+    public static Bits bitsFromLongs( long[] longs )
     {
-        int requiredLongs = numberOfBytes/8;
-        if ( numberOfBytes%8 > 0 ) requiredLongs++;
-        longs = new long[requiredLongs];
-        this.numberOfBytes = numberOfBytes;
+        return new Bits( longs, longs.length*8 );
     }
     
-    public Bits( long[] longs )
+    public static Bits bitsFromBytesLeft( byte[] bytes )
+    {
+        Bits bits = bits( bytes.length );
+        for ( int i = bytes.length-1; i >= 0; i-- )
+        {
+            bits.pushRight( bytes[i] );
+        }
+        return bits;
+    }
+    
+    public static Bits bitsFromBytesRight( byte[] bytes )
+    {
+        Bits bits = bits( bytes.length );
+        for ( byte value : bytes )
+        {
+            bits.pushLeft( value );
+        }
+        return bits;
+    }
+    
+    private Bits( long[] longs, int numberOfBytes )
     {
         this.longs = longs;
-        this.numberOfBytes = longs.length*8;
+        this.numberOfBytes = numberOfBytes;
     }
 
     /**
@@ -121,7 +139,7 @@ public class Bits
      */
     public Bits shiftRight( int steps )
     {
-        while ( steps >= 64 )
+        while ( steps >= 64 && longs.length > 1 )
         {
             for ( int i = longs.length-1; i > 0; i-- )
             {
@@ -334,7 +352,25 @@ public class Bits
         return longs;
     }
     
-    public byte[] asBytes()
+    /**
+     * Gets all the bits as bytes. If the number of bytes isn't exactly aligned
+     * the left most bytes are returned.
+     */
+    public byte[] asLeftBytes()
+    {
+        return asBytes( 0 );
+    }
+
+    /**
+     * Gets all the bits as bytes. If the number of bytes isn't exactly aligned
+     * the right most bytes are returned.
+     */
+    public byte[] asRightBytes()
+    {
+        return asBytes( longs.length*8-numberOfBytes );
+    }
+    
+    private byte[] asBytes( int leftIgnore )
     {
         byte[] result = new byte[numberOfBytes];
         int i = 0;
@@ -343,6 +379,8 @@ public class Bits
             long mask = leftOverflowMask( 8 );
             for ( int j = 0; j < 8; j++, mask >>>= 8 )
             {
+                if ( leftIgnore-- > 0 ) continue;
+                if ( i >= numberOfBytes ) break;
                 result[i++] = (byte) ((block & mask) >>> (64-8*j-8));
             }
         }
@@ -416,9 +454,9 @@ public class Bits
     public String toString()
     {
         StringBuilder builder = new StringBuilder();
-        int byteCounter = 0;
         for ( long value : longs )
         {
+            if ( builder.length() > 0 ) builder.append( "\n" );
             builder.append( "[" );
             for ( int i = 63; i >= 0; i-- )
             {
@@ -430,10 +468,6 @@ public class Bits
                 }
             }
             builder.append( "]" );
-            if ( byteCounter++ % 8 == 0 )
-            {
-                builder.append( "\n" );
-            }
         }
         return builder.toString();
     }
@@ -441,7 +475,7 @@ public class Bits
     @Override
     public Bits clone()
     {
-        return new Bits( Arrays.copyOf( longs, longs.length ) );
+        return new Bits( Arrays.copyOf( longs, longs.length ), numberOfBytes );
     }
     
     public Bits pushLeft( byte value, int steps )

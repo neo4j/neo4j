@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl;
 
 import java.io.File;
+import java.lang.reflect.Field;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -27,8 +28,13 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 
 public abstract class AbstractNeo4jTestCase
 {
@@ -172,5 +178,40 @@ public abstract class AbstractNeo4jTestCase
     {
         getEmbeddedGraphDb().getConfig().getGraphDbModule()
             .getNodeManager().clearCache();
+    }
+
+    protected long propertyRecordsInUse()
+    {
+        return propertyStore().getNumberOfIdsInUse();
+    }
+
+    protected long dynamicStringRecordsInUse()
+    {
+        return dynamicRecordsInUse( "stringPropertyStore" );
+    }
+
+    protected long dynamicArrayRecordsInUse()
+    {
+        return dynamicRecordsInUse( "arrayPropertyStore" );
+    }
+    
+    private long dynamicRecordsInUse( String fieldName )
+    {
+        try
+        {
+            Field storeField = PropertyStore.class.getDeclaredField( fieldName );
+            storeField.setAccessible( true );
+            return ( (AbstractDynamicStore) storeField.get( propertyStore() ) ).getNumberOfIdsInUse();
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+    
+    protected PropertyStore propertyStore()
+    {
+        XaDataSourceManager dsMgr = ((AbstractGraphDatabase)graphDb).getConfig().getTxModule().getXaDataSourceManager();
+        return ( (NeoStoreXaConnection) dsMgr.getXaDataSource( "nioneodb" ).getXaConnection() ).getPropertyStore();
     }
 }
