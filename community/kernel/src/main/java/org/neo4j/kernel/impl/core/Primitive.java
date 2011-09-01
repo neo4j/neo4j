@@ -539,8 +539,11 @@ abstract class Primitive
         Object value = property.getValue();
         if ( value == null )
         {
-            // This will only happen for "heavy" property value, such asstrings/arrays
-            value = nodeManager.loadPropertyValue( property.getId() );
+            /*
+             * This will only happen for "heavy" property value, such as
+             * strings/arrays
+             */
+            value = nodeManager.loadPropertyValue( property );
             property.setNewValue( value );
         }
         return value;

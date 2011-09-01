@@ -49,7 +49,11 @@ public class PropertyStore extends AbstractStore implements Store
     // store version, each store ends with this string (byte encoded)
     private static final String VERSION = "PropertyStore v0.9.9";
 
-    public static final int RECORD_SIZE = 5+DEFAULT_PAYLOAD_SIZE+5/*temporary for prev*/;
+    public static final int RECORD_SIZE = 1/*next and prev high bits*/
+    + 4/*next*/
+    + 4/*prev*/
+    + DEFAULT_PAYLOAD_SIZE /*property blocks*/;
+    // = 41
 
     private DynamicStringStore stringPropertyStore;
     private PropertyIndexStore propertyIndexStore;
@@ -244,25 +248,6 @@ public class PropertyStore extends AbstractStore implements Store
         {
             releaseWindow( window );
         }
-        if ( !record.isLight() )
-        {
-            for ( DynamicRecord valueRecord : record.getValueRecords() )
-            {
-                if ( valueRecord.getType() == PropertyType.STRING.intValue() )
-                {
-                    stringPropertyStore.updateRecord( valueRecord );
-                }
-                else if ( valueRecord.getType() ==
-                    PropertyType.ARRAY.intValue() )
-                {
-                    arrayPropertyStore.updateRecord( valueRecord );
-                }
-                else
-                {
-                    throw new InvalidRecordException( "Unknown dynamic record" );
-                }
-            }
-        }
     }
 
     private void updateRecord( PropertyRecord record, PersistenceWindow window )
@@ -279,11 +264,45 @@ public class PropertyStore extends AbstractStore implements Store
             bits.shiftLeft( 32 ).or( (int)record.getPrevProp() );
             bits.shiftLeft( 32 ).or( (int)record.getNextProp() );
 
-            for ( long block : record.getPropBlock() )
+            int longsPushed = 0;
+            for ( PropertyBlock block : record.getPropertyBlocks() )
             {
-                bits.shiftLeft( 64 ).or( block );
+                if ( !block.inUse() )
+                {
+                    bits.shiftLeft( 64 ).or( 0 );
+                    longsPushed++;
+                    continue;
+                }
+                for ( long propBlockValue : block.getValueBlocks() )
+                {
+                    longsPushed++;
+                    bits.shiftLeft( 64 ).or( propBlockValue );
+                }
+                if ( !block.isLight() )
+                {
+                    for ( DynamicRecord valueRecord : block.getValueRecords() )
+                    {
+                        if ( valueRecord.getType() == PropertyType.STRING.intValue() )
+                        {
+                            stringPropertyStore.updateRecord( valueRecord );
+                        }
+                        else if ( valueRecord.getType() == PropertyType.ARRAY.intValue() )
+                        {
+                            arrayPropertyStore.updateRecord( valueRecord );
+                        }
+                        else
+                        {
+                            throw new InvalidRecordException(
+                                    "Unknown dynamic record" );
+                        }
+                    }
+                }
             }
-
+            while ( longsPushed < PropertyType.getPayloadSizeLongs() )
+            {
+                bits.shiftLeft( 64 ).or( 0l );
+                longsPushed++;
+            }
             bits.apply( buffer );
         }
         else
@@ -310,11 +329,11 @@ public class PropertyStore extends AbstractStore implements Store
         }
     }
 
-    public void makeHeavy( PropertyRecord record )
+    public void makeHeavy( PropertyBlock record )
     {
         if ( record.getType() == PropertyType.STRING )
         {
-            Collection<DynamicRecord> stringRecords = stringPropertyStore.getLightRecords( record.getSinglePropBlock() & 0xFFFFFFFFFL );
+            Collection<DynamicRecord> stringRecords = stringPropertyStore.getLightRecords( record.getSingleValueBlock() & 0xFFFFFFFFFL );
             for ( DynamicRecord stringRecord : stringRecords )
             {
                 stringRecord.setType( PropertyType.STRING.intValue() );
@@ -323,7 +342,7 @@ public class PropertyStore extends AbstractStore implements Store
         }
         else if ( record.getType() == PropertyType.ARRAY )
         {
-            Collection<DynamicRecord> arrayRecords = arrayPropertyStore.getLightRecords( record.getSinglePropBlock() & 0xFFFFFFFFFL );
+            Collection<DynamicRecord> arrayRecords = arrayPropertyStore.getLightRecords( record.getSingleValueBlock() & 0xFFFFFFFFFL );
             for ( DynamicRecord arrayRecord : arrayRecords )
             {
                 arrayRecord.setType( PropertyType.ARRAY.intValue() );
@@ -344,22 +363,25 @@ public class PropertyStore extends AbstractStore implements Store
         {
             releaseWindow( window );
         }
-        if ( record.getType() == PropertyType.STRING )
+        for ( PropertyBlock block : record.getPropertyBlocks() )
         {
-            Collection<DynamicRecord> stringRecords = stringPropertyStore.getLightRecords( record.getSinglePropBlock() & 0xFFFFFFFFFL );
-            for ( DynamicRecord stringRecord : stringRecords )
+            if ( block.getType() == PropertyType.STRING )
             {
-                stringRecord.setType( PropertyType.STRING.intValue() );
-                record.addValueRecord( stringRecord );
+                Collection<DynamicRecord> stringRecords = stringPropertyStore.getLightRecords( block.getValueBlocks()[0] & 0xFFFFFFFFFL );
+                for ( DynamicRecord stringRecord : stringRecords )
+                {
+                    stringRecord.setType( PropertyType.STRING.intValue() );
+                    block.addValueRecord( stringRecord );
+                }
             }
-        }
-        else if ( record.getType() == PropertyType.ARRAY )
-        {
-            Collection<DynamicRecord> arrayRecords = arrayPropertyStore.getLightRecords( record.getSinglePropBlock() & 0xFFFFFFFFFL );
-            for ( DynamicRecord arrayRecord : arrayRecords )
+            else if ( block.getType() == PropertyType.ARRAY )
             {
-                arrayRecord.setType( PropertyType.ARRAY.intValue() );
-                record.addValueRecord( arrayRecord );
+                Collection<DynamicRecord> arrayRecords = arrayPropertyStore.getLightRecords( block.getValueBlocks()[0] & 0xFFFFFFFFFL );
+                for ( DynamicRecord arrayRecord : arrayRecords )
+                {
+                    arrayRecord.setType( PropertyType.ARRAY.intValue() );
+                    block.addValueRecord( arrayRecord );
+                }
             }
         }
         return record;
@@ -371,40 +393,75 @@ public class PropertyStore extends AbstractStore implements Store
 
         Bits bits = new Bits( RECORD_SIZE );
         bits.read( buffer );
+        bits.pullLeftLong( 8 * 7 );
 
-        long[] propBlock = new long[PropertyType.getPayloadSizeLongs()];
+        PropertyRecord record = new PropertyRecord( id );
+        record.setInUse( true );
+
+        long prevMod = (long) bits.pullLeftByte( 4 ) << 32;
+        long nextMod = (long) bits.pullLeftByte( 4 ) << 32;
+        long prevProp = bits.pullLeftLong( 32 );
+        long nextProp = bits.pullLeftLong( 32 );
+        record.setPrevProp( longFromIntAndMod( prevProp, prevMod ) );
+        record.setNextProp( longFromIntAndMod( nextProp, nextMod ) );
+
         boolean someBlockInUse = false;
-        for ( int i = propBlock.length-1; i >= 0; i-- )
+        while(bits.getLongs()[0] != 0)
         {
-            propBlock[i] = bits.getLong( 0xFFFFFFFFFFFFFFFFL );
-            bits.shiftRight( 64 );
-            if ( propBlock[i] != 0 ) someBlockInUse = true;
+            PropertyBlock newBlock = getPropertyBlock(bits);
+            if ( newBlock.inUse() )
+            {
+                someBlockInUse = true;
+                record.addPropertyBlock( newBlock );
+                for ( int i = 0; i < newBlock.getType().getSizeInLongs(); i++ )
+                {
+                    bits.pullLeftLong();
+                }
+            }
+            else
+            {
+                // We assume that storage is defragged
+                break;
+            }
         }
         if ( !someBlockInUse )
         {
             throw new InvalidRecordException( "Record[" + id + "] not in use" );
         }
-
-        PropertyRecord record = new PropertyRecord( id );
-        record.setInUse( true );
-        record.setPropBlock( propBlock );
-
-        long nextProp = bits.getLong( 0xFFFFFFFFL );
-        bits.shiftRight( 32 );
-        long prevProp = bits.getLong( 0xFFFFFFFFL );
-        bits.shiftRight( 32 );
-        long nextMod = (long)bits.getByte( (byte)0xF ) << 32;
-        bits.shiftRight( 4 );
-        long prevMod = (long)bits.getByte( (byte)0xF ) << 32;
-        record.setPrevProp( longFromIntAndMod( prevProp, prevMod ) );
-        record.setNextProp( longFromIntAndMod( nextProp, nextMod ) );
-
         return record;
     }
 
-    public Object getValue( PropertyRecord propertyRecord )
+    /*
+     * It is assumed that the argument does hold a property block - all zeros is
+     * a valid (not in use) block, so even if the Bits object has been exhausted a
+     * result is returned, that has inUse() return false. Also, the argument is not
+     * touched.
+     */
+    private static PropertyBlock getPropertyBlock( Bits fromBits )
     {
-        return propertyRecord.getType().getValue( propertyRecord, this );
+        PropertyBlock toReturn = new PropertyBlock();
+
+        long header = fromBits.getLongs()[0];
+        PropertyType type = PropertyType.getPropertyType( header, true );
+        if ( type == null )
+        {
+            toReturn.setInUse( false );
+            return toReturn;
+        }
+        toReturn.setInUse( true );
+        long[] blockData = new long[type.getSizeInLongs()];
+        blockData[0] = header; // we already have that;
+        for ( int i = 1; i < type.getSizeInLongs(); i++ )
+        {
+            blockData[i] = fromBits.getLongs()[i];
+        }
+        toReturn.setValueBlocks( blockData );
+        return toReturn;
+    }
+
+    public Object getValue( PropertyBlock propertyBlock )
+    {
+        return propertyBlock.getType().getValue( propertyBlock, this );
     }
 
     @Override
@@ -445,19 +502,18 @@ public class PropertyStore extends AbstractStore implements Store
         return arrayPropertyStore.allocateRecords( valueBlockId, array );
     }
 
-    public void encodeValue( PropertyRecord record, int keyId, Object value )
+    public void encodeValue( PropertyBlock block, int keyId, Object value )
     {
         if ( value instanceof String )
         {
             String string = (String) value;
-//            if ( ShortString.encode( keyId, string, record ) ) return;
-            if ( LongerShortString.encode( keyId, string, record,
+            if ( LongerShortString.encode( keyId, string, block,
                     PropertyType.getPayloadSize() ) ) return;
 
             Bits bits = bits32WithKeyAndType( keyId, PropertyType.STRING );
             long stringBlockId = nextStringBlockId();
             bits.or( stringBlockId, 0xFFFFFFFFFL );
-            record.setSinglePropBlock( bits.getLongs()[0] );
+            block.getValueBlocks()[0] = bits.getLongs()[0];
             int length = string.length();
             char[] chars = new char[length];
             string.getChars( 0, length, chars, 0 );
@@ -466,61 +522,61 @@ public class PropertyStore extends AbstractStore implements Store
             for ( DynamicRecord valueRecord : valueRecords )
             {
                 valueRecord.setType( PropertyType.STRING.intValue() );
-                record.addValueRecord( valueRecord );
+                block.addValueRecord( valueRecord );
             }
         }
         else if ( value instanceof Integer )
         {
             Bits bits = bits32WithKeyAndType( keyId, PropertyType.INT ).or( ((Integer)value).intValue() );
-            record.setSinglePropBlock( bits.getLongs()[0] );
+            block.setSingleBlock( bits.getLongs()[0] );
         }
         else if ( value instanceof Boolean )
         {
             Bits bits = bits32WithKeyAndType( keyId, PropertyType.BOOL ).or( ((Boolean)value).booleanValue() ? 1 : 0, 0x1 );
-            record.setSinglePropBlock( bits.getLongs()[0] );
+            block.setSingleBlock( bits.getLongs()[0] );
         }
         else if ( value instanceof Float )
         {
             Bits bits = bits32WithKeyAndType( keyId, PropertyType.FLOAT ).or( Float.floatToRawIntBits( ((Float) value).floatValue() ) );
-            record.setSinglePropBlock( bits.getLongs()[0] );
+            block.setSingleBlock( bits.getLongs()[0] );
         }
         else if ( value instanceof Long )
         {
             Bits bits = bits64WithKeyAndType( keyId, PropertyType.LONG ).or( ((Long)value).longValue() );
-            record.setPropBlock( bits.getLongs() );
+            block.setValueBlocks( bits.getLongs() );
         }
         else if ( value instanceof Double )
         {
             Bits bits = bits64WithKeyAndType( keyId, PropertyType.DOUBLE ).or( Double.doubleToRawLongBits( ((Double)value).doubleValue() ) );
-            record.setPropBlock( bits.getLongs() );
+            block.setValueBlocks( bits.getLongs() );
         }
         else if ( value instanceof Byte )
         {
             Bits bits = bits32WithKeyAndType( keyId, PropertyType.BYTE ).or( ((Byte)value).byteValue() );
-            record.setSinglePropBlock( bits.getLongs()[0] );
+            block.setSingleBlock( bits.getLongs()[0] );
         }
         else if ( value instanceof Character )
         {
             Bits bits = bits32WithKeyAndType( keyId, PropertyType.CHAR ).or( ((Character)value).charValue() );
-            record.setSinglePropBlock( bits.getLongs()[0] );
+            block.setSingleBlock( bits.getLongs()[0] );
         }
         else if ( value instanceof Short )
         {
             Bits bits = bits32WithKeyAndType( keyId, PropertyType.SHORT ).or( ((Short)value).shortValue() );
-            record.setSinglePropBlock( bits.getLongs()[0] );
+            block.setSingleBlock( bits.getLongs()[0] );
         }
         else if ( value.getClass().isArray() )
         {
-            if ( ShortArray.encode( keyId, value, record, DEFAULT_PAYLOAD_SIZE ) ) return;
+            if ( ShortArray.encode( keyId, value, block, DEFAULT_PAYLOAD_SIZE ) ) return;
             long arrayBlockId = nextArrayBlockId();
             Bits bits = bits32WithKeyAndType( keyId, PropertyType.ARRAY ).or( arrayBlockId, 0xFFFFFFFFFL );
-            record.setSinglePropBlock( bits.getLongs()[0] );
+            block.setSingleBlock( bits.getLongs()[0] );
             Collection<DynamicRecord> arrayRecords = allocateArrayRecords(
                 arrayBlockId, value );
             for ( DynamicRecord valueRecord : arrayRecords )
             {
                 valueRecord.setType( PropertyType.ARRAY.intValue() );
-                record.addValueRecord( valueRecord );
+                block.addValueRecord( valueRecord );
             }
         }
         else
@@ -542,9 +598,9 @@ public class PropertyStore extends AbstractStore implements Store
         return bits( 16 ).or( keyId, 0xFFFFFF ).shiftLeft( 4 ).or( type.intValue(), 0xF ).shiftLeft( 36+64 );
     }
 
-    public Object getStringFor( PropertyRecord propRecord )
+    public Object getStringFor( PropertyBlock propRecord )
     {
-        long recordToFind = propRecord.getSinglePropBlock() & 0xFFFFFFFFFL;
+        long recordToFind = propRecord.getSingleValueBlock() & 0xFFFFFFFFFL;
         Map<Long,DynamicRecord> recordsMap = new HashMap<Long,DynamicRecord>();
         for ( DynamicRecord record : propRecord.getValueRecords() )
         {
@@ -581,10 +637,10 @@ public class PropertyStore extends AbstractStore implements Store
         return buf.toString();
     }
 
-    public Object getArrayFor( PropertyRecord propertyRecord )
+    public Object getArrayFor( PropertyBlock propertyBlock )
     {
-        return getArrayFor( propertyRecord.getSinglePropBlock() & 0xFFFFFFFFFL,
-                propertyRecord.getValueRecords(), arrayPropertyStore );
+        return getArrayFor( propertyBlock.getSingleValueBlock() & 0xFFFFFFFFFL,
+                propertyBlock.getValueRecords(), arrayPropertyStore );
     }
 
     public static Object getArrayFor( long startRecord, Iterable<DynamicRecord> records,

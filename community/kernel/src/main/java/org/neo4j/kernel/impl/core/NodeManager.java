@@ -597,9 +597,9 @@ public class NodeManager
         relCache.remove( id );
     }
 
-    Object loadPropertyValue( long id )
+    Object loadPropertyValue( PropertyData property )
     {
-        return persistenceManager.loadPropertyValue( id );
+        return persistenceManager.loadPropertyValue( property );
     }
 
     long getRelationshipChainPosition( NodeImpl node )
@@ -875,8 +875,8 @@ public class NodeManager
                         property.getValue(), value );
             }
         }
-        return persistenceManager.nodeChangeProperty( node.getId(),
-                property.getId(), value );
+        return persistenceManager.nodeChangeProperty( node.getId(), property,
+                value );
     }
 
     void nodeRemoveProperty( NodeImpl node, PropertyData property )
@@ -891,7 +891,7 @@ public class NodeManager
                         property.getValue() );
             }
         }
-        persistenceManager.nodeRemoveProperty( node.getId(), property.getId() );
+        persistenceManager.nodeRemoveProperty( node.getId(), property );
     }
 
     ArrayMap<Integer,PropertyData> deleteRelationship( RelationshipImpl rel )
@@ -929,8 +929,8 @@ public class NodeManager
                         property.getValue(), value );
             }
         }
-        return persistenceManager.relChangeProperty( rel.getId(),
-                property.getId(), value );
+        return persistenceManager.relChangeProperty( rel.getId(), property,
+                value );
     }
 
     void relRemoveProperty( RelationshipImpl rel, PropertyData property )
@@ -945,7 +945,7 @@ public class NodeManager
                         property.getValue() );
             }
         }
-        persistenceManager.relRemoveProperty( rel.getId(), property.getId() );
+        persistenceManager.relRemoveProperty( rel.getId(), property );
     }
 
     public Collection<Long> getCowRelationshipRemoveMap( NodeImpl node, String type )
@@ -1049,10 +1049,10 @@ public class NodeManager
         return persistenceManager.isRelationshipCreated( relId );
     }
 
-    public String getKeyForProperty( long propertyId )
+    public String getKeyForProperty( PropertyData property )
     {
-        int keyId = persistenceManager.getKeyIdForProperty( propertyId );
-        return propertyIndexManager.getIndexFor( keyId ).getKey();
+        // int keyId = persistenceManager.getKeyIdForProperty( property );
+        return propertyIndexManager.getIndexFor( property.getIndex() ).getKey();
     }
 
     public RelationshipTypeHolder getRelationshipTypeHolder()

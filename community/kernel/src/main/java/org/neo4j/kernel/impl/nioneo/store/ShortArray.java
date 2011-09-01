@@ -41,7 +41,7 @@ public enum ShortArray
         {
             bytes.or( ((Boolean)value).booleanValue() ? (byte)1 : (byte)0, mask );
         }
-        
+
         @Override
         Object createArray( int ofLength )
         {
@@ -77,7 +77,7 @@ public enum ShortArray
         {
             bytes.or( ((Byte)value).byteValue(), mask );
         }
-        
+
         @Override
         Object createArray( int ofLength )
         {
@@ -108,7 +108,7 @@ public enum ShortArray
             }
             return highest;
         }
-        
+
         @Override
         void push( Object value, Bits bytes, long mask )
         {
@@ -145,7 +145,7 @@ public enum ShortArray
             }
             return highest;
         }
-        
+
         @Override
         void push( Object value, Bits bytes, long mask )
         {
@@ -293,7 +293,7 @@ public enum ShortArray
             }
             return highest;
         }
-        
+
         @Override
         void push( Object value, Bits bytes, long mask )
         {
@@ -313,7 +313,7 @@ public enum ShortArray
             Array.setDouble( array, position, Double.longBitsToDouble( value ) );
         }
     };
-    
+
     final int maxBits;
 
     private final Class<?> boxedClass;
@@ -325,36 +325,38 @@ public enum ShortArray
         this.maxBits = maxBits;
         this.boxedClass = boxedClass;
     }
-    
+
     abstract int getRequiredBits( Object value );
-    
+
     abstract void push( Object value, Bits bits, long mask );
-    
+
     abstract Object createArray( int ofLength );
-    
+
     abstract void pull( Bits bits, Object array, int position, long mask );
-    
+
     boolean matches( Class<?> cls )
     {
         return boxedClass.equals( cls );
     }
-    
-    public static boolean encode( int keyId, Object array, PropertyRecord target, int payloadSizeInBytes )
+
+    public static boolean encode( int keyId, Object array,
+            PropertyBlock target, int payloadSizeInBytes )
     {
         ShortArray type = typeOf( array );
         if ( type == null )
         {
             return false;
         }
-        
+
         int requiredBits = type.calculateRequiredBitsForArray( array );
         int arrayLength = Array.getLength( array );
-        if ( arrayLength > 32 || !willFit( requiredBits, arrayLength, payloadSizeInBytes ) )
+        if ( arrayLength > 63
+             || !willFit( requiredBits, arrayLength, payloadSizeInBytes ) )
         {
             // Too big array
             return false;
         }
-        
+
         Bits result = new Bits( payloadSizeInBytes );
         long mask = Bits.rightOverflowMask( requiredBits );
         for ( int i = 0; i < arrayLength; i++ )
@@ -366,30 +368,30 @@ public enum ShortArray
             type.push( Array.get( array, i ), result, mask );
         }
         long[] longs = result.getLongs();
-        // [kkkk,kkkk][kkkk,kkkk][kkkk,kkkk][tttt,yyyy][llll,llbb][bbbb
+        // [kkkk,kkkk][kkkk,kkkk][kkkk,kkkk][tttt,yyyy][llll,llbb][bbbb...
         Bits bits = Bits.bits( 8 );
-        long header = bits.or( keyId )
-                .shiftLeft( 4 ).or( PropertyType.SHORT_ARRAY.intValue() )
+        long header = bits.or( keyId ).shiftLeft( 24 ).or(
+                PropertyType.SHORT_ARRAY.intValue() )
                 .shiftLeft( 4 ).or( type.type.intValue() )
                 .shiftLeft( 6 ).or( arrayLength )
                 .shiftLeft( 6 ).or( requiredBits )
                 .shiftLeft( 20 ).getLongs()[0];
         longs[0] |= header;
-        target.setPropBlock( longs );
+        target.setValueBlocks( longs );
         return true;
     }
-    
-    public static Object decode( PropertyRecord record )
+
+    public static Object decode( PropertyBlock block )
     {
-        long block = record.getPropBlock()[0];
-        Bits headerBits = new Bits( new long[] { block } );
+        long firstLong = block.getSingleValueBlock();
+        Bits headerBits = new Bits( new long[] { firstLong } );
         int requiredBits = headerBits.shiftRight( 20 ).getInt( (int) rightOverflowMask( 6 ) ); // 6 bits required bits
         int arrayLength = headerBits.shiftRight( 6 ).getInt( (int) rightOverflowMask( 6 ) ); // 6 bits array length
         int typeId = headerBits.shiftRight( 6 ).getInt( (int) rightOverflowMask( 4 ) ); // 4 bits type
-        ShortArray type = values()[typeId];
+        ShortArray type = values()[typeId - 1];
         Object array = type.createArray( arrayLength );
-        
-        long[] longs = record.getPropBlock();
+
+        long[] longs = block.getValueBlocks();
         Bits bits = new Bits( copyOf( longs, longs.length ) );
         long mask = rightOverflowMask( requiredBits );
         for ( int i = arrayLength-1; i >= 0; i-- )
@@ -399,7 +401,7 @@ public enum ShortArray
         }
         return array;
     }
-    
+
     private static boolean willFit( int requiredBits, int arrayLength, int payloadSizeInBytes )
     {
         int totalBitsRequired = requiredBits*arrayLength;

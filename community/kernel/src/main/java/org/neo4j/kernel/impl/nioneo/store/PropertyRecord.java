@@ -19,20 +19,29 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.neo4j.kernel.impl.nioneo.store.PropertyType.getPayloadSizeLongs;
-
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.kernel.impl.core.PropertyIndex;
+
+/**
+ * PropertyRecord is a container for PropertyBlocks. PropertyRecords form
+ * a double linked list and each one holds one or more PropertyBlocks that
+ * are the actual property key/value pairs. Because PropertyBlocks are of
+ * variable length, a full PropertyRecord can be holding just one
+ * PropertyBlock.
+ *
+ */
 public class PropertyRecord extends Abstract64BitRecord
 {
-    private PropertyType type;
-    private long[] propBlock = new long[getPayloadSizeLongs()];
+    // private long[] propBlock = new long[getPayloadSizeLongs()];
     private long nextProp = Record.NO_NEXT_PROPERTY.intValue();
     private long prevProp = Record.NO_NEXT_PROPERTY.intValue();
-    private List<DynamicRecord> valueRecords = new ArrayList<DynamicRecord>();
+    private final List<PropertyBlock> blockRecords = new ArrayList<PropertyBlock>(
+            3 );
     private long entityId = -1;
     private boolean nodeIdSet;
     private boolean isChanged;
@@ -72,37 +81,22 @@ public class PropertyRecord extends Abstract64BitRecord
         return -1;
     }
 
-    public boolean isLight()
+    /**
+     * Gets the sum of the sizes of the blocks in this record, in bytes.
+     *
+     * @return
+     */
+    public int size()
     {
-        return valueRecords.size() == 0;
+        int result = 0;
+        for ( PropertyBlock block : blockRecords )
+        {
+            result += block.getSize();
+        }
+        return result;
     }
 
-    public Collection<DynamicRecord> getValueRecords()
-    {
-        return valueRecords;
-    }
-
-    public void addValueRecord( DynamicRecord record )
-    {
-        valueRecords.add( record );
-    }
-
-    public PropertyType getType()
-    {
-        return PropertyType.getPropertyType( propBlock[0], false );
-    }
-
-    public int getKeyIndexId()
-    {
-        // [kkkk,kkkk][kkkk,kkkk][kkkk,kkk ],[][][][][]
-        return (int) ( propBlock[0] >> 40 );
-    }
-
-//    public void setKeyIndexId( int keyId )
-//    {
-//        this.keyIndexId = keyId;
-//    }
-
+    /*
     public long[] getPropBlock()
     {
         return propBlock;
@@ -127,6 +121,54 @@ public class PropertyRecord extends Abstract64BitRecord
             this.propBlock[i] = 0;
         }
     }
+    */
+    public Collection<PropertyBlock> getPropertyBlocks()
+    {
+        return Collections.unmodifiableList( blockRecords );
+    }
+
+    public void removeBlock( int indexId )
+    {
+
+    }
+
+    public int[] getKeyIndexIds()
+    {
+        int[] toReturn = new int[blockRecords.size()];
+        int i = 0;
+        for ( PropertyBlock block : blockRecords )
+        {
+            toReturn[i++] = block.getKeyIndexId();
+        }
+        return toReturn;
+    }
+
+    public void addPropertyBlock(PropertyBlock block)
+    {
+        if ( size() + block.getSize() > PropertyType.getPayloadSize() )
+        {
+            throw new IllegalStateException(
+                    "Exceeded capacity of property record" );
+        }
+        blockRecords.add( block );
+    }
+
+    public PropertyBlock getPropertyBlock( PropertyIndex index )
+    {
+        return getPropertyBlock( index.getKeyId() );
+    }
+
+    public PropertyBlock getPropertyBlock( int keyIndex )
+    {
+        for ( PropertyBlock block : blockRecords )
+        {
+            if ( block.getKeyIndexId() == keyIndex )
+            {
+                return block;
+            }
+        }
+        return null;
+    }
 
     public long getNextProp()
     {
@@ -138,27 +180,22 @@ public class PropertyRecord extends Abstract64BitRecord
         this.nextProp = nextProp;
     }
 
-    public PropertyData newPropertyData()
-    {
-        return getType().newPropertyData( this, null );
-    }
-
-    public PropertyData newPropertyData( Object extractedValue )
-    {
-        return getType().newPropertyData( this, extractedValue );
-    }
-
     @Override
     public String toString()
     {
         StringBuffer buf = new StringBuffer();
         buf.append( "PropertyRecord[" ).append( getId() ).append( "," ).append(
-            inUse() ).append( "," ).append( type ).append( "," ).append( propBlock ).append( "," )
-            .append( "," ).append( nextProp );
+                inUse() ).append( "," ).append( "," )./*append( propBlock ).*/append(
+                "," ).append( "," ).append( nextProp );
         buf.append( ", Value[" );
-        for ( DynamicRecord record : valueRecords )
+        Iterator<PropertyBlock> itr = blockRecords.iterator();
+        while ( itr.hasNext() )
         {
-            buf.append( record );
+            buf.append( itr.next() );
+            if ( itr.hasNext() )
+            {
+                buf.append( ", " );
+            }
         }
         buf.append( "]]" );
         return buf.toString();

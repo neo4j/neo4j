@@ -264,19 +264,19 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         xaCon.getWriteTransaction().nodeCreate( node1 );
         long node2 = ds.nextId( Node.class );
         xaCon.getWriteTransaction().nodeCreate( node2 );
-        long n1prop1 = pStore.nextId();
-        long n1prop2 = pStore.nextId();
-        long n1prop3 = pStore.nextId();
-        xaCon.getWriteTransaction().nodeAddProperty( node1, n1prop1, index( "prop1" ), "string1" );
-        xaCon.getWriteTransaction().nodeAddProperty( node1, n1prop2, index( "prop2" ), 1 );
-        xaCon.getWriteTransaction().nodeAddProperty( node1, n1prop3, index( "prop3" ), true );
+        PropertyData n1prop1 = xaCon.getWriteTransaction().nodeAddProperty(
+                node1, index( "prop1" ), "string1" );
+        PropertyData n1prop2 = xaCon.getWriteTransaction().nodeAddProperty(
+                node1, index( "prop2" ), 1 );
+        PropertyData n1prop3 = xaCon.getWriteTransaction().nodeAddProperty(
+                node1, index( "prop3" ), true );
 
-        long n2prop1 = pStore.nextId();
-        long n2prop2 = pStore.nextId();
-        long n2prop3 = pStore.nextId();
-        xaCon.getWriteTransaction().nodeAddProperty( node2, n2prop1, index( "prop1" ), "string2" );
-        xaCon.getWriteTransaction().nodeAddProperty( node2, n2prop2, index( "prop2" ), 2 );
-        xaCon.getWriteTransaction().nodeAddProperty( node2, n2prop3, index( "prop3" ), false );
+        PropertyData n2prop1 = xaCon.getWriteTransaction().nodeAddProperty(
+                node2, index( "prop1" ), "string2" );
+        PropertyData n2prop2 = xaCon.getWriteTransaction().nodeAddProperty(
+                node2, index( "prop2" ), 2 );
+        PropertyData n2prop3 = xaCon.getWriteTransaction().nodeAddProperty(
+                node2, index( "prop3" ), false );
 
         int relType1 = (int) ds.nextId( RelationshipType.class );
         xaCon.getWriteTransaction().createRelationshipType( relType1, "relationshiptype1" );
@@ -286,18 +286,20 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         xaCon.getWriteTransaction().relationshipCreate( rel1, relType1, node1, node2 );
         long rel2 = ds.nextId( Relationship.class );
         xaCon.getWriteTransaction().relationshipCreate( rel2, relType2, node2, node1 );
-        long r1prop1 = pStore.nextId();
-        long r1prop2 = pStore.nextId();
-        long r1prop3 = pStore.nextId();
-        xaCon.getWriteTransaction().relAddProperty( rel1, r1prop1, index( "prop1" ), "string1" );
-        xaCon.getWriteTransaction().relAddProperty( rel1, r1prop2, index( "prop2" ), 1 );
-        xaCon.getWriteTransaction().relAddProperty( rel1, r1prop3, index( "prop3" ), true );
-        long r2prop1 = pStore.nextId();
-        long r2prop2 = pStore.nextId();
-        long r2prop3 = pStore.nextId();
-        xaCon.getWriteTransaction().relAddProperty( rel2, r2prop1, index( "prop1" ), "string2" );
-        xaCon.getWriteTransaction().relAddProperty( rel2, r2prop2, index( "prop2" ), 2 );
-        xaCon.getWriteTransaction().relAddProperty( rel2, r2prop3, index( "prop3" ), false );
+
+        PropertyData r1prop1 = xaCon.getWriteTransaction().relAddProperty(
+                rel1, index( "prop1" ), "string1" );
+        PropertyData r1prop2 = xaCon.getWriteTransaction().relAddProperty(
+                rel1, index( "prop2" ), 1 );
+        PropertyData r1prop3 = xaCon.getWriteTransaction().relAddProperty(
+                rel1, index( "prop3" ), true );
+
+        PropertyData r2prop1 = xaCon.getWriteTransaction().relAddProperty(
+                rel2, index( "prop1" ), "string2" );
+        PropertyData r2prop2 = xaCon.getWriteTransaction().relAddProperty(
+                rel2, index( "prop2" ), 2 );
+        PropertyData r2prop3 = xaCon.getWriteTransaction().relAddProperty(
+                rel2, index( "prop3" ), false );
         commitTx();
         ds.close();
 
@@ -305,14 +307,12 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         startTx();
         // validate node
         validateNodeRel1( node1, n1prop1, n1prop2, n1prop3, rel1, rel2,
-            relType1, relType2 );
+                relType1, relType2 );
         validateNodeRel2( node2, n2prop1, n2prop2, n2prop3, rel1, rel2,
-            relType1, relType2 );
+                relType1, relType2 );
         // validate rels
-        validateRel1( rel1, r1prop1, r1prop2, r1prop3, node1, node2,
-            relType1 );
-        validateRel2( rel2, r2prop1, r2prop2, r2prop3, node2, node1,
-            relType2 );
+        validateRel1( rel1, r1prop1, r1prop2, r1prop3, node1, node2, relType1 );
+        validateRel2( rel2, r2prop1, r2prop2, r2prop3, node2, node1, relType2 );
         validateRelTypes( relType1, relType2 );
         // validate reltypes
         validateRelTypes( relType1, relType2 );
@@ -344,8 +344,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         {
             nodeIds[i] = ds.nextId( Node.class );
             xaCon.getWriteTransaction().nodeCreate( nodeIds[i] );
-            xaCon.getWriteTransaction().nodeAddProperty( nodeIds[i], pStore.nextId(),
-                index( "nisse" ), new Integer( 10 - i ) );
+            xaCon.getWriteTransaction().nodeAddProperty( nodeIds[i],
+                    index( "nisse" ), new Integer( 10 - i ) );
         }
         for ( int i = 0; i < 2; i++ )
         {
@@ -385,6 +385,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         return new CombiningIterable<RelationshipRecord>( list );
     }
 
+    /*
     private Object getValue( PropertyRecord propertyRecord ) throws IOException
     {
         try
@@ -396,9 +397,10 @@ public class TestNeoStore extends AbstractNeo4jTestCase
             throw new IOException( ex );
         }
     }
-
-    private void validateNodeRel1( long node, long prop1, long prop2, long prop3,
-        long rel1, long rel2, int relType1, int relType2 ) throws IOException
+     */
+    private void validateNodeRel1( long node, PropertyData prop1,
+            PropertyData prop2, PropertyData prop3, long rel1, long rel2,
+            int relType1, int relType2 ) throws IOException
     {
         assertTrue( xaCon.getWriteTransaction().nodeLoadLight( node ) );
         ArrayMap<Integer,PropertyData> props = xaCon.getWriteTransaction().nodeLoadProperties( node,
@@ -408,22 +410,23 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         {
             long id = props.get( keyId ).getId();
             PropertyRecord record = pStore.getRecord( id );
-            PropertyData data = record.newPropertyData();
-            if ( data.getId() == prop1 )
+            PropertyBlock block = record.getPropertyBlock( props.get( keyId ).getIndex() );
+            PropertyData data = block.newPropertyData( record );
+            if ( data.getIndex() == prop1.getIndex() )
             {
                 assertEquals( "prop1", MyPropertyIndex.getIndexFor(
                     keyId ).getKey() );
                 assertEquals( "string1", data.getValue() );
                 xaCon.getWriteTransaction().nodeChangeProperty( node, prop1, "-string1" );
             }
-            else if ( data.getId() == prop2 )
+            else if ( data.getIndex() == prop2.getIndex() )
             {
                 assertEquals( "prop2", MyPropertyIndex.getIndexFor(
                     keyId ).getKey() );
                 assertEquals( new Integer( 1 ), data.getValue() );
                 xaCon.getWriteTransaction().nodeChangeProperty( node, prop2, new Integer( -1 ) );
             }
-            else if ( data.getId() == prop3 )
+            else if ( data.getIndex() == prop3.getIndex() )
             {
                 assertEquals( "prop3", MyPropertyIndex.getIndexFor(
                     keyId ).getKey() );
@@ -468,7 +471,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         assertEquals( 2, count );
     }
 
-    private void validateNodeRel2( long node, long prop1, long prop2, long prop3,
+    private void validateNodeRel2( long node, PropertyData prop1,
+            PropertyData prop2, PropertyData prop3,
         long rel1, long rel2, int relType1, int relType2 ) throws IOException
     {
         assertTrue( xaCon.getWriteTransaction().nodeLoadLight( node ) );
@@ -479,22 +483,23 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         {
             long id = props.get( keyId ).getId();
             PropertyRecord record = pStore.getRecord( id );
-            PropertyData data = record.newPropertyData();
-            if ( data.getId() == prop1 )
+            PropertyBlock block = record.getPropertyBlock( props.get( keyId ).getIndex() );
+            PropertyData data = block.newPropertyData( record );
+            if ( data.getIndex() == prop1.getIndex() )
             {
                 assertEquals( "prop1", MyPropertyIndex.getIndexFor(
                     keyId ).getKey() );
                 assertEquals( "string2", data.getValue() );
                 xaCon.getWriteTransaction().nodeChangeProperty( node, prop1, "-string2" );
             }
-            else if ( data.getId() == prop2 )
+            else if ( data.getIndex() == prop2.getIndex() )
             {
                 assertEquals( "prop2", MyPropertyIndex.getIndexFor(
                     keyId ).getKey() );
                 assertEquals( new Integer( 2 ), data.getValue() );
                 xaCon.getWriteTransaction().nodeChangeProperty( node, prop2, new Integer( -2 ) );
             }
-            else if ( data.getId() == prop3 )
+            else if ( data.getIndex() == prop3.getIndex() )
             {
                 assertEquals( "prop3", MyPropertyIndex.getIndexFor(
                     keyId ).getKey() );
@@ -540,7 +545,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         assertEquals( 2, count );
     }
 
-    private void validateRel1( long rel, long prop1, long prop2, long prop3,
+    private void validateRel1( long rel, PropertyData prop1,
+            PropertyData prop2, PropertyData prop3,
         long firstNode, long secondNode, int relType ) throws IOException
     {
         ArrayMap<Integer,PropertyData> props = xaCon.getWriteTransaction().relLoadProperties( rel,
@@ -550,22 +556,23 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         {
             long id = props.get( keyId ).getId();
             PropertyRecord record = pStore.getRecord( id );
-            PropertyData data = record.newPropertyData();
-            if ( data.getId() == prop1 )
+            PropertyBlock block = record.getPropertyBlock( props.get( keyId ).getIndex() );
+            PropertyData data = block.newPropertyData( record );
+            if ( data.getIndex() == prop1.getIndex() )
             {
                 assertEquals( "prop1", MyPropertyIndex.getIndexFor(
                     keyId ).getKey() );
                 assertEquals( "string1", data.getValue() );
                 xaCon.getWriteTransaction().relChangeProperty( rel, prop1, "-string1" );
             }
-            else if ( data.getId() == prop2 )
+            else if ( data.getIndex() == prop2.getIndex() )
             {
                 assertEquals( "prop2", MyPropertyIndex.getIndexFor(
                     keyId ).getKey() );
                 assertEquals( new Integer( 1 ), data.getValue() );
                 xaCon.getWriteTransaction().relChangeProperty( rel, prop2, new Integer( -1 ) );
             }
-            else if ( data.getId() == prop3 )
+            else if ( data.getIndex() == prop3.getIndex() )
             {
                 assertEquals( "prop3", MyPropertyIndex.getIndexFor(
                     keyId ).getKey() );
@@ -585,7 +592,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         assertEquals( relType, relData.getType() );
     }
 
-    private void validateRel2( long rel, long prop1, long prop2, long prop3,
+    private void validateRel2( long rel, PropertyData prop1,
+            PropertyData prop2, PropertyData prop3,
         long firstNode, long secondNode, int relType ) throws IOException
     {
         ArrayMap<Integer,PropertyData> props = xaCon.getWriteTransaction().relLoadProperties( rel,
@@ -595,22 +603,23 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         {
             long id = props.get( keyId ).getId();
             PropertyRecord record = pStore.getRecord( id );
-            PropertyData data = record.newPropertyData();
-            if ( data.getId() == prop1 )
+            PropertyBlock block = record.getPropertyBlock( props.get( keyId ).getIndex() );
+            PropertyData data = block.newPropertyData( record );
+            if ( data.getIndex() == prop1.getIndex() )
             {
                 assertEquals( "prop1", MyPropertyIndex.getIndexFor(
                     keyId ).getKey() );
                 assertEquals( "string2", data.getValue() );
                 xaCon.getWriteTransaction().relChangeProperty( rel, prop1, "-string2" );
             }
-            else if ( data.getId() == prop2 )
+            else if ( data.getIndex() == prop2.getIndex() )
             {
                 assertEquals( "prop2", MyPropertyIndex.getIndexFor(
                     keyId ).getKey() );
                 assertEquals( new Integer( 2 ), data.getValue() );
                 xaCon.getWriteTransaction().relChangeProperty( rel, prop2, new Integer( -2 ) );
             }
-            else if ( data.getId() == prop3 )
+            else if ( data.getIndex() == prop3.getIndex() )
             {
                 assertEquals( "prop3", MyPropertyIndex.getIndexFor(
                     keyId ).getKey() );
@@ -660,7 +669,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         }
     }
 
-    private void deleteRel1( long rel, long prop1, long prop2, long prop3,
+    private void deleteRel1( long rel, PropertyData prop1, PropertyData prop2,
+            PropertyData prop3,
         long firstNode, long secondNode, int relType ) throws IOException
     {
         ArrayMap<Integer,PropertyData> props = xaCon.getWriteTransaction().relLoadProperties( rel,
@@ -670,20 +680,21 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         {
             long id = props.get( keyId ).getId();
             PropertyRecord record = pStore.getRecord( id );
-            PropertyData data = record.newPropertyData();
-            if ( data.getId() == prop1 )
+            PropertyBlock block = record.getPropertyBlock( props.get( keyId ).getIndex() );
+            PropertyData data = block.newPropertyData( record );
+            if ( data.getIndex() == prop1.getIndex() )
             {
                 assertEquals( "prop1", MyPropertyIndex.getIndexFor(
                     keyId ).getKey() );
                 assertEquals( "-string1", data.getValue() );
             }
-            else if ( data.getId() == prop2 )
+            else if ( data.getIndex() == prop2.getIndex() )
             {
                 assertEquals( "prop2", MyPropertyIndex.getIndexFor(
                     keyId ).getKey() );
                 assertEquals( new Integer( -1 ), data.getValue() );
             }
-            else if ( data.getId() == prop3 )
+            else if ( data.getIndex() == prop3.getIndex() )
             {
                 assertEquals( "prop3", MyPropertyIndex.getIndexFor(
                     keyId ).getKey() );
@@ -713,7 +724,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         assertTrue( second.hasNext() );
     }
 
-    private void deleteRel2( long rel, long prop1, long prop2, long prop3,
+    private void deleteRel2( long rel, PropertyData prop1, PropertyData prop2,
+            PropertyData prop3,
             long firstNode, long secondNode, int relType ) throws IOException
     {
         ArrayMap<Integer,PropertyData> props = xaCon.getWriteTransaction().relLoadProperties( rel,
@@ -723,20 +735,21 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         {
             long id = props.get( keyId ).getId();
             PropertyRecord record = pStore.getRecord( id );
-            PropertyData data = record.newPropertyData();
-            if ( data.getId() == prop1 )
+            PropertyBlock block = record.getPropertyBlock( props.get( keyId ).getIndex() );
+            PropertyData data = block.newPropertyData( record );
+            if ( data.getIndex() == prop1.getIndex() )
             {
                 assertEquals( "prop1", MyPropertyIndex.getIndexFor(
                     keyId ).getKey() );
                 assertEquals( "-string2", data.getValue() );
             }
-            else if ( data.getId() == prop2 )
+            else if ( data.getIndex() == prop2.getIndex() )
             {
                 assertEquals( "prop2", MyPropertyIndex.getIndexFor(
                     keyId ).getKey() );
                 assertEquals( new Integer( -2 ), data.getValue() );
             }
-            else if ( data.getId() == prop3 )
+            else if ( data.getIndex() == prop3.getIndex() )
             {
                 assertEquals( "prop3", MyPropertyIndex.getIndexFor(
                     keyId ).getKey() );
@@ -764,7 +777,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         assertTrue( second.hasNext() );
     }
 
-    private void deleteNode1( long node, long prop1, long prop2, long prop3 )
+    private void deleteNode1( long node, PropertyData prop1,
+            PropertyData prop2, PropertyData prop3 )
         throws IOException
     {
         ArrayMap<Integer,PropertyData> props = xaCon.getWriteTransaction().nodeLoadProperties( node,
@@ -774,20 +788,21 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         {
             long id = props.get( keyId ).getId();
             PropertyRecord record = pStore.getRecord( id );
-            PropertyData data = record.newPropertyData();
-            if ( data.getId() == prop1 )
+            PropertyBlock block = record.getPropertyBlock( props.get( keyId ).getIndex() );
+            PropertyData data = block.newPropertyData( record );
+            if ( data.getIndex() == prop1.getIndex() )
             {
                 assertEquals( "prop1", MyPropertyIndex.getIndexFor(
                     keyId ).getKey() );
                 assertEquals( "-string1", data.getValue() );
             }
-            else if ( data.getId() == prop2 )
+            else if ( data.getIndex() == prop2.getIndex() )
             {
                 assertEquals( "prop2", MyPropertyIndex.getIndexFor(
                     keyId ).getKey() );
                 assertEquals( new Integer( -1 ), data.getValue() );
             }
-            else if ( data.getId() == prop3 )
+            else if ( data.getIndex() == prop3.getIndex() )
             {
                 assertEquals( "prop3", MyPropertyIndex.getIndexFor(
                     keyId ).getKey() );
@@ -808,7 +823,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         xaCon.getWriteTransaction().nodeDelete( node );
     }
 
-    private void deleteNode2( long node, long prop1, long prop2, long prop3 )
+    private void deleteNode2( long node, PropertyData prop1,
+            PropertyData prop2, PropertyData prop3 )
         throws IOException
     {
         ArrayMap<Integer,PropertyData> props = xaCon.getWriteTransaction().nodeLoadProperties( node,
@@ -818,20 +834,21 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         {
             long id = props.get( keyId ).getId();
             PropertyRecord record = pStore.getRecord( id );
-            PropertyData data = record.newPropertyData();
-            if ( data.getId() == prop1 )
+            PropertyBlock block = record.getPropertyBlock( props.get( keyId ).getIndex() );
+            PropertyData data = block.newPropertyData( record );
+            if ( data.getIndex() == prop1.getIndex() )
             {
                 assertEquals( "prop1", MyPropertyIndex.getIndexFor(
                     keyId ).getKey() );
                 assertEquals( "-string2", data.getValue() );
             }
-            else if ( data.getId() == prop2 )
+            else if ( data.getIndex() == prop2.getIndex() )
             {
                 assertEquals( "prop2", MyPropertyIndex.getIndexFor(
                     keyId ).getKey() );
                 assertEquals( new Integer( -2 ), data.getValue() );
             }
-            else if ( data.getId() == prop3 )
+            else if ( data.getIndex() == prop3.getIndex() )
             {
                 assertEquals( "prop3", MyPropertyIndex.getIndexFor(
                     keyId ).getKey() );
@@ -872,7 +889,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         {
             nodeIds[i] = ds.nextId( Node.class );
             xaCon.getWriteTransaction().nodeCreate( nodeIds[i] );
-            xaCon.getWriteTransaction().nodeAddProperty( nodeIds[i], pStore.nextId(),
+            xaCon.getWriteTransaction().nodeAddProperty( nodeIds[i],
                 index( "nisse" ), new Integer( 10 - i ) );
         }
         for ( int i = 0; i < 2; i++ )
@@ -906,7 +923,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         {
             nodeIds[i] = ds.nextId( Node.class );
             xaCon.getWriteTransaction().nodeCreate( nodeIds[i] );
-            xaCon.getWriteTransaction().nodeAddProperty( nodeIds[i], pStore.nextId(),
+            xaCon.getWriteTransaction().nodeAddProperty( nodeIds[i],
                 index( "nisse" ), new Integer( 10 - i ) );
         }
         for ( int i = 0; i < 2; i++ )
@@ -988,14 +1005,16 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         long nodeId = ds.nextId( Node.class );
         xaCon.getWriteTransaction().nodeCreate( nodeId );
         long propertyId = pStore.nextId();
-        xaCon.getWriteTransaction().nodeAddProperty( nodeId, propertyId, index( "nisse" ),
+        PropertyData prop = xaCon.getWriteTransaction().nodeAddProperty(
+                nodeId, index( "nisse" ),
             new Integer( 10 ) );
         commitTx();
         ds.close();
         initializeStores();
         startTx();
-        xaCon.getWriteTransaction().nodeChangeProperty( nodeId, propertyId, new Integer( 5 ) );
-        xaCon.getWriteTransaction().nodeRemoveProperty( nodeId, propertyId );
+        xaCon.getWriteTransaction().nodeChangeProperty( nodeId, prop,
+                new Integer( 5 ) );
+        xaCon.getWriteTransaction().nodeRemoveProperty( nodeId, prop );
         xaCon.getWriteTransaction().nodeDelete( nodeId );
         commitTx();
         ds.close();

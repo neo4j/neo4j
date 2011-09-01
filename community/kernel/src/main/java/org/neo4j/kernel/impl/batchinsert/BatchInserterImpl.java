@@ -413,7 +413,7 @@ public class BatchInserterImpl implements BatchInserter
             propertyRecord.setInUse( true );
             propertyRecord.setCreated();
 //            propertyRecord.setKeyIndexId( keyId );
-            propStore.encodeValue( propertyRecord, keyId, entry.getValue() );
+            // propStore.encodeValue( propertyRecord, keyId, entry.getValue() );
             if ( prevRecord != null )
             {
                 prevRecord.setPrevProp( propertyId );
@@ -439,10 +439,10 @@ public class BatchInserterImpl implements BatchInserter
         PropertyStore propStore = getPropertyStore();
         PropertyRecord propertyRecord = propStore.getRecord( propertyId );
         propertyRecord.setInUse( false );
-        for ( DynamicRecord record : propertyRecord.getValueRecords() )
-        {
-            record.setInUse( false );
-        }
+        // for ( DynamicRecord record : propertyRecord.getValueRecords() )
+        // {
+        // record.setInUse( false );
+        // }
         propStore.updateRecord( propertyRecord );
     }
 
@@ -452,7 +452,7 @@ public class BatchInserterImpl implements BatchInserter
         PropertyRecord propertyRecord = propStore.getRecord( propertyId );
         long nextProperty = -1;
         Map<String,Object> properties = new HashMap<String,Object>();
-        do
+        /*do
         {
             nextProperty = propertyRecord.getNextProp();
             propStore.makeHeavy( propertyRecord );
@@ -465,7 +465,7 @@ public class BatchInserterImpl implements BatchInserter
                 propertyRecord =
                     propStore.getRecord( propertyRecord.getNextProp() );
             }
-        } while ( nextProperty != Record.NO_NEXT_PROPERTY.intValue() );
+        } while ( nextProperty != Record.NO_NEXT_PROPERTY.intValue() );*/
         return properties;
     }
 

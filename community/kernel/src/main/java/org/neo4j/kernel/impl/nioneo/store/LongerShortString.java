@@ -359,13 +359,13 @@ public enum LongerShortString
             case 0x3: return 0x1D;
             case 0x4: return 0x1E;
             case 0x5: return 0x1F;
-            
+
             case 0x6: return 0x3B;
             case 0x7: return 0x3C;
             case 0x8: return 0x3D;
             case 0x9: return 0x3E;
             case 0xA: return 0x3F;
-            
+
             case 0xB: return 0x20;
             default: throw cannotEncode( b );
             }
@@ -502,7 +502,8 @@ public enum LongerShortString
      * E-  à  á  â  ã  ä  å  æ  ç    è  é  ê  ë  ì  í  î  ï
      * F-  ð  ñ  ò  ó  ô  õ  ö       ø  ù  ú  û  ü  ý  þ  ÿ
      */
-    public static boolean encode( int keyId, String string, PropertyRecord target, int payloadSize )
+    public static boolean encode( int keyId, String string,
+            PropertyBlock target, int payloadSize )
     {
         // NUMERICAL can carry most characters, so compare to that
         int stringLength = string.length();
@@ -672,7 +673,8 @@ public enum LongerShortString
         return false;
     }
 
-    private static void applyOnRecord( int keyId, PropertyRecord target, int encoding, int stringLength, long[] data )
+    private static void applyOnRecord( int keyId, PropertyBlock target,
+            int encoding, int stringLength, long[] data )
     {
         // TODO Make a utility OR:ing in the key/type in the propblock
         data[0] |= ((long)keyId << 40);
@@ -680,7 +682,7 @@ public enum LongerShortString
         data[0] |= ( (long) encoding << 32 );
         data[0] |= ( (long) stringLength << 26 );
 
-        target.setPropBlock( data );
+        target.setValueBlocks( data );
     }
 
     /**
@@ -689,9 +691,10 @@ public enum LongerShortString
      * @param data the value to decode to a short string.
      * @return the decoded short string
      */
-    public static String decode( PropertyRecord record )
+    public static String decode( PropertyBlock block )
     {
-        Bits bits = new Bits( copyOf( record.getPropBlock(), record.getPropBlock().length ) );
+        Bits bits = new Bits( copyOf( block.getValueBlocks(),
+                block.getValueBlocks().length ) );
         long firstLong = bits.getLongs()[0];
         if ( ( firstLong & 0xFFFFFF0FFFFFFFFFL ) == 0 ) return "";
         /*
@@ -733,7 +736,8 @@ public enum LongerShortString
         return new Bits( payloadSize );
     }
 
-    private static boolean encodeLatin1( int keyId, String string, PropertyRecord target, int payloadSize )
+    private static boolean encodeLatin1( int keyId, String string,
+            PropertyBlock target, int payloadSize )
     { // see doEncode
         Bits bits = newBits( payloadSize );
         for ( int i = 0; i < string.length(); i++ )
@@ -747,7 +751,8 @@ public enum LongerShortString
         return true;
     }
 
-    private static boolean encodeUTF8( int keyId, String string, PropertyRecord target, int payloadSize )
+    private static boolean encodeUTF8( int keyId, String string,
+            PropertyBlock target, int payloadSize )
     {
         try
         {
@@ -768,7 +773,8 @@ public enum LongerShortString
         }
     }
 
-    private boolean doEncode( int keyId, byte[] data, PropertyRecord target, int payloadSize )
+    private boolean doEncode( int keyId, byte[] data, PropertyBlock target,
+            int payloadSize )
     {
         if ( data.length > maxLength( payloadSize ) ) return false;
         Bits bits = newBits( payloadSize );

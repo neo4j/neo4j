@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
@@ -76,27 +77,31 @@ class ReadTransaction implements NeoStoreTransaction
         return neoStore.getPropertyStore();
     }
 
+    @Override
     public boolean nodeLoadLight( long nodeId )
     {
         return getNodeStore().loadLightNode( nodeId );
     }
 
+    @Override
     public RelationshipRecord relLoadLight( long id )
     {
         return getRelationshipStore().getLightRel( id );
     }
 
+    @Override
     public long getRelationshipChainPosition( long nodeId )
     {
         return getNodeStore().getRecord( nodeId ).getNextRel();
     }
 
+    @Override
     public Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> getMoreRelationships(
             long nodeId, long position )
     {
         return getMoreRelationships( nodeId, position, getRelGrabSize(), getRelationshipStore() );
     }
-    
+
     static Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> getMoreRelationships(
             long nodeId, long position, int grabSize, RelationshipStore relStore )
     {
@@ -108,7 +113,7 @@ class ReadTransaction implements NeoStoreTransaction
             new EnumMap<DirectionWrapper, Iterable<RelationshipRecord>>( DirectionWrapper.class );
         result.put( DirectionWrapper.OUTGOING, out );
         result.put( DirectionWrapper.INCOMING, in );
-        for ( int i = 0; i < grabSize && 
+        for ( int i = 0; i < grabSize &&
             position != Record.NO_NEXT_RELATIONSHIP.intValue(); i++ )
         {
             RelationshipRecord relRecord = relStore.getChainRecord( position );
@@ -156,63 +161,74 @@ class ReadTransaction implements NeoStoreTransaction
             }
             else
             {
-                throw new InvalidRecordException( "Node[" + nodeId + 
-                    "] is neither firstNode[" + firstNode + 
+                throw new InvalidRecordException( "Node[" + nodeId +
+                    "] is neither firstNode[" + firstNode +
                     "] nor secondNode[" + secondNode + "] for Relationship[" + relRecord.getId() + "]" );
             }
         }
         return Pair.of( result, position );
     }
-    
+
     static ArrayMap<Integer, PropertyData> loadProperties( PropertyStore propertyStore, long nextProp )
     {
         if ( nextProp == Record.NO_NEXT_PROPERTY.intValue() )
         {
             return null;
         }
-        ArrayMap<Integer,PropertyData> propertyMap = 
+        ArrayMap<Integer,PropertyData> propertyMap =
             new ArrayMap<Integer,PropertyData>( 9, false, true );
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
             PropertyRecord propRecord = propertyStore.getLightRecord( nextProp );
-            propertyMap.put( propRecord.getKeyIndexId(), propRecord.newPropertyData() );
+            for ( PropertyBlock propBlock : propRecord.getPropertyBlocks() )
+            {
+                propertyMap.put( propBlock.getKeyIndexId(),
+                        propBlock.newPropertyData( propRecord ) );
+            }
             nextProp = propRecord.getNextProp();
         }
         return propertyMap;
     }
-    
+
+    @Override
     public ArrayMap<Integer,PropertyData> relLoadProperties( long relId, boolean light )
     {
         RelationshipRecord relRecord = getRelationshipStore().getRecord( relId );
         if ( !relRecord.inUse() )
         {
-            throw new InvalidRecordException( "Relationship[" + relId + 
+            throw new InvalidRecordException( "Relationship[" + relId +
                 "] not in use" );
         }
         return loadProperties( getPropertyStore(), relRecord.getNextProp() );
     }
 
+    @Override
     public ArrayMap<Integer,PropertyData> nodeLoadProperties( long nodeId, boolean light )
     {
         return loadProperties( getPropertyStore(), getNodeStore().getRecord( nodeId ).getNextProp() );
     }
 
     // Duplicated code
-    public Object propertyGetValueOrNull( PropertyRecord propertyRecord )
+    public Object propertyGetValueOrNull( PropertyBlock propertyBlock )
     {
-        return propertyRecord.getType().getValue( propertyRecord, null );
+        return propertyBlock.getType().getValue( propertyBlock, null );
     }
 
-    public Object loadPropertyValue( long id )
+    @Override
+    public Object loadPropertyValue( PropertyData property )
     {
-        PropertyRecord propertyRecord = getPropertyStore().getRecord( id );
-        if ( propertyRecord.isLight() )
+        PropertyRecord propertyRecord = getPropertyStore().getRecord(
+                property.getId() );
+        PropertyBlock propertyBlock = propertyRecord.getPropertyBlock( property.getIndex() );
+        if ( propertyBlock.isLight() )
         {
-            getPropertyStore().makeHeavy( propertyRecord );
+            getPropertyStore().makeHeavy( propertyBlock );
         }
-        return propertyRecord.getType().getValue( propertyRecord, getPropertyStore() );
+        return propertyBlock.getType().getValue( propertyBlock,
+                getPropertyStore() );
     }
 
+    @Override
     public String loadIndex( int id )
     {
         PropertyIndexStore indexStore = getPropertyStore().getIndexStore();
@@ -224,19 +240,22 @@ class ReadTransaction implements NeoStoreTransaction
         return indexStore.getStringFor( index );
     }
 
+    @Override
     public PropertyIndexData[] loadPropertyIndexes( int count )
     {
         PropertyIndexStore indexStore = getPropertyStore().getIndexStore();
         return indexStore.getPropertyIndexes( count );
     }
 
-    public int getKeyIdForProperty( long propertyId )
-    {
-        PropertyRecord propRecord =
-            getPropertyStore().getLightRecord( propertyId );
-        return propRecord.getKeyIndexId();
-    }
-
+    /*
+        @Override
+        public int getKeyIdForProperty( long propertyId )
+        {
+            PropertyRecord propRecord =
+                getPropertyStore().getLightRecord( propertyId );
+            return propRecord.getKeyIndexId();
+        }
+    */
     @Override
     public void setXaConnection( XaConnection connection )
     {
@@ -274,13 +293,14 @@ class ReadTransaction implements NeoStoreTransaction
     }
 
     @Override
-    public PropertyData nodeChangeProperty( long nodeId, long propertyId, Object value )
+    public PropertyData nodeChangeProperty( long nodeId, PropertyData data,
+            Object value )
     {
         throw readOnlyException();
     }
 
     @Override
-    public void nodeRemoveProperty( long nodeId, long propertyId )
+    public void nodeRemoveProperty( long nodeId, PropertyData data )
     {
         throw readOnlyException();
     }
@@ -310,13 +330,14 @@ class ReadTransaction implements NeoStoreTransaction
     }
 
     @Override
-    public PropertyData relChangeProperty( long relId, long propertyId, Object value )
+    public PropertyData relChangeProperty( long relId, PropertyData data,
+            Object value )
     {
         throw readOnlyException();
     }
 
     @Override
-    public void relRemoveProperty( long relId, long propertyId )
+    public void relRemoveProperty( long relId, PropertyData data )
     {
         throw readOnlyException();
     }
@@ -364,5 +385,19 @@ class ReadTransaction implements NeoStoreTransaction
     public boolean isRelationshipCreated( long relId )
     {
         return false;
+    }
+
+    public static int getKeyIdForProperty( PropertyData property,
+            PropertyStore store )
+    {
+        // PropertyRecord propRecord = store.getLightRecord( property.getId() );
+        // return propRecord.getKeyIndexIds();
+        return property.getIndex();
+    }
+
+    @Override
+    public int getKeyIdForProperty( PropertyData property )
+    {
+        return getKeyIdForProperty( property, getPropertyStore() );
     }
 }

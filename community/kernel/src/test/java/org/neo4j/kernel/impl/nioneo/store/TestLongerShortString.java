@@ -35,21 +35,21 @@ public class TestLongerShortString
     {
         assertCanEncodeAndDecodeToSame( "" );
     }
-    
+
     @Test
     public void canEncodeNumerical()
     {
         assertCanEncodeAndDecodeToSame( "12345678901234567890" );
         assertCanEncodeAndDecodeToSame( "12345678901234567890 +-.,' 321,3" );
     }
-    
+
     @Test
     public void canEncodeDate() throws Exception
     {
         assertCanEncodeAndDecodeToSame( "2011-10-10 12:45:22+0200" );
         assertCanEncodeAndDecodeToSame( "2011/10/10 12:45:22+0200" );
     }
-    
+
     @Test
     public void testRandomStrings() throws Exception
     {
@@ -60,7 +60,7 @@ public class TestLongerShortString
                 List<String> list = TestShortString.randomStrings( 100, charset, 30 );
                 for ( String string : list )
                 {
-                    PropertyRecord record = new PropertyRecord( 0 );
+                    PropertyBlock record = new PropertyBlock();
                     if ( LongerShortString.encode( 10, string, record, PropertyStore.DEFAULT_PAYLOAD_SIZE ) )
                     {
                         assertEquals( string, LongerShortString.decode( record ) );
@@ -69,14 +69,14 @@ public class TestLongerShortString
             }
         }
     }
-    
+
     @Test
     public void canEncodeEmailAndUri() throws Exception
     {
         assertCanEncodeAndDecodeToSame( "mattias@neotechnology.com" );
         assertCanEncodeAndDecodeToSame( "http://domain:7474/" );
     }
-    
+
     @Test
     public void canEncodeLower() throws Exception
     {
@@ -84,26 +84,27 @@ public class TestLongerShortString
         assertCanEncodeAndDecodeToSame( "folder/generators/templates/controller.extr" );
         assertCannotEncode( "folder/generators/templates/controller.extra" );
     }
-    
+
     private void assertCanEncodeAndDecodeToSame( String string )
     {
         assertCanEncodeAndDecodeToSame( string, PropertyStore.DEFAULT_PAYLOAD_SIZE );
     }
-    
+
     private void assertCanEncodeAndDecodeToSame( String string, int payloadSize )
     {
-        PropertyRecord target = new PropertyRecord( 0 );
+        PropertyBlock target = new PropertyBlock();
         assertTrue( LongerShortString.encode( 0, string, target, payloadSize ) );
         assertEquals( string, LongerShortString.decode( target ) );
     }
-    
+
     private void assertCannotEncode( String string )
     {
         assertCannotEncode( string, PropertyStore.DEFAULT_PAYLOAD_SIZE );
     }
-    
+
     private void assertCannotEncode( String string, int payloadSize )
     {
-        assertFalse( LongerShortString.encode( 0, string, new PropertyRecord( 0 ), payloadSize ) );
+        assertFalse( LongerShortString.encode( 0, string, new PropertyBlock(),
+                payloadSize ) );
     }
 }

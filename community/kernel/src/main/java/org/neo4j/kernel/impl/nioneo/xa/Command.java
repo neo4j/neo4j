@@ -29,11 +29,11 @@ import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
-import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
@@ -74,6 +74,34 @@ public abstract class Command extends XaCommand
         return (int) (( key >>> 32 ) ^ key );
     }
 
+    private static void writePropertyBlock( LogBuffer buffer,
+            PropertyBlock block ) throws IOException
+    {
+        buffer.put( (byte) block.getSize() );
+        for ( long value : block.getValueBlocks() )
+        {
+            buffer.putLong( value );
+        }
+        if ( block.isLight() )
+        {
+            /*
+             *  This has to be int. If this record is not light
+             *  then we have the number of DynamicRecords that follow,
+             *  which is an int. We do not currently want/have a flag bit so
+             *  we simplify by putting an int here always
+             */
+            buffer.putInt( 0 );
+        }
+        else
+        {
+            buffer.putInt( block.getValueRecords().size() );
+            for ( DynamicRecord record : block.getValueRecords() )
+            {
+                writeDynamicRecord( buffer, record );
+            }
+        }
+    }
+
     static void writeDynamicRecord( LogBuffer buffer, DynamicRecord record )
         throws IOException
     {
@@ -104,6 +132,51 @@ public abstract class Command extends XaCommand
             buffer.putLong( record.getId() ).putInt( record.getType() ).put(
                 inUse );
         }
+    }
+
+    static PropertyBlock readPropertyBlock( ReadableByteChannel byteChannel,
+            ByteBuffer buffer ) throws IOException
+    {
+        // Read in block size.
+        buffer.clear();
+        buffer.limit( 1 );
+        if ( byteChannel.read( buffer ) != buffer.limit() )
+        {
+            return null;
+        }
+        int blockSize = buffer.get() / 8; // the size is stored in bytes
+
+        // Read in blocks
+        buffer.clear();
+        buffer.limit( blockSize * 8 + 4 ); // We add 4 to avoid a limit()/read() for the DynamicRecord size field
+        if ( byteChannel.read( buffer ) != buffer.limit() )
+        {
+            return null;
+        }
+        long[] blocks = readLongs( buffer, blockSize );
+
+        /*
+         *  Ok, now we may be ready to return, if there are no DynamicRecords. So
+         *  we start building the Object
+         */
+        PropertyBlock toReturn = new PropertyBlock();
+        toReturn.setValueBlocks( blocks );
+
+        /*
+         * Read in existence of DynamicRecords. Remember, this has already been
+         * read in the buffer with the blocks, above.
+         */
+        int noOfDynRecs = buffer.get();
+        if ( noOfDynRecs == 0 )
+        {
+            // isLight() so we are done
+            return toReturn;
+        }
+        for ( int i = 0; i < noOfDynRecs; i++ )
+        {
+            toReturn.addValueRecord( readDynamicRecord( byteChannel, buffer ) );
+        }
+        return toReturn;
     }
 
     static DynamicRecord readDynamicRecord( ReadableByteChannel byteChannel,
@@ -155,6 +228,16 @@ public abstract class Command extends XaCommand
             record.setData( data );
         }
         return record;
+    }
+
+    private static long[] readLongs( ByteBuffer buffer, int count )
+    {
+        long[] result = new long[count];
+        for ( int i = 0; i < count; i++ )
+        {
+            result[i] = buffer.getLong();
+        }
+        return result;
     }
 
     // means the first byte of the command record was only written but second
@@ -628,24 +711,11 @@ public abstract class Command extends XaCommand
             if ( record.inUse() )
             {
                 buffer.putLong( record.getNextProp() ).putLong( record.getPrevProp() );
-                for ( long block : record.getPropBlock() )
-                {
-                    buffer.putLong( block );
-                }
             }
-            if ( record.isLight() )
+            buffer.put( (byte) record.getPropertyBlocks().size() );
+            for ( PropertyBlock block : record.getPropertyBlocks() )
             {
-                buffer.putInt( 0 );
-            }
-            else
-            {
-                Collection<DynamicRecord> valueRecords = record
-                    .getValueRecords();
-                buffer.putInt( valueRecords.size() );
-                for ( DynamicRecord valueRecord : valueRecords )
-                {
-                    writeDynamicRecord( buffer, valueRecord );
-                }
+                writePropertyBlock( buffer, block );
             }
         }
 
@@ -689,7 +759,10 @@ public abstract class Command extends XaCommand
             if ( inUse )
             {
                 buffer.clear();
-                buffer.limit( 16 + PropertyType.getPayloadSize() );
+                /*
+                 * 16 next & prev, 1 is the no of property blocks
+                 */
+                buffer.limit( 16 + 1 );
                 if ( byteChannel.read( buffer ) != buffer.limit() )
                 {
                     return null;
@@ -698,40 +771,23 @@ public abstract class Command extends XaCommand
                 // /*byte category = */buffer.get();
                 long nextProp = buffer.getLong();
                 long prevProp = buffer.getLong();
-                long[] propBlock = readLongs( buffer, PropertyType.getPayloadSizeLongs() );
                 record.setInUse( inUse );
                 record.setNextProp( nextProp );
-                record.setPropBlock( propBlock );
                 record.setPrevProp( prevProp );
             }
             buffer.clear();
-            buffer.limit( 4 );
+            buffer.limit( 1 );
             if ( byteChannel.read( buffer ) != buffer.limit() )
             {
                 return null;
             }
             buffer.flip();
-            int nrValueRecords = buffer.getInt();
-            for ( int i = 0; i < nrValueRecords; i++ )
+            int nrPropBlocks = buffer.get();
+            while ( nrPropBlocks-- > 0 )
             {
-                DynamicRecord dr = readDynamicRecord( byteChannel, buffer );
-                if ( dr == null )
-                {
-                    return null;
-                }
-                record.addValueRecord( dr );
+                record.addPropertyBlock( readPropertyBlock( byteChannel, buffer ) );
             }
             return new PropertyCommand( neoStore == null ? null : neoStore.getPropertyStore(), record );
-        }
-
-        private static long[] readLongs( ByteBuffer buffer, int count )
-        {
-            long[] result = new long[count];
-            for ( int i = 0; i < count; i++ )
-            {
-                result[i] = buffer.getLong();
-            }
-            return result;
         }
 
         @Override

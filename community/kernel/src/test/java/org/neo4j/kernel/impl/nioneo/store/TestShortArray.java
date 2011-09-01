@@ -41,7 +41,7 @@ public class TestShortArray
         assertCanEncodeAndDecodeToSameValue( new long[] { 1,2,3,4,5,6,7 } );
         assertCanEncodeAndDecodeToSameValue( new float[] { 0.34f, 0.21f } );
     }
-    
+
     @Test
     public void canEncodeBiggerArraysWithBiggerPayloadSize() throws Exception
     {
@@ -54,10 +54,11 @@ public class TestShortArray
     {
         assertCanNotEncode( intArray, DEFAULT_PAYLOAD_SIZE );
     }
-    
+
     private void assertCanNotEncode( int[] intArray, int payloadSize )
     {
-        assertFalse( ShortArray.encode( 0, intArray, new PropertyRecord( 0 ), payloadSize ) );
+        assertFalse( ShortArray.encode( 0, intArray, new PropertyBlock(),
+                payloadSize ) );
     }
 
     private int[] intArray( int count, int stride )
@@ -77,10 +78,9 @@ public class TestShortArray
 
     private void assertCanEncodeAndDecodeToSameValue( Object value, int payloadSize )
     {
-        PropertyRecord target = new PropertyRecord( 0 );
+        PropertyBlock target = new PropertyBlock();
         boolean encoded = ShortArray.encode( 0, value, target, payloadSize );
         assertTrue( encoded );
-//        Bits bits = new Bits( target.getPropBlock() );
         assertArraysEquals( value, ShortArray.decode( target ) );
     }
 
@@ -90,7 +90,7 @@ public class TestShortArray
         int length1 = Array.getLength( value1 );
         int length2 = Array.getLength( value2 );
         assertEquals( length1, length2 );
-        
+
         for ( int i = 0; i < length1; i++ )
         {
             Object item1 = Array.get( value1, i );

@@ -24,12 +24,12 @@ package org.neo4j.kernel.impl.nioneo.store;
  */
 public enum PropertyType
 {
-    BOOL( 0 )
+    BOOL( 1, 1 )
     {
         @Override
-        public Object getValue( PropertyRecord record, PropertyStore store )
+        public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            return getValue( record.getPropBlock()[0] );
+            return getValue( block.getValueBlocks()[0] );
         }
 
         private Boolean getValue( long propBlock )
@@ -38,88 +38,104 @@ public enum PropertyType
         }
 
         @Override
-        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        public PropertyData newPropertyData( PropertyBlock block,
+                long propertyId, Object extractedValue )
         {
-            return PropertyDatas.forBoolean( record.getKeyIndexId(), record.getId(),
-                    getValue( record.getPropBlock()[0] ).booleanValue() );
+            // TODO : The masking off of bits should not happen here
+            return PropertyDatas.forBoolean( block.getKeyIndexId(), propertyId,
+                    getValue( block.getValueBlocks()[0] ).booleanValue() );
         }
     },
-    BYTE( 1 )
+    BYTE( 2, 1 )
     {
         @Override
-        public Object getValue( PropertyRecord record, PropertyStore store )
+        public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            return Byte.valueOf( (byte) record.getPropBlock()[0] );
+            return Byte.valueOf( (byte) block.getValueBlocks()[0] );
         }
 
         @Override
-        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        public PropertyData newPropertyData( PropertyBlock block,
+                long propertyId, Object extractedValue )
         {
-            return PropertyDatas.forByte( record.getKeyIndexId(), record.getId(), (byte) record.getPropBlock()[0] );
+            // TODO : The masking off of bits should not happen here
+            return PropertyDatas.forByte( block.getKeyIndexId(), propertyId,
+                    (byte) block.getValueBlocks()[0] );
         }
     },
-    SHORT( 2 )
+    SHORT( 3, 1 )
     {
         @Override
-        public Object getValue( PropertyRecord record, PropertyStore store )
+        public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            return Short.valueOf( (short) record.getPropBlock()[0] );
+            return Short.valueOf( (short) block.getValueBlocks()[0] );
         }
 
         @Override
-        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        public PropertyData newPropertyData( PropertyBlock block,
+                long propertyId, Object extractedValue )
         {
-            return PropertyDatas.forShort( record.getKeyIndexId(), record.getId(), (short) record.getPropBlock()[0] );
+            // TODO : The masking off of bits should not happen here
+            return PropertyDatas.forShort( block.getKeyIndexId(), propertyId,
+                    (short) block.getValueBlocks()[0] );
         }
     },
-    CHAR( 3 )
+    CHAR( 4, 1 )
     {
         @Override
-        public Object getValue( PropertyRecord record, PropertyStore store )
+        public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            return Character.valueOf( (char) record.getPropBlock()[0] );
+            return Character.valueOf( (char) block.getValueBlocks()[0] );
         }
 
         @Override
-        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        public PropertyData newPropertyData( PropertyBlock block,
+                long propertyId, Object extractedValue )
         {
-            return PropertyDatas.forChar( record.getKeyIndexId(), record.getId(), (char) record.getPropBlock()[0] );
+            // TODO : The masking off of bits should not happen here
+            return PropertyDatas.forChar( block.getKeyIndexId(), propertyId,
+                    (char) block.getValueBlocks()[0] );
         }
     },
-    INT( 4 )
+    INT( 5, 1 )
     {
         @Override
-        public Object getValue( PropertyRecord record, PropertyStore store )
+        public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            return Integer.valueOf( (int) record.getPropBlock()[0] );
+            return Integer.valueOf( (int) block.getValueBlocks()[0] );
         }
 
         @Override
-        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        public PropertyData newPropertyData( PropertyBlock block,
+                long propertyId, Object extractedValue )
         {
-            return PropertyDatas.forInt( record.getKeyIndexId(), record.getId(), (int) record.getPropBlock()[0] );
+            // TODO : The masking off of bits should not happen here
+            return PropertyDatas.forInt( block.getKeyIndexId(), propertyId,
+                    (int) block.getValueBlocks()[0] );
         }
     },
-    LONG( 5 )
+    LONG( 6, 2 )
     {
         @Override
-        public Object getValue( PropertyRecord record, PropertyStore store )
+        public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            return Long.valueOf( record.getPropBlock()[0] );
+            return Long.valueOf( block.getValueBlocks()[0] );
         }
 
         @Override
-        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        public PropertyData newPropertyData( PropertyBlock block,
+                long propertyId, Object extractedValue )
         {
-            return PropertyDatas.forLong( record.getKeyIndexId(), record.getId(), record.getPropBlock()[1] );
+            return PropertyDatas.forLong( block.getKeyIndexId(), propertyId,
+                    block.getValueBlocks()[1] );
         }
     },
-    FLOAT( 6 )
+    FLOAT( 7, 1 )
     {
         @Override
-        public Object getValue( PropertyRecord record, PropertyStore store )
+        public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            return Float.valueOf( getValue( record.getPropBlock()[0] ) );
+            return Float.valueOf( getValue( block.getValueBlocks()[0] ) );
         }
 
         private float getValue( long propBlock )
@@ -128,17 +144,19 @@ public enum PropertyType
         }
 
         @Override
-        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        public PropertyData newPropertyData( PropertyBlock block,
+                long propertyId, Object extractedValue )
         {
-            return PropertyDatas.forFloat( record.getKeyIndexId(), record.getId(), getValue( record.getPropBlock()[0] ) );
+            return PropertyDatas.forFloat( block.getKeyIndexId(), propertyId,
+                    getValue( block.getValueBlocks()[0] ) );
         }
     },
-    DOUBLE( 7 )
+    DOUBLE( 8, 2 )
     {
         @Override
-        public Object getValue( PropertyRecord record, PropertyStore store )
+        public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            return Double.valueOf( Double.longBitsToDouble( record.getPropBlock()[1] ) );
+            return Double.valueOf( Double.longBitsToDouble( block.getValueBlocks()[1] ) );
         }
 
         private double getValue( long propBlock )
@@ -147,80 +165,91 @@ public enum PropertyType
         }
 
         @Override
-        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        public PropertyData newPropertyData( PropertyBlock block,
+                long propertyId, Object extractedValue )
         {
-            return PropertyDatas.forDouble( record.getKeyIndexId(),
-                    record.getId(), getValue( record.getPropBlock()[1] ) );
+            return PropertyDatas.forDouble( block.getKeyIndexId(), propertyId,
+                    getValue( block.getValueBlocks()[1] ) );
         }
     },
-    STRING( 8 )
+    STRING( 9, 1 )
     {
         @Override
-        public Object getValue( PropertyRecord record, PropertyStore store )
+        public Object getValue( PropertyBlock block, PropertyStore store )
         {
             if ( store == null ) return null;
-            return store.getStringFor( record );
+            return store.getStringFor( block );
         }
 
         @Override
-        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        public PropertyData newPropertyData( PropertyBlock block,
+                long propertyId, Object extractedValue )
         {
-            return PropertyDatas.forStringOrArray( record.getKeyIndexId(), record.getId(), extractedValue );
+            return PropertyDatas.forStringOrArray( block.getKeyIndexId(),
+                    propertyId, extractedValue );
         }
     },
-    ARRAY( 9 )
+    ARRAY( 10, 1 )
     {
         @Override
-        public Object getValue( PropertyRecord record, PropertyStore store )
+        public Object getValue( PropertyBlock block, PropertyStore store )
         {
             if ( store == null ) return null;
-            return store.getArrayFor( record );
+            return store.getArrayFor( block );
         }
 
         @Override
-        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        public PropertyData newPropertyData( PropertyBlock block,
+                long propertyId, Object extractedValue )
         {
-            return PropertyDatas.forStringOrArray( record.getKeyIndexId(), record.getId(), extractedValue );
+            return PropertyDatas.forStringOrArray( block.getKeyIndexId(),
+                    propertyId, extractedValue );
         }
     },
-    SHORT_STRING( 10 )
+    SHORT_STRING( 11, 4 )
     {
         @Override
-        public Object getValue( PropertyRecord record, PropertyStore store )
+        public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            return LongerShortString.decode( record );
+            return LongerShortString.decode( block );
         }
 
         @Override
-        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        public PropertyData newPropertyData( PropertyBlock block,
+                long propertyId, Object extractedValue )
         {
-            return PropertyDatas.forStringOrArray( record.getKeyIndexId(), record.getId(), getValue( record, null ) );
+            return PropertyDatas.forStringOrArray( block.getKeyIndexId(),
+                    propertyId, getValue( block, null ) );
         }
     },
-    SHORT_ARRAY( 11 )
+    SHORT_ARRAY( 12, 4 )
     {
         @Override
-        public Object getValue( PropertyRecord record, PropertyStore store )
+        public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            return ShortArray.decode( record );
+            return ShortArray.decode( block );
         }
 
         @Override
-        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        public PropertyData newPropertyData( PropertyBlock block,
+                long propertyId, Object extractedValue )
         {
-            return PropertyDatas.forStringOrArray( record.getKeyIndexId(), record.getId(),
-                    getValue( record, null ) );
+            return PropertyDatas.forStringOrArray( block.getKeyIndexId(),
+                    propertyId, getValue( block, null ) );
         }
     };
 
     private final int type;
 
+    private final int sizeOfBlockInLongs;
+
     // TODO In wait of a better place
     private static int payloadSize = PropertyStore.DEFAULT_PAYLOAD_SIZE;
 
-    PropertyType( int type )
+    PropertyType( int type, int sizeOfBlockInLongs )
     {
         this.type = type;
+        this.sizeOfBlockInLongs = sizeOfBlockInLongs;
     }
 
     /**
@@ -233,9 +262,27 @@ public enum PropertyType
         return type;
     }
 
-    public abstract Object getValue( PropertyRecord record, PropertyStore store );
+    /**
+     * Returns a byte value representing the type. As long as there are
+     * &lt 128 PropertyTypes, this should be equal to intValue(). When this
+     * statement no longer holds, this method should be removed.
+     *
+     * @return The byte value for this property type
+     */
+    public byte byteValue()
+    {
+        return (byte) type;
+    }
 
-    public abstract PropertyData newPropertyData( PropertyRecord record, Object extractedValue );
+    public abstract Object getValue( PropertyBlock block, PropertyStore store );
+
+    public abstract PropertyData newPropertyData( PropertyBlock block,
+            long propertyId, Object extractedValue );
+
+    public int getSizeInLongs()
+    {
+        return sizeOfBlockInLongs;
+    }
 
     public static PropertyType getPropertyType( long propBlock, boolean nullOnIllegal )
     {
@@ -243,19 +290,33 @@ public enum PropertyType
         int type = (int)((propBlock&0x000000F000000000L)>>36);
         switch ( type )
         {
-        case 0: return BOOL;
-        case 1: return BYTE;
-        case 2: return SHORT;
-        case 3: return CHAR;
-        case 4: return INT;
-        case 5: return LONG;
-        case 6: return FLOAT;
-        case 7: return DOUBLE;
-        case 8: return STRING;
-        case 9: return ARRAY;
-        case 10: return SHORT_STRING;
-        case 11: return SHORT_ARRAY;
-        default: throw new InvalidRecordException( "Unknown property type for type " + type );
+        case 1:
+            return BOOL;
+        case 2:
+            return BYTE;
+        case 3:
+            return SHORT;
+        case 4:
+            return CHAR;
+        case 5:
+            return INT;
+        case 6:
+            return LONG;
+        case 7:
+            return FLOAT;
+        case 8:
+            return DOUBLE;
+        case 9:
+            return STRING;
+        case 10:
+            return ARRAY;
+        case 11:
+            return SHORT_STRING;
+        case 12:
+            return SHORT_ARRAY;
+        default: if (nullOnIllegal) return null;
+            throw new InvalidRecordException( "Unknown property type for type "
+                                              + type );
         }
     }
 
