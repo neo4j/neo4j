@@ -31,6 +31,20 @@
         <include>**/*.py</include>
         <include>README*</include>
       </includes>
+      <excludes>
+        <!-- Included in the next fileSet,
+             to allow us to inject the correct
+             version number. -->
+        <exclude>setup.py</exclude>
+      </excludes>
+      <outputDirectory>/</outputDirectory>
+      <directory>src/main/python</directory>
+    </fileSet>
+    <fileSet>
+      <filtered>true</filtered>
+      <includes>
+        <include>setup.py</include>
+      </includes>
       <outputDirectory>/</outputDirectory>
       <directory>src/main/python</directory>
     </fileSet>
