@@ -1,3 +1,8 @@
+1.5.M01 (2011-08-31)
+--------------------
+o Frame length configurable per communication interface.
+o Fixed some issues regarding monitoring of open channels and what resources they map to and occupy.
+
 1.4.M03 (2011-05-26)
 --------------------
 o Changed to always dispose channels after exception.
