@@ -1,3 +1,16 @@
+1.5.M01 (2011-08-31)
+--------------------
+o Fixed file lock issues on an open database which could cause them to be released, making the database vulnerable.
+o Fixed several recovery issues which could leave the logical logs in an inconsistent state after a recovery.
+o Fixed some data visibility issue for relationships as well as some issues with committing relationships to NodeImpl.
+o Auto indexing follows tightly with each mutating operation, not per transaction commit.
+o Tighter integration with the manual in a lot of places.
+
+1.4 (2011-06-27)
+----------------
+o Fix for numerical values not being indexes properly in fulltext index.
+o More shell commands for deleting entities from the graph.
+
 1.4.M04 (2011-06-09)
 --------------------
 o First iteration of the Cypher Query Language included,
