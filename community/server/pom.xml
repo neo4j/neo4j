@@ -25,6 +25,8 @@
     <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
     <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
     <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
+    <blueprints.version>0.9</blueprints.version>
+    <gremlin.version>1.2</gremlin.version>
 
     <!-- Run integration tests against a server that is started elsewhere.
       This is used in ServerIntegrationTestFacade, which currently assumes external 
@@ -172,7 +174,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>com.tinkerpop</groupId>
       <artifactId>gremlin</artifactId>
-      <version>1.2</version>
+      <version>${gremlin.version}</version>
       <type>jar</type>
       <exclusions>
         <!-- Sail support not needed --> 
@@ -195,7 +197,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>com.tinkerpop.blueprints</groupId>
       <artifactId>blueprints-neo4j-graph</artifactId>
-      <version>0.8</version>
+      <version>${blueprints.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.neo4j</groupId>
@@ -277,7 +279,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-graphviz</artifactId>
-      <version>0.2-SNAPSHOT</version>
+      <version>1.5-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
     

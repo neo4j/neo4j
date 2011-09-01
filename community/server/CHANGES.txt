@@ -1,6 +1,9 @@
-1.5.M01
+1.5.M01 (2011-08-31)
 --------------------
 o Fixed bug in statistics sampling
+o Support for querying auto index via REST
+o Some status code corrections to better reflect their intents.
+o Lots of documentation and more integration with the manual as well as using neo4j-graphviz for generating graphs.
 
 1.4.M05 (2011-06-23)
 --------------------

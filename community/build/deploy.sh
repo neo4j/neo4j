@@ -6,7 +6,7 @@ tcrepo=http://builder.neo4j.org/guestAuth/repository/download/bt18/lastSuccessfu
 mvnrepo=http://build-repo.neo4j.org/repository/snapshots/
 
 function work {
-    deploy_defaults neo4j-graph-algo neo4j-jmx neo4j-kernel neo4j-lucene-index neo4j-shell server-api neo4j-graph-matching
+    deploy_defaults neo4j-graph-algo neo4j-jmx neo4j-kernel neo4j-lucene-index neo4j-shell server-api neo4j-graph-matching neo4j-graphviz
 
     deploy neo4j-udc docs javadoc sources test-sources tests neo4j
 

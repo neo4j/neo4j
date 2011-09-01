@@ -22,7 +22,7 @@ define(
   ['neo4j/webadmin/utils/ItemUrlResolver'
    'ribcage/ui/Dialog'
    'ribcage/ui/FilterList'
-   './nodeFilterDialog'
+   './nodeFilterDialogTemplate'
    'lib/backbone'], 
   (ItemUrlResolver, Dialog, FilterList, template) ->
   
