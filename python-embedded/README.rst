@@ -18,7 +18,7 @@ This is the source distribution of this project. To install into a python enviro
 ::
 
   mvn package
-  unzip target/neo4j-python-embedded-[VERSION]-    python-dist.zip
+  unzip target/neo4j-python-embedded-[VERSION]-python-dist.zip
   cd target/neo4j-embedded
   python setup.py install
 
