@@ -784,6 +784,12 @@ the relevant Commercial Agreement.
                   	<exclude>lib/arbor.js</exclude>
                   </exclude>
               	</module>
+              	<module>
+                  <name>visualization</name>
+                  <exclude>
+                  	<exclude>lib/arbor.js</exclude>
+                  </exclude>
+              	</module>
               </modules>
               <coffeeOutputDir>${basedir}/src/main/resources/webadmin-html/js</coffeeOutputDir>
               <hamlOutputDir>${basedir}/src/main/resources/webadmin-html/js</hamlOutputDir>
