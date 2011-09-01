@@ -51,4 +51,22 @@ public class TestBits
         assertEquals( (short) 100, bits.pullLeftShort( 7 ) );
         assertEquals( (byte) 3, bits.pullLeftByte( 3 ) );
     }
+    
+    @Test
+    public void asBytes() throws Exception
+    {
+        int numberOfBytes = 16;
+        Bits bits = bits( numberOfBytes );
+        for ( byte i = 0; i < numberOfBytes; i++ )
+        {
+            bits.pushRight( i );
+        }
+        
+        // They come out in the revers order of which they got pushed in, LIFO style
+        byte[] bytes = bits.asBytes();
+        for ( byte i = 0; i < 16; i++ )
+        {
+            assertEquals( 15-i, bytes[i] );
+        }
+    }
 }

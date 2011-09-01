@@ -368,7 +368,7 @@ public class TestUpgradeStore
         public IdGenerator open( String fileName, int grabSize, IdType idType,
                 long highestIdInUse )
         {
-            IdGenerator generator = new IdGeneratorImpl( fileName, grabSize, Long.MAX_VALUE );
+            IdGenerator generator = new IdGeneratorImpl( fileName, grabSize, Long.MAX_VALUE, false );
             generators.put( idType, generator );
             return generator;
         }

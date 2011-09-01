@@ -442,7 +442,8 @@ public enum LongerShortString
 
     int maxLength( int payloadSize )
     {
-        return ((payloadSize << 3)-24-4-6)/step;
+        // key-type-encoding-length
+        return ((payloadSize << 3)-24-4-4-6)/step;
     }
 
     final IllegalArgumentException cannotEncode( byte b )
