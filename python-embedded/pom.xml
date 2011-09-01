@@ -121,7 +121,6 @@ the relevant Commercial Agreement.
       <!-- Produce source jars, for our documentation -->
       <plugin>
         <artifactId>maven-source-plugin</artifactId>
-        <version>2.1.2</version>
         <configuration>    
           <attach>true</attach>
           <includes>
@@ -133,7 +132,6 @@ the relevant Commercial Agreement.
       <!-- Assemble python distribution -->
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
-        <version>2.2-beta-2</version>
         <executions>
           <execution>
             <id>python-distribution</id>
@@ -156,3 +154,4 @@ the relevant Commercial Agreement.
   </build>
 
 </project>
+
