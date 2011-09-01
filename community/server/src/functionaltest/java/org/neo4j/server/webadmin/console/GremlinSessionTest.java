@@ -54,14 +54,18 @@ public class GremlinSessionTest
     }
 
     @Test
-    public void canCreateNodesInGremlinLand()
+    public void canCreateNodesAndEdgesInGremlinLand()
     {
         String result = session.evaluate( "g.addVertex(null)" );
-
         assertEquals( "v[1]" + NEWLINE, result );
         result = session.evaluate( "g.V >> 2" );
-
         assertEquals( "v[0]" + NEWLINE + "v[1]" + NEWLINE, result );
+        result = session.evaluate( "g.addVertex(null)" );
+        assertEquals( "v[2]" + NEWLINE, result );
+        result = session.evaluate( "g.addEdge(g.v(1), g.v(2), 'knows')" );
+        assertEquals( "e[0][1-knows->2]" + NEWLINE, result );
+        result = session.evaluate( "g.v(1).out" );
+        assertEquals( "v[2]" + NEWLINE, result );
     }
 
     @Before
