@@ -23,6 +23,8 @@
 
 __all__ = 'GraphDatabase',\
           'Direction', 'Evaluation', 'Uniqueness'
+          
+__version__ = "${pythonic_version}"
 
 from neo4j.core import GraphDatabase, Direction, NotFoundException
 from neo4j.traversal import Traversal, Evaluation, Uniqueness

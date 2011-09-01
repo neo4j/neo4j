@@ -118,6 +118,42 @@ the relevant Commercial Agreement.
         </executions>
       </plugin>
       
+      <!-- Generate appropriate python
+           version from current project version. 
+           See: http://www.python.org/dev/peps/pep-0386/ 
+           -->
+     <plugin>
+       <groupId>org.codehaus.groovy.maven</groupId>
+       <artifactId>gmaven-plugin</artifactId>
+       <version>1.0</version>
+       <executions>
+         <execution>
+           <id>pythonificate-version-number</id>
+             <phase>generate-resources</phase>
+             <goals>
+               <goal>execute</goal>
+             </goals>
+             <configuration>
+               <source>
+                 def version = project.version
+                 
+                 // 1.5-SNAPSHOT -> 1.5.dev1
+                 version = version.replace("-SNAPSHOT", ".dev1")
+                 
+                 // 1.5.RC1 -> 1.5.c1
+                 version = version.replace("RC","c")
+                 
+                 // 1.5.M01 -> 1.5.b1
+                 version = version.replace("M0","b")
+                 version = version.replace("M","b")
+                 
+                 project.properties['pythonic_version'] = version
+              </source>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      
       <!-- Produce source jars, for our documentation -->
       <plugin>
         <artifactId>maven-source-plugin</artifactId>
