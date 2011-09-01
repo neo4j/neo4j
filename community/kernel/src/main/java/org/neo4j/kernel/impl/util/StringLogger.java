@@ -111,6 +111,7 @@ public class StringLogger
     
     public synchronized void logMessage( String msg, boolean flush )
     {
+        ensureOpen();
         out.println( new Date() + ": " + msg );
         if ( flush )
         {
@@ -121,6 +122,7 @@ public class StringLogger
 
     public synchronized void logMessage( String msg, Throwable cause, boolean flush )
     {
+        ensureOpen();
         out.println( new Date() + ": " + msg + " " + cause.getMessage() );
         cause.printStackTrace( out );
         if ( flush )
@@ -128,6 +130,30 @@ public class StringLogger
             out.flush();
         }
         checkRotation();
+    }
+    
+    private void ensureOpen()
+    {
+        /*
+         * Since StringLogger has instances in its own static map and HA graph db
+         * does internal restarts of the database the StringLogger instances are kept
+         * whereas the actual files can be removed/replaced, making the PrintWriter
+         * fail at writing stuff and also swallowing those exceptions(!). Since we
+         * have this layout of static map of loggers we'll have to reopen the PrintWriter
+         * in such occasions. It'd be better to tie each StringLogger to a GraphDatabaseService.
+         */
+        if ( out.checkError() )
+        {
+            out.close();
+            try
+            {
+                instantiateWriter();
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
     }
     
     private void checkRotation()

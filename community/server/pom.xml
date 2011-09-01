@@ -277,7 +277,11 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-graphviz</artifactId>
+<<<<<<< .merge_file_Ue7TkZ
       <version>0.2-SNAPSHOT</version>
+=======
+      <version>1.5-SNAPSHOT</version>
+>>>>>>> .merge_file_Yhr6aZ
       <scope>test</scope>
     </dependency>
     

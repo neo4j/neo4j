@@ -75,9 +75,10 @@ public class Config
     /** Enable a remote shell server which shell clients can log in to */
     @Documented
     public static final String ENABLE_REMOTE_SHELL = "enable_remote_shell";
+    /** Enable a support for running online backups */
     @Documented
     public static final String ENABLE_ONLINE_BACKUP = "enable_online_backup";
-
+    /** Mark this database as a backup slave. */
     @Documented
     public static final String BACKUP_SLAVE = "backup_slave";
 

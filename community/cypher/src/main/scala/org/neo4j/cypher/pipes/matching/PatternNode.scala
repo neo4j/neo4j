@@ -19,23 +19,37 @@
  */
 package org.neo4j.cypher.pipes.matching
 
-import org.neo4j.graphdb.{Relationship, Direction, Node}
+import org.neo4j.graphdb.{ Relationship, Direction, Node }
 import scala.collection.JavaConverters._
+import org.neo4j.graphdb.{ DynamicRelationshipType, Relationship, Direction, Node }
 
 class PatternNode(key: String) extends PatternElement(key) with PinnablePatternElement[Node] {
   val relationships = scala.collection.mutable.Set[PatternRelationship]()
 
-  def getPRels(history: Seq[MatchingPair]): Seq[PatternRelationship] = relationships.filterNot( r => history.exists(_.matches(r)) ).toSeq
+  def getPRels(history: Seq[MatchingPair]): Seq[PatternRelationship] = relationships.filterNot(r => history.exists(_.matches(r))).toSeq
 
-  def getRealRelationships(node: Node, pRel: PatternRelationship, history:Seq[MatchingPair]): Seq[Relationship] = {
-    node.getRelationships.asScala.filterNot( r => history.exists(_.matches(r)) ).toSeq
+  def getGraphRelationships(node: Node, pRel: PatternRelationship, history: Seq[MatchingPair]): Seq[GraphRelationship] = {
+    val relationships = pRel.getGraphRelationships(this, node)
+    //    println(String.format("found real relationships: %s\n", relationships.toList))
+    relationships.filterNot(gr => gr match {
+      case SingleGraphRelationship(r) => history.exists(h => h.matches(r))
+      case VariableLengthGraphRelationship(p) => history.exists(h => h.matches(p))
+    }).toSeq
   }
 
   def relateTo(key: String, other: PatternNode, relType: Option[String], dir: Direction): PatternRelationship = {
     val rel = new PatternRelationship(key, this, other, relType, dir)
     relationships.add(rel)
     other.relationships.add(rel)
-
     rel
   }
+
+  def relateViaVariableLengthPathTo(pathName: String, end: PatternNode, minHops: Int, maxHops: Int, relType: Option[String], dir: Direction): PatternRelationship = {
+    val rel = new VariableLengthPatternRelationship(pathName, this, end, minHops, maxHops, relType, dir)
+    relationships.add(rel)
+    end.relationships.add(rel)
+    rel
+  }
+
+  override def toString = String.format("PatternNode[key=%s]", key)
 }

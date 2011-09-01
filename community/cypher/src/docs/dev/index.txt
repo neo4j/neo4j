@@ -59,7 +59,7 @@ classifier=test-sources
 
 When you reference parts of the pattern, you do so by naming them.
 
-[source]
+[source,cypher]
 ----
 start identifier=(0) return identifier
 ----
@@ -68,7 +68,7 @@ Identifiers can be lower or upper case, and may contain underscore.
 If other characters are needed, you can use the +`+ sign.
 The same rules apply to property names.
 
-[source]
+[source,cypher]
 ----
 start a=(0) return a.`property.with.periods`
 ----

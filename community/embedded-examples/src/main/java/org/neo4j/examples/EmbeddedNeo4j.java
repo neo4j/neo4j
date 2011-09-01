@@ -84,6 +84,7 @@ public class EmbeddedNeo4j
         // END SNIPPET: shutdownServer
     }
 
+    // START SNIPPET: shutdownHook
     private static void registerShutdownHook( final GraphDatabaseService graphDb )
     {
         // Registers a shutdown hook for the Neo4j instance so that it
@@ -98,4 +99,5 @@ public class EmbeddedNeo4j
             }
         } );
     }
+    // END SNIPPET: shutdownHook
 }

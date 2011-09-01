@@ -2,13 +2,13 @@
 Aggregation
 ===========
 
-To calculate aggregated data, Cypher offers aggregation, much like SQL's GROUP BY.
-If any aggregation functions are found in the RETURN statement, all the columns without aggregating functions are used as the grouping key.
+To calculate aggregated data, Cypher offers aggregation, much like SQL's +GROUP BY+.
+If any aggregation functions are found in the +RETURN+ statement, all the columns without aggregating functions are used as the grouping key.
 
 == COUNT ==
-COUNT is used to count the number of rows. COUNT can be used in two forms - COUNT(*)
-which just counts the number of matching rows, and COUNT(<identifier>), which counts
-the number of non-null values in <identifier>.
++COUNT+ is used to count the number of rows. +COUNT+ can be used in two forms - +COUNT(*)+
+which just counts the number of matching rows, and +COUNT(<identifier>)+, which counts
+the number of non-null values in +<identifier>+.
 
 include::count-nodes.txt[]
 include::count-entities.txt[]

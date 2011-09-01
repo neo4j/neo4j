@@ -19,8 +19,7 @@ package org.neo4j.cypher.pipes.matching
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import org.neo4j.graphdb.PropertyContainer
 
-case class MatchingPair(patternElement:PatternElement, entity:PropertyContainer) {
-  def matches(x:Any) = entity == x || patternElement == x
+case class MatchingPair(patternElement: PatternElement, entity: Any) {
+  def matches(x: Any) = entity == x || patternElement == x
 }

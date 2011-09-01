@@ -27,7 +27,7 @@ import scala.collection.JavaConverters._
 import java.io.{ PrintWriter, File, FileWriter }
 import org.neo4j.graphdb._
 import org.neo4j.cypher.parser.CypherParser
-import org.neo4j.cypher.{ExecutionResult, ExecutionEngine}
+import org.neo4j.cypher.{ ExecutionResult, ExecutionEngine }
 import org.scalatest.junit.JUnitSuite
 
 abstract class DocumentingTestBase extends JUnitSuite {
@@ -54,7 +54,7 @@ abstract class DocumentingTestBase extends JUnitSuite {
     writer.println()
     writer.println("_Query_")
     writer.println()
-    writer.println("[source]")
+    writer.println("[source,cypher]")
     writer.println("----")
     writer.println(query)
     writer.println("----")

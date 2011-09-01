@@ -87,3 +87,56 @@ With that in place you can add Neo4j to the mix by having something along these 
 ----
 _Where +$\{neo4j-version}+ is the intended version and the +name+ is found in <<editions>>._
 
+[[tutorials-java-embedded-setup-startstop]]
+== Starting and stopping ==
+
+To create a new database or ópen an existing one you instantiate an +http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/EmbeddedGraphDatabase.html[EmbeddedGraphDatabase]+.
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/EmbeddedNeo4j.java
+classifier=sources
+tag=startDb
+----
+
+[NOTE]
+The +EmbeddedGraphDatabase+ instance can be shared among multiple threads.
+Note however that you can't create multiple instances poting to the same database.
+
+To stop the database, call the +shutdown()+ method:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/EmbeddedNeo4j.java
+classifier=sources
+tag=shutdownServer
+----
+
+To make sure Neo4j is shut down properly you can add a shutdown hook:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/EmbeddedNeo4j.java
+classifier=sources
+tag=shutdownHook
+----
+
+If you want a _read-only view_ of the database, use +http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/EmbeddedReadOnlyGraphDatabase.html[EmbeddedReadOnlyGraphDatabase]+. 
+
+To start Neo4j with configuration settings, a Neo4j properties file can be loaded like this:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/StartWithConfiguration.java
+classifier=test-sources
+tag=startDbWithConfig
+----
+
+Or you could of course create you own +Map<String, String>+ programatically and use that instead.
+
+For configuration settings, see <<configuration>>.
+

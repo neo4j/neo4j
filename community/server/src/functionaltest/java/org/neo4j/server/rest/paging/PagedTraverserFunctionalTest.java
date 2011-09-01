@@ -105,8 +105,8 @@ public class PagedTraverserFunctionalTest
      * Creating a paged traverser. Paged traversers are created by +POST+-ing a
      * traversal description to the link identified by the +paged_traverser+ key
      * in a node representation. When creating a paged traverser, the same
-     * options apply as for a regular traverser, meaning that +node+, 'path/',
-     * or 'fullpath', can be targeted.
+     * options apply as for a regular traverser, meaning that +node+, +path+,
+     * or +fullpath+, can be targeted.
      */
     @Documented
     @Test

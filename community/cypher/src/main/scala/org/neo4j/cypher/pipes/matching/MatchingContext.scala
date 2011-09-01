@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.pipes.matching
 
-import org.neo4j.cypher.commands.{RelatedTo, Pattern}
+import org.neo4j.cypher.commands.{ RelatedTo, Pattern }
 import org.neo4j.graphdb.Node
+import org.neo4j.cypher.commands.{ VariableLengthPath, RelatedTo, Pattern }
 
-class MatchingContext(patterns : Seq[Pattern]) {
+class MatchingContext(patterns: Seq[Pattern]) {
 
-  def getMatches(bindings : Map[String, Any]) : Traversable[Map[String, Any]] = {
+  def getMatches(bindings: Map[String, Any]): Traversable[Map[String, Any]] = {
     val patternGraph: Seq[PatternElement] = buildPatternGraph(bindings)
     val (pinnedName, pinnedNode) = bindings.head
 
@@ -32,7 +33,7 @@ class MatchingContext(patterns : Seq[Pattern]) {
 
     pinnedPatternNode.pin(pinnedNode.asInstanceOf[Node])
 
-    new PatternMatcher(pinnedPatternNode)
+    new PatternMatcher(pinnedPatternNode, bindings)
 
   }
 
@@ -49,6 +50,11 @@ class MatchingContext(patterns : Seq[Pattern]) {
         val rightNode: PatternNode = patternNodeMap.getOrElseUpdate(right, new PatternNode(right))
 
         patternRelMap(rel) = leftNode.relateTo(rel, rightNode, relType, dir)
+      }
+      case VariableLengthPath(pathName, start, end, minHops, maxHops, relType, dir) => {
+        val startNode: PatternNode = patternNodeMap.getOrElseUpdate(start, new PatternNode(start))
+        val endNode: PatternNode = patternNodeMap.getOrElseUpdate(end, new PatternNode(end))
+        patternRelMap(pathName) = startNode.relateViaVariableLengthPathTo(pathName, endNode, minHops, maxHops, relType, dir)
       }
     })
 

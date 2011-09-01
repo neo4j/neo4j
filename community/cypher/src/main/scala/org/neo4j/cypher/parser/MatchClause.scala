@@ -34,11 +34,11 @@ trait MatchClause extends JavaTokenParsers with Tokens {
   def path : Parser[List[Pattern]] = pathSegment | parenPath | noParenPath
 
   def parenPath : Parser[List[Pattern]] = identity ~ "=" ~ "(" ~ pathSegment ~ ")" ^^ {
-    case p ~ "=" ~ "(" ~ pathSegment ~ ")" => List(PathItem(p, pathSegment: _*))
+    case p ~ "=" ~ "(" ~ pathSegment ~ ")" => List(NamedPath(p, pathSegment: _*))
   }
 
   def noParenPath : Parser[List[Pattern]] = identity ~ "=" ~ pathSegment ^^ {
-    case p ~ "=" ~ pathSegment => List(PathItem(p, pathSegment: _*))
+    case p ~ "=" ~ pathSegment => List(NamedPath(p, pathSegment: _*))
   }
 
   def pathSegment: Parser[List[Pattern]] = node ~ rep1(relatedTail) ^^ {
