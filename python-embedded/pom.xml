@@ -72,7 +72,7 @@ the relevant Commercial Agreement.
     </profile>
     <profile><id>jython-test</id>
       <properties>
-        <python>/home/jake/Workspaces/Neo4j/jython/dist/bin/jython</python>
+        <python>jython</python>
       </properties>
     </profile>
   </profiles>
