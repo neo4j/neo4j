@@ -72,6 +72,7 @@ div.navheader
   top: 112px;
   width: 4em;
   text-align: right;
+  z-index: 10;
 }
 
 div.navheader hr

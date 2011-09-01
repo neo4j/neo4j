@@ -1,0 +1,202 @@
+[[capabilities]]
+Capabilities
+============
+
+/////////
+Details, originally contained in the capabilities document.
+/////////
+
+[[capabilities-data-security]]
+== Data Security ==
+
+Some data may need to be protected from unauthorized access (e.g., theft, modification). 
+Neo4j does not deal with data encryption explicitly, but supports all means built into the Java programming language and the JVM to protect data by encrypting it before storing.
+
+Furthermore, data can be easily secured by running on an encrypted datastore at the file system level.
+Finally, data protection should be considered in the upper layers of the surrounding system in order to prevent problems with scraping, malicious data insertion, and other threats.
+
+[[capabilities-data-integrity]]
+== Data Integrity ==
+
+In order to keep data consistent, there needs to be mechanisms and structures that guarantee the integrity of all stored data.
+In Neo4j, data integrity is maintained for the core graph engine together with other data sources - see below.
+
+[[capabilities-core-graph-engine]]
+=== Core Graph Engine ===
+
+In Neo4j, the whole data model is stored as a graph on disk and persisted as 
+part of every committed transaction.
+In the storage layer, Relationships, Nodes, and Properties have direct pointers to each other.
+This maintains integrity without the need for data duplication between the different backend store files.
+ 
+[[capabilities-different-data-sources]]
+=== Different Data Sources ===
+
+In a number of scenarios, the core graph engine is combined with other systems 
+in order to achieve optimal performance for non-graph lookups.
+For example, Apache Lucene is frequently used as an additional index system for text queries that would otherwise be very processing-intensive in the graph layer.
+
+To keep these external systems in synchronization with each other, Neo4j provides 
+full Two Phase Commit transaction management, with rollback support over all data 
+sources.
+Thus, failed index insertions into Lucene can be transparently rolled back in all data sources and thus keep data up-to-date.
+
+[[capabilities-data-integration]]
+== Data Integration ==
+
+Most enterprises rely primarily on relational databases to store their data, but 
+this may cause performance limitations.
+In some of these cases, Neo4j can be used as an extension to supplement search/lookup for faster decision making.
+However, in any situation where multiple data repositories contain the same data, synchronization can be an issue.
+
+In some applications, it is acceptable for the search platform to be slightly out 
+of sync with the relational database.
+In others, tight data integrity (eg., between Neo4j and RDBMS) is necessary. 
+Typically, this has to be addressed for data changing in real-time and for bulk data changes happening in the RDBMS.
+
+A few strategies for synchronizing integrated data follows.
+
+[[capabilities-event-based-synchronization]]
+=== Event-based Synchronization ===
+
+In this scenario, all data stores, both RDBMS and Neo4j, are fed with domain-specific 
+events via an event bus.
+Thus, the data held in the different backends is not actually synchronized but rather replicated.
+
+[[capabilities-periodic-synchronization]]
+=== Periodic Synchronization ===
+
+Another viable scenario is the periodic export of the latest changes in the RDBMS to 
+Neo4j via some form of SQL query.
+This allows a small amount of latency in the synchronization, but has the advantage of using the RDBMS as the master for all data purposes.
+The same process can be applied with Neo4j as the master data source.
+
+[[capabilities-full-export]]
+=== Periodic Full Export/Import of Data ===
+
+Using the Batch Inserter tools for Neo4j, even large amounts of data can be imported 
+into the database in very short times.
+Thus, a full export from the RDBMS and import into Neo4j becomes possible.
+If the propagation lag between the RDBMS and Neo4j is not a big issue, this is a very viable solution.
+
+[[capabilities-availability]]
+== Availability and Reliability ==
+
+Most mission-critical systems require the database subsystem to be accessible at all 
+times.
+Neo4j ensures availability and reliability through a few different strategies.  
+
+[[capabilities-op-availability]]
+=== Operational Availability ===
+
+In order not to create a single point of failure, Neo4j supports different 
+approaches which provide transparent fallback and/or recovery from failures.
+
+==== Online backup (Cold spare) ====
+
+In this approach, a single instance of the master database is used, with Online 
+Backup enabled.
+In case of a failure, the backup files can be mounted onto a new 
+Neo4j instance and reintegrated into the application.
+
+==== Online Backup High Availability (Hot spare) ====
+
+Here, a Neo4j "backup" instance listens to online transfers of changes from the 
+master.
+In the event of a failure of the master, the backup is already running 
+and can directly take over the load.
+
+==== High Availability cluster ====
+
+This approach uses a cluster of database instances, with one (read/write) master 
+and a number of (read-only) slaves.
+Failing slaves can simply be restarted and brought back online.
+Alternatively, a new slave may be added by cloning an existing one.
+Should the master instance fail, a new master will be elected by the remaining 
+cluster nodes.
+
+[[capabilities-disaster]]
+=== Disaster Recovery/ Resiliency ===
+
+In cases of a breakdown of major part of the IT infrastructure, there need to be 
+mechanisms in place that enable the fast recovery and regrouping of the remaining 
+services and servers.
+In Neo4j, there are different components that are suitable to be part of a disaster recovery strategy.
+
+==== Prevention ====
+
+* Online Backup High Availability to other locations outside the current data center.
+* Online Backup to different file system locations: this is a simpler form of backup, 
+applying changes directly to backup files; it is thus more suited for local backup scenarios.
+* Neo4j High Availability cluster: a cluster of one write-master Neo4j server and a number of read-slaves, getting transaction logs from the master.
+  Write-master failover is handled by quorum election among the read-slaves for a new master.
+
+==== Detection ====
+
+* SNMP and JMX monitoring can be used for the Neo4j database.
+
+==== Correction ====
+
+* Online Backup: A new Neo4j server can be started directly on the backed-up files 
+and take over new requests.
+* Neo4j High Availability cluster: A broken Neo4j read slave can be reinserted into the cluster, getting the latest updates from the master.
+  Alternatively, a new server can be inserted by copying an existing server and applying the latest updates to it.
+
+[[capabilities-capacity]]
+== Capacity ==
+
+[[capabilities-file-sizes]]
+=== File Sizes ===
+
+Neo4j relies on Java's Non-blocking I/O subsystem for all file handling.
+Furthermore, while the storage file layout is optimized for interconnected data, Neo4j does not require raw devices.
+Thus, filesizes are only limited by the underlying operating system's capacity to handle large files.
+Physically, there is no built-in limit of the file handling capacity in Neo4j.
+
+Neo4j tries to memory-map as much of the underlying store files as possible.
+If the available RAM is not sufficient to keep all data in RAM, Neo4j will use buffers in some cases, reallocating the memory-mapped high-performance I/O windows to the regions with the most I/O activity dynamically.
+Thus, ACID speed degrades gracefully as RAM becomes the limiting factor.
+
+[[capabilities-read-speed]]
+=== Read speed ===
+
+Enterprises want to optimize the use of hardware to deliver the maximum business value 
+from available resources.
+Neo4j's approach to reading data provides the best possible usage of all available hardware resources.
+Neo4j does not block or lock any read operations; thus, there is no danger for deadlocks in read operations and no need for read transactions.
+With a threaded read access to the database, queries can be run simultaneously on as many processors as may be available.
+This provides very good scale-up scenarios with bigger servers.
+
+[[capabilities-write-speed]]
+=== Write speed ===
+
+Write speed is a consideration for many enterprise applications.
+However, there are two different scenarios:
+
+. sustained continuous operation and
+. bulk access (e.g., backup, initial or batch loading).
+
+To support the disparate requirements of these scenarios, Neo4j supports two modes of writing to the storage layer.
+
+In transactional, ACID-compliant normal operation, isolation level is maintained and 
+read operations can occur at the same time as the writing process.
+At every commit, the data is persisted to disk and can be recovered to a consistent state upon system failures.
+This requires disk write access and a real flushing of data.
+Thus, the write speed of Neo4j on a single server in continuous mode is limited by the I/O capacity of the hardware.
+Consequently, the use of fast SSDs is highly recommended for production scenarios.
+
+Neo4j has a Batch Inserter that operates directly on the store files.
+This mode does not provide transactional security, so it can only be used when there is a single write thread.
+Because data is written sequentially, and never flushed to the logical logs, huge performance boosts are achieved.
+The Batch Inserter is optimized for non-transactional bulk import of large amounts of data.  
+
+[[capabilities-data-size]]
+=== Data size ===
+
+In Neo4j, data size is mainly limited by the address space of the primary keys for Nodes, Relationships, and Properties.
+Currently, the address space is as follows:
+
+* 2ˆ35 (~ 34 billion) nodes 
+* 2ˆ35 (~ 34 billion) relationships 
+* 2ˆ36 (~ 68 billion) properties 
+
