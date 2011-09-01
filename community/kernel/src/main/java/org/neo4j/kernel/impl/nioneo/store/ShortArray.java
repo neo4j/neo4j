@@ -521,7 +521,7 @@ public enum ShortArray
     public int calculateRequiredBitsForArray( Object array )
     {
         int arrayLength = Array.getLength( array );
-        int highest = 0;
+        int highest = 1;
         for ( int i = 0; i < arrayLength; i++ )
         {
             Object value = Array.get( array, i );
