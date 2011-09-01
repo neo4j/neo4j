@@ -80,7 +80,7 @@
     }
   }
   var disqus_url = window.location;
-  if ( disqus_url.protocol !== "http:" && disqus_url.protocol !== "https:" )
+  if ( disqus_url.protocol === "http:" || disqus_url.protocol === "https:" )
   {
     var docsLocation = "http://docs.neo4j.org/chunked/snapshot/";
     var path = disqus_url.pathname;
