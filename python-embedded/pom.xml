@@ -27,7 +27,7 @@
     <version>23</version>
   </parent>
 
-  <groupId>org.neo4j</groupId>
+  <groupId>org.neo4j.drivers</groupId>
   <artifactId>neo4j-python-embedded</artifactId>
   <version>0.2-SNAPSHOT</version>
   <name>Embedded Neo4j Python bindings</name>
