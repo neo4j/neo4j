@@ -53,6 +53,7 @@ define(
           query : @dataModel.getQuery()
           viewType : @viewType
           dataType : @dataModel.getDataType() )
+        console.log(@el)
         @renderDataView()
 
       renderDataView : =>
