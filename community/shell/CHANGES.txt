@@ -1,3 +1,18 @@
+1.5.M01 (2011-08-31)
+--------------------
+o More documentation and integration with manual.
+
+1.4 (2011-07-08)
+----------------
+o Added "rmnode" command to delete nodes and also possibility to delete nodes/relationships
+  that are still connected (deleting relationships also).
+o Better handling of standing on deleted nodes.
+o Added sorting of relationships in ls.
+
+1.4.M05 (2011-06-27)
+--------------------
+o Added "start" command for Cypher queries.
+
 1.4.M03 (2011-05-26)
 -------------------
 o No changes.
