@@ -31,7 +31,8 @@ public class PropertyBlock
 
     public PropertyType getType()
     {
-        return PropertyType.getPropertyType( valueBlocks[0], false );
+        return valueBlocks == null ? null : PropertyType.getPropertyType(
+                valueBlocks[0], false );
     }
 
     public int getKeyIndexId()
@@ -129,14 +130,15 @@ public class PropertyBlock
     public int getSize()
     {
         // Currently each block is a multiple of 8 in size
-        return valueBlocks.length * 8;
+        return valueBlocks == null ? 0 : valueBlocks.length * 8;
     }
 
     @Override
     public String toString()
     {
         StringBuffer result = new StringBuffer("PropertyBlock[");
-        result.append( getKeyIndexId() ).append( ", " ).append( getType() );
+        result.append( valueBlocks == null ? -1 : getKeyIndexId() ).append(
+                ", " ).append( getType() );
         result.append( ", " ).append( valueBlocks ).append( "]" );
 
         return result.toString();
