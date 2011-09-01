@@ -256,7 +256,7 @@ public class PropertyStore extends AbstractStore implements Store
         Buffer buffer = window.getOffsettedBuffer( id );
         if ( record.inUse() )
         {
-            Bits bits = new Bits( RECORD_SIZE );
+            Bits bits = Bits.bits( RECORD_SIZE );
 
             short prevModifier = record.getPrevProp() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((record.getPrevProp() & 0xF00000000L) >> 32);
             short nextModifier = record.getNextProp() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((record.getNextProp() & 0xF00000000L) >> 32);
@@ -391,7 +391,7 @@ public class PropertyStore extends AbstractStore implements Store
     {
         Buffer buffer = window.getOffsettedBuffer( id );
 
-        Bits bits = new Bits( RECORD_SIZE );
+        Bits bits = Bits.bits( RECORD_SIZE );
         bits.read( buffer );
         bits.pullLeftLong( 8 * 7 );
 
@@ -571,8 +571,7 @@ public class PropertyStore extends AbstractStore implements Store
             long arrayBlockId = nextArrayBlockId();
             Bits bits = bits32WithKeyAndType( keyId, PropertyType.ARRAY ).or( arrayBlockId, 0xFFFFFFFFFL );
             block.setSingleBlock( bits.getLongs()[0] );
-            Collection<DynamicRecord> arrayRecords = allocateArrayRecords(
-                arrayBlockId, value );
+            Collection<DynamicRecord> arrayRecords = allocateArrayRecords( arrayBlockId, value );
             for ( DynamicRecord valueRecord : arrayRecords )
             {
                 valueRecord.setType( PropertyType.ARRAY.intValue() );

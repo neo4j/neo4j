@@ -301,8 +301,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 
                 // assert record.getId() != record.getPrevBlock();
                 buffer.put( (byte) inUseUnsignedByte )/*.putInt( (int)prevProp )*/.putInt(
-                        nrOfBytesInt )
-                    .putInt( (int)nextProp );
+                        nrOfBytesInt ).putInt( (int)nextProp );
                 if ( !record.isLight() )
                 {
                     if ( !record.isCharData() )

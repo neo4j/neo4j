@@ -693,7 +693,7 @@ public enum LongerShortString
      */
     public static String decode( PropertyBlock block )
     {
-        Bits bits = new Bits( copyOf( block.getValueBlocks(),
+        Bits bits = Bits.bitsFromLongs( copyOf( block.getValueBlocks(),
                 block.getValueBlocks().length ) );
         long firstLong = bits.getLongs()[0];
         if ( ( firstLong & 0xFFFFFF0FFFFFFFFFL ) == 0 ) return "";
@@ -733,7 +733,7 @@ public enum LongerShortString
 
     private static Bits newBits( int payloadSize )
     {
-        return new Bits( payloadSize );
+        return Bits.bits( payloadSize );
     }
 
     private static boolean encodeLatin1( int keyId, String string,

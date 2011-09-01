@@ -55,7 +55,7 @@ public class TestBits
     @Test
     public void asBytes() throws Exception
     {
-        int numberOfBytes = 16;
+        int numberOfBytes = 14;
         Bits bits = bits( numberOfBytes );
         for ( byte i = 0; i < numberOfBytes; i++ )
         {
@@ -63,10 +63,31 @@ public class TestBits
         }
         
         // They come out in the revers order of which they got pushed in, LIFO style
-        byte[] bytes = bits.asBytes();
-        for ( byte i = 0; i < 16; i++ )
+        byte[] bytes = bits.asLeftBytes();
+        for ( byte i = 0; i < numberOfBytes; i++ )
         {
-            assertEquals( 15-i, bytes[i] );
+            assertEquals( numberOfBytes-1-i, bytes[i] );
         }
+        
+        bytes = Bits.bitsFromBytesLeft( bytes ).asLeftBytes();
+        for ( byte i = 0; i < numberOfBytes; i++ )
+        {
+            assertEquals( numberOfBytes-1-i, bytes[i] );
+        }
+    }
+    
+    @Test
+    public void doubleAsBytes() throws Exception
+    {
+        double[] array1 = new double[] { 1.0, 2.0, 3.0, 4.0, 5.0 };
+        Bits bits = Bits.bits( array1.length*8 );
+        for ( double value : array1 )
+        {
+            bits.pushRight( Double.doubleToRawLongBits( value ) );
+        }
+        String first = bits.toString();
+        byte[] asBytes = bits.asLeftBytes();
+        String other = Bits.bitsFromBytesLeft( asBytes ).toString();
+        assertEquals( first, other );
     }
 }
