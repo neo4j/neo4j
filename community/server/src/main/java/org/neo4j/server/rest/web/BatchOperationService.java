@@ -83,14 +83,15 @@ public class BatchOperationService
                 performJob( results, uriInfo, (Map<String, Object>) rawOperation );
             }
 
-            tx.success();
-
-            return Response.ok()
+            Response res = Response.ok()
                     .entity( results.toJSON()
                             .getBytes( "UTF-8" ) )
                     .header( HttpHeaders.CONTENT_ENCODING, "UTF-8" )
                     .type( MediaType.APPLICATION_JSON )
                     .build();
+
+            tx.success();
+            return res;
         }
         catch ( Exception e )
         {
