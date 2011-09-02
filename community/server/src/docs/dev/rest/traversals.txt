@@ -32,9 +32,9 @@ return filter:: Decides whether the current position should be included in the r
  * +all+
  * +all_but_start_node+
 max_depth:: Is a short-hand way of specifying a prune evaluator which prunes after a certain depth.
- If not specified a max depth of 1 is used and if a +prune evaluator+ is specified instead of a +max depth+, no max depth limit is set.
+ If not specified a max depth of 1 is used and if a +prune_evaluator+ is specified instead of a +max_depth+, no max depth limit is set.
 
-The +position+ object in the body of the return filter and prune evaluator is a
+The +position+ object in the body of the +return_filter+ and +prune_evaluator+ is a
 +http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Path.html[Path]+
 object representing the path from the start node to the current traversal position.
 
