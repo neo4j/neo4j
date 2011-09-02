@@ -692,12 +692,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         long nextProp = startingAt;
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            PropertyRecord propRecord = getPropertyRecord( nextProp );
-            if ( propRecord == null )
-            {
-                propRecord = getPropertyStore().getRecord( nextProp );
-                addPropertyRecord( propRecord );
-            }
+            PropertyRecord propRecord = getPropertyRecord( nextProp, false );
             if ( !propRecord.isCreated() && propRecord.isChanged() )
             {
                 // Being here means a new value could be on disk. Re-read
@@ -915,12 +910,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             throw new IllegalStateException( "Property remove on relationship[" +
                 relId + "] illegal since it has been deleted." );
         }
-        PropertyRecord propRecord = getPropertyRecord( propertyId );
-        if ( propRecord == null )
-        {
-            propRecord = getPropertyStore().getRecord( propertyId );
-            addPropertyRecord( propRecord );
-        }
+        PropertyRecord propRecord = getPropertyRecord( propertyId, false );
         if ( !propRecord.inUse() )
         {
             throw new IllegalStateException( "Unable to delete property[" +
@@ -966,23 +956,13 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
         if ( prevProp != Record.NO_PREVIOUS_PROPERTY.intValue() )
         {
-            PropertyRecord prevPropRecord = getPropertyRecord( prevProp );
-            if ( prevPropRecord == null )
-            {
-                prevPropRecord = getPropertyStore().getLightRecord( prevProp );
-                addPropertyRecord( prevPropRecord );
-            }
+            PropertyRecord prevPropRecord = getPropertyRecord( prevProp, true );
             assert prevPropRecord.inUse();
             prevPropRecord.setNextProp( nextProp );
         }
         if ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            PropertyRecord nextPropRecord = getPropertyRecord( nextProp );
-            if ( nextPropRecord == null )
-            {
-                nextPropRecord = getPropertyStore().getLightRecord( nextProp );
-                addPropertyRecord( nextPropRecord );
-            }
+            PropertyRecord nextPropRecord = getPropertyRecord( nextProp, true );
             assert nextPropRecord.inUse();
             nextPropRecord.setPrevProp( prevProp );
         }
@@ -1079,12 +1059,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             throw new IllegalStateException( "Property remove on node[" +
                 nodeId + "] illegal since it has been deleted." );
         }
-        PropertyRecord propRecord = getPropertyRecord( propertyId );
-        if ( propRecord == null )
-        {
-            propRecord = getPropertyStore().getRecord( propertyId );
-            addPropertyRecord( propRecord );
-        }
+        PropertyRecord propRecord = getPropertyRecord( propertyId, false );
         if ( !propRecord.inUse() )
         {
             throw new IllegalStateException( "Unable to delete property[" +
@@ -1134,23 +1109,13 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
         if ( prevProp != Record.NO_PREVIOUS_PROPERTY.intValue() )
         {
-            PropertyRecord prevPropRecord = getPropertyRecord( prevProp );
-            if ( prevPropRecord == null )
-            {
-                prevPropRecord = getPropertyStore().getLightRecord( prevProp );
-                addPropertyRecord( prevPropRecord );
-            }
+            PropertyRecord prevPropRecord = getPropertyRecord( prevProp, true );
             assert prevPropRecord.inUse();
             prevPropRecord.setNextProp( nextProp );
         }
         if ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            PropertyRecord nextPropRecord = getPropertyRecord( nextProp );
-            if ( nextPropRecord == null )
-            {
-                nextPropRecord = getPropertyStore().getLightRecord( nextProp );
-                addPropertyRecord( nextPropRecord );
-            }
+            PropertyRecord nextPropRecord = getPropertyRecord( nextProp, true );
             assert nextPropRecord.inUse();
             nextPropRecord.setPrevProp( prevProp );
         }
@@ -1171,12 +1136,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             throw new IllegalStateException( "Property change on relationship[" +
                 relId + "] illegal since it has been deleted." );
         }
-        PropertyRecord propertyRecord = getPropertyRecord( propertyId );
-        if ( propertyRecord == null )
-        {
-            propertyRecord = getPropertyStore().getRecord( propertyId );
-            addPropertyRecord( propertyRecord );
-        }
+        PropertyRecord propertyRecord = getPropertyRecord( propertyId, false );
         if ( !propertyRecord.inUse() )
         {
             throw new IllegalStateException( "Unable to change property[" +
@@ -1219,7 +1179,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             }
         }
         getPropertyStore().encodeValue( block, propertyData.getIndex(), value );
-        addPropertyRecord( propertyRecord );
+        // addPropertyRecord( propertyRecord );
         return block.newPropertyData( propertyRecord, value );
     }
 
@@ -1238,12 +1198,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             throw new IllegalStateException( "Property change on node[" +
                 nodeId + "] illegal since it has been deleted." );
         }
-        PropertyRecord propertyRecord = getPropertyRecord( propertyId );
-        if ( propertyRecord == null )
-        {
-            propertyRecord = getPropertyStore().getRecord( propertyId );
-            addPropertyRecord( propertyRecord );
-        }
+        PropertyRecord propertyRecord = getPropertyRecord( propertyId, false );
         if ( !propertyRecord.inUse() )
         {
             throw new IllegalStateException( "Unable to change property[" +
@@ -1287,7 +1242,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
 
         getPropertyStore().encodeValue( block, propertyData.getIndex(), value );
-        addPropertyRecord( propertyRecord );
+        // addPropertyRecord( propertyRecord );
         return block.newPropertyData( propertyRecord, value );
     }
 
@@ -1325,12 +1280,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         long nextProp = relRecord.getNextProp();
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            PropertyRecord propRecord = getPropertyRecord( nextProp );
-            if ( propRecord == null )
-            {
-                propRecord = getPropertyStore().getRecord( nextProp );
-                addPropertyRecord( propRecord );
-            }
+            PropertyRecord propRecord = getPropertyRecord( nextProp, false );
             nextProp = propRecord.getNextProp();
             if ( PropertyType.getPayloadSize() - propRecord.size() >= newBlockSizeInBytes )
             {
@@ -1348,13 +1298,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             // Link it in if there already exist some
             if ( relRecord.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
             {
-                PropertyRecord prevProp = getPropertyRecord( relRecord.getNextProp() );
-                if ( prevProp == null )
-                {
-                    prevProp = getPropertyStore().getLightRecord(
-                            relRecord.getNextProp() );
-                    addPropertyRecord( prevProp );
-                }
+                PropertyRecord prevProp = getPropertyRecord(
+                        relRecord.getNextProp(), true );
                 assert prevProp.getPrevProp() == Record.NO_PREVIOUS_PROPERTY.intValue();
                 prevProp.setPrevProp( host.getId() );
                 host.setNextProp( prevProp.getId() );
@@ -1435,12 +1380,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         long nextProp = nodeRecord.getNextProp();
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            PropertyRecord propRecord = getPropertyRecord( nextProp );
-            if ( propRecord == null )
-            {
-                propRecord = getPropertyStore().getRecord( nextProp );
-                addPropertyRecord( propRecord );
-            }
+            PropertyRecord propRecord = getPropertyRecord( nextProp, false );
             nextProp = propRecord.getNextProp();
             if ( PropertyType.getPayloadSize() - propRecord.size() >= newBlockSizeInBytes )
             {
@@ -1456,13 +1396,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             host.setNodeId( nodeId );
             if ( nodeRecord.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
             {
-                PropertyRecord prevProp = getPropertyRecord( nodeRecord.getNextProp() );
-                if ( prevProp == null )
-                {
-                    prevProp = getPropertyStore().getLightRecord(
-                            nodeRecord.getNextProp() );
-                    addPropertyRecord( prevProp );
-                }
+                PropertyRecord prevProp = getPropertyRecord(
+                        nodeRecord.getNextProp(), true );
                 assert prevProp.getPrevProp() == Record.NO_PREVIOUS_PROPERTY.intValue();
                 prevProp.setPrevProp( host.getId() );
                 host.setNextProp( prevProp.getId() );
@@ -1686,9 +1621,22 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         propertyRecords.put( record.getId(), record );
     }
 
-    PropertyRecord getPropertyRecord( long propertyId )
+    PropertyRecord getPropertyRecord( long propertyId, boolean light )
     {
-        return propertyRecords.get( propertyId );
+        PropertyRecord result = propertyRecords.get( propertyId );
+        if ( result == null )
+        {
+            if ( light )
+            {
+                result = getPropertyStore().getLightRecord( propertyId );
+            }
+            else
+            {
+                result = getPropertyStore().getRecord( propertyId );
+            }
+            addPropertyRecord( result );
+        }
+        return result;
     }
 
     void addRelationshipTypeRecord( RelationshipTypeRecord record )
@@ -1895,21 +1843,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     {
         this.xaConnection = connection;
     }
-
-    /*
-        @Override
-        public PropertyData nodeAddProperty( long nodeId, PropertyIndex index, Object value )
-        {
-            return nodeAddProperty( nodeId, propertyId, index, value ).newPropertyData(
-                    value );
-        }
-    @Override
-    public PropertyData relAddProperty( long relId, PropertyIndex index, Object value )
-    {
-        long propertyId = neoStore.getPropertyStore().nextId();
-        return relAddProperty( relId, propertyId, index, value ).newPropertyData( value );
-    }
-     */
 
     @Override
     public RelationshipTypeData[] loadRelationshipTypes()
