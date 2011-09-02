@@ -539,7 +539,8 @@ abstract class Primitive
         Object value = property.getValue();
         if ( value == null )
         {
-            // This will only happen for "heavy" property value, such asstrings/arrays
+            // This will only happen for "heavy" property value, such as
+            // strings/arrays
             value = nodeManager.loadPropertyValue( property.getId() );
             property.setNewValue( value );
         }
@@ -557,11 +558,23 @@ abstract class Primitive
         }
 
         PropertyData[] newArray = properties;
-        int extraLength = (cowPropertyAddMap != null ? cowPropertyAddMap.size() : 0) -
-                (cowPropertyRemoveMap != null ? cowPropertyRemoveMap.size() : 0);
+
+        /*
+         * add map will definitely be added in the properties array - all properties
+         * added and later removed in the same tx are removed from there as well.
+         * The remove map will not necessarily be removed, since it may hold a prop that was
+         * added in this tx. So the difference in size is all the keys that are common
+         * between properties and remove map subtracted by the add map size.
+         */
+        int extraLength = 0;
+        if (cowPropertyAddMap != null)
+        {
+            extraLength += cowPropertyAddMap.size();
+        }
+
         if ( extraLength > 0 )
         {
-            newArray = new PropertyData[properties.length+extraLength];
+            newArray = new PropertyData[properties.length + extraLength];
             System.arraycopy( properties, 0, newArray, 0, properties.length );
         }
 
@@ -583,6 +596,7 @@ abstract class Primitive
                 }
             }
         }
+
         if ( cowPropertyAddMap != null )
         {
             for ( PropertyData addedProperty : cowPropertyAddMap.values() )

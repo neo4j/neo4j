@@ -20,21 +20,62 @@
 package org.neo4j.kernel.impl.core;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 public class TestProperties extends AbstractNeo4jTestCase
 {
+
+    @Test
+    public void addAndRemovePropertiesWithinOneTransaction() throws Exception
+    {
+        Node node = getGraphDb().createNode();
+
+        node.setProperty( "name", "oscar" );
+        node.setProperty( "favourite_numbers", new Long[] { 1l, 2l, 3l } );
+        node.setProperty( "favourite_colors", new String[] { "blue", "red" } );
+        node.removeProperty( "favourite_colors" );
+        newTransaction();
+
+        assertNotNull( node.getProperty( "favourite_numbers", null ) );
+    }
+
+    @Test
+    public void addAndRemovePropertiesWithinOneTransaction2() throws Exception
+    {
+        Node node = getGraphDb().createNode();
+        node.setProperty( "foo", "bar" );
+
+        newTransaction();
+        node.setProperty( "foo2", "bar" );
+        node.removeProperty( "foo" );
+
+        newTransaction();
+
+        try
+        {
+            node.getProperty( "foo" );
+            fail( "property should not exist" );
+        }
+        catch ( NotFoundException e )
+        {
+            // good
+        }
+    }
+
     @Test
     public void removeAndAddSameProperty() throws Exception
     {
         Node node = getGraphDb().createNode();
         node.setProperty( "foo", "bar" );
         newTransaction();
-        
+
         node.removeProperty( "foo" );
         node.setProperty( "foo", "bar" );
         newTransaction();
@@ -45,24 +86,24 @@ public class TestProperties extends AbstractNeo4jTestCase
         newTransaction();
         assertNull( node.getProperty( "foo", null ) );
     }
-    
+
     @Test
     public void removeSomeAndSetSome() throws Exception
     {
         Node node = getGraphDb().createNode();
         node.setProperty( "remove me", "trash" );
         newTransaction();
-        
+
         node.removeProperty( "remove me" );
         node.setProperty( "foo", "bar" );
         node.setProperty( "baz", 17 );
         newTransaction();
-        
+
         assertEquals( "bar", node.getProperty( "foo" ) );
         assertEquals( 17, node.getProperty( "baz" ) );
         assertNull( node.getProperty( "remove me", null ) );
     }
-    
+
     @Test
     public void removeOneOfThree() throws Exception
     {
@@ -71,12 +112,12 @@ public class TestProperties extends AbstractNeo4jTestCase
         node.setProperty( "2", 2 );
         node.setProperty( "3", 3 );
         newTransaction();
-        
+
         node.removeProperty( "2" );
         newTransaction();
         assertNull( node.getProperty( "2", null ) );
     }
-    
+
     @Test
     public void testLongPropertyValues() throws Exception
     {
@@ -92,7 +133,7 @@ public class TestProperties extends AbstractNeo4jTestCase
         setPropertyAndAssertIt( n, -134217728 );
         setPropertyAndAssertIt( n, -134217729 );
     }
-    
+
     @Test
     public void booleanRange() throws Exception
     {
@@ -100,7 +141,7 @@ public class TestProperties extends AbstractNeo4jTestCase
         setPropertyAndAssertIt( node, false );
         setPropertyAndAssertIt( node, true );
     }
-    
+
     @Test
     public void byteRange() throws Exception
     {
@@ -110,7 +151,7 @@ public class TestProperties extends AbstractNeo4jTestCase
             setPropertyAndAssertIt( node, i );
         }
     }
-    
+
     @Test
     public void charRange() throws Exception
     {
@@ -120,7 +161,7 @@ public class TestProperties extends AbstractNeo4jTestCase
             setPropertyAndAssertIt( node, i );
         }
     }
-    
+
     @Test
     public void shortRange() throws Exception
     {
@@ -130,7 +171,7 @@ public class TestProperties extends AbstractNeo4jTestCase
             setPropertyAndAssertIt( node, i );
         }
     }
-    
+
     @Test
     public void intRange() throws Exception
     {
@@ -141,7 +182,7 @@ public class TestProperties extends AbstractNeo4jTestCase
             setPropertyAndAssertIt( node, i );
         }
     }
-    
+
     @Test
     public void longRange() throws Exception
     {
@@ -152,7 +193,7 @@ public class TestProperties extends AbstractNeo4jTestCase
             setPropertyAndAssertIt( node, i );
         }
     }
-    
+
     @Test
     public void floatRange() throws Exception
     {
@@ -163,7 +204,7 @@ public class TestProperties extends AbstractNeo4jTestCase
             setPropertyAndAssertIt( node, i );
         }
     }
-    
+
     @Test
     public void doubleRange() throws Exception
     {
@@ -174,7 +215,7 @@ public class TestProperties extends AbstractNeo4jTestCase
             setPropertyAndAssertIt( node, i );
         }
     }
-    
+
     private void setPropertyAndAssertIt( Node node, Object value )
     {
         node.setProperty( "key", value );
