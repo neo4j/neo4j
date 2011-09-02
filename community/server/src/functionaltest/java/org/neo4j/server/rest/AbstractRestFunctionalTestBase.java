@@ -54,6 +54,8 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
     public static void startDatabase()
     {
         graphdb = new ImpermanentGraphDatabase( "target/db" );
+        server = new WrappingNeoServerBootstrapper( graphdb );
+        server.start();
 
     }
 
@@ -63,10 +65,7 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
                + gen.get().createGraphViz( graphdb(), name );
     }
 
-    @AfterClass
-    public static void stopDatabase()
-    {
-    }
+  
 
     @Override
     public GraphDatabaseService graphdb()
@@ -78,13 +77,11 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
     public void startServer()
     {
         graphdb.cleanContent();
-        server = new WrappingNeoServerBootstrapper( graphdb );
-        server.start();
         gen.get().setGraph( graphdb );
     }
 
-    @After
-    public void shutdownServer()
+    @AfterClass
+    public static void shutdownServer()
     {
         server.stop();
     }
