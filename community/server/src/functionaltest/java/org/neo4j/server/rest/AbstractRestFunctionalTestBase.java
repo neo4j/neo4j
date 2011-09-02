@@ -53,7 +53,11 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
         graphdb = new ImpermanentGraphDatabase( "target/db" );
 
     }
-
+    protected String startGraph(String name)
+    {
+        return "_Starting Graph:_\n\n" + gen.get().createGraphViz( graphdb(), name  );
+    }
+    
     @AfterClass
     public static void stopDatabase()
     {

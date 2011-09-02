@@ -53,12 +53,13 @@ public class RelationshipFunctionalTest extends
             throws DatabaseBlockedException
     {
         Relationship loves = data.get().get( "Romeo" ).getRelationships().iterator().next();
-        String response = gen.get().description( "_Starting Graph:_\n\n" + gen.get().createGraphViz( graphdb(), "Remove properties from a relationship1"  )).
+        String response = gen.get().description( startGraph("Remove properties from a relationship1")).
                 expectedStatus(
                 Status.NO_CONTENT.getStatusCode() ).delete(
                         getRelationshipUri( loves ) ).entity();
 
     }
+ 
     
     @Test
     @Graph( nodes = { @NODE( name = "Romeo", setNameProperty = true ),
@@ -69,7 +70,7 @@ public class RelationshipFunctionalTest extends
     {
         Relationship loves = data.get().get( "Romeo" ).getRelationships().iterator().next();
         String response = gen.get().
-                description( "_Starting Graph:_\n\n" + gen.get().createGraphViz( graphdb(), "Remove property from a relationship1" ) ).
+                description( startGraph( "Remove property from a relationship1" ) ).
                 expectedStatus(
                 Status.NO_CONTENT.getStatusCode() ).delete(
                 getPropertiesUri( loves ) + "/cost" ).entity();
@@ -118,7 +119,7 @@ public class RelationshipFunctionalTest extends
     public void removeRelationship()
     {
         Relationship loves = data.get().get( "Romeo" ).getRelationships().iterator().next();
-        String response = gen.get().description( "_Starting Graph:_\n\n" + gen.get().createGraphViz( graphdb(), "Delete relationship1" ) ).expectedStatus(
+        String response = gen.get().description( startGraph( "Delete relationship1" ) ).expectedStatus(
                 Status.NO_CONTENT.getStatusCode() ).delete(getRelationshipUri( loves ) ).entity();
 
     }
