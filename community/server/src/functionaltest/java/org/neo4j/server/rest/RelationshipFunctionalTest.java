@@ -42,9 +42,10 @@ public class RelationshipFunctionalTest extends
     }
     private String getRelationshipUri( Relationship rel )
     {
-        return "http://localhost:7474/db/data/relationship/" + rel.getId();
+        return getDataUri() + "relationship/" + rel.getId();
     }
 
+    
     @Test
     @Graph( nodes = { @NODE( name = "Romeo", setNameProperty = true ),
             @NODE( name = "Juliet", setNameProperty = true ) }, relationships = { @REL( start = "Romeo", end = "Juliet", type = "LOVES", properties = { @PROP( key = "cost", value = "high", type = GraphDescription.PropType.STRING ) } ) } )
@@ -52,8 +53,8 @@ public class RelationshipFunctionalTest extends
     public void shouldReturn204WhenPropertiesAreRemovedFromRelationship()
             throws DatabaseBlockedException
     {
-        Relationship loves = data.get().get( "Romeo" ).getRelationships().iterator().next();
-        String response = gen.get().description( startGraph("Remove properties from a relationship1")).
+        Relationship loves = getNode( "Romeo" ).getRelationships().iterator().next();
+        gen.get().description( startGraph("Remove properties from a relationship1")).
                 expectedStatus(
                 Status.NO_CONTENT.getStatusCode() ).delete(
                         getRelationshipUri( loves ) ).entity();
@@ -68,8 +69,8 @@ public class RelationshipFunctionalTest extends
     public void shouldReturn204WhenPropertyIsRemovedFromRelationship()
             throws DatabaseBlockedException
     {
-        Relationship loves = data.get().get( "Romeo" ).getRelationships().iterator().next();
-        String response = gen.get().
+        Relationship loves = getNode( "Romeo" ).getRelationships().iterator().next();
+        gen.get().
                 description( startGraph( "Remove property from a relationship1" ) ).
                 expectedStatus(
                 Status.NO_CONTENT.getStatusCode() ).delete(
@@ -84,8 +85,8 @@ public class RelationshipFunctionalTest extends
             @NODE( name = "Juliet", setNameProperty = true ) }, relationships = { @REL( start = "Romeo", end = "Juliet", type = "LOVES", properties = { @PROP( key = "cost", value = "high", type = GraphDescription.PropType.STRING ) } ) } )
     public void shouldReturn404WhenPropertyWhichDoesNotExistRemovedFromRelationship()
     {
-        Relationship loves = data.get().get( "Romeo" ).getRelationships().iterator().next();
-        String response = gen.get().expectedStatus(
+        Relationship loves = getNode( "Romeo" ).getRelationships().iterator().next();
+        gen.get().expectedStatus(
                 Status.NOT_FOUND.getStatusCode() ).delete(
                 getPropertiesUri( loves ) + "/non-existent" ).entity();
     }
@@ -96,7 +97,7 @@ public class RelationshipFunctionalTest extends
     @Title("Remove properties from a non-existing relationship")
     public void shouldReturn404WhenPropertiesRemovedFromARelationshipWhichDoesNotExist()
     {
-        String response = gen.get().expectedStatus(
+        gen.get().expectedStatus(
                 Status.NOT_FOUND.getStatusCode() ).delete("http://localhost:7474/db/data/relationship/1234/properties" ).entity();
 
     }
@@ -107,7 +108,7 @@ public class RelationshipFunctionalTest extends
     @Title("Remove property from a non-existing relationship")
     public void shouldReturn404WhenPropertyRemovedFromARelationshipWhichDoesNotExist()
     {
-        String response = gen.get().expectedStatus(
+        gen.get().expectedStatus(
                 Status.NOT_FOUND.getStatusCode() ).delete("http://localhost:7474/db/data/relationship/1234/properties/cost" ).entity();
 
     }
@@ -118,8 +119,8 @@ public class RelationshipFunctionalTest extends
     @Title("Delete relationship")
     public void removeRelationship()
     {
-        Relationship loves = data.get().get( "Romeo" ).getRelationships().iterator().next();
-        String response = gen.get().description( startGraph( "Delete relationship1" ) ).expectedStatus(
+        Relationship loves = getNode( "Romeo" ).getRelationships().iterator().next();
+        gen.get().description( startGraph( "Delete relationship1" ) ).expectedStatus(
                 Status.NO_CONTENT.getStatusCode() ).delete(getRelationshipUri( loves ) ).entity();
 
     }
