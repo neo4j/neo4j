@@ -63,15 +63,15 @@ class DynamicArrayStore extends AbstractDynamicStore
         bitsUsedInLastByte = bitsUsedInLastByte == 0 ? 8 : bitsUsedInLastByte;
         bytes += 3; // type + rest + requiredBits header. TODO no need to use full bytes
         Bits bits = Bits.bits( bytes );
+        bits.put( (byte)type.intValue() );
+        bits.put( (byte)bitsUsedInLastByte );
+        bits.put( (byte)requiredBits );
         int length = arrayLength;
-        for ( int i = length-1; i >= 0; i-- )
+        for ( int i = 0; i < length; i++ )
         {
-            type.pushRight( Array.get( array, i ), bits, requiredBits ); 
+            type.put( Array.get( array, i ), bits, requiredBits ); 
         }
-        bits.pushRight( (byte)requiredBits );
-        bits.pushRight( (byte)bitsUsedInLastByte );
-        bits.pushRight( (byte)type.intValue() );
-        return allocateRecords( startBlock, bits.asLeftBytes() );
+        return allocateRecords( startBlock, bits.asBytes() );
     }
 
     private Collection<DynamicRecord> allocateFromString( long startBlock,
@@ -140,16 +140,16 @@ class DynamicArrayStore extends AbstractDynamicStore
         else
         {
             ShortArray type = ShortArray.typeOf( typeId );
-            Bits bits = Bits.bitsFromBytesLeft( bArray );
-            bits.pullLeftByte(); // type, we already got it 
-            int bitsUsedInLastByte = bits.pullLeftByte();
-            int requiredBits = bits.pullLeftByte();
+            Bits bits = Bits.bitsFromBytes( bArray );
+            bits.getByte(); // type, we already got it 
+            int bitsUsedInLastByte = bits.getByte();
+            int requiredBits = bits.getByte();
             if ( requiredBits == 0 ) return type.createArray( 0 );
             int length = ((bArray.length-3)*8-(8-bitsUsedInLastByte))/requiredBits;
             Object result = type.createArray( length );
             for ( int i = 0; i < length; i++ )
             {
-                type.pullLeft( bits, result, i, requiredBits );
+                type.get( result, i, bits, requiredBits );
             }
             return result;
         }

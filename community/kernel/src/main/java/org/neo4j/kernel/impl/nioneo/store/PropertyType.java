@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import org.neo4j.kernel.impl.util.Bits;
+
 /**
  * Defines valid property types.
  */
@@ -29,7 +31,7 @@ public enum PropertyType
         @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            return getValue( block.getValueBlocks()[0] );
+            return getValue( block.getSingleValueLong() );
         }
 
         private Boolean getValue( long propBlock )
@@ -43,7 +45,7 @@ public enum PropertyType
         {
             // TODO : The masking off of bits should not happen here
             return PropertyDatas.forBoolean( block.getKeyIndexId(), propertyId,
-                    getValue( block.getValueBlocks()[0] ).booleanValue() );
+                    getValue( block.getSingleValueLong() ).booleanValue() );
         }
     },
     BYTE( 2, 1 )
@@ -51,7 +53,7 @@ public enum PropertyType
         @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            return Byte.valueOf( (byte) block.getValueBlocks()[0] );
+            return Byte.valueOf( (byte) block.getSingleValueByte() );
         }
 
         @Override
@@ -60,7 +62,7 @@ public enum PropertyType
         {
             // TODO : The masking off of bits should not happen here
             return PropertyDatas.forByte( block.getKeyIndexId(), propertyId,
-                    (byte) block.getValueBlocks()[0] );
+                    block.getSingleValueByte() );
         }
     },
     SHORT( 3, 1 )
@@ -68,7 +70,7 @@ public enum PropertyType
         @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            return Short.valueOf( (short) block.getValueBlocks()[0] );
+            return Short.valueOf( block.getSingleValueShort() );
         }
 
         @Override
@@ -77,7 +79,7 @@ public enum PropertyType
         {
             // TODO : The masking off of bits should not happen here
             return PropertyDatas.forShort( block.getKeyIndexId(), propertyId,
-                    (short) block.getValueBlocks()[0] );
+                    block.getSingleValueShort() );
         }
     },
     CHAR( 4, 1 )
@@ -85,7 +87,7 @@ public enum PropertyType
         @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            return Character.valueOf( (char) block.getValueBlocks()[0] );
+            return Character.valueOf( (char) block.getSingleValueShort() );
         }
 
         @Override
@@ -94,7 +96,7 @@ public enum PropertyType
         {
             // TODO : The masking off of bits should not happen here
             return PropertyDatas.forChar( block.getKeyIndexId(), propertyId,
-                    (char) block.getValueBlocks()[0] );
+                    (char) block.getSingleValueShort() );
         }
     },
     INT( 5, 1 )
@@ -102,7 +104,7 @@ public enum PropertyType
         @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            return Integer.valueOf( (int) block.getValueBlocks()[0] );
+            return Integer.valueOf( block.getSingleValueInt() );
         }
 
         @Override
@@ -111,7 +113,7 @@ public enum PropertyType
         {
             // TODO : The masking off of bits should not happen here
             return PropertyDatas.forInt( block.getKeyIndexId(), propertyId,
-                    (int) block.getValueBlocks()[0] );
+                    block.getSingleValueInt() );
         }
     },
     LONG( 6, 2 )
@@ -119,7 +121,7 @@ public enum PropertyType
         @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            return Long.valueOf( block.getValueBlocks()[0] );
+            return Long.valueOf( block.getValueBlocks()[1] );
         }
 
         @Override
@@ -135,10 +137,10 @@ public enum PropertyType
         @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            return Float.valueOf( getValue( block.getValueBlocks()[0] ) );
+            return Float.valueOf( getValue( block.getSingleValueInt() ) );
         }
 
-        private float getValue( long propBlock )
+        private float getValue( int propBlock )
         {
             return Float.intBitsToFloat( (int) propBlock );
         }
@@ -148,7 +150,7 @@ public enum PropertyType
                 long propertyId, Object extractedValue )
         {
             return PropertyDatas.forFloat( block.getKeyIndexId(), propertyId,
-                    getValue( block.getValueBlocks()[0] ) );
+                    getValue( block.getSingleValueInt() ) );
         }
     },
     DOUBLE( 8, 2 )
@@ -156,7 +158,7 @@ public enum PropertyType
         @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            return Double.valueOf( Double.longBitsToDouble( block.getValueBlocks()[1] ) );
+            return Double.valueOf( getValue( block.getValueBlocks()[1] ) );
         }
 
         private double getValue( long propBlock )
@@ -286,8 +288,8 @@ public enum PropertyType
 
     public static PropertyType getPropertyType( long propBlock, boolean nullOnIllegal )
     {
-        // [kkkk,kkkk][kkkk,kkkk][kkkk,kkkk][tttt,    ][][][][]
-        int type = (int)((propBlock&0x000000F000000000L)>>36);
+        // [][][][][    ,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
+        int type = (int)((propBlock&0x000000000F000000L)>>24);
         switch ( type )
         {
         case 1:
@@ -318,6 +320,11 @@ public enum PropertyType
             throw new InvalidRecordException( "Unknown property type for type "
                                               + type );
         }
+    }
+    
+    public static void main( String[] args )
+    {
+        System.out.println( Bits.bits( 8 ).put( (long)-78 ) );
     }
 
     // TODO In wait of a better place

@@ -513,7 +513,9 @@ public enum LongerShortString
         if ( stringLength > NUMERICAL.maxLength( payloadSize ) || stringLength > 63 ) return false; // Not handled by any encoding
         if ( string.equals( "" ) )
         {
-            applyOnRecord( keyId, target, 0, 0, new long[1] );
+            Bits bits = Bits.bits( 8 );
+            writeHeader( bits, 0, 0, 0 );
+            target.setValueBlocks( bits.getLongs() );
             return true;
         }
         // Keep track of the possible encodings that can be used for the string
@@ -673,16 +675,21 @@ public enum LongerShortString
         return false;
     }
 
-    private static void applyOnRecord( int keyId, PropertyBlock target,
-            int encoding, int stringLength, long[] data )
+//    private static void applyOnRecord( int keyId, PropertyBlock target,
+//            int encoding, int stringLength, long[] data )
+//    {
+//        // TODO Make a utility OR:ing in the key/type in the propblock
+//        data[0] |= ((long)keyId << 40);
+//        data[0] |= ( (long) PropertyType.SHORT_STRING.intValue() << 36 );
+//        data[0] |= ( (long) encoding << 32 );
+//        data[0] |= ( (long) stringLength << 26 );
+//
+//        target.setValueBlocks( data );
+//    }
+    
+    private static void writeHeader( Bits bits, int keyId, int encoding, int stringLength )
     {
-        // TODO Make a utility OR:ing in the key/type in the propblock
-        data[0] |= ((long)keyId << 40);
-        data[0] |= ( (long) PropertyType.SHORT_STRING.intValue() << 36 );
-        data[0] |= ( (long) encoding << 32 );
-        data[0] |= ( (long) stringLength << 26 );
-
-        target.setValueBlocks( data );
+        bits.put( keyId, 24 ).put( PropertyType.SHORT_STRING.intValue(), 4 ).put( encoding, 5 ).put( stringLength, 6 );
     }
 
     /**
@@ -700,8 +707,10 @@ public enum LongerShortString
         /*
          *  [kkkk,kkkk][kkkk,kkkk][kkkk,kkkk][tttt, eeee][llll,ll  ][    ,    ][    ,    ][    ,    ]
          */
-        int encoding = (int) ( ( firstLong & 0xF00000000L ) >>> 32 );
-        int stringLength = (int) ( ( firstLong & 0xFC000000L ) >>> 26 );
+        bits.getInt( 24 ); // Get rid of the key
+        bits.getByte( 4 ); // Get rid of the type
+        int encoding = bits.getByte( 5 ); //(int) ( ( firstLong & 0xF00000000L ) >>> 32 );
+        int stringLength = bits.getByte( 6 ); //(int) ( ( firstLong & 0xFC000000L ) >>> 26 );
 
         LongerShortString table;
         switch ( encoding )
@@ -722,11 +731,10 @@ public enum LongerShortString
         char[] result = new char[stringLength];
         // encode shifts in the bytes with the first char at the MSB, therefore
         // we must "unshift" in the reverse order
-        for ( int i = result.length - 1; i >= 0; i-- )
+        for ( int i = 0; i < result.length; i++ )
         {
-            byte codePoint = bits.getByte( (byte)table.mask );
+            byte codePoint = bits.getByte( table.step );
             result[i] = table.decTranslate( codePoint );
-            bits.shiftRight( table.step );
         }
         return new String( result );
     }
@@ -740,14 +748,14 @@ public enum LongerShortString
             PropertyBlock target, int payloadSize )
     { // see doEncode
         Bits bits = newBits( payloadSize );
+        writeHeader( bits, keyId, 10, string.length() );
         for ( int i = 0; i < string.length(); i++ )
         {
-            if ( i > 0 ) bits.shiftLeft( 8 );
             char c = string.charAt( i );
             if ( c < 0 || c >= 256 ) return false;
-            bits.or( c, 0xFF );
+            bits.put( c, 8 ); // Just the lower byte
         }
-        applyOnRecord( keyId, target, 10, string.length(), bits.getLongs() );
+        target.setValueBlocks( bits.getLongs() );
         return true;
     }
 
@@ -759,12 +767,12 @@ public enum LongerShortString
             byte[] bytes = string.getBytes( "UTF-8" );
             if ( bytes.length > payloadSize-3-2 ) return false;
             Bits bits = newBits( payloadSize );
-            for ( int i = 0; i < bytes.length; i++ )
+            writeHeader( bits, keyId, 0, bytes.length ); // In this case it isn't the string length, but the number of bytes
+            for ( byte value : bytes )
             {
-                if ( i > 0 ) bits.shiftLeft( 8 );
-                bits.or( bytes[i] );
+                bits.put( value );
             }
-            applyOnRecord( keyId, target, 0, bytes.length, bits.getLongs() );
+            target.setValueBlocks( bits.getLongs() );
             return true;
         }
         catch ( UnsupportedEncodingException e )
@@ -778,23 +786,22 @@ public enum LongerShortString
     {
         if ( data.length > maxLength( payloadSize ) ) return false;
         Bits bits = newBits( payloadSize );
+        writeHeader( bits, keyId, encodingHeader, data.length );
         for ( int i = 0; i < data.length; i++ )
         {
-            if ( i != 0 ) bits.shiftLeft( step );
             int encodedChar = encTranslate( data[i] );
-            bits.or( encodedChar, 0xFF );
+            bits.put( encodedChar, step );
         }
-        applyOnRecord( keyId, target, encodingHeader, data.length, bits.getLongs() );
+        target.setValueBlocks( bits.getLongs() );
         return true;
     }
 
     private static String decodeLatin1( Bits bits, int stringLength )
     { // see decode
         char[] result = new char[stringLength];
-        for ( int i = result.length - 1; i >= 0; i-- )
+        for ( int i = 0; i < result.length; i++ )
         {
-            result[i] = (char) bits.getInt( 0xFF );
-            bits.shiftRight( 8 );
+            result[i] = (char) bits.getShort( 8 );
         }
         return new String( result );
     }
@@ -802,10 +809,9 @@ public enum LongerShortString
     private static String decodeUTF8( Bits bits, int stringLength )
     {
         byte[] result = new byte[stringLength];
-        for ( int i = stringLength-1; i >= 0; i-- )
+        for ( int i = 0; i < stringLength; i++ )
         {
-            result[i] = bits.getByte( (byte)0xFF );
-            bits.shiftRight( 8 );
+            result[i] = bits.getByte();
         }
         try
         {

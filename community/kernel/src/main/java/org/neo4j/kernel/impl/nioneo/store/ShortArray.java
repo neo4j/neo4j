@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static java.util.Arrays.copyOf;
-import static org.neo4j.kernel.impl.util.Bits.rightOverflowMask;
-
 import java.lang.reflect.Array;
+import java.util.Arrays;
 
 import org.neo4j.kernel.impl.util.Bits;
 
@@ -37,15 +35,9 @@ public enum ShortArray
         }
 
         @Override
-        void push( Object value, Bits bytes, long mask )
+        void put( Object value, Bits bytes, int requiredBits )
         {
-            bytes.or( ((Boolean)value).booleanValue() ? (byte)1 : (byte)0, mask );
-        }
-
-        @Override
-        void pushRight( Object value, Bits bits, int steps )
-        {
-            bits.pushRight( ((Boolean)value).booleanValue() ? (byte)1 : (byte)0, 1 );
+            bytes.put( ((Boolean)value).booleanValue() ? 1 : 0, 1 );
         }
         
         @Override
@@ -55,15 +47,9 @@ public enum ShortArray
         }
 
         @Override
-        void pull( Bits bits, Object array, int position, long mask )
+        void get( Object array, int position, Bits bits, int requiredBits )
         {
-            Array.setBoolean( array, position, bits.getByte( (byte) mask ) != 0 );
-        }
-        
-        @Override
-        void pullLeft( Bits bits, Object array, int position, int steps )
-        {
-            Array.setBoolean( array, position, bits.pullLeftByte( 1 ) != 0 );
+            Array.setBoolean( array, position, bits.getByte( requiredBits ) != 0 );
         }
     },
     BYTE( PropertyType.BYTE, 8, Byte.class )
@@ -85,15 +71,9 @@ public enum ShortArray
         }
 
         @Override
-        void push( Object value, Bits bytes, long mask )
+        void put( Object value, Bits bytes, int requiredBits )
         {
-            bytes.or( ((Byte)value).byteValue(), mask );
-        }
-
-        @Override
-        void pushRight( Object value, Bits bits, int steps )
-        {
-            bits.pushRight( ((Byte)value).byteValue(), steps );
+            bytes.put( ((Byte)value).byteValue(), requiredBits );
         }
         
         @Override
@@ -103,16 +83,9 @@ public enum ShortArray
         }
 
         @Override
-        void pull( Bits bits, Object array, int position, long mask )
+        void get( Object array, int position, Bits bits, int requiredBits )
         {
-            byte value = bits.getByte( (byte) mask );
-            Array.setByte( array, position, value );
-        }
-        
-        @Override
-        void pullLeft( Bits bits, Object array, int position, int steps )
-        {
-            Array.setByte( array, position, bits.pullLeftByte( steps ) );
+            Array.setByte( array, position, bits.getByte( requiredBits ) );
         }
     },
     SHORT( PropertyType.SHORT, 16, Short.class )
@@ -134,15 +107,9 @@ public enum ShortArray
         }
 
         @Override
-        void push( Object value, Bits bytes, long mask )
+        void put( Object value, Bits bytes, int requiredBits )
         {
-            bytes.or( ((Short)value).shortValue(), mask );
-        }
-
-        @Override
-        void pushRight( Object value, Bits bits, int steps )
-        {
-            bits.pushRight( ((Short)value).shortValue(), steps );
+            bytes.put( ((Short)value).shortValue(), requiredBits );
         }
         
         @Override
@@ -152,16 +119,9 @@ public enum ShortArray
         }
 
         @Override
-        void pull( Bits bits, Object array, int position, long mask )
+        void get( Object array, int position, Bits bits, int requiredBits )
         {
-            short value = bits.getShort( (short) mask );
-            Array.setShort( array, position, value );
-        }
-
-        @Override
-        void pullLeft( Bits bits, Object array, int position, int steps )
-        {
-            Array.setShort( array, position, bits.pullLeftShort( steps ) );
+            Array.setShort( array, position, bits.getShort( requiredBits ) );
         }
     },
     CHAR( PropertyType.CHAR, 16, Character.class )
@@ -183,15 +143,9 @@ public enum ShortArray
         }
 
         @Override
-        void push( Object value, Bits bytes, long mask )
+        void put( Object value, Bits bytes, int requiredBits )
         {
-            bytes.or( ((Character)value).charValue(), mask );
-        }
-
-        @Override
-        void pushRight( Object value, Bits bits, int steps )
-        {
-            bits.pushRight( ((Character)value).charValue(), steps );
+            bytes.put( ((Character)value).charValue(), requiredBits );
         }
         
         @Override
@@ -201,17 +155,9 @@ public enum ShortArray
         }
 
         @Override
-        void pull( Bits bits, Object array, int position, long mask )
+        void get( Object array, int position, Bits bits, int requiredBits )
         {
-            int value = bits.getInt( (int) mask );
-            Array.setChar( array, position, (char)value );
-        }
-
-
-        @Override
-        void pullLeft( Bits bits, Object array, int position, int steps )
-        {
-            Array.setChar( array, position, (char)bits.pullLeftShort( steps ) );
+            Array.setChar( array, position, (char)bits.getShort( requiredBits ) );
         }
     },
     INT( PropertyType.INT, 32, Integer.class )
@@ -233,15 +179,9 @@ public enum ShortArray
         }
 
         @Override
-        void push( Object value, Bits bytes, long mask )
+        void put( Object value, Bits bytes, int requiredBits )
         {
-            bytes.or( ((Integer)value).intValue(), mask );
-        }
-
-        @Override
-        void pushRight( Object value, Bits bits, int steps )
-        {
-            bits.pushRight( ((Integer)value).intValue(), steps );
+            bytes.put( ((Integer)value).intValue(), requiredBits );
         }
         
         @Override
@@ -251,16 +191,9 @@ public enum ShortArray
         }
 
         @Override
-        void pull( Bits bits, Object array, int position, long mask )
+        void get( Object array, int position, Bits bits, int requiredBits )
         {
-            int value = bits.getInt( (int) mask );
-            Array.setInt( array, position, value );
-        }
-
-        @Override
-        void pullLeft( Bits bits, Object array, int position, int steps )
-        {
-            Array.setInt( array, position, bits.pullLeftInt( steps ) );
+            Array.setInt( array, position, bits.getInt( requiredBits ) );
         }
     },
     LONG( PropertyType.LONG, 64, Long.class )
@@ -282,15 +215,9 @@ public enum ShortArray
         }
 
         @Override
-        void push( Object value, Bits bytes, long mask )
+        void put( Object value, Bits bytes, int requiredBits )
         {
-            bytes.or( ((Long)value).longValue(), mask );
-        }
-
-        @Override
-        void pushRight( Object value, Bits bits, int steps )
-        {
-            bits.pushRight( ((Long)value).longValue(), steps );
+            bytes.put( ((Long)value).longValue(), requiredBits );
         }
         
         @Override
@@ -300,16 +227,9 @@ public enum ShortArray
         }
 
         @Override
-        void pull( Bits bits, Object array, int position, long mask )
+        void get( Object array, int position, Bits bits, int requiredBits )
         {
-            long value = bits.getLong( mask );
-            Array.setLong( array, position, value );
-        }
-
-        @Override
-        void pullLeft( Bits bits, Object array, int position, int steps )
-        {
-            Array.setLong( array, position, bits.pullLeftLong( steps ) );
+            Array.setLong( array, position, bits.getLong( requiredBits ) );
         }
     },
     FLOAT( PropertyType.FLOAT, 32, Float.class )
@@ -331,17 +251,11 @@ public enum ShortArray
         }
 
         @Override
-        void push( Object value, Bits bytes, long mask )
+        void put( Object value, Bits bytes, int requiredBits )
         {
-            bytes.or( Float.floatToIntBits( ((Float)value).floatValue() ), mask );
+            bytes.put( Float.floatToIntBits( ((Float)value).floatValue() ), requiredBits );
         }
 
-        @Override
-        void pushRight( Object value, Bits bits, int steps )
-        {
-            bits.pushRight( Float.floatToIntBits( ((Float)value).floatValue() ), steps );
-        }
-        
         @Override
         Object createArray( int ofLength )
         {
@@ -349,16 +263,10 @@ public enum ShortArray
         }
 
         @Override
-        void pull( Bits bits, Object array, int position, long mask )
+        void get( Object array, int position, Bits bits, int requiredBits )
         {
-            int value = bits.getInt( (int) mask );
+            int value = bits.getInt( requiredBits );
             Array.setFloat( array, position, Float.intBitsToFloat( value ) );
-        }
-
-        @Override
-        void pullLeft( Bits bits, Object array, int position, int steps )
-        {
-            Array.setFloat( array, position, Float.intBitsToFloat( bits.pullLeftInt( steps ) ) );
         }
     },
     DOUBLE( PropertyType.DOUBLE, 64, Double.class )
@@ -380,15 +288,9 @@ public enum ShortArray
         }
 
         @Override
-        void push( Object value, Bits bytes, long mask )
+        void put( Object value, Bits bytes, int requiredBits )
         {
-            bytes.or( Double.doubleToLongBits( ((Double)value).doubleValue() ), mask );
-        }
-
-        @Override
-        void pushRight( Object value, Bits bits, int steps )
-        {
-            bits.pushRight( Double.doubleToLongBits( ((Double)value).doubleValue() ), steps );
+            bytes.put( Double.doubleToLongBits( ((Double)value).doubleValue() ), requiredBits );
         }
         
         @Override
@@ -398,16 +300,10 @@ public enum ShortArray
         }
 
         @Override
-        void pull( Bits bits, Object array, int position, long mask )
+        void get( Object array, int position, Bits bits, int requiredBits )
         {
-            long value = bits.getLong( mask );
+            long value = bits.getLong( requiredBits );
             Array.setDouble( array, position, Double.longBitsToDouble( value ) );
-        }
-        
-        @Override
-        void pullLeft( Bits bits, Object array, int position, int steps )
-        {
-            Array.setDouble( array, position, Double.longBitsToDouble( bits.pullLeftLong( steps ) ) );
         }
     };
 
@@ -430,15 +326,11 @@ public enum ShortArray
 
     abstract int getRequiredBits( Object value );
 
-    abstract void push( Object value, Bits bits, long mask );
+    abstract void put( Object value, Bits bits, int requiredBits );
     
-    abstract void pushRight( Object value, Bits bits, int steps );
+    abstract void get( Object array, int position, Bits bits, int requiredBits );
     
     abstract Object createArray( int ofLength );
-
-    abstract void pull( Bits bits, Object array, int position, long mask );
-    
-    abstract void pullLeft( Bits bits, Object array, int position, int steps );
     
     boolean matches( Class<?> cls )
     {
@@ -463,50 +355,35 @@ public enum ShortArray
             return false;
         }
         Bits result = Bits.bits( payloadSizeInBytes );
-        long mask = Bits.rightOverflowMask( requiredBits );
+        // [kkkk,kkkk][kkkk,kkkk][kkkk,kkkk][tttt,yyyy][llll,llbb][bbbb...
+        result.put( keyId, 24 );
+        result.put( PropertyType.SHORT_ARRAY.intValue(), 4 );
+        result.put( type.type.intValue(), 4 );
+        result.put( arrayLength, 6 );
+        result.put( requiredBits, 6 );
+        
         for ( int i = 0; i < arrayLength; i++ )
         {
-            if ( i > 0 )
-            {
-                result.shiftLeft( requiredBits );
-            }
-            type.push( Array.get( array, i ), result, mask );
+            type.put( Array.get( array, i ), result, requiredBits );
         }
-        long[] longs = result.getLongs();
-        // [kkkk,kkkk][kkkk,kkkk][kkkk,kkkk][tttt,yyyy][llll,llbb][bbbb...
-        Bits bits = Bits.bits( 8 );
-        long header = bits
-                .pushRight( requiredBits, 6 )
-                .pushRight( arrayLength, 6 )
-                .pushRight( type.type.intValue(), 4 )
-                .pushRight( PropertyType.SHORT_ARRAY.intValue(), 4 )
-                .pushRight( keyId, 24 )
-                .getLongs()[0];
-        longs[0] |= header;
-        target.setValueBlocks( longs );
+        target.setValueBlocks( result.getLongs() );
         return true;
     }
 
     public static Object decode( PropertyBlock block )
     {
-        long firstLong = block.getSingleValueBlock();
-        Bits headerBits = Bits.bitsFromLongs( new long[] { firstLong } );
-        // [kkkk,kkkk][kkkk,kkkk][kkkk,kkkk][tttt,yyyy][llll,llbb][bbbb
-        headerBits.pullLeftInt( 24 ); // Get rid of key
-        headerBits.pullLeftByte( 4 ); // Get rid of short array type
-        int typeId = headerBits.pullLeftByte( 4 );
-        int arrayLength = headerBits.pullLeftByte( 6 );
-        int requiredBits = headerBits.pullLeftByte( 6 );
+        Bits bits = Bits.bitsFromLongs( Arrays.copyOf( block.getValueBlocks(), block.getValueBlocks().length ) );
+        // bbbb][bbll,llll][yyyy,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
+        bits.getInt( 24 ); // Get rid of key
+        bits.getByte( 4 ); // Get rid of short array type
+        int typeId = bits.getByte( 4 );
+        int arrayLength = bits.getByte( 6 );
+        int requiredBits = bits.getByte( 6 );
         ShortArray type = typeOf( (byte)typeId );
         Object array = type.createArray( arrayLength );
-        
-        long[] longs = block.getValueBlocks();
-        Bits bits = Bits.bitsFromLongs( copyOf( longs, longs.length ) );
-        long mask = rightOverflowMask( requiredBits );
-        for ( int i = arrayLength-1; i >= 0; i-- )
+        for ( int i = 0; i < arrayLength; i++ )
         {
-            type.pull( bits, array, i, mask );
-            bits.shiftRight( requiredBits );
+            type.get( array, i, bits, requiredBits );
         }
         return array;
     }

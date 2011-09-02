@@ -37,8 +37,8 @@ public class PropertyBlock
 
     public int getKeyIndexId()
     {
-        // [kkkk,kkkk][kkkk,kkkk][kkkk,kkk ],[][][][][]
-        return (int) ( valueBlocks[0] >> 40 );
+        // [][][][][][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
+        return (int) (valueBlocks[0]&0xFFFFFF);
     }
 
     public void setSingleBlock( long value )
@@ -61,7 +61,27 @@ public class PropertyBlock
     {
         return valueBlocks[0];
     }
+    
+    public long getSingleValueLong()
+    {
+        return (valueBlocks[0] & 0xFFFFFFFFF0000000L) >>> 28;
+    }
 
+    public int getSingleValueInt()
+    {
+        return (int)((valueBlocks[0] & 0x0FFFFFFFF0000000L) >>> 28);
+    }
+    
+    public short getSingleValueShort()
+    {
+        return (short)((valueBlocks[0] & 0x00000FFFF0000000L) >>> 28);
+    }
+
+    public byte getSingleValueByte()
+    {
+        return (byte)((valueBlocks[0] & 0x0000000FF0000000L) >>> 28);
+    }
+    
     public long[] getValueBlocks()
     {
         return valueBlocks;

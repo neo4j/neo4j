@@ -27,52 +27,19 @@ import org.junit.Test;
 public class TestBits
 {
     @Test
-    public void pushLeft() throws Exception
-    {
-        Bits bits = bits( 16 );
-        bits.pushLeft( (byte) 3, 3 );
-        bits.pushLeft( (short) 100, 7 );
-        bits.pushLeft( (int) -1 );
-        
-        assertEquals( -1, bits.pullRightInt() );
-        assertEquals( (short) 100, bits.pullRightShort( 7 ) );
-        assertEquals( (byte) 3, bits.pullRightByte( 3 ) );
-    }
-    
-    @Test
-    public void pushRight()
-    {
-        Bits bits = bits( 16 );
-        bits.pushRight( (byte) 3, 3 );
-        bits.pushRight( (short) 100, 7 );
-        bits.pushRight( (int) -1 );
-        
-        assertEquals( -1, bits.pullLeftInt() );
-        assertEquals( (short) 100, bits.pullLeftShort( 7 ) );
-        assertEquals( (byte) 3, bits.pullLeftByte( 3 ) );
-    }
-    
-    @Test
     public void asBytes() throws Exception
     {
         int numberOfBytes = 14;
         Bits bits = bits( numberOfBytes );
         for ( byte i = 0; i < numberOfBytes; i++ )
         {
-            bits.pushRight( i );
+            bits.put( i );
         }
         
-        // They come out in the revers order of which they got pushed in, LIFO style
-        byte[] bytes = bits.asLeftBytes();
+        byte[] bytes = bits.asBytes();
         for ( byte i = 0; i < numberOfBytes; i++ )
         {
-            assertEquals( numberOfBytes-1-i, bytes[i] );
-        }
-        
-        bytes = Bits.bitsFromBytesLeft( bytes ).asLeftBytes();
-        for ( byte i = 0; i < numberOfBytes; i++ )
-        {
-            assertEquals( numberOfBytes-1-i, bytes[i] );
+            assertEquals( i, bytes[i] );
         }
     }
     
@@ -83,11 +50,35 @@ public class TestBits
         Bits bits = Bits.bits( array1.length*8 );
         for ( double value : array1 )
         {
-            bits.pushRight( Double.doubleToRawLongBits( value ) );
+            bits.put( Double.doubleToRawLongBits( value ) );
         }
         String first = bits.toString();
-        byte[] asBytes = bits.asLeftBytes();
-        String other = Bits.bitsFromBytesLeft( asBytes ).toString();
+        byte[] asBytes = bits.asBytes();
+        String other = Bits.bitsFromBytes( asBytes ).toString();
         assertEquals( first, other );
+    }
+    
+    @Test
+    public void writeAndRead() throws Exception
+    {
+        for ( int b = 5; b <= 8; b++ )
+        {
+            Bits bits = Bits.bits( 16 );
+            for ( byte value = 0; value < 16; value++ )
+            {
+                bits.put( value, b );
+            }
+            for ( byte expected = 0; bits.available(); expected++ )
+            {
+                assertEquals( expected, bits.getByte( b ) );
+            }
+        }
+        
+        for ( byte value = Byte.MIN_VALUE; value < Byte.MAX_VALUE; value++ )
+        {
+            Bits bits = Bits.bits( 8 );
+            bits.put( value );
+            assertEquals( value, bits.getByte() );
+        }
     }
 }

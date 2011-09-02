@@ -29,9 +29,20 @@ import org.neo4j.kernel.impl.nioneo.store.Buffer;
  */
 public class Bits
 {
-    // item[0] is most significant, last is least significant
+    // 3: ...
+    // 2:   [   23    ][   22    ][   21    ][   20    ][   19    ][   18    ][   17    ][   16    ] <--\
+    //                                                                                                   |
+    //    /---------------------------------------------------------------------------------------------/
+    //   |
+    // 1: \-[   15    ][   14    ][   13    ][   12    ][   11    ][   10    ][    9    ][    8    ] <--\
+    //                                                                                                   |
+    //    /---------------------------------------------------------------------------------------------/
+    //   |
+    // 0: \-[    7    ][    6    ][    5    ][    4    ][    3    ][    2    ][    1    ][    0    ] <---- START
     private final long[] longs;
     private final int numberOfBytes;
+    private int writePosition;
+    private int readPosition;
     
     public static Bits bits( int numberOfBytes )
     {
@@ -44,22 +55,12 @@ public class Bits
         return new Bits( longs, longs.length*8 );
     }
     
-    public static Bits bitsFromBytesLeft( byte[] bytes )
-    {
-        Bits bits = bits( bytes.length );
-        for ( int i = bytes.length-1; i >= 0; i-- )
-        {
-            bits.pushRight( bytes[i] );
-        }
-        return bits;
-    }
-    
-    public static Bits bitsFromBytesRight( byte[] bytes )
+    public static Bits bitsFromBytes( byte[] bytes )
     {
         Bits bits = bits( bytes.length );
         for ( byte value : bytes )
         {
-            bits.pushLeft( value );
+            bits.put( value );
         }
         return bits;
     }
@@ -105,244 +106,6 @@ public class Bits
     }
     
     /**
-     * Shifts all bits left {@code steps}.
-     * @param steps the number of steps to shift.
-     * @return this instance.
-     */
-    public Bits shiftLeft( int steps )
-    {
-        while ( steps >= 64 )
-        {
-            for ( int i = 0; i < longs.length-1; i++ )
-            {
-                longs[i] = longs[i+1];
-                longs[i+1] = 0;
-                steps -= 64;
-            }
-        }
-        
-        long overspillMask = leftOverflowMask( steps );
-        long overspill = 0;
-        for ( int i = longs.length-1; i >= 0; i-- )
-        {
-            long nextOverspill = (longs[i] & overspillMask) >>> (64-steps);
-            longs[i] = (longs[i] << steps) | overspill;
-            overspill = nextOverspill;
-        }
-        return this;
-    }
-    
-    /**
-     * Shifts all bits right {@code steps}.
-     * @param steps the number of steps to shift.
-     * @return this instance.
-     */
-    public Bits shiftRight( int steps )
-    {
-        while ( steps >= 64 && longs.length > 1 )
-        {
-            for ( int i = longs.length-1; i > 0; i-- )
-            {
-                longs[i] = longs[i-1];
-                longs[i-1] = 0;
-                steps -= 64;
-            }
-        }
-        
-        long overspillMask = rightOverflowMask( steps );
-        long overspill = 0;
-        for ( int i = 0; i < longs.length; i++ )
-        {
-            long nextOverspill = (longs[i] & overspillMask);
-            longs[i] = (longs[i] >>> steps) | (overspill << (64-steps));
-            overspill = nextOverspill;
-        }
-        return this;
-    }
-    
-    /**
-     * Applies the bits from {@code value} upon the least significant bits using OR.
-     * @param value the value to apply.
-     * @param mask mask to mask out the bits from {@code value}.
-     * @return this instance.
-     */
-    public Bits or( byte value, long mask )
-    {
-        longs[longs.length-1] |= value & mask;
-        return this;
-    }
-    
-    /**
-     * Applies the bits from {@code value} upon the least significant bits using OR.
-     * @param value the value to apply.
-     * @return this instance.
-     */
-    public Bits or( byte value )
-    {
-        return or( value, 0xFF );
-    }
-    
-    /**
-     * Applies the bits from {@code value} upon the least significant bits using OR.
-     * @param value the value to apply.
-     * @param mask mask to mask out the bits from {@code value}.
-     * @return this instance.
-     */
-    public Bits or( short value, long mask )
-    {
-        longs[longs.length-1] |= value & mask;
-        return this;
-    }
-    
-    /**
-     * Applies the bits from {@code value} upon the least significant bits using OR.
-     * @param value the value to apply.
-     * @return this instance.
-     */
-    public Bits or( short value )
-    {
-        return or( value, 0xFFFF );
-    }
-    
-    /**
-     * Applies the bits from {@code value} upon the least significant bits using OR.
-     * @param value the value to apply.
-     * @param mask mask to mask out the bits from {@code value}.
-     * @return this instance.
-     */
-    public Bits or( int value, long mask )
-    {
-        longs[longs.length-1] |= value & mask;
-        return this;
-    }
-    
-    /**
-     * Applies the bits from {@code value} upon the least significant bits using OR.
-     * @param value the value to apply.
-     * @return this instance.
-     */
-    public Bits or( int value )
-    {
-        return or( value, 0xFFFFFFFFL );
-    }
-    
-    /**
-     * Applies the bits from {@code value} upon the least significant bits using OR.
-     * @param value the value to apply.
-     * @param mask mask to mask out the bits from {@code value}.
-     * @return this instance.
-     */
-    public Bits or( long value, long mask )
-    {
-        longs[longs.length-1] |= value & mask;
-        return this;
-    }
-    
-    /**
-     * Applies the bits from {@code value} upon the least significant bits using OR.
-     * @param value the value to apply.
-     * @return this instance.
-     */
-    public Bits or( long value )
-    {
-        return or( value, 0xFFFFFFFFFFFFFFFFL );
-    }
-    
-    private Bits highOr( byte value, int steps )
-    {
-        longs[0] |= ((long)(value & rightOverflowMask( steps )) << (64-steps));
-        return this;
-    }
-    
-    private Bits highOr( byte value )
-    {
-        return or( value, Byte.SIZE );
-    }
-    
-    private Bits highOr( short value, int steps )
-    {
-        longs[0] |= ((long)(value & rightOverflowMask( steps )) << (64-steps));
-        return this;
-    }
-    
-    private Bits highOr( short value )
-    {
-        return or( value, Short.SIZE );
-    }
-    
-    private Bits highOr( int value, int steps )
-    {
-        longs[0] |= ((long)(value & rightOverflowMask( steps )) << (64-steps));
-        return this;
-    }
-    
-    private Bits highOr( int value )
-    {
-        return or( value, Integer.SIZE );
-    }
-    
-    private Bits highOr( long value, int steps )
-    {
-        longs[0] |= ((long)(value & rightOverflowMask( steps )) << (64-steps));
-        return this;
-    }
-    
-    private Bits highOr( long value )
-    {
-        return or( value, Long.SIZE );
-    }
-    
-    /**
-     * Returns the byte representation from the least significant bits using {@code mask}.
-     * @param mask for masking out the bits.
-     * @return the byte representation from the least significant bits using {@code mask}.
-     */
-    public byte getByte( byte mask )
-    {
-        return (byte) (longs[longs.length-1] & mask);
-    }
-    
-    /**
-     * Returns the short representation from the least significant bits using {@code mask}.
-     * @param mask for masking out the bits.
-     * @return the short representation from the least significant bits using {@code mask}.
-     */
-    public short getShort( short mask )
-    {
-        return (short) (longs[longs.length-1] & mask);
-    }
-    
-    /**
-     * Returns the int representation from the least significant bits using {@code mask}.
-     * @param mask for masking out the bits.
-     * @return the int representation from the least significant bits using {@code mask}.
-     */
-    public int getInt( int mask )
-    {
-        return (int) (longs[longs.length-1] & mask);
-    }
-    
-    /**
-     * Returns the int representation as long from the least significant bits using {@code mask}.
-     * @param mask for masking out the bits.
-     * @return the int representation as long from the least significant bits using {@code mask}.
-     */
-    public long getUnsignedInt( int mask )
-    {
-        return getInt( mask ) & 0xFFFFFFFF;
-    }
-    
-    /**
-     * Returns the long representation from the least significant bits using {@code mask}.
-     * @param mask for masking out the bits.
-     * @return the long representation from the least significant bits using {@code mask}.
-     */
-    public long getLong( long mask )
-    {
-        return (longs[longs.length-1] & mask);
-    }
-    
-    /**
      * Returns the underlying long values that has got all the bits applied.
      * The first item in the array has got the most significant bits.
      * @return the underlying long values that has got all the bits applied.
@@ -352,39 +115,23 @@ public class Bits
         return longs;
     }
     
-    /**
-     * Gets all the bits as bytes. If the number of bytes isn't exactly aligned
-     * the left most bytes are returned.
-     */
-    public byte[] asLeftBytes()
+    public byte[] asBytes()
     {
-        return asBytes( 0 );
-    }
-
-    /**
-     * Gets all the bits as bytes. If the number of bytes isn't exactly aligned
-     * the right most bytes are returned.
-     */
-    public byte[] asRightBytes()
-    {
-        return asBytes( longs.length*8-numberOfBytes );
-    }
-    
-    private byte[] asBytes( int leftIgnore )
-    {
-        byte[] result = new byte[numberOfBytes];
-        int i = 0;
-        for ( long block : longs )
+        int readPositionBefore = readPosition;
+        readPosition = 0;
+        try
         {
-            long mask = leftOverflowMask( 8 );
-            for ( int j = 0; j < 8; j++, mask >>>= 8 )
+            byte[] result = new byte[numberOfBytes];
+            for ( int i = 0; i < result.length; i++ )
             {
-                if ( leftIgnore-- > 0 ) continue;
-                if ( i >= numberOfBytes ) break;
-                result[i++] = (byte) ((block & mask) >>> (64-8*j-8));
+                result[i] = getByte();
             }
+            return result;
         }
-        return result;
+        finally
+        {
+            readPosition = readPositionBefore;
+        }
     }
     
     /**
@@ -394,31 +141,22 @@ public class Bits
      */
     public Bits apply( Buffer buffer )
     {
-        int rest = numberOfBytes%8;
-        if ( rest > 0 )
+        int readPositionBefore = readPosition;
+        readPosition = 0;
+        try
         {
-            // Uneven, extract the bytes from the first long
-            int steps = (rest-1)*8;
-            long mask = 0xFFL << steps;
-            long source = longs[0];
-            for ( int i = 0; i < rest; i++ )
+            // TODO byte for byte?
+            int rest = numberOfBytes;
+            while ( rest-- > 0 )
             {
-                byte value = (byte) ((source & mask) >>> steps);
-                buffer.put( value );
-                mask >>>= 8;
-                steps -= 8;
+                buffer.put( getByte() );
             }
+            return this;
         }
-        else
+        finally
         {
-            buffer.putLong( longs[0] );
+            readPosition = readPositionBefore;
         }
-        
-        for ( int i = 1; i < longs.length; i++ )
-        {
-            buffer.putLong( longs[i] );
-        }
-        return this;
     }
     
     /**
@@ -428,20 +166,13 @@ public class Bits
      */
     public Bits read( Buffer buffer )
     {
-        int rest = numberOfBytes%8;
+        // TODO byte for byte?
+        int rest = numberOfBytes;
         while ( rest > 0 )
         {
             byte value = buffer.get();
-            shiftLeft( 8 );
-            or( value, 0xFF );
+            put( value );
             rest--;
-        }
-        
-        int longs = numberOfBytes/8;
-        for ( int i = 0; i < longs; i++ )
-        {
-            shiftLeft( 64 );
-            or( buffer.getLong(), 0xFFFFFFFFFFFFFFFFL );
         }
         return this;
     }
@@ -454,10 +185,11 @@ public class Bits
     public String toString()
     {
         StringBuilder builder = new StringBuilder();
-        for ( long value : longs )
+        for ( int longIndex = longs.length-1; longIndex >= 0; longIndex-- )
         {
+            long value = longs[longIndex];
             if ( builder.length() > 0 ) builder.append( "\n" );
-            builder.append( "[" );
+            builder.append( longIndex + ":[" );
             for ( int i = 63; i >= 0; i-- )
             {
                 boolean isSet = (value & (1L << i)) != 0;
@@ -468,6 +200,7 @@ public class Bits
                 }
             }
             builder.append( "]" );
+            if ( longIndex == 0 ) builder.append( " <-- START" );
         }
         return builder.toString();
     }
@@ -478,219 +211,116 @@ public class Bits
         return new Bits( Arrays.copyOf( longs, longs.length ), numberOfBytes );
     }
     
-    public Bits pushLeft( byte value, int steps )
+    public Bits put( byte value )
     {
-        shiftLeft( steps );
-        or( value, rightOverflowMask( steps ) );
+        return put( value, Byte.SIZE );
+    }
+    
+    public Bits put( byte value, int steps )
+    {
+        return put( (long)value, steps );
+    }
+    
+    public Bits put( short value )
+    {
+        return put( value, Short.SIZE );
+    }
+    
+    public Bits put( short value, int steps )
+    {
+        return put( (long)value, steps );
+    }
+
+    public Bits put( int value )
+    {
+        return put( value, Integer.SIZE );
+    }
+    
+    public Bits put( int value, int steps )
+    {
+        return put( (long)value, steps );
+    }
+
+    public Bits put( long value )
+    {
+        return put( value, Long.SIZE );
+    }
+    
+    public Bits put( long value, int steps )
+    {
+        int lowLongIndex = writePosition >> 6; // /64
+        int lowBitInLong = writePosition%64;
+        int lowBitsAvailable = 64-lowBitInLong;
+        long lowValueMask = rightOverflowMask( Math.min( lowBitsAvailable, steps ) );
+        longs[lowLongIndex] |= ((((long)value)&lowValueMask) << lowBitInLong);
+        if ( steps > lowBitsAvailable )
+        {   // High bits
+            long highValueMask = rightOverflowMask( steps-lowBitsAvailable );
+            longs[lowLongIndex+1] |= (((long)value) >>> lowBitsAvailable)&highValueMask;
+        }
+        writePosition += steps;
         return this;
     }
-
-    public Bits pushLeft( byte value )
+    
+    public boolean available()
     {
-        return pushLeft( value, Byte.SIZE );
+        return readPosition < writePosition;
     }
     
-    public Bits pushLeft( short value, int steps )
+    public byte getByte()
     {
-        shiftLeft( steps );
-        or( value, rightOverflowMask( steps ) );
-        return this;
-    }
-
-    public Bits pushLeft( short value )
-    {
-        return pushLeft( value, Short.SIZE );
+        return getByte( Byte.SIZE );
     }
     
-    public Bits pushLeft( int value, int steps )
+    public byte getByte( int steps )
     {
-        shiftLeft( steps );
-        or( value, rightOverflowMask( steps ) );
-        return this;
-    }
-
-    public Bits pushLeft( int value )
-    {
-        return pushLeft( value, Integer.SIZE );
+        return (byte) getLong( steps );
     }
     
-    public Bits pushLeft( long value, int steps )
+    public short getShort()
     {
-        shiftLeft( steps );
-        or( value, rightOverflowMask( steps ) );
-        return this;
+        return getShort( Short.SIZE );
     }
     
-    public Bits pushLeft( long value )
+    public short getShort( int steps )
     {
-        return pushLeft( value, Long.SIZE );
-    }
-    
-    public Bits pushRight( byte value, int steps )
-    {
-        shiftRight( steps );
-        highOr( value, steps );
-        return this;
+        return (short) getLong( steps );
     }
 
-    public Bits pushRight( byte value )
+    public int getInt()
     {
-        return pushRight( value, Byte.SIZE );
+        return getInt( Integer.SIZE );
     }
     
-    public Bits pushRight( short value, int steps )
+    public int getInt( int steps )
     {
-        shiftRight( steps );
-        highOr( value, steps );
-        return this;
+        return (int) getLong( steps );
     }
 
-    public Bits pushRight( short value )
+    public long getUnsignedInt()
     {
-        return pushRight( value, Short.SIZE );
+        return getInt( Integer.SIZE ) & 0xFFFFFFFFL;
     }
     
-    public Bits pushRight( int value, int steps )
+    public long getLong()
     {
-        shiftRight( steps );
-        highOr( value, steps );
-        return this;
-    }
-
-    public Bits pushRight( int value )
-    {
-        return pushRight( value, Integer.SIZE );
+        return getLong( Long.SIZE );
     }
     
-    public Bits pushRight( long value, int steps )
+    public long getLong( int steps )
     {
-        shiftRight( steps );
-        highOr( value, steps );
-        return this;
-    }
-
-    public Bits pushRight( long value )
-    {
-        return pushRight( value, Long.SIZE );
-    }
-    
-    public byte pullRightByte( int steps )
-    {
-        byte value = getByte( (byte) rightOverflowMask( steps ) );
-        shiftRight( steps );
-        return value;
-    }
-
-    public byte pullRightByte()
-    {
-        return pullRightByte( Byte.SIZE );
-    }
-    
-    public short pullRightShort( int steps )
-    {
-        short value = getShort( (short) rightOverflowMask( steps ) );
-        shiftRight( steps );
-        return value;
-    }
-    
-    public short pullRightShort()
-    {
-        return pullRightShort( Short.SIZE );
-    }
-
-    public int pullRightInt( int steps )
-    {
-        int value = getInt( (int) rightOverflowMask( steps ) );
-        shiftRight( steps );
-        return value;
-    }
-
-    public int pullRightInt()
-    {
-        return pullRightInt( Integer.SIZE );
-    }
-    
-    public long pullRightUnsignedInt( int steps )
-    {
-        long value = getUnsignedInt( (int) rightOverflowMask( steps ) );
-        shiftRight( steps );
-        return value;
-    }
-    
-    public long pullRightUnsignedInt()
-    {
-        return pullRightUnsignedInt( Integer.SIZE );
-    }
-    
-    public long pullRightLong( int steps )
-    {
-        long value = getLong( rightOverflowMask( steps ) );
-        shiftRight( steps );
-        return value;
-    }
-    
-    public long pullRightLong()
-    {
-        return pullRightLong( Long.SIZE );
-    }
-    
-    public byte pullLeftByte( int steps )
-    {
-        byte result = (byte)((longs[0] & leftOverflowMask( steps )) >>> (64-steps));
-        shiftLeft( steps );
+        int lowLongIndex = readPosition >> 6; // 64
+        int lowBitInLong = readPosition%64;
+        int lowBitsAvailable = 64-lowBitInLong;
+        long lowLongMask = rightOverflowMask( Math.min( lowBitsAvailable, steps ) ) << lowBitInLong;
+        long lowValue = longs[lowLongIndex] & lowLongMask;
+        long result = lowValue >>> lowBitInLong;
+        if ( steps > lowBitsAvailable )
+        {   // High bits
+            long highLongMask = rightOverflowMask( steps-lowBitsAvailable );
+            result |= ((longs[lowLongIndex+1] & highLongMask) << lowBitsAvailable);
+        }
+        readPosition += steps;
         return result;
-    }
-
-    public byte pullLeftByte()
-    {
-        return pullLeftByte( Byte.SIZE );
-    }
-    
-    public short pullLeftShort( int steps )
-    {
-        short result = (short)((longs[0] & leftOverflowMask( steps )) >>> (64-steps));
-        shiftLeft( steps );
-        return result;
-    }
-
-    public short pullLeftShort()
-    {
-        return pullLeftShort( Short.SIZE );
-    }
-    
-    public int pullLeftInt( int steps )
-    {
-        int result = (int)((longs[0] & leftOverflowMask( steps )) >>> (64-steps));
-        shiftLeft( steps );
-        return result;
-    }
-
-    public int pullLeftInt()
-    {
-        return pullLeftInt( Integer.SIZE );
-    }
-    
-    public long pullLeftUnsignedInt( int steps )
-    {
-        long result = (int)((longs[0] & leftOverflowMask( steps )) >>> (64-steps));
-        shiftLeft( steps );
-        return result;
-    }
-    
-    public long pullLeftUnsignedInt()
-    {
-        return pullLeftUnsignedInt( Integer.SIZE );
-    }
-    
-    public long pullLeftLong( int steps )
-    {
-        long result = (longs[0] & leftOverflowMask( steps )) >>> (64-steps);
-        shiftLeft( steps );
-        return result;
-    }
-
-    public long pullLeftLong()
-    {
-        return pullLeftLong( Long.SIZE );
     }
 }
