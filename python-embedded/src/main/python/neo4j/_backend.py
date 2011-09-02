@@ -122,6 +122,18 @@ except: # this isn't jython (and doesn't have the java module)
     
     del graphdb, kernel, helpers # to get a consistent namespace
 
+    def java_type(obj):
+        java = jpype.java.lang
+        conversions = (
+            (strings, java.String),
+            (bool,    java.Boolean),
+            (integers,java.Long),
+        )
+        for pyType, jType in conversions:
+            if isinstance(obj, pyType):
+                return jType
+        raise TypeError("I don't know how to convert this value to a java primitive.")
+
     def from_java(value):
         global from_java
         java = jpype.java.lang
@@ -140,6 +152,14 @@ except: # this isn't jython (and doesn't have the java module)
             value = HashMap()
             for k,v in pyDict.items():
                 value.put(k,v)
+        elif isinstance(value, list):
+            if len(value) == 0:
+                raise TypeError('Empty lists are not supported, since we cannot determine what type of list they should be in Java.')
+            pyList = value
+            JavaType = java_type(pyList[0])
+            value = jpype.JArray(JavaType)(len(pyList))
+            for i in range(len(pyList)):
+                value[i] = JavaType(pyList[i])
         return value
         
     def implements(interface):

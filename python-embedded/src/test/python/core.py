@@ -21,29 +21,94 @@
 from __future__ import with_statement
 
 import unit_tests
+import tempfile, os
 
 class GraphTest(unit_tests.GraphDatabaseTest):
+    
+    def test_create_db(self):
+        folder_to_put_db_in = tempfile.mkdtemp()
+        try:
+            # START SNIPPET: creatingDatabase
+            from neo4j import GraphDatabase
+            
+            # Create db
+            db = GraphDatabase(folder_to_put_db_in)
+            
+            # Always shut down your database
+            db.shutdown()
+            # END SNIPPET: creatingDatabase
+        finally:
+           if os.path.exists(folder_to_put_db_in):
+              import shutil
+              shutil.rmtree(folder_to_put_db_in)
+    
+    def test_create_configured_db(self):
+        folder_to_put_db_in = tempfile.mkdtemp()
+        try:
+            # START SNIPPET: creatingConfiguredDatabase
+            from neo4j import GraphDatabase
+            
+            # Example configuration parameters
+            db = GraphDatabase(folder_to_put_db_in, string_block_size=200, array_block_size=240)
+            
+            db.shutdown()
+            # END SNIPPET: creatingConfiguredDatabase
+        finally:
+           if os.path.exists(folder_to_put_db_in):
+              import shutil
+              shutil.rmtree(folder_to_put_db_in)
+        
+    def test_with_statement_transactions(self):
+        db = self.graphdb
+        # START SNIPPET: withBasedTransactions
+        # Start a transaction
+        with db.transaction:
+            # This is inside the transactional
+            # context. All work done here
+            # will either entirely succeed,
+            # or no changes will be applied at all.
+            
+            # Create a node
+            node = db.node()
+            
+            # Give it a name
+            node['name'] = 'Cat Stevens'
+            
+        # The transaction is automatically
+        # commited when you exit the with 
+        # block.
+        # END SNIPPET: withBasedTransactions
+        self.assertNotEqual(node, None)
+        
     def test_create_node(self):
         with self.graphdb.transaction:
             node = self.graphdb.node()
         self.assertNotEqual(node, None)
         
     def test_delete_node(self):
-        with self.graphdb.transaction:
-            node = self.graphdb.node()
-            node_id = node.id
+        db = self.graphdb
+        # START SNIPPET: deleteNode
+        with db.transaction:
+            node = db.node()
             node.delete()
+        # END SNIPPET: deleteNode
         
         try:
-            self.graphdb.node[node_id]
+            self.graphdb.node[node.id]
             self.assertEqual(True,False)
         except Exception, e:
             self.assertTrue(isinstance(e, KeyError))
         
     def test_delete_node_by_id(self):
-        with self.graphdb.transaction:
-            node = self.graphdb.node()
-            del self.graphdb.node[node.id]
+        db = self.graphdb
+        with db.transaction:
+            node = db.node()
+        some_node_id = node.id
+        
+        # START SNIPPET: deleteByIdNode
+        with db.transaction:
+            del db.node[some_node_id]
+        # END SNIPPET: deleteByIdNode
         
         try:
             self.graphdb.node[node.id]
@@ -52,27 +117,64 @@ class GraphTest(unit_tests.GraphDatabaseTest):
             self.assertTrue(isinstance(e, KeyError))
         
     def test_create_node_with_properties(self):
-        with self.graphdb.transaction:
-            node = self.graphdb.node(name='Thomas Anderson', age=42)
-        self.assertNotEqual(node, None)
-        self.assertEquals(node['name'], 'Thomas Anderson')
-        self.assertEquals(node['age'], 42)
+        db = self.graphdb
+        # START SNIPPET: createNode
+        with db.transaction:
+            # Create a node
+            thomas = db.node(name='Thomas Anderson', age=42)
+        # END SNIPPET: createNode
+        self.assertNotEqual(thomas, None)
+        self.assertEquals(thomas['name'], 'Thomas Anderson')
+        self.assertEquals(thomas['age'], 42)
         
-    def test_iterate_properties(self):
-        with self.graphdb.transaction:
-            node = self.graphdb.node(name='Thomas Anderson', age=42)
-        items = list(node.items())
-        self.assertEqual(len(items), 2)
-        self.assertEqual(items[1][0],'name')
-        self.assertEqual(items[1][1],'Thomas Anderson')
+    def test_properties(self):
+        db = self.graphdb
+        with db.transaction:
+            node_or_rel = db.node()
+        # START SNIPPET: setProperties
+        with db.transaction:
+            node_or_rel['name'] = 'Thomas Anderson'
+            node_or_rel['age'] = 42
+            node_or_rel['favourite_numbers'] = [1,2,3]
+            node_or_rel['favourite_words'] = ['banana','blue']
+        # END SNIPPET: setProperties
         
-        keys = list(node.keys())
-        self.assertEqual(len(keys), 2)
-        self.assertEqual(keys[1],'name')
+        # START SNIPPET: getProperties
+        numbers = node_or_rel['favourite_numbers']
+        # END SNIPPET: getProperties
+        
+        # START SNIPPET: deleteProperties
+        with db.transaction:
+            del node_or_rel['favourite_numbers']
+        # END SNIPPET: deleteProperties
+            del node_or_rel['favourite_words']
+        
+        # START SNIPPET: loopProperties
+        # Loop key and value at the same time
+        for key, value in node_or_rel.items():
+            pass
             
-        values = list(node.values())
+        # Loop property keys
+        for key in node_or_rel.keys():
+            pass
+            
+        # Loop property values
+        for value in node_or_rel.values():
+            pass
+        # END SNIPPET: loopProperties
+        
+        items = list(node_or_rel.items())
+        self.assertEqual(len(items), 2)
+        self.assertEqual(items[1][0],'age')
+        self.assertEqual(items[1][1],42)
+        
+        keys = list(node_or_rel.keys())
+        self.assertEqual(len(keys), 2)
+        self.assertEqual(keys[1],'age')
+            
+        values = list(node_or_rel.values())
         self.assertEqual(len(values), 2)
-        self.assertEqual(values[1],'Thomas Anderson')
+        self.assertEqual(values[1],42)
         
     def test_remove_properties(self):
         with self.graphdb.transaction:
@@ -88,54 +190,126 @@ class GraphTest(unit_tests.GraphDatabaseTest):
                 self.assertTrue(isinstance(e, KeyError))
                 
     def test_get_node_by_id(self):
-        with self.graphdb.transaction:
-            node = self.graphdb.node()
-        n = self.graphdb.node[node.id]
-        self.assertNotEqual(n, None)
+        db = self.graphdb
+        with db.transaction:
+            node = db.node()
+        some_node_id = node.id
+        # START SNIPPET: getNodeById
+        # You don't have to be in a transaction
+        # to do read operations.
+        a_node = db.node[some_node_id]
+        # END SNIPPET: getNodeById
+        self.assertNotEqual(a_node, None)
         
     def test_get_reference_node(self):
-        
-        n = self.graphdb.reference_node
-        self.assertNotEqual(n, None)
+        db = self.graphdb
+        # START SNIPPET: getReferenceNode
+        reference = db.reference_node
+        # END SNIPPET: getReferenceNode
+        self.assertNotEqual(reference, None)
         
     def test_can_create_relationship(self):
+        db = self.graphdb
+        
+        # START SNIPPET: createRelationship
         with self.graphdb.transaction:
-            source = self.graphdb.node(message='hello')
-            target = self.graphdb.node(message='world')
-            relationship = source.related_to(target, message="graphy")
-            secondrel = target.likes(source, message="buh")
+            # Nodes to create a relationship between
+            steven = self.graphdb.node(name='Steven Brookreson')
+            poplar_bluff = self.graphdb.node(name='Poplar Bluff')
+            
+            # Create a relationship of type "mayor_of"
+            relationship = steven.mayor_of(poplar_bluff, since="12th of July 2012")
+        # END SNIPPET: createRelationship
+            secondrel = poplar_bluff.likes(steven, message="buh")
         message = ''
-        for rel in source.related_to:
+        for rel in steven.mayor_of:
             message += "%s %s %s" % (
-                rel.start['message'],
-                rel['message'],
-                rel.end['message'],
+                rel.start['name'],
+                rel['since'],
+                rel.end['name'],
                 )
-        self.assertEquals(message, "hello graphy world")
+        self.assertEquals(message, "Steven Brookreson 12th of July 2012 Poplar Bluff")
+        
+        a_node = steven
+        # START SNIPPET: accessingRelationships
+        # All relationships on a node
+        for rel in a_node.rels:
+            pass
+            
+        # Incoming relationships
+        for rel in a_node.rels.incoming:
+            pass
+            
+        # Outgoing relationships
+        for rel in a_node.rels.outgoing:
+            pass
+            
+        # Relationships of a specific type
+        for rel in a_node.mayor_of:
+            pass
+            
+        # Incoming relationships of a specific type
+        for rel in a_node.mayor_of.incoming:
+            pass
+            
+        # Outgoing relationships of a specific type
+        for rel in a_node.mayor_of.outgoing:
+            pass
+        # END SNIPPET: accessingRelationships
+        
+        self.assertEquals(len(list(steven.rels)), 2)
+        self.assertEquals(len(list(steven.rels.incoming)), 1)
+        self.assertEquals(len(list(steven.rels.outgoing)), 1)
+        
+        self.assertEquals(len(list(steven.likes)), 1)
+        self.assertEquals(len(list(steven.likes.incoming)), 1)
+        self.assertEquals(len(list(steven.likes.outgoing)), 0)
+        
+    def test_relationship_attributes(self):
+        db = self.graphdb
+        
+        with self.graphdb.transaction:
+            source = self.graphdb.node()
+            target = self.graphdb.node()
+            
+            # Create a relationship of type "related_to"
+            relationship = source.related_to(target)
+        # START SNIPPET: relationshipAttributes
+        relationship_type = relationship.type
+        
+        start_node = relationship.start
+        end_node = relationship.end
+        # END SNIPPET: relationshipAttributes
+        
+        rel = relationship
         self.assertEquals(rel.type.name(), 'related_to')
-        
-        self.assertEquals(len(list(source.rels)), 2)
-        self.assertEquals(len(list(source.rels.incoming)), 1)
-        self.assertEquals(len(list(source.rels.outgoing)), 1)
-        
-        self.assertEquals(len(list(source.likes)), 1)
-        self.assertEquals(len(list(source.likes.incoming)), 1)
-        self.assertEquals(len(list(source.likes.outgoing)), 0)
+        self.assertEquals(rel.start, source)
+        self.assertEquals(rel.end, target)
         
     def test_get_relationship_by_id(self):
+        db = self.graphdb
         with self.graphdb.transaction:
-            node1 = self.graphdb.node()
-            node2 = self.graphdb.node()
-            rel = node1.Knows(node2)
-        r = self.graphdb.relationship[rel.id]
-        self.assertNotEqual(r, None)
+            source = self.graphdb.node()
+            target = self.graphdb.node()
+            rel = source.Knows(target)
+        a_relationship_id = rel.id
+        # START SNIPPET: getRelationshipById
+        the_relationship = db.relationship[a_relationship_id]
+        # END SNIPPET: getRelationshipById
+        self.assertNotEqual(the_relationship, None)
         
     def test_delete_relationship(self):
-        with self.graphdb.transaction:
-            node1 = self.graphdb.node()
-            node2 = self.graphdb.node()
-            rel = node1.Knows(node2)
+        db = self.graphdb
+        # START SNIPPET: deleteRelationship
+        with db.transaction:
+            # Create a relationship
+            source = db.node()
+            target = db.node()
+            rel = source.Knows(target)
+            
+            # Delete it
             rel.delete()
+        # END SNIPPET: deleteRelationship
             
         try:
             self.graphdb.relationship[rel.id]
@@ -144,12 +318,19 @@ class GraphTest(unit_tests.GraphDatabaseTest):
             self.assertTrue(isinstance(e, KeyError))
         
     def test_delete_relationship_by_id(self):
+        
+        db = self.graphdb
+        
         with self.graphdb.transaction:
             node1 = self.graphdb.node()
             node2 = self.graphdb.node()
             rel = node1.Knows(node2)
             
-            del self.graphdb.relationship[rel.id]
+        some_relationship_id = rel.id
+        # START SNIPPET: deleteByIdRelationship
+        with db.transaction:
+            del db.relationship[some_relationship_id]
+        # END SNIPPET: deleteByIdRelationship
             
         try:
             self.graphdb.relationship[rel.id]

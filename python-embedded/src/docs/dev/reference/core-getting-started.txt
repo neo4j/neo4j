@@ -1,0 +1,24 @@
+== Getting started ==
+
+=== Creating a database ===
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=core.py
+tag=creatingDatabase
+classifier=test-sources
+----
+
+=== Creating a database, with configuration ===
+
+Please see <<configuration,the configuration chapter>> for what options you can use here.
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=core.py
+tag=creatingConfiguredDatabase
+classifier=test-sources
+----
+

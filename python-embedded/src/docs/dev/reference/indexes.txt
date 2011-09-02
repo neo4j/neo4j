@@ -1,0 +1,7 @@
+[[python-embedded-reference-indexes]]
+Indexes
+=======
+
+This will describe how to manage indexes.
+
+

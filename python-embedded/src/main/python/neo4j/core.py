@@ -44,10 +44,10 @@ class Direction(extends(Direction)):
 
 # Give the user references to the 
 # actual direction instances.
-Direction.BOTH = _javaDirection.BOTH
-Direction.ANY = _javaDirection.BOTH
-Direction.INCOMING = _javaDirection.INCOMING
-Direction.OUTGOING = _javaDirection.OUTGOING
+BOTH = Direction.BOTH = _javaDirection.BOTH
+ANY = Direction.ANY = _javaDirection.BOTH
+INCOMING = Direction.INCOMING = _javaDirection.INCOMING
+OUTGOING = Direction.OUTGOING = _javaDirection.OUTGOING
 del _javaDirection
 
 class DirectionalType(object):
@@ -87,8 +87,8 @@ class PropertyContainer(extends(PropertyContainer)):
     def __delitem__(self, key):
         try:
             return self.removeProperty(key)
-        except Exception, e:
-            raise KeyError(e.message)
+        except:
+            rethrow_current_exception_as(KeyError)
   
     def items(self):
         for k in self.getPropertyKeys():

@@ -50,8 +50,9 @@ class Path(extends(Path)):
     def __len__(self):  return self.length()
     
     def __iter__(self):
-        for entity in self.iterator():
-            yield entity 
+        it = self.iterator()
+        while it.hasNext():
+            yield it.next() 
 
       
 class TraversalDescriptionImpl(extends(TraversalDescriptionImpl)):
@@ -70,4 +71,7 @@ class TraversalDescriptionImpl(extends(TraversalDescriptionImpl)):
         return self._super__evaluator(ev)
            
 class TraverserImpl(extends(TraverserImpl)):
-    pass
+    def __iter__(self):
+        it = self.iterator()
+        while it.hasNext():
+            yield it.next() 

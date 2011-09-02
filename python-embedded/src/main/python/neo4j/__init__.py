@@ -22,11 +22,11 @@
 """
 
 __all__ = 'GraphDatabase',\
-          'Direction', 'Evaluation', 'Uniqueness'
+          'Direction', 'Evaluation', 'Uniqueness', 'BOTH', 'ANY', 'INCOMING', 'OUTGOING'
           
 __version__ = "${pythonic_version}"
 
-from neo4j.core import GraphDatabase, Direction, NotFoundException
+from neo4j.core import GraphDatabase, Direction, NotFoundException, BOTH, ANY, INCOMING, OUTGOING
 from neo4j.traversal import Traversal, Evaluation, Uniqueness
 from neo4j.index import NodeIndexManager, RelationshipIndexManager
 from neo4j.util import rethrow_current_exception_as

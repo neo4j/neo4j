@@ -1,10 +1,15 @@
 [[python-embedded]]
-Python embedded client
-======================
+Python embedded bindings
+========================
 
-include::introduction.txt[]
+This describes neo4j-python-embedded, a library that lets you use the embedded Neo4j database in python.
 
-[[python-embedded-installation]]
-== Installation ==
+:leveloffset: 2
 
 include::installation.txt[]
+
+include::reference/core.txt[]
+
+include::reference/traversal.txt[]
+
+include::reference/indexes.txt[]

@@ -1,3 +1,0 @@
-This is a python library that lets you run an embedded Neo4j database from within python. It uses JPype to create a JVM to run Neo4j in.
-
-You can also access the Neo4j server from python, see for instance https://github.com/versae/neo4j-rest-client or http://py2neo.org/
