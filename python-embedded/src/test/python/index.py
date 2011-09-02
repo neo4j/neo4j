@@ -27,9 +27,33 @@ from neo4j import Direction, Evaluation, Uniqueness
 class IndexTest(unit_tests.GraphDatabaseTest):
 
     def test_create_fulltext_index(self):
-        with self.graphdb.transaction:
+        db = self.graphdb
         
-            idx = self.graphdb.node.indexes.create('test', type='fulltext', provider='lucene')
+        # START SNIPPET: createIndex
+        with db.transaction:
+            # Create a relationship index
+            rel_idx = db.relationship.indexes.create('my_rels')
+            
+            # Create a node index, passing optional
+            # arguments to the index provider.
+            # In this case, enable full-text indexing.
+            node_idx = db.node.indexes.create('my_nodes', type='fulltext')
+        # END SNIPPET: createIndex
+        # START SNIPPET: getIndex
+        with db.transaction:
+            node_idx = db.node.indexes.get('my_nodes') 
+            
+            rel_idx = db.relationship.indexes.get('my_rels')
+        # END SNIPPET: getIndex
+        # START SNIPPET: deleteIndex
+        with db.transaction:
+            node_idx = db.node.indexes.get('my_nodes') 
+            node_idx.delete()
+            
+            rel_idx = db.relationship.indexes.get('my_rels')
+            rel_idx.delete()
+        # END SNIPPET: deleteIndex
+            idx = node_idx = db.node.indexes.create('test', type='fulltext')
             idx['akey']['A name of some kind.'] = self.graphdb.node()
             
         it = idx.query("akey:name")
@@ -38,14 +62,27 @@ class IndexTest(unit_tests.GraphDatabaseTest):
         it.close()
 
     def test_index_node(self):
-        with self.graphdb.transaction:
-            n = self.graphdb.node()
+        db = self.graphdb
+        # START SNIPPET: addToIndex
+        with db.transaction:
+            # Indexing nodes
+            a_node = db.node()
+            node_idx = db.node.indexes.create('my_nodes')
             
-            idx = self.graphdb.node.indexes.create('test')
-            idx['akey']['avalue'] = n
+            # Add the node to the index
+            node_idx['akey']['avalue'] = a_node
+            
+            
+            # Indexing relationships
+            a_relationship = a_node.knows(db.node())
+            rel_idx = db.relationship.indexes.create('my_rels')
+            
+            # Add the relationship to the index
+            rel_idx['akey']['avalue'] = a_relationship
+        # END SNIPPET: addToIndex
         
-        ret = list(idx['akey']['avalue'])[0]
-        self.assertEqual(ret.id, n.id)
+        ret = list(node_idx['akey']['avalue'])[0]
+        self.assertEqual(ret.id, a_node.id)
         
 
     def test_remove_node_index(self):
@@ -78,12 +115,22 @@ class IndexTest(unit_tests.GraphDatabaseTest):
         
             idx = self.graphdb.node.indexes.create('test')
             for x in range(50):
-                idx['akey']['avalue'] = self.graphdb.node()
+                idx['akey']['avalue'] = self.graphdb.node(name=x)
             
-        it = idx.query('akey:avalue')
         
-        self.assertTrue(len(list(it[:10])), 10)
-        it.close()
+        # START SNIPPET: query
+        hits = idx.query('akey:avalue')
+        for item in hits:
+            pass
+        
+        # Always close index results when you are 
+        # done, to free up resources.
+        hits.close()
+        # END SNIPPET: query
+        
+        hits = idx.query('akey:avalue')
+        self.assertEqual(len(list(hits[:10])), 10)
+        hits.close()
             
     def test_slice_get_result(self):
         with self.graphdb.transaction:
@@ -96,6 +143,16 @@ class IndexTest(unit_tests.GraphDatabaseTest):
         
         self.assertTrue(len(list(it[:10])), 10)
         it.close()
+        
+        # START SNIPPET: directLookup
+        hits = idx['akey']['avalue']
+        for item in hits:
+            pass
+        
+        # Always close index results when you are 
+        # done, to free up resources.
+        hits.close()
+        # END SNIPPET: directLookup
             
     def test_remove_node_from_index(self):
         with self.graphdb.transaction:
@@ -138,6 +195,18 @@ class IndexTest(unit_tests.GraphDatabaseTest):
             self.assertEqual(len(list(idx['akey']['avalue'])), 0)
             self.assertEqual(len(list(idx['akey']['bvalue'])), 0)
             self.assertEqual(len(list(idx['bkey']['avalue'])), 0)
+            
+            # START SNIPPET: removeFromIndex
+            # Remove specific key/value/item triplet
+            del idx['akey']['avalue'][item]
+            
+            # Remove all instances under a certain
+            # key
+            del idx['akey'][item]
+            
+            # Remove all instances all together
+            del idx[item]
+            # END SNIPPET: removeFromIndex
         
 if __name__ == '__main__':
     unit_tests.unittest.main()

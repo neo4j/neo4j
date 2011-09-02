@@ -119,18 +119,8 @@ class IndexHits(extends(IndexHits)):
 
     def __getitem__(self, item):
         if isinstance(item, slice):
-            i = 0
-            needles = range(*item.indices(len(self)))
-            needle = needles.pop(0)
-            for hit in self:
-                if i == needle:    
-                    yield hit
-                    
-                    if len(needles) == 0:
-                        return
-                        
-                    needle = needles.pop(0)
-                i += 1
+            # Memory-hogging slicing impl
+            return list(self).__getitem__(item)
 
 
 class Index(extends(Index)):
