@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -525,8 +526,8 @@ public class DocsGenerator
                 line( fw, "" );
             }
             if( graph != null) {
-                line(fw, "[\"dot\", \""+name+".svg\", \"neoviz\"]");
-                fw.append( createGraphViz( graph ));
+                line(fw, "_Final Graph_" );
+                fw.append( createGraphViz( graph, name ));
                 line(fw, "" );
             }
             line( fw, "_Example request_" );
@@ -589,13 +590,13 @@ public class DocsGenerator
         }
     }
 
-    private void line( final FileWriter fw, final String string ) throws IOException
+    private void line( final Writer fw, final String string ) throws IOException
     {
         fw.append( string );
         fw.append( "\n" );
     }
     
-    public String createGraphViz( GraphDatabaseService graphDatabaseService )
+    public String createGraphViz( GraphDatabaseService graphDatabaseService, String name )
     {
         OutputStream out = new ByteArrayOutputStream();
         GraphvizWriter writer = new GraphvizWriter(new AsciiDocStyle());
@@ -608,7 +609,8 @@ public class DocsGenerator
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        return "----\n" +
+        return  "[\"dot\", \""+name.replace( " ", "-" )+".svg\", \"neoviz\"]\n"+
+                "----\n" +
                 out.toString() +
                 "----\n";
     }
