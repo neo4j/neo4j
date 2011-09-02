@@ -19,8 +19,10 @@
  */
 package org.neo4j.server.rest;
 
+import java.util.ArrayList;
 import java.util.Map;
 
+import org.jruby.compiler.ir.operands.Array;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -41,7 +43,8 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
     protected static final String NODES = "http://localhost:7474/db/data/node/";
 
     public @Rule
-    TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
+    TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
+            this, true ) );
 
     public @Rule
     TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
@@ -53,11 +56,13 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
         graphdb = new ImpermanentGraphDatabase( "target/db" );
 
     }
-    protected String startGraph(String name)
+
+    protected String startGraph( String name )
     {
-        return "_Starting Graph:_\n\n" + gen.get().createGraphViz( graphdb(), name  );
+        return "_Starting Graph:_\n\n"
+               + gen.get().createGraphViz( graphdb(), name );
     }
-    
+
     @AfterClass
     public static void stopDatabase()
     {
@@ -82,5 +87,31 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
     public void shutdownServer()
     {
         server.stop();
+    }
+
+    protected String getDataUri()
+    {
+        return "http://localhost:7474/db/data/";
+    }
+
+    protected String getNodeUri( Node node )
+    {
+        return getDataUri() + "node/" + node.getId();
+    }
+
+    protected Node getNode( String name )
+    {
+        return data.get().get( name );
+    }
+
+    protected Node[] getNodes( String... names )
+    {
+        Node[] nodes = {};
+        ArrayList<Node> result = new ArrayList<Node>();
+        for (String name : names)
+        {
+            result.add( getNode( name ) );
+        }
+        return result.toArray(nodes);
     }
 }
