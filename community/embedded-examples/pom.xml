@@ -1,9 +1,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.neo4j.examples</groupId>
+    <groupId>org.neo4j.build</groupId>
     <artifactId>examples-pom</artifactId>
-    <version>23</version>
+    <version>24</version>
   </parent>
   <groupId>org.neo4j.examples</groupId>
   <artifactId>neo4j-examples</artifactId>
@@ -244,16 +244,6 @@
           </execution>
         </executions>
       </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>wagon-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>upload-to-dist-server</id>
-            <phase>none</phase>
-          </execution>
-        </executions>
-      </plugin>
     </plugins>
   </build>
 
@@ -275,12 +265,6 @@
             </configuration>
           </reportSet>
         </reportSets>
-      </plugin>
-      <plugin>
-        <artifactId>maven-jxr-plugin</artifactId>
-        <configuration>
-          <linkJavadoc>false</linkJavadoc>
-        </configuration>
       </plugin>
     </plugins>
   </reporting>

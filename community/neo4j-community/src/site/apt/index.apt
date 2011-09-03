@@ -1,27 +1,11 @@
-Neo4j
+Neo4j Community
 
     This is a meta package containing the most commonly used Neo4j libraries,
     which means that it enables you to add these as a single {{{http://maven.apache.org/}Maven}}
     dependency in your projects. Using this package, you're also sure that you use
     component versions that fit together.
-    
-Included components 
 
-*----+------+------+
-| neo4j-kernel | the neo4j kernel | the neo4j graph database engine |
-*----+------+------+
-| neo4j-lucene-index | indexing with Lucene | integration layer between Neo4j and Lucene, for indexing of nodes and relationships |
-*----+------+------+
-| neo4j-graph-algo | graph algorithms | graph algorithms like shortest path etc. |
-*----+------+------+
-| neo4j-ha | high availability | set up a highly available Neo4j cluster |
-*----+------+------+
-| neo4j-management | monitoring and management | management support using JMX |
-*----+------+------+
-| neo4j-udc | usage data | usage data collector |
-*----+------+------+
-
-Usage
+    To see what's included, have a look at the {{{./dependencies.html}dependencies}}.
     
     To use this package, add the following dependency to your pom.xml.
 

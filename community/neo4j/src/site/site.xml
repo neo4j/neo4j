@@ -30,17 +30,15 @@
   <body>
     <links>
       <item name="Neo4j home" href="http://neo4j.org/" />
-      <item name="wiki" href="http://wiki.neo4j.org/" />
-      <item name="issues" href="https://trac.neo4j.org/" />
+      <item name="documentation" href="http://docs.neo4j.org/" />
+      <item name="issues" href="https://help.neo4j.org/" />
       <item name="components" href=".." />
       <item name="apidocs" href="http://api.neo4j.org/" />
     </links>
-    <menu name="Neo4j Apoc">
+    <menu name="Neo4j Community">
       <item name="Introduction" href="index.html" />
-      <item name="Wiki" href="http://wiki.neo4j.org/content/Getting_Started_With_Apoc" />
       <item name="JavaDocs" href="apidocs/index.html" />
-      <item name="Browsable source code" href="xref/index.html" />
-      <item name="Source Repository" href="https://github.com/neo4j/graphdb" />
+      <item name="Source Repository" href="${scm.url}" />
     </menu>
     <menu ref="reports" />
   </body>

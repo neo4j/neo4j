@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
-    <version>23</version>
+    <version>24</version>
   </parent>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-lucene-index</artifactId>
@@ -106,4 +106,3 @@ the relevant Commercial Agreement.
   </distributionManagement>
 
 </project>
-

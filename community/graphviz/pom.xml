@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
-    <version>23</version>
+    <version>24</version>
   </parent>
   
   <groupId>org.neo4j</groupId>
@@ -38,10 +38,9 @@ the relevant Commercial Agreement.
   </licenses>
 
   <scm>
-    <connection>scm:git:git://github.com/neo4j/neoviz.git</connection>
-    <developerConnection>scm:git:git@github.com:neo4j/neoviz.git</developerConnection>
-    <url>https://github.com/neo4j/neoviz</url>
+    <url>https://github.com/neo4j/community/tree/master/graphviz</url>
   </scm>
+
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
@@ -67,4 +66,3 @@ the relevant Commercial Agreement.
     </dependency>
   </dependencies>
 </project>
-

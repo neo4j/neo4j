@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
-    <version>23</version>
+    <version>24</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -35,7 +35,7 @@
     <license-text.header>GPL-3-header.txt</license-text.header>
   </properties>
 
-  <packaging>bundle</packaging>
+  <packaging>jar</packaging>
 
   <licenses>
     <license>
@@ -77,17 +77,6 @@ the relevant Commercial Agreement.
         </configuration>
       </plugin>
       <plugin>
-        <groupId>org.ops4j</groupId>
-        <artifactId>maven-pax-plugin</artifactId>
-        <configuration>
-          <framework>felix</framework>
-          <provision>
-            <param>mvn:${jta.groupId}/${jta.artifactId}/${jta.version}</param>
-            <param>mvn:${jline.groupId}/${jline.artifactId}/${jline.version}</param>
-          </provision>
-        </configuration>
-      </plugin>
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
@@ -111,7 +100,6 @@ the relevant Commercial Agreement.
   </build>
 
   <dependencies>
-    <!-- If you add the jLine library (at least version 0.9.94) to the classpath of the client then you'll get enhanced prompt abilities. Much like regular bash etc. -->
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
@@ -160,17 +148,6 @@ the relevant Commercial Agreement.
       <artifactId>junit</artifactId>
     </dependency>
   </dependencies>
-
-  <reporting>
-    <plugins>
-      <plugin>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <configuration>
-          <excludePackageNames>*.impl.*</excludePackageNames>
-        </configuration>
-      </plugin>
-    </plugins>
-  </reporting>
 
   <distributionManagement>
     <site>
