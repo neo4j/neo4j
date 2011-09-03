@@ -23,7 +23,7 @@ import org.neo4j.cypher.commands.{RelatedTo, NamedPath, PathIdentifier}
 import org.neo4j.cypher.{PathImpl, SymbolTable}
 import org.neo4j.graphdb.PropertyContainer
 
-class PathPipe(source: Pipe, path: NamedPath) extends Pipe {
+class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
   def foreach[U](f: (Map[String, Any]) => U) {
 
     source.foreach(m => {
