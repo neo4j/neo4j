@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
-    <version>23</version>
+    <version>24</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
@@ -47,16 +47,6 @@ the relevant Commercial Agreement.
   
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.ops4j</groupId>
-        <artifactId>maven-pax-plugin</artifactId>
-        <configuration>
-          <framework>felix</framework>
-          <provision>
-            <param>mvn:${jta.groupId}/${jta.artifactId}/${jta.version}</param>
-          </provision>
-        </configuration>
-      </plugin>
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
@@ -117,10 +107,6 @@ the relevant Commercial Agreement.
                   <type>jar</type>
                   <classifier>neo4j</classifier>
                 </artifact>
-                <!-- artifact>
-                  <file>${project.build.directory}/${project.artifactId}-${project.version}.jar</file>
-                  <type>jar</type>
-                </artifact -->
               </artifacts>
             </configuration>
           </execution>
@@ -177,17 +163,6 @@ the relevant Commercial Agreement.
     </dependency>
  </dependencies>
 
-  <reporting>
-    <plugins>
-      <plugin>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <configuration>
-          <excludePackageNames>*.impl.*</excludePackageNames>
-        </configuration>
-      </plugin>
-    </plugins>
-  </reporting>
-
   <distributionManagement>
     <site>
       <id>neo4j-site</id>
@@ -196,4 +171,3 @@ the relevant Commercial Agreement.
   </distributionManagement>
 
 </project>
-
