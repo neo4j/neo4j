@@ -37,6 +37,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.index.AutoIndexer;
 
 public class GraphDescription implements GraphDefinition
 {
@@ -157,18 +158,17 @@ public class GraphDescription implements GraphDefinition
         Transaction tx = graphdb.beginTx();
         try
         {
-            graphdb.index().getNodeAutoIndexer().setEnabled( autoIndexNodes );
             graphdb.index().getRelationshipAutoIndexer().setEnabled( autoIndexRelationships );
             for ( NODE def : nodes )
             {
                 result.put( def.name(),
-                        init( graphdb.createNode(), def.setNameProperty() ? def.name() : null, def.properties() ) );
+                        init( graphdb.createNode(), def.setNameProperty() ? def.name() : null, def.properties(), graphdb.index().getNodeAutoIndexer(), autoIndexNodes ));
             }
             for ( REL def : rels )
             {
                 init( result.get( def.start() ).createRelationshipTo( result.get( def.end() ),
                         DynamicRelationshipType.withName( def.type() ) ), def.setNameProperty() ? def.name() : null,
-                        def.properties() );
+                        def.properties(), graphdb.index().getRelationshipAutoIndexer(), autoIndexNodes );
             }
             tx.success();
         }
@@ -179,16 +179,26 @@ public class GraphDescription implements GraphDefinition
         return result;
     }
 
-    private static <T extends PropertyContainer> T init( T entity, String name, PROP[] properties )
+    private static <T extends PropertyContainer> T init( T entity, String name, PROP[] properties, AutoIndexer<T> autoindex, boolean auto )
     {
+        autoindex.setEnabled( auto );
         for ( PROP prop : properties )
         {
+            if(auto)
+            {
+                autoindex.startAutoIndexingProperty( prop.key() );
+            }
             entity.setProperty( prop.key(), prop.type().convert( prop.value() ) );
         }
         if ( name != null )
         {
+            if(auto)
+            {
+                autoindex.startAutoIndexingProperty( "name" );
+            }
             entity.setProperty( "name", name );
         }
+        
         return entity;
     }
 
