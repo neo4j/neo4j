@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
-    <version>23</version>
+    <version>24</version>
   </parent>
 
   <groupId>org.neo4j</groupId>
@@ -35,15 +35,6 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-management</artifactId>
       <version>1.5-SNAPSHOT</version>
-    </dependency>
-    <!-- Needed for the javadoc generation! -->
-    <dependency>
-      <groupId>org.osgi</groupId>
-      <artifactId>osgi_R4_core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.osgi</groupId>
-      <artifactId>osgi_R4_compendium</artifactId>
     </dependency>
   </dependencies>
 
@@ -117,19 +108,6 @@ terms of the relevant Commercial Agreement.
               <includeGroupIds>org.neo4j</includeGroupIds>
             </configuration>
           </execution>
-          <!-- needed if test-jxr is enabled
-          <execution>
-            <id>get-test-sources</id>
-            <goals>
-              <goal>unpack-dependencies</goal>
-            </goals>
-            <configuration>
-              <classifier>test-sources</classifier>
-              <outputDirectory>${project.build.directory}/test-sources</outputDirectory>
-              <includeGroupIds>org.neo4j</includeGroupIds>
-            </configuration>
-          </execution>
-          -->
         </executions>
       </plugin>
       <plugin>
@@ -145,21 +123,6 @@ terms of the relevant Commercial Agreement.
               <outputDirectory>${project.build.directory}/site/apidocs</outputDirectory>
               <sourcepath>${project.build.directory}/javadoc-sources</sourcepath>
             </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-jxr-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>create-source-html</id>
-            <configuration>
-              <sourcePath>${project.build.directory}/sources</sourcePath>
-            </configuration>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>jxr</goal>
-            </goals>
           </execution>
         </executions>
       </plugin>
