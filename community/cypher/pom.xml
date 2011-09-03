@@ -75,11 +75,6 @@
       <version>1.5-SNAPSHOT</version>
     </dependency>
     <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-graph-matching</artifactId>
-      <version>1.5-SNAPSHOT</version>
-    </dependency>
-    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
     </dependency>
