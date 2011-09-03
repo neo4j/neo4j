@@ -168,7 +168,7 @@ public class GraphDescription implements GraphDefinition
             {
                 init( result.get( def.start() ).createRelationshipTo( result.get( def.end() ),
                         DynamicRelationshipType.withName( def.type() ) ), def.setNameProperty() ? def.name() : null,
-                        def.properties(), graphdb.index().getRelationshipAutoIndexer(), autoIndexNodes );
+                        def.properties(), graphdb.index().getRelationshipAutoIndexer(), autoIndexRelationships );
             }
             tx.success();
         }
