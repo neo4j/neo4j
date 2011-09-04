@@ -130,6 +130,7 @@ public class TraverserFunctionalTest extends AbstractRestFunctionalTestBase
     /**
      * Traversal returning nodes below a certain depth.
      * 
+     * Here, all nodes at a traversal depth below 3 are returned.
      */
     //TODO add ot the docs
     @Documented
