@@ -21,57 +21,19 @@ package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.IOException;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
-import javax.ws.rs.core.Response;
-
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.database.DatabaseBlockedException;
-import org.neo4j.server.helpers.ServerHelper;
-import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.server.rest.domain.URIHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
-import org.neo4j.test.TestData;
+import org.neo4j.test.GraphDescription.Graph;
+import org.neo4j.test.GraphDescription.NODE;
 
-public class AutoIndexNodeFunctionalTest
+public class AutoIndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
 {
-    private static NeoServerWithEmbeddedWebServer server;
-    private static FunctionalTestHelper functionalTestHelper;
-    private static GraphDbHelper helper;
-    public @Rule
-    TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
-
-    @BeforeClass
-    public static void setupServer() throws IOException
-    {
-        server = ServerHelper.createServer();
-        functionalTestHelper = new FunctionalTestHelper( server );
-        helper = functionalTestHelper.getGraphDbHelper();
-    }
-
-    @Before
-    public void cleanTheDatabase()
-    {
-        ServerHelper.cleanTheDatabase( server );
-    }
-
-    @AfterClass
-    public static void stopServer()
-    {
-        server.stop();
-    }
-
     /**
      * Find node by query from an automatic index.
      * 
@@ -79,95 +41,73 @@ public class AutoIndexNodeFunctionalTest
      */
     @Documented
     @Test
-    public void shouldRetrieveFromAutoIndexByQuery() throws PropertyValueException
+    @Graph( nodes = {@NODE(name = "I", setNameProperty = true )}, autoIndexNodes = true)
+    public void shouldRetrieveFromAutoIndexByQuery()
+            throws PropertyValueException
     {
-        String key = "bobsKey";
-        String value = "bobsValue";
-        Map<String, Object> props = new HashMap<String, Object>();
-        props.put( key, value );
-
-        helper.enableNodeAutoIndexingFor( key );
-        helper.createNode( props );
-
-        String entity = gen.get()
-                .expectedStatus( 200 )
-                .get( functionalTestHelper.nodeAutoIndexUri() + "?query=" + key + ":" + value )
-                .entity();
+        data.get();
+        String entity = gen.get().expectedStatus( 200 ).get(
+                nodeAutoIndexUri() + "?query=name:I" ).entity();
 
         Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
         assertEquals( 1, hits.size() );
     }
 
-    /**
-     * Find node by exact match from an automatic index.
-     */
+    private String nodeAutoIndexUri()
+    {
+        return getDataUri() + "index/auto/node/";
+    }
+
     @Documented
     @Test
-    public void shouldRetrieveFromAutoIndexByExactMatch() throws PropertyValueException
+    @Graph( nodes = {@NODE(name = "I", setNameProperty = true )}, autoIndexNodes = true)
+    public void find_autoindexed_node_by_exact_match()
+            throws PropertyValueException
     {
-        String key = "bobsKey";
-        String value = "bobsValue";
-        Map<String, Object> props = new HashMap<String, Object>();
-        props.put( key, value );
-
-        helper.enableNodeAutoIndexingFor( key );
-        helper.createNode( props );
-
-        String entity = gen.get()
-                .expectedStatus( 200 )
-                .get( functionalTestHelper.nodeAutoIndexUri() + key + "/" + value )
-                .entity();
+        data.get();
+        String entity = gen.get().expectedStatus( 200 ).get(
+                nodeAutoIndexUri() + "name/I" ).entity();
 
         Collection<?> hits = (Collection<?>) JsonHelper.jsonToSingleValue( entity );
         assertEquals( 1, hits.size() );
     }
 
     @Test
-    public void shouldNotBeAbleToRemoveAutoIndex() throws DatabaseBlockedException, JsonParseException
+    @Documented
+    @Graph( nodes = {@NODE(name = "I", setNameProperty = true )}, autoIndexNodes = true)
+    public void AutoIndex_is_not_removable()
+            throws DatabaseBlockedException, JsonParseException
     {
-        String indexName = server.getDatabase().graph.index()
-                .getNodeAutoIndexer()
-                .getAutoIndex()
-                .getName();
-        Response r = RestRequest.req()
-                .delete( functionalTestHelper.nodeIndexUri() + indexName );
-        assertEquals( 405, r.getStatus() );
+        data.get();
+        gen.get().expectedStatus( 405 ).delete(
+                nodeAutoIndexUri()).entity();
     }
 
     @Test
-    public void shouldNotAddToAutoIndex() throws Exception
+    @Graph( nodes = {@NODE(name = "I", setNameProperty = true )}, autoIndexNodes = true)
+    @Documented
+    public void items_can_not_be_added_manually_to_an_AutoIndex() throws Exception
     {
-        String indexName = server.getDatabase().graph.index()
-                .getNodeAutoIndexer()
-                .getAutoIndex()
-                .getName();
-        String key = "key";
-        String value = "the value";
-        value = URIHelper.encode( value );
-        int nodeId = 0;
-
-        Response r = RestRequest.req()
-                .post( functionalTestHelper.indexNodeUri( indexName, key, value ),
-                        JsonHelper.createJsonFrom( functionalTestHelper.nodeUri( nodeId ) ) );
-        assertEquals( 405, r.getStatus() );
+        data.get();
+        String indexName = graphdb().index().getNodeAutoIndexer().getAutoIndex().getName();
+        gen.get().expectedStatus( 405 ).payload(
+                JsonHelper.createJsonFrom( getNodeUri( data.get().get( "I" ) ) ) ).post(
+                getNodeIndexUri( indexName, "name", "I" ) ).entity();
     }
 
     @Test
-    public void shouldNotBeAbleToRemoveAutoIndexedItems() throws DatabaseBlockedException, JsonParseException
+    @Documented
+    @Graph( nodes = {@NODE(name = "I", setNameProperty = true )}, autoIndexNodes = true)
+    public void autoindexed_items_cannot_be_removed_manually()
+            throws DatabaseBlockedException, JsonParseException
     {
-        final RestRequest request = RestRequest.req();
-        String indexName = server.getDatabase().graph.index()
-                .getNodeAutoIndexer()
-                .getAutoIndex()
-                .getName();
-
-        Response r = request.delete( functionalTestHelper.nodeIndexUri() + indexName + "/key/value/0" );
-        assertEquals( 405, r.getStatus() );
-
-        r = request.delete( functionalTestHelper.nodeIndexUri() + indexName + "/key/0" );
-        assertEquals( 405, r.getStatus() );
-
-        r = request.delete( functionalTestHelper.nodeIndexUri() + indexName + "/0" );
-        assertEquals( 405, r.getStatus() );
+        long id = data.get().get( "I" ).getId();
+        String indexName = graphdb().index().getNodeAutoIndexer().getAutoIndex().getName();
+        gen.get().expectedStatus( 405 ).delete(
+                getDataUri() + "index/node/"+indexName+ "/name/I/"+ id).entity();
+        gen.get().expectedStatus( 405 ).delete(
+                getDataUri() + "index/node/"+indexName+ "/name/"+ id).entity();
+        gen.get().expectedStatus( 405 ).delete(
+                getDataUri() + "index/node/" + indexName + "/" + id ).entity();
     }
 }
