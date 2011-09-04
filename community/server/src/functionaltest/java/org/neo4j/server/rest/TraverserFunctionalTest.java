@@ -122,10 +122,32 @@ public class TraverserFunctionalTest extends AbstractRestFunctionalTestBase
                 "return_filter",
                 MapUtil.map( "language", "javascript", "body",
                         "position.endNode().getProperty('name').toLowerCase().contains('t')" ),
-                "relationships", rels, "max depth", 3 ) );
+                "relationships", rels, "max_depth", 3 ) );
         String entity = gen.get().expectedStatus( 200 ).payload( description ).post(
                 getTraverseUriNodes( start ) ).entity();
         expectNodes( entity, getNodes( "Root", "Mattias", "Peter", "Tobias" ) );
+    }
+    /**
+     * Traversal returning nodes below a certain depth.
+     * 
+     */
+    //TODO add ot the docs
+    @Documented
+    @Graph( {"Root knows Mattias", "Root knows Johan", "Johan knows Emil", "Emil knows Peter", "Emil knows Tobias", "Tobias loves Sara"} )
+    @Test
+    public void shouldGetExpectedHitsWhenTraversingAtDepth()
+            throws PropertyValueException
+    {
+        Node start = getNode( "Root" );
+        String description = JsonHelper.createJsonFrom( MapUtil.map(
+                "prune_evaluator",
+                MapUtil.map( "language", "builtin", "name", "none" ),
+                "return_filter",
+                MapUtil.map( "language", "javascript", "body",
+                        "position.length()<3;" ) ) );
+        String entity = gen.get().expectedStatus( 200 ).payload( description ).post(
+                getTraverseUriNodes( start ) ).entity();
+        expectNodes( entity, getNodes( "Root", "Mattias", "Johan", "Emil" ) );
     }
 
     @Test
