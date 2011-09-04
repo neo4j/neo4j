@@ -21,11 +21,12 @@ package org.neo4j.cypher.pipes.matching
 
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.commands.{VariableLengthPath, RelatedTo, Pattern}
+import org.neo4j.cypher.{SyntaxException, SymbolTable}
 
-class MatchingContext(patterns : Seq[Pattern]) {
+class MatchingContext(patterns: Seq[Pattern], boundIdentifiers:SymbolTable) {
+  val patternGraph: Seq[PatternElement] = buildPatternGraph(boundIdentifiers)
 
-  def getMatches(bindings : Map[String, Any]) : Traversable[Map[String, Any]] = {
-    val patternGraph: Seq[PatternElement] = buildPatternGraph(bindings)
+  def getMatches(bindings: Map[String, Any]): Traversable[Map[String, Any]] = {
     val (pinnedName, pinnedNode) = bindings.head
 
     val pinnedPatternNode = patternGraph.find(_.key == pinnedName).get.asInstanceOf[PatternNode]
@@ -33,13 +34,9 @@ class MatchingContext(patterns : Seq[Pattern]) {
     pinnedPatternNode.pin(pinnedNode.asInstanceOf[Node])
 
     new PatternMatcher(pinnedPatternNode, bindings)
-
   }
 
-  def buildPatternGraph(bindings: Map[String, Any]): Seq[PatternElement] = {
-
-    // validate pattern
-
+  def buildPatternGraph(bindings:SymbolTable): Seq[PatternElement] = {
     val patternNodeMap: scala.collection.mutable.Map[String, PatternNode] = scala.collection.mutable.Map()
     val patternRelMap: scala.collection.mutable.Map[String, PatternRelationship] = scala.collection.mutable.Map()
 
@@ -57,7 +54,45 @@ class MatchingContext(patterns : Seq[Pattern]) {
       }
     })
 
-    (patternNodeMap.values ++ patternRelMap.values).toSeq
+    val patternElements = (patternNodeMap.values ++ patternRelMap.values).toSeq
+
+    validatePattern(patternElements, bindings)
+
+    patternElements
+  }
+
+  def validatePattern(patternElements: Seq[PatternElement], bindings: SymbolTable) {
+    val elementsMap = patternElements.map(x => (x.key -> x)).toMap
+    var visited = scala.collection.mutable.Seq[PatternElement]()
+
+    def visit(x: PatternElement) {
+      if (!visited.contains(x))
+      {
+        visited = visited ++ Seq(x)
+        x match {
+          case nod: PatternNode => nod.relationships.foreach(visit)
+          case rel: PatternRelationship => {
+            visit(rel.leftNode)
+            visit(rel.rightNode)
+          }
+        }
+      }
+    }
+
+    bindings.identifiers.foreach(id=>{
+      val el = elementsMap.get(id.name)
+      el match {
+        case None =>
+        case Some(x) => visit(x)
+      }
+    })
+
+    val notVisited:Seq[PatternElement] = patternElements.toList -- visited.toList
+
+    if(notVisited.nonEmpty){
+      throw new SyntaxException("All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These identifiers were found to be disconnected: " + notVisited.map(_.key).mkString("", ", ", ""))
+    }
+
   }
 
 }
