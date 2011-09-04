@@ -45,25 +45,25 @@ public class DescendantsTest implements GraphHolder
     TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
             this, true ) );
  
-    @Graph({"N0 descendant N1",
-        "N0 descendant N2",
-        "N0 descendant N3",
-        "Principal1 owns N1",
-        "Principal2 owns N2",
-        "Principal1 owns N3",
+    @Graph({"Pet0 descendant Pet1",
+        "Pet0 descendant Pet2",
+        "Pet0 descendant Pet3",
+        "Principal1 owns Pet1",
+        "Principal2 owns Pet2",
+        "Principal1 owns Pet3",
                 })
     @Test
     /**
      * 
      * This test is demonstrating the use of node uniqueness.
-     * In order to return which all descendants (N1 and N3) 
-     * from N0 which have the relation +owns to Principal1,
+     * In order to return which all descendants 
+     * of +Pet0+ which have the relation +owns+ to Principal1 (+Pet1+ and +Pet3+),
      * the Uniqueness of the traversal needs to be set to 
      * +NODE_PATH+ rather than the default +NODE_GLOBAL+.
      */
     public void testTraversal()
     {
-        Node start = data.get().get( "N0" );
+        Node start = data.get().get( "Pet0" );
         final Node target = data.get().get( "Principal1" );
         TraversalDescription td = Traversal.description().uniqueness(Uniqueness.NODE_PATH ).evaluator( new Evaluator()
         {
