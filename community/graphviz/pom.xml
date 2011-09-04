@@ -40,6 +40,18 @@ the relevant Commercial Agreement.
   <scm>
     <url>https://github.com/neo4j/community/tree/master/graphviz</url>
   </scm>
+  
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-site-plugin</artifactId>
+          <version>3.0</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
 
   <dependencies>
     <dependency>
@@ -66,3 +78,4 @@ the relevant Commercial Agreement.
     </dependency>
   </dependencies>
 </project>
+
