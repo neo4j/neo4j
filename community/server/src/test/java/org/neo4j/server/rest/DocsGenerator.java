@@ -116,7 +116,7 @@ public class DocsGenerator
 
     private DocsGenerator( final String title )
     {
-        this.title = title;
+        this.title = title.replace( "_", " " );
     }
     
     public DocsGenerator setGraph(GraphDatabaseService graph)
