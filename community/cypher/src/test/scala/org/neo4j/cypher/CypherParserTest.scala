@@ -27,20 +27,6 @@ import org.scalatest.junit.JUnitSuite
 import parser.{ConsoleCypherParser, CypherParser}
 
 class CypherParserTest extends JUnitSuite {
-  def testQuery(query: String, expectedQuery: Query) {
-    val parser = new CypherParser()
-
-    try {
-      val executionTree = parser.parse(query)
-
-      assertEquals(expectedQuery, executionTree)
-    } catch {
-      case x => {
-        throw x
-      }
-    }
-  }
-
   @Test def shouldParseEasiestPossibleQuery() {
     val q = Query.
       start(NodeById("s", 1)).
@@ -588,6 +574,15 @@ class CypherParserTest extends JUnitSuite {
         returns (ValueReturnItem(EntityValue("a"))))
   }
 
+  @Test def variableLengthPath() {
+    testQuery("start a=(0) match a -[:knows^1..3]-> x return x",
+      Query.
+        start(NodeById("a", 0)).
+        matches(VariableLengthPath("  UNNAMED1", "a", "x", 1, 3, Some("knows"), Direction.OUTGOING)).
+        returns(ValueReturnItem(EntityValue("x")))
+    )
+  }
+
 
   @Test def consoleModeParserShouldOutputNullableProperties() {
     val query = "start a = (1) return a.name"
@@ -600,5 +595,20 @@ class CypherParserTest extends JUnitSuite {
         returns(ValueReturnItem(NullablePropertyValue("a", "name"))),
       executionTree)
   }
+
+  def testQuery(query: String, expectedQuery: Query) {
+    val parser = new CypherParser()
+
+    try {
+      val executionTree = parser.parse(query)
+
+      assertEquals(expectedQuery, executionTree)
+    } catch {
+      case x => {
+        throw new Exception(query + "\n\n" + x.getMessage)
+      }
+    }
+  }
+
 
 }

@@ -19,6 +19,7 @@ package org.neo4j.cypher.parser
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
 import org.neo4j.graphdb.Direction
@@ -30,49 +31,56 @@ trait MatchClause extends JavaTokenParsers with Tokens {
   def matching: Parser[(Match, NamedPaths)] = ignoreCase("match") ~> rep1sep(path, ",") ^^ {
     case matching => {
       val unamedPaths: List[Pattern] = matching.filter(_.isInstanceOf[List[Pattern]]).map(_.asInstanceOf[List[Pattern]]).flatten
-      val namedPaths :List[NamedPath] = matching.filter(_.isInstanceOf[NamedPath]).map(_.asInstanceOf[NamedPath])
+      val namedPaths: List[NamedPath] = matching.filter(_.isInstanceOf[NamedPath]).map(_.asInstanceOf[NamedPath])
 
-      (Match(unamedPaths:_*), NamedPaths(namedPaths:_*))
+      (Match(unamedPaths: _*), NamedPaths(namedPaths: _*))
     }
   }
 
-  def path : Parser[Any] = pathSegment | parenPath | noParenPath
+  def path: Parser[Any] = pathSegment | parenPath | noParenPath
 
-  def parenPath : Parser[NamedPath] = identity ~ "=" ~ "(" ~ pathSegment ~ ")" ^^ {
+  def parenPath: Parser[NamedPath] = identity ~ "=" ~ "(" ~ pathSegment ~ ")" ^^ {
     case p ~ "=" ~ "(" ~ pathSegment ~ ")" => NamedPath(p, pathSegment: _*)
   }
 
-  def noParenPath : Parser[NamedPath] = identity ~ "=" ~ pathSegment ^^ {
+  def noParenPath: Parser[NamedPath] = identity ~ "=" ~ pathSegment ^^ {
     case p ~ "=" ~ pathSegment => NamedPath(p, pathSegment: _*)
   }
 
   def pathSegment: Parser[List[Pattern]] = node ~ rep1(relatedTail) ^^ {
     case head ~ tails => {
       var fromNode = namer.name(head)
-      val list = tails.map(item => item match { case (back, rel, relType, forward, end) => {
-        val toNode = namer.name(end)
-        val relName = namer.name(rel)
-        val result: Pattern = RelatedTo(fromNode, toNode, relName, relType, getDirection(back, forward))
+      val list = tails.map(_ match {
+        case (back, rel, relType, forward, end, varLength) => {
+          val toNode = namer.name(end)
+          val dir = getDirection(back, forward)
 
-        fromNode = toNode
+          val result: Pattern = varLength match {
+            case None => RelatedTo(fromNode, toNode, namer.name(rel), relType, dir)
+            case Some((minHops, maxHops)) => VariableLengthPath(namer.name(None), fromNode, toNode, minHops, maxHops, relType, dir)
+          }
 
-        result
-      }})
+          fromNode = toNode
+
+          result
+        }
+      })
 
       list
     }
   }
-  private def getDirection(back:Option[String], forward:Option[String]):Direction =
+
+  private def getDirection(back: Option[String], forward: Option[String]): Direction =
     (back.nonEmpty, forward.nonEmpty) match {
-      case (true,false) => Direction.INCOMING
-      case (false,true) => Direction.OUTGOING
+      case (true, false) => Direction.INCOMING
+      case (false, true) => Direction.OUTGOING
       case _ => Direction.BOTH
     }
 
   class NodeNamer {
     var lastNodeNumber = 0
 
-    def name(s:Option[String]):String = s match {
+    def name(s: Option[String]): String = s match {
       case None => {
         lastNodeNumber += 1
         "  UNNAMED" + lastNodeNumber
@@ -81,24 +89,25 @@ trait MatchClause extends JavaTokenParsers with Tokens {
     }
   }
 
-  def node:Parser[Option[String]] =  parensNode | relatedNode
+  def node: Parser[Option[String]] = parensNode | relatedNode
 
-  def parensNode:Parser[Option[String]] = "(" ~> opt(identity) <~ ")"
+  def parensNode: Parser[Option[String]] = "(" ~> opt(identity) <~ ")"
 
-  def relatedNode:Parser[Option[String]] = opt(identity) ^^ {
+  def relatedNode: Parser[Option[String]] = opt(identity) ^^ {
     case None => throw new SyntaxException("Matching nodes without identifiers have to have parenthesis: ()")
     case x => x
   }
 
-  def relatedTail = opt("<") ~ "-" ~ opt("[" ~> relationshipInfo  <~ "]") ~ "-" ~ opt(">") ~ node ^^ {
+  def relatedTail = opt("<") ~ "-" ~ opt("[" ~> relationshipInfo <~ "]") ~ "-" ~ opt(">") ~ node ^^ {
     case back ~ "-" ~ relInfo ~ "-" ~ forward ~ end => relInfo match {
-      case Some((relName, relType)) => (back, relName, relType, forward, end)
-      case None => (back, None, None, forward, end)
+      case Some((relName, relType, varLength)) => (back, relName, relType, forward, end, varLength)
+      case None => (back, None, None, forward, end, None)
     }
   }
 
-  def relationshipInfo:Parser[(Option[String],Option[String])] = opt(identity) ~ opt(":" ~ identity) ^^ {
-    case relName  ~ Some(":" ~ relType) => (relName, Some(relType))
-    case relName  ~ None => (relName, None)
+  def relationshipInfo: Parser[(Option[String], Option[String], Option[(Int, Int)])] = opt(identity) ~ opt(":" ~ identity ~ opt("^" ~ wholeNumber ~ ".." ~ wholeNumber)) ^^ {
+    case relName ~ Some(":" ~ relType ~ None) => (relName, Some(relType), None)
+    case relName ~ Some(":" ~ relType ~ Some("^" ~ minHops ~ ".." ~ maxHops)) => (relName, Some(relType), Some((minHops.toInt, maxHops.toInt)))
+    case relName ~ None => (relName, None, None)
   }
 }
