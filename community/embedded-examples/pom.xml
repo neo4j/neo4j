@@ -45,6 +45,12 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>1.5-SNAPSHOT</version>
+      <classifier>test</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-udc</artifactId>
       <version>1.5-SNAPSHOT</version>
       <classifier>neo4j</classifier>
