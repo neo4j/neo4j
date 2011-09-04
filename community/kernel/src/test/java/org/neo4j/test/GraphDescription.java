@@ -230,10 +230,11 @@ public class GraphDescription implements GraphDefinition
     public static void destroy( Map<String, Node> nodes )
     {
         if ( nodes.isEmpty() ) return;
-        Transaction tx = nodes.values().iterator().next().getGraphDatabase().beginTx();
+        GraphDatabaseService db = nodes.values().iterator().next().getGraphDatabase();
+        Transaction tx = db.beginTx();
         try
         {
-            for ( Node node : nodes.values() )
+            for ( Node node : db.getAllNodes() )
             {
                 for ( Relationship rel : node.getRelationships() )
                     rel.delete();
