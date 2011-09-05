@@ -123,6 +123,12 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
 
         clearCache();
         assertTrue( !node1.hasProperty( key ) );
+        
+        node1.setProperty( "other", 123L );
+        assertEquals( 123L, node1.getProperty( "other" ) );
+        newTransaction();
+        clearCache();
+        assertEquals( 123L, node1.getProperty( "other" ) );
     }
 
     @Test

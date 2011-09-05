@@ -348,14 +348,14 @@ public enum ShortArray
 
         int requiredBits = type.calculateRequiredBitsForArray( array );
         int arrayLength = Array.getLength( array );
-        if ( arrayLength > 63
+        if ( arrayLength > 63 /*because we only use 6 bits for length*/
              || !willFit( requiredBits, arrayLength, payloadSizeInBytes ) )
         {
             // Too big array
             return false;
         }
-        Bits result = Bits.bits( payloadSizeInBytes );
-        // [kkkk,kkkk][kkkk,kkkk][kkkk,kkkk][tttt,yyyy][llll,llbb][bbbb...
+        Bits result = Bits.bits( calculateNumberOfBlocksUsed( arrayLength, requiredBits )*8 );
+        // [][][    ,bbbb][bbll,llll][yyyy,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
         result.put( keyId, 24 );
         result.put( PropertyType.SHORT_ARRAY.intValue(), 4 );
         result.put( type.type.intValue(), 4 );
@@ -373,7 +373,7 @@ public enum ShortArray
     public static Object decode( PropertyBlock block )
     {
         Bits bits = Bits.bitsFromLongs( Arrays.copyOf( block.getValueBlocks(), block.getValueBlocks().length ) );
-        // bbbb][bbll,llll][yyyy,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
+        // [][][    ,bbbb][bbll,llll][yyyy,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
         bits.getInt( 24 ); // Get rid of key
         bits.getByte( 4 ); // Get rid of short array type
         int typeId = bits.getByte( 4 );
@@ -439,9 +439,14 @@ public enum ShortArray
         // bbbb][bbll,llll][yyyy,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
         bits.getInt( 24 ); // Get rid of key
         bits.getByte( 4 ); // Get rid of short array type
-        int typeId = bits.getByte( 4 );
+        bits.getByte( 4 ); // Get rid of the type
         int arrayLength = bits.getByte( 6 );
         int requiredBits = bits.getByte( 6 );
+        return calculateNumberOfBlocksUsed( arrayLength, requiredBits );
+    }
+    
+    public static int calculateNumberOfBlocksUsed( int arrayLength, int requiredBits )
+    {
         int bitsForItems = arrayLength*requiredBits;
         int totalBits = 24+4+4+6+6+bitsForItems;
         return (totalBits-1)/64+1;

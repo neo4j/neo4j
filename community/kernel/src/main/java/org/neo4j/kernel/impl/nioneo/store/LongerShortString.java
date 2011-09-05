@@ -731,17 +731,18 @@ public enum LongerShortString
         return table;
     }
 
-    private static Bits newBits( int payloadSize )
+    private static Bits newBits( int encoding, int length )
     {
-        return Bits.bits( payloadSize );
+        return Bits.bits( calculateNumberOfBlocksUsed( encoding, length )*8 );
     }
 
     private static boolean encodeLatin1( int keyId, String string,
             PropertyBlock target, int payloadSize )
-    { // see doEncode
-        Bits bits = newBits( payloadSize );
-        writeHeader( bits, keyId, 10, string.length() );
-        for ( int i = 0; i < string.length(); i++ )
+    {
+        int length = string.length();
+        Bits bits = newBits( 10, length );
+        writeHeader( bits, keyId, 10, length );
+        for ( int i = 0; i < length; i++ )
         {
             char c = string.charAt( i );
             if ( c < 0 || c >= 256 ) return false;
@@ -757,8 +758,8 @@ public enum LongerShortString
         try
         {
             byte[] bytes = string.getBytes( "UTF-8" );
-            if ( bytes.length > payloadSize-3-2 ) return false;
-            Bits bits = newBits( payloadSize );
+            if ( bytes.length > payloadSize-3/*key*/-2/*enc+len*/ ) return false;
+            Bits bits = newBits( 0, bytes.length );
             writeHeader( bits, keyId, 0, bytes.length ); // In this case it isn't the string length, but the number of bytes
             for ( byte value : bytes )
             {
@@ -777,7 +778,7 @@ public enum LongerShortString
             int payloadSize )
     {
         if ( data.length > maxLength( payloadSize ) ) return false;
-        Bits bits = newBits( payloadSize );
+        Bits bits = newBits( encodingHeader, data.length );
         writeHeader( bits, keyId, encodingHeader, data.length );
         for ( int i = 0; i < data.length; i++ )
         {
@@ -822,7 +823,11 @@ public enum LongerShortString
         bits.getByte( 4 ); // type
         int encoding = bits.getByte( 5 );
         int length = bits.getByte( 6 );
-        
+        return calculateNumberOfBlocksUsed( encoding, length );
+    }
+    
+    public static int calculateNumberOfBlocksUsed( int encoding, int length )
+    {
         int bitsForCharacters = 0; 
         if ( encoding == 0 || encoding == 10 ) bitsForCharacters = length*8;
         else bitsForCharacters = getEncodingTable( encoding ).step*length;

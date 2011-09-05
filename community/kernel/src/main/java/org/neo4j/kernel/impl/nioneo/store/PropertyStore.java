@@ -507,7 +507,17 @@ public class PropertyStore extends AbstractStore implements Store
         else if ( value instanceof Integer ) block.setSingleBlock( bits32WithKeyAndType( keyId, PropertyType.INT ).put( ((Integer)value).intValue() ).getLongs()[0] );
         else if ( value instanceof Boolean ) block.setSingleBlock( bits32WithKeyAndType( keyId, PropertyType.BOOL ).put( ((Boolean)value).booleanValue() ? 1 : 0 ).getLongs()[0] );
         else if ( value instanceof Float ) block.setSingleBlock( bits32WithKeyAndType( keyId, PropertyType.FLOAT ).put( Float.floatToRawIntBits( ((Float) value).floatValue() ) ).getLongs()[0] );
-        else if ( value instanceof Long ) block.setValueBlocks( bits64WithKeyAndType( keyId, PropertyType.LONG ).put( ((Long)value).longValue() ).getLongs() );
+        else if ( value instanceof Long )
+        {
+            if ( ShortArray.LONG.getRequiredBits( value ) <= 35 )
+            {   // We only need one block for this value
+                block.setValueBlocks( bits32WithKeyAndType( keyId, PropertyType.LONG ).put( (byte)1, 1 ).put( ((Long)value).longValue(), 35 ).getLongs() );
+            }
+            else
+            {   // We need two blocks for this value
+                block.setValueBlocks( bits64WithKeyAndType( keyId, PropertyType.LONG ).put( ((Long)value).longValue() ).getLongs() );
+            }
+        }
         else if ( value instanceof Double ) block.setValueBlocks( bits64WithKeyAndType( keyId, PropertyType.DOUBLE ).put( Double.doubleToRawLongBits( ((Double)value).doubleValue() ) ).getLongs() );
         else if ( value instanceof Byte ) block.setSingleBlock( bits32WithKeyAndType( keyId, PropertyType.BYTE ).put( ((Byte)value).byteValue() ).getLongs()[0] );
         else if ( value instanceof Character ) block.setSingleBlock( bits32WithKeyAndType( keyId, PropertyType.CHAR ).put( ((Character)value).charValue() ).getLongs()[0] );

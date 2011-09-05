@@ -121,21 +121,33 @@ public enum PropertyType
         @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            return Long.valueOf( block.getValueBlocks()[1] );
+            return Long.valueOf( getLongValue( block ) );
+        }
+        
+        private long getLongValue( PropertyBlock block )
+        {
+            long firstBlock = block.getSingleValueBlock();
+            return valueIsInlined( firstBlock ) ? (block.getSingleValueLong() >>> 1) :
+                    block.getValueBlocks()[1];
         }
 
         @Override
         public PropertyData newPropertyData( PropertyBlock block,
                 long propertyId, Object extractedValue )
         {
-            return PropertyDatas.forLong( block.getKeyIndexId(), propertyId,
-                    block.getValueBlocks()[1] );
+            return PropertyDatas.forLong( block.getKeyIndexId(), propertyId, getLongValue( block ) );
+        }
+        
+        private boolean valueIsInlined( long firstBlock )
+        {
+            // [][][][][   i,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
+            return (firstBlock & 0x10000000L) > 0;
         }
 
         @Override
         public int calculateNumberOfBlocksUsed( long firstBlock )
         {
-            return 2;
+            return valueIsInlined( firstBlock ) ? 1 : 2;
         }
     },
     FLOAT( 7 )
