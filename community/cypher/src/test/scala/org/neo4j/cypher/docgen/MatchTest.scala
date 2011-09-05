@@ -93,6 +93,18 @@ class MatchTest extends DocumentingTestBase {
     )
   }
 
+  @Test def variableLengthPath() {
+    testQuery(
+      title = "Variable length relationships",
+      text = "Nodes that are variable number of relationship->node hops can be found using the -[:TYPE^minHops..maxHops]->. The ",
+      queryText = """start a=(%A%), x=(%E%, %B%) match a-[:KNOWS^1..3]->x return a,x""",
+      returns = """The three nodes in the path.""",
+      (p) => assertEquals(List(
+        Map("a" -> node("A"), "x" -> node("E")),
+        Map("a" -> node("A"), "x" -> node("B"))), p.toList)
+    )
+  }
+
   @Test def complexMatching() {
     testQuery(
       title = "Complex matching",

@@ -53,7 +53,7 @@ trait MatchClause extends JavaTokenParsers with Tokens {
       val list = tails.map(_ match {
         case (back, rel, relType, forward, end, varLength) => {
           val toNode = namer.name(end)
-          val dir = getDirection(back, forward)
+            val dir = getDirection(back, forward)
 
           val result: Pattern = varLength match {
             case None => RelatedTo(fromNode, toNode, namer.name(rel), relType, dir)
