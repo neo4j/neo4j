@@ -66,7 +66,7 @@ public class GetNodePropertiesFunctionalTest
     }
 
     public @Rule
-    TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
+    TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
 
     /**
      * Get properties for node (empty result).

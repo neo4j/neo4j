@@ -60,7 +60,7 @@ import com.sun.jersey.api.client.ClientResponse;
  * The status and media type of all responses is checked as well as the
  * existence of any expected headers.
  */
-public class DocsGenerator
+public class RESTDocsGenerator
 {
     private static final String DOCUMENTATION_END = "\n...\n";
 
@@ -70,17 +70,17 @@ public class DocsGenerator
 
     private static final List<String> REQUEST_HEADERS = Arrays.asList( new String[] { "Content-Type", "Accept" } );
 
-    public static final Producer<DocsGenerator> PRODUCER = new Producer<DocsGenerator>()
+    public static final Producer<RESTDocsGenerator> PRODUCER = new Producer<RESTDocsGenerator>()
     {
         @Override
-        public DocsGenerator create( GraphDefinition graph, String title, String documentation )
+        public RESTDocsGenerator create( GraphDefinition graph, String title, String documentation )
         {
-            return DocsGenerator.create( title )
+            return RESTDocsGenerator.create( title )
                     .description( documentation );
         }
 
         @Override
-        public void destroy( DocsGenerator product, boolean successful )
+        public void destroy( RESTDocsGenerator product, boolean successful )
         {
             // TODO: invoke some complete method here?
         }
@@ -105,21 +105,21 @@ public class DocsGenerator
      * 
      * @param title title of the test
      */
-    public static DocsGenerator create( final String title )
+    public static RESTDocsGenerator create( final String title )
     {
         if ( title == null )
         {
             throw new IllegalArgumentException( "The title can not be null" );
         }
-        return new DocsGenerator( title );
+        return new RESTDocsGenerator( title );
     }
 
-    private DocsGenerator( final String title )
+    private RESTDocsGenerator( final String title )
     {
         this.title = title.replace( "_", " " );
     }
     
-    public DocsGenerator setGraph(GraphDatabaseService graph)
+    public RESTDocsGenerator setGraph(GraphDatabaseService graph)
     {
         this.graph = graph;
         return this;
@@ -131,7 +131,7 @@ public class DocsGenerator
      * 
      * @param description the description
      */
-    public DocsGenerator description( final String description )
+    public RESTDocsGenerator description( final String description )
     {
         if ( description == null )
         {
@@ -164,7 +164,7 @@ public class DocsGenerator
      * 
      * @param expectedResponseStatus the expected response status
      */
-    public DocsGenerator expectedStatus( final int expectedResponseStatus )
+    public RESTDocsGenerator expectedStatus( final int expectedResponseStatus )
     {
         this.expectedResponseStatus = expectedResponseStatus;
         return this;
@@ -176,7 +176,7 @@ public class DocsGenerator
      * 
      * @param expectedMediaType the expected media tyupe
      */
-    public DocsGenerator expectedType( final MediaType expectedMediaType )
+    public RESTDocsGenerator expectedType( final MediaType expectedMediaType )
     {
         this.expectedMediaType = expectedMediaType;
         return this;
@@ -187,7 +187,7 @@ public class DocsGenerator
      * 
      * @param payloadMediaType the media type to use
      */
-    public DocsGenerator payloadType( final MediaType payloadMediaType )
+    public RESTDocsGenerator payloadType( final MediaType payloadMediaType )
     {
         this.payloadMediaType = payloadMediaType;
         return this;
@@ -198,7 +198,7 @@ public class DocsGenerator
      * 
      * @param payload the payload
      */
-    public DocsGenerator payload( final String payload )
+    public RESTDocsGenerator payload( final String payload )
     {
         this.payload = payload;
         return this;
@@ -211,7 +211,7 @@ public class DocsGenerator
      * 
      * @param expectedHeaderField the expected header
      */
-    public DocsGenerator expectedHeader( final String expectedHeaderField )
+    public RESTDocsGenerator expectedHeader( final String expectedHeaderField )
     {
         this.expectedHeaderFields.add( expectedHeaderField );
         return this;

@@ -41,7 +41,7 @@ public class AutoIndexWithNonDefaultConfigurationThroughRESTAPIFunctionalTest
     private static FunctionalTestHelper functionalTestHelper;
 
     public @Rule
-    TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
+    TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
 
     @BeforeClass
     public static void setupServer() throws IOException

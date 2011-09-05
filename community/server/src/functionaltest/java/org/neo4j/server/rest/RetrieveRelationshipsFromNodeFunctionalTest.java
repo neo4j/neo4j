@@ -86,7 +86,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest
     }
 
     public @Rule
-    TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
+    TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
 
     private JaxRsResponse sendRetrieveRequestToServer(long nodeId, String path) {
         return RestRequest.req().get(functionalTestHelper.nodeUri() + "/" + nodeId + "/relationships" + path);

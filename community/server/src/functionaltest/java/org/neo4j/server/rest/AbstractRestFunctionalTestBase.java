@@ -51,7 +51,7 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
             this, true ) );
 
     public @Rule
-    TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
+    TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
     protected static WrappingNeoServerBootstrapper server;
 
     @BeforeClass
