@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher
 
-import commands.Query
 import org.neo4j.kernel.AbstractGraphDatabase
 import org.neo4j.test.ImpermanentGraphDatabase
 import org.junit.{After, Before}
@@ -28,7 +27,7 @@ import scala.collection.JavaConverters._
 import org.scalatest.junit.JUnitSuite
 
 
-trait GraphDatabaseTestBase extends JUnitSuite {
+class GraphDatabaseTestBase extends JUnitSuite {
   var graph: AbstractGraphDatabase = null
   var refNode: Node = null
   var nodes: List[Node] = null
