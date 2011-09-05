@@ -84,13 +84,14 @@ public class TestGraphDescription implements GraphHolder
 
     @Test
     @Graph( nodes = { @NODE( name = "I", properties = { @PROP( key = "name", value = "me" ), @PROP( key="bool", value = "true", type = GraphDescription.PropType.BOOLEAN) } ),
-            @NODE( name = "you", setNameProperty = true ) }, relationships = { @REL( start = "I", end = "you", type = "knows" ) } )
+            @NODE( name = "you", setNameProperty = true ) }, relationships = { @REL( start = "I", end = "you", type = "knows" ) }, autoIndexRelationships=true )
     public void canCreateMoreInvolvedGraphWithPropertiesAndAutoIndex() throws Exception
     {
         System.out.println( data.get() );
         verifyIknowYou( "knows", "me" );
         assertEquals( true, data.get().get( "I" ).getProperty( "bool" ) );
         assertFalse( "node autoindex enabled.", graphdb().index().getNodeAutoIndexer().isEnabled() );
+        assertTrue( "relationship autoindex enabled.", graphdb().index().getRelationshipAutoIndexer().isEnabled() );
     }
 
     @Graph( value = { "I know you" }, nodes = { @NODE( name = "I", properties = { @PROP( key = "name", value = "me" ) } ) } )

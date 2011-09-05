@@ -116,7 +116,7 @@ public class DocsGenerator
 
     private DocsGenerator( final String title )
     {
-        this.title = title;
+        this.title = title.replace( "_", " " );
     }
     
     public DocsGenerator setGraph(GraphDatabaseService graph)
@@ -545,7 +545,7 @@ public class DocsGenerator
             line( fw, "_Example response_" );
             line( fw, "" );
             line( fw, "* *+" + data.status + ":+* +" + Response.Status.fromStatusCode( data.status )
-                    .toString() + "+" );
+                    + "+" );
             if ( data.responseHeaders != null )
             {
                 for ( Entry<String, String> header : data.responseHeaders.entrySet() )

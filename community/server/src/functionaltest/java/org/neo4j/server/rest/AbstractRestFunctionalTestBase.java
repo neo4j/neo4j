@@ -22,24 +22,25 @@ package org.neo4j.server.rest;
 import java.util.ArrayList;
 import java.util.Map;
 
-import org.jruby.compiler.ir.operands.Array;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphHolder;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestData;
+import org.neo4j.test.GraphDescription.Graph;
 
 public class AbstractRestFunctionalTestBase implements GraphHolder
 {
 
-    private static ImpermanentGraphDatabase graphdb;
+    static ImpermanentGraphDatabase graphdb;
     protected static final String NODES = "http://localhost:7474/db/data/node/";
 
     public @Rule
@@ -59,6 +60,7 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
 
     }
 
+    
     protected String startGraph( String name )
     {
         return "_Starting Graph:_\n\n"
@@ -74,7 +76,7 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
     }
 
     @Before
-    public void startServer()
+    public void cleanContent()
     {
         graphdb.cleanContent();
         gen.get().setGraph( graphdb );
@@ -95,6 +97,10 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
     {
         return getDataUri() + "node/" + node.getId();
     }
+    protected String getNodeIndexUri( String indexName, String key, String value )
+    {
+        return getDataUri() + "index/node/" + indexName + "/" + key + "/" + value;
+    }
 
     protected Node getNode( String name )
     {
@@ -111,4 +117,5 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
         }
         return result.toArray(nodes);
     }
+    
 }

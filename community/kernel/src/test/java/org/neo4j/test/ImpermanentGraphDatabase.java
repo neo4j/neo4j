@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -174,6 +175,10 @@ public class ImpermanentGraphDatabase extends AbstractGraphDatabase
     public IndexManager index()
     {
         return inner.index();
+    }
+    
+    public GraphDatabaseService getInner() {
+        return inner;
     }
 
     @Override
