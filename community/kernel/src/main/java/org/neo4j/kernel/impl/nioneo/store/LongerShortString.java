@@ -514,7 +514,7 @@ public enum LongerShortString
         if ( string.equals( "" ) )
         {
             Bits bits = Bits.bits( 8 );
-            writeHeader( bits, 0, 0, 0 );
+            writeHeader( bits, keyId, 0, 0 );
             target.setValueBlocks( bits.getLongs() );
             return true;
         }
@@ -675,20 +675,9 @@ public enum LongerShortString
         return false;
     }
 
-//    private static void applyOnRecord( int keyId, PropertyBlock target,
-//            int encoding, int stringLength, long[] data )
-//    {
-//        // TODO Make a utility OR:ing in the key/type in the propblock
-//        data[0] |= ((long)keyId << 40);
-//        data[0] |= ( (long) PropertyType.SHORT_STRING.intValue() << 36 );
-//        data[0] |= ( (long) encoding << 32 );
-//        data[0] |= ( (long) stringLength << 26 );
-//
-//        target.setValueBlocks( data );
-//    }
-    
     private static void writeHeader( Bits bits, int keyId, int encoding, int stringLength )
     {
+        // [][][][ lll,llle][eeee,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
         bits.put( keyId, 24 ).put( PropertyType.SHORT_STRING.intValue(), 4 ).put( encoding, 5 ).put( stringLength, 6 );
     }
 
@@ -704,30 +693,14 @@ public enum LongerShortString
                 block.getValueBlocks().length ) );
         long firstLong = bits.getLongs()[0];
         if ( ( firstLong & 0xFFFFFF0FFFFFFFFFL ) == 0 ) return "";
-        /*
-         *  [kkkk,kkkk][kkkk,kkkk][kkkk,kkkk][tttt, eeee][llll,ll  ][    ,    ][    ,    ][    ,    ]
-         */
         bits.getInt( 24 ); // Get rid of the key
         bits.getByte( 4 ); // Get rid of the type
         int encoding = bits.getByte( 5 ); //(int) ( ( firstLong & 0xF00000000L ) >>> 32 );
         int stringLength = bits.getByte( 6 ); //(int) ( ( firstLong & 0xFC000000L ) >>> 26 );
-
-        LongerShortString table;
-        switch ( encoding )
-        {
-        case 0: return decodeUTF8( bits, stringLength );
-        case 1: table = NUMERICAL; break;
-        case 2: table = DATE; break;
-        case 3: table = UPPER; break;
-        case 4: table = LOWER; break;
-        case 5: table = EMAIL; break;
-        case 6: table = URI; break;
-        case 7: table = ALPHANUM; break;
-        case 8: table = ALPHASYM; break;
-        case 9: table = EUROPEAN; break;
-        case 10: return decodeLatin1( bits, stringLength );
-        default: throw new IllegalArgumentException( "Invalid encoding '" + encoding + "'" );
-        }
+        if ( encoding == 0 ) return decodeUTF8( bits, stringLength );
+        if ( encoding == 10 ) return decodeLatin1( bits, stringLength );
+        
+        LongerShortString table = getEncodingTable( encoding );
         char[] result = new char[stringLength];
         // encode shifts in the bytes with the first char at the MSB, therefore
         // we must "unshift" in the reverse order
@@ -737,6 +710,25 @@ public enum LongerShortString
             result[i] = table.decTranslate( codePoint );
         }
         return new String( result );
+    }
+
+    private static LongerShortString getEncodingTable( int encoding )
+    {
+        LongerShortString table;
+        switch ( encoding )
+        {
+        case 1: table = NUMERICAL; break;
+        case 2: table = DATE; break;
+        case 3: table = UPPER; break;
+        case 4: table = LOWER; break;
+        case 5: table = EMAIL; break;
+        case 6: table = URI; break;
+        case 7: table = ALPHANUM; break;
+        case 8: table = ALPHASYM; break;
+        case 9: table = EUROPEAN; break;
+        default: throw new IllegalArgumentException( "Invalid encoding '" + encoding + "'" );
+        }
+        return table;
     }
 
     private static Bits newBits( int payloadSize )
@@ -821,5 +813,21 @@ public enum LongerShortString
         {
             throw new IllegalStateException( "All JVMs must support UTF-8", e );
         }
+    }
+    
+    public static int calculateNumberOfBlocksUsed( long firstBlock )
+    {
+        Bits bits = Bits.bitsFromLongs( new long[] {firstBlock} );
+        bits.getInt( 24 ); // key
+        bits.getByte( 4 ); // type
+        int encoding = bits.getByte( 5 );
+        int length = bits.getByte( 6 );
+        
+        int bitsForCharacters = 0; 
+        if ( encoding == 0 || encoding == 10 ) bitsForCharacters = length*8;
+        else bitsForCharacters = getEncodingTable( encoding ).step*length;
+        
+        int bitsInTotal = 24+4+5+6+bitsForCharacters;
+        return (bitsInTotal-1)/64+1;
     }
 }

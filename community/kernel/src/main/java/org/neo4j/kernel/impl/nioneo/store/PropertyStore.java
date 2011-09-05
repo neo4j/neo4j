@@ -279,6 +279,13 @@ public class PropertyStore extends AbstractStore implements Store
                     bits.put( propBlockValue );
                 }
             }
+            else
+            {
+                for ( int i = 0; i < block.getValueBlocks().length; i++ )
+                {
+                    bits.put( 0L );
+                }
+            }
             if ( !block.isLight() )
             {
                 for ( DynamicRecord valueRecord : block.getValueRecords() )
@@ -440,9 +447,10 @@ public class PropertyStore extends AbstractStore implements Store
             return toReturn;
         }
         toReturn.setInUse( true );
-        long[] blockData = new long[type.getSizeInLongs()];
-        blockData[0] = header; // we already have that;
-        for ( int i = 1; i < type.getSizeInLongs(); i++ )
+        int numBlocks = type.calculateNumberOfBlocksUsed( header );
+        long[] blockData = new long[numBlocks];
+        blockData[0] = header; // we already have that
+        for ( int i = 1; i < numBlocks; i++ )
         {
             blockData[i] = fromBits.getLong();
         }
@@ -495,6 +503,8 @@ public class PropertyStore extends AbstractStore implements Store
 
     public void encodeValue( PropertyBlock block, int keyId, Object value )
     {
+//        try
+//        {
         if ( value instanceof String )
         {
             String string = (String) value;
@@ -543,8 +553,69 @@ public class PropertyStore extends AbstractStore implements Store
             throw new IllegalArgumentException( "Unknown property type on: "
                 + value + ", " + value.getClass() );
         }
+//        }
+//        finally
+//        {
+//            verifySame( block, value );
+//        }
     }
 
+//    private void verifySame( PropertyBlock block, Object value )
+//    {
+//        if ( block.isLight() )
+//        {
+//            makeHeavy( block );
+//        }
+//        Object readValue = block.getType().getValue( block, this );
+//        if ( readValue.getClass().isArray() )
+//        {
+//            if ( !value.getClass().isArray() )
+//            {
+//                throw new RuntimeException( "Read value " + valueToString( readValue ) + " didn't match source value " + valueToString( value ) );
+//            }
+//            int length = Array.getLength( readValue );
+//            if ( Array.getLength( value ) != length )
+//            {
+//                throw new RuntimeException( "Read value " + valueToString( readValue ) + " didn't match source value " + valueToString( value ) );
+//            }
+//            for ( int i = 0; i < length; i++ )
+//            {
+//                if ( !Array.get( value, i ).equals( Array.get( readValue, i ) ) )
+//                {
+//                    throw new RuntimeException( "Read value " + valueToString( readValue ) + " didn't match source value " + valueToString( value ) );
+//                }
+//            }
+//        }
+//        else
+//        {
+//            if ( !value.equals( readValue ) )
+//            {
+//                throw new RuntimeException( "Read value " + valueToString( readValue ) + " didn't match source value " + valueToString( value ) );
+//            }
+//        }
+//    }
+//
+//    public static String valueToString( Object value )
+//    {
+//        if ( value.getClass().isArray() )
+//        {
+//            StringBuilder builder = new StringBuilder( value.getClass().getComponentType().getName() + "[" );
+//            int length = Array.getLength( value );
+//            if ( length > 1000 ) return "BIG";
+//            for ( int i = 0; i < length; i++ )
+//            {
+//                if ( i > 0 ) builder.append( "," );
+//                builder.append( Array.get( value, i ) );
+//            }
+//            return builder.append( "]" ).toString();
+//        }
+//        else
+//        {
+//            if ( value instanceof String && value.toString().length() > 1000 ) return "BIG";
+//            return "[" + value.getClass().getName() + "]'" + value.toString() + "'";
+//        }
+//    }
+    
     // TODO Assume only one prop per record for now
     private Bits bits32WithKeyAndType( int keyId, PropertyType type )
     {

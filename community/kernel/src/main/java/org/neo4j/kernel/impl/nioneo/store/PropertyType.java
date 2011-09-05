@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.util.Bits;
  */
 public enum PropertyType
 {
-    BOOL( 1, 1 )
+    BOOL( 1 )
     {
         @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
@@ -48,7 +48,7 @@ public enum PropertyType
                     getValue( block.getSingleValueLong() ).booleanValue() );
         }
     },
-    BYTE( 2, 1 )
+    BYTE( 2 )
     {
         @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
@@ -65,7 +65,7 @@ public enum PropertyType
                     block.getSingleValueByte() );
         }
     },
-    SHORT( 3, 1 )
+    SHORT( 3 )
     {
         @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
@@ -82,7 +82,7 @@ public enum PropertyType
                     block.getSingleValueShort() );
         }
     },
-    CHAR( 4, 1 )
+    CHAR( 4 )
     {
         @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
@@ -99,7 +99,7 @@ public enum PropertyType
                     (char) block.getSingleValueShort() );
         }
     },
-    INT( 5, 1 )
+    INT( 5 )
     {
         @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
@@ -116,7 +116,7 @@ public enum PropertyType
                     block.getSingleValueInt() );
         }
     },
-    LONG( 6, 2 )
+    LONG( 6 )
     {
         @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
@@ -131,8 +131,14 @@ public enum PropertyType
             return PropertyDatas.forLong( block.getKeyIndexId(), propertyId,
                     block.getValueBlocks()[1] );
         }
+
+        @Override
+        public int calculateNumberOfBlocksUsed( long firstBlock )
+        {
+            return 2;
+        }
     },
-    FLOAT( 7, 1 )
+    FLOAT( 7 )
     {
         @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
@@ -153,7 +159,7 @@ public enum PropertyType
                     getValue( block.getSingleValueInt() ) );
         }
     },
-    DOUBLE( 8, 2 )
+    DOUBLE( 8 )
     {
         @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
@@ -173,8 +179,14 @@ public enum PropertyType
             return PropertyDatas.forDouble( block.getKeyIndexId(), propertyId,
                     getValue( block.getValueBlocks()[1] ) );
         }
+
+        @Override
+        public int calculateNumberOfBlocksUsed( long firstBlock )
+        {
+            return 2;
+        }
     },
-    STRING( 9, 1 )
+    STRING( 9 )
     {
         @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
@@ -191,7 +203,7 @@ public enum PropertyType
                     propertyId, extractedValue );
         }
     },
-    ARRAY( 10, 1 )
+    ARRAY( 10 )
     {
         @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
@@ -208,7 +220,7 @@ public enum PropertyType
                     propertyId, extractedValue );
         }
     },
-    SHORT_STRING( 11, 4 )
+    SHORT_STRING( 11 )
     {
         @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
@@ -223,8 +235,14 @@ public enum PropertyType
             return PropertyDatas.forStringOrArray( block.getKeyIndexId(),
                     propertyId, getValue( block, null ) );
         }
+
+        @Override
+        public int calculateNumberOfBlocksUsed( long firstBlock )
+        {
+            return LongerShortString.calculateNumberOfBlocksUsed( firstBlock );
+        }
     },
-    SHORT_ARRAY( 12, 4 )
+    SHORT_ARRAY( 12 )
     {
         @Override
         public Object getValue( PropertyBlock block, PropertyStore store )
@@ -239,19 +257,22 @@ public enum PropertyType
             return PropertyDatas.forStringOrArray( block.getKeyIndexId(),
                     propertyId, getValue( block, null ) );
         }
+        
+        @Override
+        public int calculateNumberOfBlocksUsed( long firstBlock )
+        {
+            return ShortArray.calculateNumberOfBlocksUsed( firstBlock );
+        }
     };
 
     private final int type;
 
-    private final int sizeOfBlockInLongs;
-
     // TODO In wait of a better place
     private static int payloadSize = PropertyStore.DEFAULT_PAYLOAD_SIZE;
 
-    PropertyType( int type, int sizeOfBlockInLongs )
+    PropertyType( int type )
     {
         this.type = type;
-        this.sizeOfBlockInLongs = sizeOfBlockInLongs;
     }
 
     /**
@@ -280,11 +301,6 @@ public enum PropertyType
 
     public abstract PropertyData newPropertyData( PropertyBlock block,
             long propertyId, Object extractedValue );
-
-    public int getSizeInLongs()
-    {
-        return sizeOfBlockInLongs;
-    }
 
     public static PropertyType getPropertyType( long propBlock, boolean nullOnIllegal )
     {
@@ -347,5 +363,10 @@ public enum PropertyType
             throw new RuntimeException( "Payload must be divisible by 8" );
         }
         payloadSize = newPayloadSize;
+    }
+
+    public int calculateNumberOfBlocksUsed( long firstBlock )
+    {
+        return 1;
     }
 }

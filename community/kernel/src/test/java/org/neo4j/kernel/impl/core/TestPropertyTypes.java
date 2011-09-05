@@ -544,4 +544,19 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.setProperty( "large_string", new String( bytes ) );
         newTransaction();
     }
+    
+    @Test
+    public void testEmptyString() throws Exception
+    {
+        Node node = getGraphDb().createNode();
+        node.setProperty( "1", 2 );
+        node.setProperty( "2", "" );
+        node.setProperty( "3", "" );
+        newTransaction();
+        clearCache();
+
+        assertEquals( 2, node.getProperty( "1" ) );
+        assertEquals( "", node.getProperty( "2" ) );
+        assertEquals( "", node.getProperty( "3" ) );
+    }
 }

@@ -432,4 +432,18 @@ public enum ShortArray
         }
         return null;
     }
+
+    public static int calculateNumberOfBlocksUsed( long firstBlock )
+    {
+        Bits bits = Bits.bitsFromLongs( new long[] {firstBlock} );
+        // bbbb][bbll,llll][yyyy,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
+        bits.getInt( 24 ); // Get rid of key
+        bits.getByte( 4 ); // Get rid of short array type
+        int typeId = bits.getByte( 4 );
+        int arrayLength = bits.getByte( 6 );
+        int requiredBits = bits.getByte( 6 );
+        int bitsForItems = arrayLength*requiredBits;
+        int totalBits = 24+4+4+6+6+bitsForItems;
+        return (totalBits-1)/64+1;
+    }
 }
