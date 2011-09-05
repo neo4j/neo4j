@@ -36,7 +36,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
-import org.neo4j.server.rest.DocsGenerator;
+import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphDescription.NODE;
@@ -56,7 +56,7 @@ public class CypherPluginFunctionalTest implements GraphHolder
             this, true ) );
 
     public @Rule
-    TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
+    TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
     private static WrappingNeoServerBootstrapper server;
 
     /**
