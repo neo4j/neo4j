@@ -58,8 +58,7 @@ public class DescendantsTest implements GraphHolder
         "Pet0 descendant Pet3",
         "Principal1 owns Pet1",
         "Principal2 owns Pet2",
-        "Principal1 owns Pet3",
-                })
+        "Principal1 owns Pet3"})
     @Test
     public void testTraversal()
     {
