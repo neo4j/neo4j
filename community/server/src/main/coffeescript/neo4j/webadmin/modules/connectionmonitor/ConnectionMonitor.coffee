@@ -31,6 +31,11 @@ define(
       init : (appState) ->
         @db = appState.getServer()
         @db.bind CONNECTION_LOST_EVENT, @connectionLost
+        
+        # Empty heartbeat listener,
+        # makes sure we continiously
+        # check if the server is alive.
+        @db.heartbeat.addListener ->
 
       connectionLost : =>
 
