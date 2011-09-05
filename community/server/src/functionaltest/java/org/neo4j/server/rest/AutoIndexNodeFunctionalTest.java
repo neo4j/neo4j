@@ -57,11 +57,14 @@ public class AutoIndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
     {
         return getDataUri() + "index/auto/node/";
     }
-
+    /**
+     * Automatic index nodes can
+     * be found via exact lookups with normal Index REST syntax.
+     */
     @Documented
     @Test
     @Graph( nodes = {@NODE(name = "I", setNameProperty = true )}, autoIndexNodes = true)
-    public void find_autoindexed_node_by_exact_match()
+    public void find_node_by_exact_match_from_an_automatic_index()
             throws PropertyValueException
     {
         data.get();

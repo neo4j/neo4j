@@ -79,6 +79,7 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
     public void cleanContent()
     {
         graphdb.cleanContent();
+        gen.get().setGraph( graphdb );
     }
 
     @AfterClass

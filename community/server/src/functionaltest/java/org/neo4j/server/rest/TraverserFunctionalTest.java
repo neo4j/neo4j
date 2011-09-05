@@ -99,7 +99,8 @@ public class TraverserFunctionalTest extends AbstractRestFunctionalTestBase
      * Traversal using a return filter.
      * 
      * In this example, the +none+ prune evaluator is used and a return filter
-     * is supplied. The result is to be returned as nodes and the max depth is
+     * is supplied in order to return all names containing "t". 
+     * The result is to be returned as nodes and the max depth is
      * set to 3.
      */
     @Documented
@@ -132,7 +133,6 @@ public class TraverserFunctionalTest extends AbstractRestFunctionalTestBase
      * 
      * Here, all nodes at a traversal depth below 3 are returned.
      */
-    //TODO add ot the docs
     @Documented
     @Graph( {"Root knows Mattias", "Root knows Johan", "Johan knows Emil", "Emil knows Peter", "Emil knows Tobias", "Tobias loves Sara"} )
     @Test
