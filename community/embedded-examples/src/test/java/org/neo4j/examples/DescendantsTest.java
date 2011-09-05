@@ -45,14 +45,6 @@ public class DescendantsTest implements GraphHolder
     TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
             this, true ) );
  
-    @Graph({"Pet0 descendant Pet1",
-        "Pet0 descendant Pet2",
-        "Pet0 descendant Pet3",
-        "Principal1 owns Pet1",
-        "Principal2 owns Pet2",
-        "Principal1 owns Pet3",
-                })
-    @Test
     /**
      * 
      * This test is demonstrating the use of node uniqueness.
@@ -61,13 +53,20 @@ public class DescendantsTest implements GraphHolder
      * the Uniqueness of the traversal needs to be set to 
      * +NODE_PATH+ rather than the default +NODE_GLOBAL+.
      */
+    @Graph({"Pet0 descendant Pet1",
+        "Pet0 descendant Pet2",
+        "Pet0 descendant Pet3",
+        "Principal1 owns Pet1",
+        "Principal2 owns Pet2",
+        "Principal1 owns Pet3",
+                })
+    @Test
     public void testTraversal()
     {
         Node start = data.get().get( "Pet0" );
         final Node target = data.get().get( "Principal1" );
         TraversalDescription td = Traversal.description().uniqueness(Uniqueness.NODE_PATH ).evaluator( new Evaluator()
         {
-            
             @Override
             public Evaluation evaluate( Path path )
             {
