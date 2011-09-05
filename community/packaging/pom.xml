@@ -3,8 +3,8 @@
 
   <parent>
     <artifactId>assembly-pom</artifactId>
-    <groupId>org.neo4j.assembly</groupId>
-    <version>22</version>
+    <groupId>org.neo4j.build</groupId>
+    <version>25</version>
   </parent>
 
   <groupId>org.neo4j.assembly</groupId>
