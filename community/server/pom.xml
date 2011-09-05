@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
-    <groupId>org.neo4j</groupId>
+    <groupId>org.neo4j.build</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>23</version>
+    <version>24</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -283,47 +283,6 @@ the relevant Commercial Agreement.
       <scope>test</scope>
     </dependency>
     
-
-
-    <dependency>
-      <!-- Provides Autoprocessor. This dependency makes the plugin loader Felix-specific rather than 
-        generic. Consider refactoring out this dependency, or don't worry about it and always uses Felix. -->
-      <groupId>org.apache.felix</groupId>
-      <artifactId>org.apache.felix.main</artifactId>
-      <version>3.0.2</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.osgi</groupId>
-      <artifactId>osgi_R4_core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.osgi</groupId>
-      <artifactId>osgi_R4_compendium</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.felix</groupId>
-      <artifactId>org.apache.felix.fileinstall</artifactId>
-      <version>${felix-fileinstall.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.ops4j.pax.swissbox</groupId>
-      <artifactId>pax-swissbox-tinybundles</artifactId>
-      <version>1.3.0</version>
-      <scope>test</scope>
-    </dependency>
-
-
-    <dependency>
-      <groupId>org.ops4j.pax.url</groupId>
-      <artifactId>pax-url-mvn</artifactId>
-      <version>1.1.3</version>
-      <scope>test</scope>
-    </dependency>
-
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-shell</artifactId>
@@ -436,28 +395,6 @@ the relevant Commercial Agreement.
       <plugin>
         <groupId>com.mycila.maven-license-plugin</groupId>
         <artifactId>maven-license-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>inject-license-in-js-files</id>
-            <!-- Done in validate phase b/c the license header check is done in the intialize phase, 
-              validate is the only one before it. -->
-            <phase>validate</phase>
-            <configuration>
-              <basedir>src/main/resources/webadmin-html/</basedir>
-              <includes>
-                <!-- temporary configuration fix -->
-                <include>**/webadmin-min.js</include>
-              </includes>
-              <excludes>
-                <exclude>lib/*</exclude>
-              </excludes>
-            </configuration>
-            <goals>
-              <goal>format</goal>
-            </goals>
-          </execution>
-        </executions>
-        <!-- temporary configuration fix -->
         <configuration>
           <strictCheck>true</strictCheck>
           <header>${license-text.header}</header>
@@ -470,7 +407,6 @@ the relevant Commercial Agreement.
           <excludes>
             <exclude>**/lib/*.js</exclude>
             <exclude>**/lib/**/*.js</exclude>
-            <exclude>**/javascript/vend/**</exclude>
             <exclude>**/webadmin-html/**</exclude>
           </excludes>
           <mapping>
@@ -503,37 +439,6 @@ the relevant Commercial Agreement.
       </plugin>
 
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>appassembler-maven-plugin</artifactId>
-        <configuration>
-          <repositoryLayout>flat</repositoryLayout>
-          <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
-          <configurationDirectory>etc</configurationDirectory>
-          <target>${project.build.directory}/dist</target>
-          <daemons>
-            <daemon>
-              <id>neo-server</id>
-              <mainClass>${neo4j-server.mainClass}</mainClass>
-              <commandLineArguments>
-                <commandLineArgument>start</commandLineArgument>
-              </commandLineArguments>
-              <platforms>
-                <platform>jsw</platform>
-              </platforms>
-            </daemon>
-          </daemons>
-        </configuration>
-        <executions>
-          <execution>
-            <id>generate-jsw-scripts</id>
-            <phase>package</phase>
-            <goals>
-              <goal>generate-daemons</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
@@ -544,20 +449,16 @@ the relevant Commercial Agreement.
         </configuration>
       </plugin>
 
-      <!-- experiment with copying artifacts into expected startup directories... <plugin> <groupId>org.apache.maven.plugins</groupId> 
-        <artifactId>maven-dependency-plugin</artifactId> <executions> <execution> <id>copy-dependencies</id> 
-        <phase>package</phase> <goals> <goal>copy-dependencies</goal> </goals> <configuration> <outputDirectory>${project.build.directory}/lib</outputDirectory> 
-        <overWriteReleases>false</overWriteReleases> <overWriteSnapshots>true</overWriteSnapshots> <includeScope>runtime</includeScope> 
-        <excludeScope>test</excludeScope> </configuration> </execution> <execution> <id>copy-extensions</id> 
-        <phase>package</phase> <goals> <goal>copy</goal> </goals> <configuration> <artifactItems> <artifactItem> 
-        <groupId>org.neo4j.ext</groupId> <artifactId>hello-ext</artifactId> <version>0.1-SNAPSHOT</version> <classifier>next</classifier> 
-        </artifactItem> </artifactItems> <outputDirectory>${project.build.directory}/ext</outputDirectory> </configuration> 
-        </execution> <execution> <id>copy-installed</id> <phase>install</phase> <goals> <goal>copy</goal> </goals> 
-        <configuration> <artifactItems> <artifactItem> <groupId>${project.groupId}</groupId> <artifactId>${project.artifactId}</artifactId> 
-        <version>${project.version}</version> <type>${project.packaging}</type> </artifactItem> </artifactItems> 
-        <outputDirectory>${project.build.directory}/lib</outputDirectory> </configuration> </execution> </executions> 
-        </plugin> -->
     </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-site-plugin</artifactId>
+          <version>3.0</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
 
   <profiles>

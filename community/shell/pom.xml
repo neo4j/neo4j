@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
-    <version>23</version>
+    <version>24</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -35,7 +35,7 @@
     <license-text.header>GPL-3-header.txt</license-text.header>
   </properties>
 
-  <packaging>bundle</packaging>
+  <packaging>jar</packaging>
 
   <licenses>
     <license>
@@ -68,23 +68,11 @@ the relevant Commercial Agreement.
               <packageName>org.neo4j.shell</packageName>
             </manifest>
             <manifestEntries>
-              <url>http://neo4j.org</url>
               <Class-Path>neo4j-kernel-${project.version}.jar neo4j-index-${project.version}.jar lucene-core-${lucene.main.version}.jar ${lucene.artifactId}-${lucene.version}.jar jta-${sun.jta.version}.jar ${jta.artifactId}-${jta.version}.jar jline-${jline.main.version}.jar
                 ${jline.artifactId}-${jline.version}.jar</Class-Path>
               <Agent-Class>org.neo4j.shell.StartClient</Agent-Class>
             </manifestEntries>
           </archive>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.ops4j</groupId>
-        <artifactId>maven-pax-plugin</artifactId>
-        <configuration>
-          <framework>felix</framework>
-          <provision>
-            <param>mvn:${jta.groupId}/${jta.artifactId}/${jta.version}</param>
-            <param>mvn:${jline.groupId}/${jline.artifactId}/${jline.version}</param>
-          </provision>
         </configuration>
       </plugin>
       <plugin>
@@ -108,10 +96,18 @@ the relevant Commercial Agreement.
         </executions>
       </plugin>
     </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-site-plugin</artifactId>
+          <version>3.0</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
 
   <dependencies>
-    <!-- If you add the jLine library (at least version 0.9.94) to the classpath of the client then you'll get enhanced prompt abilities. Much like regular bash etc. -->
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
@@ -160,17 +156,6 @@ the relevant Commercial Agreement.
       <artifactId>junit</artifactId>
     </dependency>
   </dependencies>
-
-  <reporting>
-    <plugins>
-      <plugin>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <configuration>
-          <excludePackageNames>*.impl.*</excludePackageNames>
-        </configuration>
-      </plugin>
-    </plugins>
-  </reporting>
 
   <distributionManagement>
     <site>

@@ -22,41 +22,27 @@ package org.neo4j.cypher
 import commands._
 import org.junit.Assert._
 import org.neo4j.graphdb.{Direction, Node}
-import org.junit.{Ignore, Test}
+import org.junit.Test
+import parser.CypherParser
 
 class SematicErrorTest extends ExecutionEngineHelper {
   @Test def returnNodeThatsNotThere() {
-    val node: Node = createNode()
-
-    val query = Query.
-      start(NodeById("extractReturnItems", node.getId)).
-      returns(ValueReturnItem(EntityValue("bar")))
-
-    expectedError(query, """Unknown identifier "bar".""")
+    expectedError("start x=(0) return bar", """Unknown identifier "bar".""")
   }
 
-  @Test @Ignore def throwOnDisconnectedPattern() {
-    val node: Node = createNode()
-
-    val query = Query.
-      start(NodeById("extractReturnItems", node.getId)).
-      matches(RelatedTo("a", "b", "rel", None, Direction.BOTH)).
-      returns(ValueReturnItem(EntityValue("extractReturnItems")))
-
-    expectedError(query, "All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These identifiers were found to be disconnected: a, b, rel")
+  @Test def throwOnDisconnectedPattern() {
+    expectedError("start x=(0) match a-[rel]->b return x",
+      "All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These identifiers were found to be disconnected: a, b, rel")
   }
 
   @Test def defineNodeAndTreatItAsARelationship() {
-    val node: Node = createNode()
-
-    val query = Query.
-      start(NodeById("extractReturnItems", node.getId)).
-      matches(RelatedTo("a", "b", "extractReturnItems", None, Direction.BOTH)).
-      returns(ValueReturnItem(EntityValue("extractReturnItems")))
-
-    expectedError(query, "Identifier NodeIdentifier(extractReturnItems) already defined with different type RelationshipIdentifier(extractReturnItems)")
+    expectedError("start r=(0) match a-[r]->b return r",
+      "Identifier NodeIdentifier(r) already defined with different type RelationshipIdentifier(r)")
   }
 
+  def parse(txt:String):Query = new CypherParser().parse(txt)
+
+  def expectedError(query: String, message: String) { expectedError(parse(query), message) }
 
   def expectedError(query: Query, message: String) {
     try {

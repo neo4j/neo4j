@@ -42,7 +42,7 @@
             <item name="JavaDocs"
                 href="apidocs/index.html" />
             <item name="Source Repository"
-              href="https://github.com/neo4j/graphdb" />
+              href="${scm.url}" />
         </menu>
         <menu ref="reports" />
     </body>

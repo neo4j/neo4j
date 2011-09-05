@@ -38,4 +38,8 @@ case class RelatedTo(left: String, right: String, relName: String, relType: Opti
 
 case class VariableLengthPath(pathName: String, start: String, end: String, minHops: Int, maxHops: Int, relType: Option[String], direction: Direction) extends Pattern
 
-case class NamedPath(pathName:String, pathPattern: Pattern*) extends Pattern
+case class NamedPath(pathName: String, pathPattern: Pattern*) extends Traversable[Pattern] {
+  def foreach[U](f: (Pattern) => U) {
+    pathPattern.foreach(f)
+  }
+}

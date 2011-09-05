@@ -24,21 +24,26 @@ import scala.util.parsing.combinator._
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.SyntaxException
 
-
 trait MatchClause extends JavaTokenParsers with Tokens {
-
   val namer = new NodeNamer
 
-  def matching: Parser[Match] = ignoreCase("match") ~> rep1sep(path, ",") ^^ { case matching:List[List[Pattern]] => Match(matching.flatten: _*) }
+  def matching: Parser[(Match, NamedPaths)] = ignoreCase("match") ~> rep1sep(path, ",") ^^ {
+    case matching => {
+      val unamedPaths: List[Pattern] = matching.filter(_.isInstanceOf[List[Pattern]]).map(_.asInstanceOf[List[Pattern]]).flatten
+      val namedPaths :List[NamedPath] = matching.filter(_.isInstanceOf[NamedPath]).map(_.asInstanceOf[NamedPath])
 
-  def path : Parser[List[Pattern]] = pathSegment | parenPath | noParenPath
-
-  def parenPath : Parser[List[Pattern]] = identity ~ "=" ~ "(" ~ pathSegment ~ ")" ^^ {
-    case p ~ "=" ~ "(" ~ pathSegment ~ ")" => List(NamedPath(p, pathSegment: _*))
+      (Match(unamedPaths:_*), NamedPaths(namedPaths:_*))
+    }
   }
 
-  def noParenPath : Parser[List[Pattern]] = identity ~ "=" ~ pathSegment ^^ {
-    case p ~ "=" ~ pathSegment => List(NamedPath(p, pathSegment: _*))
+  def path : Parser[Any] = pathSegment | parenPath | noParenPath
+
+  def parenPath : Parser[NamedPath] = identity ~ "=" ~ "(" ~ pathSegment ~ ")" ^^ {
+    case p ~ "=" ~ "(" ~ pathSegment ~ ")" => NamedPath(p, pathSegment: _*)
+  }
+
+  def noParenPath : Parser[NamedPath] = identity ~ "=" ~ pathSegment ^^ {
+    case p ~ "=" ~ pathSegment => NamedPath(p, pathSegment: _*)
   }
 
   def pathSegment: Parser[List[Pattern]] = node ~ rep1(relatedTail) ^^ {
@@ -97,10 +102,3 @@ trait MatchClause extends JavaTokenParsers with Tokens {
     case relName  ~ None => (relName, None)
   }
 }
-
-
-
-
-
-
-

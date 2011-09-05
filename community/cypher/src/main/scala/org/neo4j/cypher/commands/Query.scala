@@ -25,15 +25,20 @@ object Query {
 }
 
 
-
 case class Query(returns: Return, start: Start, matching: Option[Match], where: Option[Clause], aggregation: Option[Aggregation],
-                 sort: Option[Sort], slice: Option[Slice])
+                 sort: Option[Sort], slice: Option[Slice], namedPaths: Option[NamedPaths])
 
 case class Return(returnItems: ReturnItem*)
 
 case class Start(startItems: StartItem*)
 
 case class Match(patterns: Pattern*)
+
+case class NamedPaths(paths: NamedPath*) extends Traversable[Pattern] {
+  def foreach[U](f: (Pattern) => U) {
+    paths.flatten.foreach(f)
+  }
+}
 
 case class Aggregation(aggregationItems: AggregationItem*)
 

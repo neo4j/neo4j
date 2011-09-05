@@ -24,7 +24,7 @@ import org.neo4j.graphdb.traversal.{TraversalDescription, Evaluators}
 import org.neo4j.graphdb._
 import org.neo4j.kernel.{Uniqueness, Traversal}
 
-class PatternRelationship(key: String, leftNode: PatternNode, rightNode: PatternNode, relType: Option[String], dir: Direction)
+class PatternRelationship(key: String, val leftNode: PatternNode, val rightNode: PatternNode, relType: Option[String], dir: Direction)
   extends PatternElement(key)
   with PinnablePatternElement[Relationship] {
 

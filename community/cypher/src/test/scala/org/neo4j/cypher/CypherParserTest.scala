@@ -518,7 +518,7 @@ class CypherParserTest extends JUnitSuite {
       "start n=(1) match p=(n-->x) where p.LENGTH = 10 return p",
       Query.
         start(NodeById("n", 1)).
-        matches(NamedPath("p", RelatedTo("n", "x", "  UNNAMED1", None, Direction.OUTGOING))).
+        namedPaths(NamedPath("p", RelatedTo("n", "x", "  UNNAMED1", None, Direction.OUTGOING))).
         where(Equals(PathLengthValue("p"), Literal(10.0))).
         returns(ValueReturnItem(EntityValue("p"))))
   }
@@ -563,7 +563,7 @@ class CypherParserTest extends JUnitSuite {
       "start a = (0) match p = ( a-->b ) return a",
       Query.
         start(NodeById("a", 0)).
-        matches(NamedPath("p", RelatedTo("a","b", "  UNNAMED1", None, Direction.OUTGOING))).
+        namedPaths(NamedPath("p", RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING))).
         returns(ValueReturnItem(EntityValue("a"))))
   }
 
@@ -572,11 +572,11 @@ class CypherParserTest extends JUnitSuite {
       "start a = (0) match p = ( a-->b-->c ) return a",
       Query.
         start(NodeById("a", 0)).
-        matches(NamedPath("p",
-          RelatedTo("a","b", "  UNNAMED1", None, Direction.OUTGOING),
-          RelatedTo("b","c", "  UNNAMED2", None, Direction.OUTGOING)
-      )).
-        returns(ValueReturnItem(EntityValue("a"))))
+        namedPaths(NamedPath("p",
+        RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING),
+        RelatedTo("b", "c", "  UNNAMED2", None, Direction.OUTGOING)
+      ))
+        returns (ValueReturnItem(EntityValue("a"))))
   }
 
   @Test def pathsShouldBePossibleWithoutParenthesis() {
@@ -584,8 +584,8 @@ class CypherParserTest extends JUnitSuite {
       "start a = (0) match p = a-->b return a",
       Query.
         start(NodeById("a", 0)).
-        matches(NamedPath("p", RelatedTo("a","b", "  UNNAMED1", None, Direction.OUTGOING))).
-        returns(ValueReturnItem(EntityValue("a"))))
+        namedPaths(NamedPath("p", RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING)))
+        returns (ValueReturnItem(EntityValue("a"))))
   }
 
 
