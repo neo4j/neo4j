@@ -91,6 +91,10 @@ include::ql/return/index.txt[]
 
 :leveloffset: 2
 
+include::ql/properties/index.txt[]
+
+:leveloffset: 2
+
 include::ql/aggregation/index.txt[]
 
 :leveloffset: 2

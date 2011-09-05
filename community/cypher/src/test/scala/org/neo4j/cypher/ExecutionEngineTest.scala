@@ -591,9 +591,9 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val r = relate("A" -> "KNOWS" -> "B")
 
     val query = Query.
-      start(NodeById("a",1)).
+      start(NodeById("a", 1)).
       namedPaths(NamedPath("p", RelatedTo("a", "b", "rel", None, Direction.OUTGOING))).
-      returns(ValueReturnItem(EntityValue("p")))  //  new CypherParser().parse("start a=(1) match p=(a-->b) return p")
+      returns(ValueReturnItem(EntityValue("p"))) //  new CypherParser().parse("start a=(1) match p=(a-->b) return p")
 
     val result = execute(query)
 
@@ -607,11 +607,11 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
 
     val query = Query.
-      start(NodeById("a",1)).
+      start(NodeById("a", 1)).
       namedPaths(NamedPath("p",
-        RelatedTo("a", "b", "rel1", None, Direction.OUTGOING),
-        RelatedTo("b", "c", "rel2", None, Direction.OUTGOING) )).
-      returns(ValueReturnItem(EntityValue("p")))  //  new CypherParser().parse("start a=(1) match p=(a-->b) return p")
+      RelatedTo("a", "b", "rel1", None, Direction.OUTGOING),
+      RelatedTo("b", "c", "rel2", None, Direction.OUTGOING))).
+      returns(ValueReturnItem(EntityValue("p"))) //  new CypherParser().parse("start a=(1) match p=(a-->b) return p")
 
     val result = execute(query)
 
@@ -654,6 +654,19 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
 
     assertEquals(List(3), result.columnAs[Int]("p.LENGTH").toList)
+  }
+
+  @Test def shouldReturnAVarLengthPath() {
+    createNodes("A", "B", "C")
+    val r1 = relate("A" -> "KNOWS" -> "B")
+    val r2 = relate("B" -> "KNOWS" -> "C")
+
+    val result = parseAndExecute("start n=(1) match p=n-[:KNOWS^1..2]->x return p")
+
+    assertEquals(List(
+      PathImpl(node("A"), r1, node("B")),
+      PathImpl(node("A"), r1, node("B"), r2, node("C"))
+    ), result.columnAs[Path]("p").toList)
   }
 
   @Test def shouldThrowNiceErrorMessageWhenPropertyIsMissing() {

@@ -105,6 +105,7 @@ class MatchTest extends DocumentingTestBase {
     )
   }
 
+
   @Test def complexMatching() {
     testQuery(
       title = "Complex matching",
