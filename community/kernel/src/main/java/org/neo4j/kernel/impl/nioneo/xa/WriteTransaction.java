@@ -1314,31 +1314,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
 
     }
 
-    /*
-    PropertyRecord propertyRecord = new PropertyRecord( propertyId );
-    propertyRecord.setInUse( true );
-    propertyRecord.setCreated();
-    propertyRecord.setRelId( relId );
-    if ( relRecord.getNextProp() != Record.NO_NEXT_RELATIONSHIP.intValue() )
-    {
-        PropertyRecord prevProp = getPropertyRecord(
-            relRecord.getNextProp() );
-        if ( prevProp == null )
-        {
-            prevProp = getPropertyStore().getLightRecord(
-                relRecord.getNextProp() );
-            addPropertyRecord( prevProp );
-        }
-        assert prevProp.getPrevProp() ==
-            Record.NO_PREVIOUS_PROPERTY.intValue();
-        prevProp.setPrevProp( propertyId );
-        propertyRecord.setNextProp( prevProp.getId() );
-    }
-    int keyIndexId = index.getKeyId();
-    //        propertyRecord.setKeyIndexId( keyIndexId );
-    relRecord.setNextProp( propertyId );
-    return propertyRecord;
-    */
     @Override
     public PropertyData nodeAddProperty( long nodeId, PropertyIndex index,
         Object value )

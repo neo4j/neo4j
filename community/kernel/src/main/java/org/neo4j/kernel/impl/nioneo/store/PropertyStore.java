@@ -66,14 +66,6 @@ public class PropertyStore extends AbstractStore implements Store
         super( fileName, config, IdType.PROPERTY );
     }
 
-    /**
-     * See {@link AbstractStore#AbstractStore(String)}
-     */
-//    public PropertyStore( String fileName )
-//    {
-//        super( fileName );
-//    }
-
     @Override
     protected void initStorage()
     {
@@ -268,22 +260,13 @@ public class PropertyStore extends AbstractStore implements Store
                 freeId( id );
             }
         }
-//        int longsPushed = 0;
         for ( PropertyBlock block : record.getPropertyBlocks() )
         {
             if ( block.inUse() )
             {
                 for ( long propBlockValue : block.getValueBlocks() )
                 {
-//                    longsPushed++;
                     bits.put( propBlockValue );
-                }
-            }
-            else
-            {
-                for ( int i = 0; i < block.getValueBlocks().length; i++ )
-                {
-                    bits.put( 0L );
                 }
             }
             if ( !block.isLight() )
@@ -306,11 +289,6 @@ public class PropertyStore extends AbstractStore implements Store
                 }
             }
         }
-        // It was only used for padding when Bits pushed from left
-//        while ( longsPushed < PropertyType.getPayloadSizeLongs() )
-//        {
-//            longsPushed++;
-//        }
         bits.apply( buffer );
     }
 
@@ -393,14 +371,14 @@ public class PropertyStore extends AbstractStore implements Store
         bits.read( buffer );
         PropertyRecord record = new PropertyRecord( id );
         record.setInUse( true );
-        
+
         long prevMod = (long) bits.getByte( 4 ) << 32;
         long nextMod = (long) bits.getByte( 4 ) << 32;
         long prevProp = bits.getUnsignedInt();
         long nextProp = bits.getUnsignedInt();
         record.setPrevProp( longFromIntAndMod( prevProp, prevMod ) );
         record.setNextProp( longFromIntAndMod( nextProp, nextMod ) );
-        
+
 //        bits.pullLeftLong( 8 * 7 );
 
         boolean someBlockInUse = false;
@@ -615,7 +593,7 @@ public class PropertyStore extends AbstractStore implements Store
 //            return "[" + value.getClass().getName() + "]'" + value.toString() + "'";
 //        }
 //    }
-    
+
     // TODO Assume only one prop per record for now
     private Bits bits32WithKeyAndType( int keyId, PropertyType type )
     {
