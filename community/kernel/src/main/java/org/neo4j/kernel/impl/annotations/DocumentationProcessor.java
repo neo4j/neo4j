@@ -80,8 +80,8 @@ public class DocumentationProcessor extends AnnotationProcessor
             if ( javadoc == null )
             {
                 warn( annotated, annotation, "Cannot extract JavaDoc documentation comment for " + annotated );
-                // return;
-                javadoc = "Documentation not available.";
+                // return no period, since that could mess up Title generation;
+                javadoc = "Documentation not available";
             }
             if ( !manipulator.updateAnnotationValue( annotated, annotation, "value", javadoc ) )
             {

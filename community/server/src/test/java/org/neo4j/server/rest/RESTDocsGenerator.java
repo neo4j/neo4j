@@ -59,6 +59,11 @@ import com.sun.jersey.api.client.ClientResponse;
  * Generate asciidoc-formatted documentation from HTTP requests and responses.
  * The status and media type of all responses is checked as well as the
  * existence of any expected headers.
+ * 
+ * The filename of the resulting ASCIIDOC test file is derived from the title.
+ * 
+ * The title is determined by either a JavaDoc perioed terminated first title line,
+ * the @Title annotation or the method name, where "_" is replaced by " ".
  */
 public class RESTDocsGenerator
 {
@@ -518,7 +523,9 @@ public class RESTDocsGenerator
             fw = new FileWriter( out, false );
 
             line( fw, "[[rest-api-" + name.replaceAll( "\\(|\\)", "" ) + "]]" );
-            line( fw, "=== " + data.title + " ===" );
+            //make first Character uppercase
+            String firstChar = data.title.substring(  0, 1 ).toUpperCase();
+            line( fw, "=== " + firstChar + data.title.substring( 1 ) + " ===" );
             line( fw, "" );
             if ( data.description != null && !data.description.isEmpty() )
             {

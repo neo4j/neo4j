@@ -128,7 +128,7 @@ public class TestData<T> implements MethodRule
             @Override
             public void evaluate() throws Throwable
             {
-                product.set( create( graph, title == null ? method.getName().replace( "_", " " ) : title.value(), doc == null ? null : doc.value(),
+                product.set( create( graph, title == null ? null : title.value(), doc == null ? null : doc.value(),
                         method.getName() ) );
                 try
                 {
@@ -252,7 +252,7 @@ public class TestData<T> implements MethodRule
         }
         if ( title == null )
         {
-            title = methodName;
+            title = methodName.replace( "_", " " );
         }
         return new Lazy( graph, title, doc );
     }

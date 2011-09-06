@@ -78,12 +78,8 @@ public class ManageNodeFunctionalTest
     public @Rule
     TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
 
-    /**
-     * Create node.
-     */
-    @Documented
     @Test
-    public void shouldGet201WhenCreatingNode() throws Exception
+    public void create_Node() throws Exception
     {
         JaxRsResponse response = gen.get()
                 .expectedStatus( 201 )
@@ -95,12 +91,8 @@ public class ManageNodeFunctionalTest
                 .matches( NODE_URI_PATTERN ) );
     }
 
-    /**
-     * Create node with properties.
-     */
-    @Documented
     @Test
-    public void shouldGet201WhenCreatingNodeWithProperties() throws Exception
+    public void create_Node_with_properties() throws Exception
     {
         JaxRsResponse response = gen.get()
                 .payload( "{\"foo\" : \"bar\"}" )
