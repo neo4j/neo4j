@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
-    <version>23</version>
+    <version>25</version>
   </parent>
   
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-graphviz</artifactId>
   <version>1.5-SNAPSHOT</version>
-  <description></description>
+  <name>Neo4j - Graphviz generation</name>
+  <description>Utility component to generate Graphviz .dot notation from Neo4j graphs.</description>
   
   <properties>
     <bundle.namespace>org.neo4j.visualization</bundle.namespace>
@@ -38,10 +38,9 @@ the relevant Commercial Agreement.
   </licenses>
 
   <scm>
-    <connection>scm:git:git://github.com/neo4j/neoviz.git</connection>
-    <developerConnection>scm:git:git@github.com:neo4j/neoviz.git</developerConnection>
-    <url>https://github.com/neo4j/neoviz</url>
+    <url>https://github.com/neo4j/community/tree/master/graphviz</url>
   </scm>
+
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
