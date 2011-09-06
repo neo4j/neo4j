@@ -3,6 +3,7 @@
 	<path id="lib">
 		<fileset dir="lib" includes="*.jar"/>
 	</path>
+	
 	<taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpathref="lib"/>
 		
 	<target name="build" description="Run the Neo4j community QA tests" depends="clean,setProperties,runCucumber"/>
@@ -50,6 +51,9 @@
 	        <include name="**/*.jar"/>
 	      </fileset>
       </path>
+		<taskdef name="gem" classname="cuke4duke.ant.GemTask"
+		classpathref="compile.classpath"/>
+		<gem args="install cuke4duke --version 0.4.4 --source http://gemcutter.org/"/>
 	</target>
 
 	<target name="clean-deps" description="Delete all dependencies">
