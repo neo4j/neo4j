@@ -31,13 +31,22 @@ To run the functional tests:
 integration-tests
 ----------------
 
-To run the webdriver-selenium-integration tests:
+To run the selenium-integration tests:
 
 `mvn clean integration-test -Dtests=web`
 
 You can also run them one-by-one via a web GUI:
 
 `tools/cukerunner.py`
+
+You can run the tests under different browsers using maven profiles. By default, Firefox is used. 
+Available profiles are: -Phtmlunit for headless browser emulation, -Pie for internet explorer, and -Pchrome for chrome.
+Please note that the chrome driver requires an installed binary on your system, which you can find here: http://code.google.com/p/chromium/downloads/list
+
+Install it to a location of your choice, and tell the tests where to find it using the 'webdriver.chrome.driver' property:
+
+`-Dwebdriver.chrome.driver=/path/to/chromedriver`
+
 
 Webadmin development
 --------------------

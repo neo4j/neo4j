@@ -23,7 +23,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
 import org.openqa.selenium.WebDriver;
-
 import cuke4duke.annotation.After;
 
 public class WebDriverFacade {
@@ -32,7 +31,11 @@ public class WebDriverFacade {
 
     public WebDriver getWebDriver() throws InvocationTargetException, IllegalAccessException, InstantiationException {
         if (browser == null) {
-            browser = getDriverConstructor().newInstance();
+            try {
+                browser = getDriverConstructor().newInstance();
+            } catch(Throwable problem) {
+                throw new RuntimeException("Couldn't instantiate the selected selenium driver. See nested exception.", problem);
+            }
         }
         return browser;
     }

@@ -30,16 +30,16 @@ import java.lang.reflect.InvocationTargetException;
 import org.hamcrest.Matcher;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
-import org.openqa.selenium.RenderedWebElement;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 
 public class WebdriverLibrary
 {
     protected final WebDriver d;
     
     public WebdriverLibrary(WebDriverFacade df) throws InvocationTargetException, IllegalAccessException, InstantiationException {
-        this.d = df.getWebDriver();
+        d = df.getWebDriver();
     }
     
     public WebDriver getWebDriver() {
@@ -103,9 +103,9 @@ public class WebdriverLibrary
         return new ElementReference(this, by);
     }
     
-    public RenderedWebElement getWebElement(By by) {
+    public WebElement getWebElement(By by) {
         waitForElementToAppear(by);
-        return (RenderedWebElement) d.findElement( by );
+        return d.findElement( by );
     }
     
     public void refresh() {
