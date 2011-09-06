@@ -205,13 +205,11 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
             node.setProperty( "boolean" + stuffedBooleans,
                     stuffedBooleans % 2 == 0 );
         }
-
         newTransaction();
 
         assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
 
         node.setProperty( "theExraOne", true );
-
         newTransaction();
 
         assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
@@ -221,7 +219,6 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
             assertEquals( Boolean.valueOf( i % 2 == 0 ),
                     node.removeProperty( "boolean" + i ) );
         }
-
         newTransaction();
 
         assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
@@ -231,5 +228,177 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
             assertFalse( node.hasProperty( "boolean" + i ) );
         }
         assertEquals( Boolean.TRUE, node.getProperty( "theExraOne" ) );
+    }
+
+    /*
+     * Creates 3 records and deletes stuff from the middle one. Assumes that a 2 character
+     * string that is a number fits in one block.
+     */
+    @Test
+    public void testMessWithMiddleRecordDeletes()
+    {
+        Node node = getGraphDb().createNode();
+        long recordsInUseAtStart = propertyRecordsInUse();
+
+        int stuffedShortStrings = 0;
+        for ( ; stuffedShortStrings < 3 * PropertyType.getPayloadSizeLongs(); stuffedShortStrings++ )
+        {
+            node.setProperty( "shortString" + stuffedShortStrings,
+                    String.valueOf( stuffedShortStrings ) );
+        }
+        newTransaction();
+        assertEquals( recordsInUseAtStart + 3, propertyRecordsInUse() );
+
+        int secondBlockInSecondRecord = PropertyType.getPayloadSizeLongs() + 1;
+        int thirdBlockInSecondRecord = PropertyType.getPayloadSizeLongs() + 2;
+
+        assertEquals( String.valueOf( secondBlockInSecondRecord ),
+                node.removeProperty( "shortString" + secondBlockInSecondRecord ) );
+        assertEquals( String.valueOf( thirdBlockInSecondRecord ),
+                node.removeProperty( "shortString" + thirdBlockInSecondRecord ) );
+
+        newTransaction();
+        assertEquals( recordsInUseAtStart + 3, propertyRecordsInUse() );
+
+        for ( int i = 0; i < stuffedShortStrings; i++ )
+        {
+            if ( i == secondBlockInSecondRecord )
+            {
+                assertFalse( node.hasProperty( "shortString" + i ) );
+            }
+            else if ( i == thirdBlockInSecondRecord )
+            {
+                assertFalse( node.hasProperty( "shortString" + i ) );
+            }
+            else
+            {
+                assertEquals( String.valueOf( i ),
+                        node.getProperty( "shortString" + i ) );
+            }
+        }
+        // Start deleting stuff. First, all the middle property blocks
+        int deletedProps = 0;
+        for ( int i = PropertyType.getPayloadSizeLongs(); i < PropertyType.getPayloadSizeLongs() * 2; i++ )
+        {
+            if ( node.hasProperty( "shortString" + i ) )
+            {
+                deletedProps++;
+                node.removeProperty( "shortString" + i );
+            }
+        }
+        assertEquals( PropertyType.getPayloadSizeLongs() - 2, deletedProps );
+
+        newTransaction();
+        assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
+
+        for ( int i = 0; i < PropertyType.getPayloadSizeLongs(); i++ )
+        {
+                assertEquals( String.valueOf( i ),
+                        node.removeProperty( "shortString" + i ) );
+        }
+        for ( int i = PropertyType.getPayloadSizeLongs(); i < PropertyType.getPayloadSizeLongs() * 2; i++ )
+        {
+            assertFalse( node.hasProperty( "shortString" + i ) );
+        }
+        for ( int i = PropertyType.getPayloadSizeLongs() * 2; i < PropertyType.getPayloadSizeLongs() * 3; i++ )
+        {
+            assertEquals( String.valueOf( i ),
+                    node.removeProperty( "shortString" + i ) );
+        }
+    }
+
+    @Test
+    public void mixAndPackDifferentTypes()
+    {
+        Node node = getGraphDb().createNode();
+        long recordsInUseAtStart = propertyRecordsInUse();
+
+        int stuffedShortStrings = 0;
+        for ( ; stuffedShortStrings < PropertyType.getPayloadSizeLongs(); stuffedShortStrings++ )
+        {
+            node.setProperty( "shortString" + stuffedShortStrings,
+                    String.valueOf( stuffedShortStrings ) );
+        }
+        newTransaction();
+
+        assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
+
+        node.removeProperty( "shortString0" );
+        node.removeProperty( "shortString2" );
+        node.setProperty( "theDoubleOne", -1.0 );
+        newTransaction();
+
+        assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
+        for ( int i = 0; i < stuffedShortStrings; i++ )
+        {
+            if ( i == 0 )
+            {
+                assertFalse( node.hasProperty( "shortString" + i ) );
+            }
+            else if ( i == 2 )
+            {
+                assertFalse( node.hasProperty( "shortString" + i ) );
+            }
+            else
+            {
+                assertEquals( String.valueOf( i ),
+                        node.getProperty( "shortString" + i ) );
+            }
+        }
+        assertEquals( -1.0, node.getProperty( "theDoubleOne" ) );
+    }
+
+    @Test
+    public void testAdditionsHappenAtTheFirstRecordIfFits1()
+    {
+        Node node = getGraphDb().createNode();
+        long recordsInUseAtStart = propertyRecordsInUse();
+
+        node.setProperty( "int1", 1 );
+        node.setProperty("double1", 1.0);
+        node.setProperty( "int2", 2 );
+        newTransaction();
+
+        assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
+
+        node.removeProperty( "double1" );
+        newTransaction();
+        node.setProperty( "double2", 1.0 );
+        newTransaction();
+        assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
+
+        node.setProperty( "paddingBoolean", false );
+        newTransaction();
+        assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
+    }
+
+    @Test
+    public void testAdditionsHappenAtTheFirstRecordWhenFits()
+    {
+        Node node = getGraphDb().createNode();
+        long recordsInUseAtStart = propertyRecordsInUse();
+
+        node.setProperty( "int1", 1 );
+        node.setProperty( "double1", 1.0 );
+        node.setProperty( "int2", 2 );
+        newTransaction();
+
+        assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
+
+        node.removeProperty( "int1" );
+        newTransaction();
+        node.setProperty( "double2", 1.0 );
+        newTransaction();
+        assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
+
+        node.removeProperty( "int2" );
+        newTransaction();
+        node.setProperty( "double3", 1.0 );
+        newTransaction();
+        assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
+
+        node.setProperty( "paddingBoolean", false );
+        newTransaction();
+        assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
     }
 }
