@@ -330,6 +330,7 @@ public class TestXa extends AbstractNeo4jTestCase
         buffer.clear();
         FileChannel fileChannel = new RandomAccessFile( file( "nioneo_logical.log." +
             active ), "rw" ).getChannel();
+        System.out.println( fileChannel.size() );
         if ( fileChannel.size() > size )
         {
             fileChannel.truncate( size );
@@ -604,7 +605,7 @@ public class TestXa extends AbstractNeo4jTestCase
         ds.close();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( path() );
-        truncateLogicalLog( 168 );
+        truncateLogicalLog( 156 );
         ds = newNeoStore();
 //        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
 //            lockManager, lockReleaser );
@@ -633,7 +634,7 @@ public class TestXa extends AbstractNeo4jTestCase
         ds.close();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( path() );
-        truncateLogicalLog( 185 );
+        truncateLogicalLog( 180 );
         ds = newNeoStore();
 //        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
 //             lockManager, lockReleaser );

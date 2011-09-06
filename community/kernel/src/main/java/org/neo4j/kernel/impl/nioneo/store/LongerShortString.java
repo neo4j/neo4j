@@ -511,25 +511,15 @@ public enum LongerShortString
         // TODO could be dealt with by having string length zero and go for null bytes,
         // at least for LATIN1 (that's what the ShortString implementation initially did)
         if ( stringLength > NUMERICAL.maxLength( payloadSize ) || stringLength > 63 ) return false; // Not handled by any encoding
-        if ( string.equals( "" ) )
-        {
-            Bits bits = Bits.bits( 8 );
-            writeHeader( bits, keyId, 0, 0 );
-            target.setValueBlocks( bits.getLongs() );
-            return true;
-        }
+//        if ( string.equals( "" ) )
+//        {
+//            Bits bits = Bits.bits( 8 );
+//            writeHeader( bits, keyId, 0, 0 );
+//            target.setValueBlocks( bits.getLongs() );
+//            return true;
+//        }
         // Keep track of the possible encodings that can be used for the string
         EnumSet<LongerShortString> possible = null;
-        // First try encoding using Latin-1
-        int maxBytes = PropertyType.getPayloadSize();
-        if ( stringLength <= (maxBytes-3-1-1) )
-        {
-            if ( encodeLatin1( keyId, string, target, payloadSize ) ) return true;
-            // If the string was short enough, but still didn't fit in latin-1
-            // we know that no other encoding will work either, remember that
-            // so that we can try UTF-8 at the end of this method
-            possible = EnumSet.noneOf( LongerShortString.class );
-        }
         // Allocate space for the intermediate representation
         // (using the intermediate representation table above)
         byte[] data = new byte[stringLength];
@@ -668,9 +658,11 @@ public enum LongerShortString
             // Will return false if the data is too long for the encoding
             if ( encoding.doEncode( keyId, data, target, payloadSize ) ) return true;
         }
+        int maxBytes = PropertyType.getPayloadSize();
         if ( stringLength <= maxBytes )
-        { // We might have a chance with UTF-8 - try it!
-            return encodeUTF8( keyId, string, target, maxBytes );
+        {
+            if ( encodeLatin1( keyId, string, target, payloadSize ) ) return true;
+            if ( encodeUTF8( keyId, string, target, payloadSize ) ) return true;
         }
         return false;
     }
