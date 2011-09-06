@@ -202,14 +202,14 @@ the relevant Commercial Agreement.
                   <goal>run</goal>
                 </goals>
                 <configuration>
-                  <tasks>
+                  <target>
                     <unzip src="${basedir}/target/${project.build.finalName}-python-dist.zip" dest="${basedir}/target/" overwrite="true"/>
                     <exec executable="python" dir="${basedir}/target/neo4j-embedded">
                       <arg value="setup.py"/>
                       <arg value="sdist"/>
                       <arg value="upload"/>
                     </exec>
-                  </tasks>
+                  </target>
                 </configuration>
               </execution>
             </executions>
