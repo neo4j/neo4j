@@ -342,6 +342,7 @@ public class PropertyStore extends AbstractStore implements Store
         }
         for ( PropertyBlock block : record.getPropertyBlocks() )
         {
+            assert block.inUse();
             if ( block.getType() == PropertyType.STRING )
             {
                 Collection<DynamicRecord> stringRecords = stringPropertyStore.getLightRecords( block.getSingleValueLong() );
@@ -379,8 +380,6 @@ public class PropertyStore extends AbstractStore implements Store
         record.setPrevProp( longFromIntAndMod( prevProp, prevMod ) );
         record.setNextProp( longFromIntAndMod( nextProp, nextMod ) );
 
-//        bits.pullLeftLong( 8 * 7 );
-
         boolean someBlockInUse = false;
         while ( bits.available() )
         {
@@ -389,10 +388,6 @@ public class PropertyStore extends AbstractStore implements Store
             {
                 someBlockInUse = true;
                 record.addPropertyBlock( newBlock );
-//                for ( int i = 0; i < newBlock.getType().getSizeInLongs(); i++ )
-//                {
-//                    bits.pullLeftLong();
-//                }
             }
             else
             {

@@ -24,6 +24,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 
 import org.junit.Assume;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
@@ -400,5 +401,56 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         node.setProperty( "paddingBoolean", false );
         newTransaction();
         assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
+    }
+
+    @Ignore
+    @Test
+    public void testAdditionHappensInTheMiddleIfItFits()
+    {
+        Node node = getGraphDb().createNode();
+
+        long recordsInUseAtStart = propertyRecordsInUse();
+
+        node.setProperty( "int1", 1 );
+        node.setProperty( "double1", 1.0 );
+        node.setProperty( "int2", 2 );
+
+        int stuffedShortStrings = 0;
+        for ( ; stuffedShortStrings < PropertyType.getPayloadSizeLongs(); stuffedShortStrings++ )
+        {
+            node.setProperty( "shortString" + stuffedShortStrings,
+                    String.valueOf( stuffedShortStrings ) );
+        }
+        newTransaction();
+
+        assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
+
+        node.removeProperty( "shortString" + 1 );
+        node.setProperty( "int3", 3 );
+
+        newTransaction();
+
+        assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
+    }
+
+    @Test
+    public void testChangePropertyType()
+    {
+        Node node = getGraphDb().createNode();
+
+        long recordsInUseAtStart = propertyRecordsInUse();
+
+        int stuffedShortStrings = 0;
+        for ( ; stuffedShortStrings < PropertyType.getPayloadSizeLongs(); stuffedShortStrings++ )
+        {
+            node.setProperty( "shortString" + stuffedShortStrings,
+                    String.valueOf( stuffedShortStrings ) );
+        }
+        newTransaction();
+
+        assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
+
+        node.setProperty( "shortString1", 1.0 );
+        newTransaction();
     }
 }

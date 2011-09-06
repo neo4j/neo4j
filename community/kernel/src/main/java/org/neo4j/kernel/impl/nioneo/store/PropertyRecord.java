@@ -99,53 +99,9 @@ public class PropertyRecord extends Abstract64BitRecord
         return result;
     }
 
-    /*
-    public long[] getPropBlock()
-    {
-        return propBlock;
-    }
-
-    public long getSinglePropBlock()
-    {
-        return propBlock[0];
-    }
-
-    public void setPropBlock( long[] propBlock )
-    {
-        this.propBlock = propBlock.length < PropertyType.getPayloadSizeLongs() ?
-                Arrays.copyOf( propBlock, PropertyType.getPayloadSizeLongs() ) : propBlock;
-    }
-
-    public void setSinglePropBlock( long propBlock )
-    {
-        this.propBlock[0] = propBlock;
-        for ( int i = 1; i < this.propBlock.length; i++ )
-        {
-            this.propBlock[i] = 0;
-        }
-    }
-    */
     public Collection<PropertyBlock> getPropertyBlocks()
     {
         return Collections.unmodifiableList( blockRecords );
-    }
-
-    /*
-    public void removeBlock( int indexId )
-    {
-        // blockRecords.remove( getPropertyBlock( indexId ) );
-    }
-    */
-
-    public int[] getKeyIndexIds()
-    {
-        int[] toReturn = new int[blockRecords.size()];
-        int i = 0;
-        for ( PropertyBlock block : blockRecords )
-        {
-            toReturn[i++] = block.getKeyIndexId();
-        }
-        return toReturn;
     }
 
     public void addPropertyBlock(PropertyBlock block)
