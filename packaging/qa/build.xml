@@ -10,7 +10,6 @@
 	<target name="clean" description="Cleans the working copy">
 		<delete dir="target"/>
 		<mkdir dir="target/junit-report"/>
-		<mkdir dir="src/test/java"/>
 	</target>
 
 	<target name="setProperties" description="Sets the various properties required by cucumber">
@@ -36,28 +35,21 @@
 								--format pretty --format junit 
 								--out target/junit-report features"
 								objectFactory="pico">
-			<classpath>
-				<pathelement location="target/test-classes"/>
-			</classpath>
 		</cucumber>
 	</target>
 	
 	<target name="install-dependencies">
 		<ivy:retrieve/>
-	    <path id="jruby.classpath">
+	   <path id="jruby.classpath">
 	      <fileset dir="lib">
 	        <include name="**/*.jar"/>
 	      </fileset>
 	    </path>
 		<path id="compile.classpath">
-		      <fileset dir="lib">
-		        <include name="**/*.jar"/>
-		      </fileset>
-		    </path>
-	    <taskdef name="gem" classname="cuke4duke.ant.GemTask"
-	       classpathref="compile.classpath"/>
-	    <gem args="install cuke4duke --version 0.3.2 --source http://gemcutter.org/"/>
-	    <gem args="install rake"/>
+	      <fileset dir="lib">
+	        <include name="**/*.jar"/>
+	      </fileset>
+      </path>
 	</target>
 
 	<target name="clean-deps" description="Delete all dependencies">
