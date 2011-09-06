@@ -1,0 +1,122 @@
+#!/bin/sh
+
+EXE=$0
+while [ -L "$EXE" ]; do
+    EXE=`readlink $EXE`
+done
+
+WORKDIR=`pwd`
+cd `dirname $EXE`
+
+function help() {
+    echo "Neo4j graphviz generator
+USAGE: $0 neo4j/store/dir [--rebuild] [-o <file>] <jvm> <graphviz> <format>
+WHERE
+    neo4j/store/dir   is the path to where the neo4j graph store is located.
+               This is the only mandatory parameter, and must be first,
+               other options may be specified in any order.
+               Be sure to stop the Neo4j instance using this location.
+    --rebuild  ensures that the program is compiled from scratch first.
+    --help     display this message and exit.
+    <file>     is the output file to generate (default is graph.dot).
+               The file ending determines the format of the generated file,
+               if the ending is anything other than 'dot', a <file>.dot file
+               will also be generated
+    <jvm>      are the JVM command line options.
+    <graphviz> are the graphviz command line options.
+    <format>   are graph output formatting configurations, these are structured
+               as:  <optionParameter>=<value>[,<more>,<values>...]
+
+               Currently supported options are:
+
+               - nodeTitle=VAL
+               - relationshipTitle=VAL
+                 Sets the title of a node/relationship. VAL is a string.
+                 Placeholders for attributes can be used by prefixing the
+                 attribute name with an @.
+                 Example: relationshipTitle=\"@type [@id]\"
+
+               - nodePropertyFilter=FIELDS
+                 FIELDS is a comma-separated list of the fields that should be
+                 included in the result. E.g., nodePropertyFilter=id,name
+"
+}
+
+MAINCLASS=org.neo4j.visualization.graphviz.Script
+CLEAN=
+OUTFILE=graph.dot
+JVMOPTIONS=
+ARGUMENTS=
+DOTOPTIONS=
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --rebuild)
+            CLEAN=clean
+            ;;
+        --help)
+            help
+            exit
+            ;;
+        -o)
+            OUTFILE=$2
+            shift
+            ;;
+        -o*)
+            OUTFILE=${1:2}
+            ;;
+        -D* | -X* | -d* | -server | -client)
+            if [ -z "$JVMOPTIONS" ]; then
+                JVMOPTIONS="$1 "
+            else
+                JVMOPTIONS="$JVMOPTIONS$1 "
+            fi
+            ;;
+        -v | -G* | -N* | -E* | -K* | -O | -q* | -s* | -y | -n* | -x | -L*)
+            DOTOPTIONS="$DOTOPTIONS $1"
+            ;;
+        *)
+            ARGUMENTS="$ARGUMENTS $(echo $1|sed 's/ /\\ /g')"
+            ;;
+    esac
+    shift
+done
+
+if [ -z "$OUTFILE" ]; then
+    echo Output file not specified
+    exit
+fi
+
+case "$OUTFILE" in
+    *.dot)
+        DOTFILE=$OUTFILE
+        ;;
+    *)
+        DOTFILE=${OUTFILE}.dot
+        ;;
+esac
+
+JVMOPTIONS="$JVMOPTIONS-Dgraphviz.out=$DOTFILE "
+
+mvn $CLEAN compile exec:exec -Dexec.executable="java"\
+    -Dexec.workingdir="$WORKDIR"\
+    -Dexec.args="$JVMOPTIONS-cp %classpath $MAINCLASS$ARGUMENTS"\
+    || exit
+
+cd $WORKDIR
+
+case "$OUTFILE" in
+    *.dot)
+        ;;
+    *)
+        OUTFORMAT=$OUTFILE
+        while [ "$OLDFORMAT" != "$OUTFORMAT" ]; do
+            OLDFORMAT=$OUTFORMAT
+            OUTFORMAT=${OLDFORMAT#*.}
+        done
+        if [ "$OUTFORMAT" != "$OUTFILE" ]; then
+            OUTFORMAT=-T$OUTFORMAT
+        fi
+        dot $OUTFORMAT $DOTOPTIONS -o$OUTFILE $DOTFILE
+        ;;
+esac
