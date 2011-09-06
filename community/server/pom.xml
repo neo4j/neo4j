@@ -590,6 +590,8 @@ the relevant Commercial Agreement.
                 <cucumberArg>--color</cucumberArg>
                 <cucumberArg>--require</cucumberArg>
                 <cucumberArg>${basedir}/target/test-classes</cucumberArg>
+                <cucumberArg>--format junit</cucumberArg>
+                <cucumberArg>--out ${project.build.directory}/cucumber-reports</cucumberArg>
                 <cucumberArg>${cukeArgs}</cucumberArg>
               </cucumberArgs>
               <gems>
