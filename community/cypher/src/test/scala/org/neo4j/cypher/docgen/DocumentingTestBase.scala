@@ -29,6 +29,11 @@ import org.neo4j.graphdb._
 import org.neo4j.cypher.parser.CypherParser
 import org.neo4j.cypher.{ ExecutionResult, ExecutionEngine }
 import org.scalatest.junit.JUnitSuite
+import java.io.IOException
+import java.io.OutputStream
+import java.io.ByteArrayOutputStream
+import org.neo4j.visualization.graphviz.{ AsciiDocStyle, GraphvizWriter}
+import org.neo4j.walk.Walker
 
 abstract class DocumentingTestBase extends JUnitSuite {
   var db: GraphDatabaseService = null
@@ -51,6 +56,10 @@ abstract class DocumentingTestBase extends JUnitSuite {
     writer.println("[[" + nicefy(section + " " + title) + "]]")
     writer.println("== " + title + " ==")
     writer.println(text)
+    writer.println()
+    writer.println("_Graph_")
+    writer.println()
+    writer.println(emitGraphviz(db, nicefy(section + " " + title)))
     writer.println()
     writer.println("_Query_")
     writer.println()
@@ -76,7 +85,17 @@ abstract class DocumentingTestBase extends JUnitSuite {
   def path: String = {
     "target/docs/ql/"
   }
-
+  
+  def emitGraphviz (graphDatabaseService: GraphDatabaseService, name: String): String = {
+        val out = new ByteArrayOutputStream();
+        val writer = new GraphvizWriter(new AsciiDocStyle());
+        writer.emit( out, Walker.fullGraph( graphDatabaseService ) );
+        return  "[\"dot\", \""+name.replace( " ", "-" )+".svg\", \"neoviz\"]\n"+
+                "----\n" +
+                out.toString() +
+                "----\n";
+  }
+  
   def testQuery(title: String, text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
     var query = queryText
     nodes.keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
