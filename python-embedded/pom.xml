@@ -22,9 +22,9 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.neo4j</groupId>
+    <groupId>org.neo4j.build</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>23</version>
+    <version>25</version>
   </parent>
 
   <groupId>org.neo4j.drivers</groupId>
@@ -63,19 +63,6 @@ the relevant Commercial Agreement.
       <version>1.5-SNAPSHOT</version>
     </dependency>
   </dependencies>
-
-  <profiles>
-    <profile><id>cpython-test</id>
-      <properties>
-        <python>python</python>
-      </properties>
-    </profile>
-    <profile><id>jython-test</id>
-      <properties>
-        <python>jython</python>
-      </properties>
-    </profile>
-  </profiles>
 
   <properties>
     <license-text.header>GPL-3-header.txt</license-text.header>
@@ -123,9 +110,9 @@ the relevant Commercial Agreement.
            See: http://www.python.org/dev/peps/pep-0386/ 
            -->
      <plugin>
-       <groupId>org.codehaus.groovy.maven</groupId>
+       <groupId>org.codehaus.gmaven</groupId>
        <artifactId>gmaven-plugin</artifactId>
-       <version>1.0</version>
+       <version>1.3</version>
        <executions>
          <execution>
            <id>pythonificate-version-number</id>
@@ -186,10 +173,20 @@ the relevant Commercial Agreement.
         </executions>
       </plugin>
       
-     
+    </plugins>
   </build>
   
   <profiles>
+    <profile><id>cpython-test</id>
+      <properties>
+        <python>python</python>
+      </properties>
+    </profile>
+    <profile><id>jython-test</id>
+      <properties>
+        <python>jython</python>
+      </properties>
+    </profile>
     <!-- Deploy the finished python library to pypi -->
     <profile>
       <id>pypi</id>
