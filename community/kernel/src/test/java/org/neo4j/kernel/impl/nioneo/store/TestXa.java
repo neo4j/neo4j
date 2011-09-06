@@ -330,7 +330,7 @@ public class TestXa extends AbstractNeo4jTestCase
         buffer.clear();
         FileChannel fileChannel = new RandomAccessFile( file( "nioneo_logical.log." +
             active ), "rw" ).getChannel();
-        System.out.println( fileChannel.size() );
+        // System.out.println( fileChannel.size() );
         if ( fileChannel.size() > size )
         {
             fileChannel.truncate( size );

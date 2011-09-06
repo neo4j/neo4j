@@ -30,24 +30,76 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     @Test
     public void deleteAndAddToFullPropertyRecord()
     {
+        // Fill it up, each integer is one block
         Node node = getGraphDb().createNode();
-        node.setProperty( "prop1", 1 );
-        node.setProperty( "prop2", 2 );
-        node.setProperty( "prop3", 3 );
-        node.setProperty( "prop4", 4 );
+        for ( int i = 0; i < PropertyType.getPayloadSizeLongs(); i++ )
+        {
+            node.setProperty( "prop" + i, i );
+        }
 
         newTransaction();
-        System.out.println( "check1" );
 
-        node.removeProperty( "prop1" );
-        node.removeProperty( "prop2" );
-        node.removeProperty( "prop3" );
+        // Remove all but one and add one
+        for ( int i = 0; i < PropertyType.getPayloadSizeLongs() - 1; i++ )
+        {
+            assertEquals( i, node.removeProperty( "prop" + i ) );
+        }
         node.setProperty( "profit", 5 );
 
         newTransaction();
-        System.out.println( "check2" );
 
-        assertEquals( 4, node.getProperty( "prop4" ) );
+        // Verify
+        int remainingProperty = PropertyType.getPayloadSizeLongs() - 1;
+        assertEquals( remainingProperty,
+                node.getProperty( "prop" + remainingProperty ) );
         assertEquals( 5, node.getProperty( "profit" ) );
+    }
+
+    @Test
+    public void checkPacking()
+    {
+        long inUseBefore = propertyRecordsInUse();
+
+        // Fill it up, each integer is one block
+        Node node = getGraphDb().createNode();
+        node.setProperty( "prop0", 0 );
+        newTransaction();
+
+        // One record must have been added
+        assertEquals( inUseBefore + 1, propertyRecordsInUse() );
+
+        // Since integers take up one block, adding the remaining should not
+        // create a new record.
+        for ( int i = 1; i < PropertyType.getPayloadSizeLongs(); i++ )
+        {
+            node.setProperty( "prop" + i, i );
+        }
+        newTransaction();
+
+        assertEquals( inUseBefore + 1, propertyRecordsInUse() );
+
+        // Removing one and adding one of the same size should not create a new
+        // record.
+        assertEquals( 0, node.removeProperty( "prop0" ) );
+        node.setProperty( "prop-1", -1 );
+        newTransaction();
+
+        assertEquals( inUseBefore + 1, propertyRecordsInUse() );
+
+        // Removing two that take up 1 block and adding one that takes up 2
+        // should not create a new record.
+        assertEquals( -1, node.removeProperty( "prop-1" ) );
+        // Hopefully prop1 exists, meaning payload is at least 16
+        assertEquals( 1, node.removeProperty( "prop1" ) );
+        // A double value should do the trick
+        node.setProperty( "propDouble", 1.0 );
+        newTransaction();
+
+        assertEquals( inUseBefore + 1, propertyRecordsInUse() );
+
+        // Adding just one now should create a new property record.
+        node.setProperty( "prop-2", -2 );
+        newTransaction();
+        assertEquals( inUseBefore + 2, propertyRecordsInUse() );
     }
 }
