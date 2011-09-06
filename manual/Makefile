@@ -192,7 +192,8 @@ pdf: docbook-shortinfo copyimages
 	cd $(FOPDIR)
 	xsltproc --xinclude --output $(FOPFILE) $(CONFDIR)/fo.xsl $(DOCBOOKFILEPDF)
 	ln -s $(SRCDIR)/images $(FOPDIR)/images
-	fop -fo $(FOPFILE) -pdf $(FOPPDF)
+	export FOP_OPTS="-Xmx2024m"
+	fop -fo $(FOPFILE) -pdf $(FOPPDF) --execdebug
 ifndef KEEP
 	rm -f $(FOPFILE)
 endif
