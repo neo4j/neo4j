@@ -67,6 +67,7 @@ the relevant Commercial Agreement.
   <properties>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <python>python</python>
+    <build.number>0</build.number>
   </properties>
 
   <build>
@@ -125,7 +126,7 @@ the relevant Commercial Agreement.
                  def version = project.version
                  
                  // 1.5-SNAPSHOT -> 1.5.dev1
-                 version = version.replace("-SNAPSHOT", ".dev1")
+                 version = version.replace("-SNAPSHOT", ".dev" + project.properties['build.number'])
                  
                  // 1.5.RC1 -> 1.5.c1
                  version = version.replace("RC","c")
@@ -160,7 +161,7 @@ the relevant Commercial Agreement.
             <id>python-distribution</id>
             <phase>package</phase>
             <configuration>
-              <attach>true</attach>
+              <attach>false</attach>
               <appendAssemblyId>true</appendAssemblyId>
               <descriptors>
                 <descriptor>src/main/assembly/python-distribution.xml</descriptor>
@@ -172,7 +173,6 @@ the relevant Commercial Agreement.
           </execution>
         </executions>
       </plugin>
-      
     </plugins>
   </build>
   
