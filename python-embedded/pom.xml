@@ -186,8 +186,42 @@ the relevant Commercial Agreement.
         </executions>
       </plugin>
       
-    </plugins>
+     
   </build>
+  
+  <profiles>
+    <!-- Deploy the finished python library to pypi -->
+    <profile>
+      <id>pypi</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>pypi-deploy</id>
+                <phase>deploy</phase>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <configuration>
+                  <tasks>
+                    <unzip src="${basedir}/target/${project.build.finalName}-python-dist.zip" dest="${basedir}/target/" overwrite="true"/>
+                    <exec executable="python" dir="${basedir}/target/neo4j-embedded">
+                      <arg value="setup.py"/>
+                      <arg value="sdist"/>
+                      <arg value="upload"/>
+                    </exec>
+                  </tasks>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
 
 </project>
 

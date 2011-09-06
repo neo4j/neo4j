@@ -10,10 +10,17 @@ The neo4j embedded database is a java application, which means you have to provi
 
 - CPython with JPype installed http://jpype.sourceforge.net/
 
+Installation
+------------
+
+::
+
+  pip install neo4j-embedded
+
 Installation from source
 ------------------------
 
-This is the source distribution of this project. To install into a python environment, use the maven build tool to produce the python distribution, then install the distribution normally:
+To install neo4j-embedded from this source tree, use the maven build tool to produce the python distribution, then install the distribution normally:
 
 ::
 
@@ -21,4 +28,13 @@ This is the source distribution of this project. To install into a python enviro
   unzip target/neo4j-python-embedded-[VERSION]-python-dist.zip
   cd target/neo4j-embedded
   python setup.py install
+
+Deploying to pypi
+------------------------
+
+Make sure you have a .pypirc file in your home folder with correct login information for the neo4j-embedded package. Then do the following:
+
+::
+
+  mvn clean deploy -Ppypi
 
