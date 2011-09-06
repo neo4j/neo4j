@@ -36,14 +36,7 @@ public class RelationshipFunctionalTest extends
         AbstractRestFunctionalTestBase
 {
 
-    private String getPropertiesUri( Relationship rel )
-    {
-        return getRelationshipUri(rel)+  "/properties";
-    }
-    private String getRelationshipUri( Relationship rel )
-    {
-        return getDataUri() + "relationship/" + rel.getId();
-    }
+
 
     
     @Test

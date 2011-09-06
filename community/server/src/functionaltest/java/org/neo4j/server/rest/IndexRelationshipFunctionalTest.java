@@ -57,7 +57,7 @@ public class IndexRelationshipFunctionalTest
     private static FunctionalTestHelper functionalTestHelper;
     private static GraphDbHelper helper;
     private static RestRequest request;
-    public @Rule TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
+    public @Rule TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
     
     @BeforeClass
     public static void setupServer() throws IOException

@@ -64,7 +64,7 @@ public class RemoveNodePropertiesFunctionalTest
     }
 
     public @Rule
-    TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
+    TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
 
     private String getPropertiesUri( final long nodeId )
     {

@@ -25,6 +25,7 @@ import org.neo4j.graphdb.Direction
 import org.junit.{Ignore, Test}
 import org.neo4j.cypher.{SymbolTable, GraphDatabaseTestBase}
 import org.neo4j.cypher.commands.{NodeIdentifier, VariableLengthPath, RelatedTo, Pattern}
+import java.lang.AssertionError
 
 
 /*
@@ -98,7 +99,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
 
     val matchingContext = new MatchingContext(patterns, bind("a"))
 
-    assertMatches( matchingContext.getMatches(Map("a" -> a)), 2,
+    assertMatches(matchingContext.getMatches(Map("a" -> a)), 2,
       Map("a" -> a, "b" -> b, "c" -> c, "d" -> d, "r1" -> r1, "r2" -> r2, "r3" -> r3, "r4" -> r4),
       Map("a" -> a, "b" -> c, "c" -> b, "d" -> d, "r1" -> r2, "r2" -> r1, "r3" -> r4, "r4" -> r3))
   }
@@ -111,9 +112,9 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     relate(a, b, "rel")
 
     val patterns: Seq[Pattern] = Seq(RelatedTo("a", "c", "r", "rel", Direction.OUTGOING))
-    val matchingContext = new MatchingContext(patterns, bind("a","c"))
+    val matchingContext = new MatchingContext(patterns, bind("a", "c"))
 
-    assertMatches(matchingContext.getMatches(Map("a" -> a, "c"->c)), 0)
+    assertMatches(matchingContext.getMatches(Map("a" -> a, "c" -> c)), 0)
   }
 
   @Test def pinnedNodeMakesNoMatches() {
@@ -270,20 +271,35 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     assertMatches(matchingContext.getMatches(Map("a" -> a)), 4, Map("a" -> a, "r1" -> r1, "b" -> b, "c" -> c, "r2" -> r2), Map("a" -> a, "r1" -> r2, "b" -> c, "c" -> b, "r2" -> r1))
   }
 
-  @Test @Ignore def zeroLengthVariableLengthPatternNotAllowed() {
+  @Test
+  @Ignore def zeroLengthVariableLengthPatternNotAllowed() {
     // TBD?
   }
 
-  def bind(boundSymbols:String*):SymbolTable = {
+  def bind(boundSymbols: String*): SymbolTable = {
     val toSet = boundSymbols.map(NodeIdentifier(_))
     new SymbolTable(toSet)
   }
 
-  def assertMatches(matches: Traversable[Map[String, Any]], expectedSize: Int, expected: Map[String, Any]*)
-  {
+  def assertMatches(matches: Traversable[Map[String, Any]], expectedSize: Int, expected: Map[String, Any]*) {
     val matchesList = matches.toList
-    assert(matchesList.toSet === expected.toSet)
     assert(matchesList.size === expectedSize)
+
+    expected.foreach(expectation => {
+      if (!matches.exists(compare(_, expectation)))
+        throw new Exception("Didn't find the expected row: " + expectation)
+    })
+
+  }
+
+  def compare(matches: Map[String, Any], expecations: Map[String, Any]): Boolean = {
+    expecations.foreach(kv =>
+      matches.get(kv._1) match {
+        case None => return false
+        case Some(x) => if (x != kv._2) return false
+      })
+
+    true
   }
 
 

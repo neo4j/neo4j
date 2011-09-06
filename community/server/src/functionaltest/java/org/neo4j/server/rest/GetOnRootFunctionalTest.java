@@ -64,7 +64,7 @@ public class GetOnRootFunctionalTest
     }
 
     public @Rule
-    TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
+    TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
 
     /**
      * The service root is your starting point to discover the REST API.

@@ -27,6 +27,7 @@ class MatchPipe(source: Pipe, patterns: Seq[Pattern]) extends Pipe {
   val matchingContext = new MatchingContext(patterns, source.symbols)
   val symbols = source.symbols ++ new SymbolTable(patterns.flatMap(_ match {
     case RelatedTo(left, right, rel, relType, dir) => Seq(NodeIdentifier(left), NodeIdentifier(right), RelationshipIdentifier(rel))
+    case VariableLengthPath(pathName, left, right, minHops, maxHops, relType, dir) => Seq(NodeIdentifier(left), NodeIdentifier(right))
   }))
 
   def foreach[U](f: (Map[String, Any]) => U) {

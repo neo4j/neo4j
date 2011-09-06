@@ -71,7 +71,7 @@ public class SetRelationshipPropertiesFunctionalTest
     }
 
     public @Rule
-    TestData<DocsGenerator> gen = TestData.producedThrough( DocsGenerator.PRODUCER );
+    TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
 
     /**
      * Update relationship properties.
