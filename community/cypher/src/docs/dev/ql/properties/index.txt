@@ -2,7 +2,8 @@
 Special properties
 ==================
 
-In the return part of your query, you define which parts of the pattern you are
-interested in. It can be nodes, relationships, or properties on these.
+Some elements have special properties. Special properties are written using all upper case. If you have a normal
+node/relation property named the same as the normal property, escape the property, like this: r.`TYPE`.
 
 include::relationship-type.txt[]
+include::path-length.txt[]

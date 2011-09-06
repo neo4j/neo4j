@@ -22,7 +22,7 @@ package org.neo4j.cypher.commands
 import org.neo4j.cypher.pipes.aggregation._
 import org.neo4j.cypher.{SyntaxException, SymbolTable}
 import org.neo4j.graphdb.{Path, NotFoundException, Relationship, PropertyContainer}
-
+import scala.collection.JavaConverters._
 abstract sealed class Value extends (Map[String,Any]=>Any) {
   def identifier: Identifier
 
@@ -102,22 +102,32 @@ case class RelationshipTypeValue(relationship: String) extends Value {
   }
 }
 
-case class PathLengthValue(pathName: String) extends Value {
+case class ArrayLengthValue(pathName: String) extends Value {
   def apply(m: Map[String, Any]): Any = m(pathName).asInstanceOf[Path].length()
 
-  def identifier: Identifier = PropertyIdentifier(pathName, "LENGTH")
+  def identifier: Identifier = PathLengthIdentifier(pathName)
 
   def checkAvailable(symbols: SymbolTable) {
+    symbols.assertHas(ArrayIdentifier(pathName))
   }
 }
 
+case class PathNodesValue(pathName: String) extends Value {
+  def apply(m: Map[String, Any]): Any = m(pathName).asInstanceOf[Path].nodes().asScala.toArray
+
+  def identifier: Identifier = ArrayIdentifier(pathName + ".NODES")
+
+  def checkAvailable(symbols: SymbolTable) {
+    symbols.assertHas(PathIdentifier(pathName))
+  }
+}
 
 case class EntityValue(entityName:String) extends Value {
   def apply(m: Map[String, Any]): Any = m.getOrElse(entityName, throw new NotFoundException)
 
-  def identifier: Identifier = PropertyContainerIdentifier(entityName)
+  def identifier: Identifier = Identifier(entityName)
 
   def checkAvailable(symbols: SymbolTable) {
-     symbols.assertHas(PropertyContainerIdentifier(entityName))
+     symbols.assertHas(Identifier(entityName))
   }
 }

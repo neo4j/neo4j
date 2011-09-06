@@ -26,9 +26,8 @@ import static org.neo4j.server.webdriver.ElementTextIs.elementTextIs;
 import java.util.List;
 
 import org.openqa.selenium.By;
-import org.openqa.selenium.RenderedWebElement;
-import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.StaleElementReferenceException;
 
 /**
  * This is used rather than a direct
@@ -55,13 +54,13 @@ public class ElementReference {
         this.matchLast = matchLast;
     }
     
-    public RenderedWebElement getElement() {
+    public WebElement getElement() {
         return wl.getWebElement( selector );
     }
     
-    public RenderedWebElement findElement(By by) {
+    public WebElement findElement(By by) {
         try {
-            return (RenderedWebElement)this.getElement().findElement(by);
+            return this.getElement().findElement(by);
         } catch (StaleElementReferenceException e) {
             return this.findElement(by);
         }
@@ -93,7 +92,7 @@ public class ElementReference {
     
     public String getValueOfCssProperty(String cssProperty) {
         try {
-            return this.getElement().getValueOfCssProperty(cssProperty);
+            return this.getElement().getCssValue(cssProperty);
         } catch (StaleElementReferenceException e) {
             return this.getValueOfCssProperty(cssProperty);
         }
@@ -110,7 +109,7 @@ public class ElementReference {
     
     public String getValue() {
         try {
-            return this.getElement().getValue();
+            return this.getElement().getAttribute("value");
         } catch (StaleElementReferenceException e) {
             return this.getValue();
         }

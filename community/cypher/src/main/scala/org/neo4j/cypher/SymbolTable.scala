@@ -36,7 +36,7 @@ class SymbolTable(val identifiers: Set[Identifier]) {
 
     val actual = getOrElse(name, () => throw new SyntaxException("Unknown identifier \"" + name + "\"."))
     if (!expected.getClass.isAssignableFrom(actual.getClass)) {
-      throw new SyntaxException("Expected " + name + " to be of class " + expected.getClass + " but it was " + actual.getClass)
+      throw new SyntaxException("Expected " + name + " to be a " + expected.getClass.getSimpleName + " but it was " + actual.getClass.getSimpleName)
     }
   }
 

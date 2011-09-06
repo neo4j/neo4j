@@ -45,6 +45,5 @@ class AggregationPipe(source: Pipe, returnItems: Seq[ReturnItem], aggregations: 
         f(elems.toMap)
       }
     }
-
   }
 }

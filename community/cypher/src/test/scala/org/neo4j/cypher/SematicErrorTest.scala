@@ -21,7 +21,6 @@ package org.neo4j.cypher
 
 import commands._
 import org.junit.Assert._
-import org.neo4j.graphdb.{Direction, Node}
 import org.junit.Test
 import parser.CypherParser
 
@@ -38,6 +37,16 @@ class SematicErrorTest extends ExecutionEngineHelper {
   @Test def defineNodeAndTreatItAsARelationship() {
     expectedError("start r=(0) match a-[r]->b return r",
       "Identifier NodeIdentifier(r) already defined with different type RelationshipIdentifier(r)")
+  }
+
+  @Test def cantUseTYPEOnNodes() {
+    expectedError("start r=(0) return r.TYPE",
+      "Expected r to be a RelationshipIdentifier but it was NodeIdentifier")
+  }
+
+  @Test def cantUseLENGTHOnNodes() {
+    expectedError("start r=(0) return r.LENGTH",
+      "Expected r to be a ArrayIdentifier but it was NodeIdentifier")
   }
 
   def parse(txt:String):Query = new CypherParser().parse(txt)

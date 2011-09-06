@@ -36,9 +36,14 @@
     <!-- Override this with something like -DcukeArgs=features/webadmin/console.feature:12 -->
     <cukeArgs>src/features</cukeArgs>
 
-    <webdriver.version>2.0b3</webdriver.version>
+    <webdriver.version>2.5.0</webdriver.version>
     <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
-	
+    
+    <!-- Default location for chrome controller binary, used 
+         by webdriver for running tests in Chrome. 
+         Available from (http://code.google.com/p/chromium/downloads/list)
+         see README.txt for details on this. -->
+	<webdriver.chrome.driver>/usr/bin/chromedriver</webdriver.chrome.driver>
   </properties>
 
   <scm>
@@ -585,6 +590,8 @@ the relevant Commercial Agreement.
                 <cucumberArg>--color</cucumberArg>
                 <cucumberArg>--require</cucumberArg>
                 <cucumberArg>${basedir}/target/test-classes</cucumberArg>
+                <cucumberArg>--format junit</cucumberArg>
+                <cucumberArg>--out ${project.build.directory}/surefire-reports</cucumberArg>
                 <cucumberArg>${cukeArgs}</cucumberArg>
               </cucumberArgs>
               <gems>
@@ -644,7 +651,7 @@ the relevant Commercial Agreement.
     <profile>
       <!-- Disconnected from the "normal" build pipeline, because the
            artifact that this produces (webadmin.min.js) is checked into
-           the source tree (and thus there is no reason to normally rebuild it).
+           the source tree (and thus there is no reason normally to rebuild it).
 
            I know, that's really awful, but the alternative is forcing 
            everyone to run the webadmin build all the time, and its *really* slow.

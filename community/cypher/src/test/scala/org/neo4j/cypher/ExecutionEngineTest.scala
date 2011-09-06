@@ -517,7 +517,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val result = execute(query)
 
-    assertEquals(List("KNOWS", "HATES"), result.columnAs[String]("r~TYPE").toList)
+    assertEquals(List("KNOWS", "HATES"), result.columnAs[String]("r.TYPE").toList)
   }
 
   @Test def shouldAggregateOnProperties() {

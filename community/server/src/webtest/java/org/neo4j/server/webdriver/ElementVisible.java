@@ -23,7 +23,6 @@ import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
-import org.openqa.selenium.RenderedWebElement;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
 
@@ -46,7 +45,7 @@ public class ElementVisible extends BaseMatcher<WebDriver>
         if(item instanceof WebDriver) {
             WebDriver d = (WebDriver)item;
             try { 
-                return ! ((RenderedWebElement)d.findElement( by )).getValueOfCssProperty( "display" ).equals( "none" );
+                return ! d.findElement( by ).getCssValue( "display" ).equals( "none" );
             } catch(NoSuchElementException e) {
                 return false;
             } catch(StaleElementReferenceException e) {

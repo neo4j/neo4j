@@ -505,7 +505,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("n", 1)).
         namedPaths(NamedPath("p", RelatedTo("n", "x", "  UNNAMED1", None, Direction.OUTGOING))).
-        where(Equals(PathLengthValue("p"), Literal(10.0))).
+        where(Equals(ArrayLengthValue("p"), Literal(10.0))).
         returns(ValueReturnItem(EntityValue("p"))))
   }
 

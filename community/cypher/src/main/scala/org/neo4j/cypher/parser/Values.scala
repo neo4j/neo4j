@@ -28,7 +28,7 @@ trait Values extends JavaTokenParsers with Tokens {
     case x => EntityValue(x)
   }
 
-  def value: Parser[Value] = (boolean | relationshipType | pathLength | property | stringValue | decimal)
+  def value: Parser[Value] = (boolean | relationshipType | pathLength | pathNodes | property | stringValue | decimal)
 
   def property: Parser[Value] = identity ~ "." ~ identity ^^ {  case v ~ "." ~ p => PropertyValue(v,p) }
 
@@ -45,8 +45,8 @@ trait Values extends JavaTokenParsers with Tokens {
   def falseX: Parser[Value] = ignoreCase("false") ^^ { case str => Literal(false) }
 
   def relationshipType: Parser[Value] = identity <~ ".TYPE" ^^ {  case v => RelationshipTypeValue(v) }
-
-  def pathLength: Parser[Value] = identity <~ ".LENGTH" ^^ { case v => PathLengthValue(v) }
+  def pathLength: Parser[Value] = identity <~ ".LENGTH" ^^ { case v => ArrayLengthValue(v) }
+  def pathNodes: Parser[Value] = identity <~ ".NODES" ^^ { case v => PathNodesValue(v) }
 }
 
 
