@@ -19,22 +19,23 @@
  */
 package org.neo4j.cypher.commands
 
-sealed abstract class Identifier(val name: String)
+case class Identifier(name: String) {
+  def isCompatibleWith(other:Identifier):Boolean = {
+    other.getClass.isAssignableFrom(this.getClass)
+  }
+}
 
 case class PropertyContainerIdentifier(propContainerName:String) extends Identifier(propContainerName)
-
 case class UnboundIdentifier(subName: String, wrapped:Option[Identifier]) extends Identifier(subName)
-
 case class LiteralIdentifier(subName: String) extends Identifier(subName)
-
-case class NodeIdentifier(subName: String) extends PropertyContainerIdentifier(subName)
-
-case class RelationshipIdentifier(subName: String) extends PropertyContainerIdentifier(subName)
-
-case class RelationshipTypeIdentifier(subName: String) extends Identifier(subName + "~TYPE")
-
 case class PropertyIdentifier(entity: String, property: String) extends Identifier(entity + "." + property)
-
 case class AggregationIdentifier(subName: String) extends Identifier(subName)
 
-case class PathIdentifier(subName:String) extends PropertyContainerIdentifier(subName)
+case class PathIdentifier(path:String) extends ArrayIdentifier(path)
+case class NodeIdentifier(subName: String) extends PropertyContainerIdentifier(subName)
+case class RelationshipIdentifier(subName: String) extends PropertyContainerIdentifier(subName)
+
+case class RelationshipTypeIdentifier(subName: String) extends Identifier(subName + ".TYPE")
+case class PathLengthIdentifier(subName: String) extends Identifier(subName + ".LENGTH")
+
+case class ArrayIdentifier(array: String) extends Identifier(array)

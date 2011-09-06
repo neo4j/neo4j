@@ -98,14 +98,13 @@ class SyntaxExceptionTest extends JUnitSuite {
   }
 
 
-
   @Test def shouldComplainAboutAStringBeingExpected() {
     expectError(
       "start s=(index,key,value) return s limit -1",
       "String literal expected")
   }
 
-    @Ignore @Test def nodeParenthesisMustBeClosed() {
+  @Ignore @Test def nodeParenthesisMustBeClosed() {
     expectError(
       "start s=(1) match s-->(x return x",
       "Unfinished parenthesis around 'x'")
@@ -129,7 +128,7 @@ class SyntaxExceptionTest extends JUnitSuite {
     try {
       new CypherParser().parse(query)
     } catch {
-      case x:SyntaxException => assertEquals(expected, x.getMessage)
+      case x: SyntaxException => assertEquals(expected, x.getMessage)
     }
   }
 }
