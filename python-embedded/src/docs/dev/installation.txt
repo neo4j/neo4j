@@ -1,25 +1,62 @@
 [[python-embedded-installation]]
-Installation
-============
+Installation on OSX/Linux
+=========================
 
-First, make sure you have JPype (http://jpype.sourceforge.net/) installed.
-On a debian system, you would do:
+
+== Prerequisites ==
+
+First, install JPype:
+
+. Download the latest version of JPype from http://sourceforge.net/projects/jpype/files/JPype/
+. Unzip
+. Open a console and navigate into the unzipped folder
+. Run `sudo python setup.py install`
+
+JPype is also available in the debian repos:
 
 [source, shell]
 ----
 sudo apt-get install python-jpype
 ----
 
-Then install the latest version of neo4j-python-embedded from source:
+
+== Installing neo4j-embedded ==
+
+You can install with your python package manager of choice:
 
 [source, shell]
 ----
-git clone git://github.com/neo4j/python-embedded.git
-cd python-embedded
-mvn package
-unzip target/neo4j-python-embedded-[VERSION]-python-dist.zip
-cd neo4j-embedded
-python setup.py install
+sudo pip install neo4j-embedded
 ----
+
+[source, shell]
+----
+sudo easy_install neo4j-embedded
+----
+
+Or install manually:
+
+. Download the latest version from http://pypi.python.org/pypi/neo4j-embedded/
+. Unzip
+. Open a console and navigate into the unzipped folder
+. Run `sudo python setup.py install`
+
+Installation on Windows
+=======================
+
+== Prerequisites ==
+
+First, install JPype:
+
+Notice that there JPype only works with Python 2.6 and 2.7. 
+Also note that there are two different downloads depending on which version you use.
+
+. Download the latest appropriate version of JPype from http://sourceforge.net/projects/jpype/files/JPype/
+. Run the installer
+
+== Installing neo4j-embedded ==
+
+. Download the latest version from http://pypi.python.org/pypi/neo4j-embedded/
+. Run the installer
 
 

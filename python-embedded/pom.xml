@@ -188,6 +188,9 @@ the relevant Commercial Agreement.
       </properties>
     </profile>
     <!-- Deploy the finished python library to pypi -->
+    <!-- NOTICE: This only works on windows machines, due
+         to dependencies on win32api for building windows
+         installers. -->
     <profile>
       <id>pypi</id>
       <build>
@@ -207,6 +210,8 @@ the relevant Commercial Agreement.
                     <exec executable="python" dir="${basedir}/target/neo4j-embedded">
                       <arg value="setup.py"/>
                       <arg value="sdist"/>
+                      <arg value="--formats=gztar,zip"/>
+                      <arg value="bdist_wininst"/>
                       <arg value="upload"/>
                     </exec>
                   </target>

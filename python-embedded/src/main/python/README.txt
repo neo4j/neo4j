@@ -8,10 +8,9 @@ Source: https://github.com/neo4j/python-embedded
 Prerequisites
 -------------
 
-The neo4j embedded database is a java application, which means you have to provide an interface to communicate with java-land. You can use:
+The Neo4j database itself is a java application, which means you have to provide an interface to communicate with java-land. You can use:
 
- - CPython with JPype installed http://jpype.sourceforge.net/
- 
+- CPython with JPype installed http://jpype.sourceforge.net/
 
 Installation
 ------------

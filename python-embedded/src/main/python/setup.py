@@ -35,6 +35,10 @@ setup(
     description='Bindings for the embedded version of the neo4j graph database.',
     long_description=long_description,
     author='Neo Technology',
+    author_email='python@neotechnology.com',
+    
+    url='https://github.com/neo4j/python-embedded',
+    
     packages=(
         'neo4j',
         'neo4j.javalib',
