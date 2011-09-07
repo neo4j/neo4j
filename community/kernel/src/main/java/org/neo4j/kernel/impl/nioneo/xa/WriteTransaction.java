@@ -1279,10 +1279,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         {
             PropertyRecord propRecord = getPropertyRecord( nextProp, false );
             nextProp = propRecord.getNextProp();
-            // if ( propRecord.size() + newBlockSizeInBytes <=
-            // PropertyType.getPayloadSize() )
             int propSize = propRecord.size();
-            if ( PropertyType.getPayloadSize() - propSize >= newBlockSizeInBytes )
+            if ( propSize + newBlockSizeInBytes <= PropertyType.getPayloadSize() )
             {
                 host = propRecord;
                 host.isChanged();

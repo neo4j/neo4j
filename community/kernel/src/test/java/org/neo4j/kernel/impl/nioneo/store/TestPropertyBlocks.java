@@ -611,7 +611,4 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         rel.setProperty( "filler", new long[] { 1 << 63, 1 << 63, 1 << 63 } );
         assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
     }
-
-    @Test
-    public void
 }
