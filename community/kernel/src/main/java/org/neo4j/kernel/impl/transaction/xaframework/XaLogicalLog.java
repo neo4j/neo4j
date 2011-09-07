@@ -1343,6 +1343,7 @@ public class XaLogicalLog
         startEntry.setStartPosition( startEntryPosition );
         cacheTxStartPosition( logApplier.commitEntry.getTxId(), logApplier.commitEntry.getMasterId(), startEntry );
 //        System.out.println( "applyFullTx#end @ pos: " + writeBuffer.getFileChannelPosition() );
+        checkLogRotation();
     }
 
     private String getLog1FileName()
