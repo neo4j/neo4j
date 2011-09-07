@@ -53,6 +53,8 @@ class DefaultStyleConfiguration implements StyleConfiguration
         label = label.replace( "\"", "\\\"" );
         label = label.replace( "'", "\\\\'" );
         label = label.replace( "\n", "\\n" );
+        label = label.replace( "<", "\\<" );
+        label = label.replace( ">", "\\>" );
         return label;
     }
 
@@ -170,7 +172,7 @@ class DefaultStyleConfiguration implements StyleConfiguration
 		}
 		else
 		{
-			stream.append( key + " = " + PropertyType.format( value ) + " : "
+			stream.append( PropertyType.STRING.format(key) + " = " + PropertyType.format( value ) + " : "
 			    + type.typeName + "\\l" );
 		}
 	}
@@ -184,7 +186,7 @@ class DefaultStyleConfiguration implements StyleConfiguration
 		}
 		else
 		{
-			stream.append( key + " = " + PropertyType.format( value ) + " : "
+			stream.append( PropertyType.STRING.format(key) + " = " + PropertyType.format( value ) + " : "
 			    + type.typeName + "\\l" );
 		}
 	}

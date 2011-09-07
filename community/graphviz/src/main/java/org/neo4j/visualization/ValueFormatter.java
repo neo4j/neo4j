@@ -95,6 +95,9 @@ public interface ValueFormatter<T>
 			string = string.replace( "\"", "\\\"" );
 			string = string.replace( "'", "\\\\'" );
 			string = string.replace( "\n", "\\\\n" );
+	        string = string.replace( "<", "\\<" );
+	        string = string.replace( ">", "\\>" );
+
 			return "'" + string + "'";
 		}
 

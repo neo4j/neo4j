@@ -51,7 +51,7 @@ class DefaultRelationshipStyle implements RelationshipStyle
         if ( reversed ) stream.append( "    dir = back\n" );
         if ( config.displayRelationshipLabel )
         {
-            stream.append( "    label = \"" + config.getTitle( relationship ) + "\\n" );
+            stream.append( "    label = \"" + config.escapeLabel(config.getTitle( relationship )) + "\\n" );
         }
     }
 
