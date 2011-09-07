@@ -759,7 +759,15 @@ public abstract class Command extends XaCommand
             if ( record.inUse() )
             {
                 buffer.putLong( record.getNextProp() ).putLong( record.getPrevProp() );
-                buffer.put( (byte) record.getPropertyBlocks().size() );
+                int propBlocks = record.getPropertyBlocks().size();
+                if ( propBlocks <= 0 )
+                {
+                    throw new IllegalStateException(
+                            "Non positive number of property blocks ("
+                                    + propBlocks
+                                    + ") for in use property record " + record );
+                }
+                buffer.putInt( propBlocks );
                 for ( PropertyBlock block : record.getPropertyBlocks() )
                 {
                     writePropertyBlock( buffer, block );
@@ -808,9 +816,9 @@ public abstract class Command extends XaCommand
             {
                 buffer.clear();
                 /*
-                 * 16 next & prev, 1 is the no of property blocks
+                 * 16 next & prev, 4 is the no of property blocks
                  */
-                buffer.limit( 16 + 1 );
+                buffer.limit( 16 + 4 );
                 if ( byteChannel.read( buffer ) != buffer.limit() )
                 {
                     return null;
@@ -822,7 +830,7 @@ public abstract class Command extends XaCommand
                 record.setInUse( inUse );
                 record.setNextProp( nextProp );
                 record.setPrevProp( prevProp );
-                int nrPropBlocks = buffer.get();
+                int nrPropBlocks = buffer.getInt();
                 if ( nrPropBlocks == 0 )
                 {
                     throw new IllegalStateException(

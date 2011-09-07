@@ -24,6 +24,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -38,6 +39,51 @@ import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 public class TestPropertyBlocks extends AbstractNeo4jTestCase
 {
+    @Test
+    @Ignore
+    public void simpleAddIntegers()
+    {
+        long inUseBefore = propertyRecordsInUse();
+        Node node = getGraphDb().createNode();
+
+        for ( int i = 0; i < PropertyType.getPayloadSizeLongs(); i++ )
+        {
+            node.setProperty( "prop" + i, i );
+            assertEquals( inUseBefore + 1, propertyRecordsInUse() );
+            assertEquals( i, node.getProperty( "prop" + i ) );
+        }
+
+        newTransaction();
+
+        for ( int i = 0; i < PropertyType.getPayloadSizeLongs(); i++ )
+        {
+            assertEquals( i, node.removeProperty( "prop" + i ) );
+            if ( i == PropertyType.getPayloadSizeLongs() - 1 )
+            {
+                assertEquals( inUseBefore, propertyRecordsInUse() );
+            }
+            else
+            {
+                assertEquals( inUseBefore + 1, propertyRecordsInUse() );
+            }
+        }
+        commit();
+    }
+
+    @Test
+    public void largeTx() throws IOException
+    {
+        Node node = getGraphDb().createNode();
+
+        node.setProperty( "anchor", "hi" );
+        for ( int i = 0; i < 255; i++ )
+        {
+            node.setProperty( "foo", 1 );
+            node.removeProperty( "foo" );
+        }
+        commit();
+    }
+
     /*
      * Creates a PropertyRecord, fills it up, removes something and
      * adds something that should fit.
@@ -611,4 +657,71 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         rel.setProperty( "filler", new long[] { 1 << 63, 1 << 63, 1 << 63 } );
         assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
     }
+
+    @Test
+    public void testRemoveZigZag()
+    {
+        Relationship rel = getGraphDb().createNode().createRelationshipTo(
+                getGraphDb().createNode(),
+                DynamicRelationshipType.withName( "LOCKS" ) );
+
+        long recordsInUseAtStart = propertyRecordsInUse();
+
+        int propRecCount = 1;
+        for ( ; propRecCount <= 3; propRecCount++ )
+        {
+            for ( int i = 1; i <= PropertyType.getPayloadSizeLongs(); i++ )
+            {
+                rel.setProperty( "int" + ( propRecCount * 10 + i ),
+                        ( propRecCount * 10 + i ) );
+                assertEquals( recordsInUseAtStart + propRecCount,
+                        propertyRecordsInUse() );
+            }
+        }
+
+        newTransaction();
+
+        for ( int i = 1; i <= PropertyType.getPayloadSizeLongs(); i++ )
+        {
+            for ( int j = 1; j < propRecCount; j++ )
+            {
+                assertEquals( j * 10 + i,
+                        rel.removeProperty( "int" + ( j * 10 + i ) ) );
+                if ( i == PropertyType.getPayloadSize() - 1
+                     && j != propRecCount - 1 )
+                {
+                    assertEquals( recordsInUseAtStart + ( propRecCount - j ),
+                            propertyRecordsInUse() );
+                }
+                else if ( i == PropertyType.getPayloadSize() - 1
+                          && j == propRecCount - 1 )
+                {
+                    assertEquals( recordsInUseAtStart, propertyRecordsInUse() );
+                }
+                else
+                {
+                    assertEquals( recordsInUseAtStart + 3,
+                            propertyRecordsInUse() );
+                }
+            }
+        }
+        for ( int i = 1; i <= PropertyType.getPayloadSizeLongs(); i++ )
+        {
+            for ( int j = 1; j < propRecCount; j++ )
+            {
+                assertFalse( rel.hasProperty( "int" + ( j * 10 + i ) ) );
+            }
+        }
+        newTransaction();
+
+        for ( int i = 1; i <= PropertyType.getPayloadSizeLongs(); i++ )
+        {
+            for ( int j = 1; j < propRecCount; j++ )
+            {
+                assertFalse( rel.hasProperty( "int" + ( j * 10 + i ) ) );
+            }
+        }
+        assertEquals( recordsInUseAtStart, propertyRecordsInUse() );
+    }
+
 }
