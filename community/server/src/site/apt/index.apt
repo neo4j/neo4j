@@ -1,3 +1,3 @@
 Neo4j Server
 
-    * {{{./rest.html}REST API}}
+    * For the docs, please refer to the {{{http://docs.neo4j.org/chunked/snapshot}Neo4j Manual}} and the docs on the {{{http://docs.neo4j.org/chunked/snapshot/rest-api.html}REST API}}
