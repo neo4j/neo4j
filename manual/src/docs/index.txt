@@ -12,10 +12,12 @@ The documents use the asciidoc format, see:
 
 The cheatsheet is really useful!
 
+[[overall-flow]]
 == Overall Flow ==
 
 Each (sub)project has its own documentation, which will produce a 'docs.jar' file.
 
+TBD.
 
 
 == Headings and document structure ==
@@ -52,8 +54,8 @@ content here ...
 
 == Writing ==
 
-Put one sentence on each line. This makes it easy to move around content,
-and also easy to spot (too) long sentences.
+Put one sentence on each line.
+This makes it easy to move content around, and also easy to spot (too) long sentences.
 
 == Gotchas ==
 
@@ -73,12 +75,13 @@ To link to other parts of the manual the id of the target is used.
 This is how such a reference looks:
 
 ----
-<<target-id>>
+<<overall-flow>>
 ----
 
+Wich will render like: <<overall-flow>>
+
 [NOTE]
-This tag will generate output like "Chapter 9, Transaction Management".
-So just write "see \<<the-id>>" and similar.
+Just write "see \<<target-id>>" and similar, that's enough in most cases.
 
 If you need to link to another document with your own link text, this is what to do:
 
@@ -86,7 +89,7 @@ If you need to link to another document with your own link text, this is what to
 <<target-id, my much better text for the link>>
 ----
 
-NOTE: Writing your own link text means you're going to keep it in sync with the title of target text in the future, in case that changes.
+NOTE: Having lots of linked text may work in a web context but is a pain in print.
 
 External links are added like this:
 
@@ -94,9 +97,49 @@ External links are added like this:
 http://neo4j.org/[Link text here]
 ----
 
+Which renders like: http://neo4j.org/[Link text here]
+
 == Text Formatting ==
 
-* Path: \'my/path/' renders as 'my/path/'
+* *Bold* - just don't do it, the editor will remove it anyhow!
+* \_Italics_ is rendered as _Italics_
+* \+methodName()+ is rendered as +methodName()+ and is used for literals as well
+* \`command` is rendered as `command` (typically used for command-line)
+* \'my/path/' is rendered as 'my/path/' (used for file names and paths)
+
+== Admonitions ==
+
+These are very useful and should be used where apropriate.
+Choose from the following (and no, we can't easily add new ones):
+
+NOTE: Note.
+
+TIP: Tip.
+
+IMPORTANT: Important
+
+CAUTION: Caution
+
+WARNING: Warning
+
+Here's how it done:
+
+----
+NOTE: Note.
+----
+
+A multiline variation:
+----
+[TIP]
+Tiptext.
+Line 2.
+----
+
+Which is rendered as:
+
+[TIP]
+Tiptext.
+Line 2.
 
 == Attributes ==
 
@@ -129,6 +172,7 @@ Here's a comment block:
 ----
 ////
 Note that includes in here will still be processed, but not make it into the output.
+That is, missing includes here will still break the build!
 ////
 ----
 
