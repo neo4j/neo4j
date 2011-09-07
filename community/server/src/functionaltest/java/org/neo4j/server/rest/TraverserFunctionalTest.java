@@ -56,7 +56,7 @@ public class TraverserFunctionalTest extends AbstractRestFunctionalTestBase
     public void shouldGet200WhenNoHitsFromTraversing()
             throws DatabaseBlockedException
     {
-        assertSize( 0,gen.get().expectedStatus( 200 ).payload( "{}" ).post(
+        assertSize( 0,gen.get().expectedStatus( 200 ).payload( "" ).post(
                 getTraverseUriNodes( getNode( "I" ) ) ).entity());
     }
     
@@ -69,7 +69,7 @@ public class TraverserFunctionalTest extends AbstractRestFunctionalTestBase
     public void return_relationships_from_a_traversal()
             throws DatabaseBlockedException
     {
-        assertSize( 2, gen.get().expectedStatus( 200 ).payload( "{}" ).post(
+        assertSize( 2, gen.get().expectedStatus( 200 ).payload( "{\"order\":\"breadth_first\",\"uniqueness\":\"none\",\"return_filter\":{\"language\":\"builtin\",\"name\":\"all\"}}" ).post(
                 getTraverseUriRelationships( getNode( "I" ) ) ).entity());
     }
 
