@@ -2,7 +2,7 @@
 Python embedded bindings
 ========================
 
-This describes neo4j-python-embedded, a library that lets you use the embedded Neo4j database in python.
+This describes neo4j-python-embedded, a library that lets you use the embedded Neo4j database in Python.
 
 :leveloffset: 2
 
