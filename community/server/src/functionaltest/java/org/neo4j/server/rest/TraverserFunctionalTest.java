@@ -38,6 +38,7 @@ import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription.Graph;
+import org.neo4j.test.GraphDescription.NODE;
 
 public class TraverserFunctionalTest extends AbstractRestFunctionalTestBase
 {
@@ -51,12 +52,30 @@ public class TraverserFunctionalTest extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    @Graph( "I know you" )
+    @Graph( nodes = {@NODE(name="I")} )
     public void shouldGet200WhenNoHitsFromTraversing()
             throws DatabaseBlockedException
     {
-        gen.get().expectedStatus( 200 ).payload( "{}" ).post(
-                getTraverseUriNodes( getNode( "I" ) ) ).entity();
+        assertSize( 0,gen.get().expectedStatus( 200 ).payload( "{}" ).post(
+                getTraverseUriNodes( getNode( "I" ) ) ).entity());
+    }
+    
+    /**
+     * In order to return relationships,
+     * simply specify the return type as part of the URL.
+     */
+    @Test
+    @Graph( {"I know you", "I own car"} )
+    public void return_relationships_from_a_traversal()
+            throws DatabaseBlockedException
+    {
+        assertSize( 2, gen.get().expectedStatus( 200 ).payload( "{}" ).post(
+                getTraverseUriRelationships( getNode( "I" ) ) ).entity());
+    }
+
+    private String getTraverseUriRelationships( Node node )
+    {
+        return getNodeUri( node) + "/traverse/relationship";
     }
 
     private String getTraverseUriNodes( Node node )
