@@ -136,6 +136,10 @@ public class ExtensionService
         {
             return output.serverError( e.getCause() );
         }
+        catch ( Exception e )
+        {
+            return output.serverError( e.getCause() );
+        }
     }
 
     @GET
