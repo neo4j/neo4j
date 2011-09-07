@@ -4,6 +4,11 @@
 BUILDDIR         = $(CURDIR)/target
 SRCDIR           = $(BUILDDIR)/classes
 SRCFILE          = $(SRCDIR)/neo4j-manual.txt
+METAFROMDIR      = $(CURDIR)/src/docs
+METAFROMCSSDIR   = $(CURDIR)/src/main/resources/css
+METAFROMIMGDIR   = $(CURDIR)/src/main/resources/images
+METASRCDIR       = $(BUILDDIR)/metadocssrc
+METASRCFILE      = $(METASRCDIR)/index.txt
 IMGDIR           = $(SRCDIR)/images
 CSSDIR           = $(SRCDIR)/css
 JSDIR            = $(SRCDIR)/js
@@ -27,6 +32,7 @@ CHUNKEDHTMLDIR   = $(BUILDDIR)/chunked
 CHUNKEDOFFLINEHTMLDIR = $(BUILDDIR)/chunked-offline
 CHUNKEDTARGET     = $(BUILDDIR)/neo4j-manual.chunked
 CHUNKEDSHORTINFOTARGET = $(BUILDDIR)/neo4j-manual-html.chunked
+METAHTMLDIR      = $(BUILDDIR)/metadocs
 MANPAGES         = $(BUILDDIR)/manpages
 UPGRADE          = $(BUILDDIR)/upgrade
 FILTERSRC        = $(CURDIR)/src/bin/resources
@@ -74,7 +80,7 @@ ASCIIDOC_FLAGS = $(V) $(VERS) $(GITVERS) $(IMPDIR)
 
 A2X_FLAGS = $(K) $(ASCIIDOC_FLAGS)
 
-.PHONY: all dist docbook help clean pdf latexpdf html offline-html singlehtml text cleanup annotated manpages upgrade installfilter html-check text-check
+.PHONY: all dist docbook help clean pdf latexpdf html offline-html singlehtml text cleanup annotated manpages upgrade installfilter html-check text-check meta
 
 help:
 	@echo "Please use 'make <target>' where <target> is one of"
@@ -109,6 +115,7 @@ ifndef KEEP
 	rm -f $(BUILDDIR)/*.xml
 	rm -f $(ANNOTATEDDIR)/*.xml
 	rm -f $(FOPDIR)/images
+	rm -f $(FOPFILE)
 	rm -f $(UPGRADE)/*.xml
 	rm -f $(UPGRADE)/*.html
 endif
@@ -194,9 +201,6 @@ pdf: docbook-shortinfo copyimages
 	ln -s $(SRCDIR)/images $(FOPDIR)/images
 	export FOP_OPTS="-Xmx2024m"
 	fop -fo $(FOPFILE) -pdf $(FOPPDF)
-ifndef KEEP
-	rm -f $(FOPFILE)
-endif
 
 latexpdf:  manpages copyimages
 	#
@@ -313,4 +317,19 @@ upgrade:
 	mkdir -p $(UPGRADE)
 	a2x -k -f text -D $(UPGRADE) $(IMPORTDIR)/neo4j-docs-jar/ops/upgrades.txt
 	mv $(UPGRADE)/upgrades.text $(UPGRADE)/UPGRADE.txt
+
+meta:
+	#
+	#
+	# Building metadocs.
+	#
+	#
+	rm -rf $(METASRCDIR)
+	cp -fr $(METAFROMDIR) $(METASRCDIR)
+	ln -s $(METAFROMCSSDIR) $(METASRCDIR)/css
+	rm -rf $(METAHTMLDIR)
+	mkdir -p $(METAHTMLDIR)
+	cp -fr $(METAFROMCSSDIR) $(METAHTMLDIR)/css
+	a2x -L -f xhtml -D $(METAHTMLDIR) --conf-file=$(CONFDIR)/xhtml.conf --asciidoc-opts "--conf-file=$(CONFDIR)/asciidoc.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/docbook45.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/linkedimages.conf" --xsl-file=$(CONFDIR)/xhtml.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(METASRCFILE)
+	cp -fr $(JSDIR) $(METAHTMLDIR)/js
 

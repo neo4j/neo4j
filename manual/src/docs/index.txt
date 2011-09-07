@@ -12,8 +12,7 @@ The documents use the asciidoc format, see:
 
 The cheatsheet is really useful!
 
-Overall Flow
-============
+== Overall Flow ==
 
 Each (sub)project has its own documentation, which will produce a 'docs.jar' file.
 
@@ -102,6 +101,7 @@ http://neo4j.org/[Link text here]
 == Attributes ==
 
 Common attributes you can use in documents:
+
 * \{neo4j-version}
 * \{neo4j-git-tag}
 
@@ -112,7 +112,7 @@ Note that neo4j-git-tag also handles the case of snapshot/master.
 
 There's a separate build including comments.
 The comments show up with a yellow background.
-It's located at http://docs.neo4j.org/annotated /.
+It's located at http://docs.neo4j.org/annotated/.
 You can also use this page to search for content, as the full manual is on a single page.
 WARNING: Don't share links to this page, as we want people to use the Disqus feature available in the normal chunked version.
 
