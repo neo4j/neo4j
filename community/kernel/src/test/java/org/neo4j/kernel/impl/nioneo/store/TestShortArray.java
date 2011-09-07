@@ -34,12 +34,19 @@ public class TestShortArray
     @Test
     public void canEncodeSomeSampleArraysWithDefaultPayloadSize() throws Exception
     {
-//        assertCanEncodeAndDecodeToSameValue( new boolean[] { true, false, true, true, true, true, true, true, true, true, false, true } );
+        assertCanEncodeAndDecodeToSameValue( new boolean[] { true, false, true,
+                true, true, true, true, true, true, true, false, true } );
         assertCanEncodeAndDecodeToSameValue( new byte[] { -1, -10, 43, 127, 0, 4, 2, 3, 56, 47, 67, 43 } );
         assertCanEncodeAndDecodeToSameValue( new short[] { 1,2,3,45,5,6,7 } );
         assertCanEncodeAndDecodeToSameValue( new int[] { 1,2,3,4,5,6,7 } );
         assertCanEncodeAndDecodeToSameValue( new long[] { 1,2,3,4,5,6,7 } );
         assertCanEncodeAndDecodeToSameValue( new float[] { 0.34f, 0.21f } );
+        assertCanEncodeAndDecodeToSameValue( new long[] { 1 << 63, 1 << 63 } );
+        assertCanEncodeAndDecodeToSameValue( new byte[] { 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0 } );
+        assertCanEncodeAndDecodeToSameValue( new long[] { 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0 } );
     }
 
     @Test

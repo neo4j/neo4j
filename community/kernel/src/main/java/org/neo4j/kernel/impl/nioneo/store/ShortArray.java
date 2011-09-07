@@ -39,7 +39,7 @@ public enum ShortArray
         {
             bytes.put( ((Boolean)value).booleanValue() ? 1 : 0, 1 );
         }
-        
+
         @Override
         Object createArray( int ofLength )
         {
@@ -75,7 +75,7 @@ public enum ShortArray
         {
             bytes.put( ((Byte)value).byteValue(), requiredBits );
         }
-        
+
         @Override
         Object createArray( int ofLength )
         {
@@ -111,7 +111,7 @@ public enum ShortArray
         {
             bytes.put( ((Short)value).shortValue(), requiredBits );
         }
-        
+
         @Override
         Object createArray( int ofLength )
         {
@@ -147,7 +147,7 @@ public enum ShortArray
         {
             bytes.put( ((Character)value).charValue(), requiredBits );
         }
-        
+
         @Override
         Object createArray( int ofLength )
         {
@@ -183,7 +183,7 @@ public enum ShortArray
         {
             bytes.put( ((Integer)value).intValue(), requiredBits );
         }
-        
+
         @Override
         Object createArray( int ofLength )
         {
@@ -219,7 +219,7 @@ public enum ShortArray
         {
             bytes.put( ((Long)value).longValue(), requiredBits );
         }
-        
+
         @Override
         Object createArray( int ofLength )
         {
@@ -292,7 +292,7 @@ public enum ShortArray
         {
             bytes.put( Double.doubleToLongBits( ((Double)value).doubleValue() ), requiredBits );
         }
-        
+
         @Override
         Object createArray( int ofLength )
         {
@@ -318,7 +318,7 @@ public enum ShortArray
         this.maxBits = maxBits;
         this.boxedClass = boxedClass;
     }
-    
+
     public int intValue()
     {
         return type.intValue();
@@ -327,11 +327,11 @@ public enum ShortArray
     abstract int getRequiredBits( Object value );
 
     abstract void put( Object value, Bits bits, int requiredBits );
-    
+
     abstract void get( Object array, int position, Bits bits, int requiredBits );
-    
+
     abstract Object createArray( int ofLength );
-    
+
     boolean matches( Class<?> cls )
     {
         return boxedClass.equals( cls );
@@ -361,7 +361,7 @@ public enum ShortArray
         result.put( type.type.intValue(), 4 );
         result.put( arrayLength, 6 );
         result.put( requiredBits, 6 );
-        
+
         for ( int i = 0; i < arrayLength; i++ )
         {
             type.put( Array.get( array, i ), result, requiredBits );
@@ -379,6 +379,16 @@ public enum ShortArray
         int typeId = bits.getByte( 4 );
         int arrayLength = bits.getByte( 6 );
         int requiredBits = bits.getByte( 6 );
+        /*
+         * So, it can be the case that values require 64 bits to store. However, you cannot encode this
+         * value with 6 bits. calculateRequiredBitsForArray never returns 0, because even for an array of
+         * all 0s one bit is required for every value. So when writing, we let it overflow and write out
+         * 0. When we are reading back, we just have to make sure that reading in 0 means 64.
+         */
+        if ( requiredBits == 0 )
+        {
+            requiredBits = 64;
+        }
         ShortArray type = typeOf( (byte)typeId );
         Object array = type.createArray( arrayLength );
         for ( int i = 0; i < arrayLength; i++ )
@@ -406,7 +416,7 @@ public enum ShortArray
         }
         return highest;
     }
-    
+
     public static ShortArray typeOf( byte typeId )
     {
         return ShortArray.values()[typeId-1];
@@ -444,7 +454,7 @@ public enum ShortArray
         int requiredBits = bits.getByte( 6 );
         return calculateNumberOfBlocksUsed( arrayLength, requiredBits );
     }
-    
+
     public static int calculateNumberOfBlocksUsed( int arrayLength, int requiredBits )
     {
         int bitsForItems = arrayLength*requiredBits;
