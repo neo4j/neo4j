@@ -61,7 +61,7 @@ public class PropertyBlock
     {
         return valueBlocks[0];
     }
-    
+
     public long getSingleValueLong()
     {
         return (valueBlocks[0] & 0xFFFFFFFFF0000000L) >>> 28;
@@ -71,7 +71,7 @@ public class PropertyBlock
     {
         return (int)((valueBlocks[0] & 0x0FFFFFFFF0000000L) >>> 28);
     }
-    
+
     public short getSingleValueShort()
     {
         return (short)((valueBlocks[0] & 0x00000FFFF0000000L) >>> 28);
@@ -81,7 +81,7 @@ public class PropertyBlock
     {
         return (byte)((valueBlocks[0] & 0x0000000FF0000000L) >>> 28);
     }
-    
+
     public long[] getValueBlocks()
     {
         return valueBlocks;
@@ -157,6 +157,7 @@ public class PropertyBlock
     public String toString()
     {
         StringBuffer result = new StringBuffer("PropertyBlock[");
+        result.append( inUse() ? "inUse, " : "notInUse, " );
         result.append( valueBlocks == null ? -1 : getKeyIndexId() ).append(
                 ", " ).append( getType() );
         result.append( ", " ).append( valueBlocks ).append( "]" );

@@ -1281,10 +1281,28 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             nextProp = propRecord.getNextProp();
             // if ( propRecord.size() + newBlockSizeInBytes <=
             // PropertyType.getPayloadSize() )
-            if ( PropertyType.getPayloadSize() - propRecord.size() >= newBlockSizeInBytes )
+            int propSize = propRecord.size();
+            if ( PropertyType.getPayloadSize() - propSize >= newBlockSizeInBytes )
             {
                 host = propRecord;
                 host.isChanged();
+                try
+                {
+                    host.addPropertyBlock( block );
+                }
+                catch ( IllegalStateException e )
+                {
+                    System.err.println( "WHOA!!!! That should NOT have happened. See, when i asked for the record's size it said "
+                                        + propSize
+                                        + " (now it is "
+                                        + propRecord.size()
+                                        + " btw) and the property block's size is "
+                                        + newBlockSizeInBytes
+                                        + "and it holds an array of size"
+                                        + block.getValueBlocks().length
+                                        + ". It should fit. The exception follows" );
+                    e.printStackTrace();
+                }
                 break;
             }
         }
@@ -1311,8 +1329,23 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             }
             primitive.setNextProp( host.getId() );
             addPropertyRecord( host );
+            try
+            {
+                host.addPropertyBlock( block );
+            }
+            catch ( IllegalStateException e )
+            {
+                System.err.println( "WHOA!!!! That should NOT have happened. See, when i asked for the record's size it said "
+                                    + host.size()
+                                    + " (0, right?, cause this is a new PropertyRecord and is a local variable) and the property block's size is "
+                                    + newBlockSizeInBytes
+                                    + "and it holds an array of size"
+                                    + block.getValueBlocks().length
+                                    + ". It should fit. The exception follows" );
+                e.printStackTrace();
+            }
         }
-        host.addPropertyBlock( block );
+        // host.addPropertyBlock( block );
         return host;
     }
 
