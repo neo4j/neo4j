@@ -166,12 +166,12 @@ public class MasterImpl implements Master
     
     private <T> Response<T> packResponse( SlaveContext context, T response )
     {
-        return packResponse( context, response, MasterUtil.ALL );
+        return packResponse( context, response, Long.MAX_VALUE );
     }
     
-    private <T> Response<T> packResponse( SlaveContext context, T response, Predicate<Long> filter )
+    private <T> Response<T> packResponse( SlaveContext context, T response, long highestPossibleTxId )
     {
-        return MasterUtil.packResponse( graphDb, context, response, filter );
+        return MasterUtil.packResponse( graphDb, context, response, highestPossibleTxId );
     }
 
     private Transaction getTxAndUpdateTimestamp( SlaveContext txId )
@@ -355,7 +355,7 @@ public class MasterImpl implements Master
                     return item < txId;
                 }
             };
-            return packResponse( context, txId, upUntilThisTx );
+            return packResponse( context, txId, txId-1 );
         }
         catch ( IOException e )
         {

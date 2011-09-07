@@ -38,11 +38,11 @@ class BackupImpl implements TheBackupInterface
     {
         SlaveContext context = MasterUtil.rotateLogsAndStreamStoreFiles( graphDb, writer );
         writer.done();
-        return MasterUtil.packResponse( graphDb, context, null, MasterUtil.ALL );
+        return MasterUtil.packResponse( graphDb, context, null, Long.MAX_VALUE );
     }
     
     public Response<Void> incrementalBackup( SlaveContext context )
     {
-        return MasterUtil.packResponse( graphDb, context, null, MasterUtil.ALL );
+        return MasterUtil.packResponse( graphDb, context, null, Long.MAX_VALUE );
     }
 }

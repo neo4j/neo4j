@@ -28,6 +28,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -37,6 +38,8 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.ClosableIterable;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.NestingIterator;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
@@ -44,6 +47,7 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.LogExtractor;
 
 public class MasterUtil
 {
@@ -135,9 +139,9 @@ public class MasterUtil
     }
     
     public static <T> Response<T> packResponse( GraphDatabaseService graphDb,
-            SlaveContext context, T response, Predicate<Long> filter )
+            SlaveContext context, T response, long highestPossibleTxId )
     {
-        List<Triplet<String, Long, TxExtractor>> stream = new ArrayList<Triplet<String, Long, TxExtractor>>();
+        List<Triplet<XaDataSource, Long, Long>> streams = new ArrayList<Triplet<XaDataSource, Long, Long>>();
         Set<String> resourceNames = new HashSet<String>();
         XaDataSourceManager dsManager = ((AbstractGraphDatabase) graphDb).getConfig().getTxModule().getXaDataSourceManager();
         for ( Pair<String, Long> txEntry : context.lastAppliedTransactions() )
@@ -149,46 +153,74 @@ public class MasterUtil
                 throw new RuntimeException( "No data source '" + resourceName + "' found" );
             }
             resourceNames.add( resourceName );
-            long masterLastTx = dataSource.getLastCommittedTxId();
-            for ( long txId = txEntry.other() + 1; txId <= masterLastTx; txId++ )
+            long fromTxId = txEntry.other()+1;
+            long toTxId = Math.min( highestPossibleTxId, dataSource.getLastCommittedTxId() );
+            
+            if ( fromTxId <= toTxId )
             {
-                if ( filter.accept( txId ) )
-                {
-                    final long tx = txId;
-                    TxExtractor extractor = new TxExtractor()
-                    {
-                        @Override
-                        public ReadableByteChannel extract()
-                        {
-                            try
-                            {
-                                return dataSource.getCommittedTransaction( tx );
-                            }
-                            catch ( IOException e )
-                            {
-                                throw new RuntimeException( e );
-                            }
-                        }
-
-                        @Override
-                        public void extract( LogBuffer buffer )
-                        {
-                            try
-                            {
-                                dataSource.getCommittedTransaction( tx, buffer );
-                            }
-                            catch ( IOException e )
-                            {
-                                throw new RuntimeException( e );
-                            }
-                        }
-                    };
-                    stream.add( Triplet.of( resourceName, txId, extractor ) );
-                }
+                streams.add( Triplet.of( dataSource, fromTxId, toTxId ) );
             }
         }
         StoreId storeId = ((NeoStoreXaDataSource) dsManager.getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME )).getStoreId();
-        return new Response<T>( response, storeId, TransactionStream.create( resourceNames, stream ) );
+        
+        // Sorry for the complex iterator. It's a nested iterator where each created sub-iterator
+        // is a ranged iterator which (re)uses one LogExtractor for the entire range, extracting
+        // one transaction with each call to next. All state is kept between calls to next.
+        Iterator<Triplet<String, Long, TxExtractor>> streamIterator = new NestingIterator<Triplet<String,Long,TxExtractor>, Triplet<XaDataSource, Long, Long>>( streams.iterator() )
+        {
+            @Override
+            protected Iterator<Triplet<String, Long, TxExtractor>> createNestedIterator(
+                    final Triplet<XaDataSource, Long, Long> item )
+            {
+                try
+                {
+                    return new PrefetchingIterator<Triplet<String,Long,TxExtractor>>()
+                    {
+                        private long txId = item.second();
+                        private long endTxId = item.third();
+                        private LogExtractor logExtractor = item.first().getLogExtractor( txId, endTxId );
+                        
+                        @Override
+                        protected Triplet<String, Long, TxExtractor> fetchNextOrNull()
+                        {
+                            if ( txId > endTxId )
+                            {
+                                logExtractor.close();
+                                return null; // End of this data source stream
+                            }
+                            
+                            TxExtractor txExtractor = new TxExtractor()
+                            {
+                                @Override
+                                public void extract( LogBuffer buffer )
+                                {
+                                    try
+                                    {
+                                        if ( logExtractor.extractNext( buffer ) == -1 )
+                                        {
+                                            throw new RuntimeException( "All txs not found" );
+                                        }
+                                        txId++;
+                                    }
+                                    catch ( IOException e )
+                                    {
+                                        throw new RuntimeException( e );
+                                    }
+                                }
+                            };
+                            return Triplet.of( item.first().getName(), txId, txExtractor );
+                        }
+                    };
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( e );
+                }
+            }
+        };
+        
+        return new Response<T>( response, storeId, new TransactionStream( streamIterator,
+                resourceNames.toArray( new String[streams.size()] ) ) );
     }
     
     public static <T> Response<T> packResponseWithoutTransactionStream( GraphDatabaseService graphDb,

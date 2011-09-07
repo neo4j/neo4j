@@ -21,13 +21,20 @@ package org.neo4j.com;
 
 import java.nio.channels.ReadableByteChannel;
 
+import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 
 public abstract class TxExtractor
 {
     public abstract void extract( LogBuffer buffer );
 
-    public abstract ReadableByteChannel extract();
+    // Only used in Single-JVM testing
+    public ReadableByteChannel extract()
+    {
+        InMemoryLogBuffer buffer = new InMemoryLogBuffer();
+        extract( buffer );
+        return buffer;
+    }
 
     public static TxExtractor create( final ReadableByteChannel data )
     {
@@ -38,7 +45,7 @@ public abstract class TxExtractor
             {
                 return data;
             }
-
+            
             @Override
             public void extract( LogBuffer buffer )
             {

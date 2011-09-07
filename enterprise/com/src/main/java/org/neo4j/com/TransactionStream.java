@@ -19,7 +19,7 @@
  */
 package org.neo4j.com;
 
-import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 
 import org.neo4j.helpers.Triplet;
@@ -28,21 +28,16 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 /**
  * Represents a stream of the data of one or more consecutive transactions.
  */
-public abstract class TransactionStream extends
+public class TransactionStream extends
         PrefetchingIterator<Triplet<String/*datasource*/, Long/*txid*/, TxExtractor>>
 {
-    public static final TransactionStream EMPTY = new TransactionStream()
-    {
-        @Override
-        protected Triplet<String, Long, TxExtractor> fetchNextOrNull()
-        {
-            return null;
-        }
-    };
+    public static final TransactionStream EMPTY = new TransactionStream( Collections.<Triplet<String, Long, TxExtractor>>emptyList().iterator() );
     private final String[] datasources;
+    private final Iterator<Triplet<String, Long, TxExtractor>> iterator;
 
-    public TransactionStream( String... datasources )
+    public TransactionStream( Iterator<Triplet<String, Long, TxExtractor>> iterator, String... datasources )
     {
+        this.iterator = iterator;
         this.datasources = datasources;
     }
 
@@ -50,19 +45,10 @@ public abstract class TransactionStream extends
     {
         return datasources.clone();
     }
-
-    public static TransactionStream create( Collection<String> datasources,
-            Iterable<Triplet<String, Long, TxExtractor>> streamSource )
+    
+    @Override
+    protected Triplet<String, Long, TxExtractor> fetchNextOrNull()
     {
-        final Iterator<Triplet<String, Long, TxExtractor>> stream = streamSource.iterator();
-        return new TransactionStream( datasources.toArray( new String[datasources.size()] ) )
-        {
-            @Override
-            protected Triplet<String, Long, TxExtractor> fetchNextOrNull()
-            {
-                if ( stream.hasNext() ) return stream.next();
-                return null;
-            }
-        };
+        return iterator.hasNext() ? iterator.next() : null;
     }
 }

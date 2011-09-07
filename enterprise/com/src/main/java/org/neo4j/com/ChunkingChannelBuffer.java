@@ -45,6 +45,7 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
     private final Channel channel;
     private final int capacity;
     private int continuationPosition;
+    private long timeLastChunkSent;
 
     public ChunkingChannelBuffer( ChannelBuffer buffer, Channel channel, int capacity )
     {
@@ -52,6 +53,7 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
         this.channel = channel;
         this.capacity = capacity;
         addRoomForContinuationHeader();
+        this.timeLastChunkSent = System.currentTimeMillis();
     }
 
     private void addRoomForContinuationHeader()
@@ -482,7 +484,7 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
     
     private void sendChunkIfNeeded( int bytesPlus )
     {
-        if ( writerIndex()+bytesPlus >= capacity )
+        if ( writerIndex()+bytesPlus >= capacity || (enoughTimeHasPassed() && readable()) )
         {
             setContinuation( CONTINUATION_MORE );
             writeCurrentChunk();
@@ -490,6 +492,17 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
             buffer = ChannelBuffers.dynamicBuffer();
             addRoomForContinuationHeader();
         }
+    }
+
+    private boolean enoughTimeHasPassed()
+    {
+        long timeSinceLastChunkSent = System.currentTimeMillis()-this.timeLastChunkSent;
+        if ( timeSinceLastChunkSent > 10*1000 )
+        {
+            this.timeLastChunkSent = System.currentTimeMillis();
+            return true;
+        }
+        return false;
     }
 
     private void writeCurrentChunk()
