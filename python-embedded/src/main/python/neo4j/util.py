@@ -30,6 +30,40 @@ except:
     # No-op update_wrapper
     def update_wrapper(wrapper, method):
         return wrapper
+
+class PythonicIterator(object):
+    def __init__(self, iterator):
+        self.__iter = iterator
+        
+    def __iter__(self):
+        return self
+        
+    def next(self):
+        return self.__iter.next()
+        
+    def close(self):
+        self.__iter.close()
+      
+    def single(self):
+        for item in self:
+            break
+        else: # empty iterator
+            return None
+        for item in self:
+            raise ValueError("Too many items in the iterator")
+        try:
+            self.close()
+        except:
+            pass
+        return item
+    single = property(single)
+    
+   
+    def __len__(self):
+       count = 0
+       for it in self:
+           count += 1
+       return count
         
 def rethrow_current_exception_as(ErrorClass):
     # Because exceptions that come out of

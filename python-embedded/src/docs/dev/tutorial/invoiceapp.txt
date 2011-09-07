@@ -1,0 +1,13 @@
+[[python-embedded-tutorial-invoiceapp]]
+A sample app using traversals and indexes
+=========================================
+
+For detailed documentation on the concepts use here, see <<python-embedded-reference-indexes>> and <<python-embedded-reference-traversal>>.
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=examples/helloworld.py
+tag=invoiceapp
+classifier=test-sources
+----

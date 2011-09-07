@@ -221,6 +221,7 @@ class GraphTest(unit_tests.GraphDatabaseTest):
             relationship = steven.mayor_of(poplar_bluff, since="12th of July 2012")
         # END SNIPPET: createRelationship
             secondrel = poplar_bluff.likes(steven, message="buh")
+        
         message = ''
         for rel in steven.mayor_of:
             message += "%s %s %s" % (
@@ -257,13 +258,13 @@ class GraphTest(unit_tests.GraphDatabaseTest):
             pass
         # END SNIPPET: accessingRelationships
         
-        self.assertEquals(len(list(steven.rels)), 2)
-        self.assertEquals(len(list(steven.rels.incoming)), 1)
-        self.assertEquals(len(list(steven.rels.outgoing)), 1)
+        self.assertEquals(len(steven.rels), 2)
+        self.assertEquals(len(steven.rels.incoming), 1)
+        self.assertEquals(len(steven.rels.outgoing), 1)
         
-        self.assertEquals(len(list(steven.likes)), 1)
-        self.assertEquals(len(list(steven.likes.incoming)), 1)
-        self.assertEquals(len(list(steven.likes.outgoing)), 0)
+        self.assertEquals(len(steven.likes), 1)
+        self.assertEquals(len(steven.likes.incoming), 1)
+        self.assertEquals(len(steven.likes.outgoing), 0)
         
     def test_relationship_attributes(self):
         db = self.graphdb

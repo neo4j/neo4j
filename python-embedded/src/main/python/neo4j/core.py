@@ -18,7 +18,7 @@
 
 from _backend import *
 
-from util import rethrow_current_exception_as
+from util import rethrow_current_exception_as, PythonicIterator
 
 #
 # Pythonification of the core API
@@ -32,6 +32,7 @@ def __new__(GraphDatabase, resourceUri, **settings):
         if isinstance(value, str):
             config.put(key, value)
     return EmbeddedGraphDatabase(resourceUri, config)
+
 
 _javaDirection = Direction
 class Direction(extends(Direction)):
@@ -102,6 +103,9 @@ class PropertyContainer(extends(PropertyContainer)):
         for k, v in self.items():
             yield v
             
+    def has_key(self, key):
+        return self.hasProperty(key)
+            
 class Transaction(extends(Transaction)):
     def __enter__(self):
         return self
@@ -138,12 +142,20 @@ class NodeRelationships(object):
                 it = self.__node.getRelationships(self.__type, direction).iterator()
             else:
                 it = self.__node.getRelationships(direction).iterator()
-            while it.hasNext(): yield it.next()
+            return PythonicIterator(it)
         return relationships
+        
     __iter__ = relationships(Direction.ANY)
     incoming = property(relationships(Direction.INCOMING))
     outgoing = property(relationships(Direction.OUTGOING))
     del relationships # (temporary helper) from the body of this class
+
+    @property
+    def single(self):
+        return self.__iter__().single
+        
+    def __len__(self):
+        return len(self.__iter__())
 
     def __call__(self, *nodes, **properties):
         if not nodes: raise TypeError("No target node specified")
@@ -159,8 +171,18 @@ class NodeRelationships(object):
         
 
 class IterableWrapper(extends(IterableWrapper)):
-    
-    def __iter__(self): 
+        
+    def __iter__(self):
         it = self.iterator()
         while it.hasNext():
-            yield it.next() 
+            yield it.next()
+            
+    def __len__(self):
+        return PythonicIterator(self.__iter__()).__len__()
+            
+    @property
+    def single(self):
+        return PythonicIterator(self.__iter__()).single
+            
+        
+        

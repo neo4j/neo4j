@@ -50,7 +50,7 @@ Or install manually:
 
 First, install JPype:
 
-Notice that there JPype only works with Python 2.6 and 2.7. 
+Notice that JPype only works with Python 2.6 and 2.7. 
 Also note that there are two different downloads depending on which version you use.
 
 . Download the latest appropriate version of JPype from http://sourceforge.net/projects/jpype/files/JPype/

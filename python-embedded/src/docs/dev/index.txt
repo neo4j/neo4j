@@ -2,7 +2,9 @@
 Python embedded bindings
 ========================
 
-This describes neo4j-python-embedded, a library that lets you use the embedded Neo4j database in Python.
+This describes neo4j-embedded, a python library that lets you use the embedded Neo4j database in python.
+
+The project lives on github: https://github.com/neo4j/python-embedded
 
 :leveloffset: 2
 

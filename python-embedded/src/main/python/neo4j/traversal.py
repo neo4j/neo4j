@@ -21,6 +21,8 @@ from _backend import extends, implements, rel_type,\
     TraversalDescriptionImpl, strings,\
     Evaluation, Evaluator, Uniqueness
         
+from util import PythonicIterator
+        
 from core import Direction, DirectionalType
 
 class DynamicEvaluator(implements(Evaluator)):

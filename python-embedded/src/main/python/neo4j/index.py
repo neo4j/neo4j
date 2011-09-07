@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from _backend import extends, Index, IndexHits, to_java
-from neo4j.util import rethrow_current_exception_as
+from neo4j.util import rethrow_current_exception_as, PythonicIterator
 
 #
 # Pythonification of the index API
@@ -88,15 +88,17 @@ class IndexCell(object):
         return self._get_hits(False).__len__()
 
     def __iter__(self):
-        it = self._get_hits().iterator()
-        while it.hasNext():
-            yield it.next()
+        return PythonicIterator(self._get_hits().iterator())
 
     def __getitem__(self, item):
         return self._get_hits().__getitem__(item)
         
     def __delitem__(self, item):
         self._idx.remove(item, self.key, self.value)
+        
+    @property
+    def single(self):
+        return self.__iter__().single
         
     def close(self):
         if hasattr(self, '_cached_hits'):

@@ -94,8 +94,6 @@ An evaluator is a normal Python method that takes a path as an argument, and ret
 
 The path argument is the current position the traverser is at, and the description of what to do can be one of four things, as seen in the example below.
 
-NOTE: This option overrides any previous calls to the +relationships(type, direction)+ method, all filtering is done by the evaluator instead.
-
 [snippet,python]
 ----
 component=neo4j-python-embedded
