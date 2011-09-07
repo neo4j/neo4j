@@ -55,6 +55,12 @@ class DefaultStyleConfiguration implements StyleConfiguration
         label = label.replace( "\n", "\\n" );
         label = label.replace( "<", "\\<" );
         label = label.replace( ">", "\\>" );
+        label = label.replace( "[", "\\[" );
+        label = label.replace( "]", "\\]" );
+        label = label.replace( "{", "\\{" );
+        label = label.replace( "}", "\\}" );
+        label = label.replace( "|", "\\|" );
+
         return label;
     }
 
