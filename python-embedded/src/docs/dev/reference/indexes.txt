@@ -2,10 +2,10 @@
 Indexes
 =======
 
-In order to rapidly find nodes or relationship based on properties, neo4j supports indexing. 
+In order to rapidly find nodes or relationship based on properties, Neo4j supports indexing. 
 This is commonly used to find start nodes for <<python-embedded-reference-traversal,traversals>>.
 
-By default, the underlying index is powered by http://lucene.apache.org/java/docs/index.html[Apache Lucene], but it is also possible to Neo4j to use other index implementations.
+By default, the underlying index is powered by http://lucene.apache.org/java/docs/index.html[Apache Lucene], but it is also possible to use Neo4j with other index implementations.
 
 You can create an arbitrary number of named indexes. 
 Each index handles either nodes or relationships, and each index works by indexing key/value/object triplets, object being either a node or a relationship, depending on the index type.
@@ -79,9 +79,10 @@ The direct lookup is the same across different index providers while the query s
 As mentioned previously, Lucene is the default and by far most common index provider.
 For querying Lucene you will want to use http://lucene.apache.org/java/3_1_0/queryparsersyntax.html[the lucene query language].
 
-There is a python library for programatically generating lucene queries, available https://github.com/scholrly/lucene-querybuilder[here].
+There is a python library for programatically generating Lucene queries, available at https://github.com/scholrly/lucene-querybuilder[GitHub].
 
-It is important to point out that, unless you loop through the entire index result, you have to close the result when you are done with it. 
+[IMPORTANT]
+Unless you loop through the entire index result, you have to close the result when you are done with it. 
 If you do not, the database does not know when it can release the resources the result is taking up.
 
 === Direct lookups ===

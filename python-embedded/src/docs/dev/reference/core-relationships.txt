@@ -2,7 +2,7 @@
 == Relationships ==
 
 This describes operations that are specific to relationship objects.
-For documentation on how to handle properties on both relationships and nodes, see <<python-embedded-core-properties, the documentation on properties>>.
+For documentation on how to handle properties on both relationships and nodes, see <<python-embedded-core-properties>>.
 
 === Creating a relationship ===
 
@@ -33,6 +33,8 @@ source=core.py
 tag=deleteRelationship
 classifier=test-sources
 ----
+
+TIP: See also <<transactions-delete>>.
 
 === Removing a relationship by id ===
 

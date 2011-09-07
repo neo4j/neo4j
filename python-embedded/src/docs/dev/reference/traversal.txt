@@ -50,7 +50,7 @@ classifier=test-sources
 
 A traversal can give you one of three different result types: <<python-embedded-core-nodes,nodes>>, <<python-embedded-core-relationships,relationships>> or <<python-embedded-core-paths,paths>>.
 
-Traversals are done lazily, which means that the graph is traversed as you loop through the result.
+Traversals are performed lazily, which means that the graph is traversed as you loop through the result.
 
 [snippet,python]
 ----
@@ -63,7 +63,7 @@ classifier=test-sources
 == Uniqueness ==
 
 To avoid infinite loops, it's important to define what parts of the graph can be re-visited during a traversal.
-By default, uniqueness is set to 'NODE_GLOBAL', which means that each node is only visited once.
+By default, uniqueness is set to +NODE_GLOBAL+, which means that each node is only visited once.
 
 Here are the other options that are available.
 
@@ -90,11 +90,11 @@ classifier=test-sources
 == Evaluators - advanced filtering ==
 
 In order to traverse based on other critera, such as node properties, or more complex things like neighboring nodes or patterns, we use evaluators.
-An evaluator is a normal python method that takes a path as an argument, and returns a description of what to do next.
+An evaluator is a normal Python method that takes a path as an argument, and returns a description of what to do next.
 
 The path argument is the current position the traverser is at, and the description of what to do can be one of four things, as seen in the example below.
 
-This option overrides any previous calls to the relationships(type, direction) method, all filtering is done by the evaluator instead.
+NOTE: This option overrides any previous calls to the +relationships(type, direction)+ method, all filtering is done by the evaluator instead.
 
 [snippet,python]
 ----
@@ -103,3 +103,4 @@ source=traversal.py
 tag=evaluators
 classifier=test-sources
 ----
+

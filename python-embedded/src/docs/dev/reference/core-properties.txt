@@ -44,3 +44,4 @@ source=core.py
 tag=loopProperties
 classifier=test-sources
 ----
+

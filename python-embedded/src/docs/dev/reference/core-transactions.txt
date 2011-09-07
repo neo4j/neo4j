@@ -3,10 +3,10 @@
 All write operations to the database need to be performed from within transactions.
 This ensures that your database never ends up in an inconsistent state.
 
-See <<transactions, the transactions section>> for details on how Neo4j handles transactions.
+See <<transactions>> for details on how Neo4j handles transactions.
 
-We use the python "with" statement to define a transaction context. 
-If you are using an older version of python, you may have to import the with statement:
+We use the python +with+ statement to define a transaction context. 
+If you are using an older version of Python, you may have to import the +with+ statement:
 
 [source, python]
 ----

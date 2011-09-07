@@ -2,7 +2,7 @@
 == Nodes ==
 
 This describes operations that are specific to node objects.
-For documentation on how to handle properties on both relationships and nodes, see <<python-embedded-core-properties, the documentation on properties>>.
+For documentation on how to handle properties on both relationships and nodes, see <<python-embedded-core-properties>>.
 
 === Creating a node ===
 
@@ -44,6 +44,8 @@ tag=deleteNode
 classifier=test-sources
 ----
 
+TIP: See also <<transactions-delete>>.
+
 === Removing a node by id ===
 
 [snippet,python]
@@ -56,7 +58,7 @@ classifier=test-sources
 
 === Accessing relationships from a node ===
 
-For details on what you can do with the relationship objects, see the <<python-embedded-core-relationships, relationships section>>.
+For details on what you can do with the relationship objects, see <<python-embedded-core-relationships>>.
 
 [snippet,python]
 ----
