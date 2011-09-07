@@ -1128,7 +1128,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             throw new IllegalStateException( "Property change on relationship[" +
                 relId + "] illegal since it has been deleted." );
         }
-        return primitiveChangeProperty( relRecord, propertyData, value, true );
+        return primitiveChangeProperty( relRecord, propertyData, value, false );
     }
 
     @Override
@@ -1153,7 +1153,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             PropertyData propertyData, Object value, boolean isNode )
     {
         long propertyId = propertyData.getId();
-        PropertyRecord propertyRecord = getPropertyRecord( propertyId, false );
+        PropertyRecord propertyRecord = getPropertyRecord( propertyId, true );
         if ( !propertyRecord.inUse() )
         {
             throw new IllegalStateException( "Unable to change property["

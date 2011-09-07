@@ -42,6 +42,8 @@ public class TestShortArray
         assertCanEncodeAndDecodeToSameValue( new long[] { 1,2,3,4,5,6,7 } );
         assertCanEncodeAndDecodeToSameValue( new float[] { 0.34f, 0.21f } );
         assertCanEncodeAndDecodeToSameValue( new long[] { 1 << 63, 1 << 63 } );
+        assertCanEncodeAndDecodeToSameValue( new long[] { 1 << 63, 1 << 63,
+                1 << 63 } );
         assertCanEncodeAndDecodeToSameValue( new byte[] { 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0 } );
         assertCanEncodeAndDecodeToSameValue( new long[] { 0, 0, 0, 0, 0, 0, 0,

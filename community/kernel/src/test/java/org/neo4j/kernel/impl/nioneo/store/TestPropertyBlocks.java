@@ -22,15 +22,26 @@ package org.neo4j.kernel.impl.nioneo.store;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 public class TestPropertyBlocks extends AbstractNeo4jTestCase
 {
+    /*
+     * Creates a PropertyRecord, fills it up, removes something and
+     * adds something that should fit.
+     */
     @Test
     public void deleteAndAddToFullPropertyRecord()
     {
@@ -453,4 +464,154 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         node.setProperty( "shortString1", 1.0 );
         newTransaction();
     }
+
+    @Test
+    public void testPackingAndOverflowingValueChangeInMiddleRecord()
+    {
+        Node node = getGraphDb().createNode();
+
+        long recordsInUseAtStart = propertyRecordsInUse();
+        long valueRecordsInUseAtStart = dynamicArrayRecordsInUse();
+
+        int shortArrays = 0;
+        for ( ; shortArrays < PropertyType.getPayloadSizeLongs() - 1; shortArrays++ )
+        {
+            node.setProperty( "shortArray" + shortArrays, new long[] { 1, 2, 3,
+                    4 } );
+        }
+
+        newTransaction();
+
+        assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
+
+        // Takes up two blocks
+        node.setProperty( "theDoubleThatBecomesAnArray", 1.0 );
+        newTransaction();
+
+        assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
+
+        // This takes up three blocks
+        node.setProperty( "theLargeArray", new long[] { 1 << 63, 1 << 63 } );
+        newTransaction();
+
+        assertTrue( Arrays.equals( new long[] { 1 << 63, 1 << 63 },
+                (long[]) node.getProperty( "theLargeArray" ) ) );
+        assertEquals( recordsInUseAtStart + 3, propertyRecordsInUse() );
+
+        node.setProperty( "fillerByte1", (byte) 3 );
+
+        newTransaction();
+
+        assertEquals( recordsInUseAtStart + 3, propertyRecordsInUse() );
+
+        node.setProperty( "fillerByte2", (byte) -4 );
+        assertEquals( recordsInUseAtStart + 3, propertyRecordsInUse() );
+
+        // Make it take up 3 blocks instead of 2
+        node.setProperty( "theDoubleThatBecomesAnArray", new long[] { 1 << 63,
+                1 << 63, 1 << 63 } );
+
+        assertEquals( valueRecordsInUseAtStart, dynamicArrayRecordsInUse() );
+        assertEquals( recordsInUseAtStart + 4, propertyRecordsInUse() );
+        newTransaction();
+        assertEquals( recordsInUseAtStart + 4, propertyRecordsInUse() );
+
+        while ( shortArrays-- > 0 )
+        {
+            assertTrue( Arrays.equals( new long[] { 1, 2, 3, 4 },
+                    (long[]) node.getProperty( "shortArray" + shortArrays ) ) );
+        }
+        assertEquals( (byte) 3, node.getProperty( "fillerByte1" ) );
+        assertEquals( (byte) -4, node.getProperty( "fillerByte2" ) );
+        assertTrue( Arrays.equals( new long[] { 1 << 63, 1 << 63 },
+                (long[]) node.getProperty( "theLargeArray" ) ) );
+        assertTrue( Arrays.equals( new long[] { 1 << 63, 1 << 63, 1 << 63 },
+                (long[]) node.getProperty( "theDoubleThatBecomesAnArray" ) ) );
+    }
+
+    @Test
+    public void testRevertOverflowingChange()
+    {
+        Relationship rel = getGraphDb().createNode().createRelationshipTo(
+                getGraphDb().createNode(),
+                DynamicRelationshipType.withName( "INVALIDATES" ) );
+
+        long recordsInUseAtStart = propertyRecordsInUse();
+        long valueRecordsInUseAtStart = dynamicArrayRecordsInUse();
+
+        rel.setProperty( "theByte", (byte) -8 );
+        rel.setProperty( "theDoubleThatGrows", Math.PI );
+        rel.setProperty( "theInteger", -444345 );
+
+        assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
+
+        rel.setProperty( "theDoubleThatGrows", new long[] { 1 << 63, 1 << 63,
+                1 << 63 } );
+
+        assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
+        assertEquals( valueRecordsInUseAtStart, dynamicArrayRecordsInUse() );
+
+        rel.setProperty( "theDoubleThatGrows", Math.E );
+        assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
+
+        newTransaction();
+        /*
+         * The following line should pass if we have packing on property block
+         * size shrinking.
+         */
+        // assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
+
+        assertEquals( (byte) -8, rel.getProperty( "theByte" ) );
+        assertEquals( -444345, rel.getProperty( "theInteger" ) );
+        assertEquals( Math.E, rel.getProperty( "theDoubleThatGrows" ) );
+    }
+
+    @Test
+    public void testYoYoPropertyWithinTx()
+    {
+        testYoyoBase( false );
+    }
+
+    @Test
+    public void testYoYoPropertyOverTxs()
+    {
+        testYoyoBase( true );
+    }
+
+    private void testYoyoBase( boolean withNewTx )
+    {
+        Relationship rel = getGraphDb().createNode().createRelationshipTo(
+                getGraphDb().createNode(),
+                DynamicRelationshipType.withName( "LOCKS" ) );
+
+        long recordsInUseAtStart = propertyRecordsInUse();
+        long valueRecordsInUseAtStart = dynamicArrayRecordsInUse();
+
+        List<Long> theYoyoData = new ArrayList<Long>();
+        for ( int i = 0; i < PropertyType.getPayloadSizeLongs() - 1; i++ )
+        {
+            theYoyoData.add( 1l << 63 );
+            Long[] value = theYoyoData.toArray( new Long[] {} );
+            rel.setProperty( "yoyo", value );
+            assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
+            assertEquals( valueRecordsInUseAtStart, dynamicArrayRecordsInUse() );
+            if ( withNewTx )
+            {
+                newTransaction();
+            }
+        }
+
+        theYoyoData.add( 1l << 63 );
+        Long[] value = theYoyoData.toArray( new Long[] {} );
+        rel.setProperty( "yoyo", value );
+        assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
+        assertEquals( valueRecordsInUseAtStart + 1, dynamicArrayRecordsInUse() );
+
+        newTransaction();
+        rel.setProperty( "filler", new long[] { 1 << 63, 1 << 63, 1 << 63 } );
+        assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
+    }
+
+    @Test
+    public void
 }

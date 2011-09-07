@@ -452,6 +452,10 @@ public enum ShortArray
         bits.getByte( 4 ); // Get rid of the type
         int arrayLength = bits.getByte( 6 );
         int requiredBits = bits.getByte( 6 );
+        if ( requiredBits == 0 )
+        {
+            requiredBits = 64;
+        }
         return calculateNumberOfBlocksUsed( arrayLength, requiredBits );
     }
 
