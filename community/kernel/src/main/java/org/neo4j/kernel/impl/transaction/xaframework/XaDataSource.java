@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.StringTokenizer;
 
 import org.neo4j.helpers.collection.ClosableIterable;
+import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.LogExtractor;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -316,16 +317,6 @@ public abstract class XaDataSource
         return false;
     }
 
-    public ReadableByteChannel getCommittedTransaction( long txId ) throws IOException
-    {
-        throw new UnsupportedOperationException( getClass().getName() );
-    }
-
-    public void getCommittedTransaction( long tx, LogBuffer buffer ) throws IOException
-    {
-        throw new UnsupportedOperationException( getClass().getName() );
-    }
-
     public ReadableByteChannel getPreparedTransaction( int identifier ) throws IOException
     {
         throw new UnsupportedOperationException( getClass().getName() );
@@ -377,5 +368,10 @@ public abstract class XaDataSource
     public boolean setRecovered( boolean recovered )
     {
         return false;
+    }
+
+    public LogExtractor getLogExtractor( long startTxId, long endTxIdHint ) throws IOException
+    {
+        throw new UnsupportedOperationException( getClass().getName() );
     }
 }
