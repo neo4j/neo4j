@@ -7,13 +7,16 @@ do
 	if [[ "$line" =~ "include file not found" ]]
 	then
 		errors="${errors}${line}"'\n'
+	elif [[ "$line" == "Error:"* ]]
+	then
+		errors="${errors}${line}"'\n'
 	fi
 done
 
 if [ -n "$errors" ]
 then
 	echo "================================"
-	echo "There are missing include files:"
+	echo "There are errors:"
 	echo "================================"
 	echo -e $errors
 	exit 1
