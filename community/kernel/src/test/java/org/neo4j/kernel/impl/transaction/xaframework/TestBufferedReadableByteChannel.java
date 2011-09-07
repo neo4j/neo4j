@@ -39,7 +39,13 @@ public class TestBufferedReadableByteChannel
     @Before
     public void createFiles() throws Exception
     {
-        testFileObject = new File( "target/var/foobar" );
+        File testDirectory = new File( "target" + File.separator + "var" );
+        if ( !testDirectory.exists() )
+        {
+            testDirectory.mkdirs();
+        }
+        testFileObject = new File( testDirectory,
+                "bufferedReadableFileByteChannelTest" );
         testRAFile = new RandomAccessFile( testFileObject, "rw" );
     }
 
@@ -55,7 +61,7 @@ public class TestBufferedReadableByteChannel
     {
         FileChannel channel = createFromData( new int[] { 1, 2, 3 }, new int[] {
                 4, 5, 6 } );
-        /* 
+        /*
          * Data is supposed to be now
          *      [1,2,3][4,5,6]
          *              ^(12)
@@ -139,7 +145,7 @@ public class TestBufferedReadableByteChannel
 
         ByteBuffer readBuffer = ByteBuffer.allocate( 12 );
         assertEquals( -1, channel.read( readBuffer ) );
-        
+
         channel.position(0);
         assertEquals( readBuffer.capacity(), channel.read( readBuffer ) );
         assertEquals( 12, channel.position() );
