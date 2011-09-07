@@ -89,7 +89,7 @@ public class CypherPluginTest implements GraphHolder
         assertTrue( formatted.contains( "name" ) );
     }
 
-    private Representation testQuery( String query ) throws SyntaxException
+    private Representation testQuery( String query ) throws Exception
     {
 
         return plugin.executeScript( db, query );

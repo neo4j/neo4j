@@ -56,7 +56,7 @@ public class CypherPlugin extends ServerPlugin
     @PluginTarget( GraphDatabaseService.class )
     public Representation executeScript(
             @Source final GraphDatabaseService neo4j,
-            @Description( "The query string" ) @Parameter( name = "query", optional = false ) final String query )
+            @Description( "The query string" ) @Parameter( name = "query", optional = false ) final String query ) throws Exception
     {
         CypherParser parser = new CypherParser();
         ExecutionResult result;
@@ -69,9 +69,8 @@ public class CypherPlugin extends ServerPlugin
         }
         catch ( SyntaxException e )
         {
-            e.printStackTrace();
+            throw new Exception(e);
         }
-        return ValueRepresentation.emptyRepresentation();
     }
 
 }

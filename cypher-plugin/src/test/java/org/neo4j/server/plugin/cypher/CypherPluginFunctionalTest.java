@@ -19,9 +19,11 @@
  */
 package org.neo4j.server.plugin.cypher;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.UnsupportedEncodingException;
+import java.util.Collection;
 import java.util.Map;
 
 import javax.ws.rs.core.Response.Status;
@@ -36,7 +38,10 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
+import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.RESTDocsGenerator;
+import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphDescription.NODE;
@@ -47,17 +52,9 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestData;
 import org.neo4j.test.TestData.Title;
 
-public class CypherPluginFunctionalTest implements GraphHolder
+public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
 {
     private static final String ENDPOINT = "http://localhost:7474/db/data/ext/CypherPlugin/graphdb/execute_query";
-    private static ImpermanentGraphDatabase graphdb;
-    public @Rule
-    TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
-            this, true ) );
-
-    public @Rule
-    TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
-    private static WrappingNeoServerBootstrapper server;
 
     /**
      * A simple query returning all nodes connected to node 1, returning the
@@ -78,48 +75,31 @@ public class CypherPluginFunctionalTest implements GraphHolder
     {
         String script = "start x  = (" + data.get().get( "I" ).getId()
                         + ") match (x) --> (n) return n.name?, n.age?";
-        String response = gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
+        gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
                 "{\"query\": \"" + script + "\"}" ).description(
-                formatCypher( script ) ).post( ENDPOINT ).entity();
+                formatCypher( script ) );
+        String response = gen.get().post( ENDPOINT ).entity();
         assertTrue( response.contains( "you" ) );
         assertTrue( response.contains( "him" ) );
         assertTrue( response.contains( "25" ) );
         assertTrue( !response.contains( "\"x\"" ) );
     }
-
-    @BeforeClass
-    public static void startDatabase()
+    
+    @Test
+    @Documented
+    @Title( "Send a Query" )
+    @Graph( "I know you" )
+    public void error_gets_returned_as_json() throws UnsupportedEncodingException, Exception
     {
-        graphdb = new ImpermanentGraphDatabase( "target/db"
-                                                + System.currentTimeMillis() );
-
+        String script = "start x  = (" + data.get().get( "I" ).getId()
+                        + ") return x.dummy";
+        gen.get().expectedStatus( Status.INTERNAL_SERVER_ERROR.getStatusCode() ).payload(
+                "{\"query\": \"" + script + "\"}" ).description(
+                formatCypher( script ) );
+        String response = gen.get().post( ENDPOINT ).entity();
+        assertEquals(3, ((Map) JsonHelper.jsonToMap( response )).size());
     }
 
-    @AfterClass
-    public static void stopDatabase()
-    {
-    }
-
-    @Override
-    public GraphDatabaseService graphdb()
-    {
-        return graphdb;
-    }
-
-    @Before
-    public void startServer()
-    {
-        graphdb.cleanContent();
-        server = new WrappingNeoServerBootstrapper( graphdb );
-        server.start();
-        gen.get().setGraph( graphdb );
-    }
-
-    @After
-    public void shutdownServer()
-    {
-        server.stop();
-    }
 
     private String formatCypher( String script )
     {
