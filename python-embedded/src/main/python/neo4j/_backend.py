@@ -93,7 +93,7 @@ except: # this isn't jython (and doesn't have the java module)
         jre = _getJVMFromJavaHome()
     
     if jre is None:
-        raise Error("Unable to find a java runtime to use. Please set JAVA_HOME to point to a JRE.")
+        raise IOError("Unable to find a java runtime to use. Please set JAVA_HOME to point to a JRE.")
         
     jpype.startJVM(jre, *jvmargs)
     
