@@ -185,9 +185,9 @@ public class MasterUtil
                         {
                             try
                             {
-//                                dataSource.getCommittedTransaction( tx, buffer );
                                 long extractedTxId = finalLogExtractor.extractNext( buffer );
                                 if ( extractedTxId == -1 ) throw new RuntimeException( "Txs not found" );
+                                if ( extractedTxId != tx ) throw new RuntimeException( "Expected txId " + tx + ", but was " + extractedTxId );
                             }
                             catch ( IOException e )
                             {

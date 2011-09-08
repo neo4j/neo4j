@@ -360,6 +360,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
                 }
                 catch ( Throwable e )
                 {
+                    e.printStackTrace();
                     channel.close();
                     tryToFinishOffChannel( channel, context );
                     throw Exceptions.launderedException( e );
