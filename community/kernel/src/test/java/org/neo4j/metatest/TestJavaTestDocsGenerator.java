@@ -20,7 +20,11 @@
 package org.neo4j.metatest;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Map;
 
@@ -47,22 +51,66 @@ public class TestJavaTestDocsGenerator implements GraphHolder
     public @Rule
     TestData<JavaTestDocsGenerator> gen = TestData.producedThrough( JavaTestDocsGenerator.PRODUCER );
 
+    String directory = "target/testdocs";
+    String sectionName = "testsection";
     
-    /**
-     * Docs in some
-     * forms
-     */
-    @Documented
+    @Documented(value="Title.\n\nhej\n@@snippet1\n\nmore docs\n@@snippet2.")
     @Test
     @Graph( "I know you" )
     public void can_create_docs_from_method_name() throws Exception
     {
         data.get();
-        gen.get().setGraph( graphdb );
+        JavaTestDocsGenerator doc = gen.get();
+        doc.setGraph( graphdb );
         assertNotNull(data.get().get( "I" ));
-        gen.get().document("target/testdocs", "testsection");
+        String snippet1 = "snippet1-value";
+        String snippet2 = "snippet2-value";
+        doc.addSnippet("snippet1", snippet1 );
+        doc.addSnippet("snippet2", snippet2 );
+        doc.document(directory, sectionName);
+        String result = readFileAsString( doc.out);
+        System.out.println(result);
+        assertTrue(result.contains( snippet1 ));
+        assertTrue(result.contains( snippet2 ));
+    }
+    
+    /**
+     * Title.
+     * 
+     * @@snippet1
+     * 
+     * more stuff
+     * 
+     * 
+     * @@snippet2
+     */
+    @Documented
+    @Test
+    @Graph( "I know you" )
+    public void canCreateDocsFromSnippetsInAnnotations() throws Exception
+    {
+        data.get();
+        JavaTestDocsGenerator doc = gen.get();
+        doc.setGraph( graphdb );
+        assertNotNull(data.get().get( "I" ));
+        String snippet1 = "snippet1-value";
+        String snippet2 = "snippet2-value";
+        doc.addSnippet("snippet1", snippet1 );
+        doc.addSnippet("snippet2", snippet2 );
+        doc.document(directory, sectionName);
+        String result = readFileAsString( doc.out);
+        assertTrue(result.contains( snippet1 ));
+        assertTrue(result.contains( snippet2 ));
     }
 
+    
+    private static String readFileAsString(File file) throws java.io.IOException{
+        byte[] buffer = new byte[(int) file.length()];
+        BufferedInputStream f = new BufferedInputStream(new FileInputStream(file));
+        f.read(buffer);
+        return new String(buffer);
+    }
+    
     @Override
     public GraphDatabaseService graphdb()
     {

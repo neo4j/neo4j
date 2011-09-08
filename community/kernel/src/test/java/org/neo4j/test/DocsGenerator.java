@@ -44,6 +44,8 @@ public abstract class DocsGenerator
     protected String description = null;
     protected GraphDatabaseService graph;
 
+    public File out;
+
     public DocsGenerator( final String title )
     {
         this.title = title.replace( "_", " " );
@@ -111,7 +113,7 @@ public abstract class DocsGenerator
             }
             String name = title.replace( " ", "-" )
                     .toLowerCase();
-            File out = new File( dirs, name + ".txt" );
+            out = new File( dirs, name + ".txt" );
             if ( out.exists() )
             {
                 out.delete();

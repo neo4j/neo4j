@@ -36,6 +36,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -56,22 +57,30 @@ public class ShortDocumentationExamplesTest implements GraphHolder
     public @Rule
     TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
             this, true ) );
+    String classifier = "test-sources";
+    String component = "neo4j-examples";
  
     /**
      * Uniqueness of Paths in traversals.
      * 
-     * This test is demonstrating the use of node uniqueness.
+     * This example is demonstrating the use of node uniqueness.
+     * Below an imaginary domain graph with Principals
+     * that own pets that are descendant to other pets.
+     * 
+     * @@graph
+     * 
      * In order to return which all descendants 
      * of +Pet0+ which have the relation +owns+ to Principal1 (+Pet1+ and +Pet3+),
      * the Uniqueness of the traversal needs to be set to 
      * +NODE_PATH+ rather than the default +NODE_GLOBAL+.
      * 
-     * [snippet,java]
+     * @@traverser
+     * 
+     * This will return the following paths:
+     * 
+     * [source]
      * ----
-     * component=neo4j-examples
-     * source=org/neo4j/examples/ShortDocumentationExamplesTest.java
-     * classifier=test-sources
-     * tag=traverser
+     * @@output
      * ----
      */
     @Graph({"Pet0 descendant Pet1",
@@ -82,11 +91,13 @@ public class ShortDocumentationExamplesTest implements GraphHolder
         "Principal1 owns Pet3"})
     @Test
     @Documented
-    public void testTraversal()
+    public void pathUniquenesExample()
     {
         Node start = data.get().get( "Pet0" );
+        gen.get().addSnippet( "graph", createGraphViz("descendants1", graphdb()) );
+        String tagName = "traverser";
+        gen.get().addSnippet( tagName, createSourceSnippet(tagName, component, classifier, this.getClass()) );
         // START SNIPPET: traverser
-        gen.get().description( createGraphViz("descendants1") );
         final Node target = data.get().get( "Principal1" );
         TraversalDescription td = Traversal.description().uniqueness(Uniqueness.NODE_PATH ).evaluator( new Evaluator()
         {
@@ -100,24 +111,39 @@ public class ShortDocumentationExamplesTest implements GraphHolder
             }
         } );
         
-        org.neo4j.graphdb.traversal.Traverser results = td.traverse( start );
+        Traverser results = td.traverse( start );
+        // END SNIPPET: traverser
+        String output = "";
         int count = 0;
         //we should get two paths back, through Pet1 and Pet3
         for(Path path : results)
-        {
-            count ++;
+        {       
+            count++;
+            output += path.toString()+"\n";
         }
+        gen.get().addSnippet( "output", output );
         assertEquals(2, count);
-        // END SNIPPET: traverser
     }
     
-    public String createGraphViz( String name )
+    public static String createSourceSnippet(String tagName, String component, String classifier,
+            Class source )
+    {
+        return "[snippet,java]\n"+
+                "----\n" +
+                "component="+component+"\n"+
+                "source="+ source.getPackage().getName().replace( ".", "/" ) + "/" + source.getSimpleName() + ".java\n"+
+                "classifier="+classifier+"\n"+
+                "tag="+tagName+"\n"+
+                "----\n";
+    }
+
+    public static String createGraphViz( String name, GraphDatabaseService graph )
     {
         OutputStream out = new ByteArrayOutputStream();
         GraphvizWriter writer = new GraphvizWriter(new AsciiDocStyle());
         try
         {
-            writer.emit( out, Walker.fullGraph( graphdb() ) );
+            writer.emit( out, Walker.fullGraph( graph ) );
         }
         catch ( IOException e )
         {
