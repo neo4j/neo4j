@@ -176,13 +176,13 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
     private void initWebServer()
     {
         int webServerPort = getWebServerPort();
-		String webServerAddr = getWebServerAddress();
+        String webServerAddr = getWebServerAddress();
 
         int maxThreads = getMaxThreads();
 
         log.info( "Starting Neo Server on port [%s] with [%d] threads available", webServerPort, maxThreads );
         webServer.setPort( webServerPort );
-		webServer.setAddress( webServerAddr );
+        webServer.setAddress( webServerAddr );
 
         webServer.setMaxThreads( maxThreads );
         webServer.init();
@@ -220,12 +220,12 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
         return configurator.configuration()
                 .getInt( Configurator.WEBSERVER_PORT_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_PORT );
     }
-	
-	protected String getWebServerAddress()
-	{
-		return configurator.configuration()
-				.getString( Configurator.WEBSERVER_ADDRESS_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_ADDRESS );
-	}
+
+    protected String getWebServerAddress()
+    {
+       return configurator.configuration()
+                .getString( Configurator.WEBSERVER_ADDRESS_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_ADDRESS );
+    }
 
     @Override
     public void stop()
@@ -305,7 +305,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
         }
         sb.append( "://" );
         //sb.append( addressResolver.getHostname() );
-		sb.append( getWebServerAddress() );
+        sb.append( getWebServerAddress() );
 
         if ( webServerPort != 80 )
         {

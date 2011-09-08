@@ -36,8 +36,8 @@ public interface WebServer
     void setNeoServer( NeoServer server );
 
     void setPort( int portNo );
-	
-	void setAddress( String addr );
+
+    void setAddress( String addr );
 
     void start();
 
