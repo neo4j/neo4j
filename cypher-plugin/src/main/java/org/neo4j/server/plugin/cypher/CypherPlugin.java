@@ -33,7 +33,6 @@ import org.neo4j.server.plugins.ServerPlugin;
 import org.neo4j.server.plugins.Source;
 import org.neo4j.server.rest.repr.CypherResultRepresentation;
 import org.neo4j.server.rest.repr.Representation;
-import org.neo4j.server.rest.repr.ValueRepresentation;
 
 /* This is a class that will represent a server side
  * Gremlin plugin and will return JSON
@@ -56,21 +55,16 @@ public class CypherPlugin extends ServerPlugin
     @PluginTarget( GraphDatabaseService.class )
     public Representation executeScript(
             @Source final GraphDatabaseService neo4j,
-            @Description( "The query string" ) @Parameter( name = "query", optional = false ) final String query ) throws Exception
+            @Description( "The query string" ) @Parameter( name = "query", optional = false ) final String query )
+            throws SyntaxException
     {
         CypherParser parser = new CypherParser();
         ExecutionResult result;
-        try
-        {
-            Query compiledQuery = parser.parse(query);
-            ExecutionEngine engine = new ExecutionEngine(neo4j);
-            result = engine.execute(compiledQuery);
-            return new CypherResultRepresentation( result );
-        }
-        catch ( SyntaxException e )
-        {
-            throw new Exception(e);
-        }
+        Query compiledQuery = parser.parse( query );
+        ExecutionEngine engine = new ExecutionEngine( neo4j );
+        result = engine.execute( compiledQuery );
+        return new CypherResultRepresentation( result );
+
     }
 
 }

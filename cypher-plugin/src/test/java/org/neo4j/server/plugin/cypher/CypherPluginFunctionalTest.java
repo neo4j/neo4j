@@ -93,7 +93,7 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
     {
         String script = "start x  = (" + data.get().get( "I" ).getId()
                         + ") return x.dummy";
-        gen.get().expectedStatus( Status.INTERNAL_SERVER_ERROR.getStatusCode() ).payload(
+        gen.get().expectedStatus( Status.BAD_REQUEST.getStatusCode() ).payload(
                 "{\"query\": \"" + script + "\"}" ).description(
                 formatCypher( script ) );
         String response = gen.get().post( ENDPOINT ).entity();
