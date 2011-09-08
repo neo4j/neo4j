@@ -327,9 +327,10 @@ meta:
 	rm -rf $(METASRCDIR)
 	cp -fr $(METAFROMDIR) $(METASRCDIR)
 	ln -s $(METAFROMCSSDIR) $(METASRCDIR)/css
+	ln -s $(METAFROMIMGDIR) $(METASRCDIR)/images
 	rm -rf $(METAHTMLDIR)
 	mkdir -p $(METAHTMLDIR)
 	cp -fr $(METAFROMCSSDIR) $(METAHTMLDIR)/css
-	a2x -L -f xhtml -D $(METAHTMLDIR) --conf-file=$(CONFDIR)/xhtml.conf --asciidoc-opts "--conf-file=$(CONFDIR)/asciidoc.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/docbook45.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/linkedimages.conf" --xsl-file=$(CONFDIR)/xhtml.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(METASRCFILE)
+	a2x -L -f xhtml -D $(METAHTMLDIR) --conf-file=$(CONFDIR)/xhtml.conf --asciidoc-opts "--conf-file=$(CONFDIR)/asciidoc.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/docbook45.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/linkedimages.conf" --xsl-file=$(CONFDIR)/xhtml.xsl --xsltproc-opts "--stringparam admon.graphics 1" --resource $(IMGDIR) $(METASRCFILE)
 	cp -fr $(JSDIR) $(METAHTMLDIR)/js
 

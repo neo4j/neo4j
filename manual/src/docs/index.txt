@@ -16,9 +16,28 @@ The cheatsheet is really useful!
 == Overall Flow ==
 
 Each (sub)project has its own documentation, which will produce a 'docs.jar' file.
+By default this file is assembled from the contents in 'src/docs/'.
 
-TBD.
+The documents can use code snippets which will extract code from the project.
+The corresponding code must be deployed to the 'sources.jar' or 'test-sources.jar' file.
 
+The above files are all consumed by the build of the manual (by adding them as dependencies).
+To get content included in the manual, it has to be explicitly included by a document in the manual.
+
+== File Structure in 'docs.jar' ==
+
+[options="header", cols="e,d"]
+|========================
+| Directory | Contents
+| dev/ | content aimed at developers
+| dev/images/ | images used by the dev docs
+| ops/ | content aimed at operations
+| ops/images/ | images used by the ops docs
+| man/ | manpages
+|========================
+
+Additional subdirectories are used as needed to structure the documents,
+like 'dev/tutorial/', 'ops/tutorial/' etc.
 
 == Headings and document structure ==
 
@@ -28,8 +47,9 @@ In some cases sections in the document need to have id's as well, this depends o
 To be able to link to content, it has to have an id.
 Missing id's in mandatory places will fail the build.
 
-This is how a document should begin:
+This is how a document should start:
 
+[source]
 ----
 [[unique-id-verbose-is-ok]]
 The Document Title
@@ -41,6 +61,7 @@ attribute is used when including the document inside of another document.
 
 Subsequent headings in a document should use the following syntax:
 
+[source]
 ----
 == Subheading ==
 
@@ -74,34 +95,46 @@ This makes it easy to move content around, and also easy to spot (too) long sent
 To link to other parts of the manual the id of the target is used.
 This is how such a reference looks:
 
+[source]
 ----
 <<overall-flow>>
 ----
 
-Wich will render like: <<overall-flow>>
+Which will render like: <<overall-flow>>
 
 [NOTE]
 Just write "see \<<target-id>>" and similar, that's enough in most cases.
 
 If you need to link to another document with your own link text, this is what to do:
 
+[source]
 ----
-<<target-id, my much better text for the link>>
+<<target-id, link text that fits the content>>
 ----
 
-NOTE: Having lots of linked text may work in a web context but is a pain in print.
+NOTE: Having lots of linked text may work in a web context but is a pain in print, and we aim for both!
 
 External links are added like this:
 
+[source]
 ----
 http://neo4j.org/[Link text here]
 ----
 
 Which renders like: http://neo4j.org/[Link text here]
 
+For short links it may be better not to add a link text, just do:
+
+[source]
+----
+http://neo4j.org/
+----
+
+Which renders like: http://neo4j.org/
+
 == Text Formatting ==
 
-* *Bold* - just don't do it, the editor will remove it anyhow!
+* *Bold* - just don't do it, the editor in charge is likely to remove it anyhow!
 * \_Italics_ is rendered as _Italics_
 * \+methodName()+ is rendered as +methodName()+ and is used for literals as well
 * \`command` is rendered as `command` (typically used for command-line)
@@ -109,7 +142,7 @@ Which renders like: http://neo4j.org/[Link text here]
 
 == Admonitions ==
 
-These are very useful and should be used where apropriate.
+These are very useful and should be used where appropriate.
 Choose from the following (and no, we can't easily add new ones):
 
 NOTE: Note.
@@ -124,11 +157,14 @@ WARNING: Warning
 
 Here's how it done:
 
+[source]
 ----
 NOTE: Note.
 ----
 
 A multiline variation:
+
+[source]
 ----
 [TIP]
 Tiptext.
@@ -140,6 +176,78 @@ Which is rendered as:
 [TIP]
 Tiptext.
 Line 2.
+
+== Images ==
+
+IMPORTANT: _All images in the entire manual share the same namespace._
+  Make sure to use a unique prefix in front of all image file names!
+
+=== Images Files ===
+
+To include an image file, make sure it resides in the 'images/' directory relative to the document you're including it from. Then go:
+
+[source]
+----
+image::neo4j-logo.png[]
+----
+
+Which is rendered as:
+
+image::neo4j-logo.png[]
+
+=== Static Graphviz/Dot ===
+
+This is how to include a simple example graph:
+
+[source]
+----
+ ["dot", "metadocs-graphdb-rels.svg"]
+ ----
+ "Start node" -> "End node" [label="relationship"]
+ ----
+----
+
+Which is rendered as:
+
+["dot", "metadocs-graphdb-rels.svg"]
+----
+"Start node" -> "End node" [label="relationship"]
+----
+
+Here's an example using some predefined variables available in the build:
+
+[source]
+----
+ ["dot", "metadocs-graphdb-rels-overview.svg", "meta"]
+ ----
+ "A Relationship" [fillcolor="NODEHIGHLIGHT"]
+ "Start node" [fillcolor="NODE2HIGHLIGHT"]
+ "A Relationship" -> "Start node" [label="has a"]
+ "A Relationship" -> "End node" [label="has a"]
+ "A Relationship" -> "Relationship type" [label="has a"]
+ Name [TEXTNODE]
+ "Relationship type" -> Name [label="uniquely identified by" color="EDGEHIGHLIGHT" fontcolor="EDGEHIGHLIGHT"]
+ ----
+----
+
+Which is rendered as:
+
+["dot", "metadocs-graphdb-rels-overview.svg", "meta"]
+----
+"A Relationship" [fillcolor="NODEHIGHLIGHT"]
+"Start node" [fillcolor="NODE2HIGHLIGHT"]
+"A Relationship" -> "Start node" [label="has a"]
+"A Relationship" -> "End node" [label="has a"]
+"A Relationship" -> "Relationship type" [label="has a"]
+Name [TEXTNODE]
+"Relationship type" -> Name [label="uniquely identified by" color="EDGEHIGHLIGHT" fontcolor="EDGEHIGHLIGHT"]
+----
+
+The optional second argument given to the dot filter defines the style to use:
+
+* when not defined: Default styling for nodespace examples.
+* +neoviz+: Nodespace view generated by Neoviz.
+* +meta+: Graphs that don't resemble db contents, but rather concepts.
 
 == Attributes ==
 
@@ -161,6 +269,7 @@ WARNING: Don't share links to this page, as we want people to use the Disqus fea
 
 Here's how to write a comment:
 
+[source]
 ----
 // this is a comment
 ----
@@ -169,6 +278,7 @@ The comments are not visible in the normal build.
 Comment blocks won't be included in the output of any build at all.
 Here's a comment block:
 
+[source]
 ----
 ////
 Note that includes in here will still be processed, but not make it into the output.
