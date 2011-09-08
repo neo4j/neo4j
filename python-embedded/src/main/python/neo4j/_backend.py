@@ -86,16 +86,24 @@ except: # this isn't jython (and doesn't have the java module)
     if debug:
         jvmargs = jvmargs + ['-Xdebug', '-Xnoagent', '-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=8000']
     
-    jre = jpype.getDefaultJVMPath()
-    if jre is None:
-        # Try JAVA_HOME on non-linux platforms
-        from jpype._linux import _getJVMFromJavaHome
-        jre = _getJVMFromJavaHome()
-    
-    if jre is None:
-        raise IOError("Unable to find a java runtime to use. Please set JAVA_HOME to point to a JRE.")
+    def getJVMPath():
+        jvm = jpype.getDefaultJVMPath()
+        if jvm is None:
+            # JPype does not always find java correctly
+            # on windows, try using JAVA_HOME to detect it.
+	          rootJre = os.getenv("JAVA_HOME", "c:/Program Files/Java/jre6")
+	          if os.path.exists(rootJre+"/bin/javac.exe") :
+		          # this is a JDK home
+		          rootJre += '/jre'
+	
+	          if os.path.exists(rootJre+"/bin/client/jvm.dll") :
+		          jvm = rootJre+"/bin/client/jvm.dll"
         
-    jpype.startJVM(jre, *jvmargs)
+        if jvm is None:
+            raise IOError("Unable to find a java runtime to use. Please set JAVA_HOME to point to the folder that contains your jre or jdk.")
+        return jvm
+        
+    jpype.startJVM(getJVMPath(), *jvmargs)
     
     graphdb = jpype.JPackage('org.neo4j.graphdb')
     Direction = graphdb.Direction
