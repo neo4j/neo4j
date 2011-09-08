@@ -11,7 +11,7 @@
   <version>1.5-SNAPSHOT</version>
   <description>Neo4j Embedded Examples</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}/</url>
-  
+
   <scm>
     <url>https://github.com/neo4j/community/tree/master/embedded-examples</url>
   </scm>
@@ -43,11 +43,17 @@
       <artifactId>neo4j-shell</artifactId>
       <version>1.5-SNAPSHOT</version>
     </dependency>
-     <dependency>
+    <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
       <version>1.5-SNAPSHOT</version>
       <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-graphviz</artifactId>
+      <version>1.5-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -197,6 +203,20 @@
               <appendAssemblyId>true</appendAssemblyId>
               <descriptors>
                 <descriptor>src/main/assembly/download-assembly.xml</descriptor>
+              </descriptors>
+            </configuration>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>docs-assembly</id>
+            <phase>package</phase>
+            <configuration>
+              <attach>true</attach>
+              <appendAssemblyId>true</appendAssemblyId>
+              <descriptors>
+                <descriptor>src/main/assembly/docs-assembly.xml</descriptor>
               </descriptors>
             </configuration>
             <goals>
