@@ -2,6 +2,7 @@
 Installation
 ============
 
+NOTE: The needed Neo4j library files (from the <<editions,Community Edition>>) are included in the neo4j-embedded distribution.
 
 == Installation on OSX/Linux ==
 
