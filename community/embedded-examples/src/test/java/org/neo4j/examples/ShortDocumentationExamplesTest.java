@@ -150,7 +150,7 @@ public class ShortDocumentationExamplesTest implements GraphHolder
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        return  "_The Graph_\n\n[\"dot\", \""+name.replace( " ", "-" )+".svg\", \"neoviz\"]\n"+
+        return  "_The Graph:_\n\n[\"dot\", \""+name.replace( " ", "-" )+".svg\", \"neoviz\"]\n"+
                 "----\n" +
                 out.toString() +
                 "----\n";
