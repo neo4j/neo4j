@@ -26,6 +26,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
+import org.neo4j.cypher.SyntaxException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -132,6 +133,10 @@ public class ExtensionService
         {
             return output.badRequest( e.getCause() );
         }
+        catch ( SyntaxException e )
+        {
+            return output.badRequest( e.getCause() );
+        }
         catch ( PluginInvocationFailureException e )
         {
             return output.serverError( e.getCause() );
@@ -186,6 +191,10 @@ public class ExtensionService
         {
             return output.serverError( e.getCause() );
         }
+        catch ( Exception e )
+        {
+            return output.serverError( e.getCause() );
+        }
     }
 
     @GET
@@ -200,6 +209,10 @@ public class ExtensionService
         catch ( PluginLookupException e )
         {
             return output.notFound( e );
+        }
+        catch ( Exception e )
+        {
+            return output.serverError( e.getCause() );
         }
     }
 
@@ -233,6 +246,10 @@ public class ExtensionService
         {
             return output.serverError( e.getCause() );
         }
+        catch ( Exception e )
+        {
+            return output.serverError( e.getCause() );
+        }
     }
 
     @GET
@@ -247,6 +264,10 @@ public class ExtensionService
         catch ( PluginLookupException e )
         {
             return output.notFound( e );
+        }
+        catch ( Exception e )
+        {
+            return output.serverError( e.getCause() );
         }
     }
 
