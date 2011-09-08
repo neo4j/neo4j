@@ -53,7 +53,7 @@ Once you have access to this information, you can use it to for instance expose 
 === Reference of supported JMX MBeans ===
 
 .MBeans exposed by the Neo4j Kernel
-[options="header"]
+[options="header", cols="m,"]
 |===================
 |Name|Description
 |org.neo4j:instance=kernel#0,name=Memory Mapping|The status of Neo4j memory mapping
@@ -70,7 +70,7 @@ Once you have access to this information, you can use it to for instance expose 
 
 
 .MBean Memory Mapping
-[options="header", cols="45,45,10"]
+[options="header", cols="45m,45,10"]
 |========================================================
 |Attribute|Description    |Type
 |MemoryPools  |Get information about each pool of memory mapped regions from store files with memory mapping enabled
@@ -79,7 +79,7 @@ Once you have access to this information, you can use it to for instance expose 
 
 
 .MBean Locking
-[options="header", cols="45,45,10"]
+[options="header", cols="45m,45,10"]
 |========================================================
 |Attribute|Description    |Type
 |NumberOfAdvertedDeadlocks  |The number of lock sequences that would have lead to a deadlock situation that Neo4j has detected and adverted (by throwing DeadlockDetectedException).|Integer
@@ -87,7 +87,7 @@ Once you have access to this information, you can use it to for instance expose 
 
 
 .MBean Transactions
-[options="header", cols="45,45,10"]
+[options="header", cols="45m,45,10"]
 |========================================================
 |Attribute|Description    |Type
 |NumberOfOpenTransactions  |The number of currently open transactions|Integer
@@ -98,7 +98,7 @@ Once you have access to this information, you can use it to for instance expose 
 |========================================================
 
 .MBean Cache
-[options="header", cols="45,45,10"]
+[options="header", cols="45m,45,10"]
 |========================================================
 |Attribute|Description    |Type
 |CacheType  |The type of cache used by Neo4j|String
@@ -128,7 +128,7 @@ Once you have access to this information, you can use it to for instance expose 
 |========================================================
 
 .MBean Primitive count
-[options="header", cols="45,45,10"]
+[options="header", cols="45m,45,10"]
 |========================================================
 |Attribute|Description    |Type
 |NumberOfNodeIdsInUse  |An estimation of the number of nodes used in this Neo4j instance|Integer
@@ -139,14 +139,14 @@ Once you have access to this information, you can use it to for instance expose 
 
 
 .MBean XA Resources
-[options="header", cols="45,45,10"]
+[options="header", cols="45m,45,10"]
 |========================================================
 |Attribute|Description    |Type
 |XaResources  |Information about all XA resources managed by the transaction manager | String
 |========================================================
 
 .MBean Store file sizes
-[options="header", cols="45,45,10"]
+[options="header", cols="45m,45,10"]
 |========================================================
 |Attribute|Description    |Type
 |TotalStoreSize  |The total disk space used by this Neo4j instance, in bytes.|Integer
@@ -159,7 +159,7 @@ Once you have access to this information, you can use it to for instance expose 
 |========================================================
 
 .MBean Kernel
-[options="header", cols="45,45,10"]
+[options="header", cols="45m,45,10"]
 |========================================================
 |Attribute|Description    |Type
 |ReadOnly  |Whether this is a read only instance.|boolean
@@ -174,7 +174,7 @@ Once you have access to this information, you can use it to for instance expose 
 
 
 .MBean High Availability
-[options="header", cols="45,45,10"]
+[options="header", cols="45m,45,10"]
 |========================================================
 |Attribute|Description    |Type
 |MachineId  |The cluster machine id of this instance|String
