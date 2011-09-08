@@ -965,21 +965,27 @@ public class XaLogicalLog
         private final LogEntryCollector collector;
         private long version;
         private LogEntry.Commit lastCommitEntry;
+        private LogEntry.Commit previousCommitEntry;
+        private final long startTxId;
+        private long nextExpectedTxId;
+        private int counter;
 
         public LogExtractor( long startTxId, long endTxIdHint ) throws IOException
         {
-            long diff = endTxIdHint-startTxId + 1/*since they are inclusive*/;
-            if ( diff < CACHE_FIND_THRESHOLD )
-            {   // Find it from cache, we must check with all the requested transactions
-                // because the first committed transaction doesn't necessarily have its
-                // start record before the others.
-                TxPosition earliestPosition = getEarliestStartPosition( startTxId, endTxIdHint );
-                if ( earliestPosition != null )
-                {
-                    this.version = earliestPosition.version;
-                    this.source = getLogicalLogOrMyselfCommitted( version, earliestPosition.position );
-                }
-            }
+            this.startTxId = startTxId;
+            this.nextExpectedTxId = startTxId;
+//            long diff = endTxIdHint-startTxId + 1/*since they are inclusive*/;
+//            if ( diff < CACHE_FIND_THRESHOLD )
+//            {   // Find it from cache, we must check with all the requested transactions
+//                // because the first committed transaction doesn't necessarily have its
+//                // start record before the others.
+//                TxPosition earliestPosition = getEarliestStartPosition( startTxId, endTxIdHint );
+//                if ( earliestPosition != null )
+//                {
+//                    this.version = earliestPosition.version;
+//                    this.source = getLogicalLogOrMyselfCommitted( version, earliestPosition.position );
+//                }
+//            }
             
             if ( source == null )
             {   // Find the start position by jumping to the right log and scan linearly.
@@ -992,23 +998,20 @@ public class XaLogicalLog
             this.collector = new KnownTxIdCollector( startTxId );
         }
 
-        private TxPosition getEarliestStartPosition( long startTxId, long endTxIdHint )
-        {
-            TxPosition earliest = null;
-            synchronized ( txStartPositionCache )
-            {
-                for ( long txId = startTxId; txId <= endTxIdHint; txId++ )
-                {
-                    TxPosition position = txStartPositionCache.get( txId );
-                    if ( position == null ) return null;
-                    if ( earliest == null || position.position < earliest.position )
-                    {
-                        earliest = position;
-                    }
-                }
-            }
-            return earliest;
-        }
+//        private TxPosition getEarliestStartPosition( long startTxId, long endTxIdHint )
+//        {
+//            TxPosition earliest = null;
+//            for ( long txId = startTxId; txId <= endTxIdHint; txId++ )
+//            {
+//                TxPosition position = txStartPositionCache.get( txId );
+//                if ( position == null ) return null;
+//                if ( earliest == null || position.earlierThan( earliest ) )
+//                {
+//                    earliest = position;
+//                }
+//            }
+//            return earliest;
+//        }
 
         /**
          * @return the txId for the extracted tx.
@@ -1018,7 +1021,18 @@ public class XaLogicalLog
             while ( this.version <= logVersion )
             {
                 long result = collectNextFromCurrentSource( target );
-                if ( result != -1 ) return result;
+                if ( result != -1 )
+                {
+                    // TODO Should be assertions?
+                    if ( previousCommitEntry != null && result == previousCommitEntry.getTxId() ) continue;
+                    if ( result != nextExpectedTxId )
+                    {
+                        throw new RuntimeException( "Expected txId " + nextExpectedTxId + ", but got " + result + " (starting from " + startTxId + ")" + " " + counter + ", " + previousCommitEntry + ", " + lastCommitEntry );
+                    }
+                    nextExpectedTxId++;
+                    counter++;
+                    return result;
+                }
                 if ( this.version < logVersion )
                 {
                     continueInNextLog();
@@ -1042,6 +1056,7 @@ public class XaLogicalLog
                 if ( collector.collect( entry, target ) )
                 {
                     // It just wrote the transaction w/o the done record though. Add it
+                    previousCommitEntry = lastCommitEntry;
                     LogIoUtils.writeLogEntry( new LogEntry.Done( collector.getIdentifier() ), target );
                     lastCommitEntry = (LogEntry.Commit)entry;
                     return lastCommitEntry.getTxId();
@@ -1565,6 +1580,13 @@ public class XaLogicalLog
             this.identifier = identifier;
             this.position = position;
         }
+        
+        public boolean earlierThan( TxPosition other )
+        {
+            if ( version < other.version ) return true;
+            if ( version > other.version ) return false;
+            return position < other.position;
+        }
     }
 
     private static interface LogEntryCollector
@@ -1607,6 +1629,7 @@ public class XaLogicalLog
         private final Map<Integer,List<LogEntry>> transactions = new HashMap<Integer,List<LogEntry>>();
         private final long startTxId;
         private int identifier;
+        private long previousTxId;
 
         KnownTxIdCollector( long startTxId )
         {
@@ -1630,14 +1653,23 @@ public class XaLogicalLog
             else if ( entry instanceof LogEntry.Commit )
             {
                 long commitTxId = ((LogEntry.Commit) entry).getTxId();
-                if ( commitTxId >= startTxId )
+                if ( commitTxId < startTxId ) return false;
+                if ( previousTxId != 0 )
                 {
-                    interesting = true;
-                    identifier = entry.getIdentifier();
-                    List<LogEntry> entries = transactions.get( identifier );
-                    entries.add( entry );
-                    writeToBuffer( entries, target );
+                    // TODO Can happen due to log rotation?
+                    if ( commitTxId == previousTxId ) return false;
+                    if ( commitTxId != previousTxId+1 )
+                    {
+                        throw new RuntimeException( "Unexpected tx " + commitTxId + " after " + previousTxId + ", starting from " + startTxId );
+                    }
                 }
+                
+                interesting = true;
+                identifier = entry.getIdentifier();
+                List<LogEntry> entries = transactions.get( identifier );
+                entries.add( entry );
+                writeToBuffer( entries, target );
+                previousTxId = commitTxId;
             }
             else if ( entry instanceof LogEntry.Command || entry instanceof LogEntry.Prepare )
             {
