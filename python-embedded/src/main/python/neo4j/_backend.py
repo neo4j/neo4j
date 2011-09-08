@@ -93,14 +93,18 @@ except: # this isn't jython (and doesn't have the java module)
             # on windows, try using JAVA_HOME to detect it.
 	          rootJre = os.getenv("JAVA_HOME", "c:/Program Files/Java/jre6")
 	          if os.path.exists(rootJre+"/bin/javac.exe") :
-		          # this is a JDK home
-		          rootJre += '/jre'
+		            # this is a JDK home
+		            rootJre += '/jre'
 	
-	          if os.path.exists(rootJre+"/bin/client/jvm.dll") :
-		          jvm = rootJre+"/bin/client/jvm.dll"
+	          for i in ['/bin/client/jvm.dll','/bin/server/jvm.dll']:
+	              if os.path.exists(rootJre + i) :
+		                jvm = rootJre + i
         
         if jvm is None:
-            raise IOError("Unable to find a java runtime to use. Please set JAVA_HOME to point to the folder that contains your jre or jdk.")
+            if os.getenv("JAVA_HOME", None) != None:
+                raise IOError("Unable to find a java runtime to use. JAVA_HOME is set to '%s', but I could not find a JVM to use there." % os.getenv("JAVA_HOME"))
+            else:
+                raise IOError("Unable to find a java runtime to use. Please set JAVA_HOME to point to the folder that contains your jre or jdk.")
         return jvm
         
     jpype.startJVM(getJVMPath(), *jvmargs)
