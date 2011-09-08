@@ -60,7 +60,7 @@ public class TestJavaTestDocsGenerator implements GraphHolder
         data.get();
         gen.get().setGraph( graphdb );
         assertNotNull(data.get().get( "I" ));
-        gen.get().document();
+        gen.get().document("target/testdocs", "testsection");
     }
 
     @Override

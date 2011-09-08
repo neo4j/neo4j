@@ -69,7 +69,7 @@ public class ShortDocumentationExamplesTest implements GraphHolder
      * [snippet,java]
      * ----
      * component=neo4j-examples
-     * source=org/neo4j/examples/DescendantsTest.java
+     * source=org/neo4j/examples/ShortDocumentationExamplesTest.java
      * classifier=test-sources
      * tag=traverser
      * ----
