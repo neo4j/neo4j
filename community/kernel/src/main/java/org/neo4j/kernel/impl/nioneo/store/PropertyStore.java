@@ -371,7 +371,6 @@ public class PropertyStore extends AbstractStore implements Store
         Buffer buffer = window.getOffsettedBuffer( id );
         bits.read( buffer );
         PropertyRecord record = new PropertyRecord( id );
-        record.setInUse( true );
 
         long prevMod = (long) bits.getByte( 4 ) << 32;
         long nextMod = (long) bits.getByte( 4 ) << 32;
@@ -380,14 +379,13 @@ public class PropertyStore extends AbstractStore implements Store
         record.setPrevProp( longFromIntAndMod( prevProp, prevMod ) );
         record.setNextProp( longFromIntAndMod( nextProp, nextMod ) );
 
-        boolean someBlockInUse = false;
         while ( bits.available() )
         {
             PropertyBlock newBlock = getPropertyBlock( bits );
             if ( newBlock.inUse() )
             {
-                someBlockInUse = true;
                 record.addPropertyBlock( newBlock );
+                record.setInUse( true );
             }
             else
             {
@@ -395,7 +393,7 @@ public class PropertyStore extends AbstractStore implements Store
                 break;
             }
         }
-        if ( !someBlockInUse )
+        if ( !record.inUse() )
         {
             throw new InvalidRecordException( "Record[" + id + "] not in use" );
         }

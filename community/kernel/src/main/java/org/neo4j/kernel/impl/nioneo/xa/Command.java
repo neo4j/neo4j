@@ -80,9 +80,12 @@ public abstract class Command extends XaCommand
         if ( !block.inUse() )
         {
             buffer.put( (byte) 0 );
-            return;
+            // return;
         }
-        buffer.put( (byte) 1 );
+        else
+        {
+            buffer.put( (byte) 1 );
+        }
         byte blockSize = (byte) block.getSize();
         if ( blockSize <= 0 )
         {
@@ -153,7 +156,7 @@ public abstract class Command extends XaCommand
         PropertyBlock toReturn = new PropertyBlock();
         // Read in block size.
         buffer.clear();
-        buffer.limit( 1 );
+        buffer.limit( 2 );
         if ( byteChannel.read( buffer ) != buffer.limit() )
         {
             return null;
@@ -164,20 +167,17 @@ public abstract class Command extends XaCommand
         if ( inUse == 0 )
         {
             toReturn.setInUse( false );
-            return toReturn;
+            // return toReturn;
         }
-        if ( inUse != 1 )
+        else if ( inUse == 1 )
+        {
+            toReturn.setInUse( true );
+        }
+        else
         {
             throw new IllegalStateException(
                     inUse + " is not a valid value for the inUse field" );
         }
-        buffer.clear();
-        buffer.limit( 1 );
-        if ( byteChannel.read( buffer ) != buffer.limit() )
-        {
-            return null;
-        }
-        buffer.flip();
         int blockSize = buffer.get(); // the size is stored in bytes
         if ( blockSize <= 0 )
         {
@@ -186,7 +186,6 @@ public abstract class Command extends XaCommand
                             + blockSize
                             + " for a property block record that was marked as in use" );
         }
-        toReturn.setInUse( true );
         // Read in blocks
         buffer.clear();
         /*
@@ -827,7 +826,6 @@ public abstract class Command extends XaCommand
                 // /*byte category = */buffer.get();
                 long nextProp = buffer.getLong();
                 long prevProp = buffer.getLong();
-                record.setInUse( inUse );
                 record.setNextProp( nextProp );
                 record.setPrevProp( prevProp );
                 int nrPropBlocks = buffer.getInt();
@@ -847,6 +845,16 @@ public abstract class Command extends XaCommand
                         return null;
                     }
                     record.addPropertyBlock( block );
+                    if ( block.inUse() )
+                    {
+                        record.setInUse( true );
+                    }
+                }
+                if ( !record.inUse() )
+                {
+                    throw new IllegalStateException(
+                            "Read in record marked as in use but no blocks read in:\n\t"
+                                    + record );
                 }
             }
             return new PropertyCommand( neoStore == null ? null : neoStore.getPropertyStore(), record );

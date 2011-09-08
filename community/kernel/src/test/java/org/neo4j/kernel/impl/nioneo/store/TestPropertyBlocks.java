@@ -40,7 +40,6 @@ import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 public class TestPropertyBlocks extends AbstractNeo4jTestCase
 {
     @Test
-    @Ignore
     public void simpleAddIntegers()
     {
         long inUseBefore = propertyRecordsInUse();
@@ -54,20 +53,92 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         }
 
         newTransaction();
+        clearCache();
+        assertEquals( inUseBefore + 1, propertyRecordsInUse() );
+
+        for ( int i = 0; i < PropertyType.getPayloadSizeLongs(); i++ )
+        {
+            assertEquals( i, node.getProperty( "prop" + i ) );
+        }
 
         for ( int i = 0; i < PropertyType.getPayloadSizeLongs(); i++ )
         {
             assertEquals( i, node.removeProperty( "prop" + i ) );
-            if ( i == PropertyType.getPayloadSizeLongs() - 1 )
-            {
-                assertEquals( inUseBefore, propertyRecordsInUse() );
-            }
-            else
-            {
-                assertEquals( inUseBefore + 1, propertyRecordsInUse() );
-            }
+            assertFalse( node.hasProperty( "prop" + i ) );
         }
         commit();
+        assertEquals( inUseBefore, propertyRecordsInUse() );
+    }
+
+    @Test
+    public void simpleAddDoubles()
+    {
+        long inUseBefore = propertyRecordsInUse();
+        Node node = getGraphDb().createNode();
+
+        for ( int i = 0; i < PropertyType.getPayloadSizeLongs() / 2; i++ )
+        {
+            node.setProperty( "prop" + i, i * -1.0 );
+            assertEquals( inUseBefore + 1, propertyRecordsInUse() );
+            assertEquals( i * -1.0, node.getProperty( "prop" + i ) );
+        }
+
+        newTransaction();
+        clearCache();
+        assertEquals( inUseBefore + 1, propertyRecordsInUse() );
+
+        for ( int i = 0; i < PropertyType.getPayloadSizeLongs() / 2; i++ )
+        {
+            assertEquals( i * -1.0, node.getProperty( "prop" + i ) );
+        }
+
+        for ( int i = 0; i < PropertyType.getPayloadSizeLongs() / 2; i++ )
+        {
+            assertEquals( i * -1.0, node.removeProperty( "prop" + i ) );
+            assertFalse( node.hasProperty( "prop" + i ) );
+        }
+        commit();
+        assertEquals( inUseBefore, propertyRecordsInUse() );
+    }
+
+    @Test
+    public void deleteEverythingInMiddleRecord()
+    {
+        long inUseBefore = propertyRecordsInUse();
+        Node node = getGraphDb().createNode();
+
+        for ( int i = 0; i < 3*PropertyType.getPayloadSizeLongs(); i++ )
+        {
+            node.setProperty( "shortString"+i, String.valueOf( i ) );
+        }
+        assertEquals( inUseBefore + 3, propertyRecordsInUse() );
+        newTransaction();
+        clearCache();
+
+        for ( int i = PropertyType.getPayloadSizeLongs(); i < 2 * PropertyType.getPayloadSizeLongs(); i++ )
+        {
+            assertEquals( String.valueOf( i ),
+                    node.removeProperty( "shortString" + i ) );
+        }
+
+        newTransaction();
+        clearCache();
+
+        assertEquals( inUseBefore + 2, propertyRecordsInUse() );
+        for ( int i = 0; i < PropertyType.getPayloadSizeLongs(); i++ )
+        {
+            assertEquals( String.valueOf( i ),
+                    node.removeProperty( "shortString" + i ) );
+        }
+        for ( int i = PropertyType.getPayloadSizeLongs(); i < 2 * PropertyType.getPayloadSizeLongs(); i++ )
+        {
+            assertFalse( node.hasProperty( "shortString" + i ) );
+        }
+        for ( int i = 2 * PropertyType.getPayloadSizeLongs(); i < 3 * PropertyType.getPayloadSizeLongs(); i++ )
+        {
+            assertEquals( String.valueOf( i ),
+                    node.removeProperty( "shortString" + i ) );
+        }
     }
 
     @Test
@@ -99,6 +170,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         }
 
         newTransaction();
+        clearCache();
 
         // Remove all but one and add one
         for ( int i = 0; i < PropertyType.getPayloadSizeLongs() - 1; i++ )
@@ -108,6 +180,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         node.setProperty( "profit", 5 );
 
         newTransaction();
+        clearCache();
 
         // Verify
         int remainingProperty = PropertyType.getPayloadSizeLongs() - 1;
@@ -125,6 +198,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         Node node = getGraphDb().createNode();
         node.setProperty( "prop0", 0 );
         newTransaction();
+        clearCache();
 
         // One record must have been added
         assertEquals( inUseBefore + 1, propertyRecordsInUse() );
@@ -136,6 +210,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
             node.setProperty( "prop" + i, i );
         }
         newTransaction();
+        clearCache();
 
         assertEquals( inUseBefore + 1, propertyRecordsInUse() );
 
@@ -144,6 +219,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         assertEquals( 0, node.removeProperty( "prop0" ) );
         node.setProperty( "prop-1", -1 );
         newTransaction();
+        clearCache();
 
         assertEquals( inUseBefore + 1, propertyRecordsInUse() );
 
@@ -155,12 +231,14 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         // A double value should do the trick
         node.setProperty( "propDouble", 1.0 );
         newTransaction();
+        clearCache();
 
         assertEquals( inUseBefore + 1, propertyRecordsInUse() );
 
         // Adding just one now should create a new property record.
         node.setProperty( "prop-2", -2 );
         newTransaction();
+        clearCache();
         assertEquals( inUseBefore + 2, propertyRecordsInUse() );
     }
 
@@ -186,6 +264,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
             node.setProperty( "int" + i, i );
         }
         newTransaction();
+        clearCache();
 
         // Just checking that the assumptions above is correct
         assertEquals(inUseBefore+1, propertyRecordsInUse());
@@ -193,17 +272,20 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         // We assume at least one double has been added
         node.removeProperty( "double0" );
         newTransaction();
+        clearCache();
         assertEquals( inUseBefore + 1, propertyRecordsInUse() );
 
         // Do the actual substitution, check that no record is created
         node.setProperty( "int-1", -1 );
         node.setProperty( "int-2", -2 );
         newTransaction();
+        clearCache();
         assertEquals( inUseBefore + 1, propertyRecordsInUse() );
 
         // Finally, make sure we actually are with a full prop record
         node.setProperty( "int-3", -3 );
         newTransaction();
+        clearCache();
         assertEquals( inUseBefore + 2, propertyRecordsInUse() );
     }
 
@@ -227,6 +309,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         // Basic check that integers take up one (8 byte) block.
         assertEquals( stuffedIntegers, PropertyType.getPayloadSizeLongs() );
         newTransaction();
+        clearCache();
 
         assertEquals( inUseBefore + 1, propertyRecordsInUse() );
 
@@ -234,9 +317,11 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         node.removeProperty( "int0" );
         node.removeProperty( "int2" );
         newTransaction();
+        clearCache();
         // Add the two block thing.
         node.setProperty( "theDouble", 1.0 );
         newTransaction();
+        clearCache();
 
         // Let's make sure everything is in one record and with proper values.
         assertEquals( inUseBefore + 1, propertyRecordsInUse() );
@@ -264,11 +349,13 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
                     stuffedBooleans % 2 == 0 );
         }
         newTransaction();
+        clearCache();
 
         assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
 
         node.setProperty( "theExraOne", true );
         newTransaction();
+        clearCache();
 
         assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
 
@@ -278,6 +365,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
                     node.removeProperty( "boolean" + i ) );
         }
         newTransaction();
+        clearCache();
 
         assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
 
@@ -305,6 +393,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
                     String.valueOf( stuffedShortStrings ) );
         }
         newTransaction();
+        clearCache();
         assertEquals( recordsInUseAtStart + 3, propertyRecordsInUse() );
 
         int secondBlockInSecondRecord = PropertyType.getPayloadSizeLongs() + 1;
@@ -316,6 +405,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
                 node.removeProperty( "shortString" + thirdBlockInSecondRecord ) );
 
         newTransaction();
+        clearCache();
         assertEquals( recordsInUseAtStart + 3, propertyRecordsInUse() );
 
         for ( int i = 0; i < stuffedShortStrings; i++ )
@@ -347,6 +437,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         assertEquals( PropertyType.getPayloadSizeLongs() - 2, deletedProps );
 
         newTransaction();
+        clearCache();
         assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
 
         for ( int i = 0; i < PropertyType.getPayloadSizeLongs(); i++ )
@@ -378,6 +469,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
                     String.valueOf( stuffedShortStrings ) );
         }
         newTransaction();
+        clearCache();
 
         assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
 
@@ -385,6 +477,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         node.removeProperty( "shortString2" );
         node.setProperty( "theDoubleOne", -1.0 );
         newTransaction();
+        clearCache();
 
         assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
         for ( int i = 0; i < stuffedShortStrings; i++ )
@@ -416,17 +509,21 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         node.setProperty("double1", 1.0);
         node.setProperty( "int2", 2 );
         newTransaction();
+        clearCache();
 
         assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
 
         node.removeProperty( "double1" );
         newTransaction();
+        clearCache();
         node.setProperty( "double2", 1.0 );
         newTransaction();
+        clearCache();
         assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
 
         node.setProperty( "paddingBoolean", false );
         newTransaction();
+        clearCache();
         assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
     }
 
@@ -440,23 +537,29 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         node.setProperty( "double1", 1.0 );
         node.setProperty( "int2", 2 );
         newTransaction();
+        clearCache();
 
         assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
 
         node.removeProperty( "int1" );
         newTransaction();
+        clearCache();
         node.setProperty( "double2", 1.0 );
         newTransaction();
+        clearCache();
         assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
 
         node.removeProperty( "int2" );
         newTransaction();
+        clearCache();
         node.setProperty( "double3", 1.0 );
         newTransaction();
+        clearCache();
         assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
 
         node.setProperty( "paddingBoolean", false );
         newTransaction();
+        clearCache();
         assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
     }
 
@@ -479,6 +582,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
                     String.valueOf( stuffedShortStrings ) );
         }
         newTransaction();
+        clearCache();
 
         assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
 
@@ -486,6 +590,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         node.setProperty( "int3", 3 );
 
         newTransaction();
+        clearCache();
 
         assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
     }
@@ -504,11 +609,12 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
                     String.valueOf( stuffedShortStrings ) );
         }
         newTransaction();
+        clearCache();
 
         assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
 
         node.setProperty( "shortString1", 1.0 );
-        newTransaction();
+        commit();
     }
 
     @Test
@@ -527,18 +633,21 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         }
 
         newTransaction();
+        clearCache();
 
         assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
 
         // Takes up two blocks
         node.setProperty( "theDoubleThatBecomesAnArray", 1.0 );
         newTransaction();
+        clearCache();
 
         assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
 
         // This takes up three blocks
         node.setProperty( "theLargeArray", new long[] { 1 << 63, 1 << 63 } );
         newTransaction();
+        clearCache();
 
         assertTrue( Arrays.equals( new long[] { 1 << 63, 1 << 63 },
                 (long[]) node.getProperty( "theLargeArray" ) ) );
@@ -547,6 +656,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         node.setProperty( "fillerByte1", (byte) 3 );
 
         newTransaction();
+        clearCache();
 
         assertEquals( recordsInUseAtStart + 3, propertyRecordsInUse() );
 
@@ -560,6 +670,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         assertEquals( valueRecordsInUseAtStart, dynamicArrayRecordsInUse() );
         assertEquals( recordsInUseAtStart + 4, propertyRecordsInUse() );
         newTransaction();
+        clearCache();
         assertEquals( recordsInUseAtStart + 4, propertyRecordsInUse() );
 
         while ( shortArrays-- > 0 )
@@ -601,6 +712,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
 
         newTransaction();
+        clearCache();
         /*
          * The following line should pass if we have packing on property block
          * size shrinking.
@@ -644,6 +756,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
             if ( withNewTx )
             {
                 newTransaction();
+                clearCache();
             }
         }
 
@@ -654,6 +767,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         assertEquals( valueRecordsInUseAtStart + 1, dynamicArrayRecordsInUse() );
 
         newTransaction();
+        clearCache();
         rel.setProperty( "filler", new long[] { 1 << 63, 1 << 63, 1 << 63 } );
         assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
     }
@@ -680,6 +794,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         }
 
         newTransaction();
+        clearCache();
 
         for ( int i = 1; i <= PropertyType.getPayloadSizeLongs(); i++ )
         {

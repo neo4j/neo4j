@@ -25,8 +25,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.kernel.impl.core.PropertyIndex;
-
 /**
  * PropertyRecord is a container for PropertyBlocks. PropertyRecords form
  * a double linked list and each one holds one or more PropertyBlocks that
@@ -117,11 +115,6 @@ public class PropertyRecord extends Abstract64BitRecord
         blockRecords.add( block );
     }
 
-    public PropertyBlock getPropertyBlock( PropertyIndex index )
-    {
-        return getPropertyBlock( index.getKeyId() );
-    }
-
     public PropertyBlock getPropertyBlock( int keyIndex )
     {
         for ( PropertyBlock block : blockRecords )
@@ -149,9 +142,8 @@ public class PropertyRecord extends Abstract64BitRecord
     {
         StringBuffer buf = new StringBuffer();
         buf.append( "PropertyRecord[" ).append( getId() ).append( "," ).append(
-                inUse() ).append( "," ).append( "," )./*append( propBlock ).*/append(
-                "," ).append( "," ).append( nextProp );
-        buf.append( ", Value[" );
+                inUse() ).append( "," ).append( prevProp ).append( "," ).append(
+                nextProp ).append( ", Value[" );
         Iterator<PropertyBlock> itr = blockRecords.iterator();
         while ( itr.hasNext() )
         {
@@ -173,6 +165,18 @@ public class PropertyRecord extends Abstract64BitRecord
     public void setChanged()
     {
         isChanged = true;
+    }
+
+    @Override
+    public void setInUse( boolean inUse )
+    {
+        if ( inUse && !( size() > 0 ) )
+        {
+            throw new IllegalStateException(
+                    "You cannot set a property record as in use when no property blocks are set as in use. Offensive record is:\n\t"
+                            + this );
+        }
+        super.setInUse( inUse );
     }
 
     public long getPrevProp()

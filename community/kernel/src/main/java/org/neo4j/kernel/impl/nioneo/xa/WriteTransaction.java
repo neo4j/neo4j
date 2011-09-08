@@ -1307,7 +1307,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         if ( host == null )
         {
             host = new PropertyRecord( getPropertyStore().nextId() );
-            host.setInUse( true );
             host.setCreated();
             if ( isNode )
             {
@@ -1330,6 +1329,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             try
             {
                 host.addPropertyBlock( block );
+                host.setInUse( true );
             }
             catch ( IllegalStateException e )
             {
