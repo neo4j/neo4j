@@ -149,4 +149,13 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
         return getRelationshipUri(rel)+  "/properties";
     }
     
+    public RESTDocsGenerator gen() {
+        return gen.get();
+    }
+    
+    public void description( String description )
+    {
+        gen().description( description );
+        
+    }
 }

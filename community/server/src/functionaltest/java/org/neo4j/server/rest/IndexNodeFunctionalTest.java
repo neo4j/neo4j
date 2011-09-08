@@ -71,6 +71,7 @@ public class IndexNodeFunctionalTest
     public void cleanTheDatabase()
     {
         ServerHelper.cleanTheDatabase( server );
+        gen.get().setGraph(server.getDatabase().graph );
     }
 
     @AfterClass
@@ -236,7 +237,7 @@ public class IndexNodeFunctionalTest
         String indexName = "bobTheIndex";
         String key = "Name";
         String value = "Builder";
-        long node = helper.createNode();
+        long node = helper.createNode(MapUtil.map( key, value ));
         helper.addNodeToIndex( indexName, key, value, node );
         helper.addNodeToIndex( indexName, "Gender", "Male", node );
 
