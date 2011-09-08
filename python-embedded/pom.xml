@@ -67,6 +67,11 @@ the relevant Commercial Agreement.
   <properties>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <python>python</python>
+    
+    <!-- Paths used while testing. These are overridden for
+         windows platforms, see the profiles section. -->
+    <pythonpath>../../main/python:$PYTHONPATH</pythonpath>
+    <jythonpath>../../main/python:$JYTHONPATH</jythonpath>
     <build.number>0</build.number>
   </properties>
 
@@ -95,8 +100,8 @@ the relevant Commercial Agreement.
                 <argument>${basedir}/target/surefire-reports</argument>
               </arguments>
               <environmentVariables>
-                <PYTHONPATH>../../main/python:$PYTHONPATH</PYTHONPATH>
-                <JYTHONPATH>../../main/python:$JYTHONPATH</JYTHONPATH>
+                <PYTHONPATH>${pythonpath}</PYTHONPATH>
+                <JYTHONPATH>${jythonpath}</JYTHONPATH>
               </environmentVariables>
             </configuration>
             <id>python-test</id>
@@ -185,6 +190,18 @@ the relevant Commercial Agreement.
     <profile><id>jython-test</id>
       <properties>
         <python>jython</python>
+      </properties>
+    </profile>
+    <profile>
+      <id>windows</id>
+      <activation>
+        <os>
+          <family>windows</family>
+        </os>
+      </activation>
+      <properties>
+        <pythonpath>../../main/python</pythonpath>
+        <jythonpath>../../main/python</jythonpath>
       </properties>
     </profile>
     <!-- Deploy the finished python library to pypi -->
