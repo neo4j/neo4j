@@ -274,9 +274,8 @@ public abstract class Client<M> implements ChannelPipelineFactory
         {
             return TransactionStream.EMPTY;
         }
-
-        // TODO Don't like that null passed in, but what the heck.
-        return new TransactionStream( null )
+        
+        return new TransactionStream()
         {
             @Override
             protected Triplet<String, Long, TxExtractor> fetchNextOrNull()

@@ -48,4 +48,9 @@ public class Response<T>
     {
         return transactions;
     }
+    
+    public void close()
+    {
+        transactions.close();
+    }
 }

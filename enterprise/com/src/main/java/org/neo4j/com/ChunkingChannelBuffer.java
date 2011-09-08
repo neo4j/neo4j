@@ -27,7 +27,6 @@ import java.nio.ByteOrder;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.ScatteringByteChannel;
 import java.nio.charset.Charset;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBufferFactory;
@@ -41,14 +40,11 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
 {
     static final byte CONTINUATION_LAST = 0;
     static final byte CONTINUATION_MORE = 1;
-    private static final int MAX_WRITE_AHEAD_CHUNKS = 5;
     
     private ChannelBuffer buffer;
     private final Channel channel;
     private final int capacity;
     private int continuationPosition;
-    private long timeLastChunkSent;
-    private AtomicInteger writeAheadCounter = new AtomicInteger();
 
     public ChunkingChannelBuffer( ChannelBuffer buffer, Channel channel, int capacity )
     {
@@ -56,7 +52,6 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
         this.channel = channel;
         this.capacity = capacity;
         addRoomForContinuationHeader();
-        this.timeLastChunkSent = System.currentTimeMillis();
     }
 
     private void addRoomForContinuationHeader()
@@ -487,7 +482,7 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
     
     private void sendChunkIfNeeded( int bytesPlus )
     {
-        if ( writerIndex()+bytesPlus >= capacity || (enoughTimeHasPassed() && readable()) )
+        if ( writerIndex()+bytesPlus >= capacity )
         {
             setContinuation( CONTINUATION_MORE );
             writeCurrentChunk();
@@ -497,41 +492,10 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
         }
     }
 
-    private boolean enoughTimeHasPassed()
-    {
-        long timeSinceLastChunkSent = System.currentTimeMillis()-this.timeLastChunkSent;
-        if ( timeSinceLastChunkSent > 10*1000 )
-        {
-            this.timeLastChunkSent = System.currentTimeMillis();
-            return true;
-        }
-        return false;
-    }
-
     private void writeCurrentChunk()
     {
-        waitForClientToCatchUpOnReadingChunks();
         ChannelFuture future = channel.write( buffer );
         future.addListener( this );
-        writeAheadCounter.incrementAndGet();
-    }
-    
-    private void waitForClientToCatchUpOnReadingChunks()
-    {
-        // Wait until channel gets disconnected or client catches up.
-        // If channel has been disconnected we can exit and the next write
-        // will produce a decent exception out.
-        while ( channel.isConnected() && writeAheadCounter.get() >= MAX_WRITE_AHEAD_CHUNKS )
-        {
-            try
-            {
-                Thread.sleep( 200 );
-            }
-            catch ( InterruptedException e )
-            {   // OK
-                Thread.interrupted();
-            }
-        }
     }
     
     @Override
@@ -546,7 +510,6 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
         {
             future.getChannel().close();
         }
-        writeAheadCounter.decrementAndGet();
     }
 
     public void done()

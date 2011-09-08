@@ -348,9 +348,10 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
             @SuppressWarnings( "unchecked" )
             public void run()
             {
+                Response<R> response = null;
                 try
                 {
-                    Response<R> response = type.getMasterCaller().callMaster( realMaster, context, bufferToReadFrom, targetBuffer );
+                    response = type.getMasterCaller().callMaster( realMaster, context, bufferToReadFrom, targetBuffer );
                     type.getObjectSerializer().write( response.response(), targetBuffer );
                     writeStoreId( response.getStoreId(), targetBuffer );
                     writeTransactionStreams( response.transactions(), targetBuffer, targetByteBuffer );
@@ -362,6 +363,10 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
                     channel.close();
                     tryToFinishOffChannel( channel, context );
                     throw Exceptions.launderedException( e );
+                }
+                finally
+                {
+                    if ( response != null ) response.close();
                 }
             }
         };
