@@ -1,0 +1,13 @@
+[[tutorials-python-embedded]]
+Using Neo4j embedded in Python applications
+===========================================
+
+:leveloffset: 2
+
+include::helloworld.txt[]
+
+:leveloffset: 2
+
+include::invoiceapp.txt[]
+
+
