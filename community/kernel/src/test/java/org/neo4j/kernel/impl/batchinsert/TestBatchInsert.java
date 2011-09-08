@@ -131,6 +131,7 @@ public class TestBatchInsert
     }
 
     @Test
+    @Ignore
     public void makeSureLoopsCanBeCreated()
     {
         BatchInserter graphDb = newBatchInserter();
