@@ -88,7 +88,8 @@ except: # this isn't jython (and doesn't have the java module)
     
     jre = jpype.getDefaultJVMPath()
     if jre is None:
-        from jpype._core import _getJVMFromJavaHome
+        # Try JAVA_HOME on non-linux platforms
+        from jpype._linux import _getJVMFromJavaHome
         jre = _getJVMFromJavaHome()
     
     if jre is None:
