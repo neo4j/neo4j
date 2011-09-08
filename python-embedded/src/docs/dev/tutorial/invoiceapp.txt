@@ -7,7 +7,7 @@ For detailed documentation on the concepts use here, see <<python-embedded-refer
 [snippet,python]
 ----
 component=neo4j-python-embedded
-source=examples/helloworld.py
+source=examples.py
 tag=invoiceapp
 classifier=test-sources
 ----
