@@ -100,14 +100,15 @@ public class ShortDocumentationExamplesTest implements GraphHolder
             }
         } );
         
-        // END SNIPPET: traverser
         org.neo4j.graphdb.traversal.Traverser results = td.traverse( start );
         int count = 0;
+        //we should get two paths back, through Pet1 and Pet3
         for(Path path : results)
         {
             count ++;
         }
         assertEquals(2, count);
+        // END SNIPPET: traverser
     }
     
     public String createGraphViz( String name )
