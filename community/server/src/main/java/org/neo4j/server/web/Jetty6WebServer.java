@@ -37,6 +37,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
+import org.mortbay.jetty.Connector;
+import org.mortbay.jetty.nio.SelectChannelConnector;
+
 import org.mortbay.jetty.SessionManager;
 import org.mortbay.jetty.handler.MovedContextHandler;
 import org.mortbay.jetty.servlet.Context;
@@ -57,9 +60,11 @@ public class Jetty6WebServer implements WebServer
 {
     public static final Logger log = Logger.getLogger( Jetty6WebServer.class );
     public static final int DEFAULT_PORT = 80;
+    public static final String DEFAULT_ADDRESS = "0.0.0.0";
 
     private Server jetty;
     private int jettyPort = DEFAULT_PORT;
+    private String jettyAddr = DEFAULT_ADDRESS;
 
     private final HashMap<String, String> staticContent = new HashMap<String, String>();
     private final HashMap<String, ServletHolder> jaxRSPackages = new HashMap<String, ServletHolder>();
@@ -140,7 +145,13 @@ public class Jetty6WebServer implements WebServer
     {
         if ( jetty == null )
         {
-            jetty = new Server( jettyPort );
+            jetty = new Server();
+            Connector connector = new SelectChannelConnector();
+            
+            connector.setPort( jettyPort );
+            connector.setHost( jettyAddr );
+            jetty.addConnector( connector );
+
             jetty.setThreadPool( new QueuedThreadPool( jettyMaxThreads ) );
         }
     }
@@ -175,6 +186,12 @@ public class Jetty6WebServer implements WebServer
     public void setPort( int portNo )
     {
         jettyPort = portNo;
+    }
+
+    @Override
+    public void setAddress( String addr )
+    {
+        jettyAddr = addr;
     }
 
     @Override
