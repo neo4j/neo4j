@@ -20,9 +20,6 @@ package org.neo4j.examples;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.Map;
 
 import org.junit.After;
@@ -47,9 +44,6 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.JavaTestDocsGenerator;
 import org.neo4j.test.TestData;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
-import org.neo4j.visualization.graphviz.AsciiDocStyle;
-import org.neo4j.visualization.graphviz.GraphvizWriter;
-import org.neo4j.walk.Walker;
 
 public class ShortDocumentationExamplesTest implements GraphHolder
 {

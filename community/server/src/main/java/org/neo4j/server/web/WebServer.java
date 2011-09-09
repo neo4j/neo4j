@@ -37,6 +37,8 @@ public interface WebServer
 
     void setPort( int portNo );
 
+    void setAddress( String addr );
+
     void start();
 
     void stop();
