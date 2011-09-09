@@ -51,7 +51,7 @@ public class TestJavaTestDocsGenerator implements GraphHolder
     public @Rule
     TestData<JavaTestDocsGenerator> gen = TestData.producedThrough( JavaTestDocsGenerator.PRODUCER );
 
-    String directory = "target"+System.getProperty("path.separator")+"testdocs";
+    String directory = "target"+File.separator+"testdocs";
     String sectionName = "testsection";
     
     @Documented(value="Title1.\n\nhej\n@@snippet1\n\nmore docs\n@@snippet2.")
