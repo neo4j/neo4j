@@ -72,7 +72,7 @@ public class JavaTestDocsGenerator extends DocsGenerator
 
     public void document( String directory, String sectionName )
     {
-        FileWriter fw = getFW( directory + "/" + sectionName, title );
+        FileWriter fw = getFW( directory + System.getProperty("path.separator") + sectionName, title );
         String name = title.replace( " ", "-" ).toLowerCase();
         description = replaceSnippets( description );
         try
