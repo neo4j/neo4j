@@ -140,6 +140,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         master = master != null ? master : broker.getMasterReally();
         // Assume it's shut down at this point
 
+        internalShutdown();
         moveAwayCurrentDatabase();
 
         Exception exception = null;
