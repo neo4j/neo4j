@@ -549,7 +549,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         }
         else
         {
-            String msg = "Broken store, I (machineId:" + machineId + ") think machineId for txId (" +
+            String msg = "Branched data, I (machineId:" + machineId + ") think machineId for txId (" +
                     highestCommonTxId + ") is " + masterForMyHighestCommonTxId + ", but master (machineId:" +
                     master.other().getMachineId() + ") says that it's " + masterForMastersHighestCommonTxId;
             msgLog.logMessage( msg, true );
