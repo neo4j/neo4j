@@ -27,7 +27,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -43,7 +42,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.test.DocsGenerator;
+import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.TestData.Producer;
 import org.neo4j.visualization.graphviz.AsciiDocStyle;
@@ -65,7 +64,7 @@ import com.sun.jersey.api.client.ClientResponse;
  * The title is determined by either a JavaDoc perioed terminated first title line,
  * the @Title annotation or the method name, where "_" is replaced by " ".
  */
-public class RESTDocsGenerator extends DocsGenerator
+public class RESTDocsGenerator extends AsciiDocGenerator
 {
 
     private static final Builder REQUEST_BUILDER = ClientRequest.create();

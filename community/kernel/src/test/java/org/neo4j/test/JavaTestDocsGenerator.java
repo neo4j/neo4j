@@ -19,6 +19,7 @@
  */
 package org.neo4j.test;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
@@ -37,7 +38,7 @@ import org.neo4j.test.TestData.Producer;
  * @author peterneubauer
  *
  */
-public class JavaTestDocsGenerator extends DocsGenerator
+public class JavaTestDocsGenerator extends AsciiDocGenerator
 {
     public static final Producer<JavaTestDocsGenerator> PRODUCER = new Producer<JavaTestDocsGenerator>()
     {
@@ -72,7 +73,7 @@ public class JavaTestDocsGenerator extends DocsGenerator
 
     public void document( String directory, String sectionName )
     {
-        FileWriter fw = getFW( directory + System.getProperty("path.separator") + sectionName, title );
+        FileWriter fw = getFW( directory + File.separator + sectionName, title );
         String name = title.replace( " ", "-" ).toLowerCase();
         description = replaceSnippets( description );
         try

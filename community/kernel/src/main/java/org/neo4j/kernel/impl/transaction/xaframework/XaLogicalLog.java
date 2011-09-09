@@ -1109,12 +1109,18 @@ public class XaLogicalLog
         }
 
         LogExtractor extractor = getLogExtractor( txId, txId );
-        if ( extractor.extractNext( NullLogBuffer.INSTANCE ) != -1 )
+        try
         {
-            return extractor.lastCommitEntry.getMasterId();
+            if ( extractor.extractNext( NullLogBuffer.INSTANCE ) != -1 )
+            {
+                return extractor.lastCommitEntry.getMasterId();
+            }
+            throw new RuntimeException( "Unable to find commit entry in for txId[" + txId + "]" );// in log[" + version + "]" );
         }
-        throw new RuntimeException( "Unable to find commit entry in for txId[" +
-                txId + "]" );// in log[" + version + "]" );
+        finally
+        {
+            extractor.close();
+        }
     }
 
     public ReadableByteChannel getLogicalLogOrMyselfCommitted( long version, long position )
@@ -1187,11 +1193,17 @@ public class XaLogicalLog
             else
             {
                 ReadableByteChannel logChannel = getLogicalLogOrMyselfCommitted( version, 0 );
-                ByteBuffer buf = ByteBuffer.allocate( 16 );
-                long[] header = readAndAssertLogHeader( buf, logChannel, version );
-                committedTx = header[1];
-                logHeaderCache.put( version, committedTx );
-                logChannel.close();
+                try
+                {
+                    ByteBuffer buf = ByteBuffer.allocate( 16 );
+                    long[] header = readAndAssertLogHeader( buf, logChannel, version );
+                    committedTx = header[1];
+                    logHeaderCache.put( version, committedTx );
+                }
+                finally
+                {
+                    logChannel.close();
+                }
             }
             if ( committedTx < txId )
             {
@@ -1664,6 +1676,10 @@ public class XaLogicalLog
                     {
                         throw new RuntimeException( "Unexpected tx " + commitTxId + " after " + previousTxId + ", starting from " + startTxId );
                     }
+                }
+                else if ( commitTxId != startTxId )
+                {
+                    throw new RuntimeException( "Unexpected tx " + commitTxId + ". Was expecting " + startTxId );
                 }
                 
                 interesting = true;

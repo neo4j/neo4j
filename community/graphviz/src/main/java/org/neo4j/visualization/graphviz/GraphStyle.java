@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-class GraphStyle
+public class GraphStyle
 {
 	GraphStyle( StyleParameter... parameters )
 	{

@@ -46,6 +46,7 @@ import org.neo4j.test.GraphHolder;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.JavaTestDocsGenerator;
 import org.neo4j.test.TestData;
+import org.neo4j.visualization.asciidoc.AsciidocHelper;
 import org.neo4j.visualization.graphviz.AsciiDocStyle;
 import org.neo4j.visualization.graphviz.GraphvizWriter;
 import org.neo4j.walk.Walker;
@@ -94,9 +95,9 @@ public class ShortDocumentationExamplesTest implements GraphHolder
     public void pathUniquenesExample()
     {
         Node start = data.get().get( "Pet0" );
-        gen.get().addSnippet( "graph", createGraphViz("descendants1", graphdb()) );
+        gen.get().addSnippet( "graph", AsciidocHelper.createGraphViz("descendants1", graphdb()) );
         String tagName = "traverser";
-        gen.get().addSnippet( tagName, createSourceSnippet(tagName, component, classifier, this.getClass()) );
+        gen.get().addSnippet( tagName, gen.get().createSourceSnippet(tagName, this.getClass()) );
         // START SNIPPET: traverser
         final Node target = data.get().get( "Principal1" );
         TraversalDescription td = Traversal.description().uniqueness(Uniqueness.NODE_PATH ).evaluator( new Evaluator()
@@ -125,37 +126,8 @@ public class ShortDocumentationExamplesTest implements GraphHolder
         assertEquals(2, count);
     }
     
-    public static String createSourceSnippet(String tagName, String component, String classifier,
-            Class source )
-    {
-        return "[snippet,java]\n"+
-                "----\n" +
-                "component="+component+"\n"+
-                "source="+ source.getPackage().getName().replace( ".", "/" ) + "/" + source.getSimpleName() + ".java\n"+
-                "classifier="+classifier+"\n"+
-                "tag="+tagName+"\n"+
-                "----\n";
-    }
-
-    public static String createGraphViz( String name, GraphDatabaseService graph )
-    {
-        OutputStream out = new ByteArrayOutputStream();
-        GraphvizWriter writer = new GraphvizWriter(new AsciiDocStyle());
-        try
-        {
-            writer.emit( out, Walker.fullGraph( graph ) );
-        }
-        catch ( IOException e )
-        {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        return  "_The Graph:_\n\n[\"dot\", \""+name.replace( " ", "-" )+".svg\", \"neoviz\"]\n"+
-                "----\n" +
-                out.toString() +
-                "----\n";
-    }
     
+
     private static ImpermanentGraphDatabase db;
     @BeforeClass
     public static void init()
