@@ -176,6 +176,8 @@ include::traversal-using-a-return-filter.txt[]
 
 include::return-relationships-from-a-traversal.txt[]
 
+include::return-paths-from-a-traversal[]
+
 include::traversal-returning-nodes-below-a-certain-depth.txt[]
 
 include::creating-a-paged-traverser.txt[]

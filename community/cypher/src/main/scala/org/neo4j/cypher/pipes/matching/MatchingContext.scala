@@ -19,33 +19,49 @@
  */
 package org.neo4j.cypher.pipes.matching
 
-import org.neo4j.graphdb.Node
 import org.neo4j.cypher.commands.{VariableLengthPath, RelatedTo, Pattern}
 import org.neo4j.cypher.{SyntaxException, SymbolTable}
+import org.neo4j.graphdb.{Relationship, Node}
 
 class MatchingContext(patterns: Seq[Pattern], boundIdentifiers:SymbolTable) {
-  val patternGraph: Seq[PatternElement] = buildPatternGraph(boundIdentifiers)
+  type PatternGraph = Map[String, PatternElement]
+
+  val patternGraph: PatternGraph = buildPatternGraph(boundIdentifiers)
 
   def getMatches(bindings: Map[String, Any]): Traversable[Map[String, Any]] = {
     val (pinnedName, pinnedNode) = bindings.head
 
-    val pinnedPatternNode = patternGraph.find(_.key == pinnedName).get.asInstanceOf[PatternNode]
+    val pinnedPatternNode = patternGraph(pinnedName).asInstanceOf[PatternNode]
+
+    val boundPairs = bindings.map(kv => {
+      val patternElement = patternGraph(kv._1)
+      val pair = kv._2 match {
+        case node: Node => MatchingPair(patternElement, node)
+        case rel: Relationship => MatchingPair(patternElement, rel)
+      }
+
+      kv._1 -> pair
+    })
 
     pinnedPatternNode.pin(pinnedNode.asInstanceOf[Node])
 
-    new PatternMatcher(pinnedPatternNode, bindings)
+    new PatternMatcher(pinnedPatternNode, boundPairs).map( matchedGraph=> {
+      val missingElements = (patternGraph.keySet -- matchedGraph.keySet).map(_->null).toMap
+
+      matchedGraph ++ missingElements
+    })
   }
 
-  def buildPatternGraph(bindings:SymbolTable): Seq[PatternElement] = {
+  def buildPatternGraph(bindings:SymbolTable): PatternGraph = {
     val patternNodeMap: scala.collection.mutable.Map[String, PatternNode] = scala.collection.mutable.Map()
     val patternRelMap: scala.collection.mutable.Map[String, PatternRelationship] = scala.collection.mutable.Map()
 
     patterns.foreach(_ match {
-      case RelatedTo(left, right, rel, relType, dir) => {
+      case RelatedTo(left, right, rel, relType, dir, optional) => {
         val leftNode: PatternNode = patternNodeMap.getOrElseUpdate(left, new PatternNode(left))
         val rightNode: PatternNode = patternNodeMap.getOrElseUpdate(right, new PatternNode(right))
 
-        patternRelMap(rel) = leftNode.relateTo(rel, rightNode, relType, dir)
+        patternRelMap(rel) = leftNode.relateTo(rel, rightNode, relType, dir, optional)
       }
       case VariableLengthPath(pathName, start, end, minHops, maxHops, relType, dir) => {
         val startNode: PatternNode = patternNodeMap.getOrElseUpdate(start, new PatternNode(start))
@@ -54,11 +70,11 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers:SymbolTable) {
       }
     })
 
-    val patternElements = (patternNodeMap.values ++ patternRelMap.values).toSeq
+    val patternGraph = (patternNodeMap.values ++ patternRelMap.values).toSeq
 
-    validatePattern(patternElements, bindings)
+    validatePattern(patternGraph, bindings)
 
-    patternElements
+    patternGraph.map(x => x.key->x).toMap
   }
 
   def validatePattern(patternElements: Seq[PatternElement], bindings: SymbolTable) {

@@ -26,7 +26,10 @@ abstract class Pattern
 
 object RelatedTo {
   def apply(left: String, right: String, relName: String, relType: String, direction: Direction) =
-    new RelatedTo(left, right, relName, Some(relType), direction)
+    new RelatedTo(left, right, relName, Some(relType), direction, false)
+
+  def apply(left: String, right: String, relName: String, relType: Option[String], direction: Direction) =
+    new RelatedTo(left, right, relName, relType, direction, false)
 }
 
 object VariableLengthPath {
@@ -34,12 +37,7 @@ object VariableLengthPath {
     new VariableLengthPath(pathName, start, end, minHops, maxHops, Some(relType), direction)
 }
 
-case class RelatedTo(left: String, right: String, relName: String, relType: Option[String], direction: Direction) extends Pattern
+case class RelatedTo(left: String, right: String, relName: String, relType: Option[String], direction: Direction, optional:Boolean) extends Pattern
 
 case class VariableLengthPath(pathName: String, start: String, end: String, minHops: Int, maxHops: Int, relType: Option[String], direction: Direction) extends Pattern
 
-case class NamedPath(pathName: String, pathPattern: Pattern*) extends Traversable[Pattern] {
-  def foreach[U](f: (Pattern) => U) {
-    pathPattern.foreach(f)
-  }
-}

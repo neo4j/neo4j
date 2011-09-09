@@ -36,7 +36,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
  * The title is determined by either a JavaDoc perioed terminated first title
  * line, the @Title annotation or the method name, where "_" is replaced by " ".
  */
-public abstract class DocsGenerator
+public abstract class AsciiDocGenerator
 {
     private static final String DOCUMENTATION_END = "\n...\n";
 
@@ -46,12 +46,12 @@ public abstract class DocsGenerator
 
     public File out;
 
-    public DocsGenerator( final String title )
+    public AsciiDocGenerator( final String title )
     {
         this.title = title.replace( "_", " " );
     }
 
-    public DocsGenerator setGraph( GraphDatabaseService graph )
+    public AsciiDocGenerator setGraph( GraphDatabaseService graph )
     {
         this.graph = graph;
         return this;
@@ -63,7 +63,7 @@ public abstract class DocsGenerator
      * 
      * @param description the description
      */
-    public DocsGenerator description( final String description )
+    public AsciiDocGenerator description( final String description )
     {
         if ( description == null )
         {
@@ -129,6 +129,17 @@ public abstract class DocsGenerator
             e.printStackTrace();
             throw new RuntimeException(e);
         }
+    }
+    
+    public static String createSourceSnippet(String tagName, Class source )
+    {
+        return "[snippet,java]\n"+
+                "----\n" +
+                "component=${project.artifactId}\n"+
+                "source="+ source.getPackage().getName().replace( ".", "/" ) + "/" + source.getSimpleName() + ".java\n"+
+                "classifier=test-sources\n"+
+                "tag="+tagName+"\n"+
+                "----\n";
     }
 
 }

@@ -35,6 +35,8 @@ public interface Configurator
 
     int DEFAULT_WEBSERVER_PORT = 7474;
     String WEBSERVER_PORT_PROPERTY_KEY = "org.neo4j.server.webserver.port";
+    String DEFAULT_WEBSERVER_ADDRESS = "0.0.0.0";
+    String WEBSERVER_ADDRESS_PROPERTY_KEY = "org.neo4j.server.webserver.address";
     String WEBSERVER_MAX_THREADS_PROPERTY_KEY = "org.neo4j.server.webserver.maxthreads";
 
     String REST_API_PATH_PROPERTY_KEY = "org.neo4j.server.webadmin.data.uri";
