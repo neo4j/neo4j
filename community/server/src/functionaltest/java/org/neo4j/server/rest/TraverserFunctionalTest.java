@@ -83,7 +83,7 @@ public class TraverserFunctionalTest extends AbstractRestFunctionalTestBase
     public void return_paths_from_a_traversal()
             throws DatabaseBlockedException
     {
-        assertSize( 2, gen.get().expectedStatus( 200 ).payload( "{\"order\":\"breadth_first\",\"uniqueness\":\"none\",\"return_filter\":{\"language\":\"builtin\",\"name\":\"all\"}}" ).post(
+        assertSize( 3, gen.get().expectedStatus( 200 ).payload( "{\"order\":\"breadth_first\",\"uniqueness\":\"none\",\"return_filter\":{\"language\":\"builtin\",\"name\":\"all\"}}" ).post(
                 getTraverseUriPaths( getNode( "I" ) ) ).entity());
     }
     
