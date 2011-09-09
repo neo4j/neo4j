@@ -73,9 +73,28 @@ public class TraverserFunctionalTest extends AbstractRestFunctionalTestBase
                 getTraverseUriRelationships( getNode( "I" ) ) ).entity());
     }
 
+    
+    /**
+     * In order to return paths from a traversal,
+     * specify the +Path+ return type as part of the URL.
+     */
+    @Test
+    @Graph( {"I know you", "I own car"} )
+    public void return_paths_from_a_traversal()
+            throws DatabaseBlockedException
+    {
+        assertSize( 2, gen.get().expectedStatus( 200 ).payload( "{\"order\":\"breadth_first\",\"uniqueness\":\"none\",\"return_filter\":{\"language\":\"builtin\",\"name\":\"all\"}}" ).post(
+                getTraverseUriPaths( getNode( "I" ) ) ).entity());
+    }
+    
+    
     private String getTraverseUriRelationships( Node node )
     {
         return getNodeUri( node) + "/traverse/relationship";
+    }
+    private String getTraverseUriPaths( Node node )
+    {
+        return getNodeUri( node) + "/traverse/path";
     }
 
     private String getTraverseUriNodes( Node node )
