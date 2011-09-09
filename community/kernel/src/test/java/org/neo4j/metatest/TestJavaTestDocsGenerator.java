@@ -51,10 +51,10 @@ public class TestJavaTestDocsGenerator implements GraphHolder
     public @Rule
     TestData<JavaTestDocsGenerator> gen = TestData.producedThrough( JavaTestDocsGenerator.PRODUCER );
 
-    String directory = "targe"+System.getProperty("path.separator")+"testdocs";
+    String directory = "target"+System.getProperty("path.separator")+"testdocs";
     String sectionName = "testsection";
     
-    @Documented(value="Title.\n\nhej\n@@snippet1\n\nmore docs\n@@snippet2.")
+    @Documented(value="Title1.\n\nhej\n@@snippet1\n\nmore docs\n@@snippet2.")
     @Test
     @Graph( "I know you" )
     public void can_create_docs_from_method_name() throws Exception
@@ -75,7 +75,7 @@ public class TestJavaTestDocsGenerator implements GraphHolder
     }
     
     /**
-     * Title.
+     * Title2.
      * 
      * @@snippet1
      * 
