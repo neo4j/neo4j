@@ -32,12 +32,12 @@ class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
       def getPath(x:String):Path = m(x).asInstanceOf[Path]
 
       val firstNode = path.pathPattern.head match {
-        case RelatedTo(left, right, relName, x, xx) => left
+        case RelatedTo(left, right, relName, x, xx, optional) => left
         case VariableLengthPath(pathName, start, end, minHops, maxHops, relType, direction) => start
       }
 
       val p = Seq(get(firstNode)) ++ path.pathPattern.flatMap(p => p match {
-        case RelatedTo(left, right, relName, x, xx) => Seq(get(relName), get(right))
+        case RelatedTo(left, right, relName, x, xx, optional) => Seq(get(relName), get(right))
         case VariableLengthPath(pathName, start, end, minHops, maxHops, relType, direction) => getPath(pathName).iterator().asScala.toList.tail
       })
 

@@ -24,7 +24,12 @@ import org.neo4j.graphdb.traversal.{TraversalDescription, Evaluators}
 import org.neo4j.graphdb._
 import org.neo4j.kernel.{Uniqueness, Traversal}
 
-class PatternRelationship(key: String, val leftNode: PatternNode, val rightNode: PatternNode, relType: Option[String], dir: Direction)
+class PatternRelationship(key: String,
+                          val leftNode: PatternNode,
+                          val rightNode: PatternNode,
+                          relType: Option[String],
+                          dir: Direction,
+                          val optional:Boolean)
   extends PatternElement(key)
   with PinnablePatternElement[Relationship] {
 
@@ -47,7 +52,7 @@ class PatternRelationship(key: String, val leftNode: PatternNode, val rightNode:
 }
 
 class VariableLengthPatternRelationship(pathName: String, val start: PatternNode, val end: PatternNode, minHops: Int, maxHops: Int, relType: Option[String], dir: Direction)
-  extends PatternRelationship(pathName, start, end, relType, dir) {
+  extends PatternRelationship(pathName, start, end, relType, dir, false) {
 
   override def getGraphRelationships(node: PatternNode, realNode: Node): Seq[GraphRelationship] = {
     val baseTraversalDescription: TraversalDescription = Traversal.description()

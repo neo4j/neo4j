@@ -27,6 +27,13 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, Any]) extend
     traverse(MatchingPair(startPoint, startPoint.pinnedEntity.get), Seq(), Seq(), f)
   }
 
+  private def futureWalk[U](future: Seq[MatchingPair], history: Seq[MatchingPair], yielder: Map[String, Any] => U) {
+    future.toList match {
+      case List() => yieldThis(yielder, history )
+      case next :: rest => traverse(next, history, rest, yielder)
+    }
+  }
+
   private def traverse[U](current: MatchingPair,
                           history: Seq[MatchingPair],
                           future: Seq[MatchingPair],
@@ -43,11 +50,7 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, Any]) extend
 
     patternNode.getPRels(history).toList match {
       case pRel :: tail => visitNext(current, pRel, history, future ++ Seq(current), yielder)
-
-      case List() => future.toList match {
-        case List() => yieldThis(yielder, history ++ Seq(current))
-        case next :: rest => traverse(next, history ++ Seq(current), rest, yielder)
-      }
+      case List() => futureWalk(future, history ++ Seq(current), yielder)
     }
   }
 
@@ -62,12 +65,16 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, Any]) extend
     val node: Node = current.entity.asInstanceOf[Node]
 
     val notVisitedRelationships = patternNode.getGraphRelationships(node, pRel, history)
-    notVisitedRelationships.foreach(rel => {
-      val nextNode = rel.getOtherNode(node)
-      val nextPNode = pRel.getOtherNode(patternNode)
-      val newHistory = history ++ Seq(current, MatchingPair(pRel, rel))
-      traverse(MatchingPair(nextPNode, nextNode), newHistory, future, yielder)
-    })
+
+    if (notVisitedRelationships.isEmpty && pRel.optional) {
+      futureWalk(future, history ++ Seq(current, MatchingPair(pRel, null)), yielder)
+    } else
+      notVisitedRelationships.foreach(rel => {
+        val nextNode = rel.getOtherNode(node)
+        val nextPNode = pRel.getOtherNode(patternNode)
+        val newHistory = history ++ Seq(current, MatchingPair(pRel, rel))
+        traverse(MatchingPair(nextPNode, nextNode), newHistory, future, yielder)
+      })
 
   }
 
@@ -76,6 +83,7 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, Any]) extend
       case MatchingPair(p, e) => (p, e) match {
         case (pe: PatternNode, entity: Node) => Seq(pe.key -> entity)
         case (pe: PatternRelationship, entity: SingleGraphRelationship) => Seq(pe.key -> entity.rel)
+        case (pe: PatternRelationship, null) => Seq(pe.key -> null)
         case (pe: VariableLengthPatternRelationship, entity: VariableLengthGraphRelationship) => Seq(
           pe.start.key -> entity.path.startNode(),
           pe.end.key -> entity.path.endNode(),

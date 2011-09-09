@@ -25,9 +25,6 @@ import org.neo4j.graphdb.Direction
 import org.junit.{Ignore, Test}
 import org.neo4j.cypher.{SymbolTable, GraphDatabaseTestBase}
 import org.neo4j.cypher.commands.{NodeIdentifier, VariableLengthPath, RelatedTo, Pattern}
-import java.lang.AssertionError
-
-
 /*
 A few of the tests cast the result to a set before comparing with the expected values. This is because
 Set doesn't care about ordering, but Seq does. The tests should not care about ordering
@@ -165,6 +162,16 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
 
     assertMatches(matchingContext.getMatches(Map("a" -> a)), 1, Map("a" -> a, "b" -> b, "r" -> r1))
   }
+
+  @Test def optionalRelationship() {
+    val a = createNode()
+
+    val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", Some("t1"), Direction.OUTGOING, optional = true))
+    val matchingContext = new MatchingContext(patterns, bind("a"))
+
+    assertMatches(matchingContext.getMatches(Map("a" -> a)), 1, Map("a" -> a, "b" -> null, "r" -> null))
+  }
+
 
   @Test def variableLengthPath() {
 

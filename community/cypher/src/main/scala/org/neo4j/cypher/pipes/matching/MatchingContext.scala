@@ -24,7 +24,10 @@ import org.neo4j.cypher.commands.{VariableLengthPath, RelatedTo, Pattern}
 import org.neo4j.cypher.{SyntaxException, SymbolTable}
 
 class MatchingContext(patterns: Seq[Pattern], boundIdentifiers:SymbolTable) {
-  val patternGraph: Seq[PatternElement] = buildPatternGraph(boundIdentifiers)
+  type PatternGraph = Seq[PatternElement]
+
+  val patternGraph: PatternGraph = buildPatternGraph(boundIdentifiers)
+  val patternNames = patternGraph.map(_.key).toSet
 
   def getMatches(bindings: Map[String, Any]): Traversable[Map[String, Any]] = {
     val (pinnedName, pinnedNode) = bindings.head
@@ -33,19 +36,23 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers:SymbolTable) {
 
     pinnedPatternNode.pin(pinnedNode.asInstanceOf[Node])
 
-    new PatternMatcher(pinnedPatternNode, bindings)
+    new PatternMatcher(pinnedPatternNode, bindings).map( subgraph=> {
+      val missingElements = (patternNames -- subgraph.keys).map(_->null).toMap
+
+      subgraph ++ missingElements
+    })
   }
 
-  def buildPatternGraph(bindings:SymbolTable): Seq[PatternElement] = {
+  def buildPatternGraph(bindings:SymbolTable): PatternGraph = {
     val patternNodeMap: scala.collection.mutable.Map[String, PatternNode] = scala.collection.mutable.Map()
     val patternRelMap: scala.collection.mutable.Map[String, PatternRelationship] = scala.collection.mutable.Map()
 
     patterns.foreach(_ match {
-      case RelatedTo(left, right, rel, relType, dir) => {
+      case RelatedTo(left, right, rel, relType, dir, optional) => {
         val leftNode: PatternNode = patternNodeMap.getOrElseUpdate(left, new PatternNode(left))
         val rightNode: PatternNode = patternNodeMap.getOrElseUpdate(right, new PatternNode(right))
 
-        patternRelMap(rel) = leftNode.relateTo(rel, rightNode, relType, dir)
+        patternRelMap(rel) = leftNode.relateTo(rel, rightNode, relType, dir, optional)
       }
       case VariableLengthPath(pathName, start, end, minHops, maxHops, relType, dir) => {
         val startNode: PatternNode = patternNodeMap.getOrElseUpdate(start, new PatternNode(start))
@@ -54,11 +61,11 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers:SymbolTable) {
       }
     })
 
-    val patternElements = (patternNodeMap.values ++ patternRelMap.values).toSeq
+    val patternGraph = (patternNodeMap.values ++ patternRelMap.values).toSeq
 
-    validatePattern(patternElements, bindings)
+    validatePattern(patternGraph, bindings)
 
-    patternElements
+    patternGraph
   }
 
   def validatePattern(patternElements: Seq[PatternElement], bindings: SymbolTable) {

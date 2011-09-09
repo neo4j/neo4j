@@ -36,8 +36,8 @@ class PatternNode(key: String) extends PatternElement(key) with PinnablePatternE
     }).toSeq
   }
 
-  def relateTo(key: String, other: PatternNode, relType: Option[String], dir: Direction): PatternRelationship = {
-    val rel = new PatternRelationship(key, this, other, relType, dir)
+  def relateTo(key: String, other: PatternNode, relType: Option[String], dir: Direction, optional:Boolean): PatternRelationship = {
+    val rel = new PatternRelationship(key, this, other, relType, dir, optional)
     relationships.add(rel)
     other.relationships.add(rel)
     rel
