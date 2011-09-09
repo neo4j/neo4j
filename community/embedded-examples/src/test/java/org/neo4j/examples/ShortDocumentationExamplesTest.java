@@ -65,7 +65,10 @@ public class ShortDocumentationExamplesTest implements GraphHolder
      * In order to return which all descendants 
      * of +Pet0+ which have the relation +owns+ to Principal1 (+Pet1+ and +Pet3+),
      * the Uniqueness of the traversal needs to be set to 
-     * +NODE_PATH+ rather than the default +NODE_GLOBAL+.
+     * +NODE_PATH+ rather than the default +NODE_GLOBAL+ so that nodes
+     * can be traversed more that once, and paths that have
+     * different nodes but can have some nodes in common (like the
+     * start and end node) can be returned.
      * 
      * @@traverser
      * 
