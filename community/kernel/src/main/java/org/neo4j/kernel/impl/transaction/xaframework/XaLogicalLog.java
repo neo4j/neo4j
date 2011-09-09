@@ -1109,12 +1109,18 @@ public class XaLogicalLog
         }
 
         LogExtractor extractor = getLogExtractor( txId, txId );
-        if ( extractor.extractNext( NullLogBuffer.INSTANCE ) != -1 )
+        try
         {
-            return extractor.lastCommitEntry.getMasterId();
+            if ( extractor.extractNext( NullLogBuffer.INSTANCE ) != -1 )
+            {
+                return extractor.lastCommitEntry.getMasterId();
+            }
+            throw new RuntimeException( "Unable to find commit entry in for txId[" + txId + "]" );// in log[" + version + "]" );
         }
-        throw new RuntimeException( "Unable to find commit entry in for txId[" +
-                txId + "]" );// in log[" + version + "]" );
+        finally
+        {
+            extractor.close();
+        }
     }
 
     public ReadableByteChannel getLogicalLogOrMyselfCommitted( long version, long position )
