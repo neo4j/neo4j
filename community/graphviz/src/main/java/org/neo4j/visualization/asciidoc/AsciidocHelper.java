@@ -31,7 +31,7 @@ import org.neo4j.walk.Walker;
 public class AsciidocHelper
 {
 
-    public static String createGraphViz( String title, GraphDatabaseService graph )
+    public static String createGraphViz( String title, GraphDatabaseService graph, String identifier )
     {
         OutputStream out = new ByteArrayOutputStream();
         GraphvizWriter writer = new GraphvizWriter(new AsciiDocStyle());
@@ -43,7 +43,7 @@ public class AsciidocHelper
         {
             e.printStackTrace();
         }
-        return  "_"+title+":_\n\n[\"dot\", \""+title.replace( " ", "-" )+".svg\", \"neoviz\"]\n"+
+        return  "_"+title+":_\n\n[\"dot\", \""+(title+"-"+identifier).replace( " ", "-" )+".svg\", \"neoviz\"]\n"+
                 "----\n" +
                 out.toString() +
                 "----\n";

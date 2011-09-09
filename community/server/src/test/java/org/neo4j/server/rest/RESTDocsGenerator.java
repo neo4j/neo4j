@@ -45,6 +45,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.TestData.Producer;
+import org.neo4j.visualization.asciidoc.AsciidocHelper;
 import org.neo4j.visualization.graphviz.AsciiDocStyle;
 import org.neo4j.visualization.graphviz.GraphvizWriter;
 import org.neo4j.walk.Walker;
@@ -476,8 +477,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
                 line( fw, "" );
             }
             if( graph != null) {
-                line(fw, "_Final Graph_" );
-                fw.append( createGraphViz( graph, name ));
+                fw.append( AsciidocHelper.createGraphViz( "Final Graph:", graph, title));
                 line(fw, "" );
             }
             line( fw, "_Example request_" );
@@ -541,24 +541,6 @@ public class RESTDocsGenerator extends AsciiDocGenerator
     }
 
     
-    public String createGraphViz( GraphDatabaseService graphDatabaseService, String name )
-    {
-        OutputStream out = new ByteArrayOutputStream();
-        GraphvizWriter writer = new GraphvizWriter(new AsciiDocStyle());
-        try
-        {
-            writer.emit( out, Walker.fullGraph( graphDatabaseService ) );
-        }
-        catch ( IOException e )
-        {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        return  "[\"dot\", \""+name.replace( " ", "-" )+".svg\", \"neoviz\"]\n"+
-                "----\n" +
-                out.toString() +
-                "----\n";
-    }
-    
+   
 
 }

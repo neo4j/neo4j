@@ -52,8 +52,6 @@ public class ShortDocumentationExamplesTest implements GraphHolder
     public @Rule
     TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
             this, true ) );
-    String classifier = "test-sources";
-    String component = "neo4j-examples";
  
     /**
      * Uniqueness of Paths in traversals.
@@ -89,7 +87,7 @@ public class ShortDocumentationExamplesTest implements GraphHolder
     public void pathUniquenesExample()
     {
         Node start = data.get().get( "Pet0" );
-        gen.get().addSnippet( "graph", AsciidocHelper.createGraphViz("descendants1", graphdb()) );
+        gen.get().addSnippet( "graph", AsciidocHelper.createGraphViz("descendants1", graphdb(), gen.get().getTitle()) );
         String tagName = "traverser";
         gen.get().addSnippet( tagName, gen.get().createSourceSnippet(tagName, this.getClass()) );
         // START SNIPPET: traverser
