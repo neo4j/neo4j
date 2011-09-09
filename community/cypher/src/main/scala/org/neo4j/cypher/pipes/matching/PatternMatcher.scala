@@ -21,10 +21,10 @@ package org.neo4j.cypher.pipes.matching
 
 import org.neo4j.graphdb.Node
 
-class PatternMatcher(startPoint: PatternNode, bindings: Map[String, Any]) extends Traversable[Map[String, Any]] {
+class PatternMatcher(startPoint: PatternNode, bindings: Map[String, MatchingPair]) extends Traversable[Map[String, Any]] {
 
   def foreach[U](f: (Map[String, Any]) => U) {
-    traverse(MatchingPair(startPoint, startPoint.pinnedEntity.get), Seq(), Seq(), f)
+    traverse(MatchingPair(startPoint, startPoint.pinnedEntity.get), Seq(), bindings.values.toSeq, f)
   }
 
   private def futureWalk[U](future: Seq[MatchingPair], history: Seq[MatchingPair], yielder: Map[String, Any] => U) {
@@ -44,7 +44,7 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, Any]) extend
     val node: Node = current.entity.asInstanceOf[Node]
 
     bindings.get(patternNode.key) match {
-      case Some(pinnedNode) => if (pinnedNode != node) return
+      case Some(pinnedNode) => if (pinnedNode.entity != node) return
       case None =>
     }
 

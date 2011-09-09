@@ -19,27 +19,36 @@
  */
 package org.neo4j.cypher.pipes.matching
 
-import org.neo4j.graphdb.Node
 import org.neo4j.cypher.commands.{VariableLengthPath, RelatedTo, Pattern}
 import org.neo4j.cypher.{SyntaxException, SymbolTable}
+import org.neo4j.graphdb.{Relationship, Node}
 
 class MatchingContext(patterns: Seq[Pattern], boundIdentifiers:SymbolTable) {
-  type PatternGraph = Seq[PatternElement]
+  type PatternGraph = Map[String, PatternElement]
 
   val patternGraph: PatternGraph = buildPatternGraph(boundIdentifiers)
-  val patternNames = patternGraph.map(_.key).toSet
 
   def getMatches(bindings: Map[String, Any]): Traversable[Map[String, Any]] = {
     val (pinnedName, pinnedNode) = bindings.head
 
-    val pinnedPatternNode = patternGraph.find(_.key == pinnedName).get.asInstanceOf[PatternNode]
+    val pinnedPatternNode = patternGraph(pinnedName).asInstanceOf[PatternNode]
+
+    val boundPairs = bindings.map(kv => {
+      val patternElement = patternGraph(kv._1)
+      val pair = kv._2 match {
+        case node: Node => MatchingPair(patternElement, node)
+        case rel: Relationship => MatchingPair(patternElement, rel)
+      }
+
+      kv._1 -> pair
+    })
 
     pinnedPatternNode.pin(pinnedNode.asInstanceOf[Node])
 
-    new PatternMatcher(pinnedPatternNode, bindings).map( subgraph=> {
-      val missingElements = (patternNames -- subgraph.keys).map(_->null).toMap
+    new PatternMatcher(pinnedPatternNode, boundPairs).map( matchedGraph=> {
+      val missingElements = (patternGraph.keySet -- matchedGraph.keySet).map(_->null).toMap
 
-      subgraph ++ missingElements
+      matchedGraph ++ missingElements
     })
   }
 
@@ -65,7 +74,7 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers:SymbolTable) {
 
     validatePattern(patternGraph, bindings)
 
-    patternGraph
+    patternGraph.map(x => x.key->x).toMap
   }
 
   def validatePattern(patternElements: Seq[PatternElement], bindings: SymbolTable) {

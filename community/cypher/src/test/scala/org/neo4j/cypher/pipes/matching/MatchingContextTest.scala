@@ -25,10 +25,7 @@ import org.neo4j.graphdb.Direction
 import org.junit.{Ignore, Test}
 import org.neo4j.cypher.{SymbolTable, GraphDatabaseTestBase}
 import org.neo4j.cypher.commands.{NodeIdentifier, VariableLengthPath, RelatedTo, Pattern}
-/*
-A few of the tests cast the result to a set before comparing with the expected values. This is because
-Set doesn't care about ordering, but Seq does. The tests should not care about ordering
- */
+
 class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
 
   @Test def singleHopSingleMatch() {
@@ -170,6 +167,47 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     val matchingContext = new MatchingContext(patterns, bind("a"))
 
     assertMatches(matchingContext.getMatches(Map("a" -> a)), 1, Map("a" -> a, "b" -> null, "r" -> null))
+  }
+
+  @Test def optionalRelatedWithMatch() {
+    val a = createNode()
+    val b = createNode()
+    val r1 = relate(a, b, "t1")
+    relate(a, b, "t2")
+
+    val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", Some("t1"), Direction.OUTGOING, optional = true))
+    val matchingContext = new MatchingContext(patterns, bind("a"))
+
+    assertMatches(matchingContext.getMatches(Map("a" -> a)), 1, Map("a" -> a, "b" -> b, "r" -> r1))
+  }
+
+  @Test def optionalRelatedWithTwoBoundNodes() {
+    val a = createNode()
+    val b = createNode()
+
+    val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", Some("t1"), Direction.OUTGOING, optional = true))
+    val matchingContext = new MatchingContext(patterns, bind("a", "b"))
+
+    assertMatches(matchingContext.getMatches(Map("a" -> a, "b" -> b)), 1, Map("a" -> a, "b" -> b, "r" -> null))
+  }
+
+  @Test def moreComplexOptionalCase() {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+    val d = createNode()
+
+    val r1 = relate(a, b, "t1")
+    val r3 = relate(c, d, "t1")
+
+    val patterns: Seq[Pattern] = Seq(
+      RelatedTo("a", "b", "r1", Some("t1"), Direction.OUTGOING, optional = true),
+      RelatedTo("a", "c", "r2", Some("t1"), Direction.OUTGOING, optional = true),
+      RelatedTo("c", "d", "r3", Some("t1"), Direction.OUTGOING, optional = false)
+    )
+    val matchingContext = new MatchingContext(patterns, bind("a", "d"))
+
+    assertMatches(matchingContext.getMatches(Map("a" -> a, "d" -> d)), 1, Map("a" -> a, "b" -> b, "r1" -> r1, "r2" -> null, "r3" -> r3, "c" -> c, "d" -> d))
   }
 
 
