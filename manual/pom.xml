@@ -430,6 +430,40 @@
         </plugins>
       </build>
     </profile>
+    <profile>
+      <id>check-asciidoc</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>check</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>execute-asciidoc</id>
+                <phase>compile</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <executable>make</executable>
+                  <arguments>
+                    <argument>check</argument>
+                    <argument>VERSION=${project.version}</argument>
+                    <argument>IMPORTDIR=${docs.sources}</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 
   <distributionManagement>

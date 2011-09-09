@@ -17,6 +17,11 @@ http://maven.apache.org/[Apache Maven] together with http://www.gnu.org/software
 To build the documentation, use: +
 `mvn clean install`
 
+To perform a faster check of the document structure and to see if snippets and images are correctly resolved, use:
+`mvn clean compile -Dcheck`
+which will only produce html for offline use and text outputs (including the manpages).
+Note that this profile can't be used together with the `package` goal.
+
 === With brew on OSX ===
 
   brew install docbook asciidoc w3m fop graphviz

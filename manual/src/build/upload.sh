@@ -34,6 +34,7 @@ ssh docs-server mkdir -p $ROOTPATHDOCS/{text,chunked,annotated}/$VERSION
 # Copy artifacts
 rsync -r $DIR/target/text/ docs-server:$ROOTPATHDOCS/text/$VERSION/
 rsync -r --delete $DIR/target/annotated/ docs-server:$ROOTPATHDOCS/annotated/
+rsync -r --delete $DIR/target/metadocs/ docs-server:$ROOTPATHDOCS/metadocs/
 rsync -r --delete $DIR/target/chunked/ docs-server:$ROOTPATHDOCS/chunked/$VERSION/
 scp $DIR/target/pdf/neo4j-manual.pdf dist-server:$ROOTPATHDIST/neo4j-manual-$VERSION.pdf
 
