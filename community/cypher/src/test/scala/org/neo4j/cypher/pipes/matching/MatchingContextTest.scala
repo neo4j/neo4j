@@ -191,7 +191,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     assertMatches(matchingContext.getMatches(Map("a" -> a, "b" -> b)), 1, Map("a" -> a, "b" -> b, "r" -> null))
   }
 
-  @Test def moreComplexOptionalCase() {
+  @Test @Ignore def moreComplexOptionalCase() {
     val a = createNode()
     val b = createNode()
     val c = createNode()
