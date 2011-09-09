@@ -85,6 +85,13 @@ public class TestLongerShortString
         assertCannotEncode( "folder/generators/templates/controller.extra" );
     }
 
+    @Test
+    public void checkMarginalFit() throws Exception
+    {
+        assertCanEncodeAndDecodeToSame( "^aaaaaaaaaaaaaaaaaaaaaaaaaa" );
+        assertCannotEncode( "^aaaaaaaaaaaaaaaaaaaaaaaaaaa" );
+    }
+
     private void assertCanEncodeAndDecodeToSame( String string )
     {
         assertCanEncodeAndDecodeToSame( string, PropertyStore.DEFAULT_PAYLOAD_SIZE );

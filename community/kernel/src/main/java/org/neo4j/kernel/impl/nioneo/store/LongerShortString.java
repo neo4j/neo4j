@@ -656,10 +656,11 @@ public enum LongerShortString
         for ( LongerShortString encoding : possible )
         {
             // Will return false if the data is too long for the encoding
-            if ( encoding.doEncode( keyId, data, target, payloadSize ) ) return true;
+            if ( encoding.doEncode( keyId, data, target, payloadSize ) )
+                return true;
         }
         int maxBytes = PropertyType.getPayloadSize();
-        if ( stringLength <= maxBytes )
+        if ( stringLength <= maxBytes - 5 )
         {
             if ( encodeLatin1( keyId, string, target, payloadSize ) ) return true;
             if ( encodeUTF8( keyId, string, target, payloadSize ) ) return true;
@@ -691,7 +692,7 @@ public enum LongerShortString
         int stringLength = bits.getByte( 6 ); //(int) ( ( firstLong & 0xFC000000L ) >>> 26 );
         if ( encoding == 0 ) return decodeUTF8( bits, stringLength );
         if ( encoding == 10 ) return decodeLatin1( bits, stringLength );
-        
+
         LongerShortString table = getEncodingTable( encoding );
         char[] result = new char[stringLength];
         // encode shifts in the bytes with the first char at the MSB, therefore
@@ -733,6 +734,12 @@ public enum LongerShortString
     {
         int length = string.length();
         Bits bits = newBits( 10, length );
+        /*
+        if ( bits.getLongs().length > 4 )
+        {
+             return false;
+        }
+        */
         writeHeader( bits, keyId, 10, length );
         for ( int i = 0; i < length; i++ )
         {
@@ -752,6 +759,12 @@ public enum LongerShortString
             byte[] bytes = string.getBytes( "UTF-8" );
             if ( bytes.length > payloadSize-3/*key*/-2/*enc+len*/ ) return false;
             Bits bits = newBits( 0, bytes.length );
+            /*
+            if ( bits.getLongs().length > 4 )
+            {
+                return false;
+            }
+            */
             writeHeader( bits, keyId, 0, bytes.length ); // In this case it isn't the string length, but the number of bytes
             for ( byte value : bytes )
             {
@@ -771,6 +784,12 @@ public enum LongerShortString
     {
         if ( data.length > maxLength( payloadSize ) ) return false;
         Bits bits = newBits( encodingHeader, data.length );
+        /*
+        if ( bits.getLongs().length > 4 )
+        {
+            return false;
+        }
+        */
         writeHeader( bits, keyId, encodingHeader, data.length );
         for ( int i = 0; i < data.length; i++ )
         {
@@ -807,7 +826,7 @@ public enum LongerShortString
             throw new IllegalStateException( "All JVMs must support UTF-8", e );
         }
     }
-    
+
     public static int calculateNumberOfBlocksUsed( long firstBlock )
     {
         Bits bits = Bits.bitsFromLongs( new long[] {firstBlock} );
@@ -817,14 +836,15 @@ public enum LongerShortString
         int length = bits.getByte( 6 );
         return calculateNumberOfBlocksUsed( encoding, length );
     }
-    
+
     public static int calculateNumberOfBlocksUsed( int encoding, int length )
     {
-        int bitsForCharacters = 0; 
+        int bitsForCharacters = 0;
         if ( encoding == 0 || encoding == 10 ) bitsForCharacters = length*8;
         else bitsForCharacters = getEncodingTable( encoding ).step*length;
-        
+
         int bitsInTotal = 24+4+5+6+bitsForCharacters;
-        return (bitsInTotal-1)/64+1;
+        int result = ( bitsInTotal - 1 ) / 64 + 1;
+        return result;
     }
 }

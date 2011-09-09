@@ -1190,9 +1190,10 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             }
         }
         int oldSize = block.getSize();
+        int oldRecordSize = propertyRecord.size();
         getPropertyStore().encodeValue( block, propertyData.getIndex(),
                 value );
-        if ( oldSize < block.getSize() )
+        if ( oldRecordSize - oldSize + block.getSize() > PropertyType.getPayloadSize() )
         {
             PropertyBlock newBlock = new PropertyBlock();
             newBlock.setInUse( true );
@@ -1299,7 +1300,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                                         + "and it holds an array of size"
                                         + block.getValueBlocks().length
                                         + ". It should fit. The exception follows" );
-                    e.printStackTrace();
+                    throw e;
                 }
                 break;
             }
@@ -1340,7 +1341,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                                     + "and it holds an array of size"
                                     + block.getValueBlocks().length
                                     + ". It should fit. The exception follows" );
-                e.printStackTrace();
+                throw e;
             }
         }
         // host.addPropertyBlock( block );

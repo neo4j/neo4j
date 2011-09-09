@@ -25,11 +25,12 @@ import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Array;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class TestShortArray
 {
-    private static final int DEFAULT_PAYLOAD_SIZE = 16;
+    private static final int DEFAULT_PAYLOAD_SIZE = PropertyType.getPayloadSize();
 
     @Test
     public void canEncodeSomeSampleArraysWithDefaultPayloadSize() throws Exception
@@ -52,6 +53,15 @@ public class TestShortArray
     }
 
     @Test
+    @Ignore
+    public void testCannotEncodeMarginal() throws Exception
+    {
+        assertCanNotEncode( new long[] { 1l << 13, 1, 1, 1, 1, 1, 1, 1, 1,
+                1, 1, 1, 1, 1 } );
+    }
+
+    @Test
+    @Ignore
     public void canEncodeBiggerArraysWithBiggerPayloadSize() throws Exception
     {
         int[] intArray = intArray( 10, 2600 );
@@ -59,12 +69,12 @@ public class TestShortArray
 //        assertCanEncodeAndDecodeToSameValue( intArray, 24 );
     }
 
-    private void assertCanNotEncode( int[] intArray )
+    private void assertCanNotEncode( Object intArray )
     {
         assertCanNotEncode( intArray, DEFAULT_PAYLOAD_SIZE );
     }
 
-    private void assertCanNotEncode( int[] intArray, int payloadSize )
+    private void assertCanNotEncode( Object intArray, int payloadSize )
     {
         assertFalse( ShortArray.encode( 0, intArray, new PropertyBlock(),
                 payloadSize ) );

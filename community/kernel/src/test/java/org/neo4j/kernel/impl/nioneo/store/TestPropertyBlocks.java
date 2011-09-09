@@ -30,7 +30,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Assume;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
@@ -39,6 +38,13 @@ import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 public class TestPropertyBlocks extends AbstractNeo4jTestCase
 {
+
+    @Override
+    protected boolean restartGraphDbBetweenTests()
+    {
+        return true;
+    }
+
     @Test
     public void simpleAddIntegers()
     {
@@ -563,7 +569,6 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
     }
 
-    @Ignore
     @Test
     public void testAdditionHappensInTheMiddleIfItFits()
     {
@@ -725,18 +730,18 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testYoYoPropertyWithinTx()
+    public void testYoYoArrayPropertyWithinTx()
     {
-        testYoyoBase( false );
+        testYoyoArrayBase( false );
     }
 
     @Test
-    public void testYoYoPropertyOverTxs()
+    public void testYoYoArrayPropertyOverTxs()
     {
-        testYoyoBase( true );
+        testYoyoArrayBase( true );
     }
 
-    private void testYoyoBase( boolean withNewTx )
+    private void testYoyoArrayBase( boolean withNewTx )
     {
         Relationship rel = getGraphDb().createNode().createRelationshipTo(
                 getGraphDb().createNode(),
@@ -839,4 +844,62 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         assertEquals( recordsInUseAtStart, propertyRecordsInUse() );
     }
 
+    @Test
+    public void testSetWithSameValue()
+    {
+        Node node = getGraphDb().createNode();
+        node.setProperty( "rev_pos", "40000633e7ad67ff" );
+        assertEquals( "40000633e7ad67ff", node.getProperty( "rev_pos" ) );
+        newTransaction();
+        clearCache();
+        node.setProperty( "rev_pos", "40000633e7ad67ef" );
+        assertEquals( "40000633e7ad67ef", node.getProperty( "rev_pos" ) );
+    }
+
+    private void testStringYoYoBase( boolean withNewTx )
+    {
+        Node node = getGraphDb().createNode();
+
+        long recordsInUseAtStart = propertyRecordsInUse();
+        long valueRecordsInUseAtStart = dynamicStringRecordsInUse();
+
+        String data = "0";
+        int counter = 1;
+        while ( dynamicStringRecordsInUse() == valueRecordsInUseAtStart )
+        {
+            data += counter++;
+            node.setProperty( "yoyo", data );
+            assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
+            if ( withNewTx )
+            {
+                newTransaction();
+                clearCache();
+            }
+        }
+
+        assertEquals( valueRecordsInUseAtStart + 1, dynamicStringRecordsInUse() );
+
+        data = data.substring( 0, data.length() - 2 );
+        node.setProperty( "yoyo", data );
+
+        newTransaction();
+
+        assertEquals( valueRecordsInUseAtStart, dynamicStringRecordsInUse() );
+        assertEquals( recordsInUseAtStart + 1, propertyRecordsInUse() );
+
+        node.setProperty( "fillerBoolean", true );
+        assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
+    }
+
+    @Test
+    public void testStringYoYoWithTx()
+    {
+        testStringYoYoBase( true );
+    }
+
+    @Test
+    public void testStringYoYoWithoutTx()
+    {
+        testStringYoYoBase( false );
+    }
 }

@@ -104,14 +104,13 @@ public class PropertyRecord extends Abstract64BitRecord
 
     public void addPropertyBlock(PropertyBlock block)
     {
-        if ( size() + block.getSize() > PropertyType.getPayloadSize() )
-        {
-            String message = "Exceeded capacity of property record " + this
-                             + ". My current size is reported as ";
-            message += "The added block was " + block + " (note that size is "
-                       + block.getSize() + ")";
-            throw new IllegalStateException( message );
-        }
+        assert ( !block.inUse()
+             || ( size() + block.getSize() <= PropertyType.getPayloadSize() ) ) :
+
+            ("Exceeded capacity of property record " + this
+                             + ". My current size is reported as " + size() + "The added block was " + block + " (note that size is "
+          + block.getSize() + ")"
+        );
         blockRecords.add( block );
     }
 

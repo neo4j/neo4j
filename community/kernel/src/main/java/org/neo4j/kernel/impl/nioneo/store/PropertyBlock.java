@@ -105,6 +105,7 @@ public class PropertyBlock
 
     public void setValueBlocks( long[] blocks )
     {
+        assert ( blocks == null || blocks.length <= PropertyType.getPayloadSizeLongs() ) : ( "i was given an array of size " + blocks.length );
         this.valueBlocks = blocks;
     }
 

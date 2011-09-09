@@ -234,6 +234,7 @@ abstract class Primitive
         {
             throw new IllegalArgumentException( "null key" );
         }
+
         ArrayMap<Integer,PropertyData> skipMap =
             nodeManager.getCowPropertyRemoveMap( this );
         ArrayMap<Integer,PropertyData> addMap =

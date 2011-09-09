@@ -355,6 +355,10 @@ public enum ShortArray
             return false;
         }
         Bits result = Bits.bits( calculateNumberOfBlocksUsed( arrayLength, requiredBits )*8 );
+        if ( result.getLongs().length > 4 )
+        {
+            return false;
+        }
         // [][][    ,bbbb][bbll,llll][yyyy,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
         result.put( keyId, 24 );
         result.put( PropertyType.SHORT_ARRAY.intValue(), 4 );
@@ -401,7 +405,7 @@ public enum ShortArray
     private static boolean willFit( int requiredBits, int arrayLength, int payloadSizeInBytes )
     {
         int totalBitsRequired = requiredBits*arrayLength;
-        int maxBits = payloadSizeInBytes*8-24-4-6-6;
+        int maxBits = payloadSizeInBytes * 8 - 24 - 4 - 4 - 6 - 6;
         return totalBitsRequired <= maxBits;
     }
 
@@ -462,7 +466,11 @@ public enum ShortArray
     public static int calculateNumberOfBlocksUsed( int arrayLength, int requiredBits )
     {
         int bitsForItems = arrayLength*requiredBits;
-        int totalBits = 24+4+4+6+6+bitsForItems;
-        return (totalBits-1)/64+1;
+        /*
+         * Key, Property Type (ARRAY), Array Type, Array Length, Bits Per Member, Data
+         */
+        int totalBits = 24 + 4 + 4 + 6 + 6 + bitsForItems;
+        int result = ( totalBits - 1 ) / 64 + 1;
+        return result;
     }
 }
