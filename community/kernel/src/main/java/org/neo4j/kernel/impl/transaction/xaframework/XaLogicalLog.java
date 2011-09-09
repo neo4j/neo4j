@@ -1193,11 +1193,17 @@ public class XaLogicalLog
             else
             {
                 ReadableByteChannel logChannel = getLogicalLogOrMyselfCommitted( version, 0 );
-                ByteBuffer buf = ByteBuffer.allocate( 16 );
-                long[] header = readAndAssertLogHeader( buf, logChannel, version );
-                committedTx = header[1];
-                logHeaderCache.put( version, committedTx );
-                logChannel.close();
+                try
+                {
+                    ByteBuffer buf = ByteBuffer.allocate( 16 );
+                    long[] header = readAndAssertLogHeader( buf, logChannel, version );
+                    committedTx = header[1];
+                    logHeaderCache.put( version, committedTx );
+                }
+                finally
+                {
+                    logChannel.close();
+                }
             }
             if ( committedTx < txId )
             {

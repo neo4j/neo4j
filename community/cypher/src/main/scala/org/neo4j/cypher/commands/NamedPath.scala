@@ -1,5 +1,3 @@
-package org.neo4j.cypher.pipes.matching
-
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -19,21 +17,10 @@ package org.neo4j.cypher.pipes.matching
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.cypher.commands
 
-import org.scalatest.junit.JUnitSuite
-import org.scalatest.Assertions
-import org.junit.Test
-import org.neo4j.graphdb.Direction
-
-class PatternRelationshipTest extends JUnitSuite with Assertions {
-  @Test def returnsTheOtherNode() {
-    val a = new PatternNode("a")
-    val b = new PatternNode("b")
-
-    val r = a.relateTo("r", b, None, Direction.BOTH, false)
-
-    val result = r.getOtherNode(a)
-
-    assert(result === b)
+case class NamedPath(pathName: String, pathPattern: Pattern*) extends Traversable[Pattern] {
+  def foreach[U](f: (Pattern) => U) {
+    pathPattern.foreach(f)
   }
 }
