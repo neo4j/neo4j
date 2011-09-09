@@ -974,18 +974,18 @@ public class XaLogicalLog
         {
             this.startTxId = startTxId;
             this.nextExpectedTxId = startTxId;
-//            long diff = endTxIdHint-startTxId + 1/*since they are inclusive*/;
-//            if ( diff < CACHE_FIND_THRESHOLD )
-//            {   // Find it from cache, we must check with all the requested transactions
-//                // because the first committed transaction doesn't necessarily have its
-//                // start record before the others.
-//                TxPosition earliestPosition = getEarliestStartPosition( startTxId, endTxIdHint );
-//                if ( earliestPosition != null )
-//                {
-//                    this.version = earliestPosition.version;
-//                    this.source = getLogicalLogOrMyselfCommitted( version, earliestPosition.position );
-//                }
-//            }
+            long diff = endTxIdHint-startTxId + 1/*since they are inclusive*/;
+            if ( diff < CACHE_FIND_THRESHOLD )
+            {   // Find it from cache, we must check with all the requested transactions
+                // because the first committed transaction doesn't necessarily have its
+                // start record before the others.
+                TxPosition earliestPosition = getEarliestStartPosition( startTxId, endTxIdHint );
+                if ( earliestPosition != null )
+                {
+                    this.version = earliestPosition.version;
+                    this.source = getLogicalLogOrMyselfCommitted( version, earliestPosition.position );
+                }
+            }
             
             if ( source == null )
             {   // Find the start position by jumping to the right log and scan linearly.
@@ -998,20 +998,20 @@ public class XaLogicalLog
             this.collector = new KnownTxIdCollector( startTxId );
         }
 
-//        private TxPosition getEarliestStartPosition( long startTxId, long endTxIdHint )
-//        {
-//            TxPosition earliest = null;
-//            for ( long txId = startTxId; txId <= endTxIdHint; txId++ )
-//            {
-//                TxPosition position = txStartPositionCache.get( txId );
-//                if ( position == null ) return null;
-//                if ( earliest == null || position.earlierThan( earliest ) )
-//                {
-//                    earliest = position;
-//                }
-//            }
-//            return earliest;
-//        }
+        private TxPosition getEarliestStartPosition( long startTxId, long endTxIdHint )
+        {
+            TxPosition earliest = null;
+            for ( long txId = startTxId; txId <= endTxIdHint; txId++ )
+            {
+                TxPosition position = txStartPositionCache.get( txId );
+                if ( position == null ) return null;
+                if ( earliest == null || position.earlierThan( earliest ) )
+                {
+                    earliest = position;
+                }
+            }
+            return earliest;
+        }
 
         /**
          * @return the txId for the extracted tx.
@@ -1082,6 +1082,8 @@ public class XaLogicalLog
             }
             catch ( IOException e )
             { // OK?
+                System.out.println( "Couldn't close logical after extracting transactions from it" );
+                e.printStackTrace();
             }
         }
     }
@@ -1107,12 +1109,18 @@ public class XaLogicalLog
         }
 
         LogExtractor extractor = getLogExtractor( txId, txId );
-        if ( extractor.extractNext( NullLogBuffer.INSTANCE ) != -1 )
+        try
         {
-            return extractor.lastCommitEntry.getMasterId();
+            if ( extractor.extractNext( NullLogBuffer.INSTANCE ) != -1 )
+            {
+                return extractor.lastCommitEntry.getMasterId();
+            }
+            throw new RuntimeException( "Unable to find commit entry in for txId[" + txId + "]" );// in log[" + version + "]" );
         }
-        throw new RuntimeException( "Unable to find commit entry in for txId[" +
-                txId + "]" );// in log[" + version + "]" );
+        finally
+        {
+            extractor.close();
+        }
     }
 
     public ReadableByteChannel getLogicalLogOrMyselfCommitted( long version, long position )
@@ -1662,6 +1670,10 @@ public class XaLogicalLog
                     {
                         throw new RuntimeException( "Unexpected tx " + commitTxId + " after " + previousTxId + ", starting from " + startTxId );
                     }
+                }
+                else if ( commitTxId != startTxId )
+                {
+                    throw new RuntimeException( "Unexpected tx " + commitTxId + ". Was expecting " + startTxId );
                 }
                 
                 interesting = true;
