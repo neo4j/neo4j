@@ -47,7 +47,7 @@ public class BrowserTitleIs extends BaseMatcher<WebDriver>
     public boolean matches( Object wd )
     {
         if(wd instanceof WebDriver) {
-            return ((WebDriver)wd).getTitle().equals(title );
+            return ((WebDriver)wd).getTitle().matches(title );
         } else {
             return false;
         }

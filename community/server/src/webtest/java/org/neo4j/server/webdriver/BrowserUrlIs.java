@@ -40,7 +40,7 @@ public class BrowserUrlIs extends BaseMatcher<WebDriver>
     public boolean matches( Object item )
     {
         if(item instanceof WebDriver) {
-            return ((WebDriver)item).getCurrentUrl().equals( url );
+            return ((WebDriver)item).getCurrentUrl().matches( url );
         }
         return false;
     }

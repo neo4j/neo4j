@@ -12,14 +12,14 @@ Feature: Webadmin data browser allows me to see and change details of a relation
     And I type "1" into the element found by the xpath //input[@id="create-relationship-to"]
     And I click on the "Create" button in webadmin
     
-    Then The data browser item subtitle should change to http://localhost:7474/db/data/relationship/[0-9]+
+    Then The data browser item subtitle should change to http://.+:7474/db/data/relationship/[0-9]+
 
   Scenario: Find relationnship by id in webadmin
     Given I have a neo4j server running
     And I have created a relationship through webadmin
     When I look at the webadmin data browser in a web browser
     And I enter rel:0 into the data browser search field
-    Then The data browser item subtitle should be http://localhost:7474/db/data/relationship/0
+    Then The data browser item subtitle should be http://.+:7474/db/data/relationship/0
 
   Scenario: Create relationship properties in webadmin
     Given I have a neo4j server running
@@ -27,7 +27,7 @@ Feature: Webadmin data browser allows me to see and change details of a relation
     
     When I look at the webadmin data browser in a web browser
     And I enter rel:0 into the data browser search field
-    Then The data browser item subtitle should be http://localhost:7474/db/data/relationship/0
+    Then The data browser item subtitle should be http://.+:7474/db/data/relationship/0
     
     When I click on the "Add property" button in webadmin
     Then An element should appear that can be found by the xpath //li[1]/ul/li//input[@class="property-key"]
