@@ -7,7 +7,7 @@ Feature: Webadmin has a cypher console
     Given I have a neo4j server running
     When I look at webadmin in a web browser
     And I click on the Console tab in webadmin
-    And I click on the Cypher link in webadmin
+    And I click on the "Cypher" link in webadmin
     
     Then An element should appear that can be found by the xpath //p[contains(.,"Cypher query language")]
 
@@ -15,7 +15,7 @@ Feature: Webadmin has a cypher console
     Given I have a neo4j server running
     When I look at webadmin in a web browser
     And I click on the Console tab in webadmin
-    And I click on the Cypher link in webadmin
+    And I click on the "Cypher" link in webadmin
     
     And I click on the Console tab in webadmin
 
@@ -27,7 +27,7 @@ Feature: Webadmin has a cypher console
   #  Given I have a neo4j server running
   #  When I look at webadmin in a web browser
   #  And I click on the Console tab in webadmin
-  #  And I click on the Cypher link in webadmin
+  #  And I click on the "Cypher" link in webadmin
   #  
   # 
   #  And I type "start a=(0)" into the element found by the xpath //input[@id="console-input"]
