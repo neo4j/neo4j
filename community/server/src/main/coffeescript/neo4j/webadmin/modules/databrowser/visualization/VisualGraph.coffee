@@ -27,14 +27,14 @@ define(
    'order!lib/jquery'
    'order!lib/arbor'
    'order!lib/arbor-graphics'
-   'order!lib/arbor-tween'], 
+   'order!lib/arbor-tween'],
   (Renderer, NodeStyler, RelationshipStyler, VisualDataModel, NodeFilterDialog) ->
-  
+
     class VisualGraph
 
       constructor : (@server, width=800, height=400, @groupingThreshold=10) ->
         @el = $("<canvas width='#{width}' height='#{height}'></canvas>")
-        
+
         @labelProperties = []
 
         @nodeStyler = new NodeStyler()
@@ -44,11 +44,11 @@ define(
 
         @sys = arbor.ParticleSystem()
         @sys.parameters({
-          repulsion:10, 
-          stiffness:100, 
+          repulsion:10,
+          stiffness:100,
           friction:0.5,
           gravity:true,
-          fps:30, 
+          fps:30,
           dt:0.015,
           precision:0.5
         })
@@ -57,6 +57,7 @@ define(
 
         @sys.renderer = new Renderer(@el, @nodeStyler, @relationshipStyler)
         @sys.renderer.bind "node:click", @nodeClicked
+        @sys.renderer.bind "node:dropped", @nodeDropped
         @sys.screenPadding(20)
 
         @steadStateWorker = setInterval(@steadyStateCheck, 1000)
@@ -78,7 +79,7 @@ define(
         @addNodes([node])
 
       addNodes : (nodes) =>
-          
+
         fetchCountdown = nodes.length
         @stop()
         for node in nodes
@@ -88,42 +89,52 @@ define(
             relatedNodesPromise = node.traverse({})
 
             neo4j.Promise.join(relPromise, relatedNodesPromise).then (result) =>
-              
+
               [rels, relatedNodes] = result
               @dataModel.addNode node, rels, relatedNodes
               if (--fetchCountdown) == 0
                 @sys.merge @dataModel.getVisualGraph()
                 @start()
-    
-      nodeClicked : (visualNode) =>
+
+      nodeClicked : (visualNode, event) =>
         if visualNode.data.type?
-          switch visualNode.data.type
-            when "unexplored"
-              @addNode visualNode.data.neoNode
-            when "explored"
-              @dataModel.unexplore visualNode.data.neoNode
-              @sys.merge @dataModel.getVisualGraph()
-            when "group"
-
-              nodes = for url, groupedMeta of visualNode.data.group.grouped
-                groupedMeta.node
-
-              completeCallback = (filteredNodes, dialog) =>
-                dialog.remove()
-                @dataModel.ungroup filteredNodes
+          if event.button == 2
+            1# TODO: right clicked, show context menu
+          else
+            switch visualNode.data.type
+              when "unexplored"
+                @addNode visualNode.data.neoNode
+              when "explored"
+                @dataModel.unexplore visualNode.data.neoNode
                 @sys.merge @dataModel.getVisualGraph()
+              when "group"
 
-              dialog = new NodeFilterDialog { nodes : nodes, completeCallback : completeCallback, labelProperties : @labelProperties }
-              dialog.show()
+                nodes = for url, groupedMeta of visualNode.data.group.grouped
+                  groupedMeta.node
 
+                completeCallback = (filteredNodes, dialog) =>
+                  dialog.remove()
+                  @dataModel.ungroup filteredNodes
+                  @sys.merge @dataModel.getVisualGraph()
+
+                dialog = new NodeFilterDialog { nodes : nodes, completeCallback : completeCallback, labelProperties : @labelProperties }
+                dialog.show()
+
+
+      nodeDropped : (dropped, target, event) ->
+        neo4j.events.trigger("ui:node:dropped", {
+            dropped:dropped.data.neoNode, target:target.data.neoNode,
+            altKey:event.altKey, ctrlKey:event.ctrlKey, metaKey:event.metaKey,
+            button:event.button,
+        })
 
       setLabelProperties : (labelProps) ->
         @nodeStyler.setLabelProperties(labelProps)
         @labelProperties = labelProps
-      
+
       getNodeStyler : () =>
         @nodeStyler
-      
+
       reflow : () =>
         @sys.eachNode @floatNode
         @sys.parameters({gravity:true})
@@ -144,7 +155,7 @@ define(
         if @sys.renderer?
           @sys.renderer.start()
         @sys.start()
-        
+
         # Force a redraw
         @sys.renderer.redraw()
 

@@ -219,7 +219,7 @@ body {
 #data-switch-view .icon {
   background:url("../img/icons/glyphish/55-network.png") no-repeat scroll center center;
 }
-#data-switch-view.tabular .icon {
+#data-switch-view .icon.tabular {
   background:url("../img/icons/glyphish/tabular.png") no-repeat scroll center center;
 }
 #visualization-show-settings .icon {
