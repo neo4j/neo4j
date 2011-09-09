@@ -1671,6 +1671,10 @@ public class XaLogicalLog
                         throw new RuntimeException( "Unexpected tx " + commitTxId + " after " + previousTxId + ", starting from " + startTxId );
                     }
                 }
+                else if ( commitTxId != startTxId )
+                {
+                    throw new RuntimeException( "Unexpected tx " + commitTxId + ". Was expecting " + startTxId );
+                }
                 
                 interesting = true;
                 identifier = entry.getIdentifier();
