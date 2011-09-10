@@ -20,7 +20,9 @@
 package org.neo4j.kernel;
 
 import static org.neo4j.backup.OnlineBackupExtension.parsePort;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
+import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
 
 import java.io.File;
 import java.io.IOException;
@@ -258,14 +260,14 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         msgLog.logMessage( "Copying store from master" );
         Response<Void> response = master.first().copyStore( new SlaveContext( 0, machineId, 0, new Pair[0] ),
                 new ToFileStoreWriter( storeDir ) );
-        EmbeddedGraphDatabase tempDb = new EmbeddedGraphDatabase( storeDir );
+        EmbeddedGraphDatabase copiedDb = new EmbeddedGraphDatabase( storeDir, stringMap( KEEP_LOGICAL_LOGS, "true" ) );
         try
         {
-            MasterUtil.applyReceivedTransactions( response, tempDb, MasterUtil.txHandlerForFullCopy() );
+            MasterUtil.applyReceivedTransactions( response, copiedDb, MasterUtil.txHandlerForFullCopy() );
         }
         finally
         {
-            tempDb.shutdown();
+            copiedDb.shutdown();
         }
         msgLog.logMessage( "Done copying store from master" );
     }
