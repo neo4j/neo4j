@@ -20,12 +20,9 @@
 package org.neo4j.server.rest.repr;
 
 import java.io.StringWriter;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.StringUtils;
 import org.neo4j.server.rest.domain.JsonHelper;
 
 /*
