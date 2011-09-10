@@ -382,7 +382,6 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
 
   def assertMatches(matches: Traversable[Map[String, Any]], expectedSize: Int, expected: Map[String, Any]*) {
     val matchesList = matches.toList
-    println(matchesList)
     assert(matchesList.size === expectedSize)
 
     expected.foreach(expectation => {
