@@ -56,8 +56,8 @@ trait MatchClause extends JavaTokenParsers with Tokens {
             val dir = getDirection(back, forward)
 
           val result: Pattern = varLength match {
-            case None => RelatedTo(fromNode, toNode, namer.name(rel), relType, dir)
-            case Some((minHops, maxHops)) => VariableLengthPath(namer.name(None), fromNode, toNode, minHops, maxHops, relType, dir)
+            case None => RelatedTo(fromNode, toNode, namer.name(rel), relType, dir, false)
+            case Some((minHops, maxHops)) => VariableLengthPath(namer.name(None), fromNode, toNode, minHops, maxHops, relType, dir, false)
           }
 
           fromNode = toNode

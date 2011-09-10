@@ -63,10 +63,10 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers:SymbolTable) {
 
         patternRelMap(rel) = leftNode.relateTo(rel, rightNode, relType, dir, optional)
       }
-      case VariableLengthPath(pathName, start, end, minHops, maxHops, relType, dir) => {
+      case VariableLengthPath(pathName, start, end, minHops, maxHops, relType, dir, optional) => {
         val startNode: PatternNode = patternNodeMap.getOrElseUpdate(start, new PatternNode(start))
         val endNode: PatternNode = patternNodeMap.getOrElseUpdate(end, new PatternNode(end))
-        patternRelMap(pathName) = startNode.relateViaVariableLengthPathTo(pathName, endNode, minHops, maxHops, relType, dir)
+        patternRelMap(pathName) = startNode.relateViaVariableLengthPathTo(pathName, endNode, minHops, maxHops, relType, dir, optional)
       }
     })
 

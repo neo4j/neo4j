@@ -42,8 +42,8 @@ class PatternNode(key: String) extends PatternElement(key) with PinnablePatternE
     rel
   }
 
-  def relateViaVariableLengthPathTo(pathName: String, end: PatternNode, minHops: Int, maxHops: Int, relType: Option[String], dir: Direction): PatternRelationship = {
-    val rel = new VariableLengthPatternRelationship(pathName, this, end, minHops, maxHops, relType, dir)
+  def relateViaVariableLengthPathTo(pathName: String, end: PatternNode, minHops: Int, maxHops: Int, relType: Option[String], dir: Direction, optional:Boolean): PatternRelationship = {
+    val rel = new VariableLengthPatternRelationship(pathName, this, end, minHops, maxHops, relType, dir, optional)
     relationships.add(rel)
     end.relationships.add(rel)
     rel

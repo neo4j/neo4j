@@ -120,7 +120,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("start", start.getId)).
-      matches(RelatedTo("start", "a", "rel", Some("x"), Direction.BOTH)).
+      matches(RelatedTo("start", "a", "rel", "x", Direction.BOTH)).
       where(Equals(PropertyValue("a", "name"), Literal(name))).
       returns(ValueReturnItem(EntityValue("a")))
 
@@ -137,7 +137,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("start", start.getId)).
-      matches(RelatedTo("start", "a", "r", Some("KNOWS"), Direction.BOTH)).
+      matches(RelatedTo("start", "a", "r", "KNOWS", Direction.BOTH)).
       where(Equals(PropertyValue("r", "name"), Literal("monkey"))).
       returns(ValueReturnItem(EntityValue("a")))
 
@@ -166,7 +166,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("n1", n1.getId)).
-      matches(RelatedTo("n1", "n2", "rel", Some("KNOWS"), Direction.OUTGOING)).
+      matches(RelatedTo("n1", "n2", "rel", "KNOWS", Direction.OUTGOING)).
       returns(ValueReturnItem(EntityValue("n1")), ValueReturnItem(EntityValue("n2")))
 
     val result = execute(query)
@@ -183,7 +183,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("start", n1.getId)).
-      matches(RelatedTo("start", "x", "rel", Some("KNOWS"), Direction.OUTGOING)).
+      matches(RelatedTo("start", "x", "rel", "KNOWS", Direction.OUTGOING)).
       returns(ValueReturnItem(EntityValue("x")))
 
     val result = execute(query)
@@ -200,7 +200,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("start", n1.getId)).
-      matches(RelatedTo("start", "x", "rel", Some("KNOWS"), Direction.OUTGOING)).
+      matches(RelatedTo("start", "x", "rel", "KNOWS", Direction.OUTGOING)).
       returns(ValueReturnItem(EntityValue("x")), ValueReturnItem(EntityValue("start")))
 
     val result = execute(query)
@@ -231,8 +231,8 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val query = Query.
       start(NodeById("start", n1.getId)).
       matches(
-      RelatedTo("start", "a", "rel", Some("KNOWS"), Direction.OUTGOING),
-      RelatedTo("a", "b", "rel2", Some("FRIEND"), Direction.OUTGOING)).
+      RelatedTo("start", "a", "rel", "KNOWS", Direction.OUTGOING),
+      RelatedTo("a", "b", "rel2", "FRIEND", Direction.OUTGOING)).
       returns(ValueReturnItem(EntityValue("b")))
 
     val result = execute(query)
@@ -349,7 +349,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("n", n1.getId, n4.getId)).
-      matches(RelatedTo("n", "x", "rel", None, Direction.OUTGOING)).
+      matches(RelatedTo("n", "x", "rel", None, Direction.OUTGOING, false)).
       where(Equals(PropertyValue("n", "animal"), PropertyValue("x", "animal"))).
       returns(ValueReturnItem(EntityValue("n")), ValueReturnItem(EntityValue("x")))
 
@@ -403,7 +403,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("a", refNode.getId)).
-      matches(RelatedTo("a", "b", "rel", None, Direction.OUTGOING)).
+      matches(RelatedTo("a", "b", "rel", None, Direction.OUTGOING, false)).
       aggregation(CountStar()).
       returns(ValueReturnItem(EntityValue("a")))
 
@@ -496,7 +496,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("n", 1)).
-      matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING)).
+      matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING, false)).
       where(Equals(RelationshipTypeValue("r"), Literal("KNOWS"))).
       returns(ValueReturnItem(EntityValue("x")))
 
@@ -512,7 +512,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("n", 1)).
-      matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING)).
+      matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING, false)).
       returns(ValueReturnItem(RelationshipTypeValue("r")))
 
     val result = execute(query)
@@ -577,7 +577,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("n", 1)).
-      matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING)).
+      matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING, false)).
       where(Or(Equals(RelationshipTypeValue("r"), Literal("KNOWS")), Equals(RelationshipTypeValue("r"), Literal("HATES")))).
       returns(ValueReturnItem(EntityValue("x")))
 
@@ -592,7 +592,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("a", 1)).
-      namedPaths(NamedPath("p", RelatedTo("a", "b", "rel", None, Direction.OUTGOING))).
+      namedPaths(NamedPath("p", RelatedTo("a", "b", "rel", None, Direction.OUTGOING, false))).
       returns(ValueReturnItem(EntityValue("p"))) //  new CypherParser().parse("start a=(1) match p=(a-->b) return p")
 
     val result = execute(query)
@@ -609,8 +609,8 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val query = Query.
       start(NodeById("a", 1)).
       namedPaths(NamedPath("p",
-      RelatedTo("a", "b", "rel1", None, Direction.OUTGOING),
-      RelatedTo("b", "c", "rel2", None, Direction.OUTGOING))).
+      RelatedTo("a", "b", "rel1", None, Direction.OUTGOING, false),
+      RelatedTo("b", "c", "rel2", None, Direction.OUTGOING, false))).
       returns(ValueReturnItem(EntityValue("p"))) //  new CypherParser().parse("start a=(1) match p=(a-->b) return p")
 
     val result = execute(query)

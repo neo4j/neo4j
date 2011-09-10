@@ -33,7 +33,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     val b = createNode()
     val r = relate(a, b, "rel")
 
-    val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.OUTGOING))
+    val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.OUTGOING, false))
     val matchingContext = new MatchingContext(patterns, bind("a"))
 
     assertMatches(matchingContext.getMatches(Map("a" -> a)), 1, Map("a" -> a, "b" -> b, "r" -> r))
@@ -46,7 +46,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     val r1 = relate(a, b, "rel", "r1")
     val r2 = relate(a, c, "rel", "r2")
 
-    val patterns: Seq[Pattern] = Seq(RelatedTo("pA", "pB", "pR", "rel", Direction.OUTGOING))
+    val patterns: Seq[Pattern] = Seq(RelatedTo("pA", "pB", "pR", "rel", Direction.OUTGOING, false))
     val matchingContext = new MatchingContext(patterns, bind("pA"))
 
 
@@ -66,8 +66,8 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     val r2 = relate(a, c, "rel")
 
     val patterns: Seq[Pattern] = Seq(
-      RelatedTo("a", "b", "r1", None, Direction.OUTGOING),
-      RelatedTo("a", "c", "r2", None, Direction.OUTGOING)
+      RelatedTo("a", "b", "r1", None, Direction.OUTGOING, false),
+      RelatedTo("a", "c", "r2", None, Direction.OUTGOING, false)
     )
     val matchingContext = new MatchingContext(patterns, bind("a"))
 
@@ -88,10 +88,10 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     val r4 = relate(c, d, "x")
 
     val patterns: Seq[Pattern] = Seq(
-      RelatedTo("a", "b", "r1", None, Direction.OUTGOING),
-      RelatedTo("a", "c", "r2", None, Direction.OUTGOING),
-      RelatedTo("b", "d", "r3", None, Direction.OUTGOING),
-      RelatedTo("c", "d", "r4", None, Direction.OUTGOING)
+      RelatedTo("a", "b", "r1", None, Direction.OUTGOING, false),
+      RelatedTo("a", "c", "r2", None, Direction.OUTGOING, false),
+      RelatedTo("b", "d", "r3", None, Direction.OUTGOING, false),
+      RelatedTo("c", "d", "r4", None, Direction.OUTGOING, false)
     )
 
     val matchingContext = new MatchingContext(patterns, bind("a"))
@@ -108,7 +108,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     val c = createNode()
     relate(a, b, "rel")
 
-    val patterns: Seq[Pattern] = Seq(RelatedTo("a", "c", "r", "rel", Direction.OUTGOING))
+    val patterns: Seq[Pattern] = Seq(RelatedTo("a", "c", "r", "rel", Direction.OUTGOING, false))
     val matchingContext = new MatchingContext(patterns, bind("a", "c"))
 
     assertMatches(matchingContext.getMatches(Map("a" -> a, "c" -> c)), 0)
@@ -126,10 +126,10 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     val r4 = relate(c, d, "x")
 
     val patterns: Seq[Pattern] = Seq(
-      RelatedTo("a", "b", "r1", None, Direction.OUTGOING),
-      RelatedTo("a", "c", "r2", None, Direction.OUTGOING),
-      RelatedTo("b", "d", "r3", None, Direction.OUTGOING),
-      RelatedTo("c", "d", "r4", None, Direction.OUTGOING)
+      RelatedTo("a", "b", "r1", None, Direction.OUTGOING, false),
+      RelatedTo("a", "c", "r2", None, Direction.OUTGOING, false),
+      RelatedTo("b", "d", "r3", None, Direction.OUTGOING, false),
+      RelatedTo("c", "d", "r4", None, Direction.OUTGOING, false)
     )
     val matchingContext = new MatchingContext(patterns, bind("a", "b"))
 
