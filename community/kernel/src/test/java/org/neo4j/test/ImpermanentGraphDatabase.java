@@ -205,7 +205,7 @@ public class ImpermanentGraphDatabase extends AbstractGraphDatabase
         return inner.isReadOnly();
     }
 
-    public void cleanContent()
+    public void cleanContent(boolean retainReferenceNode)
     {
         Transaction tx = inner.beginTx();
         try
@@ -218,7 +218,14 @@ public class ImpermanentGraphDatabase extends AbstractGraphDatabase
                 }
                 if ( !node.hasRelationship() )
                 {
+                    if(node.equals( inner.getReferenceNode() ))
+                    {
+                        if(!retainReferenceNode) {
+                            node.delete();
+                        }
+                    } else {
                     node.delete();
+                    }
                 }
             }
             tx.success();
@@ -231,5 +238,10 @@ public class ImpermanentGraphDatabase extends AbstractGraphDatabase
         {
             tx.finish();
         }
+    }
+    
+    public void cleanContent()
+    {
+        cleanContent( false );
     }
 }

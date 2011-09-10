@@ -24,14 +24,13 @@ import static junit.framework.Assert.assertEquals;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class ImpermanentGraphDatabaseTests
 {
-    private GraphDatabaseService db;
+    private ImpermanentGraphDatabase db;
 
     @Before
 	public void Given() {
@@ -50,6 +49,17 @@ public class ImpermanentGraphDatabaseTests
         createNode();
         
         assertEquals( "Expected one new node, plus reference node", 2, nodeCount() );
+    }
+	
+	@Test
+    public void should_keep_reference_node()
+    {
+        createNode();
+        assertEquals( "Expected one new node, plus reference node", 2, nodeCount() );
+        db.cleanContent( true );
+        assertEquals( "reference node", 1, nodeCount() );
+        db.cleanContent( false );
+        assertEquals( "reference node", 0, nodeCount() );
     }
 
     @Test
