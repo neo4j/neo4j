@@ -213,9 +213,37 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     assertMatches(matchingContext.getMatches(Map("pA" -> a, "pD" -> d)), 1, Map("pA" -> a, "pB" -> b, "pR1" -> r1, "pR2" -> null, "pR3" -> r3, "pC" -> c, "pD" -> d))
   }
 
+  @Test def optionalVariableLengthPath() {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+    relate(a, b, "rel")
+    relate(b, c, "rel")
+
+    val patterns: Seq[Pattern] = Seq(VariableLengthPath("p", "a", "c", 1, 2, "rel", Direction.OUTGOING, true))
+    val matchingContext = new MatchingContext(patterns, bind("a"))
+
+    assertMatches(matchingContext.getMatches(Map("a" -> a)), 2, Map("a" -> a, "c" -> b), Map("a" -> a, "c" -> c))
+  }
+
+  @Test def optionalVariableLengthPathWithPinnedEndNodes() {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+    val d = createNode()
+    relate(a,b,"rel")
+    relate(b,c,"rel")
+    relate(a,c,"rel")
+
+    val patterns: Seq[Pattern] = Seq(VariableLengthPath("p", "pA", "pB", 1, 2, "rel", Direction.OUTGOING, true))
+    val matchingContext = new MatchingContext(patterns, bind("pA", "pB"))
+
+    assertMatches(matchingContext.getMatches(Map("pA" -> a, "pB"->d)), 1, Map("pA" -> a, "pB" -> d))
+    assertMatches(matchingContext.getMatches(Map("pA" -> a, "pB"->c)), 2)
+  }
+
 
   @Test def variableLengthPath() {
-
     val a = createNode()
     val b = createNode()
     val c = createNode()
@@ -354,6 +382,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
 
   def assertMatches(matches: Traversable[Map[String, Any]], expectedSize: Int, expected: Map[String, Any]*) {
     val matchesList = matches.toList
+    println(matchesList)
     assert(matchesList.size === expectedSize)
 
     expected.foreach(expectation => {
