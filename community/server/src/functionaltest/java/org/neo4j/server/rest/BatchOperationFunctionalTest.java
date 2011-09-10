@@ -398,6 +398,7 @@ public class BatchOperationFunctionalTest
 
     }
     
+    @Ignore
     @Test
     public void testlargerequest() {    
         testlargerequest(1000);
@@ -416,6 +417,8 @@ public class BatchOperationFunctionalTest
             largereq.append("{\"method\":\"post\",\"to\":\"/node\", \"body\":{ \"age\":1 } },");
         }
         largereq.append("{\"method\":\"post\",\"to\":\"/node\", \"body\":{ \"age\":1 } }]");
+        
+        System.out.println(Runtime.getRuntime().totalMemory());
         
         Date d = new Date();
         JaxRsResponse response = RestRequest.req().post(functionalTestHelper.dataUri() + "batch", largereq.toString());
