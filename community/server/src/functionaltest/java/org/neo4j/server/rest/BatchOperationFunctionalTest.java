@@ -23,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -201,7 +202,7 @@ public class BatchOperationFunctionalTest
                 .expectedStatus(200)
                 .post(uri);
     }
-
+    
     /**
      * Refer to items created earlier in the same batch job.
      * 
@@ -326,29 +327,6 @@ public class BatchOperationFunctionalTest
         assertTrue(((String) result.get("location")).length() > 0);
     }
 
-    @Ignore
-    @Test
-    public void shouldBeAbleToCreateEmptyArrayProperties() throws Exception {
-
-        int originalNodeCount = helper.getNumberOfNodes();
-
-        JaxRsResponse response = RestRequest.req().post(functionalTestHelper.dataUri() + "batch", new PrettyJSON()
-            .array()
-                .object()
-                    .key("method") .value("POST")
-                    .key("to")     .value("/node")
-                    .key("body")   
-                        .object()
-                            .key("age")  .array().endArray()
-                        .endObject()
-                .endObject()
-            .endArray()
-            .toString());
-
-        assertEquals(200, response.getStatus());
-        assertEquals(originalNodeCount + 1, helper.getNumberOfNodes());
-    }
-    
     @Test
     public void shouldForwardUnderlyingErrors() throws Exception {
 
@@ -364,7 +342,6 @@ public class BatchOperationFunctionalTest
                 .endObject()
             .endArray()
             .toString());
-
         assertEquals(400, response.getStatus());
         Map<String, Object> res = JsonHelper.jsonToMap(response.getEntity());
 
@@ -419,5 +396,33 @@ public class BatchOperationFunctionalTest
         assertEquals(400, response.getStatus());
         assertEquals(originalNodeCount, helper.getNumberOfNodes());
 
+    }
+    
+    @Test
+    public void testlargerequest() {    
+        testlargerequest(1000);
+        testlargerequest(5000);
+        testlargerequest(10000);
+        testlargerequest(50000);
+        testlargerequest(100000);
+        testlargerequest(500000);
+        testlargerequest(1000000);
+    }
+    
+    private void testlargerequest(int number) {
+        StringBuilder largereq = new StringBuilder();
+        largereq.append("[");
+        for(int i=0;i<number; i++) {
+            largereq.append("{\"method\":\"post\",\"to\":\"/node\", \"body\":{ \"age\":1 } },");
+        }
+        largereq.append("{\"method\":\"post\",\"to\":\"/node\", \"body\":{ \"age\":1 } }]");
+        
+        Date d = new Date();
+        JaxRsResponse response = RestRequest.req().post(functionalTestHelper.dataUri() + "batch", largereq.toString());
+
+        System.out.println(number + "\t:" + ((new Date()).getTime() - d.getTime()) + "ms");
+        
+        assertEquals(200, response.getStatus());
+        
     }
 }

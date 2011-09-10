@@ -20,12 +20,15 @@
 package org.neo4j.server.rest.domain;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringWriter;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.neo4j.server.rest.web.PropertyValueException;
 
@@ -45,7 +48,7 @@ public class JsonHelper
     {
         return (List<Map<String, Object>>) readJson( json );
     }
-
+    
     public static Object readJson( String json ) throws JsonParseException
     {
         ObjectMapper mapper = new ObjectMapper();
