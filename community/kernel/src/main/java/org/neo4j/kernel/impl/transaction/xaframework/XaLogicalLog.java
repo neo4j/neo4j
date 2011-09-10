@@ -1070,6 +1070,12 @@ public class XaLogicalLog
             ensureSourceIsClosed();
         }
         
+        @Override
+        protected void finalize() throws Throwable
+        {
+            ensureSourceIsClosed();
+        }
+        
         private void ensureSourceIsClosed()
         {
             try
