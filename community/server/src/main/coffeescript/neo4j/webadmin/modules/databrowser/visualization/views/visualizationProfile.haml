@@ -1,0 +1,20 @@
+.sidebar
+  %h1.pad Profile details
+
+.workarea.with-sidebar#visualization-settings
+
+  :if isInCreateMode
+    %h2.pad Create new profile
+  :if !isInCreateMode
+    %h2.pad Manage profile
+  
+  %input(id="profile-name" type="text" value="#{htmlEscape(name)}")
+  
+  %h2.pad Style rules
+  %table.styleRules
+  
+  %button.button.addStyleRule Add style rule
+  
+  %button.button.save Save
+  %button.button.cancel Cancel
+  
