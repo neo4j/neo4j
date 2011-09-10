@@ -24,7 +24,7 @@ import org.neo4j.graphdb.Node
 class PatternMatcher(startPoint: PatternNode, bindings: Map[String, MatchingPair]) extends Traversable[Map[String, Any]] {
 
   def foreach[U](f: (Map[String, Any]) => U) {
-    traverse(MatchingPair(startPoint, startPoint.pinnedEntity.get), Set(), bindings.values.toSet, f)
+    traverseNode(MatchingPair(startPoint, startPoint.pinnedEntity.get), Set(), bindings.values.toSet, f)
   }
 
   private def futureWalk[U](future: Set[MatchingPair], history: Set[MatchingPair], yielder: Map[String, Any] => U): Boolean = {
@@ -32,12 +32,12 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, MatchingPair
 
     future.toList match {
       case List() => yieldThis(yielder, history); true
-      case next :: rest => traverse(next, history, rest.toSet, yielder)
+      case next :: rest => traverseNode(next, history, rest.toSet, yielder)
     }
   }
 
 
-  private def traverse[U](current: MatchingPair,
+  private def traverseNode[U](current: MatchingPair,
                           history: Set[MatchingPair],
                           future: Set[MatchingPair],
                           yielder: Map[String, Any] => U): Boolean = {
@@ -52,13 +52,13 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, MatchingPair
     }
 
     patternNode.getPRels(history).toList match {
-      case pRel :: tail => visitNext(current, pRel, history, future ++ Seq(current), yielder)
+      case pRel :: tail => traverseRelationship(current, pRel, history, future ++ Seq(current), yielder)
       case List() => futureWalk(future, history ++ Seq(current), yielder)
     }
   }
 
 
-  private def visitNext[U](current: MatchingPair,
+  private def traverseRelationship[U](current: MatchingPair,
                            pRel: PatternRelationship,
                            history: Set[MatchingPair],
                            future: Set[MatchingPair],
@@ -74,10 +74,10 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, MatchingPair
       val nextNode = rel.getOtherNode(node)
       val nextPNode = pRel.getOtherNode(patternNode)
       val newHistory = history ++ Seq(current, MatchingPair(pRel, rel))
-      traverse(MatchingPair(nextPNode, nextNode), newHistory, future, yielder)
+      traverseNode(MatchingPair(nextPNode, nextNode), newHistory, future, yielder)
     })
 
-    val yielded = results.foldLeft(false)(_ || _)
+    val yielded = results.exists( x => x )
 
     if (pRel.optional && !yielded) {
       futureWalk(future, history ++ Seq(current, MatchingPair(pRel, null)), yielder)
@@ -105,7 +105,7 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, MatchingPair
     yielder(resultMap)
   }
 
-  val isDebugging = true
+  val isDebugging = false
 
   def debug[U](history: Set[MatchingPair], future: Set[MatchingPair]) {
     if (isDebugging)
