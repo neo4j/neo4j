@@ -48,7 +48,7 @@ class PatternRelationship(key: String,
     }
   }
 
-  override def toString = String.format("PatternRelationship[key=%s, left=%s, right=%s]", key, leftNode, rightNode)
+  override def toString = String.format("%s", key)
 }
 
 class VariableLengthPatternRelationship(pathName: String, val start: PatternNode, val end: PatternNode, minHops: Int, maxHops: Int, relType: Option[String], dir: Direction)

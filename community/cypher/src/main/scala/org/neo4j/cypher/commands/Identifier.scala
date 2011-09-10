@@ -19,11 +19,7 @@
  */
 package org.neo4j.cypher.commands
 
-case class Identifier(name: String) {
-  def isCompatibleWith(other:Identifier):Boolean = {
-    other.getClass.isAssignableFrom(this.getClass)
-  }
-}
+case class Identifier(name: String)
 
 case class PropertyContainerIdentifier(propContainerName:String) extends Identifier(propContainerName)
 case class UnboundIdentifier(subName: String, wrapped:Option[Identifier]) extends Identifier(subName)

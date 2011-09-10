@@ -40,7 +40,7 @@ case class SingleGraphRelationship(rel: Relationship) extends GraphRelationship 
     case x => x == this || x == rel
   }
 
-  override def toString = String.format("SingleGraphRelationship[rel=%s]", rel)
+  override def toString = rel.getProperty("name").toString
 }
 
 case class VariableLengthGraphRelationship(path: Path) extends GraphRelationship {
@@ -59,5 +59,5 @@ case class VariableLengthGraphRelationship(path: Path) extends GraphRelationship
     case x => obj == this || obj == path
   }
 
-  override def toString = String.format("VariableLengthGraphRelationship[path=%s]", path)
+  override def toString = path.toString
 }

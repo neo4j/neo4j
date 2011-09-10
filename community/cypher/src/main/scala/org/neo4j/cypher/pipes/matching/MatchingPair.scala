@@ -1,5 +1,7 @@
 package org.neo4j.cypher.pipes.matching
 
+import org.neo4j.graphdb.PropertyContainer
+
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -20,6 +22,16 @@ package org.neo4j.cypher.pipes.matching
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-case class MatchingPair(patternElement:PatternElement, entity:Any) {
-  def matches(x:Any) = entity == x || patternElement == x
+case class MatchingPair(patternElement: PatternElement, entity: Any) {
+  def matches(x: Any) = entity == x || patternElement == x
+
+  override def toString = {
+    val value = entity match {
+      case propC: PropertyContainer => propC.getProperty("name").toString
+      case null => "null"
+      case x => x.toString
+    }
+
+    patternElement.key + "/" + value
+  }
 }
