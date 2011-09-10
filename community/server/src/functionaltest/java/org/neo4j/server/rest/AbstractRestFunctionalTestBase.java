@@ -39,6 +39,7 @@ import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphHolder;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestData;
+import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 public class AbstractRestFunctionalTestBase implements GraphHolder
 {
@@ -66,8 +67,7 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
     
     protected String startGraph( String name )
     {
-        return "_Starting Graph:_\n\n"
-               + gen.get().createGraphViz( graphdb(), name );
+        return AsciidocHelper.createGraphViz( "Starting Graph:", graphdb(), name);
     }
 
   

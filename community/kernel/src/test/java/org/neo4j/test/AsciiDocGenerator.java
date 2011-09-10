@@ -56,6 +56,11 @@ public abstract class AsciiDocGenerator
         this.graph = graph;
         return this;
     }
+    
+    public String getTitle()
+    {
+        return title;
+    }
 
     /**
      * Add a description to the test (in asciidoc format). Adding multiple

@@ -23,10 +23,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
-import java.io.ByteArrayOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -41,13 +39,10 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.TestData.Producer;
-import org.neo4j.visualization.graphviz.AsciiDocStyle;
-import org.neo4j.visualization.graphviz.GraphvizWriter;
-import org.neo4j.walk.Walker;
+import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientRequest;
@@ -476,8 +471,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
                 line( fw, "" );
             }
             if( graph != null) {
-                line(fw, "_Final Graph_" );
-                fw.append( createGraphViz( graph, name ));
+                fw.append( AsciidocHelper.createGraphViz( "Final Graph:", graph, title));
                 line(fw, "" );
             }
             line( fw, "_Example request_" );
@@ -541,24 +535,6 @@ public class RESTDocsGenerator extends AsciiDocGenerator
     }
 
     
-    public String createGraphViz( GraphDatabaseService graphDatabaseService, String name )
-    {
-        OutputStream out = new ByteArrayOutputStream();
-        GraphvizWriter writer = new GraphvizWriter(new AsciiDocStyle());
-        try
-        {
-            writer.emit( out, Walker.fullGraph( graphDatabaseService ) );
-        }
-        catch ( IOException e )
-        {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        return  "[\"dot\", \""+name.replace( " ", "-" )+".svg\", \"neoviz\"]\n"+
-                "----\n" +
-                out.toString() +
-                "----\n";
-    }
-    
+   
 
 }
