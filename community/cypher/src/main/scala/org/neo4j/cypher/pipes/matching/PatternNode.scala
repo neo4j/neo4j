@@ -24,9 +24,9 @@ import org.neo4j.graphdb.{Direction, Node}
 class PatternNode(key: String) extends PatternElement(key) with PinnablePatternElement[Node] {
   val relationships = scala.collection.mutable.Set[PatternRelationship]()
 
-  def getPRels(history: Set[MatchingPair]): Seq[PatternRelationship] = relationships.filterNot( r => history.exists(_.matches(r)) ).toSeq
+  def getPRels(history: Seq[MatchingPair]): Seq[PatternRelationship] = relationships.filterNot( r => history.exists(_.matches(r)) ).toSeq
 
-  def getGraphRelationships(node: Node, pRel: PatternRelationship, history:Set[MatchingPair]): Seq[GraphRelationship] = {
+  def getGraphRelationships(node: Node, pRel: PatternRelationship, history:Seq[MatchingPair]): Seq[GraphRelationship] = {
     val relationships = pRel.getGraphRelationships(this, node)
 //    println(String.format("found real relationships: %s\n", relationships.toList))
     relationships.filterNot( gr => gr match {
