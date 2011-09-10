@@ -77,14 +77,14 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, MatchingPair
       traverse(MatchingPair(nextPNode, nextNode), newHistory, future, yielder)
     })
 
-//    val yielded = results.foldLeft(false)(_ || _)
-//
-//    if (pRel.optional && !yielded) {
-//      futureWalk(future, history ++ Seq(current, MatchingPair(pRel, null)), yielder)
-//    } else {
-//      yielded
-//    }
-    true
+    val yielded = results.foldLeft(false)(_ || _)
+
+    if (pRel.optional && !yielded) {
+      futureWalk(future, history ++ Seq(current, MatchingPair(pRel, null)), yielder)
+    } else {
+      yielded
+    }
+//    true
   }
 
   private def yieldThis[U](yielder: Map[String, Any] => U, history: Set[MatchingPair]) {

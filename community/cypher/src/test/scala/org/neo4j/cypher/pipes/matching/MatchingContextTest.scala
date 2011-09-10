@@ -299,16 +299,37 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
   }
 
   @Test def variableLengthPathInDiamond() {
+    /*
+    Graph:
+              a
+             / \
+            /   \
+           b----c
+           \   /
+            \ /
+             d
 
-    val a = createNode("pA")
-    val b = createNode("pB")
-    val c = createNode("pC")
-    val d = createNode("pD")
-    val r1 = relate(a, b, "rel", "pR1")
-    val r2 = relate(a, c, "rel", "pR2")
-    relate(b, d, "rel", "pR3")
-    relate(c, d, "rel", "pR4")
-    relate(b, c, "rel", "pR5")
+
+    Pattern:
+              pA
+             / \
+            /   \
+         p=pB~~~pC
+
+    Should match two subgraphs, one where p is b-c, and one where it is b-d-c
+     */
+
+
+
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
+    val d = createNode("d")
+    val r1 = relate(a, b, "rel", "r1")
+    val r2 = relate(a, c, "rel", "r2")
+    relate(b, d, "rel", "r3")
+    relate(c, d, "rel", "r4")
+    relate(b, c, "rel", "r5")
 
     val patterns: Seq[Pattern] = Seq(
       RelatedTo("pA", "pB", "pR1", "rel", Direction.OUTGOING),
@@ -316,7 +337,9 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
       VariableLengthPath("p", "pB", "pC", 1, 3, "rel", Direction.BOTH))
     val matchingContext = new MatchingContext(patterns, bind("pA"))
 
-    assertMatches(matchingContext.getMatches(Map("pA" -> a)), 4, Map("pA" -> a, "pR1" -> r1, "pB" -> b, "pC" -> c, "pR2" -> r2), Map("pA" -> a, "pR1" -> r2, "pB" -> c, "pC" -> b, "pR2" -> r1))
+    assertMatches(matchingContext.getMatches(Map("pA" -> a)), 4,
+      Map("pA" -> a, "pR1" -> r1, "pB" -> b, "pC" -> c, "pR2" -> r2),
+      Map("pA" -> a, "pR1" -> r2, "pB" -> c, "pC" -> b, "pR2" -> r1))
   }
 
   @Test

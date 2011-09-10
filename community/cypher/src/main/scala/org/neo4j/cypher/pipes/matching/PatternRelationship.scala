@@ -48,7 +48,7 @@ class PatternRelationship(key: String,
     }
   }
 
-  override def toString = String.format("%s", key)
+  override def toString = key
 }
 
 class VariableLengthPatternRelationship(pathName: String, val start: PatternNode, val end: PatternNode, minHops: Int, maxHops: Int, relType: Option[String], dir: Direction)
@@ -63,13 +63,7 @@ class VariableLengthPatternRelationship(pathName: String, val start: PatternNode
       case Some(typeName) => baseTraversalDescription.expand(Traversal.expanderForTypes(DynamicRelationshipType.withName(typeName), getDirection(node)))
       case None => baseTraversalDescription.expand(Traversal.expanderForAllTypes(getDirection(node)))
     }
-//    for (p: Path <- traversalDescription.traverse(realNode).asScala.foreach()) {
-//      println(String.format("  found path match: %s", p))
-//    }
     traversalDescription.traverse(realNode).asScala.toSeq.map(p => VariableLengthGraphRelationship(p))
   }
-
-  override def toString = String.format("VariableLengthPatternRelationship[pathName=%s, start=%s, end=%s]", key, start, end)
-
 }
 
