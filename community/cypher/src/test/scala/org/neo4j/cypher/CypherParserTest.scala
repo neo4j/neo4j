@@ -583,6 +583,42 @@ class CypherParserTest extends JUnitSuite {
     )
   }
 
+  @Test def optionalRelationship() {
+    testQuery(
+      "start a = (1) match a -[?]-> (b) return b",
+      Query.
+        start(NodeById("a", 1)).
+        matches(RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING, true)).
+        returns(ValueReturnItem(EntityValue("b"))))
+  }
+
+  @Test def optionalTypedRelationship() {
+    testQuery(
+      "start a = (1) match a -[?:KNOWS]-> (b) return b",
+      Query.
+        start(NodeById("a", 1)).
+        matches(RelatedTo("a", "b", "  UNNAMED1", Some("KNOWS"), Direction.OUTGOING, true)).
+        returns(ValueReturnItem(EntityValue("b"))))
+  }
+
+    @Test def optionalTypedAndNamedRelationship() {
+    testQuery(
+      "start a = (1) match a -[r?:KNOWS]-> (b) return b",
+      Query.
+        start(NodeById("a", 1)).
+        matches(RelatedTo("a", "b", "r", Some("KNOWS"), Direction.OUTGOING, true)).
+        returns(ValueReturnItem(EntityValue("b"))))
+  }
+
+  @Test def optionalNamedRelationship() {
+    testQuery(
+      "start a = (1) match a -[r?]-> (b) return b",
+      Query.
+        start(NodeById("a", 1)).
+        matches(RelatedTo("a", "b", "r", None, Direction.OUTGOING, true)).
+        returns(ValueReturnItem(EntityValue("b"))))
+  }
+
 
   @Test def consoleModeParserShouldOutputNullableProperties() {
     val query = "start a = (1) return a.name"

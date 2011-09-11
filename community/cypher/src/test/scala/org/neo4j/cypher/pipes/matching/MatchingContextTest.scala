@@ -50,10 +50,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     val matchingContext = new MatchingContext(patterns, bind("pA"))
 
 
-    val traversable = matchingContext.getMatches(Map("pA" -> a))
-    println(traversable)
-
-    assertMatches(traversable, 2,
+    assertMatches(matchingContext.getMatches(Map("pA" -> a)), 2,
       Map("pA" -> a, "pB" -> b, "pR" -> r1),
       Map("pA" -> a, "pB" -> c, "pR" -> r2))
   }
@@ -238,7 +235,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     val patterns: Seq[Pattern] = Seq(VariableLengthPath("p", "pA", "pB", 1, 2, "rel", Direction.OUTGOING, true))
     val matchingContext = new MatchingContext(patterns, bind("pA", "pB"))
 
-    assertMatches(matchingContext.getMatches(Map("pA" -> a, "pB"->d)), 1, Map("pA" -> a, "pB" -> d))
+    assertMatches(matchingContext.getMatches(Map("pA" -> a, "pB"->d)), 1)
     assertMatches(matchingContext.getMatches(Map("pA" -> a, "pB"->c)), 2)
   }
 

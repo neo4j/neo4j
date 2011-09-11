@@ -51,13 +51,13 @@ trait MatchClause extends JavaTokenParsers with Tokens {
     case head ~ tails => {
       var fromNode = namer.name(head)
       val list = tails.map(_ match {
-        case (back, rel, relType, forward, end, varLength) => {
+        case (back, rel, relType, forward, end, varLength, optional) => {
           val toNode = namer.name(end)
             val dir = getDirection(back, forward)
 
           val result: Pattern = varLength match {
-            case None => RelatedTo(fromNode, toNode, namer.name(rel), relType, dir, false)
-            case Some((minHops, maxHops)) => VariableLengthPath(namer.name(None), fromNode, toNode, minHops, maxHops, relType, dir, false)
+            case None => RelatedTo(fromNode, toNode, namer.name(rel), relType, dir, optional)
+            case Some((minHops, maxHops)) => VariableLengthPath(namer.name(None), fromNode, toNode, minHops, maxHops, relType, dir, optional)
           }
 
           fromNode = toNode
@@ -100,14 +100,14 @@ trait MatchClause extends JavaTokenParsers with Tokens {
 
   def relatedTail = opt("<") ~ "-" ~ opt("[" ~> relationshipInfo <~ "]") ~ "-" ~ opt(">") ~ node ^^ {
     case back ~ "-" ~ relInfo ~ "-" ~ forward ~ end => relInfo match {
-      case Some((relName, relType, varLength)) => (back, relName, relType, forward, end, varLength)
-      case None => (back, None, None, forward, end, None)
+      case Some((relName, relType, varLength, optional)) => (back, relName, relType, forward, end, varLength, optional)
+      case None => (back, None, None, forward, end, None, false)
     }
   }
 
-  def relationshipInfo: Parser[(Option[String], Option[String], Option[(Int, Int)])] = opt(identity) ~ opt(":" ~ identity ~ opt("^" ~ wholeNumber ~ ".." ~ wholeNumber)) ^^ {
-    case relName ~ Some(":" ~ relType ~ None) => (relName, Some(relType), None)
-    case relName ~ Some(":" ~ relType ~ Some("^" ~ minHops ~ ".." ~ maxHops)) => (relName, Some(relType), Some((minHops.toInt, maxHops.toInt)))
-    case relName ~ None => (relName, None, None)
+  def relationshipInfo: Parser[(Option[String], Option[String], Option[(Int, Int)], Boolean)] = opt(identity) ~ opt("?") ~ opt(":" ~ identity ~ opt("^" ~ wholeNumber ~ ".." ~ wholeNumber)) ^^ {
+    case relName ~ optional ~ Some(":" ~ relType ~ None) => (relName, Some(relType), None, optional.isDefined)
+    case relName ~ optional ~ Some(":" ~ relType ~ Some("^" ~ minHops ~ ".." ~ maxHops)) => (relName, Some(relType), Some((minHops.toInt, maxHops.toInt)), optional.isDefined)
+    case relName ~ optional ~ None => (relName, None, None, optional.isDefined)
   }
 }

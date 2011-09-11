@@ -96,12 +96,36 @@ class MatchTest extends DocumentingTestBase {
   @Test def variableLengthPath() {
     testQuery(
       title = "Variable length relationships",
-      text = "Nodes that are variable number of relationship->node hops can be found using the -[:TYPE^minHops..maxHops]->. The ",
+      text = "Nodes that are variable number of relationship->node hops can be found using the -[:TYPE^minHops..maxHops]->. ",
       queryText = """start a=(%A%), x=(%E%, %B%) match a-[:KNOWS^1..3]->x return a,x""",
       returns = """The three nodes in the path.""",
       (p) => assertEquals(List(
         Map("a" -> node("A"), "x" -> node("E")),
         Map("a" -> node("A"), "x" -> node("B"))), p.toList)
+    )
+  }
+
+  @Test def optionalRelationship() {
+    testQuery(
+      title = "Optional relationship",
+      text = "If a relationship is optional, it can be marked with a question mark. This similar to how a SQL outer join " +
+        "works, if the relationship is there, it is returned. If it's not, null is returned in it's place. Remember that " +
+        "anything hanging of an optional relation, is in turn optional, unless it is connected with a bound node some other " +
+        "path.",
+      queryText = """start a=(%E%) match a-[?]->x return a,x""",
+      returns = """A node, and null, since the node has no relationships.""",
+      (p) => assertEquals(List(Map("a" -> node("E"), "x" -> null)), p.toList)
+    )
+  }
+
+  @Test def optionalTypedRelationship() {
+    testQuery(
+      title = "Optional typed and named relationship",
+      text = "Just as with a normal relationship, you can decide which identifier it goes into, and what relationship type " +
+        "you need.",
+      queryText = """start a=(%A%) match a-[r?:LOVES]->() return a,r""",
+      returns = """A node, and null, since the node has no relationships.""",
+      (p) => assertEquals(List(Map("a" -> node("A"), "r" -> null)), p.toList)
     )
   }
 
