@@ -1449,7 +1449,7 @@ public class XaLogicalLog
                 if ( entry instanceof LogEntry.Start )
                 {
                     LogEntry.Start startEntry = (LogEntry.Start) entry;
-                    startEntry.setStartPosition( newLog.position() );
+                    startEntry.setStartPosition( newLogBuffer.getFileChannelPosition() ); // newLog.position() );
                     // overwrite old start entry with new that has updated position
                     xidIdentMap.put( startEntry.getIdentifier(), startEntry );
                     // startEntriesWritten.add( entry.getIdentifier() );
