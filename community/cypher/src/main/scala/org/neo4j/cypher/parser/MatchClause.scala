@@ -57,7 +57,7 @@ trait MatchClause extends JavaTokenParsers with Tokens {
 
           val result: Pattern = varLength match {
             case None => RelatedTo(fromNode, toNode, namer.name(rel), relType, dir, optional)
-            case Some((minHops, maxHops)) => VariableLengthPath(namer.name(None), fromNode, toNode, minHops, maxHops, relType, dir, optional)
+            case Some((minHops, maxHops)) => VarLengthRelatedTo(namer.name(None), fromNode, toNode, minHops, maxHops, relType, dir, optional)
           }
 
           fromNode = toNode

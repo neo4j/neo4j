@@ -23,10 +23,14 @@ import org.neo4j.cypher.commands.{VarLengthRelatedTo, RelatedTo, Pattern}
 import org.neo4j.cypher.{SyntaxException, SymbolTable}
 import org.neo4j.graphdb.{Relationship, Node}
 
-class MatchingContext(patterns: Seq[Pattern], boundIdentifiers:SymbolTable) {
+class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable) {
   type PatternGraph = Map[String, PatternElement]
 
   val patternGraph: PatternGraph = buildPatternGraph(boundIdentifiers)
+
+  def createNullValuesForOptionalElements(matchedGraph: Map[String, Any]): Map[String, Null] = {
+    (patternGraph.keySet -- matchedGraph.keySet).map(_ -> null).toMap
+  }
 
   def getMatches(bindings: Map[String, Any]): Traversable[Map[String, Any]] = {
     val (pinnedName, pinnedNode) = bindings.head
@@ -45,14 +49,16 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers:SymbolTable) {
 
     pinnedPatternNode.pin(pinnedNode.asInstanceOf[Node])
 
-    new PatternMatcher(pinnedPatternNode, boundPairs).map( matchedGraph=> {
-      val missingElements = (patternGraph.keySet -- matchedGraph.keySet).map(_->null).toMap
-
-      matchedGraph ++ missingElements
+    new PatternMatcher(pinnedPatternNode, boundPairs).map(matchedGraph => {
+      matchedGraph ++ createNullValuesForOptionalElements(matchedGraph)
     })
   }
 
-  def buildPatternGraph(bindings:SymbolTable): PatternGraph = {
+  /*
+  This method is mutable, but it is only called from the constructor of this class. The created PatternGraph
+   is immutable and thread safe.
+   */
+  private def buildPatternGraph(bindings: SymbolTable): PatternGraph = {
     val patternNodeMap: scala.collection.mutable.Map[String, PatternNode] = scala.collection.mutable.Map()
     val patternRelMap: scala.collection.mutable.Map[String, PatternRelationship] = scala.collection.mutable.Map()
 
@@ -74,7 +80,7 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers:SymbolTable) {
 
     validatePattern(patternGraph, bindings)
 
-    patternGraph.map(x => x.key->x).toMap
+    patternGraph.map(x => x.key -> x).toMap
   }
 
   def validatePattern(patternElements: Seq[PatternElement], bindings: SymbolTable) {
@@ -82,8 +88,7 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers:SymbolTable) {
     var visited = scala.collection.mutable.Seq[PatternElement]()
 
     def visit(x: PatternElement) {
-      if (!visited.contains(x))
-      {
+      if (!visited.contains(x)) {
         visited = visited ++ Seq(x)
         x match {
           case nod: PatternNode => nod.relationships.foreach(visit)
@@ -95,7 +100,7 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers:SymbolTable) {
       }
     }
 
-    bindings.identifiers.foreach(id=>{
+    bindings.identifiers.foreach(id => {
       val el = elementsMap.get(id.name)
       el match {
         case None =>
@@ -103,9 +108,9 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers:SymbolTable) {
       }
     })
 
-    val notVisited:Seq[PatternElement] = patternElements.toList -- visited.toList
+    val notVisited: Seq[PatternElement] = patternElements.toList -- visited.toList
 
-    if(notVisited.nonEmpty){
+    if (notVisited.nonEmpty) {
       throw new SyntaxException("All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These identifiers were found to be disconnected: " + notVisited.map(_.key).mkString("", ", ", ""))
     }
 
