@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.pipes.matching
 
-import org.neo4j.cypher.commands.{VariableLengthPath, RelatedTo, Pattern}
+import org.neo4j.cypher.commands.{VarLengthRelatedTo, RelatedTo, Pattern}
 import org.neo4j.cypher.{SyntaxException, SymbolTable}
 import org.neo4j.graphdb.{Relationship, Node}
 
@@ -63,7 +63,7 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers:SymbolTable) {
 
         patternRelMap(rel) = leftNode.relateTo(rel, rightNode, relType, dir, optional)
       }
-      case VariableLengthPath(pathName, start, end, minHops, maxHops, relType, dir, optional) => {
+      case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, dir, optional) => {
         val startNode: PatternNode = patternNodeMap.getOrElseUpdate(start, new PatternNode(start))
         val endNode: PatternNode = patternNodeMap.getOrElseUpdate(end, new PatternNode(end))
         patternRelMap(pathName) = startNode.relateViaVariableLengthPathTo(pathName, endNode, minHops, maxHops, relType, dir, optional)

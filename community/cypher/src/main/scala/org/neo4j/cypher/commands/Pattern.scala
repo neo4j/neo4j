@@ -30,12 +30,12 @@ object RelatedTo {
     new RelatedTo(left, right, relName, Some(relType), direction, optional)
 }
 
-object VariableLengthPath {
+object VarLengthRelatedTo {
   def apply(pathName: String, start: String, end: String, minHops: Int, maxHops: Int, relType: String, direction: Direction, optional: Boolean = false) =
-    new VariableLengthPath(pathName, start, end, minHops, maxHops, Some(relType), direction, optional)
+    new VarLengthRelatedTo(pathName, start, end, minHops, maxHops, Some(relType), direction, optional)
 }
 
 case class RelatedTo(left: String, right: String, relName: String, relType: Option[String], direction: Direction, optional:Boolean) extends Pattern
 
-case class VariableLengthPath(pathName: String, start: String, end: String, minHops: Int, maxHops: Int, relType: Option[String], direction: Direction, optional: Boolean) extends Pattern
+case class VarLengthRelatedTo(pathName: String, start: String, end: String, minHops: Int, maxHops: Int, relType: Option[String], direction: Direction, optional: Boolean) extends Pattern
 

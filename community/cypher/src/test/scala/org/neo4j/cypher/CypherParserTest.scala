@@ -578,7 +578,7 @@ class CypherParserTest extends JUnitSuite {
     testQuery("start a=(0) match a -[:knows^1..3]-> x return x",
       Query.
         start(NodeById("a", 0)).
-        matches(VariableLengthPath("  UNNAMED1", "a", "x", 1, 3, "knows", Direction.OUTGOING)).
+        matches(VarLengthRelatedTo("  UNNAMED1", "a", "x", 1, 3, "knows", Direction.OUTGOING)).
         returns(ValueReturnItem(EntityValue("x")))
     )
   }

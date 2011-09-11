@@ -24,7 +24,7 @@ import org.scalatest.Assertions
 import org.neo4j.graphdb.Direction
 import org.junit.{Ignore, Test}
 import org.neo4j.cypher.{SymbolTable, GraphDatabaseTestBase}
-import org.neo4j.cypher.commands.{NodeIdentifier, VariableLengthPath, RelatedTo, Pattern}
+import org.neo4j.cypher.commands.{NodeIdentifier, VarLengthRelatedTo, RelatedTo, Pattern}
 
 class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
 
@@ -217,7 +217,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     relate(a, b, "rel")
     relate(b, c, "rel")
 
-    val patterns: Seq[Pattern] = Seq(VariableLengthPath("p", "a", "c", 1, 2, "rel", Direction.OUTGOING, true))
+    val patterns: Seq[Pattern] = Seq(VarLengthRelatedTo("p", "a", "c", 1, 2, "rel", Direction.OUTGOING, true))
     val matchingContext = new MatchingContext(patterns, bind("a"))
 
     assertMatches(matchingContext.getMatches(Map("a" -> a)), 2, Map("a" -> a, "c" -> b), Map("a" -> a, "c" -> c))
@@ -232,7 +232,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     relate(b,c,"rel")
     relate(a,c,"rel")
 
-    val patterns: Seq[Pattern] = Seq(VariableLengthPath("p", "pA", "pB", 1, 2, "rel", Direction.OUTGOING, true))
+    val patterns: Seq[Pattern] = Seq(VarLengthRelatedTo("p", "pA", "pB", 1, 2, "rel", Direction.OUTGOING, true))
     val matchingContext = new MatchingContext(patterns, bind("pA", "pB"))
 
     assertMatches(matchingContext.getMatches(Map("pA" -> a, "pB"->d)), 1)
@@ -247,7 +247,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     relate(a, b, "rel")
     relate(b, c, "rel")
 
-    val patterns: Seq[Pattern] = Seq(VariableLengthPath("p", "a", "c", 1, 2, "rel", Direction.OUTGOING))
+    val patterns: Seq[Pattern] = Seq(VarLengthRelatedTo("p", "a", "c", 1, 2, "rel", Direction.OUTGOING))
     val matchingContext = new MatchingContext(patterns, bind("a"))
 
     assertMatches(matchingContext.getMatches(Map("a" -> a)), 2, Map("a" -> a, "c" -> b), Map("a" -> a, "c" -> c))
@@ -265,7 +265,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
 
     val patterns: Seq[Pattern] = Seq(
       RelatedTo("a", "b", "r1", "rel", Direction.OUTGOING),
-      VariableLengthPath("p", "b", "c", 1, 2, "rel", Direction.OUTGOING))
+      VarLengthRelatedTo("p", "b", "c", 1, 2, "rel", Direction.OUTGOING))
     val matchingContext = new MatchingContext(patterns, bind("a"))
 
     assertMatches(matchingContext.getMatches(Map("a" -> a)), 2, Map("a" -> a, "r1" -> r1, "b" -> b, "c" -> c), Map("a" -> a, "r1" -> r1, "b" -> b, "c" -> d))
@@ -283,7 +283,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
 
     val patterns: Seq[Pattern] = Seq(
       RelatedTo("a", "b", "r1", "t1", Direction.OUTGOING),
-      VariableLengthPath("p", "b", "c", 1, 2, "t1", Direction.OUTGOING))
+      VarLengthRelatedTo("p", "b", "c", 1, 2, "t1", Direction.OUTGOING))
     val matchingContext = new MatchingContext(patterns, bind("a"))
 
     assertMatches(matchingContext.getMatches(Map("a" -> a)), 1, Map("a" -> a, "r1" -> r1, "b" -> b, "c" -> c))
@@ -300,7 +300,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     relate(b, d, "t1")
 
     val patterns: Seq[Pattern] = Seq(
-      VariableLengthPath("p", "a", "x", 1, 2, "t1", Direction.OUTGOING))
+      VarLengthRelatedTo("p", "a", "x", 1, 2, "t1", Direction.OUTGOING))
     val matchingContext = new MatchingContext(patterns, bind("a"))
 
     assertMatches(matchingContext.getMatches(Map("a" -> a)), 3, Map("a" -> a, "x" -> b), Map("a" -> a, "x" -> c), Map("a" -> a, "x" -> d))
@@ -317,7 +317,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     relate(b, d, "t1")
 
     val patterns: Seq[Pattern] = Seq(
-      VariableLengthPath("p", "a", "x", 1, 2, "t1", Direction.OUTGOING))
+      VarLengthRelatedTo("p", "a", "x", 1, 2, "t1", Direction.OUTGOING))
     val matchingContext = new MatchingContext(patterns, bind("a", "x"))
 
     assertMatches(matchingContext.getMatches(Map("a" -> a, "x" -> d)), 1, Map("a" -> a, "x" -> d))
@@ -359,7 +359,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     val patterns: Seq[Pattern] = Seq(
       RelatedTo("pA", "pB", "pR1", "rel", Direction.OUTGOING),
       RelatedTo("pA", "pC", "pR2", "rel", Direction.OUTGOING),
-      VariableLengthPath("p", "pB", "pC", 1, 3, "rel", Direction.BOTH))
+      VarLengthRelatedTo("p", "pB", "pC", 1, 3, "rel", Direction.BOTH))
     val matchingContext = new MatchingContext(patterns, bind("pA"))
 
     assertMatches(matchingContext.getMatches(Map("pA" -> a)), 4,
