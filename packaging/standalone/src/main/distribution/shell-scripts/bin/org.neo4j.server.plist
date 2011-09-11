@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>Label</key>
-	<string>org.neo4j.server</string>
+	<string>LAUNCHD_NAME</string>
 	<key>WorkingDirectory</key>
 	<string>NEO4J_INSTANCE</string>
 	<key>ProgramArguments</key>

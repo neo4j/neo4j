@@ -68,6 +68,8 @@ JAVA_OPTS="-server ${wrapper_java_additional}"
 #NEO4J_SERVER_PORT=`( egrep "^org.neo4j.server.webserver.port" $NEO4J_INSTANCE/conf/neo4j-server.properties || echo 7474 ) | sed -e 's/.*=//'`
 NEO4J_SERVER_PORT=${org_neo4j_server_webserver_port:=7474}
 
+LAUNCHD_NAME="${LAUNCHD_NAME}.${NEO4J_SERVER_PORT}"
+
 if [ -z "${wrapper_user}" ]; then
   NEO4J_USER=`id -un`
 else
@@ -294,9 +296,9 @@ installservice() {
         fi
       fi
     elif [[ $DIST_OS -eq "macosx" ]] ; then
-      sed -e "s^NEO4J_INSTANCE^${NEO4J_INSTANCE}^" <"${NEO4J_INSTANCE}/bin/org.neo4j.server.plist" >"${LAUNCHD_DIR}/org.neo4j.server.plist"
-      launchctl load -w ${LAUNCHD_DIR}/org.neo4j.server.plist
-      launchctl start org.neo4j.server
+      sed -e "s^NEO4J_INSTANCE^${NEO4J_INSTANCE}^" -e "s^LAUNCHD_NAME^${LAUNCHD_NAME}^" <"${NEO4J_INSTANCE}/bin/org.neo4j.server.plist" >"${LAUNCHD_DIR}/${LAUNCHD_NAME}.plist"
+      launchctl load -w ${LAUNCHD_DIR}/${LAUNCHD_NAME}.plist
+      launchctl start ${LAUNCHD_NAME}
     else
       echo "Sorry, don't know how to install on ${DIST_OS}."
     fi
