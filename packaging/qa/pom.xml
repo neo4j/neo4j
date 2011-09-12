@@ -27,6 +27,7 @@
     <junit.version>4.8.2</junit.version>
     <commons-lang.version>2.5</commons-lang.version>
     <commons-io.version>2.0.1</commons-io.version>
+    <databinder.version>0.7.8</databinder.version>
   </properties>
 
 
@@ -39,7 +40,7 @@
     <dependency>
       <groupId>net.databinder</groupId>
       <artifactId>dispatch-http_2.8.1</artifactId>
-      <version>0.7.8</version>
+      <version>${databinder.version}</version>
     </dependency>
     <dependency>
       <groupId>commons-vfs</groupId>
