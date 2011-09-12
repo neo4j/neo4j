@@ -53,7 +53,7 @@ class PropertiesTest extends DocumentingTestBase {
       text = """To return all the nodes in a path, use the special property NODES""",
       queryText = """start a=(%A%) match p=a-->b-->c return p.NODES""",
       returns = """All the nodes in the path p.""",
-      (p) => assert(Array(node("A"), node("B"), node("C")) === p.columnAs[Array[Node]]("p.NODES").toList.head)
+      (p) => assert(List(node("A"), node("B"), node("C")) === p.columnAs[List[Node]]("p.NODES").toList.head)
     )
   }
 }

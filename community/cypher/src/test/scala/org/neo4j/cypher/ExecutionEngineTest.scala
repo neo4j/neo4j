@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.commands._
+import commands._
 import org.junit.Assert._
 import java.lang.String
 import parser.CypherParser
@@ -652,8 +652,27 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val result = parseAndExecute("start n=(1) match p = n-->x return p.LENGTH")
 
-
     assertEquals(List(3), result.columnAs[Int]("p.LENGTH").toList)
+  }
+
+  @Test def shouldBeAbleToFilterOnPathNodes() {
+    val a = createNode(Map("foo" -> "bar"))
+    val b = createNode(Map("foo" -> "bar"))
+    val c = createNode(Map("foo" -> "bar"))
+    val d = createNode(Map("foo" -> "bar"))
+
+    relate(a, b, "rel")
+    relate(b, c, "rel")
+    relate(c, d, "rel")
+
+    val query = Query.start(NodeById("pA", a.getId), NodeById("pB", d.getId)).
+      namedPaths(NamedPath("p", VarLengthRelatedTo("x", "pA", "pB", 1, 5, "rel", Direction.OUTGOING))).
+      where(AllInSeq(PathNodesValue("p"), "i", Equals(PropertyValue("i", "foo"), Literal("bar")))).
+      returns(ValueReturnItem(EntityValue("pB")))
+
+    val result = execute(query)
+
+    assertEquals(List(d), result.columnAs[Node]("pB").toList)
   }
 
   @Test def shouldReturnAVarLengthPath() {
