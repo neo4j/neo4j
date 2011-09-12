@@ -64,4 +64,6 @@ case class PathImpl(pathEntities: PropertyContainer*)
   def foreach[U](f: (PropertyContainer) => U) {
     pathEntities.foreach(f(_))
   }
+
+  override def toString(): String = "Path(" + pathEntities.mkString(", ") + ")"
 }

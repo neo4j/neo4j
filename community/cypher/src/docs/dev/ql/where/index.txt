@@ -10,3 +10,7 @@ include::filter-on-node-property.txt[]
 include::regular-expressions.txt[]
 include::filtering-on-relationship-type.txt[]
 include::property-exists.txt[]
+include::all-nodes-have-a-property.txt
+include::at-least-one-node-has-a-property.txt
+include::no-nodes-in-path.txt
+include::single-node-matches.txt

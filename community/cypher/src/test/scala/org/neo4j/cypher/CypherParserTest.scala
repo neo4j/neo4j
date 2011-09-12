@@ -24,7 +24,7 @@ import org.junit.Assert._
 import org.neo4j.graphdb.Direction
 import org.scalatest.junit.JUnitSuite
 import parser.{ConsoleCypherParser, CypherParser}
-import org.junit.{Ignore, Test}
+import org.junit.Test
 
 class CypherParserTest extends JUnitSuite {
   @Test def shouldParseEasiestPossibleQuery() {
@@ -601,7 +601,7 @@ class CypherParserTest extends JUnitSuite {
         returns(ValueReturnItem(EntityValue("b"))))
   }
 
-    @Test def optionalTypedAndNamedRelationship() {
+  @Test def optionalTypedAndNamedRelationship() {
     testQuery(
       "start a = (1) match a -[r?:KNOWS]-> (b) return b",
       Query.
@@ -625,11 +625,51 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         namedPaths(
-          NamedPath("p",
-            RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING, false),
-            RelatedTo("b", "c", "  UNNAMED2", None, Direction.OUTGOING, false))).
+        NamedPath("p",
+          RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING, false),
+          RelatedTo("b", "c", "  UNNAMED2", None, Direction.OUTGOING, false))).
         where(AllInSeq(PathNodesValue("p"), "n", Equals(PropertyValue("n", "name"), Literal("Andres"))))
-        returns(ValueReturnItem(EntityValue("b"))))
+        returns (ValueReturnItem(EntityValue("b"))))
+  }
+
+  @Test def testOnAllNodesInAPathImplicitSymbol() {
+    testQuery(
+      """start a = (1) match p = a --> b --> c where all(p.NODES, _.name = "Andres") return b""",
+      Query.
+        start(NodeById("a", 1)).
+        namedPaths(
+        NamedPath("p",
+          RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING, false),
+          RelatedTo("b", "c", "  UNNAMED2", None, Direction.OUTGOING, false))).
+        where(AllInSeq(PathNodesValue("p"), "_", Equals(PropertyValue("_", "name"), Literal("Andres"))))
+        returns (ValueReturnItem(EntityValue("b"))))
+  }
+
+  @Test def testAny() {
+    testQuery(
+      """start a = (1) where ANY(p.NODES, _.name = "Andres") return b""",
+      Query.
+        start(NodeById("a", 1)).
+        where(AnyInSeq(PathNodesValue("p"), "_", Equals(PropertyValue("_", "name"), Literal("Andres"))))
+        returns (ValueReturnItem(EntityValue("b"))))
+  }
+
+  @Test def testNone() {
+    testQuery(
+      """start a = (1) where none(p.NODES, x=> x.name = "Andres") return b""",
+      Query.
+        start(NodeById("a", 1)).
+        where(NoneInSeq(PathNodesValue("p"), "x", Equals(PropertyValue("x", "name"), Literal("Andres"))))
+        returns (ValueReturnItem(EntityValue("b"))))
+  }
+
+  @Test def testSingle() {
+    testQuery(
+      """start a = (1) where single(p.NODES, _.name = "Andres") return b""",
+      Query.
+        start(NodeById("a", 1)).
+        where(SingleInSeq(PathNodesValue("p"), "_", Equals(PropertyValue("_", "name"), Literal("Andres"))))
+        returns (ValueReturnItem(EntityValue("b"))))
   }
 
 

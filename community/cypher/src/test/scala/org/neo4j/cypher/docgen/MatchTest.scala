@@ -22,6 +22,7 @@ package org.neo4j.cypher.docgen
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.graphdb.Node
+import org.neo4j.cypher.PathImpl
 
 class MatchTest extends DocumentingTestBase {
   override def indexProps: List[String] = List("name")
@@ -126,6 +127,16 @@ class MatchTest extends DocumentingTestBase {
       queryText = """start a=(%A%) match a-[r?:LOVES]->() return a,r""",
       returns = """A node, and null, since the node has no relationships.""",
       (p) => assertEquals(List(Map("a" -> node("A"), "r" -> null)), p.toList)
+    )
+  }
+
+  @Test def introduceNamedPath() {
+    testQuery(
+      title = "Named path",
+      text = "If you want to return or filter on a path in your pattern graph, you can a introduce a named path.",
+      queryText = """start a=(%A%) match p = a-->b return p""",
+      returns = """The two paths starting from the first node.""",
+      (p) => assertEquals(2, p.toSeq.length)
     )
   }
 
