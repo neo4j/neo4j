@@ -74,6 +74,14 @@ the relevant Commercial Agreement.
     <jythonpath>../../main/python:$JYTHONPATH</jythonpath>
     <build.number>0</build.number>
   </properties>
+  
+  <repositories>
+    <repository>
+      <id>neo4j-dev</id>
+      <name>Neo4j Developer Repository</name>
+      <url>https://repo.neo4j.org/content/groups/dev/</url>
+    </repository>
+  </repositories>
 
   <build>
   
