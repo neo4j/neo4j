@@ -44,7 +44,7 @@ public class PluginInitializer
         pluginLifecycles = Service.load( PluginLifecycle.class );
     }
 
-    public Collection<Injectable<?>> intitializePackages( Iterable<String> packageNames )
+    public Collection<Injectable<?>> initializePackages( Iterable<String> packageNames )
     {
         AbstractGraphDatabase graphDatabaseService = neoServer.getDatabase().graph;
         Configuration configuration = neoServer.getConfiguration();
