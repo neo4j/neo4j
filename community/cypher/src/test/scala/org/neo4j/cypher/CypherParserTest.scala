@@ -22,9 +22,9 @@ package org.neo4j.cypher
 import org.neo4j.cypher.commands._
 import org.junit.Assert._
 import org.neo4j.graphdb.Direction
-import org.junit.Test
 import org.scalatest.junit.JUnitSuite
 import parser.{ConsoleCypherParser, CypherParser}
+import org.junit.{Ignore, Test}
 
 class CypherParserTest extends JUnitSuite {
   @Test def shouldParseEasiestPossibleQuery() {
@@ -616,6 +616,19 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "r", None, Direction.OUTGOING, true)).
+        returns(ValueReturnItem(EntityValue("b"))))
+  }
+
+  @Test @Ignore def testOnAllNodesInAPath() {
+    testQuery(
+      """start a = (1) match p = a --> b --> c where ALL(p.NODES, n => n.name = "Andres") return b""",
+      Query.
+        start(NodeById("a", 1)).
+        namedPaths(
+          NamedPath("p",
+            RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING, false),
+            RelatedTo("b", "c", "  UNNAMED2", None, Direction.OUTGOING, false))).
+        where(AllInSeq(PathNodesValue("p"), "n", Equals(PropertyValue("n", "name"), Literal("Andres"))))
         returns(ValueReturnItem(EntityValue("b"))))
   }
 
