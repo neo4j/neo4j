@@ -321,12 +321,21 @@ public class XaLogicalLog
     private synchronized void cacheTxStartPosition( long txId, int masterId,
             LogEntry.Start startEntry )
     {
+        cacheTxStartPosition( txId, masterId, startEntry, logVersion );
+    }
+    
+    private synchronized TxPosition cacheTxStartPosition( long txId, int masterId,
+            LogEntry.Start startEntry, long logVersion )
+    {
         if ( startEntry.getStartPosition() == -1 )
         {
             throw new RuntimeException( "StartEntry.position is " + startEntry.getStartPosition() );
         }
-        txStartPositionCache.put( txId, new TxPosition( logVersion, masterId, startEntry.getIdentifier(),
-                startEntry.getStartPosition() ) );
+        
+        TxPosition result = new TxPosition( logVersion, masterId, startEntry.getIdentifier(),
+                startEntry.getStartPosition() );
+        txStartPositionCache.put( txId, result );
+        return result;
     }
 
     // [DONE][identifier]
@@ -1018,27 +1027,38 @@ public class XaLogicalLog
          */
         public long extractNext( LogBuffer target ) throws IOException
         {
-            while ( this.version <= logVersion )
+            try
             {
-                long result = collectNextFromCurrentSource( target );
-                if ( result != -1 )
+                while ( this.version <= logVersion )
                 {
-                    // TODO Should be assertions?
-                    if ( previousCommitEntry != null && result == previousCommitEntry.getTxId() ) continue;
-                    if ( result != nextExpectedTxId )
+                    long result = collectNextFromCurrentSource( target );
+                    if ( result != -1 )
                     {
-                        throw new RuntimeException( "Expected txId " + nextExpectedTxId + ", but got " + result + " (starting from " + startTxId + ")" + " " + counter + ", " + previousCommitEntry + ", " + lastCommitEntry );
+                        // TODO Should be assertions?
+                        if ( previousCommitEntry != null && result == previousCommitEntry.getTxId() ) continue;
+                        if ( result != nextExpectedTxId )
+                        {
+                            throw new RuntimeException( "Expected txId " + nextExpectedTxId + ", but got " + result + " (starting from " + startTxId + ")" + " " + counter + ", " + previousCommitEntry + ", " + lastCommitEntry );
+                        }
+                        nextExpectedTxId++;
+                        counter++;
+                        return result;
                     }
-                    nextExpectedTxId++;
-                    counter++;
-                    return result;
+                    if ( this.version < logVersion )
+                    {
+                        continueInNextLog();
+                    }
                 }
-                if ( this.version < logVersion )
-                {
-                    continueInNextLog();
-                }
+                return -1;
             }
-            return -1;
+            catch ( Exception e )
+            {
+                // Something is wrong with the cached tx start position for this (expected) tx,
+                // remove it from cache so that next request will have to bypass the cache
+                txStartPositionCache.remove( nextExpectedTxId );
+                if ( e instanceof IOException ) throw (IOException) e;
+                else throw Exceptions.launderedException( e );
+            }
         }
 
         private void continueInNextLog() throws IOException
@@ -1458,9 +1478,10 @@ public class XaLogicalLog
                 {
                     LogEntry.Start startEntry = xidIdentMap.get( entry.getIdentifier() );
                     LogEntry.Commit commitEntry = (LogEntry.Commit) entry;
-                    cacheTxStartPosition( commitEntry.getTxId(), commitEntry.getMasterId(), startEntry );
+                    TxPosition oldPos = txStartPositionCache.get( commitEntry.getTxId() );
+                    TxPosition newPos = cacheTxStartPosition( commitEntry.getTxId(), commitEntry.getMasterId(), startEntry, logVersion+1 );
                     msgLog.logMessage( "Updated tx " + ((LogEntry.Commit) entry ).getTxId() +
-                            " with " + startEntry.getStartPosition() );
+                            " from " + oldPos + " to " + newPos );
                 }
 //                if ( !startEntriesWritten.contains( entry.getIdentifier() ) )
 //                {
@@ -1606,6 +1627,12 @@ public class XaLogicalLog
             if ( version < other.version ) return true;
             if ( version > other.version ) return false;
             return position < other.position;
+        }
+        
+        @Override
+        public String toString()
+        {
+            return "TxPosition[version:" + version + ", pos:" + position + "]";
         }
     }
 

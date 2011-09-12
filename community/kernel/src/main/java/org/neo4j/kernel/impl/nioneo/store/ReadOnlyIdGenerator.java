@@ -75,4 +75,10 @@ public class ReadOnlyIdGenerator implements IdGenerator
     {
         return 0;
     }
+    
+    @Override
+    public void clearFreeIds()
+    {
+        throw new ReadOnlyDbException();
+    }
 }
