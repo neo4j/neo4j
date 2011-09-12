@@ -79,42 +79,4 @@ class WhereTest extends DocumentingTestBase {
       returns = """The relationship that has a type whose name starts with K.""",
       (p) => assertEquals("KNOWS", p.columnAs[Relationship]("r").toList.head.getType.name()))
   }
-
-  @Test def all_nodes_in_path() {
-    testQuery(
-      title = "All nodes have a property",
-      text = """When you have a path, and want to make sure that all nodes follow a rule, you can use the ALL function,
-        "which takes an iterable part, and a closure that returns true or false for the items in the iterable.
-        "For example, if you want all nodes in a path to be at least 18 years old, you could write something like this:""",
-      queryText = """start n=(%Andres%) match p=n-->b where all(p.NODES, x => x.age > 18) return p.NODES""",
-      returns = """All nodes in the path.""",
-      (p) => assertEquals(List(List(node("Andres"), node("Tobias"))), p.columnAs[Node]("p.NODES").toList))
-  }
-
-  @Test def any_nodes_in_path() {
-    testQuery(
-      title = "At least one node has a property",
-      text = """To test if at least one node fulfills a requirement, you can use the ANY function.""",
-      queryText = """start n=(%Andres%) match p=n-->b where ANY(p.NODES, x => x.age = 30) return p.NODES""",
-      returns = """All nodes in the path.""",
-      (p) => assertEquals(List(), p.columnAs[Node]("p.NODES").toList))
-  }
-
-  @Test def no_node_in_path() {
-    testQuery(
-      title = "No nodes in path",
-      text = """To exclude subgraphs where the path has at least one node matching a rule, use the NONE function.""",
-      queryText = """start n=(%Andres%) match p=n-->b where NONE(p.NODES, x => x.age = 30) return p.NODES""",
-      returns = """All nodes in the path.""",
-      (p) => assertEquals(List(List(node("Andres"), node("Tobias"))), p.columnAs[Node]("p.NODES").toList))
-  }
-
-  @Test def single_node_in_path() {
-    testQuery(
-      title = "Single node matches",
-      text = """If you need exactly one node to match your expression, use the function SINGLE""",
-      queryText = """start n=(%Andres%) match p=n-->b where SINGLE(p.NODES, x => x.age = 25) return p.NODES""",
-      returns = """All nodes in the path.""",
-      (p) => assertEquals(List(List(node("Andres"), node("Tobias"))), p.columnAs[Node]("p.NODES").toList))
-  }
 }

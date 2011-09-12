@@ -1,0 +1,14 @@
+[[query-function]]
+Functions in Cypher
+===================
+
+Here is an list of the functions in Cypher, seperated into three different sections: Predicates and Aggregated functions
+
+==Predicates==
+Predicates are boolean functions that return true or false for a given set of input. They are most commonly used to
+filter out subgraphs in the WHERE part of a query.
+
+include::all.txt[]
+include::any.txt[]
+include::none.txt[]
+include::single.txt[]
