@@ -15,7 +15,7 @@ function work {
     
     deploy neo4j-cypher sources test-sources tests docs
     
-    deploy neo4j-server site static-web docs javadoc sources test-sources tests
+    deploy neo4j-server static-web docs javadoc sources test-sources tests
 
     deploy_tarball neo4j-examples download
     deploy neo4j-examples docs sources test-sources tests site
