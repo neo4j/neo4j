@@ -65,24 +65,27 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, MatchingPair
 
     val notVisitedRelationships = currentNode.getGraphRelationships(currentRel, history)
 
+    val nextPNode = currentRel.getOtherNode(pNode)
+
     /*
     We need to know if any of these sub-calls results in a yield. If none do, and we're
     looking at an optional pattern relationship, we'll output a null as match.
      */
-    val results = notVisitedRelationships.map(rel => {
+    val yielded = notVisitedRelationships.map(rel => {
       val nextNode = rel.getOtherNode(gNode)
-      val nextPNode = currentRel.getOtherNode(pNode)
       val newHistory = history ++ Seq(currentNode, MatchingPair(currentRel, rel))
       traverseNode(MatchingPair(nextPNode, nextNode), newHistory, remaining, yielder)
-    })
+    }).foldLeft(false)(_ || _)
 
-    val yielded = results.exists(x => x)
-
-    if (currentRel.optional && !yielded) {
-      traverseNextNodeOrYield(remaining, history ++ Seq(currentNode, MatchingPair(currentRel, null)), yielder)
-    } else {
-      yielded
+    if(yielded) {
+      return true
     }
+
+    if (currentRel.optional) {
+      return traverseNextNodeOrYield(remaining, history ++ Seq(currentNode, MatchingPair(currentRel, null)), yielder)
+    }
+
+    false
   }
 
   private def traverseNextNodeOrYield[U](remaining: Seq[MatchingPair], history: Seq[MatchingPair], yielder: Map[String, Any] => U): Boolean = {
