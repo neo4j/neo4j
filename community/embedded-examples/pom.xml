@@ -124,25 +124,6 @@
         </executions>
       </plugin>
       <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>copy-apidocs</id>
-            <phase>site</phase>
-            <configuration>
-              <target name="Copy apidocs">
-                <copy todir="${apidocs-target}" overwrite="true">
-                  <fileset dir="${apidocs-unpack}" includes="**/*" />
-                </copy>
-              </target>
-            </configuration>
-            <goals>
-              <goal>run</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <artifactId>maven-source-plugin</artifactId>
         <executions>
           <execution>
