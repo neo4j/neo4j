@@ -62,4 +62,22 @@ Also note that there are two different downloads depending on which version you 
 . Download the latest version from http://pypi.python.org/pypi/neo4j-embedded/
 . Run the installer
 
+=== Solving problems with missing DLL files ===
+
+Certain versions of Windows ship without DLL files needed to programmatically launch a JVM. You will need to make the files IEShims.dll and MSVCR71.DLL available to windows.
+
+IEShims.dll is normally included with Internet Explorer installs. To make windows find this file globally, you need to add the IE install folder to your PATH.
+
+. Right click on "My Computer" or "Computer"
+. Select "Properties"
+. Click on "Advanced" or "Advanced system settings"
+. Click the "Environment variables" button
+. Find the path varible, and add C:\Program Files\Internet Explorer to it (or the install location of IE, if you have installed it somewhere else).
+
+MSVCR71.DLL needs to be downloaded. There does not seem to be a download available for it directly from Microsoft, and the Microsoft support site points to a download at http://www.dll-files.com/dllindex/dll-files.shtml?msvcr71
+
+Download the dll, and put it in c:\Windows\System32\
+
+
+If you are still getting errors about missing DLL files, you can use http://www.dependencywalker.com/ to open your jvm.dll (located in JAVA_HOME/bin/client/ or JAVA_HOME/bin/server/), and it will tell you if there are other missing dlls.
 
