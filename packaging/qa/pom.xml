@@ -27,7 +27,7 @@
     <junit.version>4.8.2</junit.version>
     <commons-lang.version>2.5</commons-lang.version>
     <commons-io.version>2.0.1</commons-io.version>
-    <databinder.version>0.7.8</databinder.version>
+    <databinder.version>0.8.5</databinder.version>
   </properties>
 
 
