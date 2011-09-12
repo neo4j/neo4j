@@ -56,6 +56,7 @@ public class SlaveIdGenerator implements IdGenerator
         {
             IdGenerator localIdGenerator = localFactory.open( fileName, grabSize,
                     idType, highestIdInUse );
+            localIdGenerator.clearFreeIds();
             SlaveIdGenerator generator = new SlaveIdGenerator( idType, highestIdInUse, broker,
                     receiver, localIdGenerator );
             generators.put( idType, generator );
@@ -195,6 +196,11 @@ public class SlaveIdGenerator implements IdGenerator
     public long getDefragCount()
     {
         return this.defragCount;
+    }
+    
+    @Override
+    public void clearFreeIds()
+    {
     }
     
     private static class IdRangeIterator

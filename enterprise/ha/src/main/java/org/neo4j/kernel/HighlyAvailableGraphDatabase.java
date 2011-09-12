@@ -430,12 +430,11 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         boolean restarted = false;
         boolean iAmCurrentlyMaster = masterServer != null;
         msgLog.logMessage( "ReevaluateMyself: machineId=" + machineId + " with master[" + master +
-                "] (I am master=" + iAmCurrentlyMaster + ")" );
+                "] (I am master=" + iAmCurrentlyMaster + ", " + localGraph + ")" );
         if ( master.other().getMachineId() == machineId )
-        {
-            // I am not currently master
+        {   // I am the new master
             if ( this.localGraph == null || !iAmCurrentlyMaster )
-            {
+            {   // I am currently a slave, so restart as master
                 internalShutdown();
                 startAsMaster( storeId );
                 restarted = true;
@@ -444,16 +443,17 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             broker.rebindMaster();
         }
         else
-        {
+        {   // Someone else is the new master
             broker.notifyMasterChange( master.other() );
             if ( this.localGraph == null || iAmCurrentlyMaster )
-            {
+            {   // I am currently master, so restart as slave.
+                // This will result in clearing of free ids from .id files, see SlaveIdGenerator.
                 internalShutdown();
                 startAsSlave( storeId );
                 restarted = true;
             }
             else
-            {
+            {   // I am already a slave, so just forget the ids I got from the previous master
                 ((SlaveIdGeneratorFactory) getConfig().getIdGeneratorFactory()).forgetIdAllocationsFromMaster();
             }
 
