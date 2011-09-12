@@ -516,6 +516,27 @@ the relevant Commercial Agreement.
     </profile>
 
     <profile>
+      <id>functional-tests-windows</id>
+      <activation>
+        <os>
+          <family>windows</family>
+        </os>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <skip>false</skip>
+              <argLine>-Xmx1024m</argLine>
+              <forkMode>always</forkMode>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
       <id>web-tests</id>
       <activation>
         <property>
