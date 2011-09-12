@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 
 public class CypherResultRepresentation extends ObjectRepresentation
@@ -88,6 +89,10 @@ public class CypherResultRepresentation extends ObjectRepresentation
         else if ( r instanceof Long || r instanceof Integer )
         {
             return ValueRepresentation.number( ( (Number) r ).longValue() );
+        }
+        else if ( r instanceof Path )
+        {
+            return new PathRepresentation<Path>((Path) r );
         }
         else
         {

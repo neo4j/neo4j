@@ -106,4 +106,20 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
         return "_Cypher query_\n\n" + "[source,cypher]\n" + "----\n" + script
                + "\n----\n";
     }
+    
+    
+    @Test
+    @Documented
+    @Graph( "I know you" )
+    public void return_paths() throws UnsupportedEncodingException, Exception
+    {
+        String script = "start x  = (" + data.get().get( "I" ).getId()
+                        + ") match path = (x--friend) return path";
+        gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
+                "{\"query\": \"" + script + "\"}" ).description(
+                formatCypher( script ) );
+        String response = gen.get().post( ENDPOINT ).entity();
+        assertEquals(2, ((Map) JsonHelper.jsonToMap( response )).size());
+        assertTrue(response.contains( "data" ));
+    }
 }

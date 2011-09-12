@@ -11,3 +11,4 @@ of the field value - +Node+, +Relationship+ or any simple value like +String+.
 
 include::send-a-query.txt[]
 
+include::return-paths.txt[]
