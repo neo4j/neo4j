@@ -17,11 +17,9 @@ function work {
     
     deploy neo4j-server static-web docs javadoc sources test-sources tests
 
-    deploy_tarball neo4j-examples download
-    deploy neo4j-examples docs sources test-sources tests site
+    deploy neo4j-examples docs sources test-sources tests
 
-    deploy_tarball neo4j-server-examples download
-    deploy neo4j-server-examples docs site sources test-sources tests
+    deploy neo4j-server-examples docs sources test-sources tests
 }
 
 function deploy_defaults {
