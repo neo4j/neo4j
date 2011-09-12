@@ -4,9 +4,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.neo4j</groupId>
+    <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
-    <version>21</version>
+    <version>25</version>
   </parent>
 
   <groupId>org.neo4j</groupId>
@@ -63,28 +63,43 @@ the relevant Commercial Agreement.
     </developer>
   </developers>
 
+  <profiles>
+    <profile>
+      <id>eclipse</id>
+    </profile>
+    <!-- eclipse has an issue with this configuration of the assembly-plugin, use the 'eclipse' profile -->
+    <profile>
+      <id>default</id>
+      <activation><activeByDefault>true</activeByDefault></activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>neo4j-test-utils</id>
+                <phase>compile</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+                <configuration>
+                  <attach>false</attach>
+                  <descriptors>
+                    <!-- repackage org/neo4j/test from 'provided' dependencies -->
+                    <descriptor>src/main/assemblies/neo4j-test-utils.xml</descriptor>
+                  </descriptors>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>neo4j-test-utils</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <attach>false</attach>
-              <descriptors>
-               <!-- repackage org/neo4j/test from 'provided' dependencies -->
-               <descriptor>src/main/assemblies/neo4j-test-utils.xml</descriptor>
-              </descriptors>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
@@ -111,6 +126,19 @@ the relevant Commercial Agreement.
   <dependencies>
 
     <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-graphviz</artifactId>
+      <version>${neo4j.version}</version>
+      <exclusions>
+        <exclusion>
+          <!-- needs to be provided by the user -->
+          <groupId>org.neo4j</groupId>
+          <artifactId>neo4j-kernel</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server-enterprise</artifactId>
       <version>${neo4j.version}</version>
@@ -120,7 +148,6 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.8.2</version>
       <scope>test</scope>
     </dependency>
 
@@ -129,6 +156,13 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
+      <version>${neo4j.version}</version>
+      <type>test-jar</type>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>server-api</artifactId>
       <version>${neo4j.version}</version>
       <type>test-jar</type>
       <scope>provided</scope>
@@ -149,7 +183,21 @@ the relevant Commercial Agreement.
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher</artifactId>
+      <version>${neo4j.version}</version>
+      <type>test-jar</type>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-graph-algo</artifactId>
+      <version>${neo4j.version}</version>
+      <type>test-jar</type>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-graph-matching</artifactId>
       <version>${neo4j.version}</version>
       <type>test-jar</type>
       <scope>provided</scope>
@@ -192,6 +240,13 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-udc</artifactId>
+      <version>${neo4j.version}</version>
+      <type>test-jar</type>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-graphviz</artifactId>
       <version>${neo4j.version}</version>
       <type>test-jar</type>
       <scope>provided</scope>

@@ -49,12 +49,12 @@
     <fileSet>
       <outputDirectory>/META-INF</outputDirectory>
       <includes>
-	<include>COPYRIGHT.txt</include>
+        <include>COPYRIGHT.txt</include>
         <include>NOTICE.txt</include>
         <include>LICENSE.txt</include>
         <include>LICENSES.txt</include>
         <include>README*</include>
-	<include>CHANGES.txt</include>
+        <include>CHANGES.txt</include>
       </includes>
     </fileSet>
   </fileSets>
