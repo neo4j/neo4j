@@ -619,7 +619,7 @@ class CypherParserTest extends JUnitSuite {
         returns(ValueReturnItem(EntityValue("b"))))
   }
 
-  @Test @Ignore def testOnAllNodesInAPath() {
+  @Test def testOnAllNodesInAPath() {
     testQuery(
       """start a = (1) match p = a --> b --> c where ALL(p.NODES, n => n.name = "Andres") return b""",
       Query.
