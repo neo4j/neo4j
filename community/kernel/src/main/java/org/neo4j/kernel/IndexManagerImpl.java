@@ -207,7 +207,7 @@ class IndexManagerImpl implements IndexManager
     {
         private final String indexName;
         private final Map<String, String> config;
-        private Exception exception;
+        private volatile Exception exception;
         private final Class<? extends PropertyContainer> cls;
 
         IndexCreatorThread( Class<? extends PropertyContainer> cls, String indexName,
@@ -239,7 +239,14 @@ class IndexManagerImpl implements IndexManager
             }
             finally
             {
-                tx.finish();
+                try
+                {
+                    tx.finish();
+                }
+                catch ( Exception e )
+                {
+                    this.exception = e;
+                }
             }
         }
     }

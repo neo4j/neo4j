@@ -29,6 +29,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.management.MBeanServer;
+import javax.management.NotCompliantMBeanException;
 import javax.management.remote.JMXServiceURL;
 
 import org.neo4j.helpers.Service;
@@ -72,8 +73,12 @@ public final class JmxExtension extends KernelExtension<JmxExtension.JmxData>
                     beans.add( bean );
                 }
             }
+            catch ( NotCompliantMBeanException e )
+            {   // Not compliant with the current setup, log as fine for those really interested
+                log.fine( "JMX Bean not compliant " + provider + " due to " + e.getMessage() );
+            }
             catch ( Exception e )
-            {
+            {   // Unexpected exception, worth noting in the log
                 log.info( "Failed to register JMX Bean " + provider );
             }
         }
