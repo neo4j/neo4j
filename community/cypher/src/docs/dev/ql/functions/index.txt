@@ -18,9 +18,11 @@ Scalar functions return a single value.
 
 include::length.txt[]
 include::type.txt[]
+include::id.txt[]
 
 
 == Iterable functions ==
 Iterable functions return an iterable of things - nodes in a path, and so on.
 
 include::nodes.txt[]
+include::relationships.txt[]
