@@ -17,6 +17,9 @@ rem
 rem You should have received a copy of the GNU General Public License
 rem along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+cls
+setlocal ENABLEEXTENSIONS
+
 call:main %1
 
 goto:eof
@@ -30,6 +33,12 @@ set settingError=""
 call:checkSettings
 if not %settingError% == "" (
   echo %settingError% variable is not set.
+  goto:eof
+)
+
+call:findJavaHome
+if not "%javaHomeError%" == "" (
+  echo %javaHomeError%
   goto:eof
 )
 set wrapperJarFilename=windows-service-wrapper-1.jar
@@ -49,14 +58,42 @@ goto:eof
 rem end function main
 
 rem
+rem function findJavaHome
+rem
+
+:findJavaHome
+set keyName=HKLM\SOFTWARE\JavaSoft\Java Runtime Environment
+set valueName=CurrentVersion
+
+FOR /F "usebackq skip=2 tokens=3" %%a IN (`REG QUERY "%keyName%" /v %valueName% 2^>nul`) DO (
+	set javaVersion=%%a
+)
+
+if "%javaVersion%" == "" (
+    set javaHomeError=Unable to locate jvm. Could not find %keyName%/%valueName% entry in windows registry.
+	goto:eof
+)
+
+set javaCurrentKey=HKLM\SOFTWARE\JavaSoft\Java Runtime Environment\%javaVersion%
+set javaHomeKey=JavaHome
+
+FOR /F "usebackq skip=2 tokens=3,4" %%a IN (`REG QUERY "%javaCurrentKey%" /v %javaHomeKey% 2^>nul`) DO (
+    set javaPath=%%a %%b
+)
+
+goto:eof
+
+rem end function findJavaHome
+
+rem
 rem function checkSettings
 rem
 :checkSettings
-if %serviceName% == "" (
+if "%serviceName%" == "" (
   set settingError=serviceName
   goto:eof
 )
-if %serviceDisplayName% == "" (
+if "%serviceDisplayName%" == "" (
   set settingError=serviceDisplayName
   goto:eof
 )
@@ -133,8 +170,8 @@ rem
 rem function install
 rem
 :install
-set binPath="java "-DworkingDir=%~dps0.." -DconfigFile=%configFile% %classpath% %mainclass% -jar "%~dps0%wrapperJarFilename%" %serviceName%"
-sc create %serviceName% binPath= %binPath% DisplayName= %serviceDisplayName% start= %serviceStartType%
+set binPath=%javaPath%\bin\java.exe -DworkingDir=%~dps0.. -DconfigFile=%configFile% %classpath% %mainclass% -jar %~dps0%wrapperJarFilename% %serviceName%
+sc create "%serviceName%" binPath= "%binPath%" DisplayName= "%serviceDisplayName%" start= %serviceStartType%
 call:start
 goto:eof
 
@@ -193,7 +230,7 @@ rem
 rem function console
 rem
 :console
-java "-DworkingDir=%~dp0.." -DconfigFile=%configFile% %classpath% %mainclass% -jar "%~dps0%wrapperJarFilename%"
+java -DworkingDir=%~dp0.. -DconfigFile=%configFile% %classpath% %mainclass% -jar %~dps0%wrapperJarFilename%
 goto:eof
 
 rem end function console
@@ -232,4 +269,5 @@ rem Factored out switch for setting the variables
 goto:eof
 
 rem end function parseConfig
+
 

@@ -17,11 +17,12 @@ rem
 rem You should have received a copy of the GNU General Public License
 rem along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-set serviceName="neo4j"
-set serviceDisplayName="Neo4j Graph DB Server"
+set serviceName=neo4j
+set serviceDisplayName=Neo4j Graph DB Server
 set serviceStartType=auto
 set classpath="-DserverClasspath=lib/*.jar;system/lib/*.jar;plugins/*.jar;system/coordinator/lib/*.jar"
 set mainclass="-DserverMainClass=org.neo4j.server.Bootstrapper"
 set configFile="conf\neo4j-wrapper.conf"
 
-call base.bat %1 %2 %3 %4 %5
+call "%~dp0\base.bat" %1 %2 %3 %4 %5
+
