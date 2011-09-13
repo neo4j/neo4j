@@ -204,10 +204,6 @@ terms of the relevant Commercial Agreement.
                   <mainClass>${neo4j-server.mainClass}</mainClass>
                 </manifest>
               </archive>
-              <excludes>
-                <exclude>webadmin-html/**</exclude>
-                <exclude>lib/**</exclude>
-              </excludes>
             </configuration>
           </execution>
         </executions>
@@ -224,63 +220,43 @@ terms of the relevant Commercial Agreement.
         </configuration>
       </plugin>
 
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-test-source</id>
+            <phase>generate-test-sources</phase>
+            <goals>
+              <goal>add-test-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>src/functionaltest/java</source>
+              </sources>
+            </configuration>
+          </execution>
+          <execution>
+            <id>add-test-resource</id>
+            <phase>generate-test-resources</phase>
+            <goals>
+              <goal>add-test-resource</goal>
+            </goals>
+            <configuration>
+              <resources>
+                <resource>
+                  <directory>src/functionaltest/resources</directory>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
     </plugins>
   </build>
 
   <profiles>
-    <profile>
-      <id>functional-tests</id>
-      <activation>
-        <property>
-          <name>tests</name>
-          <value>functional</value>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>build-helper-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>add-test-source</id>
-                <phase>generate-test-sources</phase>
-                <goals>
-                  <goal>add-test-source</goal>
-                </goals>
-                <configuration>
-                  <sources>
-                    <source>src/functionaltest/java</source>
-                  </sources>
-                </configuration>
-              </execution>
-              <execution>
-                <id>add-test-resource</id>
-                <phase>generate-test-resources</phase>
-                <goals>
-                  <goal>add-test-resource</goal>
-                </goals>
-                <configuration>
-                  <resources>
-                    <resource>
-                      <directory>src/functionaltest/resources</directory>
-                    </resource>
-                  </resources>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <skip>false</skip>
-              <argLine>-Xmx1024m</argLine>
-              <forkMode>perTest</forkMode>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
 
     <profile>
       <id>web-tests</id>
@@ -410,9 +386,9 @@ terms of the relevant Commercial Agreement.
       <id>initial-build</id>
       <repositories>
         <repository>
-          <id>neo4j-dev</id>
+          <id>neo4j-build</id>
           <name>Neo4j Developer Repository</name>
-          <url>https://repo.neo4j.org/content/groups/dev/</url>
+          <url>https://repo.neo4j.org/content/groups/build</url>
         </repository>
       </repositories>
     </profile>
