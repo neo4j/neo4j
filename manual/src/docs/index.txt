@@ -145,7 +145,7 @@ NOTE: It's ok to have a dot right after the URL, it won't be part of the link.
 == Admonitions ==
 
 These are very useful and should be used where appropriate.
-Choose from the following (and no, we can't easily add new ones):
+Choose from the following (write all caps and no, we can't easily add new ones):
 
 NOTE: Note.
 
