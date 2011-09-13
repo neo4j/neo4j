@@ -74,7 +74,7 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
     public void testPropertyColumn() throws UnsupportedEncodingException
     {
         String script = "start x  = (" + data.get().get( "I" ).getId()
-                        + ") match (x) --> (n) return n.name?, n.age?";
+                        + ") match (x) -[r]-> (n) return type(r), n.name?, n.age?";
         gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
                 "{\"query\": \"" + script + "\"}" ).description(
                 formatCypher( script ) );
@@ -107,19 +107,24 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
                + "\n----\n";
     }
     
-    
+    /**
+     * Paths can be returned
+     * together with other return types by just
+     * specifying returns.
+     */
     @Test
     @Documented
     @Graph( "I know you" )
     public void return_paths() throws UnsupportedEncodingException, Exception
     {
         String script = "start x  = (" + data.get().get( "I" ).getId()
-                        + ") match path = (x--friend) return path";
+                        + ") match path = (x--friend) return path, friend.name";
         gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
                 "{\"query\": \"" + script + "\"}" ).description(
                 formatCypher( script ) );
         String response = gen.get().post( ENDPOINT ).entity();
         assertEquals(2, ((Map) JsonHelper.jsonToMap( response )).size());
         assertTrue(response.contains( "data" ));
+        assertTrue(response.contains( "you" ));
     }
 }
