@@ -26,9 +26,9 @@ uniqueness:: Decides how uniqueness should be calculated. Possible values:
  * +node_path+
  * +relationship_path+
 prune_evaluator:: Decides whether the traverser should continue down that path or if it should be pruned so that the traverser won't continue down that path.
- You can write your own prune evaluator or use the built-in +none+ prune evaluator.
-return filter:: Decides whether the current position should be included in the result.
- You can provide your own code for this, or use one of the built-in filters:
+ You can write your own prune evaluator as (see <<rest-api-traversal-using-a-return-filter>> or use the +built-in+ +none+ prune evaluator.
+return_filter:: Decides whether the current position should be included in the result.
+ You can provide your own code for this (see <<rest-api-traversal-using-a-return-filter>>), or use one of the built-in filters:
  * +all+
  * +all_but_start_node+
 max_depth:: Is a short-hand way of specifying a prune evaluator which prunes after a certain depth.
