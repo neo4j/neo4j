@@ -40,6 +40,12 @@ if not "%javaHomeError%" == "" (
   echo %javaHomeError%
   goto:eof
 )
+
+rem Unescape javaPath
+for /f "tokens=* delims=" %%P in (%javaPath%) do (
+    set javaPath=%%P
+)
+
 set wrapperJarFilename=windows-service-wrapper-1.jar
 set command=""
 call:parseConfig "%~dp0..\%configFile%"
@@ -58,27 +64,31 @@ rem end function main
 
 rem
 rem function findJavaHome
-rem Tries to find java.exe using JAVA_HOME
-rem or using registry keys.
 rem
 
 :findJavaHome
 if not "%JAVA_HOME%" == "" (
   
-  set javaPath=%JAVA_HOME%
-  if exist "%javaPath%\bin\javac.exe" (
-    set javaPath=%javaPath%\jre
+  if exist "%JAVA_HOME%\bin\javac.exe" (
+    if exist "%JAVA_HOME%\jre\bin\client\java.exe" (
+      set javaPath= "%JAVA_HOME%\jre\bin\client\java.exe"
+      goto:eof
+    )
+
+    if exist "%JAVA_HOME%\jre\bin\server\java.exe" (
+      set javaPath= "%JAVA_HOME%\jre\bin\server\java.exe"
+      goto:eof
+    )
   )
-  
-  if exist "%javaPath%\bin\client\java.exe" (
-    set javaPath= %javaPath%\bin\client\java.exe
-	
-    goto:eof
+
+  if exist "%JAVA_HOME%\bin\client\java.exe" (
+		set javaPath= "%JAVA_HOME%\bin\client\java.exe"
+		goto:eof
   )
-  
-  if exist "%javaPath%\bin\server\java.exe" (
-    set javaPath= %javaPath%\bin\server\java.exe
-    goto:eof
+	  
+  if exist "%JAVA_HOME%\bin\server\java.exe" (
+		set javaPath= "%JAVA_HOME%\bin\server\java.exe"
+		goto:eof
   )
 )
 
@@ -91,7 +101,7 @@ FOR /F "usebackq skip=2 tokens=3" %%a IN (`REG QUERY "%keyName%" /v %valueName% 
 )
 
 if "%javaVersion%" == "" (
-  set javaHomeError=Unable to locate jvm. Could not find %keyName%/%valueName% entry in windows registry, and could not find it via JAVA_HOME.
+  set javaHomeError=Unable to locate jvm. Could not find %keyName%/%valueName% entry in windows registry.
   goto:eof
 )
 
@@ -99,7 +109,7 @@ set javaCurrentKey=HKLM\SOFTWARE\JavaSoft\Java Runtime Environment\%javaVersion%
 set javaHomeKey=JavaHome
 
 FOR /F "usebackq skip=2 tokens=3,4" %%a IN (`REG QUERY "%javaCurrentKey%" /v %javaHomeKey% 2^>nul`) DO (
-  set javaPath=%%a %%b
+  set javaPath="%%a %%b"
 )
 goto:eof
 
@@ -190,8 +200,8 @@ rem
 rem function install
 rem
 :install
-set binPath=%javaPath%\bin\java.exe -DworkingDir=%~dps0.. -DconfigFile=%configFile% %classpath% %mainclass% -jar %~dps0%wrapperJarFilename% %serviceName%
-sc create "%serviceName%" binPath= "%binPath%" DisplayName= "%serviceDisplayName%" start= %serviceStartType%
+set binPath="%javaPath%\bin\java.exe -DworkingDir=%~dps0.. -DconfigFile=%configFile% %classpath% %mainclass% -jar %~dps0%wrapperJarFilename% %serviceName%"
+sc create "%serviceName%" binPath= %binPath% DisplayName= "%serviceDisplayName%" start= %serviceStartType%
 call:start
 goto:eof
 
