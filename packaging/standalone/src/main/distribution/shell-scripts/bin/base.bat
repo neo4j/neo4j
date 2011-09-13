@@ -46,7 +46,7 @@ for /f "tokens=* delims=" %%P in (%javaPath%) do (
     set javaPath=%%P
 )
 
-set wrapperJarFilename=windows-service-wrapper-1.jar
+set wrapperJarFilename=${windows-wrapper.filename}
 set command=""
 call:parseConfig "%~dp0..\%configFile%"
 
@@ -70,13 +70,12 @@ rem
 if not "%JAVA_HOME%" == "" (
   
   if exist "%JAVA_HOME%\bin\javac.exe" (
-    set javaPath= "%JAVA_HOME%\jre\bin\java.exe"
+    set javaPath= "%JAVA_HOME%\jre"
     goto:eof
   )
 
-  set javaPath= "%JAVA_HOME%\bin\java.exe"
+  set javaPath= "%JAVA_HOME%"
   goto:eof
-  
 )
 
 rem Attempt finding JVM via registry
