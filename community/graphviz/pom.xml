@@ -10,7 +10,7 @@
   
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-graphviz</artifactId>
-  <version>1.4.2</version>
+  <version>1.5-SNAPSHOT</version>
   <name>Neo4j - Graphviz generation</name>
   <description>Utility component to generate Graphviz .dot notation from Neo4j graphs.</description>
   
@@ -45,7 +45,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.4.2</version>
+      <version>1.5-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
