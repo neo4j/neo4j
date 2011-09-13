@@ -325,7 +325,6 @@ the relevant Commercial Agreement.
       </resource>
     </resources>
 
-
     <plugins>
 
       <!-- Development execution -->
@@ -366,6 +365,20 @@ the relevant Commercial Agreement.
                 <descriptor>src/main/assemblies/static-web.xml</descriptor>
               </descriptors>
             </configuration>
+          </execution>
+          <execution>
+            <id>docs</id>
+            <phase>package</phase>
+            <configuration>
+              <attach>true</attach>
+              <appendAssemblyId>true</appendAssemblyId>
+              <descriptors>
+                <descriptor>src/main/assemblies/docs-assembly.xml</descriptor>
+              </descriptors>
+            </configuration>
+            <goals>
+              <goal>single</goal>
+            </goals>
           </execution>
         </executions>
       </plugin>
@@ -413,6 +426,10 @@ the relevant Commercial Agreement.
               </excludes>
             </configuration>
           </execution>
+          <execution>
+            <id>attach-docs</id>
+            <phase>none</phase>
+          </execution>
         </executions>
       </plugin>
 
@@ -424,99 +441,49 @@ the relevant Commercial Agreement.
             <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
           </systemPropertyVariables>
           <argLine>-Xmx1024m</argLine>
+          <forkMode>once</forkMode>
         </configuration>
       </plugin>
 
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-test-source</id>
+            <phase>generate-test-sources</phase>
+            <goals>
+              <goal>add-test-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>src/functionaltest/java</source>
+              </sources>
+            </configuration>
+          </execution>
+          <execution>
+            <id>add-test-resource</id>
+            <phase>generate-test-resources</phase>
+            <goals>
+              <goal>add-test-resource</goal>
+            </goals>
+            <configuration>
+              <resources>
+                <resource>
+                  <directory>src/functionaltest/resources</directory>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
+
   </build>
 
   <profiles>
     <profile>
-      <id>functional-tests</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-        <property>
-          <name>tests</name>
-          <value>functional</value>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>build-helper-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>add-test-source</id>
-                <phase>generate-test-sources</phase>
-                <goals>
-                  <goal>add-test-source</goal>
-                </goals>
-                <configuration>
-                  <sources>
-                    <source>src/functionaltest/java</source>
-                  </sources>
-                </configuration>
-              </execution>
-              <execution>
-                <id>add-test-resource</id>
-                <phase>generate-test-resources</phase>
-                <goals>
-                  <goal>add-test-resource</goal>
-                </goals>
-                <configuration>
-                  <resources>
-                    <resource>
-                      <directory>src/functionaltest/resources</directory>
-                    </resource>
-                  </resources>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <skip>false</skip>
-              <argLine>-Xmx1024m</argLine>
-              <forkMode>once</forkMode>
-            </configuration>
-          </plugin>
-          <plugin>
-            <artifactId>maven-jar-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>attach-docs</id>
-                <phase>none</phase>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-assembly-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>docs</id>
-                <phase>package</phase>
-                <configuration>
-                  <attach>true</attach>
-                  <appendAssemblyId>true</appendAssemblyId>
-                  <descriptors>
-                    <descriptor>src/main/assemblies/docs-assembly.xml</descriptor>
-                  </descriptors>
-                </configuration>
-                <goals>
-                  <goal>single</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <profile>
-      <id>functional-tests-windows</id>
+      <id>surefire-windows</id>
       <activation>
         <os>
           <family>windows</family>
