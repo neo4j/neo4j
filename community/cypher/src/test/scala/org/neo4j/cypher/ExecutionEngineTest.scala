@@ -497,7 +497,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val query = Query.
       start(NodeById("n", 1)).
       matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING, false)).
-      where(Equals(RelationshipTypeValue("r"), Literal("KNOWS"))).
+      where(Equals(RelationshipTypeValue(EntityValue("r")), Literal("KNOWS"))).
       returns(ValueReturnItem(EntityValue("x")))
 
     val result = execute(query)
@@ -513,7 +513,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val query = Query.
       start(NodeById("n", 1)).
       matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING, false)).
-      returns(ValueReturnItem(RelationshipTypeValue("r")))
+      returns(ValueReturnItem(RelationshipTypeValue(EntityValue("r"))))
 
     val result = execute(query)
 
@@ -578,7 +578,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val query = Query.
       start(NodeById("n", 1)).
       matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING, false)).
-      where(Or(Equals(RelationshipTypeValue("r"), Literal("KNOWS")), Equals(RelationshipTypeValue("r"), Literal("HATES")))).
+      where(Or(Equals(RelationshipTypeValue(EntityValue("r")), Literal("KNOWS")), Equals(RelationshipTypeValue(EntityValue("r")), Literal("HATES")))).
       returns(ValueReturnItem(EntityValue("x")))
 
     val result = execute(query)
@@ -667,7 +667,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.start(NodeById("pA", a.getId), NodeById("pB", d.getId)).
       namedPaths(NamedPath("p", VarLengthRelatedTo("x", "pA", "pB", 1, 5, "rel", Direction.OUTGOING))).
-      where(AllInSeq(PathNodesValue("p"), "i", Equals(PropertyValue("i", "foo"), Literal("bar")))).
+      where(AllInSeq(PathNodesValue(EntityValue("p")), "i", Equals(PropertyValue("i", "foo"), Literal("bar")))).
       returns(ValueReturnItem(EntityValue("pB")))
 
     val result = execute(query)
@@ -685,7 +685,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.start(NodeById("pA", a.getId)).
       namedPaths(NamedPath("p", VarLengthRelatedTo("x", "pA", "pB", 2, 2, "rel", Direction.OUTGOING))).
-      returns(ValueReturnItem(PathRelationshipsValue("p")))
+      returns(ValueReturnItem(PathRelationshipsValue(EntityValue("p"))))
 
     val result = execute(query)
 

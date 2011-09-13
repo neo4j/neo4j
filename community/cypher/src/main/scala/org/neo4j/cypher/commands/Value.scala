@@ -38,6 +38,17 @@ case class Literal(v: Any) extends Value {
   def checkAvailable(symbols: SymbolTable) {}
 }
 
+abstract case class FunctionValue(functionName : String, arguments: Value*) extends Value {
+
+  def identifier: Identifier = ValueIdentifier(functionName +"(" + arguments.map(_.identifier.name).mkString(",")+")");
+
+  def checkAvailable(symbols: SymbolTable) {
+    arguments.foreach( _.checkAvailable(symbols))
+  }
+}
+
+
+
 abstract class AggregationValue(functionName: String, inner: Value) extends Value {
   def apply(m: Map[String, Any]) = m(identifier.name)
 
@@ -93,60 +104,41 @@ case class PropertyValue(entity: String, property: String) extends Value {
   }
 }
 
-case class RelationshipTypeValue(relationship: String) extends Value {
-  def apply(m: Map[String, Any]): Any = m(relationship).asInstanceOf[Relationship].getType.name()
+case class RelationshipTypeValue(relationship: Value) extends FunctionValue("TYPE",relationship) {
+  def apply(m: Map[String, Any]): Any = relationship(m).asInstanceOf[Relationship].getType.name()
 
-  def identifier: Identifier = ValueIdentifier("TYPE("+relationship+")")
-
-  def checkAvailable(symbols: SymbolTable) {
-    symbols.assertHas(RelationshipIdentifier(relationship))
+  override def checkAvailable(symbols: SymbolTable) {
+    symbols.assertHas(RelationshipIdentifier(relationship.identifier.name))
   }
 }
 
-case class ArrayLengthValue(inner: Value) extends Value {
-
+case class ArrayLengthValue(inner: Value) extends FunctionValue("LENGTH",inner) {
   def apply(m: Map[String, Any]): Any = inner(m) match {
     case path:Path => path.length()
     case x => throw new SyntaxException("Expected " + inner.identifier.name + " to be an iterable, but it is not.")
   }
-
-  def identifier: Identifier = ValueIdentifier("LENGTH(" + inner.identifier.name + ")")
-
-  def checkAvailable(symbols: SymbolTable) {
-  }
 }
 
 
-case class IdValue(inner: Value) extends Value {
+case class IdValue(inner: Value) extends FunctionValue("ID",inner) {
   def apply(m: Map[String, Any]): Any = inner(m) match {
     case node:Node => node.getId
     case rel:Relationship => rel.getId
     case x => throw new SyntaxException("Expected " + inner.identifier.name + " to be a node or relationship.")
   }
+}
 
-  def identifier: Identifier = ValueIdentifier("ID(" + inner.identifier.name + ")")
-
-  def checkAvailable(symbols: SymbolTable) {
+case class PathNodesValue(path: EntityValue) extends FunctionValue("NODES",path) {
+  def apply(m: Map[String, Any]): Any = path(m) match {
+    case p : Path => p.nodes().asScala.toSeq
+    case x => throw new SyntaxException("Expected " + path.identifier.name + " to be a path.")
   }
 }
 
-case class PathNodesValue(pathName: String) extends Value {
-  def apply(m: Map[String, Any]): Any = m(pathName).asInstanceOf[Path].nodes().asScala.toSeq
-
-  def identifier: Identifier = ArrayIdentifier("NODES(" + pathName + ")")
-
-  def checkAvailable(symbols: SymbolTable) {
-    symbols.assertHas(PathIdentifier(pathName))
-  }
-}
-
-case class PathRelationshipsValue(pathName: String) extends Value {
-  def apply(m: Map[String, Any]): Any = m(pathName).asInstanceOf[Path].relationships().asScala.toSeq
-
-  def identifier: Identifier = ArrayIdentifier("RELATIONSHIPS(" + pathName + ")")
-
-  def checkAvailable(symbols: SymbolTable) {
-    symbols.assertHas(PathIdentifier(pathName))
+case class PathRelationshipsValue(path: EntityValue) extends FunctionValue("RELATIONSHIPS",path) {
+  def apply(m: Map[String, Any]): Any = path(m) match {
+    case p : Path => p.relationships().asScala.toSeq
+    case x => throw new SyntaxException("Expected " + path.identifier.name + " to be a path.")
   }
 }
 

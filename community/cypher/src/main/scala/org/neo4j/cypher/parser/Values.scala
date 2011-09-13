@@ -25,7 +25,7 @@ import scala.util.parsing.combinator._
 
 trait Values extends JavaTokenParsers with Tokens {
 
-  def entityValue: Parser[Value] = identity ^^ {
+  def entityValue: Parser[EntityValue] = identity ^^ {
     case x => EntityValue(x)
   }
 
@@ -57,13 +57,17 @@ trait Values extends JavaTokenParsers with Tokens {
     case str => Literal(false)
   }
 
-  def functionCall: Parser[Value] = (typeFunc | lengthFunc | nodesFunc | relsFunc | idFunc)
+  def functionCall : Parser[Value] = (typeFunc | lengthFunc | nodesFunc | relsFunc | idFunc)
 
-  def typeFunc: Parser[Value] = ignoreCase("type") ~> parens(identity) ^^ { case v => RelationshipTypeValue(v)  }
-  def idFunc: Parser[Value] = ignoreCase("id") ~> parens( value | entityValue ) ^^ { case v => IdValue(v)  }
-  def lengthFunc: Parser[Value] = ignoreCase("length") ~> parens( value | entityValue ) ^^ { case v => ArrayLengthValue(v)  }
-  def nodesFunc: Parser[Value] = ignoreCase("nodes") ~> parens(identity) ^^ { case v => PathNodesValue(v)  }
-  def relsFunc: Parser[Value] = (ignoreCase("rels") | ignoreCase("relationships"))  ~> parens(identity) ^^ { case v => PathRelationshipsValue(v)  }
+  def functionArguments (numArgs:Int) : Parser[List[Value]] = parens((value | entityValue) ~ repN(numArgs-1, "," ~> (value | entityValue))) ^^ {
+    case firstArg ~ nextArguments => firstArg :: nextArguments
+  }
+
+  def typeFunc: Parser[Value] = ignoreCase("type") ~> functionArguments(1) ^^ { case v => RelationshipTypeValue(v.head)  }
+  def idFunc: Parser[Value] = ignoreCase("id") ~> functionArguments(1) ^^ { case v => IdValue(v.head)  }
+  def lengthFunc: Parser[Value] = ignoreCase("length") ~> functionArguments(1) ^^ { case v => ArrayLengthValue(v.head)  }
+  def nodesFunc: Parser[Value] = ignoreCase("nodes") ~> parens(entityValue) ^^ { case v => PathNodesValue(v)  }
+  def relsFunc: Parser[Value] = (ignoreCase("rels") | ignoreCase("relationships"))  ~> parens(entityValue) ^^ { case v => PathRelationshipsValue(v)  }
 }
 
 

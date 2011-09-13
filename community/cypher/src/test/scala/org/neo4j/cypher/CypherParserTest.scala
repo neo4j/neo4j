@@ -495,7 +495,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("n", 1)).
         matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING, false)).
-        where(Equals(RelationshipTypeValue("r"), Literal("something"))).
+        where(Equals(RelationshipTypeValue(EntityValue("r")), Literal("something"))).
         returns(ValueReturnItem(EntityValue("r"))))
   }
 
@@ -516,7 +516,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("n", 1)).
         matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING, false)).
-        returns(ValueReturnItem(RelationshipTypeValue("r"))))
+        returns(ValueReturnItem(RelationshipTypeValue(EntityValue("r")))))
   }
 
   @Test def relationshipsFromPathOutput() {
@@ -526,7 +526,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("n", 1)).
         namedPaths(NamedPath("p", RelatedTo("n", "x", "  UNNAMED1", None, Direction.OUTGOING, false))).
-        returns(ValueReturnItem(PathRelationshipsValue("p"))))
+        returns(ValueReturnItem(PathRelationshipsValue(EntityValue("p")))))
   }
 
   @Test def relationshipsFromPathInWhere() {
@@ -536,7 +536,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("n", 1)).
         namedPaths(NamedPath("p", RelatedTo("n", "x", "  UNNAMED1", None, Direction.OUTGOING, false))).
-        where(Equals(ArrayLengthValue(PathRelationshipsValue("p")), Literal(1)))
+        where(Equals(ArrayLengthValue(PathRelationshipsValue(EntityValue("p"))), Literal(1)))
         returns (ValueReturnItem(EntityValue("p"))))
   }
 
@@ -658,7 +658,7 @@ class CypherParserTest extends JUnitSuite {
         NamedPath("p",
           RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING, false),
           RelatedTo("b", "c", "  UNNAMED2", None, Direction.OUTGOING, false))).
-        where(AllInSeq(PathNodesValue("p"), "n", Equals(PropertyValue("n", "name"), Literal("Andres"))))
+        where(AllInSeq(PathNodesValue(EntityValue("p")), "n", Equals(PropertyValue("n", "name"), Literal("Andres"))))
         returns (ValueReturnItem(EntityValue("b"))))
   }
 
@@ -671,7 +671,7 @@ class CypherParserTest extends JUnitSuite {
         NamedPath("p",
           RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING, false),
           RelatedTo("b", "c", "  UNNAMED2", None, Direction.OUTGOING, false))).
-        where(AllInSeq(PathNodesValue("p"), "_", Equals(PropertyValue("_", "name"), Literal("Andres"))))
+        where(AllInSeq(PathNodesValue(EntityValue("p")), "_", Equals(PropertyValue("_", "name"), Literal("Andres"))))
         returns (ValueReturnItem(EntityValue("b"))))
   }
 
@@ -680,7 +680,7 @@ class CypherParserTest extends JUnitSuite {
       """start a = (1) where ANY(NODES(p), _.name = "Andres") return b""",
       Query.
         start(NodeById("a", 1)).
-        where(AnyInSeq(PathNodesValue("p"), "_", Equals(PropertyValue("_", "name"), Literal("Andres"))))
+        where(AnyInSeq(PathNodesValue(EntityValue("p")), "_", Equals(PropertyValue("_", "name"), Literal("Andres"))))
         returns (ValueReturnItem(EntityValue("b"))))
   }
 
@@ -689,7 +689,7 @@ class CypherParserTest extends JUnitSuite {
       """start a = (1) where none(nodes(p), x=> x.name = "Andres") return b""",
       Query.
         start(NodeById("a", 1)).
-        where(NoneInSeq(PathNodesValue("p"), "x", Equals(PropertyValue("x", "name"), Literal("Andres"))))
+        where(NoneInSeq(PathNodesValue(EntityValue("p")), "x", Equals(PropertyValue("x", "name"), Literal("Andres"))))
         returns (ValueReturnItem(EntityValue("b"))))
   }
 
@@ -698,7 +698,7 @@ class CypherParserTest extends JUnitSuite {
       """start a = (1) where single(NODES(p), _.name = "Andres") return b""",
       Query.
         start(NodeById("a", 1)).
-        where(SingleInSeq(PathNodesValue("p"), "_", Equals(PropertyValue("_", "name"), Literal("Andres"))))
+        where(SingleInSeq(PathNodesValue(EntityValue("p")), "_", Equals(PropertyValue("_", "name"), Literal("Andres"))))
         returns (ValueReturnItem(EntityValue("b"))))
   }
 
