@@ -23,7 +23,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.UnsupportedEncodingException;
-import java.util.Map;
 
 import javax.ws.rs.core.Response.Status;
 
@@ -83,7 +82,7 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
                 "{\"query\": \"" + script + "\"}" ).description(
                 formatCypher( script ) );
         String response = gen.get().post( ENDPOINT ).entity();
-        assertEquals(3, ((Map) JsonHelper.jsonToMap( response )).size());
+        assertEquals( 3, ( JsonHelper.jsonToMap( response ) ).size() );
     }
 
 
@@ -105,7 +104,7 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
                 "{\"query\": \"" + script + "\"}" ).description(
                 formatCypher( script ) );
         String response = gen.get().post( ENDPOINT ).entity();
-        assertEquals(2, ((Map) JsonHelper.jsonToMap( response )).size());
+        assertEquals( 2, ( JsonHelper.jsonToMap( response ) ).size() );
         assertTrue(response.contains( "data" ));
     }
 }
