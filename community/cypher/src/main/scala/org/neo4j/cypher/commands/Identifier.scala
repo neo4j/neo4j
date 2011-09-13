@@ -39,7 +39,6 @@ case class PathIdentifier(path:String) extends ArrayIdentifier(path)
 case class NodeIdentifier(subName: String) extends PropertyContainerIdentifier(subName)
 case class RelationshipIdentifier(subName: String) extends PropertyContainerIdentifier(subName)
 
-case class RelationshipTypeIdentifier(subName: String) extends Identifier("TYPE(" + subName + ")")
-case class PathLengthIdentifier(subName: String) extends Identifier("LENGTH(" + subName + ")")
+case class ValueIdentifier(subName: String) extends Identifier(subName)
 
 case class ArrayIdentifier(array: String) extends Identifier(array)

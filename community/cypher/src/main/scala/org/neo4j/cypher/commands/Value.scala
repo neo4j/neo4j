@@ -96,7 +96,7 @@ case class PropertyValue(entity: String, property: String) extends Value {
 case class RelationshipTypeValue(relationship: String) extends Value {
   def apply(m: Map[String, Any]): Any = m(relationship).asInstanceOf[Relationship].getType.name()
 
-  def identifier: Identifier = RelationshipTypeIdentifier(relationship)
+  def identifier: Identifier = ValueIdentifier("TYPE("+relationship+")")
 
   def checkAvailable(symbols: SymbolTable) {
     symbols.assertHas(RelationshipIdentifier(relationship))
@@ -110,7 +110,7 @@ case class ArrayLengthValue(inner: Value) extends Value {
     case x => throw new SyntaxException("Expected " + inner.identifier.name + " to be an iterable, but it is not.")
   }
 
-  def identifier: Identifier = PathLengthIdentifier(inner.identifier.name)
+  def identifier: Identifier = ValueIdentifier("LENGTH(" + inner.identifier.name + ")")
 
   def checkAvailable(symbols: SymbolTable) {
   }
@@ -124,7 +124,7 @@ case class IdValue(inner: Value) extends Value {
     case x => throw new SyntaxException("Expected " + inner.identifier.name + " to be a node or relationship.")
   }
 
-  def identifier: Identifier = LiteralIdentifier("ID(" + inner.identifier.name + ")")
+  def identifier: Identifier = ValueIdentifier("ID(" + inner.identifier.name + ")")
 
   def checkAvailable(symbols: SymbolTable) {
   }
