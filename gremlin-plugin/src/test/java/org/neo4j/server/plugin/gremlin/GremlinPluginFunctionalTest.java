@@ -24,41 +24,20 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.WrappingNeoServerBootstrapper;
-import org.neo4j.server.rest.RESTDocsGenerator;
+import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.JSONPrettifier;
-import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
-import org.neo4j.test.GraphHolder;
-import org.neo4j.test.ImpermanentGraphDatabase;
-import org.neo4j.test.TestData;
 import org.neo4j.test.TestData.Title;
 
-public class GremlinPluginFunctionalTest implements GraphHolder
+public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
 {
     private static final String ENDPOINT = "http://localhost:7474/db/data/ext/GremlinPlugin/graphdb/execute_script";
-    private static org.neo4j.test.ImpermanentGraphDatabase graphdb;
-    public @Rule
-    TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
-            this, true ) );
-
-    public @Rule
-    TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
-    private static WrappingNeoServerBootstrapper server;
 
     /**
      * Scripts can be sent as URL-encoded
@@ -70,10 +49,10 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     public void testGremlinPostURLEncoded() throws UnsupportedEncodingException
     {
         String script = "i = g.v("+data.get().get( "I" ).getId() +");i.out";
-        String response = gen.get()
+        gen()
         .expectedStatus( Status.OK.getStatusCode() )
-        .description( formatGroovy( script ) )
-        .payload( "script=" + URLEncoder.encode( script, "UTF-8") )
+        .description( formatGroovy( script ) );
+        String response = gen().payload( "script=" + URLEncoder.encode( script, "UTF-8") )
         .payloadType( MediaType.APPLICATION_FORM_URLENCODED_TYPE )
         .post( ENDPOINT )
         .entity();
@@ -93,8 +72,8 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     {
         final String script = "g.v(me).out;";
         final String params = "{ \"me\" : "+data.get().get("I").getId()+" }";
-        String response = gen.get()
-        .description( formatGroovy( script ) )
+        gen().description( formatGroovy( script ) );
+        String response = gen()
         .expectedStatus(Status.OK.getStatusCode())
         .payload( "script=" + URLEncoder.encode(script, "UTF-8")+
                 "&params=" + URLEncoder.encode(params, "UTF-8")
@@ -118,8 +97,8 @@ public class GremlinPluginFunctionalTest implements GraphHolder
         final String script = "g.v(me).out";
         final String params = "{ \"me\" : "+data.get().get("I").getId()+" }";
         final String payload = String.format("{ \"script\" : \"%s\", \"params\" : %s }", script, params);
-        String response = gen.get()
-        .description( formatGroovy( script ) )
+        gen().description( formatGroovy( script ) );
+        String response = gen()
         .expectedStatus( Status.OK.getStatusCode() )
                 .payload( JSONPrettifier.parse( payload ) )
         .payloadType( MediaType.APPLICATION_JSON_TYPE )
@@ -144,8 +123,8 @@ public class GremlinPluginFunctionalTest implements GraphHolder
                 "g.V;";
         String payload = "{\"script\":\"" +
         script  +"\"}";
-        String response = gen.get()
-        .description( formatGroovy( script ) )
+        description( formatGroovy( script ) );
+        String response = gen()
         .expectedStatus( Status.OK.getStatusCode() )
                 .payload( JSONPrettifier.parse( payload ) )
         .payloadType( MediaType.APPLICATION_JSON_TYPE )
@@ -155,6 +134,10 @@ public class GremlinPluginFunctionalTest implements GraphHolder
         assertTrue(response.contains( "him" ));
     }
     
+    
+
+
+
     /**
      * Exporting a graph can be done by simple emitting the appropriate
      * String.
@@ -172,8 +155,8 @@ public class GremlinPluginFunctionalTest implements GraphHolder
         		"result = out.toString();";
         String payload = "{\"script\":\"" +
         script  +"\"}";
+        description( formatGroovy( script ) );
         String response = gen.get()
-        .description( formatGroovy( script ) )
         .expectedStatus( Status.OK.getStatusCode() )
                 .payload( JSONPrettifier.parse( payload ) )
         .payloadType( MediaType.APPLICATION_JSON_TYPE )
@@ -199,7 +182,7 @@ public class GremlinPluginFunctionalTest implements GraphHolder
     {
         String payload = "{\"script\":\"meaning_of_life\","
             + "\"params\":{\"meaning_of_life\" : 42.0}}";
-        String response = gen.get()
+        String response = gen()
         .expectedStatus( Status.OK.getStatusCode() )
                 .payload( JSONPrettifier.parse( payload ) )
         .payloadType( MediaType.APPLICATION_JSON_TYPE )
@@ -224,8 +207,8 @@ public class GremlinPluginFunctionalTest implements GraphHolder
         .get( "I" )
         .getId() + ").out.sort{it.name}.toList()";
         String payload = "{\"script\":\""+script +"\"}";
-        String response = gen.get()
-        .description( formatGroovy( script ) )
+        description( formatGroovy( script ) );
+        String response = gen()
         .expectedStatus( Status.OK.getStatusCode() )
         .payload( JSONPrettifier.parse( payload ) )
         .payloadType( MediaType.APPLICATION_JSON_TYPE )
@@ -306,10 +289,10 @@ public class GremlinPluginFunctionalTest implements GraphHolder
         .expectedStatus( Status.OK.getStatusCode() )
                 .payload( JSONPrettifier.parse( payload ) )
         .payloadType( MediaType.APPLICATION_JSON_TYPE )
-        .description( formatGroovy( script ) )
         .post( ENDPOINT )
         
         .entity();
+        description( formatGroovy( script ) );
         assertTrue(response.contains( "cats" ));
     }
     
@@ -353,9 +336,9 @@ public class GremlinPluginFunctionalTest implements GraphHolder
         .expectedStatus( Status.OK.getStatusCode() )
                 .payload( JSONPrettifier.parse( payload ) )
         .payloadType( MediaType.APPLICATION_JSON_TYPE )
-        .description( formatGroovy(script) )
         .post( ENDPOINT )
         .entity();
+        description( formatGroovy(script) );
         assertTrue(response.contains( "me" ));
         
     }
@@ -409,11 +392,22 @@ public class GremlinPluginFunctionalTest implements GraphHolder
         .expectedStatus( Status.OK.getStatusCode() )
                 .payload( JSONPrettifier.parse( payload ) )
         .payloadType( MediaType.APPLICATION_JSON_TYPE )
-        .description( formatGroovy(script) )
         .post( ENDPOINT )
         .entity();
+        description( formatGroovy(script) );
         assertTrue(response.contains( "Role1" ));
         assertFalse(response.contains( "Role2" ));
+        
+    }
+    
+    @Test
+    public void getExtension()
+    {
+        String entity = gen.get()
+        .expectedStatus( Status.OK.getStatusCode() )
+        .get( ENDPOINT )
+        .entity();
+        assertTrue( entity.contains( "map" ) );
         
     }
     
@@ -432,36 +426,4 @@ public class GremlinPluginFunctionalTest implements GraphHolder
         		"----\n";
     }
 
-
-
-    @BeforeClass
-    public static void startDatabase()
-    {
-        graphdb = new ImpermanentGraphDatabase("target/db"+System.currentTimeMillis());
-    }
-
-    @AfterClass
-    public static void stopDatabase()
-    {
-    }
-
-    @Override
-    public GraphDatabaseService graphdb()
-    {
-        return graphdb;
-    }
-
-    @Before
-    public void startServer() {
-        ((ImpermanentGraphDatabase)graphdb).cleanContent();
-        server = new WrappingNeoServerBootstrapper(
-                graphdb );
-        server.start();
-        gen.get().setGraph( graphdb );
-    }
-
-    @After
-    public void shutdownServer() {
-        server.stop();
-    }
 }
