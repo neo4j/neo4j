@@ -491,7 +491,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def relationshipType() {
     testQuery(
-      "start n=(1) match n-[r]->(x) where r.TYPE = \"something\" return r",
+      "start n=(1) match n-[r]->(x) where type(r) = \"something\" return r",
       Query.
         start(NodeById("n", 1)).
         matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING, false)).
@@ -501,7 +501,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def pathLength() {
     testQuery(
-      "start n=(1) match p=(n-->x) where p.LENGTH = 10 return p",
+      "start n=(1) match p=(n-->x) where LENGTH(p) = 10 return p",
       Query.
         start(NodeById("n", 1)).
         namedPaths(NamedPath("p", RelatedTo("n", "x", "  UNNAMED1", None, Direction.OUTGOING, false))).
@@ -511,7 +511,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def relationshipTypeOut() {
     testQuery(
-      "start n=(1) match n-[r]->(x) return r.TYPE",
+      "start n=(1) match n-[r]->(x) return type(r)",
 
       Query.
         start(NodeById("n", 1)).
@@ -621,7 +621,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def testOnAllNodesInAPath() {
     testQuery(
-      """start a = (1) match p = a --> b --> c where ALL(p.NODES, n => n.name = "Andres") return b""",
+      """start a = (1) match p = a --> b --> c where ALL(NODES(p), n => n.name = "Andres") return b""",
       Query.
         start(NodeById("a", 1)).
         namedPaths(
@@ -634,7 +634,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def testOnAllNodesInAPathImplicitSymbol() {
     testQuery(
-      """start a = (1) match p = a --> b --> c where all(p.NODES, _.name = "Andres") return b""",
+      """start a = (1) match p = a --> b --> c where all(NODES(p), _.name = "Andres") return b""",
       Query.
         start(NodeById("a", 1)).
         namedPaths(
@@ -647,7 +647,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def testAny() {
     testQuery(
-      """start a = (1) where ANY(p.NODES, _.name = "Andres") return b""",
+      """start a = (1) where ANY(NODES(p), _.name = "Andres") return b""",
       Query.
         start(NodeById("a", 1)).
         where(AnyInSeq(PathNodesValue("p"), "_", Equals(PropertyValue("_", "name"), Literal("Andres"))))
@@ -656,7 +656,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def testNone() {
     testQuery(
-      """start a = (1) where none(p.NODES, x=> x.name = "Andres") return b""",
+      """start a = (1) where none(nodes(p), x=> x.name = "Andres") return b""",
       Query.
         start(NodeById("a", 1)).
         where(NoneInSeq(PathNodesValue("p"), "x", Equals(PropertyValue("x", "name"), Literal("Andres"))))
@@ -665,7 +665,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def testSingle() {
     testQuery(
-      """start a = (1) where single(p.NODES, _.name = "Andres") return b""",
+      """start a = (1) where single(NODES(p), _.name = "Andres") return b""",
       Query.
         start(NodeById("a", 1)).
         where(SingleInSeq(PathNodesValue("p"), "_", Equals(PropertyValue("_", "name"), Literal("Andres"))))
@@ -694,6 +694,7 @@ class CypherParserTest extends JUnitSuite {
       assertEquals(expectedQuery, executionTree)
     } catch {
       case x => {
+        println(x)
         throw new Exception(query + "\n\n" + x.getMessage)
       }
     }

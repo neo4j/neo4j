@@ -25,12 +25,9 @@ import scala.util.parsing.combinator._
 
 trait Clauses extends JavaTokenParsers with Tokens with Values {
   def clause: Parser[Clause] = (orderedComparison | not | notEquals | equals | regexp | hasProperty | parens | sequenceClause) * (
-    ignoreCase("and") ^^^ {
-      (a: Clause, b: Clause) => And(a, b)
-    } |
-      ignoreCase("or") ^^^ {
-        (a: Clause, b: Clause) => Or(a, b)
-      })
+    ignoreCase("and") ^^^ { (a: Clause, b: Clause) => And(a, b)  } |
+    ignoreCase("or") ^^^  { (a: Clause, b: Clause) => Or(a, b) }
+    )
 
   def regexp: Parser[Clause] = value ~ "=~" ~ regularLiteral ^^ {
     case a ~ "=~" ~ b => RegularExpression(a, stripQuotes(b))

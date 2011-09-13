@@ -115,7 +115,7 @@ case class ArrayLengthValue(pathName: String) extends Value {
 case class PathNodesValue(pathName: String) extends Value {
   def apply(m: Map[String, Any]): Any = m(pathName).asInstanceOf[Path].nodes().asScala.toSeq
 
-  def identifier: Identifier = ArrayIdentifier(pathName + ".NODES")
+  def identifier: Identifier = ArrayIdentifier("NODES(" + pathName + ")")
 
   def checkAvailable(symbols: SymbolTable) {
     symbols.assertHas(PathIdentifier(pathName))

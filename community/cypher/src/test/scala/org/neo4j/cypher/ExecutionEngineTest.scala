@@ -517,7 +517,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val result = execute(query)
 
-    assertEquals(List("KNOWS", "HATES"), result.columnAs[String]("r.TYPE").toList)
+    assertEquals(List("KNOWS", "HATES"), result.columnAs[String]("TYPE(r)").toList)
   }
 
   @Test def shouldAggregateOnProperties() {
@@ -623,7 +623,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     relate("A" -> "KNOWS" -> "B")
     relate("A" -> "HATES" -> "C")
 
-    val result = parseAndExecute("start n=(1) match (n)-[r]->(x) where r.TYPE='KNOWS' or r.TYPE='HATES' return x")
+    val result = parseAndExecute("start n=(1) match (n)-[r]->(x) where type(r)='KNOWS' or type(r) = 'HATES' return x")
 
     assertEquals(nodes.slice(1, 3), result.columnAs[Node]("x").toList)
   }
@@ -632,7 +632,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     createNodes("A", "B")
     relate("A" -> "KNOWS" -> "B")
 
-    val result = parseAndExecute("start n=(1) match p = n-->x where p.LENGTH=10 return x")
+    val result = parseAndExecute("start n=(1) match p = n-->x where length(p) = 10 return x")
 
     assertTrue("Result set should be empty, but it wasn't", result.isEmpty)
   }
@@ -641,7 +641,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     createNodes("A", "B")
     relate("A" -> "KNOWS" -> "B")
 
-    val result = parseAndExecute("start n=(1) match p = n-->x where p.LENGTH=3 return x")
+    val result = parseAndExecute("start n=(1) match p = n-->x where length(p)=3 return x")
 
     assertTrue("Result set should not be empty, but it was", !result.isEmpty)
   }
@@ -650,9 +650,9 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     createNodes("A", "B")
     relate("A" -> "KNOWS" -> "B")
 
-    val result = parseAndExecute("start n=(1) match p = n-->x return p.LENGTH")
+    val result = parseAndExecute("start n=(1) match p = n-->x return length(p)")
 
-    assertEquals(List(3), result.columnAs[Int]("p.LENGTH").toList)
+    assertEquals(List(3), result.columnAs[Int]("LENGTH(p)").toList)
   }
 
   @Test def shouldBeAbleToFilterOnPathNodes() {

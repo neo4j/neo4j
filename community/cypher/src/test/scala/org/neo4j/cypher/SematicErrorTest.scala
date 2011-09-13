@@ -40,12 +40,12 @@ class SematicErrorTest extends ExecutionEngineHelper {
   }
 
   @Test def cantUseTYPEOnNodes() {
-    expectedError("start r=(0) return r.TYPE",
+    expectedError("start r=(0) return type(r)",
       "Expected r to be a RelationshipIdentifier but it was NodeIdentifier")
   }
 
   @Test def cantUseLENGTHOnNodes() {
-    expectedError("start r=(0) return r.LENGTH",
+    expectedError("start r=(0) return length(r)",
       "Expected r to be a ArrayIdentifier but it was NodeIdentifier")
   }
 
