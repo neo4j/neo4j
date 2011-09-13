@@ -19,26 +19,16 @@
  */
 package slavetest;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.transaction.TestRecovery.countMentionsInMessagesLog;
-
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.After;
-import org.junit.Test;
+import org.junit.Ignore;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -48,6 +38,7 @@ import org.neo4j.kernel.ha.FakeMasterBroker;
 import org.neo4j.kernel.ha.FakeSlaveBroker;
 import org.neo4j.kernel.ha.MasterImpl;
 
+@Ignore( "SingleJvmWithNettyTest covers this and more" )
 public class SingleJvmTest extends AbstractHaTest
 {
     private MasterImpl master;
@@ -98,20 +89,24 @@ public class SingleJvmTest extends AbstractHaTest
     @Override
     protected void startUpMaster( Map<String, String> extraConfig ) throws Exception
     {
+        master = new MasterImpl( startUpMasterDb( extraConfig ) );
+    }
+    
+    protected PlaceHolderGraphDatabaseService startUpMasterDb( Map<String, String> extraConfig ) throws Exception
+    {
         int masterId = 0;
         Map<String, String> config = MapUtil.stringMap( extraConfig,
                 HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, String.valueOf( masterId ) );
         String path = dbPath( 0 ).getAbsolutePath();
         PlaceHolderGraphDatabaseService placeHolderDb = new PlaceHolderGraphDatabaseService( path );
-        Broker broker = makeMasterBroker( master, masterId, placeHolderDb );
+        Broker broker = makeMasterBroker( masterId, placeHolderDb );
         HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase( path,
                 config, wrapBrokerAndSetPlaceHolderDb( placeHolderDb, broker ) );
         placeHolderDb.setDb( db );
-        // db.newMaster( null, new Exception() );
-        master = new MasterImpl( db );
+        return placeHolderDb;
     }
 
-    protected Broker makeMasterBroker( MasterImpl master, int masterId, GraphDatabaseService graphDb )
+    protected Broker makeMasterBroker( int masterId, GraphDatabaseService graphDb )
     {
         return new FakeMasterBroker( masterId, graphDb );
     }
@@ -205,44 +200,6 @@ public class SingleJvmTest extends AbstractHaTest
         }
     }
 
-    @Test
-    public void testMixingEntitiesFromWrongDbs() throws Exception
-    {
-        initializeDbs( 1 );
-        GraphDatabaseService haDb1 = haDbs.get( 0 );
-        GraphDatabaseService mDb = master.getGraphDb();
-
-        Transaction tx = mDb.beginTx();
-        Node masterNode;
-        try
-        {
-            masterNode = mDb.createNode();
-            mDb.getReferenceNode().createRelationshipTo( masterNode, CommonJobs.REL_TYPE );
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
-
-        tx = haDb1.beginTx();
-        // try throw in node that does not exist and no tx on mdb
-        try
-        {
-            Node node = haDb1.createNode();
-            mDb.getReferenceNode().createRelationshipTo( node, CommonJobs.KNOWS );
-            fail( "Should throw not found exception" );
-        }
-        catch ( NotFoundException e )
-        {
-            // good
-        }
-        finally
-        {
-            tx.finish();
-        }
-    }
-
     @Override
     protected CommonJobs.ShutdownDispatcher getMasterShutdownDispatcher()
     {
@@ -308,72 +265,5 @@ public class SingleJvmTest extends AbstractHaTest
             {
             }
         };
-    }
-
-    @Test
-    public void slaveWriteThatOnlyModifyRelationshipRecordsCanUpdateCachedNodeOnMaster() throws Exception
-    {
-        initializeDbs( 1, MapUtil.stringMap( Config.CACHE_TYPE, "strong" ) );
-        HighlyAvailableGraphDatabase sDb = (HighlyAvailableGraphDatabase) haDbs.get( 0 );
-        HighlyAvailableGraphDatabase mDb = (HighlyAvailableGraphDatabase) master.getGraphDb();
-
-        long relId;
-        Node node;
-
-        Transaction tx = mDb.beginTx();
-        try
-        {
-            node = mDb.createNode();
-            // "pad" the relationship so that removing it doesn't update the node record
-            node.createRelationshipTo( mDb.createNode(), REL_TYPE );
-            relId = node.createRelationshipTo( mDb.createNode(), REL_TYPE ).getId();
-            node.createRelationshipTo( mDb.createNode(), REL_TYPE );
-
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
-
-        // update the slave to make getRelationshipById() work
-        sDb.pullUpdates();
-
-        // remove the relationship on the slave
-        tx = sDb.beginTx();
-        try
-        {
-            sDb.getRelationshipById( relId ).delete();
-
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
-
-        // verify that the removed relationship is gone from the master
-        int relCount = 0;
-        for ( Relationship rel : node.getRelationships() )
-        {
-            rel.getOtherNode( node );
-            relCount++;
-        }
-        assertEquals( "wrong number of relationships", 2, relCount );
-    }
-    
-    @Test
-    public void mastersMessagesLogShouldNotContainMentionsAboutAppliedTransactions() throws Exception
-    {
-        initializeDbs( 1 );
-        for ( int i = 0; i < 5; i++ )
-        {
-            executeJob( new CommonJobs.CreateNodeJob(), 0 );
-        }
-        disableVerificationAfterTest();
-        shutdownDbs();
-        // Strings copied from XaLogicalLog#applyTransactionWithoutTxId
-        Collection<String> toLookFor = asList( "applyTxWithoutTxId log version", "Applied external tx and generated" );
-        assertEquals( 0, countMentionsInMessagesLog( dbPath( 0 ).getAbsolutePath(), toLookFor ) );
     }
 }

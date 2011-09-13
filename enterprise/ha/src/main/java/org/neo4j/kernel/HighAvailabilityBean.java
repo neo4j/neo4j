@@ -74,12 +74,17 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
                 throws NotCompliantMBeanException
         {
             super( management );
+            if ( !(management.getKernelData().graphDatabase() instanceof HighlyAvailableGraphDatabase) )
+                throw new NotCompliantMBeanException( "Not in HA mode" );
             this.db = (HighlyAvailableGraphDatabase) management.getKernelData().graphDatabase();
         }
 
         HighAvailibilityImpl( ManagementData management, boolean isMXBean )
+                throws NotCompliantMBeanException
         {
             super( management, isMXBean );
+            if ( !(management.getKernelData().graphDatabase() instanceof HighlyAvailableGraphDatabase) )
+                throw new NotCompliantMBeanException( "Not in HA mode" );
             this.db = (HighlyAvailableGraphDatabase) management.getKernelData().graphDatabase();
         }
 

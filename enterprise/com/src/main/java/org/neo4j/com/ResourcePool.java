@@ -81,14 +81,20 @@ public abstract class ResourcePool<R>
         resources.setPermits( maxResources );
     }
 
-    public final R acquire( boolean allowCreateNew )
+    public final R acquire( boolean allowWaitForPermit )
     {
         Thread thread = Thread.currentThread();
         R resource = current.get( thread );
         if ( resource == null )
         {
-            if ( !allowCreateNew ) return null;
-            resources.acquireUninterruptibly();
+            if ( !allowWaitForPermit )
+            {
+                if ( !resources.tryAcquire() ) return null;
+            }
+            else
+            {
+                resources.acquireUninterruptibly();
+            }
             List<R> garbage = null;
             synchronized ( unused )
             {

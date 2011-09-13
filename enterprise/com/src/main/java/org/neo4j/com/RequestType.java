@@ -29,5 +29,5 @@ public interface RequestType<M>
     
     boolean monitorChannelMapping();
     
-    boolean allowCreateNewChannel();
+    boolean allowWaitForNewChannel();
 }

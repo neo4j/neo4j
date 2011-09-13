@@ -46,6 +46,11 @@ public class PlaceHolderGraphDatabaseService extends AbstractGraphDatabase
     {
         this.db = db;
     }
+    
+    public GraphDatabaseService getDb()
+    {
+        return db;
+    }
 
     @Override
     public Node createNode()

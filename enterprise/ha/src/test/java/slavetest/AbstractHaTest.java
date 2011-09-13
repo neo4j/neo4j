@@ -39,6 +39,7 @@ import java.util.Set;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -467,7 +468,7 @@ public abstract class AbstractHaTest
     }
 
     @Test
-    public void testMultipleSlaves() throws Exception
+    public void slaveCanPullTransactionsThatOtherSlaveCommited() throws Exception
     {
         setExpectedResults( 2, 1, 1, 1, 0, 0 );
         initializeDbs( 3 );
@@ -476,10 +477,8 @@ public abstract class AbstractHaTest
         pullUpdates( 0, 2 );
     }
 
-    // This is difficult to test a.t.m. since you can't really bring down a master
-    // and expect it to be able to come up again without any work.
     @Test
-    public void testMasterFailure() throws Exception
+    public void shutdownMasterBeforeFinishingTx() throws Exception
     {
         initializeDbs( 1 );
         Serializable[] result = executeJob( new CommonJobs.CreateSubRefNodeMasterFailJob(
@@ -492,7 +491,7 @@ public abstract class AbstractHaTest
     }
 
     @Test
-    public void testSlaveConstraintViolation() throws Exception
+    public void slaveCannotDoAnInvalidTransaction() throws Exception
     {
         setExpectedResults( 2, 1, 0, 1, 0, 0 );
         initializeDbs( 1 );
@@ -505,7 +504,7 @@ public abstract class AbstractHaTest
     }
 
     @Test
-    public void testMasterConstraintViolation() throws Exception
+    public void masterCannotDoAnInvalidTransaction() throws Exception
     {
         setExpectedResults( 2, 1, 1, 1, 0, 0 );
         initializeDbs( 1 );
@@ -519,7 +518,7 @@ public abstract class AbstractHaTest
     }
 
     @Test
-    public void testGetRelationships() throws Exception
+    public void cacheInvalidationOfRelationships() throws Exception
     {
         setExpectedResults( 3, 2, 0, 0, 0, 0 );
         initializeDbs( 1 );
@@ -535,7 +534,7 @@ public abstract class AbstractHaTest
     }
 
     @Test
-    public void testNoTransaction() throws Exception
+    public void writeOperationNeedsTransaction() throws Exception
     {
         setExpectedResults( 2, 1, 0, 1, 0, 0 );
         initializeDbs( 1 );
@@ -547,7 +546,7 @@ public abstract class AbstractHaTest
     }
 
     @Test
-    public void testNodeDeleted() throws Exception
+    public void slaveSetPropertyOnNodeDeletedByMaster() throws Exception
     {
         setExpectedResults( 1, 0, 0, 0, 0, 0 );
         initializeDbs( 1 );
@@ -561,7 +560,7 @@ public abstract class AbstractHaTest
     }
 
     @Test
-    public void testDeadlock() throws Exception
+    public void deadlockDetectionIsEnforced() throws Exception
     {
         initializeDbs( 2 );
 
@@ -591,7 +590,7 @@ public abstract class AbstractHaTest
     }
 
     @Test
-    public void indexingAndTwoSlaves() throws Exception
+    public void indexingIsSynchronizedBetweenInstances() throws Exception
     {
         initializeDbs( 2 );
         long id = executeJobOnMaster( new CommonJobs.CreateNodeAndIndexJob( "name", "Morpheus" ) );
@@ -601,17 +600,8 @@ public abstract class AbstractHaTest
                 new String[] { "value1", "value2" }, "key 2", 105.43f ) ), 1 );
         pullUpdates();
     }
-
-    @Test
-    public void testNewIndexFramework() throws Exception
-    {
-        setExpectedResults( 2, 0, 2, 0, 0, 2 );
-        initializeDbs( 2 );
-        long id = executeJobOnMaster( new CommonJobs.CreateNodeAndNewIndexJob( "users",
-                "name", "Morpheus", "rank", "Captain" ) );
-        pullUpdates();
-    }
-
+    
+    @Ignore( "Not suitable for a unit test, rely on HA Cronies to test this" )
     @Test
     public void testLargeTransaction() throws Exception
     {
@@ -619,6 +609,7 @@ public abstract class AbstractHaTest
         executeJob( new CommonJobs.LargeTransactionJob( 20, 1 ), 0 );
     }
 
+    @Ignore( "Not suitable for a unit test, rely on HA Cronies to test this" )
     @Test
     public void testPullLargeTransaction() throws Exception
     {
@@ -627,6 +618,7 @@ public abstract class AbstractHaTest
         pullUpdates();
     }
 
+    @Ignore( "Not suitable for a unit test, rely on HA Cronies to test this" )
     @Test
     public void testLargeTransactionData() throws Exception
     {
@@ -634,6 +626,7 @@ public abstract class AbstractHaTest
         executeJob( new CommonJobs.LargeTransactionJob( 1, 20 ), 0 );
     }
 
+    @Ignore( "Not suitable for a unit test, rely on HA Cronies to test this" )
     @Test
     public void testPullLargeTransactionData() throws Exception
     {
@@ -642,6 +635,7 @@ public abstract class AbstractHaTest
         pullUpdates();
     }
 
+    @Ignore( "Not suitable for a unit test, rely on HA Cronies to test this" )
     @Test
     public void makeSureSlaveCanCopyLargeInitialDatabase() throws Exception
     {

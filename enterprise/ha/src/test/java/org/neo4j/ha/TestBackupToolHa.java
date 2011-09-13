@@ -26,7 +26,6 @@ import static org.neo4j.backup.TestBackupToolEmbedded.createSomeData;
 import static org.neo4j.backup.TestBackupToolEmbedded.runBackupToolFromOtherJvmToGetExitCode;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
-import static org.neo4j.kernel.Config.osIsWindows;
 import static org.neo4j.kernel.HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID;
 import static org.neo4j.kernel.HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVER;
 import static org.neo4j.kernel.HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS;
@@ -54,7 +53,6 @@ public class TestBackupToolHa
     @Before
     public void before() throws Exception
     {
-        if ( osIsWindows() ) return;
         FileUtils.deleteDirectory( new File( PATH ) );
         FileUtils.deleteDirectory( new File( BACKUP_PATH ) );
 
@@ -79,7 +77,6 @@ public class TestBackupToolHa
     @After
     public void after() throws Exception
     {
-        if ( osIsWindows() ) return;
         for ( GraphDatabaseService instance : instances )
         {
             instance.shutdown();
@@ -90,7 +87,6 @@ public class TestBackupToolHa
     @Test
     public void makeSureBackupCanBePerformedFromCluster() throws Exception
     {
-        if ( osIsWindows() ) return;
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "-full", "-from",

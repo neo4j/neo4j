@@ -359,7 +359,7 @@ public class MasterClient extends Client<Master> implements Master
         final ObjectSerializer serializer;
         private final boolean includesSlaveContext;
         final boolean withinTx;
-        private final boolean allowCreateNewChannel;
+        private final boolean allowWaitForNewChannel;
 
         private <T> HaRequestType( MasterCaller caller, ObjectSerializer<T> serializer,
                 boolean includesSlaveContext, boolean withinTx )
@@ -368,13 +368,13 @@ public class MasterClient extends Client<Master> implements Master
         }
         
         private <T> HaRequestType( MasterCaller caller, ObjectSerializer<T> serializer,
-                boolean includesSlaveContext, boolean withinTx, boolean allowCreateNewChannel )
+                boolean includesSlaveContext, boolean withinTx, boolean allowWaitForChannel )
         {
             this.caller = caller;
             this.serializer = serializer;
             this.includesSlaveContext = includesSlaveContext;
             this.withinTx = withinTx;
-            this.allowCreateNewChannel = allowCreateNewChannel;
+            this.allowWaitForNewChannel = allowWaitForChannel;
         }
         
         public ObjectSerializer getObjectSerializer()
@@ -404,9 +404,9 @@ public class MasterClient extends Client<Master> implements Master
         }
         
         @Override
-        public boolean allowCreateNewChannel()
+        public boolean allowWaitForNewChannel()
         {
-            return allowCreateNewChannel;
+            return allowWaitForNewChannel;
         }
     }
 

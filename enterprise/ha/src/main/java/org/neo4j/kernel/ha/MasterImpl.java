@@ -370,7 +370,6 @@ public class MasterImpl implements Master
 
     public Response<Void> finishTransaction( SlaveContext context )
     {
-//        System.out.println( "TRYING TO FINISH OFF " + context + ", " + transactions.get( context ) );
         Transaction otherTx = suspendOtherAndResumeThis( context );
         rollbackThisAndResumeOther( otherTx, context );
         return packResponse( context, null );

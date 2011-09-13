@@ -112,7 +112,7 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
         }
         
         @Override
-        public boolean allowCreateNewChannel()
+        public boolean allowWaitForNewChannel()
         {
             return true;
         }

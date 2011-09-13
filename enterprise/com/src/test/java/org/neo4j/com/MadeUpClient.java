@@ -137,7 +137,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
         }
         
         @Override
-        public boolean allowCreateNewChannel()
+        public boolean allowWaitForNewChannel()
         {
             return true;
         }
