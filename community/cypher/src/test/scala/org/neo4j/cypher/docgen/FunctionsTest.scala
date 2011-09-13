@@ -26,14 +26,14 @@ import org.neo4j.graphdb.Node
 import org.neo4j.cypher.ExecutionResult
 
 class FunctionsTest extends DocumentingTestBase {
-  def graphDescription = List("A KNOWS B", "A KNOWS C", "B KNOWS D", "C KNOWS D", "B MARRIED E" )
+  def graphDescription = List("A KNOWS B", "A KNOWS C", "B KNOWS D", "C KNOWS D", "B MARRIED E")
 
   override val properties = Map(
-    "A" -> Map("age" -> 38, "eyes"->"brown"),
-    "B" -> Map("age" -> 25, "eyes"->"blue"),
-    "C" -> Map("age" -> 53, "eyes"->"green"),
-    "D" -> Map("age" -> 54, "eyes"->"brown"),
-    "E" -> Map("age" -> 41, "eyes"->"blue")
+    "A" -> Map("age" -> 38, "eyes" -> "brown"),
+    "B" -> Map("age" -> 25, "eyes" -> "blue"),
+    "C" -> Map("age" -> 53, "eyes" -> "green"),
+    "D" -> Map("age" -> 54, "eyes" -> "brown"),
+    "E" -> Map("age" -> 41, "eyes" -> "blue")
   )
 
 
@@ -89,11 +89,11 @@ class FunctionsTest extends DocumentingTestBase {
       (p) => assertEquals(1, p.toSeq.length))
   }
 
-    @Test def relationship_type() {
+  @Test def relationship_type() {
     testThis(
       title = "TYPE",
       syntax = "TYPE( relationship )",
-      arguments = List("relationship"->"A relationship"),
+      arguments = List("relationship" -> "A relationship"),
       text = """Returns a string representation of the relationship type.""",
       queryText = """start n=(%A%) match (n)-[r]->() return type(r)""",
       returns = """The relationship type of r.""",
@@ -104,7 +104,7 @@ class FunctionsTest extends DocumentingTestBase {
     testThis(
       title = "LENGTH",
       syntax = "LENGTH( iterable )",
-      arguments = List("iterable"->"An iterable, value or function call"),
+      arguments = List("iterable" -> "An iterable, value or function call"),
       text = """To return or filter on the length of a path, use the special property LENGTH""",
       queryText = """start a=(%A%) match p=a-->b-->c return length(p)""",
       returns = """The length of the path p.""",
@@ -115,7 +115,7 @@ class FunctionsTest extends DocumentingTestBase {
     testThis(
       title = "NODES",
       syntax = "NODES( path )",
-      arguments = List("path"->"A path"),
+      arguments = List("path" -> "A path"),
       text = """Returns all nodes in a path""",
       queryText = """start a=(%A%), c=(%E%) match p=a-->b-->c return NODES(p)""",
       returns = """All the nodes in the path p.""",
@@ -127,13 +127,26 @@ class FunctionsTest extends DocumentingTestBase {
     testThis(
       title = "RELATIONSHIPS",
       syntax = "RELATIONSHIPS( path )",
-      arguments = List("path"->"A path"),
+      arguments = List("path" -> "A path"),
       text = """Returns all relationships in a path""",
       queryText = """start a=(%A%), c=(%E%) match p=a-->b-->c return RELATIONSHIPS(p)""",
       returns = """All the nodes in the path p.""",
       (p) => assert(2 === p.columnAs[List[Node]]("RELATIONSHIPS(p)").toSeq.head.length)
     )
   }
+
+  @Test def id() {
+    testThis(
+      title = "ID",
+      syntax = "ID( property-container )",
+      arguments = List("property-container" -> "A node or a relationship"),
+      text = """Returns the id of the relationship or node""",
+      queryText = """start a=(%A%, %B%, %C%) return ID(a)""",
+      returns = """The node id for three nodes.""",
+      (p) => assert(Seq(node("A").getId, node("B").getId, node("C").getId) === p.columnAs[Int]("ID(a)").toSeq)
+    )
+  }
+
   private def testThis(title: String, syntax: String, arguments: List[(String, String)], text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
     val argsText = arguments.map(x => "   " + x._1 + ": " + x._2).mkString("\n")
     val fullText = String.format("""%s

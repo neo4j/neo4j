@@ -21,8 +21,9 @@ package org.neo4j.cypher.commands
 
 import org.neo4j.cypher.pipes.aggregation._
 import org.neo4j.cypher.{SyntaxException, SymbolTable}
-import org.neo4j.graphdb.{Path, NotFoundException, Relationship, PropertyContainer}
 import scala.collection.JavaConverters._
+import org.neo4j.graphdb._
+
 abstract sealed class Value extends (Map[String,Any]=>Any) {
   def identifier: Identifier
 
@@ -103,14 +104,29 @@ case class RelationshipTypeValue(relationship: String) extends Value {
 }
 
 case class ArrayLengthValue(inner: Value) extends Value {
+
   def apply(m: Map[String, Any]): Any = inner(m) match {
     case path:Path => path.length()
+    case x => throw new SyntaxException("Expected " + inner.identifier.name + " to be an iterable, but it is not.")
   }
 
   def identifier: Identifier = PathLengthIdentifier(inner.identifier.name)
 
   def checkAvailable(symbols: SymbolTable) {
-//    symbols.assertHas(ArrayIdentifier(pathName))
+  }
+}
+
+
+case class IdValue(inner: Value) extends Value {
+  def apply(m: Map[String, Any]): Any = inner(m) match {
+    case node:Node => node.getId
+    case rel:Relationship => rel.getId
+    case x => throw new SyntaxException("Expected " + inner.identifier.name + " to be a node or relationship.")
+  }
+
+  def identifier: Identifier = LiteralIdentifier("ID(" + inner.identifier.name + ")")
+
+  def checkAvailable(symbols: SymbolTable) {
   }
 }
 

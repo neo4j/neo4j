@@ -19,7 +19,15 @@
  */
 package org.neo4j.cypher.commands
 
-case class Identifier(name: String)
+import org.neo4j.cypher.SyntaxException
+
+case class Identifier(name: String) {
+
+  def assertIs( clazz:Class[_] ) {
+    if(!clazz.isAssignableFrom( this.getClass ))
+      throw new SyntaxException("Expected " + name + " to be of type " + clazz.getSimpleName + ", but it was of type " + this.getClass.getSimpleName)
+  }
+}
 
 case class PropertyContainerIdentifier(propContainerName:String) extends Identifier(propContainerName)
 case class UnboundIdentifier(subName: String, wrapped:Option[Identifier]) extends Identifier(subName)

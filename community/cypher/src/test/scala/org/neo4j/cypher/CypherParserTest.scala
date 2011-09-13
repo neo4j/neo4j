@@ -549,6 +549,15 @@ class CypherParserTest extends JUnitSuite {
         returns(ValueReturnItem(EntityValue("a"))))
   }
 
+  @Test def shouldHandleIdBothInReturnAndWhere() {
+    testQuery(
+      "start a = (1) where id(a) = 0 return id(a)",
+      Query.
+        start(NodeById("a", 1)).
+        where(Equals(IdValue(EntityValue("a")), Literal(0)))
+        returns(ValueReturnItem(IdValue(EntityValue("a")))))
+  }
+
   @Test def shouldBeAbleToHandleStringLiteralsWithApostrophe() {
     testQuery(
       "start a = (index, key, 'value') return a",
