@@ -70,26 +70,13 @@ rem
 if not "%JAVA_HOME%" == "" (
   
   if exist "%JAVA_HOME%\bin\javac.exe" (
-    if exist "%JAVA_HOME%\jre\bin\client\java.exe" (
-      set javaPath= "%JAVA_HOME%\jre\bin\client\java.exe"
-      goto:eof
-    )
-
-    if exist "%JAVA_HOME%\jre\bin\server\java.exe" (
-      set javaPath= "%JAVA_HOME%\jre\bin\server\java.exe"
-      goto:eof
-    )
+    set javaPath= "%JAVA_HOME%\jre\bin\java.exe"
+    goto:eof
   )
 
-  if exist "%JAVA_HOME%\bin\client\java.exe" (
-		set javaPath= "%JAVA_HOME%\bin\client\java.exe"
-		goto:eof
-  )
-	  
-  if exist "%JAVA_HOME%\bin\server\java.exe" (
-		set javaPath= "%JAVA_HOME%\bin\server\java.exe"
-		goto:eof
-  )
+  set javaPath= "%JAVA_HOME%\bin\java.exe"
+  goto:eof
+  
 )
 
 rem Attempt finding JVM via registry
