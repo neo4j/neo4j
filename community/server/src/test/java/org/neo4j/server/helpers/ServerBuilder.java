@@ -81,6 +81,7 @@ public class ServerBuilder
     private Clock clock = null;
     private String[] autoIndexedNodeKeys = null;
     private String[] autoIndexedRelationshipKeys = null;
+    private String host = null;
 
     public static ServerBuilder server()
     {
@@ -134,6 +135,10 @@ public class ServerBuilder
         if ( portNo != null )
         {
             writePropertyToFile( Configurator.WEBSERVER_PORT_PROPERTY_KEY, portNo, temporaryConfigFile );
+        }
+        if ( host != null )
+        {
+            writePropertyToFile( Configurator.WEBSERVER_ADDRESS_PROPERTY_KEY, host, temporaryConfigFile );
         }
         if ( maxThreads != null )
         {
@@ -348,6 +353,11 @@ public class ServerBuilder
     public ServerBuilder withAutoIndexingEnabledForRelationships( String... keys )
     {
         autoIndexedRelationshipKeys = keys;
+        return this;
+    }
+
+    public ServerBuilder onHost(String host) {
+        this.host  = host;
         return this;
     }
 }
