@@ -75,7 +75,7 @@ public class WrappingNeoServerBootstrapperTest
 
         srv.start();
 
-        // Server is now running in background threads
+        // Server is now running
 
         srv.stop();
         // END SNIPPET: usingWrappingNeoServerBootstrapper
