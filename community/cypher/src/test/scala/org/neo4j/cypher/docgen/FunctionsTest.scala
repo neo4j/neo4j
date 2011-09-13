@@ -84,7 +84,7 @@ class FunctionsTest extends DocumentingTestBase {
       syntax = "SINGLE(iterable, [symbol =>] predicate-closure)",
       arguments = common_arguments,
       text = """Returns true if the closure predicate matches exactly one of the items in the iterable.""",
-      queryText = """start n=(%A%) match p=n-->b where SINGLE(nodes(p), x => x.eyes = "blue") return p""",
+      queryText = """start n=(%A%) match p=n-->b where SINGLE(nodes(p), _.eyes = "blue") return p""",
       returns = """All nodes in the path.""",
       (p) => assertEquals(1, p.toSeq.length))
   }

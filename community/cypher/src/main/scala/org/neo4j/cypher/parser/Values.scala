@@ -60,7 +60,7 @@ trait Values extends JavaTokenParsers with Tokens {
   def functionCall: Parser[Value] = (typeFunc | lengthFunc | nodesFunc | relsFunc)
 
   def typeFunc: Parser[Value] = ignoreCase("type") ~> parens(identity) ^^ { case v => RelationshipTypeValue(v)  }
-  def lengthFunc: Parser[Value] = ignoreCase("length") ~> parens(identity) ^^ { case v => ArrayLengthValue(v)  }
+  def lengthFunc: Parser[Value] = ignoreCase("length") ~> parens( value | entityValue ) ^^ { case v => ArrayLengthValue(v)  }
   def nodesFunc: Parser[Value] = ignoreCase("nodes") ~> parens(identity) ^^ { case v => PathNodesValue(v)  }
   def relsFunc: Parser[Value] = (ignoreCase("rels") | ignoreCase("relationships"))  ~> parens(identity) ^^ { case v => PathRelationshipsValue(v)  }
 }

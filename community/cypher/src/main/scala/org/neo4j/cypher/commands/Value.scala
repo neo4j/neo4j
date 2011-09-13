@@ -102,13 +102,15 @@ case class RelationshipTypeValue(relationship: String) extends Value {
   }
 }
 
-case class ArrayLengthValue(pathName: String) extends Value {
-  def apply(m: Map[String, Any]): Any = m(pathName).asInstanceOf[Path].length()
+case class ArrayLengthValue(inner: Value) extends Value {
+  def apply(m: Map[String, Any]): Any = inner(m) match {
+    case path:Path => path.length()
+  }
 
-  def identifier: Identifier = PathLengthIdentifier(pathName)
+  def identifier: Identifier = PathLengthIdentifier(inner.identifier.name)
 
   def checkAvailable(symbols: SymbolTable) {
-    symbols.assertHas(ArrayIdentifier(pathName))
+//    symbols.assertHas(ArrayIdentifier(pathName))
   }
 }
 

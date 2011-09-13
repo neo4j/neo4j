@@ -505,7 +505,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("n", 1)).
         namedPaths(NamedPath("p", RelatedTo("n", "x", "  UNNAMED1", None, Direction.OUTGOING, false))).
-        where(Equals(ArrayLengthValue("p"), Literal(10.0))).
+        where(Equals(ArrayLengthValue(EntityValue("p")), Literal(10.0))).
         returns(ValueReturnItem(EntityValue("p"))))
   }
 
@@ -528,17 +528,17 @@ class CypherParserTest extends JUnitSuite {
         namedPaths(NamedPath("p", RelatedTo("n", "x", "  UNNAMED1", None, Direction.OUTGOING, false))).
         returns(ValueReturnItem(PathRelationshipsValue("p"))))
   }
-//
-//  @Test def relationshipsFromPathInWhere() {
-//    testQuery(
-//      "start n=(1) match p=n-->x where length(rels(p))=1 return p",
-//
-//      Query.
-//        start(NodeById("n", 1)).
-//        namedPaths(NamedPath("p", RelatedTo("n", "x", "  UNNAMED1", None, Direction.OUTGOING, false))).
-//        where(Equals(ArrayLengthValue(PathRelationshipsValue("p")), Literal(1)))
-//        returns (ValueReturnItem(EntityValue("p"))))
-//  }
+
+  @Test def relationshipsFromPathInWhere() {
+    testQuery(
+      "start n=(1) match p=n-->x where length(rels(p))=1 return p",
+
+      Query.
+        start(NodeById("n", 1)).
+        namedPaths(NamedPath("p", RelatedTo("n", "x", "  UNNAMED1", None, Direction.OUTGOING, false))).
+        where(Equals(ArrayLengthValue(PathRelationshipsValue("p")), Literal(1)))
+        returns (ValueReturnItem(EntityValue("p"))))
+  }
 
   @Test def countNonNullValues() {
     testQuery(
