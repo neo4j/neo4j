@@ -262,8 +262,9 @@ public abstract class Command extends XaCommand
         record.setInUse( inUse, type );
         if ( inUse )
         {
-            // record.setPrevBlock( buffer.getLong() );
             int nrOfBytes = buffer.getInt();
+            assert nrOfBytes > 0;
+            assert nrOfBytes < ( ( 1 << 24 ) - 1 );
             record.setNextBlock( buffer.getLong() );
             buffer.clear();
             buffer.limit( nrOfBytes );

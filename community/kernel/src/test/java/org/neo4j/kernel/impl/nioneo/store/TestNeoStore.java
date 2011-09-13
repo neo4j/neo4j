@@ -1031,8 +1031,10 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         config.put( FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
         NeoStore.createStore( file( "neo" ), config );
         initializeStores();
-        assertEquals( 62 + 9, pStore.getStringBlockSize() );
-        assertEquals( 302 + 9, pStore.getArrayBlockSize() );
+        assertEquals( 62 + AbstractDynamicStore.BLOCK_HEADER_SIZE,
+                pStore.getStringBlockSize() );
+        assertEquals( 302 + AbstractDynamicStore.BLOCK_HEADER_SIZE,
+                pStore.getArrayBlockSize() );
         ds.close();
     }
 }

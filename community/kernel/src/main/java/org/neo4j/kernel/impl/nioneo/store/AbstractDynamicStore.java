@@ -265,8 +265,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         return dataSize + BLOCK_HEADER_SIZE;
     }
 
-    // in_use(byte)+nr_of_bytes(int)+next_block(int)
-    protected static final int BLOCK_HEADER_SIZE = 1 + 4 + 4;
+    // (in_use+next high)(1 byte)+nr_of_bytes(3 bytes)+next_block(int)
+    protected static final int BLOCK_HEADER_SIZE = 1 + 3 + 4; // = 8
 
     public void updateRecord( DynamicRecord record )
     {
@@ -282,20 +282,23 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
             if ( record.inUse() )
             {
                 long nextProp = record.getNextBlock();
-                int nextModifier = nextProp == Record.NO_NEXT_BLOCK.intValue() ? 0 : (int)((nextProp & 0xF00000000L) >> 8);
+                int nextModifier = nextProp == Record.NO_NEXT_BLOCK.intValue() ? 0
+                        : (int) ( ( nextProp & 0xF00000000L ) >> 8 );
+                nextModifier |= ( Record.IN_USE.byteValue() << 28 );
 
-                // [    ,   x] in use
-                // [xxxx,    ] high prev block bits
-                short inUseUnsignedByte = ( ( Record.IN_USE.byteValue() /* | prevModifier*/) );
+                /*
+                 *
+                 * [   x,    ][    ,    ][    ,    ][    ,    ] inUse
+                 * [    ,xxxx][    ,    ][    ,    ][    ,    ] high next block bits
+                 * [    ,    ][xxxx,xxxx][xxxx,xxxx][xxxx,xxxx] nr of bytes
+                 *
+                 */
+                int mostlyNrOfBytesInt = record.getLength();
+                assert mostlyNrOfBytesInt < ( 1 << 24 ) - 1;
 
-                // [    ,    ][xxxx,xxxx][xxxx,xxxx][xxxx,xxxx] nr of bytes
-                // [    ,xxxx][    ,    ][    ,    ][    ,    ] high next block bits
-                int nrOfBytesInt = record.getLength();
-                nrOfBytesInt |= nextModifier;
+                mostlyNrOfBytesInt |= nextModifier;
 
-                // assert record.getId() != record.getPrevBlock();
-                buffer.put( (byte) inUseUnsignedByte )/*.putInt( (int)prevProp )*/.putInt(
-                        nrOfBytesInt ).putInt( (int)nextProp );
+                buffer.putInt( mostlyNrOfBytesInt ).putInt( (int) nextProp );
                 if ( !record.isLight() )
                 {
                     if ( !record.isCharData() )
@@ -461,27 +464,28 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         DynamicRecord record = new DynamicRecord( blockId );
         Buffer buffer = window.getOffsettedBuffer( blockId );
 
-        // [    ,   x] in use
-        // [xxxx,    ] high bits for prev block
-        long inUseByte = buffer.get();
-        boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
+        /*
+         *
+         * [   x,    ][    ,    ][    ,    ][    ,    ] inUse
+         * [    ,xxxx][    ,    ][    ,    ][    ,    ] high next block bits
+         * [    ,    ][xxxx,xxxx][xxxx,xxxx][xxxx,xxxx] nr of bytes
+         *
+         */
+
+        long firstInteger = buffer.getUnsignedInt();
+        // firstInteger &= 0xF0000000;
+        int inUseByte = (int) ( ( firstInteger & 0xF0000000 ) >> 28 );
+        boolean inUse = inUseByte == Record.IN_USE.intValue();
         if ( !inUse )
         {
             throw new InvalidRecordException( "Not in use, blockId[" + blockId + "]" );
         }
-        // long prevBlock = buffer.getUnsignedInt();
-        // long prevModifier = (inUseByte & 0xF0L) << 28;
-
         int dataSize = getBlockSize() - BLOCK_HEADER_SIZE;
 
-        // [    ,    ][xxxx,xxxx][xxxx,xxxx][xxxx,xxxx] number of bytes
-        // [    ,xxxx][    ,    ][    ,    ][    ,    ] higher bits for next block
-        long nrOfBytesInt = buffer.getInt();
-
-        int nrOfBytes = (int)(nrOfBytesInt & 0xFFFFFF);
+        int nrOfBytes = (int) ( firstInteger & 0xFFFFFF );
 
         long nextBlock = buffer.getUnsignedInt();
-        long nextModifier = (nrOfBytesInt & 0xF000000L) << 8;
+        long nextModifier = ( firstInteger & 0xF000000L ) << 8;
 
         long longNextBlock = longFromIntAndMod( nextBlock, nextModifier );
         if ( longNextBlock != Record.NO_NEXT_BLOCK.intValue()
@@ -493,7 +497,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         }
         record.setInUse( true );
         record.setLength( nrOfBytes );
-        // record.setPrevBlock( longFromIntAndMod( prevBlock, prevModifier ) );
         record.setNextBlock( longNextBlock );
         if ( loadData )
         {

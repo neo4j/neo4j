@@ -289,9 +289,7 @@ public class TestUpgradeStore
     {
         FileChannel channel = new RandomAccessFile( file, "rw" ).getChannel();
         ByteBuffer buffer = ByteBuffer.wrap( new byte[4] );
-        // This +9 thing is done internally when creating the store
-        // since a block has an overhead of 9 bytes
-        buffer.putInt( blockSize + 9 );
+        buffer.putInt( blockSize + AbstractDynamicStore.BLOCK_HEADER_SIZE );
         buffer.flip();
         channel.write( buffer );
 

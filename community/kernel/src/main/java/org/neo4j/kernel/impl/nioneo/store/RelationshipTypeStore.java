@@ -98,17 +98,20 @@ public class RelationshipTypeStore extends AbstractStore implements Store
         }
     }
 
+    @Override
     public void flushAll()
     {
         typeNameStore.flushAll();
         super.flushAll();
     }
 
+    @Override
     public String getTypeAndVersionDescriptor()
     {
         return VERSION;
     }
 
+    @Override
     public int getRecordSize()
     {
         return RECORD_SIZE;
@@ -200,7 +203,6 @@ public class RelationshipTypeStore extends AbstractStore implements Store
         {
             releaseWindow( window );
         }
-        // }
         if ( record != null )
         {
             Collection<DynamicRecord> nameRecords = typeNameStore.getRecords(
@@ -476,6 +478,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
             " of Neo4j." );
     }
 
+    @Override
     public List<WindowPoolStats> getAllWindowPoolStats()
     {
         List<WindowPoolStats> list = new ArrayList<WindowPoolStats>();
