@@ -122,6 +122,16 @@ case class PathNodesValue(pathName: String) extends Value {
   }
 }
 
+case class PathRelationshipsValue(pathName: String) extends Value {
+  def apply(m: Map[String, Any]): Any = m(pathName).asInstanceOf[Path].relationships().asScala.toSeq
+
+  def identifier: Identifier = ArrayIdentifier("RELATIONSHIPS(" + pathName + ")")
+
+  def checkAvailable(symbols: SymbolTable) {
+    symbols.assertHas(PathIdentifier(pathName))
+  }
+}
+
 case class EntityValue(entityName:String) extends Value {
   def apply(m: Map[String, Any]): Any = m.getOrElse(entityName, throw new NotFoundException)
 

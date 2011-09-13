@@ -675,6 +675,23 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     assertEquals(List(d), result.columnAs[Node]("pB").toList)
   }
 
+  @Test def shouldReturnRelationships() {
+    val a = createNode(Map("foo" -> "bar"))
+    val b = createNode(Map("foo" -> "bar"))
+    val c = createNode(Map("foo" -> "bar"))
+
+    val r1 = relate(a, b, "rel")
+    val r2 = relate(b, c, "rel")
+
+    val query = Query.start(NodeById("pA", a.getId)).
+      namedPaths(NamedPath("p", VarLengthRelatedTo("x", "pA", "pB", 2, 2, "rel", Direction.OUTGOING))).
+      returns(ValueReturnItem(PathRelationshipsValue("p")))
+
+    val result = execute(query)
+
+    assertEquals(List(r1,r2), result.columnAs[Node]("RELATIONSHIPS(p)").toList.head)
+  }
+
   @Test def shouldReturnAVarLengthPath() {
     createNodes("A", "B", "C")
     val r1 = relate("A" -> "KNOWS" -> "B")
