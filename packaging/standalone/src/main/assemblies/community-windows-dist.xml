@@ -142,26 +142,6 @@
         <exclude>org.neo4j.app:windows-service-wrapper:*</exclude>
       </excludes>
     </dependencySet>
-    <!-- java examples -->
-    <dependencySet>
-      <outputDirectory>examples/java/embedded</outputDirectory>
-      <unpack>true</unpack>
-      <useProjectArtifact>false</useProjectArtifact>
-      <directoryMode>0777</directoryMode>
-      <includes>
-        <include>org.neo4j.examples:neo4j-examples</include>
-      </includes>
-    </dependencySet>
-    <!-- server examples. -->
-    <dependencySet>
-      <outputDirectory>examples/java/server</outputDirectory>
-      <unpack>true</unpack>
-      <useProjectArtifact>false</useProjectArtifact>
-      <directoryMode>0777</directoryMode>
-      <includes>
-        <include>org.neo4j.examples:neo4j-server-examples</include>
-      </includes>
-    </dependencySet>
     <!-- java api docs -->
     <dependencySet>
       <outputDirectory>doc/java/api</outputDirectory>
@@ -171,16 +151,6 @@
       <directoryMode>0777</directoryMode>
       <includes>
         <include>org.neo4j:neo4j:*:javadoc</include>
-      </includes>
-    </dependencySet>
-    <!-- server maven site becomes REST api -->
-    <dependencySet>
-      <outputDirectory>doc/rest</outputDirectory>
-      <unpack>true</unpack>
-      <fileMode>0444</fileMode>
-      <directoryMode>0777</directoryMode>
-      <includes>
-        <include>org.neo4j.app:neo4j-server:*:site</include>
       </includes>
     </dependencySet>
     <!-- der manual -->
@@ -200,3 +170,4 @@
   </dependencySets>
 
 </assembly>
+

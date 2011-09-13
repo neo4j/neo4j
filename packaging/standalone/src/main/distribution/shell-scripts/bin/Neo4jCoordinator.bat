@@ -24,4 +24,4 @@ set configFile="conf\coord-wrapper.conf"
 set classpath="-DserverClasspath=lib/zoo*.jar;system/coordinator/lib/*.jar"
 set mainclass="-DserverMainClass=org.apache.zookeeper.server.quorum.QuorumPeerMain"
 
-call base.bat %1 %2 %3 %4 %5
+call "%~dp0\base.bat" %1 %2 %3 %4 %5

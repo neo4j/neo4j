@@ -1,3 +1,7 @@
+1.5.M01 (2011-08-31)
+--------------------
+o Fixed some issues regarding monitoring of open channels and what resources they map to and occupy.
+
 1.4.M04 (2011-06-09)
 --------------------
 o First iteration of the Cypher Query Language included,

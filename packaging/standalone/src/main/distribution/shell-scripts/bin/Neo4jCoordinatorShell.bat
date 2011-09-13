@@ -68,17 +68,23 @@ if "%JAVACMD%"=="" set JAVACMD=java
 
 if "%REPO%"=="" set REPO=%BASEDIR%\lib
 
+if "%COORDINATOR_LIB%"=="" set COORDINATOR_LIB=%BASEDIR%\system\coordinator\lib
+
 rem Setup the classpath
 set LIBPATH=""
 pushd "%REPO%"
-for %%G in (*.jar) do call:APPEND_TO_LIBPATH %%G
+for %%G in (*.jar) do call:APPEND_TO_LIBPATH %%G %REPO%
+popd
+pushd "%COORDINATOR_LIB%"
+for %%G in (*.jar) do call:APPEND_TO_LIBPATH %%G %COORDINATOR_LIB%
 popd
 goto LIBPATH_END
 
 : APPEND_TO_LIBPATH
 set filename=%~1
+set dir=%~2
 set suffix=%filename:~-4%
-if %suffix% equ .jar set LIBPATH=%LIBPATH%;"%REPO%\%filename%"
+if %suffix% equ .jar set LIBPATH=%LIBPATH%;"%dir%\%filename%"
 goto :EOF
 
 :LIBPATH_END

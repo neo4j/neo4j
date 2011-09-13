@@ -1,4 +1,9 @@
-1.4.M05 (2011-06-2?)
+1.5.M01 (2011-08-31)
+--------------------
+o Fixed some bugs in the startup scripts.
+o Log rotation of server logs.
+
+1.4.M05 (2011-06-27)
 --------------------
 o Replaced YAJSW with our in-house solution consisting mostly of scripts and a bit
   of native code for windows services

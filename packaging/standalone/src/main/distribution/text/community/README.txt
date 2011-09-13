@@ -17,7 +17,6 @@ Here in the installation directory, you'll find:
 * conf - server configuration
 * data - database, log, and other variable files
 * doc - more light reading
-* examples - real code
 * lib - core libraries
 * plugins - user extensions
 * system - super-secret server stuff
@@ -55,18 +54,6 @@ Out on the internets, you'll find:
 
 For more links, a handy [guide post](doc/guide-post.html) in the `doc` 
 directory will point you in the right direction.
-
-Examples
---------
-
-The `examples` directory has working code for programming with Neo4j and
-interacting with the server through REST.
-
-The command line `curl` tool is useful for "programming" against the REST
-api outside of a particular language. The REST examples take that approach.
-
-For JVM-based "embedded programming" with Neo4j, you'll find examples 
-written in Java.
 
 License(s)
 ----------

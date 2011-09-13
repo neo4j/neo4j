@@ -3,8 +3,8 @@
 
   <parent>
     <artifactId>assembly-pom</artifactId>
-    <groupId>org.neo4j.assembly</groupId>
-    <version>21</version>
+    <groupId>org.neo4j.build</groupId>
+    <version>24</version>
   </parent>
 
   <groupId>org.neo4j.assembly</groupId>
@@ -31,7 +31,7 @@
     <!-- other filter properties -->
     <wrapper.conf>conf/neo4j-wrapper.conf</wrapper.conf>
     <neo4j.version>1.5-SNAPSHOT</neo4j.version>
-    <windows-wrapper.version>1-SNAPSHOT</windows-wrapper.version>
+    <windows-wrapper.version>1</windows-wrapper.version>
 
     <!-- conf/neo4j-server.properties filter properties -->
     <org.neo4j.database.location>data/graph.db</org.neo4j.database.location>
@@ -44,11 +44,6 @@
     <neo4j.confdir>${neo4j.home}/conf</neo4j.confdir> <!-- needed? -->
     <neo4j.datadir>${neo4j.home}/data</neo4j.datadir> <!-- needed? -->
     <neo4j.logdir>${neo4j.datadir}/log</neo4j.logdir> <!-- needed? -->
-
-    <!-- OSGi Bundle versions 
-    <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
-    <pax-logging.version>1.5.3</pax-logging.version>
-    -->
 
   </properties>
 
@@ -77,7 +72,6 @@ terms of the relevant Commercial Agreement.
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>properties-maven-plugin</artifactId>
-        <version>1.0-alpha-2</version>
         <executions>
           <execution>
             <phase>initialize</phase>
@@ -274,16 +268,6 @@ terms of the relevant Commercial Agreement.
           </execution>
         </executions>
       </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>wagon-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>upload-to-dist-server</id>
-            <phase>none</phase>
-          </execution>
-        </executions>
-      </plugin>
 
       <plugin>
         <groupId>com.mycila.maven-license-plugin</groupId>
@@ -388,18 +372,6 @@ terms of the relevant Commercial Agreement.
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
       <version>${neo4j.version}</version>
-      <classifier>site</classifier>
-      <exclusions>
-        <exclusion>
-          <artifactId>neo4j-udc</artifactId>
-          <groupId>org.neo4j</groupId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.app</groupId>
-      <artifactId>neo4j-server</artifactId>
-      <version>${neo4j.version}</version>
       <exclusions>
         <exclusion>
           <artifactId>neo4j-udc</artifactId>
@@ -434,20 +406,6 @@ terms of the relevant Commercial Agreement.
       <artifactId>neo4j-server</artifactId>
       <version>${neo4j.version}</version>
       <classifier>static-web</classifier> 
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.examples</groupId>
-      <artifactId>neo4j-examples</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>download</classifier>
-      <type>tar.gz</type>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j.examples</groupId>
-      <artifactId>neo4j-server-examples</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>download</classifier>
-      <type>tar.gz</type>
     </dependency>
 
     <dependency>
@@ -485,29 +443,7 @@ terms of the relevant Commercial Agreement.
       <artifactId>neo4j-cypher-plugin</artifactId>
       <version>${neo4j.version}</version>
     </dependency>
-    
   </dependencies>
-
-  <developers>
-    <developer>
-      <id>akollegger</id>
-      <name>Andreas Kollegger</name>
-      <email>andreas.kollegger [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-    <developer>
-      <id>andres</id>
-      <name>Andrés Taylor</name>
-      <email>andres.taylor [at] neotechnology.com</email>
-      <timezone>+1</timezone>
-      <roles>
-        <role>Developer</role>
-      </roles>
-    </developer>
-  </developers>
 
   <distributionManagement>
     <site>
