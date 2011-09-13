@@ -123,6 +123,17 @@ class FunctionsTest extends DocumentingTestBase {
     )
   }
 
+  @Test def rels_in_path() {
+    testThis(
+      title = "RELATIONSHIPS",
+      syntax = "RELATIONSHIPS( path )",
+      arguments = List("path"->"A path"),
+      text = """Returns all relationships in a path""",
+      queryText = """start a=(%A%), c=(%E%) match p=a-->b-->c return RELATIONSHIPS(p)""",
+      returns = """All the nodes in the path p.""",
+      (p) => assert(2 === p.columnAs[List[Node]]("RELATIONSHIPS(p)").toSeq.head.length)
+    )
+  }
   private def testThis(title: String, syntax: String, arguments: List[(String, String)], text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
     val argsText = arguments.map(x => "   " + x._1 + ": " + x._2).mkString("\n")
     val fullText = String.format("""%s

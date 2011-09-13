@@ -519,6 +519,27 @@ class CypherParserTest extends JUnitSuite {
         returns(ValueReturnItem(RelationshipTypeValue("r"))))
   }
 
+  @Test def relationshipsFromPathOutput() {
+    testQuery(
+      "start n=(1) match p=n-->x return relationships(p)",
+
+      Query.
+        start(NodeById("n", 1)).
+        namedPaths(NamedPath("p", RelatedTo("n", "x", "  UNNAMED1", None, Direction.OUTGOING, false))).
+        returns(ValueReturnItem(PathRelationshipsValue("p"))))
+  }
+//
+//  @Test def relationshipsFromPathInWhere() {
+//    testQuery(
+//      "start n=(1) match p=n-->x where length(rels(p))=1 return p",
+//
+//      Query.
+//        start(NodeById("n", 1)).
+//        namedPaths(NamedPath("p", RelatedTo("n", "x", "  UNNAMED1", None, Direction.OUTGOING, false))).
+//        where(Equals(ArrayLengthValue(PathRelationshipsValue("p")), Literal(1)))
+//        returns (ValueReturnItem(EntityValue("p"))))
+//  }
+
   @Test def countNonNullValues() {
     testQuery(
       "start a = (1) return a, count(a)",
