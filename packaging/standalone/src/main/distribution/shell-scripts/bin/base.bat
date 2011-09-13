@@ -17,7 +17,6 @@ rem
 rem You should have received a copy of the GNU General Public License
 rem along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-cls
 setlocal ENABLEEXTENSIONS
 
 call:main %1
@@ -59,28 +58,49 @@ rem end function main
 
 rem
 rem function findJavaHome
+rem Tries to find java.exe using JAVA_HOME
+rem or using registry keys.
 rem
 
 :findJavaHome
+if not "%JAVA_HOME%" == "" (
+  
+  set javaPath=%JAVA_HOME%
+  if exist "%javaPath%\bin\javac.exe" (
+    set javaPath=%javaPath%\jre
+  )
+  
+  if exist "%javaPath%\bin\client\java.exe" (
+    set javaPath= %javaPath%\bin\client\java.exe
+	
+    goto:eof
+  )
+  
+  if exist "%javaPath%\bin\server\java.exe" (
+    set javaPath= %javaPath%\bin\server\java.exe
+    goto:eof
+  )
+)
+
+rem Attempt finding JVM via registry
 set keyName=HKLM\SOFTWARE\JavaSoft\Java Runtime Environment
 set valueName=CurrentVersion
 
 FOR /F "usebackq skip=2 tokens=3" %%a IN (`REG QUERY "%keyName%" /v %valueName% 2^>nul`) DO (
-	set javaVersion=%%a
+  set javaVersion=%%a
 )
 
 if "%javaVersion%" == "" (
-    set javaHomeError=Unable to locate jvm. Could not find %keyName%/%valueName% entry in windows registry.
-	goto:eof
+  set javaHomeError=Unable to locate jvm. Could not find %keyName%/%valueName% entry in windows registry, and could not find it via JAVA_HOME.
+  goto:eof
 )
 
 set javaCurrentKey=HKLM\SOFTWARE\JavaSoft\Java Runtime Environment\%javaVersion%
 set javaHomeKey=JavaHome
 
 FOR /F "usebackq skip=2 tokens=3,4" %%a IN (`REG QUERY "%javaCurrentKey%" /v %javaHomeKey% 2^>nul`) DO (
-    set javaPath=%%a %%b
+  set javaPath=%%a %%b
 )
-
 goto:eof
 
 rem end function findJavaHome
