@@ -23,33 +23,18 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.UnsupportedEncodingException;
-import java.util.Collection;
-import java.util.Map;
 
 import javax.ws.rs.core.Response.Status;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.WrappingNeoServerBootstrapper;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
-import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphDescription.NODE;
 import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphDescription.REL;
-import org.neo4j.test.GraphHolder;
-import org.neo4j.test.ImpermanentGraphDatabase;
-import org.neo4j.test.TestData;
 import org.neo4j.test.TestData.Title;
 
 public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
@@ -97,7 +82,7 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
                 "{\"query\": \"" + script + "\"}" ).description(
                 formatCypher( script ) );
         String response = gen.get().post( ENDPOINT ).entity();
-        assertEquals(3, ((Map) JsonHelper.jsonToMap( response )).size());
+        assertEquals( 3, ( JsonHelper.jsonToMap( response ) ).size() );
     }
 
 
@@ -123,7 +108,7 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
                 "{\"query\": \"" + script + "\"}" ).description(
                 formatCypher( script ) );
         String response = gen.get().post( ENDPOINT ).entity();
-        assertEquals(2, ((Map) JsonHelper.jsonToMap( response )).size());
+        assertEquals( 2, ( JsonHelper.jsonToMap( response ) ).size() );
         assertTrue(response.contains( "data" ));
         assertTrue(response.contains( "you" ));
     }
