@@ -20,7 +20,7 @@
 package org.neo4j.server;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
+import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
 
 import java.net.URI;
 
@@ -31,10 +31,11 @@ import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.server.helpers.FunctionalTestHelper;
+import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.helpers.Transactor;
 import org.neo4j.server.helpers.UnitOfWork;
-import org.neo4j.server.rest.FunctionalTestHelper;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 

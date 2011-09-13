@@ -198,7 +198,7 @@ public class IdGeneratorImpl implements IdGenerator
         }
     }
     
-    public IdRange nextIdBatch( int size )
+    public synchronized IdRange nextIdBatch( int size )
     {
         assertStillOpen();
         
