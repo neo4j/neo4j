@@ -74,6 +74,7 @@ public abstract class ManagementBeanProvider extends Service
     }
 
     final Iterable<? extends Neo4jMBean> loadBeans( KernelData kernel, ManagementSupport support )
+            throws NotCompliantMBeanException
     {
         try
         {
@@ -86,9 +87,9 @@ public abstract class ManagementBeanProvider extends Service
                 return createMBeans( new ManagementData( this, kernel, support ) );
             }
         }
-        catch ( Exception e )
+        catch ( NotCompliantMBeanException e )
         {
-            return null;
+            throw e;
         }
     }
 }

@@ -1718,6 +1718,7 @@ public class XaLogicalLog
                 interesting = true;
                 identifier = entry.getIdentifier();
                 List<LogEntry> entries = transactions.get( identifier );
+                if ( entries == null ) return false;
                 entries.add( entry );
                 writeToBuffer( entries, target );
                 previousTxId = commitTxId;

@@ -148,11 +148,13 @@ class FunctionsTest extends DocumentingTestBase {
   }
 
   private def testThis(title: String, syntax: String, arguments: List[(String, String)], text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
-    val argsText = arguments.map(x => "   " + x._1 + ": " + x._2).mkString("\n")
+    val argsText = arguments.map(x => "* _" + x._1 + ":_ " + x._2).mkString("\r\n\r\n")
     val fullText = String.format("""%s
 
-Syntax: %s
-Arguments:
+*Syntax:* %s
+
+*Arguments:*
+
 %s""", text, syntax, argsText)
     testQuery(title, fullText, queryText, returns, assertions: _*)
   }

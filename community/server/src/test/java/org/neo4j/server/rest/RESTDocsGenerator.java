@@ -186,6 +186,12 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         return retrieveResponse( title, description, request.getURI()
                 .toString(), expectedResponseStatus, expectedMediaType, expectedHeaderFields, request );
     }
+    
+    @Override
+    public RESTDocsGenerator description( String description )
+    {
+        return (RESTDocsGenerator) super.description( description );
+    }
 
     /**
      * Send a GET request.
