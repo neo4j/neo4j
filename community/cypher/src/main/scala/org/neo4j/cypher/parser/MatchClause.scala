@@ -105,9 +105,10 @@ trait MatchClause extends JavaTokenParsers with Tokens {
     }
   }
 
-  def relationshipInfo: Parser[(Option[String], Option[String], Option[(Int, Int)], Boolean)] = opt(identity) ~ opt("?") ~ opt(":" ~ identity ~ opt("^" ~ wholeNumber ~ ".." ~ wholeNumber)) ^^ {
-    case relName ~ optional ~ Some(":" ~ relType ~ None) => (relName, Some(relType), None, optional.isDefined)
-    case relName ~ optional ~ Some(":" ~ relType ~ Some("^" ~ minHops ~ ".." ~ maxHops)) => (relName, Some(relType), Some((minHops.toInt, maxHops.toInt)), optional.isDefined)
-    case relName ~ optional ~ None => (relName, None, None, optional.isDefined)
+  def relationshipInfo: Parser[(Option[String], Option[String], Option[(Int, Int)], Boolean)] = opt(identity) ~ opt("?") ~ opt(":" ~> identity) ~ opt("^" ~ wholeNumber ~ ".." ~ wholeNumber) ^^ {
+    case relName ~ optional ~ Some(relType) ~ None => (relName, Some(relType), None, optional.isDefined)
+    case relName ~ optional ~ Some(relType) ~ Some("^" ~ minHops ~ ".." ~ maxHops) => (relName, Some(relType), Some((minHops.toInt, maxHops.toInt)), optional.isDefined)
+    case relName ~ optional ~ None ~ Some("^" ~ minHops ~ ".." ~ maxHops)  => (relName, None, Some((minHops.toInt, maxHops.toInt)), optional.isDefined)
+    case relName ~ optional ~ None ~ None => (relName, None, None, optional.isDefined)
   }
 }

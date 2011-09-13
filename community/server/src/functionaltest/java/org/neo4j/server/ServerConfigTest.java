@@ -22,7 +22,7 @@ package org.neo4j.server;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.server.ServerBuilder.server;
+import static org.neo4j.server.helpers.ServerBuilder.server;
 
 import java.io.IOException;
 

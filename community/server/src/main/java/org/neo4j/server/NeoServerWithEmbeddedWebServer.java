@@ -351,7 +351,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
     @Override
     public Collection<Injectable<?>> getInjectables( List<String> packageNames )
     {
-        return pluginInitializer.intitializePackages( packageNames );
+        return pluginInitializer.initializePackages( packageNames );
     }
 
     private boolean hasModule( Class<? extends ServerModule> clazz )

@@ -586,6 +586,7 @@ public class TestIdGenerator
         idGenerator = new IdGeneratorImpl( idGeneratorFile(), 1, IdType.NODE.getMaxValue() );
         assertEquals( magicMinusOne-1, idGenerator.nextId() );
         assertEquals( magicMinusOne+2, idGenerator.nextId() );
+        idGenerator.close();
     }
     
     @Test
@@ -651,5 +652,35 @@ public class TestIdGenerator
         }
         
         db.shutdown();
+    }
+    
+    @Test
+    public void clearFreeIds()
+    {
+        IdGeneratorImpl.createGenerator( idGeneratorFile() );
+        IdGenerator generator = new IdGeneratorImpl( idGeneratorFile(), 10, 100 );
+        
+        // Create then free enough ids to make #freeId write out id batches which we rely on
+        // #clearFreeIds to clear out, as well as the state in memory.
+        long[] ids = new long[35];
+        for ( int i = 0; i < ids.length; i++ ) ids[i] = generator.nextId();
+        for ( long id : ids ) generator.freeId( id ); 
+        long nextExpectedId = ids[ids.length-1]+1;
+        generator.close();
+        generator = new IdGeneratorImpl( idGeneratorFile(), 10, 100 );
+        generator.clearFreeIds();
+        assertEquals( nextExpectedId++, generator.nextId() );
+        generator.close();
+        
+        generator = new IdGeneratorImpl( idGeneratorFile(), 10, 100 );
+        assertEquals( nextExpectedId, generator.nextId() );
+        for ( int i = 0; i < ids.length; i++ ) ids[i] = generator.nextId();
+        for ( long id : ids ) generator.freeId( id ); 
+        nextExpectedId = ids[ids.length-1]+1;
+        generator.close();
+        generator = new IdGeneratorImpl( idGeneratorFile(), 10, 100 );
+        generator.clearFreeIds();
+        assertEquals( nextExpectedId++, generator.nextId() );
+        generator.close();
     }
 }

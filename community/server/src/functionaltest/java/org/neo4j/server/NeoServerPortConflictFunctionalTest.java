@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 
 import org.junit.Test;
+import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.server.logging.InMemoryAppender;
 
 public class NeoServerPortConflictFunctionalTest

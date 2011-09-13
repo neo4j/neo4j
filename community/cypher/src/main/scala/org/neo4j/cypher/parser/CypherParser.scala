@@ -34,7 +34,6 @@ with OrderByClause
 with StringExtras {
 
   def query: Parser[Query] = start ~ opt(matching) ~ opt(where) ~ returns ~ opt(order) ~ opt(skip) ~ opt(limit) ^^ {
-//    case start ~ matching ~ where ~ returns ~ order ~ None ~ None => Query(returns._1, start, matching, where, returns._2, order, None, None)
 
     case start ~ matching ~ where ~ returns ~ order ~ skip ~ limit => {
       val slice = (skip,limit) match {

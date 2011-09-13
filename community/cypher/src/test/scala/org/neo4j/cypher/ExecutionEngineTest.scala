@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.commands._
+import commands._
 import org.junit.Assert._
 import java.lang.String
 import parser.CypherParser
@@ -497,7 +497,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val query = Query.
       start(NodeById("n", 1)).
       matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING, false)).
-      where(Equals(RelationshipTypeValue("r"), Literal("KNOWS"))).
+      where(Equals(RelationshipTypeValue(EntityValue("r")), Literal("KNOWS"))).
       returns(ValueReturnItem(EntityValue("x")))
 
     val result = execute(query)
@@ -513,11 +513,11 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val query = Query.
       start(NodeById("n", 1)).
       matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING, false)).
-      returns(ValueReturnItem(RelationshipTypeValue("r")))
+      returns(ValueReturnItem(RelationshipTypeValue(EntityValue("r"))))
 
     val result = execute(query)
 
-    assertEquals(List("KNOWS", "HATES"), result.columnAs[String]("r.TYPE").toList)
+    assertEquals(List("KNOWS", "HATES"), result.columnAs[String]("TYPE(r)").toList)
   }
 
   @Test def shouldAggregateOnProperties() {
@@ -578,7 +578,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val query = Query.
       start(NodeById("n", 1)).
       matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING, false)).
-      where(Or(Equals(RelationshipTypeValue("r"), Literal("KNOWS")), Equals(RelationshipTypeValue("r"), Literal("HATES")))).
+      where(Or(Equals(RelationshipTypeValue(EntityValue("r")), Literal("KNOWS")), Equals(RelationshipTypeValue(EntityValue("r")), Literal("HATES")))).
       returns(ValueReturnItem(EntityValue("x")))
 
     val result = execute(query)
@@ -623,7 +623,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     relate("A" -> "KNOWS" -> "B")
     relate("A" -> "HATES" -> "C")
 
-    val result = parseAndExecute("start n=(1) match (n)-[r]->(x) where r.TYPE='KNOWS' or r.TYPE='HATES' return x")
+    val result = parseAndExecute("start n=(1) match (n)-[r]->(x) where type(r)='KNOWS' or type(r) = 'HATES' return x")
 
     assertEquals(nodes.slice(1, 3), result.columnAs[Node]("x").toList)
   }
@@ -632,7 +632,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     createNodes("A", "B")
     relate("A" -> "KNOWS" -> "B")
 
-    val result = parseAndExecute("start n=(1) match p = n-->x where p.LENGTH=10 return x")
+    val result = parseAndExecute("start n=(1) match p = n-->x where length(p) = 10 return x")
 
     assertTrue("Result set should be empty, but it wasn't", result.isEmpty)
   }
@@ -641,7 +641,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     createNodes("A", "B")
     relate("A" -> "KNOWS" -> "B")
 
-    val result = parseAndExecute("start n=(1) match p = n-->x where p.LENGTH=3 return x")
+    val result = parseAndExecute("start n=(1) match p = n-->x where length(p)=3 return x")
 
     assertTrue("Result set should not be empty, but it was", !result.isEmpty)
   }
@@ -650,10 +650,46 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     createNodes("A", "B")
     relate("A" -> "KNOWS" -> "B")
 
-    val result = parseAndExecute("start n=(1) match p = n-->x return p.LENGTH")
+    val result = parseAndExecute("start n=(1) match p = n-->x return length(p)")
 
+    assertEquals(List(3), result.columnAs[Int]("LENGTH(p)").toList)
+  }
 
-    assertEquals(List(3), result.columnAs[Int]("p.LENGTH").toList)
+  @Test def shouldBeAbleToFilterOnPathNodes() {
+    val a = createNode(Map("foo" -> "bar"))
+    val b = createNode(Map("foo" -> "bar"))
+    val c = createNode(Map("foo" -> "bar"))
+    val d = createNode(Map("foo" -> "bar"))
+
+    relate(a, b, "rel")
+    relate(b, c, "rel")
+    relate(c, d, "rel")
+
+    val query = Query.start(NodeById("pA", a.getId), NodeById("pB", d.getId)).
+      namedPaths(NamedPath("p", VarLengthRelatedTo("x", "pA", "pB", 1, 5, "rel", Direction.OUTGOING))).
+      where(AllInSeq(PathNodesValue(EntityValue("p")), "i", Equals(PropertyValue("i", "foo"), Literal("bar")))).
+      returns(ValueReturnItem(EntityValue("pB")))
+
+    val result = execute(query)
+
+    assertEquals(List(d), result.columnAs[Node]("pB").toList)
+  }
+
+  @Test def shouldReturnRelationships() {
+    val a = createNode(Map("foo" -> "bar"))
+    val b = createNode(Map("foo" -> "bar"))
+    val c = createNode(Map("foo" -> "bar"))
+
+    val r1 = relate(a, b, "rel")
+    val r2 = relate(b, c, "rel")
+
+    val query = Query.start(NodeById("pA", a.getId)).
+      namedPaths(NamedPath("p", VarLengthRelatedTo("x", "pA", "pB", 2, 2, "rel", Direction.OUTGOING))).
+      returns(ValueReturnItem(PathRelationshipsValue(EntityValue("p"))))
+
+    val result = execute(query)
+
+    assertEquals(List(r1,r2), result.columnAs[Node]("RELATIONSHIPS(p)").toList.head)
   }
 
   @Test def shouldReturnAVarLengthPath() {

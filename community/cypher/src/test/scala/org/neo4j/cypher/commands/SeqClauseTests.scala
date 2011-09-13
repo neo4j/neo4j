@@ -17,25 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server;
+package org.neo4j.cypher.commands
 
-import java.io.IOException;
+import org.junit.Test
+import org.scalatest.Assertions
 
-import org.junit.Test;
-import org.neo4j.server.helpers.ServerBuilder;
-import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
+class SeqClauseTests extends Assertions {
+  @Test def allStringsBeginWithA() {
+    val strings = Seq("Andres", "Andres")
+    val inner = Equals(Literal("Andres"), EntityValue("x"))
+    val all = new AllInSeq(EntityValue("strings"), "x", inner)
 
-public class StartupHealthcheckFunctionalTest
-{
-
-    private NeoServer server;
-
-    @Test( expected = StartupHealthCheckFailedException.class )
-    public void shouldExitWhenFailedStartupHealthCheck() throws IOException
-    {
-        server = ServerBuilder.server()
-                .withFailingStartupHealthcheck()
-                .build();
-        server.start();
-    }
+    assert(all.isMatch(Map("strings" -> strings)))
+  }
 }
