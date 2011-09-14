@@ -78,7 +78,9 @@ class IndexManagerImpl implements IndexManager
             {
                 return result;
             }
-            throw new IllegalArgumentException( "No index provider '" + provider + "' found" );
+            throw new IllegalArgumentException( "No index provider '" + provider +
+                    "' found. Maybe the intended provider (or one more of its dependencies) " +
+                    "aren't on the classpath or it failed to load." );
         }
     }
 
