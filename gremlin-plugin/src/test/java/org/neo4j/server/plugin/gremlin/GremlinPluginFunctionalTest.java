@@ -180,8 +180,10 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     @Title("Set script variables")
     public void setVariables() throws UnsupportedEncodingException
     {
-        String payload = "{\"script\":\"meaning_of_life\","
+        String script = "meaning_of_life";
+        String payload = "{\"script\":\""+script +"\","
             + "\"params\":{\"meaning_of_life\" : 42.0}}";
+        description( formatGroovy( script ) );
         String response = gen()
         .expectedStatus( Status.OK.getStatusCode() )
                 .payload( JSONPrettifier.parse( payload ) )
@@ -234,6 +236,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
         .get( "I" )
         .getId() + ").out.name.paths";
         String payload = "{\"script\":\""+script+"\"}";
+        description( formatGroovy( script ) );
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
         .payload( JSONPrettifier.parse( payload ) )
@@ -285,6 +288,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
             + "t= new Table();"
             + "i.as('I').out('know').as('friend').out('like').as('likes').table(t,['friend','likes']){it.name}{it.name} >> -1;t;";
         String payload = "{\"script\":\""+script +"\"}";
+        description( formatGroovy( script ) );
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
                 .payload( JSONPrettifier.parse( payload ) )
@@ -332,6 +336,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
                 "query = new QueryContext( 'name:*' ).sort( new Sort(new SortField( 'name',SortField.STRING, true ) ) );" +
                 "results = personIndex.query( query );";
         String payload = "{\"script\":\""+script+"\"}";
+        description( formatGroovy( script ) );
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
                 .payload( JSONPrettifier.parse( payload ) )
@@ -387,6 +392,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
                 		"out('hasGroup').filter{it.name=='Group2'}." +
                 		"back('hyperedge').out('hasRole').name";
         String payload = "{\"script\":\""+script+"\"}";
+        description( formatGroovy(script) );
         data.get();
         String response = gen.get()
         .expectedStatus( Status.OK.getStatusCode() )
@@ -394,7 +400,6 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
         .payloadType( MediaType.APPLICATION_JSON_TYPE )
         .post( ENDPOINT )
         .entity();
-        description( formatGroovy(script) );
         assertTrue(response.contains( "Role1" ));
         assertFalse(response.contains( "Role2" ));
         
