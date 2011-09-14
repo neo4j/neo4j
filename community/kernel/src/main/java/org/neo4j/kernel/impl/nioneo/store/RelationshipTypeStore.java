@@ -119,9 +119,9 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 
     /**
      * Creates a new relationship type store contained in <CODE>fileName</CODE>
-     * If filename is <CODE>null</CODE> or the file already exists an 
+     * If filename is <CODE>null</CODE> or the file already exists an
      * <CODE>IOException</CODE> is thrown.
-     * 
+     *
      * @param fileName
      *            File name of the new relationship type store
      * @throws IOException
@@ -230,7 +230,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
             unsetRecovered();
         }
     }
-    
+
     public RelationshipTypeData getRelationshipType( int id )
     {
         RelationshipTypeRecord record = getRecord( id );
@@ -240,7 +240,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 
     public RelationshipTypeData[] getRelationshipTypes()
     {
-        LinkedList<RelationshipTypeData> typeDataList = 
+        LinkedList<RelationshipTypeData> typeDataList =
             new LinkedList<RelationshipTypeData>();
         for ( int i = 0;; i++ )
         {
@@ -253,14 +253,14 @@ public class RelationshipTypeStore extends AbstractStore implements Store
             {
                 break;
             }
-            if ( record != null && 
+            if ( record != null &&
                 record.getTypeBlock() != Record.RESERVED.intValue() )
             {
                 String name = getStringFor( record );
                 typeDataList.add( new RelationshipTypeData( i, name ) );
             }
         }
-        return typeDataList.toArray( 
+        return typeDataList.toArray(
             new RelationshipTypeData[typeDataList.size()] );
     }
 
@@ -291,7 +291,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
         }
         if ( inUse != Record.IN_USE.byteValue() )
         {
-            throw new InvalidRecordException( "Record[" + id + 
+            throw new InvalidRecordException( "Record[" + id +
                 "] unknown in use flag[" + inUse + "]" );
         }
         RelationshipTypeRecord record = new RelationshipTypeRecord( id );
@@ -300,7 +300,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
         return record;
     }
 
-    private void updateRecord( RelationshipTypeRecord record, 
+    private void updateRecord( RelationshipTypeRecord record,
         PersistenceWindow window )
     {
         int id = record.getId();
@@ -364,7 +364,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException( 
+            throw new UnderlyingStorageException(
                 "Unable to rebuild id generator " + getStorageFileName(), e );
         }
         setHighId( highId );
@@ -376,11 +376,11 @@ public class RelationshipTypeStore extends AbstractStore implements Store
     public String getStringFor( RelationshipTypeRecord relTypeRecord )
     {
         long recordToFind = relTypeRecord.getTypeBlock();
-        Iterator<DynamicRecord> records = 
+        Iterator<DynamicRecord> records =
             relTypeRecord.getTypeRecords().iterator();
         List<char[]> charList = new LinkedList<char[]>();
         int totalSize = 0;
-        while ( recordToFind != Record.NO_NEXT_BLOCK.intValue() && 
+        while ( recordToFind != Record.NO_NEXT_BLOCK.intValue() &&
             records.hasNext() )
         {
             DynamicRecord record = records.next();
@@ -472,9 +472,9 @@ public class RelationshipTypeStore extends AbstractStore implements Store
             }
             return true;
         }
-        throw new IllegalStoreVersionException( "Store version [" + version  + 
-            "]. Please make sure you are not running old Neo4j kernel " + 
-            " towards a store that has been created by newer version " + 
+        throw new IllegalStoreVersionException( "Store version [" + version  +
+            "]. Please make sure you are not running old Neo4j kernel " +
+            " towards a store that has been created by newer version " +
             " of Neo4j." );
     }
 

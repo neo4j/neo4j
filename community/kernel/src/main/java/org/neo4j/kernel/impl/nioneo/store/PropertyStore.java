@@ -46,7 +46,7 @@ public class PropertyStore extends AbstractStore implements Store
     public static final int DEFAULT_PAYLOAD_SIZE = 32;
 
     // store version, each store ends with this string (byte encoded)
-    private static final String VERSION = "PropertyStore v0.9.9";
+    private static final String VERSION = "PropertyStore v0.A.0";
 
     public static final int RECORD_SIZE = 1/*next and prev high bits*/
     + 4/*next*/

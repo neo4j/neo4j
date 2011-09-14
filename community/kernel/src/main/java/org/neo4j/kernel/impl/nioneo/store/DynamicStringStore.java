@@ -30,8 +30,8 @@ import org.neo4j.kernel.IdType;
 public class DynamicStringStore extends AbstractDynamicStore
 {
     // store version, each store ends with this string (byte encoded)
-    private static final String VERSION = "StringPropertyStore v0.9.9";
-    
+    static final String VERSION = "StringPropertyStore v0.A.0";
+
     public DynamicStringStore( String fileName, Map<?,?> config, IdType idType )
     {
         super( fileName, config, idType );
@@ -42,6 +42,7 @@ public class DynamicStringStore extends AbstractDynamicStore
 //        super( fileName );
 //    }
 
+    @Override
     public String getTypeAndVersionDescriptor()
     {
         return VERSION;
@@ -52,12 +53,14 @@ public class DynamicStringStore extends AbstractDynamicStore
     {
         createEmptyStore( fileName, blockSize, VERSION, idGeneratorFactory, idType );
     }
-    
+
+    @Override
     public void setHighId( long highId )
     {
         super.setHighId( highId );
     }
-    
+
+    @Override
     public long nextBlockId()
     {
         return super.nextBlockId();
@@ -89,9 +92,9 @@ public class DynamicStringStore extends AbstractDynamicStore
             }
             return true;
         }
-        throw new IllegalStoreVersionException( "Store version [" + version  + 
-            "]. Please make sure you are not running old Neo4j kernel " + 
-            " towards a store that has been created by newer version " + 
+        throw new IllegalStoreVersionException( "Store version [" + version  +
+            "]. Please make sure you are not running old Neo4j kernel " +
+            " towards a store that has been created by newer version " +
             " of Neo4j." );
     }
 }

@@ -48,29 +48,29 @@ public class TestDynamicStore
 {
     public static IdGeneratorFactory ID_GENERATOR_FACTORY =
             CommonFactories.defaultIdGeneratorFactory();
-    
+
     private String path()
     {
         String path = AbstractNeo4jTestCase.getStorePath( "dynamicstore" );
         new File( path ).mkdirs();
         return path;
     }
-    
+
     private String file( String name )
     {
         return path() + File.separator + name;
     }
-    
+
     private String dynamicStoreFile()
     {
         return file( "testDynamicStore.db" );
     }
-    
+
     private String dynamicStoreIdFile()
     {
         return file( "testDynamicStore.db.id" );
     }
-    
+
     @Test
     public void testCreateStore()
     {
@@ -111,9 +111,10 @@ public class TestDynamicStore
     private void createEmptyStore( String fileName, int blockSize )
     {
         DynamicArrayStore.createEmptyStore( fileName, blockSize,
-                "ArrayPropertyStore v0.9.9", ID_GENERATOR_FACTORY, IdType.ARRAY_BLOCK );
+                DynamicArrayStore.VERSION, ID_GENERATOR_FACTORY,
+                IdType.ARRAY_BLOCK );
     }
-    
+
     private DynamicArrayStore newStore()
     {
         return new DynamicArrayStore( dynamicStoreFile(), config(), IdType.ARRAY_BLOCK );

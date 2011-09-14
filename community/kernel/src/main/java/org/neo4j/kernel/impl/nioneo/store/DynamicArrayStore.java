@@ -31,16 +31,17 @@ import org.neo4j.kernel.impl.util.Bits;
 /**
  * Dynamic store that stores strings.
  */
-class DynamicArrayStore extends AbstractDynamicStore
+public class DynamicArrayStore extends AbstractDynamicStore
 {
     // store version, each store ends with this string (byte encoded)
-    private static final String VERSION = "ArrayPropertyStore v0.9.9";
+    static final String VERSION = "ArrayPropertyStore v0.A.0";
 
     public DynamicArrayStore( String fileName, Map<?,?> config, IdType idType )
     {
         super( fileName, config, idType );
     }
 
+    @Override
     public String getTypeAndVersionDescriptor()
     {
         return VERSION;
@@ -69,7 +70,7 @@ class DynamicArrayStore extends AbstractDynamicStore
         int length = arrayLength;
         for ( int i = 0; i < length; i++ )
         {
-            type.put( Array.get( array, i ), bits, requiredBits ); 
+            type.put( Array.get( array, i ), bits, requiredBits );
         }
         return allocateRecords( startBlock, bits.asBytes() );
     }
@@ -105,7 +106,7 @@ class DynamicArrayStore extends AbstractDynamicStore
         {
             throw new IllegalArgumentException( array + " not an array" );
         }
-        
+
         Class<?> type = array.getClass().getComponentType();
         if ( type.equals( String.class ) )
         {
@@ -141,7 +142,7 @@ class DynamicArrayStore extends AbstractDynamicStore
         {
             ShortArray type = ShortArray.typeOf( typeId );
             Bits bits = Bits.bitsFromBytes( bArray );
-            bits.getByte(); // type, we already got it 
+            bits.getByte(); // type, we already got it
             int bitsUsedInLastByte = bits.getByte();
             int requiredBits = bits.getByte();
             if ( requiredBits == 0 ) return type.createArray( 0 );
@@ -181,9 +182,9 @@ class DynamicArrayStore extends AbstractDynamicStore
             }
             return true;
         }
-        throw new IllegalStoreVersionException( "Store version [" + version  + 
-            "]. Please make sure you are not running old Neo4j kernel " + 
-            " towards a store that has been created by newer version " + 
+        throw new IllegalStoreVersionException( "Store version [" + version  +
+            "]. Please make sure you are not running old Neo4j kernel " +
+            " towards a store that has been created by newer version " +
             " of Neo4j." );
     }
 }

@@ -60,11 +60,12 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
      * should make use of this method to initialize an empty store. Block size
      * must be greater than zero. Not that the first block will be marked as
      * reserved (contains info about the block size). There will be an overhead
-     * for each block of <CODE>13</CODE> bytes.
+     * for each block of <CODE>AbstractDynamicStore.BLOCK_HEADER_SIZE</CODE>
+     * bytes.
      * <p>
      * This method will create a empty store with descriptor returned by the
-     * {@link #getTypeAndVersionDescriptor()}. The internal id generator used
-     * by this store will also be created.
+     * {@link #getTypeAndVersionDescriptor()}. The internal id generator used by
+     * this store will also be created.
      *
      * @param fileName
      *            The file name of the store that will be created
