@@ -77,6 +77,9 @@ public interface Configurator
     
     String WEBSERVER_SSL_KEYSTORE_PASSWORD_PROPERTY_KEY = "org.neo4j.server.webserver.ssl.key.password";
     String DEFAULT_WEBSERVER_SSL_KEYSTORE_PASSWORD = "Change this to a password of your own.";
+    
+    String WEBSERVER_SSL_CERT_PATH_PROPERTY_KEY = "org.neo4j.server.webserver.ssl.cert";
+    String DEFAULT_WEBSERVER_SSL_CERT_PATH = "snakeoil.cert";
 
     Configuration configuration();
 

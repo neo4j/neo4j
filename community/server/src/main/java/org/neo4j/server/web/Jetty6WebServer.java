@@ -58,8 +58,8 @@ import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.security.SecurityFilter;
 import org.neo4j.server.rest.security.SecurityRule;
 import org.neo4j.server.rest.web.AllowAjaxFilter;
-import org.neo4j.server.rest.web.security.SslConfiguration;
-import org.neo4j.server.rest.web.security.SslSocketConnectorFactory;
+import org.neo4j.server.security.SslConfiguration;
+import org.neo4j.server.security.SslSocketConnectorFactory;
 
 import com.sun.jersey.api.core.ResourceConfig;
 import com.sun.jersey.spi.container.servlet.ServletContainer;

@@ -85,6 +85,7 @@ public class ServerBuilder
     private String host = null;
     private String[] securityRuleClassNames;
     private boolean persistent;
+    private boolean sslEnabled = false;
 
     public static ServerBuilder server()
     {
@@ -185,6 +186,11 @@ public class ServerBuilder
             String propertyKeys = org.apache.commons.lang.StringUtils.join( securityRuleClassNames, "," );
             properties.put( Configurator.SECURITY_RULES_KEY, propertyKeys );
         }
+        
+        if(sslEnabled) {
+            properties.put( Configurator.WEBSERVER_SSL_ENABLED_PROPERTY_KEY, "true" );
+        }
+        
         ServerTestUtils.writePropertiesToFile( properties, temporaryConfigFile );
     }
 
@@ -392,6 +398,12 @@ public class ServerBuilder
     public ServerBuilder withSecurityRules( String... securityRuleClassNames )
     {
         this.securityRuleClassNames = securityRuleClassNames;
+        return this;
+    }
+    
+    public ServerBuilder withSslEnabled()
+    {
+        sslEnabled  = true;
         return this;
     }
 }
