@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.plugin.gremlin;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -32,6 +33,7 @@ import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.JSONPrettifier;
+import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.TestData.Title;
 
@@ -404,6 +406,27 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
         assertFalse(response.contains( "Role2" ));
         
     }
+    
+    /**
+     * This example is showing a group count in Germlin,
+     * for instance the counting of the different relationship types connected
+     * to some the start node.
+     */
+    @Test
+    @Documented
+    @Graph( {"Peter knows Ian", "Ian knows Peter", "Peter likes Bikes"} )
+    public void group_count() throws UnsupportedEncodingException, Exception
+    {
+        String script = "m = [:];" +
+        		"g.v(" + data.get().get( "Peter" ).getId()
+                        + ").bothE().label.groupCount(m) >> -1;m";
+        String payload = "{\"script\":\""+script+"\"}";
+        description( formatGroovy(script) );
+        gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(JSONPrettifier.parse( payload ) );
+        String response = gen.get().post( ENDPOINT ).entity();
+        assertTrue(response.contains( "knows=2" ));
+    }
+
     
     @Test
     public void getExtension()
