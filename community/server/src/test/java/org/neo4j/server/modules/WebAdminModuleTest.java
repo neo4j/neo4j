@@ -19,25 +19,32 @@
  */
 package org.neo4j.server.modules;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.net.URI;
-import java.util.Collections;
-import java.util.HashMap;
-
-import javax.management.ObjectName;
-
 import org.apache.commons.configuration.MapConfiguration;
 import org.junit.Test;
+import org.neo4j.jmx.JmxUtils;
 import org.neo4j.jmx.Kernel;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.Config;
+import org.neo4j.kernel.impl.core.GraphDbModule;
+import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.web.WebServer;
 import org.rrd4j.core.RrdDb;
+
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import javax.management.openmbean.CompositeDataSupport;
+import java.net.URI;
+import java.util.Collections;
+import java.util.HashMap;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.test.ReflectionUtil.setStaticFinalField;
 
 public class WebAdminModuleTest
 {
@@ -59,6 +66,23 @@ public class WebAdminModuleTest
 
         when( neoServer.getDatabase() ).thenReturn( db );
         when( neoServer.getConfiguration() ).thenReturn( new MapConfiguration( new HashMap<Object, Object>() ) );
+
+        Config config = mock( Config.class );
+        when( db.graph.getConfig() ).thenReturn( config );
+        NodeManager nodeManager = mock( NodeManager.class );
+        GraphDbModule graphDbModule = mock( GraphDbModule.class );
+        when( config.getGraphDbModule() ).thenReturn( graphDbModule );
+        when( graphDbModule.getNodeManager() ).thenReturn( nodeManager );
+
+        CompositeDataSupport result = mock( CompositeDataSupport.class );
+        when( result.get( "used" ) ).thenReturn( 50L );
+        when( result.get( "max" ) ).thenReturn( 1000L );
+
+        MBeanServer mbeanServer = mock( MBeanServer.class );
+        when( mbeanServer.getAttribute( any( ObjectName.class ), eq( "HeapMemoryUsage" ) ) ).thenReturn( result );
+        // when(mbeanServer.getAttribute(any(ObjectName.class), eq("Collector"))).thenReturn( new StatisticCollector() );
+
+        setStaticFinalField( JmxUtils.class.getDeclaredField( "mbeanServer" ), mbeanServer );
 
         WebAdminModule module = new WebAdminModule();
         module.start( neoServer );

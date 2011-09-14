@@ -17,27 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rrd;
+package org.neo4j.server.rrd.sampler;
 
-import javax.management.MalformedObjectNameException;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.kernel.AbstractGraphDatabase;
 
-import org.neo4j.server.database.Database;
-
-public class NodeIdsInUseSampleable extends DatabasePrimitivesSampleableBase
+public class RelationshipCountSampleable extends DatabasePrimitivesSampleableBase
 {
-
-    public NodeIdsInUseSampleable( Database db ) throws MalformedObjectNameException
+    public RelationshipCountSampleable( AbstractGraphDatabase db )
     {
         super( db );
     }
 
-    public String getName()
+    @Override public String getName()
     {
-        return "node_count";
+        return "relationship_count";
     }
 
-    protected String getJmxAttributeName()
+    @Override public double getValue()
     {
-        return "NumberOfNodeIdsInUse";
+        return getNodeManager().getNumberOfIdsInUse( Relationship.class );
     }
 }

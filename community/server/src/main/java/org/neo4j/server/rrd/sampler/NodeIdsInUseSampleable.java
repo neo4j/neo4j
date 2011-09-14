@@ -17,9 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rrd;
+package org.neo4j.server.rrd.sampler;
 
-public interface JobScheduler
+import org.neo4j.graphdb.Node;
+import org.neo4j.kernel.AbstractGraphDatabase;
+
+public class NodeIdsInUseSampleable extends DatabasePrimitivesSampleableBase
 {
-    void scheduleAtFixedRate( Runnable job, String jobName, long period );
+
+    public NodeIdsInUseSampleable( AbstractGraphDatabase db )
+    {
+        super( db );
+    }
+
+    @Override public String getName()
+    {
+        return "node_count";
+    }
+
+    @Override public double getValue()
+    {
+        return getNodeManager().getNumberOfIdsInUse( Node.class );
+    }
 }

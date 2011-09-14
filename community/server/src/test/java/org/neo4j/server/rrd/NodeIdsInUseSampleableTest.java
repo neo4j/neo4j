@@ -19,21 +19,18 @@
  */
 package org.neo4j.server.rrd;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.core.Is.is;
-
-import java.io.IOException;
-
-import javax.management.MalformedObjectNameException;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
 import org.neo4j.test.ImpermanentGraphDatabase;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.core.Is.is;
 
 public class NodeIdsInUseSampleableTest
 {
@@ -41,17 +38,16 @@ public class NodeIdsInUseSampleableTest
     public NodeIdsInUseSampleable sampleable;
 
     @Test
-    public void emptyDbHasZeroNodesInUse() throws IOException, MalformedObjectNameException
+    public void emptyDbHasZeroNodesInUse()
     {
-        assertThat( sampleable.getValue(), is( 1L ) ); // Reference node is
-                                                       // always created in
-                                                       // empty dbs
+        // Reference node is always created in empty dbs
+        assertThat( sampleable.getValue(), is( 1d ) );
     }
 
     @Test
-    public void addANodeAndSampleableGoesUp() throws IOException, MalformedObjectNameException
+    public void addANodeAndSampleableGoesUp()
     {
-        long oldValue = sampleable.getValue();
+        double oldValue = sampleable.getValue();
 
         createNode( db.graph );
 
@@ -70,7 +66,7 @@ public class NodeIdsInUseSampleableTest
     public void setUp() throws Exception
     {
         db = new Database( new ImpermanentGraphDatabase() );
-        sampleable = new NodeIdsInUseSampleable( db );
+        sampleable = new NodeIdsInUseSampleable( db.graph );
     }
 
     @After

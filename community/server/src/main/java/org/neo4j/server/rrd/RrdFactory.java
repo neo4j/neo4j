@@ -19,29 +19,43 @@
  */
 package org.neo4j.server.rrd;
 
-import java.io.File;
-import java.io.IOException;
-
-import javax.management.MalformedObjectNameException;
-
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.logging.Logger;
+import org.neo4j.server.rrd.sampler.MemoryUsedSampleable;
+import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
+import org.neo4j.server.rrd.sampler.PropertyCountSampleable;
+import org.neo4j.server.rrd.sampler.RelationshipCountSampleable;
 import org.rrd4j.ConsolFun;
-import org.rrd4j.DsType;
+import org.rrd4j.core.DsDef;
 import org.rrd4j.core.RrdDb;
 import org.rrd4j.core.RrdDef;
+import org.rrd4j.core.RrdToolkit;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import static java.lang.Double.NaN;
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.DAYS;
+import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.neo4j.server.configuration.Configurator.RRDB_LOCATION_PROPERTY_KEY;
+import static org.rrd4j.ConsolFun.AVERAGE;
+import static org.rrd4j.ConsolFun.MAX;
+import static org.rrd4j.ConsolFun.MIN;
 
 public class RrdFactory
 {
-    public static final int STEP_SIZE = 3000;
-    public static final int STEPS_PER_ARCHIVE = 750;
+    public static final int STEP_SIZE = 1;
     private static final String RRD_THREAD_NAME = "Statistics Gatherer";
 
     private final Configuration config;
-    private Logger log = Logger.getLogger( RrdFactory.class );
+    private static final Logger LOG = Logger.getLogger( RrdFactory.class );
 
     public RrdFactory( Configuration config )
     {
@@ -49,18 +63,23 @@ public class RrdFactory
         this.config = config;
     }
 
-    public RrdDb createRrdDbAndSampler( Database db, JobScheduler scheduler ) throws MalformedObjectNameException,
-            IOException
+    public RrdDb createRrdDbAndSampler( Database db, JobScheduler scheduler ) throws IOException
     {
-        Sampleable[] sampleables = new Sampleable[] { new MemoryUsedSampleable(), new NodeIdsInUseSampleable( db ),
-                new PropertyCountSampleable( db ), new RelationshipCountSampleable( db ) };
+        Sampleable[] sampleables = {
+                new MemoryUsedSampleable(),
+                new NodeIdsInUseSampleable( db.graph ),
+                new PropertyCountSampleable( db.graph ),
+                new RelationshipCountSampleable( db.graph )
+        };
 
-        String basePath = config.getString( Configurator.RRDB_LOCATION_PROPERTY_KEY, getDefaultDirectory( db.graph ) );
-        RrdDb rrdb = createRrdb( basePath, STEP_SIZE, STEPS_PER_ARCHIVE, sampleables );
+        String basePath = config.getString( RRDB_LOCATION_PROPERTY_KEY, getDefaultDirectory( db.graph ) );
+        RrdDb rrdb = createRrdb( basePath, sampleables );
 
-        RrdSampler sampler = new RrdSampler( rrdb.createSample(), sampleables );
-        RrdJob job = new RrdJob( sampler );
-        scheduler.scheduleToRunEveryXSeconds( job, RRD_THREAD_NAME, 3 );
+        RrdJob job = new RrdJob(
+                new RrdSamplerImpl( rrdb.createSample(), sampleables )
+        );
+        scheduler.scheduleAtFixedRate( job, RRD_THREAD_NAME,
+                SECONDS.toSeconds( 3 ) );
         return rrdb;
     }
 
@@ -69,79 +88,126 @@ public class RrdFactory
         return new File( db.getStoreDir(), "rrd" ).getAbsolutePath();
     }
 
-    protected RrdDb createRrdb( String rrdPath, int stepSize, int stepsPerArchive, Sampleable... sampleables )
+    protected RrdDb createRrdb( String rrdPathx, Sampleable... sampleables )
             throws IOException
     {
-        if ( !new File( rrdPath ).exists() )
-        {
-            RrdDef rrdDef = createRrdDb( rrdPath, stepSize );
-            defineDataSources( stepSize, rrdDef, sampleables );
-            addArchives( stepsPerArchive, rrdDef );
-            return new RrdDb( rrdDef );
-        }
-        else
+        File rrdFile = new File( rrdPathx );
+        if ( rrdFile.exists() )
         {
             try
             {
-                return new RrdDb( rrdPath );
-            }
-            catch ( IOException e )
+                if ( !validateStepSize( rrdFile ) )
+                {
+                    return recreateArchive( rrdFile, sampleables );
+                }
+
+                Sampleable[] missing = checkDataSources( rrdFile.getAbsolutePath(), sampleables );
+                if ( missing.length > 0 )
+                {
+                    updateDataSources( rrdFile.getAbsolutePath(), missing );
+                }
+                return new RrdDb( rrdFile.getAbsolutePath() );
+            } catch ( IOException e )
             {
-                if ( e.getMessage()
-                        .startsWith( "Invalid file header." ) )
+                if ( e.getMessage().startsWith( "Invalid file header." ) )
                 {
                     // RRD file has become corrupt
-                    File rrdFile = new File( rrdPath );
-                    if ( rrdFile.canWrite() )
-                    {
-                        rrdFile.delete();
-                        log.error( "Deleted corrupt RRDB statistics logging file." );
-                        return createRrdb( rrdPath, stepSize, stepsPerArchive, sampleables );
-                    }
-
-                    throw new IOException(
-                            "RRD file ['" + rrdFile.getAbsolutePath()
-                                    + "'] has become corrupted, but I do not have write permissions to recreate it.", e );
+                    return recreateArchive( rrdFile, sampleables );
                 }
                 throw e;
             }
+        } else
+        {
+            RrdDef rrdDef = new RrdDef( rrdFile.getAbsolutePath(), STEP_SIZE );
+            defineDataSources( rrdDef, sampleables );
+            addArchives( rrdDef );
+            return new RrdDb( rrdDef );
         }
     }
 
-    private static void addArchives( int stepsPerArchive, RrdDef rrdDef )
+    private boolean validateStepSize( File rrdFile ) throws IOException
     {
-        // Last 35 minutes
-        rrdDef.addArchive( ConsolFun.AVERAGE, 0.5, 1, stepsPerArchive );
-
-        // Last 6 hours
-        rrdDef.addArchive( ConsolFun.AVERAGE, 0.2, 10, stepsPerArchive );
-
-        // Last day
-        rrdDef.addArchive( ConsolFun.AVERAGE, 0.2, 50, stepsPerArchive );
-
-        // Last week
-        rrdDef.addArchive( ConsolFun.AVERAGE, 0.2, 300, stepsPerArchive );
-
-        // Last month
-        rrdDef.addArchive( ConsolFun.AVERAGE, 0.2, 1300, stepsPerArchive );
-
-        // Last five years
-        rrdDef.addArchive( ConsolFun.AVERAGE, 0.2, 15000, stepsPerArchive * 5 );
+        RrdDb r = new RrdDb( rrdFile.getAbsolutePath(), true );
+        try
+        {
+            return ( r.getRrdDef().getStep() == STEP_SIZE );
+        }
+        finally
+        {
+            r.close();
+        }
     }
 
-    private static void defineDataSources( int stepSize, RrdDef rrdDef, Sampleable[] sampleables )
+    private RrdDb recreateArchive( File rrdFile, Sampleable[] sampleables ) throws IOException
+    {
+        File file = new File( rrdFile.getParentFile(),
+                rrdFile.getName() + "-invalid-" + System.currentTimeMillis() );
+
+        if ( rrdFile.renameTo( file ) )
+        {
+            LOG.error( "current RRDB is invalid, renamed it to %s", file.getAbsolutePath() );
+            return createRrdb( rrdFile.getAbsolutePath(), sampleables );
+        }
+
+        throw new IOException( "RRD file ['" + rrdFile.getAbsolutePath()
+                + "'] is invalid, but I do not have write permissions to recreate it." );
+    }
+
+    private static Sampleable[] checkDataSources( String rrdPath, Sampleable[] sampleables ) throws IOException
+    {
+        RrdDb rrdDb = new RrdDb( rrdPath, true );
+        List<Sampleable> missing = new ArrayList<Sampleable>();
+        for ( Sampleable sampleable : sampleables )
+        {
+            if ( rrdDb.getDatasource( sampleable.getName() ) == null )
+            {
+                missing.add( sampleable );
+            }
+        }
+        rrdDb.close();
+        return missing.toArray( new Sampleable[missing.size()] );
+    }
+
+    private static void updateDataSources( String rrdPath, Sampleable[] sampleables ) throws IOException
     {
         for ( Sampleable sampleable : sampleables )
         {
-            rrdDef.addDatasource( sampleable.getName(), DsType.GAUGE, stepSize, 0, Long.MAX_VALUE );
-
+            LOG.warn( "Updating RRDB structure, adding: " + sampleable.getName() );
+            RrdToolkit.addDatasource( rrdPath, createDsDef( sampleable ), true );
         }
     }
 
-    private static RrdDef createRrdDb( String inDirectory, int stepSize )
+    private static DsDef createDsDef( Sampleable sampleable )
     {
-        RrdDef rrdDef = new RrdDef( inDirectory, stepSize );
-        // rrdDef.setVersion( 2 );
-        return rrdDef;
+        return new DsDef( sampleable.getName(), sampleable.getType(),
+                STEP_SIZE, NaN, NaN );
     }
+
+    private void addArchives( RrdDef rrdDef )
+    {
+        for ( ConsolFun fun : asList( AVERAGE, MAX, MIN ) )
+        {
+            addArchive( rrdDef, fun, MINUTES.toSeconds( 30 ), SECONDS.toSeconds( 1 ) );
+            addArchive( rrdDef, fun, DAYS.toSeconds( 1 ), MINUTES.toSeconds( 1 ) );
+            addArchive( rrdDef, fun, DAYS.toSeconds( 7 ), MINUTES.toSeconds( 5 ) );
+            addArchive( rrdDef, fun, DAYS.toSeconds( 30 ), MINUTES.toSeconds( 30 ) );
+            addArchive( rrdDef, fun, DAYS.toSeconds( 1780 ), HOURS.toSeconds( 2 ) );
+        }
+    }
+
+    private void addArchive( RrdDef rrdDef, ConsolFun fun, long length, long resolution )
+    {
+        rrdDef.addArchive( fun, 0.2,
+                (int) ( resolution * STEP_SIZE ),
+                (int) ( length / ( resolution * STEP_SIZE ) ) );
+    }
+
+    private void defineDataSources( RrdDef rrdDef, Sampleable[] sampleables )
+    {
+        for ( Sampleable sampleable : sampleables )
+        {
+            rrdDef.addDatasource( createDsDef( sampleable ) );
+        }
+    }
+
 }
