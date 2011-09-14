@@ -163,7 +163,7 @@
       <classifier>docs</classifier>
       <scope>provided</scope>
     </dependency>
-<!--    <dependency>
+    <dependency>
       <groupId>org.neo4j.drivers</groupId>
       <artifactId>neo4j-python-embedded</artifactId>
       <version>${neo4j.version}</version>
@@ -177,7 +177,6 @@
       <classifier>test-sources</classifier>
       <scope>provided</scope>
     </dependency>
-  -->
   </dependencies>
 
   <build>

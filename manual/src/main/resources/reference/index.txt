@@ -57,8 +57,6 @@ include::{importdir}/neo4j-ha-docs-jar/dev/index.txt[]
 
 include::operations/index.txt[]
 
-////
-//:leveloffset: 1
+:leveloffset: 1
 
-// include::{importdir}/neo4j-python-embedded-docs-jar/dev/index.txt[]
-////
+include::{importdir}/neo4j-python-embedded-docs-jar/dev/index.txt[]
