@@ -19,14 +19,13 @@
  */
 package org.neo4j.server.rrd.sampler;
 
-import org.neo4j.jmx.JmxUtils;
-import org.neo4j.server.rrd.RrdFactory;
-import org.neo4j.server.rrd.Sampleable;
-import org.rrd4j.DsType;
-
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.openmbean.CompositeDataSupport;
+
+import org.neo4j.jmx.JmxUtils;
+import org.neo4j.server.rrd.Sampleable;
+import org.rrd4j.DsType;
 
 public class MemoryUsedSampleable implements Sampleable
 {
