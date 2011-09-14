@@ -302,17 +302,21 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         }
         Client client = new Client();
         ClientResponse response = client.handle( request );
+        if ( response.hasEntity() && response.getStatus() != 204 )
+        {
+            data.setEntity( response.getEntity( String.class ) );
+        }
         try {
         } catch (UniformInterfaceException uie) {
             //ok
         }
         if ( response.getType() != null )
         {
-            assertEquals( type, response.getType() );
+            assertEquals( "wrong response type: "+ data.entity, type, response.getType() );
         }
         for ( String headerField : headerFields )
         {
-            assertNotNull( response.getHeaders()
+            assertNotNull( "wrong headers: "+ data.entity, response.getHeaders()
                     .get( headerField ) );
         }
         data.setTitle( title );
@@ -320,10 +324,6 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         data.setMethod( request.getMethod() );
         data.setUri( uri );
         data.setStatus( responseCode );
-        if ( response.hasEntity() && response.getStatus() != 204 )
-        {
-            data.setEntity( response.getEntity( String.class ) );
-        }
         assertEquals( "Wrong response status. response: " + data.entity, responseCode, response.getStatus() );
         getResponseHeaders( data, response.getHeaders(), headerFields );
         document( data );
