@@ -19,8 +19,6 @@
  */
 package org.neo4j.jmx.impl;
 
-import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -29,12 +27,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.management.MBeanServer;
-import javax.management.NotCompliantMBeanException;
 import javax.management.remote.JMXServiceURL;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.KernelExtension;
+
+import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 
 @Service.Implementation( KernelExtension.class )
 public final class JmxExtension extends KernelExtension<JmxExtension.JmxData>
@@ -72,10 +71,6 @@ public final class JmxExtension extends KernelExtension<JmxExtension.JmxData>
                     mbs.registerMBean( bean, bean.objectName );
                     beans.add( bean );
                 }
-            }
-            catch ( NotCompliantMBeanException e )
-            {   // Not compliant with the current setup, log as fine for those really interested
-                log.fine( "JMX Bean not compliant " + provider + " due to " + e.getMessage() );
             }
             catch ( Exception e )
             {   // Unexpected exception, worth noting in the log
