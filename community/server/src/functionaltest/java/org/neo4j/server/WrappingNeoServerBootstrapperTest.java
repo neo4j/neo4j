@@ -103,7 +103,7 @@ public class WrappingNeoServerBootstrapperTest
     }
 
     @Test
-    public void shouldAllowModifyingLitenPorts() throws UnknownHostException
+    public void shouldAllowModifyingListenPorts() throws UnknownHostException
     {
 
         EmbeddedServerConfigurator config = new EmbeddedServerConfigurator(
