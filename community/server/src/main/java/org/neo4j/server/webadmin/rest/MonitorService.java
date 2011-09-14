@@ -19,7 +19,12 @@
  */
 package org.neo4j.server.webadmin.rest;
 
-import java.util.Date;
+import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.webadmin.rest.representations.RrdDataRepresentation;
+import org.neo4j.server.webadmin.rest.representations.ServiceDefinitionRepresentation;
+import org.rrd4j.core.FetchRequest;
+import org.rrd4j.core.RrdDb;
+import org.rrd4j.core.Util;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -27,13 +32,9 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
-import org.neo4j.server.rest.repr.OutputFormat;
-import org.neo4j.server.rrd.RrdFactory;
-import org.neo4j.server.webadmin.rest.representations.RrdDataRepresentation;
-import org.neo4j.server.webadmin.rest.representations.ServiceDefinitionRepresentation;
-import org.rrd4j.ConsolFun;
-import org.rrd4j.core.FetchRequest;
-import org.rrd4j.core.RrdDb;
+import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.DAYS;
+import static org.rrd4j.ConsolFun.AVERAGE;
 
 /**
  * This exposes data from an internal round-robin database that tracks various
@@ -66,8 +67,8 @@ public class MonitorService implements AdvertisableService
     public static final String DATA_FROM_PATH = DATA_PATH + "/{start}";
     public static final String DATA_SPAN_PATH = DATA_PATH + "/{start}/{stop}";
 
-    public static final long MAX_TIMESPAN = 1000l * 60l * 60l * 24l * 365l * 5;
-    public static final long DEFAULT_TIMESPAN = 1000 * 60 * 60 * 24;
+    public static final long MAX_TIMESPAN = DAYS.toSeconds( 365 * 5 );
+    public static final long DEFAULT_TIMESPAN = DAYS.toSeconds( 1 );
 
     @GET
     public Response getServiceDefinition()
@@ -84,7 +85,7 @@ public class MonitorService implements AdvertisableService
     @Path( DATA_PATH )
     public Response getData()
     {
-        long time = new Date().getTime();
+        long time = Util.getTime();
         return getData( time - DEFAULT_TIMESPAN, time );
     }
 
@@ -92,7 +93,7 @@ public class MonitorService implements AdvertisableService
     @Path( DATA_FROM_PATH )
     public Response getData( @PathParam( "start" ) long start )
     {
-        return getData( start, new Date().getTime() );
+        return getData( start, Util.getTime() );
     }
 
     @GET
@@ -101,17 +102,18 @@ public class MonitorService implements AdvertisableService
     {
         if ( start >= stop || ( stop - start ) > MAX_TIMESPAN )
         {
-            String message = String.format(
-                    "Start time must be before stop time, and the total time span can be no bigger than %dms. Time span was %dms.",
-                    MAX_TIMESPAN, ( stop - start ) );
-            return output.badRequest( new IllegalArgumentException( message ) );
+            return output.badRequest(
+                    new IllegalArgumentException( format(
+                            "Start time must be before stop time, and the " +
+                                    "total time span can be no bigger than " +
+                                    "%dms. Time span was %dms.",
+                            MAX_TIMESPAN, ( stop - start ) ) ) );
         }
 
         try
         {
 
-            FetchRequest request = rrdDb.createFetchRequest( ConsolFun.AVERAGE, start, stop, getResolutionFor( stop
-                                                                                                               - start ) );
+            FetchRequest request = rrdDb.createFetchRequest( AVERAGE, start, stop );
 
             return output.ok( new RrdDataRepresentation( request.fetchData() ) );
         }
@@ -119,13 +121,5 @@ public class MonitorService implements AdvertisableService
         {
             return output.serverError( e );
         }
-    }
-
-    private long getResolutionFor( long timespan )
-    {
-        long preferred = (long) Math.floor( timespan / ( RrdFactory.STEPS_PER_ARCHIVE * 2 ) );
-
-        // Don't allow resolutions smaller than the actual minimum resolution
-        return preferred > RrdFactory.STEP_SIZE ? preferred : RrdFactory.STEP_SIZE;
     }
 }

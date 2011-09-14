@@ -19,41 +19,36 @@
  */
 package org.neo4j.server.rrd;
 
+import org.neo4j.server.logging.Logger;
+
 import java.util.Timer;
 import java.util.TimerTask;
 
-import org.neo4j.server.logging.Logger;
-
 public class ScheduledJob
 {
-    private Job job;
     private Timer timer;
     private Logger logger = Logger.getLogger( ScheduledJob.class );
 
-    public ScheduledJob( Job job, String name, int intervalInSeconds )
+    public ScheduledJob( final Runnable job, String name, long period )
     {
-        this.job = job;
-
         timer = new Timer( name );
-        timer.scheduleAtFixedRate( runJob, 0, intervalInSeconds * 1000 );
+        TimerTask runJob = new TimerTask()
+        {
+            public void run()
+            {
+                try
+                {
+                    job.run();
+                } catch ( Exception e )
+                {
+                    logger.warn( e );
+                }
+            }
+        };
+        timer.scheduleAtFixedRate( runJob, 0, period );
     }
 
-    private TimerTask runJob = new TimerTask()
-    {
-        public void run()
-        {
-            try
-            {
-                job.run();
-            }
-            catch ( Exception e )
-            {
-                logger.warn( e );
-            }
-        }
-    };
-
-    public void kill()
+    public void cancel()
     {
         timer.cancel();
     }

@@ -19,16 +19,13 @@
  */
 package org.neo4j.server.rrd;
 
+import org.junit.Before;
+import org.junit.Test;
+import org.neo4j.server.rrd.sampler.MemoryUsedSampleable;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
-
-import java.io.IOException;
-
-import javax.management.MalformedObjectNameException;
-
-import org.junit.Before;
-import org.junit.Test;
 
 public class MemoryUsedSampleableTest
 {
@@ -42,10 +39,10 @@ public class MemoryUsedSampleableTest
     }
 
     @Test
-    public void memoryUsageIsBetweenZeroAndOneHundred() throws IOException, MalformedObjectNameException
+    public void memoryUsageIsBetweenZeroAndOneHundred()
     {
-        assertThat( sampleable.getValue(), greaterThan( 0l ) );
-        assertThat( sampleable.getValue(), lessThan( 100l ) );
+        assertThat( sampleable.getValue(), greaterThan( 0d ) );
+        assertThat( sampleable.getValue(), lessThan( 100d ) );
     }
 
 }

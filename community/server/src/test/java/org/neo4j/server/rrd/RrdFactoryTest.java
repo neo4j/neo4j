@@ -19,14 +19,6 @@
  */
 package org.neo4j.server.rrd;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertThat;
-
-import java.io.IOException;
-import java.util.HashMap;
-
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.MapConfiguration;
 import org.junit.After;
@@ -35,7 +27,19 @@ import org.junit.Test;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.test.ImpermanentGraphDatabase;
+import org.rrd4j.ConsolFun;
+import org.rrd4j.DsType;
 import org.rrd4j.core.RrdDb;
+import org.rrd4j.core.RrdDef;
+
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.util.HashMap;
+
+import static java.lang.Double.NaN;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 public class RrdFactoryTest
 {
@@ -56,9 +60,22 @@ public class RrdFactoryTest
     }
 
     @Test
-    public void shouldTakeDirectoryLocationFromConfig() throws Exception
+    public void shouldTakeDirectoryLocationFromConfig() throws IOException
     {
         String expected = "target/rrd-test";
+        config.addProperty( Configurator.RRDB_LOCATION_PROPERTY_KEY, expected );
+        TestableRrdFactory factory = createRrdFactory();
+
+        factory.createRrdDbAndSampler( db, new NullJobScheduler() );
+
+        assertThat( factory.directoryUsed, is( expected ) );
+    }
+
+    @Test
+    public void recreateDatabaseIfWrongStepsize() throws IOException
+    {
+        String expected = "target/rrd-test";
+
         config.addProperty( Configurator.RRDB_LOCATION_PROPERTY_KEY, expected );
         TestableRrdFactory factory = createRrdFactory();
 
@@ -72,10 +89,26 @@ public class RrdFactoryTest
     {
         TestableRrdFactory factory = createRrdFactory();
 
+        // create invalid rrd
+        File rrd = new File( db.graph.getStoreDir(), "rrd" );
+        RrdDef rrdDef = new RrdDef( rrd.getAbsolutePath(), 3000 );
+        rrdDef.addDatasource( "test", DsType.GAUGE, 1, NaN, NaN );
+        rrdDef.addArchive( ConsolFun.AVERAGE, 0.2, 1, 1600 );
+        RrdDb r = new RrdDb( rrdDef );
+        r.close();
+
         RrdDb rrdDbAndSampler = factory.createRrdDbAndSampler( db, new NullJobScheduler() );
 
-        assertThat( factory.directoryUsed, startsWith( db.graph.getStoreDir() ) );
-        assertThat( factory.directoryUsed, endsWith( "rrd" ) );
+        assertThat( new File( factory.directoryUsed ).getParentFile()
+                .list( new FilenameFilter()
+                {
+                    @Override
+                    public boolean accept( File file, String s )
+                    {
+                        return s.startsWith( "rrd-invalid" );
+
+                    }
+                } ).length, is( 1 ) );
 
         rrdDbAndSampler.close();
     }
@@ -95,18 +128,18 @@ public class RrdFactoryTest
         }
 
         @Override
-        protected RrdDb createRrdb( String inDirectory, int stepSize, int stepsPerArchive, Sampleable... sampleables )
+        protected RrdDb createRrdb( String inDirectory, Sampleable... sampleables )
                 throws IOException
         {
             directoryUsed = inDirectory;
-            return super.createRrdb( inDirectory, stepSize, stepsPerArchive, sampleables );
+            return super.createRrdb( inDirectory, sampleables );
         }
     }
 
     private static class NullJobScheduler implements JobScheduler
     {
         @Override
-        public void scheduleToRunEveryXSeconds( Job job, String name, int runEveryXSeconds )
+        public void scheduleAtFixedRate( Runnable job, String name, long period )
         {
 
         }

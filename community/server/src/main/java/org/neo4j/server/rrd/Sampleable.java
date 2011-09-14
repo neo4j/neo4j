@@ -19,9 +19,13 @@
  */
 package org.neo4j.server.rrd;
 
+import org.rrd4j.DsType;
+
 public interface Sampleable
 {
     String getName();
 
-    long getValue();
+    double getValue();
+
+    DsType getType();
 }

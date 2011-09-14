@@ -49,28 +49,28 @@ define(
 
       zoomLevels : # All granularities approximate 30 points per timespan
         year : 
-          xSpan : 1000 * 60 * 60 * 24 * 365
-          granularity : 1000 * 60 * 60 * 24 * 12
+          xSpan : 60 * 60 * 24 * 365
+          granularity : 60 * 60 * 24 * 12
           timeformat: "%d/%m %y"
         month : 
-          xSpan : 1000 * 60 * 60 * 24 * 30
-          granularity : 1000 * 60 * 60 * 24
+          xSpan : 60 * 60 * 24 * 30
+          granularity : 60 * 60 * 24
           timeformat: "%d/%m"
         week :
-          xSpan : 1000 * 60 * 60 * 24 * 7
-          granularity : 1000 * 60 * 60 * 6
+          xSpan : 60 * 60 * 24 * 7
+          granularity : 60 * 60 * 6
           timeformat: "%d/%m"
         day :
-          xSpan : 1000 * 60 * 60 * 24
-          granularity : 1000 * 60 * 48
+          xSpan : 60 * 60 * 24
+          granularity : 60 * 48
           timeformat: "%H:%M"
         six_hours :
-          xSpan : 1000 * 60 * 60 * 6
-          granularity : 1000 * 60 * 12
+          xSpan : 60 * 60 * 6
+          granularity : 60 * 12
           timeformat: "%H:%M"
         thirty_minutes :
-          xSpan : 1000 * 60 * 30
-          granularity : 1000 * 60
+          xSpan : 60 * 30
+          granularity : 60
           timeformat: "%H:%M"
 
       initialize : (options) =>

@@ -18,23 +18,23 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define( 
+define(
   ['./base',
    './DashboardInfoView',
    './DashboardChartsView',
    'ribcage/View',
-   'lib/backbone'], 
+   'lib/backbone'],
   (template, DashboardInfoView, DashboardChartsView, View) ->
 
     class DashboardView extends View
-      
+
       template : template
-     
+
       initialize : (@opts) =>
         @appState = opts.state
         @server = @appState.getServer()
         @kernelBean = opts.kernelBean
-        
+
         @kernelBean.bind "change", @render
 
       render : =>
