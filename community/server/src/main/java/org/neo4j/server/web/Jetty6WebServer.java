@@ -58,6 +58,8 @@ import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.security.SecurityFilter;
 import org.neo4j.server.rest.security.SecurityRule;
 import org.neo4j.server.rest.web.AllowAjaxFilter;
+import org.neo4j.server.rest.web.security.SslConfiguration;
+import org.neo4j.server.rest.web.security.SslSocketConnectorFactory;
 
 import com.sun.jersey.api.core.ResourceConfig;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
@@ -77,6 +79,9 @@ public class Jetty6WebServer implements WebServer
 
     private NeoServer server;
     private int jettyMaxThreads = tenThreadsPerProcessor();
+    private boolean sslEnabled = false;
+    private SslConfiguration sslConfig = null;
+    private int jettySslPort = 7473;
 
     @Override
     public void init()
@@ -90,8 +95,11 @@ public class Jetty6WebServer implements WebServer
             connector.setHost( jettyAddr );
             
             jetty.addConnector( connector );
-            //jetty.addConnector( sslConnector );
-
+            
+            if(sslEnabled) {
+               jetty.addConnector( SslSocketConnectorFactory.createConnector(sslConfig, jettyAddr, jettySslPort) );
+            }
+            
             jetty.setThreadPool( new QueuedThreadPool( jettyMaxThreads ) );
         }
     }
@@ -188,6 +196,22 @@ public class Jetty6WebServer implements WebServer
     {
         return jetty;
     }
+    
+    @Override
+    public void setEnableSsl( boolean enable ) {
+        sslEnabled = enable;
+    }
+    
+    @Override
+    public void setSslPort( int portNo )  {
+        jettySslPort = portNo;
+    }
+    
+    @Override
+    public void setSslConfiguration( SslConfiguration config ) {
+        sslConfig = config;
+    }
+    
 
     protected void startJetty()
     {

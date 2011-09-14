@@ -23,12 +23,16 @@ import org.mortbay.jetty.security.SslSocketConnector;
 
 public class SslSocketConnectorFactory {
 
-    public SslSocketConnector createConnector() {
+    public static SslSocketConnector createConnector(SslConfiguration config, String host, int port) {
         SslSocketConnector connector = new SslSocketConnector();
-        connector.setPort( 8443 );
-        connector.setHost( "" );
-        connector.setKeyPassword("blahblah");
-        connector.setPassword("blahblah");
+        
+        connector.setPort( port );
+        connector.setHost( host );
+        
+        connector.setKeyPassword(config.getKeyPassword());
+        connector.setPassword(config.getKeyStorePassword());
+        connector.setKeystore(config.getKeyStorePath());
+        
         return connector; 
     }
     
