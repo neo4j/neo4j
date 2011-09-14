@@ -31,6 +31,8 @@ import org.neo4j.walk.Walker;
 public class AsciidocHelper
 {
 
+    private static final String ILLEGAL_STRINGS = "[:\\(\\)\t;&/\\\\]"; 
+    
     public static String createGraphViz( String title, GraphDatabaseService graph, String identifier )
     {
         OutputStream out = new ByteArrayOutputStream();
@@ -43,7 +45,10 @@ public class AsciidocHelper
         {
             e.printStackTrace();
         }
-        return  "_"+title+":_\n\n[\"dot\", \""+(title+"-"+identifier).replace( " ", "-" )+".svg\", \"neoviz\"]\n"+
+        
+        String safeTitle = title.replaceAll(ILLEGAL_STRINGS, "");
+        
+        return  "_"+title+":_\n\n[\"dot\", \""+(safeTitle+"-"+identifier).replace( " ", "-" )+".svg\", \"neoviz\"]\n"+
                 "----\n" +
                 out.toString() +
                 "----\n";
