@@ -301,7 +301,8 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         }
         Client client = new Client();
         ClientResponse response = client.handle( request );
-        assertEquals( responseCode, response.getStatus() );
+        String entity = response.getEntity( String.class );
+        assertEquals( "Wrong response status. response: " + entity, responseCode, response.getStatus() );
         if ( response.getType() != null )
         {
             assertEquals( type, response.getType() );
@@ -318,7 +319,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         data.setStatus( responseCode );
         if ( response.hasEntity() && response.getStatus() != 204 )
         {
-            data.setEntity( response.getEntity( String.class ) );
+            data.setEntity( entity );
         }
         getResponseHeaders( data, response.getHeaders(), headerFields );
         document( data );
