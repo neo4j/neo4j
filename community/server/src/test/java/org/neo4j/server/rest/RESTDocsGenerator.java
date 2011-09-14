@@ -302,13 +302,10 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         }
         Client client = new Client();
         ClientResponse response = client.handle( request );
-        String entity = "no content";
         try {
-            response.getEntity( String.class );
         } catch (UniformInterfaceException uie) {
             //ok
         }
-        assertEquals( "Wrong response status. response: " + entity, responseCode, response.getStatus() );
         if ( response.getType() != null )
         {
             assertEquals( type, response.getType() );
@@ -325,8 +322,9 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         data.setStatus( responseCode );
         if ( response.hasEntity() && response.getStatus() != 204 )
         {
-            data.setEntity( entity );
+            data.setEntity( response.getEntity( String.class ) );
         }
+        assertEquals( "Wrong response status. response: " + data.entity, responseCode, response.getStatus() );
         getResponseHeaders( data, response.getHeaders(), headerFields );
         document( data );
         return new ResponseEntity( response, data.entity );
