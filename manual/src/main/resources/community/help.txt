@@ -1,5 +1,5 @@
 [[community-support]]
-Community support
+Community Support
 =================
 
 Get help from the Neo4j open source community, here are some starting points:
