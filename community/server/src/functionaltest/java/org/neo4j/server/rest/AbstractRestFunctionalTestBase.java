@@ -67,7 +67,7 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
     
     protected String startGraph( String name )
     {
-        return AsciidocHelper.createGraphViz( "Starting Graph:", graphdb(), name);
+        return AsciidocHelper.createGraphViz( "Starting Graph", graphdb(), name);
     }
 
   
