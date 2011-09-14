@@ -48,6 +48,7 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientRequest.Builder;
 import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.UniformInterfaceException;
 
 /**
  * Generate asciidoc-formatted documentation from HTTP requests and responses.
@@ -301,7 +302,12 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         }
         Client client = new Client();
         ClientResponse response = client.handle( request );
-        String entity = response.getEntity( String.class );
+        String entity = "no content";
+        try {
+            response.getEntity( String.class );
+        } catch (UniformInterfaceException uie) {
+            //ok
+        }
         assertEquals( "Wrong response status. response: " + entity, responseCode, response.getStatus() );
         if ( response.getType() != null )
         {
