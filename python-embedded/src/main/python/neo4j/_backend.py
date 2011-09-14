@@ -88,9 +88,11 @@ except: # this isn't jython (and doesn't have the java module)
     
     def getJVMPath():
         jvm = jpype.getDefaultJVMPath()
-        if jvm is None:
+        if jvm is None or not os.path.exists(jvm):
             # JPype does not always find java correctly
             # on windows, try using JAVA_HOME to detect it.
+            
+            # TODO: Expand this code to work properly on non win
 	          rootJre = os.getenv("JAVA_HOME", "c:/Program Files/Java/jre6")
 	          if os.path.exists(rootJre+"/bin/javac.exe") :
 		            # this is a JDK home
