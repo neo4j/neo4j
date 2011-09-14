@@ -1,8 +1,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
-    <groupId>org.neo4j</groupId>
+    <groupId>org.neo4j.build</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>23</version>
+    <version>25</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -14,7 +14,6 @@
 
   <properties>
     <!-- Jar Versions -->
-    <junit.version>4.8.2</junit.version>
     <spring.version>3.0.4.RELEASE</spring.version>
     <jackson.version>1.5.2</jackson.version>
     <cxf.version>2.3.1</cxf.version>
@@ -136,7 +135,6 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.8.2</version>
       <scope>test</scope>
     </dependency>
 
@@ -170,14 +168,6 @@ the relevant Commercial Agreement.
     </resources>
     <plugins>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>1.6</source>
-          <target>1.6</target>
-        </configuration>
-      </plugin>
-      <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
         <configuration>
           <descriptors>
@@ -201,35 +191,14 @@ the relevant Commercial Agreement.
   </build>
   <repositories>
     <repository>
-      <id>neo4j-dev</id>
+      <id>neo4j-build</id>
       <name>neo4j.org repository</name>
-      <url>https://m2.neo4j.org/content/groups/public/</url>
+      <url>https://repo.neo4j.org/content/groups/build</url>
       <snapshots>
         <enabled>true</enabled>
       </snapshots>
     </repository>
-    <repository>
-      <id>tinkerpop-repository</id>
-      <name>TinkerPop Maven2 Repository</name>
-      <url>http://tinkerpop.com/maven2</url>
-    </repository>
-    <repository>
-      <id>maven2-repository.dev.java.net</id>
-      <name>Java.net Repository for Maven</name>
-      <url>http://download.java.net/maven/2/</url>
-      <layout>default</layout>
-    </repository>
-    <repository>
-      <id>maven-repository.dev.java.net</id>
-      <name>Java.net Maven 1 Repository (legacy)</name>
-      <url>http://download.java.net/maven/1</url>
-      <layout>legacy</layout>
-    </repository>
-    <repository>
-      <id>jasig-3rd-party</id>
-      <name>Jasig 3rd Party Repository</name>
-      <url>http://developer.jasig.org/repo/content/repositories/3rd-party</url>
-    </repository>
   </repositories>
 
 </project>
+
