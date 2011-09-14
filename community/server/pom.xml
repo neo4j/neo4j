@@ -163,14 +163,8 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.codehaus.jackson</groupId>
       <artifactId>jackson-jaxrs</artifactId>
-      <version>1.6.1</version>
+      <version>1.8.1</version>
     </dependency>
-    <dependency>
-      <groupId>org.codehaus.jackson</groupId>
-      <artifactId>jackson-mapper-asl</artifactId>
-      <version>1.6.1</version>
-    </dependency>
-
     <dependency>
       <groupId>com.tinkerpop</groupId>
       <artifactId>gremlin</artifactId>
