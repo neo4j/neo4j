@@ -57,13 +57,20 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
     @Override
     protected Neo4jMBean createMXBean( ManagementData management ) throws NotCompliantMBeanException
     {
+        if ( !isHA( management ) ) return null;
         return new HighAvailibilityImpl( management, true );
     }
 
     @Override
     protected Neo4jMBean createMBean( ManagementData management ) throws NotCompliantMBeanException
     {
+        if ( !isHA( management ) ) return null;
         return new HighAvailibilityImpl( management );
+    }
+
+    private static boolean isHA( ManagementData management )
+    {
+        return management.getKernelData().graphDatabase() instanceof HighlyAvailableGraphDatabase;
     }
 
     private static class HighAvailibilityImpl extends Neo4jMBean implements HighAvailability
@@ -74,17 +81,12 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
                 throws NotCompliantMBeanException
         {
             super( management );
-            if ( !(management.getKernelData().graphDatabase() instanceof HighlyAvailableGraphDatabase) )
-                throw new NotCompliantMBeanException( "Not in HA mode" );
             this.db = (HighlyAvailableGraphDatabase) management.getKernelData().graphDatabase();
         }
 
         HighAvailibilityImpl( ManagementData management, boolean isMXBean )
-                throws NotCompliantMBeanException
         {
             super( management, isMXBean );
-            if ( !(management.getKernelData().graphDatabase() instanceof HighlyAvailableGraphDatabase) )
-                throw new NotCompliantMBeanException( "Not in HA mode" );
             this.db = (HighlyAvailableGraphDatabase) management.getKernelData().graphDatabase();
         }
 
