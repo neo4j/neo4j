@@ -238,25 +238,25 @@ the relevant Commercial Agreement.
                     <!-- Windows 32bit installer -->
                     <exec executable="python" failonerror="true" dir="${basedir}/target/neo4j-embedded">
                       <arg value="setup.py"/>
-                      <arg value="--plat-name=win-amd64"/>
                       <arg value="bdist_wininst"/>
                       <arg value="upload"/>
+                      <arg value="--plat-name=win-amd64"/>
                     </exec>
                     
                     <!-- Windows 64bit installer -->
                     <exec executable="python" failonerror="true" dir="${basedir}/target/neo4j-embedded">
                       <arg value="setup.py"/>
-                      <arg value="--plat-name=win32"/>
                       <arg value="bdist_wininst"/>
                       <arg value="upload"/>
+                      <arg value="--plat-name=win32"/>
                     </exec>
                     
                     <!-- Source distribution -->
                     <exec executable="python" failonerror="true" dir="${basedir}/target/neo4j-embedded">
                       <arg value="setup.py"/>
                       <arg value="sdist"/>
-                      <arg value="--formats=gztar,zip"/>
                       <arg value="upload"/>
+                      <arg value="--formats=gztar,zip"/>
                     </exec>
                   </target>
                 </configuration>
