@@ -40,13 +40,13 @@ class SematicErrorTest extends ExecutionEngineHelper {
   }
 
   @Test def cantUseTYPEOnNodes() {
-    expectedError("start r=(0) return r.TYPE",
+    expectedError("start r=(0) return type(r)",
       "Expected r to be a RelationshipIdentifier but it was NodeIdentifier")
   }
 
   @Test def cantUseLENGTHOnNodes() {
-    expectedError("start r=(0) return r.LENGTH",
-      "Expected r to be a ArrayIdentifier but it was NodeIdentifier")
+    expectedError("start n=(0) return length(n)",
+      "Expected n to be an iterable, but it is not.")
   }
 
   def parse(txt:String):Query = new CypherParser().parse(txt)

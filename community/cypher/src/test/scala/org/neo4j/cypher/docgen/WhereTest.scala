@@ -27,7 +27,7 @@ class WhereTest extends DocumentingTestBase {
   def graphDescription = List("Andres KNOWS Tobias")
 
   override val properties = Map(
-    "Andres" -> Map("age" -> 36l, "belt"->"white"),
+    "Andres" -> Map("age" -> 36l, "belt" -> "white"),
     "Tobias" -> Map("age" -> 25l)
   )
 
@@ -75,9 +75,8 @@ class WhereTest extends DocumentingTestBase {
       text = "You can put the exact relationship type in the MATCH pattern, but sometimes you want to be able to do more " +
         "advanced filtering on the type. You can use the special property TYPE to compare the type with something else. " +
         "In this example, the query does a regular expression comparison with the name of the relationship type.",
-      queryText = """start n=(%Andres%) match (n)-[r]->() where r.TYPE =~ /K.*/ return r""",
+      queryText = """start n=(%Andres%) match (n)-[r]->() where type(r) =~ /K.*/ return r""",
       returns = """The relationship that has a type whose name starts with K.""",
       (p) => assertEquals("KNOWS", p.columnAs[Relationship]("r").toList.head.getType.name()))
   }
-
 }

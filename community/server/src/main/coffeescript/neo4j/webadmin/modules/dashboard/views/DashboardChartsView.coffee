@@ -56,18 +56,20 @@ define(
           metricKeys = for v in chartDef.layers
             v.key
 
-          startTime = (new Date()).getTime() - zoomLevel.xSpan
+          startTime = Math.round new Date().getTime() / 1000 - zoomLevel.xSpan
           metrics = @statistics.getMetrics(metricKeys, startTime, zoomLevel.granularity)
           
           # Add meta info to each data layer
           data = for i in [0...metrics.length]
             _.extend({ data:metrics[i] }, chartDef.layers[i] )
-          
-          settings = 
+
+          settings =
             xaxis : 
               min : startTime - @statistics.timezoneOffset
               mode : "time"
               timeformat : zoomLevel.timeformat
+              tickFormatter : (v) ->
+                $.plot.formatDate new Date( v * 1000 ), zoomLevel.timeformat
           @chart.render data, _.extend(chartDef.chartSettings || {}, settings)
 
       switchChartClicked : (ev) =>

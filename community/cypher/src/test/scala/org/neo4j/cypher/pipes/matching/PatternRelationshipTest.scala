@@ -30,7 +30,7 @@ class PatternRelationshipTest extends JUnitSuite with Assertions {
     val a = new PatternNode("a")
     val b = new PatternNode("b")
 
-    val r = a.relateTo("r", b, None, Direction.BOTH)
+    val r = a.relateTo("r", b, None, Direction.BOTH, false)
 
     val result = r.getOtherNode(a)
 

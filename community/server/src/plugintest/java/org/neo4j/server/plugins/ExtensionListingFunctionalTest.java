@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest;
+package org.neo4j.server.plugins;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasKey;
@@ -34,8 +34,10 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
+import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.helpers.ServerHelper;
-import org.neo4j.server.plugins.FunctionalTestPlugin;
+import org.neo4j.server.rest.JaxRsResponse;
+import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.JsonHelper;
 
 

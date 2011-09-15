@@ -20,7 +20,7 @@
 package org.neo4j.cypher.pipes
 
 import org.neo4j.cypher.{PathImpl, SymbolTable}
-import org.neo4j.cypher.commands.{VariableLengthPath, RelatedTo, NamedPath, PathIdentifier}
+import org.neo4j.cypher.commands.{VarLengthRelatedTo, RelatedTo, NamedPath, PathIdentifier}
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import scala.collection.JavaConverters._
 
@@ -32,13 +32,13 @@ class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
       def getPath(x:String):Path = m(x).asInstanceOf[Path]
 
       val firstNode = path.pathPattern.head match {
-        case RelatedTo(left, right, relName, x, xx) => left
-        case VariableLengthPath(pathName, start, end, minHops, maxHops, relType, direction) => start
+        case RelatedTo(left, right, relName, x, xx, optional) => left
+        case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, direction, optional) => start
       }
 
       val p = Seq(get(firstNode)) ++ path.pathPattern.flatMap(p => p match {
-        case RelatedTo(left, right, relName, x, xx) => Seq(get(relName), get(right))
-        case VariableLengthPath(pathName, start, end, minHops, maxHops, relType, direction) => getPath(pathName).iterator().asScala.toList.tail
+        case RelatedTo(left, right, relName, x, xx, optional) => Seq(get(relName), get(right))
+        case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, direction, optional) => getPath(pathName).iterator().asScala.toList.tail
       })
 
       val pathImpl = new PathImpl(p: _*)

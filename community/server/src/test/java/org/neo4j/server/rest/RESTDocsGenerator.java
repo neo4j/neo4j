@@ -23,12 +23,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -43,17 +39,16 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.TestData.Producer;
-import org.neo4j.visualization.graphviz.AsciiDocStyle;
-import org.neo4j.visualization.graphviz.GraphvizWriter;
-import org.neo4j.walk.Walker;
+import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientRequest.Builder;
 import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.UniformInterfaceException;
 
 /**
  * Generate asciidoc-formatted documentation from HTTP requests and responses.
@@ -65,9 +60,8 @@ import com.sun.jersey.api.client.ClientResponse;
  * The title is determined by either a JavaDoc perioed terminated first title line,
  * the @Title annotation or the method name, where "_" is replaced by " ".
  */
-public class RESTDocsGenerator
+public class RESTDocsGenerator extends AsciiDocGenerator
 {
-    private static final String DOCUMENTATION_END = "\n...\n";
 
     private static final Builder REQUEST_BUILDER = ClientRequest.create();
 
@@ -80,8 +74,9 @@ public class RESTDocsGenerator
         @Override
         public RESTDocsGenerator create( GraphDefinition graph, String title, String documentation )
         {
-            return RESTDocsGenerator.create( title )
-                    .description( documentation );
+            RESTDocsGenerator gen = RESTDocsGenerator.create( title );
+            gen.description(documentation);
+            return gen;
         }
 
         @Override
@@ -91,14 +86,11 @@ public class RESTDocsGenerator
         }
     };
 
-    private final String title;
-    private String description = null;
     private int expectedResponseStatus = -1;
     private MediaType expectedMediaType = MediaType.APPLICATION_JSON_TYPE;
     private MediaType payloadMediaType = MediaType.APPLICATION_JSON_TYPE;
     private final List<String> expectedHeaderFields = new ArrayList<String>();
     private String payload;
-    private GraphDatabaseService graph;
 
     /**
      * Creates a documented test case. Finish building it by using one of these:
@@ -119,49 +111,12 @@ public class RESTDocsGenerator
         return new RESTDocsGenerator( title );
     }
 
-    private RESTDocsGenerator( final String title )
+    private RESTDocsGenerator( String ti )
     {
-        this.title = title.replace( "_", " " );
+        super(ti);
     }
     
-    public RESTDocsGenerator setGraph(GraphDatabaseService graph)
-    {
-        this.graph = graph;
-        return this;
-    }
 
-    /**
-     * Add a description to the test (in asciidoc format). Adding multiple
-     * descriptions will yield one paragraph per description.
-     * 
-     * @param description the description
-     */
-    public RESTDocsGenerator description( final String description )
-    {
-        if ( description == null )
-        {
-            throw new IllegalArgumentException( "The description can not be null" );
-        }
-        String content;
-        int pos = description.indexOf( DOCUMENTATION_END );
-        if ( pos != -1 )
-        {
-            content = description.substring( 0, pos );
-        }
-        else
-        {
-            content = description;
-        }
-        if ( this.description == null )
-        {
-            this.description = content;
-        }
-        else
-        {
-            this.description += "\n\n" + content;
-        }
-        return this;
-    }
 
     /**
      * Set the expected status of the response. The test will fail if the
@@ -231,6 +186,12 @@ public class RESTDocsGenerator
     {
         return retrieveResponse( title, description, request.getURI()
                 .toString(), expectedResponseStatus, expectedMediaType, expectedHeaderFields, request );
+    }
+    
+    @Override
+    public RESTDocsGenerator description( String description )
+    {
+        return (RESTDocsGenerator) super.description( description );
     }
 
     /**
@@ -341,14 +302,21 @@ public class RESTDocsGenerator
         }
         Client client = new Client();
         ClientResponse response = client.handle( request );
-        assertEquals( responseCode, response.getStatus() );
+        if ( response.hasEntity() && response.getStatus() != 204 )
+        {
+            data.setEntity( response.getEntity( String.class ) );
+        }
+        try {
+        } catch (UniformInterfaceException uie) {
+            //ok
+        }
         if ( response.getType() != null )
         {
-            assertEquals( type, response.getType() );
+            assertEquals( "wrong response type: "+ data.entity, type, response.getType() );
         }
         for ( String headerField : headerFields )
         {
-            assertNotNull( response.getHeaders()
+            assertNotNull( "wrong headers: "+ data.entity, response.getHeaders()
                     .get( headerField ) );
         }
         data.setTitle( title );
@@ -356,10 +324,7 @@ public class RESTDocsGenerator
         data.setMethod( request.getMethod() );
         data.setUri( uri );
         data.setStatus( responseCode );
-        if ( response.hasEntity() && response.getStatus() != 204 )
-        {
-            data.setEntity( response.getEntity( String.class ) );
-        }
+        assertEquals( "Wrong response status. response: " + data.entity, responseCode, response.getStatus() );
         getResponseHeaders( data, response.getHeaders(), headerFields );
         document( data );
         return new ResponseEntity( response, data.entity );
@@ -503,25 +468,9 @@ public class RESTDocsGenerator
         FileWriter fw = null;
         try
         {
-            File dirs = new File( "target/rest-api" );
-            if ( !dirs.exists() )
-            {
-                dirs.mkdirs();
-            }
-            String name = data.title.replace( " ", "-" )
+            fw = getFW("target/rest-api", data.title);
+            String name = title.replace( " ", "-" )
                     .toLowerCase();
-            File out = new File( dirs, name + ".txt" );
-            if ( out.exists() )
-            {
-                out.delete();
-            }
-            if ( !out.createNewFile() )
-            {
-                throw new RuntimeException( "File exists: " + out.getAbsolutePath() );
-            }
-
-            fw = new FileWriter( out, false );
-
             line( fw, "[[rest-api-" + name.replaceAll( "\\(|\\)", "" ) + "]]" );
             //make first Character uppercase
             String firstChar = data.title.substring(  0, 1 ).toUpperCase();
@@ -533,8 +482,7 @@ public class RESTDocsGenerator
                 line( fw, "" );
             }
             if( graph != null) {
-                line(fw, "_Final Graph_" );
-                fw.append( createGraphViz( graph, name ));
+                fw.append( AsciidocHelper.createGraphViz( "Final Graph", graph, title));
                 line(fw, "" );
             }
             line( fw, "_Example request_" );
@@ -585,7 +533,7 @@ public class RESTDocsGenerator
         }
     }
 
-    private void writeEntity( final FileWriter fw, final String entity ) throws IOException
+    public void writeEntity( final FileWriter fw, final String entity ) throws IOException
     {
         if ( entity != null )
         {
@@ -597,30 +545,7 @@ public class RESTDocsGenerator
         }
     }
 
-    private void line( final Writer fw, final String string ) throws IOException
-    {
-        fw.append( string );
-        fw.append( "\n" );
-    }
     
-    public String createGraphViz( GraphDatabaseService graphDatabaseService, String name )
-    {
-        OutputStream out = new ByteArrayOutputStream();
-        GraphvizWriter writer = new GraphvizWriter(new AsciiDocStyle());
-        try
-        {
-            writer.emit( out, Walker.fullGraph( graphDatabaseService ) );
-        }
-        catch ( IOException e )
-        {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        return  "[\"dot\", \""+name.replace( " ", "-" )+".svg\", \"neoviz\"]\n"+
-                "----\n" +
-                out.toString() +
-                "----\n";
-    }
-    
+   
 
 }

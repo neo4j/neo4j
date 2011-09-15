@@ -24,7 +24,12 @@ import org.neo4j.graphdb.traversal.{TraversalDescription, Evaluators}
 import org.neo4j.graphdb._
 import org.neo4j.kernel.{Uniqueness, Traversal}
 
-class PatternRelationship(key: String, val leftNode: PatternNode, val rightNode: PatternNode, relType: Option[String], dir: Direction)
+class PatternRelationship(key: String,
+                          val leftNode: PatternNode,
+                          val rightNode: PatternNode,
+                          relType: Option[String],
+                          dir: Direction,
+                          val optional:Boolean)
   extends PatternElement(key)
   with PinnablePatternElement[Relationship] {
 
@@ -43,11 +48,19 @@ class PatternRelationship(key: String, val leftNode: PatternNode, val rightNode:
     }
   }
 
-  override def toString = String.format("PatternRelationship[key=%s, left=%s, right=%s]", key, leftNode, rightNode)
+  override def toString = key
 }
 
-class VariableLengthPatternRelationship(pathName: String, val start: PatternNode, val end: PatternNode, minHops: Int, maxHops: Int, relType: Option[String], dir: Direction)
-  extends PatternRelationship(pathName, start, end, relType, dir) {
+class VariableLengthPatternRelationship(
+                                         pathName: String,
+                                         val start: PatternNode,
+                                         val end: PatternNode,
+                                         minHops: Int,
+                                         maxHops: Int,
+                                         relType: Option[String],
+                                         dir: Direction,
+                                         optional:Boolean)
+  extends PatternRelationship(pathName, start, end, relType, dir, optional) {
 
   override def getGraphRelationships(node: PatternNode, realNode: Node): Seq[GraphRelationship] = {
     val baseTraversalDescription: TraversalDescription = Traversal.description()
@@ -58,13 +71,7 @@ class VariableLengthPatternRelationship(pathName: String, val start: PatternNode
       case Some(typeName) => baseTraversalDescription.expand(Traversal.expanderForTypes(DynamicRelationshipType.withName(typeName), getDirection(node)))
       case None => baseTraversalDescription.expand(Traversal.expanderForAllTypes(getDirection(node)))
     }
-//    for (p: Path <- traversalDescription.traverse(realNode).asScala.foreach()) {
-//      println(String.format("  found path match: %s", p))
-//    }
     traversalDescription.traverse(realNode).asScala.toSeq.map(p => VariableLengthGraphRelationship(p))
   }
-
-  override def toString = String.format("VariableLengthPatternRelationship[pathName=%s, start=%s, end=%s]", key, start, end)
-
 }
 

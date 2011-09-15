@@ -59,6 +59,7 @@ public abstract class Representation
     public static final String BOOLEAN = RepresentationType.BOOLEAN.valueName;
     public static final String BOOLEAN_LIST = RepresentationType.BOOLEAN.listName;
     public static final String EXCEPTION = RepresentationType.EXCEPTION.valueName;
+    public static final String MAP = RepresentationType.MAP.valueName;
 
     final RepresentationType type;
 

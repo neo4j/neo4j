@@ -33,8 +33,8 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.helpers.ServerHelper;
-import org.neo4j.server.rest.FunctionalTestHelper;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 

@@ -22,7 +22,7 @@ package org.neo4j.server.rest;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.server.rest.FunctionalTestHelper.CLIENT;
+import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
 
 import java.io.IOException;
 import java.net.URI;
@@ -43,6 +43,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.database.DatabaseBlockedException;
+import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -71,6 +72,7 @@ public class IndexNodeFunctionalTest
     public void cleanTheDatabase()
     {
         ServerHelper.cleanTheDatabase( server );
+        gen.get().setGraph(server.getDatabase().graph );
     }
 
     @AfterClass
@@ -236,7 +238,7 @@ public class IndexNodeFunctionalTest
         String indexName = "bobTheIndex";
         String key = "Name";
         String value = "Builder";
-        long node = helper.createNode();
+        long node = helper.createNode(MapUtil.map( key, value ));
         helper.addNodeToIndex( indexName, key, value, node );
         helper.addNodeToIndex( indexName, "Gender", "Male", node );
 

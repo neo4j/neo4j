@@ -24,7 +24,6 @@ import java.io.IOException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
-import org.neo4j.server.ServerBuilder;
 
 public class ServerHelper
 {

@@ -21,10 +21,14 @@ package org.neo4j.kernel.impl.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Stack;
+import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.NotFoundException;
 
@@ -92,6 +96,25 @@ public class FileUtils
         while ( !deleted && count <= WINDOWS_RETRY_COUNT );
         return deleted;
     }
+    
+    public static File[] deleteFiles( File directory, String regexPattern )
+            throws IOException
+    {
+        Pattern pattern = Pattern.compile( regexPattern );
+        Collection<File> deletedFiles = new ArrayList<File>();
+        for ( File file : directory.listFiles() )
+        {
+            if ( pattern.matcher( file.getName() ).find() )
+            {
+                if ( !file.delete() )
+                {
+                    throw new IOException( "Couldn't delete file '" + file.getAbsolutePath() + "'" );
+                }
+                deletedFiles.add( file );
+            }
+        }
+        return deletedFiles.toArray( new File[deletedFiles.size()] );
+    }
 
     public static boolean renameFile( File srcFile, File renameToFile )
     {
@@ -144,6 +167,19 @@ public class FileUtils
         if ( !success )
         {
             throw cause;
+        }
+    }
+    
+    public static void truncateFile( File file, long position ) throws IOException
+    {
+        RandomAccessFile access = new RandomAccessFile( file, "rw" );
+        try
+        {
+            truncateFile( access.getChannel(), position );
+        }
+        finally
+        {
+            access.close();
         }
     }
 

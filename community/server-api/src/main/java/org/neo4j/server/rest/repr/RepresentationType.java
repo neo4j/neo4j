@@ -76,7 +76,8 @@ public final class RepresentationType
             BOOLEAN = new RepresentationType( "boolean", "booleans", boolean.class ),//
             NOTHING = new RepresentationType( "void", null ),//
             // System
-            EXCEPTION = new RepresentationType( "exception" );
+            EXCEPTION = new RepresentationType( "exception" ),
+            MAP = new RepresentationType( "map", null, Map.class );
 
     final String valueName;
     final String listName;

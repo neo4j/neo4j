@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server;
+package org.neo4j.server.helpers;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -37,6 +37,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 
+import org.neo4j.server.AddressResolver;
+import org.neo4j.server.NeoServerBootstrapper;
+import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
@@ -78,6 +81,7 @@ public class ServerBuilder
     private Clock clock = null;
     private String[] autoIndexedNodeKeys = null;
     private String[] autoIndexedRelationshipKeys = null;
+    private String host = null;
 
     public static ServerBuilder server()
     {
@@ -131,6 +135,10 @@ public class ServerBuilder
         if ( portNo != null )
         {
             writePropertyToFile( Configurator.WEBSERVER_PORT_PROPERTY_KEY, portNo, temporaryConfigFile );
+        }
+        if ( host != null )
+        {
+            writePropertyToFile( Configurator.WEBSERVER_ADDRESS_PROPERTY_KEY, host, temporaryConfigFile );
         }
         if ( maxThreads != null )
         {
@@ -345,6 +353,11 @@ public class ServerBuilder
     public ServerBuilder withAutoIndexingEnabledForRelationships( String... keys )
     {
         autoIndexedRelationshipKeys = keys;
+        return this;
+    }
+
+    public ServerBuilder onHost(String host) {
+        this.host  = host;
         return this;
     }
 }

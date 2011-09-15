@@ -27,11 +27,11 @@ import java.io.IOException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.helpers.ServerHelper;
-import org.neo4j.server.rest.FunctionalTestHelper;
 import org.neo4j.server.rest.JaxRsResponse;
 
-public class NeoServerDefaultPortFunctionalTest
+public class NeoServerDefaultPortAndHostnameFunctionalTest
 {
 
     private NeoServerWithEmbeddedWebServer server;
@@ -65,5 +65,10 @@ public class NeoServerDefaultPortFunctionalTest
         JaxRsResponse response = functionalTestHelper.get(functionalTestHelper.getWebadminUri());
 
         assertThat(response.getStatus(), is(200));
+    }
+
+    @Test
+    public void shouldDefaultToLocalhostOfNoneSpecifiedInConfig() throws Exception {
+        assertThat(server.baseUri().getHost(), is("localhost"));
     }
 }

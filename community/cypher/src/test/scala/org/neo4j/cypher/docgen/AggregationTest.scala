@@ -43,6 +43,15 @@ class AggregationTest extends DocumentingTestBase {
       returns = "The start node and the count of related nodes.",
       (p) => assertEquals(Map("n" -> node("A"), "count(*)" -> 3), p.toList.head))
   }
+  
+  @Test def countRelationshipsByType() {
+    testQuery(
+      title = "Group Count Relationship Types",
+      text = "To count the groups of relationship types, return the types and count them with +count(*)+.",
+      queryText = "start n=(%A%) match (n)-[r]->() return type(r), count(*)",
+      returns = "The relationship types and their group count.",
+      (p) => assertEquals(Map("TYPE(r)" -> "KNOWS", "count(*)" -> 3), p.toList.head))
+  }
 
   @Test def countEntities() {
     testQuery(

@@ -27,7 +27,7 @@ define(
 
     class LineChart
       
-      timezoneOffset = (new Date()).getTimezoneOffset()  * 60 * 1000
+      timezoneOffset = (new Date()).getTimezoneOffset()  * 60
       defaultSettings : 
         label : ""
         xaxis : 
@@ -44,9 +44,9 @@ define(
 
         grid  : { hoverable: true }
         colors : ["#490A3D","#BD1550","#E97F02","#F8CA00","#8A9B0F"]
-        tooltipYFormatter : (v) -> Math.round(v)
-        tooltipXFormatter : (v) -> 
-          DateFormat.format(new Date(v + timezoneOffset))
+        tooltipYFormatter : (v) -> Math.round v
+        tooltipXFormatter : (v) ->
+          DateFormat.format new Date( (v + timezoneOffset) * 1000 )
 
       constructor : (el) ->
         @el = $(el)

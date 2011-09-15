@@ -121,6 +121,11 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
         {
             return 0;
         }
+        
+        @Override
+        public void clearFreeIds()
+        {
+        }
     }
     
     private class JumpingIdGenerator implements IdGenerator
@@ -190,6 +195,11 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
         public long getDefragCount()
         {
             return 0;
+        }
+        
+        @Override
+        public void clearFreeIds()
+        {
         }
     }
 }

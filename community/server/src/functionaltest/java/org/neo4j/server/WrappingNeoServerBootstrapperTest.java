@@ -21,23 +21,35 @@ package org.neo4j.server;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.jmx.Primitives;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.EmbeddedServerConfigurator;
-import org.neo4j.server.rest.FunctionalTestHelper;
+import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.JaxRsResponse;
+import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TestData;
+
+import com.sun.jersey.api.client.ClientHandlerException;
+import com.sun.jersey.api.client.ClientResponse.Status;
 
 public class WrappingNeoServerBootstrapperTest
 {
+    public @Rule
+    TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
+
     AbstractGraphDatabase myDb;
     FunctionalTestHelper helper;
 
@@ -58,11 +70,12 @@ public class WrappingNeoServerBootstrapperTest
     {
 
         // START SNIPPET: usingWrappingNeoServerBootstrapper
-        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper( myDb );
+        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(
+                myDb );
 
         srv.start();
 
-        // Server is now running in background threads
+        // Server is now running
 
         srv.stop();
         // END SNIPPET: usingWrappingNeoServerBootstrapper
@@ -73,18 +86,50 @@ public class WrappingNeoServerBootstrapperTest
     {
 
         // START SNIPPET: customConfiguredWrappingNeoServerBootstrapper
-        EmbeddedServerConfigurator config = new EmbeddedServerConfigurator( myDb );
-        config.configuration()
-                .setProperty( Configurator.WEBSERVER_PORT_PROPERTY_KEY, 7575 );
+        EmbeddedServerConfigurator config = new EmbeddedServerConfigurator(
+                myDb );
+        config.configuration().setProperty(
+                Configurator.WEBSERVER_PORT_PROPERTY_KEY, 7575 );
 
-        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper( myDb, config );
+        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(
+                myDb, config );
 
         srv.start();
         // END SNIPPET: customConfiguredWrappingNeoServerBootstrapper
 
-        assertEquals( srv.getServer()
-                .baseUri()
-                .getPort(), 7575 );
+        assertEquals( srv.getServer().baseUri().getPort(), 7575 );
+
+        srv.stop();
+    }
+
+    @Test
+    public void shouldAllowModifyingListenPorts() throws UnknownHostException
+    {
+
+        EmbeddedServerConfigurator config = new EmbeddedServerConfigurator(
+                myDb );
+        String hostAddress = InetAddress.getLocalHost().getHostAddress();
+        config.configuration().setProperty(
+                Configurator.WEBSERVER_ADDRESS_PROPERTY_KEY,
+                hostAddress );
+
+        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(
+                myDb, config );
+
+        srv.start();
+        try
+        {
+            gen.get().expectedStatus( Status.OK.getStatusCode() ).get(
+                    "http://127.0.0.1:7474/db/data/" );
+            fail();
+        }
+        catch ( ClientHandlerException cee )
+        {
+            //ok
+        }
+
+        gen.get().expectedStatus( Status.OK.getStatusCode() ).get(
+                "http://"+hostAddress+":7474/db/data/" );
 
         srv.stop();
     }
@@ -93,37 +138,39 @@ public class WrappingNeoServerBootstrapperTest
     public void serverShouldRespondProperly()
     {
 
-        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper( myDb );
+        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(
+                myDb );
 
         srv.start();
         helper = new FunctionalTestHelper( srv.getServer() );
 
-        JaxRsResponse response = new RestRequest().get(helper.dataUri());
+        JaxRsResponse response = new RestRequest().get( helper.dataUri() );
         assertEquals( 200, response.getStatus() );
 
         srv.stop();
     }
 
     @Test
-    public void shouldModifyInjectedDatabase() {
+    public void shouldModifyInjectedDatabase()
+    {
 
-        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(myDb);
+        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(
+                myDb );
 
         srv.start();
 
-        long originalNodeNumber = myDb.getManagementBean(Primitives.class)
-                .getNumberOfNodeIdsInUse();
+        long originalNodeNumber = myDb.getManagementBean( Primitives.class ).getNumberOfNodeIdsInUse();
 
-        helper = new FunctionalTestHelper(srv.getServer());
+        helper = new FunctionalTestHelper( srv.getServer() );
         String nodeData = "{\"age\":12}";
 
-        JaxRsResponse response = new RestRequest().post(helper.dataUri() + "node", nodeData);
-        assertEquals(201, response.getStatus());
+        JaxRsResponse response = new RestRequest().post( helper.dataUri()
+                                                         + "node", nodeData );
+        assertEquals( 201, response.getStatus() );
 
-        long newNodeNumber = myDb.getManagementBean(Primitives.class)
-                .getNumberOfNodeIdsInUse();
+        long newNodeNumber = myDb.getManagementBean( Primitives.class ).getNumberOfNodeIdsInUse();
 
-        assertEquals(originalNodeNumber + 1, newNodeNumber);
+        assertEquals( originalNodeNumber + 1, newNodeNumber );
 
         srv.stop();
     }
@@ -132,7 +179,8 @@ public class WrappingNeoServerBootstrapperTest
     public void shouldNotStopDatabaseOnShutdown()
     {
 
-        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper( myDb );
+        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(
+                myDb );
 
         srv.start();
         helper = new FunctionalTestHelper( srv.getServer() );

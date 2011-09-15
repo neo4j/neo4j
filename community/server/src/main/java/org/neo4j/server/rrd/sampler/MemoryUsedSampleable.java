@@ -17,42 +17,50 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rrd;
+package org.neo4j.server.rrd.sampler;
 
-import java.lang.management.ManagementFactory;
-
-import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.openmbean.CompositeDataSupport;
 
+import org.neo4j.jmx.JmxUtils;
+import org.neo4j.server.rrd.Sampleable;
+import org.rrd4j.DsType;
+
 public class MemoryUsedSampleable implements Sampleable
 {
-    private ObjectName memoryName;
-    private MBeanServer mbeanServer;
 
-    public MemoryUsedSampleable() throws MalformedObjectNameException
+    private final ObjectName memoryName;
+
+    public MemoryUsedSampleable()
     {
-        memoryName = new ObjectName( "java.lang:type=Memory" );
-        mbeanServer = ManagementFactory.getPlatformMBeanServer();
+        try
+        {
+            memoryName = new ObjectName( "java.lang:type=Memory" );
+        } catch ( MalformedObjectNameException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
+    @Override
     public String getName()
     {
         return "memory_usage_percent";
     }
 
-    public long getValue()
+    @Override
+    public double getValue()
     {
-        try
-        {
-            long used = (Long) ( (CompositeDataSupport) mbeanServer.getAttribute( memoryName, "HeapMemoryUsage" ) ).get( "used" );
-            long max = (Long) ( (CompositeDataSupport) mbeanServer.getAttribute( memoryName, "HeapMemoryUsage" ) ).get( "max" );
-            return (long) Math.ceil( ( used / (double) max ) * 100 );
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
+        CompositeDataSupport heapMemoryUsage = JmxUtils.getAttribute( memoryName, "HeapMemoryUsage" );
+        long used = (Long) heapMemoryUsage.get( "used" );
+        long max = (Long) heapMemoryUsage.get( "max" );
+        return Math.ceil( 100.0 * used / max );
+    }
+
+    @Override
+    public DsType getType()
+    {
+        return DsType.GAUGE;
     }
 }

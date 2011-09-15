@@ -47,7 +47,7 @@ public class RelationshipFunctionalTest extends
             throws DatabaseBlockedException
     {
         Relationship loves = getNode( "Romeo" ).getRelationships().iterator().next();
-        gen.get().description( startGraph("Remove properties from a relationship1")).
+        gen.get().
                 expectedStatus(
                 Status.NO_CONTENT.getStatusCode() ).delete(
                         getRelationshipUri( loves ) ).entity();
@@ -64,8 +64,8 @@ public class RelationshipFunctionalTest extends
     {
         Relationship loves = getNode( "Romeo" ).getRelationships().iterator().next();
         gen.get().
-                description( startGraph( "Remove property from a relationship1" ) ).
-                expectedStatus(
+                description( startGraph( "Remove property from a relationship1" ) );
+        gen.get().expectedStatus(
                 Status.NO_CONTENT.getStatusCode() ).delete(
                 getPropertiesUri( loves ) + "/cost" ).entity();
 
@@ -113,7 +113,8 @@ public class RelationshipFunctionalTest extends
     public void removeRelationship()
     {
         Relationship loves = getNode( "Romeo" ).getRelationships().iterator().next();
-        gen.get().description( startGraph( "Delete relationship1" ) ).expectedStatus(
+        gen.get().description( startGraph( "Delete relationship1" ) );
+        gen.get().expectedStatus(
                 Status.NO_CONTENT.getStatusCode() ).delete(getRelationshipUri( loves ) ).entity();
 
     }

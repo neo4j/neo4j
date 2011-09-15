@@ -19,9 +19,13 @@
  */
 package org.neo4j.cypher.commands
 
+import org.neo4j.cypher.SyntaxException
+
 case class Identifier(name: String) {
-  def isCompatibleWith(other:Identifier):Boolean = {
-    other.getClass.isAssignableFrom(this.getClass)
+
+  def assertIs( clazz:Class[_] ) {
+    if(!clazz.isAssignableFrom( this.getClass ))
+      throw new SyntaxException("Expected " + name + " to be of type " + clazz.getSimpleName + ", but it was of type " + this.getClass.getSimpleName)
   }
 }
 
@@ -35,7 +39,6 @@ case class PathIdentifier(path:String) extends ArrayIdentifier(path)
 case class NodeIdentifier(subName: String) extends PropertyContainerIdentifier(subName)
 case class RelationshipIdentifier(subName: String) extends PropertyContainerIdentifier(subName)
 
-case class RelationshipTypeIdentifier(subName: String) extends Identifier(subName + ".TYPE")
-case class PathLengthIdentifier(subName: String) extends Identifier(subName + ".LENGTH")
+case class ValueIdentifier(subName: String) extends Identifier(subName)
 
 case class ArrayIdentifier(array: String) extends Identifier(array)

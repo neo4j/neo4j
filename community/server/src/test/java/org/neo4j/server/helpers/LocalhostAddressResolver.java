@@ -17,28 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rrd;
+package org.neo4j.server.helpers;
 
-import javax.management.MalformedObjectNameException;
+import org.neo4j.server.AddressResolver;
 
-import org.neo4j.server.database.Database;
-
-public class PropertyCountSampleable extends DatabasePrimitivesSampleableBase
+public class LocalhostAddressResolver extends AddressResolver
 {
-    public PropertyCountSampleable( Database db ) throws MalformedObjectNameException
+    public String getHostname()
     {
-        super( db );
-    }
-
-    @Override
-    public String getName()
-    {
-        return "property_count";
-    }
-
-    @Override
-    protected String getJmxAttributeName()
-    {
-        return "NumberOfPropertyIdsInUse";
+        return "localhost";
     }
 }

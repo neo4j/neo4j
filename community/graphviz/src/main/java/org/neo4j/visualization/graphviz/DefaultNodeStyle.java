@@ -38,7 +38,7 @@ class DefaultNodeStyle implements NodeStyle
 	{
 		stream.append( "  N" + node.getId() + " [\n" );
 		config.emit( node, stream );
-		stream.append( "    label = \"{" + config.getTitle( node ) + "|" );
+		stream.append( "    label = \"{" + config.escapeLabel( config.getTitle( node )) + "|" );
 	}
 
 	public void emitEnd( Appendable stream ) throws IOException
@@ -52,7 +52,7 @@ class DefaultNodeStyle implements NodeStyle
 		if ( config.acceptNodeProperty( key ) )
 		{
 			PropertyType type = PropertyType.getTypeOf( value );
-			config.emitRelationshipProperty( stream, key, type, value );
+			config.emitNodeProperty( stream, key, type, value );
 		}
 	}
 }

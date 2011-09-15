@@ -38,6 +38,7 @@ import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription.Graph;
+import org.neo4j.test.GraphDescription.NODE;
 
 public class TraverserFunctionalTest extends AbstractRestFunctionalTestBase
 {
@@ -51,12 +52,49 @@ public class TraverserFunctionalTest extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    @Graph( "I know you" )
+    @Graph( nodes = {@NODE(name="I")} )
     public void shouldGet200WhenNoHitsFromTraversing()
             throws DatabaseBlockedException
     {
-        gen.get().expectedStatus( 200 ).payload( "{}" ).post(
-                getTraverseUriNodes( getNode( "I" ) ) ).entity();
+        assertSize( 0,gen.get().expectedStatus( 200 ).payload( "" ).post(
+                getTraverseUriNodes( getNode( "I" ) ) ).entity());
+    }
+    
+    /**
+     * In order to return relationships,
+     * simply specify the return type as part of the URL.
+     */
+    @Test
+    @Graph( {"I know you", "I own car"} )
+    public void return_relationships_from_a_traversal()
+            throws DatabaseBlockedException
+    {
+        assertSize( 2, gen.get().expectedStatus( 200 ).payload( "{\"order\":\"breadth_first\",\"uniqueness\":\"none\",\"return_filter\":{\"language\":\"builtin\",\"name\":\"all\"}}" ).post(
+                getTraverseUriRelationships( getNode( "I" ) ) ).entity());
+    }
+
+    
+    /**
+     * In order to return paths from a traversal,
+     * specify the +Path+ return type as part of the URL.
+     */
+    @Test
+    @Graph( {"I know you", "I own car"} )
+    public void return_paths_from_a_traversal()
+            throws DatabaseBlockedException
+    {
+        assertSize( 3, gen.get().expectedStatus( 200 ).payload( "{\"order\":\"breadth_first\",\"uniqueness\":\"none\",\"return_filter\":{\"language\":\"builtin\",\"name\":\"all\"}}" ).post(
+                getTraverseUriPaths( getNode( "I" ) ) ).entity());
+    }
+    
+    
+    private String getTraverseUriRelationships( Node node )
+    {
+        return getNodeUri( node) + "/traverse/relationship";
+    }
+    private String getTraverseUriPaths( Node node )
+    {
+        return getNodeUri( node) + "/traverse/path";
     }
 
     private String getTraverseUriNodes( Node node )
@@ -119,7 +157,7 @@ public class TraverserFunctionalTest extends AbstractRestFunctionalTestBase
                 "uniqueness",
                 "node_global",
                 "prune_evaluator",
-                MapUtil.map( "language", "builtin", "name", "none" ),
+                MapUtil.map( "language", "javascript", "body", "position.length() > 10" ),
                 "return_filter",
                 MapUtil.map( "language", "javascript", "body",
                         "position.endNode().getProperty('name').toLowerCase().contains('t')" ),

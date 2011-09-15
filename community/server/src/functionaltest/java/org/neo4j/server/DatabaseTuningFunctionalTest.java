@@ -28,6 +28,7 @@ import java.util.Map;
 
 import org.junit.Test;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
+import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.server.logging.InMemoryAppender;
 
 public class DatabaseTuningFunctionalTest

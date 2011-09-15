@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.rrd;
 
-public class RrdJob implements Job {
-    private static final long MIN_STEP_TIME = 1000;
+public class RrdJob implements Runnable {
+    private static final long MIN_STEP_TIME = 1;
 
     private RrdSampler sampler;
     private long lastRun = 0;

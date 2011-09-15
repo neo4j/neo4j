@@ -17,12 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server;
+package org.neo4j.server.rrd.sampler;
 
-public class LocalhostAddressResolver extends AddressResolver
+import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+
+public class PropertyCountSampleable extends DatabasePrimitivesSampleableBase
 {
-    public String getHostname()
+    public PropertyCountSampleable( AbstractGraphDatabase db )
     {
-        return "localhost";
+        super( db );
+    }
+
+    @Override public String getName()
+    {
+        return "property_count";
+    }
+
+    @Override public double getValue()
+    {
+        return getNodeManager().getNumberOfIdsInUse( PropertyStore.class );
     }
 }

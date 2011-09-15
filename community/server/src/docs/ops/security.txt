@@ -2,6 +2,25 @@
 Securing access to the Neo4j Server
 ===================================
 
+Per default, the Neo4j Server is bundled with a Jetty instance that binds to host +localhost+ on port +7474+, answering only requests from the local machine. 
+
+If you need to enable access from external machines, configure Jetty in the +conf/neo4j-server.properties+ by setting the related properties, e.g for access by any host, do
+
+[IMPORTANT]
+The neo4j server exposes remote scripting functionality by default that allow full access to the underlying system. 
+Exposing your server without an added security layer (see below) poses a severe security threat.
+
+[source]
+----
+# http port (for all data, administrative, and UI access)
+org.neo4j.server.webserver.port=7474
+
+#let the webserver only listen on the specified IP. Default
+#is localhost (only accept local connections). Uncomment to allow
+#any connection.
+#org.neo4j.server.webserver.address=0.0.0.0
+----
+
 The Neo4j server currently does not enforce security on the REST access layer.
 This should be taken care of by external means.
 We strongly recommend to front a running Neo4j Server with a proxy like Apache `mod_proxy` footnote:[http://httpd.apache.org/docs/2.2/mod/mod_proxy.html].

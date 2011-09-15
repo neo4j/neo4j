@@ -22,6 +22,7 @@ package org.neo4j.server;
 import java.io.IOException;
 
 import org.junit.Test;
+import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 
 public class StartupHealthcheckFunctionalTest
