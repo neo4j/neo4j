@@ -36,6 +36,7 @@ import org.neo4j.test.GraphDescription.NODE;
 import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphDescription.REL;
 import org.neo4j.test.TestData.Title;
+import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
 {
@@ -62,7 +63,7 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
                         + ") match (x) -[r]-> (n) return type(r), n.name?, n.age?";
         gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
                 "{\"query\": \"" + script + "\"}" ).description(
-                formatCypher( script ) );
+                        AsciidocHelper.createCypherSnippet(  script ) );
         String response = gen.get().post( ENDPOINT ).entity();
         assertTrue( response.contains( "you" ) );
         assertTrue( response.contains( "him" ) );
@@ -84,17 +85,12 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
                         + ") return x.dummy";
         gen.get().expectedStatus( Status.BAD_REQUEST.getStatusCode() ).payload(
                 "{\"query\": \"" + script + "\"}" ).description(
-                formatCypher( script ) );
+                AsciidocHelper.createCypherSnippet(  script ) );
         String response = gen.get().post( ENDPOINT ).entity();
         assertEquals( 3, ( JsonHelper.jsonToMap( response ) ).size() );
     }
 
 
-    private String formatCypher( String script )
-    {
-        return "_Cypher query_\n\n" + "[source,cypher]\n" + "----\n" + script
-               + "\n----\n";
-    }
     
     /**
      * Paths can be returned
@@ -110,7 +106,7 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
                         + ") match path = (x--friend) return path, friend.name";
         gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
                 "{\"query\": \"" + script + "\"}" ).description(
-                formatCypher( script ) );
+                        AsciidocHelper.createCypherSnippet( script ));
         String response = gen.get().post( ENDPOINT ).entity();
         assertEquals( 2, ( JsonHelper.jsonToMap( response ) ).size() );
         assertTrue(response.contains( "data" ));
