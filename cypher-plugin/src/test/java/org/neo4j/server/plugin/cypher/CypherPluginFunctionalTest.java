@@ -70,9 +70,13 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
         assertTrue( !response.contains( "\"x\"" ) );
     }
     
+    /**
+     * Erros on the server
+     * will be reported as a JSON-formatted stacktrace and message.
+     */
     @Test
     @Documented
-    @Title( "Send a Query" )
+    @Title( "Return on syntax errors" )
     @Graph( "I know you" )
     public void error_gets_returned_as_json() throws UnsupportedEncodingException, Exception
     {
@@ -112,4 +116,5 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
         assertTrue(response.contains( "data" ));
         assertTrue(response.contains( "you" ));
     }
+    
 }
