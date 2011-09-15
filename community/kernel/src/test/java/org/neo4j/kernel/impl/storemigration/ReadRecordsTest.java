@@ -44,20 +44,15 @@ public class ReadRecordsTest
     }
 
     @Test
-    public void shouldReadPropertyRecords() throws IOException
+    public void shouldReadAPropertyRecordById() throws IOException
     {
         URL propertyStoreFile = getClass().getResource( "oldformatstore/neostore.propertystore.db" );
 
-        Iterable<LegacyPropertyStoreReader.LegacyPropertyRecord> records = new LegacyPropertyStoreReader().readPropertyStore( propertyStoreFile.getFile() );
-        int propertyCount = 0;
-        for ( LegacyPropertyStoreReader.LegacyPropertyRecord record : records )
-        {
-            int keyIndexId = record.getKeyIndexId();
-            assertEquals( 0, keyIndexId );
-            Object value = record.getType().getValue( record, null );
-            assertEquals( true, value );
-            propertyCount++;
-        }
-        assertEquals( 1000, propertyCount );
+        LegacyPropertyStoreReader.LegacyPropertyRecord record = new LegacyPropertyStoreReader(propertyStoreFile.getFile()).readPropertyRecord( 23 );
+
+        int keyIndexId = record.getKeyIndexId();
+        assertEquals( 0, keyIndexId );
+        Object value = record.getType().getValue( record, null );
+        assertEquals( true, value );
     }
 }

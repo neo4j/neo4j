@@ -22,61 +22,65 @@ package org.neo4j.kernel.impl.storemigration;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.nioneo.store.*;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 
 import static org.neo4j.kernel.impl.storemigration.LegacyStore.*;
 
 public class LegacyPropertyStoreReader
 {
-    public Iterable<LegacyPropertyRecord> readPropertyStore( String fileName ) throws IOException
+
+    public static final int RECORD_LENGTH = 25;
+    private PersistenceWindowPool windowPool;
+
+    public LegacyPropertyStoreReader( String fileName ) throws FileNotFoundException
     {
         FileChannel fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
-        int recordLength = 25;
-        int endHeaderSize = UTF8.encode( FROM_VERSION ).length;
-        long recordCount = (fileChannel.size() - endHeaderSize) / recordLength;
+        windowPool = new PersistenceWindowPool( fileName,
+                RECORD_LENGTH, fileChannel, CommonAbstractStore.calculateMappedMemory( null, fileName ),
+                true, true );
+    }
 
-        ByteBuffer buffer = ByteBuffer.allocateDirect( recordLength );
+    public LegacyPropertyRecord readPropertyRecord( long id ) throws IOException
+    {
+        PersistenceWindow persistenceWindow = windowPool.acquire( id, OperationType.READ );
 
-        ArrayList<LegacyPropertyRecord> records = new ArrayList<LegacyPropertyRecord>();
-        for ( long id = 0; id < recordCount; id++ )
+        Buffer buffer = persistenceWindow.getOffsettedBuffer( id );
+
+        // [    ,   x] in use
+        // [xxxx,    ] high prev prop bits
+        long inUseByte = buffer.get();
+
+        boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
+        if ( !inUse )
         {
-            buffer.position( 0 );
-            fileChannel.read( buffer );
-            buffer.flip();
-            // [    ,   x] in use
-            // [xxxx,    ] high prev prop bits
-            long inUseByte = buffer.get();
-
-            boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
-            if ( inUse )
-            {
-                LegacyPropertyRecord record = new LegacyPropertyRecord( id );
-
-                // [    ,    ][    ,    ][xxxx,xxxx][xxxx,xxxx] type
-                // [    ,    ][    ,xxxx][    ,    ][    ,    ] high next prop bits
-                long typeInt = buffer.getInt();
-
-                record.setType( getEnumType( (int) typeInt & 0xFFFF ) );
-                record.setInUse( true );
-                record.setKeyIndexId( buffer.getInt() );
-                record.setPropBlock( buffer.getLong() );
-
-                long prevProp = getUnsignedInt( buffer );
-                long prevModifier = (inUseByte & 0xF0L) << 28;
-                long nextProp = getUnsignedInt( buffer );
-                long nextModifier = (typeInt & 0xF0000L) << 16;
-
-                record.setPrevProp( longFromIntAndMod( prevProp, prevModifier ) );
-                record.setNextProp( longFromIntAndMod( nextProp, nextModifier ) );
-
-                records.add( record );
-            }
+            throw new IllegalArgumentException( MessageFormat.format( "Record {0} not in use", id ) );
         }
-        return records;
+        LegacyPropertyRecord record = new LegacyPropertyRecord( id );
+
+        // [    ,    ][    ,    ][xxxx,xxxx][xxxx,xxxx] type
+        // [    ,    ][    ,xxxx][    ,    ][    ,    ] high next prop bits
+        long typeInt = buffer.getInt();
+
+        record.setType( getEnumType( (int) typeInt & 0xFFFF ) );
+        record.setInUse( true );
+        record.setKeyIndexId( buffer.getInt() );
+        record.setPropBlock( buffer.getLong() );
+
+        long prevProp = buffer.getUnsignedInt();
+        long prevModifier = (inUseByte & 0xF0L) << 28;
+        long nextProp = buffer.getUnsignedInt();
+        long nextModifier = (typeInt & 0xF0000L) << 16;
+
+        record.setPrevProp( longFromIntAndMod( prevProp, prevModifier ) );
+        record.setNextProp( longFromIntAndMod( nextProp, nextModifier ) );
+
+        return record;
     }
 
     private PropertyType getEnumType( int type )
@@ -198,7 +202,7 @@ public class LegacyPropertyStoreReader
                     {
 //                        if ( store == null )
 //                        {
-                            return null;
+                        return null;
 //                        }
 //                        return store.getStringFor( record );
                     }
@@ -316,7 +320,7 @@ public class LegacyPropertyStoreReader
                     {
 //                        if ( store == null )
 //                        {
-                            return null;
+                        return null;
 //                        }
 //                        return store.getArrayFor( record );
                     }
