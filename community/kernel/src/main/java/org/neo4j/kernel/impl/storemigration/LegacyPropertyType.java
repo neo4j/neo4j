@@ -31,11 +31,6 @@ public enum LegacyPropertyType
                     throw new InvalidRecordException( "Invalid type: 0 for record " + record );
                 }
 
-                @Override
-                public PropertyData newPropertyData( LegacyPropertyRecord record, Object extractedValue )
-                {
-                    throw new InvalidRecordException( "Invalid type: 0 for record " + record );
-                }
             },
     INT( 1 )
             {
@@ -45,11 +40,6 @@ public enum LegacyPropertyType
                     return Integer.valueOf( (int) record.getPropBlock() );
                 }
 
-                @Override
-                public PropertyData newPropertyData( LegacyPropertyRecord record, Object extractedValue )
-                {
-                    return PropertyDatas.forInt( record.getKeyIndexId(), record.getId(), (int) record.getPropBlock() );
-                }
             },
     STRING( 2 )
             {
@@ -59,11 +49,6 @@ public enum LegacyPropertyType
                     return store.getStringFor( record );
                 }
 
-                @Override
-                public PropertyData newPropertyData( LegacyPropertyRecord record, Object extractedValue )
-                {
-                    return PropertyDatas.forStringOrArray( record.getKeyIndexId(), record.getId(), extractedValue );
-                }
             },
     BOOL( 3 )
             {
@@ -78,12 +63,6 @@ public enum LegacyPropertyType
                     return propBlock == 1 ? Boolean.TRUE : Boolean.FALSE;
                 }
 
-                @Override
-                public PropertyData newPropertyData( LegacyPropertyRecord record, Object extractedValue )
-                {
-                    return PropertyDatas.forBoolean( record.getKeyIndexId(), record.getId(),
-                            getValue( record.getPropBlock() ).booleanValue() );
-                }
             },
     DOUBLE( 4 )
             {
@@ -98,11 +77,6 @@ public enum LegacyPropertyType
                     return Double.longBitsToDouble( propBlock );
                 }
 
-                @Override
-                public PropertyData newPropertyData( LegacyPropertyRecord record, Object extractedValue )
-                {
-                    return PropertyDatas.forDouble( record.getKeyIndexId(), record.getId(), getValue( record.getPropBlock() ) );
-                }
             },
     FLOAT( 5 )
             {
@@ -117,11 +91,6 @@ public enum LegacyPropertyType
                     return Float.intBitsToFloat( (int) propBlock );
                 }
 
-                @Override
-                public PropertyData newPropertyData( LegacyPropertyRecord record, Object extractedValue )
-                {
-                    return PropertyDatas.forFloat( record.getKeyIndexId(), record.getId(), getValue( record.getPropBlock() ) );
-                }
             },
     LONG( 6 )
             {
@@ -131,11 +100,6 @@ public enum LegacyPropertyType
                     return Long.valueOf( record.getPropBlock() );
                 }
 
-                @Override
-                public PropertyData newPropertyData( LegacyPropertyRecord record, Object extractedValue )
-                {
-                    return PropertyDatas.forLong( record.getKeyIndexId(), record.getId(), record.getPropBlock() );
-                }
             },
     BYTE( 7 )
             {
@@ -145,11 +109,6 @@ public enum LegacyPropertyType
                     return Byte.valueOf( (byte) record.getPropBlock() );
                 }
 
-                @Override
-                public PropertyData newPropertyData( LegacyPropertyRecord record, Object extractedValue )
-                {
-                    return PropertyDatas.forByte( record.getKeyIndexId(), record.getId(), (byte) record.getPropBlock() );
-                }
             },
     CHAR( 8 )
             {
@@ -159,11 +118,6 @@ public enum LegacyPropertyType
                     return Character.valueOf( (char) record.getPropBlock() );
                 }
 
-                @Override
-                public PropertyData newPropertyData( LegacyPropertyRecord record, Object extractedValue )
-                {
-                    return PropertyDatas.forChar( record.getKeyIndexId(), record.getId(), (char) record.getPropBlock() );
-                }
             },
     ARRAY( 9 )
             {
@@ -173,11 +127,6 @@ public enum LegacyPropertyType
                     return store.getArrayFor( record );
                 }
 
-                @Override
-                public PropertyData newPropertyData( LegacyPropertyRecord record, Object extractedValue )
-                {
-                    return PropertyDatas.forStringOrArray( record.getKeyIndexId(), record.getId(), extractedValue );
-                }
             },
     SHORT( 10 )
             {
@@ -187,11 +136,6 @@ public enum LegacyPropertyType
                     return Short.valueOf( (short) record.getPropBlock() );
                 }
 
-                @Override
-                public PropertyData newPropertyData( LegacyPropertyRecord record, Object extractedValue )
-                {
-                    return PropertyDatas.forShort( record.getKeyIndexId(), record.getId(), (short) record.getPropBlock() );
-                }
             },
     SHORT_STRING( 11 )
             {
@@ -201,11 +145,6 @@ public enum LegacyPropertyType
                     return ShortString.decode( record.getPropBlock() );
                 }
 
-                @Override
-                public PropertyData newPropertyData( LegacyPropertyRecord record, Object extractedValue )
-                {
-                    return PropertyDatas.forStringOrArray( record.getKeyIndexId(), record.getId(), getValue( record, null ) );
-                }
             };
 
     private int type;
@@ -226,8 +165,6 @@ public enum LegacyPropertyType
     }
 
     public abstract Object getValue( LegacyPropertyRecord record, LegacyDynamicRecordFetcher store );
-
-    public abstract PropertyData newPropertyData( LegacyPropertyRecord record, Object extractedValue );
 
     public static LegacyPropertyType getPropertyType( int type, boolean nullOnIllegal )
     {
