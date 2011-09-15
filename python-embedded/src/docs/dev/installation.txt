@@ -9,6 +9,8 @@ NOTE: The needed Neo4j library files (from the <<editions,Community Edition>>) a
 
 === Prerequisites ===
 
+Important: Make sure that the entire stack used is either 64bit or 32bit (no mixing, that is). That means the JVM, Python and JPype.
+
 First, install JPype:
 
 . Download the latest version of JPype from http://sourceforge.net/projects/jpype/files/JPype/
@@ -40,7 +42,7 @@ sudo easy_install neo4j-embedded
 
 Or install manually:
 
-. Download the latest version from http://pypi.python.org/pypi/neo4j-embedded/
+. Download the latest appropriate version of JPype from http://sourceforge.net/projects/jpype/files/JPype/ for 32bit or from http://www.lfd.uci.edu/~gohlke/pythonlibs/ for 64bit 
 . Unzip
 . Open a console and navigate into the unzipped folder
 . Run `sudo python setup.py install`
@@ -49,6 +51,8 @@ Or install manually:
 
 === Prerequisites ===
 
+Important: It is *imperative* that the entire stack used is either 64bit or 32bit (no mixing, that is). That means the JVM, Python, JPype and all extra DLLs (see below).
+
 First, install JPype:
 
 Notice that JPype only works with Python 2.6 and 2.7. 
@@ -56,8 +60,6 @@ Also note that there are different downloads depending on which version you use.
 
 . Download the latest appropriate version of JPype from http://sourceforge.net/projects/jpype/files/JPype/ for 32bit or from http://www.lfd.uci.edu/~gohlke/pythonlibs/ for 64bit
 . Run the installer
-
-Important: If you are using 64bit windows it is *imperative* that the entire stack used is 64bit. That means the JVM, Python, JPype and all extra DLLs.
 
 Notice: There may be DLL files missing from your system that are required by JPype. See <<python-embedded-installation-windows-dlls>> for instructions for how to fix this.
 

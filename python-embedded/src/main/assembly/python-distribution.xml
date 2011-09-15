@@ -36,6 +36,7 @@
              to allow us to inject the correct
              version number. -->
         <exclude>setup.py</exclude>
+        <exclude>README.txt</exclude>
         <exclude>neo4j/__init__.py</exclude>
       </excludes>
       <outputDirectory>/</outputDirectory>
@@ -46,6 +47,7 @@
       <includes>
         <include>neo4j/__init__.py</include>
         <include>setup.py</include>
+        <include>README.txt</include>
       </includes>
       <outputDirectory>/</outputDirectory>
       <directory>src/main/python</directory>

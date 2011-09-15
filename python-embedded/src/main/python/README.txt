@@ -23,6 +23,13 @@ Or, if you prefer the manual download::
 
   python setup.py install
   
+Documentation
+-------------
+
+Documentation can be found in the Neo4j Manual: 
+
+http://docs.neo4j.org/chunked/${neo-version}/python-embedded.html
+  
 
 Versions
 --------

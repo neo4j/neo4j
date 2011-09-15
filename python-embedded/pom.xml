@@ -60,7 +60,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
-      <version>1.5-SNAPSHOT</version>
+      <version>${neo-version}</version>
     </dependency>
   </dependencies>
 
@@ -73,6 +73,8 @@ the relevant Commercial Agreement.
     <pythonpath>../../main/python:$PYTHONPATH</pythonpath>
     <jythonpath>../../main/python:$JYTHONPATH</jythonpath>
     <build.number>0</build.number>
+    
+    <neo-version>1.5-SNAPSHOT</neo-version>
   </properties>
   
   <repositories>
