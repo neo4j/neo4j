@@ -572,11 +572,8 @@ class CypherParserTest extends JUnitSuite {
       "start a = (0) match p = ( a-->b-->c ) return a",
       Query.
         start(NodeById("a", 0)).
-<<<<<<< .merge_file_UOtUjR
-        matches(PathItem("p",
-=======
+//        matches(PathItem("p",
         matches(NamedPath("p",
->>>>>>> .merge_file_MhmW9N
           RelatedTo("a","b", "  UNNAMED1", None, Direction.OUTGOING),
           RelatedTo("b","c", "  UNNAMED2", None, Direction.OUTGOING)
       )).
