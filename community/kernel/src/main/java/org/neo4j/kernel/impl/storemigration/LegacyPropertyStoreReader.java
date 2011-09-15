@@ -27,8 +27,6 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
 import static org.neo4j.kernel.impl.storemigration.LegacyStore.*;
 
@@ -93,11 +91,6 @@ public class LegacyPropertyStoreReader
         private long propBlock = Record.NO_NEXT_BLOCK.intValue();
         private long prevProp = Record.NO_PREVIOUS_PROPERTY.intValue();
         private long nextProp = Record.NO_NEXT_PROPERTY.intValue();
-        private List<DynamicRecord> valueRecords = new ArrayList<DynamicRecord>();
-        private boolean isLight = false;
-        private long nodeRelId = -1;
-        private boolean nodeIdSet = false;
-        private boolean isChanged = false;
 
         public LegacyPropertyRecord( long id )
         {
@@ -107,58 +100,6 @@ public class LegacyPropertyStoreReader
         public void setType( PropertyType type )
         {
             this.type = type;
-        }
-
-        public void setNodeId( long nodeId )
-        {
-            nodeIdSet = true;
-            nodeRelId = nodeId;
-        }
-
-        public void setRelId( long relId )
-        {
-            nodeIdSet = false;
-            nodeRelId = relId;
-        }
-
-        public long getNodeId()
-        {
-            if ( nodeIdSet )
-            {
-                return nodeRelId;
-            }
-            return -1;
-        }
-
-        public long getRelId()
-        {
-            if ( !nodeIdSet )
-            {
-                return nodeRelId;
-            }
-            return -1;
-        }
-
-        void setIsLight( boolean status )
-        {
-            isLight = status;
-        }
-
-        public boolean isLight()
-        {
-            return isLight;
-        }
-
-        public Collection<DynamicRecord> getValueRecords()
-        {
-            assert !isLight;
-            return valueRecords;
-        }
-
-        public void addValueRecord( DynamicRecord record )
-        {
-            assert !isLight;
-            valueRecords.add( record );
         }
 
         public PropertyType getType()
@@ -206,16 +147,6 @@ public class LegacyPropertyStoreReader
             this.nextProp = nextProp;
         }
 
-//        public PropertyData newPropertyData()
-//        {
-//            return getType().newPropertyData( this, null );
-//        }
-//
-//        public PropertyData newPropertyData( Object extractedValue )
-//        {
-//            return getType().newPropertyData( this, extractedValue );
-//        }
-
         @Override
         public String toString()
         {
@@ -224,23 +155,8 @@ public class LegacyPropertyStoreReader
                     inUse() ).append( "," ).append( type ).append( "," ).append(
                     keyIndexId ).append( "," ).append( propBlock ).append( "," )
                     .append( prevProp ).append( "," ).append( nextProp );
-            buf.append( ", Value[" );
-            for ( DynamicRecord record : valueRecords )
-            {
-                buf.append( record );
-            }
-            buf.append( "]]" );
+            buf.append( "]" );
             return buf.toString();
-        }
-
-        public boolean isChanged()
-        {
-            return isChanged;
-        }
-
-        public void setChanged()
-        {
-            isChanged = true;
         }
 
     }
