@@ -23,7 +23,7 @@
 
 	function Brush()
 	{
-        var funcs   =   'avg max min sum count not';
+        var funcs   =   'avg max min sum count not all any none single length type id nodes relationships';
 
         var keywords =  'start match where return skip limit order by descending desc ascending asc distinct true false';
 
