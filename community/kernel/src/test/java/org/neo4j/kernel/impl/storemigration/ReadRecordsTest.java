@@ -52,6 +52,10 @@ public class ReadRecordsTest
         int propertyCount = 0;
         for ( LegacyPropertyStoreReader.LegacyPropertyRecord record : records )
         {
+            int keyIndexId = record.getKeyIndexId();
+            assertEquals( 0, keyIndexId );
+            Object value = record.getType().getValue( record, null );
+            assertEquals( true, value );
             propertyCount++;
         }
         assertEquals( 1000, propertyCount );
