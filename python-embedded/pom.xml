@@ -239,6 +239,7 @@ the relevant Commercial Agreement.
                       <arg value="setup.py"/>
                       <arg value="--plat-name=win32"/>
                       <arg value="bdist_wininst"/>
+                      <arg value="upload"/>
                     </exec>
                     
                     <exec executable="python" dir="${basedir}/target/neo4j-embedded">
