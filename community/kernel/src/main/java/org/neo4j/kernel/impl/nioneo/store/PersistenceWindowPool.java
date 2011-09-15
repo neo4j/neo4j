@@ -201,7 +201,7 @@ public class PersistenceWindowPool
      * @throws IOException
      *             If unable to release window
      */
-    void release( PersistenceWindow window )
+    public void release( PersistenceWindow window )
     {
         if ( window instanceof PersistenceRow )
         {

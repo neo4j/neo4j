@@ -17,19 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.nioneo.store;
+package org.neo4j.kernel.impl.storemigration;
 
-public class DynamicRecord extends Abstract64BitRecord
+import org.neo4j.kernel.impl.nioneo.store.Abstract64BitRecord;
+import org.neo4j.kernel.impl.nioneo.store.Record;
+
+public class LegacyDynamicRecord extends Abstract64BitRecord
 {
     private byte[] data = null;
     private char[] charData = null;
     private int length;
-    // private long prevBlock = Record.NO_PREV_BLOCK.intValue();
+    private long prevBlock = Record.NO_PREV_BLOCK.intValue();
     private long nextBlock = Record.NO_NEXT_BLOCK.intValue();
-    private boolean isLight = false;
     private int type;
 
-    public DynamicRecord( long id )
+    public LegacyDynamicRecord( long id )
     {
         super( id );
     }
@@ -39,19 +41,9 @@ public class DynamicRecord extends Abstract64BitRecord
         return type;
     }
 
-    public void setType( int type )
+    void setType( int type )
     {
         this.type = type;
-    }
-
-    void setIsLight( boolean status )
-    {
-        this.isLight = status;
-    }
-
-    public boolean isLight()
-    {
-        return isLight;
     }
 
     public void setLength( int length )
@@ -59,7 +51,6 @@ public class DynamicRecord extends Abstract64BitRecord
         this.length = length;
     }
 
-    @Override
     public void setInUse( boolean inUse )
     {
         super.setInUse( inUse );
@@ -77,14 +68,12 @@ public class DynamicRecord extends Abstract64BitRecord
 
     public void setData( byte[] data )
     {
-        isLight = false;
         this.length = data.length;
         this.data = data;
     }
 
     public void setCharData( char[] data )
     {
-        isLight = false;
         this.length = data.length * 2;
         this.charData = data;
     }
@@ -96,7 +85,6 @@ public class DynamicRecord extends Abstract64BitRecord
 
     public byte[] getData()
     {
-        assert !isLight;
         assert charData == null;
         return data;
     }
@@ -108,20 +96,19 @@ public class DynamicRecord extends Abstract64BitRecord
 
     public char[] getDataAsChar()
     {
-        assert !isLight;
         assert data == null;
         return charData;
     }
 
-    // public long getPrevBlock()
-    // {
-    // return prevBlock;
-    // }
-    //
-    // public void setPrevBlock( long prevBlock )
-    // {
-    // this.prevBlock = prevBlock;
-    // }
+    public long getPrevBlock()
+    {
+        return prevBlock;
+    }
+
+    public void setPrevBlock( long prevBlock )
+    {
+        this.prevBlock = prevBlock;
+    }
 
     public long getNextBlock()
     {
@@ -141,10 +128,11 @@ public class DynamicRecord extends Abstract64BitRecord
             inUse() );
         if ( inUse() )
         {
-            buf.append( "," )./*append( prevBlock ).*/append( "," ).append(
-                isLight || data == null ? null : data.length ).append( "," ).append( nextBlock )
+            buf.append( "," ).append( prevBlock ).append( "," ).append(
+                data.length ).append( "," ).append( nextBlock )
                 .append( "]" );
         }
         return buf.toString();
     }
+
 }
