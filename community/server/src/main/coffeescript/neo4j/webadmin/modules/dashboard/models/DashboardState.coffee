@@ -27,13 +27,36 @@ define(
       charts :
         primitives :
           layers : [
-            {label:"Nodes",         key:'node_count'}, 
+            {label:"Nodes",         key:'node_count'},
             {label:"Properties",    key:'property_count'}, 
             {label:"Relationships", key:'relationship_count'}]
           chartSettings:
             yaxis :
               min : 0
-          
+
+        usageRequests :
+          layers : [
+           {label:"Count",    key:'request_count'}]
+          chartSettings:
+            yaxis :
+              min : 0
+
+        usageTimes :
+          layers : [
+            {label:"Time Avg", key:'request_avg_time'},
+            {label:"Time Max", key:'request_max_time'},
+            {label:"Time Min", key:'request_min_time'}]
+          chartSettings:
+            yaxis :
+              min : 0
+
+        usageBytes :
+          layers : [
+            {label:"Bytes",    key:'request_bytes'}]
+          chartSettings:
+            yaxis :
+              min : 0
+
         memory :
           layers : [{
             label:"Memory usage", 
@@ -75,10 +98,13 @@ define(
 
       initialize : (options) =>
         @setChartByKey "primitives"
+        @setChartByKey "usageRequests"
+        @setChartByKey "usageTimes"
+        @setChartByKey "usageBytes"
         @setZoomLevelByKey "six_hours"
 
-      getChart : () =>
-        @get "chart"
+      getChart : (key) =>
+        @get "chart" + key
       
       getChartKey : () =>
         @get "chartKey"
@@ -98,10 +124,13 @@ define(
 
       setChartByKey : (key) =>
         @set "chartKey" : key
-        @setChart @charts[key]
+        @setChart key, @charts[key]
       
-      setChart : (chart) =>
-        @set chart : chart
-      
+      setChart : (key, chart) =>
+        console.log key
+        tmp =  {}
+        tmp["chart" + key] = chart
+        @set tmp
+
 
 )
