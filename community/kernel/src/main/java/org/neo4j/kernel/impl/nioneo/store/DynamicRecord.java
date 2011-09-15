@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.nioneo.store;
 public class DynamicRecord extends Abstract64BitRecord
 {
     private byte[] data = null;
-    private char[] charData = null;
     private int length;
     // private long prevBlock = Record.NO_PREV_BLOCK.intValue();
     private long nextBlock = Record.NO_NEXT_BLOCK.intValue();
@@ -82,13 +81,6 @@ public class DynamicRecord extends Abstract64BitRecord
         this.data = data;
     }
 
-    public void setCharData( char[] data )
-    {
-        isLight = false;
-        this.length = data.length * 2;
-        this.charData = data;
-    }
-
     public int getLength()
     {
         return length;
@@ -97,20 +89,7 @@ public class DynamicRecord extends Abstract64BitRecord
     public byte[] getData()
     {
         assert !isLight;
-        assert charData == null;
         return data;
-    }
-
-    public boolean isCharData()
-    {
-        return charData != null;
-    }
-
-    public char[] getDataAsChar()
-    {
-        assert !isLight;
-        assert data == null;
-        return charData;
     }
 
     // public long getPrevBlock()

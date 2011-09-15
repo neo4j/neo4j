@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 
+import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.util.Bits;
@@ -460,8 +461,7 @@ public class PropertyStore extends AbstractStore implements Store
         this.updateHighId();
     }
 
-    private Collection<DynamicRecord> allocateStringRecords( long valueBlockId,
-        char[] chars )
+    private Collection<DynamicRecord> allocateStringRecords( long valueBlockId, byte[] chars )
     {
         return stringPropertyStore.allocateRecords( valueBlockId, chars );
     }
@@ -486,11 +486,8 @@ public class PropertyStore extends AbstractStore implements Store
             long stringBlockId = nextStringBlockId();
             bits.put( stringBlockId, 36 );
             block.setSingleBlock( bits.getLongs()[0] );
-            int length = string.length();
-            char[] chars = new char[length];
-            string.getChars( 0, length, chars, 0 );
-            Collection<DynamicRecord> valueRecords = allocateStringRecords(
-                stringBlockId, chars );
+            byte[] encodedString = getBestSuitedEncoding( string );
+            Collection<DynamicRecord> valueRecords = allocateStringRecords( stringBlockId, encodedString );
             for ( DynamicRecord valueRecord : valueRecords )
             {
                 valueRecord.setType( PropertyType.STRING.intValue() );
@@ -539,6 +536,20 @@ public class PropertyStore extends AbstractStore implements Store
 //        {
 //            verifySame( block, value );
 //        }
+    }
+
+    public static byte[] getBestSuitedEncoding( String string )
+    {
+        // Try LATIN-1 (uses less space than UTF-8)
+        Bits bits = Bits.bits( string.length()+1 ).put( (byte)1 );
+        if ( LongerShortString.writeLatin1Characters( string, bits ) ) return bits.asBytes();
+        
+        // Use UTF-8
+        byte[] asUtfBytes = UTF8.encode( string );
+        byte[] result = new byte[asUtfBytes.length+1];
+        result[0] = (byte)0;
+        System.arraycopy( asUtfBytes, 0, result, 1, asUtfBytes.length );
+        return result;
     }
 
 //    private void verifySame( PropertyBlock block, Object value )
@@ -597,55 +608,46 @@ public class PropertyStore extends AbstractStore implements Store
 //        }
 //    }
 
-    // TODO Assume only one prop per record for now
     private Bits bits32WithKeyAndType( int keyId, PropertyType type )
     {
         return Bits.bits( 8 ).put( keyId, 24 ).put( type.intValue(), 4 );
     }
 
-    // TODO Assume only one prop per record for now
     private Bits bits64WithKeyAndType( int keyId, PropertyType type )
     {
         return Bits.bits( 16 ).put( keyId, 24 ).put( type.intValue(), 4 ).put( 0, 36 );
     }
-
-    public Object getStringFor( PropertyBlock propRecord )
+    
+    public Object getStringFor( PropertyBlock propertyBlock )
     {
-        long recordToFind = propRecord.getSingleValueLong();
-        Map<Long,DynamicRecord> recordsMap = new HashMap<Long,DynamicRecord>();
-        for ( DynamicRecord record : propRecord.getValueRecords() )
-        {
-            recordsMap.put( record.getId(), record );
+        return getStringFor( stringPropertyStore, propertyBlock );
+    }
+
+    public static Object getStringFor( AbstractDynamicStore store, PropertyBlock propertyBlock )
+    {
+        return getStringFor( store, propertyBlock.getSingleValueLong(), propertyBlock.getValueRecords() );
+    }
+    
+    public static Object getStringFor( AbstractDynamicStore store, long startRecord, Collection<DynamicRecord> dynamicRecords )
+    {
+        return getStringFor( readFullByteArray( startRecord, dynamicRecords, store ) );
+    }
+    
+    public static Object getStringFor( byte[] byteArrayForAllDynamicRecords )
+    {
+        byte[] bArray = new byte[byteArrayForAllDynamicRecords.length-1];
+        System.arraycopy( byteArrayForAllDynamicRecords, 1, bArray, 0, bArray.length );
+        byte encoding = byteArrayForAllDynamicRecords[0];
+        switch ( encoding )
+        {   
+        case 0: // UTF-8
+            return UTF8.decode( bArray );
+        case 1: // LATIN-1
+            char[] result = new char[bArray.length];
+            for ( int i = 0; i < result.length; i++ ) result[i] = (char) bArray[i];
+            return new String( result );
+        default: throw new RuntimeException( "Unknown string encoding " + encoding );
         }
-        List<char[]> charList = new LinkedList<char[]>();
-//        int totalSize = 0;
-        while ( recordToFind != Record.NO_NEXT_BLOCK.intValue() )
-        {
-            DynamicRecord record = recordsMap.get( recordToFind );
-            if ( record.isLight() )
-            {
-                stringPropertyStore.makeHeavy( record );
-            }
-            if ( !record.isCharData() )
-            {
-                ByteBuffer buf = ByteBuffer.wrap( record.getData() );
-                char[] chars = new char[record.getData().length / 2];
-//                totalSize += chars.length;
-                buf.asCharBuffer().get( chars );
-                charList.add( chars );
-            }
-            else
-            {
-                charList.add( record.getDataAsChar() );
-            }
-            recordToFind = record.getNextBlock();
-        }
-        StringBuffer buf = new StringBuffer();
-        for ( char[] str : charList )
-        {
-            buf.append( str );
-        }
-        return buf.toString();
     }
 
     public Object getArrayFor( PropertyBlock propertyBlock )
@@ -655,6 +657,13 @@ public class PropertyStore extends AbstractStore implements Store
 
     public static Object getArrayFor( long startRecord, Iterable<DynamicRecord> records,
             DynamicArrayStore arrayPropertyStore )
+    {
+        return arrayPropertyStore.getRightArray(
+                readFullByteArray( startRecord, records, arrayPropertyStore ) );
+    }
+
+    public static byte[] readFullByteArray( long startRecord, Iterable<DynamicRecord> records,
+            AbstractDynamicStore store )
     {
         long recordToFind = startRecord;
         Map<Long,DynamicRecord> recordsMap = new HashMap<Long,DynamicRecord>();
@@ -669,21 +678,13 @@ public class PropertyStore extends AbstractStore implements Store
             DynamicRecord record = recordsMap.get( recordToFind );
             if ( record.isLight() )
             {
-                arrayPropertyStore.makeHeavy( record );
+                store.makeHeavy( record );
             }
-            if ( !record.isCharData() )
-            {
-                ByteBuffer buf = ByteBuffer.wrap( record.getData() );
-                byte[] bytes = new byte[record.getData().length];
-                totalSize += bytes.length;
-                buf.get( bytes );
-                byteList.add( bytes );
-            }
-            else
-            {
-                throw new InvalidRecordException(
-                    "Expected byte data on record " + record );
-            }
+            ByteBuffer buf = ByteBuffer.wrap( record.getData() );
+            byte[] bytes = new byte[record.getData().length];
+            totalSize += bytes.length;
+            buf.get( bytes );
+            byteList.add( bytes );
             recordToFind = record.getNextBlock();
         }
         byte[] bArray = new byte[totalSize];
@@ -694,7 +695,7 @@ public class PropertyStore extends AbstractStore implements Store
                 currentArray.length );
             offset += currentArray.length;
         }
-        return arrayPropertyStore.getRightArray( bArray );
+        return bArray;
     }
 
     @Override

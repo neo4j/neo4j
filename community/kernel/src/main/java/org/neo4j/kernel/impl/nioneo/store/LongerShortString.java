@@ -662,7 +662,7 @@ public enum LongerShortString
         int maxBytes = PropertyType.getPayloadSize();
         if ( stringLength <= maxBytes - 5 )
         {
-            if ( encodeLatin1( keyId, string, target, payloadSize ) ) return true;
+            if ( encodeLatin1( keyId, string, target ) ) return true;
             if ( encodeUTF8( keyId, string, target, payloadSize ) ) return true;
         }
         return false;
@@ -729,8 +729,7 @@ public enum LongerShortString
         return Bits.bits( calculateNumberOfBlocksUsed( encoding, length )*8 );
     }
 
-    private static boolean encodeLatin1( int keyId, String string,
-            PropertyBlock target, int payloadSize )
+    private static boolean encodeLatin1( int keyId, String string, PropertyBlock target )
     {
         int length = string.length();
         Bits bits = newBits( 10, length );
@@ -741,13 +740,20 @@ public enum LongerShortString
         }
         */
         writeHeader( bits, keyId, 10, length );
+        if ( !writeLatin1Characters( string, bits ) ) return false;
+        target.setValueBlocks( bits.getLongs() );
+        return true;
+    }
+    
+    public static boolean writeLatin1Characters( String string, Bits bits )
+    {
+        int length = string.length();
         for ( int i = 0; i < length; i++ )
         {
             char c = string.charAt( i );
             if ( c < 0 || c >= 256 ) return false;
             bits.put( c, 8 ); // Just the lower byte
         }
-        target.setValueBlocks( bits.getLongs() );
         return true;
     }
 

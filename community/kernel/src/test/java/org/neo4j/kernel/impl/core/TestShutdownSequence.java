@@ -26,15 +26,23 @@ import java.io.File;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.impl.util.FileUtils;
 
 public class TestShutdownSequence
 {
     private EmbeddedGraphDatabase graphDb;
+    
+    @BeforeClass
+    public static void deleteDb() throws Exception
+    {
+        FileUtils.deleteRecursively( new File( getStorePath( "shutdown" ) ) );
+    }
 
     public @Before
     void createGraphDb()
