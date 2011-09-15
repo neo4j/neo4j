@@ -11,7 +11,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 
-public class OldStoreReader
+public class LegacyNodeStoreReader
 {
     private static final String FROM_VERSION = "NodeStore v0.9.9";
 

@@ -15,7 +15,7 @@ public class ReadRecordsTest
     {
         URL nodeStoreFile = getClass().getResource( "oldformatstore/neostore.nodestore.db" );
 
-        Iterable<NodeRecord> records = new OldStoreReader().readNodeStore( nodeStoreFile.getFile() );
+        Iterable<NodeRecord> records = new LegacyNodeStoreReader().readNodeStore( nodeStoreFile.getFile() );
         int nodeCount = 0;
         for ( NodeRecord record : records )
         {
