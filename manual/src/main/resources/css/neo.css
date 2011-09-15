@@ -22,6 +22,7 @@ body #toolbar_item command_help {
 .syntaxhighlighter textarea {
   font-size: 14px !important;
   font-family: Consolas, Monaco,"Bitstream Vera Sans Mono", monospace !important;
+  line-height: 18px !important;
 }
 
 html
