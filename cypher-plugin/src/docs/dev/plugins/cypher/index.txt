@@ -13,7 +13,5 @@ include::send-a-query.txt[]
 
 include::return-paths.txt[]
 
-// include::aggregate-functions-group-count.txt[]
-
 include::return-on-syntax-errors.txt[]
 
