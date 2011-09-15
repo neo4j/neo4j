@@ -41,7 +41,7 @@ class FunctionsTest extends DocumentingTestBase {
 
   val common_arguments = List(
     "iterable" -> "An array property, or an iterable symbol, or an iterable function.",
-    "symbol" -> "The closure will have a symbol introduced in it's context. Here you decide which symbol to use. If you leave the symbol out, the default symbol _ (underscore) will be used.",
+    "symbol" -> "The closure will have a symbol introduced in it's context. Here you decide which symbol to use. If you leave the symbol out, the default symbol +_+ (underscore) will be used.",
     "predicate-closure" -> "A predicate that is tested against all items in iterable"
   )
 
@@ -151,7 +151,7 @@ class FunctionsTest extends DocumentingTestBase {
     val argsText = arguments.map(x => "* _" + x._1 + ":_ " + x._2).mkString("\r\n\r\n")
     val fullText = String.format("""%s
 
-*Syntax:* %s
+*Syntax:* +%s+
 
 *Arguments:*
 

@@ -62,13 +62,12 @@ class ReturnTest extends DocumentingTestBase {
     testQuery(
       title = "Identifier with uncommon characters",
       text = """To introduce a placeholder that is made up of characters that are
-      outside of the english alphabet, you can use the ` to enclose the identifier, like this:""",
+      outside of the english alphabet, you can use the +`+ to enclose the identifier, like this:""",
       queryText = """start `This isn't a common identifier`=(%A%)
 return `This isn't a common identifier`.`<<!!__??>>`""",
       returns = """The node indexed with name "A" is returned""",
       (p) => assertEquals(List(Map("This isn't a common identifier.<<!!__??>>" -> "Yes!")), p.toList))
   }
-
 
   @Test def nullable_properties() {
     testQuery(
@@ -76,14 +75,14 @@ return `This isn't a common identifier`.`<<!!__??>>`""",
       text = """If a property might or might not be there, you can select it optionally by adding a questionmark to the identifier,
 like this:""",
       queryText = """start n=(%A%, %B%) return n.age?""",
-      returns = """The age when the node has that property, or null if the property is not there.""",
+      returns = """The age when the node has that property, or +null+ if the property is not there.""",
       (p) => assertEquals(List(55, null), p.columnAs[Int]("n.age").toList))
   }
 
   @Test def distinct_output() {
     testQuery(
       title = "Unique results",
-      text = """DISTINCT retrieves only unique rows depending on the columns that have been selected to output.""",
+      text = """`DISTINCT` retrieves only unique rows depending on the columns that have been selected to output.""",
       queryText = """start a=(%A%) match (a)-->(b) return distinct b""",
       returns = """The node named B, but only once.""",
       (p) => assertEquals(List(node("B")), p.columnAs[Node]("b").toList))

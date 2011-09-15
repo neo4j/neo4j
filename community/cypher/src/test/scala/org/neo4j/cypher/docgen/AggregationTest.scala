@@ -56,7 +56,7 @@ class AggregationTest extends DocumentingTestBase {
   @Test def countEntities() {
     testQuery(
       title = "Count entities",
-      text = "Instead of counting the number of results with count(*), it might be more expressive to include " +
+      text = "Instead of counting the number of results with +count(*)+, it might be more expressive to include " +
         "the name of the identifier you care about.",
       queryText = "start n=(%A%) match (n)-->(x) return count(x)",
       returns = "The number of connected nodes from the start node.",
