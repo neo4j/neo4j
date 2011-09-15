@@ -27,6 +27,37 @@ By default, the Neo4j Server comes with some places where arbitrary code code ex
 To secure these, either disable them completely by removing the offending plugins from the server classpath, or secure access to these URLs through proxies or Authorization Rules.
 Also, the http://docs.oracle.com/javase/1.4.2/docs/api/java/lang/SecurityManager.html[Java Security Manager] can be used to secure parts of the codebase.
 
+== HTTPS support ==
+
+The Neo4j server includes built in support for SSL encrypted communication over HTTPS. 
+The first time the server starts, it automatically generates a self-signed ssl certificate and a private key.
+Because the certificate is self signed, it is not safe to rely on for production use, instead, you should provide your own key and certificate for the server to use.
+
+To provide your own key and certificate, replace the generated key and certificate, or change the neo4j-server.properties file to set the location of your certififacate and key:
+
+[source]
+----
+# Certificate location (auto generated if the file does not exist)
+org.neo4j.server.webserver.https.cert.location=ssl/snakeoil.cert
+
+# Private key location (auto generated if the file does not exist)
+org.neo4j.server.webserver.https.key.location=ssl/snakeoil.key
+----
+
+Note that the key should be unencrypted. 
+Make sure you set correct permissions to the private key, so that only the neo4j server user can read/write it.
+
+You can set what port the https connector should bind to in the same configuration file, as well as turn https off:
+
+[source]
+----
+# Turn https-support on/off
+org.neo4j.server.webserver.https.enabled=true
+
+# https port (for all data, administrative, and UI access)
+org.neo4j.server.webserver.https.port=443
+----
+
 == Server Authorization Rules ==
 
 Administrators may require more fine-grained security policies in addition to IP-level restrictions on the Web server.  Neo4j server supports 
@@ -47,6 +78,7 @@ Exposing your server without implementing a security layer poses a substantial s
 == Security in Depth ==
 
 Although the Neo4j server has a number of security features built-in (see the above chapters), for sensitive deployments it is often sensible to front against the outside world it with a proxy like Apache `mod_proxy` footnote:[http://httpd.apache.org/docs/2.2/mod/mod_proxy.html].
+
 This provides a number of advantages:
 
 * Control access to the Neo4j server to specific IP addresses, URL patterns and IP ranges. This can be used to make for instance only the +/db/data+ namespace accessible to non-local clients, while the +/db/admin+ URLs only respond to a specific IP address.
