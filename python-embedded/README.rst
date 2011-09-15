@@ -10,6 +10,13 @@ The neo4j embedded database is a java application, which means you have to provi
 
 - CPython with JPype installed http://jpype.sourceforge.net/
 
+Documentation
+-------------
+
+The documentation contains more detailed help with installation, as well as examples and reference documentation.
+
+See http://docs.neo4j.org/
+
 Installation
 ------------
 
@@ -36,5 +43,5 @@ Make sure you have a .pypirc file in your home folder with correct login informa
 
 ::
 
-  mvn clean deploy -Ppypi
+  mvn clean install -Ppypi
 
