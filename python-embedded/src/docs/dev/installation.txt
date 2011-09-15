@@ -2,14 +2,14 @@
 Installation
 ============
 
-NOTE: The needed Neo4j library files (from the <<editions,Community Edition>>) are included in the neo4j-embedded distribution.
+NOTE: The Neo4j database itself (from the <<editions,Community Edition>>) are included in the neo4j-embedded distribution.
 
 == Installation on OSX/Linux ==
 
 
 === Prerequisites ===
 
-Important: Make sure that the entire stack used is either 64bit or 32bit (no mixing, that is). That means the JVM, Python and JPype.
+NOTE: Make sure that the entire stack used is either 64bit or 32bit (no mixing, that is). That means the JVM, Python and JPype.
 
 First, install JPype:
 
@@ -51,7 +51,7 @@ Or install manually:
 
 === Prerequisites ===
 
-Important: It is *imperative* that the entire stack used is either 64bit or 32bit (no mixing, that is). That means the JVM, Python, JPype and all extra DLLs (see below).
+NOTE: It is *imperative* that the entire stack used is either 64bit or 32bit (no mixing, that is). That means the JVM, Python, JPype and all extra DLLs (see below).
 
 First, install JPype:
 
