@@ -85,7 +85,7 @@ public class ServerBuilder
     private String host = null;
     private String[] securityRuleClassNames;
     private boolean persistent;
-    private boolean sslEnabled = false;
+    private Boolean httpsEnabled = false;
 
     public static ServerBuilder server()
     {
@@ -187,8 +187,12 @@ public class ServerBuilder
             properties.put( Configurator.SECURITY_RULES_KEY, propertyKeys );
         }
         
-        if(sslEnabled) {
-            properties.put( Configurator.WEBSERVER_SSL_ENABLED_PROPERTY_KEY, "true" );
+        if(httpsEnabled != null) {
+            if(httpsEnabled) {
+                properties.put( Configurator.WEBSERVER_SSL_ENABLED_PROPERTY_KEY, "true" );
+            } else {
+                properties.put( Configurator.WEBSERVER_SSL_ENABLED_PROPERTY_KEY, "false" );
+            }
         }
         
         ServerTestUtils.writePropertiesToFile( properties, temporaryConfigFile );
@@ -403,7 +407,7 @@ public class ServerBuilder
     
     public ServerBuilder withSslEnabled()
     {
-        sslEnabled  = true;
+        httpsEnabled  = true;
         return this;
     }
 }

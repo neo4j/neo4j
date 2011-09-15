@@ -71,15 +71,15 @@ public interface Configurator
     
     String WEBSERVER_SSL_KEYSTORE_PATH_PROPERTY_KEY = "org.neo4j.server.webserver.ssl.keystore.path";
     String DEFAULT_WEBSERVER_SSL_KEYSTORE_PATH = "keystore";
+
+    String WEBSERVER_KEYSTORE_PATH_PROPERTY_KEY = "org.neo4j.server.webserver.https.keystore.location";
+    String DEFAULT_WEBSERVER_KEYSTORE_PATH = "neo4j-home/ssl/keystore";
     
-    String WEBSERVER_SSL_KEY_PASSWORD_PROPERTY_KEY = "org.neo4j.server.webserver.ssl.keystore.password";
-    String DEFAULT_WEBSERVER_SSL_KEY_PASSWORD = "Change this to a password of your own.";
+    String WEBSERVER_HTTPS_CERT_PATH_PROPERTY_KEY = "org.neo4j.server.webserver.https.cert.location";
+    String DEFAULT_WEBSERVER_HTTPS_CERT_PATH = "neo4j-home/ssl/snakeoil.cert";
     
-    String WEBSERVER_SSL_KEYSTORE_PASSWORD_PROPERTY_KEY = "org.neo4j.server.webserver.ssl.key.password";
-    String DEFAULT_WEBSERVER_SSL_KEYSTORE_PASSWORD = "Change this to a password of your own.";
-    
-    String WEBSERVER_SSL_CERT_PATH_PROPERTY_KEY = "org.neo4j.server.webserver.ssl.cert";
-    String DEFAULT_WEBSERVER_SSL_CERT_PATH = "snakeoil.cert";
+    String WEBSERVER_HTTPS_KEY_PATH_PROPERTY_KEY = "org.neo4j.server.webserver.https.key.location";
+    String DEFAULT_WEBSERVER_HTTPS_KEY_PATH = "neo4j-home/ssl/snakeoil.key";
 
     Configuration configuration();
 

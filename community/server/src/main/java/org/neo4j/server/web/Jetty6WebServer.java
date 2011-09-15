@@ -58,20 +58,20 @@ import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.security.SecurityFilter;
 import org.neo4j.server.rest.security.SecurityRule;
 import org.neo4j.server.rest.web.AllowAjaxFilter;
-import org.neo4j.server.security.SslConfiguration;
-import org.neo4j.server.security.SslSocketConnectorFactory;
 
 import com.sun.jersey.api.core.ResourceConfig;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
 
 public class Jetty6WebServer implements WebServer
 {
+    private static final int DEFAULT_HTTPS_PORT = 7473;
     public static final Logger log = Logger.getLogger( Jetty6WebServer.class );
     public static final int DEFAULT_PORT = 80;
     public static final String DEFAULT_ADDRESS = "0.0.0.0";
 
     private Server jetty;
-    private int jettyPort = DEFAULT_PORT;
+    private int jettyHttpPort = DEFAULT_PORT;
+    private int jettyHttpsPort = DEFAULT_HTTPS_PORT;
     private String jettyAddr = DEFAULT_ADDRESS;
 
     private final HashMap<String, String> staticContent = new HashMap<String, String>();
@@ -79,9 +79,9 @@ public class Jetty6WebServer implements WebServer
 
     private NeoServer server;
     private int jettyMaxThreads = tenThreadsPerProcessor();
-    private boolean sslEnabled = false;
-    private SslConfiguration sslConfig = null;
-    private int jettySslPort = 7473;
+    private boolean httpEnabled = true;
+    private boolean httpsEnabled = false;
+    private HttpsConfiguration httpsConfig = null;
 
     @Override
     public void init()
@@ -96,8 +96,12 @@ public class Jetty6WebServer implements WebServer
             
             jetty.addConnector( connector );
             
-            if(sslEnabled) {
-               jetty.addConnector( SslSocketConnectorFactory.createConnector(sslConfig, jettyAddr, jettySslPort) );
+            if(httpsEnabled) {
+               if(httpsConfig != null) {
+                   jetty.addConnector( SslSocketConnectorFactory.createConnector(httpsConfig, jettyAddr, jettyHttpsPort) );
+               } else {
+                   throw new RuntimeException("HTTPS set to enabled, but no HTTPS configuration provided.");
+               }
             }
             
             jetty.setThreadPool( new QueuedThreadPool( jettyMaxThreads ) );
