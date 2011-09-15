@@ -53,4 +53,14 @@ public class AsciidocHelper
                 out.toString() +
                 "----\n";
     }
+    
+    public static String createOutputSnippet( final String output )
+    {
+        return "[source]\n----\n"+output+"\n----\n";
+    }
+    
+    public static String createCypherSnippet( final String query )
+    {
+        return "[source,cypher]\n----\n"+query+"\n----\n";
+    }
 }
