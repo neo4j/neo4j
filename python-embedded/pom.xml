@@ -25,6 +25,7 @@
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-pom</artifactId>
     <version>25</version>
+    <relativePath/>
   </parent>
 
   <groupId>org.neo4j.drivers</groupId>
