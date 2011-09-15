@@ -23,4 +23,18 @@ public class ReadRecordsTest
         }
         assertEquals( 1001, nodeCount );
     }
+
+    @Test
+    public void shouldReadPropertyRecords() throws IOException
+    {
+        URL propertyStoreFile = getClass().getResource( "oldformatstore/neostore.propertystore.db" );
+
+        Iterable<LegacyPropertyStoreReader.LegacyPropertyRecord> records = new LegacyPropertyStoreReader().readPropertyStore( propertyStoreFile.getFile() );
+        int propertyCount = 0;
+        for ( LegacyPropertyStoreReader.LegacyPropertyRecord record : records )
+        {
+            propertyCount++;
+        }
+        assertEquals( 1000, propertyCount );
+    }
 }

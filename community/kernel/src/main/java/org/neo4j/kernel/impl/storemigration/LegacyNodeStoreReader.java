@@ -1,7 +1,6 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import org.neo4j.helpers.UTF8;
-import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 
@@ -11,9 +10,10 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 
+import static org.neo4j.kernel.impl.storemigration.LegacyStore.*;
+
 public class LegacyNodeStoreReader
 {
-    private static final String FROM_VERSION = "NodeStore v0.9.9";
 
     public Iterable<NodeRecord> readNodeStore( String fileName ) throws IOException
     {
@@ -35,8 +35,8 @@ public class LegacyNodeStoreReader
             boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
             if ( inUse )
             {
-                long nextRel = getUnsignedInt(buffer);
-                long nextProp = getUnsignedInt(buffer);
+                long nextRel = getUnsignedInt( buffer );
+                long nextProp = getUnsignedInt( buffer );
 
                 long relModifier = (inUseByte & 0xEL) << 31;
                 long propModifier = (inUseByte & 0xF0L) << 28;
@@ -50,16 +50,6 @@ public class LegacyNodeStoreReader
             }
         }
         return records;
-    }
-
-    public static long getUnsignedInt(ByteBuffer buf)
-    {
-        return buf.getInt()&0xFFFFFFFFL;
-    }
-
-    protected static long longFromIntAndMod( long base, long modifier )
-    {
-        return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base|modifier;
     }
 
 }

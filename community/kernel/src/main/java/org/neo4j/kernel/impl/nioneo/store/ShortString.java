@@ -27,7 +27,7 @@ import java.util.EnumSet;
  *
  * @author Tobias Ivarsson <tobias.ivarsson@neotechnology.com>
  */
-enum ShortString
+public enum ShortString
 {
     /**
      * Binary coded decimal with punctuation.
