@@ -214,11 +214,16 @@ class GraphTest(unit_tests.GraphDatabaseTest):
         # START SNIPPET: createRelationship
         with self.graphdb.transaction:
             # Nodes to create a relationship between
-            steven = self.graphdb.node(name='Steven Brookreson')
+            steven = self.graphdb.node(name='Steve Brook')
             poplar_bluff = self.graphdb.node(name='Poplar Bluff')
             
             # Create a relationship of type "mayor_of"
             relationship = steven.mayor_of(poplar_bluff, since="12th of July 2012")
+            
+            # Or, to create relationship types with names
+            # that would not be possible with the above
+            # method.
+            steven.relationships.create('mayor_of', poplar_bluff, since="12th of July 2012")
         # END SNIPPET: createRelationship
             secondrel = poplar_bluff.likes(steven, message="buh")
         
@@ -229,20 +234,20 @@ class GraphTest(unit_tests.GraphDatabaseTest):
                 rel['since'],
                 rel.end['name'],
                 )
-        self.assertEquals(message, "Steven Brookreson 12th of July 2012 Poplar Bluff")
+        self.assertEquals(message, "Steve Brook 12th of July 2012 Poplar BluffSteve Brook 12th of July 2012 Poplar Bluff")
         
         a_node = steven
         # START SNIPPET: accessingRelationships
         # All relationships on a node
-        for rel in a_node.rels:
+        for rel in a_node.relationships:
             pass
             
         # Incoming relationships
-        for rel in a_node.rels.incoming:
+        for rel in a_node.relationships.incoming:
             pass
             
         # Outgoing relationships
-        for rel in a_node.rels.outgoing:
+        for rel in a_node.relationships.outgoing:
             pass
             
         # Relationships of a specific type
@@ -258,9 +263,9 @@ class GraphTest(unit_tests.GraphDatabaseTest):
             pass
         # END SNIPPET: accessingRelationships
         
-        self.assertEquals(len(steven.rels), 2)
-        self.assertEquals(len(steven.rels.incoming), 1)
-        self.assertEquals(len(steven.rels.outgoing), 1)
+        self.assertEquals(len(steven.relationships), 3)
+        self.assertEquals(len(steven.relationships.incoming), 1)
+        self.assertEquals(len(steven.relationships.outgoing), 2)
         
         self.assertEquals(len(steven.likes), 1)
         self.assertEquals(len(steven.likes.incoming), 1)

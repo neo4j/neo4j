@@ -38,21 +38,27 @@ class Nodes(object):
         self.indexes = NodeIndexManager(db)
     
     def __call__(self, **properties):
+        return self.create(**properties)
+        
+    def __getitem__(self, items):
+        return self.get(items)
+            
+    def __delitem__(self, item):
+        return self[item].delete()
+        
+    def create(self, **properties):
         node = self.db.createNode()
         for key, val in properties.items():
             node[key] = val
         return node
         
-    def __getitem__(self, items):
-        if not isinstance(items, (int, long)):
+    def get(self, id):
+        if not isinstance(id, (int, long)):
             raise TypeError("Only integer and long values allowed as node ids.")
         try:
-            return self.db.getNodeById( items )
+            return self.db.getNodeById( id )
         except:
             rethrow_current_exception_as(KeyError)
-            
-    def __delitem__(self, item):
-        return self[item].delete()
            
 
 class Relationships(object):
@@ -62,15 +68,19 @@ class Relationships(object):
         self.indexes = RelationshipIndexManager(db)
         
     def __getitem__(self, items):
-        if not isinstance(items, (int, long)):
-            raise TypeError("Only integer and long values allowed as relationship ids.")
-        try:
-            return self.db.getRelationshipById( items )
-        except:
-            rethrow_current_exception_as(KeyError)
+        return self.get(items)
             
     def __delitem__(self, item):
         return self[item].delete()
+        
+    def get(self, id):
+        if not isinstance(id, (int, long)):
+            raise TypeError("Only integer and long values allowed as relationship ids.")
+            
+        try:
+            return self.db.getRelationshipById( id )
+        except:
+            rethrow_current_exception_as(KeyError)
 
 
 class GraphDatabase(GraphDatabase):
@@ -102,15 +112,21 @@ class GraphDatabase(GraphDatabase):
     
     @property
     def node(self):
-        # TODO: Figure out a way to cache
-        # this that works in Jython.
-        return Nodes(self)
+        if not hasattr(self, '__nodes'):
+            self.__nodes = Nodes(self)
+        return self.__nodes
+        
+    # Syntax sugar
+    nodes = node
         
     @property
     def relationship(self):
-        # TODO: Figure out a way to cache
-        # this that works in Jython.
-        return Relationships(self)
+        if not hasattr(self, '__relationships'):
+            self.__relationships = Relationships(self)
+        return self.__relationships
+        
+    # Syntax sugare
+    relationships = relationship
         
     @property
     def reference_node(self):

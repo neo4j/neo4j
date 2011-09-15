@@ -58,14 +58,16 @@ class DirectionalType(object):
     def __repr__(self):
         return "%r.%s" % (self.dir, self.type.name())
 
-
 class NodeProxy(extends(NodeProxy)):
     def __getattr__(self, attr):
         return NodeRelationships(self, rel_type(attr))
     
     @property
-    def rels(self):
+    def relationships(self):
         return NodeRelationships(self, None)
+        
+    # Backwards compat
+    rels = relationships
 
 class RelationshipProxy(extends(RelationshipProxy)):
     
@@ -127,9 +129,9 @@ class NodeRelationships(object):
     relationships.
     '''
 
-    def __init__(self, node, rel_type):
+    def __init__(self, node, t):
         self.__node = node
-        self.__type = rel_type
+        self.__type = t
 
     def __repr__(self):
         if self.__type is None:
@@ -156,19 +158,25 @@ class NodeRelationships(object):
         
     def __len__(self):
         return len(self.__iter__())
-
-    def __call__(self, *nodes, **properties):
+        
+    def create(self, t, *nodes, **properties):
         if not nodes: raise TypeError("No target node specified")
         rels = []
-        node = self.__node; type = self.__type
+        node = self.__node; 
+        
+        if type(t) in strings:
+            t = rel_type(t)
+        
         for other in nodes:
-            rels.append( node.createRelationshipTo(other, type) )
+            rels.append( node.createRelationshipTo(other, t) )
         for rel in rels:
             for key, val in properties.items():
                 rel[key] = val
         if len(rels) == 1: return rels[0]
         return rels
-        
+
+    def __call__(self, *nodes, **properties):
+        return self.create(self.__type, *nodes, **properties)
 
 class IterableWrapper(extends(IterableWrapper)):
         
