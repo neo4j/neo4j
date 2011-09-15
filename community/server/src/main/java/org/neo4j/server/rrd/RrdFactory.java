@@ -27,6 +27,11 @@ import org.neo4j.server.rrd.sampler.MemoryUsedSampleable;
 import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
 import org.neo4j.server.rrd.sampler.PropertyCountSampleable;
 import org.neo4j.server.rrd.sampler.RelationshipCountSampleable;
+import org.neo4j.server.rrd.sampler.RequestAvgTimeSampleable;
+import org.neo4j.server.rrd.sampler.RequestBytesSampleable;
+import org.neo4j.server.rrd.sampler.RequestCountSampleable;
+import org.neo4j.server.rrd.sampler.RequestMaxTimeSampleable;
+import org.neo4j.server.rrd.sampler.RequestMinTimeSampleable;
 import org.rrd4j.ConsolFun;
 import org.rrd4j.core.DsDef;
 import org.rrd4j.core.RrdDb;
@@ -69,13 +74,19 @@ public class RrdFactory
                 new MemoryUsedSampleable(),
                 new NodeIdsInUseSampleable( db.graph ),
                 new PropertyCountSampleable( db.graph ),
-                new RelationshipCountSampleable( db.graph )
+                new RelationshipCountSampleable( db.graph ),
+                new RequestBytesSampleable( db ),
+                new RequestAvgTimeSampleable( db ),
+                new RequestMaxTimeSampleable( db ),
+                new RequestMinTimeSampleable( db ),
+                new RequestCountSampleable( db )
         };
 
         String basePath = config.getString( RRDB_LOCATION_PROPERTY_KEY, getDefaultDirectory( db.graph ) );
         RrdDb rrdb = createRrdb( basePath, sampleables );
 
         RrdJob job = new RrdJob(
+                new RequestSnapshotSampler( db ),
                 new RrdSamplerImpl( rrdb.createSample(), sampleables )
         );
         scheduler.scheduleAtFixedRate( job, RRD_THREAD_NAME,

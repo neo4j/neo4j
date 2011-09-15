@@ -17,31 +17,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rrd;
+package org.neo4j.server.rrd.sampler;
 
-public class RrdJob implements Runnable {
-    private static final long MIN_STEP_TIME = 1;
+import org.neo4j.server.database.Database;
+import org.neo4j.server.rrd.Sampleable;
+import org.neo4j.server.statistic.StatisticCollector;
+import org.neo4j.server.statistic.StatisticRecord;
+import org.rrd4j.DsType;
 
-    private RrdSampler[] sampler;
-    private long lastRun = 0;
-    private TimeSource timeSource;
+public abstract class StatisticSampleableBase implements Sampleable
+{
 
-    public RrdJob(RrdSampler... sampler) {
-        this(new SystemBackedTimeSource(), sampler);
+    private final StatisticCollector collector;
+    private final DsType dsType;
+
+    public StatisticSampleableBase( Database db, DsType dsType )
+    {
+        collector = db.statisticCollector();
+        this.dsType = dsType;
     }
 
-    public RrdJob(TimeSource timeSource, RrdSampler... sampler) {
-        this.sampler = sampler;
-        this.timeSource = timeSource;
+
+    public abstract String getName();
+
+    public abstract double getValue();
+
+    protected StatisticRecord getCurrentSnapshot()
+    {
+        return collector.currentSnapshot();
     }
 
-    public void run() {
-        // Guard against getting run in too rapid succession.
-        if ((timeSource.getTime() - lastRun) >= MIN_STEP_TIME) {
-            lastRun = timeSource.getTime();
-            for (RrdSampler rrdSampler : sampler) {
-                rrdSampler.updateSample();
-            }
-        }
+    @Override
+    public DsType getType()
+    {
+        return dsType;
     }
 }

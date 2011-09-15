@@ -17,35 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rrd;
+package org.neo4j.server.rrd.sampler;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.stub;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import org.neo4j.server.database.Database;
+import org.rrd4j.DsType;
 
-import org.junit.Test;
-
-public class RrdJobTest {
-
-    @Test
-    public void testGuardsAgainstQuickRuns() throws Exception {
-
-        RrdSampler sampler = mock(RrdSampler.class);
-        TimeSource time = mock(TimeSource.class);
-        stub(time.getTime())
-            .toReturn(10000l).toReturn(10000l) // First call (getTime gets called twice)
-            .toReturn(10000l) // Second call
-            .toReturn(12000l); // Third call
-
-        RrdJob job = new RrdJob( time, sampler );
-
-        job.run();
-        job.run();
-        job.run();
-
-        verify(sampler, times(2)).updateSample();
-
+public class RequestMinTimeSampleable extends StatisticSampleableBase
+{
+    public RequestMinTimeSampleable( Database db )
+    {
+        super( db, DsType.GAUGE );
     }
 
+    @Override
+    public String getName()
+    {
+        return "request_min_time";
+    }
+
+    @Override
+    public double getValue()
+    {
+        return getCurrentSnapshot().getDuration().getMin();
+    }
 }

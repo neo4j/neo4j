@@ -30,6 +30,7 @@ import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.server.logging.Logger;
+import org.neo4j.server.statistic.StatisticCollector;
 import org.rrd4j.core.RrdDb;
 
 public class Database
@@ -40,6 +41,7 @@ public class Database
 
     private final String databaseStoreDirectory;
     private RrdDb rrdDb;
+    private final StatisticCollector statisticCollector = new StatisticCollector();
 
     public Database( AbstractGraphDatabase db )
     {
@@ -159,5 +161,10 @@ public class Database
     public IndexManager getIndexManager()
     {
         return graph.index();
+    }
+
+    public StatisticCollector statisticCollector()
+    {
+        return statisticCollector;
     }
 }
