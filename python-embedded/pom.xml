@@ -234,6 +234,13 @@ the relevant Commercial Agreement.
                 <configuration>
                   <target>
                     <unzip src="${basedir}/target/${project.build.finalName}-python-dist.zip" dest="${basedir}/target/" overwrite="true"/>
+                    
+                    <exec executable="python" dir="${basedir}/target/neo4j-embedded">
+                      <arg value="setup.py"/>
+                      <arg value="--plat-name=win32"/>
+                      <arg value="bdist_wininst"/>
+                    </exec>
+                    
                     <exec executable="python" dir="${basedir}/target/neo4j-embedded">
                       <arg value="setup.py"/>
                       <arg value="sdist"/>
