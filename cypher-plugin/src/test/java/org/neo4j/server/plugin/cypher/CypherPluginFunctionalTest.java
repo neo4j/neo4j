@@ -71,8 +71,8 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
     }
     
     /**
-     * Erros on the server
-     * will be reported as a JSON-formatted stacktrace and message.
+     * Errors on the server will be reported as a JSON-formatted stacktrace and
+     * message.
      */
     @Test
     @Documented
