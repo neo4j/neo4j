@@ -235,18 +235,27 @@ the relevant Commercial Agreement.
                   <target>
                     <unzip src="${basedir}/target/${project.build.finalName}-python-dist.zip" dest="${basedir}/target/" overwrite="true"/>
                     
-                    <exec executable="python" dir="${basedir}/target/neo4j-embedded">
+                    <!-- Windows 32bit installer -->
+                    <exec executable="python" failonerror="true" dir="${basedir}/target/neo4j-embedded">
+                      <arg value="setup.py"/>
+                      <arg value="--plat-name=win-amd64"/>
+                      <arg value="bdist_wininst"/>
+                      <arg value="upload"/>
+                    </exec>
+                    
+                    <!-- Windows 64bit installer -->
+                    <exec executable="python" failonerror="true" dir="${basedir}/target/neo4j-embedded">
                       <arg value="setup.py"/>
                       <arg value="--plat-name=win32"/>
                       <arg value="bdist_wininst"/>
                       <arg value="upload"/>
                     </exec>
                     
-                    <exec executable="python" dir="${basedir}/target/neo4j-embedded">
+                    <!-- Source distribution -->
+                    <exec executable="python" failonerror="true" dir="${basedir}/target/neo4j-embedded">
                       <arg value="setup.py"/>
                       <arg value="sdist"/>
                       <arg value="--formats=gztar,zip"/>
-                      <arg value="bdist_wininst"/>
                       <arg value="upload"/>
                     </exec>
                   </target>

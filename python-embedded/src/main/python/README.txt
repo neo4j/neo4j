@@ -8,20 +8,7 @@ Source: https://github.com/neo4j/python-embedded
 Prerequisites
 -------------
 
-The Neo4j database itself is a java application, which means you have to provide an interface to communicate with java-land. You can use:
-
-- CPython with JPype installed http://jpype.sourceforge.net/
-
-Installation
-------------
-
-Check that you have the prerequisites, then just::
-
-  pip install neo4j-embedded
-    
-Or, if you prefer the manual download::
-
-  python setup.py install
+The Neo4j database itself is a java application, which means you have to provide an interface to communicate with java-land. Specifically, you need to have JPype installed. See the installation section in the documentation for details.
   
 Documentation
 -------------
