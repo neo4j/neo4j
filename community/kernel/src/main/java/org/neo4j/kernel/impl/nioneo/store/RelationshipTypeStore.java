@@ -153,7 +153,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
     }
 
     public Collection<DynamicRecord> allocateTypeNameRecords( int startBlock,
-        char src[] )
+        byte src[] )
     {
         return typeNameStore.allocateRecords( startBlock, src );
     }
@@ -376,43 +376,21 @@ public class RelationshipTypeStore extends AbstractStore implements Store
     public String getStringFor( RelationshipTypeRecord relTypeRecord )
     {
         long recordToFind = relTypeRecord.getTypeBlock();
-        Iterator<DynamicRecord> records =
-            relTypeRecord.getTypeRecords().iterator();
-        List<char[]> charList = new LinkedList<char[]>();
-        int totalSize = 0;
-        while ( recordToFind != Record.NO_NEXT_BLOCK.intValue() &&
-            records.hasNext() )
+        Iterator<DynamicRecord> records = relTypeRecord.getTypeRecords().iterator();
+        Collection<DynamicRecord> relevantRecords = new ArrayList<DynamicRecord>();
+        while ( recordToFind != Record.NO_NEXT_BLOCK.intValue() && records.hasNext() )
         {
             DynamicRecord record = records.next();
             if ( record.inUse() && record.getId() == recordToFind )
             {
-                if ( record.isLight() )
-                {
-                    typeNameStore.makeHeavy( record );
-                }
-                if ( !record.isCharData() )
-                {
-                    ByteBuffer buf = ByteBuffer.wrap( record.getData() );
-                    char[] chars = new char[record.getData().length / 2];
-                    totalSize += chars.length;
-                    buf.asCharBuffer().get( chars );
-                    charList.add( chars );
-                }
-                else
-                {
-                    charList.add( record.getDataAsChar() );
-                }
                 recordToFind = record.getNextBlock();
                 // TODO: optimize here, high chance next is right one
+                relevantRecords.add( record );
                 records = relTypeRecord.getTypeRecords().iterator();
             }
         }
-        StringBuilder buf = new StringBuilder();
-        for ( char[] str : charList )
-        {
-            buf.append( str );
-        }
-        return buf.toString();
+        return (String) PropertyStore.getStringFor( PropertyStore.readFullByteArray(
+                relTypeRecord.getTypeBlock(), relevantRecords, typeNameStore ) );
     }
 
     @Override

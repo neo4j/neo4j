@@ -53,4 +53,42 @@ public class TestLengthyArrayPacking extends AbstractNeo4jTestCase
         assertTrue( Arrays.equals( arrayWhichUnpackedWouldFillTwoDynamicRecords,
                 (int[]) node.getProperty( key ) ) );
     }
+
+    // Tests for strings, although the test class name suggests otherwise
+    
+    @Test
+    public void makeSureLongLatin1StringUsesOneBytePerChar() throws Exception
+    {
+        long stringRecordsBefore = dynamicStringRecordsInUse();
+        String allLatin1 = "abcdefghijklmnopqrstuvwxyz";
+        Node node = getGraphDb().createNode();
+        String string = stringOfLength( allLatin1, 239 ); // Assume 120B data size -1 header byte
+        node.setProperty( "name", string );
+        newTransaction();
+        long stringRecordsAfter = dynamicStringRecordsInUse();
+        assertEquals( stringRecordsBefore+2, stringRecordsAfter );
+    }
+    
+    @Test
+    public void makeSureLongUtf8StringUsesLessThanTwoBytesPerChar() throws Exception
+    {
+        long stringRecordsBefore = dynamicStringRecordsInUse();
+        String mixedWeirdChars = "abc421#¤åäö(/&€";
+        Node node = getGraphDb().createNode();
+        String string = stringOfLength( mixedWeirdChars, 130 ); // Assume 120B data size -1 header byte
+        node.setProperty( "name", string );
+        newTransaction();
+        long stringRecordsAfter = dynamicStringRecordsInUse();
+        assertEquals( stringRecordsBefore+2, stringRecordsAfter );
+    }
+
+    private String stringOfLength( String possibilities, int length )
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( int i = 0; i < length; i++ )
+        {
+            builder.append( possibilities.charAt( i%possibilities.length() ) );
+        }
+        return builder.toString();
+    }
 }
