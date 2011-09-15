@@ -4,6 +4,7 @@
     <groupId>org.neo4j.build</groupId>
     <artifactId>examples-pom</artifactId>
     <version>25</version>
+    <relativePath/>
   </parent>
   <groupId>org.neo4j.examples</groupId>
   <artifactId>neo4j-examples</artifactId>
