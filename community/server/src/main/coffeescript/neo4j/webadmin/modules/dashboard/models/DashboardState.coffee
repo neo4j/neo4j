@@ -98,9 +98,9 @@ define(
 
       initialize : (options) =>
         @setChartByKey "primitives"
-        @setChartByKey "usageRequests"
-        @setChartByKey "usageTimes"
-        @setChartByKey "usageBytes"
+        #@setChartByKey "usageRequests"
+        #@setChartByKey "usageTimes"
+        #@setChartByKey "usageBytes"
         @setZoomLevelByKey "six_hours"
 
       getChart : (key) =>

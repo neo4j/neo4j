@@ -41,9 +41,9 @@ define(
         $(@el).html @template()
 
         @monitorChart = new LineChart($("#monitor-chart"))
-        @usageRequestsChart = new LineChart($("#usage-requests-chart"))
-        @usageTimeChart = new LineChart($("#usage-time-chart"))
-        @usageBytesChart = new LineChart($("#usage-bytes-chart"))
+        #@usageRequestsChart = new LineChart($("#usage-requests-chart"))
+        #@usageTimeChart = new LineChart($("#usage-time-chart"))
+        #@usageBytesChart = new LineChart($("#usage-bytes-chart"))
         @redrawAllCharts()
 
         @highlightChartSwitchTab @dashboardState.getChartKey()
@@ -53,9 +53,9 @@ define(
 
       redrawAllCharts : =>
         @redrawChart @monitorChart, "primitives"
-        @redrawChart @usageRequestsChart, "usageRequests"
-        @redrawChart @usageTimeChart, "usageTimes"
-        @redrawChart @usageBytesChart, "usageBytes"
+        #@redrawChart @usageRequestsChart, "usageRequests"
+        #@redrawChart @usageTimeChart, "usageTimes"
+        #@redrawChart @usageBytesChart, "usageBytes"
 
       redrawChart : (chart, name) =>
         if chart?
@@ -100,9 +100,9 @@ define(
       remove : =>
         @unbind()
         @monitorChart.remove() if @monitorChart?
-        @usageRequestsChart.remove() if @usageRequestsChart?
-        @usageTimeChart.remove() if @usageTimeChart?
-        @usageBytesChart.remove() if @usageBytesChart?
+        #@usageRequestsChart.remove() if @usageRequestsChart?
+        #@usageTimeChart.remove() if @usageTimeChart?
+        #@usageBytesChart.remove() if @usageBytesChart?
         super()
 
       bind : =>
