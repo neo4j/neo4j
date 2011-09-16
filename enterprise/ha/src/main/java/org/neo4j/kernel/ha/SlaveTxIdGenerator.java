@@ -26,7 +26,9 @@ import javax.transaction.TransactionManager;
 
 import org.neo4j.com.ComException;
 import org.neo4j.com.Response;
+import org.neo4j.com.SlaveContext;
 import org.neo4j.com.TxExtractor;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
@@ -71,7 +73,7 @@ public class SlaveTxIdGenerator implements TxIdGenerator
         {
             final int eventIdentifier = txManager.getEventIdentifier();
             Response<Long> response = broker.getMaster().first().commitSingleResourceTransaction(
-                    receiver.getSlaveContext( eventIdentifier ),
+                    onlyForThisDataSource( receiver.getSlaveContext( eventIdentifier ), dataSource ),
                     dataSource.getName(), new TxExtractor()
                     {
                         public void extract( LogBuffer buffer )
@@ -110,6 +112,27 @@ public class SlaveTxIdGenerator implements TxIdGenerator
             receiver.newMaster( null, e );
             throw e;
         }
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private SlaveContext onlyForThisDataSource( SlaveContext slaveContext, XaDataSource dataSource )
+    {
+        Pair<String, Long> txForDs = null;
+        for ( Pair<String, Long> tx : slaveContext.lastAppliedTransactions() )
+        {
+            if ( tx.first().equals( dataSource.getName() ) )
+            {
+                txForDs = tx;
+                break;
+            }
+        }
+        if ( txForDs == null )
+        {   // Should not be able to happen
+            throw new RuntimeException( "Apparently " + slaveContext +
+                    " didn't have the XA data source we are commiting (" + dataSource.getName() + ")" );
+        }
+        return new SlaveContext( slaveContext.getSessionId(), slaveContext.machineId(),
+                slaveContext.getEventIdentifier(), new Pair[] {txForDs} );
     }
 
     public int getCurrentMasterId()
