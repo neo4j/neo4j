@@ -1340,7 +1340,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             try
             {
                 host.addPropertyBlock( block );
-                host.setInUse( true );
             }
             catch ( IllegalStateException e )
             {

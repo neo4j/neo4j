@@ -543,7 +543,7 @@ public class PropertyStore extends AbstractStore implements Store
         // Try LATIN-1 (uses less space than UTF-8)
         Bits bits = Bits.bits( string.length()+1 ).put( (byte)1 );
         if ( LongerShortString.writeLatin1Characters( string, bits ) ) return bits.asBytes();
-        
+
         // Use UTF-8
         byte[] asUtfBytes = UTF8.encode( string );
         byte[] result = new byte[asUtfBytes.length+1];
@@ -617,7 +617,7 @@ public class PropertyStore extends AbstractStore implements Store
     {
         return Bits.bits( 16 ).put( keyId, 24 ).put( type.intValue(), 4 ).put( 0, 36 );
     }
-    
+
     public Object getStringFor( PropertyBlock propertyBlock )
     {
         return getStringFor( stringPropertyStore, propertyBlock );
@@ -627,19 +627,19 @@ public class PropertyStore extends AbstractStore implements Store
     {
         return getStringFor( store, propertyBlock.getSingleValueLong(), propertyBlock.getValueRecords() );
     }
-    
+
     public static Object getStringFor( AbstractDynamicStore store, long startRecord, Collection<DynamicRecord> dynamicRecords )
     {
         return getStringFor( readFullByteArray( startRecord, dynamicRecords, store ) );
     }
-    
+
     public static Object getStringFor( byte[] byteArrayForAllDynamicRecords )
     {
         byte[] bArray = new byte[byteArrayForAllDynamicRecords.length-1];
         System.arraycopy( byteArrayForAllDynamicRecords, 1, bArray, 0, bArray.length );
         byte encoding = byteArrayForAllDynamicRecords[0];
         switch ( encoding )
-        {   
+        {
         case 0: // UTF-8
             return UTF8.decode( bArray );
         case 1: // LATIN-1

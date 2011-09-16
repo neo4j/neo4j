@@ -883,50 +883,46 @@ public abstract class Command extends XaCommand
             {
                 record.setRelId( primitiveId );
             }
-            // if ( inUse )
+            buffer.clear();
+            /*
+             * 16 next & prev, 4 is the no of property blocks
+             */
+            buffer.limit( 16 + 4 );
+            if ( byteChannel.read( buffer ) != buffer.limit() )
             {
-                buffer.clear();
-                /*
-                 * 16 next & prev, 4 is the no of property blocks
-                 */
-                buffer.limit( 16 + 4 );
-                if ( byteChannel.read( buffer ) != buffer.limit() )
+                return null;
+            }
+            buffer.flip();
+            long nextProp = buffer.getLong();
+            long prevProp = buffer.getLong();
+            record.setNextProp( nextProp );
+            record.setPrevProp( prevProp );
+            int nrPropBlocks = buffer.getInt();
+            if ( nrPropBlocks == 0 )
+            {
+                throw new IllegalStateException(
+                        "Number of blocks reported for record " + id
+                                + " which is in use was " + nrPropBlocks );
+            }
+            while ( nrPropBlocks-- > 0 )
+            {
+                PropertyBlock block = readPropertyBlock( byteChannel, buffer );
+                if ( block == null )
                 {
                     return null;
                 }
-                buffer.flip();
-                long nextProp = buffer.getLong();
-                long prevProp = buffer.getLong();
-                record.setNextProp( nextProp );
-                record.setPrevProp( prevProp );
-                int nrPropBlocks = buffer.getInt();
-                if ( nrPropBlocks == 0 )
+                record.addPropertyBlock( block );
+                if ( block.inUse() )
                 {
-                    throw new IllegalStateException(
-                            "Number of blocks reported for record " + id
-                                    + " which is in use was "
-                                    + nrPropBlocks );
+                    record.setInUse( true );
                 }
-                while ( nrPropBlocks-- > 0 )
-                {
-                    PropertyBlock block = readPropertyBlock( byteChannel,
-                            buffer );
-                    if ( block == null )
-                    {
-                        return null;
-                    }
-                    record.addPropertyBlock( block );
-                    // if ( block.inUse() )
-                    // {
-                    // record.setInUse( true );
-                    // }
-                }
-                // if ( !record.inUse() )
-                // {
-                // throw new IllegalStateException(
-                // "Read in record marked as in use but no blocks read in:\n\t"
-                // + record );
-                // }
+            }
+            if ( ( inUse && !record.inUse() ) || ( !inUse && record.inUse() ) )
+            {
+                throw new IllegalStateException(
+                        "Weird, inUse was read in as " + inUse
+                                + " but the record is marked as "
+                                + record.inUse() );
             }
             // buffer.clear();
             // buffer.limit( 1 );

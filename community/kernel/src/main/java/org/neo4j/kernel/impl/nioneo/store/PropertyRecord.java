@@ -112,6 +112,10 @@ public class PropertyRecord extends Abstract64BitRecord
           + block.getSize() + ")"
         );
         blockRecords.add( block );
+        if ( block.inUse() )
+        {
+            this.setInUse( true );
+        }
     }
 
     public PropertyBlock getPropertyBlock( int keyIndex )

@@ -42,7 +42,6 @@ import javax.transaction.xa.Xid;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -500,7 +499,6 @@ public class TestXa extends AbstractNeo4jTestCase
     }
 
     @Test
-    @Ignore
     public void testLogicalLogPreparedPropertyBlocks() throws Exception
     {
         Xid xid = new XidImpl( new byte[2], new byte[2] );
@@ -525,6 +523,7 @@ public class TestXa extends AbstractNeo4jTestCase
         ds.close();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( path() );
+
         ds = newNeoStore();
         // ds = new NeoStoreXaDataSource( file( "neo" ), file(
         // "nioneo_logical.log" ),
@@ -534,7 +533,7 @@ public class TestXa extends AbstractNeo4jTestCase
         assertEquals( 1, xaRes.recover( XAResource.TMNOFLAGS ).length );
         xaRes.commit( xid, true );
         xaCon.clearAllTransactions();
-        System.out.println( "=====================================================" );
+
         xid = new XidImpl( new byte[2], new byte[2] );
         xaRes = xaCon.getXaResource();
         xaRes.start( xid, XAResource.TMNOFLAGS );
@@ -547,12 +546,8 @@ public class TestXa extends AbstractNeo4jTestCase
                 new long[] { 1 << 23, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 } );
         xaRes.end( xid, XAResource.TMSUCCESS );
-        System.out.println( "================== preparing ==================" );
         xaRes.prepare( xid );
-        System.out.println( "================== prepared ==================" );
-        System.out.println( "================== rotating ==================" );
         ds.rotateLogicalLog();
-        System.out.println( "================== rotated ==================" );
         copyLogicalLog( path() );
         xaCon.clearAllTransactions();
         ds.close();
@@ -571,7 +566,6 @@ public class TestXa extends AbstractNeo4jTestCase
     }
 
     @Test
-    @Ignore
     public void makeSureRecordsAreCreated() throws Exception
     {
         Xid xid = new XidImpl( new byte[2], new byte[2] );
@@ -598,10 +592,8 @@ public class TestXa extends AbstractNeo4jTestCase
         ds.close();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( path() );
+
         ds = newNeoStore();
-        // ds = new NeoStoreXaDataSource( file( "neo" ), file(
-        // "nioneo_logical.log" ),
-        // lockManager, lockReleaser );
         xaCon = (NeoStoreXaConnection) ds.getXaConnection();
         xaRes = xaCon.getXaResource();
         assertEquals( 1, xaRes.recover( XAResource.TMNOFLAGS ).length );
