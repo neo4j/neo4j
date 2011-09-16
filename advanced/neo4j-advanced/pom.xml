@@ -35,7 +35,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-management</artifactId>
-      <version>1.4.2</version>
+      <version>1.5-SNAPSHOT</version>
     </dependency>
   </dependencies>
 
