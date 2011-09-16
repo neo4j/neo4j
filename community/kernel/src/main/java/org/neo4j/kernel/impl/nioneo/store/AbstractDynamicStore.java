@@ -334,7 +334,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         assert src != null : "Null src argument";
         List<DynamicRecord> recordList = new LinkedList<DynamicRecord>();
         long nextBlock = startBlock;
-        // long prevBlock = Record.NO_PREV_BLOCK.intValue();
         int srcOffset = 0;
         int dataSize = getBlockSize() - BLOCK_HEADER_SIZE;
         do
@@ -342,14 +341,11 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
             DynamicRecord record = new DynamicRecord( nextBlock );
             record.setCreated();
             record.setInUse( true );
-            // assert prevBlock != nextBlock;
-            // record.setPrevBlock( prevBlock );
             if ( src.length - srcOffset > dataSize )
             {
                 byte data[] = new byte[dataSize];
                 System.arraycopy( src, srcOffset, data, 0, dataSize );
                 record.setData( data );
-                // prevBlock = nextBlock;
                 nextBlock = nextBlockId();
                 record.setNextBlock( nextBlock );
                 srcOffset += dataSize;
@@ -375,7 +371,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         assert src != null : "Null src argument";
         List<DynamicRecord> recordList = new LinkedList<DynamicRecord>();
         long nextBlock = startBlock;
-        // long prevBlock = Record.NO_PREV_BLOCK.intValue();
         int srcOffset = 0;
         int dataSize = getBlockSize() - BLOCK_HEADER_SIZE;
         do
@@ -383,15 +378,12 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
             DynamicRecord record = new DynamicRecord( nextBlock );
             record.setCreated();
             record.setInUse( true );
-            // assert prevBlock != nextBlock;
-            // record.setPrevBlock( prevBlock );
             if ( (src.length - srcOffset) * 2 > dataSize )
             {
                 byte data[] = new byte[dataSize];
                 CharBuffer charBuf = ByteBuffer.wrap( data ).asCharBuffer();
                 charBuf.put( src, srcOffset, dataSize / 2 );
                 record.setData( data );
-                // prevBlock = nextBlock;
                 nextBlock = nextBlockId();
                 record.setNextBlock( nextBlock );
                 srcOffset += dataSize / 2;
@@ -474,7 +466,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
          */
 
         long firstInteger = buffer.getUnsignedInt();
-        // firstInteger &= 0xF0000000;
         int inUseByte = (int) ( ( firstInteger & 0xF0000000 ) >> 28 );
         boolean inUse = inUseByte == Record.IN_USE.intValue();
         if ( !inUse )

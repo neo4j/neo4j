@@ -42,6 +42,7 @@ import javax.transaction.xa.Xid;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -330,7 +331,7 @@ public class TestXa extends AbstractNeo4jTestCase
         buffer.clear();
         FileChannel fileChannel = new RandomAccessFile( file( "nioneo_logical.log." +
             active ), "rw" ).getChannel();
-        // System.out.println( fileChannel.size() );
+        System.out.println( fileChannel.size() );
         if ( fileChannel.size() > size )
         {
             fileChannel.truncate( size );
@@ -499,6 +500,161 @@ public class TestXa extends AbstractNeo4jTestCase
     }
 
     @Test
+    @Ignore
+    public void testLogicalLogPreparedPropertyBlocks() throws Exception
+    {
+        Xid xid = new XidImpl( new byte[2], new byte[2] );
+        XAResource xaRes = xaCon.getXaResource();
+        xaRes.start( xid, XAResource.TMNOFLAGS );
+        long node1 = ds.nextId( Node.class );
+        xaCon.getWriteTransaction().nodeCreate( node1 );
+        PropertyData n1prop1 = xaCon.getWriteTransaction().nodeAddProperty(
+                node1, index( "prop1" ),
+                new long[] { 1 << 23, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 } );
+        PropertyData n1prop2 = xaCon.getWriteTransaction().nodeAddProperty(
+                node1,
+                index( "prop2" ),
+                new long[] { 1 << 23, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 } );
+        xaRes.end( xid, XAResource.TMSUCCESS );
+        xaRes.prepare( xid );
+        ds.rotateLogicalLog();
+        copyLogicalLog( path() );
+        xaCon.clearAllTransactions();
+        ds.close();
+        deleteLogicalLogIfExist();
+        renameCopiedLogicalLog( path() );
+        ds = newNeoStore();
+        // ds = new NeoStoreXaDataSource( file( "neo" ), file(
+        // "nioneo_logical.log" ),
+        // lockManager, lockReleaser );
+        xaCon = (NeoStoreXaConnection) ds.getXaConnection();
+        xaRes = xaCon.getXaResource();
+        assertEquals( 1, xaRes.recover( XAResource.TMNOFLAGS ).length );
+        xaRes.commit( xid, true );
+        xaCon.clearAllTransactions();
+        System.out.println( "=====================================================" );
+        xid = new XidImpl( new byte[2], new byte[2] );
+        xaRes = xaCon.getXaResource();
+        xaRes.start( xid, XAResource.TMNOFLAGS );
+        xaCon.getWriteTransaction().nodeRemoveProperty( node1, n1prop1 );
+        // long node2 = ds.nextId( Node.class );
+        // xaCon.getWriteTransaction().nodeCreate( node2 );
+        PropertyData n2prop1 = xaCon.getWriteTransaction().nodeAddProperty(
+                node1,
+                index( "prop3" ),
+                new long[] { 1 << 23, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 } );
+        xaRes.end( xid, XAResource.TMSUCCESS );
+        System.out.println( "================== preparing ==================" );
+        xaRes.prepare( xid );
+        System.out.println( "================== prepared ==================" );
+        System.out.println( "================== rotating ==================" );
+        ds.rotateLogicalLog();
+        System.out.println( "================== rotated ==================" );
+        copyLogicalLog( path() );
+        xaCon.clearAllTransactions();
+        ds.close();
+        deleteLogicalLogIfExist();
+        renameCopiedLogicalLog( path() );
+        ds = newNeoStore();
+        // ds = new NeoStoreXaDataSource( file( "neo" ), file(
+        // "nioneo_logical.log" ),
+        // lockManager, lockReleaser );
+        xaCon = (NeoStoreXaConnection) ds.getXaConnection();
+        xaRes = xaCon.getXaResource();
+        assertEquals( 1, xaRes.recover( XAResource.TMNOFLAGS ).length );
+        xaRes.commit( xid, true );
+        xaCon.clearAllTransactions();
+
+    }
+
+    @Test
+    @Ignore
+    public void makeSureRecordsAreCreated() throws Exception
+    {
+        Xid xid = new XidImpl( new byte[2], new byte[2] );
+        XAResource xaRes = xaCon.getXaResource();
+        xaRes.start( xid, XAResource.TMNOFLAGS );
+        long node1 = ds.nextId( Node.class );
+        xaCon.getWriteTransaction().nodeCreate( node1 );
+        xaCon.getWriteTransaction().nodeAddProperty(
+                node1, index( "prop1" ),
+                new long[] { 1 << 63, 1, 1 } );
+        xaCon.getWriteTransaction().nodeAddProperty( node1, index( "prop2" ),
+                new long[] { 1 << 63, 1, 1 } );
+        xaCon.getWriteTransaction().nodeAddProperty(
+                node1, index( "prop3" ),
+                new long[] { 1 << 63, 1, 1 } );
+        PropertyData toDelete = xaCon.getWriteTransaction().nodeAddProperty(
+                node1, index( "prop4" ),
+                new long[] { 1 << 63, 1, 1 } );
+        xaRes.end( xid, XAResource.TMSUCCESS );
+        xaRes.prepare( xid );
+        ds.rotateLogicalLog();
+        copyLogicalLog( path() );
+        xaCon.clearAllTransactions();
+        ds.close();
+        deleteLogicalLogIfExist();
+        renameCopiedLogicalLog( path() );
+        ds = newNeoStore();
+        // ds = new NeoStoreXaDataSource( file( "neo" ), file(
+        // "nioneo_logical.log" ),
+        // lockManager, lockReleaser );
+        xaCon = (NeoStoreXaConnection) ds.getXaConnection();
+        xaRes = xaCon.getXaResource();
+        assertEquals( 1, xaRes.recover( XAResource.TMNOFLAGS ).length );
+        xaRes.commit( xid, true );
+        xaCon.clearAllTransactions();
+
+        xid = new XidImpl( new byte[2], new byte[2] );
+        xaRes = xaCon.getXaResource();
+        xaRes.start( xid, XAResource.TMNOFLAGS );
+
+        xaCon.getWriteTransaction().nodeLoadProperties( node1, false );
+
+        xaRes.end( xid, XAResource.TMSUCCESS );
+        xaRes.prepare( xid );
+        xaCon.clearAllTransactions();
+        ds.close();
+        deleteLogicalLogIfExist();
+        renameCopiedLogicalLog( path() );
+
+        ds = newNeoStore();
+        xaCon = (NeoStoreXaConnection) ds.getXaConnection();
+        xaRes = xaCon.getXaResource();
+        xid = new XidImpl( new byte[2], new byte[2] );
+        xaRes = xaCon.getXaResource();
+        xaRes.start( xid, XAResource.TMNOFLAGS );
+
+        xaCon.getWriteTransaction().nodeRemoveProperty( node1, toDelete );
+
+        xaRes.end( xid, XAResource.TMSUCCESS );
+        xaRes.prepare( xid );
+        xaCon.clearAllTransactions();
+        ds.close();
+        deleteLogicalLogIfExist();
+        renameCopiedLogicalLog( path() );
+
+        ds = newNeoStore();
+        xaCon = (NeoStoreXaConnection) ds.getXaConnection();
+        xaRes = xaCon.getXaResource();
+        xid = new XidImpl( new byte[2], new byte[2] );
+        xaRes = xaCon.getXaResource();
+        xaRes.start( xid, XAResource.TMNOFLAGS );
+
+        xaCon.getWriteTransaction().nodeLoadProperties( node1, false );
+
+        xaRes.end( xid, XAResource.TMSUCCESS );
+        xaRes.prepare( xid );
+        xaCon.clearAllTransactions();
+        ds.close();
+        deleteLogicalLogIfExist();
+        renameCopiedLogicalLog( path() );
+    }
+
+    @Test
     public void testLogicalLogPrePrepared() throws Exception
     {
         Xid xid = new XidImpl( new byte[3], new byte[3] );
@@ -605,7 +761,7 @@ public class TestXa extends AbstractNeo4jTestCase
         ds.close();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( path() );
-        truncateLogicalLog( 156 );
+        truncateLogicalLog( 157 );
         ds = newNeoStore();
 //        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
 //            lockManager, lockReleaser );
@@ -634,7 +790,7 @@ public class TestXa extends AbstractNeo4jTestCase
         ds.close();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( path() );
-        truncateLogicalLog( 180 );
+        truncateLogicalLog( 183 );
         ds = newNeoStore();
 //        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
 //             lockManager, lockReleaser );

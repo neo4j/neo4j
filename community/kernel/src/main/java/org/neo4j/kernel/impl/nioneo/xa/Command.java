@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
@@ -49,6 +50,10 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 public abstract class Command extends XaCommand
 {
     static Logger logger = Logger.getLogger( Command.class.getName() );
+
+    // private static final byte PROPERTY_RECORD_DONE = 0x55;
+    // private static final byte DYNAMIC_RECORD_DONE = (byte) ( 0xAA );
+    // private static final byte PROPERTY_BLOCK_DONE = 0x33;
 
     private final long key;
 
@@ -77,17 +82,19 @@ public abstract class Command extends XaCommand
     private static void writePropertyBlock( LogBuffer buffer,
             PropertyBlock block ) throws IOException
     {
+        // System.out.println( "Writing property block " + block );
+        // buffer.put( PROPERTY_BLOCK_DONE );
         if ( !block.inUse() )
         {
             buffer.put( (byte) 0 );
-            // return;
         }
         else
         {
             buffer.put( (byte) 1 );
         }
         byte blockSize = (byte) block.getSize();
-        if ( blockSize <= 0 )
+        assert blockSize >= 0 : blockSize + " is not a valid block size value";
+        if ( blockSize == 0 && block.inUse() )
         {
             throw new IllegalStateException(
                     blockSize + " for PropertyBlock " + block
@@ -116,11 +123,14 @@ public abstract class Command extends XaCommand
                 writeDynamicRecord( buffer, record );
             }
         }
+        // buffer.put( PROPERTY_BLOCK_DONE );
     }
 
     static void writeDynamicRecord( LogBuffer buffer, DynamicRecord record )
         throws IOException
     {
+        // System.out.println( "Writing dynamic block " + record );
+        // buffer.put( DYNAMIC_RECORD_DONE );
         // id+type+in_use(byte)+nr_of_bytes(int)+next_block(long)
         if ( record.inUse() )
         {
@@ -130,6 +140,7 @@ public abstract class Command extends XaCommand
                 record.getLength() ).putLong( record.getNextBlock() );
             if ( !record.isLight() )
             {
+                buffer.put( (byte) 0 );
                 if ( !record.isCharData() )
                 {
                     byte[] data = record.getData();
@@ -141,6 +152,10 @@ public abstract class Command extends XaCommand
                     buffer.put( chars );
                 }
             }
+            else
+            {
+                buffer.put( (byte) 1 );
+            }
         }
         else
         {
@@ -148,13 +163,14 @@ public abstract class Command extends XaCommand
             buffer.putLong( record.getId() ).putInt( record.getType() ).put(
                 inUse );
         }
+        // buffer.put( DYNAMIC_RECORD_DONE );
     }
 
     static PropertyBlock readPropertyBlock( ReadableByteChannel byteChannel,
             ByteBuffer buffer ) throws IOException
     {
+        // System.out.println( "Reading property block " );
         PropertyBlock toReturn = new PropertyBlock();
-        // Read in block size.
         buffer.clear();
         buffer.limit( 2 );
         if ( byteChannel.read( buffer ) != buffer.limit() )
@@ -162,12 +178,15 @@ public abstract class Command extends XaCommand
             return null;
         }
         buffer.flip();
-
+        // byte flag = buffer.get();
+        // assert flag == PROPERTY_BLOCK_DONE : flag
+        // + "not a proper property block opener";
         byte inUse = buffer.get();
+        assert inUse == 0 || inUse == 1 : inUse
+                                          + " is not a valid value for the inUse field";
         if ( inUse == 0 )
         {
             toReturn.setInUse( false );
-            // return toReturn;
         }
         else if ( inUse == 1 )
         {
@@ -178,13 +197,15 @@ public abstract class Command extends XaCommand
             throw new IllegalStateException(
                     inUse + " is not a valid value for the inUse field" );
         }
-        int blockSize = buffer.get(); // the size is stored in bytes
-        if ( blockSize <= 0 )
+        byte blockSize = buffer.get(); // the size is stored in bytes
+        assert blockSize >= 0 && blockSize % 8 == 0 : blockSize + " is not a valid block size value";
+        if ( blockSize == 0 && inUse == 1 )
         {
             throw new IllegalStateException(
                     "blockSize field was read in as "
                             + blockSize
-                            + " for a property block record that was marked as in use" );
+                            + " for a property block record that was marked as in use ("
+                            + inUse + ")." );
         }
         // Read in blocks
         buffer.clear();
@@ -199,7 +220,14 @@ public abstract class Command extends XaCommand
         }
         buffer.flip();
         long[] blocks = readLongs( buffer, blockSize / 8 );
-
+        assert blocks.length == blockSize / 8 : blocks.length
+                                                + " longs were read in while i asked for what corresponds to "
+                                                + blockSize;
+        assert PropertyType.getPropertyType( blocks[0], false ).calculateNumberOfBlocksUsed(
+                blocks[0] ) == blocks.length : blocks.length
+                                               + " is not a valid number of blocks for type "
+                                               + PropertyType.getPropertyType(
+                                                       blocks[0], false );
         /*
          *  Ok, now we may be ready to return, if there are no DynamicRecords. So
          *  we start building the Object
@@ -211,26 +239,42 @@ public abstract class Command extends XaCommand
          * read in the buffer with the blocks, above.
          */
         int noOfDynRecs = buffer.getInt();
-        if ( noOfDynRecs == 0 )
+        assert noOfDynRecs >= 0 : noOfDynRecs
+                                  + " is not a valid value for the number of dynamic records in a property block";
+        if ( noOfDynRecs != 0 )
         {
-            // isLight() so we are done
-            return toReturn;
-        }
-        for ( int i = 0; i < noOfDynRecs; i++ )
-        {
-            DynamicRecord dr = readDynamicRecord( byteChannel, buffer );
-            if ( dr == null )
+            for ( int i = 0; i < noOfDynRecs; i++ )
             {
-                return null;
+                DynamicRecord dr = readDynamicRecord( byteChannel, buffer );
+                if ( dr == null )
+                {
+                    return null;
+                }
+                toReturn.addValueRecord( dr );
             }
-            toReturn.addValueRecord( dr );
+            assert toReturn.getValueRecords().size() == noOfDynRecs : "read in "
+                                                                      + toReturn.getValueRecords().size()
+                                                                      + " instead of the proper "
+                                                                      + noOfDynRecs;
         }
+        // buffer.clear();
+        // buffer.limit( 1 );
+        // if ( byteChannel.read( buffer ) != buffer.limit() )
+        // {
+        // return null;
+        // }
+        // buffer.flip();
+        // byte end = buffer.get();
+        // assert end == PROPERTY_BLOCK_DONE : end
+        // + " is not a valid property block command footer";
+        // System.out.println( "Read in prop block " + toReturn );
         return toReturn;
     }
 
     static DynamicRecord readDynamicRecord( ReadableByteChannel byteChannel,
         ByteBuffer buffer ) throws IOException
     {
+        // System.out.print( "Reading dynamic record " );
         // id+type+in_use(byte)+nr_of_bytes(int)+next_block(long)
         buffer.clear();
         buffer.limit( 13 );
@@ -239,15 +283,23 @@ public abstract class Command extends XaCommand
             return null;
         }
         buffer.flip();
+        // byte flag = buffer.get();
+        // assert flag == DYNAMIC_RECORD_DONE : flag
+        // + "not a proper dynamic block opener";
         long id = buffer.getLong();
+        // System.out.print( " with id " + id );
+        assert id >= 0 && id <= ( 1l << 36 ) - 1 : id
+                                                  + " is not a valid dynamic record id";
         int type = buffer.getInt();
+        // System.out.print( ", type " + type );
         byte inUseFlag = buffer.get();
+        // System.out.print( " and inUse " + inUseFlag );
         boolean inUse = false;
         if ( inUseFlag == Record.IN_USE.byteValue() )
         {
             inUse = true;
             buffer.clear();
-            buffer.limit( 12 );
+            buffer.limit( 13 );
             if ( byteChannel.read( buffer ) != buffer.limit() )
             {
                 return null;
@@ -263,20 +315,45 @@ public abstract class Command extends XaCommand
         if ( inUse )
         {
             int nrOfBytes = buffer.getInt();
-            assert nrOfBytes > 0;
-            assert nrOfBytes < ( ( 1 << 24 ) - 1 );
-            record.setNextBlock( buffer.getLong() );
-            buffer.clear();
-            buffer.limit( nrOfBytes );
-            if ( byteChannel.read( buffer ) != buffer.limit() )
+            // System.out.print( " reading " + nrOfBytes + " bytes" );
+            assert nrOfBytes >= 0 && nrOfBytes < ( ( 1 << 24 ) - 1 ) : nrOfBytes
+                                                                      + " is not valid for a number of bytes field of a dynamic record";
+            long nextBlock = buffer.getLong();
+            assert ( nextBlock >= 0 && nextBlock <= ( 1l << 36 - 1 ) )
+                   || ( nextBlock == Record.NO_NEXT_BLOCK.intValue() ) : nextBlock
+                                                                    + " is not valid for a next record field of a dynamic record";
+            record.setNextBlock( nextBlock );
+            byte light = buffer.get();
+            if ( light == 0 )
             {
-                return null;
+                buffer.clear();
+                buffer.limit( nrOfBytes );
+                if ( byteChannel.read( buffer ) != buffer.limit() )
+                {
+                    return null;
+                }
+                buffer.flip();
+                byte data[] = new byte[nrOfBytes];
+                buffer.get( data );
+                record.setData( data );
             }
-            buffer.flip();
-            byte data[] = new byte[nrOfBytes];
-            buffer.get( data );
-            record.setData( data );
+            else
+            {
+                record.setLength( nrOfBytes );
+            }
         }
+        // System.out.println();
+        // buffer.clear();
+        // buffer.limit( 1 );
+        // if ( byteChannel.read( buffer ) != buffer.limit() )
+        // {
+        // return null;
+        // }
+        // buffer.flip();
+        // byte end = buffer.get();
+        // assert end == DYNAMIC_RECORD_DONE : end
+        // + " is not a valid dynamic record command footer";
+        // System.out.println( "Read in dyn rec " + record );
         return record;
     }
 
@@ -731,6 +808,7 @@ public abstract class Command extends XaCommand
         @Override
         public void writeToFile( LogBuffer buffer ) throws IOException
         {
+            // System.out.println( "Writing property record " + this );
             byte inUse = record.inUse() ? Record.IN_USE.byteValue()
                 : Record.NOT_IN_USE.byteValue();
             if ( record.getRelId() != -1 )
@@ -756,7 +834,7 @@ public abstract class Command extends XaCommand
                 // prop chain
                 buffer.putLong( -1 );
             }
-            if ( record.inUse() )
+            // if ( record.inUse() )
             {
                 buffer.putLong( record.getNextProp() ).putLong( record.getPrevProp() );
                 int propBlocks = record.getPropertyBlocks().size();
@@ -773,12 +851,14 @@ public abstract class Command extends XaCommand
                     writePropertyBlock( buffer, block );
                 }
             }
+            // buffer.put( PROPERTY_RECORD_DONE );
         }
 
         public static Command readCommand( NeoStore neoStore,
             ReadableByteChannel byteChannel, ByteBuffer buffer )
             throws IOException
         {
+            // System.out.println( "reading property record" );
             // id+in_use(byte)+type(int)+key_indexId(int)+prop_blockId(long)+
             // prev_prop_id(long)+next_prop_id(long)+nr_value_records(int)
             buffer.clear();
@@ -812,7 +892,7 @@ public abstract class Command extends XaCommand
             {
                 record.setRelId( primitiveId );
             }
-            if ( inUse )
+            // if ( inUse )
             {
                 buffer.clear();
                 /*
@@ -824,7 +904,6 @@ public abstract class Command extends XaCommand
                     return null;
                 }
                 buffer.flip();
-                // /*byte category = */buffer.get();
                 long nextProp = buffer.getLong();
                 long prevProp = buffer.getLong();
                 record.setNextProp( nextProp );
@@ -846,18 +925,29 @@ public abstract class Command extends XaCommand
                         return null;
                     }
                     record.addPropertyBlock( block );
-                    if ( block.inUse() )
-                    {
-                        record.setInUse( true );
-                    }
+                    // if ( block.inUse() )
+                    // {
+                    // record.setInUse( true );
+                    // }
                 }
-                if ( !record.inUse() )
-                {
-                    throw new IllegalStateException(
-                            "Read in record marked as in use but no blocks read in:\n\t"
-                                    + record );
-                }
+                // if ( !record.inUse() )
+                // {
+                // throw new IllegalStateException(
+                // "Read in record marked as in use but no blocks read in:\n\t"
+                // + record );
+                // }
             }
+            // buffer.clear();
+            // buffer.limit( 1 );
+            // if ( byteChannel.read( buffer ) != buffer.limit() )
+            // {
+            // return null;
+            // }
+            // buffer.flip();
+            // byte end = buffer.get();
+            // assert end == PROPERTY_RECORD_DONE : end
+            // + " is not a valid property record command footer";
+            // System.out.println( "Read in prop rec " + record );
             return new PropertyCommand( neoStore == null ? null : neoStore.getPropertyStore(), record );
         }
 

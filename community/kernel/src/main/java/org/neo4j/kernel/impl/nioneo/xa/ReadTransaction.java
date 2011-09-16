@@ -45,7 +45,6 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.persistence.NeoStoreTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
@@ -189,11 +188,6 @@ class ReadTransaction implements NeoStoreTransaction
             nextProp = propRecord.getNextProp();
         }
         return propertyMap;
-    }
-    
-    public static void main( String[] args )
-    {
-        System.out.println( Bits.bits( 8 ).put( -5318545496841650176L ) );
     }
 
     @Override
