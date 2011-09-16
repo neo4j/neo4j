@@ -2,6 +2,8 @@
 Hello, world!
 =============
 
+Here is a simple example to get you started.
+
 [snippet,python]
 ----
 component=neo4j-python-embedded

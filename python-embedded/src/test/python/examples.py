@@ -66,7 +66,7 @@ class ExamplesTest(unit_tests.GraphDatabaseTest):
     def test_invoice_app(self):
         folder_to_put_db_in = tempfile.mkdtemp()
         try:
-            # START SNIPPET: invoiceapp
+            # START SNIPPET: invoiceapp-setup
             from neo4j import GraphDatabase, INCOMING, Evaluation
             from datetime import date
             import time
@@ -74,7 +74,6 @@ class ExamplesTest(unit_tests.GraphDatabaseTest):
             # Create a database
             db = GraphDatabase(folder_to_put_db_in)
             
-            # Create some base data
             with db.transaction:
                 
                 # A node to connect customers to
@@ -90,10 +89,9 @@ class ExamplesTest(unit_tests.GraphDatabaseTest):
                 
                 # An index, helps us rapidly look up customers
                 customer_idx = db.node.indexes.create('customers')
+            # END SNIPPET: invoiceapp-setup
             
-            
-            # Some domain logic
-            
+            # START SNIPPET: invoiceapp-domainlogic-create
             def create_customer(name):
                 with db.transaction:                    
                     customer = db.node(name=name)
@@ -110,10 +108,14 @@ class ExamplesTest(unit_tests.GraphDatabaseTest):
                     
                     invoice.RECIPIENT(customer)
                 return customer
-                
+            # END SNIPPET: invoiceapp-domainlogic-create
+            
+            # START SNIPPET: invoiceapp-domainlogic-get-by-idx
             def get_customer(name):
                 return customer_idx['name'][name].single
-                
+            # END SNIPPET: invoiceapp-domainlogic-get-by-idx
+            
+            # START SNIPPET: invoiceapp-domainlogic-get-by-traversal
             def get_invoices_with_amount_over(customer, min_sum):
                 def evaluator(path):
                     node = path.end
@@ -126,10 +128,9 @@ class ExamplesTest(unit_tests.GraphDatabaseTest):
                          .evaluator(evaluator)\
                          .traverse(customer)\
                          .nodes()
+            # END SNIPPET: invoiceapp-domainlogic-get-by-traversal
             
-            
-            # Create some domain data
-            
+            # START SNIPPET: invoiceapp-create-and-search
             for name in ['Acme Inc.', 'Example Ltd.']:
                create_customer(name)
             
@@ -137,14 +138,14 @@ class ExamplesTest(unit_tests.GraphDatabaseTest):
                for i in range(1,12):
                    create_invoice(relationship.end, 100 * i)
                    
-                   
-            # Find invoices over a given sum for a given customer
-            
             large_invoices = get_invoices_with_amount_over(get_customer('Acme Inc.'), 500)
-            # END SNIPPET: invoiceapp
+            
+            # Getting all invoices per customer:
+            for invoice in get_customer('Acme Inc.').RECIPIENT.incoming:
+                pass
+            # END SNIPPET: invoiceapp-create-and-search
             
             self.assertEqual(len(large_invoices), 6)
-            # Always shut down your database when your application exits
             db.shutdown()
         finally:
            if os.path.exists(folder_to_put_db_in):
