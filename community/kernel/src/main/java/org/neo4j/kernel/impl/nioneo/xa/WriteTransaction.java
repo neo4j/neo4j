@@ -1107,12 +1107,14 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             PropertyRecord prevPropRecord = getPropertyRecord( prevProp, true );
             assert prevPropRecord.inUse();
             prevPropRecord.setNextProp( nextProp );
+            prevPropRecord.setChanged();
         }
         if ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
             PropertyRecord nextPropRecord = getPropertyRecord( nextProp, true );
             assert nextPropRecord.inUse();
             nextPropRecord.setPrevProp( prevProp );
+            nextPropRecord.setChanged();
         }
     }
 
@@ -1124,6 +1126,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         if ( relRecord == null )
         {
             relRecord = getRelationshipStore().getRecord( relId );
+            addRelationshipRecord( relRecord );
         }
         if ( !relRecord.inUse() )
         {
@@ -1195,6 +1198,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         int oldRecordSize = propertyRecord.getUsedPayloadBytes();
         getPropertyStore().encodeValue( block, propertyData.getIndex(),
                 value );
+        // So far we assume it fit. If not, create new, copy over and set old as
+        // not in use.
         if ( oldRecordSize - oldSize + block.getSize() > PropertyType.getPayloadSize() )
         {
             PropertyBlock newBlock = new PropertyBlock();
@@ -1257,7 +1262,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
          * rollback only.
          */
         getPropertyStore().encodeValue( block, index.getKeyId(), value );
-
         PropertyRecord host = addPropertyBlockToPrimitive( block, nodeRecord,
         /*isNode*/true );
         return block.newPropertyData( host, value );
@@ -1310,6 +1314,9 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         if ( host == null )
         {
             host = new PropertyRecord( getPropertyStore().nextId() );
+            // System.out.println( "created prop record for primitive "
+            // + primitive + "(" + isNode + ") with id "
+            // + host.getId() );
             host.setCreated();
             if ( isNode )
             {
@@ -1326,6 +1333,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 assert prevProp.getPrevProp() == Record.NO_PREVIOUS_PROPERTY.intValue();
                 prevProp.setPrevProp( host.getId() );
                 host.setNextProp( prevProp.getId() );
+                prevProp.setChanged();
             }
             primitive.setNextProp( host.getId() );
             addPropertyRecord( host );

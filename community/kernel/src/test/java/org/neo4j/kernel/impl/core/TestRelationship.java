@@ -56,6 +56,11 @@ public class TestRelationship extends AbstractNeo4jTestCase
     private String key2 = "key2";
     private String key3 = "key3";
 
+    private enum RelType implements RelationshipType
+    {
+        TYPE_GENERIC
+    }
+
     @Test
     public void testSimple()
     {
@@ -78,6 +83,31 @@ public class TestRelationship extends AbstractNeo4jTestCase
         assertTrue( node2.getRelationships(
             MyRelTypes.TEST, Direction.INCOMING ).iterator().hasNext() );
     }
+
+    /*
+    public static void main( String[] args )
+    {
+        EmbeddedGraphDatabase db = new EmbeddedGraphDatabase(
+                "target/iAmAwesome" );
+        Transaction tx = db.beginTx();
+        Node n1 = db.createNode();
+        Node n2 = db.createNode();
+        n1.createRelationshipTo( n2, TEST );
+        tx.success();
+        tx.finish();
+        db.getConfig().getGraphDbModule().getNodeManager().clearCache();
+        // n1.getSingleRelationship( RelType.TYPE_GENERIC, Direction.BOTH );
+        for ( Node n : db.getAllNodes() )
+        {
+            for ( Relationship rel : n.getRelationships() )
+            {
+                n.getSingleRelationship( rel.getType(), Direction.BOTH );
+            }
+        }
+    }
+    */
+
+
 
     @Test
     public void testSimple2()
