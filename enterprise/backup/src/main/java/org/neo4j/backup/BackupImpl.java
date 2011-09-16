@@ -24,6 +24,7 @@ import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
 import org.neo4j.com.StoreWriter;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.Config;
 
 class BackupImpl implements TheBackupInterface
 {
@@ -38,11 +39,26 @@ class BackupImpl implements TheBackupInterface
     {
         SlaveContext context = MasterUtil.rotateLogsAndStreamStoreFiles( graphDb, writer );
         writer.done();
-        return MasterUtil.packResponse( graphDb, context, null, MasterUtil.ALL );
+        return packResponse( context );
     }
     
     public Response<Void> incrementalBackup( SlaveContext context )
     {
+        return packResponse( context );
+    }
+    
+    private Response<Void> packResponse( SlaveContext context )
+    {
+        // On Windows there's a problem extracting logs from the current log version
+        // where a rotation is requested during the time of extracting transactions
+        // from it, especially if the extraction process is waiting for the client
+        // to catch up on reading them. On Linux/Mac this isn't a due to a more flexible
+        // file handling system. Solution: rotate before doing an incremental backup
+        // in Windows to avoid running into that problem.
+        if ( Config.osIsWindows() )
+        {
+            MasterUtil.rotateLogs( graphDb );
+        }
         return MasterUtil.packResponse( graphDb, context, null, MasterUtil.ALL );
     }
 }

@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.LogExtractor;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public class MasterUtil
 {
@@ -76,10 +77,9 @@ public class MasterUtil
             return path.substring( 1 );
         return path;
     }
-
-    public static SlaveContext rotateLogsAndStreamStoreFiles( GraphDatabaseService graphDb, StoreWriter writer )
+    
+    public static Pair<String, Long>[] rotateLogs( GraphDatabaseService graphDb )
     {
-        File baseDir = getBaseDir( graphDb );
         XaDataSourceManager dsManager =
                 ((AbstractGraphDatabase) graphDb).getConfig().getTxModule().getXaDataSourceManager();
         Collection<XaDataSource> sources = dsManager.getAllRegisteredDataSources();
@@ -97,13 +97,22 @@ public class MasterUtil
             catch ( IOException e )
             {
                 // TODO: what about error message?
+                StringLogger.getLogger( ((AbstractGraphDatabase)graphDb).getStoreDir() ).logMessage(
+                        "Unable to rotate log for " + ds, e );
                 throw new MasterFailureException( e );
             }
         }
-        SlaveContext context = SlaveContext.anonymous( appliedTransactions );
-        
+        return appliedTransactions;
+    }
+
+    public static SlaveContext rotateLogsAndStreamStoreFiles( GraphDatabaseService graphDb, StoreWriter writer )
+    {
+        File baseDir = getBaseDir( graphDb );
+        XaDataSourceManager dsManager =
+                ((AbstractGraphDatabase) graphDb).getConfig().getTxModule().getXaDataSourceManager();
+        SlaveContext context = SlaveContext.anonymous( rotateLogs( graphDb ) );
         ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( 1024*1024 );
-        for ( XaDataSource ds : sources )
+        for ( XaDataSource ds : dsManager.getAllRegisteredDataSources() )
         {
             try
             {
@@ -131,7 +140,6 @@ public class MasterUtil
             }
             catch ( IOException e )
             {
-                // TODO: what about error message?
                 throw new MasterFailureException( e );
             }
         }
