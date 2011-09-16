@@ -65,8 +65,12 @@ parseConfig
 
 NEO4J_OPTS="-Dlog4j.configuration=file:conf/log4j.properties -Dorg.neo4j.server.properties="${NEO4J_INSTANCE}"/conf/neo4j-server.properties -Djava.util.logging.config.file="${NEO4J_INSTANCE}/conf/logging.properties" -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}""
 JAVA_OPTS="-server ${wrapper_java_additional}"
-#NEO4J_SERVER_PORT=`( egrep "^org.neo4j.server.webserver.port" $NEO4J_INSTANCE/conf/neo4j-server.properties || echo 7474 ) | sed -e 's/.*=//'`
-NEO4J_SERVER_PORT=${org_neo4j_server_webserver_port:=7474}
+
+if [ ${org_neo4j_server_webserver_http_enabled} = "true" ]; then
+  NEO4J_SERVER_PORT=${org_neo4j_server_webserver_port:=7474}
+else
+  NEO4J_SERVER_PORT=${org_neo4j_server_webserver_https_port:=7473}
+fi
 
 LAUNCHD_NAME="${LAUNCHD_NAME}.${NEO4J_SERVER_PORT}"
 
