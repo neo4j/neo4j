@@ -573,41 +573,19 @@ public class TestXa extends AbstractNeo4jTestCase
         xaRes.start( xid, XAResource.TMNOFLAGS );
         long node1 = ds.nextId( Node.class );
         xaCon.getWriteTransaction().nodeCreate( node1 );
-        xaCon.getWriteTransaction().nodeAddProperty(
-                node1, index( "prop1" ),
+        xaCon.getWriteTransaction().nodeAddProperty( node1, index( "prop1" ),
                 new long[] { 1 << 63, 1, 1 } );
         xaCon.getWriteTransaction().nodeAddProperty( node1, index( "prop2" ),
                 new long[] { 1 << 63, 1, 1 } );
-        xaCon.getWriteTransaction().nodeAddProperty(
+        PropertyData toDelete = xaCon.getWriteTransaction().nodeAddProperty(
                 node1, index( "prop3" ),
                 new long[] { 1 << 63, 1, 1 } );
-        PropertyData toDelete = xaCon.getWriteTransaction().nodeAddProperty(
-                node1, index( "prop4" ),
+        PropertyData toRead = xaCon.getWriteTransaction().nodeAddProperty( node1, index( "prop4" ),
                 new long[] { 1 << 63, 1, 1 } );
         xaRes.end( xid, XAResource.TMSUCCESS );
         xaRes.prepare( xid );
         ds.rotateLogicalLog();
         copyLogicalLog( path() );
-        xaCon.clearAllTransactions();
-        ds.close();
-        deleteLogicalLogIfExist();
-        renameCopiedLogicalLog( path() );
-
-        ds = newNeoStore();
-        xaCon = (NeoStoreXaConnection) ds.getXaConnection();
-        xaRes = xaCon.getXaResource();
-        assertEquals( 1, xaRes.recover( XAResource.TMNOFLAGS ).length );
-        xaRes.commit( xid, true );
-        xaCon.clearAllTransactions();
-
-        xid = new XidImpl( new byte[2], new byte[2] );
-        xaRes = xaCon.getXaResource();
-        xaRes.start( xid, XAResource.TMNOFLAGS );
-
-        xaCon.getWriteTransaction().nodeLoadProperties( node1, false );
-
-        xaRes.end( xid, XAResource.TMSUCCESS );
-        xaRes.prepare( xid );
         xaCon.clearAllTransactions();
         ds.close();
         deleteLogicalLogIfExist();
@@ -636,7 +614,10 @@ public class TestXa extends AbstractNeo4jTestCase
         xaRes = xaCon.getXaResource();
         xaRes.start( xid, XAResource.TMNOFLAGS );
 
-        xaCon.getWriteTransaction().nodeLoadProperties( node1, false );
+        assertTrue( Arrays.equals(
+                (long[]) toRead.getValue(),
+                (long[]) xaCon.getWriteTransaction().nodeLoadProperties( node1,
+                        false ).get( toRead.getIndex() ).getValue() ) );
 
         xaRes.end( xid, XAResource.TMSUCCESS );
         xaRes.prepare( xid );

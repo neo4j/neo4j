@@ -114,7 +114,7 @@ public class PropertyRecord extends Abstract64BitRecord
         blockRecords.add( block );
         if ( block.inUse() )
         {
-            this.setInUse( true );
+            setInUse( true );
         }
     }
 
