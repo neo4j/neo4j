@@ -20,9 +20,9 @@
 package org.neo4j.cypher.commands
 
 import org.neo4j.cypher.pipes.aggregation._
-import org.neo4j.cypher.{SyntaxException, SymbolTable}
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
+import org.neo4j.cypher.{ParameterNotFoundException, SyntaxException, SymbolTable}
 
 abstract sealed class Value extends (Map[String,Any]=>Any) {
   def identifier: Identifier
@@ -149,5 +149,14 @@ case class EntityValue(entityName:String) extends Value {
 
   def checkAvailable(symbols: SymbolTable) {
      symbols.assertHas(Identifier(entityName))
+  }
+}
+
+case class ParameterValue(parameterName:String) extends Value {
+  def apply(m: Map[String, Any]): Any = m.getOrElse(parameterName, throw new ParameterNotFoundException("Expected a parameter named " + parameterName))
+
+  def identifier: Identifier = Identifier(parameterName)
+
+  def checkAvailable(symbols: SymbolTable) {
   }
 }

@@ -19,22 +19,6 @@
  */
 package org.neo4j.cypher
 
-import commands.Query
-import org.junit.Before
-
-
-trait ExecutionEngineHelper extends GraphDatabaseTestBase {
-
-  var engine: ExecutionEngine = null
-
-  @Before
-  def executionEngineHelperInit() {
-    engine = new ExecutionEngine(graph)
-  }
-
-  def execute(query: Query, params:(String,Any)*) = {
-    val result = engine.execute(query, params.toMap)
-    result
-  }
-
+class ParameterNotFoundException(message:String, cause:Throwable) extends RuntimeException(message, cause) {
+  def this(message:String)=this(message,null)
 }

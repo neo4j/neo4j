@@ -637,6 +637,16 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     assertTrue("Result set should be empty, but it wasn't", result.isEmpty)
   }
 
+  @Ignore
+  @Test def statingAPathTwiceShouldNotBeAProblem() {
+    createNodes("A", "B")
+    relate("A" -> "KNOWS" -> "B")
+
+    val result = parseAndExecute("start n=(1) match x<--n, p = n-->x return p")
+
+    assertEquals(1, result.toSeq.length)
+  }
+
   @Test def shouldPassThePathLengthTest() {
     createNodes("A", "B")
     relate("A" -> "KNOWS" -> "B")
@@ -689,7 +699,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val result = execute(query)
 
-    assertEquals(List(r1,r2), result.columnAs[Node]("RELATIONSHIPS(p)").toList.head)
+    assertEquals(List(r1, r2), result.columnAs[Node]("RELATIONSHIPS(p)").toList.head)
   }
 
   @Test def shouldReturnAVarLengthPath() {
@@ -703,6 +713,35 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
       PathImpl(node("A"), r1, node("B")),
       PathImpl(node("A"), r1, node("B"), r2, node("C"))
     ), result.columnAs[Path]("p").toList)
+  }
+
+  @Test def shouldBeAbleToTakeParams() {
+    createNodes("A")
+
+    val query = Query.
+      start(NodeById("pA", ParameterValue("a"))).
+      returns(ValueReturnItem(EntityValue("pA")))
+
+    val result = execute(query, "a" -> Seq[Long](1))
+
+    assertEquals(List(Map("pA" -> node("A"))), result.toList)
+  }
+
+  @Test def shouldBeAbleToTakeParamsFromParsedStuff() {
+    createNodes("A")
+
+    val query = new CypherParser().parse("start pA = (::a) return pA")
+    val result = execute(query, "a" -> Seq[Long](1))
+
+    assertEquals(List(Map("pA" -> node("A"))), result.toList)
+  }
+
+  @Test(expected = classOf[ParameterNotFoundException]) def shouldComplainWhenMissingParams() {
+    val query = Query.
+      start(NodeById("pA", ParameterValue("a"))).
+      returns(ValueReturnItem(EntityValue("pA")))
+
+    execute(query).toList
   }
 
   @Test def shouldThrowNiceErrorMessageWhenPropertyIsMissing() {
