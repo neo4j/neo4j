@@ -541,7 +541,7 @@ public class TestXa extends AbstractNeo4jTestCase
         xaCon.getWriteTransaction().nodeRemoveProperty( node1, n1prop1 );
         // long node2 = ds.nextId( Node.class );
         // xaCon.getWriteTransaction().nodeCreate( node2 );
-        PropertyData n2prop1 = xaCon.getWriteTransaction().nodeAddProperty(
+        xaCon.getWriteTransaction().nodeAddProperty(
                 node1,
                 index( "prop3" ),
                 new long[] { 1 << 23, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,

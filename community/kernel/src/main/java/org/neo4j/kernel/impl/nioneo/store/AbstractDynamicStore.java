@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -302,14 +301,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
                 buffer.putInt( mostlyNrOfBytesInt ).putInt( (int) nextProp );
                 if ( !record.isLight() )
                 {
-                    if ( !record.isCharData() )
-                    {
-                        buffer.put( record.getData() );
-                    }
-                    else
-                    {
-                        buffer.put( record.getDataAsChar() );
-                    }
+                    buffer.put( record.getData() );
                 }
             }
             else
@@ -355,52 +347,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
                 byte data[] = new byte[src.length - srcOffset];
                 System.arraycopy( src, srcOffset, data, 0, data.length );
                 record.setData( data );
-                nextBlock = Record.NO_NEXT_BLOCK.intValue();
-                record.setNextBlock( nextBlock );
-            }
-            recordList.add( record );
-        }
-        while ( nextBlock != Record.NO_NEXT_BLOCK.intValue() );
-        return recordList;
-    }
-
-    public Collection<DynamicRecord> allocateRecords( long startBlock,
-        char src[] )
-    {
-        assert getFileChannel() != null : "Store closed, null file channel";
-        assert src != null : "Null src argument";
-        List<DynamicRecord> recordList = new LinkedList<DynamicRecord>();
-        long nextBlock = startBlock;
-        int srcOffset = 0;
-        int dataSize = getBlockSize() - BLOCK_HEADER_SIZE;
-        do
-        {
-            DynamicRecord record = new DynamicRecord( nextBlock );
-            record.setCreated();
-            record.setInUse( true );
-            if ( (src.length - srcOffset) * 2 > dataSize )
-            {
-                byte data[] = new byte[dataSize];
-                CharBuffer charBuf = ByteBuffer.wrap( data ).asCharBuffer();
-                charBuf.put( src, srcOffset, dataSize / 2 );
-                record.setData( data );
-                nextBlock = nextBlockId();
-                record.setNextBlock( nextBlock );
-                srcOffset += dataSize / 2;
-            }
-            else
-            {
-                if ( srcOffset == 0 )
-                {
-                    record.setCharData( src );
-                }
-                else
-                {
-                    byte data[] = new byte[(src.length - srcOffset) * 2];
-                    CharBuffer charBuf = ByteBuffer.wrap( data ).asCharBuffer();
-                    charBuf.put( src, srcOffset, src.length - srcOffset );
-                    record.setData( data );
-                }
                 nextBlock = Record.NO_NEXT_BLOCK.intValue();
                 record.setNextBlock( nextBlock );
             }

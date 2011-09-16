@@ -141,16 +141,8 @@ public abstract class Command extends XaCommand
             if ( !record.isLight() )
             {
                 buffer.put( (byte) 0 );
-                if ( !record.isCharData() )
-                {
-                    byte[] data = record.getData();
-                    buffer.put( data );
-                }
-                else
-                {
-                    char[] chars = record.getDataAsChar();
-                    buffer.put( chars );
-                }
+                byte[] data = record.getData();
+                buffer.put( data );
             }
             else
             {

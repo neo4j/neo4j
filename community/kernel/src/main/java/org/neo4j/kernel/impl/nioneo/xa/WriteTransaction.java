@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.getBestSuitedEncoding;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -1473,11 +1475,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         PropertyIndexStore propIndexStore = getPropertyStore().getIndexStore();
         int keyBlockId = propIndexStore.nextKeyBlockId();
         record.setKeyBlockId( keyBlockId );
-        int length = key.length();
-        char[] chars = new char[length];
-        key.getChars( 0, length, chars, 0 );
         Collection<DynamicRecord> keyRecords =
-            propIndexStore.allocateKeyRecords( keyBlockId, chars );
+            propIndexStore.allocateKeyRecords( keyBlockId, getBestSuitedEncoding( key ) );
         for ( DynamicRecord keyRecord : keyRecords )
         {
             record.addKeyRecord( keyRecord );
@@ -1493,11 +1492,11 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         record.setCreated();
         int blockId = (int) getRelationshipTypeStore().nextBlockId();
         record.setTypeBlock( blockId );
-        int length = name.length();
-        char[] chars = new char[length];
-        name.getChars( 0, length, chars, 0 );
+//        int length = name.length();
+//        char[] chars = new char[length];
+//        name.getChars( 0, length, chars, 0 );
         Collection<DynamicRecord> typeNameRecords =
-            getRelationshipTypeStore().allocateTypeNameRecords( blockId, chars );
+            getRelationshipTypeStore().allocateTypeNameRecords( blockId, getBestSuitedEncoding( name ) );
         for ( DynamicRecord typeRecord : typeNameRecords )
         {
             record.addTypeRecord( typeRecord );

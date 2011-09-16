@@ -28,6 +28,7 @@ import static org.neo4j.kernel.Config.ARRAY_BLOCK_SIZE;
 import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
 import static org.neo4j.kernel.Config.STRING_BLOCK_SIZE;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
+import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.getBestSuitedEncoding;
 
 import java.io.File;
 import java.io.IOException;
@@ -315,10 +316,7 @@ public class TestUpgradeStore
             record.setInUse( true );
             int typeBlockId = (int) store.nextBlockId();
             record.setTypeBlock( typeBlockId );
-            int length = name.length();
-            char[] chars = new char[length];
-            name.getChars( 0, length, chars, 0 );
-            Collection<DynamicRecord> typeRecords = store.allocateTypeNameRecords( typeBlockId, chars );
+            Collection<DynamicRecord> typeRecords = store.allocateTypeNameRecords( typeBlockId, getBestSuitedEncoding( name ) );
             for ( DynamicRecord typeRecord : typeRecords )
             {
                 record.addTypeRecord( typeRecord );
