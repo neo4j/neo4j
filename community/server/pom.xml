@@ -501,6 +501,42 @@ the relevant Commercial Agreement.
           </execution>
         </executions>
       </plugin>
+      
+      <plugin>
+        <groupId>com.voltvoodoo</groupId>
+        <artifactId>brew</artifactId>
+        <version>0.2.3</version>
+        <executions>
+          <execution>
+            <id>build-webadmin</id>
+            <goals>
+              <goal>compile</goal>
+              <goal>optimize</goal>
+            </goals>
+            <phase>generate-resources</phase>
+          </execution>
+        </executions>
+        <configuration>
+          <modules>
+            <module>
+              <name>webadmin</name>
+              <exclude>
+                <exclude>lib/arbor.js</exclude>
+              </exclude>
+            </module>
+            <module>
+              <name>visualization</name>
+              <exclude>
+                <exclude>lib/arbor.js</exclude>
+              </exclude>
+            </module>
+          </modules>
+          <coffeeOutputDir>${project.build.outputDirectory}/webadmin-html/js</coffeeOutputDir>
+          <hamlOutputDir>${project.build.outputDirectory}/webadmin-html/js</hamlOutputDir>
+          <optimizeSourceDir>${project.build.outputDirectory}/webadmin-html/js</optimizeSourceDir>
+          <optimizeOutputDir>${project.build.outputDirectory}/webadmin-html/js</optimizeOutputDir>
+        </configuration>
+      </plugin>
     </plugins>
 
   </build>
@@ -605,76 +641,7 @@ the relevant Commercial Agreement.
         </plugins>
       </build>
     </profile>
-
-    <profile>
-      <!-- An execution that adds src/main/resources to the classpath. Allows changing static files and seeing results without restarting server. Done with ant b/c of problems adding local directory to classpath when using exec. -->
-      <id>webdev-exec</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-antrun-plugin</artifactId>
-
-            <configuration>
-              <target>
-                <property name="classpath" refid="maven.runtime.classpath" />
-                <exec executable="java">
-                  <arg line="-Dorg.neo4j.server.properties=${basedir}/neo4j-home/conf/neo4j-server.properties" />
-                  <arg line="-classpath" />
-                  <arg line="${basedir}/src/main/resources:${classpath}" />
-                  <arg line="${neo4j-server.mainClass}" />
-                </exec>
-              </target>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <profile>
-      <!-- Disconnected from the "normal" build pipeline, because the artifact that this produces (webadmin.min.js) is checked into the source tree (and thus there is no reason normally to rebuild it). I know, that's really awful, but the alternative is forcing everyone to run the webadmin build all 
-        the time, and its *really* slow. The plan is to move webadmin into it's own project, where the build can be sane without killing the build time for the server project. -->
-      <id>webadmin-build</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>com.voltvoodoo</groupId>
-            <artifactId>brew</artifactId>
-            <version>0.2.2</version>
-            <executions>
-              <execution>
-                <id>build-webadmin</id>
-                <goals>
-                  <goal>compile</goal>
-                  <goal>optimize</goal>
-                </goals>
-              </execution>
-            </executions>
-            <configuration>
-              <modules>
-                <module>
-                  <name>webadmin</name>
-                  <exclude>
-                    <exclude>lib/arbor.js</exclude>
-                  </exclude>
-                </module>
-                <module>
-                  <name>visualization</name>
-                  <exclude>
-                    <exclude>lib/arbor.js</exclude>
-                  </exclude>
-                </module>
-              </modules>
-              <coffeeOutputDir>${basedir}/src/main/resources/webadmin-html/js</coffeeOutputDir>
-              <hamlOutputDir>${basedir}/src/main/resources/webadmin-html/js</hamlOutputDir>
-              <optimizeSourceDir>${basedir}/src/main/resources/webadmin-html/js</optimizeSourceDir>
-              <optimizeOutputDir>${basedir}/src/main/resources/webadmin-html/js</optimizeOutputDir>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
+    
     <profile>
       <id>neodev</id>
       <!-- Expands the number of things skipped by the neodev profile defined in parent-central pom. This is meant to be used by maven exec, it does not guarantee producing working artifacts. -->
@@ -733,8 +700,6 @@ the relevant Commercial Agreement.
       </build>
     </profile>
 
-
-
     <!-- Firefox is default implementation, set in properties at the top of this file. -->
     <profile>
       <id>htmlunit</id>
@@ -766,7 +731,6 @@ the relevant Commercial Agreement.
       </repositories>
     </profile>
   </profiles>
-
 
   <reporting>
     <plugins>
