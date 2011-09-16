@@ -718,9 +718,12 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 {
                     valueRecord.setInUse( false );
                 }
+                block.setInUse( false );
+                block.setChanged();
             }
             nextProp = propRecord.getNextProp();
             propRecord.setInUse( false );
+            propRecord.setChanged();
         }
         return result;
     }
@@ -936,6 +939,9 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             getPropertyStore().makeHeavy( block );
         }
         block.setInUse( false );
+        block.setChanged();
+        propRecord.setChanged();
+
         // TODO: update count on property index record
         for ( DynamicRecord valueRecord : block.getValueRecords() )
         {
@@ -1203,11 +1209,16 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         if ( oldRecordSize - oldSize + block.getSize() > PropertyType.getPayloadSize() )
         {
             PropertyBlock newBlock = new PropertyBlock();
+            PropertyRecord oldRecord = propertyRecord;
             newBlock.setInUse( true );
             newBlock.setValueBlocks( block.getValueBlocks() );
             block.setInUse( false );
             propertyRecord = addPropertyBlockToPrimitive( newBlock, primitive,
             /*isNode*/isNode );
+            if ( propertyRecord != oldRecord && oldRecord.size() == 0 )
+            {
+                oldRecord.setInUse( false );
+            }
             block = newBlock;
         }
         return block.newPropertyData( propertyRecord, value );
@@ -1290,10 +1301,11 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             if ( usedPayloadBytes + newBlockSizeInBytes <= PropertyType.getPayloadSize() )
             {
                 host = propRecord;
-                host.isChanged();
                 try
                 {
                     host.addPropertyBlock( block );
+                    host.setInUse( true );
+                    host.isChanged();
                 }
                 catch ( IllegalStateException e )
                 {
@@ -1340,6 +1352,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             try
             {
                 host.addPropertyBlock( block );
+                host.setInUse( true );
             }
             catch ( IllegalStateException e )
             {
@@ -1353,7 +1366,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 throw e;
             }
         }
-        // host.addPropertyBlock( block );
         return host;
     }
 
