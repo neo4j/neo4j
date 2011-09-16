@@ -14,11 +14,13 @@
   <version>1.5-SNAPSHOT</version>
 
   <scm>
-    <url>https://github.com/neo4j/testing-utils/tree/master</url>
+    <connection>scm:git:git://github.com/neo4j/testing-utils.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/testing-utils.git</developerConnection>
+    <url>https://github.com/neo4j/testing-utils</url>
   </scm>
 
   <properties>
-    <neo4j.version>${project.version}</neo4j.version>
+    <neo4j.version>1.5-SNAPSHOT</neo4j.version>
     <license-text.header>GPL-3-header.txt</license-text.header>
   </properties>
 
