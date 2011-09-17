@@ -19,17 +19,15 @@ package org.neo4j.cypher.parser
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
-trait StartClause extends JavaTokenParsers with Tokens {
-  def start: Parser[Start] = ignoreCase("start") ~> rep1sep(nodeByParam | nodeByIds | nodeByIndex | nodeByIndexQuery | relsByIds | relsByIndex , ",") ^^ (Start(_: _*))
 
-  def nodeByParam = identity ~ "=" ~  "(" ~ "::" ~ identity  ~ ")" ^^ {
-    case varName ~ "=" ~  "(" ~ "::" ~ paramName  ~ ")"  => {
-      println(varName)
-      println(paramName)
-      NodeById(varName, ParameterValue(paramName))
-    }
+trait StartClause extends JavaTokenParsers with Tokens {
+  def start: Parser[Start] = ignoreCase("start") ~> rep1sep(nodeByParam | nodeByIds | nodeByIndex | nodeByIndexQuery | relsByIds | relsByIndex, ",") ^^ (Start(_: _*))
+
+  def nodeByParam = identity ~ "=" ~ "(" ~ "::" ~ identity ~ ")" ^^ {
+    case varName ~ "=" ~ "(" ~ "::" ~ paramName ~ ")" => NodeById(varName, ParameterValue(paramName))
   }
 
 

@@ -715,16 +715,37 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     ), result.columnAs[Path]("p").toList)
   }
 
-  @Test def shouldBeAbleToTakeParams() {
+  @Test def shouldBeAbleToTakeParamsInDifferentTypes() {
+    createNodes("A", "B", "C", "D", "E")
+
+    val query = Query.
+      start(
+      NodeById("pA", ParameterValue("a")),
+      NodeById("pB", ParameterValue("b")),
+      NodeById("pC", ParameterValue("c")),
+      NodeById("pD", ParameterValue("d")),
+      NodeById("pE", ParameterValue("e"))).
+      returns(ValueReturnItem(EntityValue("pA")), ValueReturnItem(EntityValue("pB")), ValueReturnItem(EntityValue("pC")), ValueReturnItem(EntityValue("pD")), ValueReturnItem(EntityValue("pE")))
+
+    val result = execute(query,
+      "a" -> Seq[Long](1),
+      "b" -> 2,
+      "c" -> Seq(3L).asJava,
+      "d" -> Seq(4).asJava,
+      "e" -> List(5)
+    )
+
+    assertEquals(1, result.toList.size)
+  }
+
+  @Test(expected = classOf[ParameterNotFoundException]) def parameterTypeErrorShouldBeNicelyExplained() {
     createNodes("A")
 
     val query = Query.
       start(NodeById("pA", ParameterValue("a"))).
       returns(ValueReturnItem(EntityValue("pA")))
 
-    val result = execute(query, "a" -> Seq[Long](1))
-
-    assertEquals(List(Map("pA" -> node("A"))), result.toList)
+    execute(query, "a" -> "Andres").toList
   }
 
   @Test def shouldBeAbleToTakeParamsFromParsedStuff() {

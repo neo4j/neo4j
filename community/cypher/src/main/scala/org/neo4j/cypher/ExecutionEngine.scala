@@ -129,15 +129,7 @@ class ExecutionEngine(graph: GraphDatabaseService) {
         indexHits.asScala
       })
 
-    case NodeById(varName, id) => new StartPipe(lastPipe, varName, m => {
-      id(m) match {
-        case x: Traversable[Long] => x.map(graph.getNodeById).toSeq
-        case x => {
-          println(x)
-          throw new Exception("Wut?")
-        }
-      }
-    })
+    case NodeById(varName, id) => new StartPipe(lastPipe, varName, m => makeLongSeq(id(m), varName).map(graph.getNodeById))
     case RelationshipById(varName, ids@_*) => new StartPipe(lastPipe, varName, ids.map(graph.getRelationshipById))
   }
 
@@ -147,5 +139,31 @@ class ExecutionEngine(graph: GraphDatabaseService) {
       throw new Error("Cypher can only run with Scala 2.9.0. It looks like the Scala version is: " +
         util.Properties.versionString)
     }
+  }
+
+  private def makeLongSeq(result: Any, name: String): Seq[Long] = {
+    if (result.isInstanceOf[Int]) {
+      return Seq(result.asInstanceOf[Int].toLong)
+    }
+
+    if (result.isInstanceOf[Long]) {
+      return Seq(result.asInstanceOf[Long])
+    }
+
+    def makeLong(x: Any): Long = x match {
+      case i: Int => i.toLong
+      case i: Long => i
+      case i: String => i.toLong
+    }
+
+    if (result.isInstanceOf[java.lang.Iterable[_]]) {
+      return result.asInstanceOf[java.lang.Iterable[_]].asScala.map(makeLong).toSeq
+    }
+
+    if (result.isInstanceOf[Traversable[_]]) {
+      return result.asInstanceOf[Traversable[_]].map(makeLong).toSeq
+    }
+
+    throw new ParameterNotFoundException("Expected " + name + " to be a Long, or an Iterable of Long. It was '" + result + "'")
   }
 }
