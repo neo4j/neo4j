@@ -702,6 +702,14 @@ class CypherParserTest extends JUnitSuite {
         returns (ValueReturnItem(EntityValue("b"))))
   }
 
+  @Test def testParam() {
+    testQuery(
+      """start pA = (::a) return pA""",
+      Query.
+        start(NodeById("pA", ParameterValue("a"))).
+        returns(ValueReturnItem(EntityValue("pA"))))
+  }
+
 
   @Test def consoleModeParserShouldOutputNullableProperties() {
     val query = "start a = (1) return a.name"

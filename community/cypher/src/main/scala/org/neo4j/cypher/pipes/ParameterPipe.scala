@@ -17,24 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.pipes
 
-import commands.Query
-import org.junit.Before
+import org.neo4j.cypher.SymbolTable
+import org.neo4j.cypher.commands.{Identifier, LiteralIdentifier}
 
-
-trait ExecutionEngineHelper extends GraphDatabaseTestBase {
-
-  var engine: ExecutionEngine = null
-
-  @Before
-  def executionEngineHelperInit() {
-    engine = new ExecutionEngine(graph)
+class ParameterPipe(params: Map[String, Any]) extends Pipe {
+  def foreach[U](f: (Map[String, Any]) => U) {
+    f(params)
   }
 
-  def execute(query: Query, params:(String,Any)*) = {
-    val result = engine.execute(query, params.toMap)
-    result
-  }
+  val identifiers: Seq[Identifier] = params.keys.map(k => LiteralIdentifier("$" + k)).toSeq
 
+  val symbols: SymbolTable = new SymbolTable(identifiers)
 }

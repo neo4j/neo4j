@@ -24,7 +24,6 @@ object Query {
   def start(startItems: StartItem*) = new QueryBuilder(startItems)
 }
 
-
 case class Query(returns: Return, start: Start, matching: Option[Match], where: Option[Clause], aggregation: Option[Aggregation],
                  sort: Option[Sort], slice: Option[Slice], namedPaths: Option[NamedPaths])
 
