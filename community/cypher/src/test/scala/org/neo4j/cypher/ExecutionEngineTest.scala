@@ -145,7 +145,6 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     assertEquals(List(a), result.columnAs[Node]("a").toList)
   }
 
-  @Ignore("Maybe later")
   @Test def shouldOutputTheCartesianProductOfTwoNodes() {
     val n1: Node = createNode()
     val n2: Node = createNode()
