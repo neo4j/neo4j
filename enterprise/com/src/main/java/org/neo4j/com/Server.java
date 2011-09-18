@@ -63,7 +63,10 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public abstract class Server<M, R> extends Protocol implements ChannelPipelineFactory
 {
     public static final int DEFAULT_BACKUP_PORT = 6362;
-    
+
+    // It's ok if there are more transactions, since these worker threads doesn't
+    // do any actual work themselves, but spawn off other worker threads doing the
+    // actual work. So this is more like a core Netty I/O pool worker size.
     protected final static int DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS = 200;
 
     private final ChannelFactory channelFactory;
