@@ -28,6 +28,7 @@ import java.util.Map;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
@@ -176,8 +177,9 @@ public class ImpermanentGraphDatabase extends AbstractGraphDatabase
     {
         return inner.index();
     }
-    
-    public GraphDatabaseService getInner() {
+
+    public GraphDatabaseService getInner()
+    {
         return inner;
     }
 
@@ -205,7 +207,7 @@ public class ImpermanentGraphDatabase extends AbstractGraphDatabase
         return inner.isReadOnly();
     }
 
-    public void cleanContent(boolean retainReferenceNode)
+    public void cleanContent( boolean retainReferenceNode )
     {
         Transaction tx = inner.beginTx();
         try
@@ -218,13 +220,24 @@ public class ImpermanentGraphDatabase extends AbstractGraphDatabase
                 }
                 if ( !node.hasRelationship() )
                 {
-                    if(node.equals( inner.getReferenceNode() ))
+                    if ( retainReferenceNode )
                     {
-                        if(!retainReferenceNode) {
-                            node.delete();
+                        try
+                        {
+                            Node referenceNode = inner.getReferenceNode();
+                            if ( !node.equals( referenceNode ) )
+                            {
+                                node.delete();
+                            }
                         }
-                    } else {
-                    node.delete();
+                        catch ( NotFoundException nfe )
+                        {
+                            // no ref node
+                        }
+                    }
+                    else
+                    {
+                        node.delete();
                     }
                 }
             }
@@ -239,7 +252,7 @@ public class ImpermanentGraphDatabase extends AbstractGraphDatabase
             tx.finish();
         }
     }
-    
+
     public void cleanContent()
     {
         cleanContent( false );
