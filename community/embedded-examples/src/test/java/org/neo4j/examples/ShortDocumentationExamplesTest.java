@@ -165,6 +165,9 @@ public class ShortDocumentationExamplesTest implements GraphHolder
      * - The owning user of a File has read access
      * - any user having a role that has been granted read access to one of the parent folders of the Item has read access.
      * 
+     * In order to find users that can read any part of the parent folder hierarchy above the files,
+     * Cypher provides optional relationships that make certain subgraphs of the matching pattern optional.
+     * 
      * @@query3
      * 
      * @@result3
@@ -223,12 +226,12 @@ public class ShortDocumentationExamplesTest implements GraphHolder
         //ACL
         query = "START file=(node_auto_index,'name:File*') " +
         		"MATCH " +
-        		"dir-[:leaf]->file, " +
+        		"file<-[:leaf]-dir, " +
         		"file<-[:owns]-owner, " +
-        		"path = dir<-[:contains^1..10]-(parent)," +
-        		"(parent)<-[r?:canRead]-()<-[:hasRole]-readUserMoreThan1DirUp, " +
-                "dir<-[s?:canRead]-()<-[:hasRole]-readUser1DirUp " +
-        		"RETURN path, file, readUser1DirUp, readUserMoreThan1DirUp, owner";
+        		"path = dir<-[:contains^1..10]-parent," +
+        		"parent<-[?:canRead]-role2<-[:hasRole]-readUserMoreThan1DirUp, " +
+                "dir<-[?:canRead]-role1<-[:hasRole]-readUser1DirUp " +
+        		"RETURN path, file, role1, readUser1DirUp, role2, readUserMoreThan1DirUp, owner";
         gen.get().addSnippet( "query3", AsciidocHelper.createCypherSnippet( query ) );
         result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("File1") );
