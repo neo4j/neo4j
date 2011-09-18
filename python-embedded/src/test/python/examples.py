@@ -67,13 +67,12 @@ class ExamplesTest(unit_tests.GraphDatabaseTest):
         folder_to_put_db_in = tempfile.mkdtemp()
         try:
             # START SNIPPET: invoiceapp-setup
-            from neo4j import GraphDatabase, INCOMING, Evaluation
-            from datetime import date
-            import time
+            from neo4j import GraphDatabase, OUTGOING, Evaluation
             
             # Create a database
             db = GraphDatabase(folder_to_put_db_in)
             
+            # All write operations happen in a transaction
             with db.transaction:
                 
                 # A node to connect customers to
@@ -83,7 +82,7 @@ class ExamplesTest(unit_tests.GraphDatabaseTest):
                 invoices = db.node()
                 
                 # Connected to the reference node, so
-                # that we can always find it.
+                # that we can always find them.
                 db.reference_node.CUSTOMERS(customers)
                 db.reference_node.INVOICES(invoices)
                 
@@ -95,7 +94,7 @@ class ExamplesTest(unit_tests.GraphDatabaseTest):
             def create_customer(name):
                 with db.transaction:                    
                     customer = db.node(name=name)
-                    customers.CUSTOMER(customer)
+                    customer.INSTANCE_OF(customers)
                     
                     # Index the customer by name
                     customer_idx['name'][name] = customer
@@ -104,9 +103,9 @@ class ExamplesTest(unit_tests.GraphDatabaseTest):
             def create_invoice(customer, amount):
                 with db.transaction:
                     invoice = db.node(amount=amount)
-                    invoices.INVOICE(invoice)
+                    invoice.INSTANCE_OF(invoices)
                     
-                    invoice.RECIPIENT(customer)
+                    invoice.SENT_TO(customer)
                 return customer
             # END SNIPPET: invoiceapp-domainlogic-create
             
@@ -124,7 +123,7 @@ class ExamplesTest(unit_tests.GraphDatabaseTest):
                     return Evaluation.EXCLUDE_AND_CONTINUE
                 
                 return db.traversal()\
-                         .relationships('RECIPIENT', INCOMING)\
+                         .relationships('SENT_TO', OUTGOING)\
                          .evaluator(evaluator)\
                          .traverse(customer)\
                          .nodes()
@@ -134,14 +133,14 @@ class ExamplesTest(unit_tests.GraphDatabaseTest):
             for name in ['Acme Inc.', 'Example Ltd.']:
                create_customer(name)
             
-            for relationship in customers.CUSTOMER:
+            for relationship in customers.INSTANCE_OF:
                for i in range(1,12):
                    create_invoice(relationship.end, 100 * i)
                    
             large_invoices = get_invoices_with_amount_over(get_customer('Acme Inc.'), 500)
             
             # Getting all invoices per customer:
-            for invoice in get_customer('Acme Inc.').RECIPIENT.incoming:
+            for invoice in get_customer('Acme Inc.').SENT_TO.incoming:
                 pass
             # END SNIPPET: invoiceapp-create-and-search
             
