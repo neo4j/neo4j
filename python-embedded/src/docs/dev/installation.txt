@@ -2,7 +2,7 @@
 Installation
 ============
 
-NOTE: The Neo4j database itself (from the <<editions,Community Edition>>) are included in the neo4j-embedded distribution.
+NOTE: The Neo4j database itself (from the <<editions,Community Edition>>) is included in the neo4j-embedded distribution.
 
 == Installation on OSX/Linux ==
 
@@ -24,6 +24,8 @@ JPype is also available in the Debian repos:
 ----
 sudo apt-get install python-jpype
 ----
+
+Then, make sure the JAVA_HOME environment variable is set to your jre or jdk folder, so that jpype can find the JVM.
 
 
 === Installing neo4j-embedded ===
@@ -60,6 +62,8 @@ Also note that there are different downloads depending on which version you use.
 
 . Download the latest appropriate version of JPype from http://sourceforge.net/projects/jpype/files/JPype/ for 32bit or from http://www.lfd.uci.edu/~gohlke/pythonlibs/ for 64bit
 . Run the installer
+
+Then, make sure the JAVA_HOME environment variable is set to your jre or jdk folder. There is a description of how to set environment variables in <<python-embedded-installation-windows-dlls>>.
 
 Notice: There may be DLL files missing from your system that are required by JPype. See <<python-embedded-installation-windows-dlls>> for instructions for how to fix this.
 
