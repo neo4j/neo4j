@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.plugin.gremlin;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -33,7 +32,6 @@ import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.JSONPrettifier;
-import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.TestData.Title;
 
