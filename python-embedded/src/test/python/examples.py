@@ -133,15 +133,18 @@ class ExamplesTest(unit_tests.GraphDatabaseTest):
             for name in ['Acme Inc.', 'Example Ltd.']:
                create_customer(name)
             
+            # Loop through customers
             for relationship in customers.INSTANCE_OF:
+               customer = relationship.end
                for i in range(1,12):
-                   create_invoice(relationship.end, 100 * i)
+                   create_invoice(customer, 100 * i)
                    
+            # Finding large invoices
             large_invoices = get_invoices_with_amount_over(get_customer('Acme Inc.'), 500)
             
             # Getting all invoices per customer:
-            for invoice in get_customer('Acme Inc.').SENT_TO.incoming:
-                pass
+            for relationship in get_customer('Acme Inc.').SENT_TO.incoming:
+                invoice = relationship.start
             # END SNIPPET: invoiceapp-create-and-search
             
             self.assertEqual(len(large_invoices), 6)
