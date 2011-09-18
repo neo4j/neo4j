@@ -26,6 +26,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
 
 import java.io.File;
+import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
@@ -37,6 +38,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
@@ -309,6 +311,39 @@ public class TestBackup
         {
             db.shutdown();
         }
+    }
+    
+    @Test
+    public void backupEmptyIndex() throws Exception
+    {
+        String key = "name";
+        String value = "Neo";
+        GraphDatabaseService db = new EmbeddedGraphDatabase( serverPath, configForBackup() );
+        Index<Node> index = db.index().forNodes( key );
+        Transaction tx = db.beginTx();
+        Node node = db.createNode();
+        node.setProperty( key, value );
+        tx.success();
+        tx.finish();
+        OnlineBackup.from( "localhost" ).full( backupPath );
+        assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
+        FileUtils.deleteDirectory( new File( backupPath ) );
+        OnlineBackup.from( "localhost" ).full( backupPath );
+        assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
+        
+        tx = db.beginTx();
+        index.add( node, key, value );
+        tx.success();
+        tx.finish();
+        FileUtils.deleteDirectory( new File( backupPath ) );
+        OnlineBackup.from( "localhost" ).full( backupPath );
+        assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
+        db.shutdown();
+    }
+
+    private Map<String, String> configForBackup()
+    {
+        return MapUtil.stringMap( Config.ENABLE_ONLINE_BACKUP, "true" );
     }
 
     private static void assertStoreIsLocked( String path )
