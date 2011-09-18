@@ -298,22 +298,6 @@ public class TestBackup
     }
 
     @Test
-    public void shouldRetainFileLocksAfterFullBackupOnLiveDatabase() throws Exception
-    {
-        GraphDatabaseService db = new EmbeddedGraphDatabase( serverPath, stringMap( ENABLE_ONLINE_BACKUP, "true" ) );
-        try
-        {
-            assertStoreIsLocked( serverPath );
-            OnlineBackup.from( "localhost" ).full( backupPath );
-            assertStoreIsLocked( serverPath );
-        }
-        finally
-        {
-            db.shutdown();
-        }
-    }
-    
-    @Test
     public void backupEmptyIndex() throws Exception
     {
         String key = "name";
@@ -340,7 +324,24 @@ public class TestBackup
         assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
         db.shutdown();
     }
-
+    
+    @Test
+    public void shouldRetainFileLocksAfterFullBackupOnLiveDatabase() throws Exception
+    {
+        String sourcePath = "target/var/serverdb-lock";
+        GraphDatabaseService db = new EmbeddedGraphDatabase( sourcePath, stringMap( ENABLE_ONLINE_BACKUP, "true" ) );
+        try
+        {
+            assertStoreIsLocked( sourcePath );
+            OnlineBackup.from( "localhost" ).full( backupPath );
+            assertStoreIsLocked( sourcePath );
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+    
     private Map<String, String> configForBackup()
     {
         return MapUtil.stringMap( Config.ENABLE_ONLINE_BACKUP, "true" );
