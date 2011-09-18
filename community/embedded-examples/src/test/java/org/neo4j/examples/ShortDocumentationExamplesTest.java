@@ -21,6 +21,10 @@ package org.neo4j.examples;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.test.AsciiDocGenerator.createSourceSnippet;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createCypherSnippet;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphViz;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
 
 import java.util.Map;
 
@@ -47,7 +51,6 @@ import org.neo4j.test.GraphHolder;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.JavaTestDocsGenerator;
 import org.neo4j.test.TestData;
-import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 public class ShortDocumentationExamplesTest implements GraphHolder
 {
@@ -91,9 +94,10 @@ public class ShortDocumentationExamplesTest implements GraphHolder
     public void pathUniquenesExample()
     {
         Node start = data.get().get( "Pet0" );
-        gen.get().addSnippet( "graph", AsciidocHelper.createGraphViz("descendants1", graphdb(), gen.get().getTitle()) );
+        gen.get().addSnippet( "graph", createGraphViz("descendants1", graphdb(), gen.get().getTitle()) );
         String tagName = "traverser";
-        gen.get().addSnippet( tagName, gen.get().createSourceSnippet(tagName, this.getClass()) );
+        gen.get();
+        gen.get().addSnippet( tagName, createSourceSnippet(tagName, this.getClass()) );
         // START SNIPPET: traverser
         final Node target = data.get().get( "Principal1" );
         TraversalDescription td = Traversal.description().uniqueness(Uniqueness.NODE_PATH ).evaluator( new Evaluator()
@@ -118,7 +122,7 @@ public class ShortDocumentationExamplesTest implements GraphHolder
             count++;
             output += path.toString()+"\n";
         }
-        gen.get().addSnippet( "output", AsciidocHelper.createOutputSnippet(output) );
+        gen.get().addSnippet( "output", createOutputSnippet(output) );
         assertEquals(2, count);
     }
     
@@ -203,25 +207,25 @@ public class ShortDocumentationExamplesTest implements GraphHolder
     public void file_trees_and_graphs()
     {
         data.get();
-        gen.get().addSnippet( "graph1", AsciidocHelper.createGraphViz("The Domain Structure", graphdb(), gen.get().getTitle()) );
+        gen.get().addSnippet( "graph1", createGraphViz("The Domain Structure", graphdb(), gen.get().getTitle()) );
         CypherParser parser = new CypherParser();
         ExecutionEngine engine = new ExecutionEngine(db);
         
         //Files
         //TODO: can we do open ended?
         String query = "start root=(node_auto_index,'name:Dir0') match (root)-[:contains^0..10]->()-[:leaf]->(file) return file";
-        gen.get().addSnippet( "query1", AsciidocHelper.createCypherSnippet( query ) );
+        gen.get().addSnippet( "query1", createCypherSnippet( query ) );
         String result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("File1") );
-        gen.get().addSnippet( "result1", AsciidocHelper.createOutputSnippet( result ) );
+        gen.get().addSnippet( "result1", createOutputSnippet( result ) );
         
         //Ownership
         query = "start root=(node_auto_index,'name:Dir0') match (root)-[:contains^0..10]->()-[:leaf]->(file)<-[:owns]-(user) where user.name = 'User1' return file, user";
-        gen.get().addSnippet( "query2", AsciidocHelper.createCypherSnippet( query ) );
+        gen.get().addSnippet( "query2", createCypherSnippet( query ) );
         result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("File1") );
         assertFalse( result.contains("File2") );
-        gen.get().addSnippet( "result2", AsciidocHelper.createOutputSnippet( result ) );
+        gen.get().addSnippet( "result2", createOutputSnippet( result ) );
         
         //ACL
         query = "START file=(node_auto_index,'name:File*') " +
@@ -231,14 +235,15 @@ public class ShortDocumentationExamplesTest implements GraphHolder
         		"path = dir<-[:contains^1..10]-parent," +
         		"parent<-[?:canRead]-role2<-[:hasRole]-readUserMoreThan1DirUp, " +
                 "dir<-[?:canRead]-role1<-[:hasRole]-readUser1DirUp " +
+        		//TODO: would like to get results the order I specify
         		"RETURN path, file, role1, readUser1DirUp, role2, readUserMoreThan1DirUp, owner";
-        gen.get().addSnippet( "query3", AsciidocHelper.createCypherSnippet( query ) );
+        gen.get().addSnippet( "query3", createCypherSnippet( query ) );
         result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("File1") );
         assertTrue( result.contains("File2") );
         assertTrue( result.contains("AdminUser3") );
         assertTrue( result.contains("AdminUser4") );
-        gen.get().addSnippet( "result3", AsciidocHelper.createOutputSnippet( result ) );
+        gen.get().addSnippet( "result3", createOutputSnippet( result ) );
         
         
     }
