@@ -72,7 +72,6 @@ class IndexTest(unit_tests.GraphDatabaseTest):
             # Add the node to the index
             node_idx['akey']['avalue'] = a_node
             
-            
             # Indexing relationships
             a_relationship = a_node.knows(db.node())
             rel_idx = db.relationship.indexes.create('my_rels')

@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from _backend import extends, implements, rel_type,\
-    Path, TraverserImpl, Traversal,\
+    TraversalPath, TraverserImpl, Traversal,\
     TraversalDescriptionImpl, strings,\
     Evaluation, Evaluator, Uniqueness
         
@@ -36,7 +36,7 @@ class DynamicEvaluator(implements(Evaluator)):
 # Pythonification of the traversal API
 #
 
-class Path(extends(Path)):
+class TraversalPath(extends(TraversalPath)):
 
     @property
     def start(self): return self.startNode()
@@ -46,6 +46,12 @@ class Path(extends(Path)):
     
     @property
     def last_relationship(self): return self.lastRelationship()
+    
+    @property
+    def nodes(self): return self._super__nodes()
+    
+    @property
+    def relationships(self): return self._super__relationships()
     
     def __repr__(self): return self.toString()
     
@@ -73,7 +79,17 @@ class TraversalDescriptionImpl(extends(TraversalDescriptionImpl)):
         return self._super__evaluator(ev)
            
 class TraverserImpl(extends(TraverserImpl)):
+    
     def __iter__(self):
         it = self.iterator()
         while it.hasNext():
-            yield it.next() 
+            yield it.next()
+            
+    @property
+    def last_relationship(self): return self.lastRelationship()
+    
+    @property
+    def nodes(self): return self._super__nodes()
+    
+    @property
+    def relationships(self): return self._super__relationships()

@@ -67,7 +67,7 @@ class ExamplesTest(unit_tests.GraphDatabaseTest):
         folder_to_put_db_in = tempfile.mkdtemp()
         try:
             # START SNIPPET: invoiceapp-setup
-            from neo4j import GraphDatabase, OUTGOING, Evaluation
+            from neo4j import GraphDatabase, INCOMING, Evaluation
             
             # Create a database
             db = GraphDatabase(folder_to_put_db_in)
@@ -105,7 +105,7 @@ class ExamplesTest(unit_tests.GraphDatabaseTest):
                     invoice = db.node(amount=amount)
                     invoice.INSTANCE_OF(invoices)
                     
-                    invoice.SENT_TO(customer)
+                    invoice.RECIPIENT(customer)
                 return customer
             # END SNIPPET: invoiceapp-domainlogic-create
             
@@ -123,10 +123,10 @@ class ExamplesTest(unit_tests.GraphDatabaseTest):
                     return Evaluation.EXCLUDE_AND_CONTINUE
                 
                 return db.traversal()\
-                         .relationships('SENT_TO', OUTGOING)\
+                         .relationships('RECIPIENT', INCOMING)\
                          .evaluator(evaluator)\
                          .traverse(customer)\
-                         .nodes()
+                         .nodes
             # END SNIPPET: invoiceapp-domainlogic-get-by-traversal
             
             # START SNIPPET: invoiceapp-create-and-search
@@ -135,7 +135,7 @@ class ExamplesTest(unit_tests.GraphDatabaseTest):
             
             # Loop through customers
             for relationship in customers.INSTANCE_OF:
-               customer = relationship.end
+               customer = relationship.start
                for i in range(1,12):
                    create_invoice(customer, 100 * i)
                    
@@ -143,7 +143,7 @@ class ExamplesTest(unit_tests.GraphDatabaseTest):
             large_invoices = get_invoices_with_amount_over(get_customer('Acme Inc.'), 500)
             
             # Getting all invoices per customer:
-            for relationship in get_customer('Acme Inc.').SENT_TO.incoming:
+            for relationship in get_customer('Acme Inc.').RECIPIENT.incoming:
                 invoice = relationship.start
             # END SNIPPET: invoiceapp-create-and-search
             

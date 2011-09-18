@@ -76,7 +76,6 @@ the relevant Commercial Agreement.
     <build.number>0</build.number>
     
     <neo-version>1.5-SNAPSHOT</neo-version>
-    <skipTests>false</skipTests>
   </properties>
   
   <repositories>
@@ -191,8 +190,7 @@ the relevant Commercial Agreement.
 	    <id>run-tests</id>
 	    <activation>
         <property>
-          <name>skipTests</name>
-          <value>false</value>
+          <name>!skipTests</name>
         </property>
       </activation>
 	    <build>

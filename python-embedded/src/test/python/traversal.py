@@ -46,11 +46,11 @@ class TraversalTest(unit_tests.GraphDatabaseTest):
             
         # The graph is traversed as 
         # you loop through the result.
-        for node in traverser.nodes():
+        for node in traverser.nodes:
             pass
         # END SNIPPET: basicTraversal
             
-        self.assertEqual(len(list(traverser.nodes())), 2)
+        self.assertEqual(len(list(traverser.nodes)), 2)
         
         # START SNIPPET: directedTraversal
         from neo4j import OUTGOING, INCOMING, ANY
@@ -60,7 +60,7 @@ class TraversalTest(unit_tests.GraphDatabaseTest):
             .traverse(start_node)
         # END SNIPPET: directedTraversal
         
-        self.assertEqual(len(list(traverser.nodes())), 2)
+        self.assertEqual(len(list(traverser.nodes)), 2)
         
         # START SNIPPET: multiRelationshipTraversal
         from neo4j import OUTGOING, INCOMING, ANY
@@ -70,7 +70,7 @@ class TraversalTest(unit_tests.GraphDatabaseTest):
             .relationships('likes')\
             .traverse(start_node)
         # END SNIPPET: multiRelationshipTraversal
-        self.assertEqual(len(list(traverser.nodes())), 2)
+        self.assertEqual(len(list(traverser.nodes)), 2)
         
         # START SNIPPET: traversalResults
         traverser = db.traversal()\
@@ -82,11 +82,11 @@ class TraversalTest(unit_tests.GraphDatabaseTest):
             pass
             
         # Get each node
-        for path in traverser.nodes():
+        for node in traverser.nodes:
             pass
             
         # Get each relationship
-        for path in traverser.relationships():
+        for relationship in traverser.relationships:
             pass
         # END SNIPPET: traversalResults
 
@@ -98,7 +98,7 @@ class TraversalTest(unit_tests.GraphDatabaseTest):
             .relationships(Direction.ANY.related_to)\
             .traverse(self.source)
             
-        res = list(t.nodes())
+        res = list(t.nodes)
         self.assertEqual(len(res), 2)
         
         
@@ -161,7 +161,7 @@ class TraversalTest(unit_tests.GraphDatabaseTest):
             .evaluator(include_all)\
             .traverse(self.source)
 
-        res = list(t.nodes())
+        res = list(t.nodes)
         self.assertEqual(len(res), 2)
         
         t = self.graphdb.traversal()\
@@ -169,7 +169,7 @@ class TraversalTest(unit_tests.GraphDatabaseTest):
             .evaluator(exclude_all)\
             .traverse(self.source)
             
-        res = list(t.nodes())
+        res = list(t.nodes)
         self.assertEqual(len(res), 0)
         
     def test_uniqueness(self):
@@ -234,7 +234,7 @@ class TraversalTest(unit_tests.GraphDatabaseTest):
             .traverse(start_node)
         # END SNIPPET: uniqueness
             
-        res = list(traverser.nodes())
+        res = list(traverser.nodes)
         self.assertEqual(len(res), 3)
         
         
@@ -256,7 +256,7 @@ class TraversalTest(unit_tests.GraphDatabaseTest):
             .traverse(start_node)
         # END SNIPPET: ordering
             
-        res = list(traverser.nodes())
+        res = list(traverser.nodes)
         self.assertEqual(len(res), 2)
         
     def test_paths(self):
@@ -282,11 +282,11 @@ class TraversalTest(unit_tests.GraphDatabaseTest):
                 # or a Node
                 pass
                 
-            for nodes in path.nodes():
+            for nodes in path.nodes:
                 # All nodes in a path
                 pass
                 
-            for nodes in path.relationships():
+            for nodes in path.relationships:
                 # All relationships in a path
                 pass
             # END SNIPPET: loopThroughPath

@@ -113,6 +113,7 @@ except: # this isn't jython (and doesn't have the java module)
       jpype.startJVM(getJVMPath(), *jvmargs)
     except Exception, e:
       raise Exception("Unable to start JVM, even though I found the JVM path. If you are using windows, this may be due to missing system DLL files, please see the windows installation instructions in the neo4j documentation.",e)
+    
     graphdb = jpype.JPackage('org.neo4j.graphdb')
     Direction = graphdb.Direction
     PropertyContainer = graphdb.PropertyContainer
@@ -120,7 +121,6 @@ except: # this isn't jython (and doesn't have the java module)
     GraphDatabaseService = graphdb.GraphDatabaseService
     Node = graphdb.Node
     Relationship = graphdb.Relationship
-    Path = graphdb.Path
     Evaluation = graphdb.traversal.Evaluation
     Evaluator = graphdb.traversal.Evaluator
     NotFoundException = graphdb.NotFoundException
@@ -138,6 +138,7 @@ except: # this isn't jython (and doesn't have the java module)
     Uniqueness = kernel.Uniqueness
     NodeProxy = kernel.impl.core.NodeProxy
     RelationshipProxy = kernel.impl.core.RelationshipProxy
+    TraversalPath = kernel.impl.traversal.TraversalPath
     
     helpers = jpype.JPackage('org.neo4j.helpers')
     IterableWrapper = helpers.collection.IterableWrapper
@@ -201,7 +202,7 @@ except: # this isn't jython (and doesn't have the java module)
 else:
     from org.neo4j.kernel.impl.core import NodeProxy, RelationshipProxy
     from org.neo4j.kernel import Uniqueness, Traversal, EmbeddedGraphDatabase
-    from org.neo4j.kernel.impl.traversal import TraversalDescriptionImpl, TraverserImpl
+    from org.neo4j.kernel.impl.traversal import TraversalDescriptionImpl, TraverserImpl, TraversalPath
     from org.neo4j.graphdb import Direction, DynamicRelationshipType,\
         PropertyContainer, Transaction, GraphDatabaseService, Node, Relationship, Path, NotFoundException
     from org.neo4j.graphdb.traversal import Evaluation, Evaluator
