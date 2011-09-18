@@ -1384,9 +1384,21 @@ public class XaLogicalLog
         LogApplier logApplier = new LogApplier( byteChannel );
         int xidIdent = getNextIdentifier();
         long startEntryPosition = writeBuffer.getFileChannelPosition();
-        while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) )
+        boolean successfullyApplied = false;
+        try
         {
-            logEntriesFound++;
+            while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) )
+            {
+                logEntriesFound++;
+            }
+            successfullyApplied = true;
+        }
+        finally
+        {
+            if ( !successfullyApplied )
+            {   // Unmap this identifier if tx not applied correctly
+                xidIdentMap.remove( xidIdent );
+            }
         }
         byteChannel.close();
         scanIsComplete = true;
