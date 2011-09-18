@@ -43,11 +43,10 @@ class MultipleBackupDeletionPolicy extends SnapshotDeletionPolicy
         if ( snapshotUsers == 0 )
         {
             snapshot = super.snapshot( id );
-            // Only increment the value if no exception (IllegalStateException if empty index)
-            // is thrown from super.snapshot
-            snapshotUsers++;
         }
-        else snapshotUsers++;
+        // Incremented after the call to super.snapshot() so that it wont get incremented
+        // if an exception (IllegalStateException if empty index) is thrown
+        snapshotUsers++;
         return snapshot;
     }
 
