@@ -40,10 +40,14 @@ class MultipleBackupDeletionPolicy extends SnapshotDeletionPolicy
     @Override
     public synchronized IndexCommit snapshot( String id ) throws IOException
     {
-        if ( (snapshotUsers++) == 0 )
+        if ( snapshotUsers == 0 )
         {
             snapshot = super.snapshot( id );
+            // Only increment the value if no exception (IllegalStateException if empty index)
+            // is thrown from super.snapshot
+            snapshotUsers++;
         }
+        else snapshotUsers++;
         return snapshot;
     }
 
