@@ -126,7 +126,9 @@ public class ShortDocumentationExamplesTest implements GraphHolder
      * In this example, we are going to examine a tree structure of +directories+ and
      * +files+. Also, there are users that own files and roles that can be assigned to
      * users. Roles can have permissions on directory or files structures (here we model
-     * only canRead, as opposed to full +rwx+ Unix permissions) and be nested.
+     * only canRead, as opposed to full +rwx+ Unix permissions) and be nested. A more thorough
+     * example of modeling ACL structures can be found at 
+     * http://www.xaprb.com/blog/2006/08/16/how-to-build-role-based-access-control-in-sql/[How to Build Role-Based Access Control in SQL]
      * 
      * @@graph1
      * 
@@ -155,9 +157,9 @@ public class ShortDocumentationExamplesTest implements GraphHolder
      * @@result2
      * 
      *
-     * == Who has access to an item? ==
+     * == Who has access to a File? ==
      * 
-     * If we now want to check what users have read access to +File1+, and define our ACL as
+     * If we now want to check what users have read access to all Files, and define our ACL as
      * 
      * - the root directory has no access granted
      * - The owning user of a File has read access
@@ -180,7 +182,8 @@ public class ShortDocumentationExamplesTest implements GraphHolder
             "Admin1 subRoleOf Admins",
             "Admin2 subRoleOf Admins",
             "AdminUser3 hasRole Admins",
-            "User2 hasRole Admin2",
+            "AdminUser4 hasRole Admins",
+//            "User2 hasRole Admin2",
             "User1 hasRole Admin1",
             "User1 owns File1",
             "User2 owns File2",
@@ -218,18 +221,20 @@ public class ShortDocumentationExamplesTest implements GraphHolder
         gen.get().addSnippet( "result2", AsciidocHelper.createOutputSnippet( result ) );
         
         //ACL
-        //TODO how to check for any canRead relationships higher up Dir0?
-        query = "start root=(node_auto_index,'name:FileRoot') " +
-        		"match " +
-        		"(root)-[:contains^0..10]->(dir)-[:leaf]->(file)," +
-        		"(dir)<-[:canRead]-(role)," +
-        		"(role)<-[:hasRole]-(user)," +
-        		"(file)<-[:owns]-(owner) " +
-        		"return root, file, dir, role, user, owner";
+        query = "START file=(node_auto_index,'name:File*') " +
+        		"MATCH " +
+        		"dir-[:leaf]->file, " +
+        		"file<-[:owns]-owner, " +
+        		"path = dir<-[:contains^1..10]-(parent)," +
+        		"(parent)<-[r?:canRead]-()<-[:hasRole]-readUserMoreThan1DirUp, " +
+                "dir<-[s?:canRead]-()<-[:hasRole]-readUser1DirUp " +
+        		"RETURN path, file, readUser1DirUp, readUserMoreThan1DirUp, owner";
         gen.get().addSnippet( "query3", AsciidocHelper.createCypherSnippet( query ) );
         result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("File1") );
         assertTrue( result.contains("File2") );
+        assertTrue( result.contains("AdminUser3") );
+        assertTrue( result.contains("AdminUser4") );
         gen.get().addSnippet( "result3", AsciidocHelper.createOutputSnippet( result ) );
         
         
