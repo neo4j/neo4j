@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -360,7 +361,34 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         db = new EmbeddedGraphDatabase( storeDir, config );
         xaDsMgr = db.getConfig().getTxModule().getXaDataSourceManager();
         xaDs = xaDsMgr.getXaDataSource( "nioneodb" );
-        assertTrue( !xaDs.isLogicalLogKept() );
+        // Here we rely on the default value being set to true due to the existence
+        // of previous log files.
+        assertTrue( xaDs.isLogicalLogKept() );
+        db.shutdown();
+
+        config.put( Config.KEEP_LOGICAL_LOGS, "false" );
+        db = new EmbeddedGraphDatabase( storeDir, config );
+        xaDsMgr = db.getConfig().getTxModule().getXaDataSourceManager();
+        xaDs = xaDsMgr.getXaDataSource( "nioneodb" );
+        // Here we explicitly turn off the keeping of logical logs so it should be
+        // false even if there are previous existing log files.
+        assertFalse( xaDs.isLogicalLogKept() );
+        db.shutdown();
+        
+        config.put( Config.KEEP_LOGICAL_LOGS, "nioneodb=false" );
+        db = new EmbeddedGraphDatabase( storeDir, config );
+        xaDsMgr = db.getConfig().getTxModule().getXaDataSourceManager();
+        xaDs = xaDsMgr.getXaDataSource( "nioneodb" );
+        // Here we explicitly turn off the keeping of logical logs so it should be
+        // false even if there are previous existing log files.
+        assertFalse( xaDs.isLogicalLogKept() );
+        db.shutdown();
+        
+        config.put( Config.KEEP_LOGICAL_LOGS, "nioneodb=true" );
+        db = new EmbeddedGraphDatabase( storeDir, config );
+        xaDsMgr = db.getConfig().getTxModule().getXaDataSourceManager();
+        xaDs = xaDsMgr.getXaDataSource( "nioneodb" );
+        assertTrue( xaDs.isLogicalLogKept() );
         db.shutdown();
 
         config.put( Config.KEEP_LOGICAL_LOGS, "true" );

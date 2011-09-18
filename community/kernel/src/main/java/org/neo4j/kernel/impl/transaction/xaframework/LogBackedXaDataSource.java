@@ -133,4 +133,13 @@ public abstract class LogBackedXaDataSource extends XaDataSource
     {
         return logicalLog.getLogExtractor( startTxId, endTxIdHint );
     }
+
+    protected void setKeepLogicalLogsIfSpecified( String configString, String dataSourceName )
+    {
+        Boolean keepLogs = shouldKeepLog( configString, dataSourceName );
+        if ( keepLogs != null )
+        {
+            getXaContainer().getLogicalLog().setKeepLogs( keepLogs.booleanValue() );
+        }
+    }
 }

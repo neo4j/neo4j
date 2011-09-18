@@ -222,8 +222,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
                         this.baseStorePath, e );
             }
 
-            xaContainer.getLogicalLog().setKeepLogs(
-                    shouldKeepLog( (String) params.get( Config.KEEP_LOGICAL_LOGS ), DEFAULT_NAME ) );
+            setKeepLogicalLogsIfSpecified( (String) params.get( Config.KEEP_LOGICAL_LOGS ), "nioneodb" );
             setLogicalLogAtCreationTime( xaContainer.getLogicalLog() );
         }
     }
