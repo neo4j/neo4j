@@ -19,17 +19,23 @@
  */
 package org.neo4j.server.plugin.gremlin;
 
-import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jEdge;
-import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
-import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jVertex;
-import com.tinkerpop.gremlin.pipes.util.Table;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.server.rest.repr.*;
+import org.neo4j.server.rest.repr.GremlinTableRepresentation;
+import org.neo4j.server.rest.repr.ListRepresentation;
+import org.neo4j.server.rest.repr.NodeRepresentation;
+import org.neo4j.server.rest.repr.RelationshipRepresentation;
+import org.neo4j.server.rest.repr.Representation;
+import org.neo4j.server.rest.repr.RepresentationType;
+import org.neo4j.server.rest.repr.ValueRepresentation;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jEdge;
+import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
+import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jVertex;
+import com.tinkerpop.pipes.util.Table;
 
 public class GremlinToRepresentationConverter {
     public GremlinToRepresentationConverter() {

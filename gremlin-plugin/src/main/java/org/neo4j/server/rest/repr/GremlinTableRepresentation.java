@@ -19,12 +19,13 @@
  */
 package org.neo4j.server.rest.repr;
 
-import com.tinkerpop.gremlin.pipes.util.Table;
-import com.tinkerpop.gremlin.pipes.util.Table.Row;
-import org.neo4j.server.plugin.gremlin.GremlinToRepresentationConverter;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import org.neo4j.server.plugin.gremlin.GremlinToRepresentationConverter;
+
+import com.tinkerpop.pipes.util.Table;
+import com.tinkerpop.pipes.util.Table.Row;
 
 public class GremlinTableRepresentation extends ObjectRepresentation
 {
