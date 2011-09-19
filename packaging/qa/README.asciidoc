@@ -28,7 +28,7 @@ With maven (first time):
 
 With maven (subequent times):
 
-  export DOWNLOAD_LOCATION=file:///path/to/neo4j-enterprise-1.3-SNAPSHOT-unix.tar.gz && export NEO4J_VERSION=1.3-SNAPSHOT && mvn clean integration-test
+  export DOWNLOAD_LOCATION=file:///path/to/neo4j-enterprise-1.5-SNAPSHOT-unix.tar.gz && export NEO4J_VERSION=1.5-SNAPSHOT && mvn clean integration-test
   mvn integration-test
 
 To run only a particular feature:
@@ -44,7 +44,7 @@ Pragmatic guide
 OR set an environmentnt variable to point at a built tarball/zip
 
   export DOWNLOAD_LOCATION=file:///home/user/pointing/to/local/neo4j.tgz
-  export NEO4J_VERSION=1.3-SNAPSHOT
+  export NEO4J_VERSION=1.5-SNAPSHOT
   export NEO4J_PRODUCT={community|advanced|enterprise}
 
   cd ../qa
