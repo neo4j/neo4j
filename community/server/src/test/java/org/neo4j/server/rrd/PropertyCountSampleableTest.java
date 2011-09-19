@@ -19,14 +19,6 @@
  */
 package org.neo4j.server.rrd;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
-
-import java.io.IOException;
-import java.util.UUID;
-
-import javax.management.MalformedObjectNameException;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,7 +26,13 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.rrd.sampler.PropertyCountSampleable;
 import org.neo4j.test.ImpermanentGraphDatabase;
+
+import java.util.UUID;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 
 public class PropertyCountSampleableTest
 {
@@ -42,22 +40,22 @@ public class PropertyCountSampleableTest
     public PropertyCountSampleable sampleable;
 
     @Test
-    public void emptyDbHasZeroNodesInUse() throws IOException, MalformedObjectNameException
+    public void emptyDbHasZeroNodesInUse()
     {
-        assertThat( sampleable.getValue(), is( 0L ) );
+        assertThat( sampleable.getValue(), is( 0d ) );
     }
 
     @Test
-    public void addANodeAndSampleableGoesUp() throws IOException, MalformedObjectNameException
+    public void addANodeAndSampleableGoesUp()
     {
         addPropertyToReferenceNode();
 
-        assertThat( sampleable.getValue(), is( 1L ) );
+        assertThat( sampleable.getValue(), is( 1d ) );
 
         addNodeIntoGraph();
         addNodeIntoGraph();
 
-        assertThat( sampleable.getValue(), is( 3L ) );
+        assertThat( sampleable.getValue(), is( 3d ) );
     }
 
     private void addNodeIntoGraph()
@@ -65,8 +63,7 @@ public class PropertyCountSampleableTest
         Transaction tx = db.graph.beginTx();
         Node referenceNode = db.graph.getReferenceNode();
         Node myNewNode = db.graph.createNode();
-        myNewNode.setProperty( "id", UUID.randomUUID()
-                .toString() );
+        myNewNode.setProperty( "id", UUID.randomUUID().toString() );
         myNewNode.createRelationshipTo( referenceNode, new RelationshipType()
         {
             public String name()
@@ -92,7 +89,7 @@ public class PropertyCountSampleableTest
     public void setUp() throws Exception
     {
         db = new Database( new ImpermanentGraphDatabase() );
-        sampleable = new PropertyCountSampleable( db );
+        sampleable = new PropertyCountSampleable( db.graph );
     }
 
     @After

@@ -2,7 +2,7 @@
 Order by
 ========
 
-To sort the output, use the Order by clause. Note that you can not sort on nodes or relationships,
+To sort the output, use the +ORDER BY+ clause. Note that you can not sort on nodes or relationships,
 just on properties on these.
 
 include::order-nodes-by-property.txt[]

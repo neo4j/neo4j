@@ -157,7 +157,7 @@ public class TraverserFunctionalTest extends AbstractRestFunctionalTestBase
                 "uniqueness",
                 "node_global",
                 "prune_evaluator",
-                MapUtil.map( "language", "builtin", "name", "none" ),
+                MapUtil.map( "language", "javascript", "body", "position.length() > 10" ),
                 "return_filter",
                 MapUtil.map( "language", "javascript", "body",
                         "position.endNode().getProperty('name').toLowerCase().contains('t')" ),

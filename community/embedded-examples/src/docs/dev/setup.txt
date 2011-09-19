@@ -23,7 +23,7 @@ IntelliJ IDEA::
  See http://www.jetbrains.com/idea/webhelp/libraries-global-libraries-and-the-configure-library-dialog.html[Libraries, Global Libraries, and the Configure Library dialog]
 NetBeans::
  * Right-click on the _Libraries_ node of the project, choose _Add JAR/Folder_, browse to the Neo4j 'lib/' directory and select all of the jar files.
- * You can also handle libraries from the proejct node, see http://netbeans.org/kb/docs/java/project-setup.html#projects-classpath[Managing a Project's Classpath].
+ * You can also handle libraries from the project node, see http://netbeans.org/kb/docs/java/project-setup.html#projects-classpath[Managing a Project's Classpath].
 
 
 == Add Neo4j as a dependency ==
@@ -102,7 +102,7 @@ tag=startDb
 
 [NOTE]
 The +EmbeddedGraphDatabase+ instance can be shared among multiple threads.
-Note however that you can't create multiple instances poting to the same database.
+Note however that you can't create multiple instances pointing to the same database.
 
 To stop the database, call the +shutdown()+ method:
 

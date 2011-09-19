@@ -61,11 +61,11 @@
 	
 	<target name="createPackage" description="Creates package for linux">
 		<copy file="packaging/pom.xml" tofile="packaging/pom-with-build-number.xml" overwrite="true"/>
-		<replace file="packaging/pom-with-build-number.xml" token="1.5-SNAPSHOT" value="${buildNumber}"/>
-		<replace file="packaging/pom-with-build-number.xml" token="@MANUALVERSION@" value="1.5-SNAPSHOT"/>	
+		<replace file="packaging/pom-with-build-number.xml" token="1.5-SNAPSHOT" value="${buildNumber}"/>	
 		<replace file="packaging/pom-with-build-number.xml" token="@3RDPARTYVERSION@" value="1.5-SNAPSHOT"/>				
 		<replace file="packaging/pom-with-build-number.xml" token="@GREMLINVERSION@" value="1.5-SNAPSHOT"/>	
 		<replace file="packaging/pom-with-build-number.xml" token="@CYPHERPLUGINVERSION@" value="1.5-SNAPSHOT"/>
+		<replace file="packaging/pom-with-build-number.xml" token="@MANUALVERSION@" value="1.5-SNAPSHOT"/>
 		<exec executable="mvn" dir="packaging" failonerror="true">
 			<arg value="clean"/>
 			<arg value="package"/>

@@ -20,12 +20,9 @@
 package org.neo4j.server.rest.repr;
 
 import java.io.StringWriter;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.StringUtils;
 import org.neo4j.server.rest.domain.JsonHelper;
 
 /*
@@ -45,23 +42,26 @@ public class BatchOperationResults
     private static final String CLOSING_CURLY = "}";
     private static final String COMMA = ",";
 
-    private List<String> operationResults;
+    private StringWriter results = new StringWriter();
+    private boolean firstResult = true;
     private Map<Integer, String> locations = new HashMap<Integer, String>();
 
-    public BatchOperationResults( int numOperations )
-    {
-        operationResults = new ArrayList<String>( numOperations );
+    public BatchOperationResults() {
+        results.append(OPENING_BRACKET);
     }
 
     public void addOperationResult( String from, Integer id, String body, String location )
     {
-        StringWriter wt = new StringWriter();
-
-        wt.append( OPENING_CURLY );
+        if(firstResult)
+            firstResult = false;
+        else
+            results.append(',');
+        
+        results.append( OPENING_CURLY );
 
         if ( id != null )
         {
-            wt.append( "\"id\":" )
+            results.append( "\"id\":" )
                     .append( id.toString() )
                     .append( COMMA );
         }
@@ -69,24 +69,22 @@ public class BatchOperationResults
         if ( location != null )
         {
             locations.put( id, location );
-            wt.append( "\"location\":" )
+            results.append( "\"location\":" )
                     .append( JsonHelper.createJsonFrom( location ) )
                     .append( COMMA );
         }
 
         if ( body != null && body.length() != 0 )
         {
-            wt.append( "\"body\":" )
+            results.append( "\"body\":" )
                     .append( body )
                     .append( COMMA );
         }
 
-        wt.append( "\"from\":" )
+        results.append( "\"from\":" )
                 .append( JsonHelper.createJsonFrom( from ) );
 
-        wt.append( CLOSING_CURLY );
-
-        operationResults.add( wt.toString() );
+        results.append( CLOSING_CURLY );
     }
 
     public Map<Integer, String> getLocations()
@@ -96,6 +94,7 @@ public class BatchOperationResults
 
     public String toJSON()
     {
-        return OPENING_BRACKET + StringUtils.join( operationResults, "," ) + CLOSING_BRACKET;
+        results.append(CLOSING_BRACKET);
+        return results.toString();
     }
 }

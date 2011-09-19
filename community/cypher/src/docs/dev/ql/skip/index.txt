@@ -2,8 +2,8 @@
 Skip
 ====
 
-Skip enables the return of only subsets of the total result. By using skip, the result set will trimmed from the top.
-Please note that no guarantees are made on the order of the result unless the query species the order by clause.
++SKIP+ enables the return of only subsets of the total result. By using +SKIP+, the result set will trimmed from the top.
+Please note that no guarantees are made on the order of the result unless the query specifies the +ORDER BY+ clause.
 
 include::skip-first-three.txt[]
 include::return-middle-two.txt[]

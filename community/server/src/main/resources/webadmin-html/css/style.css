@@ -160,13 +160,13 @@ body {
  */
 
 
-#monitor-chart-wrap {
+#usage-requests-chart-wrap, #usage-time-chart-wrap, #usage-bytes-chart-wrap, #monitor-chart-wrap {
   padding: 0 10px 10px;
   background: none repeat scroll 0 0 #eee;
   border-bottom: 1px solid #ccc;
 }
 
-#monitor-chart {
+#usage-requests-chart, #usage-time-chart, #usage-bytes-chart, #monitor-chart {
   height:200px;
   width:100%;
   background: none repeat scroll 0 0 #eee;

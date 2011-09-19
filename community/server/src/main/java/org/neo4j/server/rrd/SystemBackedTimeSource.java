@@ -19,12 +19,15 @@
  */
 package org.neo4j.server.rrd;
 
-public class SystemBackedTimeSource implements TimeSource {
+import org.rrd4j.core.Util;
+
+public class SystemBackedTimeSource implements TimeSource
+{
 
     @Override
-    public long getTime() 
+    public long getTime()
     {
-        return System.currentTimeMillis();
+        return Util.getTime();
     }
 
 }

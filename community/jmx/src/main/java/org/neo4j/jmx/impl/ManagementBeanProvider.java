@@ -19,6 +19,7 @@
  */
 package org.neo4j.jmx.impl;
 
+import java.util.Collection;
 import java.util.Collections;
 
 import javax.management.DynamicMBean;
@@ -41,7 +42,7 @@ public abstract class ManagementBeanProvider extends Service
     protected Iterable<? extends Neo4jMBean> createMBeans( ManagementData management )
             throws NotCompliantMBeanException
     {
-        return Collections.singleton( createMBean( management ) );
+        return singletonOrNone( createMBean( management ) );
     }
 
     protected Iterable<? extends Neo4jMBean> createMXBeans( ManagementData management )
@@ -62,7 +63,7 @@ public abstract class ManagementBeanProvider extends Service
         }
         else
         { // otherwise delegate to the createMXBean method and create a list
-            return Collections.singleton( createMXBean( management ) );
+            return singletonOrNone( createMXBean( management ) );
         }
     }
 
@@ -74,21 +75,21 @@ public abstract class ManagementBeanProvider extends Service
     }
 
     final Iterable<? extends Neo4jMBean> loadBeans( KernelData kernel, ManagementSupport support )
+            throws Exception
     {
-        try
+        if ( support.supportsMxBeans() )
         {
-            if ( support.supportsMxBeans() )
-            {
-                return createMXBeans( new ManagementData( this, kernel, support ) );
-            }
-            else
-            {
-                return createMBeans( new ManagementData( this, kernel, support ) );
-            }
+            return createMXBeans( new ManagementData( this, kernel, support ) );
         }
-        catch ( Exception e )
+        else
         {
-            return null;
+            return createMBeans( new ManagementData( this, kernel, support ) );
         }
+    }
+
+    private static Collection<? extends Neo4jMBean> singletonOrNone( Neo4jMBean mbean )
+    {
+        if ( mbean == null ) return Collections.emptySet();
+        return Collections.singleton( mbean );
     }
 }

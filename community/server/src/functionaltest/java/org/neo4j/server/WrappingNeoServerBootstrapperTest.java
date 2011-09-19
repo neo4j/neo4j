@@ -24,7 +24,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
-import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
@@ -36,7 +35,7 @@ import org.neo4j.jmx.Primitives;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.EmbeddedServerConfigurator;
-import org.neo4j.server.rest.FunctionalTestHelper;
+import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.server.rest.RestRequest;
@@ -76,7 +75,7 @@ public class WrappingNeoServerBootstrapperTest
 
         srv.start();
 
-        // Server is now running in background threads
+        // Server is now running
 
         srv.stop();
         // END SNIPPET: usingWrappingNeoServerBootstrapper
@@ -104,7 +103,7 @@ public class WrappingNeoServerBootstrapperTest
     }
 
     @Test
-    public void shouldAllowModifyingLitenPorts() throws UnknownHostException
+    public void shouldAllowModifyingListenPorts() throws UnknownHostException
     {
 
         EmbeddedServerConfigurator config = new EmbeddedServerConfigurator(

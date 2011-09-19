@@ -29,6 +29,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
+import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 

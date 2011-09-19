@@ -40,35 +40,46 @@ define(
       render : =>
         $(@el).html @template()
 
-        @chart = new LineChart($("#monitor-chart"))
-        @redrawChart()
+        @monitorChart = new LineChart($("#monitor-chart"))
+        #@usageRequestsChart = new LineChart($("#usage-requests-chart"))
+        #@usageTimeChart = new LineChart($("#usage-time-chart"))
+        #@usageBytesChart = new LineChart($("#usage-bytes-chart"))
+        @redrawAllCharts()
 
         @highlightChartSwitchTab @dashboardState.getChartKey()
         @highlightZoomTab @dashboardState.getZoomLevelKey()
 
         return this
 
-      redrawChart : =>
-        if @chart?
-          chartDef = @dashboardState.getChart()
+      redrawAllCharts : =>
+        @redrawChart @monitorChart, "primitives"
+        #@redrawChart @usageRequestsChart, "usageRequests"
+        #@redrawChart @usageTimeChart, "usageTimes"
+        #@redrawChart @usageBytesChart, "usageBytes"
+
+      redrawChart : (chart, name) =>
+        if chart?
+          chartDef = @dashboardState.getChart name
           zoomLevel = @dashboardState.getZoomLevel()
 
           metricKeys = for v in chartDef.layers
             v.key
 
-          startTime = (new Date()).getTime() - zoomLevel.xSpan
+          startTime = Math.round new Date().getTime() / 1000 - zoomLevel.xSpan
           metrics = @statistics.getMetrics(metricKeys, startTime, zoomLevel.granularity)
           
           # Add meta info to each data layer
           data = for i in [0...metrics.length]
             _.extend({ data:metrics[i] }, chartDef.layers[i] )
-          
-          settings = 
+
+          settings =
             xaxis : 
               min : startTime - @statistics.timezoneOffset
               mode : "time"
               timeformat : zoomLevel.timeformat
-          @chart.render data, _.extend(chartDef.chartSettings || {}, settings)
+              tickFormatter : (v) ->
+                $.plot.formatDate new Date( v * 1000 ), zoomLevel.timeformat
+          chart.render data, _.extend(chartDef.chartSettings || {}, settings)
 
       switchChartClicked : (ev) =>
         @highlightChartSwitchTab $(ev.target).val()
@@ -88,18 +99,20 @@ define(
 
       remove : =>
         @unbind()
-        if @chart?        
-          @chart.remove()
+        @monitorChart.remove() if @monitorChart?
+        #@usageRequestsChart.remove() if @usageRequestsChart?
+        #@usageTimeChart.remove() if @usageTimeChart?
+        #@usageBytesChart.remove() if @usageBytesChart?
         super()
 
       bind : =>
-        @dashboardState.bind "change:chart", @redrawChart
-        @dashboardState.bind "change:zoomLevel", @redrawChart
-        @statistics.bind "change:metrics", @redrawChart
+        @dashboardState.bind "change:chart", @redrawAllCharts
+        @dashboardState.bind "change:zoomLevel", @redrawAllCharts
+        @statistics.bind "change:metrics", @redrawAllCharts
 
       unbind : =>
-        @dashboardState.unbind "change:chart", @redrawChart
-        @dashboardState.unbind "change:zoomLevel", @redrawChart
-        @statistics.unbind "change:metrics", @redrawChart
+        @dashboardState.unbind "change:chart", @redrawAllCharts
+        @dashboardState.unbind "change:zoomLevel", @redrawAllCharts
+        @statistics.unbind "change:metrics", @redrawAllCharts
 
 )

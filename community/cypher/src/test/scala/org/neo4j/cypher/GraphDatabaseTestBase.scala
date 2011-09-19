@@ -48,6 +48,7 @@ class GraphDatabaseTestBase extends JUnitSuite {
   }
 
   def createNode(): Node = createNode(Map[String, Any]())
+  def createNode(name:String): Node = createNode(Map[String, Any]("name"->name))
 
   def inTx[T](f: () => T): T = {
     val tx = graph.beginTx
@@ -61,6 +62,8 @@ class GraphDatabaseTestBase extends JUnitSuite {
   }
 
   def nodeIds = nodes.map(_.getId).toArray
+
+  def relate(n1:Node, n2:Node, relType:String, name:String): Relationship = relate(n1,n2,relType, Map("name"->name))
 
   def relate(n1: Node, n2: Node, relType: String, props: Map[String, Any] = Map()): Relationship = {
     inTx(() => {

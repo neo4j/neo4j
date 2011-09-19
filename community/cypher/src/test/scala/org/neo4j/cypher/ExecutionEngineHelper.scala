@@ -32,8 +32,8 @@ trait ExecutionEngineHelper extends GraphDatabaseTestBase {
     engine = new ExecutionEngine(graph)
   }
 
-  def execute(query: Query) = {
-    val result = engine.execute(query)
+  def execute(query: Query, params:(String,Any)*) = {
+    val result = engine.execute(query, params.toMap)
     result
   }
 

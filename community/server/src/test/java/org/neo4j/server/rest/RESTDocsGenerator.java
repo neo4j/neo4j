@@ -23,10 +23,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
-import java.io.ByteArrayOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -41,18 +39,16 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.test.AsciiDocGenerator;
 import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.TestData.Producer;
-import org.neo4j.visualization.graphviz.AsciiDocStyle;
-import org.neo4j.visualization.graphviz.GraphvizWriter;
-import org.neo4j.walk.Walker;
+import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientRequest.Builder;
 import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.UniformInterfaceException;
 
 /**
  * Generate asciidoc-formatted documentation from HTTP requests and responses.
@@ -191,6 +187,12 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         return retrieveResponse( title, description, request.getURI()
                 .toString(), expectedResponseStatus, expectedMediaType, expectedHeaderFields, request );
     }
+    
+    @Override
+    public RESTDocsGenerator description( String description )
+    {
+        return (RESTDocsGenerator) super.description( description );
+    }
 
     /**
      * Send a GET request.
@@ -300,14 +302,21 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         }
         Client client = new Client();
         ClientResponse response = client.handle( request );
-        assertEquals( responseCode, response.getStatus() );
+        if ( response.hasEntity() && response.getStatus() != 204 )
+        {
+            data.setEntity( response.getEntity( String.class ) );
+        }
+        try {
+        } catch (UniformInterfaceException uie) {
+            //ok
+        }
         if ( response.getType() != null )
         {
-            assertEquals( type, response.getType() );
+            assertEquals( "wrong response type: "+ data.entity, type, response.getType() );
         }
         for ( String headerField : headerFields )
         {
-            assertNotNull( response.getHeaders()
+            assertNotNull( "wrong headers: "+ data.entity, response.getHeaders()
                     .get( headerField ) );
         }
         data.setTitle( title );
@@ -315,10 +324,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         data.setMethod( request.getMethod() );
         data.setUri( uri );
         data.setStatus( responseCode );
-        if ( response.hasEntity() && response.getStatus() != 204 )
-        {
-            data.setEntity( response.getEntity( String.class ) );
-        }
+        assertEquals( "Wrong response status. response: " + data.entity, responseCode, response.getStatus() );
         getResponseHeaders( data, response.getHeaders(), headerFields );
         document( data );
         return new ResponseEntity( response, data.entity );
@@ -476,8 +482,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
                 line( fw, "" );
             }
             if( graph != null) {
-                line(fw, "_Final Graph_" );
-                fw.append( createGraphViz( graph, name ));
+                fw.append( AsciidocHelper.createGraphViz( "Final Graph", graph, title));
                 line(fw, "" );
             }
             line( fw, "_Example request_" );
@@ -541,24 +546,6 @@ public class RESTDocsGenerator extends AsciiDocGenerator
     }
 
     
-    public String createGraphViz( GraphDatabaseService graphDatabaseService, String name )
-    {
-        OutputStream out = new ByteArrayOutputStream();
-        GraphvizWriter writer = new GraphvizWriter(new AsciiDocStyle());
-        try
-        {
-            writer.emit( out, Walker.fullGraph( graphDatabaseService ) );
-        }
-        catch ( IOException e )
-        {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        return  "[\"dot\", \""+name.replace( " ", "-" )+".svg\", \"neoviz\"]\n"+
-                "----\n" +
-                out.toString() +
-                "----\n";
-    }
-    
+   
 
 }

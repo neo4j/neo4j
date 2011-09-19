@@ -20,24 +20,21 @@
 package org.neo4j.cypher.pipes
 
 import org.neo4j.cypher.SymbolTable
-import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
-import org.neo4j.cypher.commands.{Identifier, RelationshipIdentifier, NodeIdentifier}
+import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.cypher.commands.{Identifier, NodeIdentifier}
 
-class StartPipe[T <: PropertyContainer](name: String, f: () => Iterable[T]) extends Pipe {
-  def this(name: String, sourceIterable: Iterable[T]) = this(name, () => sourceIterable)
+class StartPipe[T <: PropertyContainer](inner: Pipe, name: String, createSource: Map[String,Any] => Iterable[T]) extends Pipe {
+  def this(inner: Pipe, name: String, sourceIterable: Iterable[T]) = this(inner, name, m => sourceIterable)
 
-  def source : Iterable[T] = f()
+  val symbolType: Identifier =NodeIdentifier(name)
 
-  val symbolType: Identifier = source match {
-    case nodes: Iterable[Node] => NodeIdentifier(name)
-    case rels: Iterable[Relationship] => RelationshipIdentifier(name)
-  }
-
-  val symbols: SymbolTable = new SymbolTable(List(symbolType))
+  val symbols: SymbolTable = inner.symbols.add(Seq(symbolType))
 
   def foreach[U](f: (Map[String, Any]) => U) {
-    source.foreach((x) => {
-      f(Map(name -> x))
+    inner.foreach(innerMap => {
+      createSource(innerMap).foreach((x) => {
+        f(innerMap ++ Map(name -> x))
+      })
     })
   }
 }

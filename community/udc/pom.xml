@@ -4,6 +4,7 @@
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
     <version>25</version>
+    <relativePath/>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
@@ -61,7 +62,7 @@ the relevant Commercial Agreement.
               <filters>
                 <filter>${project.basedir}/src/main/assembly/forMavenCentral.properties</filter>
               </filters>
-              <finalName>${artifactId}-${version}</finalName>
+              <finalName>${project.artifactId}-${project.version}</finalName>
               <ignoreDirFormatExtensions>true</ignoreDirFormatExtensions>
               <descriptors>
                 <descriptor>src/main/assembly/assembly.xml</descriptor>
@@ -80,7 +81,7 @@ the relevant Commercial Agreement.
               <filters>
                 <filter>${project.basedir}/src/main/assembly/forNeo4j.properties</filter>
               </filters>
-              <finalName>${artifactId}-${version}-neo4j</finalName>
+              <finalName>${project.artifactId}-${project.version}-neo4j</finalName>
               <ignoreDirFormatExtensions>true</ignoreDirFormatExtensions>
               <descriptors>
                 <descriptor>src/main/assembly/assembly.xml</descriptor>

@@ -20,10 +20,11 @@
 package org.neo4j.cypher.commands
 
 import org.neo4j.cypher.pipes.aggregation._
-import org.neo4j.cypher.{SyntaxException, SymbolTable}
-import org.neo4j.graphdb.{Path, NotFoundException, Relationship, PropertyContainer}
 import scala.collection.JavaConverters._
-abstract sealed class Value extends (Map[String,Any]=>Any) {
+import org.neo4j.graphdb._
+import org.neo4j.cypher.{ParameterNotFoundException, SyntaxException, SymbolTable}
+
+abstract sealed class Value extends (Map[String, Any] => Any) {
   def identifier: Identifier
 
   def checkAvailable(symbols: SymbolTable)
@@ -37,10 +38,20 @@ case class Literal(v: Any) extends Value {
   def checkAvailable(symbols: SymbolTable) {}
 }
 
+abstract case class FunctionValue(functionName: String, arguments: Value*) extends Value {
+
+  def identifier: Identifier = ValueIdentifier(functionName + "(" + arguments.map(_.identifier.name).mkString(",") + ")");
+
+  def checkAvailable(symbols: SymbolTable) {
+    arguments.foreach(_.checkAvailable(symbols))
+  }
+}
+
+
 abstract class AggregationValue(functionName: String, inner: Value) extends Value {
   def apply(m: Map[String, Any]) = m(identifier.name)
 
-  def identifier: Identifier = AggregationIdentifier(functionName+"("+inner.identifier.name+")")
+  def identifier: Identifier = AggregationIdentifier(functionName + "(" + inner.identifier.name + ")")
 
   def checkAvailable(symbols: SymbolTable) {
     inner.checkAvailable(symbols)
@@ -49,23 +60,23 @@ abstract class AggregationValue(functionName: String, inner: Value) extends Valu
   def createAggregationFunction: AggregationFunction
 }
 
-case class Count(anInner: Value) extends AggregationValue("count",anInner) {
+case class Count(anInner: Value) extends AggregationValue("count", anInner) {
   def createAggregationFunction = new CountFunction(anInner)
 }
 
-case class Sum(anInner: Value) extends AggregationValue("sum",anInner) {
+case class Sum(anInner: Value) extends AggregationValue("sum", anInner) {
   def createAggregationFunction = new SumFunction(anInner)
 }
 
-case class Min(anInner: Value) extends AggregationValue("min",anInner) {
+case class Min(anInner: Value) extends AggregationValue("min", anInner) {
   def createAggregationFunction = new MinFunction(anInner)
 }
 
-case class Max(anInner: Value) extends AggregationValue("max",anInner) {
+case class Max(anInner: Value) extends AggregationValue("max", anInner) {
   def createAggregationFunction = new MaxFunction(anInner)
 }
 
-case class Avg(anInner: Value) extends AggregationValue("avg",anInner) {
+case class Avg(anInner: Value) extends AggregationValue("avg", anInner) {
   def createAggregationFunction = new AvgFunction(anInner)
 }
 
@@ -92,42 +103,59 @@ case class PropertyValue(entity: String, property: String) extends Value {
   }
 }
 
-case class RelationshipTypeValue(relationship: String) extends Value {
-  def apply(m: Map[String, Any]): Any = m(relationship).asInstanceOf[Relationship].getType.name()
+case class RelationshipTypeValue(relationship: Value) extends FunctionValue("TYPE", relationship) {
+  def apply(m: Map[String, Any]): Any = relationship(m).asInstanceOf[Relationship].getType.name()
 
-  def identifier: Identifier = RelationshipTypeIdentifier(relationship)
-
-  def checkAvailable(symbols: SymbolTable) {
-    symbols.assertHas(RelationshipIdentifier(relationship))
+  override def checkAvailable(symbols: SymbolTable) {
+    symbols.assertHas(RelationshipIdentifier(relationship.identifier.name))
   }
 }
 
-case class ArrayLengthValue(pathName: String) extends Value {
-  def apply(m: Map[String, Any]): Any = m(pathName).asInstanceOf[Path].length()
-
-  def identifier: Identifier = PathLengthIdentifier(pathName)
-
-  def checkAvailable(symbols: SymbolTable) {
-    symbols.assertHas(ArrayIdentifier(pathName))
+case class ArrayLengthValue(inner: Value) extends FunctionValue("LENGTH", inner) {
+  def apply(m: Map[String, Any]): Any = inner(m) match {
+    case path: Path => path.length()
+    case x => throw new SyntaxException("Expected " + inner.identifier.name + " to be an iterable, but it is not.")
   }
 }
 
-case class PathNodesValue(pathName: String) extends Value {
-  def apply(m: Map[String, Any]): Any = m(pathName).asInstanceOf[Path].nodes().asScala.toArray
 
-  def identifier: Identifier = ArrayIdentifier(pathName + ".NODES")
-
-  def checkAvailable(symbols: SymbolTable) {
-    symbols.assertHas(PathIdentifier(pathName))
+case class IdValue(inner: Value) extends FunctionValue("ID", inner) {
+  def apply(m: Map[String, Any]): Any = inner(m) match {
+    case node: Node => node.getId
+    case rel: Relationship => rel.getId
+    case x => throw new SyntaxException("Expected " + inner.identifier.name + " to be a node or relationship.")
   }
 }
 
-case class EntityValue(entityName:String) extends Value {
+case class PathNodesValue(path: EntityValue) extends FunctionValue("NODES", path) {
+  def apply(m: Map[String, Any]): Any = path(m) match {
+    case p: Path => p.nodes().asScala.toSeq
+    case x => throw new SyntaxException("Expected " + path.identifier.name + " to be a path.")
+  }
+}
+
+case class PathRelationshipsValue(path: EntityValue) extends FunctionValue("RELATIONSHIPS", path) {
+  def apply(m: Map[String, Any]): Any = path(m) match {
+    case p: Path => p.relationships().asScala.toSeq
+    case x => throw new SyntaxException("Expected " + path.identifier.name + " to be a path.")
+  }
+}
+
+case class EntityValue(entityName: String) extends Value {
   def apply(m: Map[String, Any]): Any = m.getOrElse(entityName, throw new NotFoundException)
 
   def identifier: Identifier = Identifier(entityName)
 
   def checkAvailable(symbols: SymbolTable) {
-     symbols.assertHas(Identifier(entityName))
+    symbols.assertHas(Identifier(entityName))
+  }
+}
+
+case class ParameterValue(parameterName: String) extends Value {
+  def apply(m: Map[String, Any]): Any = m.getOrElse(parameterName, throw new ParameterNotFoundException("Expected a parameter named " + parameterName))
+
+  def identifier: Identifier = Identifier(parameterName)
+
+  def checkAvailable(symbols: SymbolTable) {
   }
 }

@@ -22,7 +22,7 @@ package org.neo4j.server.steps;
 import java.io.IOException;
 
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
-import org.neo4j.server.ServerBuilder;
+import org.neo4j.server.helpers.ServerBuilder;
 
 public class ServerIntegrationTestFacade
 {

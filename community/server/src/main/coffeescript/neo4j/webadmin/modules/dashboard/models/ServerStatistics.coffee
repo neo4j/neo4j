@@ -24,7 +24,7 @@ define ['lib/DateFormat', 'lib/backbone'], (DateFormat) ->
 
     initialize : (options) =>
   
-      @timezoneOffset = (new Date()).getTimezoneOffset()  * 60 * 1000
+      @timezoneOffset = (new Date()).getTimezoneOffset() * 60
       @server = options.server
       @heartbeat = @server.heartbeat
 
@@ -38,7 +38,7 @@ define ['lib/DateFormat', 'lib/backbone'], (DateFormat) ->
 
       # We don't need data as granular as neo4js gives us. 
       # Weed some of it out to save memory.
-      @indexesToSave = @getTimestampIndexes(0, 1000 * 30)
+      @indexesToSave = @getTimestampIndexes(0, 30)
       @timestamps = @extractValues(@timestamps, @indexesToSave)
 
       update = {}

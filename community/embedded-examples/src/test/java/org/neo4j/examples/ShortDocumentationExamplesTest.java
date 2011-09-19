@@ -19,6 +19,8 @@
 package org.neo4j.examples;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Map;
 
@@ -27,6 +29,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.cypher.javacompat.CypherParser;
+import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -52,8 +56,6 @@ public class ShortDocumentationExamplesTest implements GraphHolder
     public @Rule
     TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
             this, true ) );
-    String classifier = "test-sources";
-    String component = "neo4j-examples";
  
     /**
      * Uniqueness of Paths in traversals.
@@ -67,16 +69,16 @@ public class ShortDocumentationExamplesTest implements GraphHolder
      * In order to return which all descendants 
      * of +Pet0+ which have the relation +owns+ to Principal1 (+Pet1+ and +Pet3+),
      * the Uniqueness of the traversal needs to be set to 
-     * +NODE_PATH+ rather than the default +NODE_GLOBAL+.
+     * +NODE_PATH+ rather than the default +NODE_GLOBAL+ so that nodes
+     * can be traversed more that once, and paths that have
+     * different nodes but can have some nodes in common (like the
+     * start and end node) can be returned.
      * 
      * @@traverser
      * 
      * This will return the following paths:
      * 
-     * [source]
-     * ----
      * @@output
-     * ----
      */
     @Graph({"Pet0 descendant Pet1",
         "Pet0 descendant Pet2",
@@ -89,7 +91,7 @@ public class ShortDocumentationExamplesTest implements GraphHolder
     public void pathUniquenesExample()
     {
         Node start = data.get().get( "Pet0" );
-        gen.get().addSnippet( "graph", AsciidocHelper.createGraphViz("descendants1", graphdb()) );
+        gen.get().addSnippet( "graph", AsciidocHelper.createGraphViz("descendants1", graphdb(), gen.get().getTitle()) );
         String tagName = "traverser";
         gen.get().addSnippet( tagName, gen.get().createSourceSnippet(tagName, this.getClass()) );
         // START SNIPPET: traverser
@@ -116,11 +118,122 @@ public class ShortDocumentationExamplesTest implements GraphHolder
             count++;
             output += path.toString()+"\n";
         }
-        gen.get().addSnippet( "output", output );
+        gen.get().addSnippet( "output", AsciidocHelper.createOutputSnippet(output) );
         assertEquals(2, count);
     }
     
-    
+        /**
+     * In this example, we are going to examine a tree structure of +directories+ and
+     * +files+. Also, there are users that own files and roles that can be assigned to
+     * users. Roles can have permissions on directory or files structures (here we model
+     * only canRead, as opposed to full +rwx+ Unix permissions) and be nested.
+     * 
+     * @@graph1
+     * 
+     * == Find all files in the directory structure ==
+     * 
+     * In order to find all files contained in this structure, we need a variable length
+     * query that follows all +contains+ relationships and retrieves the nodes at the other
+     * end of the +leaf+ relationships
+     * 
+     *
+     * @@query1
+     * 
+     * resulting in
+     * 
+     * @@result1
+     * 
+     * == What files are owned by whom? ==
+     * 
+     * If we introduce the concept of ownership on files, we then can ask for files owned by
+     * +User1+
+     * 
+     * @@query2
+     * 
+     * Resulting in 
+     * 
+     * @@result2
+     * 
+     *
+     * == Who has access to an item? ==
+     * 
+     * If we now want to check what users have read access to +File1+, and define our ACL as
+     * 
+     * - the root directory has no access granted
+     * - The owning user of a File has read access
+     * - any user having a role that has been granted read access to one of the parent folders of the Item has read access.
+     * 
+     * @@query3
+     * 
+     * @@result3
+     * 
+     */
+    @Documented
+    @Graph(autoIndexNodes=true, value = {
+            "Root has Role",
+            "Root has FileRoot",
+            "AdminUser3 hasRole User",
+            "User1 hasRole User",
+            "User2 hasRole User",
+            "User isA Role",
+            "Admins isA Role",
+            "Admin1 subRoleOf Admins",
+            "Admin2 subRoleOf Admins",
+            "AdminUser3 hasRole Admins",
+            "User2 hasRole Admin2",
+            "User1 hasRole Admin1",
+            "User1 owns File1",
+            "User2 owns File2",
+        "Dir2 leaf File1", 
+        "Admins canRead Dir0", 
+        "Admin1 canRead Dir2", 
+        "Admin2 canRead Dir3", 
+        "FileRoot contains Dir0", 
+        "Dir1 contains Dir2", 
+        "Dir0 contains Dir3", 
+        "Dir0 contains Dir1",
+        "Dir3 leaf File2"})
+    @Test
+    public void file_trees_and_graphs()
+    {
+        data.get();
+        gen.get().addSnippet( "graph1", AsciidocHelper.createGraphViz("The Domain Structure", graphdb(), gen.get().getTitle()) );
+        CypherParser parser = new CypherParser();
+        ExecutionEngine engine = new ExecutionEngine(db);
+        
+        //Files
+        //TODO: can we do open ended?
+        String query = "start root=(node_auto_index,'name:Dir0') match (root)-[:contains^0..10]->()-[:leaf]->(file) return file";
+        gen.get().addSnippet( "query1", AsciidocHelper.createCypherSnippet( query ) );
+        String result = engine.execute( parser.parse( query ) ).toString();
+        assertTrue( result.contains("File1") );
+        gen.get().addSnippet( "result1", AsciidocHelper.createOutputSnippet( result ) );
+        
+        //Ownership
+        query = "start root=(node_auto_index,'name:Dir0') match (root)-[:contains^0..10]->()-[:leaf]->(file)<-[:owns]-(user) where user.name = 'User1' return file, user";
+        gen.get().addSnippet( "query2", AsciidocHelper.createCypherSnippet( query ) );
+        result = engine.execute( parser.parse( query ) ).toString();
+        assertTrue( result.contains("File1") );
+        assertFalse( result.contains("File2") );
+        gen.get().addSnippet( "result2", AsciidocHelper.createOutputSnippet( result ) );
+        
+        //ACL
+        //TODO how to check for any canRead relationships higher up Dir0?
+        query = "start root=(node_auto_index,'name:FileRoot') " +
+        		"match " +
+        		"(root)-[:contains^0..10]->(dir)-[:leaf]->(file)," +
+        		"(dir)<-[:canRead]-(role)," +
+        		"(role)<-[:hasRole]-(user)," +
+        		"(file)<-[:owns]-(owner) " +
+        		"return root, file, dir, role, user, owner";
+        gen.get().addSnippet( "query3", AsciidocHelper.createCypherSnippet( query ) );
+        result = engine.execute( parser.parse( query ) ).toString();
+        assertTrue( result.contains("File1") );
+        assertTrue( result.contains("File2") );
+        gen.get().addSnippet( "result3", AsciidocHelper.createOutputSnippet( result ) );
+        
+        
+    }
 
     private static ImpermanentGraphDatabase db;
     @BeforeClass

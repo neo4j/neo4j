@@ -38,7 +38,7 @@ public class RrdJobTest {
             .toReturn(10000l) // Second call
             .toReturn(12000l); // Third call
 
-        RrdJob job = new RrdJob(sampler, time);
+        RrdJob job = new RrdJob( time, sampler );
 
         job.run();
         job.run();

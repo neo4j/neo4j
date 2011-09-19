@@ -30,23 +30,14 @@ trait ReturnItems extends JavaTokenParsers with Tokens with Values {
 
   def returnValues: Parser[Value] = nullableProperty | value | entityValue
 
-  private def lowerCaseIdent = ident ^^ {
-    case c => c.toLowerCase
-  }
+  def countFunc: Parser[AggregationItem] = ignoreCase("count") ~> parens(returnValues) ^^ { case inner => ValueAggregationItem(Count(inner)) }
+  def sumFunc: Parser[AggregationItem] = ignoreCase("sum") ~> parens(returnValues) ^^ { case inner => ValueAggregationItem(Sum(inner)) }
+  def minFunc: Parser[AggregationItem] = ignoreCase("min") ~> parens(returnValues) ^^ { case inner => ValueAggregationItem(Min(inner)) }
+  def maxFunc: Parser[AggregationItem] = ignoreCase("max") ~> parens(returnValues) ^^ { case inner => ValueAggregationItem(Max(inner)) }
+  def avgFunc: Parser[AggregationItem] = ignoreCase("avg") ~> parens(returnValues) ^^ { case inner => ValueAggregationItem(Avg(inner)) }
+  def countStar: Parser[AggregationItem] = ignoreCase("count") ~> parens("*") ^^ { case "*" => CountStar()  }
 
-  def aggregationValueFunction: Parser[AggregationItem] = lowerCaseIdent ~ "(" ~ ( returnValues )~ ")" ^^ {
-    case "count" ~ "(" ~ inner ~ ")" => ValueAggregationItem(Count(inner))
-    case "sum" ~ "(" ~ inner ~ ")" => ValueAggregationItem(Sum(inner))
-    case "min" ~ "(" ~ inner ~ ")" => ValueAggregationItem(Min(inner))
-    case "max" ~ "(" ~ inner ~ ")" => ValueAggregationItem(Max(inner))
-    case "avg" ~ "(" ~ inner ~ ")" => ValueAggregationItem(Avg(inner))
-  }
-
-  def countStar: Parser[AggregationItem] = ignoreCase("count") ~> "(*)" ^^ {
-    case "(*)" => CountStar()
-  }
-
-  def aggregate:Parser[AggregationItem] = countStar  | aggregationValueFunction
+  def aggregate:Parser[AggregationItem] = (countStar | countFunc | sumFunc | minFunc | maxFunc | avgFunc)
 }
 
 

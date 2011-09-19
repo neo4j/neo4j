@@ -4,6 +4,7 @@
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
     <version>25</version>
+    <relativePath/>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>

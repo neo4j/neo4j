@@ -38,6 +38,11 @@ trait Tokens extends JavaTokenParsers {
     }
   }
 
+  def lowerCaseIdent = ident ^^ {
+    case c => c.toLowerCase
+  }
+
+  def parens[U](inner: Parser[U]) = "(" ~> inner <~ ")"
 
   def escapedIdentity: Parser[String] = ("`(``|[^`])*`").r ^^ {
     case str => stripQuotes(str).replace("``", "`")

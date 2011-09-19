@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.neo4j.kernel.impl.util.FileUtils.truncateFile;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -196,7 +198,7 @@ public class IdGeneratorImpl implements IdGenerator
         }
     }
     
-    public IdRange nextIdBatch( int size )
+    public synchronized IdRange nextIdBatch( int size )
     {
         assertStillOpen();
         
@@ -578,5 +580,20 @@ public class IdGeneratorImpl implements IdGenerator
     public long getDefragCount()
     {
         return defraggedIdCount;
+    }
+    
+    public void clearFreeIds()
+    {
+        releasedIdList.clear();
+        defragedIdList.clear();
+        defraggedIdCount = -1;
+        try
+        {
+            truncateFile( fileChannel, HEADER_SIZE );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }
