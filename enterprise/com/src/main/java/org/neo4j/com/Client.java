@@ -64,10 +64,10 @@ public abstract class Client<M> implements ChannelPipelineFactory
     // don't want to run into that limit, it will make some #acquire calls block and
     // gets disastrous if that thread is holding monitors that is needed to communicate
     // with the master in some way.
-    public static final int DEFAULT_MAX_NUMBER_OF_CONCURRENT_REQUESTS_PER_CLIENT = 2000;
+    public static final int DEFAULT_MAX_NUMBER_OF_CONCURRENT_REQUESTS_PER_CLIENT = 20;
     public static final int DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS = 20;
     // Max number of channels held open in a pool awaiting new owner.
-    private static final int DEFAULT_MAX_NUMBER_OF_UNUSED_CHANNELS = 50;
+    private static final int DEFAULT_MAX_NUMBER_OF_UNUSED_CHANNELS = DEFAULT_MAX_NUMBER_OF_CONCURRENT_REQUESTS_PER_CLIENT;
 
     private final ClientBootstrap bootstrap;
     private final SocketAddress address;
@@ -239,7 +239,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
         // Calling acquire is dangerous since it may be a blocking call... and if this
         // thread holds a lock which others may want to be able to communicate with
         // the master things go stiff.
-        Triplet<Channel, ChannelBuffer, ByteBuffer> result = channelPool.acquire( type.allowWaitForNewChannel() );
+        Triplet<Channel, ChannelBuffer, ByteBuffer> result = channelPool.acquire();
         if ( result == null )
         {
             msgLog.logMessage( "Unable to acquire new channel for " + type );

@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 
-
 public abstract class ResourcePool<R>
 {
     private static final boolean FAIR = true;
@@ -81,20 +80,13 @@ public abstract class ResourcePool<R>
         resources.setPermits( maxResources );
     }
 
-    public final R acquire( boolean allowWaitForPermit )
+    public final R acquire()
     {
         Thread thread = Thread.currentThread();
         R resource = current.get( thread );
         if ( resource == null )
         {
-            if ( !allowWaitForPermit )
-            {
-                if ( !resources.tryAcquire() ) return null;
-            }
-            else
-            {
-                resources.acquireUninterruptibly();
-            }
+            resources.acquireUninterruptibly();
             List<R> garbage = null;
             synchronized ( unused )
             {

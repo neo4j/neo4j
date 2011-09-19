@@ -59,15 +59,6 @@ public class MasterServer extends Server<Master, Void>
     }
     
     @Override
-    protected void responseWritten( RequestType<Master> type, Channel channel, SlaveContext context )
-    {
-        if ( type == HaRequestType.FINISH || !((HaRequestType)type).withinTx )
-        {
-            unmapSlave( channel, context );
-        }
-    }
-    
-    @Override
     public void shutdown()
     {
         super.shutdown();

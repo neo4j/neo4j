@@ -106,15 +106,6 @@ public class MasterClient extends Client<Master> implements Master
         return type != HaRequestType.COPY_STORE;
     }
     
-    @Override
-    protected void releaseChannel( RequestType<Master> type, Triplet<Channel, ChannelBuffer, ByteBuffer> channel )
-    {
-        if ( type.equals( HaRequestType.FINISH ) || !((HaRequestType)type).withinTx )
-        {
-            super.releaseChannel( type, channel );
-        }
-    }
-    
     public Response<IdAllocation> allocateIds( final IdType idType )
     {
         return sendRequest( HaRequestType.ALLOCATE_IDS, SlaveContext.EMPTY, new Serializer()
@@ -263,7 +254,7 @@ public class MasterClient extends Client<Master> implements Master
                 result.writeLong( idAllocation.getHighestIdInUse() );
                 result.writeLong( idAllocation.getDefragCount() );
             }
-        }, false, true ),
+        }, false ),
         CREATE_RELATIONSHIP_TYPE( new MasterCaller<Master, Integer>()
         {
             public Response<Integer> callMaster( Master master, SlaveContext context,
@@ -271,7 +262,7 @@ public class MasterClient extends Client<Master> implements Master
             {
                 return master.createRelationshipType( context, readString( input ) );
             }
-        }, INTEGER_SERIALIZER, true, false ),
+        }, INTEGER_SERIALIZER, true ),
         ACQUIRE_NODE_WRITE_LOCK( new AquireLockCall()
         {
             @Override
@@ -279,7 +270,7 @@ public class MasterClient extends Client<Master> implements Master
             {
                 return master.acquireNodeWriteLock( context, ids );
             }
-        }, LOCK_SERIALIZER, true, true ),
+        }, LOCK_SERIALIZER, true ),
         ACQUIRE_NODE_READ_LOCK( new AquireLockCall()
         {
             @Override
@@ -287,7 +278,7 @@ public class MasterClient extends Client<Master> implements Master
             {
                 return master.acquireNodeReadLock( context, ids );
             }
-        }, LOCK_SERIALIZER, true, true ),
+        }, LOCK_SERIALIZER, true ),
         ACQUIRE_RELATIONSHIP_WRITE_LOCK( new AquireLockCall()
         {
             @Override
@@ -295,7 +286,7 @@ public class MasterClient extends Client<Master> implements Master
             {
                 return master.acquireRelationshipWriteLock( context, ids );
             }
-        }, LOCK_SERIALIZER, true, true ),
+        }, LOCK_SERIALIZER, true ),
         ACQUIRE_RELATIONSHIP_READ_LOCK( new AquireLockCall()
         {
             @Override
@@ -303,7 +294,7 @@ public class MasterClient extends Client<Master> implements Master
             {
                 return master.acquireRelationshipReadLock( context, ids );
             }
-        }, LOCK_SERIALIZER, true, true ),
+        }, LOCK_SERIALIZER, true ),
         COMMIT( new MasterCaller<Master, Long>()
         {
             public Response<Long> callMaster( Master master, SlaveContext context,
@@ -314,7 +305,7 @@ public class MasterClient extends Client<Master> implements Master
                 return master.commitSingleResourceTransaction( context, resource,
                         TxExtractor.create( reader ) );
             }
-        }, LONG_SERIALIZER, true, true, false ),
+        }, LONG_SERIALIZER, true ),
         PULL_UPDATES( new MasterCaller<Master, Void>()
         {
             public Response<Void> callMaster( Master master, SlaveContext context,
@@ -322,7 +313,7 @@ public class MasterClient extends Client<Master> implements Master
             {
                 return master.pullUpdates( context );
             }
-        }, VOID_SERIALIZER, true, false ),
+        }, VOID_SERIALIZER, true ),
         FINISH( new MasterCaller<Master, Void>()
         {
             public Response<Void> callMaster( Master master, SlaveContext context,
@@ -330,7 +321,7 @@ public class MasterClient extends Client<Master> implements Master
             {
                 return master.finishTransaction( context );
             }
-        }, VOID_SERIALIZER, true, true ),
+        }, VOID_SERIALIZER, true ),
         GET_MASTER_ID_FOR_TX( new MasterCaller<Master, Integer>()
         {
             public Response<Integer> callMaster( Master master, SlaveContext context,
@@ -338,7 +329,7 @@ public class MasterClient extends Client<Master> implements Master
             {
                 return master.getMasterIdForCommittedTx( input.readLong() );
             }
-        }, INTEGER_SERIALIZER, false, false ),
+        }, INTEGER_SERIALIZER, false ),
         COPY_STORE( new MasterCaller<Master, Void>()
         {
             public Response<Void> callMaster( Master master, SlaveContext context,
@@ -351,30 +342,20 @@ public class MasterClient extends Client<Master> implements Master
             {
                 return (byte) 255;
             }
-        }, VOID_SERIALIZER, true, false );
+        }, VOID_SERIALIZER, true );
 
         @SuppressWarnings( "rawtypes" )
         final MasterCaller caller;
         @SuppressWarnings( "rawtypes" )
         final ObjectSerializer serializer;
         private final boolean includesSlaveContext;
-        final boolean withinTx;
-        private final boolean allowWaitForNewChannel;
 
         private <T> HaRequestType( MasterCaller caller, ObjectSerializer<T> serializer,
-                boolean includesSlaveContext, boolean withinTx )
-        {
-            this( caller, serializer, includesSlaveContext, withinTx, true );
-        }
-        
-        private <T> HaRequestType( MasterCaller caller, ObjectSerializer<T> serializer,
-                boolean includesSlaveContext, boolean withinTx, boolean allowWaitForChannel )
+                boolean includesSlaveContext )
         {
             this.caller = caller;
             this.serializer = serializer;
             this.includesSlaveContext = includesSlaveContext;
-            this.withinTx = withinTx;
-            this.allowWaitForNewChannel = allowWaitForChannel;
         }
         
         public ObjectSerializer getObjectSerializer()
@@ -395,18 +376,6 @@ public class MasterClient extends Client<Master> implements Master
         public boolean includesSlaveContext()
         {
             return this.includesSlaveContext;
-        }
-        
-        @Override
-        public boolean monitorChannelMapping()
-        {
-            return withinTx;
-        }
-        
-        @Override
-        public boolean allowWaitForNewChannel()
-        {
-            return allowWaitForNewChannel;
         }
     }
 

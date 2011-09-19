@@ -26,8 +26,4 @@ public interface RequestType<M>
     ObjectSerializer getObjectSerializer();
     
     byte id();
-    
-    boolean monitorChannelMapping();
-    
-    boolean allowWaitForNewChannel();
 }

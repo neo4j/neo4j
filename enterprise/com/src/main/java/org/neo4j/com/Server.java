@@ -247,6 +247,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         try
         {
             finishOffChannel( channel, slave );
+            unmapSlave( channel, slave );
         }
         catch ( IllegalStateException e ) // From TxManager.resume (if the tx is already active)
         {
@@ -371,13 +372,16 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
                 finally
                 {
                     if ( response != null ) response.close();
+                    unmapSlave( channel, context );
                 }
             }
         };
     }
     
-    protected abstract void responseWritten( RequestType<M> type, Channel channel, SlaveContext context );
-
+    protected void responseWritten( RequestType<M> type, Channel channel, SlaveContext context )
+    {
+    }
+    
     private static void writeStoreId( StoreId storeId, ChannelBuffer targetBuffer )
     {
         targetBuffer.writeBytes( storeId.serialize() );
@@ -438,16 +442,9 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         {
             // Checking for machineId -1 excludes the "empty" slave contexts
             // which some communication points pass in as context.
-            if ( type.monitorChannelMapping() && slave != null && slave.machineId() != SlaveContext.EMPTY.machineId() )
+            if ( slave != null && slave.machineId() != SlaveContext.EMPTY.machineId() )
             {
                 Pair<SlaveContext, AtomicLong> previous = connectedSlaveChannels.get( channel );
-                if ( previous != null && !previous.first().equals( slave ) )
-                {   // The previous mapping for this channel seems to be void and the
-                    // channel reused somehow. Try to finish off this channel right away.
-                    tryToFinishOffChannel( channel, previous.first() );
-                    throw new RuntimeException( "Tried to map " + channel + " --> " + slave +
-                            ", but was already mapped to " + previous.first() );
-                }
                 if ( previous != null )
                 {
                     previous.other().set( System.currentTimeMillis() );
