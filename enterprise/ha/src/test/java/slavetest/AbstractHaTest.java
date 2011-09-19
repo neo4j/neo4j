@@ -688,7 +688,6 @@ public abstract class AbstractHaTest
         assertTrue( executeJob( new CommonJobs.GetNodeByIdJob( nodeId ), 0 ) );
     }
     
-    @Ignore( "Turn on when problem has been fixed" )
     @Test
     public void testChannelResourcePool() throws Exception
     {
