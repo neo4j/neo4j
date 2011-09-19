@@ -19,6 +19,8 @@
  */
 package org.neo4j.helpers.collection;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -402,5 +404,51 @@ public abstract class IteratorUtil
         List<T> list = new ArrayList<T>();
         addToCollection( iterable, list );
         return list;
+    }
+    
+    /**
+     * Creates an {@link Iterable} for iterating over the lines of a text file.
+     * @param file the file to get the lines for.
+     * @return an {@link Iterable} for iterating over the lines of a text file.
+     */
+    public static ClosableIterable<String> asIterable( final File file )
+    {
+        return new ClosableIterable<String>()
+        {
+            private ClosableIterator<String> mostRecentIterator;
+            
+            @Override
+            public Iterator<String> iterator()
+            {
+                try
+                {
+                    if ( mostRecentIterator != null ) mostRecentIterator.close();
+                    mostRecentIterator = asIterator( file );
+                    return mostRecentIterator;
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( e );
+                }
+            }
+            
+            @Override
+            public void close()
+            {
+                if ( mostRecentIterator != null ) mostRecentIterator.close();
+            }
+        };
+    }
+    
+    /**
+     * Creates an {@link Iterator} for iterating over the lines of a text file.
+     * The opened file is closed if an exception occurs during reading or when
+     * the files has been read through all the way.
+     * @param file the file to get the lines for.
+     * @return an {@link Iterator} for iterating over the lines of a text file.
+     */
+    public static ClosableIterator<String> asIterator( File file ) throws IOException
+    {
+        return new LinesOfFileIterator( file );
     }
 }
