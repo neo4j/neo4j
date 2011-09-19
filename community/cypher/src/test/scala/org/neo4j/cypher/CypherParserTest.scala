@@ -555,7 +555,7 @@ class CypherParserTest extends JUnitSuite {
       Query.
         start(NodeById("a", 1)).
         where(Equals(IdValue(EntityValue("a")), Literal(0)))
-        returns(ValueReturnItem(IdValue(EntityValue("a")))))
+        returns (ValueReturnItem(IdValue(EntityValue("a")))))
   }
 
   @Test def shouldBeAbleToHandleStringLiteralsWithApostrophe() {
@@ -702,7 +702,7 @@ class CypherParserTest extends JUnitSuite {
         returns (ValueReturnItem(EntityValue("b"))))
   }
 
-  @Test def testParam() {
+  @Test def testParamAsStartNode() {
     testQuery(
       """start pA = (::a) return pA""",
       Query.
@@ -710,6 +710,14 @@ class CypherParserTest extends JUnitSuite {
         returns(ValueReturnItem(EntityValue("pA"))))
   }
 
+  @Test def testParamForWhereLiteral() {
+    testQuery(
+      """start pA = (1) where pA.name = ::name return pA""",
+      Query.
+        start(NodeById("pA", 1)).
+        where(Equals(PropertyValue("pA", "name"), ParameterValue("name")))
+        returns (ValueReturnItem(EntityValue("pA"))))
+  }
 
   @Test def consoleModeParserShouldOutputNullableProperties() {
     val query = "start a = (1) return a.name"
