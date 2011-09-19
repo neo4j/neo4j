@@ -30,7 +30,7 @@ else
   nodeshape=box
 fi
 
-maxsize="graph [size=\"7.0,9,0\"]"
+maxsize="graph [size=\"7.0,9.0\"]"
 
 nodestyle=filled,rounded
 #nodeheight=0.37
