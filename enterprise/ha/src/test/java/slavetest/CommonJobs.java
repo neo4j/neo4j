@@ -711,4 +711,24 @@ public abstract class CommonJobs
             return null;
         }
     }
+    
+    public static class CreateNodeNoCommit extends AbstractJob<Void>
+    {
+        private GraphDatabaseService gdb; 
+        private Transaction tx;
+        
+        public Void execute( GraphDatabaseService db ) throws RemoteException
+        {
+            this.gdb = db;
+            tx = db.beginTx();
+            Node node = db.createNode();
+            System.out.println( Thread.currentThread() + " created node " + node );
+            return null;
+        }
+        
+        public void rollback()
+        {
+            tx.finish();
+        }
+    }
 }
