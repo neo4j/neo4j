@@ -26,8 +26,8 @@
     <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
     <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
     <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
-    <blueprints.version>0.9</blueprints.version>
-    <gremlin.version>1.2</gremlin.version>
+    <blueprints.version>1.0</blueprints.version>
+    <gremlin.version>1.3</gremlin.version>
 
     <!-- Run integration tests against a server that is started elsewhere. This is used in ServerIntegrationTestFacade, which currently assumes external servers to be running at http://localhost:7474/ -->
     <testWithExternalServer>false</testWithExternalServer>
