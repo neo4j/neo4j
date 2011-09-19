@@ -43,6 +43,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+import org.neo4j.com.Client;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -196,6 +197,7 @@ public abstract class AbstractHaTest
                 otherNodes.remove( otherNode );
                 vNodeCount++;
             }
+            if ( !otherNodes.isEmpty() ) System.out.println( otherNodes );
             assertTrue( otherNodes.isEmpty() );
 
             if ( expectsResults )
@@ -684,6 +686,111 @@ public abstract class AbstractHaTest
         Long nodeId = executeJobOnMaster( new CommonJobs.CreateSubRefNodeJob( "PULL", "key", "value" ) );
         sleeep( waitTime*1000*2 );
         assertTrue( executeJob( new CommonJobs.GetNodeByIdJob( nodeId ), 0 ) );
+    }
+    
+    @Ignore( "Turn on when problem has been fixed" )
+    @Test
+    public void testChannelResourcePool() throws Exception
+    {
+        initializeDbs( 1 );
+        List<WorkerThread> jobs = new LinkedList<WorkerThread>();
+        for ( int i = 0; i < Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_REQUESTS_PER_CLIENT; i++ )
+        {
+            WorkerThread job = new WorkerThread( this );
+            jobs.add( job );
+            job.start();
+        }
+        for ( int i = 0; i < 10; i++ )
+        {
+            int count = 0;
+            for ( WorkerThread job : jobs )
+            {
+                if ( job.nodeHasBeenCreatedOnTx() )
+                {
+                    count++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+            if ( count == jobs.size() )
+            {
+                break;
+            }
+            sleeep( 100 );
+        }
+        WorkerThread jobShouldNotBlock = new WorkerThread( this );
+        jobShouldNotBlock.start();
+        for ( int i = 0; i < 10; i++ )
+        {
+            if ( jobShouldNotBlock.nodeHasBeenCreatedOnTx() )
+            {
+                break;
+            }
+            sleeep( 250 );
+        }
+        assertTrue( "Create node should not have been blocked", jobShouldNotBlock.nodeHasBeenCreatedOnTx() );
+        for ( WorkerThread job : jobs )
+        {
+            job.finish();
+            job.join();
+        }
+        jobShouldNotBlock.finish();
+        jobShouldNotBlock.join();
+    }
+    
+    static class WorkerThread extends Thread
+    {
+        private final AbstractHaTest testCase;
+        private volatile boolean keepRunning = true;
+        private volatile boolean nodeCreatedOnTx = false;
+        
+        WorkerThread( AbstractHaTest testCase )
+        {
+            this.testCase = testCase;
+        }
+        
+        @Override
+        public void run()
+        {
+            final CommonJobs.CreateNodeNoCommit job = new CommonJobs.CreateNodeNoCommit();
+            try
+            {
+                testCase.executeJob( job, 0 );
+                nodeCreatedOnTx = true;
+            }
+            catch ( Exception e )
+            {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            while ( keepRunning )
+            {
+                try
+                {
+                    synchronized ( this )
+                    {
+                        wait( 100 );
+                    }
+                }
+                catch ( InterruptedException e )
+                {
+                    Thread.interrupted();
+                }
+            }
+            job.rollback();
+        }
+        
+        void finish()
+        {
+            keepRunning = false;
+        }
+        
+        boolean nodeHasBeenCreatedOnTx()
+        {
+            return nodeCreatedOnTx;
+        }
     }
     
     protected void disableVerificationAfterTest()
