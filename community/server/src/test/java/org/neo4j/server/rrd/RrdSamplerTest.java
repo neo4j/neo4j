@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.rrd;
 
-import org.junit.Test;
-import org.rrd4j.DsType;
-import org.rrd4j.core.Sample;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+
+import org.junit.Test;
+import org.rrd4j.DsType;
+import org.rrd4j.core.Sample;
 
 public class RrdSamplerTest
 {

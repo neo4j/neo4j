@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.rrd;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.neo4j.server.rrd.sampler.MemoryUsedSampleable;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.neo4j.server.rrd.sampler.MemoryUsedSampleable;
 
 public class MemoryUsedSampleableTest
 {

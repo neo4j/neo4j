@@ -19,10 +19,10 @@
  */
 package org.neo4j.server.rrd;
 
-import org.neo4j.server.logging.Logger;
-
 import java.util.Timer;
 import java.util.TimerTask;
+
+import org.neo4j.server.logging.Logger;
 
 public class ScheduledJob
 {

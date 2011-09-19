@@ -54,14 +54,13 @@ public class ModelBuilder
 
         dm.nodeIndexName = "matrixal-nodes";
         dm.indexedNodeKeyValues.put( key, value );
+
         dm.indexedNodeUriToEntityMap.put(
-                (URI) rgd.addToNodeIndex( dm.nodeIndexName, key, value,
-                        JsonHelper.createJsonFrom( thomas.location.toString() ) )
+                (URI) rgd.addToNodeIndex( dm.nodeIndexName, "{\"key\": \"" + key + "\", \"value\":\"" + value + "\", \"uri\": \"" + thomas.location + "\"}" )
                         .getMetadata()
                         .getFirst( "Location" ), thomas );
         dm.indexedNodeUriToEntityMap.put(
-                (URI) rgd.addToNodeIndex( dm.nodeIndexName, key, value,
-                        JsonHelper.createJsonFrom( agent.location.toString() ) )
+                (URI) rgd.addToNodeIndex( dm.nodeIndexName, "{\"key\": \"" + key + "\", \"value\":\"" + value + "\", \"uri\": \"" + agent.location + "\"}" )
                         .getMetadata()
                         .getFirst( "Location" ), agent );
 

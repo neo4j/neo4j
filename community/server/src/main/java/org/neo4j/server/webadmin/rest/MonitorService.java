@@ -19,12 +19,9 @@
  */
 package org.neo4j.server.webadmin.rest;
 
-import org.neo4j.server.rest.repr.OutputFormat;
-import org.neo4j.server.webadmin.rest.representations.RrdDataRepresentation;
-import org.neo4j.server.webadmin.rest.representations.ServiceDefinitionRepresentation;
-import org.rrd4j.core.FetchRequest;
-import org.rrd4j.core.RrdDb;
-import org.rrd4j.core.Util;
+import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.DAYS;
+import static org.rrd4j.ConsolFun.AVERAGE;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -32,9 +29,12 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
-import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.DAYS;
-import static org.rrd4j.ConsolFun.AVERAGE;
+import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.webadmin.rest.representations.RrdDataRepresentation;
+import org.neo4j.server.webadmin.rest.representations.ServiceDefinitionRepresentation;
+import org.rrd4j.core.FetchRequest;
+import org.rrd4j.core.RrdDb;
+import org.rrd4j.core.Util;
 
 /**
  * This exposes data from an internal round-robin database that tracks various

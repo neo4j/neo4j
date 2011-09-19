@@ -19,6 +19,11 @@
  */
 package org.neo4j.server.rrd;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+
+import java.util.UUID;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,11 +33,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rrd.sampler.PropertyCountSampleable;
 import org.neo4j.test.ImpermanentGraphDatabase;
-
-import java.util.UUID;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
 
 public class PropertyCountSampleableTest
 {
