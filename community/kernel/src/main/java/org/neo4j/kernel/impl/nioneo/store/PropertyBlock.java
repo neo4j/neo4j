@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -161,8 +162,26 @@ public class PropertyBlock
         result.append( inUse() ? "inUse, " : "notInUse, " );
         result.append( valueBlocks == null ? -1 : getKeyIndexId() ).append(
                 ", " ).append( getType() );
-        result.append( ", " ).append( valueBlocks ).append( "]" );
+        result.append( ", " ).append( valueBlocks ).append( ", " );
+        result.append( "ValueRecords[" );
+        if ( !isLight() )
+        {
+            Iterator<DynamicRecord> recIt = valueRecords.iterator();
+            while ( recIt.hasNext() )
+            {
+                result.append( recIt.next() );
+                if ( recIt.hasNext() )
+                {
+                    result.append( ", " );
+                }
+            }
+        }
+        else
+        {
+            result.append( "<none>" );
+        }
 
+        result.append( "]]" );
         return result.toString();
     }
 }
