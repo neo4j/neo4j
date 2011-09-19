@@ -285,7 +285,8 @@ public class PropertyStore extends AbstractStore implements Store
                     else
                     {
                         throw new InvalidRecordException(
-                                "Unknown dynamic record" );
+                                "Unknown dynamic record" + valueRecord
+                                        + " from property record " + record );
                     }
                 }
             }
@@ -366,10 +367,9 @@ public class PropertyStore extends AbstractStore implements Store
         return record;
     }
 
-    private PropertyRecord getRecord( long id, PersistenceWindow window )
+    private PropertyRecord getRecordFromBuffer( long id, Buffer buffer )
     {
         Bits bits = Bits.bits( RECORD_SIZE );
-        Buffer buffer = window.getOffsettedBuffer( id );
         bits.read( buffer );
         PropertyRecord record = new PropertyRecord( id );
 
@@ -394,11 +394,18 @@ public class PropertyStore extends AbstractStore implements Store
                 break;
             }
         }
-        if ( !record.inUse() )
+        return record;
+    }
+
+    private PropertyRecord getRecord( long id, PersistenceWindow window )
+    {
+        Buffer buffer = window.getOffsettedBuffer( id );
+        PropertyRecord toReturn = getRecordFromBuffer( id, buffer );
+        if ( !toReturn.inUse() )
         {
             throw new InvalidRecordException( "Record[" + id + "] not in use" );
         }
-        return record;
+        return toReturn;
     }
 
     /*
@@ -652,6 +659,7 @@ public class PropertyStore extends AbstractStore implements Store
 
     public Object getArrayFor( PropertyBlock propertyBlock )
     {
+        assert !propertyBlock.isLight();
         return getArrayFor( propertyBlock.getSingleValueLong(), propertyBlock.getValueRecords(), arrayPropertyStore );
     }
 
@@ -680,6 +688,13 @@ public class PropertyStore extends AbstractStore implements Store
             {
                 store.makeHeavy( record );
             }
+            assert record.getData().length > 0;
+            // assert ( ( record.getData().length == ( DEFAULT_DATA_BLOCK_SIZE -
+            // AbstractDynamicStore.BLOCK_HEADER_SIZE ) ) && (
+            // record.getNextBlock() != Record.NO_NEXT_BLOCK.intValue() ) )
+            // || ( ( record.getData().length < ( DEFAULT_DATA_BLOCK_SIZE -
+            // AbstractDynamicStore.BLOCK_HEADER_SIZE ) ) && (
+            // record.getNextBlock() == Record.NO_NEXT_BLOCK.intValue() ) );
             ByteBuffer buf = ByteBuffer.wrap( record.getData() );
             byte[] bytes = new byte[record.getData().length];
             totalSize += bytes.length;
@@ -695,6 +710,7 @@ public class PropertyStore extends AbstractStore implements Store
                 currentArray.length );
             offset += currentArray.length;
         }
+        assert bArray.length > 0;
         return bArray;
     }
 
@@ -740,5 +756,13 @@ public class PropertyStore extends AbstractStore implements Store
     public int getArrayBlockSize()
     {
         return arrayPropertyStore.getBlockSize();
+    }
+
+    @Override
+    protected boolean isRecordInUse( ByteBuffer buffer )
+    {
+        // TODO: The next line is an ugly hack, but works.
+        Buffer fromByteBuffer = new Buffer( null, buffer );
+        return getRecordFromBuffer( 0, fromByteBuffer ).inUse();
     }
 }

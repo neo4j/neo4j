@@ -87,7 +87,6 @@ public class DynamicRecord extends Abstract64BitRecord
 
     public byte[] getData()
     {
-        assert !isLight;
         return data;
     }
 
@@ -119,10 +118,6 @@ public class DynamicRecord extends Abstract64BitRecord
             {
                 buf.append( "byte[" + data.length + "]" );
                 written = true;
-            }
-            if (!written)
-            {
-                buf.append( "null" );
             }
         }
         buf.append( "," ).append( nextBlock ).append( "]" );

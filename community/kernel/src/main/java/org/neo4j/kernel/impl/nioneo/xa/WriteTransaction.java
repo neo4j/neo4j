@@ -1076,6 +1076,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
 
         block.setInUse( false );
+        block.setChanged();
+        propRecord.setChanged();
         // TODO: update count on property index record
         for ( DynamicRecord valueRecord : block.getValueRecords() )
         {
@@ -1101,7 +1103,9 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     private void unlinkPropertyRecord( PropertyRecord propRecord,
             PrimitiveRecord primitive )
     {
+        assert propRecord.size() == 0;
         propRecord.setInUse( false );
+        propRecord.setChanged();
         long prevProp = propRecord.getPrevProp();
         long nextProp = propRecord.getNextProp();
         if ( primitive.getNextProp() == propRecord.getId() )

@@ -303,6 +303,10 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
                 {
                     buffer.put( record.getData() );
                 }
+                else
+                {
+                    assert getHighId() != record.getId() + 1;
+                }
             }
             else
             {
@@ -351,6 +355,9 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
                 record.setNextBlock( nextBlock );
             }
             recordList.add( record );
+            assert !record.isLight();
+            assert record.getLength() > 0;
+            assert record.getData() != null;
         }
         while ( nextBlock != Record.NO_NEXT_BLOCK.intValue() );
         return recordList;
@@ -398,6 +405,11 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         }
     }
 
+    protected boolean isRecordInUse( ByteBuffer buffer )
+    {
+        return ( ( buffer.get() & (byte) 0xF0 ) >> 4 ) == Record.IN_USE.byteValue();
+    }
+
     private DynamicRecord getRecord( long blockId, PersistenceWindow window, boolean loadData )
     {
         DynamicRecord record = new DynamicRecord( blockId );
@@ -436,15 +448,11 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         record.setInUse( true );
         record.setLength( nrOfBytes );
         record.setNextBlock( longNextBlock );
-        if ( loadData )
+        // if ( loadData )
         {
             byte byteArrayElement[] = new byte[nrOfBytes];
             buffer.get( byteArrayElement );
             record.setData( byteArrayElement );
-        }
-        else
-        {
-            record.setIsLight( true );
         }
         return record;
     }
@@ -484,9 +492,9 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
             if ( fileChannel.read( byteBuffer ) > 0 )
             {
                 byteBuffer.flip();
-                byte inUse = byteBuffer.get();
+                boolean isInUse = isRecordInUse( byteBuffer );
                 byteBuffer.clear();
-                if ( inUse != 0 )
+                if ( isInUse )
                 {
                     return i;
                 }
