@@ -20,15 +20,87 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 define(
   ['./Filter',
-   'ribcage/View'], 
-  (Filter, View) ->
+   './propertyFilterTemplate',
+   '../../views/AbstractFilterView'], 
+  (Filter, template, AbstractFilterView) ->
 
-    class PropertyFilterView extends View
+    class PropertyFilterView extends AbstractFilterView
+
+      events : 
+        'change .method' : 'methodChanged'
+        'change .propertyName' : 'propertyNameChanged'
+        'change .compareValue' : 'compareValueChanged'
+        "click button.removeFilter" : "deleteFilter"
+              
+      render : () ->
+        $(@el).html template()
+        
+        select = $(".method", @el)
+        
+        select.append("<option value='exists'>exists</option>")
+        for method, definition of PropertyFilter.compareMethods
+          label = definition.label
+          select.append("<option value='#{htmlEscape(method)}'>#{htmlEscape(label)}</option>")
+        
+        @uiSetMethod @filter.getMethodName()
+        @uiSetPropertyName @filter.getPropertyName()
+        @uiSetCompareValue @filter.getCompareValue()
+        
+        return this
+        
+      methodChanged : () =>
+        method = $(".method", @el).val()
+        @uiSetMethod method
+        @filter.set method : method
+        
+      propertyNameChanged : () =>
+        name = $('.propertyName',@el).val()
+        @filter.set property : name
       
+      compareValueChanged : () =>
+        val = $('.compareValue',@el).val()
+        @filter.set compareValue : val
+        
+      uiSetMethod : (method) ->
+        $(".method", @el).val method
+        if PropertyFilter.compareMethods[method]?
+          $('.compareValue',@el).show()
+        else
+          $('.compareValue',@el).hide()
+        
+      uiSetPropertyName : (prop) -> $('.propertyName',@el).val(prop)
+      uiSetCompareValue : (val) -> $('.compareValue',@el).val(val)
+          
 
     class PropertyFilter extends Filter
       
-      @name = 'propertyFilter'
-      @view = PropertyFilterView
+      @name : 'propertyFilter'
+      
+      @methods : 
+        'exists' : (item, propertyName) -> true
+        'compare' : (item, propertyName) -> true
+      
+      @compareMethods : 
+        '==' : {label : "is",    filter : (actual, expected) -> actual == expected}
+        '!=' : {label : "isn't", filter : (actual, expected) -> actual != expected}
+      
+      defaults : 
+        'method' : 'exists'
+      
+      getViewClass : ()-> PropertyFilterView
+      getType : () -> PropertyFilter.name
+      
+      getMethodName : -> @get 'method'
+      getPropertyName : -> @get 'propertyName'
+      getCompareValue : -> @get 'compareValue'
+      
+      matches : (item) =>
+        method = @getMethodName()
+        if method == 'exists'
+          return item.neoNode.hasProperty @getPropertyName()
+        else if @compareMethods[method]?
+          cmp = @compareMethods[method]
+          return cmp item.getProperty(@getPropertyName()), getCompareValue()
+        return false
       
 )

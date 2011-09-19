@@ -37,6 +37,9 @@ define(
       
       filters : filterMap
       
+      # Override the normal deserialization method, 
+      # to allow us to deserialize to multiple different
+      # filter types.
       deserializeItem : (json) ->
         if @filters[json.type]?
           return new @filters[json.type](json)

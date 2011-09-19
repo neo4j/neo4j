@@ -23,29 +23,14 @@ define(
    'ribcage/LocalModel'], 
   (Filters, LocalModel) ->
 
-    class StyleRule extends LocalModel
+    class NodeStyleDefinition extends LocalModel
       
       defaults : 
-        target : 'node:explored'
+        target : 'nodes'
       
       initialize : () ->
         @initNestedCollection('filters', Filters)
       
       setTarget : (target) -> @set target:target
       getTarget : () -> @get 'target'
-      
-      getTargetEntity : () -> @getTarget().split(':')[0]
-      getTargetEntityType : () -> @getTarget().split(':')[1]
-      
-      appliesTo : (item, type) ->
-        if type != @getTargetEntity() or item.type != @getTargetEntityType()
-          return false
-        
-        for filter in @filters.models
-          if not filter.matches(item)
-            return false
-        return true
-        
-      applyStyleTo : (target) ->
-        
 )

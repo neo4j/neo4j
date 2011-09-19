@@ -25,12 +25,9 @@ define(
    'lib/backbone'], 
   (ItemUrlResolver, template, View) ->
   
-    class StyleRuleFilterView extends View
+    class AbstractFilterView extends View
 
       tagName : 'tr'
-
-      events : 
-        "click button.removeFilter" : "deleteFilter"
       
       initialize : (opts) =>
         @filter = opts.filter

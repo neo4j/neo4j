@@ -21,11 +21,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 define(
   ['neo4j/webadmin/utils/ItemUrlResolver'
    './styleRule',
-   './StyleRuleFilterView',
    '../models/Filters',
+   '../models/filters/PropertyFilter',
    'ribcage/View',
    'lib/backbone'], 
-  (ItemUrlResolver, template, StyleRuleFilterView, Filters, View) ->
+  (ItemUrlResolver, template, Filters, PropertyFilter, View) ->
   
     class StyleRuleView extends View
 
@@ -58,14 +58,12 @@ define(
         @remove()
         
       addFilter : () ->
-        return
-        filter = new StyleRuleFilter
+        filter = new PropertyFilter
         @rule.filters.add filter
         @addFilterElement filter
         
       addFilterElement : (filter) ->
-        view = new StyleRuleFilterView( filter : filter, filters:@rule.filters )
+        FilterView = filter.getViewClass()
+        view = new FilterView( {filter : filter, filters:@rule.filters} )
         @filterContainer.append view.render().el
-        
-
 )

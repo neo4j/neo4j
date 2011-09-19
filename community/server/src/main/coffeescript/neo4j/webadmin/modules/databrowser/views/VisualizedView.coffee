@@ -102,7 +102,8 @@ define(
       getViz : () =>
         width = $(document).width() - 40;
         height = $(document).height() - 160;
-        @viz ?= new VisualGraph(@server,width,height)
+        profile = @settings.getCurrentVisualizationProfile()
+        @viz ?= new VisualGraph(@server, profile, width,height)
         @settingsChanged()
         return @viz
 

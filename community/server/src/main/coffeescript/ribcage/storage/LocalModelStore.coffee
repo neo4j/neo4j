@@ -27,7 +27,7 @@ define(
       store : (key, obj) ->
         localStorage.setItem(key, JSON.stringify(obj))
 
-      fetch : (key, defaults={}) ->
+      fetch : (key, defaults) ->
         stored = localStorage.getItem(key)
         if stored != null then JSON.parse(stored) else defaults
 
@@ -39,7 +39,7 @@ define(
       store : (key, obj) ->
         @storage[key] = obj
 
-      fetch : (key, defaults={}) ->
+      fetch : (key, defaults) ->
         if @storage[key]? then @storage[key] else @defaults
     
     class LocalModelStore
@@ -67,7 +67,7 @@ define(
       toJSON is used to serialize objects, and the objects
       constructor is passed the raw JSON upon instantiation.
       ###
-      get : (key,type=null,defaults=[]) ->
+      get : (key,type=null,defaults=null) ->
         if not @_cache[key]?
           fetch = () =>
             @storingStrategy.fetch key, defaults

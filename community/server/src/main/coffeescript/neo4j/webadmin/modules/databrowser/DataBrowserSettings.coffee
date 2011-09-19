@@ -1,12 +1,15 @@
 
 define(
-  [], 
-  () ->
+  ['./visualization/models/VisualizationProfiles'], 
+  (VisualizationProfiles) ->
 
     class DataBrowserSettings
 
       LABEL_PROPERTIES_KEY : 'databrowser.labelProperties'
       LABEL_PROPERTIES_DEFAULT : ['name']
+      
+      VIZ_PROFILES_KEY : 'databrowser.visualization.profiles'
+      VIZ_PROFILES_DEFAULT : [{ id:0, name:"Default profile" }]
 
       constructor : (@settings) ->
         # Pass
@@ -25,5 +28,16 @@ define(
       
       labelPropertiesChanged : (callback) ->
         @settings.bind 'change:' + @LABEL_PROPERTIES_KEY,  callback
+        
+      getVisualizationProfiles : () ->
+        @settings.get @VIZ_PROFILES_KEY, VisualizationProfiles, @VIZ_PROFILES_DEFAULT
+        
+      getCurrentVisualizationProfile : () ->
+        id = @settings.get @CURRENT_VIZ_PROFILE_KEY
+        profiles = @getVisualizationProfiles()
+        if id?
+          return profiles.get id
+        else
+          return profiles.first()
       
 )

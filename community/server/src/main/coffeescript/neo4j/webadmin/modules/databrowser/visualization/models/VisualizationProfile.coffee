@@ -14,4 +14,11 @@ define(
         
       isBuiltin : () -> @get "builtin"
       
+      # Given a visualization node, 
+      # apply appropriate style attributes
+      styleNode : (visualNode) ->
+        @styleRules.each (rule) =>
+          if rule.appliesTo visualNode, 'node'
+            rule.applyStyleTo visualNode
+      
 )

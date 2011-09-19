@@ -24,4 +24,10 @@ define(
 
     class Filter extends LocalModel
       
+      matches : (item) -> false
+      
+      toJSON : () ->
+        json = super()
+        json.type = @getType()
+        return json
 )

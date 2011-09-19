@@ -48,7 +48,11 @@ define(
             item.id = ++@_idCounter
           
           if item not instanceof Backbone.Model
-            item = @deserializeItem item
+            try
+              item = @deserializeItem item
+            catch e
+              neo4j.log "Unable to deserialize model, error was: ", e
+              continue
             
           modelFetch = () =>
             @fetch(item.id)

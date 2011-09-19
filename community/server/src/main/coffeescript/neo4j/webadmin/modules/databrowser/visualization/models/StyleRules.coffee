@@ -24,5 +24,6 @@ define(
     class StyleRules extends LocalCollection
       
       model: StyleRule
+        
 
 )
