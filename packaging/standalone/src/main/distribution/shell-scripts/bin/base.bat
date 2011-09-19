@@ -186,7 +186,7 @@ rem
 rem function install
 rem
 :install
-set binPath="%javaPath%\bin\java.exe -Djava.util.logging.config.file=%~dps0../conf/logging.properties -DworkingDir=%~dps0.. -DconfigFile=%configFile% %classpath% %mainclass% -jar %~dps0%wrapperJarFilename% %serviceName%"
+set binPath="%javaPath%\bin\java.exe -Djava.util.logging.config.file="%~dps0..\conf\logging.properties" -Djava.util.logging.config.file=%~dps0../conf/logging.properties -DworkingDir=%~dps0.. -DconfigFile=%configFile% %classpath% %mainclass% -jar %~dps0%wrapperJarFilename% %serviceName%"
 sc create "%serviceName%" binPath= %binPath% DisplayName= "%serviceDisplayName%" start= %serviceStartType%
 call:start
 goto:eof
@@ -246,7 +246,7 @@ rem
 rem function console
 rem
 :console
-java -DworkingDir=%~dp0.. -DconfigFile=%configFile% -Djava.util.logging.config.file=%~dps0../conf/logging.properties %classpath% %mainclass% -jar %~dps0%wrapperJarFilename%
+java -DworkingDir=%~dp0.. -Djava.util.logging.config.file="%~dps0..\conf\logging.properties" -DconfigFile=%configFile% -Djava.util.logging.config.file=%~dps0../conf/logging.properties %classpath% %mainclass% -jar %~dps0%wrapperJarFilename%
 goto:eof
 
 rem end function console
