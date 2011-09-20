@@ -26,7 +26,7 @@ input {
 button {
   outline:none; 
 }
-
+ 
 .filter .filterText {
   padding: 4px 3px;
   width: 90%;
@@ -44,4 +44,20 @@ button {
   height: 25px;
   cursor:pointer;
   width: 100px;
+}
+
+.form {
+  list-style: none outside none;
+  margin: 0;
+  padding: 0;
+}
+
+.form > li {
+  float:left;
+}
+
+.form-fieldset {
+  list-style:none;
+  margin: 0;
+  padding: 0;
 }

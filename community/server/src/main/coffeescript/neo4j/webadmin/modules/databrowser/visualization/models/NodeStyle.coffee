@@ -30,12 +30,15 @@ define(
     class NodeStyleView extends forms.ModelForm
       
       fields :
-        
-        shapeColor : new forms.ColorField("Background")
-        strokeColor : new forms.ColorField("Border color")
-        
-        labelColor : new forms.ColorField("Label color")
-        
+      
+        shape : new forms.FieldSet("Shape",{
+          shapeColor : new forms.ColorField("Background")
+          strokeColor : new forms.ColorField("Border color")
+        })
+        label : new forms.FieldSet("Label",{
+          labelColor : new forms.ColorField("Color")
+          labelPattern : new forms.TextField("Text", {tooltip:'You can use placeholders here, {id} for node id, {prop.PROPERTYNAME} for properties.'})
+        })
       save : () ->
         neo4j.log @model
 
@@ -45,6 +48,7 @@ define(
         type : 'node' # For deserialization
         
         shape : 'box'
+        shapeOpacity : 0.9
         shapeColor : '#000000'
         strokeColor : '#333333'
         

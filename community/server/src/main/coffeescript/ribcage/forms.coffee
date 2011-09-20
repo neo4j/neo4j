@@ -35,16 +35,39 @@ define(
         @instance = opts.instance
         
       render : =>
-        wrap = $("<ul></ul>")
+        wrap = $("<ul class='form'></ul>")
         model = @model
+        for key, fieldset of @_getFieldSets()
+          wrap.append fieldset.renderLi model
+        
+        $(@el).html(wrap)
+        return this
+        
+      _getFieldSets : () ->
+        sets = 
+          _default : new FieldSet  
+        for key, fieldDef of @fields
+          if fieldDef instanceof FieldSet
+            sets[key] = fieldDef
+          else
+            sets._default.fields[key] = fieldDef
+            
+        return sets
+        
+    exports.FieldSet = class FieldSet 
+    
+      constructor : (@label="", @fields={}) ->
+      
+      renderLi : (model) ->
+        ul = $("<ul class='form-fieldset'></ul>")
         for key, field of @fields
           do (key)->
             valChanger = (newValue) =>
               model.set key, newValue
-            wrap.append field.renderLi(model.get(key), valChanger)
-        
-        $(@el).html(wrap)
-        return this
+            ul.append field.renderLi(model.get(key), valChanger)
+        wrap = $("<li><h3>#{htmlEscape(@label)}</h3></li>")
+        wrap.append ul
+        wrap
         
     #
     # FIELDS
@@ -52,15 +75,17 @@ define(
     
     exports.Field = class Field
       
-      constructor : (@label) -> 
+      constructor : (@label, opts={}) -> 
+        @tooltip = opts.tooltip or ""
       
-      renderLi : (value, triggerValueChange) ->
-        @renderWithTemplate "<li>{label}: {input}</li>", value, triggerValueChange
+      renderLi : (value, triggerValueChange, onValueChange, opts={}) ->
+        @renderWithTemplate "<li>{label}: {input} <div class='form-tooltip'>{tooltip}</div></li>", value, triggerValueChange
       
-      renderWithTemplate : (tpl, value, triggerValueChange) ->
+      renderWithTemplate : (tpl, value, triggerValueChange, onValueChange, opts) ->
         r = $ Nano.compile tpl, {
           label : @label
           input : "<div class='PLACEHOLDER'></div>"
+          tooltip : @tooltip
         }
         
         $('.PLACEHOLDER', r).replaceWith(@renderElement(value, triggerValueChange))
@@ -69,12 +94,14 @@ define(
     exports.TextField = class TextField extends Field
 
       renderElement : (value, triggerValueChange) =>
-        return "<input type='text' />"
+        el = $ "<input type='text' value='#{htmlEscape(value)}' />"
+        el.change () -> triggerValueChange(el.val())
+        el
         
     exports.ColorField = class ColorField extends Field
       
       renderElement : (value, triggerValueChange) =>
-        el = $ "<div class='colorpicker-input' style='background-color: #{value}'></div>"
+        el = $ "<div class='colorpicker-input' style='background-color: #{htmlEscape(value)}'></div>"
         el.ColorPicker
           onChange: (hsb, hex, rgb) ->
             $(el).css 'background-color' : "##{hex}"

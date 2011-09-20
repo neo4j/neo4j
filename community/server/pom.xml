@@ -500,7 +500,7 @@ the relevant Commercial Agreement.
       <plugin>
         <groupId>com.voltvoodoo</groupId>
         <artifactId>brew</artifactId>
-        <version>0.2.4</version>
+        <version>0.2.5-SNAPSHOT</version>
         <executions>
           <execution>
             <id>build-webadmin</id>
@@ -526,7 +526,6 @@ the relevant Commercial Agreement.
               </exclude>
             </module>
           </modules>
-          <providePlugins>true</providePlugins>
           <coffeeOutputDir>${project.build.outputDirectory}/webadmin-html/js</coffeeOutputDir>
           <hamlOutputDir>${project.build.outputDirectory}/webadmin-html/js</hamlOutputDir>
           
