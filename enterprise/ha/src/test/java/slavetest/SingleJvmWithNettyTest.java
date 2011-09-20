@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Test;
+import org.neo4j.com.Client;
 import org.neo4j.com.Protocol;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -67,7 +68,8 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
     {
         final Machine masterMachine = new Machine( masterId, -1, 1, -1,
                 "localhost:" + Protocol.PORT );
-        final Master client = new MasterClient( masterMachine, graphDb );
+        final Master client = new MasterClient( masterMachine.getServer().first(), masterMachine.getServer().other(), graphDb,
+                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT);
         return new AbstractBroker( id, graphDb )
         {
             public boolean iAmMaster()

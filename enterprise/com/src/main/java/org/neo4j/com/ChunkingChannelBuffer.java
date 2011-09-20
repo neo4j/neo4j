@@ -508,8 +508,10 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
         // Wait until channel gets disconnected or client catches up.
         // If channel has been disconnected we can exit and the next write
         // will produce a decent exception out.
+        boolean waited = false;
         while ( channel.isConnected() && writeAheadCounter.get() >= MAX_WRITE_AHEAD_CHUNKS )
         {
+            waited = true;
             try
             {
                 Thread.sleep( 200 );
@@ -520,7 +522,7 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
             }
         }
         
-        if ( !channel.isConnected() || !channel.isOpen() )
+        if ( waited && (!channel.isConnected() || !channel.isOpen()) )
         {
             throw new ComException( "Channel has been closed" );
         }

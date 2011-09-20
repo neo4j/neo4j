@@ -37,6 +37,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.com.Client;
 import org.neo4j.com.ComException;
 import org.neo4j.com.MasterUtil;
 import org.neo4j.com.Response;
@@ -86,6 +87,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     private static final int CONFIG_DEFAULT_PORT = 6361;
     public static final String CONFIG_KEY_HA_PULL_INTERVAL = "ha.pull_interval";
     public static final String CONFIG_KEY_ALLOW_INIT_CLUSTER = "ha.allow_init_cluster";
+    public static final String CONFIG_KEY_MAX_CONCURRENT_CHANNELS_PER_SLAVE = "ha.max_concurrent_channels_per_slave";
 
     private final String storeDir;
     private final Map<String, String> config;
@@ -342,11 +344,17 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                         getZooKeeperServersFromConfig( config ),
                         getHaServerFromConfig( config ),
                         getBackupPortFromConfig( config ),
+                        getMaxConcurrentChannelsPerSlave( config ),
                         HighlyAvailableGraphDatabase.this );
             }
         };
     }
 
+    private int getMaxConcurrentChannelsPerSlave( Map<String, String> config )
+    {
+        String value = config.get( CONFIG_KEY_MAX_CONCURRENT_CHANNELS_PER_SLAVE );
+        return value != null ? Integer.parseInt( value ) : Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT;
+    }
     /**
      * @return the port for the backup server if that is enabled, or 0 if disabled.
      */

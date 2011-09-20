@@ -64,10 +64,8 @@ public abstract class Client<M> implements ChannelPipelineFactory
     // don't want to run into that limit, it will make some #acquire calls block and
     // gets disastrous if that thread is holding monitors that is needed to communicate
     // with the master in some way.
-    public static final int DEFAULT_MAX_NUMBER_OF_CONCURRENT_REQUESTS_PER_CLIENT = 20;
+    public static final int DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT = 20;
     public static final int DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS = 20;
-    // Max number of channels held open in a pool awaiting new owner.
-    private static final int DEFAULT_MAX_NUMBER_OF_UNUSED_CHANNELS = DEFAULT_MAX_NUMBER_OF_CONCURRENT_REQUESTS_PER_CLIENT;
 
     private final ClientBootstrap bootstrap;
     private final SocketAddress address;
@@ -79,20 +77,14 @@ public abstract class Client<M> implements ChannelPipelineFactory
     private final int frameLength;
     private final int readTimeout;
 
-    public Client( String hostNameOrIp, int port, GraphDatabaseService graphDb, int frameLength, int readTimeout )
-    {
-        this( hostNameOrIp, port, graphDb, frameLength, readTimeout, DEFAULT_MAX_NUMBER_OF_CONCURRENT_REQUESTS_PER_CLIENT,
-                DEFAULT_MAX_NUMBER_OF_UNUSED_CHANNELS );
-    }
-    
     public Client( String hostNameOrIp, int port, GraphDatabaseService graphDb, int frameLength,
-            int readTimeout, int maxConcurrentTransactions, int maxUnusedPoolSize )
+            int readTimeout, int maxConcurrentChannels, int maxUnusedPoolSize )
     {
         this.graphDb = graphDb;
         this.frameLength = frameLength;
         this.readTimeout = readTimeout;
         channelPool = new ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>>(
-                maxConcurrentTransactions, maxUnusedPoolSize )
+                maxConcurrentChannels, maxUnusedPoolSize )
         {
             @Override
             protected Triplet<Channel, ChannelBuffer, ByteBuffer> create()

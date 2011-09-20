@@ -30,6 +30,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.ZooKeeper;
+import org.neo4j.com.Client;
 
 public class ClusterManager extends AbstractZooKeeperManager
 {
@@ -39,7 +40,7 @@ public class ClusterManager extends AbstractZooKeeperManager
     
     public ClusterManager( String zooKeeperServers )
     {
-        super( zooKeeperServers, null );
+        super( zooKeeperServers, null, Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT );
         this.zooKeeper = instantiateZooKeeper();
     }
     

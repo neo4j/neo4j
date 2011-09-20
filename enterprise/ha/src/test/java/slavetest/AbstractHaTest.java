@@ -217,7 +217,7 @@ public abstract class AbstractHaTest
     {
         int vNodePropCount = verifyProperties( node, otherNode );
         //        int vNodeIndexServicePropCount = verifyIndexService( node, otherNode, refDb, otherDb );
-        int vNodeIndexProviderProCount = verifyIndexProvider( node, otherNode, refDb, otherDb );
+        int vNodeIndexProviderProCount = verifyIndex( node, otherNode, refDb, otherDb );
         Set<Long> otherRelIds = new HashSet<Long>();
         for ( Relationship otherRel : otherNode.getRelationships( Direction.OUTGOING ) )
         {
@@ -253,51 +253,10 @@ public abstract class AbstractHaTest
         return new int[] { vRelCount, vNodePropCount, vRelPropCount, -1, vNodeIndexProviderProCount };
     }
 
-    /*    private static int verifyIndexService( Node node, Node otherNode, VerifyDbContext refDb,
-            VerifyDbContext otherDb )
-    {
-        return 0;
-        int count = 0;
-        if ( refDb.indexService == null || otherDb.indexService == null )
-        {
-            return count;
-        }
-
-        Set<String> otherKeys = new HashSet<String>();
-        for ( String key : otherNode.getPropertyKeys() )
-        {
-            if ( isIndexedWithIndexService( otherNode, otherDb, key ) )
-            {
-                otherKeys.add( key );
-            }
-        }
-        count = otherKeys.size();
-
-        for ( String key : node.getPropertyKeys() )
-        {
-            if ( otherKeys.remove( key ) != isIndexedWithIndexService( node, refDb, key ) )
-            {
-                throw new RuntimeException( "Index differs on " + node + ", " + key );
-            }
-        }
-        if ( !otherKeys.isEmpty() )
-        {
-            throw new RuntimeException( "Other node " + otherNode + " has more indexing: " +
-                    otherKeys );
-        }
-        return count;
-    }*/
-
-    //    private static boolean isIndexedWithIndexService( Node node, VerifyDbContext db, String key )
-    //    {
-    //        return false;
-    //        // return db.indexService.getSingleNode( key, node.getProperty( key ) ) != null;
-    //    }
-
     /**
      * This method is bogus... it really needs to ask all indexes, not the "users" index :)
      */
-    private static int verifyIndexProvider( Node node, Node otherNode, GraphDatabaseService refDb,
+    private static int verifyIndex( Node node, Node otherNode, GraphDatabaseService refDb,
             GraphDatabaseService otherDb )
     {
         int count = 0;
@@ -692,7 +651,7 @@ public abstract class AbstractHaTest
     {
         initializeDbs( 1 );
         List<WorkerThread> jobs = new LinkedList<WorkerThread>();
-        for ( int i = 0; i < Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_REQUESTS_PER_CLIENT; i++ )
+        for ( int i = 0; i < Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT; i++ )
         {
             WorkerThread job = new WorkerThread( this );
             jobs.add( job );

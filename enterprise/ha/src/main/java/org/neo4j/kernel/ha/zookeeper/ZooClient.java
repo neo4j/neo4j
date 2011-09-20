@@ -70,9 +70,10 @@ public class ZooClient extends AbstractZooKeeperManager
     private final int backupPort;
 
     public ZooClient( String servers, int machineId, RootPathGetter rootPathGetter,
-            ResponseReceiver receiver, String haServer, int backupPort, GraphDatabaseService graphDb )
+            ResponseReceiver receiver, String haServer, int backupPort, int maxConcurrentChannelsPerClient,
+            GraphDatabaseService graphDb )
     {
-        super( servers, graphDb );
+        super( servers, graphDb, maxConcurrentChannelsPerClient );
         this.receiver = receiver;
         this.rootPathGetter = rootPathGetter;
         this.haServer = haServer;

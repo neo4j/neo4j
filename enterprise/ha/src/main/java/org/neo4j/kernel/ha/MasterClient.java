@@ -31,11 +31,8 @@ import static org.neo4j.com.Protocol.writeString;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.channel.Channel;
 import org.neo4j.com.BlockLogBuffer;
 import org.neo4j.com.BlockLogReader;
 import org.neo4j.com.Client;
@@ -52,9 +49,7 @@ import org.neo4j.com.ToNetworkStoreWriter;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 
 /**
@@ -86,20 +81,13 @@ public class MasterClient extends Client<Master> implements Master
         }
     };
 
-    private final Map<Integer /* tx event identifier */, Triplet<Channel, ChannelBuffer, ByteBuffer>> txChannel;
-    
-    public MasterClient( String hostNameOrIp, int port, GraphDatabaseService graphDb )
+    public MasterClient( String hostNameOrIp, int port, GraphDatabaseService graphDb, int maxConcurrentChannels )
     {
         super( hostNameOrIp, port, graphDb, MasterServer.FRAME_LENGTH,
-                Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS );
-        this.txChannel = new HashMap<Integer, Triplet<Channel,ChannelBuffer,ByteBuffer>>();
+                DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
+                maxConcurrentChannels, Math.min( maxConcurrentChannels, DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ) );
     }
 
-    public MasterClient( Machine machine, GraphDatabaseService graphDb )
-    {
-        this( machine.getServer().first(), machine.getServer().other(), graphDb );
-    }
-    
     @Override
     protected boolean shouldCheckStoreId( RequestType<Master> type )
     {
@@ -338,10 +326,6 @@ public class MasterClient extends Client<Master> implements Master
                 return master.copyStore( context, new ToNetworkStoreWriter( target ) );
             }
             
-            byte id()
-            {
-                return (byte) 255;
-            }
         }, VOID_SERIALIZER, true );
 
         @SuppressWarnings( "rawtypes" )

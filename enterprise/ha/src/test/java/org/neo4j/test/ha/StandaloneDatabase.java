@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Ignore;
+import org.neo4j.com.Client;
 import org.neo4j.com.Protocol;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.Broker;
@@ -115,7 +116,8 @@ public class StandaloneDatabase
                 else
                 {
                     broker = new FakeSlaveBroker( new MasterClient( "localhost",
-                            Protocol.PORT, placeHolderGraphDb ), masterId, machineId, placeHolderGraphDb );
+                            Protocol.PORT, placeHolderGraphDb, Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ),
+                            masterId, machineId, placeHolderGraphDb );
                 }
                 config = removeDashes( config );
                 HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase( storeDir, config,

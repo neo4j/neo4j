@@ -35,7 +35,9 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
 {
     public BackupClient( String hostNameOrIp, int port, GraphDatabaseService graphDb )
     {
-        super( hostNameOrIp, port, graphDb, BackupServer.FRAME_LENGTH, 40 );
+        super( hostNameOrIp, port, graphDb, BackupServer.FRAME_LENGTH, 40,
+                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT,
+                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT );
     }
     
     public Response<Void> fullBackup( StoreWriter storeWriter )
