@@ -193,7 +193,8 @@ public abstract class AbstractStore extends CommonAbstractStore
             }
         }
         setWindowPool( new PersistenceWindowPool( getStorageFileName(),
-            getRecordSize(), getFileChannel(), calculateMappedMemory( getConfig(), storageFileName ),
+                getRecordSize(), getFileChannel(), calculateMappedMemory(
+                        getConfig(), storageFileName ),
             getIfMemoryMapped(), isReadOnly() && !isBackupSlave() ) );
     }
 
