@@ -50,6 +50,7 @@ import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.MapUtil;
@@ -255,7 +256,7 @@ public class TxManager extends AbstractTransactionManager
     void setTmNotOk()
     {
         tmOk = false;
-        kpe.generateEvent( null );
+        kpe.generateEvent( ErrorState.TX_MANAGER_NOT_OK );
     }
 
     private void recover( Iterator<List<TxLog.Record>> danglingRecordList )
