@@ -47,6 +47,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
@@ -123,6 +124,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         {
             throw new IllegalArgumentException( "null config, proper configuration required" );
         }
+        initializeTxManagerKernelPanicEventHandler();
         this.startupTime = System.currentTimeMillis();
         this.storeDir = storeDir;
         this.config = config;
@@ -135,6 +137,37 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
         boolean allowInitFromConfig = getAllowInitFromConfig( config );
         startUp( allowInitFromConfig );
+    }
+
+    private void initializeTxManagerKernelPanicEventHandler()
+    {
+        kernelEventHandlers.add( new KernelEventHandler()
+        {
+            @Override public void beforeShutdown() {}
+
+            @Override
+            public void kernelPanic( ErrorState error )
+            {
+                if ( error == ErrorState.TX_MANAGER_NOT_OK )
+                {
+                    msgLog.logMessage( "TxManager not ok, doing internal restart" );
+                    internalShutdown();
+                    newMaster( null, new Exception( "Tx manager not ok" ) );
+                }
+            }
+
+            @Override
+            public Object getResource()
+            {
+                return null;
+            }
+
+            @Override
+            public ExecutionOrder orderComparedTo( KernelEventHandler other )
+            {
+                return ExecutionOrder.DOESNT_MATTER;
+            }
+        } );
     }
 
     private void getFreshDatabaseFromMaster( Pair<Master, Machine> master )
@@ -171,11 +204,17 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         // only has got permissions on the dbPath, not the parent.
         this.msgLog.logMessage( "Cleaning database " + storeDir + " to make way for new db from master" );
 
-        File oldDir = new File( storeDir, "broken-" + System.currentTimeMillis() );
+        File oldDir = new File( storeDir, "branched-" + System.currentTimeMillis() );
         oldDir.mkdirs();
         for ( File file : new File( storeDir ).listFiles() )
         {
-            if ( !file.equals( oldDir ) && !file.getName().equals( "messages.log" ) )
+            if (    // Exclude messages.log since it's good to have in one piece in
+                    // the active directory.
+                    !file.getName().equals( "messages.log" ) && 
+                    
+                    // Exclude any previous branched-??? directories, otherwise this
+                    // becomes like a linked list of old directories.
+                    (file.isDirectory() && file.getName().startsWith( "branched-" ) ) )
             {
                 File dest = new File( oldDir, file.getName() );
                 if ( !file.renameTo( dest ) )

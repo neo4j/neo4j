@@ -53,7 +53,6 @@ public abstract class CommonJobs
     {
         protected Config getConfig( GraphDatabaseService db )
         {
-            Config config = null;
             try
             {
                 return (Config) db.getClass().getDeclaredMethod( "getConfig" ).invoke( db );
@@ -281,7 +280,6 @@ public abstract class CommonJobs
     public static class DeleteNodeJob implements Job<Boolean>
     {
         private final long id;
-        private final boolean deleteIndexing;
 
         public DeleteNodeJob( long id, boolean deleteIndexing )
         {
@@ -296,14 +294,6 @@ public abstract class CommonJobs
             try
             {
                 Node node = db.getNodeById( id );
-//                if ( deleteIndexing )
-//                {
-//                    IndexService index = ((HighlyAvailableGraphDatabase) db).getIndexService();
-//                    for ( String key : node.getPropertyKeys() )
-//                    {
-//                        index.removeIndex( node, key, node.getProperty( key ) );
-//                    }
-//                }
                 node.delete();
                 tx.success();
             }
@@ -605,12 +595,8 @@ public abstract class CommonJobs
         @Override
         protected Long executeInTransaction( GraphDatabaseService db, Transaction tx )
         {
-//            IndexService index = db instanceof HighlyAvailableGraphDatabase ?
-//                    ((HighlyAvailableGraphDatabase) db).getIndexService() :
-//                    new LuceneIndexService( db );
             Node node = db.createNode();
             node.setProperty( key, value );
-//            index.index( node, key, value );
             tx.success();
             return node.getId();
         }
@@ -714,7 +700,6 @@ public abstract class CommonJobs
     
     public static class CreateNodeNoCommit extends AbstractJob<Void>
     {
-        private GraphDatabaseService gdb; 
         private Transaction tx;
         
         public Void execute( GraphDatabaseService db ) throws RemoteException

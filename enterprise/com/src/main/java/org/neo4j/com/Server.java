@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -83,6 +84,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
     private final Map<Channel, PartialRequest> partialRequests =
             Collections.synchronizedMap( new HashMap<Channel, PartialRequest>() );
     private final int frameLength;
+    private volatile boolean shuttingDown;
     
     // Executor for channels that we know should be finished, but can't due to being
     // active at the moment.
@@ -251,12 +253,25 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         }
         catch ( IllegalStateException e ) // From TxManager.resume (if the tx is already active)
         {
-            unfinishedTransactionExecutor.submit( newTransactionFinisher( slave ) );
+            submitSilent( unfinishedTransactionExecutor, newTransactionFinisher( slave ) );
         }
         catch ( Throwable failure ) // Unknown error trying to finish off the tx
         {
-            unfinishedTransactionExecutor.submit( newTransactionFinisher( slave ) );
+            submitSilent( unfinishedTransactionExecutor, newTransactionFinisher( slave ) );
             msgLog.logMessage( "Could not finish off dead channel", failure );
+        }
+    }
+
+    private void submitSilent( ExecutorService service, Runnable job )
+    {
+        try
+        {
+            service.submit( job );
+        }
+        catch ( RejectedExecutionException e )
+        {   // Don't scream and shout if we're shutting down, because a rejected execution
+            // is expected at that time.
+            if ( !shuttingDown ) throw e;
         }
     }
 
@@ -340,7 +355,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
 
             bufferToWriteTo.clear();
             final ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( bufferToWriteTo, channel, frameLength );
-            masterCallExecutor.submit( masterCaller( type, channel, context, chunkingBuffer, bufferToReadFrom, targetBuffers.other() ) );
+            submitSilent( masterCallExecutor, masterCaller( type, channel, context, chunkingBuffer, bufferToReadFrom, targetBuffers.other() ) );
         }
     }
 
@@ -483,6 +498,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
     public void shutdown()
     {
         // Close all open connections
+        shuttingDown = true;
         silentChannelExecutor.shutdown();
         unfinishedTransactionExecutor.shutdown();
         masterCallExecutor.shutdown();
