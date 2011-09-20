@@ -210,8 +210,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
                 {
                     if ( inner.code() != KeeperException.Code.NONODE )
                     {
-                        throw new ZooKeeperException( "Unabe to get master.",
-                            inner );
+                        throw new ZooKeeperException( "Unable to get master.", inner );
                     }
                 }
             }
