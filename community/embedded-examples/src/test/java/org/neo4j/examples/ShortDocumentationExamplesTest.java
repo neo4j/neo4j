@@ -208,8 +208,7 @@ public class ShortDocumentationExamplesTest implements GraphHolder
     {
         data.get();
         gen.get().addSnippet( "graph1", createGraphViz("The Domain Structure", graphdb(), gen.get().getTitle()) );
-        CypherParser parser = new CypherParser();
-        ExecutionEngine engine = new ExecutionEngine(db);
+       
         
         //Files
         //TODO: can we do open ended?
@@ -247,8 +246,21 @@ public class ShortDocumentationExamplesTest implements GraphHolder
         
         
     }
+    
+    @Test
+    @Graph(value = {"A FOLLOW B", "B FOLLOW A", "B FOLLOW C"}, autoIndexNodes = true)
+    public void follow_back()
+    {
+        data.get();
+        String query = "START b=(node_auto_index,'name:B') " +
+        		"MATCH a-[:FOLLOW]->b, b-[:FOLLOW]->a RETURN a ";
+        String result = engine.execute( parser.parse( query ) ).toString();
+        assertTrue(result.contains( "A" ));
+    }
 
     private static ImpermanentGraphDatabase db;
+    private CypherParser parser;
+    private ExecutionEngine engine;
     @BeforeClass
     public static void init()
     {
@@ -259,6 +271,8 @@ public class ShortDocumentationExamplesTest implements GraphHolder
     public void setUp() {
         db.cleanContent();
         gen.get().setGraph( db );
+        parser = new CypherParser();
+        engine = new ExecutionEngine(db);
     }
     @After
     public void doc() {
