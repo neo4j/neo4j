@@ -221,7 +221,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 File dest = new File( oldDir, file.getName() );
                 if ( !file.renameTo( dest ) )
                 {
-                    System.out.println( "Couldn't move " + file.getPath() );
+                    msgLog.logMessage( "Couldn't move " + file.getPath() );
                 }
             }
         }
@@ -800,7 +800,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         }
         catch ( BranchedDataException bde )
         {
-            System.out.println( "Branched data occured, retrying" );
+            msgLog.logMessage( "Branched data occured, retrying" );
             getFreshDatabaseFromMaster( master );
             doNewMaster( master, storeId, bde );
         }

@@ -449,21 +449,13 @@ public class MasterImpl implements Master
             String resourceName = txEntry.first();
             XaDataSource dataSource = graphDbConfig.getTxModule().getXaDataSourceManager()
                     .getXaDataSource( resourceName );
+            long startedCopyAtTxId = txEntry.other();
             if ( dataSource instanceof NeoStoreXaDataSource )
             {
-                if ( txEntry.other() == 1 || txEntry.other() < dataSource.getLastCommittedTxId() )
-                {
-                    // No transactions and nothing has happened during the
-                    // copying
-                    return context;
-                }
-                // Put back slave one tx so that it gets one transaction
-                txs.add( Pair.of( resourceName, dataSource.getLastCommittedTxId() - 1 ) );
+                if ( startedCopyAtTxId == 1 ) return context;
+                if ( startedCopyAtTxId == dataSource.getLastCommittedTxId() ) startedCopyAtTxId--;
             }
-            else
-            {
-                txs.add( Pair.of( resourceName, dataSource.getLastCommittedTxId() ) );
-            }
+            txs.add( Pair.of( resourceName, startedCopyAtTxId ) );
         }
         return new SlaveContext( context.getSessionId(), context.machineId(),
                 context.getEventIdentifier(), txs.toArray( new Pair[0] ) );
