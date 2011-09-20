@@ -20,19 +20,27 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 define(
   ['./Filters'
+   './NodeStyle',
    'ribcage/LocalModel'], 
-  (Filters, LocalModel) ->
+  (Filters, NodeStyle, LocalModel) ->
 
     class StyleRule extends LocalModel
       
       defaults : 
         target : 'node:explored'
+        style : {}
       
       initialize : () ->
-        @initNestedCollection('filters', Filters)
+        @initNestedModel('filters', Filters)
+        @initNestedModel('style', { deserialize : (raw) => 
+          return new NodeStyle(raw)
+        })
       
       setTarget : (target) -> @set target:target
       getTarget : () -> @get 'target'
+      
+      getStyle : () -> @style
+      setStyle : (s) -> this.style = s
       
       getTargetEntity : () -> @getTarget().split(':')[0]
       getTargetEntityType : () -> @getTarget().split(':')[1]
@@ -47,5 +55,7 @@ define(
         return true
         
       applyStyleTo : (target) ->
-        
+        style = @getStyle()
+        if style?
+          style.applyTo target
 )

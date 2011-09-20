@@ -51,15 +51,15 @@ define(
       methodChanged : () =>
         method = $(".method", @el).val()
         @uiSetMethod method
-        @filter.set method : method
+        @filter.setMethodName method
         
       propertyNameChanged : () =>
         name = $('.propertyName',@el).val()
-        @filter.set property : name
+        @filter.setPropertyName name
       
       compareValueChanged : () =>
         val = $('.compareValue',@el).val()
-        @filter.set compareValue : val
+        @filter.setCompareValue val
         
       uiSetMethod : (method) ->
         $(".method", @el).val method
@@ -81,8 +81,8 @@ define(
         'compare' : (item, propertyName) -> true
       
       @compareMethods : 
-        '==' : {label : "is",    filter : (actual, expected) -> actual == expected}
-        '!=' : {label : "isn't", filter : (actual, expected) -> actual != expected}
+        '==' : {label : "is",    cmp : (actual, expected) -> actual == expected}
+        '!=' : {label : "isn't", cmp : (actual, expected) -> actual != expected}
       
       defaults : 
         'method' : 'exists'
@@ -94,13 +94,23 @@ define(
       getPropertyName : -> @get 'propertyName'
       getCompareValue : -> @get 'compareValue'
       
+      setMethodName :   (v) -> @set 'method', v
+      setPropertyName : (v) -> @set 'propertyName', v
+      setCompareValue : (v) -> @set 'compareValue', v
+      
       matches : (item) =>
         method = @getMethodName()
+        node = item.neoNode
         if method == 'exists'
-          return item.neoNode.hasProperty @getPropertyName()
-        else if @compareMethods[method]?
-          cmp = @compareMethods[method]
-          return cmp item.getProperty(@getPropertyName()), getCompareValue()
+          return node.hasProperty @getPropertyName()
+        else if PropertyFilter.compareMethods[method]?
+          cmp = PropertyFilter.compareMethods[method].cmp
+          s = "item.#{@getPropertyName()}: #{node.getProperty(@getPropertyName())} #{method} #{@getCompareValue()}:"
+          if cmp node.getProperty(@getPropertyName()), @getCompareValue()
+            console.log s, true
+            return true
+          else 
+            neo4j.log s, false
         return false
       
 )

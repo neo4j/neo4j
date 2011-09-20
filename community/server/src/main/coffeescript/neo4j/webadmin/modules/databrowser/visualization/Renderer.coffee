@@ -67,26 +67,26 @@ define(
         if node.data.hidden is true
           return
 
-        style = @nodeStyler.getStyleFor(node)
-        label = style.labelText
+        style = node.data.style
+        labelText = style.labelText
 
         # determine the box size and round off the coords if we'll be
         # drawing a text label (awful alignment jitter otherwise...)
-        w = @ctx.measureText(""+label).width + 10
-        if not (""+label).match(/^[ \t]*$/)
+        w = @ctx.measureText(""+labelText).width + 10
+        if not (""+labelText).match(/^[ \t]*$/)
           pt.x = Math.floor(pt.x)
           pt.y = Math.floor(pt.y)
         else
           label = null
 
-        ns = style.nodeStyle
+        ns = style.shapeStyle
         if @hovered and node._id == @hovered._id
           ns = {} # copy the style to not affect other nodes with same style
-          for key of style.nodeStyle
-            ns[key] = style.nodeStyle[key]
+          for k,v of style.shapeStyle
+            ns[k] = v
           ns.stroke = {r:0xff, g:0, b:0, a:node.data.alpha}
-
-        if style.nodeStyle.shape == 'dot'
+        
+        if ns.shape == 'dot'
           @gfx.oval(pt.x-w/2, pt.y-w/2, w,w, ns)
           @nodeBoxes[node.name] = [pt.x-w/2, pt.y-w/2, w,w]
         else
@@ -94,12 +94,12 @@ define(
           @nodeBoxes[node.name] = [pt.x-w/2, pt.y-11, w, 22]
 
         # draw the text
-        if label
+        if labelText
           @ctx.font = style.labelStyle.font
           @ctx.textAlign = "center"
           @ctx.fillStyle = style.labelStyle.color
 
-          @ctx.fillText(label||"", pt.x, pt.y+4)
+          @ctx.fillText(labelText||"", pt.x, pt.y+4)
 
       renderEdge : (edge, pt1, pt2) =>
         # edge: {source:Node, target:Node, length:#, data:{}}
@@ -235,11 +235,11 @@ define(
       nodeDropped : (e) =>
         @hovered = null
         if @dragged is null or @dragged.node is undefined then return
-        if @dragged.node != null then @dragged.node.fixed = @dragged.node.data.fixated
+        if @dragged.node? then @dragged.node.fixed = @dragged.node.data.fixated
         @dragged.node.fixed = true
         @dragged.node.mass = 1
 
-        if @dragged.node != null and @thesePointsAreReallyClose(@dragStart, {x:e.pageX, y:e.pageY})
+        if @dragged.node? and @thesePointsAreReallyClose(@dragStart, {x:e.pageX, y:e.pageY})
           @trigger("node:click", @dragged.node, e)
 
         pos = $(@canvas).offset()
@@ -270,6 +270,7 @@ define(
               nearest.node = node
               nearest.distance = dist
         if not (nearest.node is null)
+          console.log nearest.node, @nodeBoxes, @nodeBoxes[nearest.node.name]
           if @ptInBox(pos, @nodeBoxes[nearest.node.name])
             return nearest.node
 

@@ -36,3 +36,12 @@ button {
   height: 200px;
   width: 450px;
 }
+
+.colorpicker-input {
+  background-color: #FFFFFF;
+  border: 1px solid #EFEFEF;
+  border-radius: 3px 3px 3px 3px;
+  height: 25px;
+  cursor:pointer;
+  width: 100px;
+}

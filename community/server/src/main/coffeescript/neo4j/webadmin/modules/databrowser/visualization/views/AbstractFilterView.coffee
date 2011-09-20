@@ -20,10 +20,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 define(
   ['neo4j/webadmin/utils/ItemUrlResolver'
-   './styleRuleFilter',
    'ribcage/View',
    'lib/backbone'], 
-  (ItemUrlResolver, template, View) ->
+  (ItemUrlResolver, View) ->
   
     class AbstractFilterView extends View
 
@@ -34,8 +33,6 @@ define(
         @filters = opts.filters
         
       render : () =>
-        $(@el).html(template())
-        
         return this
       
       deleteFilter : () ->

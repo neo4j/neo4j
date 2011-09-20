@@ -30,8 +30,7 @@ define(
 
     class VisualizedView extends View
 
-      events : 
-        'click #visualization-show-settings' : "showSettingsDialog"
+      events :
         'click #visualization-reflow' : "reflowGraphLayout"
 
       initialize : (options)->
@@ -107,49 +106,28 @@ define(
         @settingsChanged()
         return @viz
 
-
-      showSettingsDialog : =>
-        if @settingsDialog?
-          @hideSettingsDialog()
-        else
-          button = $("#visualization-show-settings")
-          button.addClass("selected")
-          @settingsDialog = new VisualizationSettingsDialog(
-            dataBrowserSettings : @settings
-            baseElement : button
-            closeCallback : @hideSettingsDialog)
-
-      hideSettingsDialog : =>
-        if @settingsDialog?
-          @settingsDialog.remove()
-          delete(@settingsDialog)
-          $("#visualization-show-settings").removeClass("selected")
-
       browserHasRequiredFeatures : ->
         Object.prototype.__defineGetter__?
 
       showBrowserNotSupportedMessage : ->
-        $(@el).html("<div class='pad'>
+        $(@el).html """<div class='pad'>
           <h1>I currently do not support visualization in this browser :(</h1>
           <p>I can't find the __defineGetter__ API method, which the visualization lib I use, Arbor.js, needs.</p>
           <p>If you really want to use visualization (it's pretty awesome), please consider using Google Chrome, Firefox or Safari.</p>
-          </div>")
-
+          </div>""" 
+      
       reflowGraphLayout : () =>
-        if @viz != null
-          @viz.reflow()
+        @viz.reflow() if @viz?
 
       remove : =>
         if @browserHasRequiredFeatures()
           @dataModel.unbind("change:data", @render)
-          @hideSettingsDialog()
           @getViz().stop()
         super()
 
       detach : =>
         if @browserHasRequiredFeatures()
           @dataModel.unbind("change:data", @render)
-          @hideSettingsDialog()
           @getViz().stop()
         super()
 
@@ -158,5 +136,5 @@ define(
         if @browserHasRequiredFeatures() and @vizEl?
           @getViz().start()
           @dataModel.bind("change:data", @render)
-
+          
 )

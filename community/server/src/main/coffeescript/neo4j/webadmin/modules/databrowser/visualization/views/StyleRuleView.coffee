@@ -43,12 +43,20 @@ define(
         
       render : () =>
         $(@el).html(template())
-        $('.target', @el).val @rule.getTarget()
+        #$('.target', @el).val @rule.getTarget()
         
         @filterContainer = $('.filters',@el)
         @rule.filters.each (filter) =>
           @addFilterElement filter
+        
+        @renderStyleView()
+        
         return this
+        
+      renderStyleView : () ->
+        StyleView = @rule.getStyle().getViewClass()
+        styleView = new StyleView( model : @rule.getStyle() )
+        $('.style',@el).append(styleView.render().el)
         
       targetChanged : (ev) ->
         @rule.setTarget $(ev.target).val()

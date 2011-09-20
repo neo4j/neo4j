@@ -6,6 +6,7 @@
 @import url(tables.css);
 @import url(forms.css);
 @import url(grid.css);
+@import url(../lib/colorpicker/css/colorpicker.css);
 
 body { 
   width:100%; 

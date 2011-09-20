@@ -65,6 +65,7 @@ define(
         @styleRuleContainer.append view.render().el
       
       render : () =>
+
         $(@el).html(template( name : @profile.getName(), isInCreateMode:@isInCreateMode ))
         
         @styleRuleContainer = $('.styleRules',@el)

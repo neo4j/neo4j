@@ -24,7 +24,7 @@ define(
     class LocalModel extends Backbone.Model
       
       constructor : (args, opts) ->
-        @_nestedCollections = []
+        @_nestedModels = []
         super(args, opts)
       
       get : (key, defaultValue=null) ->
@@ -56,30 +56,33 @@ define(
         @_save this
         
       ### Boilerplate to set 
-      a model collection as an attribute.
+      a model or collection as an attribute.
       
       Takes care of setting fetch and save
-      methods on the collection appropriately,
+      methods on the model/collection appropriately,
       and adds hooks into this models fetch
       and toJSON methods to ensure fetch calls
       and saves propagate correctly.
       
       @param name is the property name to use and to fetch data via
-      @param type is the collection class
+      @param type is the model or collection class (or any object with a deserialize method)
       ###
-      initNestedCollection : (name, type) ->
-        @[name] = new type @get name
+      initNestedModel : (name, type) ->
+        if type.deserialize?
+          @[name] = type.deserialize @get name
+        else
+          @[name] = new type @get name
         @[name].setFetchMethod () =>
           @fetch(name)
         @[name].setSaveMethod @save
         
-        @_nestedCollections.push name
+        @_nestedModels.push name
         
       toJSON : () ->
         data = super()
         data.id = @id
         
-        for name in @_nestedCollections
+        for name in @_nestedModels
           data[name] = @[name].toJSON()
         
         return data

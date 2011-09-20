@@ -1,13 +1,15 @@
 
 define(
   ['./StyleRules',
+   './NodeStyle',
    'ribcage/LocalModel'], 
-  (StyleRules, LocalModel) ->
+  (StyleRules, NodeStyle, LocalModel) ->
 
     class VisualizationProfile extends LocalModel
       
       initialize : () ->
-        @initNestedCollection('styleRules', StyleRules)
+        @initNestedModel('styleRules', StyleRules)
+        @_defaultNodeStyle = new NodeStyle
       
       setName : (name) -> @set name:name
       getName : () -> @get "name"
@@ -17,8 +19,10 @@ define(
       # Given a visualization node, 
       # apply appropriate style attributes
       styleNode : (visualNode) ->
+        @_defaultNodeStyle.applyTo visualNode
         @styleRules.each (rule) =>
           if rule.appliesTo visualNode, 'node'
             rule.applyStyleTo visualNode
+            console.log visualNode.style
       
 )
