@@ -214,7 +214,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                     
                     // Exclude any previous branched-??? directories, otherwise this
                     // becomes like a linked list of old directories.
-                    (file.isDirectory() && !file.getName().startsWith( "branched-" ) ) )
+                    !(file.isDirectory() && file.getName().startsWith( "branched-" ) ) )
             {
                 File dest = new File( oldDir, file.getName() );
                 if ( !file.renameTo( dest ) )
