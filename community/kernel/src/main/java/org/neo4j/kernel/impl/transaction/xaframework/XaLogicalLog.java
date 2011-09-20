@@ -1055,7 +1055,9 @@ public class XaLogicalLog
             {
                 // Something is wrong with the cached tx start position for this (expected) tx,
                 // remove it from cache so that next request will have to bypass the cache
-                txStartPositionCache.remove( nextExpectedTxId );
+//                txStartPositionCache.remove( nextExpectedTxId );
+                txStartPositionCache.clear();
+                msgLog.logMessage( fileName + ", " + e.getMessage() + ". Clearing tx start position cache" );
                 if ( e instanceof IOException ) throw (IOException) e;
                 else throw Exceptions.launderedException( e );
             }
@@ -1296,7 +1298,6 @@ public class XaLogicalLog
             }
             return false;
         }
-
     }
 
     private long[] readLogHeader( ReadableByteChannel source, String message ) throws IOException
@@ -1395,9 +1396,17 @@ public class XaLogicalLog
         }
         finally
         {
-            if ( !successfullyApplied )
+            if ( !successfullyApplied && logApplier.startEntry != null )
             {   // Unmap this identifier if tx not applied correctly
                 xidIdentMap.remove( xidIdent );
+                try
+                {
+                    xaRm.forget( logApplier.startEntry.getXid() );
+                }
+                catch ( XAException e )
+                {
+                    throw new IOException( e );
+                }
             }
         }
         byteChannel.close();

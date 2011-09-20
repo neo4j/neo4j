@@ -29,7 +29,7 @@ trait Values extends JavaTokenParsers with Tokens {
     case x => EntityValue(x)
   }
 
-  def value: Parser[Value] = (boolean | functionCall | property | stringValue | decimal)
+  def value: Parser[Value] = (boolean | functionCall | property | stringValue | decimal | parameter)
 
   def property: Parser[Value] = identity ~ "." ~ identity ^^ {
     case v ~ "." ~ p => PropertyValue(v, p)
@@ -55,6 +55,10 @@ trait Values extends JavaTokenParsers with Tokens {
 
   def falseX: Parser[Value] = ignoreCase("false") ^^ {
     case str => Literal(false)
+  }
+
+  def parameter:Parser[Value] = "::" ~> identity ^^ {
+    case paramName => ParameterValue(paramName)
   }
 
   def functionCall : Parser[Value] = (typeFunc | lengthFunc | nodesFunc | relsFunc | idFunc)
