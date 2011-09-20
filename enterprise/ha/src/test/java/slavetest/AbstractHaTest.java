@@ -500,8 +500,7 @@ public abstract class AbstractHaTest
 
         Long nodeId = executeJob( new CommonJobs.CreateSubRefNodeJob(
                 CommonJobs.REL_TYPE.name(), null, null ), 0 );
-        Boolean successful = executeJob( new CommonJobs.DeleteNodeJob( nodeId.longValue(),
-                false ), 0 );
+        Boolean successful = executeJob( new CommonJobs.DeleteNodeJob( nodeId.longValue() ), 0 );
         assertFalse( successful.booleanValue() );
     }
 
@@ -514,7 +513,7 @@ public abstract class AbstractHaTest
         Long nodeId = executeJob( new CommonJobs.CreateSubRefNodeJob( CommonJobs.REL_TYPE.name(),
                 "name", "Mattias" ), 0 );
         Boolean successful = executeJobOnMaster(
-                new CommonJobs.DeleteNodeJob( nodeId.longValue(), false ) );
+                new CommonJobs.DeleteNodeJob( nodeId.longValue() ) );
         assertFalse( successful.booleanValue() );
         pullUpdates();
     }
@@ -556,7 +555,7 @@ public abstract class AbstractHaTest
         Long nodeId = executeJobOnMaster( new CommonJobs.CreateNodeJob() );
         pullUpdates();
         assertTrue( executeJobOnMaster( new CommonJobs.DeleteNodeJob(
-                nodeId.longValue(), false ) ).booleanValue() );
+                nodeId.longValue() ) ).booleanValue() );
         assertFalse( executeJob( new CommonJobs.SetNodePropertyJob( nodeId.longValue(), "something",
         "some thing" ), 0 ) );
     }

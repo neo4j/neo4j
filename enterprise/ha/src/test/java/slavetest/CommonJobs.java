@@ -281,10 +281,9 @@ public abstract class CommonJobs
     {
         private final long id;
 
-        public DeleteNodeJob( long id, boolean deleteIndexing )
+        public DeleteNodeJob( long id )
         {
             this.id = id;
-            this.deleteIndexing = deleteIndexing;
         }
 
         public Boolean execute( GraphDatabaseService db ) throws RemoteException
@@ -704,7 +703,6 @@ public abstract class CommonJobs
         
         public Void execute( GraphDatabaseService db ) throws RemoteException
         {
-            this.gdb = db;
             tx = db.beginTx();
             Node node = db.createNode();
             System.out.println( Thread.currentThread() + " created node " + node );
