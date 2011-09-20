@@ -83,6 +83,10 @@ define(
       @compareMethods : 
         '==' : {label : "is",    cmp : (actual, expected) -> actual == expected}
         '!=' : {label : "isn't", cmp : (actual, expected) -> actual != expected}
+        '>' : {label : ">", cmp : (actual, expected) -> actual > expected}
+        '<' : {label : "<", cmp : (actual, expected) -> actual < expected}
+        '>=' : {label : ">=", cmp : (actual, expected) -> actual >= expected}
+        '<=' : {label : "<=", cmp : (actual, expected) -> actual <= expected}
       
       defaults : 
         'method' : 'exists'
