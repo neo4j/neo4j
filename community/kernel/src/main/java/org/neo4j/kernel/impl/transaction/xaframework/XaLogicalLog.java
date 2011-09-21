@@ -97,6 +97,7 @@ public class XaLogicalLog
     private final LogBufferFactory logBufferFactory;
     private boolean doingRecovery;
     private long lastRecoveredTx = -1;
+    private long recoveredTxCount;
 
     private final StringLogger msgLog;
 
@@ -491,11 +492,20 @@ public class XaLogicalLog
             XaTransaction xaTx = xaRm.getXaTransaction( xid );
             xaTx.setCommitTxId( txId );
             xaRm.injectOnePhaseCommit( xid );
-            if ( doingRecovery ) lastRecoveredTx = txId;
+            registerRecoveredTransaction( txId );
         }
         catch ( XAException e )
         {
             throw new IOException( e );
+        }
+    }
+
+    private void registerRecoveredTransaction( long txId )
+    {
+        if ( doingRecovery )
+        {
+            lastRecoveredTx = txId;
+            recoveredTxCount++;
         }
     }
 
@@ -541,7 +551,7 @@ public class XaLogicalLog
             XaTransaction xaTx = xaRm.getXaTransaction( xid );
             xaTx.setCommitTxId( txId );
             xaRm.injectTwoPhaseCommit( xid );
-            if ( doingRecovery ) lastRecoveredTx = txId;
+            registerRecoveredTransaction( txId );
         }
         catch ( XAException e )
         {
@@ -812,7 +822,8 @@ public class XaLogicalLog
         fileChannel.position( lastEntryPos );
         scanIsComplete = true;
         log.fine( "Internal recovery completed, scanned " + logEntriesFound
-            + " log entries. Last tx recovered: " + lastRecoveredTx );
+            + " log entries. Recovered " + recoveredTxCount
+            + " transactions. Last tx recovered: " + lastRecoveredTx );
 
         xaRm.checkXids();
         if ( xidIdentMap.size() == 0 )
