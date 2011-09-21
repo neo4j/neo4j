@@ -20,14 +20,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 define(
   ['./Filters'
-   './NodeStyle',
+   './style',
    'ribcage/LocalModel'], 
-  (Filters, NodeStyle, LocalModel) ->
+  (Filters, style, LocalModel) ->
+
+    {NodeStyle} = style
 
     class StyleRule extends LocalModel
       
       defaults : 
-        target : 'node:explored'
+        target : 'node'
         style : {}
       
       initialize : () ->
@@ -44,9 +46,10 @@ define(
       
       getTargetEntity : () -> @getTarget().split(':')[0]
       getTargetEntityType : () -> @getTarget().split(':')[1]
+      hasTargetEntityType : () -> @getTarget().split(':').length > 1
       
       appliesTo : (item, type) ->
-        if type != @getTargetEntity() or item.type != @getTargetEntityType()
+        if type != @getTargetEntity() or (@hasTargetEntityType() and item.type != @getTargetEntityType())
           return false
         
         for filter in @filters.models

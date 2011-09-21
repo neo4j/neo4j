@@ -57,9 +57,6 @@ define(
         @particleSystem.eachNode @renderNode
         @particleSystem.eachEdge @renderEdge
 
-        ## # No need to save this data
-        ## @nodeBoxes = {}
-
       renderNode : (node, pt) =>
         # node: {mass:#, p:{x,y}, name:"", data:{}}
         # pt:   {x:#, y:#}  node position in screen coords
@@ -68,16 +65,23 @@ define(
           return
 
         style = node.data.style
-        labelText = style.labelText
-
+          
         # determine the box size and round off the coords if we'll be
         # drawing a text label (awful alignment jitter otherwise...)
-        w = @ctx.measureText(""+labelText).width + 10
-        if not (""+labelText).match(/^[ \t]*$/)
+        w = 10
+        h = 10
+        labels = []
+        for label in (""+style.labelText).split(";")
+          labelSize = @ctx.measureText(""+label)
+          w = labelSize.width + 10 if (labelSize.width + 10) > w
+          h += 12
+          labels.push label
+        
+        if labels.length > 0
           pt.x = Math.floor(pt.x)
           pt.y = Math.floor(pt.y)
         else
-          label = null
+          labels = null
 
         ns = style.shapeStyle
         if @hovered and node._id == @hovered._id
@@ -87,19 +91,23 @@ define(
           ns.stroke = {r:0xff, g:0, b:0, a:node.data.alpha}
         
         if ns.shape == 'dot'
-          @gfx.oval(pt.x-w/2, pt.y-w/2, w,w, ns)
-          @nodeBoxes[node.name] = [pt.x-w/2, pt.y-w/2, w,w]
+          d = if w>h then w else h
+          @gfx.oval(pt.x-d/2, pt.y-d/2, d,d, ns)
+          @nodeBoxes[node.name] = [pt.x-d/2, pt.y-d/2, d,d]
         else
-          @gfx.rect(pt.x-w/2, pt.y-10, w,20, 4, ns)
-          @nodeBoxes[node.name] = [pt.x-w/2, pt.y-11, w, 22]
+          @gfx.rect(pt.x-w/2, pt.y-h/2, w,h, 4, ns)
+          @nodeBoxes[node.name] = [pt.x-w/2, pt.y-h/2, w, h]
 
         # draw the text
-        if labelText
+        if labels
           @ctx.font = style.labelStyle.font
           @ctx.textAlign = "center"
           @ctx.fillStyle = style.labelStyle.color
-
-          @ctx.fillText(labelText||"", pt.x, pt.y+4)
+        
+          yOffset = (h/-2) + 15
+          for label in labels
+            @ctx.fillText(label||"", pt.x, pt.y+yOffset)
+            yOffset += 12
 
       renderEdge : (edge, pt1, pt2) =>
         # edge: {source:Node, target:Node, length:#, data:{}}
@@ -270,7 +278,6 @@ define(
               nearest.node = node
               nearest.distance = dist
         if not (nearest.node is null)
-          console.log nearest.node, @nodeBoxes, @nodeBoxes[nearest.node.name]
           if @ptInBox(pos, @nodeBoxes[nearest.node.name])
             return nearest.node
 

@@ -19,42 +19,52 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['./nodeStyleTemplate'
-   'ribcage/LocalModel',
+  ['ribcage/LocalModel',
    'ribcage/ui/Nano',
    'ribcage/forms',
    'ribcage/View'
    'lib/rgbcolor'], 
-  (template, LocalModel, Nano, forms, View) ->
-  
+  (LocalModel, Nano, forms, View) ->
+    exports = {}
+        
     class NodeStyleView extends forms.ModelForm
       
       fields :
       
         shape : new forms.FieldSet("Shape",{
           shapeColor : new forms.ColorField("Background")
-          strokeColor : new forms.ColorField("Border color")
         })
         label : new forms.FieldSet("Label",{
           labelColor : new forms.ColorField("Color")
-          labelPattern : new forms.TextField("Text", {tooltip:'You can use placeholders here, {id} for node id, {prop.PROPERTYNAME} for properties.'})
+          labelPattern : new forms.TextField("Text", {tooltip:'You can use placeholders here, {id} for node id, {prop.PROPERTYNAME} for properties. Use ";" to create multiline labels.'})
         })
-      save : () ->
-        neo4j.log @model
 
-    class NodeStyle extends LocalModel
+    
+    class GroupStyleView extends forms.ModelForm
+      
+      fields :
+      
+        shape : new forms.FieldSet("Shape",{
+          shapeColor : new forms.ColorField("Background")
+        })
+        label : new forms.FieldSet("Label",{
+          labelColor : new forms.ColorField("Color")
+          labelPattern : new forms.TextField("Text", {tooltip:'You can use {count} here to show the number of nodes in the group. Use ";" to create multiline labels.'})
+        })
+     
+
+    exports.NodeStyle = class NodeStyle extends LocalModel
       
       defaults :
         type : 'node' # For deserialization
         
         shape : 'box'
-        shapeOpacity : 0.9
+        
         shapeColor : '#000000'
-        strokeColor : '#333333'
         
         labelFont : "monospace"
         labelColor : "#eeeeee"
-        labelPattern : "{id}: {prop.name}"
+        labelPattern : "{id}"
         
       getViewClass : -> NodeStyleView
       
@@ -64,20 +74,45 @@ define(
         visualNode.style ?= {} 
         
         shapeColor = new RGBColor @get 'shapeColor'
-        strokeColor = new RGBColor @get 'strokeColor'
+        #strokeColor = new RGBColor @get 'strokeColor'
         
-        visualNode.style.shape = @get 'shape'
         visualNode.style.shapeStyle = 
           fill : shapeColor.toHex()
-          stroke : strokeColor.toHex()
+          shape : @get "shape"
           
         visualNode.style.labelStyle = 
           font : @get 'labelFont'
           color : @get 'labelColor'
           
-        labelCtx = 
-          id : visualNode.neoNode.getId()
-          prop : visualNode.neoNode.getProperties()
-        
+        labelCtx = @getLabelCtx(visualNode)
         visualNode.style.labelText = Nano.compile @getLabelPattern(), labelCtx
+        
+      getLabelCtx : (visualNode) ->
+        return {
+          id : if visualNode.neoNode then visualNode.neoNode.getId() else 'N/A'
+          prop : if visualNode.neoNode then visualNode.neoNode.getProperties() else {}
+        }
+
+
+    exports.GroupStyle = class GroupStyle extends NodeStyle
+       
+      defaults :
+        type : 'group' # For deserialization
+        
+        shape : 'dot' 
+        
+        shapeColor : '#590101'
+        
+        labelFont : "monospace"
+        labelColor : "#eeeeee"
+        labelPattern : "{count};nodes"
+        
+      getViewClass : -> GroupStyleView
+        
+      getLabelCtx : (visualNode) ->
+        return {
+          count : visualNode.group.nodeCount
+        }
+        
+    return exports
 )

@@ -43,7 +43,8 @@ define(
         
       render : () =>
         $(@el).html(template())
-        #$('.target', @el).val @rule.getTarget()
+        
+        $('.target', @el).val(@rule.getTarget())
         
         @filterContainer = $('.filters',@el)
         @rule.filters.each (filter) =>

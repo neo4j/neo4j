@@ -25,13 +25,58 @@ define(
    './VisualizationSettingsDialog'
    'ribcage/View'
    'ribcage/security/HtmlEscaper'
-   './visualization'],
-  (VisualGraph, DataBrowserSettings, ItemUrlResolver, VisualizationSettingsDialog, View, HtmlEscaper, template) ->
+   './visualization'
+   'ribcage/ui/Dropdown'],
+  (VisualGraph, DataBrowserSettings, ItemUrlResolver, VisualizationSettingsDialog, View, HtmlEscaper, template, Dropdown) ->
+
+    class ProfilesDropdown extends Dropdown
+      
+      constructor : (@profiles, @settings) ->
+        super()
+      
+      getItems : () ->
+        items = []
+        items.push @title "Profiles"
+        @profiles.each (profile) =>
+          items.push @renderProfileItem(profile)
+        items.push @divider()
+        items.push "<a class='button' href='#/data/visualization/settings/profile/'>New profile</a>"
+        return items
+        
+      renderProfileItem : (profile) ->
+      
+        currentProfileId = @settings.getCurrentVisualizationProfile().id
+      
+        currentMarker = '*' if currentProfileId == profile.id
+      
+        profileButton = $ "<span>#{profile.getName()}</span>"
+        profileButton.click (ev) =>
+          @settings.setCurrentVisualizationProfile profile.id
+          @render()
+          ev.stopPropagation()
+        
+        if not profile.isDefault()
+          editButton = "<a class='button' href='#/data/visualization/settings/profile/#{profile.id}/'>Edit</a>"
+          deleteButton = $ "<div class='bad-button'>Remove</div>"
+          deleteButton.click (ev) =>
+            @profiles.remove(profile)
+            @profiles.save()
+            ev.stopPropagation()
+            $(ev.target).closest('li').remove()
+          
+          wrap = $ '<div></div>'
+          wrap.append profileButton
+          wrap.append editButton
+          wrap.append deleteButton
+          return wrap
+        return profileButton
+        
 
     class VisualizedView extends View
 
       events :
         'click #visualization-reflow' : "reflowGraphLayout"
+        'click #visualization-profiles-button' : "showProfilesDropdown"
 
       initialize : (options)->
         @server = options.server
@@ -41,6 +86,9 @@ define(
         @settings = new DataBrowserSettings(@appState.getSettings())
         @settings.labelPropertiesChanged @settingsChanged
         @dataModel.bind("change:data", @render)
+        
+        @settings.onCurrentVisualizationProfileChange () =>
+          @getViz().setProfile @settings.getCurrentVisualizationProfile()
 
       render : =>
         if @browserHasRequiredFeatures()
@@ -63,6 +111,13 @@ define(
           @showBrowserNotSupportedMessage()
 
         return this
+        
+      showProfilesDropdown : () ->
+        @_profilesDropdown ?= new ProfilesDropdown(@settings.getVisualizationProfiles(), @settings)
+        if @_profilesDropdown.isVisible()
+          @_profilesDropdown.hide()
+        else
+          @_profilesDropdown.renderFor $("#visualization-profiles-button")
 
       visualizeFromNode : (node) ->
         @getViz().setNode(node)

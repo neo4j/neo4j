@@ -41,7 +41,6 @@ define(
         @styleViews = []
         
       save : () =>
-        
         name = $('#profile-name',@el).val()
         
         @profile.setName name
@@ -50,10 +49,10 @@ define(
           @profiles.add @profile
         @profile.save()
         
-        window.location = '#/data/visualization/settings/'
+        window.location = '#/data/'
         
       cancel : () =>
-        window.location = '#/data/visualization/settings/'
+        window.location = '#/data/'
           
       addStyleRule : () =>
         rule = new StyleRule()

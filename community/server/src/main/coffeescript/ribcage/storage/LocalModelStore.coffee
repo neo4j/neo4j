@@ -88,7 +88,7 @@ define(
       set : (key, item) ->
         @_cache[key] = item
         
-        item = item.toJSON() if item.toJSON()
+        item = item.toJSON() if item.toJSON
         if @storagePrefix.length > 0
           key = "#{@storagePrefix}::#{key}"
         @storingStrategy.store(key, item)

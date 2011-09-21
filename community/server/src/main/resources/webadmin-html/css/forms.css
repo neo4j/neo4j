@@ -61,3 +61,25 @@ button {
   margin: 0;
   padding: 0;
 }
+
+
+.dropdown {
+  background: none repeat scroll 0 0 #EFEFEF;
+  border: 1px solid #AAAAAA;
+  box-shadow: 0 0 8px 0 #888888;
+}
+
+.dropdown > ul {
+  margin:0;
+  padding:0;
+  list-style:none;
+}
+
+.dropdown > ul > li {
+  border-bottom: 1px solid #aaa;
+  padding: 3px 5px;
+}
+
+.dropdown > ul > li > h3 {
+  margin: 0;
+}

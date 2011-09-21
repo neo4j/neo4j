@@ -104,11 +104,12 @@ define(
         el = $ "<div class='colorpicker-input' style='background-color: #{htmlEscape(value)}'></div>"
         el.ColorPicker
           onChange: (hsb, hex, rgb) ->
-            $(el).css 'background-color' : "##{hex}"
+            el.css 'background-color' : "##{hex}"
           onBeforeShow: () ->
-            $(el).ColorPickerSetColor $(el).css 'background-color'
+            color = new RGBColor(el.css 'background-color')
+            el.ColorPickerSetColor color.toHex()
           onHide: (hsb, hex, rgb) ->
-            color = new RGBColor($(el).css 'background-color')
+            color = new RGBColor(el.css 'background-color')
             triggerValueChange color.toRGB()
         el
         

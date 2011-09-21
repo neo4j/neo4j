@@ -11,6 +11,8 @@ define(
       VIZ_PROFILES_KEY : 'databrowser.visualization.profiles'
       VIZ_PROFILES_DEFAULT : [{ id:0, name:"Default profile" }]
 
+      CURRENT_VIZ_PROFILE_KEY : 'databrowser.visualization.currentProfile'
+
       constructor : (@settings) ->
         # Pass
 
@@ -39,5 +41,12 @@ define(
           return profiles.get id
         else
           return profiles.first()
+      
+      setCurrentVisualizationProfile : (id) ->
+        id = id.id if id.id?
+        @settings.set @CURRENT_VIZ_PROFILE_KEY, id
+        
+      onCurrentVisualizationProfileChange : (cb) ->
+        @settings.bind "change:#{@CURRENT_VIZ_PROFILE_KEY}", cb
       
 )

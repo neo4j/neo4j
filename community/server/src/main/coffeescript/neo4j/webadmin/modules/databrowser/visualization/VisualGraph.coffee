@@ -165,6 +165,9 @@ define(
         @stop()
         @el.detach()
         
+      setProfile : (@profile) ->
+        @_synchronizeUiWithData()
+        
       _synchronizeUiWithData : () ->
         # Update styling
         for url, visualNode of @dataModel.getVisualGraph().nodes

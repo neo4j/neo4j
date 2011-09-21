@@ -1,28 +1,37 @@
 
 define(
   ['./StyleRules',
-   './NodeStyle',
+   './style',
    'ribcage/LocalModel'], 
-  (StyleRules, NodeStyle, LocalModel) ->
+  (StyleRules, style, LocalModel) ->
 
     class VisualizationProfile extends LocalModel
       
       initialize : () ->
         @initNestedModel('styleRules', StyleRules)
-        @_defaultNodeStyle = new NodeStyle
+        @_defaultNodeStyle = new style.NodeStyle
+        @_defaultGroupStyle = new style.GroupStyle
       
       setName : (name) -> @set name:name
       getName : () -> @get "name"
         
-      isBuiltin : () -> @get "builtin"
+      isDefault : () -> @get "builtin"
       
       # Given a visualization node, 
       # apply appropriate style attributes
       styleNode : (visualNode) ->
-        @_defaultNodeStyle.applyTo visualNode
+        
+        type = if visualNode.type is "group" then "group" else "node"
+        
+        switch type
+          when "group" then @_defaultGroupStyle.applyTo visualNode
+          when "node" then @_defaultNodeStyle.applyTo visualNode
+        
         @styleRules.each (rule) =>
-          if rule.appliesTo visualNode, 'node'
+          if rule.appliesTo visualNode, type
             rule.applyStyleTo visualNode
-            console.log visualNode.style
+            
+        if visualNode.type is "unexplored"
+          visualNode.style.shapeStyle.alpha = 0.2
       
 )
