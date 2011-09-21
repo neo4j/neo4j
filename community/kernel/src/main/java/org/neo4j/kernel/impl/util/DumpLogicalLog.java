@@ -41,6 +41,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 public class DumpLogicalLog
 {
     private static final String PREFIX = "_logical.log.v";
+    private static final String PREFIX_1 = "_logical.log.1";
+    private static final String PREFIX_2 = "_logical.log.2";
 
     public static void main( String args[] ) throws IOException
     {
@@ -79,7 +81,7 @@ public class DumpLogicalLog
             }
         }
     }
-
+    
     private static String[] filenamesOf( String string )
     {
         File file = new File( string );
@@ -89,7 +91,7 @@ public class DumpLogicalLog
             {
                 public boolean accept( File dir, String name )
                 {
-                    return name.contains( PREFIX );
+                    return name.contains( PREFIX ) || name.contains( PREFIX_1 ) || name.contains( PREFIX_2 );
                 }
             } );
             Collection<String> result = new TreeSet<String>( sequentialComparator() );
@@ -119,7 +121,7 @@ public class DumpLogicalLog
             {
                 String toFind = PREFIX;
                 int index = string.indexOf( toFind );
-                if ( index == -1 ) throw new RuntimeException( string );
+                if ( index == -1 ) return Integer.MAX_VALUE;
                 return Integer.valueOf( string.substring( index + toFind.length() ) );
             }
         };
