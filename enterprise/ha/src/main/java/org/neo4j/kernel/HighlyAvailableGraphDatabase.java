@@ -810,7 +810,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         try
         {
-            msgLog.logMessage( "newMaster(" + master + ") called", e, true );
+            msgLog.logMessage( "newMaster(" + master + ") called", true );
             reevaluateMyself( master, storeId );
         }
         catch ( ZooKeeperException ee )
@@ -825,9 +825,8 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         // sees to that.
         catch ( Throwable t )
         {
-            t.printStackTrace();
             msgLog.logMessage( "Reevaluation ended in unknown exception " + t
-                    + " so shutting down", true );
+                    + " so shutting down", t, true );
             shutdown( t instanceof RuntimeException ? (RuntimeException) t : new RuntimeException( t ), false );
             if ( t instanceof RuntimeException )
             {

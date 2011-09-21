@@ -89,10 +89,10 @@ public class MasterUtil
         int i = 0;
         for ( XaDataSource ds : sources )
         {
-            appliedTransactions[i++] = Pair.of( ds.getName(), ds.getLastCommittedTxId() );
             try
             {
-                ds.getXaContainer().getResourceManager().rotateLogicalLog();
+                long lastCommittedTx = ds.getXaContainer().getResourceManager().rotateLogicalLog();
+                appliedTransactions[i++] = Pair.of( ds.getName(), lastCommittedTx );
             }
             catch ( IOException e )
             {
