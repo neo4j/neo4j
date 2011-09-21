@@ -23,7 +23,6 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.transaction.TestRecovery.countMentionsInMessagesLog;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -41,6 +40,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
@@ -264,7 +264,20 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         shutdownDbs();
         // Strings copied from XaLogicalLog#applyTransactionWithoutTxId
         Collection<String> toLookFor = asList( "applyTxWithoutTxId log version", "Applied external tx and generated" );
-        assertEquals( 0, countMentionsInMessagesLog( dbPath( 0 ).getAbsolutePath(), toLookFor ) );
+        assertEquals( 0, countMentionsInMessagesLog( new File( dbPath( 0 ), "messages.log" ), toLookFor ) );
+    }
+
+    private int countMentionsInMessagesLog( File file, Collection<String> toLookFor )
+    {
+        int counter = 0;
+        for ( String line : IteratorUtil.asIterable( file ) )
+        {
+            for ( String lookFor : toLookFor )
+            {
+                if ( line.contains( lookFor ) ) counter++;
+            }
+        }
+        return counter;
     }
 
     @Test
