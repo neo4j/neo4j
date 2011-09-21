@@ -58,8 +58,8 @@ endif
 ifdef IMPORTDIR
 	IMPDIR = --attribute importdir=$(IMPORTDIR)
 else
-	IMPDIR = --attribute importdir=$(SRCDIR)
-	IMPORTDIR = $(SRCDIR)
+	IMPDIR = --attribute importdir=$(BUILDDIR)/docs
+	IMPORTDIR = $(BUILDDIR)/docs
 endif
 
 ifneq (,$(findstring SNAPSHOT,$(VERSNUM)))
