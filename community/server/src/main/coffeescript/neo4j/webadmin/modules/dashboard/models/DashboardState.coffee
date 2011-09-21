@@ -43,7 +43,8 @@ define(
 
         usageTimes :
           layers : [
-            {label:"Time Avg", key:'request_avg_time'},
+            {label:"Time Mean", key:'request_mean_time'},
+            {label:"Time Median", key:'request_median_time'},
             {label:"Time Max", key:'request_max_time'},
             {label:"Time Min", key:'request_min_time'}]
           chartSettings:
