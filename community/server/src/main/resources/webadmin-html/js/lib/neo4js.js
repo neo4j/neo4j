@@ -503,7 +503,7 @@ a++){neo4j.setTimeout((function(g){return function(){try{g(c)
 })(e[a]),0)
 }}};
 neo4j.events=new neo4j.Events();
-neo4j.jqueryWebProvider={ajax:function(h){var i=h.timeout||5000,a=h.method,c=h.url,e=h.data,k=h.success,d=h.failure,b=a==="GET";
+neo4j.jqueryWebProvider={ajax:function(h){var i=h.timeout||6*60*60*1000,a=h.method,c=h.url,e=h.data,k=h.success,d=h.failure,b=a==="GET";
 function g(m,l,n){if(n.status===0){f(n)
 }else{k.apply(this,arguments)
 }}function f(m){try{if(m.status===200){return k(null)
