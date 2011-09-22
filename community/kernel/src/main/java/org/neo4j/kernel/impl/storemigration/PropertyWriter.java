@@ -25,6 +25,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 
 public class PropertyWriter
 {
@@ -38,18 +39,28 @@ public class PropertyWriter
     public long writeProperties( List<Pair<Integer, Object>> properties )
     {
         PropertyRecord propertyRecord = new PropertyRecord( propertyStore.nextId() );
+        long startOfPropertyList = propertyRecord.getId();
 
         for ( Pair<Integer, Object> property : properties )
         {
             PropertyBlock block = new PropertyBlock();
             propertyStore.encodeValue( block, property.first(), property.other() );
             block.setInUse( true );
+            int newBlockSizeInBytes = block.getSize();
+            if ( propertyRecord.getUsedPayloadBytes() + newBlockSizeInBytes > PropertyType.getPayloadSize() )
+            {
+                System.out.println( "property = " + property );
+                long nextId = propertyStore.nextId();
+                propertyRecord.setNextProp( nextId );
+                propertyStore.updateRecord( propertyRecord );
+                propertyRecord = new PropertyRecord( nextId );
+            }
             propertyRecord.addPropertyBlock( block );
+            propertyRecord.setInUse( true );
         }
 
-        propertyRecord.setInUse( true );
         propertyStore.updateRecord( propertyRecord );
 
-        return propertyRecord.getId();
+        return startOfPropertyList;
     }
 }

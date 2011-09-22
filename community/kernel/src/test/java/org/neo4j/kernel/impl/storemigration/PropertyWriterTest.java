@@ -34,7 +34,9 @@ import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
+import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 public class PropertyWriterTest
@@ -47,7 +49,7 @@ public class PropertyWriterTest
         FileUtils.deleteRecursively( outputDir );
         assertTrue( outputDir.mkdirs() );
 
-        File propertyStoreFile = new File( outputDir, "neostore.propertystore.db");
+        File propertyStoreFile = new File( outputDir, "neostore.propertystore.db" );
         PropertyStore.createStore( propertyStoreFile.getPath(), config );
         PropertyStore propertyStore = new PropertyStore( propertyStoreFile.getPath(), config );
 
@@ -62,11 +64,50 @@ public class PropertyWriterTest
         assertEquals( 1, propertyStore.getHighId() );
         assertEquals( 0, propertyRecordId );
 
-        List<PropertyBlock> propertyBlocks = new ArrayList(propertyStore.getRecord( propertyRecordId ).getPropertyBlocks());
+        List<PropertyBlock> propertyBlocks = new ArrayList( propertyStore.getRecord( propertyRecordId ).getPropertyBlocks() );
         assertEquals( 0, propertyBlocks.get( 0 ).getKeyIndexId() );
         assertEquals( 1234, propertyBlocks.get( 0 ).getSingleValueInt() );
         assertEquals( 1, propertyBlocks.get( 1 ).getKeyIndexId() );
         assertEquals( 5678, propertyBlocks.get( 1 ).getSingleValueInt() );
+
+        propertyStore.close();
+    }
+
+    @Test
+    public void shouldStoreMultiplePropertiesAcrossASeriesOfRecords() throws IOException
+    {
+        HashMap config = defaultConfig();
+        File outputDir = new File( "target/outputDatabase" );
+        FileUtils.deleteRecursively( outputDir );
+        assertTrue( outputDir.mkdirs() );
+
+        File propertyStoreFile = new File( outputDir, "neostore.propertystore.db" );
+        PropertyStore.createStore( propertyStoreFile.getPath(), config );
+        PropertyStore propertyStore = new PropertyStore( propertyStoreFile.getPath(), config );
+
+        assertEquals( 0, propertyStore.getHighId() );
+
+        PropertyWriter propertyWriter = new PropertyWriter( propertyStore );
+        ArrayList<Pair<Integer, Object>> properties = new ArrayList<Pair<Integer, Object>>();
+        for ( int i = 0; i < 100; i++ )
+        {
+            properties.add( Pair.of( i, (Object) i ) );
+        }
+        long propertyRecordId = propertyWriter.writeProperties( properties );
+
+        assertEquals( 25, propertyStore.getHighId() );
+        assertEquals( 0, propertyRecordId );
+
+        List<PropertyBlock> propertyBlocks = new ArrayList<PropertyBlock>( );
+
+        PropertyRecord propertyRecord = propertyStore.getRecord( 0 );
+        propertyBlocks.addAll( propertyStore.getRecord( propertyRecordId ).getPropertyBlocks() );
+        while (propertyRecord.getNextProp() != Record.NO_NEXT_PROPERTY.intValue()) {
+            propertyRecord = propertyStore.getRecord( propertyRecord.getNextProp() );
+            propertyBlocks.addAll( propertyStore.getRecord( propertyRecordId ).getPropertyBlocks() );
+        }
+
+        assertEquals( 100, propertyBlocks.size() );
 
         propertyStore.close();
     }

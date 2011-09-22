@@ -84,7 +84,7 @@ public class PropertyRecord extends Abstract64BitRecord
      *
      * @return
      */
-    public int size()
+    public int getUsedPayloadBytes()
     {
         int result = 0;
         for ( PropertyBlock block : blockRecords )
@@ -105,10 +105,10 @@ public class PropertyRecord extends Abstract64BitRecord
     public void addPropertyBlock(PropertyBlock block)
     {
         assert ( !block.inUse()
-             || ( size() + block.getSize() <= PropertyType.getPayloadSize() ) ) :
+             || ( getUsedPayloadBytes() + block.getSize() <= PropertyType.getPayloadSize() ) ) :
 
             ("Exceeded capacity of property record " + this
-                             + ". My current size is reported as " + size() + "The added block was " + block + " (note that size is "
+                             + ". My current size is reported as " + getUsedPayloadBytes() + "The added block was " + block + " (note that size is "
           + block.getSize() + ")"
         );
         blockRecords.add( block );
@@ -169,7 +169,7 @@ public class PropertyRecord extends Abstract64BitRecord
     @Override
     public void setInUse( boolean inUse )
     {
-        if ( inUse && !( size() > 0 ) )
+        if ( inUse && !( getUsedPayloadBytes() > 0 ) )
         {
             throw new IllegalStateException(
                     "You cannot set a property record as in use when no property blocks are set as in use. Offensive record is:\n\t"

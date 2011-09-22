@@ -943,7 +943,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             }
         }
         // propRecord.removeBlock( propertyData.getIndex() );
-        if ( propRecord.size() > 0 )
+        if ( propRecord.getUsedPayloadBytes() > 0 )
         {
             return;
         }
@@ -1077,7 +1077,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             }
         }
         // propRecord.removeBlock( propertyData.getIndex() );
-        if (propRecord.size() > 0)
+        if (propRecord.getUsedPayloadBytes() > 0)
         {
             /*
              * There are remaining blocks in the record. We do not unlink yet.
@@ -1190,7 +1190,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             }
         }
         int oldSize = block.getSize();
-        int oldRecordSize = propertyRecord.size();
+        int oldRecordSize = propertyRecord.getUsedPayloadBytes();
         getPropertyStore().encodeValue( block, propertyData.getIndex(),
                 value );
         if ( oldRecordSize - oldSize + block.getSize() > PropertyType.getPayloadSize() )
@@ -1280,8 +1280,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         {
             PropertyRecord propRecord = getPropertyRecord( nextProp, false );
             nextProp = propRecord.getNextProp();
-            int propSize = propRecord.size();
-            if ( propSize + newBlockSizeInBytes <= PropertyType.getPayloadSize() )
+            int usedPayloadBytes = propRecord.getUsedPayloadBytes();
+            if ( usedPayloadBytes + newBlockSizeInBytes <= PropertyType.getPayloadSize() )
             {
                 host = propRecord;
                 host.isChanged();
@@ -1292,9 +1292,9 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 catch ( IllegalStateException e )
                 {
                     System.err.println( "WHOA!!!! That should NOT have happened. See, when i asked for the record's size it said "
-                                        + propSize
+                                        + usedPayloadBytes
                                         + " (now it is "
-                                        + propRecord.size()
+                                        + propRecord.getUsedPayloadBytes()
                                         + " btw) and the property block's size is "
                                         + newBlockSizeInBytes
                                         + "and it holds an array of size"
@@ -1335,7 +1335,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             catch ( IllegalStateException e )
             {
                 System.err.println( "WHOA!!!! That should NOT have happened. See, when i asked for the record's size it said "
-                                    + host.size()
+                                    + host.getUsedPayloadBytes()
                                     + " (0, right?, cause this is a new PropertyRecord and is a local variable) and the property block's size is "
                                     + newBlockSizeInBytes
                                     + "and it holds an array of size"
