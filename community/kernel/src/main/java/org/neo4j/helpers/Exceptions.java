@@ -23,6 +23,8 @@ import java.lang.reflect.InvocationTargetException;
 
 public class Exceptions
 {
+    private static final String UNEXPECTED_MESSAGE = "Unexpected Exception";
+
     public static <T extends Throwable> T withCause( T exception, Throwable cause )
     {
         try
@@ -38,14 +40,25 @@ public class Exceptions
 
     public static RuntimeException launderedException( Throwable exception )
     {
-        return launderedException( "Unexpected Exception", exception );
+        return launderedException( UNEXPECTED_MESSAGE, exception );
     }
 
     public static RuntimeException launderedException( String messageForUnexpected, Throwable exception )
     {
-        if ( exception instanceof RuntimeException )
+        return launderedException( RuntimeException.class, messageForUnexpected, exception );
+    }
+
+    public static <T extends Throwable> T launderedException( Class<T> type, Throwable exception )
+    {
+        return launderedException( type, UNEXPECTED_MESSAGE, exception );
+    }
+
+    public static <T extends Throwable> T launderedException( Class<T> type, String messageForUnexpected,
+            Throwable exception )
+    {
+        if ( type.isInstance( exception ) )
         {
-            return (RuntimeException) exception;
+            return type.cast( exception );
         }
         else if ( exception instanceof Error )
         {
@@ -53,12 +66,16 @@ public class Exceptions
         }
         else if ( exception instanceof InvocationTargetException )
         {
-            return launderedException( messageForUnexpected,
+            return launderedException( type, messageForUnexpected,
                     ( (InvocationTargetException) exception ).getTargetException() );
+        }
+        else if ( exception instanceof RuntimeException )
+        {
+            throw (RuntimeException) exception;
         }
         else
         {
-            return new RuntimeException( messageForUnexpected, exception );
+            throw new RuntimeException( messageForUnexpected, exception );
         }
     }
 

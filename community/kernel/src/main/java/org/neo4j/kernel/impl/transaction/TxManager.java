@@ -50,6 +50,7 @@ import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.MapUtil;
@@ -255,7 +256,8 @@ public class TxManager extends AbstractTransactionManager
     void setTmNotOk()
     {
         tmOk = false;
-        kpe.generateEvent( null );
+        msgLog.logMessage( "setting TM not OK", new Throwable() );
+        kpe.generateEvent( ErrorState.TX_MANAGER_NOT_OK );
     }
 
     private void recover( Iterator<List<TxLog.Record>> danglingRecordList )
@@ -567,12 +569,7 @@ public class TxManager extends AbstractTransactionManager
 
     public void begin() throws NotSupportedException, SystemException
     {
-        if ( !tmOk )
-        {
-            throw logAndReturn("TM error tx begin", new SystemException( "TM has encountered some problem, "
-                + "please perform neccesary action (tx recovery/restart)" ));
-        }
-
+        assertTmOk( "tx begin" );
         Thread thread = Thread.currentThread();
         TransactionImpl tx = txThreadMap.get( thread );
         if ( tx != null )
@@ -589,6 +586,15 @@ public class TxManager extends AbstractTransactionManager
         }
         startedTxCount.incrementAndGet();
         // start record written on resource enlistment
+    }
+
+    private void assertTmOk( String source ) throws SystemException
+    {
+        if ( !tmOk )
+        {
+            throw logAndReturn("TM error " + source, new SystemException( "TM has encountered some problem, "
+                + "please perform neccesary action (tx recovery/restart)" ));
+        }
     }
 
     // called when a resource gets enlisted
@@ -610,11 +616,7 @@ public class TxManager extends AbstractTransactionManager
     public void commit() throws RollbackException, HeuristicMixedException,
         HeuristicRollbackException, IllegalStateException, SystemException
     {
-        if ( !tmOk )
-        {
-            throw logAndReturn("TM error tx commit",new SystemException( "TM has encountered some problem, "
-                + "please perform neccesary action (tx recovery/restart)" ));
-        }
+        assertTmOk( "tx commit" );
         Thread thread = Thread.currentThread();
         TransactionImpl tx = txThreadMap.get( thread );
         if ( tx == null )
@@ -814,11 +816,7 @@ public class TxManager extends AbstractTransactionManager
 
     public void rollback() throws IllegalStateException, SystemException
     {
-        if ( !tmOk )
-        {
-            throw logAndReturn("TM error tx rollback",new SystemException( "TM has encountered some problem, "
-                + "please perform neccesary action (tx recovery/restart)" ));
-        }
+        assertTmOk( "tx rollback" );
         Thread thread = Thread.currentThread();
         TransactionImpl tx = txThreadMap.get( thread );
         if ( tx == null )
@@ -906,11 +904,7 @@ public class TxManager extends AbstractTransactionManager
     public void resume( Transaction tx ) throws IllegalStateException,
         SystemException
     {
-        if ( !tmOk )
-        {
-            throw logAndReturn("TM error tx resume",new SystemException( "TM has encountered some problem, "
-                + "please perform neccesary action (tx recovery/restart)" ));
-        }
+        assertTmOk( "tx resume" );
         Thread thread = Thread.currentThread();
         if ( txThreadMap.get( thread ) != null )
         {
@@ -934,11 +928,7 @@ public class TxManager extends AbstractTransactionManager
 
     public Transaction suspend() throws SystemException
     {
-        if ( !tmOk )
-        {
-            throw logAndReturn("TM error tx suspend",new SystemException( "TM has encountered some problem, "
-                + "please perform neccesary action (tx recovery/restart)" ));
-        }
+        assertTmOk( "tx suspend" );
         // check for ACTIVE/MARKED_ROLLBACK?
         TransactionImpl tx = txThreadMap.remove( Thread.currentThread() );
         if ( tx != null )
@@ -951,11 +941,7 @@ public class TxManager extends AbstractTransactionManager
 
     public void setRollbackOnly() throws IllegalStateException, SystemException
     {
-        if ( !tmOk )
-        {
-            throw logAndReturn("TM error tx set rollback only",new SystemException( "TM has encountered some problem, "
-                + "please perform neccesary action (tx recovery/restart)" ));
-        }
+        assertTmOk( "tx set rollback only" );
         Thread thread = Thread.currentThread();
         TransactionImpl tx = txThreadMap.get( thread );
         if ( tx == null )
@@ -967,11 +953,7 @@ public class TxManager extends AbstractTransactionManager
 
     public void setTransactionTimeout( int seconds ) throws SystemException
     {
-        if ( !tmOk )
-        {
-            throw logAndReturn("TM error tx set timeout",new SystemException( "TM has encountered some problem, "
-                + "please perform neccesary action (tx recovery/restart)" ));
-        }
+        assertTmOk( "tx set timeout" );
         // ...
     }
 

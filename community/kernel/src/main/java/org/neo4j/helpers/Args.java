@@ -52,12 +52,26 @@ public class Args
     private final Map<String, String> map = new HashMap<String, String>();
     private final List<String> orphans = new ArrayList<String>();
     
+    /**
+     * Suitable for main( String[] args )
+     * @param args the arguments to parse.
+     */
     public Args( String[] args )
     {
         this.args = args;
         parseArgs( args );
     }
     
+    public Args( String arg )
+    {
+        this( splitArg( arg ) );
+    }
+
+    private static String[] splitArg( String arg )
+    {
+        return arg.split( " " );
+    }
+
     public String[] source()
     {
         return this.args;

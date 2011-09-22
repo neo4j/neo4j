@@ -727,8 +727,8 @@ public class XaResourceManager
         return txId;
     }
     
-    public synchronized void rotateLogicalLog() throws IOException
+    public synchronized long rotateLogicalLog() throws IOException
     {
-        log.rotate();
+        return log.rotate();
     }
 }

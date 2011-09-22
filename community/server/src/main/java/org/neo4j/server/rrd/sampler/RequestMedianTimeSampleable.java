@@ -22,10 +22,10 @@ package org.neo4j.server.rrd.sampler;
 import org.neo4j.server.database.Database;
 import org.rrd4j.DsType;
 
-public class RequestAvgTimeSampleable extends StatisticSampleableBase
+public class RequestMedianTimeSampleable extends StatisticSampleableBase
 {
 
-    public RequestAvgTimeSampleable( Database db )
+    public RequestMedianTimeSampleable( Database db )
     {
         super( db, DsType.ABSOLUTE );
     }
@@ -33,12 +33,12 @@ public class RequestAvgTimeSampleable extends StatisticSampleableBase
     @Override
     public String getName()
     {
-        return "request_avg_time";
+        return "request_median_time";
     }
 
     @Override
     public double getValue()
     {
-        return getCurrentSnapshot().getDuration().getAvg();
+        return getCurrentSnapshot().getDuration().getMedian();
     }
 }

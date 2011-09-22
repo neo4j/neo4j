@@ -30,10 +30,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.ClosableIterable;
 import org.neo4j.kernel.Config;
@@ -134,41 +136,55 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         neoStore = new NeoStore( config );
         xaContainer = XaContainer.create( this, (String) config.get( "logical_log" ),
                 new CommandFactory( neoStore ), new TransactionFactory(), config );
-
-        if ( !readOnly )
+        try
         {
-            neoStore.setRecoveredStatus( true );
+            if ( !readOnly )
+            {
+                neoStore.setRecoveredStatus( true );
+                try
+                {
+                    xaContainer.openLogicalLog();
+                }
+                finally
+                {
+                    neoStore.setRecoveredStatus( false );
+                }
+            }
+            if ( !xaContainer.getResourceManager().hasRecoveredTransactions() )
+            {
+                neoStore.makeStoreOk();
+            }
+            else
+            {
+                logger.fine( "Waiting for TM to take care of recovered " +
+                    "transactions." );
+            }
+            idGenerators = new ArrayMap<Class<?>,Store>( 5, false, false );
+            this.idGenerators.put( Node.class, neoStore.getNodeStore() );
+            this.idGenerators.put( Relationship.class,
+                neoStore.getRelationshipStore() );
+            this.idGenerators.put( RelationshipType.class,
+                neoStore.getRelationshipTypeStore() );
+            this.idGenerators.put( PropertyStore.class,
+                neoStore.getPropertyStore() );
+            this.idGenerators.put( PropertyIndex.class,
+                neoStore.getPropertyStore().getIndexStore() );
+            xaContainer.getLogicalLog().setKeepLogs(
+                    shouldKeepLog( (String) config.get( Config.KEEP_LOGICAL_LOGS ), "nioneodb" ) );
+            setLogicalLogAtCreationTime( xaContainer.getLogicalLog() );
+        }
+        catch ( Throwable e )
+        {   // Something unexpected happened during startup
             try
-            {
-                xaContainer.openLogicalLog();
+            {   // Close the neostore, so that locks are released properly
+                neoStore.close();
             }
-            finally
+            catch ( Exception closeException )
             {
-                neoStore.setRecoveredStatus( false );
+                msgLog.logMessage( "Couldn't close neostore after startup failure" );
             }
+            throw Exceptions.launderedException( e );
         }
-        if ( !xaContainer.getResourceManager().hasRecoveredTransactions() )
-        {
-            neoStore.makeStoreOk();
-        }
-        else
-        {
-            logger.fine( "Waiting for TM to take care of recovered " +
-                "transactions." );
-        }
-        idGenerators = new ArrayMap<Class<?>,Store>( 5, false, false );
-        this.idGenerators.put( Node.class, neoStore.getNodeStore() );
-        this.idGenerators.put( Relationship.class,
-            neoStore.getRelationshipStore() );
-        this.idGenerators.put( RelationshipType.class,
-            neoStore.getRelationshipTypeStore() );
-        this.idGenerators.put( PropertyStore.class,
-            neoStore.getPropertyStore() );
-        this.idGenerators.put( PropertyIndex.class,
-            neoStore.getPropertyStore().getIndexStore() );
-        xaContainer.getLogicalLog().setKeepLogs(
-                shouldKeepLog( (String) config.get( Config.KEEP_LOGICAL_LOGS ), "nioneodb" ) );
-        setLogicalLogAtCreationTime( xaContainer.getLogicalLog() );
     }
 
     private void autoCreatePath( String store ) throws IOException
@@ -477,6 +493,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     {
         final Collection<File> files = new ArrayList<File>();
         File neostoreFile = null;
+        Pattern logFilePattern = getXaContainer().getLogicalLog().getFileNamePattern();
         for ( File dbFile : new File( storeDir ).listFiles() )
         {
             String name = dbFile.getName();
@@ -488,8 +505,13 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                 {
                     neostoreFile = dbFile;
                 }
-                else if ( (name.startsWith( "neostore" ) || name.equals( IndexStore.INDEX_DB_FILE_NAME )) && !name.endsWith( ".id" ) )
-                {
+                else if ( (name.startsWith( "neostore" ) ||
+                        name.equals( IndexStore.INDEX_DB_FILE_NAME )) && !name.endsWith( ".id" ) )
+                {   // Store files
+                    files.add( dbFile );
+                }
+                else if ( logFilePattern.matcher( dbFile.getName() ).matches() )
+                {   // Logs
                     files.add( dbFile );
                 }
             }

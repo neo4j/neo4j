@@ -119,7 +119,9 @@ class ExecutionEngine(graph: GraphDatabaseService) {
   private def createStartPipe(lastPipe: Pipe, item: StartItem): Pipe = item match {
     case NodeByIndex(varName, idxName, key, value) =>
       new StartPipe(lastPipe, varName, m => {
-        val indexHits: Iterable[Node] = graph.index.forNodes(idxName).get(key, value)
+        val keyVal = key(m).toString
+        val valueVal = value(m)
+        val indexHits: Iterable[Node] = graph.index.forNodes(idxName).get(keyVal, valueVal)
         indexHits.asScala
       })
 
