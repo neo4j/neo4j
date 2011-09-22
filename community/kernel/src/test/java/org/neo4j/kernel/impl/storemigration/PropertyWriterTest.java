@@ -64,7 +64,7 @@ public class PropertyWriterTest
         assertEquals( 1, propertyStore.getHighId() );
         assertEquals( 0, propertyRecordId );
 
-        List<PropertyBlock> propertyBlocks = new ArrayList( propertyStore.getRecord( propertyRecordId ).getPropertyBlocks() );
+        List<PropertyBlock> propertyBlocks = new ArrayList<PropertyBlock>( propertyStore.getRecord( propertyRecordId ).getPropertyBlocks() );
         assertEquals( 0, propertyBlocks.get( 0 ).getKeyIndexId() );
         assertEquals( 1234, propertyBlocks.get( 0 ).getSingleValueInt() );
         assertEquals( 1, propertyBlocks.get( 1 ).getKeyIndexId() );
@@ -114,6 +114,7 @@ public class PropertyWriterTest
         propertyStore.close();
     }
 
+    @SuppressWarnings({"unchecked"})
     private HashMap defaultConfig()
     {
         HashMap config = new HashMap();
