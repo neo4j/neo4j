@@ -578,24 +578,25 @@ public class PropertyStore extends AbstractStore implements Store
                 block.addValueRecord( valueRecord );
             }
         }
-        else if ( value instanceof Integer ) block.setSingleBlock( bits32WithKeyAndType( keyId, PropertyType.INT ).put( ((Integer)value).intValue() ).getLongs()[0] );
-        else if ( value instanceof Boolean ) block.setSingleBlock( bits32WithKeyAndType( keyId, PropertyType.BOOL ).put( ((Boolean)value).booleanValue() ? 1 : 0 ).getLongs()[0] );
-        else if ( value instanceof Float ) block.setSingleBlock( bits32WithKeyAndType( keyId, PropertyType.FLOAT ).put( Float.floatToRawIntBits( ((Float) value).floatValue() ) ).getLongs()[0] );
+        else if ( value instanceof Integer ) setSingleBlockValue( block, keyId, PropertyType.INT, ((Integer)value).longValue() );
+        else if ( value instanceof Boolean ) setSingleBlockValue( block, keyId, PropertyType.BOOL, (((Boolean)value).booleanValue()?1L:0L) );
+        else if ( value instanceof Float ) setSingleBlockValue( block, keyId, PropertyType.FLOAT, (long)Float.floatToRawIntBits( ((Float) value).floatValue() ) );
         else if ( value instanceof Long )
         {
+            long keyAndType = keyId | (((long)PropertyType.LONG.intValue()) << 24);
             if ( ShortArray.LONG.getRequiredBits( value ) <= 35 )
-            {   // We only need one block for this value
-                block.setValueBlocks( bits32WithKeyAndType( keyId, PropertyType.LONG ).put( (byte)1, 1 ).put( ((Long)value).longValue(), 35 ).getLongs() );
+            {   // We only need one block for this value, special layout compared to, say, an integer
+                block.setSingleBlock( keyAndType | (1L << 28) |  (((Long)value).longValue() << 29) );
             }
             else
             {   // We need two blocks for this value
-                block.setValueBlocks( bits64WithKeyAndType( keyId, PropertyType.LONG ).put( ((Long)value).longValue() ).getLongs() );
+                block.setValueBlocks( new long[] {keyAndType, ((Long)value).longValue()} );
             }
         }
-        else if ( value instanceof Double ) block.setValueBlocks( bits64WithKeyAndType( keyId, PropertyType.DOUBLE ).put( Double.doubleToRawLongBits( ((Double)value).doubleValue() ) ).getLongs() );
-        else if ( value instanceof Byte ) block.setSingleBlock( bits32WithKeyAndType( keyId, PropertyType.BYTE ).put( ((Byte)value).byteValue() ).getLongs()[0] );
-        else if ( value instanceof Character ) block.setSingleBlock( bits32WithKeyAndType( keyId, PropertyType.CHAR ).put( ((Character)value).charValue() ).getLongs()[0] );
-        else if ( value instanceof Short ) block.setSingleBlock( bits32WithKeyAndType( keyId, PropertyType.SHORT ).put( ((Short)value).shortValue() ).getLongs()[0] );
+        else if ( value instanceof Double ) block.setValueBlocks( new long[] { keyId | (((long)PropertyType.DOUBLE.intValue()) << 24), Double.doubleToRawLongBits( ((Double)value).doubleValue() ) } );
+        else if ( value instanceof Byte ) setSingleBlockValue( block, keyId, PropertyType.BYTE, ((Byte)value).longValue() );
+        else if ( value instanceof Character ) setSingleBlockValue( block, keyId, PropertyType.CHAR, (long)((Character)value).charValue() );
+        else if ( value instanceof Short ) setSingleBlockValue( block, keyId, PropertyType.SHORT, ((Short)value).longValue() );
         else if ( value.getClass().isArray() )
         {
             if ( ShortArray.encode( keyId, value, block, DEFAULT_PAYLOAD_SIZE ) ) return;
@@ -620,6 +621,11 @@ public class PropertyStore extends AbstractStore implements Store
 //        {
 //            verifySame( block, value );
 //        }
+    }
+
+    private void setSingleBlockValue( PropertyBlock block, int keyId, PropertyType type, long longValue )
+    {
+        block.setSingleBlock( keyId | (((long)PropertyType.INT.intValue()) << 24) | (longValue << 28) );
     }
 
     public static byte[] getBestSuitedEncoding( String string )

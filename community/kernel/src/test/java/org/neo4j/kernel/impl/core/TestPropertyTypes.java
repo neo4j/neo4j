@@ -132,6 +132,41 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     }
 
     @Test
+    public void testIntType()
+    {
+        int time = (int)System.currentTimeMillis();
+        Integer iValue = new Integer( time );
+        String key = "testing";
+        node1.setProperty( key, iValue );
+        newTransaction();
+
+        clearCache();
+        Integer propertyValue = null;
+        propertyValue = (Integer) node1.getProperty( key );
+        assertEquals( iValue, propertyValue );
+
+        iValue = new Integer( (int)System.currentTimeMillis() );
+        node1.setProperty( key, iValue );
+        newTransaction();
+
+        clearCache();
+        propertyValue = (Integer) node1.getProperty( key );
+        assertEquals( iValue, propertyValue );
+
+        node1.removeProperty( key );
+        newTransaction();
+
+        clearCache();
+        assertTrue( !node1.hasProperty( key ) );
+        
+        node1.setProperty( "other", 123L );
+        assertEquals( 123L, node1.getProperty( "other" ) );
+        newTransaction();
+        clearCache();
+        assertEquals( 123L, node1.getProperty( "other" ) );
+    }
+    
+    @Test
     public void testByteType()
     {
         byte b = (byte) 177;
@@ -218,6 +253,35 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertTrue( !node1.hasProperty( key ) );
     }
 
+    @Test
+    public void testBooleanType()
+    {
+        boolean value = true;
+        Boolean bValue = new Boolean( value );
+        String key = "testbool";
+        node1.setProperty( key, bValue );
+        newTransaction();
+
+        clearCache();
+        Boolean propertyValue = null;
+        propertyValue = (Boolean) node1.getProperty( key );
+        assertEquals( bValue, propertyValue );
+
+        bValue = new Boolean( false );
+        node1.setProperty( key, bValue );
+        newTransaction();
+
+        clearCache();
+        propertyValue = (Boolean) node1.getProperty( key );
+        assertEquals( bValue, propertyValue );
+
+        node1.removeProperty( key );
+        newTransaction();
+
+        clearCache();
+        assertTrue( !node1.hasProperty( key ) );
+    }
+    
     @Test
     public void testIntArray()
     {
