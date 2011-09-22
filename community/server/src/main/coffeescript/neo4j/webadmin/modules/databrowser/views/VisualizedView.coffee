@@ -38,38 +38,52 @@ define(
         items = []
         items.push @title "Profiles"
         @profiles.each (profile) =>
-          items.push @renderProfileItem(profile)
-        items.push @divider()
-        items.push "<a class='button' href='#/data/visualization/settings/profile/'>New profile</a>"
+          items.push @actionable @renderProfileItem(profile), (ev) =>
+            @settings.setCurrentVisualizationProfile profile.id
+            @render()
+            ev.stopPropagation()
+        items.push @item "<a class='micro-button' href='#/data/visualization/settings/profile/'>New profile</a><div class='break'></div>"
         return items
         
       renderProfileItem : (profile) ->
       
         currentProfileId = @settings.getCurrentVisualizationProfile().id
+        if currentProfileId == profile.id
+          currentClass = 'selected' 
+        else
+          currentClass = ''
       
-        currentMarker = '*' if currentProfileId == profile.id
-      
-        profileButton = $ "<span>#{profile.getName()}</span>"
-        profileButton.click (ev) =>
-          @settings.setCurrentVisualizationProfile profile.id
-          @render()
-          ev.stopPropagation()
+        profileButton = $ "<span class='#{currentClass}'>#{profile.getName()}</span>"
         
         if not profile.isDefault()
-          editButton = "<a class='button' href='#/data/visualization/settings/profile/#{profile.id}/'>Edit</a>"
-          deleteButton = $ "<div class='bad-button'>Remove</div>"
+          editButton = $ "<a class='micro-button' href='#/data/visualization/settings/profile/#{profile.id}/'>Edit</a>"
+          editButton.click @hide
+          
+          deleteButton = $ "<div class='bad-button micro-button'>Remove</div>"
           deleteButton.click (ev) =>
-            @profiles.remove(profile)
-            @profiles.save()
+            @deleteProfile(profile)
+            @render()
             ev.stopPropagation()
-            $(ev.target).closest('li').remove()
+            
+          buttons = $ "<div class='dropdown-controls'></div>"
+          buttons.append editButton
+          buttons.append deleteButton
           
           wrap = $ '<div></div>'
           wrap.append profileButton
-          wrap.append editButton
-          wrap.append deleteButton
+          wrap.append buttons
           return wrap
         return profileButton
+        
+      deleteProfile : (profile) =>
+        currentProfileId = @settings.getCurrentVisualizationProfile().id
+        # Use default profile if the current
+        # profile is getting removed
+        if profile.id == currentProfileId
+          @settings.setCurrentVisualizationProfile @profiles.first()
+        @profiles.remove(profile)
+        @profiles.save()
+      
         
 
     class VisualizedView extends View

@@ -37,7 +37,8 @@ define(
       getCurrentVisualizationProfile : () ->
         id = @settings.get @CURRENT_VIZ_PROFILE_KEY
         profiles = @getVisualizationProfiles()
-        if id?
+        console.log profiles
+        if id? and profiles.get id
           return profiles.get id
         else
           return profiles.first()

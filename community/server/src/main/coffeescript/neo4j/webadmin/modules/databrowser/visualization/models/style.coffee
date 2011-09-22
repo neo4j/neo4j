@@ -31,12 +31,12 @@ define(
       
       fields :
       
-        shape : new forms.FieldSet("Shape",{
+        shape : new forms.FieldSet({
           shapeColor : new forms.ColorField("Background")
+          labelColor : new forms.ColorField("Label color")
         })
-        label : new forms.FieldSet("Label",{
-          labelColor : new forms.ColorField("Color")
-          labelPattern : new forms.TextField("Text", {tooltip:'You can use placeholders here, {id} for node id, {prop.PROPERTYNAME} for properties. Use ";" to create multiline labels.'})
+        label : new forms.FieldSet({
+          labelPattern : new forms.TextField("Label", {tooltip:'You can use placeholders here, {id} for node id, {prop.PROPERTYNAME} for properties. Use ";" to create multiline labels.'})
         })
 
     
@@ -44,10 +44,10 @@ define(
       
       fields :
       
-        shape : new forms.FieldSet("Shape",{
+        shape : new forms.FieldSet({
           shapeColor : new forms.ColorField("Background")
         })
-        label : new forms.FieldSet("Label",{
+        label : new forms.FieldSet({
           labelColor : new forms.ColorField("Color")
           labelPattern : new forms.TextField("Text", {tooltip:'You can use {count} here to show the number of nodes in the group. Use ";" to create multiline labels.'})
         })

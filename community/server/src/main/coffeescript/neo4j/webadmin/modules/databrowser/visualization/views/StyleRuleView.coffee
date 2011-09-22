@@ -29,7 +29,7 @@ define(
   
     class StyleRuleView extends View
 
-      tagName : 'tr'
+      tagName : 'li'
 
       events : 
         "click button.remove" : "deleteRule"
@@ -57,7 +57,7 @@ define(
       renderStyleView : () ->
         StyleView = @rule.getStyle().getViewClass()
         styleView = new StyleView( model : @rule.getStyle() )
-        $('.style',@el).append(styleView.render().el)
+        $('.ruleStyle',@el).append(styleView.render().el)
         
       targetChanged : (ev) ->
         @rule.setTarget $(ev.target).val()

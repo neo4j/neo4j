@@ -1,20 +1,29 @@
-.sidebar
-  %h1.pad Profile details
 
-.workarea.with-sidebar#visualization-settings
-
-  :if isInCreateMode
-    %h2.pad Create new profile
-  :if !isInCreateMode
-    %h2.pad Manage profile
+.workarea#visualization-settings
+  .pad
+    .span-half
+      :if isInCreateMode
+        %h2 Create new visualization profile
+      :if !isInCreateMode
+        %h2 Manage visualization profile
+    
+      %input.big(id="profile-name" type="text" value="#{htmlEscape(name)}")
+    .span-half.last
+      %ul.button-bar
+        %li
+          %button.button.save Save
+        %li
+          %button.button.cancel Cancel
   
-  %input(id="profile-name" type="text" value="#{htmlEscape(name)}")
+    .break
   
-  %h2.pad Style rules
-  %table.styleRules
-  
-  %button.button.addStyleRule Add style rule
-  
-  %button.button.save Save
-  %button.button.cancel Cancel
+  .styleRulesWrap
+    .headline-bar.pad
+      %h2 Style rules
+      .button-bar
+        %button.button.addStyleRule Add style rule
+      .break
+    
+    .break
+    %ul.styleRules
   

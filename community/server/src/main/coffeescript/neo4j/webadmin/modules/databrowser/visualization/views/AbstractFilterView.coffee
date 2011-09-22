@@ -26,7 +26,7 @@ define(
   
     class AbstractFilterView extends View
 
-      tagName : 'tr'
+      tagName : 'li'
       
       initialize : (opts) =>
         @filter = opts.filter

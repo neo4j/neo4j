@@ -223,7 +223,7 @@ body {
 #data-switch-view .icon.tabular {
   background:url("../img/icons/glyphish/tabular.png") no-repeat scroll center center;
 }
-#visualization-show-settings .icon {
+#visualization-profiles-button .icon {
   background:url("../img/icons/glyphish/157-wrench.png") no-repeat scroll 5px center;
 }
 #visualization-reflow .icon {
@@ -356,6 +356,75 @@ body {
   top: 10px;
 }
 
+/* Visualization style settings */
+
+.styleRules, .styleRule, .styleRule .filters, .styleRule .filters > li > ul {
+  list-style:none;
+  margin:0;
+  padding:0;
+}
+
+.styleRulesWrap {
+  background: none repeat scroll 0 0 #EEEEEE;
+  border-bottom: 1px solid #DDDDDD;
+  border-top: 1px solid #DDDDDD;
+}
+
+.styleRules > li {
+  border-bottom: 1px solid #eee;
+  border-top:1px solid #aaa;
+  clear:both;
+}
+
+.styleRule > li {
+  float: left;
+}
+
+.ruleFilters {
+  width: 470px;
+  font-size:12px;
+  border-left: 1px solid #DDDDDD;
+  border-right: 1px solid #DDDDDD;
+  min-height: 120px;
+}
+
+.ruleTitle {
+  padding:5px 5px 2px 10px;
+}
+
+.ruleTitle .ruleTarget { padding: 3px 5px 8px;}
+
+.ruleStyle {
+  padding: 2px 4px;
+}
+
+.styleRule .filters > li {
+  clear:both;
+  padding: 3px 5px;
+}
+
+.styleRule .filters .filter {
+  width:390px;
+}
+
+.styleRule .filters .filter > * {
+  margin: 0 1px;
+}
+
+.styleRule .filters .filter .filterType {
+  float:left;    
+  line-height: 25px;
+  width: 90px
+}
+
+.styleRule .filters .removeFilterWrap {
+  padding: 5px 0;
+}
+
+.styleRule .filters > li > ul > li {
+  float:left;
+  padding:2px 1px;
+}
 
 /**
  * CONSOLE

@@ -39,9 +39,7 @@ define(
       
       render : () ->
         @listElement.html('')
-        for item in @getItems()
-          li = $ "<li></li>"
-          li.append item
+        for li in @getItems()
           @listElement.append li
         return this
       
@@ -76,13 +74,25 @@ define(
         
       clickedAnywhere : =>
         $('body').unbind 'click', @clickedAnywhere
+        @hide()
+        
+      hide : () =>
         @el.hide()
         
       #
       # Helpers for generating dropdown items
       #
       
-      title : (title) -> "<h3>#{htmlEscape(title)}</h3>"
-      divider : () -> "<hr />"
+      title : (title) -> "<li><h3>#{htmlEscape(title)}</h3></li>"
+      divider : () -> "<li><hr /></li>"
+      actionable : (contents, clickhandler) -> 
+        el = $ "<li class='actionable'></li>"
+        el.click clickhandler
+        el.append contents
+        el
+      item : (contents) ->
+        el = $ "<li></li>"
+        el.append contents
+        el
         
 )

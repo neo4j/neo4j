@@ -1,6 +1,9 @@
-%td where property 
-  %input.propertyName(type="text")
-  %select.method
-  %input.compareValue(type="text" style="display:none")
-%td
-  %button.bad-button.removeFilter Remove
+%ul
+  %li.filter
+    .filterType where property 
+    %input.small.propertyName(type="text")
+    %select.method
+    %input.small.compareValue(type="text" style="display:none")
+  %li.removeFilterWrap
+    %button.bad-button.micro-button.removeFilter Remove
+.break

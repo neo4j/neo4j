@@ -46,17 +46,24 @@ define(
       _getFieldSets : () ->
         sets = 
           _default : new FieldSet  
+        hasDefaultFieldset = false
         for key, fieldDef of @fields
           if fieldDef instanceof FieldSet
             sets[key] = fieldDef
           else
+            hasDefaultFieldset = true
             sets._default.fields[key] = fieldDef
-            
+        
+        if not hasDefaultFieldset
+          delete sets._default
         return sets
         
     exports.FieldSet = class FieldSet 
     
       constructor : (@label="", @fields={}) ->
+        if not _(@label).isString()
+          @fields = @label
+          @label = null
       
       renderLi : (model) ->
         ul = $("<ul class='form-fieldset'></ul>")
@@ -65,7 +72,9 @@ define(
             valChanger = (newValue) =>
               model.set key, newValue
             ul.append field.renderLi(model.get(key), valChanger)
-        wrap = $("<li><h3>#{htmlEscape(@label)}</h3></li>")
+        wrap = $("<li></li>")
+        if @label
+          wrap.append "<h3>#{htmlEscape(@label)}</h3>"
         wrap.append ul
         wrap
         
