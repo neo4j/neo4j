@@ -48,10 +48,12 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.Broker;
@@ -74,6 +76,7 @@ import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
@@ -100,6 +103,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     private volatile long updateTime = 0;
     private volatile RuntimeException causeOfShutdown;
     private final long startupTime;
+    private volatile boolean doingNewMaster;
 
     private final List<KernelEventHandler> kernelEventHandlers =
             new CopyOnWriteArrayList<KernelEventHandler>();
@@ -242,8 +246,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             while ( System.currentTimeMillis() < endTime )
             {
                 // Check if the cluster is up
-                Pair<Master, Machine> master = broker.getMaster();
-                master = master.first() != null ? master : broker.getMasterReally();
+                Pair<Master, Machine> master = broker.getMasterReally();
                 if ( master != null && master.first() != null )
                 { // Join the existing cluster
                     try
@@ -504,7 +507,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 ((SlaveIdGeneratorFactory) getConfig().getIdGeneratorFactory()).forgetIdAllocationsFromMaster();
             }
 
-            tryToEnsureIAmNotABrokenMachine( broker.getMaster() );
+            tryToEnsureIAmNotABrokenMachine( master );
         }
         if ( restarted )
         {
@@ -572,35 +575,36 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         XaDataSource nioneoDataSource = getConfig().getTxModule()
                 .getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
         long myLastCommittedTx = nioneoDataSource.getLastCommittedTxId();
-        long highestCommonTxId = Math.min( myLastCommittedTx, master.other().getLastCommittedTxId() );
         int masterForMyHighestCommonTxId = -1;
         try
         {
-            masterForMyHighestCommonTxId = nioneoDataSource.getMasterForCommittedTx( highestCommonTxId );
+            masterForMyHighestCommonTxId = nioneoDataSource.getMasterForCommittedTx( myLastCommittedTx );
         }
         catch ( IOException e )
         {
             // This is quite dangerous to just catch here... but the special case is
             // where this db was just now copied from the master where there's data,
             // but no logical logs were transfered and hence no masterId info is here
-            msgLog.logMessage( "Couldn't get master ID for txId " + highestCommonTxId +
+            msgLog.logMessage( "Couldn't get master ID for txId " + myLastCommittedTx +
                     ". It may be that a log file is missing due to the db being copied from master?", e );
+//            throw new RuntimeException( e );
             return;
         }
 
-        int masterForMastersHighestCommonTxId = master.first().getMasterIdForCommittedTx( highestCommonTxId ).response();
+        int masterForMastersHighestCommonTxId = master.first().getMasterIdForCommittedTx( myLastCommittedTx ).response();
 
         // Compare those two, if equal -> good
-        if ( masterForMyHighestCommonTxId == masterForMastersHighestCommonTxId )
+        if ( masterForMyHighestCommonTxId == XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER // means that tx has been was recovered
+                || masterForMyHighestCommonTxId == masterForMastersHighestCommonTxId )
         {
             msgLog.logMessage( "Master id for last committed tx ok with highestCommonTxId=" +
-                    highestCommonTxId + " with masterId=" + masterForMyHighestCommonTxId, true );
+                    myLastCommittedTx + " with masterId=" + masterForMyHighestCommonTxId, true );
             return;
         }
         else
         {
             String msg = "Branched data, I (machineId:" + machineId + ") think machineId for txId (" +
-                    highestCommonTxId + ") is " + masterForMyHighestCommonTxId + ", but master (machineId:" +
+                    myLastCommittedTx + ") is " + masterForMyHighestCommonTxId + ", but master (machineId:" +
                     master.other().getMachineId() + ") says that it's " + masterForMastersHighestCommonTxId;
             msgLog.logMessage( msg, true );
             RuntimeException exception = new BranchedDataException( msg );
@@ -637,7 +641,20 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     @Override
     public Transaction beginTx()
     {
-        return localGraph().beginTx();
+        try
+        {
+            return localGraph().beginTx();
+        }
+        catch ( TransactionFailureException e )
+        {
+            if ( doingNewMaster )
+            {
+                throw e;
+            }
+            internalShutdown();
+            newMaster( null, e );
+            return localGraph().beginTx();
+        }
     }
 
     @Override
@@ -781,7 +798,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         }
         catch ( IOException e )
         {
-            newMaster( broker.getMaster(), e );
+            newMaster( null, e );
             throw new RuntimeException( e );
         }
     }
@@ -796,6 +813,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         try
         {
+            doingNewMaster = true;
             doNewMaster( master, storeId, e );
         }
         catch ( BranchedDataException bde )
@@ -803,6 +821,10 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             msgLog.logMessage( "Branched data occured, retrying" );
             getFreshDatabaseFromMaster( master );
             doNewMaster( master, storeId, bde );
+        }
+        finally
+        {
+            doingNewMaster = false;
         }
     }
 
@@ -828,11 +850,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             msgLog.logMessage( "Reevaluation ended in unknown exception " + t
                     + " so shutting down", t, true );
             shutdown( t instanceof RuntimeException ? (RuntimeException) t : new RuntimeException( t ), false );
-            if ( t instanceof RuntimeException )
-            {
-                throw (RuntimeException) t;
-            }
-            throw new RuntimeException( t );
+            throw Exceptions.launderedException( t );
         }
     }
 

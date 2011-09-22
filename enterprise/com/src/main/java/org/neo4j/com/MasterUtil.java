@@ -164,7 +164,7 @@ public class MasterUtil
                     throw new RuntimeException( "No data source '" + resourceName + "' found" );
                 }
                 resourceNames.add( resourceName );
-                long masterLastTx = dataSource.getLastCommittedTxId();
+                final long masterLastTx = dataSource.getLastCommittedTxId();
                 LogExtractor logExtractor;
                 try
                 {
@@ -176,7 +176,8 @@ public class MasterUtil
                 }
                 final LogExtractor finalLogExtractor = logExtractor;
                 logExtractors.add( finalLogExtractor );
-                for ( long txId = txEntry.other() + 1; txId <= masterLastTx; txId++ )
+                final long startTxId = txEntry.other() + 1;
+                for ( long txId = startTxId; txId <= masterLastTx; txId++ )
                 {
                     if ( filter.accept( txId ) )
                     {
@@ -197,8 +198,18 @@ public class MasterUtil
                                 try
                                 {
                                     long extractedTxId = finalLogExtractor.extractNext( buffer );
-                                    if ( extractedTxId == -1 ) throw new RuntimeException( "Txs not found" );
-                                    if ( extractedTxId != tx ) throw new RuntimeException( "Expected txId " + tx + ", but was " + extractedTxId );
+                                    if ( extractedTxId == -1 )
+                                    {
+                                        throw new RuntimeException( "Transaction " + tx +
+                                                " is missing and can't be extracted from " +
+                                                dataSource.getName() + ". Was about to extract " +
+                                                startTxId + " to " + masterLastTx );
+                                    }
+                                    if ( extractedTxId != tx )
+                                    {
+                                        throw new RuntimeException( "Expected txId " + tx +
+                                                ", but was " + extractedTxId );
+                                    }
                                 }
                                 catch ( IOException e )
                                 {

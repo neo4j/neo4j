@@ -430,7 +430,7 @@ public class MasterImpl implements Master
         // If no transactions have been applied during the time this store was copied
         // then pack the last transaction anyways so that the receiver gets at least
         // one transaction (the only way to get masterId for txId).
-        context = makeSureThereIsAtLeastOneKernelTx( context );
+//        context = makeSureThereIsAtLeastOneKernelTx( context );
 
         return packResponse( context, null );
     }
@@ -454,6 +454,7 @@ public class MasterImpl implements Master
             {
                 if ( startedCopyAtTxId == 1 ) return context;
                 if ( startedCopyAtTxId == dataSource.getLastCommittedTxId() ) startedCopyAtTxId--;
+//                startedCopyAtTxId = Math.max( 2, startedCopyAtTxId-100 );
             }
             txs.add( Pair.of( resourceName, startedCopyAtTxId ) );
         }
