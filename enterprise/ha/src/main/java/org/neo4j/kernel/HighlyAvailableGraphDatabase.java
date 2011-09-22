@@ -711,7 +711,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
     public synchronized void internalShutdown( boolean attemptWaitForTransactionsToFinish )
     {
-        msgLog.logMessage( "Internal shutdown of HA db[" + machineId + "] reference=" + this + ", masterServer=" + masterServer, true );
+        msgLog.logMessage( "Internal shutdown of HA db[" + machineId + "] reference=" + this + ", masterServer=" + masterServer, new Exception( "Internal shutdown" ), true );
         if ( this.updatePuller != null )
         {
             msgLog.logMessage( "Internal shutdown updatePuller", true );
