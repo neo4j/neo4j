@@ -22,18 +22,23 @@ package org.neo4j.cypher.pipes
 import org.junit.Test
 import org.scalatest.Assertions
 import org.neo4j.cypher.GraphDatabaseTestBase
-import org.neo4j.graphdb.Path
+import org.neo4j.graphdb.{Node, Path}
+
 class ShortestPathPipeTest extends GraphDatabaseTestBase with Assertions {
+  def runThroughPipeAndGetPath(a: Node, b: Node): Path = {
+    val source = new FakePipe(List(Map("a" -> a, "b" -> b)))
+
+    val pipe = new ShortestPathPipe(source, "p", "a", "b", true)
+    pipe.head("p").asInstanceOf[Path]
+  }
+
   @Test def shouldReturnTheShortestPathBetweenTwoNodes() {
     val a = createNode("a")
     val b = createNode("b")
 
     val r = relate(a, b, "rel")
 
-    val source = new FakePipe(List(Map("a" -> a, "b" -> b)))
-
-    val pipe = new ShortestPathPipe(source, "p", "a", "b")
-    val resultPath = pipe.head("p").asInstanceOf[Path]
+    val resultPath = runThroughPipeAndGetPath(a, b)
 
     val number_of_relationships_in_path = resultPath.length()
 
@@ -41,5 +46,13 @@ class ShortestPathPipeTest extends GraphDatabaseTestBase with Assertions {
     assert(resultPath.lastRelationship() === r)
     assert(resultPath.startNode() === a)
     assert(resultPath.endNode() === b)
+  }
+
+  @Test def shouldReturnNullWhenOptional() {
+    val a = createNode("a")
+    val b = createNode("b")
+    // The secret is in what's not there - there is no relationship between a and b
+
+    assert(runThroughPipeAndGetPath(a, b) === null)
   }
 }

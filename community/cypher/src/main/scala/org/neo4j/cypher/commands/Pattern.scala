@@ -39,3 +39,4 @@ case class RelatedTo(left: String, right: String, relName: String, relType: Opti
 
 case class VarLengthRelatedTo(pathName: String, start: String, end: String, minHops: Int, maxHops: Int, relType: Option[String], direction: Direction, optional: Boolean) extends Pattern
 
+case class ShortestPath(pathName:String, start: String, end: String, optional:Boolean) extends Pattern

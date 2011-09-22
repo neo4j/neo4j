@@ -20,28 +20,30 @@
 package org.neo4j.cypher.pipes
 
 import org.neo4j.graphdb.Node
-import graphalgo.GraphAlgoFactory
+import org.neo4j.graphalgo.GraphAlgoFactory
 import org.neo4j.kernel.Traversal
 import org.neo4j.cypher.SymbolTable
 import org.neo4j.cypher.commands.PathIdentifier
 
-class ShortestPathPipe(source:Pipe, pipeName:String, startName:String, endName:String) extends Pipe {
+class ShortestPathPipe(source: Pipe, pipeName: String, startName: String, endName: String, optional: Boolean) extends Pipe {
   def foreach[U](f: (Map[String, Any]) => U) {
-    source.foreach(m=>{
+    source.foreach(m => {
       val start = m(startName).asInstanceOf[Node]
       val end = m(endName).asInstanceOf[Node]
       val finder = GraphAlgoFactory.shortestPath(Traversal.expanderForAllTypes(), 15)
       val findSinglePath = finder.findSinglePath(start, end)
 
-      findSinglePath match {
-        case null =>
-        case path => f(m ++ Map(pipeName->path))
+      (findSinglePath, optional) match {
+        case (null, true) => f(m ++ Map(pipeName -> null))
+        case (null, false) =>
+        case (path, _) => f(m ++ Map(pipeName -> path))
       }
     })
   }
 
   val symbols: SymbolTable = source.symbols.add(PathIdentifier(pipeName))
 }
+
 // My daughters wrote this when I left the laptop open 2011-09-22. Now it belongs here.
 //      lola
 //      nina
