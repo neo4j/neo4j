@@ -103,7 +103,9 @@ public class PropertyWriterTest
         PropertyRecord propertyRecord = propertyStore.getRecord( 0 );
         propertyBlocks.addAll( propertyStore.getRecord( propertyRecordId ).getPropertyBlocks() );
         while (propertyRecord.getNextProp() != Record.NO_NEXT_PROPERTY.intValue()) {
+            long currentRecordId = propertyRecord.getId();
             propertyRecord = propertyStore.getRecord( propertyRecord.getNextProp() );
+            assertEquals( currentRecordId, propertyRecord.getPrevProp() );
             propertyBlocks.addAll( propertyStore.getRecord( propertyRecordId ).getPropertyBlocks() );
         }
 

@@ -49,11 +49,12 @@ public class PropertyWriter
             int newBlockSizeInBytes = block.getSize();
             if ( propertyRecord.getUsedPayloadBytes() + newBlockSizeInBytes > PropertyType.getPayloadSize() )
             {
-                System.out.println( "property = " + property );
+                long currentId = propertyRecord.getId();
                 long nextId = propertyStore.nextId();
                 propertyRecord.setNextProp( nextId );
                 propertyStore.updateRecord( propertyRecord );
                 propertyRecord = new PropertyRecord( nextId );
+                propertyRecord.setPrevProp( currentId );
             }
             propertyRecord.addPropertyBlock( block );
             propertyRecord.setInUse( true );
