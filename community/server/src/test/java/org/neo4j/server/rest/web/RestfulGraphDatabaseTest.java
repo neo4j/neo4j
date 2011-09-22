@@ -942,7 +942,7 @@ public class RestfulGraphDatabaseTest
         assertEquals( response.getMetadata()
                 .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
     }
-
+    
     @Test
     public void shouldBeAbleToIndexNode() throws DatabaseBlockedException, JsonParseException
     {

@@ -694,7 +694,7 @@ public class RestfulGraphDatabase
     }
 
     @POST
-    @Path( PATH_NODE_INDEX_GET )
+    @Path( PATH_NAMED_NODE_INDEX )
     @Consumes( MediaType.APPLICATION_JSON )
     public Response addToNodeIndex( @PathParam( "indexName" ) String indexName, String postBody )
     {
@@ -703,8 +703,7 @@ public class RestfulGraphDatabase
         {
             Map<String, Object> entityBody = input.readMap( postBody );
             return output.created( actions.addToNodeIndex( indexName, String.valueOf( entityBody.get( "key" ) ),
-                    String.valueOf( entityBody.get( "value" ) ), extractNodeId( entityBody.get( "uri" )
-                            .toString() ) ) );
+                    String.valueOf( entityBody.get( "value" ) ), extractNodeId( entityBody.get( "uri" ).toString() ) ) );
         }
         catch ( UnsupportedOperationException e )
         {
@@ -718,6 +717,7 @@ public class RestfulGraphDatabase
         {
             return output.serverError( e );
         }
+        
     }
 
     @POST
