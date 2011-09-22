@@ -25,6 +25,8 @@ import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
 import collection.Seq
 import java.lang.{Error, Iterable}
+import java.util.{Map => JavaMap}
+
 
 class ExecutionEngine(graph: GraphDatabaseService) {
   checkScalaVersion()
@@ -32,6 +34,10 @@ class ExecutionEngine(graph: GraphDatabaseService) {
   // This is here because the JavaAPI looks funny with default values
   @throws(classOf[SyntaxException])
   def execute(query: Query): ExecutionResult = execute(query, Map[String, Any]())
+
+  // This is here to support Java people
+  @throws(classOf[SyntaxException])
+  def execute(query: Query, map:JavaMap[String,Any]): ExecutionResult = execute(query, map.asScala.toMap)
 
   @throws(classOf[SyntaxException])
   def execute(query: Query, params: Map[String, Any]): ExecutionResult = query match {
