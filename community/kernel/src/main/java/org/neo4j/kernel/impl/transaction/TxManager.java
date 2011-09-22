@@ -293,17 +293,7 @@ public class TxManager extends AbstractTransactionManager
                 ", but failed for: " + failedTransactions.toString())) );
         
         long endTime = System.currentTimeMillis()+maxWaitTimeMillis;
-        while ( txThreadMap.size() > 0 && System.currentTimeMillis() < endTime )
-        {
-            try
-            {
-                System.out.println( "Waiting for all transactions to fail" );
-                Thread.sleep( 200 );
-            }
-            catch ( InterruptedException e )
-            {   // OK
-            }
-        }
+        while ( txThreadMap.size() > 0 && System.currentTimeMillis() < endTime ) Thread.yield();
     }
 
     private void recover( Iterator<List<TxLog.Record>> danglingRecordList )
