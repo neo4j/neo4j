@@ -27,7 +27,7 @@ public class PropertyBlock
 {
     private final List<DynamicRecord> valueRecords = new LinkedList<DynamicRecord>();
     private long[] valueBlocks;
-    private boolean inUse;
+    // private boolean inUse;
     private boolean isCreated;
 
     public PropertyType getType()
@@ -46,6 +46,7 @@ public class PropertyBlock
     {
         valueBlocks = new long[1];
         valueBlocks[0] = value;
+        valueRecords.clear();
     }
 
     public void addValueRecord( DynamicRecord record )
@@ -108,8 +109,10 @@ public class PropertyBlock
     {
         assert ( blocks == null || blocks.length <= PropertyType.getPayloadSizeLongs() ) : ( "i was given an array of size " + blocks.length );
         this.valueBlocks = blocks;
+        valueRecords.clear();
     }
 
+    /*
     public boolean inUse()
     {
         return inUse;
@@ -119,6 +122,7 @@ public class PropertyBlock
     {
         this.inUse = inUse;
     }
+    */
 
     public boolean isCreated()
     {
@@ -159,10 +163,13 @@ public class PropertyBlock
     public String toString()
     {
         StringBuffer result = new StringBuffer("PropertyBlock[");
-        result.append( inUse() ? "inUse, " : "notInUse, " );
+        // result.append( inUse() ? "inUse, " : "notInUse, " );
         result.append( valueBlocks == null ? -1 : getKeyIndexId() ).append(
                 ", " ).append( getType() );
-        result.append( ", " ).append( valueBlocks ).append( ", " );
+        result.append( ", " ).append(
+                valueBlocks == null ? "null" : "blocks[" + valueBlocks.length
+                                               + "]" ).append(
+                ", " );
         result.append( "ValueRecords[" );
         if ( !isLight() )
         {

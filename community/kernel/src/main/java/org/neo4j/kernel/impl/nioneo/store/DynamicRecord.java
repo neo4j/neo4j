@@ -108,7 +108,6 @@ public class DynamicRecord extends Abstract64BitRecord
                 inUse() );
         if ( inUse() )
         {
-            boolean written = false;
             buf.append( "," );
             if ( isLight )
             {
@@ -117,7 +116,6 @@ public class DynamicRecord extends Abstract64BitRecord
             if ( data != null )
             {
                 buf.append( "byte[" + data.length + "]" );
-                written = true;
             }
         }
         buf.append( "," ).append( nextBlock ).append( "]" );

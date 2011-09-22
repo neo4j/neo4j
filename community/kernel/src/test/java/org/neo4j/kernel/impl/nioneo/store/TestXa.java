@@ -837,7 +837,7 @@ public class TestXa extends AbstractNeo4jTestCase
         ds.close();
         deleteLogicalLogIfExist();
         renameCopiedLogicalLog( path() );
-        truncateLogicalLog( 183 );
+        truncateLogicalLog( 177 );
         ds = newNeoStore();
 //        ds = new NeoStoreXaDataSource( file( "neo" ), file( "nioneo_logical.log" ),
 //             lockManager, lockReleaser );

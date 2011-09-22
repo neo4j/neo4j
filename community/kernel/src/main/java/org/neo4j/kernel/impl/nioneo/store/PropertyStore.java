@@ -242,17 +242,82 @@ public class PropertyStore extends AbstractStore implements Store
         }
     }
 
+    private void updateInUseRecord( PropertyRecord record, Buffer buffer )
+    {
+        short prevModifier = record.getPrevProp() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0
+                : (short) ( ( record.getPrevProp() & 0xF00000000L ) >> 28 );
+        short nextModifier = record.getNextProp() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((record.getNextProp() & 0xF00000000L) >> 32);
+        byte modifiers = (byte) ( prevModifier | nextModifier );
+        /*
+         * [pppp,nnnn] previous, next high bits
+         */
+        buffer.put( modifiers );
+        buffer.putInt( (int) record.getPrevProp() ).putInt(
+                (int) record.getNextProp() );
+
+        if ( updateBlocks( record, buffer ) < PropertyType.getPayloadSizeLongs() )
+        {
+            buffer.putLong( 0 );
+        }
+    }
+
+    private int updateBlocks( PropertyRecord record, Buffer buffer )
+    {
+        int longsAppended = 0;
+        List<PropertyBlock> blocks = record.getPropertyBlocks();
+        for ( int i = 0; i < blocks.size(); i++ )
+        {
+            PropertyBlock block = blocks.get( i );
+            longsAppended += updateBlock( block, buffer );
+            updateDynamicRecords( block.getValueRecords() );
+        }
+        return longsAppended;
+    }
+
+    private int updateBlock(PropertyBlock block, Buffer buffer)
+    {
+        long[] propBlockValues = block.getValueBlocks();
+        switch ( propBlockValues.length )
+        {
+        case 4:
+            buffer.putLong( propBlockValues[0] );
+            buffer.putLong( propBlockValues[1] );
+            buffer.putLong( propBlockValues[2] );
+            buffer.putLong( propBlockValues[3] );
+            break;
+        case 3:
+            buffer.putLong( propBlockValues[0] );
+            buffer.putLong( propBlockValues[1] );
+            buffer.putLong( propBlockValues[2] );
+            break;
+        case 2:
+            buffer.putLong( propBlockValues[0] );
+            buffer.putLong( propBlockValues[1] );
+            break;
+        case 1:
+            buffer.putLong( propBlockValues[0] );
+            break;
+        }
+        return propBlockValues.length;
+    }
+
     private void updateRecord( PropertyRecord record, PersistenceWindow window )
     {
         long id = record.getId();
         Buffer buffer = window.getOffsettedBuffer( id );
-        Bits bits = Bits.bits( RECORD_SIZE );
         if ( record.inUse() )
         {
-            short prevModifier = record.getPrevProp() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((record.getPrevProp() & 0xF00000000L) >> 32);
-            short nextModifier = record.getNextProp() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((record.getNextProp() & 0xF00000000L) >> 32);
-            bits.put( prevModifier, 4 ).put( nextModifier, 4 );
-            bits.put( (int)record.getPrevProp() ).put( (int)record.getNextProp() );
+//            short prevModifier = record.getPrevProp() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0
+//                    : (short) ( ( record.getPrevProp() & 0xF00000000L ) >> 28 );
+//            short nextModifier = record.getNextProp() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((record.getNextProp() & 0xF00000000L) >> 32);
+//            byte modifiers = (byte) ( prevModifier | nextModifier );
+//            /*
+//             * [pppp,nnnn] previous, next high bits
+//             */
+//            buffer.put( modifiers );
+//            buffer.putInt( (int) record.getPrevProp() ).putInt(
+//                    (int) record.getNextProp() );
+            updateInUseRecord( record, buffer );
         }
         else
         {
@@ -260,38 +325,48 @@ public class PropertyStore extends AbstractStore implements Store
             {
                 freeId( id );
             }
+            buffer.setOffset( buffer.getOffset() + 9 );
+            buffer.putLong( 0 );
         }
-        for ( PropertyBlock block : record.getPropertyBlocks() )
+        // int longsAppended = PropertyType.getPayloadSizeLongs();
+        // for ( PropertyBlock block : record.getPropertyBlocks() )
+        // {
+        // for ( long propBlockValue : block.getValueBlocks() )
+        // {
+        // buffer.putLong( propBlockValue );
+        // longsAppended--;
+        // }
+        // if ( !block.isLight() )
+        // {
+        // updateDynamicRecords( block.getValueRecords() );
+        // }
+        // }
+        // if ( longsAppended > 0 )
+        // {
+        // buffer.putLong( 0 );
+        // }
+        updateDynamicRecords( record.getDeletedRecords() );
+    }
+
+    private void updateDynamicRecords( List<DynamicRecord> records )
+    {
+        for (int i = 0; i < records.size(); i++)
         {
-            if ( block.inUse() )
+            DynamicRecord valueRecord = records.get( i );
+            if ( valueRecord.getType() == PropertyType.STRING.intValue() )
             {
-                for ( long propBlockValue : block.getValueBlocks() )
-                {
-                    bits.put( propBlockValue );
-                }
+                stringPropertyStore.updateRecord( valueRecord );
             }
-            if ( !block.isLight() )
+            else if ( valueRecord.getType() == PropertyType.ARRAY.intValue() )
             {
-                for ( DynamicRecord valueRecord : block.getValueRecords() )
-                {
-                    if ( valueRecord.getType() == PropertyType.STRING.intValue() )
-                    {
-                        stringPropertyStore.updateRecord( valueRecord );
-                    }
-                    else if ( valueRecord.getType() == PropertyType.ARRAY.intValue() )
-                    {
-                        arrayPropertyStore.updateRecord( valueRecord );
-                    }
-                    else
-                    {
-                        throw new InvalidRecordException(
-                                "Unknown dynamic record" + valueRecord
-                                        + " from property record " + record );
-                    }
-                }
+                arrayPropertyStore.updateRecord( valueRecord );
+            }
+            else
+            {
+                throw new InvalidRecordException( "Unknown dynamic record"
+                                                  + valueRecord );
             }
         }
-        bits.apply( buffer );
     }
 
     public PropertyRecord getLightRecord( long id )
@@ -344,7 +419,7 @@ public class PropertyStore extends AbstractStore implements Store
         }
         for ( PropertyBlock block : record.getPropertyBlocks() )
         {
-            assert block.inUse();
+            // assert block.inUse();
             if ( block.getType() == PropertyType.STRING )
             {
                 Collection<DynamicRecord> stringRecords = stringPropertyStore.getLightRecords( block.getSingleValueLong() );
@@ -369,21 +444,24 @@ public class PropertyStore extends AbstractStore implements Store
 
     private PropertyRecord getRecordFromBuffer( long id, Buffer buffer )
     {
-        Bits bits = Bits.bits( RECORD_SIZE );
-        bits.read( buffer );
+        int offsetAtBeggining = buffer.getOffset();
         PropertyRecord record = new PropertyRecord( id );
 
-        long prevMod = (long) bits.getByte( 4 ) << 32;
-        long nextMod = (long) bits.getByte( 4 ) << 32;
-        long prevProp = bits.getUnsignedInt();
-        long nextProp = bits.getUnsignedInt();
+        /*
+         * [pppp,nnnn] previous, next high bits
+         */
+        byte modifiers = buffer.get();
+        long prevMod = ( ( modifiers & 0xF0L ) << 28 );
+        long nextMod = ( ( modifiers & 0x0FL ) << 32 );
+        long prevProp = buffer.getUnsignedInt();
+        long nextProp = buffer.getUnsignedInt();
         record.setPrevProp( longFromIntAndMod( prevProp, prevMod ) );
         record.setNextProp( longFromIntAndMod( nextProp, nextMod ) );
 
-        while ( bits.available() )
+        while ( buffer.getOffset() - offsetAtBeggining < RECORD_SIZE )
         {
-            PropertyBlock newBlock = getPropertyBlock( bits );
-            if ( newBlock.inUse() )
+            PropertyBlock newBlock = getPropertyBlock( buffer );
+            if ( newBlock != null )
             {
                 record.addPropertyBlock( newBlock );
                 record.setInUse( true );
@@ -414,24 +492,23 @@ public class PropertyStore extends AbstractStore implements Store
      * result is returned, that has inUse() return false. Also, the argument is not
      * touched.
      */
-    private static PropertyBlock getPropertyBlock( Bits fromBits )
+    private static PropertyBlock getPropertyBlock( Buffer buffer )
     {
-        PropertyBlock toReturn = new PropertyBlock();
 
-        long header = fromBits.getLong();
+        long header = buffer.getLong();
         PropertyType type = PropertyType.getPropertyType( header, true );
         if ( type == null )
         {
-            toReturn.setInUse( false );
-            return toReturn;
+            return null;
         }
-        toReturn.setInUse( true );
+        PropertyBlock toReturn = new PropertyBlock();
+        // toReturn.setInUse( true );
         int numBlocks = type.calculateNumberOfBlocksUsed( header );
         long[] blockData = new long[numBlocks];
         blockData[0] = header; // we already have that
         for ( int i = 1; i < numBlocks; i++ )
         {
-            blockData[i] = fromBits.getLong();
+            blockData[i] = buffer.getLong();
         }
         toReturn.setValueBlocks( blockData );
         return toReturn;
