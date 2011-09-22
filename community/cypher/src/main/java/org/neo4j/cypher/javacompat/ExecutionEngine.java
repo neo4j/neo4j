@@ -56,6 +56,7 @@ public class ExecutionEngine
     /**
      * Executes a {@link Query} and returns an iterable that contains the result set
      * @param query The query to execute
+     * @param params Parameters for the query
      * @return A ExecutionResult that contains the result set
      * @throws org.neo4j.cypher.SyntaxException If the Query contains errors,
      * a SyntaxException exception might be thrown
