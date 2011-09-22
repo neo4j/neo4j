@@ -362,7 +362,7 @@ public enum ShortArray
             return false;
         }
         Bits result = Bits.bits( calculateNumberOfBlocksUsed( arrayLength, requiredBits )*8 );
-        if ( result.getLongs().length > 4 )
+        if ( result.getLongs().length > PropertyType.getPayloadSizeLongs() )
         {
             return false;
         }
