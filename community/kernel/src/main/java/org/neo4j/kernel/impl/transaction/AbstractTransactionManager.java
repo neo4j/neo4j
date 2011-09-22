@@ -49,4 +49,13 @@ public abstract class AbstractTransactionManager implements TransactionManager
      * cleanup.
      */
     public abstract void stop();
+    
+    /**
+     * Prevents new transactions from being created by throwing exception in
+     * beginTx and waits for all existing transactions to complete. When this method
+     * returns there are no transactions active and no new transactions can be started.
+     */
+    public void attemptWaitForTxCompletionAndBlockFutureTransactions( long maxWaitTimeMillis )
+    {
+    }
 }

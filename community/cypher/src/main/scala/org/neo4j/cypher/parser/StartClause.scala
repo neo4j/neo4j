@@ -37,9 +37,8 @@ trait StartClause extends JavaTokenParsers with Tokens {
     case varName ~ "=" ~ "(" ~ "{" ~ paramName ~ "}"  ~ ")" => NodeById(varName, ParameterValue(paramName))
   }
 
-
   def nodeByIds = identity ~ "=" ~ "(" ~ rep1sep(wholeNumber, ",") ~ ")" ^^ {
-    case varName ~ "=" ~ "(" ~ id ~ ")" => NodeById(varName, id.map(_.toLong).toSeq: _*)
+    case varName ~ "=" ~ "(" ~ id ~ ")" => NodeById(varName, Literal(id.map(_.toLong)))
   }
 
   def nodeByIndex = identity ~ "=" ~ "(" ~ identity ~ "," ~ param ~ "," ~ paramString ~ ")" ^^ {
@@ -47,7 +46,7 @@ trait StartClause extends JavaTokenParsers with Tokens {
   }
 
   def nodeByIndexQuery = identity ~ "=" ~ "(" ~ identity ~ "," ~ string ~ ")" ^^ {
-    case varName ~ "=" ~ "(" ~ index ~ "," ~ query ~ ")" => NodeByIndexQuery(varName, index, query)
+    case varName ~ "=" ~ "(" ~ index ~ "," ~ query ~ ")" => NodeByIndexQuery(varName, index, Literal(query))
   }
 
   def relsByIds = identity ~ "=" ~ "<" ~ rep1sep(wholeNumber, ",") ~ ">" ^^ {
