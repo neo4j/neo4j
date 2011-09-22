@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -492,6 +493,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     {
         final Collection<File> files = new ArrayList<File>();
         File neostoreFile = null;
+        Pattern logFilePattern = getXaContainer().getLogicalLog().getFileNamePattern();
         for ( File dbFile : new File( storeDir ).listFiles() )
         {
             String name = dbFile.getName();
@@ -505,7 +507,11 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                 }
                 else if ( (name.startsWith( "neostore" ) ||
                         name.equals( IndexStore.INDEX_DB_FILE_NAME )) && !name.endsWith( ".id" ) )
-                {
+                {   // Store files
+                    files.add( dbFile );
+                }
+                else if ( logFilePattern.matcher( dbFile.getName() ).matches() )
+                {   // Logs
                     files.add( dbFile );
                 }
             }

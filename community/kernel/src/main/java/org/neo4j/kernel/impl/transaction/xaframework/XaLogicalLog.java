@@ -821,9 +821,11 @@ public class XaLogicalLog
         } while ( fileChannel.position() < endPosition );
         fileChannel.position( lastEntryPos );
         scanIsComplete = true;
-        log.fine( "Internal recovery completed, scanned " + logEntriesFound
-            + " log entries. Recovered " + recoveredTxCount
-            + " transactions. Last tx recovered: " + lastRecoveredTx );
+        String recoveryCompletedMessage = "Internal recovery completed, scanned " + logEntriesFound
+                + " log entries. Recovered " + recoveredTxCount
+                + " transactions. Last tx recovered: " + lastRecoveredTx;
+        log.fine( recoveryCompletedMessage );
+        msgLog.logMessage( recoveryCompletedMessage );
 
         xaRm.checkXids();
         if ( xidIdentMap.size() == 0 )
@@ -1036,7 +1038,8 @@ public class XaLogicalLog
         }
 
         /**
-         * @return the txId for the extracted tx.
+         * @return the txId for the extracted tx. Or -1 if end-of-stream was reached.
+         * @throws RuntimeException if there was something unexpected with the stream.
          */
         public long extractNext( LogBuffer target ) throws IOException
         {
@@ -1057,10 +1060,12 @@ public class XaLogicalLog
                         counter++;
                         return result;
                     }
+                    
                     if ( this.version < logVersion )
                     {
                         continueInNextLog();
                     }
+                    else break;
                 }
                 return -1;
             }
@@ -1157,7 +1162,7 @@ public class XaLogicalLog
             {
                 return extractor.lastCommitEntry.getMasterId();
             }
-            throw new RuntimeException( "Unable to find commit entry in for txId[" + txId + "]" );// in log[" + version + "]" );
+            throw new RuntimeException( "Unable to find commit entry for txId[" + txId + "]" );// in log[" + version + "]" );
         }
         finally
         {
@@ -1758,7 +1763,7 @@ public class XaLogicalLog
         {
             if ( futureQueue.containsKey( nextExpectedTxId ) )
             {
-                List<LogEntry> list = futureQueue.remove( nextExpectedTxId );
+                List<LogEntry> list = futureQueue.remove( nextExpectedTxId++ );
                 writeToBuffer( list, target );
                 return commitEntryOf( list );
             }
