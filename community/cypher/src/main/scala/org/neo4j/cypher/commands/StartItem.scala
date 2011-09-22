@@ -30,7 +30,7 @@ case class RelationshipById(varName:String, id: Long*) extends RelationshipStart
 case class RelationshipByIndex(varName:String, idxName: String, key:String, value: Any) extends RelationshipStartItem(varName)
 
 case class NodeByIndex(varName:String, idxName: String, key:Value, value: Value) extends NodeStartItem(varName)
-case class NodeByIndexQuery(varName:String, idxName: String, query: Any) extends NodeStartItem(varName)
+case class NodeByIndexQuery(varName:String, idxName: String, query: Value) extends NodeStartItem(varName)
 case class NodeById(varName:String, value:Value) extends NodeStartItem(varName)
 
 object NodeById {

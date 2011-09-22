@@ -32,7 +32,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
   @Test def shouldGetReferenceNode() {
     val query = Query.
-      start(NodeById("node", 0)).
+      start(NodeById("node", Literal(0))).
       returns(ValueReturnItem(EntityValue("node")))
 
     val result = execute(query)
@@ -263,7 +263,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     indexNode(n, idxName, key, value)
 
     val query = Query.
-      start(NodeByIndexQuery("n", idxName, key + ":" + value)).
+      start(NodeByIndexQuery("n", idxName, Literal(key + ":" + value))).
       returns(ValueReturnItem(EntityValue("n")))
 
     val result = execute(query)
@@ -294,7 +294,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     indexNode(n, idxName, key, value)
 
     val query = Query.
-      start(NodeByIndexQuery("n", idxName, key + ":andr*")).
+      start(NodeByIndexQuery("n", idxName, Literal(key + ":andr*"))).
       returns(ValueReturnItem(EntityValue("n")))
 
     val result = execute(query)

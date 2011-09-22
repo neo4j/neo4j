@@ -127,7 +127,8 @@ class ExecutionEngine(graph: GraphDatabaseService) {
 
     case NodeByIndexQuery(varName, idxName, query) =>
       new StartPipe(lastPipe, varName, m => {
-        val indexHits: Iterable[Node] = graph.index.forNodes(idxName).query(query)
+        val queryText = query(m)
+        val indexHits: Iterable[Node] = graph.index.forNodes(idxName).query(queryText)
         indexHits.asScala
       })
 

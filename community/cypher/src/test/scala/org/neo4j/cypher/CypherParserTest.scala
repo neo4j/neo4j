@@ -46,7 +46,7 @@ class CypherParserTest extends JUnitSuite {
     testQuery(
       """start a = (index, "key:value") return a""",
       Query.
-        start(NodeByIndexQuery("a", "index", "key:value")).
+        start(NodeByIndexQuery("a", "index", Literal("key:value"))).
         returns(ValueReturnItem(EntityValue("a"))))
   }
 
