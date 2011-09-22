@@ -580,7 +580,7 @@ public class PropertyStore extends AbstractStore implements Store
         }
         else if ( value instanceof Integer ) setSingleBlockValue( block, keyId, PropertyType.INT, ((Integer)value).longValue() );
         else if ( value instanceof Boolean ) setSingleBlockValue( block, keyId, PropertyType.BOOL, (((Boolean)value).booleanValue()?1L:0L) );
-        else if ( value instanceof Float ) setSingleBlockValue( block, keyId, PropertyType.FLOAT, (long)Float.floatToRawIntBits( ((Float) value).floatValue() ) );
+        else if ( value instanceof Float ) setSingleBlockValue( block, keyId, PropertyType.FLOAT, Float.floatToRawIntBits( ((Float) value).floatValue() ) );
         else if ( value instanceof Long )
         {
             long keyAndType = keyId | (((long)PropertyType.LONG.intValue()) << 24);
@@ -595,7 +595,7 @@ public class PropertyStore extends AbstractStore implements Store
         }
         else if ( value instanceof Double ) block.setValueBlocks( new long[] { keyId | (((long)PropertyType.DOUBLE.intValue()) << 24), Double.doubleToRawLongBits( ((Double)value).doubleValue() ) } );
         else if ( value instanceof Byte ) setSingleBlockValue( block, keyId, PropertyType.BYTE, ((Byte)value).longValue() );
-        else if ( value instanceof Character ) setSingleBlockValue( block, keyId, PropertyType.CHAR, (long)((Character)value).charValue() );
+        else if ( value instanceof Character ) setSingleBlockValue( block, keyId, PropertyType.CHAR, ((Character)value).charValue() );
         else if ( value instanceof Short ) setSingleBlockValue( block, keyId, PropertyType.SHORT, ((Short)value).longValue() );
         else if ( value.getClass().isArray() )
         {
@@ -625,7 +625,8 @@ public class PropertyStore extends AbstractStore implements Store
 
     private void setSingleBlockValue( PropertyBlock block, int keyId, PropertyType type, long longValue )
     {
-        block.setSingleBlock( keyId | (((long)PropertyType.INT.intValue()) << 24) | (longValue << 28) );
+        block.setSingleBlock( keyId | ( ( (long) type.intValue() ) << 24 )
+                              | ( longValue << 28 ) );
     }
 
     public static byte[] getBestSuitedEncoding( String string )
