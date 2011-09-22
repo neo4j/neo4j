@@ -48,7 +48,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
@@ -642,20 +641,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     @Override
     public Transaction beginTx()
     {
-        try
-        {
-            return localGraph().beginTx();
-        }
-        catch ( TransactionFailureException e )
-        {
-            if ( doingNewMaster )
-            {
-                throw e;
-            }
-            internalShutdown( true );
-            newMaster( null, e );
-            return localGraph().beginTx();
-        }
+        return localGraph().beginTx();
     }
 
     @Override
