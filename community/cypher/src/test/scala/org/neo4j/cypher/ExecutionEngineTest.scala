@@ -756,6 +756,18 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     assertEquals(List(Map("pA" -> node("A"))), result.toList)
   }
 
+  @Test def shouldBeAbleToTakeParamsForEqualityComparisons() {
+    createNode(Map("name"->"Andres"))
+
+    val query = Query.
+      start(NodeById("a", 1)).
+      where(Equals(PropertyValue("a", "name"), ParameterValue("name")))
+    .returns(ValueReturnItem(EntityValue("a")))
+
+    assert(0 === execute(query, "name"->"Tobias" ).toList.size)
+    assert(1 === execute(query, "name"->"Andres" ).toList.size)
+  }
+
   @Test(expected = classOf[ParameterNotFoundException]) def shouldComplainWhenMissingParams() {
     val query = Query.
       start(NodeById("pA", ParameterValue("a"))).

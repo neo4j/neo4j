@@ -17,28 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rrd.sampler;
+package org.neo4j.helpers.collection;
 
-import org.neo4j.server.database.Database;
-import org.rrd4j.DsType;
+import java.util.Iterator;
 
-public class RequestAvgTimeSampleable extends StatisticSampleableBase
+public interface ClosableIterator<T> extends Iterator<T>
 {
-
-    public RequestAvgTimeSampleable( Database db )
-    {
-        super( db, DsType.ABSOLUTE );
-    }
-
-    @Override
-    public String getName()
-    {
-        return "request_avg_time";
-    }
-
-    @Override
-    public double getValue()
-    {
-        return getCurrentSnapshot().getDuration().getAvg();
-    }
+    void close();
 }

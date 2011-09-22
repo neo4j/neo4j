@@ -27,20 +27,23 @@ import org.neo4j.server.rrd.sampler.MemoryUsedSampleable;
 import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
 import org.neo4j.server.rrd.sampler.PropertyCountSampleable;
 import org.neo4j.server.rrd.sampler.RelationshipCountSampleable;
-import org.neo4j.server.rrd.sampler.RequestAvgTimeSampleable;
 import org.neo4j.server.rrd.sampler.RequestBytesSampleable;
 import org.neo4j.server.rrd.sampler.RequestCountSampleable;
 import org.neo4j.server.rrd.sampler.RequestMaxTimeSampleable;
+import org.neo4j.server.rrd.sampler.RequestMeanTimeSampleable;
+import org.neo4j.server.rrd.sampler.RequestMedianTimeSampleable;
 import org.neo4j.server.rrd.sampler.RequestMinTimeSampleable;
 import org.rrd4j.ConsolFun;
 import org.rrd4j.core.DsDef;
 import org.rrd4j.core.RrdDb;
 import org.rrd4j.core.RrdDef;
 import org.rrd4j.core.RrdToolkit;
+import org.rrd4j.core.Sample;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static java.lang.Double.NaN;
@@ -68,30 +71,56 @@ public class RrdFactory
         this.config = config;
     }
 
-    public RrdDb createRrdDbAndSampler( Database db, JobScheduler scheduler ) throws IOException
+    public RrdDb createRrdDbAndSampler( final Database db, JobScheduler scheduler ) throws IOException
     {
-        Sampleable[] sampleables = {
+        Sampleable[] primitives = {
                 new MemoryUsedSampleable(),
                 new NodeIdsInUseSampleable( db.graph ),
                 new PropertyCountSampleable( db.graph ),
-                new RelationshipCountSampleable( db.graph ),
+                new RelationshipCountSampleable( db.graph )
+        };
+
+        Sampleable[] usage = {
                 new RequestBytesSampleable( db ),
-                new RequestAvgTimeSampleable( db ),
+                new RequestMeanTimeSampleable( db ),
+                new RequestMedianTimeSampleable( db ),
                 new RequestMaxTimeSampleable( db ),
                 new RequestMinTimeSampleable( db ),
                 new RequestCountSampleable( db )
         };
 
-        String basePath = config.getString( RRDB_LOCATION_PROPERTY_KEY, getDefaultDirectory( db.graph ) );
-        RrdDb rrdb = createRrdb( basePath, sampleables );
+        final String basePath = config.getString( RRDB_LOCATION_PROPERTY_KEY,
+                getDefaultDirectory( db.graph ) );
+        final RrdDb rrdb = createRrdb( basePath, join( primitives, usage ) );
 
-        RrdJob job = new RrdJob(
-                new RequestSnapshotSampler( db ),
-                new RrdSamplerImpl( rrdb.createSample(), sampleables )
-        );
-        scheduler.scheduleAtFixedRate( job, RRD_THREAD_NAME,
-                SECONDS.toSeconds( 3 ) );
+        final Sample sample = rrdb.createSample();
+
+        scheduler.scheduleAtFixedRate(
+                new RrdJob( new RrdSamplerImpl( sample, primitives ) ),
+                RRD_THREAD_NAME + "[primitives]", SECONDS.toSeconds( 3 ) );
+
+        scheduler.scheduleAtFixedRate(
+                new RrdJob( new RrdSamplerImpl( sample, usage )
+                {
+                    @Override
+                    public void updateSample()
+                    {
+                        db.statisticCollector().createSnapshot();
+                        super.updateSample();
+                    }
+                } ),
+                RRD_THREAD_NAME + "[usage]", SECONDS.toSeconds( 60 ) );
         return rrdb;
+    }
+
+    private Sampleable[] join( Sampleable[]... sampleables )
+    {
+        ArrayList<Sampleable> result = new ArrayList<Sampleable>();
+        for ( Sampleable[] sampleable : sampleables )
+        {
+            Collections.addAll( result, sampleable );
+        }
+        return result.toArray( new Sampleable[result.size()] );
     }
 
     private String getDefaultDirectory( AbstractGraphDatabase db )
@@ -191,7 +220,7 @@ public class RrdFactory
     private static DsDef createDsDef( Sampleable sampleable )
     {
         return new DsDef( sampleable.getName(), sampleable.getType(),
-                STEP_SIZE, NaN, NaN );
+                120 * STEP_SIZE, NaN, NaN );
     }
 
     private void addArchives( RrdDef rrdDef )

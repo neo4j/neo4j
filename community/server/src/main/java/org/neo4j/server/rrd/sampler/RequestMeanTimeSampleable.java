@@ -17,27 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rrd;
+package org.neo4j.server.rrd.sampler;
 
 import org.neo4j.server.database.Database;
-import org.neo4j.server.statistic.StatisticCollector;
+import org.rrd4j.DsType;
 
-/**
- * @author tbaum
- * @since 08.09.11
- */
-public class RequestSnapshotSampler implements RrdSampler
+public class RequestMeanTimeSampleable extends StatisticSampleableBase
 {
-    private final StatisticCollector collector;
 
-    public RequestSnapshotSampler( Database db )
+    public RequestMeanTimeSampleable( Database db )
     {
-        collector = db.statisticCollector();
+        super( db, DsType.ABSOLUTE );
     }
 
     @Override
-    public void updateSample()
+    public String getName()
     {
-        collector.createSnapshot();
+        return "request_mean_time";
+    }
+
+    @Override
+    public double getValue()
+    {
+        return getCurrentSnapshot().getDuration().getAvg();
     }
 }

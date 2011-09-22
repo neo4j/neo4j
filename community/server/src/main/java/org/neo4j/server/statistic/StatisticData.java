@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.statistic;
 
-import org.codehaus.jackson.annotate.JsonIgnore;
-
 import java.io.Serializable;
 
 /**
@@ -31,28 +29,30 @@ import java.io.Serializable;
  */
 public class StatisticData implements Serializable
 {
+    private static final int MEDIAN_MAX = 3000;
+    private int[] requests = new int[MEDIAN_MAX];
+    private int count = 0;
+    private double sum = 0;
+    private double sumSq = 0;
+    private double min = 0;
+    private double max = 0;
 
-    private final long count;
-    private final double sum;
-    private final double sumSq;
-    private final double min;
-    private final double max;
-
-    public static StatisticData empty()
+    public StatisticData()
     {
-        return new StatisticData( 0, 0, 0, 0, 0 );
     }
 
-    private StatisticData( long count, double sum, double sumSq, double min, double max )
+    private StatisticData( int count, double sum, double sumSq, double min,
+                           double max, int[] requests )
     {
         this.count = count;
         this.sum = sum;
         this.sumSq = sumSq;
         this.min = min;
         this.max = max;
+        System.arraycopy( requests, 0, this.requests, 0, MEDIAN_MAX );
     }
 
-    @JsonIgnore
+
     public double getAvg()
     {
         double avg = 0;
@@ -63,7 +63,6 @@ public class StatisticData implements Serializable
         return avg;
     }
 
-    @JsonIgnore
     private double getVar()
     {
         double var = 0;
@@ -72,6 +71,21 @@ public class StatisticData implements Serializable
             var = Math.sqrt( ( sumSq - sum * sum / count ) / ( count - 1 ) );
         }
         return var;
+    }
+
+    public int getMedian()
+    {
+        int c = 0;
+        int medianPoint = count / 2;
+        for ( int i = 0; i < MEDIAN_MAX; i++ )
+        {
+            c += requests[i];
+            if ( c >= medianPoint )
+            {
+                return i;
+            }
+        }
+        return MEDIAN_MAX;
     }
 
     @Override
@@ -84,19 +98,30 @@ public class StatisticData implements Serializable
                 ", max=" + max +
                 ", avg=" + getAvg() +
                 ", var=" + getVar() +
+                ", median=" + getMedian() +
                 '}';
     }
 
 
-    public StatisticData addValue( double value )
+    public StatisticData copy()
     {
-        return new StatisticData(
-                count + 1,
-                sum + value,
-                sumSq + value * value,
-                count > 0 && min < value ? min : value,
-                count > 0 && max > value ? max : value
-        );
+        return new StatisticData( count, sum, sumSq, min, max, requests );
+    }
+
+    public void addValue( double value )
+    {
+        min = count > 0 && min < value ? min : value;
+        max = count > 0 && max > value ? max : value;
+
+        count += 1;
+        sum += value;
+        sumSq += value * value;
+
+        int v = value > requests.length ? requests.length :
+                value < 0 ? 0 :
+                        (int) value;
+
+        requests[v]++;
     }
 
     public double getMin()
