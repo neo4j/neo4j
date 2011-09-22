@@ -62,6 +62,6 @@ class IndexIdentifier
     @Override
     public String toString()
     {
-        return "Index[" + indexName + ", " + (entityTypeByte==LuceneCommand.NODE?"node":"relationship") + "]";
+        return "Index[" + indexName + "," + (entityTypeByte==LuceneCommand.NODE?"Node":"Relationship") + "]";
     }
 }
