@@ -65,9 +65,8 @@ except: # this isn't jython (and doesn't have the java module)
     import jpype, os
 
     # Classpath set by environment var
-    classpath = os.getenv('CLASSPATH',None)
+    classpath = os.getenv('NEO4J_PYTHON_CLASSPATH',None)
     if classpath is None:
-    
         # Classpath set by finding bundled jars
         jars = []
         from pkg_resources import resource_listdir, resource_filename
@@ -115,10 +114,10 @@ except: # this isn't jython (and doesn't have the java module)
       raise Exception("Unable to start JVM, even though I found the JVM path. If you are using windows, this may be due to missing system DLL files, please see the windows installation instructions in the neo4j documentation.",e)
     
     graphdb = jpype.JPackage('org.neo4j.graphdb')
+    GraphDatabaseService = graphdb.GraphDatabaseService
     Direction = graphdb.Direction
     PropertyContainer = graphdb.PropertyContainer
     Transaction = graphdb.Transaction
-    GraphDatabaseService = graphdb.GraphDatabaseService
     Node = graphdb.Node
     Relationship = graphdb.Relationship
     Evaluation = graphdb.traversal.Evaluation
@@ -144,7 +143,20 @@ except: # this isn't jython (and doesn't have the java module)
     IterableWrapper = helpers.collection.IterableWrapper
     PrefetchingIterator = helpers.collection.PrefetchingIterator
     
+    tinkerpop = jpype.JPackage('com.tinkerpop')
+    
+    Neo4jGraph = tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph
+    Neo4jEdge = tinkerpop.blueprints.pgm.impls.neo4j.Neo4jEdge
+    Neo4jVertex = tinkerpop.blueprints.pgm.impls.neo4j.Neo4jVertex
+    Gremlin = tinkerpop.gremlin.Gremlin
+        
     HashMap = jpype.JPackage('java.util').HashMap
+    
+    # If JPype cannot find a class, it returns
+    # package instances. Make sure we were able to load
+    # classes.
+    if isinstance(GraphDatabaseService, jpype.JPackage):
+        raise ImportError("Cannot find Neo4j java classes, used classpath: %s" % classpath)
     
     del graphdb, kernel, helpers # to get a consistent namespace
 
@@ -210,6 +222,8 @@ else:
     from org.neo4j.helpers.collection import IterableWrapper
     from java.util import HashMap
     
+    from com.tinkerpop.blueprints.pgm.impls.neo4j import Neo4jGraph, Neo4jEdge, Neo4jVertex
+    from com.tinkerpop.gremlin import Gremlin
     rel_type = DynamicRelationshipType.withName
 
     def from_java(value):

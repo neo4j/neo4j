@@ -3,3 +3,6 @@
 *.pyc
 *.class
 /ENV
+.classpath
+.project
+.settings/
