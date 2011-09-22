@@ -19,13 +19,9 @@
  */
 package org.neo4j.test.ha;
 
-import static java.util.Arrays.asList;
-
 import java.io.File;
 import java.io.PrintStream;
 import java.io.Serializable;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -35,6 +31,7 @@ import java.util.Map;
 import org.junit.Ignore;
 import org.neo4j.com.Client;
 import org.neo4j.com.Protocol;
+import org.neo4j.helpers.Format;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.FakeMasterBroker;
@@ -47,6 +44,8 @@ import org.neo4j.test.subprocess.SubProcess;
 import slavetest.AbstractHaTest;
 import slavetest.Job;
 import slavetest.PlaceHolderGraphDatabaseService;
+
+import static java.util.Arrays.asList;
 
 @Ignore
 public class StandaloneDatabase
@@ -221,7 +220,7 @@ public class StandaloneDatabase
     {
         private final long timestamp;
 
-		StartupFailureException( Throwable cause )
+        StartupFailureException( Throwable cause )
         {
             super( cause );
             timestamp = new Date().getTime();
@@ -229,15 +228,15 @@ public class StandaloneDatabase
 
         public IllegalStateException format()
         {
-			return new IllegalStateException( message() , getCause() );
-		}
+            return new IllegalStateException( message(), getCause() );
+        }
 
-		private String message()
-		{
-			return "database failed to start @ " + TimestampStream.format( new Date( timestamp ) );
-		}
+        private String message()
+        {
+            return "database failed to start @ " + Format.time( timestamp );
+        }
 
-		IllegalStateException format( LocalhostZooKeeperCluster zooKeeper )
+        IllegalStateException format( LocalhostZooKeeperCluster zooKeeper )
         {
             Throwable cause = getCause();
             String message = message();
@@ -425,7 +424,7 @@ public class StandaloneDatabase
 
         public int getMachineId() throws StartupFailureException
         {
-            return Integer.parseInt( db().getManagementBean( HighAvailability.class ).getMachineId() );
+            return Integer.parseInt( db().getSingleManagementBean( HighAvailability.class ).getMachineId() );
         }
 
         public void pullUpdates() throws StartupFailureException
@@ -438,20 +437,6 @@ public class StandaloneDatabase
 
     private static class TimestampStream extends PrintStream
     {
-        static ThreadLocal<DateFormat> timestamp = new ThreadLocal<DateFormat>()
-        {
-            @Override
-            protected DateFormat initialValue()
-            {
-                return new SimpleDateFormat( "[HH:mm:ss:SS] " );
-            }
-        };
-
-        static String format( Date date )
-        {
-            return timestamp.get().format( date );
-        }
-
         TimestampStream( PrintStream out )
         {
             super( out );
@@ -460,7 +445,7 @@ public class StandaloneDatabase
         @Override
         public void println( String string )
         {
-            super.println( format( new Date() ) + string );
+            super.println( "[" + Format.time( new Date() ) + "] " + string );
         }
     }
 }

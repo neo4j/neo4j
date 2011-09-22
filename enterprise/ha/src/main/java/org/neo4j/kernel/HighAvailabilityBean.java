@@ -19,11 +19,8 @@
  */
 package org.neo4j.kernel;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +29,7 @@ import javax.management.NotCompliantMBeanException;
 import javax.management.remote.JMXServiceURL;
 
 import org.neo4j.com.SlaveContext;
+import org.neo4j.helpers.Format;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Service;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
@@ -47,8 +45,6 @@ import org.neo4j.management.SlaveInfo.SlaveTransaction;
 @Service.Implementation( ManagementBeanProvider.class )
 public final class HighAvailabilityBean extends ManagementBeanProvider
 {
-    private static final DateFormat ISO8601 = new SimpleDateFormat( "yyyy-MM-dd'T'HH:mm:ssz" );
-
     public HighAvailabilityBean()
     {
         super( HighAvailability.class );
@@ -129,7 +125,7 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
 
         public String getLastUpdateTime()
         {
-            return ISO8601.format( new Date( db.lastUpdateTime() ) );
+            return Format.date( db.lastUpdateTime() );
         }
 
         public String update()

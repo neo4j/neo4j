@@ -19,14 +19,10 @@
  */
 package org.neo4j.test.ha;
 
-import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -38,10 +34,13 @@ import org.apache.zookeeper.server.quorum.QuorumMXBean;
 import org.apache.zookeeper.server.quorum.QuorumPeerMain;
 import org.jboss.netty.handler.timeout.TimeoutException;
 import org.junit.Ignore;
+import org.neo4j.helpers.Format;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.ha.zookeeper.ClusterManager;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.subprocess.SubProcess;
+
+import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 
 @Ignore
 public final class LocalhostZooKeeperCluster
@@ -305,13 +304,8 @@ public final class LocalhostZooKeeperCluster
             long time = System.currentTimeMillis();
             String name = quorumBean.getName();
             int size = quorumBean.getQuorumSize();
-            return String.format( "name=%s, size=%s, time=%s (+%sms)", name, size, format( time ),
+            return String.format( "name=%s, size=%s, time=%s (+%sms)", name, size, Format.time( time ),
                     System.currentTimeMillis() - time );
-        }
-
-        private String format( long time )
-        {
-            return new SimpleDateFormat( "[HH:mm:ss:SS] " ).format( new Date( time ) );
         }
     }
 }
