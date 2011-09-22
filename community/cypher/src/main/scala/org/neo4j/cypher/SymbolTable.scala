@@ -40,7 +40,8 @@ class SymbolTable(val identifiers: Set[Identifier]) {
     }
   }
 
-  def add(idents: Seq[Identifier]) = this ++ new SymbolTable(idents)
+  def add(idents: Seq[Identifier]): SymbolTable = this ++ new SymbolTable(idents)
+  def add(ident:Identifier): SymbolTable = add(Seq(ident))
 
   def get(name: String): Option[Identifier] = identifiers.find(_.name == name)
 
