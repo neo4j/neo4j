@@ -65,7 +65,7 @@ except: # this isn't jython (and doesn't have the java module)
     import jpype, os
 
     # Classpath set by environment var
-    classpath = os.getenv('NEO4J_PYTHON_CLASSPATH',None)
+    classpath = os.getenv('CLASSPATH',None)
     if classpath is None:
         # Classpath set by finding bundled jars
         jars = []
@@ -74,7 +74,8 @@ except: # this isn't jython (and doesn't have the java module)
             if name.endswith('.jar'):
                 jars.append(resource_filename(__name__, "javalib/%s" % name))
         if len(jars) > 0:
-            classpath = ':'.join(jars)
+            divider = ';' if sys.platform == "win32" else ':'
+            classpath = divider.join(jars)
         else:
             # Last resort
             classpath = '.'
@@ -87,11 +88,9 @@ except: # this isn't jython (and doesn't have the java module)
     
     def getJVMPath():
         jvm = jpype.getDefaultJVMPath()
-        if jvm is None or not os.path.exists(jvm):
+        if sys.platform == "win32" and (jvm is None or not os.path.exists(jvm)):
             # JPype does not always find java correctly
             # on windows, try using JAVA_HOME to detect it.
-            
-            # TODO: Expand this code to work properly on non win
 	          rootJre = os.getenv("JAVA_HOME", "c:/Program Files/Java/jre6")
 	          if os.path.exists(rootJre+"/bin/javac.exe") :
 		            # this is a JDK home

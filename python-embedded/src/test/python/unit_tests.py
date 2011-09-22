@@ -49,9 +49,9 @@ if ! $PYTHON -c "import neo4j" &> /dev/null; then
     fi
     export JYTHONPATH
     
-    NEO4J_PYTHON_CLASSPATH=$($SRC/bin/classpath)
+    CLASSPATH=$($SRC/bin/classpath)
     if [ $? -ne 0 ]; then exit -1; fi
-    export NEO4J_PYTHON_CLASSPATH
+    export CLASSPATH
 fi
 
 $PYTHON $0 "$@"
@@ -80,7 +80,7 @@ if __name__ == '__main__':
         try:
             import java
         except:
-            os.environ['NEO4J_PYTHON_CLASSPATH'] = params['--classpath']
+            os.environ['CLASSPATH'] = params['--classpath']
         else:
             sys.path.extend(params['--classpath'].split(':'))
     if params['--junit']:

@@ -43,6 +43,11 @@ setup(
         'neo4j',
         'neo4j.javalib',
     ),
+    
+    install_requires=(
+      'setuptools',
+    ),
+    
     package_data = {
         # Include our java dependencies
         '': ['*.jar'],

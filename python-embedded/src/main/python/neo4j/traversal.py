@@ -77,7 +77,7 @@ class TraversalDescriptionImpl(extends(TraversalDescriptionImpl)):
         if hasattr(ev, '__call__'):
             ev = DynamicEvaluator(ev)
         return self._super__evaluator(ev)
-           
+        
 class TraverserImpl(extends(TraverserImpl)):
     
     def __iter__(self):
