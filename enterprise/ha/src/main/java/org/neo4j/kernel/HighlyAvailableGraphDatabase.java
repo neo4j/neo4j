@@ -74,6 +74,7 @@ import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
@@ -157,7 +158,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 if ( error == ErrorState.TX_MANAGER_NOT_OK )
                 {
                     msgLog.logMessage( "TxManager not ok, doing internal restart" );
-                    internalShutdown();
+                    internalShutdown( true );
                     newMaster( null, new Exception( "Tx manager not ok" ) );
                 }
             }
@@ -181,7 +182,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         master = master != null ? master : broker.getMasterReally();
         // Assume it's shut down at this point
 
-        internalShutdown();
+        internalShutdown( false );
         moveAwayCurrentDatabase();
 
         Exception exception = null;
@@ -485,7 +486,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         {   // I am the new master
             if ( this.localGraph == null || !iAmCurrentlyMaster )
             {   // I am currently a slave, so restart as master
-                internalShutdown();
+                internalShutdown( true );
                 startAsMaster( storeId );
                 restarted = true;
             }
@@ -498,7 +499,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             if ( this.localGraph == null || iAmCurrentlyMaster )
             {   // I am currently master, so restart as slave.
                 // This will result in clearing of free ids from .id files, see SlaveIdGenerator.
-                internalShutdown();
+                internalShutdown( false );
                 startAsSlave( storeId );
                 restarted = true;
             }
@@ -651,7 +652,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             {
                 throw e;
             }
-            internalShutdown();
+            internalShutdown( true );
             newMaster( null, e );
             return localGraph().beginTx();
         }
@@ -708,7 +709,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         return localGraph().registerTransactionEventHandler( handler );
     }
 
-    public synchronized void internalShutdown()
+    public synchronized void internalShutdown( boolean attemptWaitForTransactionsToFinish )
     {
         msgLog.logMessage( "Internal shutdown of HA db[" + machineId + "] reference=" + this + ", masterServer=" + masterServer, true );
         if ( this.updatePuller != null )
@@ -727,6 +728,10 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         }
         if ( this.localGraph != null )
         {
+            if ( attemptWaitForTransactionsToFinish )
+            {
+                ((AbstractTransactionManager)getConfig().getTxModule().getTxManager()).attemptWaitForTxCompletionAndBlockFutureTransactions( 7000 );
+            }
             msgLog.logMessage( "Internal shutdown localGraph", true );
             this.localGraph.shutdown();
             msgLog.logMessage( "Internal shutdown localGraph DONE", true );
@@ -749,7 +754,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         {
             this.broker.shutdown();
         }
-        internalShutdown();
+        internalShutdown( true );
     }
 
     @Override
