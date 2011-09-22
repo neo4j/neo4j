@@ -23,31 +23,24 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.neo4j.helpers.Format;
 
 public class StringLogger
 {
     public static final String DEFAULT_NAME = "messages.log";
-    public static final StringLogger SYSTEM = 
+    public static final StringLogger SYSTEM =
         new StringLogger( new PrintWriter( System.out ) );
     private static final int DEFAULT_THRESHOLD_FOR_ROTATION_MB = 100;
     private static final int NUMBER_OF_OLD_LOGS_TO_KEEP = 2;
-    
+
     private PrintWriter out;
     private final Integer rotationThreshold;
     private final File file;
-    private static final ThreadLocal<DateFormat> DATE_FORMAT = new ThreadLocal<DateFormat>()
-    {
-        protected DateFormat initialValue()
-        {
-            return new SimpleDateFormat( "yyyy:MM:dd HH:mm:ss:SS" );
-        }
-    };
 
+    @SuppressWarnings( "boxing" )
     private StringLogger( String filename, int rotationThresholdMb )
     {
         this.rotationThreshold = rotationThresholdMb*1024*1024;
@@ -70,29 +63,29 @@ public class StringLogger
     {
         out = new PrintWriter( new FileWriter( file, true ) );
     }
-    
+
     private StringLogger( PrintWriter writer )
     {
         this.out = writer;
         this.rotationThreshold = null;
         this.file = null;
     }
-    
-    private static final Map<String,StringLogger> loggers = 
+
+    private static final Map<String,StringLogger> loggers =
         new HashMap<String, StringLogger>();
-    
+
     public static StringLogger getLogger( String storeDir )
     {
         return getLogger( storeDir, DEFAULT_THRESHOLD_FOR_ROTATION_MB );
     }
-    
+
     public static StringLogger getLogger( String storeDir, int rotationThresholdMb )
     {
         if ( storeDir == null )
         {
             return SYSTEM;
         }
-        
+
         String filename = defaultFileName( storeDir );
         StringLogger logger = loggers.get( filename );
         if ( logger == null )
@@ -102,22 +95,22 @@ public class StringLogger
         }
         return logger;
     }
-    
+
     private static String defaultFileName( String storeDir )
     {
         return new File( storeDir, DEFAULT_NAME ).getAbsolutePath();
     }
-    
+
     public void logMessage( String msg )
     {
         logMessage( msg, false );
-    } 
+    }
 
     public void logMessage( String msg, Throwable cause )
     {
         logMessage( msg, cause, false );
     }
-    
+
     public synchronized void logMessage( String msg, boolean flush )
     {
         ensureOpen();
@@ -127,11 +120,11 @@ public class StringLogger
             out.flush();
         }
         checkRotation();
-    } 
+    }
 
     private String time()
     {
-        return DATE_FORMAT.get().format( new Date() );
+        return Format.date();
     }
 
     public synchronized void logMessage( String msg, Throwable cause, boolean flush )
@@ -145,7 +138,7 @@ public class StringLogger
         }
         checkRotation();
     }
-    
+
     private void ensureOpen()
     {
         /*
@@ -169,7 +162,7 @@ public class StringLogger
             }
         }
     }
-    
+
     private void checkRotation()
     {
         if ( rotationThreshold != null && file.length() > rotationThreshold.intValue() )
@@ -177,7 +170,7 @@ public class StringLogger
             doRotation();
         }
     }
-    
+
     private void doRotation()
     {
         out.close();
@@ -196,7 +189,7 @@ public class StringLogger
      * Will move:
      * messages.log.1 -> messages.log.2
      * messages.log   -> messages.log.1
-     * 
+     *
      * Will delete (if exists):
      * messages.log.2
      */
@@ -207,7 +200,7 @@ public class StringLogger
         {
             oldLogFile.delete();
         }
-        
+
         for ( int i = NUMBER_OF_OLD_LOGS_TO_KEEP-1; i >= 0; i-- )
         {
             oldLogFile = new File( file.getParentFile(), file.getName() + (i == 0 ? "" : ("." + i)) );
@@ -222,7 +215,7 @@ public class StringLogger
     {
         out.flush();
     }
-    
+
     public synchronized static void close( String storeDir )
     {
         StringLogger logger = loggers.remove( defaultFileName( storeDir ) );
