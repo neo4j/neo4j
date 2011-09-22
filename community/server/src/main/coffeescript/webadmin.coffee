@@ -29,21 +29,11 @@ require(
    "neo4j/webadmin/modules/splash/SplashScreen"
    "neo4j/webadmin/modules/loading/GlobalLoadingIndicator"
    "neo4j/webadmin/modules/connectionmonitor/ConnectionMonitor"
-   "neo4j/webadmin/ApplicationState"
-   "ribcage/security/HtmlEscaper"
+   "neo4j/webadmin/Bootstrapper"
    "lib/jquery"
    "lib/neo4js"
    "lib/backbone"]
-  (DashboardRouter, DataBrowserRouter, ConsoleRouter, ServerInfoRouter, IndexManagerRouter, BaseUI, MoreInfo, SplashScreen, GlobalLoadingIndicator, ConnectionMonitor, ApplicationState, HtmlEscaper) ->
-
-    # Global html escaper, used by the pre-compiled templates.
-    htmlEscaper = new HtmlEscaper()
-    window.htmlEscape = htmlEscaper.escape
-
-    # WEBADMIN BOOT
-
-    appState = new ApplicationState
-    appState.set server : new neo4j.GraphDatabase(location.protocol + "//" + location.host)
+  (DashboardRouter, DataBrowserRouter, ConsoleRouter, ServerInfoRouter, IndexManagerRouter, BaseUI, MoreInfo, SplashScreen, GlobalLoadingIndicator, ConnectionMonitor, Bootstrapper) ->
 
     modules = [
         new BaseUI
@@ -58,9 +48,8 @@ require(
         new GlobalLoadingIndicator
         new MoreInfo
     ]
-
-    jQuery () ->
-      m.init(appState) for m in modules
-      Backbone.history.start()
+    
+    boot = new Bootstrapper
+    boot.bootstrap modules
 
 )

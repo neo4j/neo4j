@@ -22,8 +22,6 @@ package org.neo4j.cypher.docgen
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.graphdb.Node
-import org.neo4j.cypher.PathImpl
-
 class MatchTest extends DocumentingTestBase {
   override def indexProps: List[String] = List("name")
 
@@ -77,6 +75,16 @@ class MatchTest extends DocumentingTestBase {
       title = "Match by relationship type and use an identifier",
       text = "If you both want to introduce an identifier to hold the relationship, and specify the relationship type you want, " +
         "just add them both, like this.",
+      queryText = """start n=(%A%) match (n)-[r:BLOCKS]->() return r""",
+      returns = """All +BLOCKS+ relationship going out from A.""",
+      (p) => assertEquals(1, p.size)
+    )
+  }
+
+  @Test def relationshipsByTypeWithSpace() {
+    testQuery(
+      title = "Relationship types with uncommon characters",
+      text = "Sometime your database will have types with non-letter characters, or with spaces in them. Use ` to escape these.",
       queryText = """start n=(%A%) match (n)-[r:BLOCKS]->() return r""",
       returns = """All +BLOCKS+ relationship going out from A.""",
       (p) => assertEquals(1, p.size)

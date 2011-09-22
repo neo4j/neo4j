@@ -17,20 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.event;
+package org.neo4j.server.rrd.sampler;
 
-/**
- * An object that describes a state from which a Neo4j Graph Database cannot
- * continue.
- *
- * @author Tobias Ivarsson
- */
-public enum ErrorState
+import org.neo4j.server.database.Database;
+import org.rrd4j.DsType;
+
+public class RequestMedianTimeSampleable extends StatisticSampleableBase
 {
-    /**
-     * The Graph Database failed since the storage media where the graph
-     * database data is stored is full and cannot be written to.
-     */
-    STORAGE_MEDIA_FULL,
-    TX_MANAGER_NOT_OK,
+
+    public RequestMedianTimeSampleable( Database db )
+    {
+        super( db, DsType.ABSOLUTE );
+    }
+
+    @Override
+    public String getName()
+    {
+        return "request_median_time";
+    }
+
+    @Override
+    public double getValue()
+    {
+        return getCurrentSnapshot().getDuration().getMedian();
+    }
 }

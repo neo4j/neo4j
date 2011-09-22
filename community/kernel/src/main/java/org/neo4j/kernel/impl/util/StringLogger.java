@@ -23,6 +23,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,7 +40,14 @@ public class StringLogger
     private PrintWriter out;
     private final Integer rotationThreshold;
     private final File file;
-    
+    private static final ThreadLocal<DateFormat> DATE_FORMAT = new ThreadLocal<DateFormat>()
+    {
+        protected DateFormat initialValue()
+        {
+            return new SimpleDateFormat( "yyyy:MM:dd HH:mm:ss:SS" );
+        }
+    };
+
     private StringLogger( String filename, int rotationThresholdMb )
     {
         this.rotationThreshold = rotationThresholdMb*1024*1024;
@@ -112,7 +121,7 @@ public class StringLogger
     public synchronized void logMessage( String msg, boolean flush )
     {
         ensureOpen();
-        out.println( new Date() + ": " + msg );
+        out.println( time() + ": " + msg );
         if ( flush )
         {
             out.flush();
@@ -120,10 +129,15 @@ public class StringLogger
         checkRotation();
     } 
 
+    private String time()
+    {
+        return DATE_FORMAT.get().format( new Date() );
+    }
+
     public synchronized void logMessage( String msg, Throwable cause, boolean flush )
     {
         ensureOpen();
-        out.println( new Date() + ": " + msg + " " + cause.getMessage() );
+        out.println( time() + ": " + msg + " " + cause.getMessage() );
         cause.printStackTrace( out );
         if ( flush )
         {
