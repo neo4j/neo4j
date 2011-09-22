@@ -82,6 +82,7 @@ public class TxManager extends AbstractTransactionManager
     private TxLog txLog = null;
     private XaDataSourceManager xaDsManager = null;
     private boolean tmOk = false;
+    private boolean blocked = false;
 
     private final KernelPanicEventGenerator kpe;
 
@@ -258,6 +259,51 @@ public class TxManager extends AbstractTransactionManager
         tmOk = false;
         msgLog.logMessage( "setting TM not OK", new Throwable() );
         kpe.generateEvent( ErrorState.TX_MANAGER_NOT_OK );
+    }
+    
+    @Override
+    public void attemptWaitForTxCompletionAndBlockFutureTransactions( long maxWaitTimeMillis )
+    {
+        msgLog.logMessage( "TxManager is blocking new transactions and waiting for active to fail..." );
+        blocked = true;
+        List<Transaction> failedTransactions = new ArrayList<Transaction>();
+        synchronized ( txThreadMap )
+        {
+            for ( Transaction tx : txThreadMap.values() )
+            {
+                try
+                {
+                    int status = tx.getStatus();
+                    if ( status != Status.STATUS_COMMITTING && status != Status.STATUS_ROLLING_BACK )
+                    {   // Set it to rollback only if it's not committing or rolling back
+                        tx.setRollbackOnly();
+                    }
+                }
+                catch ( IllegalStateException e )
+                {   // OK
+                    failedTransactions.add( tx );
+                }
+                catch ( SystemException e )
+                {   // OK
+                    failedTransactions.add( tx );
+                }
+            }
+        }
+        msgLog.logMessage( "TxManager blocked transactions" + ((failedTransactions.isEmpty() ? "" :
+                ", but failed for: " + failedTransactions.toString())) );
+        
+        long endTime = System.currentTimeMillis()+maxWaitTimeMillis;
+        while ( txThreadMap.size() > 0 && System.currentTimeMillis() < endTime )
+        {
+            try
+            {
+                System.out.println( "Waiting for all transactions to fail" );
+                Thread.sleep( 200 );
+            }
+            catch ( InterruptedException e )
+            {   // OK
+            }
+        }
     }
 
     private void recover( Iterator<List<TxLog.Record>> danglingRecordList )
@@ -569,6 +615,12 @@ public class TxManager extends AbstractTransactionManager
 
     public void begin() throws NotSupportedException, SystemException
     {
+        if ( blocked )
+        {
+            throw new SystemException( "TxManager is preventing new transactions from starting " +
+            		"due a shutdown is imminent" );
+        }
+        
         assertTmOk( "tx begin" );
         Thread thread = Thread.currentThread();
         TransactionImpl tx = txThreadMap.get( thread );

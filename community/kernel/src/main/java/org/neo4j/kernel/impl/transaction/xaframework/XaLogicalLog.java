@@ -1457,6 +1457,7 @@ public class XaLogicalLog
      */
     public synchronized long rotate() throws IOException
     {
+        if ( writeBuffer.getFileChannelPosition() == LogIoUtils.LOG_HEADER_SIZE ) return xaTf.getLastCommittedTx();
         xaTf.flushAll();
         String newLogFile = getLog2FileName();
         String currentLogFile = getLog1FileName();
