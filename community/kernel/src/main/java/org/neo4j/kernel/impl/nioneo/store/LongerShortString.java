@@ -744,7 +744,7 @@ public enum LongerShortString
         target.setValueBlocks( bits.getLongs() );
         return true;
     }
-    
+
     public static boolean writeLatin1Characters( String string, Bits bits )
     {
         int length = string.length();
@@ -835,11 +835,18 @@ public enum LongerShortString
 
     public static int calculateNumberOfBlocksUsed( long firstBlock )
     {
+        /*
+         * [ lll,llle][eeee,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
+         */
+        int encoding = (int) ( ( firstBlock & 0x1F0000000L ) >> 28 );
+        int length = (int) ( ( firstBlock & 0x7E00000000L ) >> 33 );
+        /*
         Bits bits = Bits.bitsFromLongs( new long[] {firstBlock} );
         bits.getInt( 24 ); // key
         bits.getByte( 4 ); // type
         int encoding = bits.getByte( 5 );
         int length = bits.getByte( 6 );
+        */
         return calculateNumberOfBlocksUsed( encoding, length );
     }
 
