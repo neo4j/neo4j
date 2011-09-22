@@ -20,9 +20,8 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -35,7 +34,6 @@ import java.util.List;
  */
 public class PropertyRecord extends Abstract64BitRecord
 {
-    // private long[] propBlock = new long[getPayloadSizeLongs()];
     private long nextProp = Record.NO_NEXT_PROPERTY.intValue();
     private long prevProp = Record.NO_NEXT_PROPERTY.intValue();
     private final List<PropertyBlock> blockRecords = new ArrayList<PropertyBlock>(
@@ -43,6 +41,7 @@ public class PropertyRecord extends Abstract64BitRecord
     private long entityId = -1;
     private boolean nodeIdSet;
     private boolean isChanged;
+    private final List<DynamicRecord> deletedRecords = new LinkedList<DynamicRecord>();
 
     public PropertyRecord( long id )
     {
@@ -88,43 +87,67 @@ public class PropertyRecord extends Abstract64BitRecord
     {
         int result = 0;
         for ( PropertyBlock block : blockRecords )
-        {
+        {/*
             if ( block.inUse() )
-            {
+            {*/
                 result += block.getSize();
-            }
+            // }
         }
         return result;
     }
 
-    public Collection<PropertyBlock> getPropertyBlocks()
+    public List<PropertyBlock> getPropertyBlocks()
     {
-        return Collections.unmodifiableList( blockRecords );
+        return blockRecords;
+    }
+
+    public List<DynamicRecord> getDeletedRecords()
+    {
+        return deletedRecords;
+    }
+
+    public void addDeletedRecord( DynamicRecord record )
+    {
+        deletedRecords.add( record );
     }
 
     public void addPropertyBlock(PropertyBlock block)
     {
-        assert ( !block.inUse()
-             || ( getUsedPayloadBytes() + block.getSize() <= PropertyType.getPayloadSize() ) ) :
+        assert ( /*!block.inUse()
+                 || */( size() + block.getSize() <= PropertyType.getPayloadSize() ) ) :
 
             ("Exceeded capacity of property record " + this
                              + ". My current size is reported as " + getUsedPayloadBytes() + "The added block was " + block + " (note that size is "
           + block.getSize() + ")"
         );
         blockRecords.add( block );
+        /*
         if ( block.inUse() )
         {
             setInUse( true );
         }
+        */
     }
 
     public PropertyBlock getPropertyBlock( int keyIndex )
     {
         for ( PropertyBlock block : blockRecords )
         {
-            if ( block.getKeyIndexId() == keyIndex && block.inUse() )
+            if ( block.getKeyIndexId() == keyIndex/* && block.inUse() */)
             {
                 return block;
+            }
+        }
+        return null;
+    }
+
+    public PropertyBlock removePropertyBlock( int keyIndex )
+    {
+        for ( int i = 0; i < blockRecords.size(); i++ )
+        {
+            if ( blockRecords.get( i ).getKeyIndexId() == keyIndex )
+            {
+                return blockRecords.remove( i );
             }
         }
         return null;
@@ -170,18 +193,19 @@ public class PropertyRecord extends Abstract64BitRecord
         isChanged = true;
     }
 
-    @Override
-    public void setInUse( boolean inUse )
-    {
-        if ( inUse && !( getUsedPayloadBytes() > 0 ) )
-        {
-            throw new IllegalStateException(
-                    "You cannot set a property record as in use when no property blocks are set as in use. Offensive record is:\n\t"
-                            + this );
-        }
-        super.setInUse( inUse );
-    }
 
+    /*    @Override
+        public void setInUse( boolean inUse )
+        {
+            if ( inUse && !( size() > 0 ) )
+            {
+                throw new IllegalStateException(
+                        "You cannot set a property record as in use when no property blocks are set as in use. Offensive record is:\n\t"
+                                + this );
+            }
+            super.setInUse( inUse );
+        }
+    */
     public long getPrevProp()
     {
         return prevProp;
