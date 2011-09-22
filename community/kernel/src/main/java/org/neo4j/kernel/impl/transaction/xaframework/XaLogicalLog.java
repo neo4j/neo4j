@@ -1763,7 +1763,7 @@ public class XaLogicalLog
         {
             if ( futureQueue.containsKey( nextExpectedTxId ) )
             {
-                List<LogEntry> list = futureQueue.remove( nextExpectedTxId );
+                List<LogEntry> list = futureQueue.remove( nextExpectedTxId++ );
                 writeToBuffer( list, target );
                 return commitEntryOf( list );
             }
