@@ -44,6 +44,22 @@ public class Bits
     private int writePosition;
     private int readPosition;
     
+    /*
+     * Calculate all the right overflow masks
+     */
+    private static final long[] RIGHT_OVERFLOW_MASKS;
+    static
+    {
+        RIGHT_OVERFLOW_MASKS = new long[Long.SIZE];
+        long mask = 1L;
+        for ( int i = 0; i < RIGHT_OVERFLOW_MASKS.length; i++ )
+        {
+            RIGHT_OVERFLOW_MASKS[i] = mask;
+            mask <<= 1;
+            mask |= 0x1L;
+        }
+    }
+    
     public static Bits bits( int numberOfBytes )
     {
         int requiredLongs = (numberOfBytes-1)/8+1;
@@ -96,13 +112,7 @@ public class Bits
      */
     public static long rightOverflowMask( int steps )
     {
-        long mask = 0L;
-        for ( int i = 0; i < steps; i++ )
-        {
-            mask <<= 1;
-            mask |= 0x1L;
-        }
-        return mask;
+        return RIGHT_OVERFLOW_MASKS[steps-1];
     }
     
     /**
