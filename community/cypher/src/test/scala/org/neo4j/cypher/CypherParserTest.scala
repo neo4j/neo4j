@@ -704,7 +704,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def testParamAsStartNode() {
     testQuery(
-      """start pA = (::a) return pA""",
+      """start pA = ({a}) return pA""",
       Query.
         start(NodeById("pA", ParameterValue("a"))).
         returns(ValueReturnItem(EntityValue("pA"))))
@@ -712,7 +712,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def testParamForWhereLiteral() {
     testQuery(
-      """start pA = (1) where pA.name = ::name return pA""",
+      """start pA = (1) where pA.name = {name} return pA""",
       Query.
         start(NodeById("pA", 1)).
         where(Equals(PropertyValue("pA", "name"), ParameterValue("name")))
@@ -722,7 +722,7 @@ class CypherParserTest extends JUnitSuite {
 
   @Test def testParamForIndexKey() {
     testQuery(
-      """start pA = (idx, ::key, "Value") return pA""",
+      """start pA = (idx, {key}, "Value") return pA""",
       Query.
         start(NodeByIndex("pA", "idx", ParameterValue("key"), Literal("Value"))).
         returns (ValueReturnItem(EntityValue("pA"))))

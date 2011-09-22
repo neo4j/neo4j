@@ -57,7 +57,7 @@ trait Values extends JavaTokenParsers with Tokens {
     case str => Literal(false)
   }
 
-  def parameter:Parser[Value] = "::" ~> identity ^^ {
+  def parameter:Parser[Value] = "{" ~> identity <~ "}" ^^ {
     case paramName => ParameterValue(paramName)
   }
 

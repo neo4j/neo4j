@@ -31,10 +31,10 @@ trait StartClause extends JavaTokenParsers with Tokens {
 
   def literalString : Parser[Value] = string ^^ { case x => Literal(x) }
   def literalValue : Parser[Value] = identity ^^ { case x => Literal(x) }
-  def paramValue: Parser[Value] = "::" ~> identity ^^ { case x => ParameterValue(x) }
+  def paramValue: Parser[Value] = "{" ~> identity <~ "}" ^^ { case x => ParameterValue(x) }
 
-  def nodeByParam = identity ~ "=" ~ "(" ~ "::" ~ identity ~ ")" ^^ {
-    case varName ~ "=" ~ "(" ~ "::" ~ paramName ~ ")" => NodeById(varName, ParameterValue(paramName))
+  def nodeByParam = identity ~ "=" ~ "(" ~ "{" ~ identity ~ "}" ~ ")" ^^ {
+    case varName ~ "=" ~ "(" ~ "{" ~ paramName ~ "}"  ~ ")" => NodeById(varName, ParameterValue(paramName))
   }
 
 
