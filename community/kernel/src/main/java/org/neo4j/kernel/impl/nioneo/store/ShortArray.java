@@ -346,10 +346,17 @@ public enum ShortArray
             return false;
         }
 
-        int requiredBits = type.calculateRequiredBitsForArray( array );
+        /*
+         *  If the array is huge, we don't have to check anything else.
+         *  So do the length check first.
+         */
         int arrayLength = Array.getLength( array );
-        if ( arrayLength > 63 /*because we only use 6 bits for length*/
-             || !willFit( requiredBits, arrayLength, payloadSizeInBytes ) )
+        if ( arrayLength > 63 )/*because we only use 6 bits for length*/
+        {
+            return false;
+        }
+        int requiredBits = type.calculateRequiredBitsForArray( array );
+        if ( !willFit( requiredBits, arrayLength, payloadSizeInBytes ) )
         {
             // Too big array
             return false;
