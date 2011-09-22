@@ -157,7 +157,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 if ( error == ErrorState.TX_MANAGER_NOT_OK )
                 {
                     msgLog.logMessage( "TxManager not ok, doing internal restart" );
-                    internalShutdown( true );
+                    internalShutdown( false );
                     newMaster( null, new Exception( "Tx manager not ok" ) );
                 }
             }
@@ -740,7 +740,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         {
             this.broker.shutdown();
         }
-        internalShutdown( true );
+        internalShutdown( false );
     }
 
     @Override
