@@ -29,10 +29,12 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 import java.io.IOException;
 import java.util.Iterator;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.matchers.JUnitMatchers.containsString;
 import static org.junit.matchers.JUnitMatchers.hasItem;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
+
 public class JavaExecutionEngineTests
 {
 

@@ -26,6 +26,13 @@ import scala.util.parsing.combinator._
 trait StartClause extends JavaTokenParsers with Tokens {
   def start: Parser[Start] = ignoreCase("start") ~> rep1sep(nodeByParam | nodeByIds | nodeByIndex | nodeByIndexQuery | relsByIds | relsByIndex, ",") ^^ (Start(_: _*))
 
+  def param: Parser[Value] = (literalValue | paramValue)
+  def paramString: Parser[Value] = (paramValue | literalString)
+
+  def literalString : Parser[Value] = string ^^ { case x => Literal(x) }
+  def literalValue : Parser[Value] = identity ^^ { case x => Literal(x) }
+  def paramValue: Parser[Value] = "::" ~> identity ^^ { case x => ParameterValue(x) }
+
   def nodeByParam = identity ~ "=" ~ "(" ~ "::" ~ identity ~ ")" ^^ {
     case varName ~ "=" ~ "(" ~ "::" ~ paramName ~ ")" => NodeById(varName, ParameterValue(paramName))
   }
@@ -35,7 +42,7 @@ trait StartClause extends JavaTokenParsers with Tokens {
     case varName ~ "=" ~ "(" ~ id ~ ")" => NodeById(varName, id.map(_.toLong).toSeq: _*)
   }
 
-  def nodeByIndex = identity ~ "=" ~ "(" ~ identity ~ "," ~ identity ~ "," ~ string ~ ")" ^^ {
+  def nodeByIndex = identity ~ "=" ~ "(" ~ identity ~ "," ~ param ~ "," ~ paramString ~ ")" ^^ {
     case varName ~ "=" ~ "(" ~ index ~ "," ~ key ~ "," ~ value ~ ")" => NodeByIndex(varName, index, key, value)
   }
 

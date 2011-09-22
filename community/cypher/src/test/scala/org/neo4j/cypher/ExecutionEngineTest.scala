@@ -247,7 +247,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     indexNode(n, idxName, key, value)
 
     val query = Query.
-      start(NodeByIndex("n", idxName, key, value)).
+      start(NodeByIndex("n", idxName, Literal(key), Literal(value))).
       returns(ValueReturnItem(EntityValue("n")))
 
     val result = execute(query)
@@ -267,6 +267,21 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
       returns(ValueReturnItem(EntityValue("n")))
 
     val result = execute(query)
+
+    assertEquals(List(Map("n" -> n)), result.toList)
+  }
+
+  @Test def shouldFindNodesByIndexParameters() {
+    val n = createNode()
+    val idxName = "idxName"
+    val key = "key"
+    indexNode(n, idxName, key, "Andres")
+
+    val query = Query.
+      start(NodeByIndex("n", idxName, Literal(key), ParameterValue("value"))).
+      returns(ValueReturnItem(EntityValue("n")))
+
+    val result = execute(query, "value"->"Andres")
 
     assertEquals(List(Map("n" -> n)), result.toList)
   }
