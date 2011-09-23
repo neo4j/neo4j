@@ -75,13 +75,24 @@ button {
 
 .form-fieldset li {
   padding: 2px 2px 4px;
-} 
+}
+
+/* SORTABLE LISTS */
+
+.sortHandle {
+  background: url("../img/icons/glyphish/draggable.png") no-repeat scroll 0 0 transparent;
+  border: 1px solid #ccc;
+  border-radius: 3px 3px 3px 3px;
+  cursor: move;
+  height: 24px;
+  width: 24px;
+}
 
 /* TOOLTIP */
 
 .form-tooltip {
   color: #444444;
-  font-size: 10px;
+  font-size: 11px;
   padding: 2px 0;
 }
 

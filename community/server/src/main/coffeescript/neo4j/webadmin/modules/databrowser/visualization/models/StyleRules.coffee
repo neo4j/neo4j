@@ -24,6 +24,14 @@ define(
     class StyleRules extends LocalCollection
       
       model: StyleRule
+      
+      comparator : (rule) -> rule.getOrder()
         
+      addLast : (rule) =>
+        if @last()?
+          rule.setOrder @last().getOrder() + 1
+        @add(rule)
+        
+      
 
 )

@@ -31,6 +31,7 @@ define(
       defaults : 
         target : 'node'
         style : {}
+        order : 0
       
       initialize : () ->
         @initNestedModel('filters', Filters)
@@ -43,6 +44,9 @@ define(
       
       getStyle : () -> @style
       setStyle : (s) -> this.style = s
+      
+      getOrder : () -> @get 'order'
+      setOrder : (order) -> @set 'order',order
       
       getTargetEntity : () -> @getTarget().split(':')[0]
       getTargetEntityType : () -> @getTarget().split(':')[1]

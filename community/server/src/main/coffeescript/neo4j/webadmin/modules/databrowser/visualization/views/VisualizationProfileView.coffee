@@ -25,7 +25,8 @@ define(
    '../models/StyleRule',
    './StyleRuleView',
    'ribcage/View',
-   'lib/backbone'], 
+   'lib/backbone',
+   'lib/jquery-ui-sortable'], 
   (ItemUrlResolver, template, VisualizationProfile, StyleRule, StyleRuleView, View) ->
   
     class VisualizationProfileView extends View
@@ -45,6 +46,8 @@ define(
         
         @profile.setName name
         
+        @_updateRuleOrderFromUI()
+        
         if @isInCreateMode
           @profiles.add @profile
         @profile.save()
@@ -56,20 +59,29 @@ define(
           
       addStyleRule : () =>
         rule = new StyleRule()
-        @profile.styleRules.add rule
+        rule.setOrder @profile.styleRules.size()
+        @profile.styleRules.addLast rule
         @addStyleRuleElement rule
         
       addStyleRuleElement : (rule) ->
         view = new StyleRuleView( rule : rule, rules:@profile.styleRules )
-        @styleRuleContainer.append view.render().el
+        li = $ view.render().el
+        li.attr('id', "styleRule_#{rule.getOrder()}")
+        @styleRuleContainer.append li
       
       render : () =>
 
         $(@el).html(template( name : @profile.getName(), isInCreateMode:@isInCreateMode ))
         
         @styleRuleContainer = $('.styleRules',@el)
+        
+        sortId = 0
         @profile.styleRules.each (rule) =>
-          @addStyleRuleElement rule
+          @addStyleRuleElement rule, sortId++
+        
+        @styleRuleContainer.sortable({
+          handle : '.sortHandle'
+        })
         
         return this
         
@@ -82,5 +94,14 @@ define(
         
       hasUnsavedChanges : () ->
         @profile.name != $('#profile-name',@el).val()
+        
+      _updateRuleOrderFromUI : () ->
+        lis =  @styleRuleContainer.children()
+        order = (Number li.id.split('_')[1] for li in lis)
+        
+        rules = @profile.styleRules
+        for i in [0...order.length]
+          rules.models[i].setOrder order[i]
+        rules.sort()
 
 )
