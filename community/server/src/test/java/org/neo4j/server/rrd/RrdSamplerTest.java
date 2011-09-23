@@ -21,35 +21,44 @@ package org.neo4j.server.rrd;
 
 import org.junit.Test;
 import org.rrd4j.DsType;
+import org.rrd4j.core.RrdDb;
 import org.rrd4j.core.Sample;
 
+import java.io.IOException;
+
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class RrdSamplerTest
 {
     @Test
-    public void canSampleADatabase()
+    public void canSampleADatabase() throws IOException
     {
         Sampleable testSamplable = new TestSamplable( "myTest", 15 );
 
-        Sample sample = mock( Sample.class );
+        RrdDb rrd = mock( RrdDb.class );
+        final Sample sample = mock( Sample.class );
+        when( rrd.createSample( anyLong() ) ).thenReturn( sample );
 
-        RrdSampler sampler = new RrdSamplerImpl( sample, testSamplable );
+        RrdSampler sampler = new RrdSamplerImpl( rrd, testSamplable );
         sampler.updateSample();
 
         verify( sample ).setValue( "myTest", 15 );
     }
 
     @Test
-    public void shouldIgnoreUnableToSampleExceptions()
+    public void shouldIgnoreUnableToSampleExceptions() throws IOException
     {
         Sampleable failingSampleable = new FailingSamplable( "myTest" );
 
-        Sample sample = mock( Sample.class );
+        RrdDb rrd = mock( RrdDb.class );
+        final Sample sample = mock( Sample.class );
+        when( rrd.createSample( anyLong() ) ).thenReturn( sample );
 
-        RrdSampler sampler = new RrdSamplerImpl( sample, failingSampleable );
+        RrdSampler sampler = new RrdSamplerImpl( rrd, failingSampleable );
 
         sampler.updateSample();
 

@@ -21,6 +21,7 @@ package org.neo4j.server.rrd;
 
 import java.io.IOException;
 
+import org.rrd4j.core.RrdDb;
 import org.rrd4j.core.Sample;
 import org.rrd4j.core.Util;
 
@@ -32,14 +33,14 @@ public class RrdSamplerImpl implements RrdSampler {
     /**
      * The current sampling object. This is created when calling #start().
      */
-    private Sample sample;
+    private RrdDb rrdDb;
     private Sampleable[] samplables;
 
     /**
      * Keep track of whether to run the update task or not.
      */
-    protected RrdSamplerImpl(Sample sample, Sampleable... samplables) {
-        this.sample = sample;
+    protected RrdSamplerImpl(RrdDb rrdDb, Sampleable... samplables) {
+        this.rrdDb = rrdDb;
         this.samplables = samplables;
     }
 
@@ -52,7 +53,7 @@ public class RrdSamplerImpl implements RrdSampler {
     {
         try
         {
-            sample.setTime( Util.getTimestamp() );
+            Sample sample = rrdDb.createSample( Util.getTimestamp() );
             for ( Sampleable samplable : samplables )
             {
                 sample.setValue( samplable.getName(), samplable.getValue() );
