@@ -25,14 +25,72 @@ define(
    './VisualizationSettingsDialog'
    'ribcage/View'
    'ribcage/security/HtmlEscaper'
-   './visualization'],
-  (VisualGraph, DataBrowserSettings, ItemUrlResolver, VisualizationSettingsDialog, View, HtmlEscaper, template) ->
+   './visualization'
+   'ribcage/ui/Dropdown'],
+  (VisualGraph, DataBrowserSettings, ItemUrlResolver, VisualizationSettingsDialog, View, HtmlEscaper, template, Dropdown) ->
+
+    class ProfilesDropdown extends Dropdown
+      
+      constructor : (@profiles, @settings) ->
+        super()
+      
+      getItems : () ->
+        items = []
+        items.push @title "Profiles"
+        @profiles.each (profile) =>
+          items.push @actionable @renderProfileItem(profile), (ev) =>
+            @settings.setCurrentVisualizationProfile profile.id
+            @render()
+            ev.stopPropagation()
+        items.push @item "<a class='micro-button' href='#/data/visualization/settings/profile/'>New profile</a><div class='break'></div>"
+        return items
+        
+      renderProfileItem : (profile) ->
+      
+        currentProfileId = @settings.getCurrentVisualizationProfile().id
+        if currentProfileId == profile.id
+          currentClass = 'selected' 
+        else
+          currentClass = ''
+      
+        profileButton = $ "<span class='#{currentClass}'>#{profile.getName()}</span>"
+        
+        if not profile.isDefault()
+          editButton = $ "<a class='micro-button' href='#/data/visualization/settings/profile/#{profile.id}/'>Edit</a>"
+          editButton.click @hide
+          
+          deleteButton = $ "<div class='bad-button micro-button'>Remove</div>"
+          deleteButton.click (ev) =>
+            @deleteProfile(profile)
+            @render()
+            ev.stopPropagation()
+            
+          buttons = $ "<div class='dropdown-controls'></div>"
+          buttons.append editButton
+          buttons.append deleteButton
+          
+          wrap = $ '<div></div>'
+          wrap.append profileButton
+          wrap.append buttons
+          return wrap
+        return profileButton
+        
+      deleteProfile : (profile) =>
+        if confirm("Are you sure?")
+          currentProfileId = @settings.getCurrentVisualizationProfile().id
+          # Use default profile if the current
+          # profile is getting removed
+          if profile.id == currentProfileId
+            @settings.setCurrentVisualizationProfile @profiles.first()
+          @profiles.remove(profile)
+          @profiles.save()
+        
 
     class VisualizedView extends View
 
-      events : 
-        'click #visualization-show-settings' : "showSettingsDialog"
+      events :
         'click #visualization-reflow' : "reflowGraphLayout"
+        'click #visualization-profiles-button' : "showProfilesDropdown"
 
       initialize : (options)->
         @server = options.server
@@ -42,6 +100,9 @@ define(
         @settings = new DataBrowserSettings(@appState.getSettings())
         @settings.labelPropertiesChanged @settingsChanged
         @dataModel.bind("change:data", @render)
+        
+        @settings.onCurrentVisualizationProfileChange () =>
+          @getViz().setProfile @settings.getCurrentVisualizationProfile()
 
       render : =>
         if @browserHasRequiredFeatures()
@@ -64,6 +125,13 @@ define(
           @showBrowserNotSupportedMessage()
 
         return this
+        
+      showProfilesDropdown : () ->
+        @_profilesDropdown ?= new ProfilesDropdown(@settings.getVisualizationProfiles(), @settings)
+        if @_profilesDropdown.isVisible()
+          @_profilesDropdown.hide()
+        else
+          @_profilesDropdown.renderFor $("#visualization-profiles-button")
 
       visualizeFromNode : (node) ->
         @getViz().setNode(node)
@@ -102,53 +170,33 @@ define(
       getViz : () =>
         width = $(document).width() - 40;
         height = $(document).height() - 160;
-        @viz ?= new VisualGraph(@server,width,height)
+        profile = @settings.getCurrentVisualizationProfile()
+        @viz ?= new VisualGraph(@server, profile, width,height)
         @settingsChanged()
         return @viz
-
-
-      showSettingsDialog : =>
-        if @settingsDialog?
-          @hideSettingsDialog()
-        else
-          button = $("#visualization-show-settings")
-          button.addClass("selected")
-          @settingsDialog = new VisualizationSettingsDialog(
-            dataBrowserSettings : @settings
-            baseElement : button
-            closeCallback : @hideSettingsDialog)
-
-      hideSettingsDialog : =>
-        if @settingsDialog?
-          @settingsDialog.remove()
-          delete(@settingsDialog)
-          $("#visualization-show-settings").removeClass("selected")
 
       browserHasRequiredFeatures : ->
         Object.prototype.__defineGetter__?
 
       showBrowserNotSupportedMessage : ->
-        $(@el).html("<div class='pad'>
+        $(@el).html """<div class='pad'>
           <h1>I currently do not support visualization in this browser :(</h1>
           <p>I can't find the __defineGetter__ API method, which the visualization lib I use, Arbor.js, needs.</p>
           <p>If you really want to use visualization (it's pretty awesome), please consider using Google Chrome, Firefox or Safari.</p>
-          </div>")
-
+          </div>""" 
+      
       reflowGraphLayout : () =>
-        if @viz != null
-          @viz.reflow()
+        @viz.reflow() if @viz?
 
       remove : =>
         if @browserHasRequiredFeatures()
           @dataModel.unbind("change:data", @render)
-          @hideSettingsDialog()
           @getViz().stop()
         super()
 
       detach : =>
         if @browserHasRequiredFeatures()
           @dataModel.unbind("change:data", @render)
-          @hideSettingsDialog()
           @getViz().stop()
         super()
 
@@ -157,5 +205,5 @@ define(
         if @browserHasRequiredFeatures() and @vizEl?
           @getViz().start()
           @dataModel.bind("change:data", @render)
-
+          
 )

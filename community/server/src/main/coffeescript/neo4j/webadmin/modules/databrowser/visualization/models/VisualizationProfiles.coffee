@@ -19,10 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['ribcage/storage/LocalModelStore'], 
-  (LocalModelStore) ->
-    # Stores config models and/or collections locally
-    class Settings extends LocalModelStore
-    
-
+  ['./VisualizationProfile', 'ribcage/LocalCollection'], 
+  (VisualizationProfile, LocalCollection) ->
+    class VisualizationProfiles extends LocalCollection
+      
+      model: VisualizationProfile
 )

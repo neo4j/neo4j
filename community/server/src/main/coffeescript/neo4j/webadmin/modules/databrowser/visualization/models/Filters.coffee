@@ -19,10 +19,30 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['ribcage/storage/LocalModelStore'], 
-  (LocalModelStore) ->
-    # Stores config models and/or collections locally
-    class Settings extends LocalModelStore
+  ['./filters/PropertyFilter', 
+   './filters/GroupSizeFilter', 
+   'ribcage/LocalCollection'], 
+  (PropertyFilter, GroupSizeFilter, LocalCollection) ->
+  
+    filters = [
+      PropertyFilter
+      GroupSizeFilter
+    ]
     
+    filterMap = {}
+    for f in filters
+      filterMap[f.name] = f
+  
+    class Filters extends LocalCollection
+      
+      filters : filterMap
+      
+      # Override the normal deserialization method, 
+      # to allow us to deserialize to multiple different
+      # filter types.
+      deserializeItem : (json) ->
+        if @filters[json.type]?
+          return new @filters[json.type](json)
+        throw new Error("Unknown filter type '#{json.type}' for visualization profile")
 
 )

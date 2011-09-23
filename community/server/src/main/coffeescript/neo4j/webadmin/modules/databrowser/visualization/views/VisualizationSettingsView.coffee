@@ -19,10 +19,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['ribcage/storage/LocalModelStore'], 
-  (LocalModelStore) ->
-    # Stores config models and/or collections locally
-    class Settings extends LocalModelStore
+  ['neo4j/webadmin/utils/ItemUrlResolver'
+   './visualizationSettings',
+   './ProfileListItemView',
+   'ribcage/View',
+   'lib/backbone'],
+  (ItemUrlResolver, template, ProfileListItemView, View) ->
+  
+    class VisualizationSettingsView extends View
     
+      initialize : (opts) =>
+        
+        @settings = opts.dataBrowserSettings
+      
+      render : () =>
+        
+        $(@el).html(template())
+        profileUl = $('.visualization-profile-list', @el)
+        
+        @settings.getVisualizationProfiles().forEach (profile) =>
+          view = new ProfileListItemView( profile : profile, dataBrowserSettings : @settings )
+          profileUl.append(view.render().el)
+        
+        this
 
 )

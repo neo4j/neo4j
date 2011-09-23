@@ -19,10 +19,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['ribcage/storage/LocalModelStore'], 
-  (LocalModelStore) ->
-    # Stores config models and/or collections locally
-    class Settings extends LocalModelStore
-    
+  ['./Filter',
+   'ribcage/View'], 
+  (Filter, View) ->
 
+    class GroupSizeFilterView extends View
+      
+
+    class GroupSizeFilter extends Filter
+      
+      @name = 'groupSizeFilter'
+      @view = GroupSizeFilterView
+      
 )

@@ -19,16 +19,34 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['./Settings'
+  ['neo4j/webadmin/utils/ItemUrlResolver'
+   './profileListItem',
+   'ribcage/View',
    'lib/backbone'], 
-  (Settings) ->
+  (ItemUrlResolver, template, View) ->
   
-    class ApplicationState extends Backbone.Model
-      
-      getServer : ->
-        @get "server"
+    class ProfileListItemView extends View
 
-      getSettings : () ->
-        @settings ?= new Settings()
+      tagName : 'tr'
+
+      events : 
+        "click .delete-profile" : "deleteProfile"
+
+      initialize : (opts) =>
+        
+        @settings = opts.dataBrowserSettings
+        @profile = opts.profile
+        @profiles = @settings.getVisualizationProfiles()
+
+      deleteProfile : =>
+        if confirm "Are you sure?"
+          @profiles.remove(@profile)
+          @profiles.save()
+          
+          @remove()
+      
+      render : () =>
+        $(@el).html(template( name : @profile.getName(), id: @profile.id, isBuiltin : @profile.isBuiltin() ))
+        return this
 
 )

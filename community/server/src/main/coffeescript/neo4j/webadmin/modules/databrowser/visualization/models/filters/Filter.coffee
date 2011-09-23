@@ -19,10 +19,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['ribcage/storage/LocalModelStore'], 
-  (LocalModelStore) ->
-    # Stores config models and/or collections locally
-    class Settings extends LocalModelStore
-    
+  ['ribcage/LocalModel'], 
+  (LocalModel) ->
 
+    class Filter extends LocalModel
+      
+      matches : (item) -> false
+      
+      toJSON : () ->
+        json = super()
+        json.type = @getType()
+        return json
 )

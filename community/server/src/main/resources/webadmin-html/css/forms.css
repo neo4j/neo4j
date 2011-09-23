@@ -18,6 +18,16 @@ input {
   padding: 4px 2px;
 }
 
+input.small {
+  height: 14px;
+  line-height: 15px;
+  width: 100px;
+}
+
+input.big {
+  width: 300px;
+}
+
 .fat {
   font-size: 14px;
   padding: 5px;
@@ -26,7 +36,7 @@ input {
 button {
   outline:none; 
 }
-
+ 
 .filter .filterText {
   padding: 4px 3px;
   width: 90%;
@@ -35,4 +45,106 @@ button {
 .filter .selectList {
   height: 200px;
   width: 450px;
+}
+
+.colorpicker-input {
+  background-color: #FFFFFF;
+  border: 1px solid #aaa;
+  border-radius: 3px 3px 3px 3px;
+  height: 25px;
+  cursor:pointer;
+  width: 100px;
+}
+
+.form {
+  list-style: none outside none;
+  margin: 0;
+  padding: 0;
+}
+
+.form > li {
+  float:left;
+}
+
+.form-fieldset {
+  list-style:none;
+  margin: 0;
+  padding: 0;
+  width: 200px;
+}
+
+.form-fieldset li {
+  padding: 2px 2px 4px;
+}
+
+/* SORTABLE LISTS */
+
+.sortHandle {
+  background: url("../img/icons/glyphish/draggable.png") no-repeat scroll 0 0 transparent;
+  border: 1px solid #ccc;
+  border-radius: 3px 3px 3px 3px;
+  cursor: move;
+  height: 24px;
+  width: 24px;
+}
+
+/* TOOLTIP */
+
+.form-tooltip {
+  color: #444444;
+  font-size: 11px;
+  padding: 2px 0;
+}
+
+/* DROPDOWN */
+
+.dropdown {
+  background: none repeat scroll 0 0 #EFEFEF;
+  border: 1px solid #AAAAAA;
+  box-shadow: 0 0 8px 0 #888888;
+}
+
+.dropdown > ul {
+  margin:0;
+  padding:0;
+  list-style:none;
+}
+
+.dropdown > ul > li {
+  border-bottom: 1px solid #ddd;
+  padding: 3px 5px;
+  font-size:12px;
+  width:210px;
+  clear:both;
+}
+
+.dropdown > ul > li > h3 {
+  font-size: 13px;
+  line-height: 20px;
+  margin: 0;
+}
+
+.dropdown > ul > li.actionable {
+  cursor:pointer;
+  height:24px;
+  line-height:24px;
+}
+
+.dropdown > ul > li.actionable:hover {
+  background: #abd3ee;
+  background: -moz-linear-gradient(top, #abd3ee 0%, #89c3eb 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#abd3ee), color-stop(100%,#89c3eb));
+  background: -webkit-linear-gradient(top, #abd3ee 0%,#89c3eb 100%);
+  background: -o-linear-gradient(top, #abd3ee 0%,#89c3eb 100%);
+  background: -ms-linear-gradient(top, #abd3ee 0%,#89c3eb 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#abd3ee', endColorstr='#89c3eb',GradientType=0 );
+  background: linear-gradient(top, #abd3ee 0%,#89c3eb 100%);
+}
+
+.dropdown .selected {
+  font-weight:bold;
+}
+
+.dropdown-controls {
+  float:right;
 }

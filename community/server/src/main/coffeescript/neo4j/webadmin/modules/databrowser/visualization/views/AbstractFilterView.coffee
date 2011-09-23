@@ -19,10 +19,24 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['ribcage/storage/LocalModelStore'], 
-  (LocalModelStore) ->
-    # Stores config models and/or collections locally
-    class Settings extends LocalModelStore
-    
+  ['neo4j/webadmin/utils/ItemUrlResolver'
+   'ribcage/View',
+   'lib/backbone'], 
+  (ItemUrlResolver, View) ->
+  
+    class AbstractFilterView extends View
+
+      tagName : 'li'
+      
+      initialize : (opts) =>
+        @filter = opts.filter
+        @filters = opts.filters
+        
+      render : () =>
+        return this
+      
+      deleteFilter : () ->
+        @filters.remove @filter
+        @remove()
 
 )

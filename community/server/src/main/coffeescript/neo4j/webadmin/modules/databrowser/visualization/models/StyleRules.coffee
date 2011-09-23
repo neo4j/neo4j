@@ -19,10 +19,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define(
-  ['ribcage/storage/LocalModelStore'], 
-  (LocalModelStore) ->
-    # Stores config models and/or collections locally
-    class Settings extends LocalModelStore
-    
+  ['./StyleRule', 'ribcage/LocalCollection'], 
+  (StyleRule, LocalCollection) ->
+    class StyleRules extends LocalCollection
+      
+      model: StyleRule
+      
+      comparator : (rule) -> rule.getOrder()
+        
+      addLast : (rule) =>
+        if @last()?
+          rule.setOrder @last().getOrder() + 1
+        @add(rule)
+        
+      
 
 )
