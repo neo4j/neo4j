@@ -28,6 +28,8 @@ import java.net.URL;
 import java.util.HashMap;
 
 import org.junit.Test;
+import org.neo4j.graphdb.Node;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.util.FileUtils;
@@ -40,6 +42,7 @@ public class PropertyMigrationTest
         URL legacyStoreResource = getClass().getResource( "oldformatstore/neostore" );
 
         LegacyStore legacyStore = new LegacyStore( legacyStoreResource.getFile() );
+        File legacyDir = new File( legacyStoreResource.getFile() ).getParentFile();
 
         LegacyPropertyStoreReader propertyStoreReader = legacyStore.getPropertyStoreReader();
         LegacyDynamicRecordFetcher legacyDynamicRecordFetcher = legacyStore.getDynamicRecordFetcher();
@@ -57,11 +60,54 @@ public class PropertyMigrationTest
 
         PropertyStore propertyStore = neoStore.getPropertyStore();
 
-        new PropertyMigration( legacyNodeStoreReader, propertyStoreReader, legacyDynamicRecordFetcher ).migrateNodeProperties( new PropertyWriter( propertyStore ) );
-
-        assertEquals( 1000, propertyStore.getHighId() );
+        new PropertyMigration( legacyNodeStoreReader, propertyStoreReader, legacyDynamicRecordFetcher ).migrateNodeProperties( neoStore.getNodeStore(), new PropertyWriter( propertyStore ) );
 
         neoStore.close();
+
+        copyInFilesThatAreNotMigrated( legacyDir, outputDir );
+        verifyThatAllNodesHaveTheCorrectProperties( outputDir );
+
+    }
+
+    private void copyInFilesThatAreNotMigrated( File legacyDir, File outputDir )
+    {
+        for ( File legacyFile : legacyDir.listFiles() )
+        {
+            if (legacyFile.isDirectory()) {
+                copyInFilesThatAreNotMigrated( legacyFile, new File( outputDir, legacyFile.getName() ) );
+            } else {
+                File outputFile = new File( outputDir, legacyFile.getName() );
+                if ( !outputFile.exists() )
+                {
+                    try
+                    {
+                        FileUtils.copyFile( legacyFile, outputFile );
+                    } catch ( IOException e )
+                    {
+                        throw new RuntimeException( e );
+                    }
+                }
+            }
+        }
+    }
+
+    private void verifyThatAllNodesHaveTheCorrectProperties( File directory )
+    {
+        EmbeddedGraphDatabase database = new EmbeddedGraphDatabase( directory.getPath() );
+        int nodeCount = 0;
+        for ( Node node : database.getAllNodes() )
+        {
+            nodeCount++;
+//            for ( String key : node.getPropertyKeys() )
+//            {
+//                System.out.println( "key = " + key );
+//            }
+//                assertEquals( true, node.getProperty( "property1" ));
+//                assertEquals( true, node.getProperty( "long_string" ));
+//                assertEquals( true, node.getProperty( "long_array" ));
+        }
+        assertEquals( 1000, nodeCount );
+        database.shutdown();
     }
 
 }

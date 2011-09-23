@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 
 public class PropertyMigration
@@ -40,7 +41,7 @@ public class PropertyMigration
         this.legacyNodeStoreReader = legacyNodeStoreReader;
     }
 
-    public void migrateNodeProperties( PropertyWriter propertyWriter ) throws IOException
+    public void migrateNodeProperties( NodeStore nodeStore, PropertyWriter propertyWriter ) throws IOException
     {
         Iterable<NodeRecord> records = legacyNodeStoreReader.readNodeStore();
         for ( NodeRecord nodeRecord : records )
@@ -57,8 +58,9 @@ public class PropertyMigration
                     propertyRecord = propertyStoreReader.readPropertyRecord( propertyRecord.getNextProp() );
                 }
                 long propertyRecordId = propertyWriter.writeProperties( properties );
-//                nodeRecord.setNextProp( propertyRecordId );
-//                nodeStore.writeNode(nodeRecord)
+                nodeRecord.setNextProp( propertyRecordId );
+                nodeStore.setHighId( nodeRecord.getId() );
+                nodeStore.updateRecord( nodeRecord );
             }
         }
     }
