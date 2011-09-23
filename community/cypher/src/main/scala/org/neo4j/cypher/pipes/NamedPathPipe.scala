@@ -34,13 +34,13 @@ class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
       val firstNode = path.pathPattern.head match {
         case RelatedTo(left, right, relName, x, xx, optional) => left
         case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, direction, optional) => start
-        case ShortestPath(pathName, start, end, optional) => start
+        case ShortestPath(_, start, _, _, _, _, _) => start
       }
 
       val p = Seq(get(firstNode)) ++ path.pathPattern.flatMap(p => p match {
         case RelatedTo(left, right, relName, x, xx, optional) => Seq(get(relName), get(right))
         case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, direction, optional) => getPath(pathName).iterator().asScala.toSeq.tail
-        case ShortestPath(pathName, start, end, optional) => getPath(pathName).iterator().asScala.toSeq.tail
+        case ShortestPath(pathName, _, _, _, _, _, _) => getPath(pathName).iterator().asScala.toSeq.tail
       })
 
       val pathImpl = new PathImpl(p: _*)

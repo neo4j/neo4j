@@ -143,8 +143,8 @@ class MatchTest extends DocumentingTestBase {
     testQuery(
       title = "Shortest path",
       text = "Finding the shortest path between two nodes is as easy as using the shortestPath-function, like this.",
-      queryText = """start d=(%D%), e=(%E%) match p = shortestPath( d-->e ) return p""",
-      returns = """The two paths starting from the first node.""",
+      queryText = """start d=(%D%), e=(%E%) match p = shortestPath( d-[^..15]->e ) return p""",
+      returns = """This means: find the shortest path between two nodes, as long as the path is max 15 relationships long.""",
       (p) => assertEquals(3, p.toList.head("p").asInstanceOf[Path].length() )
     )
   }

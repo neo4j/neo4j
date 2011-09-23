@@ -690,7 +690,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     relate(c, d, "rel")
 
     val query = Query.start(NodeById("pA", a.getId), NodeById("pB", d.getId)).
-      namedPaths(NamedPath("p", VarLengthRelatedTo("x", "pA", "pB", 1, 5, "rel", Direction.OUTGOING))).
+      namedPaths(NamedPath("p", VarLengthRelatedTo("x", "pA", "pB", Some(1), Some(5), "rel", Direction.OUTGOING))).
       where(AllInSeq(PathNodesValue(EntityValue("p")), "i", Equals(PropertyValue("i", "foo"), Literal("bar")))).
       returns(ValueReturnItem(EntityValue("pB")))
 
@@ -708,7 +708,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val r2 = relate(b, c, "rel")
 
     val query = Query.start(NodeById("pA", a.getId)).
-      namedPaths(NamedPath("p", VarLengthRelatedTo("x", "pA", "pB", 2, 2, "rel", Direction.OUTGOING))).
+      namedPaths(NamedPath("p", VarLengthRelatedTo("x", "pA", "pB", Some(2), Some(2), "rel", Direction.OUTGOING))).
       returns(ValueReturnItem(PathRelationshipsValue(EntityValue("p"))))
 
     val result = execute(query)
@@ -729,13 +729,40 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     ), result.columnAs[Path]("p").toList)
   }
 
+  @Test def shouldReturnAVarLengthPathWithoutMinimalLength() {
+    createNodes("A", "B", "C")
+    val r1 = relate("A" -> "KNOWS" -> "B")
+    val r2 = relate("B" -> "KNOWS" -> "C")
+
+    val result = parseAndExecute("start n=(1) match p=n-[:KNOWS^..2]->x return p")
+
+    assertEquals(List(
+      PathImpl(node("A"), r1, node("B")),
+      PathImpl(node("A"), r1, node("B"), r2, node("C"))
+    ), result.columnAs[Path]("p").toList)
+  }
+
+  @Test def shouldReturnAVarLengthPathWithUnboundMax() {
+    createNodes("A", "B", "C")
+    val r1 = relate("A" -> "KNOWS" -> "B")
+    val r2 = relate("B" -> "KNOWS" -> "C")
+
+    val result = parseAndExecute("start n=(1) match p=n-[:KNOWS^1..]->x return p")
+
+    assertEquals(List(
+      PathImpl(node("A"), r1, node("B")),
+      PathImpl(node("A"), r1, node("B"), r2, node("C"))
+    ), result.columnAs[Path]("p").toList)
+  }
+
+
   @Test def shouldHandleBoundNodesNotPartOfThePattern() {
     createNodes("A", "B", "C")
     relate("A" -> "KNOWS" -> "B")
 
     val result = parseAndExecute("start a=(1), c = (3) match a-->b return a,b,c").toList
 
-    assert(List(Map("a"->node("A"), "b"->node("B"), "c"->node("C"))) === result)
+    assert(List(Map("a" -> node("A"), "b" -> node("B"), "c" -> node("C"))) === result)
   }
 
   @Test def shouldReturnShortestPath() {
@@ -744,12 +771,10 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("a", 1), NodeById("b", 2)).
-      namedPaths(NamedPath("p", ShortestPath("  UNNAMED1", "a", "b", false))).
+      namedPaths(NamedPath("p", ShortestPath("  UNNAMED1", "a", "b", None, Direction.BOTH, Some(15), false))).
       returns(ValueReturnItem(EntityValue("p")))
 
     val result = execute(query).toList.head("p").asInstanceOf[Path]
-
-    println(result)
 
     val number_of_relationships_in_path = result.length()
     assert(number_of_relationships_in_path === 1)

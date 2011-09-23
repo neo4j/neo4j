@@ -104,7 +104,7 @@ class ExecutionEngine(graph: GraphDatabaseService) {
     val shortestPaths = unnamedShortestPaths ++ namedShortestPaths
 
     var result = source
-    shortestPaths.foreach(p => result = new ShortestPathPipe(result, p.pathName, p.start, p.end, p.optional))
+    shortestPaths.foreach(p => result = new ShortestPathPipe(result, p))
     result
 
   }
