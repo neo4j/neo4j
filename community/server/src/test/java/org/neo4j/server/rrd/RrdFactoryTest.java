@@ -47,20 +47,20 @@ public class RrdFactoryTest
     private Database db;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp() throws IOException
     {
         config = new MapConfiguration( new HashMap<String, String>() );
         db = new Database( new ImpermanentGraphDatabase() );
     }
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
         db.shutdown();
     }
 
     @Test
-    public void shouldTakeDirectoryLocationFromConfig() throws IOException
+    public void shouldTakeDirectoryLocationFromConfig()
     {
         String expected = "target/rrd-test";
         config.addProperty( Configurator.RRDB_LOCATION_PROPERTY_KEY, expected );
@@ -72,7 +72,7 @@ public class RrdFactoryTest
     }
 
     @Test
-    public void recreateDatabaseIfWrongStepsize() throws IOException
+    public void recreateDatabaseIfWrongStepsize()
     {
         String expected = "target/rrd-test";
 
@@ -85,7 +85,7 @@ public class RrdFactoryTest
     }
 
     @Test
-    public void shouldCreateRrdInAGoodDefaultPlace() throws Exception
+    public void shouldCreateRrdInAGoodDefaultPlace() throws IOException
     {
         TestableRrdFactory factory = createRrdFactory();
 
@@ -129,7 +129,6 @@ public class RrdFactoryTest
 
         @Override
         protected RrdDb createRrdb( String inDirectory, Sampleable... sampleables )
-                throws IOException
         {
             directoryUsed = inDirectory;
             return super.createRrdb( inDirectory, sampleables );
