@@ -139,7 +139,7 @@ public class RrdFactoryTest
     private static class NullJobScheduler implements JobScheduler
     {
         @Override
-        public void scheduleAtFixedRate( Runnable job, String name, long period )
+        public void scheduleAtFixedRate( Runnable job, String name, long delay, long period )
         {
 
         }

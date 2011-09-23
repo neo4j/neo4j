@@ -97,7 +97,10 @@ public class RrdFactory
 
         scheduler.scheduleAtFixedRate(
                 new RrdJob( new RrdSamplerImpl( sample, primitives ) ),
-                RRD_THREAD_NAME + "[primitives]", SECONDS.toSeconds( 3 ) );
+                RRD_THREAD_NAME + "[primitives]",
+                SECONDS.toMillis( 0 ),
+                SECONDS.toMillis( 3 )
+        );
 
         scheduler.scheduleAtFixedRate(
                 new RrdJob( new RrdSamplerImpl( sample, usage )
@@ -109,7 +112,10 @@ public class RrdFactory
                         super.updateSample();
                     }
                 } ),
-                RRD_THREAD_NAME + "[usage]", SECONDS.toSeconds( 60 ) );
+                RRD_THREAD_NAME + "[usage]",
+                SECONDS.toMillis( 1 ),
+                SECONDS.toMillis( 60 )
+        );
         return rrdb;
     }
 
