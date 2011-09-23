@@ -40,10 +40,12 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 
 public class DumpLogicalLog
 {
-    public void dump( String filenameOrDirectory ) throws IOException
+    public int dump( String filenameOrDirectory ) throws IOException
     {
+        int logsFound = 0;
         for ( String fileName : filenamesOf( filenameOrDirectory, getLogPrefix() ) )
         {
+            logsFound++;
             System.out.println( "=== " + fileName + " ===" );
             FileChannel fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
             ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
@@ -61,7 +63,7 @@ public class DumpLogicalLog
                     + "no records in logical log." );
                 System.out.println( ex.getMessage() );
                 fileChannel.close();
-                return;
+                throw ex;
             }
             System.out.println( "Logical log version: " + logVersion + " with prev committed tx[" +
                 prevLastCommittedTx + "]" );
@@ -73,6 +75,13 @@ public class DumpLogicalLog
             }
             fileChannel.close();
         }
+        return logsFound;
+    }
+    
+    protected static boolean isAGraphDatabaseDirectory( String fileName )
+    {
+        File file = new File( fileName );
+        return file.isDirectory() && new File( file, "neostore" ).exists();
     }
     
     protected boolean readAndPrintEntry( FileChannel fileChannel, ByteBuffer buffer, XaCommandFactory cf )
