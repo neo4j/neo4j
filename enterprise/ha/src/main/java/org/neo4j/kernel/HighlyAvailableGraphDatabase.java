@@ -185,7 +185,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         moveAwayCurrentDatabase();
 
         Exception exception = null;
-        for ( int i = 0; i < 10; i++ )
+        for ( int i = 0; i < 60; i++ )
         {
             try
             {
@@ -240,8 +240,8 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         StoreId storeId = null;
         if ( !new File( storeDir, "neostore" ).exists() )
-        {
-            long endTime = System.currentTimeMillis()+10000;
+        {   // Try for 
+            long endTime = System.currentTimeMillis()+60000;
             Exception exception = null;
             while ( System.currentTimeMillis() < endTime )
             {
