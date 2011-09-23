@@ -26,10 +26,11 @@ import org.rrd4j.core.Sample;
 
 import java.io.IOException;
 
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.stub;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class RrdSamplerTest
 {
@@ -40,7 +41,7 @@ public class RrdSamplerTest
 
         RrdDb rrd = mock( RrdDb.class );
         final Sample sample = mock( Sample.class );
-        stub( rrd.createSample( 0 ) ).toReturn( sample );
+        when( rrd.createSample( anyLong() ) ).thenReturn( sample );
 
         RrdSampler sampler = new RrdSamplerImpl( rrd, testSamplable );
         sampler.updateSample();
@@ -55,7 +56,7 @@ public class RrdSamplerTest
 
         RrdDb rrd = mock( RrdDb.class );
         final Sample sample = mock( Sample.class );
-        stub( rrd.createSample( 0 ) ).toReturn( sample );
+        when( rrd.createSample( anyLong() ) ).thenReturn( sample );
 
         RrdSampler sampler = new RrdSamplerImpl( rrd, failingSampleable );
 
