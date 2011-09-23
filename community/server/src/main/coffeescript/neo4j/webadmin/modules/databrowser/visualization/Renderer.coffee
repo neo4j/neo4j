@@ -57,9 +57,6 @@ define(
         @particleSystem.eachNode @renderNode
         @particleSystem.eachEdge @renderEdge
 
-        ## # No need to save this data
-        ## @nodeBoxes = {}
-
       renderNode : (node, pt) =>
         # node: {mass:#, p:{x,y}, name:"", data:{}}
         # pt:   {x:#, y:#}  node position in screen coords
@@ -67,39 +64,50 @@ define(
         if node.data.hidden is true
           return
 
-        style = @nodeStyler.getStyleFor(node)
-        label = style.labelText
-
+        style = node.data.style
+          
         # determine the box size and round off the coords if we'll be
         # drawing a text label (awful alignment jitter otherwise...)
-        w = @ctx.measureText(""+label).width + 10
-        if not (""+label).match(/^[ \t]*$/)
+        w = 10
+        h = 10
+        labels = []
+        for label in (""+style.labelText).split(";")
+          labelSize = @ctx.measureText(""+label)
+          w = labelSize.width + 10 if (labelSize.width + 10) > w
+          h += 12
+          labels.push label
+        
+        if labels.length > 0
           pt.x = Math.floor(pt.x)
           pt.y = Math.floor(pt.y)
         else
-          label = null
+          labels = null
 
-        ns = style.nodeStyle
+        ns = style.shapeStyle
         if @hovered and node._id == @hovered._id
           ns = {} # copy the style to not affect other nodes with same style
-          for key of style.nodeStyle
-            ns[key] = style.nodeStyle[key]
+          for k,v of style.shapeStyle
+            ns[k] = v
           ns.stroke = {r:0xff, g:0, b:0, a:node.data.alpha}
-
-        if style.nodeStyle.shape == 'dot'
-          @gfx.oval(pt.x-w/2, pt.y-w/2, w,w, ns)
-          @nodeBoxes[node.name] = [pt.x-w/2, pt.y-w/2, w,w]
+        
+        if ns.shape == 'dot'
+          d = if w>h then w else h
+          @gfx.oval(pt.x-d/2, pt.y-d/2, d,d, ns)
+          @nodeBoxes[node.name] = [pt.x-d/2, pt.y-d/2, d,d]
         else
-          @gfx.rect(pt.x-w/2, pt.y-10, w,20, 4, ns)
-          @nodeBoxes[node.name] = [pt.x-w/2, pt.y-11, w, 22]
+          @gfx.rect(pt.x-w/2, pt.y-h/2, w,h, 4, ns)
+          @nodeBoxes[node.name] = [pt.x-w/2, pt.y-h/2, w, h]
 
         # draw the text
-        if label
+        if labels
           @ctx.font = style.labelStyle.font
           @ctx.textAlign = "center"
           @ctx.fillStyle = style.labelStyle.color
-
-          @ctx.fillText(label||"", pt.x, pt.y+4)
+        
+          yOffset = (h/-2) + 15
+          for label in labels
+            @ctx.fillText(label||"", pt.x, pt.y+yOffset)
+            yOffset += 12
 
       renderEdge : (edge, pt1, pt2) =>
         # edge: {source:Node, target:Node, length:#, data:{}}
@@ -235,11 +243,11 @@ define(
       nodeDropped : (e) =>
         @hovered = null
         if @dragged is null or @dragged.node is undefined then return
-        if @dragged.node != null then @dragged.node.fixed = @dragged.node.data.fixated
+        if @dragged.node? then @dragged.node.fixed = @dragged.node.data.fixated
         @dragged.node.fixed = true
         @dragged.node.mass = 1
 
-        if @dragged.node != null and @thesePointsAreReallyClose(@dragStart, {x:e.pageX, y:e.pageY})
+        if @dragged.node? and @thesePointsAreReallyClose(@dragStart, {x:e.pageX, y:e.pageY})
           @trigger("node:click", @dragged.node, e)
 
         pos = $(@canvas).offset()

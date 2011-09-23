@@ -39,7 +39,6 @@ define(
         @settings.setLabelProperties(keys)
         @settings.save()
         @closeCallback()
-
       
       render : () =>
         $(@el).html(template( labels : @settings.getLabelProperties().join(",") ))

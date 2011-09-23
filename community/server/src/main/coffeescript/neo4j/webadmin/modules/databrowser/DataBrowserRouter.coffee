@@ -2,15 +2,21 @@
 define(
   ['./search/QueuedSearch',
    './views/DataBrowserView',
+   './visualization/views/VisualizationSettingsView',
+   './visualization/views/VisualizationProfileView',
    './models/DataBrowserState', 
+   './DataBrowserSettings', 
    'ribcage/Router'], 
-  (QueuedSearch, DataBrowserView, DataBrowserState, Router) ->
+  (QueuedSearch, DataBrowserView, VisualizationSettingsView, VisualizationProfileView, DataBrowserState, DataBrowserSettings, Router) ->
 
     class DataBrowserRouter extends Router
 
       routes : 
         "/data/" : "base"
         "/data/search/*query" : "search"
+        "/data/visualization/settings/" : "visualizationSettings"
+        "/data/visualization/settings/profile/" : "createVisualizationProfile"
+        "/data/visualization/settings/profile/:id/" : "editVisualizationProfile"
 
       shortcuts : 
         "s" : "focusOnSearchField"
@@ -35,9 +41,26 @@ define(
         @dataModel.setQuery query
         @appState.set( mainView : @getDataBrowserView() )
 
+      visualizationSettings : () =>
+        @visualizationSettingsView ?= new VisualizationSettingsView
+          dataBrowserSettings : @getDataBrowserSettings()
+        @appState.set mainView : @visualizationSettingsView
+        
+      createVisualizationProfile : () =>
+        v = @getVisualizationProfileView()
+        v.setIsCreateMode(true)
+        @appState.set mainView : v
+        
+      editVisualizationProfile : (id) =>
+        profiles = @getDataBrowserSettings().getVisualizationProfiles()
+        profile = profiles.get id
+        
+        v = @getVisualizationProfileView()
+        v.setProfileToManage profile
+        @appState.set mainView : v
+
       focusOnSearchField : (ev) =>
         @base()
-        
         setTimeout( () -> 
           $("#data-console").val("")
           $("#data-console").focus()
@@ -63,4 +86,11 @@ define(
         @view ?= new DataBrowserView
           state:@appState
           dataModel:@dataModel
+
+      getVisualizationProfileView : =>
+        @visualizationProfileView ?= new VisualizationProfileView 
+          dataBrowserSettings:@getDataBrowserSettings()
+          
+      getDataBrowserSettings : ->
+        @dataBrowserSettings ?= new DataBrowserSettings @appState.getSettings()
 )

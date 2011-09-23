@@ -37,5 +37,5 @@ define ["neo4j/webadmin/utils/ItemUrlResolver","lib/backbone"], (ItemUrlResolver
       @pattern.test(statement)
       
     exec : (statement) =>
-      console.log statement
+      
  

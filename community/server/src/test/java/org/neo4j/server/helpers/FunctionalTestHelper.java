@@ -264,8 +264,13 @@ public final class FunctionalTestHelper
         request.put(path, data);
     }
 
-    public long getNodeIdFromUri( String uri )
+    public long getNodeIdFromUri( String nodeUri )
     {
-        return Long.valueOf( uri.substring( uri.lastIndexOf( "/" ) +1 , uri.length() ) );
+        return Long.valueOf( nodeUri.substring( nodeUri.lastIndexOf( "/" ) +1 , nodeUri.length() ) );
+    }
+
+    public long getRelationshipIdFromUri( String relationshipUri )
+    {
+        return getNodeIdFromUri( relationshipUri );
     }
 }

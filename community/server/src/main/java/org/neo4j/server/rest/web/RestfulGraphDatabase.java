@@ -148,6 +148,11 @@ public class RestfulGraphDatabase
             throw new BadInputException( ex );
         }
     }
+    
+    private long extractRelationshipId(String uri) throws BadInputException
+    {
+        return extractNodeId( uri );
+    }
 
     @GET
     public Response getRoot()
@@ -721,14 +726,14 @@ public class RestfulGraphDatabase
     }
 
     @POST
-    @Path( PATH_RELATIONSHIP_INDEX_GET )
+    @Path( PATH_NAMED_RELATIONSHIP_INDEX )
     public Response addToRelationshipIndex( @PathParam( "indexName" ) String indexName, String postBody )
     {
         try
         {
-            return output.created( actions.addToRelationshipIndex( indexName, key, value,
-                    extractNodeId( input.readUri( objectUri )
-                            .toString() ) ) );
+            Map<String, Object> entityBody = input.readMap( postBody );
+            return output.created( actions.addToRelationshipIndex( indexName, String.valueOf( entityBody.get( "key" ) ),
+                    String.valueOf( entityBody.get( "value" ) ), extractRelationshipId( entityBody.get( "uri" ).toString() ) ) );
         }
         catch ( UnsupportedOperationException e )
         {

@@ -21,8 +21,6 @@ package org.neo4j.server.statistic;
 
 import java.io.Serializable;
 
-import org.codehaus.jackson.annotate.JsonIgnore;
-
 /**
  * storage-class to collect general statistic-data.
  *

@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
@@ -30,7 +31,15 @@ public class DumpLogicalLog extends org.neo4j.kernel.impl.util.DumpLogicalLog
 {
     public static void main( String[] args ) throws IOException
     {
-        for ( String arg : args ) new DumpLogicalLog().dump( arg );
+        for ( String arg : args )
+        {
+            int dumped = new DumpLogicalLog().dump( arg );
+            if ( dumped == 0 && isAGraphDatabaseDirectory( arg ) )
+            {   // If none were found and we really pointed to a neodb directory
+                // then go to its index folder and try there.
+                new DumpLogicalLog().dump( new File( arg, "index" ).getAbsolutePath() );
+            }
+        }
     }
 
     @Override

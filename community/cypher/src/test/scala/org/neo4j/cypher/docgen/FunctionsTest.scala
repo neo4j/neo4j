@@ -108,7 +108,7 @@ class FunctionsTest extends DocumentingTestBase {
       text = """To return or filter on the length of a path, use the special property LENGTH""",
       queryText = """start a=(%A%) match p=a-->b-->c return length(p)""",
       returns = """The length of the path p.""",
-      (p) => assertEquals(5, p.columnAs[Int]("LENGTH(p)").toList.head))
+      (p) => assertEquals(2, p.columnAs[Int]("LENGTH(p)").toList.head))
   }
 
   @Test def nodes_in_path() {

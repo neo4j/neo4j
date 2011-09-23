@@ -55,8 +55,6 @@ import org.rrd4j.core.DsDef;
 import org.rrd4j.core.RrdDb;
 import org.rrd4j.core.RrdDef;
 import org.rrd4j.core.RrdToolkit;
-import org.rrd4j.core.Sample;
-
 
 public class RrdFactory
 {

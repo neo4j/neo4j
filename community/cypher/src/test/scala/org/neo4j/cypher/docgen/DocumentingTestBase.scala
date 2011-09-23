@@ -55,10 +55,6 @@ abstract class DocumentingTestBase extends JUnitSuite {
     writer.println("== " + title + " ==")
     writer.println(text)
     writer.println()
-    writer.println("_Graph_")
-    writer.println()
-    writer.println(emitGraphviz(db, nicefy(section + " " + title)))
-    writer.println()
     writer.println("_Query_")
     writer.println()
     writer.println("[source,cypher]")
@@ -84,14 +80,27 @@ abstract class DocumentingTestBase extends JUnitSuite {
     "target/docs/ql/"
   }
 
-  def emitGraphviz(graphDatabaseService: GraphDatabaseService, name: String): String = {
+  private def emitGraphviz(): String = {
     val out = new ByteArrayOutputStream();
     val writer = new GraphvizWriter(new AsciiDocStyle());
-    writer.emit(out, Walker.fullGraph(graphDatabaseService));
-    return "[\"dot\", \"" + name.replace(" ", "-") + ".svg\", \"neoviz\"]\n" +
-      "----\n" +
-      out.toString() +
-      "----\n";
+    writer.emit(out, Walker.fullGraph(db));
+
+"""
+_Graph_
+
+["dot", "graph.svg", "neoviz"]
+----
+%s
+----
+
+""".format(out)
+  }
+
+  def dumpGraphViz(graphViz: PrintWriter) {
+    val foo = emitGraphviz()
+    graphViz.write(foo)
+    graphViz.flush()
+    graphViz.close()
   }
 
   def testQuery(title: String, text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
@@ -107,8 +116,10 @@ abstract class DocumentingTestBase extends JUnitSuite {
     }
 
     val writer = new PrintWriter(new FileWriter(new File(dir, nicefy(title) + ".txt")))
-
     dumpToFile(writer, title, query, returns, text, result)
+
+    val graphViz = new PrintWriter(new FileWriter(new File(dir, "graph.txt")))
+    dumpGraphViz(graphViz)
   }
 
   def indexProperties[T <: PropertyContainer](n: T, index: Index[T]) {

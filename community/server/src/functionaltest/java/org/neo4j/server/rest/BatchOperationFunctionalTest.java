@@ -384,33 +384,4 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
         }
         return count;
     }
-
-    @Ignore
-    @Test
-    public void testlargerequest() {    
-        testlargerequest(1000);
-        testlargerequest(5000);
-        testlargerequest(10000);
-        testlargerequest(50000);
-        testlargerequest(100000);
-        testlargerequest(500000);
-        testlargerequest(1000000);
-    }
-    
-    private void testlargerequest(int number) {
-        StringBuilder largereq = new StringBuilder();
-        largereq.append("[");
-        for(int i=0;i<number; i++) {
-            largereq.append("{\"method\":\"post\",\"to\":\"/node\", \"body\":{ \"age\":1 } },");
-        }
-        largereq.append("{\"method\":\"post\",\"to\":\"/node\", \"body\":{ \"age\":1 } }]");
-        
-        Date d = new Date();
-        JaxRsResponse response = RestRequest.req().post(batchUri(), largereq.toString());
-
-        System.out.println(number + "\t:" + ((new Date()).getTime() - d.getTime()) + "ms");
-        
-        assertEquals(200, response.getStatus());
-        
-    }
 }
