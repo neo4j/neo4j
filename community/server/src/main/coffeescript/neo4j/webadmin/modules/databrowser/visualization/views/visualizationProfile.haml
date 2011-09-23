@@ -4,12 +4,16 @@
     .span-half
       :if isInCreateMode
         %h2 Create new visualization profile
+        %input.big(id="profile-name" type="text" placeholder="Enter a name for this profile")
+        
       :if !isInCreateMode
         %h2 Manage visualization profile
-    
-      %input.big(id="profile-name" type="text" value="#{htmlEscape(name)}")
+        %input.big(id="profile-name" type="text" value="#{htmlEscape(name)}" placeholder="Enter a name for this profile")
+        
+      .form-tooltip
+        A visualization profile defines how the graph visualization should look.
     .span-half.last
-      %ul.button-bar
+      %ul.button-bar.data-toolbar
         %li
           %button.button.save Save
         %li
@@ -18,12 +22,21 @@
     .break
   
   .styleRulesWrap
-    .headline-bar.pad
-      %h2 Style rules
-      .button-bar
-        %button.button.addStyleRule Add style rule
+    .span-half
+      .headline-bar.pad
+        %h2 Style rules
+        .form-tooltip
+          Each style rule controls how either all nodes, or a filtered subset of nodes, should look in the visualization.
       .break
-    
     .break
     %ul.styleRules
+    .button-bar.pad
+      %button.button.addStyleRule Add style rule
+      .break
+  
+  %ul.button-bar.pad
+    %li
+      %button.button.save Save
+    %li
+      %button.button.cancel Cancel
   

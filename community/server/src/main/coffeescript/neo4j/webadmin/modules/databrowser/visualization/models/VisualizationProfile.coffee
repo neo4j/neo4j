@@ -27,7 +27,9 @@ define(
           when "group" then @_defaultGroupStyle.applyTo visualNode
           when "node" then @_defaultNodeStyle.applyTo visualNode
         
-        @styleRules.each (rule) =>
+        rules = @styleRules.models
+        for i in [rules.length-1..0] by -1
+          rule = rules[i]
           if rule.appliesTo visualNode, type
             rule.applyStyleTo visualNode
             

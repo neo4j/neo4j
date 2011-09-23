@@ -370,10 +370,19 @@ body {
   border-top: 1px solid #DDDDDD;
 }
 
+.styleRules {
+  border-bottom:1px solid #ddd;
+}
+
 .styleRules > li {
   border-bottom: 1px solid #eee;
   border-top:1px solid #aaa;
   clear:both;
+  background:#eee;
+}
+
+.styleRules > li:nth-child(odd) {
+  background:#ddd;
 }
 
 .styleRule > li {
@@ -383,8 +392,8 @@ body {
 .ruleFilters {
   width: 470px;
   font-size:12px;
-  border-left: 1px solid #DDDDDD;
-  border-right: 1px solid #DDDDDD;
+  border-left: 1px solid #ccc;
+  border-right: 1px solid #ccc;
   min-height: 120px;
 }
 

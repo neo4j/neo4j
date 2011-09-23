@@ -109,12 +109,12 @@ define(
           return node.hasProperty @getPropertyName()
         else if PropertyFilter.compareMethods[method]?
           cmp = PropertyFilter.compareMethods[method].cmp
-          s = "item.#{@getPropertyName()}: #{node.getProperty(@getPropertyName())} #{method} #{@getCompareValue()}:"
-          if cmp node.getProperty(@getPropertyName()), @getCompareValue()
-            console.log s, true
-            return true
-          else 
-            neo4j.log s, false
+          val = node.getProperty(@getPropertyName())
+          cmpVal = @getCompareValue()
+          
+          cmpVal = Number cmpVal if _(val).isNumber()
+          
+          return cmp val, cmpVal
         return false
       
 )

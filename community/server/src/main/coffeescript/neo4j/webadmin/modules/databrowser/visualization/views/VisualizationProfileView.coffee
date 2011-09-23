@@ -78,7 +78,7 @@ define(
         
       setIsCreateMode : (@isInCreateMode) ->
         if @isInCreateMode        
-          @profile = new VisualizationProfile(name:'A unique profile name')
+          @profile = new VisualizationProfile(name:"",styleRules:[{  }])
         
       hasUnsavedChanges : () ->
         @profile.name != $('#profile-name',@el).val()

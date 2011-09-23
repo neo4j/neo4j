@@ -76,14 +76,14 @@ define(
         return profileButton
         
       deleteProfile : (profile) =>
-        currentProfileId = @settings.getCurrentVisualizationProfile().id
-        # Use default profile if the current
-        # profile is getting removed
-        if profile.id == currentProfileId
-          @settings.setCurrentVisualizationProfile @profiles.first()
-        @profiles.remove(profile)
-        @profiles.save()
-      
+        if confirm("Are you sure?")
+          currentProfileId = @settings.getCurrentVisualizationProfile().id
+          # Use default profile if the current
+          # profile is getting removed
+          if profile.id == currentProfileId
+            @settings.setCurrentVisualizationProfile @profiles.first()
+          @profiles.remove(profile)
+          @profiles.save()
         
 
     class VisualizedView extends View
