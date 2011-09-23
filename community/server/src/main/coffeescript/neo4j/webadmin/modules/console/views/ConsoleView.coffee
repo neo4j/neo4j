@@ -41,13 +41,10 @@ define(
         @consoleState.setStatement $("#console-input").val(), silent : true
         
         if ev.keyCode is 13 # ENTER
-          console.log ev.keyCode
           @consoleState.eval()
         else if ev.keyCode is 38 # UP
-          console.log ev.keyCode
           @consoleState.prevHistory()
         else if ev.keyCode is 40 # DOWN
-          console.log ev.keyCode
           @consoleState.nextHistory()
 
       wrapperClicked : (ev) =>

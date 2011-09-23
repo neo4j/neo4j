@@ -128,7 +128,6 @@ define(
         @setChart key, @charts[key]
       
       setChart : (key, chart) =>
-        console.log key
         tmp =  {}
         tmp["chart" + key] = chart
         @set tmp

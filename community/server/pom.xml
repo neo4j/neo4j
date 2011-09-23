@@ -500,15 +500,21 @@ the relevant Commercial Agreement.
       <plugin>
         <groupId>com.voltvoodoo</groupId>
         <artifactId>brew</artifactId>
-        <version>0.2.6-SNAPSHOT</version>
+        <version>0.2.7</version>
         <executions>
           <execution>
-            <id>build-webadmin</id>
+            <id>compile-webadmin</id>
             <goals>
               <goal>compile</goal>
-              <goal>optimize</goal>
             </goals>
             <phase>compile</phase>
+          </execution>
+          <execution>
+            <id>minify-webadmin</id>
+            <goals>
+              <goal>optimize</goal>
+            </goals>
+            <phase>process-classes</phase>
           </execution>
         </executions>
         <configuration>
