@@ -828,16 +828,19 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         }
         catch ( ZooKeeperException ee )
         {
+            broker.getMasterReally();
             msgLog.logMessage( "ZooKeeper exception in newMaster", ee );
         }
         catch ( ComException ee )
         {
+            broker.getMasterReally();
             msgLog.logMessage( "Communication exception in newMaster", ee );
         }
         // BranchedDataException will escape from this method since the catch clause below
         // sees to that.
         catch ( Throwable t )
         {
+            broker.getMasterReally();
             msgLog.logMessage( "Reevaluation ended in unknown exception " + t
                     + " so shutting down", t, true );
             shutdown( t instanceof RuntimeException ? (RuntimeException) t : new RuntimeException( t ), false );
