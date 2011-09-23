@@ -47,7 +47,7 @@ class ExecutionEngine(graph: GraphDatabaseService) {
 
       pipe = createMatchPipe(matching, namedPaths, pipe)
 
-      pipe = createShortestPathPipe(pipe, matching)
+      pipe = createShortestPathPipe(pipe, matching, namedPaths)
 
       namedPaths match {
         case None =>
@@ -90,14 +90,23 @@ class ExecutionEngine(graph: GraphDatabaseService) {
     }
   }
 
-  private def createShortestPathPipe(source: Pipe, matching: Option[Match]): Pipe = matching match {
-    case Some(m) => {
-      var result = source
-      val shortestPaths = m.patterns.filter(_.isInstanceOf[ShortestPath]).map(_.asInstanceOf[ShortestPath])
-      shortestPaths.foreach(p => result = new ShortestPathPipe(result, p.pathName, p.start, p.end, p.optional))
-      result
+  private def createShortestPathPipe(source: Pipe, matching: Option[Match], namedPaths: Option[NamedPaths]): Pipe = {
+    val unnamedShortestPaths = matching match {
+      case Some(m) => m.patterns.filter(_.isInstanceOf[ShortestPath]).map(_.asInstanceOf[ShortestPath])
+      case None => Seq()
     }
-    case None => source
+
+    val namedShortestPaths = namedPaths match {
+      case Some(m) => m.paths.flatMap(_.pathPattern ).filter(_.isInstanceOf[ShortestPath]).map(_.asInstanceOf[ShortestPath])
+      case None => Seq()
+    }
+
+    val shortestPaths = unnamedShortestPaths ++ namedShortestPaths
+
+    var result = source
+    shortestPaths.foreach(p => result = new ShortestPathPipe(result, p.pathName, p.start, p.end, p.optional))
+    result
+
   }
 
   private def createMatchPipe(unnamedPaths: Option[Match], namedPaths: Option[NamedPaths], pipe: Pipe): Pipe = {

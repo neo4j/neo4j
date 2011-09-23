@@ -665,7 +665,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     createNodes("A", "B")
     relate("A" -> "KNOWS" -> "B")
 
-    val result = parseAndExecute("start n=(1) match p = n-->x where length(p)=3 return x")
+    val result = parseAndExecute("start n=(1) match p = n-->x where length(p)=1 return x")
 
     assertTrue("Result set should not be empty, but it was", !result.isEmpty)
   }
@@ -676,7 +676,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val result = parseAndExecute("start n=(1) match p = n-->x return length(p)")
 
-    assertEquals(List(3), result.columnAs[Int]("LENGTH(p)").toList)
+    assertEquals(List(1), result.columnAs[Int]("LENGTH(p)").toList)
   }
 
   @Test def shouldBeAbleToFilterOnPathNodes() {
@@ -744,10 +744,12 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("a", 1), NodeById("b", 2)).
-      matches(ShortestPath("p", "a", "b", false)).
+      namedPaths(NamedPath("p", ShortestPath("  UNNAMED1", "a", "b", false))).
       returns(ValueReturnItem(EntityValue("p")))
 
     val result = execute(query).toList.head("p").asInstanceOf[Path]
+
+    println(result)
 
     val number_of_relationships_in_path = result.length()
     assert(number_of_relationships_in_path === 1)

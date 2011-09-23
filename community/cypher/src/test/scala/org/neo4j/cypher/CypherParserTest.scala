@@ -25,8 +25,9 @@ import org.neo4j.graphdb.Direction
 import org.scalatest.junit.JUnitSuite
 import parser.{ConsoleCypherParser, CypherParser}
 import org.junit.Test
+import org.scalatest.Assertions
 
-class CypherParserTest extends JUnitSuite {
+class CypherParserTest extends JUnitSuite with Assertions {
   @Test def shouldParseEasiestPossibleQuery() {
     val q = Query.
       start(NodeById("s", 1)).
@@ -725,7 +726,16 @@ class CypherParserTest extends JUnitSuite {
       """start pA = (idx, {key}, "Value") return pA""",
       Query.
         start(NodeByIndex("pA", "idx", ParameterValue("key"), Literal("Value"))).
-        returns (ValueReturnItem(EntityValue("pA"))))
+        returns(ValueReturnItem(EntityValue("pA"))))
+  }
+
+  @Test def testShortestPath() {
+    testQuery(
+      """start a=(0), b=(1) match p = shortestPath( a-->b ) return p""",
+      Query.
+        start(NodeById("a", 0), NodeById("b", 1)).
+        namedPaths(NamedPath("p", ShortestPath("  UNNAMED1", "a", "b", false))).
+        returns(ValueReturnItem(EntityValue("p"))))
   }
 
   @Test def consoleModeParserShouldOutputNullableProperties() {
@@ -744,9 +754,18 @@ class CypherParserTest extends JUnitSuite {
     val parser = new CypherParser()
 
     try {
-      val executionTree = parser.parse(query)
+      val ast = parser.parse(query)
 
-      assertEquals(expectedQuery, executionTree)
+      assert(expectedQuery.start === ast.start)
+      assert(expectedQuery.matching === ast.matching)
+      assert(expectedQuery.namedPaths === ast.namedPaths)
+      assert(expectedQuery.where === ast.where)
+      assert(expectedQuery.returns === ast.returns)
+      assert(expectedQuery.slice === ast.slice)
+      assert(expectedQuery.sort === ast.sort)
+
+
+      assert(expectedQuery === ast)
     } catch {
       case x => {
         println(x)

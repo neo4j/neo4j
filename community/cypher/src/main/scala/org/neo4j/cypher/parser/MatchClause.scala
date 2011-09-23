@@ -47,7 +47,14 @@ trait MatchClause extends JavaTokenParsers with Tokens {
     case p ~ "=" ~ pathSegment => NamedPath(p, pathSegment: _*)
   }
 
-  def pathSegment: Parser[List[Pattern]] = node ~ rep1(relatedTail) ^^ {
+  def pathSegment: Parser[List[Pattern]] = relatedTos | shortestPath
+
+  def shortestPath: Parser[List[Pattern]] = ignoreCase("shortestPath") ~ "(" ~ identity ~ "-->" ~ identity ~ ")" ^^
+    {
+      case _ ~ "(" ~ start ~ "-->" ~ end ~ ")" => List(ShortestPath(namer.name(None), start, end, false))
+    }
+
+  def relatedTos: Parser[List[Pattern]] = node ~ rep1(relatedTail) ^^ {
     case head ~ tails => {
       var fromNode = namer.name(head)
       val list = tails.map(_ match {
