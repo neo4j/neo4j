@@ -34,7 +34,7 @@ class PathImplTests extends Spec {
     val node = new FakeNode
     val path = new PathImpl(node)
 
-    assert(path.length() === 1)
+    assert(path.length() === 0)
     assert(path.startNode() === node)
     assert(path.endNode() === node)
     assert(path.nodes().asScala === Seq(node))
@@ -48,7 +48,7 @@ class PathImplTests extends Spec {
     val rel = new FakeRel(nodA, nodB, typ)
     val path = new PathImpl(nodA, rel, nodB)
 
-    assert(path.length() === 3)
+    assert(path.length() === 1)
     assert(path.startNode() === nodA)
     assert(path.endNode() === nodB)
     assert(path.nodes().asScala === Seq(nodA, nodB))

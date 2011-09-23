@@ -51,20 +51,27 @@ class PatternRelationship(key: String,
   override def toString = key
 }
 
-class VariableLengthPatternRelationship(
-                                         pathName: String,
+class VariableLengthPatternRelationship( pathName: String,
                                          val start: PatternNode,
                                          val end: PatternNode,
-                                         minHops: Int,
-                                         maxHops: Int,
+                                         minHops: Option[Int],
+                                         maxHops: Option[Int],
                                          relType: Option[String],
                                          dir: Direction,
                                          optional:Boolean)
   extends PatternRelationship(pathName, start, end, relType, dir, optional) {
 
   override def getGraphRelationships(node: PatternNode, realNode: Node): Seq[GraphRelationship] = {
+
+    val depthEval = (minHops, maxHops) match {
+      case (None, None) => Evaluators.fromDepth(1)
+      case (Some(min), None) => Evaluators.fromDepth(min)
+      case (None, Some(max)) => Evaluators.includingDepths(1, max)
+      case (Some(min), Some(max)) => Evaluators.includingDepths(min, max)
+    }
+
     val baseTraversalDescription: TraversalDescription = Traversal.description()
-      .evaluator(Evaluators.includingDepths(minHops, maxHops))
+      .evaluator(depthEval)
       .uniqueness(Uniqueness.RELATIONSHIP_PATH)
 
     val traversalDescription = relType match {
