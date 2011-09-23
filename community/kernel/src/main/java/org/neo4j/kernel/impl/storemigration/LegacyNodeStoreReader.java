@@ -33,8 +33,14 @@ import static org.neo4j.kernel.impl.storemigration.LegacyStore.*;
 
 public class LegacyNodeStoreReader
 {
+    private String fileName;
 
-    public Iterable<NodeRecord> readNodeStore( String fileName ) throws IOException
+    public LegacyNodeStoreReader( String fileName )
+    {
+        this.fileName = fileName;
+    }
+
+    public Iterable<NodeRecord> readNodeStore() throws IOException
     {
         FileChannel fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
         int recordLength = 9;

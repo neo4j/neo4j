@@ -34,7 +34,7 @@ public class ReadRecordsTest
     {
         URL nodeStoreFile = getClass().getResource( "oldformatstore/neostore.nodestore.db" );
 
-        Iterable<NodeRecord> records = new LegacyNodeStoreReader().readNodeStore( nodeStoreFile.getFile() );
+        Iterable<NodeRecord> records = new LegacyNodeStoreReader( nodeStoreFile.getFile() ).readNodeStore();
         int nodeCount = 0;
         for ( NodeRecord record : records )
         {
@@ -48,7 +48,7 @@ public class ReadRecordsTest
     {
         URL propertyStoreFile = getClass().getResource( "oldformatstore/neostore.propertystore.db" );
 
-        LegacyPropertyRecord propertyRecord = new LegacyPropertyStoreReader(propertyStoreFile.getFile()).readPropertyRecord( 24 );
+        LegacyPropertyRecord propertyRecord = new LegacyPropertyStoreReader( propertyStoreFile.getFile() ).readPropertyRecord( 24 );
 
         int keyIndexId = propertyRecord.getKeyIndexId();
         assertEquals( 0, keyIndexId );
@@ -63,7 +63,7 @@ public class ReadRecordsTest
         URL stringStoreFile = getClass().getResource( "oldformatstore/neostore.propertystore.db.strings" );
         URL arrayStoreFile = getClass().getResource( "oldformatstore/neostore.propertystore.db.arrays" );
 
-        LegacyPropertyRecord propertyRecord = new LegacyPropertyStoreReader(propertyStoreFile.getFile()).readPropertyRecord( 25 );
+        LegacyPropertyRecord propertyRecord = new LegacyPropertyStoreReader( propertyStoreFile.getFile() ).readPropertyRecord( 25 );
 
         int keyIndexId = propertyRecord.getKeyIndexId();
         assertEquals( 1, keyIndexId );
@@ -78,7 +78,7 @@ public class ReadRecordsTest
         URL stringStoreFile = getClass().getResource( "oldformatstore/neostore.propertystore.db.strings" );
         URL arrayStoreFile = getClass().getResource( "oldformatstore/neostore.propertystore.db.arrays" );
 
-        LegacyPropertyRecord propertyRecord2 = new LegacyPropertyStoreReader(propertyStoreFile.getFile()).readPropertyRecord( 26 );
+        LegacyPropertyRecord propertyRecord2 = new LegacyPropertyStoreReader( propertyStoreFile.getFile() ).readPropertyRecord( 26 );
 
         int keyIndexId = propertyRecord2.getKeyIndexId();
         assertEquals( 2, keyIndexId );

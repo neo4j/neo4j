@@ -30,9 +30,6 @@ import java.util.List;
 
 import org.junit.Test;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.CommonFactories;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
@@ -44,7 +41,7 @@ public class PropertyWriterTest
     @Test
     public void shouldPackASeriesOfPropertiesIntoAPropertyRecord() throws IOException
     {
-        HashMap config = defaultConfig();
+        HashMap config = MigrationTestUtils.defaultConfig();
         File outputDir = new File( "target/outputDatabase" );
         FileUtils.deleteRecursively( outputDir );
         assertTrue( outputDir.mkdirs() );
@@ -76,7 +73,7 @@ public class PropertyWriterTest
     @Test
     public void shouldStoreMultiplePropertiesAcrossASeriesOfRecords() throws IOException
     {
-        HashMap config = defaultConfig();
+        HashMap config = MigrationTestUtils.defaultConfig();
         File outputDir = new File( "target/outputDatabase" );
         FileUtils.deleteRecursively( outputDir );
         assertTrue( outputDir.mkdirs() );
@@ -114,12 +111,4 @@ public class PropertyWriterTest
         propertyStore.close();
     }
 
-    @SuppressWarnings({"unchecked"})
-    private HashMap defaultConfig()
-    {
-        HashMap config = new HashMap();
-        config.put( IdGeneratorFactory.class, CommonFactories.defaultIdGeneratorFactory() );
-        config.put( FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
-        return config;
-    }
 }
