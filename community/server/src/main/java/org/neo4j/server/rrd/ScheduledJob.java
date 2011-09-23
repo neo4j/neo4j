@@ -29,7 +29,7 @@ public class ScheduledJob
     private Timer timer;
     private Logger logger = Logger.getLogger( ScheduledJob.class );
 
-    public ScheduledJob( final Runnable job, String name, long period )
+    public ScheduledJob( final Runnable job, String name, long delay, long period )
     {
         timer = new Timer( name );
         TimerTask runJob = new TimerTask()
@@ -45,7 +45,7 @@ public class ScheduledJob
                 }
             }
         };
-        timer.scheduleAtFixedRate( runJob, 0, period );
+        timer.scheduleAtFixedRate( runJob, delay, period );
     }
 
     public void cancel()

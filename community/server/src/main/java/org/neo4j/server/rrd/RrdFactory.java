@@ -72,7 +72,7 @@ public class RrdFactory
         this.config = config;
     }
 
-    public RrdDb createRrdDbAndSampler( final Database db, JobScheduler scheduler ) throws IOException
+    public RrdDb createRrdDbAndSampler( final Database db, JobScheduler scheduler )
     {
         Sampleable[] primitives = {
                 new MemoryUsedSampleable(),
@@ -94,14 +94,15 @@ public class RrdFactory
                 getDefaultDirectory( db.graph ) );
         final RrdDb rrdb = createRrdb( basePath, join( primitives, usage ) );
 
-        final Sample sample = rrdb.createSample();
+        scheduler.scheduleAtFixedRate(
+                new RrdJob( new RrdSamplerImpl( rrdb, primitives ) ),
+                RRD_THREAD_NAME + "[primitives]",
+                SECONDS.toMillis( 0 ),
+                SECONDS.toMillis( 3 )
+        );
 
         scheduler.scheduleAtFixedRate(
-                new RrdJob( new RrdSamplerImpl( sample, primitives ) ),
-                RRD_THREAD_NAME + "[primitives]", SECONDS.toSeconds( 3 ) );
-
-        scheduler.scheduleAtFixedRate(
-                new RrdJob( new RrdSamplerImpl( sample, usage )
+                new RrdJob( new RrdSamplerImpl( rrdb, usage )
                 {
                     @Override
                     public void updateSample()
@@ -110,7 +111,10 @@ public class RrdFactory
                         super.updateSample();
                     }
                 } ),
-                RRD_THREAD_NAME + "[usage]", SECONDS.toSeconds( 60 ) );
+                RRD_THREAD_NAME + "[usage]",
+                SECONDS.toMillis( 1 ),
+                SECONDS.toMillis( 60 )
+        );
         return rrdb;
     }
 
@@ -130,7 +134,6 @@ public class RrdFactory
     }
 
     protected RrdDb createRrdb( String rrdPathx, Sampleable... sampleables )
-            throws IOException
     {
         File rrdFile = new File( rrdPathx );
         if ( rrdFile.exists() )
@@ -150,19 +153,23 @@ public class RrdFactory
                 return new RrdDb( rrdFile.getAbsolutePath() );
             } catch ( IOException e )
             {
-                if ( e.getMessage().startsWith( "Invalid file header." ) )
-                {
-                    // RRD file has become corrupt
-                    return recreateArchive( rrdFile, sampleables );
-                }
-                throw e;
+                // RRD file may has become corrupt
+                LOG.error( "Unable to open rrd store, attempting to recreate it", e );
+                return recreateArchive( rrdFile, sampleables );
             }
         } else
         {
             RrdDef rrdDef = new RrdDef( rrdFile.getAbsolutePath(), STEP_SIZE );
             defineDataSources( rrdDef, sampleables );
             addArchives( rrdDef );
-            return new RrdDb( rrdDef );
+            try
+            {
+                return new RrdDb( rrdDef );
+            } catch ( IOException e )
+            {
+                LOG.error( "Unable to create new rrd store", e );
+                throw new RuntimeException( e );
+            }
         }
     }
 
@@ -179,7 +186,7 @@ public class RrdFactory
         }
     }
 
-    private RrdDb recreateArchive( File rrdFile, Sampleable[] sampleables ) throws IOException
+    private RrdDb recreateArchive( File rrdFile, Sampleable[] sampleables )
     {
         File file = new File( rrdFile.getParentFile(),
                 rrdFile.getName() + "-invalid-" + System.currentTimeMillis() );
@@ -190,7 +197,7 @@ public class RrdFactory
             return createRrdb( rrdFile.getAbsolutePath(), sampleables );
         }
 
-        throw new IOException( "RRD file ['" + rrdFile.getAbsolutePath()
+        throw new RuntimeException( "RRD file ['" + rrdFile.getAbsolutePath()
                 + "'] is invalid, but I do not have write permissions to recreate it." );
     }
 

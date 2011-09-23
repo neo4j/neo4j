@@ -722,8 +722,7 @@ public class RestfulGraphDatabase
 
     @POST
     @Path( PATH_RELATIONSHIP_INDEX_GET )
-    public Response addToRelationshipIndex( @PathParam( "indexName" ) String indexName, @PathParam( "key" ) String key,
-            @PathParam( "value" ) String value, String objectUri )
+    public Response addToRelationshipIndex( @PathParam( "indexName" ) String indexName, String postBody )
     {
         try
         {

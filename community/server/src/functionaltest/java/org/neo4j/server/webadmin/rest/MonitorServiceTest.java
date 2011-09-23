@@ -109,7 +109,7 @@ public class MonitorServiceTest implements JobScheduler
         this.database.shutdown();
     }
 
-    public void scheduleAtFixedRate( Runnable job, String jobName, long period )
+    public void scheduleAtFixedRate( Runnable job, String jobName, long delay, long period )
     {
     }
 }
