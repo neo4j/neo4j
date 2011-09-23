@@ -23,6 +23,7 @@ import java.util.{Iterator => JavaIterator}
 import java.lang.{Iterable => JavaIterable}
 import org.neo4j.graphdb.{Relationship, PropertyContainer, Node}
 import scala.collection.JavaConverters._
+import org.neo4j.kernel.Traversal
 
 case class PathImpl(pathEntities: PropertyContainer*)
   extends org.neo4j.graphdb.Path
@@ -69,5 +70,5 @@ case class PathImpl(pathEntities: PropertyContainer*)
     pathEntities.foreach(f(_))
   }
 
-  override def toString(): String = "Path(" + pathEntities.mkString(", ") + ")"
+  override def toString(): String = Traversal.defaultPathToString( this );
 }
