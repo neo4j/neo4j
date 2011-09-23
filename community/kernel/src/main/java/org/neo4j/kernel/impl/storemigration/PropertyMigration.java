@@ -56,7 +56,9 @@ public class PropertyMigration
                     properties.add( extractValue( propertyRecord ) );
                     propertyRecord = propertyStoreReader.readPropertyRecord( propertyRecord.getNextProp() );
                 }
-                propertyWriter.writeProperties( properties );
+                long propertyRecordId = propertyWriter.writeProperties( properties );
+//                nodeRecord.setNextProp( propertyRecordId );
+//                nodeStore.writeNode(nodeRecord)
             }
         }
     }

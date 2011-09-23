@@ -21,11 +21,54 @@ package org.neo4j.kernel.impl.storemigration;
 
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class LegacyStore
 {
     static final String FROM_VERSION = "NodeStore v0.9.9";
+    private String storageFileName;
+    private LegacyPropertyStoreReader propertyStoreReader;
+    private LegacyNodeStoreReader legacyNodeStoreReader;
+    private LegacyDynamicRecordFetcher dynamicRecordFetcher;
+
+    public LegacyStore( String storageFileName ) throws IOException
+    {
+        this.storageFileName = storageFileName;
+        initStorage();
+    }
+
+    protected void initStorage() throws IOException
+    {
+//        relTypeStore = new RelationshipTypeStore( getStorageFileName()
+//            + ".relationshiptypestore.db", getConfig(), IdType.RELATIONSHIP_TYPE );
+        propertyStoreReader = new LegacyPropertyStoreReader( getStorageFileName() + ".propertystore.db" );
+        dynamicRecordFetcher = new LegacyDynamicRecordFetcher( getStorageFileName() + ".propertystore.db.strings", getStorageFileName() + ".propertystore.db.arrays" );
+//        relStore = new RelationshipStore( getStorageFileName()
+//            + ".relationshipstore.db", getConfig() );
+        legacyNodeStoreReader = new LegacyNodeStoreReader( getStorageFileName() + ".nodestore.db" );
+    }
+
+    public String getStorageFileName()
+    {
+        return storageFileName;
+    }
+
+    public LegacyPropertyStoreReader getPropertyStoreReader()
+    {
+        return propertyStoreReader;
+    }
+
+    public LegacyNodeStoreReader getLegacyNodeStoreReader()
+    {
+        return legacyNodeStoreReader;
+    }
+
+    public LegacyDynamicRecordFetcher getDynamicRecordFetcher()
+    {
+        return dynamicRecordFetcher;
+    }
 
     public static long getUnsignedInt(ByteBuffer buf)
     {

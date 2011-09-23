@@ -28,6 +28,7 @@ import java.net.URL;
 import java.util.HashMap;
 
 import org.junit.Test;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.util.FileUtils;
 
@@ -36,29 +37,31 @@ public class PropertyMigrationTest
     @Test
     public void shouldRewrite() throws IOException
     {
-        URL legacyNodeStoreFile = getClass().getResource( "oldformatstore/neostore.nodestore.db" );
-        URL legacyPropertyStoreFile = getClass().getResource( "oldformatstore/neostore.propertystore.db" );
-        URL legacyStringStoreFile = getClass().getResource( "oldformatstore/neostore.propertystore.db.strings" );
-        URL legacyArrayStoreFile = getClass().getResource( "oldformatstore/neostore.propertystore.db.arrays" );
+        URL legacyStoreResource = getClass().getResource( "oldformatstore/neostore" );
 
-        LegacyPropertyStoreReader propertyStoreReader = new LegacyPropertyStoreReader( legacyPropertyStoreFile.getFile() );
-        LegacyDynamicRecordFetcher legacyDynamicRecordFetcher = new LegacyDynamicRecordFetcher( legacyStringStoreFile.getFile(), legacyArrayStoreFile.getFile() );
-        LegacyNodeStoreReader legacyNodeStoreReader = new LegacyNodeStoreReader( legacyNodeStoreFile.getFile() );
+        LegacyStore legacyStore = new LegacyStore( legacyStoreResource.getFile() );
+
+        LegacyPropertyStoreReader propertyStoreReader = legacyStore.getPropertyStoreReader();
+        LegacyDynamicRecordFetcher legacyDynamicRecordFetcher = legacyStore.getDynamicRecordFetcher();
+        LegacyNodeStoreReader legacyNodeStoreReader = legacyStore.getLegacyNodeStoreReader();
 
         HashMap config = MigrationTestUtils.defaultConfig();
         File outputDir = new File( "target/outputDatabase" );
         FileUtils.deleteRecursively( outputDir );
         assertTrue( outputDir.mkdirs() );
 
-        File propertyStoreFile = new File( outputDir, "neostore.propertystore.db" );
-        PropertyStore.createStore( propertyStoreFile.getPath(), config );
-        PropertyStore propertyStore = new PropertyStore( propertyStoreFile.getPath(), config );
+        String storeFileName = "target/outputDatabase/neostore";
+        config.put( "neo_store", storeFileName );
+        NeoStore.createStore( storeFileName, config );
+        NeoStore neoStore = new NeoStore( config );
 
-        new PropertyMigration( legacyNodeStoreReader, propertyStoreReader, legacyDynamicRecordFetcher ).migrateNodeProperties( new PropertyWriter( propertyStore  ));
+        PropertyStore propertyStore = neoStore.getPropertyStore();
+
+        new PropertyMigration( legacyNodeStoreReader, propertyStoreReader, legacyDynamicRecordFetcher ).migrateNodeProperties( new PropertyWriter( propertyStore ) );
 
         assertEquals( 1000, propertyStore.getHighId() );
 
-        propertyStore.close();
+        neoStore.close();
     }
 
 }
