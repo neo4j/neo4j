@@ -21,7 +21,8 @@ package org.neo4j.cypher.docgen
 
 import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.{Path, Node}
+
 class MatchTest extends DocumentingTestBase {
   override def indexProps: List[String] = List("name")
 
@@ -138,13 +139,13 @@ class MatchTest extends DocumentingTestBase {
     )
   }
 
-  @Test def introduceNamedPath() {
+  @Test def shortestPathBetweenTwoNodes() {
     testQuery(
-      title = "Named path",
-      text = "If you want to return or filter on a path in your pattern graph, you can a introduce a named path.",
-      queryText = """start a=(%A%) match p = a-->b return p""",
+      title = "Shortest path",
+      text = "Finding the shortest path between two nodes is as easy as using the shortestPath-function, like this.",
+      queryText = """start d=(%D%), e=(%E%) match p = shortestPath( d-->e ) return p""",
       returns = """The two paths starting from the first node.""",
-      (p) => assertEquals(2, p.toSeq.length)
+      (p) => assertEquals(3, p.toList.head("p").asInstanceOf[Path].length() )
     )
   }
 
@@ -159,6 +160,17 @@ return a,b,c,d""",
       p => {
         assertEquals(List(Map("a" -> node("A"), "b" -> node("B"), "c" -> node("E"), "d" -> node("C"))), p.toList)
       }
+    )
+  }
+
+
+  @Test def introduceNamedPath() {
+    testQuery(
+      title = "Named path",
+      text = "If you want to return or filter on a path in your pattern graph, you can a introduce a named path.",
+      queryText = """start a=(%A%) match p = a-->b return p""",
+      returns = """The two paths starting from the first node.""",
+      (p) => assertEquals(2, p.toSeq.length)
     )
   }
 
