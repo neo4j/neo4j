@@ -19,14 +19,15 @@
  */
 package org.neo4j.cypher.pipes.matching
 
-import org.neo4j.cypher.commands.{VarLengthRelatedTo, RelatedTo, Pattern}
 import org.neo4j.cypher.{SyntaxException, SymbolTable}
 import org.neo4j.graphdb.{Relationship, Node}
+import org.neo4j.cypher.commands._
+import collection.immutable.Map
 
 class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable) {
   type PatternGraph = Map[String, PatternElement]
 
-  val patternGraph: PatternGraph = buildPatternGraph(boundIdentifiers)
+  val patternGraph: PatternGraph = buildPatternGraph()
 
   def createNullValuesForOptionalElements(matchedGraph: Map[String, Any]): Map[String, Null] = {
     (patternGraph.keySet -- matchedGraph.keySet).map(_ -> null).toMap
@@ -58,9 +59,15 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable) {
   This method is mutable, but it is only called from the constructor of this class. The created PatternGraph
    is immutable and thread safe.
    */
-  private def buildPatternGraph(bindings: SymbolTable): PatternGraph = {
+  private def buildPatternGraph(): PatternGraph = {
     val patternNodeMap: scala.collection.mutable.Map[String, PatternNode] = scala.collection.mutable.Map()
     val patternRelMap: scala.collection.mutable.Map[String, PatternRelationship] = scala.collection.mutable.Map()
+
+    boundIdentifiers.identifiers.foreach(_ match {
+      case NodeIdentifier(nodeName) => patternNodeMap(nodeName) = new PatternNode(nodeName)
+      case _ => None
+    })
+
 
     patterns.foreach(_ match {
       case RelatedTo(left, right, rel, relType, dir, optional) => {
@@ -74,17 +81,24 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable) {
         val endNode: PatternNode = patternNodeMap.getOrElseUpdate(end, new PatternNode(end))
         patternRelMap(pathName) = startNode.relateViaVariableLengthPathTo(pathName, endNode, minHops, maxHops, relType, dir, optional)
       }
+      case _ =>
     })
 
-    val patternGraph = (patternNodeMap.values ++ patternRelMap.values).toSeq
+    validatePattern(patternNodeMap.toMap, patternRelMap.toMap, boundIdentifiers)
 
-    validatePattern(patternGraph, bindings)
-
-    patternGraph.map(x => x.key -> x).toMap
+    val pattern = (patternNodeMap.values ++ patternRelMap.values).toSeq
+    pattern.map(x => x.key -> x).toMap
   }
 
-  def validatePattern(patternElements: Seq[PatternElement], bindings: SymbolTable) {
-    val elementsMap = patternElements.map(x => (x.key -> x)).toMap
+  def validatePattern( patternNodes: Map[String, PatternNode],
+                       patternRels: Map[String, PatternRelationship],
+                       bindings: SymbolTable):Map[String,PatternElement] = {
+    val overlaps = patternNodes.keys.filter(patternRels.keys.toSeq contains)
+    if(overlaps.nonEmpty) {
+      throw new SyntaxException("Some identifiers are used as both relationships and nodes: " + overlaps.mkString(", "))
+    }
+
+    val elementsMap: Map[String, PatternElement] = (patternNodes.values ++ patternRels.values).map(x => (x.key -> x)).toMap
     var visited = scala.collection.mutable.Seq[PatternElement]()
 
     def visit(x: PatternElement) {
@@ -108,12 +122,13 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable) {
       }
     })
 
-    val notVisited: Seq[PatternElement] = patternElements.toList -- visited.toList
+    val notVisited = elementsMap.values.filterNot(visited contains)
 
     if (notVisited.nonEmpty) {
       throw new SyntaxException("All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These identifiers were found to be disconnected: " + notVisited.map(_.key).mkString("", ", ", ""))
     }
 
+    elementsMap
   }
 
 }

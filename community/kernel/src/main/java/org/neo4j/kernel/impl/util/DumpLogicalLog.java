@@ -40,56 +40,90 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 
 public class DumpLogicalLog
 {
-    private static final String PREFIX = "_logical.log.v";
+    public int dump( String filenameOrDirectory ) throws IOException
+    {
+        int logsFound = 0;
+        for ( String fileName : filenamesOf( filenameOrDirectory, getLogPrefix() ) )
+        {
+            logsFound++;
+            System.out.println( "=== " + fileName + " ===" );
+            FileChannel fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
+            ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
+                    + Xid.MAXBQUALSIZE * 10 );
+            long logVersion, prevLastCommittedTx;
+            try
+            {
+                long[] header = LogIoUtils.readLogHeader( buffer, fileChannel, true );
+                logVersion = header[0];
+                prevLastCommittedTx = header[1];
+            }
+            catch ( IOException ex )
+            {
+                System.out.println( "Unable to read timestamp information, "
+                    + "no records in logical log." );
+                System.out.println( ex.getMessage() );
+                fileChannel.close();
+                throw ex;
+            }
+            System.out.println( "Logical log version: " + logVersion + " with prev committed tx[" +
+                prevLastCommittedTx + "]" );
+            long logEntriesFound = 0;
+            XaCommandFactory cf = instantiateCommandFactory();
+            while ( readAndPrintEntry( fileChannel, buffer, cf ) )
+            {
+                logEntriesFound++;
+            }
+            fileChannel.close();
+        }
+        return logsFound;
+    }
+    
+    protected static boolean isAGraphDatabaseDirectory( String fileName )
+    {
+        File file = new File( fileName );
+        return file.isDirectory() && new File( file, "neostore" ).exists();
+    }
+    
+    protected boolean readAndPrintEntry( FileChannel fileChannel, ByteBuffer buffer, XaCommandFactory cf )
+            throws IOException
+    {
+        LogEntry entry = LogIoUtils.readEntry( buffer, fileChannel, cf );
+        if ( entry != null )
+        {
+            System.out.println( entry.toString() );
+            return true;
+        }
+        return false;
+    }
+    
+    protected XaCommandFactory instantiateCommandFactory()
+    {
+        return new CommandFactory();
+    }
+
+    protected String getLogPrefix()
+    {
+        return "nioneo_logical.log";
+    }
 
     public static void main( String args[] ) throws IOException
     {
         for ( String arg : args )
         {
-            for ( String fileName : filenamesOf( arg ) )
-            {
-                System.out.println( "=== " + fileName + " ===" );
-                FileChannel fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
-                ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
-                        + Xid.MAXBQUALSIZE * 10 );
-                long logVersion, prevLastCommittedTx;
-                try
-                {
-                    long[] header = LogIoUtils.readLogHeader( buffer, fileChannel, true );
-                    logVersion = header[0];
-                    prevLastCommittedTx = header[1];
-                }
-                catch ( IOException ex )
-                {
-                    System.out.println( "Unable to read timestamp information, "
-                        + "no records in logical log." );
-                    System.out.println( ex.getMessage() );
-                    fileChannel.close();
-                    return;
-                }
-                System.out.println( "Logical log version: " + logVersion + " with prev committed tx[" +
-                    prevLastCommittedTx + "]" );
-                long logEntriesFound = 0;
-                XaCommandFactory cf = new CommandFactory();
-                while ( readEntry( fileChannel, buffer, cf ) )
-                {
-                    logEntriesFound++;
-                }
-                fileChannel.close();
-            }
+            new DumpLogicalLog().dump( arg );
         }
     }
-
-    private static String[] filenamesOf( String string )
+    
+    protected static String[] filenamesOf( String filenameOrDirectory, final String prefix )
     {
-        File file = new File( string );
+        File file = new File( filenameOrDirectory );
         if ( file.isDirectory() )
         {
             File[] files = file.listFiles( new FilenameFilter()
             {
                 public boolean accept( File dir, String name )
                 {
-                    return name.contains( PREFIX );
+                    return name.contains( prefix ) && !name.contains( "active" );
                 }
             } );
             Collection<String> result = new TreeSet<String>( sequentialComparator() );
@@ -101,7 +135,7 @@ public class DumpLogicalLog
         }
         else
         {
-            return new String[] { string };
+            return new String[] { filenameOrDirectory };
         }
     }
 
@@ -117,24 +151,12 @@ public class DumpLogicalLog
 
             private Integer versionOf( String string )
             {
-                String toFind = PREFIX;
+                String toFind = ".v";
                 int index = string.indexOf( toFind );
-                if ( index == -1 ) throw new RuntimeException( string );
+                if ( index == -1 ) return Integer.MAX_VALUE;
                 return Integer.valueOf( string.substring( index + toFind.length() ) );
             }
         };
-    }
-
-    private static boolean readEntry( FileChannel channel, ByteBuffer buf,
-            XaCommandFactory cf ) throws IOException
-    {
-        LogEntry entry = LogIoUtils.readEntry( buf, channel, cf );
-        if ( entry != null )
-        {
-            System.out.println( entry.toString() );
-            return true;
-        }
-        return false;
     }
 
     private static class CommandFactory extends XaCommandFactory

@@ -32,7 +32,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
   @Test def shouldGetReferenceNode() {
     val query = Query.
-      start(NodeById("node", 0)).
+      start(NodeById("node", Literal(0))).
       returns(ValueReturnItem(EntityValue("node")))
 
     val result = execute(query)
@@ -247,7 +247,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     indexNode(n, idxName, key, value)
 
     val query = Query.
-      start(NodeByIndex("n", idxName, key, value)).
+      start(NodeByIndex("n", idxName, Literal(key), Literal(value))).
       returns(ValueReturnItem(EntityValue("n")))
 
     val result = execute(query)
@@ -263,10 +263,25 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     indexNode(n, idxName, key, value)
 
     val query = Query.
-      start(NodeByIndexQuery("n", idxName, key + ":" + value)).
+      start(NodeByIndexQuery("n", idxName, Literal(key + ":" + value))).
       returns(ValueReturnItem(EntityValue("n")))
 
     val result = execute(query)
+
+    assertEquals(List(Map("n" -> n)), result.toList)
+  }
+
+  @Test def shouldFindNodesByIndexParameters() {
+    val n = createNode()
+    val idxName = "idxName"
+    val key = "key"
+    indexNode(n, idxName, key, "Andres")
+
+    val query = Query.
+      start(NodeByIndex("n", idxName, Literal(key), ParameterValue("value"))).
+      returns(ValueReturnItem(EntityValue("n")))
+
+    val result = execute(query, "value" -> "Andres")
 
     assertEquals(List(Map("n" -> n)), result.toList)
   }
@@ -279,7 +294,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     indexNode(n, idxName, key, value)
 
     val query = Query.
-      start(NodeByIndexQuery("n", idxName, key + ":andr*")).
+      start(NodeByIndexQuery("n", idxName, Literal(key + ":andr*"))).
       returns(ValueReturnItem(EntityValue("n")))
 
     val result = execute(query)
@@ -714,6 +729,33 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     ), result.columnAs[Path]("p").toList)
   }
 
+  @Test def shouldHandleBoundNodesNotPartOfThePattern() {
+    createNodes("A", "B", "C")
+    relate("A" -> "KNOWS" -> "B")
+
+    val result = parseAndExecute("start a=(1), c = (3) match a-->b return a,b,c").toList
+
+    assert(List(Map("a"->node("A"), "b"->node("B"), "c"->node("C"))) === result)
+  }
+
+  @Test def shouldReturnShortestPath() {
+    createNodes("A", "B")
+    val r1 = relate("A" -> "KNOWS" -> "B")
+
+    val query = Query.
+      start(NodeById("a", 1), NodeById("b", 2)).
+      matches(ShortestPath("p", "a", "b", false)).
+      returns(ValueReturnItem(EntityValue("p")))
+
+    val result = execute(query).toList.head("p").asInstanceOf[Path]
+
+    val number_of_relationships_in_path = result.length()
+    assert(number_of_relationships_in_path === 1)
+    assert(result.startNode() === node("A"))
+    assert(result.endNode() === node("B"))
+    assert(result.lastRelationship() === r1)
+  }
+
   @Test def shouldBeAbleToTakeParamsInDifferentTypes() {
     createNodes("A", "B", "C", "D", "E")
 
@@ -750,10 +792,22 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
   @Test def shouldBeAbleToTakeParamsFromParsedStuff() {
     createNodes("A")
 
-    val query = new CypherParser().parse("start pA = (::a) return pA")
+    val query = new CypherParser().parse("start pA = ({a}) return pA")
     val result = execute(query, "a" -> Seq[Long](1))
 
     assertEquals(List(Map("pA" -> node("A"))), result.toList)
+  }
+
+  @Test def shouldBeAbleToTakeParamsForEqualityComparisons() {
+    createNode(Map("name" -> "Andres"))
+
+    val query = Query.
+      start(NodeById("a", 1)).
+      where(Equals(PropertyValue("a", "name"), ParameterValue("name")))
+      .returns(ValueReturnItem(EntityValue("a")))
+
+    assert(0 === execute(query, "name" -> "Tobias").toList.size)
+    assert(1 === execute(query, "name" -> "Andres").toList.size)
   }
 
   @Test(expected = classOf[ParameterNotFoundException]) def shouldComplainWhenMissingParams() {

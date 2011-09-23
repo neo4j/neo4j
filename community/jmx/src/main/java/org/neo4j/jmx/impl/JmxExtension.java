@@ -73,8 +73,8 @@ public final class JmxExtension extends KernelExtension<JmxExtension.JmxData>
                 }
             }
             catch ( Exception e )
-            {   // Unexpected exception, worth noting in the log
-                log.info( "Failed to register JMX Bean " + provider );
+            { // Unexpected exception
+                log.info( "Failed to register JMX Bean " + provider + " (" + e + ")" );
             }
         }
         try

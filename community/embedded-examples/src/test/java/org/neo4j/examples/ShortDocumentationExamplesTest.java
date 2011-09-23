@@ -21,6 +21,10 @@ package org.neo4j.examples;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.test.AsciiDocGenerator.createSourceSnippet;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createCypherSnippet;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphViz;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
 
 import java.util.Map;
 
@@ -47,7 +51,6 @@ import org.neo4j.test.GraphHolder;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.JavaTestDocsGenerator;
 import org.neo4j.test.TestData;
-import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 public class ShortDocumentationExamplesTest implements GraphHolder
 {
@@ -91,9 +94,10 @@ public class ShortDocumentationExamplesTest implements GraphHolder
     public void pathUniquenesExample()
     {
         Node start = data.get().get( "Pet0" );
-        gen.get().addSnippet( "graph", AsciidocHelper.createGraphViz("descendants1", graphdb(), gen.get().getTitle()) );
+        gen.get().addSnippet( "graph", createGraphViz("descendants1", graphdb(), gen.get().getTitle()) );
         String tagName = "traverser";
-        gen.get().addSnippet( tagName, gen.get().createSourceSnippet(tagName, this.getClass()) );
+        gen.get();
+        gen.get().addSnippet( tagName, createSourceSnippet(tagName, this.getClass()) );
         // START SNIPPET: traverser
         final Node target = data.get().get( "Principal1" );
         TraversalDescription td = Traversal.description().uniqueness(Uniqueness.NODE_PATH ).evaluator( new Evaluator()
@@ -118,7 +122,7 @@ public class ShortDocumentationExamplesTest implements GraphHolder
             count++;
             output += path.toString()+"\n";
         }
-        gen.get().addSnippet( "output", AsciidocHelper.createOutputSnippet(output) );
+        gen.get().addSnippet( "output", createOutputSnippet(output) );
         assertEquals(2, count);
     }
     
@@ -126,15 +130,17 @@ public class ShortDocumentationExamplesTest implements GraphHolder
      * In this example, we are going to examine a tree structure of +directories+ and
      * +files+. Also, there are users that own files and roles that can be assigned to
      * users. Roles can have permissions on directory or files structures (here we model
-     * only canRead, as opposed to full +rwx+ Unix permissions) and be nested.
+     * only canRead, as opposed to full +rwx+ Unix permissions) and be nested. A more thorough
+     * example of modeling ACL structures can be found at 
+     * http://www.xaprb.com/blog/2006/08/16/how-to-build-role-based-access-control-in-sql/[How to Build Role-Based Access Control in SQL]
      * 
-     * @@graph1
+     * include::ACL-graph.txt[]
      * 
      * == Find all files in the directory structure ==
      * 
      * In order to find all files contained in this structure, we need a variable length
      * query that follows all +contains+ relationships and retrieves the nodes at the other
-     * end of the +leaf+ relationships
+     * end of the +leaf+ relationships.
      * 
      *
      * @@query1
@@ -145,97 +151,117 @@ public class ShortDocumentationExamplesTest implements GraphHolder
      * 
      * == What files are owned by whom? ==
      * 
-     * If we introduce the concept of ownership on files, we then can ask for files owned by
-     * +User1+
+     * If we introduce the concept of ownership on files, we then can ask for the owners of the files we find -
+     *  connected via +owns+ realtionships to file nodes.
      * 
      * @@query2
      * 
-     * Resulting in 
+     * Returning the owners of all files below the +FileRoot+ node.
      * 
      * @@result2
      * 
      *
-     * == Who has access to an item? ==
+     * == Who has access to a File? ==
      * 
-     * If we now want to check what users have read access to +File1+, and define our ACL as
+     * If we now want to check what users have read access to all Files, and define our ACL as
      * 
      * - the root directory has no access granted
-     * - The owning user of a File has read access
-     * - any user having a role that has been granted read access to one of the parent folders of the Item has read access.
+     * - any user having a role that has been granted +canRead+ access to one of the parent folders of a File has read access.
+     * 
+     * In order to find users that can read any part of the parent folder hierarchy above the files,
+     * Cypher provides optional relationships that make certain subgraphs of the matching pattern optional.
      * 
      * @@query3
      * 
      * @@result3
      * 
+     * The results listed above contain NULL values for optional path segments, which can be mitigated by either asking several
+     * queries or returning just the really needed values. 
+     * 
      */
     @Documented
     @Graph(autoIndexNodes=true, value = {
             "Root has Role",
+            "Role subRole SUDOers",
+            "Role subRole User",
+            "User member User1",
+            "User member User2",
             "Root has FileRoot",
-            "AdminUser3 hasRole User",
-            "User1 hasRole User",
-            "User2 hasRole User",
-            "User isA Role",
-            "Admins isA Role",
-            "Admin1 subRoleOf Admins",
-            "Admin2 subRoleOf Admins",
-            "AdminUser3 hasRole Admins",
-            "User2 hasRole Admin2",
-            "User1 hasRole Admin1",
+            "FileRoot contains Home",
+            "Home contains HomeU1",
+            "Home contains HomeU2",
+            "HomeU1 leaf File1",
+            "HomeU2 contains Desktop",
+            "Desktop leaf File2",
+            "FileRoot contains etc",
+            "etc contains init.d",
+            "SUDOers member Admin1",
+            "SUDOers member Admin2",
             "User1 owns File1",
             "User2 owns File2",
-        "Dir2 leaf File1", 
-        "Admins canRead Dir0", 
-        "Admin1 canRead Dir2", 
-        "Admin2 canRead Dir3", 
-        "FileRoot contains Dir0", 
-        "Dir1 contains Dir2", 
-        "Dir0 contains Dir3", 
-        "Dir0 contains Dir1",
-        "Dir3 leaf File2"})
+        "SUDOers canRead FileRoot"})
     @Test
-    public void file_trees_and_graphs()
+    public void ACL_structures_in_graphs()
     {
         data.get();
-        gen.get().addSnippet( "graph1", AsciidocHelper.createGraphViz("The Domain Structure", graphdb(), gen.get().getTitle()) );
-        CypherParser parser = new CypherParser();
-        ExecutionEngine engine = new ExecutionEngine(db);
+        gen.get().addSnippet( "graph1", createGraphViz("The Domain Structure", graphdb(), gen.get().getTitle()) );
+        
         
         //Files
         //TODO: can we do open ended?
-        String query = "start root=(node_auto_index,'name:Dir0') match (root)-[:contains^0..10]->()-[:leaf]->(file) return file";
-        gen.get().addSnippet( "query1", AsciidocHelper.createCypherSnippet( query ) );
+        String query = "start root=(node_auto_index,name,'FileRoot') match (root)-[:contains^0..10]->()-[:leaf]->(file) return file";
+        gen.get().addSnippet( "query1", createCypherSnippet( query ) );
         String result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("File1") );
-        gen.get().addSnippet( "result1", AsciidocHelper.createOutputSnippet( result ) );
+        gen.get().addSnippet( "result1", createOutputSnippet( result ) );
         
         //Ownership
-        query = "start root=(node_auto_index,'name:Dir0') match (root)-[:contains^0..10]->()-[:leaf]->(file)<-[:owns]-(user) where user.name = 'User1' return file, user";
-        gen.get().addSnippet( "query2", AsciidocHelper.createCypherSnippet( query ) );
+        query = "start root=(node_auto_index,name, 'FileRoot') match (root)-[:contains^0..10]->()-[:leaf]->(file)<-[:owns]-(user) return file, user";
+        gen.get().addSnippet( "query2", createCypherSnippet( query ) );
         result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("File1") );
-        assertFalse( result.contains("File2") );
-        gen.get().addSnippet( "result2", AsciidocHelper.createOutputSnippet( result ) );
+        assertTrue( result.contains("User1") );
+        assertTrue( result.contains("User2") );
+        assertTrue( result.contains("File2") );
+        assertFalse( result.contains("Admin1") );
+        assertFalse( result.contains("Admin2") );
+        gen.get().addSnippet( "result2", createOutputSnippet( result ) );
         
         //ACL
-        //TODO how to check for any canRead relationships higher up Dir0?
-        query = "start root=(node_auto_index,'name:FileRoot') " +
-        		"match " +
-        		"(root)-[:contains^0..10]->(dir)-[:leaf]->(file)," +
-        		"(dir)<-[:canRead]-(role)," +
-        		"(role)<-[:hasRole]-(user)," +
-        		"(file)<-[:owns]-(owner) " +
-        		"return root, file, dir, role, user, owner";
-        gen.get().addSnippet( "query3", AsciidocHelper.createCypherSnippet( query ) );
+        query = "START file=(node_auto_index, 'name:File*') " +
+        		"MATCH " +
+        		"file<-[:leaf]-dir, " +
+        		"path = dir<-[:contains^1..10]-parent," +
+        		"parent<-[?:canRead]-role2-[:member]->readUserMoreThan1DirUp, " +
+                "dir<-[?:canRead]-role1-[:member]->readUser1DirUp " +
+        		//TODO: would like to get results the order I specify
+        		"RETURN path, file, role1, readUser1DirUp, role2, readUserMoreThan1DirUp";
+        gen.get().addSnippet( "query3", createCypherSnippet( query ) );
         result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("File1") );
         assertTrue( result.contains("File2") );
-        gen.get().addSnippet( "result3", AsciidocHelper.createOutputSnippet( result ) );
+        assertTrue( result.contains("Admin1") );
+        assertTrue( result.contains("Admin2") );
+        gen.get().addSnippet( "result3", createOutputSnippet( result ) );
         
         
     }
+    
+    @Test
+    @Graph(value = {"A FOLLOW B", "B FOLLOW A", "B FOLLOW C"}, autoIndexNodes = true)
+    public void find_the_followers_that_follow_me_back()
+    {
+        data.get();
+        String query = "START b=(node_auto_index,'name:B') " +
+        		"MATCH a-[:FOLLOW]->b, b-[:FOLLOW]->a RETURN a ";
+        String result = engine.execute( parser.parse( query ) ).toString();
+        assertTrue(result.contains( "A" ));
+        assertFalse(result.contains( "C" ));
+    }
 
     private static ImpermanentGraphDatabase db;
+    private CypherParser parser;
+    private ExecutionEngine engine;
     @BeforeClass
     public static void init()
     {
@@ -246,6 +272,8 @@ public class ShortDocumentationExamplesTest implements GraphHolder
     public void setUp() {
         db.cleanContent();
         gen.get().setGraph( db );
+        parser = new CypherParser();
+        engine = new ExecutionEngine(db);
     }
     @After
     public void doc() {

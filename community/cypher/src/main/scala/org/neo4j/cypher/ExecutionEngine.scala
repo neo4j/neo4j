@@ -25,6 +25,8 @@ import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
 import collection.Seq
 import java.lang.{Error, Iterable}
+import java.util.{Map => JavaMap}
+
 
 class ExecutionEngine(graph: GraphDatabaseService) {
   checkScalaVersion()
@@ -33,6 +35,10 @@ class ExecutionEngine(graph: GraphDatabaseService) {
   @throws(classOf[SyntaxException])
   def execute(query: Query): ExecutionResult = execute(query, Map[String, Any]())
 
+  // This is here to support Java people
+  @throws(classOf[SyntaxException])
+  def execute(query: Query, map: JavaMap[String, Any]): ExecutionResult = execute(query, map.asScala.toMap)
+
   @throws(classOf[SyntaxException])
   def execute(query: Query, params: Map[String, Any]): ExecutionResult = query match {
     case Query(returns, start, matching, where, aggregation, sort, slice, namedPaths) => {
@@ -40,6 +46,8 @@ class ExecutionEngine(graph: GraphDatabaseService) {
       var pipe = createSourcePumps(paramPipe, start.startItems.toList)
 
       pipe = createMatchPipe(matching, namedPaths, pipe)
+
+      pipe = createShortestPathPipe(pipe, matching)
 
       namedPaths match {
         case None =>
@@ -82,6 +90,16 @@ class ExecutionEngine(graph: GraphDatabaseService) {
     }
   }
 
+  private def createShortestPathPipe(source: Pipe, matching: Option[Match]): Pipe = matching match {
+    case Some(m) => {
+      var result = source
+      val shortestPaths = m.patterns.filter(_.isInstanceOf[ShortestPath]).map(_.asInstanceOf[ShortestPath])
+      shortestPaths.foreach(p => result = new ShortestPathPipe(result, p.pathName, p.start, p.end, p.optional))
+      result
+    }
+    case None => source
+  }
+
   private def createMatchPipe(unnamedPaths: Option[Match], namedPaths: Option[NamedPaths], pipe: Pipe): Pipe = {
     val namedPattern = namedPaths match {
       case Some(m) => m.paths.flatten
@@ -119,13 +137,16 @@ class ExecutionEngine(graph: GraphDatabaseService) {
   private def createStartPipe(lastPipe: Pipe, item: StartItem): Pipe = item match {
     case NodeByIndex(varName, idxName, key, value) =>
       new StartPipe(lastPipe, varName, m => {
-        val indexHits: Iterable[Node] = graph.index.forNodes(idxName).get(key, value)
+        val keyVal = key(m).toString
+        val valueVal = value(m)
+        val indexHits: Iterable[Node] = graph.index.forNodes(idxName).get(keyVal, valueVal)
         indexHits.asScala
       })
 
     case NodeByIndexQuery(varName, idxName, query) =>
       new StartPipe(lastPipe, varName, m => {
-        val indexHits: Iterable[Node] = graph.index.forNodes(idxName).query(query)
+        val queryText = query(m)
+        val indexHits: Iterable[Node] = graph.index.forNodes(idxName).query(queryText)
         indexHits.asScala
       })
 

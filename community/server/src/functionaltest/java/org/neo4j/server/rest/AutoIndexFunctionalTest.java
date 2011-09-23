@@ -84,7 +84,7 @@ public class AutoIndexFunctionalTest extends AbstractRestFunctionalTestBase
     public void AutoIndex_is_not_removable() throws DatabaseBlockedException,
             JsonParseException
     {
-        data.get();
+        //data.get();
         gen.get().expectedStatus( 405 ).delete( nodeAutoIndexUri() ).entity();
     }
 

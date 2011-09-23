@@ -87,9 +87,9 @@ public abstract class LogBackedXaDataSource extends XaDataSource
     }
 
     @Override
-    public void rotateLogicalLog() throws IOException
+    public long rotateLogicalLog() throws IOException
     {
-        logicalLog.rotate();
+        return logicalLog.rotate();
     }
 
     @Override

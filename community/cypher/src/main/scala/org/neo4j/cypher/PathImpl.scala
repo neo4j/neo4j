@@ -29,6 +29,8 @@ case class PathImpl(pathEntities: PropertyContainer*)
   with Traversable[PropertyContainer]
   with CypherArray {
 
+
+
   assert( isProperPath )
 
   def isProperPath: Boolean = {

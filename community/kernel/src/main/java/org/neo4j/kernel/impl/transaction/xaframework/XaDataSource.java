@@ -176,7 +176,7 @@ public abstract class XaDataSource
      *
      * @throws IOException if unable to read old log or write to new one
      */
-    public void rotateLogicalLog() throws IOException
+    public long rotateLogicalLog() throws IOException
     {
         throw new UnsupportedOperationException( getClass().getName() );
     }

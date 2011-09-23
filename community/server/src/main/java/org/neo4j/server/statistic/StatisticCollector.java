@@ -34,8 +34,8 @@ public class StatisticCollector
 
     private volatile long start = System.currentTimeMillis();
     private volatile long count = 0;
-    private volatile StatisticData currentSize = StatisticData.empty();
-    private volatile StatisticData currentDuration = StatisticData.empty();
+    private volatile StatisticData currentSize = new StatisticData();
+    private volatile StatisticData currentDuration = new StatisticData();
     private StatisticRecord snapshot = createSnapshot();
 
     public StatisticRecord currentSnapshot()
@@ -50,13 +50,13 @@ public class StatisticCollector
 
         synchronized (this)
         {
-            previousDuration = currentDuration;
-            previousSize = currentSize;
+            previousDuration = currentDuration.copy();
+            previousSize = currentSize.copy();
             previousCount = count;
             previousStart = start;
 
-            currentDuration = StatisticData.empty();
-            currentSize = StatisticData.empty();
+            currentDuration = new StatisticData();
+            currentSize = new StatisticData();
             start = System.currentTimeMillis();
             count = 0;
 
@@ -75,8 +75,8 @@ public class StatisticCollector
      */
     public synchronized void update( final double time, final long size )
     {
-        currentDuration = currentDuration.addValue( time );
-        currentSize = currentSize.addValue( size );
+        currentDuration.addValue( time );
+        currentSize.addValue( size );
         count++;
     }
 }

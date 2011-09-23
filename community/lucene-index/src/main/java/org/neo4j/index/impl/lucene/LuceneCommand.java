@@ -195,6 +195,12 @@ abstract class LuceneCommand extends XaCommand
         {
             return true;
         }
+        
+        @Override
+        public String toString()
+        {
+            return "Add[" + indexId + "," + entityId + "," + key + "," + value + "]";
+        }
     }
     
     static class AddRelationshipCommand extends LuceneCommand
@@ -252,6 +258,12 @@ abstract class LuceneCommand extends XaCommand
         {
             return true;
         }
+
+        @Override
+        public String toString()
+        {
+            return "Remove[" + indexId + "," + entityId + "," + key + "," + value + "]";
+        }
     }
 
     static class DeleteCommand extends LuceneCommand
@@ -272,6 +284,12 @@ abstract class LuceneCommand extends XaCommand
         public boolean isConsideredNormalWriteCommand()
         {
             return false;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Delete[" + indexId + "]";
         }
     }
     
@@ -324,6 +342,12 @@ abstract class LuceneCommand extends XaCommand
         {
             return false;
         }
+        
+        @Override
+        public String toString()
+        {
+            return "Create[" + new IndexIdentifier( entityType, null, name ) + "," + config + "]";
+        }
     }
     
     static XaCommand readCommand( ReadableByteChannel channel, 
@@ -374,11 +398,11 @@ abstract class LuceneCommand extends XaCommand
             EntityType entityType = null;
             if ( entityTypeByte == NODE )
             {
-                entityType = dataSource.nodeEntityType;
+                entityType = dataSource != null ? dataSource.nodeEntityType : null;
             }
             else if ( entityTypeByte == RELATIONSHIP )
             {
-                entityType = dataSource.relationshipEntityType;
+                entityType = dataSource != null ? dataSource.relationshipEntityType : null;
             }
             else
             {

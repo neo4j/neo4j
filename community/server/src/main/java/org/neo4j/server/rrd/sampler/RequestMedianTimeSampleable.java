@@ -17,9 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rrd;
+package org.neo4j.server.rrd.sampler;
 
-public interface JobScheduler
+import org.neo4j.server.database.Database;
+import org.rrd4j.DsType;
+
+public class RequestMedianTimeSampleable extends StatisticSampleableBase
 {
-    void scheduleAtFixedRate( Runnable job, String jobName, long delay, long period );
+
+    public RequestMedianTimeSampleable( Database db )
+    {
+        super( db, DsType.ABSOLUTE );
+    }
+
+    @Override
+    public String getName()
+    {
+        return "request_median_time";
+    }
+
+    @Override
+    public double getValue()
+    {
+        return getCurrentSnapshot().getDuration().getMedian();
+    }
 }

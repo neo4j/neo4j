@@ -20,8 +20,10 @@
 package org.neo4j.cypher.javacompat;
 
 import org.neo4j.cypher.SyntaxException;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.cypher.commands.Query;
+import org.neo4j.graphdb.GraphDatabaseService;
+
+import java.util.Map;
 
 /**
  * To run a {@link Query}, use this class.
@@ -49,5 +51,18 @@ public class ExecutionEngine
     public ExecutionResult execute( Query query ) throws SyntaxException
     {
         return new ExecutionResult(inner.execute( query ));
+    }
+
+    /**
+     * Executes a {@link Query} and returns an iterable that contains the result set
+     * @param query The query to execute
+     * @param params Parameters for the query
+     * @return A ExecutionResult that contains the result set
+     * @throws org.neo4j.cypher.SyntaxException If the Query contains errors,
+     * a SyntaxException exception might be thrown
+     */
+    public ExecutionResult execute( Query query, Map<String, Object> params) throws SyntaxException
+    {
+        return new ExecutionResult(inner.execute(query, params));
     }
 }
