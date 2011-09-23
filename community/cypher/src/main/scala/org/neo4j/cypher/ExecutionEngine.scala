@@ -37,7 +37,7 @@ class ExecutionEngine(graph: GraphDatabaseService) {
 
   // This is here to support Java people
   @throws(classOf[SyntaxException])
-  def execute(query: Query, map:JavaMap[String,Any]): ExecutionResult = execute(query, map.asScala.toMap)
+  def execute(query: Query, map: JavaMap[String, Any]): ExecutionResult = execute(query, map.asScala.toMap)
 
   @throws(classOf[SyntaxException])
   def execute(query: Query, params: Map[String, Any]): ExecutionResult = query match {
@@ -46,6 +46,8 @@ class ExecutionEngine(graph: GraphDatabaseService) {
       var pipe = createSourcePumps(paramPipe, start.startItems.toList)
 
       pipe = createMatchPipe(matching, namedPaths, pipe)
+
+      pipe = createShortestPathPipe(pipe, matching)
 
       namedPaths match {
         case None =>
@@ -86,6 +88,16 @@ class ExecutionEngine(graph: GraphDatabaseService) {
 
       result
     }
+  }
+
+  private def createShortestPathPipe(source: Pipe, matching: Option[Match]): Pipe = matching match {
+    case Some(m) => {
+      var result = source
+      val shortestPaths = m.patterns.filter(_.isInstanceOf[ShortestPath]).map(_.asInstanceOf[ShortestPath])
+      shortestPaths.foreach(p => result = new ShortestPathPipe(result, p.pathName, p.start, p.end, p.optional))
+      result
+    }
+    case None => source
   }
 
   private def createMatchPipe(unnamedPaths: Option[Match], namedPaths: Option[NamedPaths], pipe: Pipe): Pipe = {

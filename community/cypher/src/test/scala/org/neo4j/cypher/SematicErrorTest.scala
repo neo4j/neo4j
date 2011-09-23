@@ -26,7 +26,8 @@ import parser.CypherParser
 
 class SematicErrorTest extends ExecutionEngineHelper {
   @Test def returnNodeThatsNotThere() {
-    expectedError("start x=(0) return bar", """Unknown identifier "bar".""")
+    expectedError("start x=(0) return bar",
+      """Unknown identifier "bar".""")
   }
 
   @Test def throwOnDisconnectedPattern() {
@@ -36,7 +37,12 @@ class SematicErrorTest extends ExecutionEngineHelper {
 
   @Test def defineNodeAndTreatItAsARelationship() {
     expectedError("start r=(0) match a-[r]->b return r",
-      "Identifier NodeIdentifier(r) already defined with different type RelationshipIdentifier(r)")
+      "Some identifiers are used as both relationships and nodes: r")
+  }
+
+  @Test def redefineSymbolInMatch() {
+    expectedError("start a=(0) match a-[r]->b-->r return r",
+      "Some identifiers are used as both relationships and nodes: r")
   }
 
   @Test def cantUseTYPEOnNodes() {
