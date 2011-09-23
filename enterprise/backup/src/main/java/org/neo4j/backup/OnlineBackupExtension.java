@@ -23,9 +23,9 @@ import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
 import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
 import static org.neo4j.kernel.Config.parseMapFromConfigValue;
 
-import java.util.Map;
-
+import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.KernelExtension;
 
@@ -66,21 +66,16 @@ public class OnlineBackupExtension extends KernelExtension<BackupServer>
     public static Integer parsePort( String backupConfigValue )
     {
         if ( backupConfigValue != null )
-        {
-            int port = BackupServer.DEFAULT_PORT;
-            if ( backupConfigValue.contains( "=" ) )
-            {
-                Map<String, String> args = parseMapFromConfigValue( ENABLE_ONLINE_BACKUP, backupConfigValue );
-                if ( args.containsKey( "port" ) )
-                {
-                    port = Integer.parseInt( args.get( "port" ) );
-                }
+        {   // Backup is configured
+            if ( Config.configValueContainsMultipleParameters( backupConfigValue ) )
+            {   // Multi-value config, which means we have to parse the port
+                Args args = parseMapFromConfigValue( ENABLE_ONLINE_BACKUP, backupConfigValue );
+                return args.getNumber( "port", BackupServer.DEFAULT_PORT ).intValue();
             }
-            else if ( !Boolean.parseBoolean( backupConfigValue ) )
-            {
-                return null;
+            else if ( Boolean.parseBoolean( backupConfigValue ) )
+            {   // Single-value config, true/false
+                return BackupServer.DEFAULT_PORT;
             }
-            return Integer.valueOf( port );
         }
         return null;
     }
