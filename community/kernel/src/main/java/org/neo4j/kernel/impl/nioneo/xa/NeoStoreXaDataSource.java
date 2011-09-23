@@ -169,8 +169,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                 neoStore.getPropertyStore() );
             this.idGenerators.put( PropertyIndex.class,
                 neoStore.getPropertyStore().getIndexStore() );
-            xaContainer.getLogicalLog().setKeepLogs(
-                    shouldKeepLog( (String) config.get( Config.KEEP_LOGICAL_LOGS ), "nioneodb" ) );
+            setKeepLogicalLogsIfSpecified( (String) config.get( Config.KEEP_LOGICAL_LOGS ), "nioneodb" );
             setLogicalLogAtCreationTime( xaContainer.getLogicalLog() );
         }
         catch ( Throwable e )
