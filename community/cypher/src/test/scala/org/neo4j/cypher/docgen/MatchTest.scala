@@ -106,7 +106,7 @@ class MatchTest extends DocumentingTestBase {
   @Test def variableLengthPath() {
     testQuery(
       title = "Variable length relationships",
-      text = "Nodes that are variable number of relationship->node hops can be found using `-[:TYPE^minHops..maxHops]->`. ",
+      text = "Nodes that are variable number of relationship->node hops can be found using `-[:TYPE*minHops..maxHops]->`. ",
       queryText = """start a=(%A%), x=(%E%, %B%) match a-[:KNOWS*1..3]->x return a,x""",
       returns = """The three nodes in the path.""",
       (p) => assertEquals(List(

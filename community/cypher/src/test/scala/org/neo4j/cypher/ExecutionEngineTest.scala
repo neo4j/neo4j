@@ -349,6 +349,15 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     assertEquals(List(Map("node.name" -> null)), result.toList)
   }
 
+  @Test def testOnlyIfPropertyExists() {
+    createNode(Map("prop"->"A"))
+    createNode()
+
+    val result = parseAndExecute("start a=(1,2) where a.prop? = 'A' return a")
+
+    assert( 2 === result.toSeq.length )
+  }
+
   @Test def shouldHandleComparisonBetweenNodeProperties() {
     //start n = node(1,4) match (n) --> (x) where n.animal = x.animal return n,x
     val n1 = createNode(Map("animal" -> "monkey"))
