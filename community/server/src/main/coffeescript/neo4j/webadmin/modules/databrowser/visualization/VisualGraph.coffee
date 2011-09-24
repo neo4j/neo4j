@@ -32,7 +32,7 @@ define(
 
     class VisualGraph
 
-      constructor : (@server, width=800, height=400, @groupingThreshold=10) ->
+      constructor : (@server, @profile, width=800, height=400, @groupingThreshold=10) ->
         @el = $("<canvas width='#{width}' height='#{height}'></canvas>")
 
         @labelProperties = []
@@ -93,8 +93,7 @@ define(
               [rels, relatedNodes] = result
               @dataModel.addNode node, rels, relatedNodes
               if (--fetchCountdown) == 0
-                @sys.merge @dataModel.getVisualGraph()
-                @start()
+                @_synchronizeUiWithData()
 
       nodeClicked : (visualNode, event) =>
         if visualNode.data.type?
@@ -106,7 +105,7 @@ define(
                 @addNode visualNode.data.neoNode
               when "explored"
                 @dataModel.unexplore visualNode.data.neoNode
-                @sys.merge @dataModel.getVisualGraph()
+                @_synchronizeUiWithData()
               when "group"
 
                 nodes = for url, groupedMeta of visualNode.data.group.grouped
@@ -115,7 +114,7 @@ define(
                 completeCallback = (filteredNodes, dialog) =>
                   dialog.remove()
                   @dataModel.ungroup filteredNodes
-                  @sys.merge @dataModel.getVisualGraph()
+                  @_synchronizeUiWithData()
 
                 dialog = new NodeFilterDialog { nodes : nodes, completeCallback : completeCallback, labelProperties : @labelProperties }
                 dialog.show()
@@ -142,8 +141,6 @@ define(
 
       floatNode : (node, pt) =>
         node.fixed = false
-        #node.p.x = (pt.x / 2)
-        #node.p.y = (pt.y / 2)
 
       stop : () =>
         if @sys.renderer?
@@ -167,5 +164,16 @@ define(
       detach : () =>
         @stop()
         @el.detach()
+        
+      setProfile : (@profile) ->
+        @_synchronizeUiWithData()
+        
+      _synchronizeUiWithData : () ->
+        # Update styling
+        for url, visualNode of @dataModel.getVisualGraph().nodes
+          @profile.styleNode visualNode
+        
+        @sys.merge @dataModel.getVisualGraph()
+        @start()
 
 )

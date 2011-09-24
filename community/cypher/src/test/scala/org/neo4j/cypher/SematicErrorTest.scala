@@ -55,6 +55,11 @@ class SematicErrorTest extends ExecutionEngineHelper {
       "Expected n to be an iterable, but it is not.")
   }
 
+  @Test def shortestPathNeedsBothEndNodes() {
+    expectedError("start n=(0) match p=shortestPath(n-->b) return p",
+      "Shortest path needs both ends of the path to be provided. Couldn't find b")
+  }
+
   def parse(txt:String):Query = new CypherParser().parse(txt)
 
   def expectedError(query: String, message: String) { expectedError(parse(query), message) }

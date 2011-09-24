@@ -1,0 +1,7 @@
+%td.name= name
+%td
+  %a.edit-profile.button(href="#/data/visualization/settings/profile/#{encodeURIComponent(id)}/") Edit
+%td
+  :if !isBuiltin
+    %button.delete-profile.bad-button Delete
+  

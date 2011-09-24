@@ -19,18 +19,29 @@
  */
 package org.neo4j.cypher.pipes
 
-import org.neo4j.graphdb.Node
 import org.neo4j.graphalgo.GraphAlgoFactory
 import org.neo4j.kernel.Traversal
-import org.neo4j.cypher.SymbolTable
-import org.neo4j.cypher.commands.PathIdentifier
+import org.neo4j.graphdb.{DynamicRelationshipType, Direction, Node}
+import org.neo4j.cypher.commands.{ShortestPath, PathIdentifier}
+import org.neo4j.cypher.{SyntaxException, SymbolTable}
 
-class ShortestPathPipe(source: Pipe, pipeName: String, startName: String, endName: String, optional: Boolean) extends Pipe {
+class ShortestPathPipe(source: Pipe, pipeName: String, startName: String, endName: String, relType:Option[String], dir:Direction, maxDepth:Option[Int], optional: Boolean) extends Pipe {
+
+  def this(source:Pipe, ast:ShortestPath) = this(source, ast.pipeName, ast.startName, ast.endName, ast.relType, ast.dir, ast.maxDepth, ast.optional)
+
   def foreach[U](f: (Map[String, Any]) => U) {
     source.foreach(m => {
-      val start = m(startName).asInstanceOf[Node]
-      val end = m(endName).asInstanceOf[Node]
-      val finder = GraphAlgoFactory.shortestPath(Traversal.expanderForAllTypes(), 15)
+      val err = (n:String) => throw new SyntaxException("Shortest path needs both ends of the path to be provided. Couldn't find " + n)
+
+      val start = m.getOrElse(startName, err(startName)).asInstanceOf[Node]
+      val end = m.getOrElse(endName, err(endName)).asInstanceOf[Node]
+
+      val expander = relType match {
+        case None => Traversal.expanderForAllTypes(dir)
+        case Some(typeName) => Traversal.expanderForTypes(DynamicRelationshipType.withName(typeName), dir)
+      }
+
+      val finder = GraphAlgoFactory.shortestPath(expander, maxDepth.head)
       val findSinglePath = finder.findSinglePath(start, end)
 
       (findSinglePath, optional) match {

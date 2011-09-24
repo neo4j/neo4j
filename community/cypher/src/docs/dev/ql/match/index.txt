@@ -7,6 +7,8 @@ pattern is made up of one or more paths, separated by commas.
 
 All parts of the pattern must be directly or indirectly bound to a start point.
 
+include::graph.txt[]
+
 include::related-nodes.txt[]
 include::outgoing-relationships.txt[]
 include::directed-relationships-and-identifier.txt[]
@@ -17,3 +19,4 @@ include::variable-length-relationships.txt[]
 include::optional-relationship.txt[]
 include::optional-typed-and-named-relationship.txt[]
 include::complex-matching.txt[]
+include::shortest-path.txt[]

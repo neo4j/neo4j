@@ -104,6 +104,18 @@ class SyntaxExceptionTest extends JUnitSuite {
       "String literal expected")
   }
 
+  @Test def shortestPathCanNotHaveMinimumDepth() {
+    expectError(
+      "start a=(0), b=(1) match p=shortestPath(a-[*2..3]->b) return p",
+      "Shortest path does not support a minimal length")
+  }
+
+  @Test def shortestPathCanNotHaveMultipleLinksInIt() {
+    expectError(
+      "start a=(0), b=(1) match p=shortestPath(a-->()-->b) return p",
+      "Shortest path does not support having multiple path segments")
+  }
+
   @Ignore @Test def nodeParenthesisMustBeClosed() {
     expectError(
       "start s=(1) match s-->(x return x",
