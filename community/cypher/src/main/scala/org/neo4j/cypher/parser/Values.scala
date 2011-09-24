@@ -35,43 +35,47 @@ trait Values extends JavaTokenParsers with Tokens {
     case v ~ "." ~ p => PropertyValue(v, p)
   }
 
-  def nullableProperty: Parser[Value] = property ~ "?" ^^ {
-    case PropertyValue(e, p) ~ "?" => NullablePropertyValue(e, p)
+  def nullableProperty: Parser[Value] = property <~ "?" ^^ {
+    case PropertyValue(e, p) => NullablePropertyValue(e, p)
   }
 
-  def stringValue: Parser[Value] = string ^^ {
-    case str => Literal(str)
-  }
+  def stringValue: Parser[Value] = string ^^ (x => Literal(x))
 
-  def decimal: Parser[Value] = decimalNumber ^^ {
-    case num => Literal(num.toDouble)
-  }
+  def decimal: Parser[Value] = decimalNumber ^^ (x => Literal(x.toDouble))
 
   def boolean: Parser[Value] = (trueX | falseX)
 
-  def trueX: Parser[Value] = ignoreCase("true") ^^ {
-    case str => Literal(true)
-  }
+  def trueX: Parser[Value] = ignoreCase("true") ^^ (x => Literal(true))
 
-  def falseX: Parser[Value] = ignoreCase("false") ^^ {
-    case str => Literal(false)
-  }
+  def falseX: Parser[Value] = ignoreCase("false") ^^ (x => Literal(false))
 
-  def parameter:Parser[Value] = "{" ~> identity <~ "}" ^^ {
-    case paramName => ParameterValue(paramName)
-  }
+  def parameter: Parser[Value] = curly(identity) ^^ (x => ParameterValue(x))
 
-  def functionCall : Parser[Value] = (typeFunc | lengthFunc | nodesFunc | relsFunc | idFunc)
+  def functionCall: Parser[Value] = (typeFunc | lengthFunc | nodesFunc | relsFunc | idFunc)
 
-  def functionArguments (numArgs:Int) : Parser[List[Value]] = parens((value | entityValue) ~ repN(numArgs-1, "," ~> (value | entityValue))) ^^ {
+  def functionArguments(numArgs: Int): Parser[List[Value]] = parens((value | entityValue) ~ repN(numArgs - 1, "," ~> (value | entityValue))) ^^ {
     case firstArg ~ nextArguments => firstArg :: nextArguments
   }
 
-  def typeFunc: Parser[Value] = ignoreCase("type") ~> functionArguments(1) ^^ { case v => RelationshipTypeValue(v.head)  }
-  def idFunc: Parser[Value] = ignoreCase("id") ~> functionArguments(1) ^^ { case v => IdValue(v.head)  }
-  def lengthFunc: Parser[Value] = ignoreCase("length") ~> functionArguments(1) ^^ { case v => ArrayLengthValue(v.head)  }
-  def nodesFunc: Parser[Value] = ignoreCase("nodes") ~> parens(entityValue) ^^ { case v => PathNodesValue(v)  }
-  def relsFunc: Parser[Value] = (ignoreCase("rels") | ignoreCase("relationships"))  ~> parens(entityValue) ^^ { case v => PathRelationshipsValue(v)  }
+  def typeFunc: Parser[Value] = ignoreCase("type") ~> functionArguments(1) ^^ {
+    case v => RelationshipTypeValue(v.head)
+  }
+
+  def idFunc: Parser[Value] = ignoreCase("id") ~> functionArguments(1) ^^ {
+    case v => IdValue(v.head)
+  }
+
+  def lengthFunc: Parser[Value] = ignoreCase("length") ~> functionArguments(1) ^^ {
+    case v => ArrayLengthValue(v.head)
+  }
+
+  def nodesFunc: Parser[Value] = ignoreCase("nodes") ~> parens(entityValue) ^^ {
+    case v => PathNodesValue(v)
+  }
+
+  def relsFunc: Parser[Value] = (ignoreCase("rels") | ignoreCase("relationships")) ~> parens(entityValue) ^^ {
+    case v => PathRelationshipsValue(v)
+  }
 }
 
 
