@@ -209,14 +209,14 @@ public class ShortDocumentationExamplesTest implements GraphHolder
         
         //Files
         //TODO: can we do open ended?
-        String query = "start root=(node_auto_index,name,'FileRoot') match (root)-[:contains^0..10]->()-[:leaf]->(file) return file";
+        String query = "start root=(node_auto_index,name,'FileRoot') match (root)-[:contains*0..10]->()-[:leaf]->(file) return file";
         gen.get().addSnippet( "query1", createCypherSnippet( query ) );
         String result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("File1") );
         gen.get().addSnippet( "result1", createOutputSnippet( result ) );
         
         //Ownership
-        query = "start root=(node_auto_index,name, 'FileRoot') match (root)-[:contains^0..10]->()-[:leaf]->(file)<-[:owns]-(user) return file, user";
+        query = "start root=(node_auto_index,name, 'FileRoot') match (root)-[:contains*0..10]->()-[:leaf]->(file)<-[:owns]-(user) return file, user";
         gen.get().addSnippet( "query2", createCypherSnippet( query ) );
         result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("File1") );
@@ -231,7 +231,7 @@ public class ShortDocumentationExamplesTest implements GraphHolder
         query = "START file=(node_auto_index, 'name:File*') " +
         		"MATCH " +
         		"file<-[:leaf]-dir, " +
-        		"path = dir<-[:contains^1..10]-parent," +
+        		"path = dir<-[:contains*1..10]-parent," +
         		"parent<-[?:canRead]-role2-[:member]->readUserMoreThan1DirUp, " +
                 "dir<-[?:canRead]-role1-[:member]->readUser1DirUp " +
         		//TODO: would like to get results the order I specify
@@ -253,7 +253,7 @@ public class ShortDocumentationExamplesTest implements GraphHolder
     {
         data.get();
         String query = "START b=(node_auto_index,'name:B') " +
-        		"MATCH a-[:FOLLOW]->b, b-[:FOLLOW]->a RETURN a ";
+        		"MATCH a-[:FOLLOW]->b-[:FOLLOW]->a RETURN a ";
         String result = engine.execute( parser.parse( query ) ).toString();
         assertTrue(result.contains( "A" ));
         assertFalse(result.contains( "C" ));
