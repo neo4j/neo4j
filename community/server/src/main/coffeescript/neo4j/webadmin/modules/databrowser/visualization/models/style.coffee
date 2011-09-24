@@ -36,7 +36,7 @@ define(
           labelColor : new forms.ColorField("Label color")
         })
         label : new forms.FieldSet({
-          labelPattern : new forms.TextField("Label", {tooltip:'You can use placeholders here, {id} for node id, {prop.PROPERTYNAME} for properties. Use ";" to create multiline labels.'})
+          labelPattern : new forms.TextField("Label", {tooltip:'You can use placeholders here, {id} for node id, {prop.PROPERTYNAME} for properties. Use ";" to create multiline labels. Example: "id: {id};name: {prop.name}"'})
         })
 
     
