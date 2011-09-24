@@ -130,10 +130,10 @@ trait MatchClause extends JavaTokenParsers with Tokens {
     case Some(x) => Some(x.toInt)
   }
 
-  def relationshipInfo: Parser[(Option[String], Option[String], Option[(Option[Int], Option[Int])], Boolean)] = opt(identity) ~ opt("?") ~ opt(":" ~> identity) ~ opt("^" ~ opt(wholeNumber) ~ ".." ~ opt(wholeNumber)) ^^ {
+  def relationshipInfo: Parser[(Option[String], Option[String], Option[(Option[Int], Option[Int])], Boolean)] = opt(identity) ~ opt("?") ~ opt(":" ~> identity) ~ opt("*" ~ opt(wholeNumber) ~ ".." ~ opt(wholeNumber)) ^^ {
     case relName ~ optional ~ relType ~ varLength => {
       val hops = varLength match {
-        case Some("^" ~ minHops ~ ".." ~ maxHops) => Some((intOrNone(minHops), intOrNone(maxHops)))
+        case Some("*" ~ minHops ~ ".." ~ maxHops) => Some((intOrNone(minHops), intOrNone(maxHops)))
         case None => None
       }
       (relName, relType, hops, optional.isDefined)

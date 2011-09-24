@@ -107,7 +107,7 @@ class MatchTest extends DocumentingTestBase {
     testQuery(
       title = "Variable length relationships",
       text = "Nodes that are variable number of relationship->node hops can be found using `-[:TYPE^minHops..maxHops]->`. ",
-      queryText = """start a=(%A%), x=(%E%, %B%) match a-[:KNOWS^1..3]->x return a,x""",
+      queryText = """start a=(%A%), x=(%E%, %B%) match a-[:KNOWS*1..3]->x return a,x""",
       returns = """The three nodes in the path.""",
       (p) => assertEquals(List(
         Map("a" -> node("A"), "x" -> node("E")),
@@ -143,7 +143,7 @@ class MatchTest extends DocumentingTestBase {
     testQuery(
       title = "Shortest path",
       text = "Finding the shortest path between two nodes is as easy as using the shortestPath-function, like this.",
-      queryText = """start d=(%D%), e=(%E%) match p = shortestPath( d-[^..15]->e ) return p""",
+      queryText = """start d=(%D%), e=(%E%) match p = shortestPath( d-[*..15]->e ) return p""",
       returns = """This means: find the shortest path between two nodes, as long as the path is max 15 relationships long.""",
       (p) => assertEquals(3, p.toList.head("p").asInstanceOf[Path].length() )
     )

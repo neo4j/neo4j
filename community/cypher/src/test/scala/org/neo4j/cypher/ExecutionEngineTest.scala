@@ -721,7 +721,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val r1 = relate("A" -> "KNOWS" -> "B")
     val r2 = relate("B" -> "KNOWS" -> "C")
 
-    val result = parseAndExecute("start n=(1) match p=n-[:KNOWS^1..2]->x return p")
+    val result = parseAndExecute("start n=(1) match p=n-[:KNOWS*1..2]->x return p")
 
     assertEquals(List(
       PathImpl(node("A"), r1, node("B")),
@@ -734,7 +734,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val r1 = relate("A" -> "KNOWS" -> "B")
     val r2 = relate("B" -> "KNOWS" -> "C")
 
-    val result = parseAndExecute("start n=(1) match p=n-[:KNOWS^..2]->x return p")
+    val result = parseAndExecute("start n=(1) match p=n-[:KNOWS*..2]->x return p")
 
     assertEquals(List(
       PathImpl(node("A"), r1, node("B")),
@@ -747,7 +747,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val r1 = relate("A" -> "KNOWS" -> "B")
     val r2 = relate("B" -> "KNOWS" -> "C")
 
-    val result = parseAndExecute("start n=(1) match p=n-[:KNOWS^1..]->x return p")
+    val result = parseAndExecute("start n=(1) match p=n-[:KNOWS*..]->x return p")
 
     assertEquals(List(
       PathImpl(node("A"), r1, node("B")),
