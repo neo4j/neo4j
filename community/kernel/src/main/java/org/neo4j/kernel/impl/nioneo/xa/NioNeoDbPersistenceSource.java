@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.nioneo.xa;
 
 import javax.transaction.xa.XAResource;
 
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.persistence.NeoStoreTransaction;
 import org.neo4j.kernel.impl.persistence.PersistenceSource;
@@ -48,7 +49,7 @@ public class NioNeoDbPersistenceSource implements PersistenceSource
 
     public synchronized void start( XaDataSourceManager xaDsManager )
     {
-        xaDs = (NeoStoreXaDataSource) xaDsManager.getXaDataSource( "nioneodb" );
+        xaDs = (NeoStoreXaDataSource) xaDsManager.getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
         if ( xaDs == null )
         {
             throw new IllegalStateException( 

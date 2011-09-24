@@ -35,6 +35,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
@@ -273,6 +274,6 @@ public class TestShortStringProperties extends TestShortString
     private PropertyStore propertyStore()
     {
         XaDataSourceManager dsMgr = graphdb.getConfig().getTxModule().getXaDataSourceManager();
-        return ( (NeoStoreXaConnection) dsMgr.getXaDataSource( "nioneodb" ).getXaConnection() ).getPropertyStore();
+        return ( (NeoStoreXaConnection) dsMgr.getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME ).getXaConnection() ).getPropertyStore();
     }
 }

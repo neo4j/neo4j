@@ -34,6 +34,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.util.FileUtils;
@@ -72,7 +73,7 @@ public class TestContinueKeepLogs
     @Test
     public void keepLogsForMeAndDoStuffWithoutKeepLogsConfig() throws Exception
     {
-        doStuffAndExpectLogs( stringMap( KEEP_LOGICAL_LOGS, Config.DEFAULT_DATA_SOURCE_NAME + "=true" ), 0 );
+        doStuffAndExpectLogs( keepMyLogs(), 0 );
         doStuffAndExpectLogs( dontConfigureKeepLogs(), 0, 1 );
     }
     
@@ -87,7 +88,7 @@ public class TestContinueKeepLogs
     public void keepLogsAndDoStuffWithPreventMeKeepLogsConfig() throws Exception
     {
         doStuffAndExpectLogs( keepLogs(), 0 );
-        doStuffAndExpectLogs( stringMap( KEEP_LOGICAL_LOGS, Config.DEFAULT_DATA_SOURCE_NAME + "=false" ), 0 );
+        doStuffAndExpectLogs( dontKeepMyLogs(), 0 );
     }
     
     private Map<String, String> keepLogs()
@@ -98,6 +99,21 @@ public class TestContinueKeepLogs
     private Map<String, String> dontKeepLogs()
     {
         return stringMap( KEEP_LOGICAL_LOGS, "false" );
+    }
+    
+    private Map<String, String> dontKeepMyLogs()
+    {
+        return stringMap( KEEP_LOGICAL_LOGS, dataSourceName() + "=false" );
+    }
+    
+    private Map<String, String> keepMyLogs()
+    {
+        return stringMap( KEEP_LOGICAL_LOGS, dataSourceName() + "=true" );
+    }
+    
+    protected String dataSourceName()
+    {
+        return Config.DEFAULT_DATA_SOURCE_NAME;
     }
 
     private Map<String, String> dontConfigureKeepLogs()
@@ -110,19 +126,25 @@ public class TestContinueKeepLogs
         GraphDatabaseService db = new EmbeddedGraphDatabase( PATH, config );
         doTransaction( db );
         db.shutdown();
-        expectLogs( expectedLogVersions );
+        expectLogs( db, expectedLogVersions );
+    }
+    
+    protected File logDir( GraphDatabaseService db )
+    {
+        return new File( ((AbstractGraphDatabase)db).getStoreDir() );
     }
 
-    private void expectLogs( int... versions )
+    private void expectLogs( GraphDatabaseService db, int... versions )
     {
         Set<Integer> versionSet = new HashSet<Integer>();
         for ( int version : versions ) versionSet.add( version );
         Pattern pattern = Pattern.compile( ".*\\.v\\d+" );
-        for ( File file : new File( PATH ).listFiles() )
+        for ( File file : logDir( db ).listFiles() )
         {
             if ( pattern.matcher( file.getName() ).matches() )
             {
                 assertTrue( versionSet.remove( getLogVersion( file ) ) );
+                System.out.println( "yo " + file );
             }
         }
         assertEquals( "Expected logs " + versionSet, 0, versionSet.size() );
@@ -138,12 +160,17 @@ public class TestContinueKeepLogs
         Transaction tx = db.beginTx();
         try
         {
-            db.createNode();
+            doTransactionWork( db );
             tx.success();
         }
         finally
         {
             tx.finish();
         }
+    }
+
+    protected void doTransactionWork( GraphDatabaseService db )
+    {
+        db.createNode();
     }
 }

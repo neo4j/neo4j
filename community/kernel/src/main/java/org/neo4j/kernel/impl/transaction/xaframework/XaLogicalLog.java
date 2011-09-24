@@ -1632,7 +1632,7 @@ public class XaLogicalLog
         File fileNameFile = new File( fileName );
         File logDirectory = fileNameFile.getParentFile();
         if ( !logDirectory.exists() ) return false;
-        Pattern logFilePattern = Pattern.compile( fileNameFile.getName() + "\\.v\\d+" );
+        Pattern logFilePattern = getHistoryFileNamePattern();
         for ( File file : logDirectory.listFiles() )
         {
             if ( logFilePattern.matcher( file.getName() ).find() ) return true;
@@ -1675,7 +1675,7 @@ public class XaLogicalLog
         return fileName;
     }
     
-    public Pattern getFileNamePattern()
+    public Pattern getHistoryFileNamePattern()
     {
         return Pattern.compile( new File( fileName ).getName() + "\\.v\\d+" );
     }
