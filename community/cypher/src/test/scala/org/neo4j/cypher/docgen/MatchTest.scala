@@ -108,10 +108,20 @@ class MatchTest extends DocumentingTestBase {
       title = "Variable length relationships",
       text = "Nodes that are variable number of relationship->node hops can be found using `-[:TYPE*minHops..maxHops]->`. ",
       queryText = """start a=(%A%), x=(%E%, %B%) match a-[:KNOWS*1..3]->x return a,x""",
-      returns = """The three nodes in the path.""",
+      returns = "Returns the start and end point, if there is a path between 1 and 3 relationships away",
       (p) => assertEquals(List(
         Map("a" -> node("A"), "x" -> node("E")),
         Map("a" -> node("A"), "x" -> node("B"))), p.toList)
+    )
+  }
+
+  @Test def fixedLengthPath() {
+    testQuery(
+      title = "Fixed length relationships",
+      text = "Elements that are a fixed number of hops away can be matched by using [*numberOfHops]. ",
+      queryText = """start a=(%D%) match p=a-[*3]->() return p""",
+      returns = "The two paths that go from node D to node E",
+      (p) => assert( p.toSeq.length === 2 )
     )
   }
 
@@ -144,7 +154,8 @@ class MatchTest extends DocumentingTestBase {
       title = "Shortest path",
       text = "Finding the shortest path between two nodes is as easy as using the shortestPath-function, like this.",
       queryText = """start d=(%D%), e=(%E%) match p = shortestPath( d-[*..15]->e ) return p""",
-      returns = """This means: find the shortest path between two nodes, as long as the path is max 15 relationships long.""",
+      returns = """This means: find the shortest path between two nodes, as long as the path is max 15 relationships long. Inside of the parenthesis
+ you can write """,
       (p) => assertEquals(3, p.toList.head("p").asInstanceOf[Path].length() )
     )
   }
@@ -162,7 +173,6 @@ return a,b,c,d""",
       }
     )
   }
-
 
   @Test def introduceNamedPath() {
     testQuery(

@@ -614,6 +614,15 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
+  @Test def fixedVarLengthPath() {
+    testQuery("start a=(0) match a -[*3]-> x return x",
+      Query.
+        start(NodeById("a", 0)).
+        matches(VarLengthRelatedTo("  UNNAMED1", "a", "x", Some(3), Some(3), None, Direction.OUTGOING, false)).
+        returns(ValueReturnItem(EntityValue("x")))
+    )
+  }
+
   @Test def variableLengthPathWithoutMinDepth() {
     testQuery("start a=(0) match a -[:knows*..3]-> x return x",
       Query.
@@ -628,6 +637,15 @@ class CypherParserTest extends JUnitSuite with Assertions {
       Query.
         start(NodeById("a", 0)).
         matches(VarLengthRelatedTo("  UNNAMED1", "a", "x", Some(2), None, "knows", Direction.OUTGOING)).
+        returns(ValueReturnItem(EntityValue("x")))
+    )
+  }
+
+  @Test def unboundVariableLengthPath() {
+    testQuery("start a=(0) match a -[:knows*]-> x return x",
+      Query.
+        start(NodeById("a", 0)).
+        matches(VarLengthRelatedTo("  UNNAMED1", "a", "x", None, None, "knows", Direction.OUTGOING)).
         returns(ValueReturnItem(EntityValue("x")))
     )
   }
