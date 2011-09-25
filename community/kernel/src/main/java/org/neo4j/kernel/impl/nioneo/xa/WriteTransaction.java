@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.transaction.xa.XAException;
@@ -78,8 +79,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
 {
     private final Map<Long,NodeRecord> nodeRecords =
         new HashMap<Long,NodeRecord>();
-    private final Map<Long,PropertyRecord> propertyRecords =
-        new HashMap<Long,PropertyRecord>();
+    private final Map<Long, PropertyRecord> propertyRecords = new HashMap<Long, PropertyRecord>();
     private final Map<Long,RelationshipRecord> relRecords =
         new HashMap<Long,RelationshipRecord>();
     private final Map<Integer,RelationshipTypeRecord> relTypeRecords =
@@ -466,7 +466,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
     }
 
-    private static void executeCreated( ArrayList<? extends Command>... commands )
+    private static void executeCreated(
+            ArrayList<? extends Command>... commands )
     {
         for ( ArrayList<? extends Command> c : commands ) for ( Command command : c )
         {
@@ -477,7 +478,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
     }
 
-    private static void executeModified( ArrayList<? extends Command>... commands )
+    private static void executeModified(
+            ArrayList<? extends Command>... commands )
     {
         for ( ArrayList<? extends Command> c : commands ) for ( Command command : c )
         {
@@ -488,7 +490,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
     }
 
-    private static void executeDeleted( ArrayList<? extends Command>... commands )
+    private static void executeDeleted(
+            ArrayList<? extends Command>... commands )
     {
         for ( ArrayList<? extends Command> c : commands ) for ( Command command : c )
         {
@@ -717,15 +720,15 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 // TODO: update count on property index record
                 for ( DynamicRecord valueRecord : block.getValueRecords() )
                 {
+                    assert valueRecord.inUse();
                     valueRecord.setInUse( false );
                     propRecord.addDeletedRecord( valueRecord );
                 }
-                // block.setInUse( false );
-                block.setChanged();
             }
             nextProp = propRecord.getNextProp();
             propRecord.setInUse( false );
             propRecord.setChanged();
+            // We do not remove them individually, but all together here
             propRecord.getPropertyBlocks().clear();
         }
         return result;
@@ -942,17 +945,14 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             getPropertyStore().makeHeavy( block );
         }
         // block.setInUse( false );
-        block.setChanged();
         propRecord.setChanged();
 
         // TODO: update count on property index record
         for ( DynamicRecord valueRecord : block.getValueRecords() )
         {
-            if ( valueRecord.inUse() )
-            {
-                valueRecord.setInUse( false, block.getType().intValue() );
-                propRecord.addDeletedRecord( valueRecord );
-            }
+            assert valueRecord.inUse();
+            valueRecord.setInUse( false, block.getType().intValue() );
+            propRecord.addDeletedRecord( valueRecord );
         }
         // propRecord.removeBlock( propertyData.getIndex() );
         if ( propRecord.getUsedPayloadBytes() > 0 )
@@ -988,7 +988,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             throw new InvalidRecordException( "Relationship[" + relId +
                 "] not in use" );
         }
-        return ReadTransaction.loadProperties( getPropertyStore(), relRecord.getNextProp() );
+        return loadProperties( relRecord.getNextProp() );
     }
 
     @Override
@@ -1013,7 +1013,22 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             throw new InvalidRecordException( "Node[" + nodeId +
                 "] not in use" );
         }
-        return ReadTransaction.loadProperties( getPropertyStore(), nodeRecord.getNextProp() );
+        return loadProperties( nodeRecord.getNextProp() );
+    }
+
+    private ArrayMap<Integer, PropertyData> loadProperties( long nextProp )
+    {
+        List<PropertyRecord> records = ReadTransaction.getPropertyRecordChain(
+                getPropertyStore(), nextProp );
+        if ( records == null )
+        {
+            return null;
+        }
+        if ( records.size() > 0 )
+        {
+            addPropertyRecord( records.get( 0 ) );
+        }
+        return ReadTransaction.propertyChainToMap( records );
     }
 
     public Object propertyGetValueOrNull( PropertyBlock block )
@@ -1081,18 +1096,12 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         {
             getPropertyStore().makeHeavy( block );
         }
-
-        // block.setInUse( false );
-        block.setChanged();
-        propRecord.setChanged();
         // TODO: update count on property index record
         for ( DynamicRecord valueRecord : block.getValueRecords() )
         {
-            if ( valueRecord.inUse() )
-            {
-                valueRecord.setInUse( false, block.getType().intValue() );
-                propRecord.addDeletedRecord( valueRecord );
-            }
+            assert valueRecord.inUse();
+            valueRecord.setInUse( false, block.getType().intValue() );
+            propRecord.addDeletedRecord( valueRecord );
         }
         // propRecord.removeBlock( propertyData.getIndex() );
         if (propRecord.getUsedPayloadBytes() > 0)
@@ -1100,6 +1109,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             /*
              * There are remaining blocks in the record. We do not unlink yet.
              */
+            propRecord.setChanged();
             return;
         }
         else
@@ -1113,7 +1123,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     {
         assert propRecord.size() == 0;
         propRecord.setInUse( false );
-        propRecord.setChanged();
         long prevProp = propRecord.getPrevProp();
         long nextProp = propRecord.getNextProp();
         if ( primitive.getNextProp() == propRecord.getId() )
@@ -1210,6 +1219,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         propertyRecord.setChanged();
         for ( DynamicRecord record : block.getValueRecords() )
         {
+            assert record.inUse();
             record.setInUse( false, block.getType().intValue() );
             propertyRecord.addDeletedRecord( record );
         }
@@ -1224,12 +1234,11 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             PropertyRecord oldRecord = propertyRecord;
             // newBlock.setValueBlocks( block.getValueBlocks() );
             propertyRecord.removePropertyBlock( propertyData.getIndex() );
-            propertyRecord = addPropertyBlockToPrimitive( /*newB*/block,
-                    primitive,
-            /*isNode*/isNode );
+            propertyRecord = addPropertyBlockToPrimitive( block, primitive, /*isNode*/
+                    isNode );
             if ( propertyRecord != oldRecord && oldRecord.size() == 0 )
             {
-                oldRecord.setInUse( false );
+                unlinkPropertyRecord( oldRecord, primitive );
             }
             // block = newBlock;
         }
@@ -1252,7 +1261,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 relId + "] illegal since it has been deleted." );
         }
         PropertyBlock block = new PropertyBlock();
-        // block.setInUse( true );
         block.setCreated();
         getPropertyStore().encodeValue( block, index.getKeyId(), value );
         PropertyRecord host = addPropertyBlockToPrimitive( block, relRecord, /*isNode*/
@@ -1277,7 +1285,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
 
         PropertyBlock block = new PropertyBlock();
-        // block.setInUse( true );
         block.setCreated();
         /*
          * Encoding has to be set here before anything is changed,
@@ -1304,45 +1311,25 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
          * Iterate over the property chain looking for somewhere to put the new
          * block.
          */
-        long nextProp = primitive.getNextProp();
-        while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
+        long firstProp = primitive.getNextProp();
+        if ( firstProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            PropertyRecord propRecord = getPropertyRecord( nextProp, false,
+            PropertyRecord propRecord = getPropertyRecord( firstProp, false,
                     false );
-            nextProp = propRecord.getNextProp();
-            int usedPayloadBytes = propRecord.getUsedPayloadBytes();
-            if ( usedPayloadBytes + newBlockSizeInBytes <= PropertyType.getPayloadSize() )
+            int propSize = propRecord.size();
+            if ( propSize + newBlockSizeInBytes <= PropertyType.getPayloadSize() )
             {
                 host = propRecord;
-                try
-                {
-                    host.addPropertyBlock( block );
-                    host.setInUse( true );
-                    host.setChanged();
-                    addPropertyRecord( propRecord );
-                }
-                catch ( IllegalStateException e )
-                {
-                    System.err.println( "WHOA!!!! That should NOT have happened. See, when i asked for the record's size it said "
-                                        + usedPayloadBytes
-                                        + " (now it is "
-                                        + propRecord.getUsedPayloadBytes()
-                                        + " btw) and the property block's size is "
-                                        + newBlockSizeInBytes
-                                        + "and it holds an array of size"
-                                        + block.getValueBlocks().length
-                                        + ". It should fit. The exception follows" );
-                    throw e;
-                }
-                break;
+                host.addPropertyBlock( block );
+                host.setInUse( true );
+                host.setChanged();
+                // Must do, it was not added because it might not be needed
+                addPropertyRecord( host );
             }
         }
         if ( host == null )
         {
             host = new PropertyRecord( getPropertyStore().nextId() );
-            // System.out.println( "created prop record for primitive "
-            // + primitive + "(" + isNode + ") with id "
-            // + host.getId() );
             host.setCreated();
             if ( primitive.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
             {
@@ -1355,22 +1342,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             }
             primitive.setNextProp( host.getId() );
             addPropertyRecord( host );
-            try
-            {
-                host.addPropertyBlock( block );
-                host.setInUse( true );
-            }
-            catch ( IllegalStateException e )
-            {
-                System.err.println( "WHOA!!!! That should NOT have happened. See, when i asked for the record's size it said "
-                                    + host.getUsedPayloadBytes()
-                                    + " (0, right?, cause this is a new PropertyRecord and is a local variable) and the property block's size is "
-                                    + newBlockSizeInBytes
-                                    + "and it holds an array of size"
-                                    + block.getValueBlocks().length
-                                    + ". It should fit. The exception follows" );
-                throw e;
-            }
+            host.addPropertyBlock( block );
+            host.setInUse( true );
         }
         if ( isNode )
         {

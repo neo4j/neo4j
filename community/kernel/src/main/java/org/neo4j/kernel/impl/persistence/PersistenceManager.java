@@ -109,15 +109,31 @@ public class PersistenceManager
     }
 
     public ArrayMap<Integer,PropertyData> loadNodeProperties( long nodeId,
-            boolean light )
+            boolean light, boolean readOnly )
     {
-        return getReadOnlyResourceIfPossible().nodeLoadProperties( nodeId, light );
+        if ( readOnly )
+        {
+            return getReadOnlyResourceIfPossible().nodeLoadProperties( nodeId,
+                    light );
+        }
+        else
+        {
+            return getResource( true ).nodeLoadProperties( nodeId, light );
+        }
     }
 
     public ArrayMap<Integer,PropertyData> loadRelProperties( long relId,
-            boolean light )
+            boolean light, boolean readOnly )
     {
-        return getReadOnlyResourceIfPossible().relLoadProperties( relId, light );
+        if ( readOnly )
+        {
+            return getReadOnlyResourceIfPossible().relLoadProperties( relId,
+                    light );
+        }
+        else
+        {
+            return getResource( true ).relLoadProperties( relId, light );
+        }
     }
 
     public RelationshipRecord loadLightRelationship( long id )
