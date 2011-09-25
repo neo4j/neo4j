@@ -521,8 +521,6 @@ public class PropertyStore extends AbstractStore implements Store
 
     public void encodeValue( PropertyBlock block, int keyId, Object value )
     {
-//        try
-//        {
         if ( value instanceof String )
         {
             String string = (String) value;
@@ -579,11 +577,6 @@ public class PropertyStore extends AbstractStore implements Store
             throw new IllegalArgumentException( "Unknown property type on: "
                 + value + ", " + value.getClass() );
         }
-//        }
-//        finally
-//        {
-//            verifySame( block, value );
-//        }
     }
 
     private void setSingleBlockValue( PropertyBlock block, int keyId, PropertyType type, long longValue )
@@ -605,62 +598,15 @@ public class PropertyStore extends AbstractStore implements Store
         System.arraycopy( asUtfBytes, 0, result, 1, asUtfBytes.length );
         return result;
     }
-
-//    private void verifySame( PropertyBlock block, Object value )
-//    {
-//        if ( block.isLight() )
-//        {
-//            makeHeavy( block );
-//        }
-//        Object readValue = block.getType().getValue( block, this );
-//        if ( readValue.getClass().isArray() )
-//        {
-//            if ( !value.getClass().isArray() )
-//            {
-//                throw new RuntimeException( "Read value " + valueToString( readValue ) + " didn't match source value " + valueToString( value ) );
-//            }
-//            int length = Array.getLength( readValue );
-//            if ( Array.getLength( value ) != length )
-//            {
-//                throw new RuntimeException( "Read value " + valueToString( readValue ) + " didn't match source value " + valueToString( value ) );
-//            }
-//            for ( int i = 0; i < length; i++ )
-//            {
-//                if ( !Array.get( value, i ).equals( Array.get( readValue, i ) ) )
-//                {
-//                    throw new RuntimeException( "Read value " + valueToString( readValue ) + " didn't match source value " + valueToString( value ) );
-//                }
-//            }
-//        }
-//        else
-//        {
-//            if ( !value.equals( readValue ) )
-//            {
-//                throw new RuntimeException( "Read value " + valueToString( readValue ) + " didn't match source value " + valueToString( value ) );
-//            }
-//        }
-//    }
-//
-//    public static String valueToString( Object value )
-//    {
-//        if ( value.getClass().isArray() )
-//        {
-//            StringBuilder builder = new StringBuilder( value.getClass().getComponentType().getName() + "[" );
-//            int length = Array.getLength( value );
-//            if ( length > 1000 ) return "BIG";
-//            for ( int i = 0; i < length; i++ )
-//            {
-//                if ( i > 0 ) builder.append( "," );
-//                builder.append( Array.get( value, i ) );
-//            }
-//            return builder.append( "]" ).toString();
-//        }
-//        else
-//        {
-//            if ( value instanceof String && value.toString().length() > 1000 ) return "BIG";
-//            return "[" + value.getClass().getName() + "]'" + value.toString() + "'";
-//        }
-//    }
+    
+    protected static boolean isLatin1( String string )
+    {
+        for ( int i = 0; i < string.length(); i++ )
+        {
+            if ( !LongerShortString.isLatin1( string.charAt( i ) ) ) return false;
+        }
+        return true;
+    }
 
     private Bits bits32WithKeyAndType( int keyId, PropertyType type )
     {
