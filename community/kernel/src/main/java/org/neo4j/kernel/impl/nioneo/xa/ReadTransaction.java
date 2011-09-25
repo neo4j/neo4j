@@ -20,7 +20,9 @@
 package org.neo4j.kernel.impl.nioneo.xa;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EnumMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -169,25 +171,53 @@ class ReadTransaction implements NeoStoreTransaction
         return Pair.of( result, position );
     }
 
-    static ArrayMap<Integer, PropertyData> loadProperties( PropertyStore propertyStore, long nextProp )
+    static List<PropertyRecord> getPropertyRecordChain(
+            PropertyStore propertyStore, long nextProp )
     {
+        List<PropertyRecord> toReturn = new LinkedList<PropertyRecord>();
         if ( nextProp == Record.NO_NEXT_PROPERTY.intValue() )
         {
             return null;
         }
-        ArrayMap<Integer,PropertyData> propertyMap =
-            new ArrayMap<Integer,PropertyData>( 9, false, true );
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
             PropertyRecord propRecord = propertyStore.getLightRecord( nextProp );
+            toReturn.add(propRecord);
+            nextProp = propRecord.getNextProp();
+        }
+        return toReturn;
+    }
+
+    static ArrayMap<Integer, PropertyData> propertyChainToMap(
+            Collection<PropertyRecord> chain )
+    {
+        if ( chain == null )
+        {
+            return null;
+        }
+        ArrayMap<Integer, PropertyData> propertyMap = new ArrayMap<Integer, PropertyData>(
+                chain.size(), false, true );
+        for ( PropertyRecord propRecord : chain )
+        {
             for ( PropertyBlock propBlock : propRecord.getPropertyBlocks() )
             {
                 propertyMap.put( propBlock.getKeyIndexId(),
                         propBlock.newPropertyData( propRecord ) );
             }
-            nextProp = propRecord.getNextProp();
         }
         return propertyMap;
+    }
+
+    static ArrayMap<Integer, PropertyData> loadProperties(
+            PropertyStore propertyStore, long nextProp )
+    {
+        Collection<PropertyRecord> chain = getPropertyRecordChain(
+                propertyStore, nextProp );
+        if ( chain == null )
+        {
+            return null;
+        }
+        return propertyChainToMap( chain );
     }
 
     @Override

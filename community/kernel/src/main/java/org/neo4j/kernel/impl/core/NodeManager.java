@@ -670,15 +670,17 @@ public class NodeManager
     }
 
     ArrayMap<Integer,PropertyData> loadProperties( NodeImpl node,
-            boolean light )
+            boolean light, boolean readOnly )
     {
-        return persistenceManager.loadNodeProperties( node.getId(), light );
+        return persistenceManager.loadNodeProperties( node.getId(), light,
+                readOnly );
     }
 
     ArrayMap<Integer,PropertyData> loadProperties(
-            RelationshipImpl relationship, boolean light )
+            RelationshipImpl relationship, boolean light, boolean readOnly )
     {
-        return persistenceManager.loadRelProperties( relationship.getId(), light );
+        return persistenceManager.loadRelProperties( relationship.getId(),
+                light, readOnly );
     }
 
     public void clearCache()

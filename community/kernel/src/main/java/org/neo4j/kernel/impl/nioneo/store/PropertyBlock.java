@@ -134,18 +134,6 @@ public class PropertyBlock
         isCreated = true;
     }
 
-    private boolean changed;
-
-    public boolean isChanged()
-    {
-        return changed;
-    }
-
-    public void setChanged()
-    {
-        changed = true;
-    }
-
     /**
      * A property block can take a variable size of bytes in a property record.
      * This method returns the size of this block in bytes, including the header

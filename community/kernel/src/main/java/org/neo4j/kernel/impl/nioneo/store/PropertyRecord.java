@@ -30,7 +30,6 @@ import java.util.List;
  * are the actual property key/value pairs. Because PropertyBlocks are of
  * variable length, a full PropertyRecord can be holding just one
  * PropertyBlock.
- *
  */
 public class PropertyRecord extends Abstract64BitRecord
 {
@@ -87,11 +86,8 @@ public class PropertyRecord extends Abstract64BitRecord
     {
         int result = 0;
         for ( PropertyBlock block : blockRecords )
-        {/*
-            if ( block.inUse() )
-            {*/
-                result += block.getSize();
-            // }
+        {
+            result += block.getSize();
         }
         return result;
     }
@@ -113,27 +109,20 @@ public class PropertyRecord extends Abstract64BitRecord
 
     public void addPropertyBlock(PropertyBlock block)
     {
-        assert ( /*!block.inUse()
-                 || */( size() + block.getSize() <= PropertyType.getPayloadSize() ) ) :
-
+        assert size() + block.getSize() <= PropertyType.getPayloadSize() :
             ("Exceeded capacity of property record " + this
                              + ". My current size is reported as " + size() + "The added block was " + block + " (note that size is "
           + block.getSize() + ")"
         );
+
         blockRecords.add( block );
-        /*
-        if ( block.inUse() )
-        {
-            setInUse( true );
-        }
-        */
     }
 
     public PropertyBlock getPropertyBlock( int keyIndex )
     {
         for ( PropertyBlock block : blockRecords )
         {
-            if ( block.getKeyIndexId() == keyIndex/* && block.inUse() */)
+            if ( block.getKeyIndexId() == keyIndex )
             {
                 return block;
             }
@@ -179,6 +168,20 @@ public class PropertyRecord extends Abstract64BitRecord
                 buf.append( ", " );
             }
         }
+        buf.append( "], DeletedDynRecs[" );
+
+        if ( !deletedRecords.isEmpty() )
+        {
+            Iterator<DynamicRecord> it = deletedRecords.iterator();
+            while ( it.hasNext() )
+            {
+                buf.append( it.next() );
+                if ( it.hasNext() )
+                {
+                    buf.append( ", " );
+                }
+            }
+        }
         buf.append( "]]" );
         return buf.toString();
     }
@@ -193,18 +196,6 @@ public class PropertyRecord extends Abstract64BitRecord
         isChanged = true;
     }
 
-    /*    @Override
-        public void setInUse( boolean inUse )
-        {
-            if ( inUse && !( size() > 0 ) )
-            {
-                throw new IllegalStateException(
-                        "You cannot set a property record as in use when no property blocks are set as in use. Offensive record is:\n\t"
-                                + this );
-            }
-            super.setInUse( inUse );
-        }
-    */
     public long getPrevProp()
     {
         return prevProp;

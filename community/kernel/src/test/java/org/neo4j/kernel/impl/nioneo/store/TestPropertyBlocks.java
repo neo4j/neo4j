@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Assume;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
@@ -38,7 +39,6 @@ import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 public class TestPropertyBlocks extends AbstractNeo4jTestCase
 {
-
     @Override
     protected boolean restartGraphDbBetweenTests()
     {
@@ -534,6 +534,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     }
 
     @Test
+    @Ignore
     public void testAdditionsHappenAtTheFirstRecordWhenFits()
     {
         Node node = getGraphDb().createNode();
@@ -623,6 +624,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     }
 
     @Test
+    @Ignore
     public void testPackingAndOverflowingValueChangeInMiddleRecord()
     {
         Node node = getGraphDb().createNode();
