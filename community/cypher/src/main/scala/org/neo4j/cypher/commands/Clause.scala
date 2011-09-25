@@ -25,22 +25,29 @@ abstract class Clause {
   def ++(other: Clause): Clause = And(this, other)
 
   def isMatch(m: Map[String, Any]): Boolean
+  def dependsOn:Set[String]
 }
 
 case class And(a: Clause, b: Clause) extends Clause {
   def isMatch(m: Map[String, Any]): Boolean = a.isMatch(m) && b.isMatch(m)
+  def dependsOn: Set[String] = a.dependsOn ++ b.dependsOn
 }
 
 case class Or(a: Clause, b: Clause) extends Clause {
   def isMatch(m: Map[String, Any]): Boolean = a.isMatch(m) || b.isMatch(m)
+  def dependsOn: Set[String] = a.dependsOn ++ b.dependsOn
 }
 
 case class Not(a: Clause) extends Clause {
   def isMatch(m: Map[String, Any]): Boolean = !a.isMatch(m)
+
+  def dependsOn: Set[String] = a.dependsOn
 }
 
 case class True() extends Clause {
   def isMatch(m: Map[String, Any]): Boolean = true
+
+  def dependsOn: Set[String] = Set()
 }
 
 case class Has(property: PropertyValue) extends Clause {
@@ -50,6 +57,8 @@ case class Has(property: PropertyValue) extends Clause {
       propContainer.hasProperty(propertyName)
     }
   }
+
+  def dependsOn: Set[String] = Set(property.entity)
 }
 
 case class RegularExpression(a: Value, str: String) extends Clause {
@@ -57,4 +66,6 @@ case class RegularExpression(a: Value, str: String) extends Clause {
     val value = a.apply(m).asInstanceOf[String]
     str.r.pattern.matcher(value).matches()
   }
+
+  def dependsOn: Set[String] = a.dependsOn
 }

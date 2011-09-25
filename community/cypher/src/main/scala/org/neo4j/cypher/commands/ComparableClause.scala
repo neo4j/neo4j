@@ -37,6 +37,8 @@ abstract sealed class ComparableClause(a: Value, b: Value) extends Clause with C
 
     compare(comparisonResult)
   }
+
+  def dependsOn: Set[String] = a.dependsOn ++ b.dependsOn
 }
 
 case class Equals(a: Value, b: Value) extends ComparableClause(a, b) {

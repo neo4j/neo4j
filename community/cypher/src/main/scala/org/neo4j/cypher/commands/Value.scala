@@ -28,6 +28,7 @@ abstract sealed class Value extends (Map[String, Any] => Any) {
   def identifier: Identifier
 
   def checkAvailable(symbols: SymbolTable)
+  def dependsOn:Set[String]
 }
 
 case class Literal(v: Any) extends Value {
@@ -36,6 +37,8 @@ case class Literal(v: Any) extends Value {
   def identifier: Identifier = LiteralIdentifier(v.toString)
 
   def checkAvailable(symbols: SymbolTable) {}
+
+  def dependsOn: Set[String] = Set()
 }
 
 abstract case class FunctionValue(functionName: String, arguments: Value*) extends Value {
@@ -45,6 +48,8 @@ abstract case class FunctionValue(functionName: String, arguments: Value*) exten
   def checkAvailable(symbols: SymbolTable) {
     arguments.foreach(_.checkAvailable(symbols))
   }
+
+  def dependsOn: Set[String] = arguments.flatMap(_.dependsOn).toSet
 }
 
 
@@ -58,6 +63,8 @@ abstract class AggregationValue(functionName: String, inner: Value) extends Valu
   }
 
   def createAggregationFunction: AggregationFunction
+
+  def dependsOn: Set[String] = inner.dependsOn
 }
 
 case class Count(anInner: Value) extends AggregationValue("count", anInner) {
@@ -101,6 +108,8 @@ case class PropertyValue(entity: String, property: String) extends Value {
   def checkAvailable(symbols: SymbolTable) {
     symbols.assertHas(PropertyContainerIdentifier(entity))
   }
+
+  def dependsOn: Set[String] = Set(entity)
 }
 
 case class RelationshipTypeValue(relationship: Value) extends FunctionValue("TYPE", relationship) {
@@ -149,6 +158,8 @@ case class EntityValue(entityName: String) extends Value {
   def checkAvailable(symbols: SymbolTable) {
     symbols.assertHas(Identifier(entityName))
   }
+
+  def dependsOn: Set[String] = Set(entityName)
 }
 
 case class ParameterValue(parameterName: String) extends Value {
@@ -158,4 +169,6 @@ case class ParameterValue(parameterName: String) extends Value {
 
   def checkAvailable(symbols: SymbolTable) {
   }
+
+  def dependsOn: Set[String] = Set(parameterName)
 }
