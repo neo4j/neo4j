@@ -751,9 +751,15 @@ public enum LongerShortString
         for ( int i = 0; i < length; i++ )
         {
             char c = string.charAt( i );
-            if ( c < 0 || c >= 256 ) return false;
+            if ( !isLatin1( c ) ) return false;
             bits.put( c, 8 ); // Just the lower byte
         }
+        return true;
+    }
+    
+    public static boolean isLatin1( char ch )
+    {
+        if ( ch < 0 || ch >= 256 ) return false;
         return true;
     }
 

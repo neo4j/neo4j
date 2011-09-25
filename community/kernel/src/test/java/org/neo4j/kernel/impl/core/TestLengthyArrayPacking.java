@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.DEFAULT_DATA_BLOCK_SIZE;
 
 import java.util.Arrays;
 
@@ -59,29 +60,47 @@ public class TestLengthyArrayPacking extends AbstractNeo4jTestCase
     @Test
     public void makeSureLongLatin1StringUsesOneBytePerChar() throws Exception
     {
-        long stringRecordsBefore = dynamicStringRecordsInUse();
-        String allLatin1 = "abcdefghijklmnopqrstuvwxyz";
-        Node node = getGraphDb().createNode();
-        String string = stringOfLength( allLatin1, 239 ); // Assume 120B data size -1 header byte
-        node.setProperty( "name", string );
-        newTransaction();
-        long stringRecordsAfter = dynamicStringRecordsInUse();
-        assertEquals( stringRecordsBefore+2, stringRecordsAfter );
+        String string = stringOfLength( "abcdefghijklmnopqrstuvwxyz", DEFAULT_DATA_BLOCK_SIZE*2-1 );
+        makeSureRightAmountOfDynamicRecordsUsed( string, 2, STRING_RECORD_COUNTER );
     }
     
     @Test
     public void makeSureLongUtf8StringUsesLessThanTwoBytesPerChar() throws Exception
     {
-        long stringRecordsBefore = dynamicStringRecordsInUse();
-        String mixedWeirdChars = "abc421#¤åäö(/&€";
-        Node node = getGraphDb().createNode();
-        String string = stringOfLength( mixedWeirdChars, 130 ); // Assume 120B data size -1 header byte
-        node.setProperty( "name", string );
-        newTransaction();
-        long stringRecordsAfter = dynamicStringRecordsInUse();
-        assertEquals( stringRecordsBefore+2, stringRecordsAfter );
+        String string = stringOfLength( "abc421#¤åäö(/&€", DEFAULT_DATA_BLOCK_SIZE+10 );
+        makeSureRightAmountOfDynamicRecordsUsed( string, 2, STRING_RECORD_COUNTER );
+    }
+    
+    @Test
+    public void makeSureLongLatin1StringArrayUsesOneBytePerChar() throws Exception
+    {
+        String allLatin1 = "abcdefghijklmnopqrstuvwxyz";
+        // Exactly 120 bytes: 5b header + (19+4)*5. w/o compression 5+(19*2 + 4)*5
+        String[] stringArray = new String[5];
+        for ( int i = 0; i < stringArray.length; i++ ) stringArray[i] = stringOfLength( allLatin1, 19 );
+        makeSureRightAmountOfDynamicRecordsUsed( stringArray, 1, ARRAY_RECORD_COUNTER );
     }
 
+    @Test
+    public void makeSureLongUtf8StringArrayUsesOneBytePerChar() throws Exception
+    {
+        String mixedChars = "abc421#¤åäö(/&€";
+        String[] stringArray = new String[7];
+        for ( int i = 0; i < stringArray.length; i++ ) stringArray[i] = stringOfLength( mixedChars, 20 );
+        makeSureRightAmountOfDynamicRecordsUsed( stringArray, 2, ARRAY_RECORD_COUNTER );
+    }
+    
+    private void makeSureRightAmountOfDynamicRecordsUsed( Object value, int expectedAddedDynamicRecords,
+            DynamicRecordCounter recordCounter ) throws Exception
+    {
+        long stringRecordsBefore = recordCounter.count();
+        Node node = getGraphDb().createNode();
+        node.setProperty( "name", value );
+        newTransaction();
+        long stringRecordsAfter = recordCounter.count();
+        assertEquals( stringRecordsBefore+expectedAddedDynamicRecords, stringRecordsAfter );
+    }
+    
     private String stringOfLength( String possibilities, int length )
     {
         StringBuilder builder = new StringBuilder();
@@ -91,4 +110,30 @@ public class TestLengthyArrayPacking extends AbstractNeo4jTestCase
         }
         return builder.toString();
     }
+    
+    private interface DynamicRecordCounter
+    {
+        long count();
+    }
+    
+    private class ArrayRecordCounter implements DynamicRecordCounter
+    {
+        @Override
+        public long count()
+        {
+            return dynamicArrayRecordsInUse();
+        }
+    }
+
+    private class StringRecordCounter implements DynamicRecordCounter
+    {
+        @Override
+        public long count()
+        {
+            return dynamicStringRecordsInUse();
+        }
+    }
+    
+    private final DynamicRecordCounter ARRAY_RECORD_COUNTER = new ArrayRecordCounter();
+    private final DynamicRecordCounter STRING_RECORD_COUNTER = new StringRecordCounter();
 }

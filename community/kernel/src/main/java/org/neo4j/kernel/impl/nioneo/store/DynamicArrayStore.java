@@ -21,9 +21,12 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
+import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.util.Bits;
@@ -74,30 +77,55 @@ public class DynamicArrayStore extends AbstractDynamicStore
         }
         return allocateRecords( startBlock, bits.asBytes() );
     }
-
+    
     private Collection<DynamicRecord> allocateFromString( long startBlock,
         String[] array )
     {
-        int size = 5;
-        for ( String str : array )
-        {
-            size += 4 + str.length() * 2;
-        }
-        ByteBuffer buf = ByteBuffer.allocate( size );
-        buf.put( (byte) PropertyType.STRING.intValue() );
-        buf.putInt( array.length );
-        for ( String str : array )
-        {
-            int length = str.length();
-            char[] chars = new char[length];
-            str.getChars( 0, length, chars, 0 );
-            buf.putInt( length * 2 );
-            for ( char c : chars )
+        int size = 1+4;
+        ByteBuffer buf = null; 
+        if ( isAllLatin1( array ) )
+        {   // LATIN-1
+            for ( String string : array ) size += 4 + string.length();
+            buf = ByteBuffer.allocate( size );
+            // [eett,tttt] e=1
+            buf.put( (byte)((1 << 6) | PropertyType.STRING.intValue()) );
+            buf.putInt( array.length );
+            for ( String str : array )
             {
-                buf.putChar( c );
+                int length = str.length();
+                buf.putInt( length );
+                for ( int i = 0; i < length; i++ ) buf.put( (byte) str.charAt( i ) );
+            }
+        }
+        else
+        {   // UTF-8
+            List<byte[]> stringsAsBytes = new ArrayList<byte[]>();
+            for ( String string : array )
+            {
+                byte[] stringAsBytes = UTF8.encode( string );
+                size += 4 + stringAsBytes.length;
+                stringsAsBytes.add( stringAsBytes );
+            }
+            buf = ByteBuffer.allocate( size );
+            // [eett,tttt] e=0
+            buf.put( (byte)PropertyType.STRING.intValue() );
+            buf.putInt( array.length );
+            for ( byte[] stringAsBytes : stringsAsBytes )
+            {
+                buf.putInt( stringAsBytes.length );
+                buf.put( stringAsBytes );
             }
         }
         return allocateRecords( startBlock, buf.array() );
+    }
+
+    private boolean isAllLatin1( String[] array )
+    {
+        for ( String string : array )
+        {
+            if ( !PropertyStore.isLatin1( string ) ) return false;
+        }
+        return true;
     }
 
     public Collection<DynamicRecord> allocateRecords( long startBlock, Object array )
@@ -120,21 +148,27 @@ public class DynamicArrayStore extends AbstractDynamicStore
 
     public Object getRightArray( byte[] bArray )
     {
-        byte typeId = bArray[0];
+        byte typeId = (byte)(bArray[0] & 0x3F);
         if ( typeId == PropertyType.STRING.intValue() )
         {
+            byte encoding = (byte)((bArray[0] & 0x30) >> 6);
             ByteBuffer buf = ByteBuffer.wrap( bArray );
             buf.get(); // get rid of the type byte (which we've already read)
             String[] array = new String[buf.getInt()];
-            for ( int i = 0; i < array.length; i++ )
+            for ( int r = 0; r < array.length; r++ )
             {
-                int charLength = buf.getInt() / 2;
-                char charBuffer[] = new char[charLength];
-                for ( int j = 0; j < charLength; j++ )
-                {
-                    charBuffer[j] = buf.getChar();
+                if ( encoding == 1 )
+                {   // LATIN-1
+                    char[] chars = new char[buf.getInt()];
+                    for ( int i = 0; i < chars.length; i++ ) chars[i] = (char)buf.get();
+                    array[r] = new String( chars );
+                }    
+                else
+                {   // UTF-8
+                    byte[] bytes = new byte[buf.getInt()];
+                    buf.get( bytes );
+                    array[r] = UTF8.decode( bytes );
                 }
-                array[i] = new String( charBuffer );
             }
             return array;
         }
