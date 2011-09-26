@@ -488,7 +488,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     }
     
     @Override
-    public ClosableIterable<File> listStoreFiles()
+    public ClosableIterable<File> listStoreFiles( boolean includeLogicalLogs )
     {
         final Collection<File> files = new ArrayList<File>();
         File neostoreFile = null;
@@ -509,7 +509,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                 {   // Store files
                     files.add( dbFile );
                 }
-                else if ( logFilePattern.matcher( dbFile.getName() ).matches() )
+                else if ( includeLogicalLogs && logFilePattern.matcher( dbFile.getName() ).matches() )
                 {   // Logs
                     files.add( dbFile );
                 }

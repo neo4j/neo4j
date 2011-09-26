@@ -41,7 +41,9 @@ class ShortestPathPipe(source: Pipe, pipeName: String, startName: String, endNam
         case Some(typeName) => Traversal.expanderForTypes(DynamicRelationshipType.withName(typeName), dir)
       }
 
-      val finder = GraphAlgoFactory.shortestPath(expander, maxDepth.head)
+      val depth = maxDepth.getOrElse(15)
+
+      val finder = GraphAlgoFactory.shortestPath(expander, depth)
       val findSinglePath = finder.findSinglePath(start, end)
 
       (findSinglePath, optional) match {

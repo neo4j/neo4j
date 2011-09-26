@@ -39,6 +39,8 @@ abstract sealed class ComparableClause(a: Value, b: Value) extends Clause with C
   }
 
   def dependsOn: Set[String] = a.dependsOn ++ b.dependsOn
+
+  def atoms: Seq[Clause] = Seq(this)
 }
 
 case class Equals(a: Value, b: Value) extends ComparableClause(a, b) {
