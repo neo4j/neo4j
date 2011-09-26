@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.storemigration;
 
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -30,8 +29,10 @@ public class LegacyStore
     static final String FROM_VERSION = "NodeStore v0.9.9";
     private String storageFileName;
     private LegacyPropertyStoreReader propertyStoreReader;
-    private LegacyNodeStoreReader legacyNodeStoreReader;
+    private LegacyNodeStoreReader nodeStoreReader;
     private LegacyDynamicRecordFetcher dynamicRecordFetcher;
+    private LegacyPropertyIndexStoreReader propertyIndexStoreReader;
+    private LegacyDynamicStoreReader propertyIndexKeyStoreReader;
 
     public LegacyStore( String storageFileName ) throws IOException
     {
@@ -47,7 +48,9 @@ public class LegacyStore
         dynamicRecordFetcher = new LegacyDynamicRecordFetcher( getStorageFileName() + ".propertystore.db.strings", getStorageFileName() + ".propertystore.db.arrays" );
 //        relStore = new RelationshipStore( getStorageFileName()
 //            + ".relationshipstore.db", getConfig() );
-        legacyNodeStoreReader = new LegacyNodeStoreReader( getStorageFileName() + ".nodestore.db" );
+        nodeStoreReader = new LegacyNodeStoreReader( getStorageFileName() + ".nodestore.db" );
+        propertyIndexStoreReader = new LegacyPropertyIndexStoreReader( getStorageFileName() + ".propertystore.db.index" );
+        propertyIndexKeyStoreReader = new LegacyDynamicStoreReader( getStorageFileName() + ".propertystore.db.index.keys" );
     }
 
     public String getStorageFileName()
@@ -60,14 +63,24 @@ public class LegacyStore
         return propertyStoreReader;
     }
 
-    public LegacyNodeStoreReader getLegacyNodeStoreReader()
+    public LegacyNodeStoreReader getNodeStoreReader()
     {
-        return legacyNodeStoreReader;
+        return nodeStoreReader;
     }
 
     public LegacyDynamicRecordFetcher getDynamicRecordFetcher()
     {
         return dynamicRecordFetcher;
+    }
+
+    public LegacyPropertyIndexStoreReader getPropertyIndexStoreReader()
+    {
+        return propertyIndexStoreReader;
+    }
+
+    public LegacyDynamicStoreReader getPropertyIndexKeyStoreReader()
+    {
+        return propertyIndexKeyStoreReader;
     }
 
     public static long getUnsignedInt(ByteBuffer buf)

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.storemigration;
 
 import org.junit.Test;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
 
 import java.io.IOException;
 import java.net.URL;
@@ -88,6 +89,20 @@ public class ReadRecordsTest
         for ( int i = 0; i < array.length; i++ )
         {
             assertEquals( i, array[i] );
+        }
+    }
+
+    @Test
+    public void shouldReadPropertyIndexRecords() throws IOException
+    {
+        URL legacyStoreResource = getClass().getResource( "oldformatstore/neostore" );
+        LegacyStore legacyStore = new LegacyStore( legacyStoreResource.getFile() );
+
+        LegacyPropertyIndexStoreReader propertyIndexStoreReader = legacyStore.getPropertyIndexStoreReader();
+        int recordCount = 0;
+        for ( PropertyIndexRecord record : propertyIndexStoreReader.readPropertyIndexStore() )
+        {
+            recordCount++;
         }
     }
 }

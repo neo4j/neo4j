@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -29,8 +30,10 @@ import java.util.HashMap;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyIndexStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.util.FileUtils;
 
@@ -46,7 +49,7 @@ public class PropertyMigrationTest
 
         LegacyPropertyStoreReader propertyStoreReader = legacyStore.getPropertyStoreReader();
         LegacyDynamicRecordFetcher legacyDynamicRecordFetcher = legacyStore.getDynamicRecordFetcher();
-        LegacyNodeStoreReader legacyNodeStoreReader = legacyStore.getLegacyNodeStoreReader();
+        LegacyNodeStoreReader legacyNodeStoreReader = legacyStore.getNodeStoreReader();
 
         HashMap config = MigrationTestUtils.defaultConfig();
         File outputDir = new File( "target/outputDatabase" );
@@ -58,9 +61,8 @@ public class PropertyMigrationTest
         NeoStore.createStore( storeFileName, config );
         NeoStore neoStore = new NeoStore( config );
 
-        PropertyStore propertyStore = neoStore.getPropertyStore();
-
-        new PropertyMigration( legacyNodeStoreReader, propertyStoreReader, legacyDynamicRecordFetcher ).migrateNodeProperties( neoStore.getNodeStore(), new PropertyWriter( propertyStore ) );
+        new PropertyMigration( legacyNodeStoreReader, propertyStoreReader, legacyDynamicRecordFetcher ).migrateNodeProperties( neoStore.getNodeStore(), new PropertyWriter( neoStore.getPropertyStore() ) );
+        new PropertyIndexMigration( legacyStore ).migratePropertyIndexes( neoStore );
 
         neoStore.close();
 
@@ -95,19 +97,28 @@ public class PropertyMigrationTest
     {
         EmbeddedGraphDatabase database = new EmbeddedGraphDatabase( directory.getPath() );
         int nodeCount = 0;
+
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < 100; i++) {
+            builder.append("characters");
+        }
+        String longString = builder.toString();
+
+        int[] longArray = new int[100];
+        for (int i = 0; i < 100; i++) {
+            longArray[i] = i;
+        }
+
         for ( Node node : database.getAllNodes() )
         {
             nodeCount++;
-//            for ( String key : node.getPropertyKeys() )
-//            {
-//                System.out.println( "key = " + key );
-//            }
-//                assertEquals( true, node.getProperty( "property1" ));
-//                assertEquals( true, node.getProperty( "long_string" ));
-//                assertEquals( true, node.getProperty( "long_array" ));
+            if (node.getId() > 0) {
+                assertEquals( true, node.getProperty( "property1" ));
+                assertEquals( longString, node.getProperty( "long_string" ));
+                assertArrayEquals( longArray, (int[]) node.getProperty( "long_array" ) );
+            }
         }
         assertEquals( 1000, nodeCount );
         database.shutdown();
     }
-
 }

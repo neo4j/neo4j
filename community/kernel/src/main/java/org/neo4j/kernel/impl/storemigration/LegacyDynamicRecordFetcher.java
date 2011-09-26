@@ -69,14 +69,20 @@ public class LegacyDynamicRecordFetcher
 
     public Object getStringFor( LegacyPropertyRecord propRecord )
     {
-        long recordToFind = propRecord.getPropBlock();
+        long startRecordId = propRecord.getPropBlock();
+        List<LegacyDynamicRecord> legacyDynamicRecords = readDynamicRecords( propRecord );
+        return joinRecordsIntoString( startRecordId, legacyDynamicRecords );
+    }
+
+    public static String joinRecordsIntoString( long startRecordId, List<LegacyDynamicRecord> legacyDynamicRecords )
+    {
         Map<Long, LegacyDynamicRecord> recordsMap = new HashMap<Long, LegacyDynamicRecord>();
-        for ( LegacyDynamicRecord record : readDynamicRecords( propRecord ) )
+        long recordToFind = startRecordId;
+        for ( LegacyDynamicRecord record : legacyDynamicRecords )
         {
             recordsMap.put( record.getId(), record );
         }
         List<char[]> charList = new LinkedList<char[]>();
-        int totalSize = 0;
         while ( recordToFind != Record.NO_NEXT_BLOCK.intValue() )
         {
             LegacyDynamicRecord record = recordsMap.get( recordToFind );
@@ -84,7 +90,6 @@ public class LegacyDynamicRecordFetcher
             {
                 ByteBuffer buf = ByteBuffer.wrap( record.getData() );
                 char[] chars = new char[record.getData().length / 2];
-                totalSize += chars.length;
                 buf.asCharBuffer().get( chars );
                 charList.add( chars );
             } else

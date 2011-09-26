@@ -50,13 +50,12 @@ public class PropertyMigration
             {
                 LegacyPropertyRecord propertyRecord = propertyStoreReader.readPropertyRecord( nodeRecord.getNextProp() );
                 List<Pair<Integer, Object>> properties = new ArrayList<Pair<Integer, Object>>();
-                properties.add( extractValue( propertyRecord ) );
-                propertyRecord.getPropBlock();
                 while ( propertyRecord.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
                 {
                     properties.add( extractValue( propertyRecord ) );
                     propertyRecord = propertyStoreReader.readPropertyRecord( propertyRecord.getNextProp() );
                 }
+                properties.add( extractValue( propertyRecord ) );
                 long propertyRecordId = propertyWriter.writeProperties( properties );
                 nodeRecord.setNextProp( propertyRecordId );
                 nodeStore.setHighId( nodeRecord.getId() );
