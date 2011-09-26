@@ -45,7 +45,6 @@ public class PropertyWriter
         {
             PropertyBlock block = new PropertyBlock();
             propertyStore.encodeValue( block, property.first(), property.other() );
-            block.setInUse( true );
             int newBlockSizeInBytes = block.getSize();
             if ( propertyRecord.getUsedPayloadBytes() + newBlockSizeInBytes > PropertyType.getPayloadSize() )
             {
