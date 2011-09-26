@@ -82,7 +82,7 @@ public class RolesTest extends AbstractJavaDocTestbase
      * types, you are free to create any relationship types and give them any semantics you want.
      * 
      * Lets now have a look at how to retrieve information from the graph. The Java code is using
-     * the Neo4j Traversal API, the queries are done useing the <<cypher-query-lang>>.
+     * the Neo4j Traversal API (<<graphdb-neo4j-traversal>>), the queries are done using the <<cypher-query-lang>>.
      *
      * == Get the admins ==
      * 
@@ -102,6 +102,8 @@ public class RolesTest extends AbstractJavaDocTestbase
      *
      * == Get the group memberships of a user ==
      * 
+     * Using the <<graphdb-neo4j-traversal>>[Neo4j Java Traversal API], this query looks like:
+     * 
      * @@get-user-memberships
      * 
      * resuling in: 
@@ -114,7 +116,6 @@ public class RolesTest extends AbstractJavaDocTestbase
      * 
      * @@o-query-get-user-memberships
      * 
-     * 
      * == Get all groups ==
      * 
      * In Java: 
@@ -124,7 +125,6 @@ public class RolesTest extends AbstractJavaDocTestbase
      * resulting in:
      * 
      * @@o-get-groups
-     * 
      * 
      * In Cypher:
      * 
@@ -140,7 +140,7 @@ public class RolesTest extends AbstractJavaDocTestbase
      * 
      * @@get-members
      * 
-     * @@get-members
+     * @@o-get-members
      * 
      * In Cypher, this requires to match users at two points due to the start and endpoint of the
      * variable length path being potentially matched on:
@@ -148,6 +148,9 @@ public class RolesTest extends AbstractJavaDocTestbase
      * @@query-get-members
      * 
      * @@o-query-get-members
+     * 
+     * As seen above, querying even more complex scenarios can be done using comparatively short
+     * constructs in Java and other query mechanisms.
      *
      * Full source code: https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/RolesTest.java[RolesTest.java]
      */
@@ -242,7 +245,8 @@ public class RolesTest extends AbstractJavaDocTestbase
         gen.get().addSnippet( "o-get-members", createOutputSnippet( traverserToString( traverser ) ) );
         query = "start refNode=("+ referenceNode.getId() +") " +
         		"match refNode<-[:ROOT]->topGroup<-[:PART_OF*]-subGroup, " +
-        		"subGroup<-[:MEMBER_OF]-subGroupUser return topGroup, subGroupUser";
+                "topGroup<-[:MEMBER_OF]-topGroupUser, " +
+        		"subGroup<-[:MEMBER_OF]-subGroupUser return topGroup, topGroupUser, subGroup, subGroupUser";
         gen.get().addSnippet( "query-get-members", createCypherSnippet( query ) );
         result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("Engin") );
