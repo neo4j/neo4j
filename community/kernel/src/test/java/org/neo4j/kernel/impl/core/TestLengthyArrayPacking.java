@@ -31,6 +31,8 @@ import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 public class TestLengthyArrayPacking extends AbstractNeo4jTestCase
 {
+    private static final String SOME_MIXED_CHARS = "abc421#¤åäö(/&€";
+    private static final String SOME_LATIN_1_CHARS = "abcdefghijklmnopqrstuvwxyz";
     @Test
     public void bitPackingOfLengthyArrays() throws Exception
     {
@@ -60,33 +62,31 @@ public class TestLengthyArrayPacking extends AbstractNeo4jTestCase
     @Test
     public void makeSureLongLatin1StringUsesOneBytePerChar() throws Exception
     {
-        String string = stringOfLength( "abcdefghijklmnopqrstuvwxyz", DEFAULT_DATA_BLOCK_SIZE*2-1 );
+        String string = stringOfLength( SOME_LATIN_1_CHARS, DEFAULT_DATA_BLOCK_SIZE*2-1 );
         makeSureRightAmountOfDynamicRecordsUsed( string, 2, STRING_RECORD_COUNTER );
     }
     
     @Test
     public void makeSureLongUtf8StringUsesLessThanTwoBytesPerChar() throws Exception
     {
-        String string = stringOfLength( "abc421#¤åäö(/&€", DEFAULT_DATA_BLOCK_SIZE+10 );
+        String string = stringOfLength( SOME_MIXED_CHARS, DEFAULT_DATA_BLOCK_SIZE+10 );
         makeSureRightAmountOfDynamicRecordsUsed( string, 2, STRING_RECORD_COUNTER );
     }
     
     @Test
     public void makeSureLongLatin1StringArrayUsesOneBytePerChar() throws Exception
     {
-        String allLatin1 = "abcdefghijklmnopqrstuvwxyz";
         // Exactly 120 bytes: 5b header + (19+4)*5. w/o compression 5+(19*2 + 4)*5
         String[] stringArray = new String[5];
-        for ( int i = 0; i < stringArray.length; i++ ) stringArray[i] = stringOfLength( allLatin1, 19 );
+        for ( int i = 0; i < stringArray.length; i++ ) stringArray[i] = stringOfLength( SOME_LATIN_1_CHARS, 19 );
         makeSureRightAmountOfDynamicRecordsUsed( stringArray, 1, ARRAY_RECORD_COUNTER );
     }
 
     @Test
-    public void makeSureLongUtf8StringArrayUsesOneBytePerChar() throws Exception
+    public void makeSureLongUtf8StringArrayUsesLessThanTwoBytePerChar() throws Exception
     {
-        String mixedChars = "abc421#¤åäö(/&€";
         String[] stringArray = new String[7];
-        for ( int i = 0; i < stringArray.length; i++ ) stringArray[i] = stringOfLength( mixedChars, 20 );
+        for ( int i = 0; i < stringArray.length; i++ ) stringArray[i] = stringOfLength( SOME_MIXED_CHARS, 20 );
         makeSureRightAmountOfDynamicRecordsUsed( stringArray, 2, ARRAY_RECORD_COUNTER );
     }
     

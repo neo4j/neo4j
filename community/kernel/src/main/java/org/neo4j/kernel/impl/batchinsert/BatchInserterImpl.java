@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.batchinsert;
 
 import static java.lang.Boolean.parseBoolean;
 import static org.neo4j.kernel.Config.ALLOW_STORE_UPGRADE;
-import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.getBestSuitedEncoding;
+import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -480,7 +480,7 @@ public class BatchInserterImpl implements BatchInserter
         int keyBlockId = idxStore.nextKeyBlockId();
         record.setKeyBlockId( keyBlockId );
         Collection<DynamicRecord> keyRecords =
-            idxStore.allocateKeyRecords( keyBlockId, getBestSuitedEncoding( stringKey ) );
+            idxStore.allocateKeyRecords( keyBlockId, encodeString( stringKey ) );
         for ( DynamicRecord keyRecord : keyRecords )
         {
             record.addKeyRecord( keyRecord );
@@ -500,7 +500,7 @@ public class BatchInserterImpl implements BatchInserter
         int typeBlockId = (int) typeStore.nextBlockId();
         record.setTypeBlock( typeBlockId );
         Collection<DynamicRecord> typeRecords =
-            typeStore.allocateTypeNameRecords( typeBlockId, getBestSuitedEncoding( name ) );
+            typeStore.allocateTypeNameRecords( typeBlockId, encodeString( name ) );
         for ( DynamicRecord typeRecord : typeRecords )
         {
             record.addTypeRecord( typeRecord );

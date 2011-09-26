@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.getBestSuitedEncoding;
+import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -1474,7 +1474,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         int keyBlockId = propIndexStore.nextKeyBlockId();
         record.setKeyBlockId( keyBlockId );
         Collection<DynamicRecord> keyRecords =
-            propIndexStore.allocateKeyRecords( keyBlockId, getBestSuitedEncoding( key ) );
+            propIndexStore.allocateKeyRecords( keyBlockId, encodeString( key ) );
         for ( DynamicRecord keyRecord : keyRecords )
         {
             record.addKeyRecord( keyRecord );
@@ -1494,7 +1494,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
 //        char[] chars = new char[length];
 //        name.getChars( 0, length, chars, 0 );
         Collection<DynamicRecord> typeNameRecords =
-            getRelationshipTypeStore().allocateTypeNameRecords( blockId, getBestSuitedEncoding( name ) );
+            getRelationshipTypeStore().allocateTypeNameRecords( blockId, encodeString( name ) );
         for ( DynamicRecord typeRecord : typeNameRecords )
         {
             record.addTypeRecord( typeRecord );

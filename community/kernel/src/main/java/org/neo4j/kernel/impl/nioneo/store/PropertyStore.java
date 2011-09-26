@@ -35,7 +35,6 @@ import java.util.logging.Level;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.impl.util.Bits;
 
 /**
  * Implementation of the property store. This implementation has two dynamic
@@ -45,7 +44,7 @@ public class PropertyStore extends AbstractStore implements Store
 {
     public static final int DEFAULT_DATA_BLOCK_SIZE = 120;
     public static final int DEFAULT_PAYLOAD_SIZE = 32;
-
+    
     // store version, each store ends with this string (byte encoded)
     private static final String VERSION = "PropertyStore v0.A.0";
 
@@ -522,16 +521,15 @@ public class PropertyStore extends AbstractStore implements Store
     public void encodeValue( PropertyBlock block, int keyId, Object value )
     {
         if ( value instanceof String )
-        {
+        {   // Try short string first, i.e. inlined in the property block
             String string = (String) value;
             if ( LongerShortString.encode( keyId, string, block,
                     PropertyType.getPayloadSize() ) ) return;
 
-            Bits bits = bits32WithKeyAndType( keyId, PropertyType.STRING );
+            // Fall back to dynamic string store
             long stringBlockId = nextStringBlockId();
-            bits.put( stringBlockId, 36 );
-            block.setSingleBlock( bits.getLongs()[0] );
-            byte[] encodedString = getBestSuitedEncoding( string );
+            setSingleBlockValue( block, keyId, PropertyType.STRING, stringBlockId );
+            byte[] encodedString = encodeString( string );
             Collection<DynamicRecord> valueRecords = allocateStringRecords( stringBlockId, encodedString );
             for ( DynamicRecord valueRecord : valueRecords )
             {
@@ -559,12 +557,12 @@ public class PropertyStore extends AbstractStore implements Store
         else if ( value instanceof Character ) setSingleBlockValue( block, keyId, PropertyType.CHAR, ((Character)value).charValue() );
         else if ( value instanceof Short ) setSingleBlockValue( block, keyId, PropertyType.SHORT, ((Short)value).longValue() );
         else if ( value.getClass().isArray() )
-        {
+        {   // Try short array first, i.e. inlined in the property block
             if ( ShortArray.encode( keyId, value, block, DEFAULT_PAYLOAD_SIZE ) ) return;
+            
+            // Fall back to dynamic array store
             long arrayBlockId = nextArrayBlockId();
-            Bits bits = bits32WithKeyAndType( keyId, PropertyType.ARRAY );
-            bits.put( arrayBlockId, 36 );
-            block.setSingleBlock( bits.getLongs()[0] );
+            setSingleBlockValue( block, keyId, PropertyType.ARRAY, arrayBlockId );
             Collection<DynamicRecord> arrayRecords = allocateArrayRecords( arrayBlockId, value );
             for ( DynamicRecord valueRecord : arrayRecords )
             {
@@ -585,37 +583,9 @@ public class PropertyStore extends AbstractStore implements Store
                               | ( longValue << 28 ) );
     }
 
-    public static byte[] getBestSuitedEncoding( String string )
+    public static byte[] encodeString( String string )
     {
-        // Try LATIN-1 (uses less space than UTF-8)
-        Bits bits = Bits.bits( string.length()+1 ).put( (byte)1 );
-        if ( LongerShortString.writeLatin1Characters( string, bits ) ) return bits.asBytes();
-
-        // Use UTF-8
-        byte[] asUtfBytes = UTF8.encode( string );
-        byte[] result = new byte[asUtfBytes.length+1];
-        result[0] = (byte)0;
-        System.arraycopy( asUtfBytes, 0, result, 1, asUtfBytes.length );
-        return result;
-    }
-    
-    protected static boolean isLatin1( String string )
-    {
-        for ( int i = 0; i < string.length(); i++ )
-        {
-            if ( !LongerShortString.isLatin1( string.charAt( i ) ) ) return false;
-        }
-        return true;
-    }
-
-    private Bits bits32WithKeyAndType( int keyId, PropertyType type )
-    {
-        return Bits.bits( 8 ).put( keyId, 24 ).put( type.intValue(), 4 );
-    }
-
-    private Bits bits64WithKeyAndType( int keyId, PropertyType type )
-    {
-        return Bits.bits( 16 ).put( keyId, 24 ).put( type.intValue(), 4 ).put( 0, 36 );
+        return UTF8.encode( string );
     }
 
     public Object getStringFor( PropertyBlock propertyBlock )
@@ -630,24 +600,13 @@ public class PropertyStore extends AbstractStore implements Store
 
     public static Object getStringFor( AbstractDynamicStore store, long startRecord, Collection<DynamicRecord> dynamicRecords )
     {
-        return getStringFor( readFullByteArray( startRecord, dynamicRecords, store ) );
+        byte[] source = readFullByteArray( startRecord, dynamicRecords, store );
+        return getStringFor( source );
     }
 
-    public static Object getStringFor( byte[] byteArrayForAllDynamicRecords )
+    public static Object getStringFor( byte[] byteArray )
     {
-        byte[] bArray = new byte[byteArrayForAllDynamicRecords.length-1];
-        System.arraycopy( byteArrayForAllDynamicRecords, 1, bArray, 0, bArray.length );
-        byte encoding = byteArrayForAllDynamicRecords[0];
-        switch ( encoding )
-        {
-        case 0: // UTF-8
-            return UTF8.decode( bArray );
-        case 1: // LATIN-1
-            char[] result = new char[bArray.length];
-            for ( int i = 0; i < result.length; i++ ) result[i] = (char) bArray[i];
-            return new String( result );
-        default: throw new RuntimeException( "Unknown string encoding " + encoding );
-        }
+        return UTF8.decode( byteArray );
     }
 
     public Object getArrayFor( PropertyBlock propertyBlock )
