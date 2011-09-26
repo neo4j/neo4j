@@ -43,7 +43,6 @@ define(
         _.extend(this, Backbone.Events)
 
       init : (system) =>
-        console.log system
         @particleSystem = system
         @particleSystem.screenSize(@canvas.width, @canvas.height)
         @particleSystem.screenStep(0.000)
