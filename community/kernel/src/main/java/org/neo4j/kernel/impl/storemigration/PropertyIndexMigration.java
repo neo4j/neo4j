@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.storemigration;
 import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.getBestSuitedEncoding;
 
 import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.List;
 

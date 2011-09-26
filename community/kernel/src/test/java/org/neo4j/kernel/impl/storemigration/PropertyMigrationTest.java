@@ -30,15 +30,14 @@ import java.util.HashMap;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexStore;
-import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 public class PropertyMigrationTest
 {
+    @SuppressWarnings({"unchecked"})
     @Test
     public void shouldRewrite() throws IOException
     {
@@ -98,27 +97,46 @@ public class PropertyMigrationTest
         EmbeddedGraphDatabase database = new EmbeddedGraphDatabase( directory.getPath() );
         int nodeCount = 0;
 
-        StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < 100; i++) {
-            builder.append("characters");
-        }
-        String longString = builder.toString();
-
-        int[] longArray = new int[100];
-        for (int i = 0; i < 100; i++) {
-            longArray[i] = i;
-        }
+        String longString = makeLongString();
+        int[] longArray = makeLongArray();
 
         for ( Node node : database.getAllNodes() )
         {
             nodeCount++;
             if (node.getId() > 0) {
-                assertEquals( true, node.getProperty( "property1" ));
-                assertEquals( longString, node.getProperty( "long_string" ));
-                assertArrayEquals( longArray, (int[]) node.getProperty( "long_array" ) );
+                assertEquals( Integer.MAX_VALUE, node.getProperty( PropertyType.INT.name() ) );
+                assertEquals( longString, node.getProperty( PropertyType.STRING.name() ) );
+                assertEquals( true, node.getProperty( PropertyType.BOOL.name() ) );
+                assertEquals( Double.MAX_VALUE, node.getProperty( PropertyType.DOUBLE.name() ) );
+                assertEquals( Float.MAX_VALUE, node.getProperty( PropertyType.FLOAT.name() ) );
+                assertEquals( Long.MAX_VALUE, node.getProperty( PropertyType.LONG.name() ) );
+                assertEquals( Byte.MAX_VALUE, node.getProperty( PropertyType.BYTE.name() ) );
+                assertEquals( Character.MAX_VALUE, node.getProperty( PropertyType.CHAR.name() ) );
+                assertArrayEquals( longArray, (int[]) node.getProperty( PropertyType.ARRAY.name() ) );
+                assertEquals( Short.MAX_VALUE, node.getProperty( PropertyType.SHORT.name() ) );
+                assertEquals( "short", node.getProperty( PropertyType.SHORT_STRING.name() ) );
             }
         }
         assertEquals( 1000, nodeCount );
         database.shutdown();
     }
+
+    public static int[] makeLongArray()
+    {
+        int[] longArray = new int[100];
+        for (int i = 0; i < 100; i++) {
+            longArray[i] = i;
+        }
+        return longArray;
+    }
+
+    private static String makeLongString()
+    {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < 100; i++) {
+            builder.append("characters");
+        }
+        return builder.toString();
+    }
+
 }
