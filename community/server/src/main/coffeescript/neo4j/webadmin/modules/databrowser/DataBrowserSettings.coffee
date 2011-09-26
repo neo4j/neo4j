@@ -9,7 +9,7 @@ define(
       LABEL_PROPERTIES_DEFAULT : ['name']
       
       VIZ_PROFILES_KEY : 'databrowser.visualization.profiles'
-      VIZ_PROFILES_DEFAULT : [{ id:0, name:"Default profile" }]
+      VIZ_PROFILES_DEFAULT : [{ id:0, name:"Default profile", builtin:true }]
 
       CURRENT_VIZ_PROFILE_KEY : 'databrowser.visualization.currentProfile'
 
@@ -32,7 +32,11 @@ define(
         @settings.bind 'change:' + @LABEL_PROPERTIES_KEY,  callback
         
       getVisualizationProfiles : () ->
-        @settings.get @VIZ_PROFILES_KEY, VisualizationProfiles, @VIZ_PROFILES_DEFAULT
+        prof = @settings.get @VIZ_PROFILES_KEY, VisualizationProfiles, @VIZ_PROFILES_DEFAULT
+        if prof.size() == 0
+          @settings.remove @VIZ_PROFILES_KEY
+          prof = @settings.get @VIZ_PROFILES_KEY, VisualizationProfiles, @VIZ_PROFILES_DEFAULT
+        prof
         
       getCurrentVisualizationProfile : () ->
         id = @settings.get @CURRENT_VIZ_PROFILE_KEY
