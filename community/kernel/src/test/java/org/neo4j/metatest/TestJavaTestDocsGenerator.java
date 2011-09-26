@@ -54,7 +54,7 @@ public class TestJavaTestDocsGenerator implements GraphHolder
     String directory = "target"+File.separator+"testdocs";
     String sectionName = "testsection";
     
-    @Documented(value="Title1.\n\nhej\n@@snippet1\n\nmore docs\n@@snippet2.")
+    @Documented(value="Title1.\n\nhej\n@@snippet1\n\nmore docs\n@@snippet_2-1.")
     @Test
     @Graph( "I know you" )
     public void can_create_docs_from_method_name() throws Exception
@@ -66,7 +66,7 @@ public class TestJavaTestDocsGenerator implements GraphHolder
         String snippet1 = "snippet1-value";
         String snippet2 = "snippet2-value";
         doc.addSnippet("snippet1", snippet1 );
-        doc.addSnippet("snippet2", snippet2 );
+        doc.addSnippet("snippet_2-1", snippet2 );
         doc.document(directory, sectionName);
         String result = readFileAsString( doc.out);
         System.out.println(result);

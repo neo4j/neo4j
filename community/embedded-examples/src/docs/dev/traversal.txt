@@ -135,44 +135,6 @@ tag=find--hackers-usage
 Full source code:
 https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/MatrixNewTravTest.java[MatrixNewTravTest.java]
 
-=== User roles ===
-
-The traversals from the User roles example above, this time using the new traversal API:
-
-.Get the admins
-[snippet,java]
-----
-component=neo4j-examples
-source=org/neo4j/examples/RolesNewTravTest.java
-tag=get-admins
-----
-    
-.Get the group memberships of a user
-[snippet,java]
-----
-component=neo4j-examples
-source=org/neo4j/examples/RolesNewTravTest.java
-tag=get-user-memberships
-----
-
-.Get all groups
-[snippet,java]
-----
-component=neo4j-examples
-source=org/neo4j/examples/RolesNewTravTest.java
-tag=get-groups
-----
-
-.Get all members of all groups
-[snippet,java]
-----
-component=neo4j-examples
-source=org/neo4j/examples/RolesNewTravTest.java
-tag=get-members
-----
-    
-Full source code:
-https://github.com/neo4j/community/blob/{neo4j-git-tag}/embedded-examples/src/test/java/org/neo4j/examples/RolesNewTravTest.java[RolesNewTravTest.java]
 
 === Walking an ordered path ===
 
