@@ -1,0 +1,19 @@
+
+[[domain-modeling-gallery]]
+Domain Modeling Gallery
+=======================
+
+The following chapters contains simplified examples of how different domains can be modeled using neo4j. 
+The aim is not to give full examples, but to suggest possible ways to think using the graph patterns and Data Locality in traversals.
+
+:leveloffset: 2
+
+include::examples/user-roles-in-graphs.txt[]
+
+:leveloffset: 2
+
+include::examples/acl-structures-in-graphs.txt[]
+
+:leveloffset: 2
+
+include::examples/social-network-with-multiple-relations.txt[]
