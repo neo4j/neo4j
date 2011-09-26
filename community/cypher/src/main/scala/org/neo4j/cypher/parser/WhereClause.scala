@@ -22,7 +22,7 @@ package org.neo4j.cypher.parser
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
 trait WhereClause extends JavaTokenParsers with Tokens with Clauses {
-  def where: Parser[Clause] = ignoreCase("where") ~> clause ^^ { case klas => klas }
+  def where: Parser[Clause] = ignoreCase("where") ~> clause
 }
 
 

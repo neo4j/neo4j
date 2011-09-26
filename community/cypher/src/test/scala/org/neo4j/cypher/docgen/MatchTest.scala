@@ -21,7 +21,7 @@ package org.neo4j.cypher.docgen
 
 import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.{Path, Node}
 
 class MatchTest extends DocumentingTestBase {
   override def indexProps: List[String] = List("name")
@@ -33,7 +33,7 @@ class MatchTest extends DocumentingTestBase {
   @Test def allRelationships() {
     testQuery(
       title = "Related nodes",
-      text = "The symbol -- means related to, without regard to type or direction.",
+      text = "The symbol `--` means related to, without regard to type or direction.",
       queryText = """start n=(%A%) match (n)--(x) return x""",
       returns = """All nodes related to A are returned""",
       (p) => assertEquals(List(node("B"), node("D"), node("C")), p.columnAs[Node]("x").toList)
@@ -77,7 +77,17 @@ class MatchTest extends DocumentingTestBase {
       text = "If you both want to introduce an identifier to hold the relationship, and specify the relationship type you want, " +
         "just add them both, like this.",
       queryText = """start n=(%A%) match (n)-[r:BLOCKS]->() return r""",
-      returns = """All BLOCK relationship going out from A.""",
+      returns = """All +BLOCKS+ relationship going out from A.""",
+      (p) => assertEquals(1, p.size)
+    )
+  }
+
+  @Test def relationshipsByTypeWithSpace() {
+    testQuery(
+      title = "Relationship types with uncommon characters",
+      text = "Sometime your database will have types with non-letter characters, or with spaces in them. Use ` to escape these.",
+      queryText = """start n=(%A%) match (n)-[r:BLOCKS]->() return r""",
+      returns = """All +BLOCKS+ relationship going out from A.""",
       (p) => assertEquals(1, p.size)
     )
   }
@@ -85,11 +95,68 @@ class MatchTest extends DocumentingTestBase {
   @Test def multiStepRelationships() {
     testQuery(
       title = "Multiple relationships",
-      text = "Relationships can be expressed by using multiple statements in the form of ()--(), or they can be stringed together, " +
+      text = "Relationships can be expressed by using multiple statements in the form of `()--()`, or they can be stringed together, " +
         "like this:",
       queryText = """start a=(%A%) match (a)-[:KNOWS]->(b)-[:KNOWS]->(c) return a,b,c""",
       returns = """The three nodes in the path.""",
       (p) => assertEquals(List(Map("a" -> node("A"), "b" -> node("B"), "c" -> node("E"))), p.toList)
+    )
+  }
+
+  @Test def variableLengthPath() {
+    testQuery(
+      title = "Variable length relationships",
+      text = "Nodes that are variable number of relationship->node hops can be found using `-[:TYPE*minHops..maxHops]->`. ",
+      queryText = """start a=(%A%), x=(%E%, %B%) match a-[:KNOWS*1..3]->x return a,x""",
+      returns = "Returns the start and end point, if there is a path between 1 and 3 relationships away",
+      (p) => assertEquals(List(
+        Map("a" -> node("A"), "x" -> node("E")),
+        Map("a" -> node("A"), "x" -> node("B"))), p.toList)
+    )
+  }
+
+  @Test def fixedLengthPath() {
+    testQuery(
+      title = "Fixed length relationships",
+      text = "Elements that are a fixed number of hops away can be matched by using [*numberOfHops]. ",
+      queryText = """start a=(%D%) match p=a-[*3]->() return p""",
+      returns = "The two paths that go from node D to node E",
+      (p) => assert( p.toSeq.length === 2 )
+    )
+  }
+
+  @Test def optionalRelationship() {
+    testQuery(
+      title = "Optional relationship",
+      text = "If a relationship is optional, it can be marked with a question mark. This similar to how a SQL outer join " +
+        "works, if the relationship is there, it is returned. If it's not, +null+ is returned in it's place. Remember that " +
+        "anything hanging of an optional relation, is in turn optional, unless it is connected with a bound node some other " +
+        "path.",
+      queryText = """start a=(%E%) match a-[?]->x return a,x""",
+      returns = """A node, and +null+, since the node has no relationships.""",
+      (p) => assertEquals(List(Map("a" -> node("E"), "x" -> null)), p.toList)
+    )
+  }
+
+  @Test def optionalTypedRelationship() {
+    testQuery(
+      title = "Optional typed and named relationship",
+      text = "Just as with a normal relationship, you can decide which identifier it goes into, and what relationship type " +
+        "you need.",
+      queryText = """start a=(%A%) match a-[r?:LOVES]->() return a,r""",
+      returns = """A node, and +null+, since the node has no relationships.""",
+      (p) => assertEquals(List(Map("a" -> node("A"), "r" -> null)), p.toList)
+    )
+  }
+
+  @Test def shortestPathBetweenTwoNodes() {
+    testQuery(
+      title = "Shortest path",
+      text = "Finding the shortest path between two nodes is as easy as using the shortestPath-function, like this.",
+      queryText = """start d=(%D%), e=(%E%) match p = shortestPath( d-[*..15]->e ) return p""",
+      returns = """This means: find the shortest path between two nodes, as long as the path is max 15 relationships long. Inside of the parenthesis
+ you can write """,
+      (p) => assertEquals(3, p.toList.head("p").asInstanceOf[Path].length() )
     )
   }
 
@@ -104,6 +171,16 @@ return a,b,c,d""",
       p => {
         assertEquals(List(Map("a" -> node("A"), "b" -> node("B"), "c" -> node("E"), "d" -> node("C"))), p.toList)
       }
+    )
+  }
+
+  @Test def introduceNamedPath() {
+    testQuery(
+      title = "Named path",
+      text = "If you want to return or filter on a path in your pattern graph, you can a introduce a named path.",
+      queryText = """start a=(%A%) match p = a-->b return p""",
+      returns = """The two paths starting from the first node.""",
+      (p) => assertEquals(2, p.toSeq.length)
     )
   }
 

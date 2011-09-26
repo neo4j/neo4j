@@ -52,10 +52,20 @@ public class Args
     private final Map<String, String> map = new HashMap<String, String>();
     private final List<String> orphans = new ArrayList<String>();
     
+    /**
+     * Suitable for main( String[] args )
+     * @param args the arguments to parse.
+     */
     public Args( String[] args )
     {
         this.args = args;
         parseArgs( args );
+    }
+    
+    public Args( Map<String, String> source )
+    {
+        this.args = null;
+        putAll( source );
     }
     
     public String[] source()
@@ -100,6 +110,16 @@ public class Args
             return Boolean.parseBoolean( value );
         }
         return this.map.containsKey( key ) ? defaultValueIfNoValue : defaultValueIfNotFound;
+    }
+    
+    public Object put( String key, String value )
+    {
+        return map.put( key, value );
+    }
+    
+    public void putAll( Map<String, String> source )
+    {
+        this.map.putAll( source );
     }
     
     public List<String> orphans()

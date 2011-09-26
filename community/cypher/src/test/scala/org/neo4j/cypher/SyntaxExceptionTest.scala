@@ -98,14 +98,25 @@ class SyntaxExceptionTest extends JUnitSuite {
   }
 
 
-
   @Test def shouldComplainAboutAStringBeingExpected() {
     expectError(
       "start s=(index,key,value) return s limit -1",
       "String literal expected")
   }
 
-    @Ignore @Test def nodeParenthesisMustBeClosed() {
+  @Test def shortestPathCanNotHaveMinimumDepth() {
+    expectError(
+      "start a=(0), b=(1) match p=shortestPath(a-[*2..3]->b) return p",
+      "Shortest path does not support a minimal length")
+  }
+
+  @Test def shortestPathCanNotHaveMultipleLinksInIt() {
+    expectError(
+      "start a=(0), b=(1) match p=shortestPath(a-->()-->b) return p",
+      "Shortest path does not support having multiple path segments")
+  }
+
+  @Ignore @Test def nodeParenthesisMustBeClosed() {
     expectError(
       "start s=(1) match s-->(x return x",
       "Unfinished parenthesis around 'x'")
@@ -129,7 +140,7 @@ class SyntaxExceptionTest extends JUnitSuite {
     try {
       new CypherParser().parse(query)
     } catch {
-      case x:SyntaxException => assertEquals(expected, x.getMessage)
+      case x: SyntaxException => assertEquals(expected, x.getMessage)
     }
   }
 }

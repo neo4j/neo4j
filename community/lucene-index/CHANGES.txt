@@ -1,4 +1,14 @@
-1.4.M04 (2011-06-??)
+1.5.M01 (2011-08-31)
+--------------------
+o Auto indexing hooks in on each operation instead of transaction events.
+o Fixed an issue where some not-yet-instantiated indexes wouldn't be copied during a full backup.
+o Fix for numeric values not being indexed properly in batch inserter.
+
+1.4 (2011-07-08)
+----------------
+o Fix for numeric values not being indexed properly in fulltext indexes.
+
+1.4.M05 (2011-06-27)
 --------------------
 o Added the tests and documentation for auto indexing
 

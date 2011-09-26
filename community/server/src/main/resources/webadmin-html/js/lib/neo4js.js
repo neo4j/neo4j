@@ -503,7 +503,7 @@ a++){neo4j.setTimeout((function(g){return function(){try{g(c)
 })(e[a]),0)
 }}};
 neo4j.events=new neo4j.Events();
-neo4j.jqueryWebProvider={ajax:function(h){var i=h.timeout||5000,a=h.method,c=h.url,e=h.data,k=h.success,d=h.failure,b=a==="GET";
+neo4j.jqueryWebProvider={ajax:function(h){var i=h.timeout||6*60*60*1000,a=h.method,c=h.url,e=h.data,k=h.success,d=h.failure,b=a==="GET";
 function g(m,l,n){if(n.status===0){f(n)
 }else{k.apply(this,arguments)
 }}function f(m){try{if(m.status===200){return k(null)
@@ -635,8 +635,8 @@ this.monitor=a.manage.monitor;
 this.listeners={};
 this.idCounter=0;
 this.listenerCounter=0;
-this.timespan={year:1000*60*60*24*365,month:1000*60*60*24*31,week:1000*60*60*24*7,day:1000*60*60*24,hours:1000*60*60*6,minutes:1000*60*35};
-this.startTimestamp=(new Date()).getTime()-this.timespan.year;
+this.timespan={year:60*60*24*365,month:60*60*24*31,week:60*60*24*7,day:60*60*24,hours:60*60*6,minutes:60*35};
+this.startTimestamp=Math.round((new Date()).getTime()/1000)-this.timespan.year;
 this.endTimestamp=this.startTimestamp+1;
 this.timestamps=[];
 this.data={};
@@ -687,16 +687,17 @@ e(true)
 }this.pulsePromise.addFulfilledHandler(c);
 return this.pulsePromise
 };
-neo4j.GraphDatabaseHeartbeat.prototype.adjustRequestedTimespan=function(a){var b=(new Date()).getTime()-this.endTimestamp;
-if(b>=this.timespan.year){this.endTimestamp=(new Date()).getTime()-this.timespan.month;
+neo4j.GraphDatabaseHeartbeat.prototype.adjustRequestedTimespan=function(b){var a=Math.round((new Date()).getTime()/1000);
+var c=a-this.endTimestamp;
+if(c>=this.timespan.year){this.endTimestamp=a-this.timespan.month;
 this.beat()
-}else{if(b>=this.timespan.month){this.endTimestamp=(new Date()).getTime()-this.timespan.week;
+}else{if(c>=this.timespan.month){this.endTimestamp=a-this.timespan.week;
 this.beat()
-}else{if(b>=this.timespan.week){this.endTimestamp=(new Date()).getTime()-this.timespan.day;
+}else{if(c>=this.timespan.week){this.endTimestamp=a-this.timespan.day;
 this.beat()
-}else{if(b>=this.timespan.day){this.endTimestamp=(new Date()).getTime()-this.timespan.hours;
+}else{if(c>=this.timespan.day){this.endTimestamp=a-this.timespan.hours;
 this.beat()
-}else{if(b>=this.timespan.day){this.endTimestamp=(new Date()).getTime()-this.timespan.minutes;
+}else{if(c>=this.timespan.day){this.endTimestamp=a-this.timespan.minutes;
 this.beat()
 }}}}}};
 neo4j.GraphDatabaseHeartbeat.prototype.findDataBoundaries=function(d){var c=this.getFirstKey(d);

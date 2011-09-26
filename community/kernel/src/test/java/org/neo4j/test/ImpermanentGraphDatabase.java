@@ -26,7 +26,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
@@ -176,6 +178,11 @@ public class ImpermanentGraphDatabase extends AbstractGraphDatabase
         return inner.index();
     }
 
+    public GraphDatabaseService getInner()
+    {
+        return inner;
+    }
+
     @Override
     public String getStoreDir()
     {
@@ -200,7 +207,7 @@ public class ImpermanentGraphDatabase extends AbstractGraphDatabase
         return inner.isReadOnly();
     }
 
-    public void cleanContent()
+    public void cleanContent( boolean retainReferenceNode )
     {
         Transaction tx = inner.beginTx();
         try
@@ -213,7 +220,25 @@ public class ImpermanentGraphDatabase extends AbstractGraphDatabase
                 }
                 if ( !node.hasRelationship() )
                 {
-                    node.delete();
+                    if ( retainReferenceNode )
+                    {
+                        try
+                        {
+                            Node referenceNode = inner.getReferenceNode();
+                            if ( !node.equals( referenceNode ) )
+                            {
+                                node.delete();
+                            }
+                        }
+                        catch ( NotFoundException nfe )
+                        {
+                            // no ref node
+                        }
+                    }
+                    else
+                    {
+                        node.delete();
+                    }
                 }
             }
             tx.success();
@@ -226,5 +251,10 @@ public class ImpermanentGraphDatabase extends AbstractGraphDatabase
         {
             tx.finish();
         }
+    }
+
+    public void cleanContent()
+    {
+        cleanContent( false );
     }
 }

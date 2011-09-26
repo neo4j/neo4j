@@ -19,17 +19,23 @@
  */
 package org.neo4j.cypher
 
-import java.util.Iterator
-import java.lang.Iterable
+import java.util.{Iterator => JavaIterator}
+import java.lang.{Iterable => JavaIterable}
 import org.neo4j.graphdb.{Relationship, PropertyContainer, Node}
 import scala.collection.JavaConverters._
+import org.neo4j.kernel.Traversal
 
-case class PathImpl(pathEntities: PropertyContainer*) extends org.neo4j.graphdb.Path with Traversable[PropertyContainer] {
-  assert( isProperPath )
+case class PathImpl(pathEntities: PropertyContainer*)
+  extends org.neo4j.graphdb.Path
+  with Traversable[PropertyContainer]
+  with CypherArray {
+
+
+  assert(isProperPath)
 
   def isProperPath: Boolean = {
     var x = true
-    val (nodes,rels) = pathEntities.partition(e=>{
+    val (nodes, rels) = pathEntities.partition(e => {
       x = !x
       !x
     })
@@ -45,19 +51,24 @@ case class PathImpl(pathEntities: PropertyContainer*) extends org.neo4j.graphdb.
 
   def endNode(): Node = pathEntities.last.asInstanceOf[Node]
 
-  def lastRelationship(): Relationship = null
+  def lastRelationship(): Relationship =  pathEntities.length match {
+    case 1 => null
+    case _ => entities[Relationship].last
+  }
 
-  def relationships(): Iterable[Relationship] = entities[Relationship]
+  def relationships(): JavaIterable[Relationship] = entities[Relationship].toIterable.asJava
 
-  def entities[T <: PropertyContainer](implicit m: Manifest[T]): Iterable[T] = pathEntities.filter(m.erasure.isInstance(_)).map(_.asInstanceOf[T]).toIterable.asJava
+  def entities[T <: PropertyContainer](implicit m: Manifest[T]) = pathEntities.filter(m.erasure.isInstance(_)).map(_.asInstanceOf[T])
 
-  def nodes(): Iterable[Node] = entities[Node]
+  def nodes(): JavaIterable[Node] = entities[Node].toIterable.asJava
 
-  def length(): Int = pathEntities.length
+  def length(): Int = (pathEntities.length - 1) / 2
 
-  def iterator(): Iterator[PropertyContainer] = null
+  def iterator(): JavaIterator[PropertyContainer] = null
 
   def foreach[U](f: (PropertyContainer) => U) {
     pathEntities.foreach(f(_))
   }
+
+  override def toString(): String = Traversal.defaultPathToString( this );
 }

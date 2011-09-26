@@ -19,8 +19,6 @@
  */
 package org.neo4j.jmx.impl;
 
-import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -34,6 +32,8 @@ import javax.management.remote.JMXServiceURL;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.KernelExtension;
+
+import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 
 @Service.Implementation( KernelExtension.class )
 public final class JmxExtension extends KernelExtension<JmxExtension.JmxData>
@@ -73,8 +73,8 @@ public final class JmxExtension extends KernelExtension<JmxExtension.JmxData>
                 }
             }
             catch ( Exception e )
-            {
-                log.info( "Failed to register JMX Bean " + provider );
+            { // Unexpected exception
+                log.info( "Failed to register JMX Bean " + provider + " (" + e + ")" );
             }
         }
         try

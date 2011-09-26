@@ -19,10 +19,6 @@
  */
 package org.neo4j.server.modules;
 
-import java.io.IOException;
-
-import javax.management.MalformedObjectNameException;
-
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.RoundRobinJobScheduler;
 import org.neo4j.server.database.Database;
@@ -46,7 +42,7 @@ public class WebAdminModule implements ServerModule
         {
             startRoundRobinDB( neoServer );
         }
-        catch ( Exception e )
+        catch ( RuntimeException e )
         {
             log.error( e );
             return;
@@ -61,8 +57,7 @@ public class WebAdminModule implements ServerModule
         jobScheduler.stopJobs();
     }
 
-    private void startRoundRobinDB( NeoServerWithEmbeddedWebServer neoServer ) throws MalformedObjectNameException,
-            IOException
+    private void startRoundRobinDB( NeoServerWithEmbeddedWebServer neoServer )
     {
         Database db = neoServer.getDatabase();
         RrdFactory rrdFactory = new RrdFactory( neoServer.getConfiguration() );

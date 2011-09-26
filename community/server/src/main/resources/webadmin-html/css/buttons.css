@@ -92,13 +92,13 @@
 .button:hover, .text-icon-button:hover, .icon-button:hover, .micro-button:hover {
   border:1px solid #7EB3D6;
   background: #abd3ee;
-background: -moz-linear-gradient(top, #abd3ee 0%, #89c3eb 100%);
-background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#abd3ee), color-stop(100%,#89c3eb));
-background: -webkit-linear-gradient(top, #abd3ee 0%,#89c3eb 100%);
-background: -o-linear-gradient(top, #abd3ee 0%,#89c3eb 100%);
-background: -ms-linear-gradient(top, #abd3ee 0%,#89c3eb 100%);
-filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#abd3ee', endColorstr='#89c3eb',GradientType=0 );
-background: linear-gradient(top, #abd3ee 0%,#89c3eb 100%);
+  background: -moz-linear-gradient(top, #abd3ee 0%, #89c3eb 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#abd3ee), color-stop(100%,#89c3eb));
+  background: -webkit-linear-gradient(top, #abd3ee 0%,#89c3eb 100%);
+  background: -o-linear-gradient(top, #abd3ee 0%,#89c3eb 100%);
+  background: -ms-linear-gradient(top, #abd3ee 0%,#89c3eb 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#abd3ee', endColorstr='#89c3eb',GradientType=0 );
+  background: linear-gradient(top, #abd3ee 0%,#89c3eb 100%);
 }
 
 .button[disabled], .text-icon-button[disabled], .icon-button[disabled], .micro-button[disabled], .bad-button[disabled] {

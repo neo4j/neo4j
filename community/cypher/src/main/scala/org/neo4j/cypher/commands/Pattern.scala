@@ -20,22 +20,23 @@
 package org.neo4j.cypher.commands
 
 import org.neo4j.graphdb.Direction
-import scala.Some
 
-abstract class Pattern
+abstract class Pattern {
+  val optional: Boolean
+}
 
 object RelatedTo {
-  def apply(left: String, right: String, relName: String, relType: String, direction: Direction) =
-    new RelatedTo(left, right, relName, Some(relType), direction)
+  def apply(left: String, right: String, relName: String, relType: String, direction: Direction, optional: Boolean = false) =
+    new RelatedTo(left, right, relName, Some(relType), direction, optional)
 }
 
-object VariableLengthPath {
-  def apply(pathName: String, start: String, end: String, minHops: Int, maxHops: Int, relType: String, direction: Direction) =
-    new VariableLengthPath(pathName, start, end, minHops, maxHops, Some(relType), direction)
+object VarLengthRelatedTo {
+  def apply(pathName: String, start: String, end: String, minHops: Option[Int], maxHops: Option[Int], relType: String, direction: Direction, optional: Boolean = false) =
+    new VarLengthRelatedTo(pathName, start, end, minHops, maxHops, Some(relType), direction, optional)
 }
 
-case class RelatedTo(left: String, right: String, relName: String, relType: Option[String], direction: Direction) extends Pattern
+case class RelatedTo(left: String, right: String, relName: String, relType: Option[String], direction: Direction, optional:Boolean) extends Pattern
 
-case class VariableLengthPath(pathName: String, start: String, end: String, minHops: Int, maxHops: Int, relType: Option[String], direction: Direction) extends Pattern
+case class VarLengthRelatedTo(pathName: String, start: String, end: String, minHops: Option[Int], maxHops: Option[Int], relType: Option[String], direction: Direction, optional: Boolean) extends Pattern
 
-case class NamedPath(pathName:String, pathPattern: Pattern*) extends Pattern
+case class ShortestPath(pipeName: String, startName: String, endName: String, relType:Option[String], dir:Direction, maxDepth:Option[Int], optional: Boolean) extends Pattern

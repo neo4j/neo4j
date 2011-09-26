@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher
 
-import commands.Query
 import org.neo4j.kernel.AbstractGraphDatabase
 import org.neo4j.test.ImpermanentGraphDatabase
 import org.junit.{After, Before}
@@ -28,7 +27,7 @@ import scala.collection.JavaConverters._
 import org.scalatest.junit.JUnitSuite
 
 
-trait GraphDatabaseTestBase extends JUnitSuite {
+class GraphDatabaseTestBase extends JUnitSuite {
   var graph: AbstractGraphDatabase = null
   var refNode: Node = null
   var nodes: List[Node] = null
@@ -49,6 +48,7 @@ trait GraphDatabaseTestBase extends JUnitSuite {
   }
 
   def createNode(): Node = createNode(Map[String, Any]())
+  def createNode(name:String): Node = createNode(Map[String, Any]("name"->name))
 
   def inTx[T](f: () => T): T = {
     val tx = graph.beginTx
@@ -62,6 +62,8 @@ trait GraphDatabaseTestBase extends JUnitSuite {
   }
 
   def nodeIds = nodes.map(_.getId).toArray
+
+  def relate(n1:Node, n2:Node, relType:String, name:String): Relationship = relate(n1,n2,relType, Map("name"->name))
 
   def relate(n1: Node, n2: Node, relType: String, props: Map[String, Any] = Map()): Relationship = {
     inTx(() => {

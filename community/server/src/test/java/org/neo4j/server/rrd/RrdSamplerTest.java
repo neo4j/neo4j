@@ -19,38 +19,46 @@
  */
 package org.neo4j.server.rrd;
 
+import org.junit.Test;
+import org.rrd4j.DsType;
+import org.rrd4j.core.RrdDb;
+import org.rrd4j.core.Sample;
+
+import java.io.IOException;
+
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-
-import javax.management.MalformedObjectNameException;
-
-import org.junit.Test;
-import org.rrd4j.core.Sample;
+import static org.mockito.Mockito.when;
 
 public class RrdSamplerTest
 {
     @Test
-    public void canSampleADatabase() throws MalformedObjectNameException
+    public void canSampleADatabase() throws IOException
     {
         Sampleable testSamplable = new TestSamplable( "myTest", 15 );
 
-        Sample sample = mock( Sample.class );
+        RrdDb rrd = mock( RrdDb.class );
+        final Sample sample = mock( Sample.class );
+        when( rrd.createSample( anyLong() ) ).thenReturn( sample );
 
-        RrdSampler sampler = new RrdSampler( sample, testSamplable );
+        RrdSampler sampler = new RrdSamplerImpl( rrd, testSamplable );
         sampler.updateSample();
 
         verify( sample ).setValue( "myTest", 15 );
     }
 
     @Test
-    public void shouldIgnoreUnableToSampleExceptions() throws MalformedObjectNameException
+    public void shouldIgnoreUnableToSampleExceptions() throws IOException
     {
-        Sampleable failingSampleable = new FailingSamplable( "myTest", 15 );
+        Sampleable failingSampleable = new FailingSamplable( "myTest" );
 
-        Sample sample = mock( Sample.class );
+        RrdDb rrd = mock( RrdDb.class );
+        final Sample sample = mock( Sample.class );
+        when( rrd.createSample( anyLong() ) ).thenReturn( sample );
 
-        RrdSampler sampler = new RrdSampler( sample, failingSampleable );
+        RrdSampler sampler = new RrdSamplerImpl( rrd, failingSampleable );
 
         sampler.updateSample();
 
@@ -60,9 +68,9 @@ public class RrdSamplerTest
     private class TestSamplable implements Sampleable
     {
         private String name;
-        private long value;
+        private double value;
 
-        private TestSamplable( String name, long value )
+        private TestSamplable( String name, double value )
         {
             this.name = name;
             this.value = value;
@@ -73,31 +81,39 @@ public class RrdSamplerTest
             return name;
         }
 
-        public long getValue()
+        public double getValue()
         {
             return value;
+        }
+
+        public DsType getType()
+        {
+            return DsType.GAUGE;
         }
     }
 
     private class FailingSamplable implements Sampleable
     {
         private String name;
-        private long value;
 
-        private FailingSamplable( String name, long value )
+        private FailingSamplable( String name )
         {
             this.name = name;
-            this.value = value;
         }
 
         public String getName()
         {
-            return "asd";
+            return name;
         }
 
-        public long getValue()
+        public double getValue()
         {
             throw new UnableToSampleException();
+        }
+
+        public DsType getType()
+        {
+            return DsType.GAUGE;
         }
     }
 }

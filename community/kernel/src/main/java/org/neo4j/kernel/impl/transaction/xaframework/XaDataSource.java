@@ -25,7 +25,9 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.Map;
 import java.util.StringTokenizer;
 
+import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.ClosableIterable;
+import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.LogExtractor;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -174,7 +176,7 @@ public abstract class XaDataSource
      *
      * @throws IOException if unable to read old log or write to new one
      */
-    public void rotateLogicalLog() throws IOException
+    public long rotateLogicalLog() throws IOException
     {
         throw new UnsupportedOperationException( getClass().getName() );
     }
@@ -293,37 +295,37 @@ public abstract class XaDataSource
      * @param config the configuration value specified by user configuration.
      * @param resourceName the name of the xa data source to check.
      * @return whether or not logical logs should be kept for the data source
-     * by the name {@code resourceName} or not.
+     * by the name {@code resourceName} or not. Or {@code null} if not specified.
      */
-    protected boolean shouldKeepLog( String config, String resourceName )
+    protected Boolean shouldKeepLog( String config, String resourceName )
     {
-        if ( config != null )
+        if ( config == null )
         {
-            if ( config.equals( Boolean.TRUE.toString() ) )
+            return null;
+        }
+        
+        if ( config.equals( Boolean.TRUE.toString() ) || config.equals( Boolean.FALSE.toString() ) )
+        {
+            return Boolean.parseBoolean( config );
+        }
+        StringTokenizer tok = new StringTokenizer( config, "," );
+        while ( tok.hasMoreTokens() )
+        {
+            Pair<String, Boolean> parsed = parsePossiblyKeyValueConfig( tok.nextToken().trim() );
+            if ( resourceName.equals( parsed.first() ) )
             {
-                return true;
-            }
-            StringTokenizer tok = new StringTokenizer( config, "," );
-            while ( tok.hasMoreTokens() )
-            {
-                String element = tok.nextToken().trim();
-                if ( resourceName.equals( element ) )
-                {
-                    return true;
-                }
+                return parsed.other();
             }
         }
-        return false;
+        return Boolean.FALSE;
     }
 
-    public ReadableByteChannel getCommittedTransaction( long txId ) throws IOException
+    private Pair<String, Boolean> parsePossiblyKeyValueConfig( String element )
     {
-        throw new UnsupportedOperationException( getClass().getName() );
-    }
-
-    public void getCommittedTransaction( long tx, LogBuffer buffer ) throws IOException
-    {
-        throw new UnsupportedOperationException( getClass().getName() );
+        int equalsIndex = element.indexOf( '=' );
+        return equalsIndex != -1 ?
+                Pair.of( element.substring( 0, equalsIndex ), Boolean.parseBoolean( element.substring( equalsIndex+1 ) ) ) :
+                Pair.of( element, Boolean.TRUE );
     }
 
     public ReadableByteChannel getPreparedTransaction( int identifier ) throws IOException
@@ -377,5 +379,10 @@ public abstract class XaDataSource
     public boolean setRecovered( boolean recovered )
     {
         return false;
+    }
+
+    public LogExtractor getLogExtractor( long startTxId, long endTxIdHint ) throws IOException
+    {
+        throw new UnsupportedOperationException( getClass().getName() );
     }
 }

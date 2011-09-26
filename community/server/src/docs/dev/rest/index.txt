@@ -36,6 +36,8 @@ See the examples below for more information.
 
 include::create-relationship.txt[]
 
+include::delete-relationship.txt[]
+
 include::get-all-relationships.txt[]
 
 include::get-incoming-relationships.txt[]
@@ -72,6 +74,17 @@ include::delete-all-properties-from-node.txt[]
 == Relationship properties ==
 
 include::update-relationship-properties.txt[]
+
+inlcude::remove-properties-from-a-relationship.txt[]
+
+include::remove-property-from-a-relationship.txt[]
+
+include::remove-non-existent-property-from-a-relationship.txt[]
+
+include::remove-properties-from-a-non-existing-relationship.txt[]
+
+include::remove-property-from-a-non-existing-relationship.txt[]
+
 
 [[rest-api-indexes]]
 == Indexes ==
@@ -160,6 +173,12 @@ You have to do this early in your server lifecycle, before any normal auto index
 include::traversals.txt[]
 
 include::traversal-using-a-return-filter.txt[]
+
+include::return-relationships-from-a-traversal.txt[]
+
+include::return-paths-from-a-traversal.txt[]
+
+include::traversal-returning-nodes-below-a-certain-depth.txt[]
 
 include::creating-a-paged-traverser.txt[]
 

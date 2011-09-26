@@ -21,5 +21,5 @@ package org.neo4j.server.rrd;
 
 public interface JobScheduler
 {
-    void scheduleToRunEveryXSeconds( Job job, String jobName, int runEveryXSeconds );
+    void scheduleAtFixedRate( Runnable job, String jobName, long delay, long period );
 }

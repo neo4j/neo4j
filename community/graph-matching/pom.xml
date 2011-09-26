@@ -3,7 +3,8 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
-    <version>23</version>
+    <version>25</version>
+    <relativePath/>
   </parent>
 
   <properties>

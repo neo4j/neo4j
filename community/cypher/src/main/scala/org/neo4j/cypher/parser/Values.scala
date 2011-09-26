@@ -19,36 +19,64 @@ package org.neo4j.cypher.parser
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
 
 trait Values extends JavaTokenParsers with Tokens {
 
-  def entityValue : Parser[Value] = identity ^^ {
+  def entityValue: Parser[EntityValue] = identity ^^ {
     case x => EntityValue(x)
   }
 
-  def value: Parser[Value] = (boolean | relationshipType | pathLength | property | stringValue | decimal)
+  def value: Parser[Value] = (boolean | functionCall | nullableProperty | property | stringValue | decimal | parameter )
 
-  def property: Parser[Value] = identity ~ "." ~ identity ^^ {  case v ~ "." ~ p => PropertyValue(v,p) }
-
-  def nullableProperty: Parser[Value] = property ~ "?" ^^ {
-    case PropertyValue(e,p) ~ "?" => NullablePropertyValue(e, p)
+  def property: Parser[Value] = identity ~ "." ~ identity ^^ {
+    case v ~ "." ~ p => PropertyValue(v, p)
   }
 
-  def stringValue: Parser[Value] = string ^^ { case str => Literal(str) }
+  def nullableProperty: Parser[Value] = property <~ "?" ^^ {
+    case PropertyValue(e, p) => NullablePropertyValue(e, p)
+  }
 
-  def decimal: Parser[Value] = decimalNumber ^^ { case num => Literal(num.toDouble) }
+  def stringValue: Parser[Value] = string ^^ (x => Literal(x))
+
+  def decimal: Parser[Value] = decimalNumber ^^ (x => Literal(x.toDouble))
 
   def boolean: Parser[Value] = (trueX | falseX)
-  def trueX: Parser[Value] = ignoreCase("true") ^^ { case str => Literal(true) }
-  def falseX: Parser[Value] = ignoreCase("false") ^^ { case str => Literal(false) }
 
-  def relationshipType: Parser[Value] = identity <~ ".TYPE" ^^ {  case v => RelationshipTypeValue(v) }
+  def trueX: Parser[Value] = ignoreCase("true") ^^ (x => Literal(true))
 
-  def pathLength: Parser[Value] = identity <~ ".LENGTH" ^^ { case v => PathLengthValue(v) }
+  def falseX: Parser[Value] = ignoreCase("false") ^^ (x => Literal(false))
+
+  def parameter: Parser[Value] = curly(identity) ^^ (x => ParameterValue(x))
+
+  def functionCall: Parser[Value] = (typeFunc | lengthFunc | nodesFunc | relsFunc | idFunc)
+
+  def functionArguments(numArgs: Int): Parser[List[Value]] = parens((value | entityValue) ~ repN(numArgs - 1, "," ~> (value | entityValue))) ^^ {
+    case firstArg ~ nextArguments => firstArg :: nextArguments
+  }
+
+  def typeFunc: Parser[Value] = ignoreCase("type") ~> functionArguments(1) ^^ {
+    case v => RelationshipTypeValue(v.head)
+  }
+
+  def idFunc: Parser[Value] = ignoreCase("id") ~> functionArguments(1) ^^ {
+    case v => IdValue(v.head)
+  }
+
+  def lengthFunc: Parser[Value] = ignoreCase("length") ~> functionArguments(1) ^^ {
+    case v => ArrayLengthValue(v.head)
+  }
+
+  def nodesFunc: Parser[Value] = ignoreCase("nodes") ~> parens(entityValue) ^^ {
+    case v => PathNodesValue(v)
+  }
+
+  def relsFunc: Parser[Value] = (ignoreCase("rels") | ignoreCase("relationships")) ~> parens(entityValue) ^^ {
+    case v => PathRelationshipsValue(v)
+  }
 }
-
 
 
 

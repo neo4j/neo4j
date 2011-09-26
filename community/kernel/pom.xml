@@ -3,7 +3,8 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
-    <version>23</version>
+    <version>25</version>
+    <relativePath/>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -226,10 +227,6 @@ public class ComponentVersion extends Version
           <includes>
             <include>org/neo4j/graphdb/**</include>
           </includes>
-          <!-- ABK: this looks wrong to me
-            version>${project.version}</version>
-          <comparisonVersion>1.0</comparisonVersion>
-          -->
         </configuration>
       </plugin>
       <plugin>

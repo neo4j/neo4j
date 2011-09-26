@@ -359,6 +359,19 @@ public class ArrayMap<K,V>
 
     public int size()
     {
+        if ( useThreadSafeMap )
+        {
+            return synchronizedSize();
+        }
+        if ( arrayCount != -1 )
+        {
+            return arrayCount;
+        }
+        return ((Map)data).size();
+    }
+    
+    private synchronized int synchronizedSize()
+    {
         if ( arrayCount != -1 )
         {
             return arrayCount;

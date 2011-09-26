@@ -31,13 +31,14 @@ import org.neo4j.kernel.impl.transaction.XidImpl;
 public class LogIoUtils
 {
     private static final short CURRENT_FORMAT_VERSION = ( LogEntry.CURRENT_VERSION ) & 0xFF;
+    static final int LOG_HEADER_SIZE = 16;
 
     public static long[] readLogHeader( ByteBuffer buffer, ReadableByteChannel channel,
             boolean strict ) throws IOException
     {
         buffer.clear();
-        buffer.limit( 16 );
-        if ( channel.read( buffer ) != 16 )
+        buffer.limit( LOG_HEADER_SIZE );
+        if ( channel.read( buffer ) != LOG_HEADER_SIZE )
         {
             if ( strict )
             {

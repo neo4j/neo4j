@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
-    <groupId>org.neo4j</groupId>
+    <groupId>org.neo4j.build</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>23</version>
+    <version>25</version>
+    <relativePath/>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -25,18 +26,20 @@
     <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
     <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
     <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
+    <blueprints.version>1.0</blueprints.version>
+    <gremlin.version>1.3</gremlin.version>
 
-    <!-- Run integration tests against a server that is started elsewhere.
-      This is used in ServerIntegrationTestFacade, which currently assumes external 
-      servers to be running at http://localhost:7474/ -->
+    <!-- Run integration tests against a server that is started elsewhere. This is used in ServerIntegrationTestFacade, which currently assumes external servers to be running at http://localhost:7474/ -->
     <testWithExternalServer>false</testWithExternalServer>
 
     <!-- Override this with something like -DcukeArgs=features/webadmin/console.feature:12 -->
     <cukeArgs>src/features</cukeArgs>
 
-    <webdriver.version>2.0b3</webdriver.version>
+    <webdriver.version>2.5.0</webdriver.version>
     <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
-	
+
+    <!-- Default location for chrome controller binary, used by webdriver for running tests in Chrome. Available from (http://code.google.com/p/chromium/downloads/list) see README.txt for details on this. -->
+    <webdriver.chrome.driver>/usr/bin/chromedriver</webdriver.chrome.driver>
   </properties>
 
   <scm>
@@ -127,7 +130,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-server</artifactId>
-      <version>1.3</version>
+      <version>1.9</version>
     </dependency>
 
     <dependency>
@@ -161,21 +164,15 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.codehaus.jackson</groupId>
       <artifactId>jackson-jaxrs</artifactId>
-      <version>1.6.1</version>
+      <version>1.8.3</version>
     </dependency>
-    <dependency>
-      <groupId>org.codehaus.jackson</groupId>
-      <artifactId>jackson-mapper-asl</artifactId>
-      <version>1.6.1</version>
-    </dependency>
-
     <dependency>
       <groupId>com.tinkerpop</groupId>
       <artifactId>gremlin</artifactId>
-      <version>1.2</version>
+      <version>${gremlin.version}</version>
       <type>jar</type>
       <exclusions>
-        <!-- Sail support not needed --> 
+        <!-- Sail support not needed -->
         <exclusion>
           <groupId>com.tinkerpop.blueprints</groupId>
           <artifactId>blueprints-sail-graph</artifactId>
@@ -195,18 +192,13 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>com.tinkerpop.blueprints</groupId>
       <artifactId>blueprints-neo4j-graph</artifactId>
-      <version>0.8</version>
+      <version>${blueprints.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.neo4j</groupId>
           <artifactId>neo4j</artifactId>
         </exclusion>
       </exclusions>
-    </dependency>
-
-    <dependency>
-      <groupId>org.hamcrest</groupId>
-      <artifactId>hamcrest-all</artifactId>
     </dependency>
 
     <dependency>
@@ -219,24 +211,21 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-client</artifactId>
-      <version>1.3</version>
+      <version>1.9</version>
       <scope>test</scope>
     </dependency>
 
-    <!-- dependency> <groupId>org.rrd4j</groupId> <artifactId>rrd4j</artifactId> <version>2.0.6</version> 
-      </dependency -->
-
     <dependency>
-      <groupId>de.huxhorn.lilith</groupId>
-      <artifactId>de.huxhorn.lilith.3rdparty.rrd4j</artifactId>
-      <version>2.0.5</version>
+      <groupId>org.rrd4j</groupId>
+      <artifactId>rrd4j</artifactId>
+      <version>2.0.7</version>
     </dependency>
 
     <!-- File uploads -->
     <dependency>
       <groupId>com.sun.jersey.contribs</groupId>
       <artifactId>jersey-multipart</artifactId>
-      <version>1.3</version>
+      <version>1.9</version>
     </dependency>
 
     <!-- Test dependencies -->
@@ -273,52 +262,11 @@ the relevant Commercial Agreement.
       <version>${webdriver.version}</version>
       <scope>test</scope>
     </dependency>
-    
+
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-graphviz</artifactId>
       <version>1.5-SNAPSHOT</version>
-      <scope>test</scope>
-    </dependency>
-    
-
-
-    <dependency>
-      <!-- Provides Autoprocessor. This dependency makes the plugin loader Felix-specific rather than 
-        generic. Consider refactoring out this dependency, or don't worry about it and always uses Felix. -->
-      <groupId>org.apache.felix</groupId>
-      <artifactId>org.apache.felix.main</artifactId>
-      <version>3.0.2</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.osgi</groupId>
-      <artifactId>osgi_R4_core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.osgi</groupId>
-      <artifactId>osgi_R4_compendium</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.felix</groupId>
-      <artifactId>org.apache.felix.fileinstall</artifactId>
-      <version>${felix-fileinstall.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.ops4j.pax.swissbox</groupId>
-      <artifactId>pax-swissbox-tinybundles</artifactId>
-      <version>1.3.0</version>
-      <scope>test</scope>
-    </dependency>
-
-
-    <dependency>
-      <groupId>org.ops4j.pax.url</groupId>
-      <artifactId>pax-url-mvn</artifactId>
-      <version>1.1.3</version>
       <scope>test</scope>
     </dependency>
 
@@ -359,7 +307,6 @@ the relevant Commercial Agreement.
       </resource>
     </resources>
 
-
     <plugins>
 
       <!-- Development execution -->
@@ -385,19 +332,6 @@ the relevant Commercial Agreement.
       </plugin>
 
       <plugin>
-        <artifactId>maven-site-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>create-site</id>
-            <phase>prepare-package</phase>
-            <goals>
-              <goal>site</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
@@ -415,13 +349,41 @@ the relevant Commercial Agreement.
             </configuration>
           </execution>
           <execution>
-            <id>site</id>
+            <id>docs</id>
             <phase>package</phase>
             <configuration>
               <attach>true</attach>
               <appendAssemblyId>true</appendAssemblyId>
               <descriptors>
-                <descriptor>src/main/assemblies/site-assembly.xml</descriptor>
+                <descriptor>src/main/assemblies/docs-assembly.xml</descriptor>
+              </descriptors>
+            </configuration>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>sources</id>
+            <phase>package</phase>
+            <configuration>
+              <attach>true</attach>
+              <appendAssemblyId>true</appendAssemblyId>
+              <descriptors>
+                <descriptor>src/main/assemblies/sources-assembly.xml</descriptor>
+              </descriptors>
+            </configuration>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>test-sources</id>
+            <phase>package</phase>
+            <configuration>
+              <attach>true</attach>
+              <appendAssemblyId>true</appendAssemblyId>
+              <descriptors>
+                <descriptor>src/main/assemblies/test-sources-assembly.xml</descriptor>
               </descriptors>
             </configuration>
             <goals>
@@ -434,28 +396,6 @@ the relevant Commercial Agreement.
       <plugin>
         <groupId>com.mycila.maven-license-plugin</groupId>
         <artifactId>maven-license-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>inject-license-in-js-files</id>
-            <!-- Done in validate phase b/c the license header check is done in the intialize phase, 
-              validate is the only one before it. -->
-            <phase>validate</phase>
-            <configuration>
-              <basedir>src/main/resources/webadmin-html/</basedir>
-              <includes>
-                <!-- temporary configuration fix -->
-                <include>**/webadmin-min.js</include>
-              </includes>
-              <excludes>
-                <exclude>lib/*</exclude>
-              </excludes>
-            </configuration>
-            <goals>
-              <goal>format</goal>
-            </goals>
-          </execution>
-        </executions>
-        <!-- temporary configuration fix -->
         <configuration>
           <strictCheck>true</strictCheck>
           <header>${license-text.header}</header>
@@ -468,7 +408,6 @@ the relevant Commercial Agreement.
           <excludes>
             <exclude>**/lib/*.js</exclude>
             <exclude>**/lib/**/*.js</exclude>
-            <exclude>**/javascript/vend/**</exclude>
             <exclude>**/webadmin-html/**</exclude>
           </excludes>
           <mapping>
@@ -497,40 +436,13 @@ the relevant Commercial Agreement.
               </excludes>
             </configuration>
           </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>appassembler-maven-plugin</artifactId>
-        <configuration>
-          <repositoryLayout>flat</repositoryLayout>
-          <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
-          <configurationDirectory>etc</configurationDirectory>
-          <target>${project.build.directory}/dist</target>
-          <daemons>
-            <daemon>
-              <id>neo-server</id>
-              <mainClass>${neo4j-server.mainClass}</mainClass>
-              <commandLineArguments>
-                <commandLineArgument>start</commandLineArgument>
-              </commandLineArguments>
-              <platforms>
-                <platform>jsw</platform>
-              </platforms>
-            </daemon>
-          </daemons>
-        </configuration>
-        <executions>
           <execution>
-            <id>generate-jsw-scripts</id>
-            <phase>package</phase>
-            <goals>
-              <goal>generate-daemons</goal>
-            </goals>
+            <id>attach-docs</id>
+            <phase>none</phase>
           </execution>
         </executions>
       </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
@@ -539,105 +451,145 @@ the relevant Commercial Agreement.
             <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
           </systemPropertyVariables>
           <argLine>-Xmx1024m</argLine>
+          <forkMode>once</forkMode>
         </configuration>
       </plugin>
 
-      <!-- experiment with copying artifacts into expected startup directories... <plugin> <groupId>org.apache.maven.plugins</groupId> 
-        <artifactId>maven-dependency-plugin</artifactId> <executions> <execution> <id>copy-dependencies</id> 
-        <phase>package</phase> <goals> <goal>copy-dependencies</goal> </goals> <configuration> <outputDirectory>${project.build.directory}/lib</outputDirectory> 
-        <overWriteReleases>false</overWriteReleases> <overWriteSnapshots>true</overWriteSnapshots> <includeScope>runtime</includeScope> 
-        <excludeScope>test</excludeScope> </configuration> </execution> <execution> <id>copy-extensions</id> 
-        <phase>package</phase> <goals> <goal>copy</goal> </goals> <configuration> <artifactItems> <artifactItem> 
-        <groupId>org.neo4j.ext</groupId> <artifactId>hello-ext</artifactId> <version>0.1-SNAPSHOT</version> <classifier>next</classifier> 
-        </artifactItem> </artifactItems> <outputDirectory>${project.build.directory}/ext</outputDirectory> </configuration> 
-        </execution> <execution> <id>copy-installed</id> <phase>install</phase> <goals> <goal>copy</goal> </goals> 
-        <configuration> <artifactItems> <artifactItem> <groupId>${project.groupId}</groupId> <artifactId>${project.artifactId}</artifactId> 
-        <version>${project.version}</version> <type>${project.packaging}</type> </artifactItem> </artifactItems> 
-        <outputDirectory>${project.build.directory}/lib</outputDirectory> </configuration> </execution> </executions> 
-        </plugin> -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-test-source</id>
+            <phase>generate-test-sources</phase>
+            <goals>
+              <goal>add-test-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>src/functionaltest/java</source>
+              </sources>
+            </configuration>
+          </execution>
+          <execution>
+            <id>add-test-resource</id>
+            <phase>generate-test-resources</phase>
+            <goals>
+              <goal>add-test-resource</goal>
+            </goals>
+            <configuration>
+              <resources>
+                <resource>
+                  <directory>src/functionaltest/resources</directory>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-source</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
+      
+      <plugin>
+        <groupId>com.voltvoodoo</groupId>
+        <artifactId>brew</artifactId>
+        <version>0.2.7</version>
+        <executions>
+          <execution>
+            <id>compile-webadmin</id>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+            <phase>compile</phase>
+          </execution>
+          <execution>
+            <id>minify-webadmin</id>
+            <goals>
+              <goal>optimize</goal>
+            </goals>
+            <phase>process-classes</phase>
+          </execution>
+        </executions>
+        <configuration>
+          <modules>
+            <module>
+              <name>webadmin</name>
+              <exclude>
+                <exclude>lib/arbor.js</exclude>
+              </exclude>
+            </module>
+            <module>
+              <name>visualization</name>
+              <exclude>
+                <exclude>lib/arbor.js</exclude>
+              </exclude>
+            </module>
+          </modules>
+          <coffeeOutputDir>${project.build.outputDirectory}/webadmin-html/js</coffeeOutputDir>
+          <hamlOutputDir>${project.build.outputDirectory}/webadmin-html/js</hamlOutputDir>
+          
+          <optimizeSourceDir>${project.build.outputDirectory}/webadmin-html/js</optimizeSourceDir>
+          <optimizeOutputDir>${project.build.outputDirectory}/webadmin-html/js</optimizeOutputDir>
+        </configuration>
+      </plugin>
     </plugins>
+
+    <pluginManagement>
+      <plugins>
+        <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+        <plugin>
+          <groupId>org.eclipse.m2e</groupId>
+          <artifactId>lifecycle-mapping</artifactId>
+          <version>1.0.0</version>
+          <configuration>
+            <lifecycleMappingMetadata>
+              <pluginExecutions>
+                <pluginExecution>
+                  <pluginExecutionFilter>
+                    <groupId>com.voltvoodoo</groupId>
+                    <artifactId>brew</artifactId>
+                    <versionRange>[0.2.4,)</versionRange>
+                    <goals>
+                      <goal>compile</goal>
+                      <goal>optimize</goal>
+                    </goals>
+                  </pluginExecutionFilter>
+                  <action>
+                    <ignore/>
+                  </action>
+                </pluginExecution>
+              </pluginExecutions>
+            </lifecycleMappingMetadata>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
 
   <profiles>
     <profile>
-      <id>functional-tests</id>
+      <id>surefire-windows</id>
       <activation>
-        <activeByDefault>true</activeByDefault>
-        <property>
-          <name>tests</name>
-          <value>functional</value>
-        </property>
+        <os>
+          <family>windows</family>
+        </os>
       </activation>
       <build>
         <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>build-helper-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>add-test-source</id>
-                <phase>generate-test-sources</phase>
-                <goals>
-                  <goal>add-test-source</goal>
-                </goals>
-                <configuration>
-                  <sources>
-                    <source>src/functionaltest/java</source>
-                  </sources>
-                </configuration>
-              </execution>
-              <execution>
-                <id>add-test-resource</id>
-                <phase>generate-test-resources</phase>
-                <goals>
-                  <goal>add-test-resource</goal>
-                </goals>
-                <configuration>
-                  <resources>
-                    <resource>
-                      <directory>src/functionaltest/resources</directory>
-                    </resource>
-                  </resources>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
           <plugin>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
               <skip>false</skip>
               <argLine>-Xmx1024m</argLine>
-              <forkMode>perTest</forkMode>
+              <forkMode>always</forkMode>
             </configuration>
-          </plugin>
-          <plugin>
-            <artifactId>maven-jar-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>attach-docs</id>
-                <phase>none</phase>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-assembly-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>docs</id>
-                <phase>package</phase>
-                <configuration>
-                  <attach>true</attach>
-                  <appendAssemblyId>true</appendAssemblyId>
-                  <descriptors>
-                    <descriptor>src/main/assemblies/docs-assembly.xml</descriptor>
-                  </descriptors>
-                </configuration>
-                <goals>
-                  <goal>single</goal>
-                </goals>
-              </execution>
-            </executions>
           </plugin>
         </plugins>
       </build>
@@ -691,6 +643,8 @@ the relevant Commercial Agreement.
                 <cucumberArg>--color</cucumberArg>
                 <cucumberArg>--require</cucumberArg>
                 <cucumberArg>${basedir}/target/test-classes</cucumberArg>
+                <cucumberArg>--format junit</cucumberArg>
+                <cucumberArg>--out ${project.build.directory}/surefire-reports</cucumberArg>
                 <cucumberArg>${cukeArgs}</cucumberArg>
               </cucumberArgs>
               <gems>
@@ -719,115 +673,60 @@ the relevant Commercial Agreement.
         </plugins>
       </build>
     </profile>
-
+    
     <profile>
-      <!-- An execution that adds src/main/resources to the classpath. Allows changing static files and 
-        seeing results without restarting server. Done with ant b/c of problems adding local directory to classpath 
-        when using exec. -->
-      <id>webdev-exec</id>
+      <id>neodev</id>
+      <!-- Expands the number of things skipped by the neodev profile defined in parent-central pom. This is meant to be used by maven exec, it does not guarantee producing working artifacts. -->
       <build>
         <plugins>
           <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-antrun-plugin</artifactId>
-
-            <configuration>
-              <target>
-                <property name="classpath" refid="maven.runtime.classpath" />
-                <exec executable="java">
-                  <arg line="-Dorg.neo4j.server.properties=${basedir}/neo4j-home/conf/neo4j-server.properties" />
-                  <arg line="-classpath" />
-                  <arg line="${basedir}/src/main/resources:${classpath}" />
-                  <arg line="${neo4j-server.mainClass}" />
-                </exec>
-              </target>
-            </configuration>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>static-web</id>
+                <phase>none</phase>
+              </execution>
+            </executions>
           </plugin>
         </plugins>
       </build>
     </profile>
-
     <profile>
-      <!-- Disconnected from the "normal" build pipeline, because the
-           artifact that this produces (webadmin.min.js) is checked into
-           the source tree (and thus there is no reason to normally rebuild it).
-
-           I know, that's really awful, but the alternative is forcing 
-           everyone to run the webadmin build all the time, and its *really* slow.
-
-           The plan is to move webadmin into it's own project, where the
-           build can be sane without killing the build time for the server project.
-       -->
-      <id>webadmin-build</id>
+      <id>plugin-test</id>
+      <!-- Tests plugin registration functionality. Needs to be run separately in order not to package resource files and be picked up by the other functional tests -->
       <build>
         <plugins>
-          <plugin>
-            <groupId>com.voltvoodoo</groupId>
-            <artifactId>brew</artifactId>
-            <version>0.2.2</version>
-            <executions>
-              <execution>
-              	<id>build-webadmin</id>
-                <goals>
-                  <goal>compile</goal>
-                  <goal>optimize</goal>
-                </goals>
-              </execution>
-            </executions>
-            <configuration>
-              <modules>
-              	<module>
-                  <name>webadmin</name>
-                  <exclude>
-                  	<exclude>lib/arbor.js</exclude>
-                  </exclude>
-              	</module>
-              </modules>
-              <coffeeOutputDir>${basedir}/src/main/resources/webadmin-html/js</coffeeOutputDir>
-              <hamlOutputDir>${basedir}/src/main/resources/webadmin-html/js</hamlOutputDir>
-              <optimizeSourceDir>${basedir}/src/main/resources/webadmin-html/js</optimizeSourceDir>
-              <optimizeOutputDir>${basedir}/src/main/resources/webadmin-html/js</optimizeOutputDir>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-   </profile>
-   
-   <profile>
-      <id>neodev</id>
-      <!-- Expands the number of things skipped by the neodev
-           profile defined in parent-central pom. 
-
-           This is meant to be used by maven exec, it does not
-           guarantee producing working artifacts. -->
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>com.mycila.maven-license-plugin</groupId>
-            <artifactId>maven-license-plugin</artifactId>
-            <executions>
-              <execution><id>inject-license-in-js-files</id><phase>none</phase></execution>
-            </executions>
-          </plugin>
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
-            <artifactId>appassembler-maven-plugin</artifactId>
+            <artifactId>build-helper-maven-plugin</artifactId>
             <executions>
-              <execution><id>generate-jsw-scripts</id><phase>none</phase></execution>
+              <execution>
+                <id>add-test-source</id>
+                <phase>generate-test-sources</phase>
+                <goals>
+                  <goal>add-test-source</goal>
+                </goals>
+                <configuration>
+                  <sources>
+                    <source>src/plugintest/java</source>
+                  </sources>
+                </configuration>
+              </execution>
+              <execution>
+                <id>add-test-resource</id>
+                <phase>generate-test-resources</phase>
+                <goals>
+                  <goal>add-test-resource</goal>
+                </goals>
+                <configuration>
+                  <resources>
+                    <resource>
+                      <directory>src/plugintest/resources</directory>
+                    </resource>
+                  </resources>
+                </configuration>
+              </execution>
             </executions>
-          </plugin>
-          <plugin>
-            <artifactId>maven-assembly-plugin</artifactId>
-            <executions>
-              <execution><id>static-web</id><phase>none</phase></execution>
-              <execution><id>site</id><phase>none</phase></execution>
-            </executions>
-          </plugin>
-          <plugin>
-	        <artifactId>maven-site-plugin</artifactId>
-	        <executions>
-	          <execution><id>create-site</id><phase>none</phase></execution>
-	        </executions>
           </plugin>
         </plugins>
       </build>
@@ -864,7 +763,6 @@ the relevant Commercial Agreement.
       </repositories>
     </profile>
   </profiles>
-
 
   <reporting>
     <plugins>

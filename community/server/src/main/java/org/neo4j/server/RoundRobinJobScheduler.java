@@ -22,7 +22,6 @@ package org.neo4j.server;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.server.rrd.Job;
 import org.neo4j.server.rrd.JobScheduler;
 import org.neo4j.server.rrd.ScheduledJob;
 
@@ -31,9 +30,9 @@ public class RoundRobinJobScheduler implements JobScheduler
 
     private List<ScheduledJob> scheduledJobs = new LinkedList<ScheduledJob>();
 
-    public void scheduleToRunEveryXSeconds( Job job, String jobName, int runEveryXSeconds )
+    public void scheduleAtFixedRate( Runnable job, String jobName, long delay, long period )
     {
-        ScheduledJob scheduledJob = new ScheduledJob( job, jobName, 3 );
+        ScheduledJob scheduledJob = new ScheduledJob( job, jobName, delay, period );
         scheduledJobs.add( scheduledJob );
     }
 
@@ -41,7 +40,7 @@ public class RoundRobinJobScheduler implements JobScheduler
     {
         for ( ScheduledJob job : scheduledJobs )
         {
-            job.kill();
+            job.cancel();
         }
     }
 }

@@ -23,9 +23,11 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 
 import org.junit.Test;
+import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.server.logging.InMemoryAppender;
 
 public class NeoServerPortConflictFunctionalTest
@@ -35,11 +37,11 @@ public class NeoServerPortConflictFunctionalTest
     public void shouldComplainIfServerPortIsAlreadyTaken() throws IOException
     {
         int contestedPort = 9999;
-        ServerSocket socket = new ServerSocket( contestedPort );
-
+        ServerSocket socket = new ServerSocket( contestedPort, 0, InetAddress.getLocalHost() );
         InMemoryAppender appender = new InMemoryAppender( NeoServerWithEmbeddedWebServer.log );
         NeoServerWithEmbeddedWebServer server = ServerBuilder.server()
                 .onPort( contestedPort )
+                .onHost( InetAddress.getLocalHost().toString() )
                 .build();
         server.start();
 

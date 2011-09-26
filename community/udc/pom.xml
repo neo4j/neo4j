@@ -3,7 +3,8 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
-    <version>23</version>
+    <version>25</version>
+    <relativePath/>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j</groupId>
@@ -48,16 +49,6 @@ the relevant Commercial Agreement.
   <build>
     <plugins>
       <plugin>
-        <groupId>org.ops4j</groupId>
-        <artifactId>maven-pax-plugin</artifactId>
-        <configuration>
-          <framework>felix</framework>
-          <provision>
-            <param>mvn:${jta.groupId}/${jta.artifactId}/${jta.version}</param>
-          </provision>
-        </configuration>
-      </plugin>
-      <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
           <execution>
@@ -71,7 +62,7 @@ the relevant Commercial Agreement.
               <filters>
                 <filter>${project.basedir}/src/main/assembly/forMavenCentral.properties</filter>
               </filters>
-              <finalName>${artifactId}-${version}</finalName>
+              <finalName>${project.artifactId}-${project.version}</finalName>
               <ignoreDirFormatExtensions>true</ignoreDirFormatExtensions>
               <descriptors>
                 <descriptor>src/main/assembly/assembly.xml</descriptor>
@@ -90,7 +81,7 @@ the relevant Commercial Agreement.
               <filters>
                 <filter>${project.basedir}/src/main/assembly/forNeo4j.properties</filter>
               </filters>
-              <finalName>${artifactId}-${version}-neo4j</finalName>
+              <finalName>${project.artifactId}-${project.version}-neo4j</finalName>
               <ignoreDirFormatExtensions>true</ignoreDirFormatExtensions>
               <descriptors>
                 <descriptor>src/main/assembly/assembly.xml</descriptor>
@@ -117,10 +108,6 @@ the relevant Commercial Agreement.
                   <type>jar</type>
                   <classifier>neo4j</classifier>
                 </artifact>
-                <!-- artifact>
-                  <file>${project.build.directory}/${project.artifactId}-${project.version}.jar</file>
-                  <type>jar</type>
-                </artifact -->
               </artifacts>
             </configuration>
           </execution>
@@ -177,17 +164,6 @@ the relevant Commercial Agreement.
     </dependency>
  </dependencies>
 
-  <reporting>
-    <plugins>
-      <plugin>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <configuration>
-          <excludePackageNames>*.impl.*</excludePackageNames>
-        </configuration>
-      </plugin>
-    </plugins>
-  </reporting>
-
   <distributionManagement>
     <site>
       <id>neo4j-site</id>
@@ -196,4 +172,3 @@ the relevant Commercial Agreement.
   </distributionManagement>
 
 </project>
-

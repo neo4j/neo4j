@@ -1,3 +1,21 @@
+1.5.M01 (2011-08-31)
+--------------------
+o Improved file lock for an open database. Previously the file lock could be released after a full backup.
+o Fixed a NPE exception during commiting relationships to a NodeImpl representation.
+o Fixed a data visibility issue for properties on newly created entities.
+o Fixed a data visibility issue for relationships for nodes that didn't have the full relationship chain loaded.
+o Fixed an issue where deleted relationships could be visible too long within the transaction deleting them.
+o Auto indexing hooks in on each operation instead of transaction events.
+o More relevant logging in messages.log.
+o Fixed an issue where logical logs wouldn't be rotated if all transactions happened via applyPreparedTransaction (as in HA).
+o Several recovery fixes which could produce an invalid state of the log files after a 2PC recovery.
+o Loosened some bottlenecks regarding applying and getting committed transactions.
+o Transaction semantics regarding calle to success after failure was synced with documentation.
+
+1.4 (2011-07-08)
+----------------
+o Fixed a bug in TxLog which sometimes wouldn't write out data to the log file properly during shutdown.
+
 1.4.M05 (2011-06-22)
 --------------------
 o Improved performance for recovery and extract of transaction when running HA using buffered reads to log.

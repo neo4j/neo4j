@@ -3,7 +3,8 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
-    <version>23</version>
+    <version>25</version>
+    <relativePath/>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -63,12 +64,7 @@ the relevant Commercial Agreement.
       </comments>
     </license>
   </licenses>
-
-  <issueManagement>
-    <system>Trac</system>
-    <url>https://trac.neo4j.org/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=${short-name}</url>
-  </issueManagement>
-
+  
   <distributionManagement>
     <site>
       <id>neo4j-site</id>

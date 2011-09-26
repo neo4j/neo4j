@@ -29,9 +29,6 @@ define(
         @get "server"
 
       getSettings : () ->
-        if not @settings?
-          @settings = new Settings()
-          @settings.fetch()
-        return @settings
+        @settings ?= new Settings()
 
 )

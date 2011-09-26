@@ -26,12 +26,7 @@ import org.apache.commons.configuration.Configuration;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.server.database.GraphDatabaseFactory;
-import org.neo4j.server.modules.DiscoveryModule;
-import org.neo4j.server.modules.ManagementApiModule;
-import org.neo4j.server.modules.RESTApiModule;
-import org.neo4j.server.modules.ServerModule;
-import org.neo4j.server.modules.ThirdPartyJAXRSModule;
-import org.neo4j.server.modules.WebAdminModule;
+import org.neo4j.server.modules.*;
 import org.neo4j.server.startup.healthcheck.ConfigFileMustBePresentRule;
 import org.neo4j.server.startup.healthcheck.Neo4jPropertiesMustExistRule;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckRule;
@@ -49,7 +44,7 @@ public class NeoServerBootstrapper extends Bootstrapper
     public Iterable<Class<? extends ServerModule>> getServerModules()
     {
         return Arrays.asList( DiscoveryModule.class, RESTApiModule.class, ManagementApiModule.class,
-                ThirdPartyJAXRSModule.class, WebAdminModule.class );
+                ThirdPartyJAXRSModule.class, WebAdminModule.class, StatisticModule.class );
     }
 
     @Override

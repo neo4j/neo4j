@@ -19,22 +19,19 @@
  */
 package org.neo4j.server.rrd;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
-
-import java.io.IOException;
-
-import javax.management.MalformedObjectNameException;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.rrd.sampler.RelationshipCountSampleable;
 import org.neo4j.test.ImpermanentGraphDatabase;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 public class RelationshipCountSampleableTest
 {
@@ -42,17 +39,17 @@ public class RelationshipCountSampleableTest
     public RelationshipCountSampleable sampleable;
 
     @Test
-    public void emptyDbHasZeroRelationships() throws IOException, MalformedObjectNameException
+    public void emptyDbHasZeroRelationships()
     {
-        assertThat( sampleable.getValue(), is( 0L ) );
+        assertThat( sampleable.getValue(), is( 0d ) );
     }
 
     @Test
-    public void addANodeAndSampleableGoesUp() throws IOException, MalformedObjectNameException
+    public void addANodeAndSampleableGoesUp()
     {
         createARelationship( db.graph );
 
-        assertThat( sampleable.getValue(), is( 1L ) );
+        assertThat( sampleable.getValue(), is( 1d ) );
     }
 
     private void createARelationship( AbstractGraphDatabase db )
@@ -60,7 +57,7 @@ public class RelationshipCountSampleableTest
         Transaction tx = db.beginTx();
         Node node1 = db.createNode();
         Node node2 = db.createNode();
-        node1.createRelationshipTo( node2, DynamicRelationshipType.withName( "friend" ) );
+        node1.createRelationshipTo( node2, withName( "friend" ) );
         tx.success();
         tx.finish();
     }
@@ -69,7 +66,7 @@ public class RelationshipCountSampleableTest
     public void setUp() throws Exception
     {
         db = new Database( new ImpermanentGraphDatabase() );
-        sampleable = new RelationshipCountSampleable( db );
+        sampleable = new RelationshipCountSampleable( db.graph );
     }
 
     @After

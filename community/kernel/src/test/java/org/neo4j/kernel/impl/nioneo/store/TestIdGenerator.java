@@ -57,24 +57,24 @@ public class TestIdGenerator
     {
         new File( idGeneratorFile() ).delete();
     }
-    
+
     private String path()
     {
         String path = AbstractNeo4jTestCase.getStorePath( "xatest" );
         new File( path ).mkdirs();
         return path;
     }
-    
+
     private String file( String name )
     {
         return path() + File.separator + name;
     }
-    
+
     private String idGeneratorFile()
     {
         return file( "testIdGenerator.id" );
     }
-    
+
     @Test
     public void testCreateIdGenerator() throws IOException
     {
@@ -119,7 +119,7 @@ public class TestIdGenerator
             } // good
             idGenerator.close();
             // verify that id generator is ok
-            FileChannel fileChannel = new FileInputStream( 
+            FileChannel fileChannel = new FileInputStream(
                 idGeneratorFile() ).getChannel();
             ByteBuffer buffer = ByteBuffer.allocate( 9 );
             assertEquals( 9, fileChannel.read( buffer ) );
@@ -485,7 +485,7 @@ public class TestIdGenerator
                 idGenerator.nextId();
                 fail( "Shouldn't be able to get next ID" );
             }
-            catch ( StoreFailureException e ) 
+            catch ( StoreFailureException e )
             { // good, capacity exceeded
             }
             idGenerator.close();
@@ -497,7 +497,7 @@ public class TestIdGenerator
             {
                 idGenerator.nextId();
             }
-            catch ( StoreFailureException e ) 
+            catch ( StoreFailureException e )
             { // good, capacity exceeded
             }
             idGenerator.close();
@@ -511,7 +511,7 @@ public class TestIdGenerator
             }
         }
     }
-    
+
     @Test
     public void makeSureIdCapacityCannotBeExceeded() throws Exception
     {
@@ -520,7 +520,7 @@ public class TestIdGenerator
             makeSureIdCapacityCannotBeExceeded( type );
         }
     }
-    
+
     private void makeSureIdCapacityCannotBeExceeded( IdType type )
     {
         deleteIdGeneratorFile();
@@ -570,7 +570,7 @@ public class TestIdGenerator
         assertEquals( id+5, idGenerator.nextId() );
         idGenerator.close();
     }
-    
+
     @Test
     public void makeSureMagicMinusOneCannotBeReturnedEvenIfFreed() throws Exception
     {
@@ -582,12 +582,13 @@ public class TestIdGenerator
         idGenerator.freeId( magicMinusOne-1 );
         idGenerator.freeId( magicMinusOne );
         idGenerator.close();
-        
+
         idGenerator = new IdGeneratorImpl( idGeneratorFile(), 1, IdType.NODE.getMaxValue(), false );
         assertEquals( magicMinusOne-1, idGenerator.nextId() );
         assertEquals( magicMinusOne+2, idGenerator.nextId() );
+        idGenerator.close();
     }
-    
+
     @Test
     public void commandsGetWrittenOnceSoThatFreedIdsGetsAddedOnlyOnce() throws Exception
     {
@@ -596,7 +597,7 @@ public class TestIdGenerator
         GraphDatabaseService db = new EmbeddedGraphDatabase( storeDir );
         RelationshipType type = withName( "SOME_TYPE" );
         Node rootNode = db.getReferenceNode();
-        
+
         // This transaction will, if some commands may be executed more than once,
         // add the freed ids to the defrag list more than once - making the id generator
         // return the same id more than once during the next session.
@@ -621,7 +622,7 @@ public class TestIdGenerator
         tx.success();
         tx.finish();
         db.shutdown();
-        
+
         // After a clean shutdown, create new nodes and relationships and see so that
         // all ids are unique.
         db = new EmbeddedGraphDatabase( storeDir );
@@ -642,14 +643,45 @@ public class TestIdGenerator
         }
         tx.success();
         tx.finish();
-        
+
         // Verify by loading everything from scratch
         ((AbstractGraphDatabase)db).getConfig().getGraphDbModule().getNodeManager().clearCache();
         for ( Node node : db.getAllNodes() )
         {
             lastOrNull( node.getRelationships() );
         }
-        
+
         db.shutdown();
+    }
+
+    @Test
+    public void clearFreeIds()
+    {
+        IdGeneratorImpl.createGenerator( idGeneratorFile() );
+        IdGenerator generator = new IdGeneratorImpl( idGeneratorFile(), 10,
+                100, false );
+
+        // Create then free enough ids to make #freeId write out id batches which we rely on
+        // #clearFreeIds to clear out, as well as the state in memory.
+        long[] ids = new long[35];
+        for ( int i = 0; i < ids.length; i++ ) ids[i] = generator.nextId();
+        for ( long id : ids ) generator.freeId( id );
+        long nextExpectedId = ids[ids.length-1]+1;
+        generator.close();
+        generator = new IdGeneratorImpl( idGeneratorFile(), 10, 100, false );
+        generator.clearFreeIds();
+        assertEquals( nextExpectedId++, generator.nextId() );
+        generator.close();
+
+        generator = new IdGeneratorImpl( idGeneratorFile(), 10, 100, false );
+        assertEquals( nextExpectedId, generator.nextId() );
+        for ( int i = 0; i < ids.length; i++ ) ids[i] = generator.nextId();
+        for ( long id : ids ) generator.freeId( id );
+        nextExpectedId = ids[ids.length-1]+1;
+        generator.close();
+        generator = new IdGeneratorImpl( idGeneratorFile(), 10, 100, false );
+        generator.clearFreeIds();
+        assertEquals( nextExpectedId++, generator.nextId() );
+        generator.close();
     }
 }

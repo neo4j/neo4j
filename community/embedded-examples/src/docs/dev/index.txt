@@ -34,3 +34,9 @@ include::graph-algo.txt[]
 
 include::management.txt[]
 
+:leveloffset: 2
+
+include::examples/uniqueness-of-paths-in-traversals.txt[]
+
+include::examples/acl-structures-in-graphs.txt[]
+

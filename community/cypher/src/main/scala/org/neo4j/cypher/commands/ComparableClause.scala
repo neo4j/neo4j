@@ -29,10 +29,16 @@ abstract sealed class ComparableClause(a: Value, b: Value) extends Clause with C
     val left: Any = a.apply(m)
     val right: Any = b.apply(m)
 
+    if((a.isInstanceOf[NullablePropertyValue] && left == null) ||
+      (b.isInstanceOf[NullablePropertyValue] && right == null))
+      return true
+
     val comparisonResult: Int = compare(left, right)
 
     compare(comparisonResult)
   }
+
+  def dependsOn: Set[String] = a.dependsOn ++ b.dependsOn
 }
 
 case class Equals(a: Value, b: Value) extends ComparableClause(a, b) {

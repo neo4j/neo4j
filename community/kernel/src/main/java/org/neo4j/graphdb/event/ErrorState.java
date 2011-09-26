@@ -32,4 +32,5 @@ public enum ErrorState
      * database data is stored is full and cannot be written to.
      */
     STORAGE_MEDIA_FULL,
+    TX_MANAGER_NOT_OK,
 }

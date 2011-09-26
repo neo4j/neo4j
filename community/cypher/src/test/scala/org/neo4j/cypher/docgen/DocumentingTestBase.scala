@@ -20,15 +20,18 @@
 package org.neo4j.cypher.docgen
 
 import org.neo4j.graphdb.index.Index
-import org.junit.{ Before, After }
+import org.junit.{Before, After}
 import org.neo4j.test.ImpermanentGraphDatabase
 import org.neo4j.test.GraphDescription
 import scala.collection.JavaConverters._
-import java.io.{ PrintWriter, File, FileWriter }
+import java.io.{PrintWriter, File, FileWriter}
 import org.neo4j.graphdb._
 import org.neo4j.cypher.parser.CypherParser
-import org.neo4j.cypher.{ ExecutionResult, ExecutionEngine }
+import org.neo4j.cypher.{ExecutionResult, ExecutionEngine}
 import org.scalatest.junit.JUnitSuite
+import java.io.ByteArrayOutputStream
+import org.neo4j.visualization.graphviz.{AsciiDocStyle, GraphvizWriter}
+import org.neo4j.walk.Walker
 
 abstract class DocumentingTestBase extends JUnitSuite {
   var db: GraphDatabaseService = null
@@ -77,6 +80,29 @@ abstract class DocumentingTestBase extends JUnitSuite {
     "target/docs/ql/"
   }
 
+  private def emitGraphviz(): String = {
+    val out = new ByteArrayOutputStream();
+    val writer = new GraphvizWriter(new AsciiDocStyle());
+    writer.emit(out, Walker.fullGraph(db));
+
+"""
+_Graph_
+
+["dot", "graph.svg", "neoviz"]
+----
+%s
+----
+
+""".format(out)
+  }
+
+  def dumpGraphViz(graphViz: PrintWriter) {
+    val foo = emitGraphviz()
+    graphViz.write(foo)
+    graphViz.flush()
+    graphViz.close()
+  }
+
   def testQuery(title: String, text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
     var query = queryText
     nodes.keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
@@ -90,18 +116,19 @@ abstract class DocumentingTestBase extends JUnitSuite {
     }
 
     val writer = new PrintWriter(new FileWriter(new File(dir, nicefy(title) + ".txt")))
-
     dumpToFile(writer, title, query, returns, text, result)
+
+    val graphViz = new PrintWriter(new FileWriter(new File(dir, "graph.txt")))
+    dumpGraphViz(graphViz)
   }
 
   def indexProperties[T <: PropertyContainer](n: T, index: Index[T]) {
-    indexProps.foreach((property) =>
-      {
-        if (n.hasProperty(property)) {
-          val value = n.getProperty(property)
-          index.add(n, property, value)
-        }
-      })
+    indexProps.foreach((property) => {
+      if (n.hasProperty(property)) {
+        val value = n.getProperty(property)
+        index.add(n, property, value)
+      }
+    })
   }
 
   def node(name: String): Node = nodes.getOrElse(name, throw new NotFoundException(name))
@@ -111,29 +138,37 @@ abstract class DocumentingTestBase extends JUnitSuite {
     db.shutdown()
   }
 
+  private def removeReferenceNode(db: GraphDatabaseService) {
+    val tx = db.beginTx()
+    db.getReferenceNode.delete()
+    tx.success()
+    tx.finish()
+  }
+
   @Before
   def init() {
     db = new ImpermanentGraphDatabase()
     engine = new ExecutionEngine(db)
 
+    removeReferenceNode(db)
+
     val tx = db.beginTx()
+
     nodeIndex = db.index().forNodes("nodes")
     relIndex = db.index().forRelationships("rels")
     val description = GraphDescription.create(graphDescription: _*)
 
     nodes = description.create(db).asScala.toMap
 
-    db.getAllNodes.asScala.foreach((n) =>
-      {
-        indexProperties(n, nodeIndex)
-        n.getRelationships(Direction.OUTGOING).asScala.foreach(indexProperties(_, relIndex))
-      })
+    db.getAllNodes.asScala.foreach((n) => {
+      indexProperties(n, nodeIndex)
+      n.getRelationships(Direction.OUTGOING).asScala.foreach(indexProperties(_, relIndex))
+    })
 
-    properties.foreach((n) =>
-      {
-        val nod = node(n._1)
-        n._2.foreach((kv) => nod.setProperty(kv._1, kv._2))
-      })
+    properties.foreach((n) => {
+      val nod = node(n._1)
+      n._2.foreach((kv) => nod.setProperty(kv._1, kv._2))
+    })
 
     tx.success()
     tx.finish()

@@ -29,7 +29,7 @@ class PatternNodeTest extends GraphDatabaseTestBase with Assertions {
     val a = new PatternNode("a")
     val b = new PatternNode("b")
 
-    val r = a.relateTo("r", b, None, Direction.BOTH)
+    val r = a.relateTo("r", b, None, Direction.BOTH, false)
 
     val rels = a.getPRels(Seq())
 
@@ -44,7 +44,7 @@ class PatternNodeTest extends GraphDatabaseTestBase with Assertions {
     val pA = new PatternNode("a")
     val pB = new PatternNode("b")
 
-    val pRel = pA.relateTo("r", pB, None, Direction.BOTH)
+    val pRel = pA.relateTo("r", pB, None, Direction.BOTH, false)
 
     val rels = pA.getPRels(Seq(MatchingPair(pRel, rel)))
 

@@ -27,12 +27,16 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.matchers.JUnitMatchers.containsString;
 import static org.junit.matchers.JUnitMatchers.hasItem;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
+
 public class JavaExecutionEngineTests
 {
 
@@ -67,6 +71,21 @@ public class JavaExecutionEngineTests
     {
         Query query = CypherParser.parseConsole("start n=(0) where 1=1 return n.name");
         ExecutionResult result = engine.execute(query);
+
+        assertThat( result.columns(), hasItem( "n.name" ) );
+        Iterator<Object> n_column = result.columnAs( "n.name" );
+        assertNull( n_column.next() );
+        assertThat( result.toString(), containsString("null") );
+    }
+
+
+    @Test
+    public void exampleWithParameters() throws Exception
+    {
+        Query query = CypherParser.parseConsole("start n=({id}) return n.name");
+        Map<String, Object> params = new HashMap<String, Object>();
+        params.put("id", 0);
+        ExecutionResult result = engine.execute(query, params);
 
         assertThat( result.columns(), hasItem( "n.name" ) );
         Iterator<Object> n_column = result.columnAs( "n.name" );

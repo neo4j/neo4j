@@ -2,6 +2,6 @@
 Limit
 =====
 
-Limit enables the return of only subsets of the total result.
++LIMIT+ enables the return of only subsets of the total result.
 
 include::return-first-part.txt[]

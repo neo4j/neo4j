@@ -40,17 +40,4 @@
       </includes>
     </fileSet>
   </fileSets>
-  
-  <dependencySets>
-    <dependencySet>
-      <outputDirectory>/webadmin-html/</outputDirectory>
-      <unpack>true</unpack>
-      <fileMode>0444</fileMode>
-      <directoryMode>0777</directoryMode>
-      <includes>
-        <include>org.neo4j.doc:neo4j-manual:*:html</include>
-      </includes>
-    </dependencySet>
- </dependencySets>
-
 </assembly>

@@ -36,31 +36,47 @@ The following procedure should work on most popular Linux distributions:
 
 1. `cd $NEO4J_HOME`
 2. `sudo ./bin/neo4j install`
-   * if asked, enter your password to gain super-user privileges
++
+if asked, enter your password to gain super-user privileges
+
 3. `service neo4j-service status`
-   * should indicate that the server is not running
++
+should indicate that the server is not running
+
 4. `service neo4j-service start`
-   * will start the server
-   
-   During installation you will be given the option to select the user Neo4j will run as. You will be asked to supply a username (defaulting to `neo4j`) and if that user is not present on the system it will be created as a system account and the `$NEO4J_HOME/data` directory will be `chown`'ed to that user.
-   You are encouraged to create a dedicated user for running the service and for that reason it is suggested that you unpack the distribution package under `/opt` or your site specific optional packages directory. 
-   Finally, note that if you chose to create a new user account, on uninstall you will be prompted to remove it from the system.
-   
++
+will start the server
++
+During installation you will be given the option to select the user Neo4j will run as. You will be asked to supply a username (defaulting to `neo4j`) and if that user is not present on the system it will be created as a system account and the `$NEO4J_HOME/data` directory will be `chown`'ed to that user.
++
+You are encouraged to create a dedicated user for running the service and for that reason it is suggested that you unpack the distribution package under `/opt` or your site specific optional packages directory.
++
+Finally, note that if you chose to create a new user account, on uninstall you will be prompted to remove it from the system.
+
 == Mac OSX Service ==
 
 Neo4j can be installed as a Mac launchd job:
 
 1. `cd $NEO4J_HOME`
 2. `sudo ./bin/neo4j install`
-   * if asked, enter your password to gain super-user privileges
++
+if asked, enter your password to gain super-user privileges
+
 3. `launchctl load ~/Library/LaunchAgents/wrapper.neo4j-server.plist`
-   * needed to tell launchd about the "job"
++
+needed to tell launchd about the "job"
+
 4. `launchctl list | grep neo`
-   * should reveal the launchd "wrapper.neo4j-server" job for running the Neo4j Server
++
+should reveal the launchd "wrapper.neo4j-server" job for running the Neo4j Server
+
 5. `launchctl start wrapper.neo4j-server`
-   * to start the Neo4j Server under launchd control
++
+to start the Neo4j Server under launchd control
+
 6. `./bin/neo4j status`
-   * should indicate that the server is running
++
+should indicate that the server is running
    
    
 == Multiple Server instances on one machine ==

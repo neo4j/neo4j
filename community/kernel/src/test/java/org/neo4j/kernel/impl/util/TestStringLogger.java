@@ -71,10 +71,12 @@ public class TestStringLogger
         
         // Third rotation, assert .2 file is now what used to be .1 used to be and
         // .3 doesn't exist
-        int linesToRotate = mark2-mark1;
-        for ( int i = 0; i < linesToRotate; i++ )
+        long previousSize = 0;
+        while ( true )
         {
             logger.logMessage( prefix + counter++, true );
+            if ( logFile.length() < previousSize ) break;
+            previousSize = logFile.length();
         }
         assertFalse( new File( path, "messages.log.3" ).exists() );
         assertTrue( firstLineOfFile( oldestFile ).contains( prefix + (mark1+1) ) );

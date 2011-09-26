@@ -24,13 +24,10 @@ import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
 
 trait Clauses extends JavaTokenParsers with Tokens with Values {
-  def clause: Parser[Clause] = (orderedComparison | not | notEquals | equals | regexp | hasProperty | parens) * (
-    ignoreCase("and") ^^^ {
-      (a: Clause, b: Clause) => And(a, b)
-    } |
-      ignoreCase("or") ^^^ {
-        (a: Clause, b: Clause) => Or(a, b)
-      })
+  def clause: Parser[Clause] = (orderedComparison | not | notEquals | equals | regexp | hasProperty | parens(clause) | sequenceClause) * (
+    ignoreCase("and") ^^^ { (a: Clause, b: Clause) => And(a, b)  } |
+    ignoreCase("or") ^^^  { (a: Clause, b: Clause) => Or(a, b) }
+    )
 
   def regexp: Parser[Clause] = value ~ "=~" ~ regularLiteral ^^ {
     case a ~ "=~" ~ b => RegularExpression(a, stripQuotes(b))
@@ -40,7 +37,35 @@ trait Clauses extends JavaTokenParsers with Tokens with Values {
     case prop => Has(prop.asInstanceOf[PropertyValue])
   }
 
-  def parens: Parser[Clause] = "(" ~> clause <~ ")"
+  def closure: Parser[(String, Clause)] = (explicitClosure | implicitClosure)
+
+  def explicitClosure: Parser[(String, Clause)] = (identity ~ "=>" ~ clause) ^^ {
+    case id ~ "=>" ~ c => (id, c)
+  }
+
+  def implicitClosure: Parser[(String, Clause)] = clause ^^ {
+    case c => ("_", c)
+  }
+
+  def sequenceClause: Parser[Clause] = (allInSeq | anyInSeq | noneInSeq | singleInSeq)
+
+  def valueAndClosure = parens( value ~ "," ~ closure ) ^^ { case value ~ "," ~ closure => new ~(value, closure) }
+
+  def allInSeq: Parser[Clause] = ignoreCase("ALL") ~> valueAndClosure ^^ {
+    case seqValue ~ closure => AllInSeq(seqValue, closure._1, closure._2)
+  }
+
+  def anyInSeq: Parser[Clause] = ignoreCase("ANY") ~> valueAndClosure ^^ {
+    case seqValue ~ closure => AnyInSeq(seqValue, closure._1, closure._2)
+  }
+
+  def noneInSeq: Parser[Clause] = ignoreCase("NONE") ~> valueAndClosure ^^ {
+    case seqValue ~ closure => NoneInSeq(seqValue, closure._1, closure._2)
+  }
+
+  def singleInSeq: Parser[Clause] = ignoreCase("SINGLE") ~> valueAndClosure ^^ {
+    case seqValue ~ closure => SingleInSeq(seqValue, closure._1, closure._2)
+  }
 
   def equals: Parser[Clause] = value ~ "=" ~ value ^^ {
     case l ~ "=" ~ r => Equals(l, r)

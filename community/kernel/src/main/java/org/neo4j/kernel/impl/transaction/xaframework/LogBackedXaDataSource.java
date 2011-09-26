@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Map;
 
+import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.LogExtractor;
+
 public abstract class LogBackedXaDataSource extends XaDataSource
 {
     private XaLogicalLog logicalLog;
@@ -85,9 +87,9 @@ public abstract class LogBackedXaDataSource extends XaDataSource
     }
 
     @Override
-    public void rotateLogicalLog() throws IOException
+    public long rotateLogicalLog() throws IOException
     {
-        logicalLog.rotate();
+        return logicalLog.rotate();
     }
 
     @Override
@@ -109,18 +111,6 @@ public abstract class LogBackedXaDataSource extends XaDataSource
     }
 
     @Override
-    public ReadableByteChannel getCommittedTransaction( long txId ) throws IOException
-    {
-        return logicalLog.getCommittedTransaction( txId );
-    }
-
-    @Override
-    public void getCommittedTransaction( long txId, LogBuffer buffer ) throws IOException
-    {
-        logicalLog.getCommittedTransaction( txId, buffer );
-    }
-
-    @Override
     public ReadableByteChannel getPreparedTransaction( int identifier ) throws IOException
     {
         return logicalLog.getPreparedTransaction( identifier );
@@ -136,5 +126,20 @@ public abstract class LogBackedXaDataSource extends XaDataSource
     public int getMasterForCommittedTx( long txId ) throws IOException
     {
         return logicalLog.getMasterIdForCommittedTransaction( txId );
+    }
+    
+    @Override
+    public LogExtractor getLogExtractor( long startTxId, long endTxIdHint ) throws IOException
+    {
+        return logicalLog.getLogExtractor( startTxId, endTxIdHint );
+    }
+
+    protected void setKeepLogicalLogsIfSpecified( String configString, String dataSourceName )
+    {
+        Boolean keepLogs = shouldKeepLog( configString, dataSourceName );
+        if ( keepLogs != null )
+        {
+            getXaContainer().getLogicalLog().setKeepLogs( keepLogs.booleanValue() );
+        }
     }
 }

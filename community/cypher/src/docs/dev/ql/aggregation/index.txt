@@ -11,6 +11,7 @@ which just counts the number of matching rows, and +COUNT(<identifier>)+, which 
 the number of non-null values in +<identifier>+.
 
 include::count-nodes.txt[]
+include::group-count-relationship-types.txt[]
 include::count-entities.txt[]
 include::count-non-null-values.txt[]
 

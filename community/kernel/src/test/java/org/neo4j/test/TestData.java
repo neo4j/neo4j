@@ -252,7 +252,7 @@ public class TestData<T> implements MethodRule
         }
         if ( title == null )
         {
-            title = methodName;
+            title = methodName.replace( "_", " " );
         }
         return new Lazy( graph, title, doc );
     }

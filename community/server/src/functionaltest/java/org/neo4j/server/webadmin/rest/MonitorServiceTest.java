@@ -40,7 +40,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
-import org.neo4j.server.rrd.Job;
 import org.neo4j.server.rrd.JobScheduler;
 import org.neo4j.server.rrd.RrdFactory;
 import org.neo4j.test.ImpermanentGraphDatabase;
@@ -110,7 +109,7 @@ public class MonitorServiceTest implements JobScheduler
         this.database.shutdown();
     }
 
-    public void scheduleToRunEveryXSeconds( Job job, String name, int runEveryXSeconds )
+    public void scheduleAtFixedRate( Runnable job, String jobName, long delay, long period )
     {
     }
 }

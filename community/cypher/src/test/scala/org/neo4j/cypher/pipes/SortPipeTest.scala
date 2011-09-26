@@ -21,14 +21,13 @@ package org.neo4j.cypher.pipes
 
 import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.graphdb._
 import org.neo4j.cypher.SymbolTable
 import org.scalatest.junit.JUnitSuite
 import org.neo4j.cypher.commands.{EntityValue, ValueReturnItem, SortItem}
 
 class SortPipeTest extends JUnitSuite{
   @Test def emptyInIsEmptyOut() {
-    val source = new StartPipe[Node]("x", List())
+    val source = new FakePipe(List())
     val sortPipe = new SortPipe(source, List(SortItem(ValueReturnItem(EntityValue("x")), true)))
 
     assertEquals(List(), sortPipe.toList)

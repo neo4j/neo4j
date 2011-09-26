@@ -72,7 +72,8 @@ public class TestNewGraphvizWriter
 			tobias.setProperty( "age", 23 );
 			tobias.setProperty( "hours", new int[] { 10, 10, 4, 4, 0 } );
 			final Node johan = neo.createNode();
-			johan.setProperty( "name", "Johan '\\n00b' Svensson" );
+			johan.setProperty( "!<>)", "!<>)" );
+            johan.setProperty( "name", "!<>Johan '\\n00b' !<>Svensson" );
 			final Relationship emilKNOWStobias = emil.createRelationshipTo(
 			    tobias, type.KNOWS );
 			emilKNOWStobias.setProperty( "since", "2003-08-17" );

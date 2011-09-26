@@ -24,6 +24,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Field;
+import java.util.LinkedList;
 import java.util.Map;
 
 import org.junit.Test;
@@ -183,5 +184,105 @@ public class TestArrayMap
         assertNull( "removed element still found", map.get( "key1" ) );
         map.remove( "key4" );
         assertNull( "removed element still found", map.get( "key1" ) );
+    }
+    
+    @Test
+    public void testThreadSafeSize()
+    {
+        ArrayMap<Integer,Object> map = new ArrayMap<Integer,Object>(5, true, true );
+        map.put( 1, new Object() );
+        map.put( 2, new Object() );
+        map.put( 3, new Object() );
+        map.put( 4, new Object() );
+        map.put( 5, new Object() );
+        LinkedList<WorkerThread> runningThreads = new LinkedList<WorkerThread>();
+        for ( int i = 0; i < 100; i++ )
+        {
+            WorkerThread thread = new WorkerThread( map );
+            thread.start();
+            runningThreads.add( thread );
+        }
+        while ( !runningThreads.isEmpty() )
+        {
+            try
+            {
+                Thread.sleep( 100 );
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.interrupted();
+            }
+            WorkerThread thread = runningThreads.getFirst();
+            if ( !thread.stillRunning() )
+            {
+                assertTrue( "Synchronized ArrayMap concurrent size invoke failed: " + thread.getCause(), thread.wasSuccessful() );
+                runningThreads.removeFirst();
+            }
+        }
+    }
+    
+    private static class WorkerThread extends Thread
+    {
+        private final ArrayMap<Integer,Object> map;
+        
+        private volatile boolean done = false;
+        private volatile boolean success = false;
+        private volatile Throwable t = null;
+        
+        WorkerThread( ArrayMap<Integer,Object> map )
+        {
+            this.map = map;
+        }
+        
+        @Override
+        public void run()
+        {
+            try
+            {
+                for ( int i = 0; i < 10000; i++ )
+                {
+                    if ( map.size() > 5 )
+                    {
+                        for ( int j = i; j < (i+10); j++ )
+                        {
+                            if ( map.remove( j % 10 ) != null )
+                            {
+                                break;
+                            }
+                        }
+                    }
+                    // calling size again to increase chance to hit CCE
+                    else if ( map.size() <= 5 )
+                    {
+                        map.put( i % 10, new Object() );
+                    }
+                    yield();
+                }
+                success = true;
+            }
+            catch ( Throwable t )
+            {
+                this.t = t;
+            }
+            finally
+            {
+                done = true;
+            }
+        }
+        
+        boolean stillRunning()
+        {
+            return done == false;
+        }
+        
+        boolean wasSuccessful()
+        {
+            return success;
+        }
+        
+        Throwable getCause()
+        {
+            return t;
+        }
     }
 }

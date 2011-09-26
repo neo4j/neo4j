@@ -36,7 +36,7 @@ class OrderByTest extends DocumentingTestBase {
   @Test def sortByName() {
     testQuery(
       title = "Order nodes by property",
-      text = "ORDER BY is used to sort the output",
+      text = "+ORDER BY+ is used to sort the output",
       queryText = """start n=(%C%,%A%,%B%) return n order by n.name""",
       returns = """The nodes, sorted by their name.""",
       (p) => assertEquals(List(node("A"), node("B"), node("C")), p.columnAs[Node]("n").toList))
@@ -45,7 +45,7 @@ class OrderByTest extends DocumentingTestBase {
   @Test def sortByNameReverse() {
     testQuery(
       title = "Order nodes in descending order",
-      text = "By adding DESC[ENDING] after the identifier to sort on, the sort will be done in reverse order.",
+      text = "By adding +DESC[ENDING]+ after the identifier to sort on, the sort will be done in reverse order.",
       queryText = """start n=(%C%,%A%,%B%) return n order by n.name DESC""",
       returns = """The nodes, sorted by their name reversely.""",
       (p) => assertEquals(List(node("C"), node("B"), node("A")), p.columnAs[Node]("n").toList))
@@ -54,7 +54,7 @@ class OrderByTest extends DocumentingTestBase {
   @Test def sortByMultipleColumns() {
     testQuery(
       title = "Order nodes by multiple properties",
-      text = "You can order by multiple properties by stating each identifier in the ORDER BY" +
+      text = "You can order by multiple properties by stating each identifier in the +ORDER BY+" +
         " statement. Cypher will sort the result by the first identifier listed, and for equals values, " +
         "go to the next property in the order by, and so on.",
       queryText = """start n=(%C%,%A%,%B%) return n order by n.age, n.name""",
@@ -65,7 +65,7 @@ class OrderByTest extends DocumentingTestBase {
   @Test def order_by_nullable_property() {
     testQuery(
       title = "Ordering null",
-      text = "When sorting the result set, null will always come at the end of the result set for" +
+      text = "When sorting the result set, +null+ will always come at the end of the result set for" +
         " ascending sorting, and first when doing descending sort.",
       queryText = """start n=(%C%,%A%,%B%) return n.length?, n order by n.length?""",
       returns = """The nodes sorted by the length property, with a node without that property last.""",

@@ -81,7 +81,7 @@ public class WebadminSteps
         wl.clickOnByXpath(xpath);
     }
     
-    @When("^I click on the (.+) link in webadmin$")
+    @When("^I click on the \"(.+)\" link in webadmin$")
     public void iClickOnXLink(String text) throws Exception {
         wl.clickOnLink( text );
     }

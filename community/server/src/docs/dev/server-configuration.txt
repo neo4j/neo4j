@@ -30,6 +30,16 @@ Specify the HTTP server port supporting data, administrative, and UI access:
 org.neo4j.server.webserver.port=7474
 ----
 
+Specify the client accept pattern for the webserver (default is +127.0.0.1+, localhost only):
+[source]
+----
+#allow any client to connect
+org.neo4j.server.webserver.address=0.0.0.0
+----
+
+For securing the Neo4j Server, see also <<security-server>>
+
+
 Set the location of the round-robin database directory which gathers metrics on the running server instance:
 [source]
 ----

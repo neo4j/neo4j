@@ -20,8 +20,8 @@
 package org.neo4j.server.rest.web;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
-import java.util.List;
 import java.util.Map;
 
 import javax.servlet.ServletException;
@@ -33,13 +33,16 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
+import org.codehaus.jackson.JsonFactory;
+import org.codehaus.jackson.JsonParser;
+import org.codehaus.jackson.JsonToken;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.BatchOperationResults;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.rest.repr.formats.StreamingJsonUtils;
 import org.neo4j.server.web.WebServer;
 
 @Path( "/batch" )
@@ -50,50 +53,76 @@ public class BatchOperationService
     private static final String METHOD_KEY = "method";
     private static final String BODY_KEY = "body";
     private static final String TO_KEY = "to";
+    
+    private static final JsonFactory jsonFactory = new JsonFactory(); 
+    
     private final OutputFormat output;
-    private final InputFormat input;
     private final WebServer webServer;
     private final Database database;
 
     public BatchOperationService( @Context Database database, @Context WebServer webServer, @Context InputFormat input,
             @Context OutputFormat output )
     {
-        this.input = input;
         this.output = output;
         this.webServer = webServer;
         this.database = database;
     }
 
     @POST
-    @SuppressWarnings( "unchecked" )
-    public Response performBatchOperations( @Context UriInfo uriInfo, String body )
+    public Response performBatchOperations( @Context UriInfo uriInfo, InputStream body )
     {
-
         AbstractGraphDatabase db = database.graph;
 
         Transaction tx = db.beginTx();
         try
         {
+            JsonParser jp = jsonFactory.createJsonParser(body);
+            
+            BatchOperationResults results = new BatchOperationResults();
+            
+            JsonToken token;
+            String field;
+            String jobMethod, jobPath, jobBody;
+            Integer jobId;
+            
+            // TODO: Perhaps introduce a simple DSL for 
+            // deserializing streamed JSON?
+            while( (token = jp.nextToken()) != null) {
+                 if(token == JsonToken.START_OBJECT) {
+                     jobMethod = jobPath = jobBody = "";
+                     jobId = null;
+                     while( (token = jp.nextToken()) != JsonToken.END_OBJECT && token != null) {
+                         field = jp.getText();
+                         token = jp.nextToken();
+                         if(field.equals(METHOD_KEY)) {
+                             jobMethod = jp.getText().toUpperCase();
+                         } else if(field.equals(TO_KEY)) {
+                             jobPath = jp.getText();
+                         } else if(field.equals(ID_KEY)) {
+                             jobId = jp.getIntValue();
+                         } else if(field.equals(BODY_KEY)) {
+                             jobBody = StreamingJsonUtils.readCurrentValueAsString(jp, token);
+                         }
+                     }
 
-            List<Object> operations = input.readList( body );
-            BatchOperationResults results = new BatchOperationResults( operations.size() );
-
-            for ( Object rawOperation : operations )
-            {
-                performJob( results, uriInfo, (Map<String, Object>) rawOperation );
+                     // Read one job description. Execute it.
+                     performJob(results, uriInfo, jobMethod, jobPath, jobBody, jobId);
+                 }
             }
 
-            tx.success();
-
-            return Response.ok()
-                    .entity( results.toJSON()
-                            .getBytes( "UTF-8" ) )
+            Response res = Response.ok()
+                    .entity( results.toJSON() )
                     .header( HttpHeaders.CONTENT_ENCODING, "UTF-8" )
                     .type( MediaType.APPLICATION_JSON )
                     .build();
+
+            tx.success();
+            return res;
         }
         catch ( Exception e )
         {
+            System.out.println(e.getMessage());
+            e.printStackTrace();
             tx.failure();
             return output.badRequest( e );
         }
@@ -103,17 +132,13 @@ public class BatchOperationService
         }
     }
 
-    private void performJob( BatchOperationResults results, UriInfo uriInfo, Map<String, Object> desc )
+    private void performJob( BatchOperationResults results, UriInfo uriInfo, String method, String path, String body, Integer id )
             throws IOException, ServletException
     {
+        
 
         InternalJettyServletRequest req = new InternalJettyServletRequest();
         InternalJettyServletResponse res = new InternalJettyServletResponse();
-
-        String method = (String) desc.get( METHOD_KEY );
-        String path = (String) desc.get( TO_KEY );
-        String body = desc.containsKey( BODY_KEY ) ? JsonHelper.createJsonFrom( desc.get( BODY_KEY ) ) : "";
-        Integer id = desc.containsKey( ID_KEY ) ? (Integer) desc.get( ID_KEY ) : null;
 
         // Replace {[ID]} placeholders with location values
         Map<Integer, String> locations = results.getLocations();
