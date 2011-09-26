@@ -37,17 +37,34 @@ trait MatchClause extends JavaTokenParsers with Tokens {
     }
   }
 
-  def path: Parser[Any] = pathSegment | parenPath | noParenPath
+  def path: Parser[Any] = pathSegment | parenPath
 
-  def parenPath: Parser[NamedPath] = identity ~ "=" ~ "(" ~ pathSegment ~ ")" ^^ {
-    case p ~ "=" ~ "(" ~ pathSegment ~ ")" => NamedPath(p, pathSegment: _*)
-  }
-
-  def noParenPath: Parser[NamedPath] = identity ~ "=" ~ pathSegment ^^ {
+  def parenPath: Parser[NamedPath] = identity ~ "=" ~ optParens( pathSegment ) ^^ {
     case p ~ "=" ~ pathSegment => NamedPath(p, pathSegment: _*)
   }
 
-  def pathSegment: Parser[List[Pattern]] = node ~ rep1(relatedTail) ^^ {
+  def pathSegment: Parser[List[Pattern]] = relatedTos | shortestPath
+
+  def singlePathSegment : Parser[Pattern] = relatedTos ^^ {
+    case p => if(p.length>1)
+      throw new SyntaxException("Shortest path does not support having multiple path segments.")
+    else
+      p.head
+  }
+
+  def shortestPath: Parser[List[Pattern]] = ignoreCase("shortestPath") ~> parens(singlePathSegment) ^^
+    { _ match {
+        case RelatedTo(left , right , relName , relType, direction , optional) => List(ShortestPath(namer.name(None), left, right, relType, direction, Some(1), optional))
+        case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, direction, optional)  => {
+          if(minHops.nonEmpty) {
+            throw new SyntaxException("Shortest path does not support a minimal length")
+          }
+          List(ShortestPath(namer.name(None), start, end, relType, direction, maxHops, optional))
+        }
+      }
+    }
+
+  def relatedTos: Parser[List[Pattern]] = node ~ rep1(relatedTail) ^^ {
     case head ~ tails => {
       var fromNode = namer.name(head)
       val list = tails.map(_ match {
@@ -91,7 +108,7 @@ trait MatchClause extends JavaTokenParsers with Tokens {
 
   def node: Parser[Option[String]] = parensNode | relatedNode
 
-  def parensNode: Parser[Option[String]] = "(" ~> opt(identity) <~ ")"
+  def parensNode: Parser[Option[String]] = parens(opt(identity))
 
   def relatedNode: Parser[Option[String]] = opt(identity) ^^ {
     case None => throw new SyntaxException("Matching nodes without identifiers have to have parenthesis: ()")
@@ -105,10 +122,20 @@ trait MatchClause extends JavaTokenParsers with Tokens {
     }
   }
 
-  def relationshipInfo: Parser[(Option[String], Option[String], Option[(Int, Int)], Boolean)] = opt(identity) ~ opt("?") ~ opt(":" ~> identity) ~ opt("^" ~ wholeNumber ~ ".." ~ wholeNumber) ^^ {
-    case relName ~ optional ~ Some(relType) ~ None => (relName, Some(relType), None, optional.isDefined)
-    case relName ~ optional ~ Some(relType) ~ Some("^" ~ minHops ~ ".." ~ maxHops) => (relName, Some(relType), Some((minHops.toInt, maxHops.toInt)), optional.isDefined)
-    case relName ~ optional ~ None ~ Some("^" ~ minHops ~ ".." ~ maxHops)  => (relName, None, Some((minHops.toInt, maxHops.toInt)), optional.isDefined)
-    case relName ~ optional ~ None ~ None => (relName, None, None, optional.isDefined)
+  private def intOrNone(s:Option[String]):Option[Int] = s match {
+    case None => None
+    case Some(x) => Some(x.toInt)
+  }
+
+  def relationshipInfo: Parser[(Option[String], Option[String], Option[(Option[Int], Option[Int])], Boolean)] =
+    opt(identity) ~ opt("?") ~ opt(":" ~> identity) ~ opt("*" ~ opt(wholeNumber) ~ opt("..") ~ opt(wholeNumber)) ^^ {
+    case relName ~ optional ~ relType ~ varLength => {
+      val hops = varLength match {
+        case Some("*" ~ x ~ None ~ None ) => Some((intOrNone(x), intOrNone(x)))
+        case Some("*" ~ minHops ~ punktpunkt ~ maxHops) => Some((intOrNone(minHops), intOrNone(maxHops)))
+        case None => None
+      }
+      (relName, relType, hops, optional.isDefined)
+    }
   }
 }

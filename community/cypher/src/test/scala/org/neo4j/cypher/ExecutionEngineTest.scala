@@ -349,6 +349,15 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     assertEquals(List(Map("node.name" -> null)), result.toList)
   }
 
+  @Test def testOnlyIfPropertyExists() {
+    createNode(Map("prop"->"A"))
+    createNode()
+
+    val result = parseAndExecute("start a=(1,2) where a.prop? = 'A' return a")
+
+    assert( 2 === result.toSeq.length )
+  }
+
   @Test def shouldHandleComparisonBetweenNodeProperties() {
     //start n = node(1,4) match (n) --> (x) where n.animal = x.animal return n,x
     val n1 = createNode(Map("animal" -> "monkey"))
@@ -665,7 +674,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     createNodes("A", "B")
     relate("A" -> "KNOWS" -> "B")
 
-    val result = parseAndExecute("start n=(1) match p = n-->x where length(p)=3 return x")
+    val result = parseAndExecute("start n=(1) match p = n-->x where length(p)=1 return x")
 
     assertTrue("Result set should not be empty, but it was", !result.isEmpty)
   }
@@ -676,7 +685,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val result = parseAndExecute("start n=(1) match p = n-->x return length(p)")
 
-    assertEquals(List(3), result.columnAs[Int]("LENGTH(p)").toList)
+    assertEquals(List(1), result.columnAs[Int]("LENGTH(p)").toList)
   }
 
   @Test def shouldBeAbleToFilterOnPathNodes() {
@@ -690,7 +699,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     relate(c, d, "rel")
 
     val query = Query.start(NodeById("pA", a.getId), NodeById("pB", d.getId)).
-      namedPaths(NamedPath("p", VarLengthRelatedTo("x", "pA", "pB", 1, 5, "rel", Direction.OUTGOING))).
+      namedPaths(NamedPath("p", VarLengthRelatedTo("x", "pA", "pB", Some(1), Some(5), "rel", Direction.OUTGOING))).
       where(AllInSeq(PathNodesValue(EntityValue("p")), "i", Equals(PropertyValue("i", "foo"), Literal("bar")))).
       returns(ValueReturnItem(EntityValue("pB")))
 
@@ -708,7 +717,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val r2 = relate(b, c, "rel")
 
     val query = Query.start(NodeById("pA", a.getId)).
-      namedPaths(NamedPath("p", VarLengthRelatedTo("x", "pA", "pB", 2, 2, "rel", Direction.OUTGOING))).
+      namedPaths(NamedPath("p", VarLengthRelatedTo("x", "pA", "pB", Some(2), Some(2), "rel", Direction.OUTGOING))).
       returns(ValueReturnItem(PathRelationshipsValue(EntityValue("p"))))
 
     val result = execute(query)
@@ -721,7 +730,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val r1 = relate("A" -> "KNOWS" -> "B")
     val r2 = relate("B" -> "KNOWS" -> "C")
 
-    val result = parseAndExecute("start n=(1) match p=n-[:KNOWS^1..2]->x return p")
+    val result = parseAndExecute("start n=(1) match p=n-[:KNOWS*1..2]->x return p")
 
     assertEquals(List(
       PathImpl(node("A"), r1, node("B")),
@@ -729,13 +738,40 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     ), result.columnAs[Path]("p").toList)
   }
 
+  @Test def shouldReturnAVarLengthPathWithoutMinimalLength() {
+    createNodes("A", "B", "C")
+    val r1 = relate("A" -> "KNOWS" -> "B")
+    val r2 = relate("B" -> "KNOWS" -> "C")
+
+    val result = parseAndExecute("start n=(1) match p=n-[:KNOWS*..2]->x return p")
+
+    assertEquals(List(
+      PathImpl(node("A"), r1, node("B")),
+      PathImpl(node("A"), r1, node("B"), r2, node("C"))
+    ), result.columnAs[Path]("p").toList)
+  }
+
+  @Test def shouldReturnAVarLengthPathWithUnboundMax() {
+    createNodes("A", "B", "C")
+    val r1 = relate("A" -> "KNOWS" -> "B")
+    val r2 = relate("B" -> "KNOWS" -> "C")
+
+    val result = parseAndExecute("start n=(1) match p=n-[:KNOWS*..]->x return p")
+
+    assertEquals(List(
+      PathImpl(node("A"), r1, node("B")),
+      PathImpl(node("A"), r1, node("B"), r2, node("C"))
+    ), result.columnAs[Path]("p").toList)
+  }
+
+
   @Test def shouldHandleBoundNodesNotPartOfThePattern() {
     createNodes("A", "B", "C")
     relate("A" -> "KNOWS" -> "B")
 
     val result = parseAndExecute("start a=(1), c = (3) match a-->b return a,b,c").toList
 
-    assert(List(Map("a"->node("A"), "b"->node("B"), "c"->node("C"))) === result)
+    assert(List(Map("a" -> node("A"), "b" -> node("B"), "c" -> node("C"))) === result)
   }
 
   @Test def shouldReturnShortestPath() {
@@ -744,7 +780,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("a", 1), NodeById("b", 2)).
-      matches(ShortestPath("p", "a", "b", false)).
+      namedPaths(NamedPath("p", ShortestPath("  UNNAMED1", "a", "b", None, Direction.BOTH, Some(15), false))).
       returns(ValueReturnItem(EntityValue("p")))
 
     val result = execute(query).toList.head("p").asInstanceOf[Path]
@@ -754,6 +790,19 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     assert(result.startNode() === node("A"))
     assert(result.endNode() === node("B"))
     assert(result.lastRelationship() === r1)
+  }
+
+  @Test def shouldReturnShortestPathUnboundLength() {
+    createNodes("A", "B")
+    val r1 = relate("A" -> "KNOWS" -> "B")
+
+    val query = Query.
+      start(NodeById("a", 1), NodeById("b", 2)).
+      namedPaths(NamedPath("p", ShortestPath("  UNNAMED1", "a", "b", None, Direction.BOTH, None, false))).
+      returns(ValueReturnItem(EntityValue("p")))
+
+    //Checking that we don't get an exception
+    execute(query).toList
   }
 
   @Test def shouldBeAbleToTakeParamsInDifferentTypes() {

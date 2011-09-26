@@ -19,6 +19,8 @@
  */
 package org.neo4j.shell.impl;
 
+import static org.neo4j.kernel.Config.configValueContainsMultipleParameters;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -32,6 +34,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.helpers.Args;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.shell.StartClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
@@ -43,10 +47,12 @@ public class ShellBootstrap implements Serializable
 
     ShellBootstrap( KernelData kernel )
     {
-        String shellConfig = (String) kernel.getParam( "enable_remote_shell" );
+        String shellConfig = (String) kernel.getParam( Config.ENABLE_REMOTE_SHELL );
+        Map<String, Serializable> config = null;
+        boolean enable = false;
         if ( shellConfig != null )
         {
-            if ( shellConfig.contains( "=" ) )
+            if ( configValueContainsMultipleParameters( shellConfig ) )
             {
                 enable = true;
                 config = parseShellConfigParameter( shellConfig );
@@ -54,19 +60,10 @@ public class ShellBootstrap implements Serializable
             else if ( Boolean.parseBoolean( shellConfig ) )
             {
                 enable = true;
-                config = null;
-            }
-            else
-            {
-                enable = false;
-                config = null;
             }
         }
-        else
-        {
-            enable = false;
-            config = null;
-        }
+        this.enable = enable;
+        this.config = config;
     }
 
     public ShellBootstrap( Map<String, Serializable> config )
@@ -79,36 +76,17 @@ public class ShellBootstrap implements Serializable
     {
         enable = true;
         config = new HashMap<String, Serializable>();
-        config.put( StartClient.ARG_PORT, port );
+        config.put( StartClient.ARG_PORT, port != null ? Integer.parseInt( port ) : AbstractServer.DEFAULT_PORT );
         config.put( StartClient.ARG_NAME, name );
     }
 
     @SuppressWarnings( "boxing" )
     private static Map<String, Serializable> parseShellConfigParameter( String shellConfig )
     {
+        Args parsed = Config.parseMapFromConfigValue( Config.ENABLE_REMOTE_SHELL, shellConfig );
         Map<String, Serializable> map = new HashMap<String, Serializable>();
-        for ( String keyValue : shellConfig.split( "," ) )
-        {
-            String[] splitted = keyValue.split( "=" );
-            if ( splitted.length != 2 )
-            {
-                throw new RuntimeException( "Invalid shell configuration '" + shellConfig
-                                            + "' should be '<key1>=<value1>,<key2>=<value2>...' where key can"
-                                            + " be any of [" + StartClient.ARG_PORT + ", " + StartClient.ARG_NAME
-                                            + ", " + StartClient.ARG_READONLY + "]" );
-            }
-            String key = splitted[0].trim();
-            Serializable value = splitted[1];
-            if ( key.equals( StartClient.ARG_PORT ) )
-            {
-                value = Integer.parseInt( splitted[1] );
-            }
-            else if ( key.equals( StartClient.ARG_READONLY ) )
-            {
-                value = Boolean.parseBoolean( splitted[1] );
-            }
-            map.put( key, value );
-        }
+        map.put( StartClient.ARG_PORT, parsed.getNumber( StartClient.ARG_PORT, AbstractServer.DEFAULT_PORT ).intValue() );
+        map.put( StartClient.ARG_READONLY, parsed.getBoolean( StartClient.ARG_READONLY, false, true ) );
         return map;
     }
 
@@ -178,20 +156,7 @@ public class ShellBootstrap implements Serializable
 
     public GraphDatabaseShellServer enable( GraphDatabaseShellServer server ) throws RemoteException
     {
-        Object portConfig = getConfig( StartClient.ARG_PORT, AbstractServer.DEFAULT_PORT );
-        int port;
-        if ( portConfig instanceof Integer )
-        {
-            port = (Integer) portConfig;
-        }
-        else if ( portConfig instanceof String )
-        {
-            port = Integer.parseInt( (String) portConfig );
-        }
-        else
-        {
-            throw new IllegalArgumentException( "Invalid port configuration: " + portConfig );
-        }
+        Integer port = (Integer) getConfig( StartClient.ARG_PORT, AbstractServer.DEFAULT_PORT );
         String name = (String) getConfig( StartClient.ARG_NAME, AbstractServer.DEFAULT_NAME );
         server.makeRemotelyAvailable( port, name );
         return server;

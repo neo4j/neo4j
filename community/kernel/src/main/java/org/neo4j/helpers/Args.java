@@ -62,16 +62,12 @@ public class Args
         parseArgs( args );
     }
     
-    public Args( String arg )
+    public Args( Map<String, String> source )
     {
-        this( splitArg( arg ) );
+        this.args = null;
+        putAll( source );
     }
-
-    private static String[] splitArg( String arg )
-    {
-        return arg.split( " " );
-    }
-
+    
     public String[] source()
     {
         return this.args;
@@ -114,6 +110,16 @@ public class Args
             return Boolean.parseBoolean( value );
         }
         return this.map.containsKey( key ) ? defaultValueIfNoValue : defaultValueIfNotFound;
+    }
+    
+    public Object put( String key, String value )
+    {
+        return map.put( key, value );
+    }
+    
+    public void putAll( Map<String, String> source )
+    {
+        this.map.putAll( source );
     }
     
     public List<String> orphans()

@@ -119,6 +119,11 @@ public class XaLogicalLog
             + Xid.MAXBQUALSIZE * 10 );
         storeDir = (String) config.get( "store_dir" );
         msgLog = StringLogger.getLogger( storeDir);
+
+        // We should turn keep-logs on if there are previous logs around,
+        // this so that e.g. temporary shell sessions or operations don't create
+        // holes in the log history, because it's just annoying.
+        keepLogs = hasPreviousLogs();
     }
 
     synchronized void open() throws IOException
@@ -1613,9 +1618,26 @@ public class XaLogicalLog
         currentLog = c;
     }
 
+    /*
+     * Only call this is there's an explicit property set to control it.
+     * Other wise depend on the default behaviour.
+     */
     public void setKeepLogs( boolean keep )
     {
         this.keepLogs = keep;
+    }
+    
+    private boolean hasPreviousLogs()
+    {
+        File fileNameFile = new File( fileName );
+        File logDirectory = fileNameFile.getParentFile();
+        if ( !logDirectory.exists() ) return false;
+        Pattern logFilePattern = getHistoryFileNamePattern();
+        for ( File file : logDirectory.listFiles() )
+        {
+            if ( logFilePattern.matcher( file.getName() ).find() ) return true;
+        }
+        return false;
     }
 
     public boolean isLogsKept()
@@ -1653,7 +1675,7 @@ public class XaLogicalLog
         return fileName;
     }
     
-    public Pattern getFileNamePattern()
+    public Pattern getHistoryFileNamePattern()
     {
         return Pattern.compile( new File( fileName ).getName() + "\\.v\\d+" );
     }
