@@ -24,7 +24,7 @@ import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
 import org.neo4j.cypher.{ParameterNotFoundException, SyntaxException, SymbolTable}
 
-abstract sealed class Value extends (Map[String, Any] => Any) {
+abstract class Value extends (Map[String, Any] => Any) {
   def identifier: Identifier
 
   def checkAvailable(symbols: SymbolTable)

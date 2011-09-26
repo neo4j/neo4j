@@ -42,49 +42,58 @@ class ExecutionEngine(graph: GraphDatabaseService) {
   @throws(classOf[SyntaxException])
   def execute(query: Query, params: Map[String, Any]): ExecutionResult = query match {
     case Query(returns, start, matching, where, aggregation, sort, slice, namedPaths) => {
+
+      val clauses = where match {
+        case None => Seq()
+        case Some(w) => w.atoms
+      }
+
       val paramPipe = new ParameterPipe(params)
-      var pipe = createSourcePumps(paramPipe, start.startItems.toList)
+      val pipe = createSourcePumps(paramPipe, start.startItems.toList)
 
-      pipe = createMatchPipe(matching, namedPaths, pipe)
+      var context = new CurrentContext(pipe, clauses)
+      context = addFilters(context)
 
-      pipe = createShortestPathPipe(pipe, matching, namedPaths)
+      context.pipe = createMatchPipe(matching, namedPaths, context.pipe)
+      context = addFilters(context)
+
+      context.pipe = createShortestPathPipe(context.pipe, matching, namedPaths)
+      context = addFilters(context)
 
       namedPaths match {
         case None =>
-        case Some(x) => x.paths.foreach(p => pipe = new NamedPathPipe(pipe, p))
+        case Some(x) => x.paths.foreach(p => context.pipe = new NamedPathPipe(context.pipe, p))
       }
-
-      where match {
-        case None =>
-        case Some(w) => pipe = new FilterPipe(pipe, w)
-      }
+      context = addFilters(context)
 
       val allReturnItems = extractReturnItems(returns, aggregation, sort)
+      context = addFilters(context)
 
-      pipe = new TransformPipe(pipe, allReturnItems)
+      context.pipe = new TransformPipe(context.pipe, allReturnItems)
+      context = addFilters(context)
 
       aggregation match {
         case None =>
         case Some(aggr) => {
-          pipe = new AggregationPipe(pipe, returns.returnItems, aggr.aggregationItems)
+          context.pipe = new AggregationPipe(context.pipe, returns.returnItems, aggr.aggregationItems)
         }
       }
 
       sort match {
         case None =>
         case Some(s) => {
-          pipe = new SortPipe(pipe, s.sortItems.toList)
+          context.pipe = new SortPipe(context.pipe, s.sortItems.toList)
         }
       }
 
       slice match {
         case None =>
-        case Some(x) => pipe = new SlicePipe(pipe, x.from, x.limit)
+        case Some(x) => context.pipe = new SlicePipe(context.pipe, x.from, x.limit)
       }
 
       val columns = returns.returnItems ++ aggregation.getOrElse(new Aggregation()).aggregationItems
 
-      val result = new ColumnFilterPipe(pipe, columns) with ExecutionResult
+      val result = new ColumnFilterPipe(context.pipe, columns) with ExecutionResult
 
       result
     }
@@ -97,7 +106,7 @@ class ExecutionEngine(graph: GraphDatabaseService) {
     }
 
     val namedShortestPaths = namedPaths match {
-      case Some(m) => m.paths.flatMap(_.pathPattern ).filter(_.isInstanceOf[ShortestPath]).map(_.asInstanceOf[ShortestPath])
+      case Some(m) => m.paths.flatMap(_.pathPattern).filter(_.isInstanceOf[ShortestPath]).map(_.asInstanceOf[ShortestPath])
       case None => Seq()
     }
 
@@ -163,6 +172,25 @@ class ExecutionEngine(graph: GraphDatabaseService) {
     case RelationshipById(varName, ids@_*) => new StartPipe(lastPipe, varName, ids.map(graph.getRelationshipById))
   }
 
+  private def addFilters(context: CurrentContext): CurrentContext = {
+    if (context.clauses.isEmpty)
+      context
+    else {
+      val keys = context.pipe.symbols.identifiers.map(_.name)
+      val matchingClauses = context.clauses.filter(x => {
+        val unsatisfiedDependencies = x.dependsOn.filterNot(keys contains)
+        unsatisfiedDependencies.isEmpty
+      })
+      if (matchingClauses.isEmpty)
+        context
+      else {
+        val filterClause = matchingClauses.reduceLeft(_ ++ _)
+        val p = new FilterPipe(context.pipe, filterClause)
+
+        new CurrentContext(p, context.clauses.filterNot(matchingClauses contains))
+      }
+    }
+  }
 
   def checkScalaVersion() {
     if (util.Properties.versionString.matches("^version 2.9.0")) {
@@ -197,3 +225,5 @@ class ExecutionEngine(graph: GraphDatabaseService) {
     throw new ParameterNotFoundException("Expected " + name + " to be a Long, or an Iterable of Long. It was '" + result + "'")
   }
 }
+
+private class CurrentContext(var pipe: Pipe, var clauses: Seq[Clause])
