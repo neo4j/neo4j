@@ -30,6 +30,8 @@ define(
       fetch : (key, defaults) ->
         stored = localStorage.getItem(key)
         if stored != null then JSON.parse(stored) else defaults
+        
+      remove : (key) -> localStorage.removeItem(key)
 
     class InMemoryStoringStrategy
       
@@ -41,6 +43,9 @@ define(
 
       fetch : (key, defaults) ->
         if @storage[key]? then @storage[key] else @defaults
+        
+      remove : (key) ->
+        delete @storage[key]
     
     class LocalModelStore
 
@@ -88,12 +93,15 @@ define(
       set : (key, item) ->
         @_cache[key] = item
         
-        item = item.toJSON() if item.toJSON
+        item = item.toJSON() if item != null and item.toJSON
         if @storagePrefix.length > 0
           key = "#{@storagePrefix}::#{key}"
         @storingStrategy.store(key, item)
         
         @trigger "change"
         @trigger "change:#{key}"
+        
+      remove : (key) ->
+        @storingStrategy.remove(key)
 
 )
