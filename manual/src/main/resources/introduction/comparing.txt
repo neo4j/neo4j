@@ -101,6 +101,9 @@ K:2 -> V2:v
 K:3 -> V3:v
 ----
 
++K*+ represents a key, +V*+ a value.
+Note that some keys point to other keys as well as plain values.
+
 .Graph Database as Key-Value Store
 ["dot", "graphdb-compare-kvstore-g.svg", "meta"]
 ----
@@ -174,6 +177,8 @@ subgraph cluster_2 {
   }
 }
 ----
+
++D+=Document, +S+=Subdocument, +V+=Value, +D2/S2+ = reference to subdocument in (other) document.
 
 .Graph Database as Document Store
 ["dot", "graphdb-compare-docdb-g.svg", "meta", scaledwidth="75%"]
