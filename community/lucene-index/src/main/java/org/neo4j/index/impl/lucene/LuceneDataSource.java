@@ -749,8 +749,8 @@ public class LuceneDataSource extends LogBackedXaDataSource
     }
 
     @Override
-    public ClosableIterable<File> listStoreFiles() throws IOException
-    {
+    public ClosableIterable<File> listStoreFiles( boolean includeLogicalLogs ) throws IOException
+    {   // Never include logical logs since they are of little importance
         final Collection<File> files = new ArrayList<File>();
         final Collection<SnapshotDeletionPolicy> snapshots = new ArrayList<SnapshotDeletionPolicy>();
         makeSureAllIndexesAreInstantiated();
