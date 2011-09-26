@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -345,28 +346,55 @@ public class TestNeo4j extends AbstractNeo4jTestCase
     public void testKeepLogsConfig()
     {
         Map<String,String> config = new HashMap<String,String>();
-        config.put( Config.KEEP_LOGICAL_LOGS, "nioneodb" );
+        config.put( Config.KEEP_LOGICAL_LOGS, Config.DEFAULT_DATA_SOURCE_NAME );
         String storeDir = "target/configdb";
         deleteFileOrDirectory( storeDir );
         EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( 
                 storeDir, config );
         XaDataSourceManager xaDsMgr = 
                 db.getConfig().getTxModule().getXaDataSourceManager();
-        XaDataSource xaDs = xaDsMgr.getXaDataSource( "nioneodb" );
+        XaDataSource xaDs = xaDsMgr.getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
         assertTrue( xaDs.isLogicalLogKept() );
         db.shutdown();
         
         config.remove( Config.KEEP_LOGICAL_LOGS );
         db = new EmbeddedGraphDatabase( storeDir, config );
         xaDsMgr = db.getConfig().getTxModule().getXaDataSourceManager();
-        xaDs = xaDsMgr.getXaDataSource( "nioneodb" );
-        assertTrue( !xaDs.isLogicalLogKept() );
+        xaDs = xaDsMgr.getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+        // Here we rely on the default value being set to true due to the existence
+        // of previous log files.
+        assertTrue( xaDs.isLogicalLogKept() );
+        db.shutdown();
+
+        config.put( Config.KEEP_LOGICAL_LOGS, "false" );
+        db = new EmbeddedGraphDatabase( storeDir, config );
+        xaDsMgr = db.getConfig().getTxModule().getXaDataSourceManager();
+        xaDs = xaDsMgr.getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+        // Here we explicitly turn off the keeping of logical logs so it should be
+        // false even if there are previous existing log files.
+        assertFalse( xaDs.isLogicalLogKept() );
+        db.shutdown();
+        
+        config.put( Config.KEEP_LOGICAL_LOGS, Config.DEFAULT_DATA_SOURCE_NAME + "=false" );
+        db = new EmbeddedGraphDatabase( storeDir, config );
+        xaDsMgr = db.getConfig().getTxModule().getXaDataSourceManager();
+        xaDs = xaDsMgr.getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+        // Here we explicitly turn off the keeping of logical logs so it should be
+        // false even if there are previous existing log files.
+        assertFalse( xaDs.isLogicalLogKept() );
+        db.shutdown();
+        
+        config.put( Config.KEEP_LOGICAL_LOGS, Config.DEFAULT_DATA_SOURCE_NAME + "=true" );
+        db = new EmbeddedGraphDatabase( storeDir, config );
+        xaDsMgr = db.getConfig().getTxModule().getXaDataSourceManager();
+        xaDs = xaDsMgr.getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+        assertTrue( xaDs.isLogicalLogKept() );
         db.shutdown();
 
         config.put( Config.KEEP_LOGICAL_LOGS, "true" );
         db = new EmbeddedGraphDatabase( storeDir, config );
         xaDsMgr = db.getConfig().getTxModule().getXaDataSourceManager();
-        xaDs = xaDsMgr.getXaDataSource( "nioneodb" );
+        xaDs = xaDsMgr.getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
         assertTrue( xaDs.isLogicalLogKept() );
     }
 }

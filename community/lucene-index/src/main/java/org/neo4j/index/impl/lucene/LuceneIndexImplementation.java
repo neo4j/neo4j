@@ -53,13 +53,11 @@ public class LuceneIndexImplementation extends IndexImplementation
                     KEY_TO_LOWER_CASE, "true" ) );
 
     public static final int DEFAULT_LAZY_THRESHOLD = 100;
-    private static final String DATA_SOURCE_NAME = "lucene-index";
 
     private final IndexConnectionBroker<LuceneXaConnection> broker;
     private final LuceneDataSource dataSource;
     private final GraphDatabaseService graphDb;
     final int lazynessThreshold;
-
 
     public LuceneIndexImplementation( GraphDatabaseService db, Config config )
     {
@@ -69,7 +67,7 @@ public class LuceneIndexImplementation extends IndexImplementation
         boolean isReadOnly = config.isReadOnly();
         Map<Object, Object> params = new HashMap<Object, Object>( config.getParams() );
         params.put( "read_only", isReadOnly );
-        dataSource = (LuceneDataSource) txModule.registerDataSource( DATA_SOURCE_NAME,
+        dataSource = (LuceneDataSource) txModule.registerDataSource( LuceneDataSource.DEFAULT_NAME,
                 LuceneDataSource.class.getName(), LuceneDataSource.DEFAULT_BRANCH_ID, params, true );
         broker = isReadOnly ? new ReadOnlyIndexConnectionBroker<LuceneXaConnection>( txModule.getTxManager() )
                 : new ConnectionBroker( txModule.getTxManager(), dataSource );
@@ -187,6 +185,6 @@ public class LuceneIndexImplementation extends IndexImplementation
     @Override
     public String getDataSourceName()
     {
-        return DATA_SOURCE_NAME;
+        return LuceneDataSource.DEFAULT_NAME;
     }
 }

@@ -27,6 +27,7 @@ import java.util.Map;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.helpers.Args;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
 import org.neo4j.kernel.impl.core.GraphDbModule;
@@ -390,8 +391,13 @@ public class Config
             }
         }
     }
+    
+    public static boolean configValueContainsMultipleParameters( String configValue )
+    {
+        return configValue != null && configValue.contains( "=" );
+    }
 
-    public static Map<String, String> parseMapFromConfigValue( String name, String configValue )
+    public static Args parseMapFromConfigValue( String name, String configValue )
     {
         Map<String, String> result = new HashMap<String, String>();
         for ( String part : configValue.split( quote( "," ) ) )
@@ -400,11 +406,11 @@ public class Config
             if ( tokens.length != 2 )
             {
                 throw new RuntimeException( "Invalid configuration value '" + configValue +
-                        "' for " + name );
+                        "' for " + name + ". The format is [true/false] or [key1=value1,key2=value2...]" );
             }
             result.put( tokens[0], tokens[1] );
         }
-        return result;
+        return new Args( result );
     }
 
     public static Object getFromConfig( Map<?, ?> config, Object key,

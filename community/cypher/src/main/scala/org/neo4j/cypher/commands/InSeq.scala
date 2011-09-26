@@ -29,6 +29,10 @@ abstract class InSeq(seqValue: Value, symbolName: String, innerClause: Clause) e
       innerClause.isMatch(innerMap)
     })
   }
+
+  def dependsOn: Set[String] = (seqValue.dependsOn ++ innerClause.dependsOn).filterNot( _ == symbolName )
+
+  def atoms: Seq[Clause] = Seq(this)
 }
 
 case class AllInSeq(seqValue: Value, symbolName: String, innerClause: Clause) extends InSeq(seqValue, symbolName, innerClause) {

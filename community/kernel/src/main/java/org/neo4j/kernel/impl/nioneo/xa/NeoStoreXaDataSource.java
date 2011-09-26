@@ -169,8 +169,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                 neoStore.getPropertyStore() );
             this.idGenerators.put( PropertyIndex.class,
                 neoStore.getPropertyStore().getIndexStore() );
-            xaContainer.getLogicalLog().setKeepLogs(
-                    shouldKeepLog( (String) config.get( Config.KEEP_LOGICAL_LOGS ), "nioneodb" ) );
+            setKeepLogicalLogsIfSpecified( (String) config.get( Config.KEEP_LOGICAL_LOGS ), Config.DEFAULT_DATA_SOURCE_NAME );
             setLogicalLogAtCreationTime( xaContainer.getLogicalLog() );
         }
         catch ( Throwable e )
@@ -489,11 +488,11 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     }
     
     @Override
-    public ClosableIterable<File> listStoreFiles()
+    public ClosableIterable<File> listStoreFiles( boolean includeLogicalLogs )
     {
         final Collection<File> files = new ArrayList<File>();
         File neostoreFile = null;
-        Pattern logFilePattern = getXaContainer().getLogicalLog().getFileNamePattern();
+        Pattern logFilePattern = getXaContainer().getLogicalLog().getHistoryFileNamePattern();
         for ( File dbFile : new File( storeDir ).listFiles() )
         {
             String name = dbFile.getName();
@@ -510,7 +509,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                 {   // Store files
                     files.add( dbFile );
                 }
-                else if ( logFilePattern.matcher( dbFile.getName() ).matches() )
+                else if ( includeLogicalLogs && logFilePattern.matcher( dbFile.getName() ).matches() )
                 {   // Logs
                     files.add( dbFile );
                 }
