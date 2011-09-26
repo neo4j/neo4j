@@ -419,7 +419,7 @@ public class MasterImpl implements Master
     {
         try
         {
-            context = MasterUtil.rotateLogsAndStreamStoreFiles( graphDb, writer );
+            context = MasterUtil.rotateLogsAndStreamStoreFiles( graphDb, true, writer );
         }
         catch ( Exception e )
         {

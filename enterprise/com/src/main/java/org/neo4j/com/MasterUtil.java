@@ -105,7 +105,8 @@ public class MasterUtil
         return appliedTransactions;
     }
 
-    public static SlaveContext rotateLogsAndStreamStoreFiles( GraphDatabaseService graphDb, StoreWriter writer )
+    public static SlaveContext rotateLogsAndStreamStoreFiles( GraphDatabaseService graphDb,
+            boolean includeLogicalLogs, StoreWriter writer )
     {
         File baseDir = getBaseDir( graphDb );
         XaDataSourceManager dsManager =
@@ -116,7 +117,7 @@ public class MasterUtil
         {
             try
             {
-                ClosableIterable<File> files = ds.listStoreFiles();
+                ClosableIterable<File> files = ds.listStoreFiles( includeLogicalLogs );
                 try
                 {
                     for ( File storefile : files )

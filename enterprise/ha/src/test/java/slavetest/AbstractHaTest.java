@@ -53,10 +53,15 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.Config;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.BrokerFactory;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
+import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.LogExtractor;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 public abstract class AbstractHaTest
@@ -631,8 +636,25 @@ public abstract class AbstractHaTest
                     "the key " + i, "the best value",
                     "a key " + i, "the worst value" ) );
         }
-        addDb( MapUtil.stringMap(), true );
+        int slaveId = addDb( MapUtil.stringMap(), true );
         awaitAllStarted();
+        shutdownDb( slaveId );
+        
+        // Assert that there are all neostore logical logs in the copy.
+        File slavePath = dbPath( slaveId );
+        EmbeddedGraphDatabase slaveDb = new EmbeddedGraphDatabase( slavePath.getAbsolutePath() );
+        XaDataSource dataSource = slaveDb.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+        long lastTxId = dataSource.getLastCommittedTxId();
+        LogExtractor extractor = dataSource.getXaContainer().getLogicalLog().getLogExtractor( 2/*first tx is always 2*/, lastTxId );
+        for ( long txId = 2; txId < lastTxId; txId++ )
+        {
+            long extractedTxId = extractor.extractNext( new InMemoryLogBuffer() );
+            assertEquals( txId, extractedTxId );
+        }
+        extractor.close();
+        slaveDb.shutdown();
+        
+        startDb( slaveId, MapUtil.stringMap(), true );
     }
     
     @Test

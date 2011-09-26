@@ -37,7 +37,7 @@ class BackupImpl implements TheBackupInterface
     
     public Response<Void> fullBackup( StoreWriter writer )
     {
-        SlaveContext context = MasterUtil.rotateLogsAndStreamStoreFiles( graphDb, writer );
+        SlaveContext context = MasterUtil.rotateLogsAndStreamStoreFiles( graphDb, false, writer );
         writer.done();
         return packResponse( context );
     }
