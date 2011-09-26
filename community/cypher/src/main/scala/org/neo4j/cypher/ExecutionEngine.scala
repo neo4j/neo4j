@@ -54,7 +54,7 @@ class ExecutionEngine(graph: GraphDatabaseService) {
       var context = new CurrentContext(pipe, clauses)
       context = addFilters(context)
 
-      context.pipe = createMatchPipe(matching, namedPaths, context.pipe)
+      context = createMatchPipe(matching, namedPaths, context)
       context = addFilters(context)
 
       context.pipe = createShortestPathPipe(context.pipe, matching, namedPaths)
@@ -118,7 +118,7 @@ class ExecutionEngine(graph: GraphDatabaseService) {
 
   }
 
-  private def createMatchPipe(unnamedPaths: Option[Match], namedPaths: Option[NamedPaths], pipe: Pipe): Pipe = {
+  private def createMatchPipe(unnamedPaths: Option[Match], namedPaths: Option[NamedPaths], context: CurrentContext): CurrentContext = {
     val namedPattern = namedPaths match {
       case Some(m) => m.paths.flatten
       case None => Seq()
@@ -130,9 +130,11 @@ class ExecutionEngine(graph: GraphDatabaseService) {
     }
 
     (unnamedPattern ++ namedPattern) match {
-      case Seq() => pipe
-      case x => new MatchPipe(pipe, x)
+      case Seq() =>
+      case x => context.pipe = new MatchPipe(context.pipe, x)
     }
+
+    context
   }
 
   private def createSourcePumps(pipe: Pipe, items: List[StartItem]): Pipe = {

@@ -143,6 +143,7 @@ define(
         node.fixed = false
 
       stop : () =>
+        console.log "stop", @sys, @sys.renderer
         if @sys.renderer?
           @sys.renderer.stop()
         @sys.parameters({gravity:false})
@@ -151,7 +152,8 @@ define(
       start : () =>
         if @sys.renderer?
           @sys.renderer.start()
-        @sys.start()
+        console.log "start", @sys, @sys.renderer
+        @sys.start(true)
 
         # Force a redraw
         @sys.renderer.redraw()
