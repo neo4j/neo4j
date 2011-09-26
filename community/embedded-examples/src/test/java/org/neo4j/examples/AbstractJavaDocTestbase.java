@@ -49,7 +49,7 @@ protected ExecutionEngine engine;
 @BeforeClass
 public static void init()
 {
-    db = new ImpermanentGraphDatabase("target/descendants");
+    db = new ImpermanentGraphDatabase("target/"+ System.currentTimeMillis());
 }
 
 @Before
