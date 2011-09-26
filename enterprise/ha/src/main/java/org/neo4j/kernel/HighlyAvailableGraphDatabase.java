@@ -103,7 +103,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     private volatile long updateTime = 0;
     private volatile RuntimeException causeOfShutdown;
     private final long startupTime;
-    private volatile boolean doingNewMaster;
 
     private final List<KernelEventHandler> kernelEventHandlers =
             new CopyOnWriteArrayList<KernelEventHandler>();
@@ -804,7 +803,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         try
         {
-            doingNewMaster = true;
             doNewMaster( master, storeId, e );
         }
         catch ( BranchedDataException bde )
@@ -812,10 +810,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             msgLog.logMessage( "Branched data occured, retrying" );
             getFreshDatabaseFromMaster( master );
             doNewMaster( master, storeId, bde );
-        }
-        finally
-        {
-            doingNewMaster = false;
         }
     }
 
