@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
+
+import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 
 public class LegacyStore
 {
