@@ -65,7 +65,7 @@ except: # this isn't jython (and doesn't have the java module)
     import jpype, os
 
     # Classpath set by environment var
-    classpath = os.getenv('CLASSPATH',None)
+    classpath = os.getenv('NEO4J_PYTHON_CLASSPATH',None)
     if classpath is None:
         # Classpath set by finding bundled jars
         jars = []
