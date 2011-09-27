@@ -418,8 +418,10 @@ public class TestXa extends AbstractNeo4jTestCase
         xaCon.getWriteTransaction().relationshipCreate( rel1, relType1, node1, node2 );
         PropertyData r1prop1 = xaCon.getWriteTransaction().relAddProperty(
                 rel1, index( "prop1" ), "string1" );
-        xaCon.getWriteTransaction().nodeChangeProperty( node1, n1prop1, "string2" );
-        xaCon.getWriteTransaction().relChangeProperty( rel1, r1prop1, "string2" );
+        n1prop1 = xaCon.getWriteTransaction().nodeChangeProperty( node1,
+                n1prop1, "string2" );
+        r1prop1 = xaCon.getWriteTransaction().relChangeProperty( rel1, r1prop1,
+                "string2" );
         xaCon.getWriteTransaction().nodeRemoveProperty( node1, n1prop1 );
         xaCon.getWriteTransaction().relRemoveProperty( rel1, r1prop1 );
         xaCon.getWriteTransaction().relDelete( rel1 );
@@ -879,8 +881,9 @@ public class TestXa extends AbstractNeo4jTestCase
         xaCon.getWriteTransaction().relationshipCreate( rel1, relType1, node1, node2 );
         PropertyData r1prop1 = xaCon.getWriteTransaction().relAddProperty(
                 rel1, index( "prop1" ), "string1" );
-        xaCon.getWriteTransaction().nodeChangeProperty( node1, n1prop1, "string2" );
-        xaCon.getWriteTransaction().relChangeProperty( rel1, r1prop1,
+        n1prop1 = xaCon.getWriteTransaction().nodeChangeProperty( node1,
+                n1prop1, "string2" );
+        r1prop1 = xaCon.getWriteTransaction().relChangeProperty( rel1, r1prop1,
             "string2" );
         xaCon.getWriteTransaction().nodeRemoveProperty( node1, n1prop1 );
         xaCon.getWriteTransaction().relRemoveProperty( rel1, r1prop1 );
