@@ -29,7 +29,8 @@
 
 (function($){
 
-  /*        etc.js */  //
+  /*        etc.js */
+  //
   // etc.js
   //
   // misc utilities
@@ -39,8 +40,8 @@
       if (typeof(window)=='undefined' || !window.console) return
       var len = arguments.length
       var args = []
-      for (var i=0; i<len; i++) args.push("arguments["+i+"]")
-      eval("console.log("+args.join(",")+")")
+      for (var i=0; i<len; i++) args.push(arguments[i])
+      console.log.apply(this, args)
     }  
   
     var dirname = function(path){
@@ -189,7 +190,9 @@
       else return null
     }
     
-  /*     kernel.js */  //
+  
+  /*     kernel.js */
+  //
   // kernel.js
   //
   // run-loop manager for physics and tween updates
@@ -426,7 +429,8 @@
       return that.init()    
     }
     
-  /*      atoms.js */  //
+  /*      atoms.js */
+  //
   // atoms.js
   //
   // particle system- or physics-related datatypes
@@ -546,7 +550,8 @@
   };
   
   
-  /*     system.js */  //
+  /*     system.js */
+  //
   // system.js
   //
   // the main controller object for creating/modifying graphs
@@ -1192,7 +1197,8 @@
       return that
     }
   
-  /* barnes-hut.js */  //
+  /* barnes-hut.js */
+  //
   //  barnes-hut.js
   //
   //  implementation of the barnes-hut quadtree algorithm for n-body repulsion
@@ -1366,7 +1372,8 @@
     }
   
   
-  /*    physics.js */  //
+  /*    physics.js */
+  //
   // physics.js
   //
   // the particle system itself. either run inline or in a worker (see worker.js)
@@ -1706,7 +1713,8 @@
 
   // if called as a worker thread, set up a run loop for the Physics object and bail out
   if (typeof(window)=='undefined') return (function(){
-  /* hermetic.js */  //
+  /* hermetic.js */
+  //
   // hermetic.js
   //
   // the parts of jquery i can't live without (e.g., while in a web worker)
@@ -1755,7 +1763,8 @@
     },
   }
   
-  /*     worker.js */  //
+  /*     worker.js */
+  //
   // worker.js
   //
   // wraps physics.js in an onMessage/postMessage protocol that the

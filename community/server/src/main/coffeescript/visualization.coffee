@@ -19,16 +19,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 require(
-  ["neo4j/webadmin/modules/databrowser/StandaloneVisualizationRouter"
+  ["order!lib/jquery"
+   "order!lib/neo4js"
+   "order!lib/backbone"
+   "neo4j/webadmin/modules/databrowser/StandaloneVisualizationRouter"
    "neo4j/webadmin/modules/moreinfo/MoreInfo"
    "neo4j/webadmin/modules/loading/GlobalLoadingIndicator"
    "neo4j/webadmin/modules/connectionmonitor/ConnectionMonitor"
    "neo4j/webadmin/ApplicationState"
-   "ribcage/security/HtmlEscaper"
-   "lib/jquery"
-   "lib/neo4js"
-   "lib/backbone"]
-  (StandaloneVisualizationRouter, MoreInfo, GlobalLoadingIndicator, ConnectionMonitor, ApplicationState, HtmlEscaper) ->
+   "ribcage/security/HtmlEscaper"]
+  (j,n,b,StandaloneVisualizationRouter, MoreInfo, GlobalLoadingIndicator, ConnectionMonitor, ApplicationState, HtmlEscaper) ->
 
     # Global html escaper, used by the pre-compiled templates.
     htmlEscaper = new HtmlEscaper()

@@ -28,7 +28,8 @@
 
 (function($){
 
-  /*        etc.js */  //
+  /*        etc.js */
+  //
   // etc.js
   //
   // misc utilities
@@ -38,8 +39,8 @@
       if (typeof(window)=='undefined' || !window.console) return
       var len = arguments.length
       var args = []
-      for (var i=0; i<len; i++) args.push("arguments["+i+"]")
-      eval("console.log("+args.join(",")+")")
+      for (var i=0; i<len; i++) args.push(arguments[i])
+      console.log.apply(this, args)
     }  
   
     var dirname = function(path){
@@ -188,7 +189,9 @@
       else return null
     }
     
-  /*     colors.js */  var Colors = (function(){
+  
+  /*     colors.js */
+  var Colors = (function(){
     var iscolor_re = /#[0-9a-f]{6}/i
     var hexrgb_re = /#(..)(..)(..)/
   
@@ -345,7 +348,8 @@
     return that
   })()
   
-  /* primitives.js */  //
+  /* primitives.js */
+  //
   //  primitives
   //
   //  Created by Christian Swinehart on 2010-12-08.
@@ -597,7 +601,8 @@
       // _Frame:Frame
     }
   }
-  /*   graphics.js */  //
+  /*   graphics.js */
+  //
   //  graphics.js
   //
   //  Created by Christian Swinehart on 2010-12-07.

@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 define( 
-  ['order!lib/jquery', 'order!lib/jquery.hotkeys', 'order!lib/backbone', 'order!lib/underscore'],
+  ['order!lib/jquery', 'order!lib/jquery.hotkeys', 'order!lib/backbone'],
   () ->
   
     class Router extends Backbone.Router

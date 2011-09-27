@@ -19,7 +19,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 require(
-  ["neo4j/webadmin/modules/dashboard/DashboardRouter"
+  ["order!lib/jquery"
+   "order!lib/neo4js"
+   "order!lib/backbone"
+   "neo4j/webadmin/modules/dashboard/DashboardRouter"
    "neo4j/webadmin/modules/databrowser/DataBrowserRouter"
    "neo4j/webadmin/modules/console/ConsoleRouter"
    "neo4j/webadmin/modules/serverinfo/ServerInfoRouter"
@@ -29,11 +32,8 @@ require(
    "neo4j/webadmin/modules/splash/SplashScreen"
    "neo4j/webadmin/modules/loading/GlobalLoadingIndicator"
    "neo4j/webadmin/modules/connectionmonitor/ConnectionMonitor"
-   "neo4j/webadmin/Bootstrapper"
-   "lib/jquery"
-   "lib/neo4js"
-   "lib/backbone"]
-  (DashboardRouter, DataBrowserRouter, ConsoleRouter, ServerInfoRouter, IndexManagerRouter, BaseUI, MoreInfo, SplashScreen, GlobalLoadingIndicator, ConnectionMonitor, Bootstrapper) ->
+   "neo4j/webadmin/Bootstrapper"]
+  (j,n,b, DashboardRouter, DataBrowserRouter, ConsoleRouter, ServerInfoRouter, IndexManagerRouter, BaseUI, MoreInfo, SplashScreen, GlobalLoadingIndicator, ConnectionMonitor, Bootstrapper) ->
 
     modules = [
         new BaseUI
