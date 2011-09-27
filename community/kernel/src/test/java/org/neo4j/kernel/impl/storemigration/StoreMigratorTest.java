@@ -59,8 +59,6 @@ public class StoreMigratorTest
         NeoStore neoStore = new NeoStore( config );
 
         new StoreMigrator( legacyStore ).migrateTo( neoStore );
-        new PropertyIndexMigration( legacyStore ).migratePropertyIndexes( neoStore );
-        new RelationshipTypeMigration( legacyStore ).migrateRelationshipTypes( neoStore );
 
         neoStore.close();
 
