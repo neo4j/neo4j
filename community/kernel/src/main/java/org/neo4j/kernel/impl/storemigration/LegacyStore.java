@@ -35,6 +35,7 @@ public class LegacyStore
     private LegacyDynamicStoreReader propertyIndexKeyStoreReader;
     private LegacyRelationshipStoreReader relationshipStoreReader;
     private LegacyRelationshipTypeStoreReader relationshipTypeStoreReader;
+    private LegacyDynamicStoreReader relationshipTypeNameStoreReader;
 
     public LegacyStore( String storageFileName ) throws IOException
     {
@@ -49,6 +50,7 @@ public class LegacyStore
         nodeStoreReader = new LegacyNodeStoreReader( getStorageFileName() + ".nodestore.db" );
         relationshipStoreReader = new LegacyRelationshipStoreReader( getStorageFileName() + ".relationshipstore.db" );
         relationshipTypeStoreReader = new LegacyRelationshipTypeStoreReader( getStorageFileName() + ".relationshiptypestore.db" );
+        relationshipTypeNameStoreReader = new LegacyDynamicStoreReader( getStorageFileName() + ".relationshiptypestore.db.names" );
         propertyIndexStoreReader = new LegacyPropertyIndexStoreReader( getStorageFileName() + ".propertystore.db.index" );
         propertyIndexKeyStoreReader = new LegacyDynamicStoreReader( getStorageFileName() + ".propertystore.db.index.keys" );
     }
@@ -86,6 +88,11 @@ public class LegacyStore
     public LegacyDynamicStoreReader getPropertyIndexKeyStoreReader()
     {
         return propertyIndexKeyStoreReader;
+    }
+
+    public LegacyDynamicStoreReader getRelationshipTypeNameStoreReader()
+    {
+        return relationshipTypeNameStoreReader;
     }
 
     public static long getUnsignedInt(ByteBuffer buf)
