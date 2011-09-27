@@ -44,7 +44,7 @@ public class ReadRecordsTest
         {
             nodeCount++;
         }
-        assertEquals( 1001, nodeCount );
+        assertEquals( 501, nodeCount );
     }
 
     @Test
@@ -58,7 +58,7 @@ public class ReadRecordsTest
         {
             relationshipCount++;
         }
-        assertEquals( 1000, relationshipCount );
+        assertEquals( 500, relationshipCount );
     }
 
     @Test

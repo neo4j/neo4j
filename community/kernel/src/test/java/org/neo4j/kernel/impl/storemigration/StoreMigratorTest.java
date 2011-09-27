@@ -29,6 +29,7 @@ import java.net.URL;
 import java.util.HashMap;
 
 import org.junit.Test;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -75,13 +76,17 @@ public class StoreMigratorTest
                 verifyProperties( node, longString, longArray );
             }
         }
-        assertEquals( 1001, nodeCount );
+        assertEquals( 501, nodeCount );
 
-        for ( int i = 0; i < 1000; i++ )
-        {
-            Relationship relationship = database.getRelationshipById( i );
+        Node currentNode = database.getReferenceNode();
+        int traversalCount = 0;
+        while (currentNode.hasRelationship( Direction.OUTGOING )) {
+            traversalCount++;
+            Relationship relationship = currentNode.getRelationships( Direction.OUTGOING ).iterator().next();
             verifyProperties( relationship, longString, longArray );
+            currentNode = relationship.getEndNode();
         }
+        assertEquals( 500, traversalCount );
 
         database.shutdown();
 
