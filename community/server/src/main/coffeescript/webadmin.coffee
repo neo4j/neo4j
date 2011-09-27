@@ -33,7 +33,7 @@ require(
    "neo4j/webadmin/modules/loading/GlobalLoadingIndicator"
    "neo4j/webadmin/modules/connectionmonitor/ConnectionMonitor"
    "neo4j/webadmin/Bootstrapper"]
-  (j,n,b, DashboardRouter, DataBrowserRouter, ConsoleRouter, ServerInfoRouter, IndexManagerRouter, BaseUI, MoreInfo, SplashScreen, GlobalLoadingIndicator, ConnectionMonitor, Bootstrapper) ->
+  (a,b,c,DashboardRouter, DataBrowserRouter, ConsoleRouter, ServerInfoRouter, IndexManagerRouter, BaseUI, MoreInfo, SplashScreen, GlobalLoadingIndicator, ConnectionMonitor, Bootstrapper) ->
 
     modules = [
         new BaseUI

@@ -879,7 +879,6 @@
   if (!_ && (typeof require !== 'undefined')) _ = require('underscore')._;
 
   // For Backbone's purposes, jQuery or Zepto owns the `$` variable.
-  console.log(root.jQuery);
   var $ = root.jQuery || root.Zepto;
 
   // Runs Backbone.js in *noConflict* mode, returning the `Backbone` variable

@@ -38,6 +38,8 @@ define(
         select = $(".method", @el)
         
         select.append("<option value='exists'>exists</option>")
+        select.append("<option value='!exists'>doesn't exist</option>")
+        
         for method, definition of PropertyFilter.compareMethods
           label = definition.label
           select.append("<option value='#{htmlEscape(method)}'>#{htmlEscape(label)}</option>")
@@ -76,10 +78,6 @@ define(
       
       @name : 'propertyFilter'
       
-      @methods : 
-        'exists' : (item, propertyName) -> true
-        'compare' : (item, propertyName) -> true
-      
       @compareMethods : 
         '==' : {label : "is",    cmp : (actual, expected) -> actual == expected}
         '!=' : {label : "isn't", cmp : (actual, expected) -> actual != expected}
@@ -107,6 +105,8 @@ define(
         node = item.neoNode
         if method == 'exists'
           return node.hasProperty @getPropertyName()
+        else if method == '!exists'
+          return not node.hasProperty @getPropertyName()
         else if PropertyFilter.compareMethods[method]?
           cmp = PropertyFilter.compareMethods[method].cmp
           val = node.getProperty(@getPropertyName())
