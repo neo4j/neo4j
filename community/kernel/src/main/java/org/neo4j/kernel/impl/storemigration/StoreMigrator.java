@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.storemigration;
 
 import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.getBestSuitedEncoding;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,6 +39,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
+import org.neo4j.kernel.impl.util.FileUtils;
 
 public class StoreMigrator
 {
@@ -54,6 +56,7 @@ public class StoreMigrator
         migrateRelationships( neoStore.getRelationshipStore(), new PropertyWriter( neoStore.getPropertyStore() ) );
         migratePropertyIndexes( neoStore.getPropertyStore().getIndexStore() );
         migrateRelationshipTypes( neoStore.getRelationshipTypeStore() );
+        migrateIdGenerators( neoStore );
     }
 
     private void migrateNodes( NodeStore nodeStore, PropertyWriter propertyWriter ) throws IOException
@@ -144,7 +147,7 @@ public class StoreMigrator
         relationshipTypeStore.updateRecord( record );
     }
 
-        public void migratePropertyIndexes( PropertyIndexStore propIndexStore ) throws IOException
+    public void migratePropertyIndexes( PropertyIndexStore propIndexStore ) throws IOException
     {
         LegacyPropertyIndexStoreReader indexStoreReader = legacyStore.getPropertyIndexStoreReader();
         LegacyDynamicStoreReader propertyIndexKeyStoreReader = legacyStore.getPropertyIndexKeyStoreReader();
@@ -160,7 +163,8 @@ public class StoreMigrator
     public void createPropertyIndex( PropertyIndexStore propIndexStore, String key, int id )
     {
         long nextIdFromStore = propIndexStore.nextId();
-        if (nextIdFromStore != id) {
+        if ( nextIdFromStore != id )
+        {
             throw new IllegalStateException( String.format( "Expected next id from store %d to match legacy id %d", nextIdFromStore, id ) );
         }
 
@@ -171,11 +175,21 @@ public class StoreMigrator
         int keyBlockId = propIndexStore.nextKeyBlockId();
         record.setKeyBlockId( keyBlockId );
         Collection<DynamicRecord> keyRecords =
-            propIndexStore.allocateKeyRecords( keyBlockId, getBestSuitedEncoding( key ) );
+                propIndexStore.allocateKeyRecords( keyBlockId, getBestSuitedEncoding( key ) );
         for ( DynamicRecord keyRecord : keyRecords )
         {
             record.addKeyRecord( keyRecord );
         }
         propIndexStore.updateRecord( record );
+    }
+
+    private void migrateIdGenerators( NeoStore neoStore ) throws IOException
+    {
+        String[] idGeneratorSuffixes = new String[]{".nodestore.db.id", ".relationshipstore.db.id"};
+        for ( String suffix : idGeneratorSuffixes )
+        {
+            FileUtils.copyFile( new File( legacyStore.getStorageFileName() + suffix ),
+                    new File( neoStore.getStorageFileName() + suffix ) );
+        }
     }
 }
