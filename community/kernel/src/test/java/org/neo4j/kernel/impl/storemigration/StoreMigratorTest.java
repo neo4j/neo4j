@@ -46,7 +46,6 @@ public class StoreMigratorTest
         URL legacyStoreResource = getClass().getResource( "oldformatstore/neostore" );
 
         LegacyStore legacyStore = new LegacyStore( legacyStoreResource.getFile() );
-        File legacyDir = new File( legacyStoreResource.getFile() ).getParentFile();
 
         HashMap config = MigrationTestUtils.defaultConfig();
         File outputDir = new File( "target/outputDatabase" );
@@ -62,7 +61,6 @@ public class StoreMigratorTest
 
         neoStore.close();
 
-        copyInFilesThatAreNotMigrated( legacyDir, outputDir );
         EmbeddedGraphDatabase database = new EmbeddedGraphDatabase( outputDir.getPath() );
 
         String longString = MigrationTestUtils.makeLongString();
@@ -102,30 +100,6 @@ public class StoreMigratorTest
         assertArrayEquals( longArray, (int[]) node.getProperty( PropertyType.ARRAY.name() ) );
         assertEquals( Short.MAX_VALUE, node.getProperty( PropertyType.SHORT.name() ) );
         assertEquals( "short", node.getProperty( PropertyType.SHORT_STRING.name() ) );
-    }
-
-    private void copyInFilesThatAreNotMigrated( File legacyDir, File outputDir )
-    {
-        for ( File legacyFile : legacyDir.listFiles() )
-        {
-            if ( legacyFile.isDirectory() )
-            {
-                copyInFilesThatAreNotMigrated( legacyFile, new File( outputDir, legacyFile.getName() ) );
-            } else
-            {
-                File outputFile = new File( outputDir, legacyFile.getName() );
-                if ( !outputFile.exists() )
-                {
-                    try
-                    {
-                        FileUtils.copyFile( legacyFile, outputFile );
-                    } catch ( IOException e )
-                    {
-                        throw new RuntimeException( e );
-                    }
-                }
-            }
-        }
     }
 
 }
