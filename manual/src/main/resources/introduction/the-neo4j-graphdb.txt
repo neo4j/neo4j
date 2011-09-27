@@ -159,6 +159,14 @@ For further details on float/double values, see http://java.sun.com/docs/books/j
 
 NOTE: This section is work in progress, stay tuned for the real content!
 
+The main components of a traversal are as follows:
+
+* _Expanders_ -- define what to traverse, typically in terms of relationships direction and type.
+* _Order_ -- for example depth-first or breadth-first.
+* _Uniqueness_ -- visit nodes (relationships, paths) only once.
+* _Evaluator_ -- decide what to return and whether to stop or continue traversal beoynd the current position. 
+* A _starting node_ where the traversal will begin.
+
 ["dot", "graphdb-traversal-description.svg", "meta", scaledwidth="100%"]
 ----
 "Traversal Description" [fillcolor="NODEHIGHLIGHT"]
