@@ -34,7 +34,7 @@ import java.util.List;
 public class PropertyRecord extends Abstract64BitRecord
 {
     private long nextProp = Record.NO_NEXT_PROPERTY.intValue();
-    private long prevProp = Record.NO_NEXT_PROPERTY.intValue();
+    private long prevProp = Record.NO_PREVIOUS_PROPERTY.intValue();
     private final List<PropertyBlock> blockRecords = new ArrayList<PropertyBlock>(
             4 );
     private long entityId = -1;
