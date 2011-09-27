@@ -33,6 +33,7 @@ public class LegacyStore
     private LegacyDynamicRecordFetcher dynamicRecordFetcher;
     private LegacyPropertyIndexStoreReader propertyIndexStoreReader;
     private LegacyDynamicStoreReader propertyIndexKeyStoreReader;
+    private LegacyRelationshipStoreReader relationshipStoreReader;
 
     public LegacyStore( String storageFileName ) throws IOException
     {
@@ -49,6 +50,7 @@ public class LegacyStore
 //        relStore = new RelationshipStore( getStorageFileName()
 //            + ".relationshipstore.db", getConfig() );
         nodeStoreReader = new LegacyNodeStoreReader( getStorageFileName() + ".nodestore.db" );
+        relationshipStoreReader = new LegacyRelationshipStoreReader( getStorageFileName() + ".relationshipstore.db" );
         propertyIndexStoreReader = new LegacyPropertyIndexStoreReader( getStorageFileName() + ".propertystore.db.index" );
         propertyIndexKeyStoreReader = new LegacyDynamicStoreReader( getStorageFileName() + ".propertystore.db.index.keys" );
     }
@@ -66,6 +68,11 @@ public class LegacyStore
     public LegacyNodeStoreReader getNodeStoreReader()
     {
         return nodeStoreReader;
+    }
+
+    public LegacyRelationshipStoreReader getRelationshipStoreReader()
+    {
+        return relationshipStoreReader;
     }
 
     public LegacyDynamicRecordFetcher getDynamicRecordFetcher()

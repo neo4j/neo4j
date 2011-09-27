@@ -46,10 +46,6 @@ public class PropertyMigrationTest
         LegacyStore legacyStore = new LegacyStore( legacyStoreResource.getFile() );
         File legacyDir = new File( legacyStoreResource.getFile() ).getParentFile();
 
-        LegacyPropertyStoreReader propertyStoreReader = legacyStore.getPropertyStoreReader();
-        LegacyDynamicRecordFetcher legacyDynamicRecordFetcher = legacyStore.getDynamicRecordFetcher();
-        LegacyNodeStoreReader legacyNodeStoreReader = legacyStore.getNodeStoreReader();
-
         HashMap config = MigrationTestUtils.defaultConfig();
         File outputDir = new File( "target/outputDatabase" );
         FileUtils.deleteRecursively( outputDir );
@@ -60,7 +56,8 @@ public class PropertyMigrationTest
         NeoStore.createStore( storeFileName, config );
         NeoStore neoStore = new NeoStore( config );
 
-        new PropertyMigration( legacyNodeStoreReader, propertyStoreReader, legacyDynamicRecordFetcher ).migrateNodeProperties( neoStore.getNodeStore(), new PropertyWriter( neoStore.getPropertyStore() ) );
+        new PropertyMigration( legacyStore ).migrateNodeProperties( neoStore.getNodeStore(), new PropertyWriter( neoStore.getPropertyStore() ) );
+        new PropertyMigration( legacyStore ).migrateRelationshipProperties( neoStore.getRelationshipStore(), new PropertyWriter( neoStore.getPropertyStore() ) );
         new PropertyIndexMigration( legacyStore ).migratePropertyIndexes( neoStore );
 
         neoStore.close();

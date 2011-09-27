@@ -27,36 +27,27 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.Record;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 
 public class PropertyMigration
 {
-    private LegacyPropertyStoreReader propertyStoreReader;
-    private LegacyDynamicRecordFetcher legacyDynamicRecordFetcher;
-    private LegacyNodeStoreReader legacyNodeStoreReader;
+    private LegacyStore legacyStore;
 
-    public PropertyMigration( LegacyNodeStoreReader legacyNodeStoreReader, LegacyPropertyStoreReader propertyStoreReader, LegacyDynamicRecordFetcher legacyDynamicRecordFetcher )
+    public PropertyMigration( LegacyStore legacyStore )
     {
-        this.propertyStoreReader = propertyStoreReader;
-        this.legacyDynamicRecordFetcher = legacyDynamicRecordFetcher;
-        this.legacyNodeStoreReader = legacyNodeStoreReader;
+        this.legacyStore = legacyStore;
     }
 
     public void migrateNodeProperties( NodeStore nodeStore, PropertyWriter propertyWriter ) throws IOException
     {
-        Iterable<NodeRecord> records = legacyNodeStoreReader.readNodeStore();
+        Iterable<NodeRecord> records = legacyStore.getNodeStoreReader().readNodeStore();
         for ( NodeRecord nodeRecord : records )
         {
-            if ( nodeRecord.getNextProp() != Record.NO_NEXT_RELATIONSHIP.intValue() )
+            long startOfPropertyChain = nodeRecord.getNextProp();
+            if ( startOfPropertyChain != Record.NO_NEXT_RELATIONSHIP.intValue() )
             {
-                LegacyPropertyRecord propertyRecord = propertyStoreReader.readPropertyRecord( nodeRecord.getNextProp() );
-                List<Pair<Integer, Object>> properties = new ArrayList<Pair<Integer, Object>>();
-                while ( propertyRecord.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
-                {
-                    properties.add( extractValue( propertyRecord ) );
-                    propertyRecord = propertyStoreReader.readPropertyRecord( propertyRecord.getNextProp() );
-                }
-                properties.add( extractValue( propertyRecord ) );
-                long propertyRecordId = propertyWriter.writeProperties( properties );
+                long propertyRecordId = migrateProperties( startOfPropertyChain, propertyWriter );
                 nodeRecord.setNextProp( propertyRecordId );
                 nodeStore.setHighId( nodeRecord.getId() );
                 nodeStore.updateRecord( nodeRecord );
@@ -64,10 +55,41 @@ public class PropertyMigration
         }
     }
 
+    public void migrateRelationshipProperties( RelationshipStore relationshipStore, PropertyWriter propertyWriter ) throws IOException
+    {
+        Iterable<RelationshipRecord> records = legacyStore.getRelationshipStoreReader().readRelationshipStore();
+        for ( RelationshipRecord relationshipRecord : records )
+        {
+            long startOfPropertyChain = relationshipRecord.getNextProp();
+            if ( startOfPropertyChain != Record.NO_NEXT_RELATIONSHIP.intValue() )
+            {
+                long propertyRecordId = migrateProperties( startOfPropertyChain, propertyWriter );
+                relationshipRecord.setNextProp( propertyRecordId );
+                relationshipStore.setHighId( relationshipRecord.getId() );
+                relationshipStore.updateRecord( relationshipRecord );
+            }
+
+        }
+    }
+
+    private long migrateProperties( long startOfPropertyChain, PropertyWriter propertyWriter ) throws IOException
+    {
+        LegacyPropertyRecord propertyRecord = legacyStore.getPropertyStoreReader().readPropertyRecord( startOfPropertyChain );
+        List<Pair<Integer, Object>> properties = new ArrayList<Pair<Integer, Object>>();
+        while ( propertyRecord.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
+        {
+            properties.add( extractValue( propertyRecord ) );
+            propertyRecord = legacyStore.getPropertyStoreReader().readPropertyRecord( propertyRecord.getNextProp() );
+        }
+        properties.add( extractValue( propertyRecord ) );
+        return propertyWriter.writeProperties( properties );
+    }
+
     private Pair<Integer, Object> extractValue( LegacyPropertyRecord propertyRecord )
     {
         int keyIndexId = propertyRecord.getKeyIndexId();
-        Object value = propertyRecord.getType().getValue( propertyRecord, legacyDynamicRecordFetcher );
+        Object value = propertyRecord.getType().getValue( propertyRecord, legacyStore.getDynamicRecordFetcher() );
         return Pair.of( keyIndexId, value );
     }
+
 }
