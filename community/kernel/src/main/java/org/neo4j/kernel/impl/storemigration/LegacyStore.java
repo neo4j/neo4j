@@ -34,6 +34,7 @@ public class LegacyStore
     private LegacyPropertyIndexStoreReader propertyIndexStoreReader;
     private LegacyDynamicStoreReader propertyIndexKeyStoreReader;
     private LegacyRelationshipStoreReader relationshipStoreReader;
+    private LegacyRelationshipTypeStoreReader relationshipTypeStoreReader;
 
     public LegacyStore( String storageFileName ) throws IOException
     {
@@ -43,14 +44,11 @@ public class LegacyStore
 
     protected void initStorage() throws IOException
     {
-//        relTypeStore = new RelationshipTypeStore( getStorageFileName()
-//            + ".relationshiptypestore.db", getConfig(), IdType.RELATIONSHIP_TYPE );
         propertyStoreReader = new LegacyPropertyStoreReader( getStorageFileName() + ".propertystore.db" );
         dynamicRecordFetcher = new LegacyDynamicRecordFetcher( getStorageFileName() + ".propertystore.db.strings", getStorageFileName() + ".propertystore.db.arrays" );
-//        relStore = new RelationshipStore( getStorageFileName()
-//            + ".relationshipstore.db", getConfig() );
         nodeStoreReader = new LegacyNodeStoreReader( getStorageFileName() + ".nodestore.db" );
         relationshipStoreReader = new LegacyRelationshipStoreReader( getStorageFileName() + ".relationshipstore.db" );
+        relationshipTypeStoreReader = new LegacyRelationshipTypeStoreReader( getStorageFileName() + ".relationshiptypestore.db" );
         propertyIndexStoreReader = new LegacyPropertyIndexStoreReader( getStorageFileName() + ".propertystore.db.index" );
         propertyIndexKeyStoreReader = new LegacyDynamicStoreReader( getStorageFileName() + ".propertystore.db.index.keys" );
     }
@@ -98,5 +96,10 @@ public class LegacyStore
     protected static long longFromIntAndMod( long base, long modifier )
     {
         return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base|modifier;
+    }
+
+    public LegacyRelationshipTypeStoreReader getRelationshipTypeStoreReader()
+    {
+        return relationshipTypeStoreReader;
     }
 }

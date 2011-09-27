@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 
 import java.io.IOException;
 import java.net.URL;
@@ -116,5 +117,20 @@ public class ReadRecordsTest
             recordCount++;
         }
         assertEquals( 11, recordCount );
+    }
+
+    @Test
+    public void shouldReadRelationshipTypeRecords() throws IOException
+    {
+        URL legacyStoreResource = getClass().getResource( "oldformatstore/neostore" );
+        LegacyStore legacyStore = new LegacyStore( legacyStoreResource.getFile() );
+
+        LegacyRelationshipTypeStoreReader relationshipTypeStoreReader = legacyStore.getRelationshipTypeStoreReader();
+        int recordCount = 0;
+        for ( RelationshipTypeRecord record : relationshipTypeStoreReader.readRelationshipTypes() )
+        {
+            recordCount++;
+        }
+        assertEquals( 1000, recordCount );
     }
 }
