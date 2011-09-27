@@ -321,7 +321,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         {
             if ( causeOfShutdown != null )
             {
-                throw causeOfShutdown;
+                throw new RuntimeException( "Graph database not started", causeOfShutdown );
             }
             else
             {
@@ -745,7 +745,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     @Override
     public synchronized void shutdown()
     {
-        shutdown( new IllegalStateException(), true );
+        shutdown( new IllegalStateException( "shutdown called" ), true );
     }
 
     @Override
