@@ -73,7 +73,6 @@ import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
@@ -101,7 +100,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     private volatile MasterServer masterServer;
     private ScheduledExecutorService updatePuller;
     private volatile long updateTime = 0;
-    private volatile RuntimeException causeOfShutdown;
+    private volatile Throwable causeOfShutdown;
     private final long startupTime;
 
     private final List<KernelEventHandler> kernelEventHandlers =
@@ -156,7 +155,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 if ( error == ErrorState.TX_MANAGER_NOT_OK )
                 {
                     msgLog.logMessage( "TxManager not ok, doing internal restart" );
-                    internalShutdown( false );
+                    internalShutdown( true );
                     newMaster( null, new Exception( "Tx manager not ok" ) );
                 }
             }
@@ -197,6 +196,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 msgLog.logMessage( "Problems copying store from master", e );
                 sleepWithoutInterruption( 1000, "" );
                 exception = e;
+                master = broker.getMasterReally();
             }
         }
         throw new RuntimeException( "Gave up trying to copy store from master", exception );
@@ -258,7 +258,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                     catch ( Exception e )
                     {
                         exception = e;
-                        broker.getMasterReally();
+                        master = broker.getMasterReally();
                         msgLog.logMessage( "Problems copying store from master", e );
                     }
                 }
@@ -497,7 +497,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             if ( this.localGraph == null || iAmCurrentlyMaster )
             {   // I am currently master, so restart as slave.
                 // This will result in clearing of free ids from .id files, see SlaveIdGenerator.
-                internalShutdown( false );
+                internalShutdown( true );
                 startAsSlave( storeId );
                 restarted = true;
             }
@@ -694,7 +694,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         return localGraph().registerTransactionEventHandler( handler );
     }
 
-    public synchronized void internalShutdown( boolean attemptWaitForTransactionsToFinish )
+    public synchronized void internalShutdown( boolean rotateLogs )
     {
         msgLog.logMessage( "Internal shutdown of HA db[" + machineId + "] reference=" + this + ", masterServer=" + masterServer, new Exception( "Internal shutdown" ), true );
         if ( this.updatePuller != null )
@@ -713,9 +713,19 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         }
         if ( this.localGraph != null )
         {
-            if ( attemptWaitForTransactionsToFinish )
+            if ( rotateLogs )
             {
-                ((AbstractTransactionManager)getConfig().getTxModule().getTxManager()).attemptWaitForTxCompletionAndBlockFutureTransactions( 7000 );
+                for ( XaDataSource dataSource : getConfig().getTxModule().getXaDataSourceManager().getAllRegisteredDataSources() )
+                {
+                    try
+                    {
+                        dataSource.rotateLogicalLog();
+                    }
+                    catch ( IOException e )
+                    {
+                        msgLog.logMessage( "Couldn't rotate logical log for " + dataSource.getName(), e );
+                    }
+                }
             }
             msgLog.logMessage( "Internal shutdown localGraph", true );
             this.localGraph.shutdown();
@@ -726,13 +736,8 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         StringLogger.close( storeDir );
     }
 
-    private synchronized void shutdown( RuntimeException cause, boolean shutdownBroker )
+    private synchronized void shutdown( Throwable cause, boolean shutdownBroker )
     {
-//        if ( causeOfShutdown != null )
-//        {
-//            return;
-//        }
-
         causeOfShutdown = cause;
         msgLog.logMessage( "Shutdown[" + machineId + "], " + this, true );
         if ( shutdownBroker && this.broker != null )
@@ -830,6 +835,10 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             broker.getMasterReally();
             msgLog.logMessage( "Communication exception in newMaster", ee );
         }
+        catch ( BranchedDataException ee )
+        {
+            throw ee;
+        }
         // BranchedDataException will escape from this method since the catch clause below
         // sees to that.
         catch ( Throwable t )
@@ -837,7 +846,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             broker.getMasterReally();
             msgLog.logMessage( "Reevaluation ended in unknown exception " + t
                     + " so shutting down", t, true );
-            shutdown( t instanceof RuntimeException ? (RuntimeException) t : new RuntimeException( t ), false );
+            shutdown( t, false );
             throw Exceptions.launderedException( t );
         }
     }
