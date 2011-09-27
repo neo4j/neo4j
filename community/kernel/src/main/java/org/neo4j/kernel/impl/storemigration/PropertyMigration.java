@@ -49,9 +49,9 @@ public class PropertyMigration
             {
                 long propertyRecordId = migrateProperties( startOfPropertyChain, propertyWriter );
                 nodeRecord.setNextProp( propertyRecordId );
-                nodeStore.setHighId( nodeRecord.getId() );
-                nodeStore.updateRecord( nodeRecord );
             }
+            nodeStore.setHighId( nodeRecord.getId() + 1 );
+            nodeStore.updateRecord( nodeRecord );
         }
     }
 
@@ -65,10 +65,9 @@ public class PropertyMigration
             {
                 long propertyRecordId = migrateProperties( startOfPropertyChain, propertyWriter );
                 relationshipRecord.setNextProp( propertyRecordId );
-                relationshipStore.setHighId( relationshipRecord.getId() );
-                relationshipStore.updateRecord( relationshipRecord );
             }
-
+            relationshipStore.setHighId( relationshipRecord.getId() + 1 );
+            relationshipStore.updateRecord( relationshipRecord );
         }
     }
 

@@ -80,9 +80,9 @@ public class PropertyMigrationTest
                 verifyProperties( node, longString, longArray );
             }
         }
-        assertEquals( 1000, nodeCount );
+        assertEquals( 1001, nodeCount );
 
-        for ( int i = 0; i < 999; i++ )
+        for ( int i = 0; i < 1000; i++ )
         {
             Relationship relationship = database.getRelationshipById( i );
             verifyProperties( relationship, longString, longArray );
