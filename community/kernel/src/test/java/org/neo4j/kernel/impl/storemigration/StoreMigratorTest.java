@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.util.FileUtils;
 
-public class PropertyMigrationTest
+public class StoreMigratorTest
 {
     @SuppressWarnings({"unchecked"})
     @Test
@@ -58,8 +58,7 @@ public class PropertyMigrationTest
         NeoStore.createStore( storeFileName, config );
         NeoStore neoStore = new NeoStore( config );
 
-        new PropertyMigration( legacyStore ).migrateNodeProperties( neoStore.getNodeStore(), new PropertyWriter( neoStore.getPropertyStore() ) );
-        new PropertyMigration( legacyStore ).migrateRelationshipProperties( neoStore.getRelationshipStore(), new PropertyWriter( neoStore.getPropertyStore() ) );
+        new StoreMigrator( legacyStore ).migrateTo( neoStore );
         new PropertyIndexMigration( legacyStore ).migratePropertyIndexes( neoStore );
         new RelationshipTypeMigration( legacyStore ).migrateRelationshipTypes( neoStore );
 

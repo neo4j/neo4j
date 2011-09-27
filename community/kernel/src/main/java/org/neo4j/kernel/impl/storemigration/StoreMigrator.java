@@ -24,22 +24,29 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 
-public class PropertyMigration
+public class StoreMigrator
 {
     private LegacyStore legacyStore;
 
-    public PropertyMigration( LegacyStore legacyStore )
+    public StoreMigrator( LegacyStore legacyStore )
     {
         this.legacyStore = legacyStore;
     }
 
-    public void migrateNodeProperties( NodeStore nodeStore, PropertyWriter propertyWriter ) throws IOException
+    public void migrateTo( NeoStore neoStore ) throws IOException
+    {
+        migrateNodeProperties(  neoStore.getNodeStore(), new PropertyWriter( neoStore.getPropertyStore() ) );
+        migrateRelationshipProperties(  neoStore.getRelationshipStore(), new PropertyWriter( neoStore.getPropertyStore() ) );
+    }
+
+    private void migrateNodeProperties( NodeStore nodeStore, PropertyWriter propertyWriter ) throws IOException
     {
         Iterable<NodeRecord> records = legacyStore.getNodeStoreReader().readNodeStore();
         for ( NodeRecord nodeRecord : records )
@@ -55,7 +62,7 @@ public class PropertyMigration
         }
     }
 
-    public void migrateRelationshipProperties( RelationshipStore relationshipStore, PropertyWriter propertyWriter ) throws IOException
+    private void migrateRelationshipProperties( RelationshipStore relationshipStore, PropertyWriter propertyWriter ) throws IOException
     {
         Iterable<RelationshipRecord> records = legacyStore.getRelationshipStoreReader().readRelationshipStore();
         for ( RelationshipRecord relationshipRecord : records )
