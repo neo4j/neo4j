@@ -82,7 +82,14 @@ public class DechunkingChannelBuffer implements ChannelBuffer
     private void readNextChunk()
     {
         ChannelBuffer readBuffer = readNext();
-        more = readBuffer.readByte() == ChunkingChannelBuffer.CONTINUATION_MORE;
+        byte header = readBuffer.readByte();
+        switch ( header )
+        {
+        case ChunkingChannelBuffer.CONTINUATION_LAST: more = false; break;
+        case ChunkingChannelBuffer.CONTINUATION_MORE: more = true; break;
+        default: throw new ComException( "Unexpected header " + header );
+        }
+        
         if ( !more && buffer == null )
         {
             // Optimization: this is the first chunk and it'll be the only chunk
