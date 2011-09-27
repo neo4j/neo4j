@@ -28,6 +28,7 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 import static org.neo4j.kernel.impl.storemigration.LegacyStore.*;
 
@@ -42,39 +43,73 @@ public class LegacyNodeStoreReader
 
     public Iterable<NodeRecord> readNodeStore() throws IOException
     {
-        FileChannel fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
+        final FileChannel fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
         int recordLength = 9;
         int endHeaderSize = UTF8.encode( FROM_VERSION ).length;
-        long recordCount = (fileChannel.size() - endHeaderSize) / recordLength;
+        final long maxId = (fileChannel.size() - endHeaderSize) / recordLength;
 
-        ByteBuffer buffer = ByteBuffer.allocateDirect( recordLength );
+        final ByteBuffer buffer = ByteBuffer.allocateDirect( recordLength );
 
-        ArrayList<NodeRecord> records = new ArrayList<NodeRecord>();
-        for ( long id = 0; id < recordCount; id++ )
+        return new Iterable<NodeRecord>()
         {
-            buffer.position( 0 );
-            fileChannel.read( buffer );
-            buffer.flip();
-            long inUseByte = buffer.get();
-
-            boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
-            if ( inUse )
+            @Override
+            public Iterator<NodeRecord> iterator()
             {
-                long nextRel = getUnsignedInt( buffer );
-                long nextProp = getUnsignedInt( buffer );
+                return new Iterator<NodeRecord>()
+                {
+                    long id = 0;
 
-                long relModifier = (inUseByte & 0xEL) << 31;
-                long propModifier = (inUseByte & 0xF0L) << 28;
+                    @Override
+                    public boolean hasNext()
+                    {
+                        return id < maxId;
+                    }
 
-                NodeRecord nodeRecord = new NodeRecord( id );
-                nodeRecord.setInUse( inUse );
-                nodeRecord.setNextRel( longFromIntAndMod( nextRel, relModifier ) );
-                nodeRecord.setNextProp( longFromIntAndMod( nextProp, propModifier ) );
+                    @Override
+                    public NodeRecord next()
+                    {
+                        NodeRecord nodeRecord = null;
+                        do
+                        {
+                            buffer.position( 0 );
+                            try
+                            {
+                                fileChannel.read( buffer );
+                            } catch ( IOException e )
+                            {
+                                throw new RuntimeException( e );
+                            }
+                            buffer.flip();
+                            long inUseByte = buffer.get();
 
-                records.add( nodeRecord );
+                            boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
+                            if ( inUse )
+                            {
+                                long nextRel = getUnsignedInt( buffer );
+                                long nextProp = getUnsignedInt( buffer );
+
+                                long relModifier = (inUseByte & 0xEL) << 31;
+                                long propModifier = (inUseByte & 0xF0L) << 28;
+
+                                nodeRecord = new NodeRecord( id );
+                                nodeRecord.setInUse( inUse );
+                                nodeRecord.setNextRel( longFromIntAndMod( nextRel, relModifier ) );
+                                nodeRecord.setNextProp( longFromIntAndMod( nextProp, propModifier ) );
+                            }
+                            id++;
+                        } while ( nodeRecord == null && id < maxId );
+
+                        return nodeRecord;
+                    }
+
+                    @Override
+                    public void remove()
+                    {
+                        throw new UnsupportedOperationException();
+                    }
+                };
             }
-        }
-        return records;
+        };
     }
 
 }

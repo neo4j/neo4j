@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.text.MessageFormat;
+import java.util.Map;
 
 import static org.neo4j.kernel.impl.storemigration.LegacyStore.*;
 

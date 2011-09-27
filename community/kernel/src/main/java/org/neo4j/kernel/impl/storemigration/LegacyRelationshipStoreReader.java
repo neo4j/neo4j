@@ -28,8 +28,10 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 import org.neo4j.helpers.UTF8;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 
@@ -44,70 +46,104 @@ public class LegacyRelationshipStoreReader
 
     public Iterable<RelationshipRecord> readRelationshipStore() throws IOException
     {
-        FileChannel fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
+        final FileChannel fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
         int recordLength = 33;
         int endHeaderSize = UTF8.encode( FROM_VERSION ).length;
-        long recordCount = (fileChannel.size() - endHeaderSize) / recordLength;
+        final long maxId = (fileChannel.size() - endHeaderSize) / recordLength;
 
-        ByteBuffer buffer = ByteBuffer.allocateDirect( recordLength );
+        final ByteBuffer buffer = ByteBuffer.allocateDirect( recordLength );
 
-        ArrayList<RelationshipRecord> records = new ArrayList<RelationshipRecord>();
-        for ( long id = 0; id < recordCount; id++ )
+        return new Iterable<RelationshipRecord>()
         {
-            buffer.position( 0 );
-            fileChannel.read( buffer );
-            buffer.flip();
-            long inUseByte = buffer.get();
-
-            boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
-
-            if ( inUse )
+            @Override
+            public Iterator<RelationshipRecord> iterator()
             {
-                long firstNode = getUnsignedInt( buffer );
-                long firstNodeMod = (inUseByte & 0xEL) << 31;
+                return new Iterator<RelationshipRecord>()
+                {
+                    long id = 0;
 
-                long secondNode = getUnsignedInt( buffer );
+                    @Override
+                    public boolean hasNext()
+                    {
+                        return id < maxId;
+                    }
 
-                // [ xxx,    ][    ,    ][    ,    ][    ,    ] second node high order bits,     0x70000000
-                // [    ,xxx ][    ,    ][    ,    ][    ,    ] first prev rel high order bits,  0xE000000
-                // [    ,   x][xx  ,    ][    ,    ][    ,    ] first next rel high order bits,  0x1C00000
-                // [    ,    ][  xx,x   ][    ,    ][    ,    ] second prev rel high order bits, 0x380000
-                // [    ,    ][    , xxx][    ,    ][    ,    ] second next rel high order bits, 0x70000
-                // [    ,    ][    ,    ][xxxx,xxxx][xxxx,xxxx] type
-                long typeInt = buffer.getInt();
-                long secondNodeMod = (typeInt & 0x70000000L) << 4;
-                int type = (int) (typeInt & 0xFFFF);
+                    @Override
+                    public RelationshipRecord next()
+                    {
+                        RelationshipRecord record = null;
+                        do
+                        {
+                            buffer.position( 0 );
+                            try
+                            {
+                                fileChannel.read( buffer );
+                            } catch ( IOException e )
+                            {
+                                throw new RuntimeException( e );
+                            }
+                            buffer.flip();
+                            long inUseByte = buffer.get();
 
-                RelationshipRecord record = new RelationshipRecord( id,
-                        longFromIntAndMod( firstNode, firstNodeMod ),
-                        longFromIntAndMod( secondNode, secondNodeMod ), type );
-                record.setInUse( inUse );
+                            boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
 
-                long firstPrevRel = getUnsignedInt( buffer );
-                long firstPrevRelMod = (typeInt & 0xE000000L) << 7;
-                record.setFirstPrevRel( longFromIntAndMod( firstPrevRel, firstPrevRelMod ) );
+                            if ( inUse )
+                            {
+                                long firstNode = getUnsignedInt( buffer );
+                                long firstNodeMod = (inUseByte & 0xEL) << 31;
 
-                long firstNextRel = getUnsignedInt( buffer );
-                long firstNextRelMod = (typeInt & 0x1C00000L) << 10;
-                record.setFirstNextRel( longFromIntAndMod( firstNextRel, firstNextRelMod ) );
+                                long secondNode = getUnsignedInt( buffer );
 
-                long secondPrevRel = getUnsignedInt( buffer );
-                long secondPrevRelMod = (typeInt & 0x380000L) << 13;
-                record.setSecondPrevRel( longFromIntAndMod( secondPrevRel, secondPrevRelMod ) );
+                                // [ xxx,    ][    ,    ][    ,    ][    ,    ] second node high order bits,     0x70000000
+                                // [    ,xxx ][    ,    ][    ,    ][    ,    ] first prev rel high order bits,  0xE000000
+                                // [    ,   x][xx  ,    ][    ,    ][    ,    ] first next rel high order bits,  0x1C00000
+                                // [    ,    ][  xx,x   ][    ,    ][    ,    ] second prev rel high order bits, 0x380000
+                                // [    ,    ][    , xxx][    ,    ][    ,    ] second next rel high order bits, 0x70000
+                                // [    ,    ][    ,    ][xxxx,xxxx][xxxx,xxxx] type
+                                long typeInt = buffer.getInt();
+                                long secondNodeMod = (typeInt & 0x70000000L) << 4;
+                                int type = (int) (typeInt & 0xFFFF);
 
-                long secondNextRel = getUnsignedInt( buffer );
-                long secondNextRelMod = (typeInt & 0x70000L) << 16;
-                record.setSecondNextRel( longFromIntAndMod( secondNextRel, secondNextRelMod ) );
+                                record = new RelationshipRecord( id,
+                                        longFromIntAndMod( firstNode, firstNodeMod ),
+                                        longFromIntAndMod( secondNode, secondNodeMod ), type );
+                                record.setInUse( inUse );
 
-                long nextProp = getUnsignedInt( buffer );
-                long nextPropMod = (inUseByte & 0xF0L) << 28;
+                                long firstPrevRel = getUnsignedInt( buffer );
+                                long firstPrevRelMod = (typeInt & 0xE000000L) << 7;
+                                record.setFirstPrevRel( longFromIntAndMod( firstPrevRel, firstPrevRelMod ) );
 
-                record.setNextProp( longFromIntAndMod( nextProp, nextPropMod ) );
+                                long firstNextRel = getUnsignedInt( buffer );
+                                long firstNextRelMod = (typeInt & 0x1C00000L) << 10;
+                                record.setFirstNextRel( longFromIntAndMod( firstNextRel, firstNextRelMod ) );
 
-                records.add( record );
+                                long secondPrevRel = getUnsignedInt( buffer );
+                                long secondPrevRelMod = (typeInt & 0x380000L) << 13;
+                                record.setSecondPrevRel( longFromIntAndMod( secondPrevRel, secondPrevRelMod ) );
+
+                                long secondNextRel = getUnsignedInt( buffer );
+                                long secondNextRelMod = (typeInt & 0x70000L) << 16;
+                                record.setSecondNextRel( longFromIntAndMod( secondNextRel, secondNextRelMod ) );
+
+                                long nextProp = getUnsignedInt( buffer );
+                                long nextPropMod = (inUseByte & 0xF0L) << 28;
+
+                                record.setNextProp( longFromIntAndMod( nextProp, nextPropMod ) );
+                            }
+                            id++;
+                        } while ( record == null && id < maxId );
+
+                        return record;
+                    }
+
+                    @Override
+                    public void remove()
+                    {
+                        throw new UnsupportedOperationException();
+                    }
+                };
             }
-        }
-        return records;
+        };
     }
 
 }
