@@ -757,7 +757,7 @@ public abstract class Command extends XaCommand
                 assert block.getSize() > 0 : record + " seems kinda broken";
                 writePropertyBlock( buffer, block );
             }
-            buffer.putInt( record.getDeletedRecords().size() );
+            buffer.putInt( record.getDeletedRecords().size() ); // 4
             for ( int i = 0; i < record.getDeletedRecords().size(); i++ )
             {
                 DynamicRecord dynRec = record.getDeletedRecords().get( i );
@@ -835,7 +835,7 @@ public abstract class Command extends XaCommand
                 return null;
             }
             buffer.flip();
-            int deletedRecords = buffer.getInt();
+            int deletedRecords = buffer.getInt(); // 4
             assert deletedRecords >= 0;
             while ( deletedRecords-- > 0 )
             {
