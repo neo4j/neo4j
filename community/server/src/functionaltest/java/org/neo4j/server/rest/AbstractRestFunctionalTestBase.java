@@ -106,7 +106,17 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
     }
     protected String getNodeIndexUri( String indexName, String key, String value )
     {
-        return getDataUri() + "index/node/" + indexName + "/" + key + "/" + value;
+        return postNodeIndexUri( indexName ) + "/" + key + "/" + value;
+    }
+    
+    protected String postNodeIndexUri( String indexName )
+    {
+        return getDataUri() + "index/node/" + indexName;
+    }
+    
+    protected String postRelationshipIndexUri( String indexName )
+    {
+        return getDataUri() + "index/relationship/" + indexName;
     }
 
     protected String getRelationshipIndexUri( String indexName, String key, String value )

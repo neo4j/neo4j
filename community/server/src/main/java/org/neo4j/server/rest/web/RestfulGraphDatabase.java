@@ -703,7 +703,7 @@ public class RestfulGraphDatabase
     @Consumes( MediaType.APPLICATION_JSON )
     public Response addToNodeIndex( @PathParam( "indexName" ) String indexName, String postBody )
     {
-
+        
         try
         {
             Map<String, Object> entityBody = input.readMap( postBody );
