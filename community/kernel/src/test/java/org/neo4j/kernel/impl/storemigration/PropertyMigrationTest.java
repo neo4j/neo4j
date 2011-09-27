@@ -97,8 +97,8 @@ public class PropertyMigrationTest
         EmbeddedGraphDatabase database = new EmbeddedGraphDatabase( directory.getPath() );
         int nodeCount = 0;
 
-        String longString = makeLongString();
-        int[] longArray = makeLongArray();
+        String longString = MigrationTestUtils.makeLongString();
+        int[] longArray = MigrationTestUtils.makeLongArray();
 
         for ( Node node : database.getAllNodes() )
         {
@@ -119,24 +119,6 @@ public class PropertyMigrationTest
         }
         assertEquals( 1000, nodeCount );
         database.shutdown();
-    }
-
-    public static int[] makeLongArray()
-    {
-        int[] longArray = new int[100];
-        for (int i = 0; i < 100; i++) {
-            longArray[i] = i;
-        }
-        return longArray;
-    }
-
-    private static String makeLongString()
-    {
-        StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < 100; i++) {
-            builder.append("characters");
-        }
-        return builder.toString();
     }
 
 }

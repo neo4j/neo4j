@@ -35,4 +35,22 @@ public class MigrationTestUtils
         config.put( FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
         return config;
     }
+
+    public static int[] makeLongArray()
+    {
+        int[] longArray = new int[100];
+        for (int i = 0; i < 100; i++) {
+            longArray[i] = i;
+        }
+        return longArray;
+    }
+
+    static String makeLongString()
+    {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < 100; i++) {
+            builder.append("characters");
+        }
+        return builder.toString();
+    }
 }

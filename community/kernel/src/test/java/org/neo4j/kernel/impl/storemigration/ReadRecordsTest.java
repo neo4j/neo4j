@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.storemigration;
 import org.junit.Test;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 
 import java.io.IOException;
 import java.net.URL;
@@ -43,6 +44,20 @@ public class ReadRecordsTest
             nodeCount++;
         }
         assertEquals( 1001, nodeCount );
+    }
+
+    @Test
+    public void shouldReadRelationshipRecords() throws IOException
+    {
+        URL nodeStoreFile = getClass().getResource( "oldformatstore/neostore.relationshipstore.db" );
+
+        Iterable<RelationshipRecord> records = new LegacyRelationshipStoreReader( nodeStoreFile.getFile() ).readRelationshipStore();
+        int relationshipCount = 0;
+        for ( RelationshipRecord record : records )
+        {
+            relationshipCount++;
+        }
+        assertEquals( 1000, relationshipCount );
     }
 
     @Test
@@ -85,7 +100,7 @@ public class ReadRecordsTest
         int keyIndexId = propertyRecord2.getKeyIndexId();
         assertEquals( 8, keyIndexId );
         Object value = propertyRecord2.getType().getValue( propertyRecord2, new LegacyDynamicRecordFetcher( stringStoreFile.getFile(), arrayStoreFile.getFile() ) );
-        assertArrayEquals( PropertyMigrationTest.makeLongArray(), (int[]) value );
+        assertArrayEquals( MigrationTestUtils.makeLongArray(), (int[]) value );
     }
 
     @Test
