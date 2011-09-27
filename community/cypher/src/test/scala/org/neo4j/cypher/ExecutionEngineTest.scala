@@ -349,6 +349,15 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     assertEquals(List(Map("node.name" -> null)), result.toList)
   }
 
+  @Test def testOnlyIfPropertyExists() {
+    createNode(Map("prop"->"A"))
+    createNode()
+
+    val result = parseAndExecute("start a=(1,2) where a.prop? = 'A' return a")
+
+    assert( 2 === result.toSeq.length )
+  }
+
   @Test def shouldHandleComparisonBetweenNodeProperties() {
     //start n = node(1,4) match (n) --> (x) where n.animal = x.animal return n,x
     val n1 = createNode(Map("animal" -> "monkey"))
@@ -721,7 +730,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val r1 = relate("A" -> "KNOWS" -> "B")
     val r2 = relate("B" -> "KNOWS" -> "C")
 
-    val result = parseAndExecute("start n=(1) match p=n-[:KNOWS^1..2]->x return p")
+    val result = parseAndExecute("start n=(1) match p=n-[:KNOWS*1..2]->x return p")
 
     assertEquals(List(
       PathImpl(node("A"), r1, node("B")),
@@ -734,7 +743,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val r1 = relate("A" -> "KNOWS" -> "B")
     val r2 = relate("B" -> "KNOWS" -> "C")
 
-    val result = parseAndExecute("start n=(1) match p=n-[:KNOWS^..2]->x return p")
+    val result = parseAndExecute("start n=(1) match p=n-[:KNOWS*..2]->x return p")
 
     assertEquals(List(
       PathImpl(node("A"), r1, node("B")),
@@ -747,7 +756,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val r1 = relate("A" -> "KNOWS" -> "B")
     val r2 = relate("B" -> "KNOWS" -> "C")
 
-    val result = parseAndExecute("start n=(1) match p=n-[:KNOWS^1..]->x return p")
+    val result = parseAndExecute("start n=(1) match p=n-[:KNOWS*..]->x return p")
 
     assertEquals(List(
       PathImpl(node("A"), r1, node("B")),
@@ -781,6 +790,19 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     assert(result.startNode() === node("A"))
     assert(result.endNode() === node("B"))
     assert(result.lastRelationship() === r1)
+  }
+
+  @Test def shouldReturnShortestPathUnboundLength() {
+    createNodes("A", "B")
+    val r1 = relate("A" -> "KNOWS" -> "B")
+
+    val query = Query.
+      start(NodeById("a", 1), NodeById("b", 2)).
+      namedPaths(NamedPath("p", ShortestPath("  UNNAMED1", "a", "b", None, Direction.BOTH, None, false))).
+      returns(ValueReturnItem(EntityValue("p")))
+
+    //Checking that we don't get an exception
+    execute(query).toList
   }
 
   @Test def shouldBeAbleToTakeParamsInDifferentTypes() {

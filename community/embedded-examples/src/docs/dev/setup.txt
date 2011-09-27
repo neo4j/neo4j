@@ -3,6 +3,7 @@ Include Neo4j in your project
 =============================
 
 After selecting the appropriate <<editions,edition>> for your platform, embed Neo4j in your Java application by including the Neo4j library jars in your build.
+The following sections will show how to do this by either altering the build path directly or by using dependency management.
 
 == Add Neo4j to the build path ==
 
@@ -52,7 +53,7 @@ The examples included here use the top-level artifact approach.
 </project>
 --------------------------------------------
 
-_Where +$\{neo4j-version}+ is the intended version and the +artifactId+ is found in <<editions>>._
+_Where +$\{neo4j-version}+ is the desired version and the +artifactId+ is found in <<editions>>._
 
 === Ivy ===
 
@@ -85,7 +86,25 @@ With that in place you can add Neo4j to the mix by having something along these 
 </dependencies>
 ..
 ----
-_Where +$\{neo4j-version}+ is the intended version and the +name+ is found in <<editions>>._
+_Where +$\{neo4j-version}+ is the desired version and the +name+ is found in <<editions>>._
+
+=== Gradle ===
+
+The example below shows an example gradle build script for including the Neo4j libraries.
+
+[source,groovy]
+----
+def neo4jVersion = "[set-version-here]"
+apply plugin: 'java'
+repositories {
+   mavenCentral()
+}
+dependencies {
+   compile "org.neo4j:neo4j:${neo4jVersion}"
+}
+----
+_Where +neo4jVersion+ is the desired version and the +name+ ("+neo4j+" in the example) is found in <<editions>>._
+
 
 [[tutorials-java-embedded-setup-startstop]]
 == Starting and stopping ==

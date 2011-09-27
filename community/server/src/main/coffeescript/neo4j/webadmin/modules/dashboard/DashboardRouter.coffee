@@ -38,6 +38,7 @@ define(
         @appState = appState
 
       dashboard : =>
+        @saveLocation()
         @appState.set( mainView : @getDashboardView() )
 
       getDashboardView : =>

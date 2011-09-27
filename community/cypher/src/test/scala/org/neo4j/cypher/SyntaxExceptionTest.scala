@@ -106,7 +106,7 @@ class SyntaxExceptionTest extends JUnitSuite {
 
   @Test def shortestPathCanNotHaveMinimumDepth() {
     expectError(
-      "start a=(0), b=(1) match p=shortestPath(a-[^2..3]->b) return p",
+      "start a=(0), b=(1) match p=shortestPath(a-[*2..3]->b) return p",
       "Shortest path does not support a minimal length")
   }
 

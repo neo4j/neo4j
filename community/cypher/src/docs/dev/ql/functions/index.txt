@@ -4,6 +4,8 @@ Functions in Cypher
 
 Here is a list of the functions in Cypher, seperated into three different sections: Predicates, Scalar functions and Aggregated functions
 
+include::graph.txt[]
+
 == Predicates ==
 Predicates are boolean functions that return true or false for a given set of input.
 They are most commonly used to filter out subgraphs in the +WHERE+ part of a query.

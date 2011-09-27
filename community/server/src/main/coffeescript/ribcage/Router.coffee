@@ -22,7 +22,7 @@ define(
   ['order!lib/jquery', 'order!lib/jquery.hotkeys', 'order!lib/backbone'],
   () ->
   
-    class Router extends Backbone.Controller
+    class Router extends Backbone.Router
 
       # Override in subclasses to add url routes
       routes : {}
@@ -34,4 +34,7 @@ define(
         super()
         for definition, method of @shortcuts
           $(document).bind("keyup", definition, this[method])
+          
+      saveLocation : () -> 
+        @navigate(location.hash, false)
 )

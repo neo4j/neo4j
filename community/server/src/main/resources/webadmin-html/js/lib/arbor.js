@@ -29,17 +29,1867 @@
 
 (function($){
 
-  /*        etc.js */  var trace=function(msg){if(typeof(window)=="undefined"||!window.console){return}var len=arguments.length;var args=[];for(var i=0;i<len;i++){args.push("arguments["+i+"]")}eval("console.log("+args.join(",")+")")};var dirname=function(a){var b=a.replace(/^\/?(.*?)\/?$/,"$1").split("/");b.pop();return"/"+b.join("/")};var basename=function(b){var c=b.replace(/^\/?(.*?)\/?$/,"$1").split("/");var a=c.pop();if(a==""){return null}else{return a}};var _ordinalize_re=/(\d)(?=(\d\d\d)+(?!\d))/g;var ordinalize=function(a){var b=""+a;if(a<11000){b=(""+a).replace(_ordinalize_re,"$1,")}else{if(a<1000000){b=Math.floor(a/1000)+"k"}else{if(a<1000000000){b=(""+Math.floor(a/1000)).replace(_ordinalize_re,"$1,")+"m"}}}return b};var nano=function(a,b){return a.replace(/\{([\w\-\.]*)}/g,function(f,c){var d=c.split("."),e=b[d.shift()];$.each(d,function(){if(e.hasOwnProperty(this)){e=e[this]}else{e=f}});return e})};var objcopy=function(a){if(a===undefined){return undefined}if(a===null){return null}if(a.parentNode){return a}switch(typeof a){case"string":return a.substring(0);break;case"number":return a+0;break;case"boolean":return a===true;break}var b=($.isArray(a))?[]:{};$.each(a,function(d,c){b[d]=objcopy(c)});return b};var objmerge=function(d,b){d=d||{};b=b||{};var c=objcopy(d);for(var a in b){c[a]=b[a]}return c};var objcmp=function(e,c,d){if(!e||!c){return e===c}if(typeof e!=typeof c){return false}if(typeof e!="object"){return e===c}else{if($.isArray(e)){if(!($.isArray(c))){return false}if(e.length!=c.length){return false}}else{var h=[];for(var f in e){if(e.hasOwnProperty(f)){h.push(f)}}var g=[];for(var f in c){if(c.hasOwnProperty(f)){g.push(f)}}if(!d){h.sort();g.sort()}if(h.join(",")!==g.join(",")){return false}}var i=true;$.each(e,function(a){var b=objcmp(e[a],c[a]);i=i&&b;if(!i){return false}});return i}};var objkeys=function(b){var a=[];$.each(b,function(d,c){if(b.hasOwnProperty(d)){a.push(d)}});return a};var objcontains=function(c){if(!c||typeof c!="object"){return false}for(var b=1,a=arguments.length;b<a;b++){if(c.hasOwnProperty(arguments[b])){return true}}return false};var uniq=function(b){var a=b.length;var d={};for(var c=0;c<a;c++){d[b[c]]=true}return objkeys(d)};var arbor_path=function(){var a=$("script").map(function(b){var c=$(this).attr("src");if(!c){return}if(c.match(/arbor[^\/\.]*.js|dev.js/)){return c.match(/.*\//)||"/"}});if(a.length>0){return a[0]}else{return null}};
-  /*     kernel.js */  var Kernel=function(b){var a=(window.Worker!==undefined);var i=null;var c=null;var f=[];f.last=new Date();var k=null;var d=null;var e=null;var h=null;var g=false;var j={system:b,tween:null,nodes:{},init:function(){if(typeof(Tween)!="undefined"){c=Tween()}else{if(typeof(arbor.Tween)!="undefined"){c=arbor.Tween()}else{c={busy:function(){return false},tick:function(){return true},to:function(){trace("Please include arbor-tween.js to enable tweens");c.to=function(){};return}}}}j.tween=c;var l=b.parameters();if(a){trace("using web workers");k=setInterval(j.screenUpdate,l.timeout);i=new Worker(arbor_path()+"arbor.js");i.onmessage=j.workerMsg;i.onerror=function(m){trace("physics:",m)};i.postMessage({type:"physics",physics:objmerge(l,{timeout:Math.ceil(l.timeout)})})}else{trace("couldn't use web workers, be careful...");i=Physics(l.dt,l.stiffness,l.repulsion,l.friction,j.system._updateGeometry);j.start()}return j},graphChanged:function(l){if(a){i.postMessage({type:"changes",changes:l})}else{i._update(l)}j.start()},particleModified:function(m,l){if(a){i.postMessage({type:"modify",id:m,mods:l})}else{i.modifyNode(m,l)}j.start()},physicsModified:function(l){if(!isNaN(l.timeout)){if(a){clearInterval(k);k=setInterval(j.screenUpdate,l.timeout)}else{clearInterval(e);e=null}}if(a){i.postMessage({type:"sys",param:l})}else{i.modifyPhysics(l)}j.start()},workerMsg:function(m){var l=m.data.type;if(l=="geometry"){j.workerUpdate(m.data)}else{trace("physics:",m.data)}},_lastPositions:null,workerUpdate:function(l){j._lastPositions=l;j._lastBounds=l.bounds},_lastFrametime:new Date().valueOf(),_lastBounds:null,_currentRenderer:null,screenUpdate:function(){var m=new Date().valueOf();var l=false;if(j._lastPositions!==null){j.system._updateGeometry(j._lastPositions);j._lastPositions=null;l=true}if(c&&c.busy()){l=true}if(j.system._updateBounds(j._lastBounds)){l=true}if(l){var n=j.system.renderer;if(n!==undefined){if(n!==d){n.init(j.system);d=n}if(c){c.tick()}n.redraw();var o=f.last;f.last=new Date();f.push(f.last-o);if(f.length>50){f.shift()}}}},physicsUpdate:function(){if(c){c.tick()}i.tick();var m=j.system._updateBounds();if(c&&c.busy()){m=true}var n=j.system.renderer;var l=new Date();var n=j.system.renderer;if(n!==undefined){if(n!==d){n.init(j.system);d=n}n.redraw({timestamp:l})}var p=f.last;f.last=l;f.push(f.last-p);if(f.length>50){f.shift()}var o=i.systemEnergy();if((o.mean+o.max)/2<0.05){if(h===null){h=new Date().valueOf()}if(new Date().valueOf()-h>1000){clearInterval(e);e=null}else{}}else{h=null}},fps:function(m){if(m!==undefined){var p=1000/Math.max(1,targetFps);j.physicsModified({timeout:p})}var q=0;for(var o=0,n=f.length;o<n;o++){q+=f[o]}var l=q/Math.max(1,f.length);if(!isNaN(l)){return Math.round(1000/l)}else{return 0}},start:function(l){if(e!==null){return}if(g&&!l){return}g=false;if(a){i.postMessage({type:"start"})}else{h=null;e=setInterval(j.physicsUpdate,j.system.parameters().timeout)}},stop:function(){g=true;if(a){i.postMessage({type:"stop"})}else{if(e!==null){clearInterval(e);e=null}}}};return j.init()};
-  /*      atoms.js */  var Node=function(a){this._id=_nextNodeId++;this.data=a||{};this._mass=(a.mass!==undefined)?a.mass:1;this._fixed=(a.fixed===true)?true:false;this._p=new Point((typeof(a.x)=="number")?a.x:null,(typeof(a.y)=="number")?a.y:null);delete this.data.x;delete this.data.y;delete this.data.mass;delete this.data.fixed};var _nextNodeId=1;var Edge=function(b,c,a){this._id=_nextEdgeId--;this.source=b;this.target=c;this.length=(a.length!==undefined)?a.length:1;this.data=(a!==undefined)?a:{};delete this.data.length};var _nextEdgeId=-1;var Particle=function(a,b){this.p=a;this.m=b;this.v=new Point(0,0);this.f=new Point(0,0)};Particle.prototype.applyForce=function(a){this.f=this.f.add(a.divide(this.m))};var Spring=function(c,b,d,a){this.point1=c;this.point2=b;this.length=d;this.k=a};Spring.prototype.distanceToParticle=function(a){var c=that.point2.p.subtract(that.point1.p).normalize().normal();var b=a.p.subtract(that.point1.p);return Math.abs(b.x*c.x+b.y*c.y)};var Point=function(a,b){if(a&&a.hasOwnProperty("y")){b=a.y;a=a.x}this.x=a;this.y=b};Point.random=function(a){a=(a!==undefined)?a:5;return new Point(2*a*(Math.random()-0.5),2*a*(Math.random()-0.5))};Point.prototype={exploded:function(){return(isNaN(this.x)||isNaN(this.y))},add:function(a){return new Point(this.x+a.x,this.y+a.y)},subtract:function(a){return new Point(this.x-a.x,this.y-a.y)},multiply:function(a){return new Point(this.x*a,this.y*a)},divide:function(a){return new Point(this.x/a,this.y/a)},magnitude:function(){return Math.sqrt(this.x*this.x+this.y*this.y)},normal:function(){return new Point(-this.y,this.x)},normalize:function(){return this.divide(this.magnitude())}};
-  /*     system.js */  var ParticleSystem=function(d,p,e,f,t,l,q){var j=[];var h=null;var k=0;var u=null;var m=0.04;var i=[20,20,20,20];var n=null;var o=null;if(typeof p=="object"){var s=p;e=s.friction;d=s.repulsion;t=s.fps;l=s.dt;p=s.stiffness;f=s.gravity;q=s.precision}e=isNaN(e)?0.5:e;d=isNaN(d)?1000:d;t=isNaN(t)?55:t;p=isNaN(p)?600:p;l=isNaN(l)?0.02:l;q=isNaN(q)?0.6:q;f=(f===true);var r=(t!==undefined)?1000/t:1000/50;var b={repulsion:d,stiffness:p,friction:e,dt:l,gravity:f,precision:q,timeout:r};var a;var c={renderer:null,tween:null,nodes:{},edges:{},adjacency:{},names:{},kernel:null};var g={parameters:function(v){if(v!==undefined){if(!isNaN(v.precision)){v.precision=Math.max(0,Math.min(1,v.precision))}$.each(b,function(x,w){if(v[x]!==undefined){b[x]=v[x]}});c.kernel.physicsModified(v)}return b},fps:function(v){if(v===undefined){return c.kernel.fps()}else{g.parameters({timeout:1000/(v||50)})}},start:function(){c.kernel.start()},stop:function(){c.kernel.stop()},addNode:function(v,x){x=x||{};var y=c.names[v];if(y){y.data=x;return y}else{if(v!=undefined){var w=new Node(x);w.name=v;c.names[v]=w;c.nodes[w._id]=w;j.push({t:"addNode",id:w._id,m:w.mass});g._notify();return w}}},pruneNode:function(w){var v=g.getNode(w);if(typeof(c.nodes[v._id])!=="undefined"){delete c.nodes[v._id];delete c.names[v.name]}$.each(c.edges,function(y,x){if(x.source._id===v._id||x.target._id===v._id){g.pruneEdge(x)}});j.push({t:"dropNode",id:v._id});g._notify()},getNode:function(v){if(v._id!==undefined){return v}else{if(typeof v=="string"||typeof v=="number"){return c.names[v]}}},eachNode:function(v){$.each(c.nodes,function(y,x){if(x._p.x==null||x._p.y==null){return}var w=(u!==null)?g.toScreen(x._p):x._p;v.call(g,x,w)})},addEdge:function(z,A,y){z=g.getNode(z)||g.addNode(z);A=g.getNode(A)||g.addNode(A);y=y||{};var x=new Edge(z,A,y);var B=z._id;var C=A._id;c.adjacency[B]=c.adjacency[B]||{};c.adjacency[B][C]=c.adjacency[B][C]||[];var w=(c.adjacency[B][C].length>0);if(w){$.extend(c.adjacency[B][C].data,x.data);return}else{c.edges[x._id]=x;c.adjacency[B][C].push(x);var v=(x.length!==undefined)?x.length:1;j.push({t:"addSpring",id:x._id,fm:B,to:C,l:v});g._notify()}return x},pruneEdge:function(A){j.push({t:"dropSpring",id:A._id});delete c.edges[A._id];for(var v in c.adjacency){for(var B in c.adjacency[v]){var w=c.adjacency[v][B];for(var z=w.length-1;z>=0;z--){if(c.adjacency[v][B][z]._id===A._id){c.adjacency[v][B].splice(z,1)}}}}g._notify()},getEdges:function(w,v){w=g.getNode(w);v=g.getNode(v);if(!w||!v){return[]}if(typeof(c.adjacency[w._id])!=="undefined"&&typeof(c.adjacency[w._id][v._id])!=="undefined"){return c.adjacency[w._id][v._id]}return[]},getEdgesFrom:function(v){v=g.getNode(v);if(!v){return[]}if(typeof(c.adjacency[v._id])!=="undefined"){var w=[];$.each(c.adjacency[v._id],function(y,x){w=w.concat(x)});return w}return[]},getEdgesTo:function(v){v=g.getNode(v);if(!v){return[]}var w=[];$.each(c.edges,function(y,x){if(x.target==v){w.push(x)}});return w},eachEdge:function(v){$.each(c.edges,function(z,x){var y=c.nodes[x.source._id]._p;var w=c.nodes[x.target._id]._p;if(y.x==null||w.x==null){return}y=(u!==null)?g.toScreen(y):y;w=(u!==null)?g.toScreen(w):w;if(y&&w){v.call(g,x,y,w)}})},prune:function(w){var v={dropped:{nodes:[],edges:[]}};if(w===undefined){$.each(c.nodes,function(y,x){v.dropped.nodes.push(x);g.pruneNode(x)})}else{g.eachNode(function(y){var x=w.call(g,y,{from:g.getEdgesFrom(y),to:g.getEdgesTo(y)});if(x){v.dropped.nodes.push(y);g.pruneNode(y)}})}return v},graft:function(w){var v={added:{nodes:[],edges:[]}};if(w.nodes){$.each(w.nodes,function(y,x){var z=g.getNode(y);if(z){z.data=x}else{v.added.nodes.push(g.addNode(y,x))}c.kernel.start()})}if(w.edges){$.each(w.edges,function(z,x){var y=g.getNode(z);if(!y){v.added.nodes.push(g.addNode(z,{}))}$.each(x,function(D,A){var C=g.getNode(D);if(!C){v.added.nodes.push(g.addNode(D,{}))}var B=g.getEdges(z,D);if(B.length>0){B[0].data=A}else{v.added.edges.push(g.addEdge(z,D,A))}})})}return v},merge:function(w){var v={added:{nodes:[],edges:[]},dropped:{nodes:[],edges:[]}};$.each(c.edges,function(A,z){if((w.edges[z.source.name]===undefined||w.edges[z.source.name][z.target.name]===undefined)){g.pruneEdge(z);v.dropped.edges.push(z)}});var y=g.prune(function(A,z){if(w.nodes[A.name]===undefined){v.dropped.nodes.push(A);return true}});var x=g.graft(w);v.added.nodes=v.added.nodes.concat(x.added.nodes);v.added.edges=v.added.edges.concat(x.added.edges);v.dropped.nodes=v.dropped.nodes.concat(y.dropped.nodes);v.dropped.edges=v.dropped.edges.concat(y.dropped.edges);return v},tweenNode:function(y,v,x){var w=g.getNode(y);if(w){c.tween.to(w,v,x)}},tweenEdge:function(w,v,z,y){if(y===undefined){g._tweenEdge(w,v,z)}else{var x=g.getEdges(w,v);$.each(x,function(A,B){g._tweenEdge(B,z,y)})}},_tweenEdge:function(w,v,x){if(w&&w._id!==undefined){c.tween.to(w,v,x)}},_updateGeometry:function(y){if(y!=undefined){var v=(y.epoch<k);a=y.energy;var z=y.geometry;if(z!==undefined){for(var x=0,w=z.length/3;x<w;x++){var A=z[3*x];if(v&&c.nodes[A]==undefined){continue}c.nodes[A]._p.x=z[3*x+1];c.nodes[A]._p.y=z[3*x+2]}}}},screen:function(v){if(v.size!==undefined){g.screenSize(v.size.width,v.size.height)}if(!isNaN(v.step)){g.screenStep(v.step)}if(v.padding!==undefined){g.screenPadding(v.padding)}},screenSize:function(v,w){u={width:v,height:w};g._updateBounds()},screenPadding:function(y,z,v,w){if($.isArray(y)){trbl=y}else{trbl=[y,z,v,w]}var A=trbl[0];var x=trbl[1];var B=trbl[2];if(x===undefined){trbl=[A,A,A,A]}else{if(B==undefined){trbl=[A,x,A,x]}}i=trbl},screenStep:function(v){m=v},toScreen:function(x){if(!n||!u){return}var w=i||[0,0,0,0];var v=n.bottomright.subtract(n.topleft);var z=w[3]+x.subtract(n.topleft).divide(v.x).x*(u.width-(w[1]+w[3]));var y=w[0]+x.subtract(n.topleft).divide(v.y).y*(u.height-(w[0]+w[2]));return arbor.Point(z,y)},fromScreen:function(z){if(!n||!u){return}var y=i||[0,0,0,0];var x=n.bottomright.subtract(n.topleft);var w=(z.x-y[3])/(u.width-(y[1]+y[3]))*x.x+n.topleft.x;var v=(z.y-y[0])/(u.height-(y[0]+y[2]))*x.y+n.topleft.y;return arbor.Point(w,v)},_updateBounds:function(w){if(u===null){return}if(w){o=w}else{o=g.bounds()}var z=new Point(o.bottomright.x,o.bottomright.y);var y=new Point(o.topleft.x,o.topleft.y);var B=z.subtract(y);var v=y.add(B.divide(2));var x=4;var D=new Point(Math.max(B.x,x),Math.max(B.y,x));o.topleft=v.subtract(D.divide(2));o.bottomright=v.add(D.divide(2));if(!n){if($.isEmptyObject(c.nodes)){return false}n=o;return true}var C=m;_newBounds={bottomright:n.bottomright.add(o.bottomright.subtract(n.bottomright).multiply(C)),topleft:n.topleft.add(o.topleft.subtract(n.topleft).multiply(C))};var A=new Point(n.topleft.subtract(_newBounds.topleft).magnitude(),n.bottomright.subtract(_newBounds.bottomright).magnitude());if(A.x*u.width>1||A.y*u.height>1){n=_newBounds;return true}else{return false}},energy:function(){return a},bounds:function(){var w=null;var v=null;$.each(c.nodes,function(z,y){if(!w){w=new Point(y._p);v=new Point(y._p);return}var x=y._p;if(x.x===null||x.y===null){return}if(x.x>w.x){w.x=x.x}if(x.y>w.y){w.y=x.y}if(x.x<v.x){v.x=x.x}if(x.y<v.y){v.y=x.y}});if(w&&v){return{bottomright:w,topleft:v}}else{return{topleft:new Point(-1,-1),bottomright:new Point(1,1)}}},nearest:function(x){if(u!==null){x=g.fromScreen(x)}var w={node:null,point:null,distance:null};var v=g;$.each(c.nodes,function(B,y){var z=y._p;if(z.x===null||z.y===null){return}var A=z.subtract(x).magnitude();if(w.distance===null||A<w.distance){w={node:y,point:z,distance:A};if(u!==null){w.screenPoint=g.toScreen(z)}}});if(w.node){if(u!==null){w.distance=g.toScreen(w.node.p).subtract(g.toScreen(x)).magnitude()}return w}else{return null}},_notify:function(){if(h===null){k++}else{clearTimeout(h)}h=setTimeout(g._synchronize,20)},_synchronize:function(){if(j.length>0){c.kernel.graphChanged(j);j=[];h=null}},};c.kernel=Kernel(g);c.tween=c.kernel.tween||null;Node.prototype.__defineGetter__("p",function(){var w=this;var v={};v.__defineGetter__("x",function(){return w._p.x});v.__defineSetter__("x",function(x){c.kernel.particleModified(w._id,{x:x})});v.__defineGetter__("y",function(){return w._p.y});v.__defineSetter__("y",function(x){c.kernel.particleModified(w._id,{y:x})});v.__proto__=Point.prototype;return v});Node.prototype.__defineSetter__("p",function(v){this._p.x=v.x;this._p.y=v.y;c.kernel.particleModified(this._id,{x:v.x,y:v.y})});Node.prototype.__defineGetter__("mass",function(){return this._mass});Node.prototype.__defineSetter__("mass",function(v){this._mass=v;c.kernel.particleModified(this._id,{m:v})});Node.prototype.__defineSetter__("tempMass",function(v){c.kernel.particleModified(this._id,{_m:v})});Node.prototype.__defineGetter__("fixed",function(){return this._fixed});Node.prototype.__defineSetter__("fixed",function(v){this._fixed=v;c.kernel.particleModified(this._id,{f:v?1:0})});return g};
-  /* barnes-hut.js */  var BarnesHutTree=function(){var b=[];var a=0;var e=null;var d=0.5;var c={init:function(g,h,f){d=f;a=0;e=c._newBranch();e.origin=g;e.size=h.subtract(g)},insert:function(j){var f=e;var g=[j];while(g.length){var h=g.shift();var m=h._m||h.m;var p=c._whichQuad(h,f);if(f[p]===undefined){f[p]=h;f.mass+=m;if(f.p){f.p=f.p.add(h.p.multiply(m))}else{f.p=h.p.multiply(m)}}else{if("origin" in f[p]){f.mass+=(m);if(f.p){f.p=f.p.add(h.p.multiply(m))}else{f.p=h.p.multiply(m)}f=f[p];g.unshift(h)}else{var l=f.size.divide(2);var n=new Point(f.origin);if(p[0]=="s"){n.y+=l.y}if(p[1]=="e"){n.x+=l.x}var o=f[p];f[p]=c._newBranch();f[p].origin=n;f[p].size=l;f.mass=m;f.p=h.p.multiply(m);f=f[p];if(o.p.x===h.p.x&&o.p.y===h.p.y){var k=l.x*0.08;var i=l.y*0.08;o.p.x=Math.min(n.x+l.x,Math.max(n.x,o.p.x-k/2+Math.random()*k));o.p.y=Math.min(n.y+l.y,Math.max(n.y,o.p.y-i/2+Math.random()*i))}g.push(o);g.unshift(h)}}}},applyForces:function(m,g){var f=[e];while(f.length){node=f.shift();if(node===undefined){continue}if(m===node){continue}if("f" in node){var k=m.p.subtract(node.p);var l=Math.max(1,k.magnitude());var i=((k.magnitude()>0)?k:Point.random(1)).normalize();m.applyForce(i.multiply(g*(node._m||node.m)).divide(l*l))}else{var j=m.p.subtract(node.p.divide(node.mass)).magnitude();var h=Math.sqrt(node.size.x*node.size.y);if(h/j>d){f.push(node.ne);f.push(node.nw);f.push(node.se);f.push(node.sw)}else{var k=m.p.subtract(node.p.divide(node.mass));var l=Math.max(1,k.magnitude());var i=((k.magnitude()>0)?k:Point.random(1)).normalize();m.applyForce(i.multiply(g*(node.mass)).divide(l*l))}}}},_whichQuad:function(i,f){if(i.p.exploded()){return null}var h=i.p.subtract(f.origin);var g=f.size.divide(2);if(h.y<g.y){if(h.x<g.x){return"nw"}else{return"ne"}}else{if(h.x<g.x){return"sw"}else{return"se"}}},_newBranch:function(){if(b[a]){var f=b[a];f.ne=f.nw=f.se=f.sw=undefined;f.mass=0;delete f.p}else{f={origin:null,size:null,nw:undefined,ne:undefined,sw:undefined,se:undefined,mass:0};b[a]=f}a++;return f}};return c};
-  /*    physics.js */  var Physics=function(a,m,n,e,h){var f=BarnesHutTree();var c={particles:{},springs:{}};var l={particles:{}};var o=[];var k=[];var d=0;var b={sum:0,max:0,mean:0};var g={topleft:new Point(-1,-1),bottomright:new Point(1,1)};var j=1000;var i={stiffness:(m!==undefined)?m:1000,repulsion:(n!==undefined)?n:600,friction:(e!==undefined)?e:0.3,gravity:false,dt:(a!==undefined)?a:0.02,theta:0.4,init:function(){return i},modifyPhysics:function(p){$.each(["stiffness","repulsion","friction","gravity","dt","precision"],function(r,s){if(p[s]!==undefined){if(s=="precision"){i.theta=1-p[s];return}i[s]=p[s];if(s=="stiffness"){var q=p[s];$.each(c.springs,function(u,t){t.k=q})}}})},addNode:function(u){var t=u.id;var q=u.m;var p=g.bottomright.x-g.topleft.x;var s=g.bottomright.y-g.topleft.y;var r=new Point(g.topleft.x+p*Math.random(),g.topleft.y+s*Math.random());c.particles[t]=new Particle(r,q);c.particles[t].connections=0;l.particles[t]=c.particles[t];o.push(c.particles[t])},dropNode:function(s){var r=s.id;var q=c.particles[r];var p=$.inArray(q,o);if(p>-1){o.splice(p,1)}delete c.particles[r];delete l.particles[r]},modifyNode:function(r,p){if(r in c.particles){var q=c.particles[r];if("x" in p){q.p.x=p.x}if("y" in p){q.p.y=p.y}if("m" in p){q.m=p.m}if("f" in p){q.fixed=(p.f===1)}if("_m" in p){if(q._m===undefined){q._m=q.m}q.m=p._m}}},addSpring:function(t){var s=t.id;var p=t.l;var r=c.particles[t.fm];var q=c.particles[t.to];if(r!==undefined&&q!==undefined){c.springs[s]=new Spring(r,q,p,i.stiffness);k.push(c.springs[s]);r.connections++;q.connections++;delete l.particles[t.fm];delete l.particles[t.to]}},dropSpring:function(s){var r=s.id;var q=c.springs[r];q.point1.connections--;q.point2.connections--;var p=$.inArray(q,k);if(p>-1){k.splice(p,1)}delete c.springs[r]},_update:function(p){d++;$.each(p,function(q,r){if(r.t in i){i[r.t](r)}});return d},tick:function(){i.tendParticles();i.eulerIntegrator(i.dt);i.tock()},tock:function(){var p=[];$.each(c.particles,function(r,q){p.push(r);p.push(q.p.x);p.push(q.p.y)});if(h){h({geometry:p,epoch:d,energy:b,bounds:g})}},tendParticles:function(){$.each(c.particles,function(q,p){if(p._m!==undefined){if(Math.abs(p.m-p._m)<1){p.m=p._m;delete p._m}else{p.m*=0.98}}p.v.x=p.v.y=0})},eulerIntegrator:function(p){if(i.repulsion>0){if(i.theta>0){i.applyBarnesHutRepulsion()}else{i.applyBruteForceRepulsion()}}if(i.stiffness>0){i.applySprings()}i.applyCenterDrift();if(i.gravity){i.applyCenterGravity()}i.updateVelocity(p);i.updatePosition(p)},applyBruteForceRepulsion:function(){$.each(c.particles,function(q,p){$.each(c.particles,function(s,r){if(p!==r){var u=p.p.subtract(r.p);var v=Math.max(1,u.magnitude());var t=((u.magnitude()>0)?u:Point.random(1)).normalize();p.applyForce(t.multiply(i.repulsion*(r._m||r.m)*0.5).divide(v*v*0.5));r.applyForce(t.multiply(i.repulsion*(p._m||p.m)*0.5).divide(v*v*-0.5))}})})},applyBarnesHutRepulsion:function(){if(!g.topleft||!g.bottomright){return}var q=new Point(g.bottomright);var p=new Point(g.topleft);f.init(p,q,i.theta);$.each(c.particles,function(s,r){f.insert(r)});$.each(c.particles,function(s,r){f.applyForces(r,i.repulsion)})},applySprings:function(){$.each(c.springs,function(t,p){var s=p.point2.p.subtract(p.point1.p);var q=p.length-s.magnitude();var r=((s.magnitude()>0)?s:Point.random(1)).normalize();p.point1.applyForce(r.multiply(p.k*q*-0.5));p.point2.applyForce(r.multiply(p.k*q*0.5))})},applyCenterDrift:function(){var q=0;var r=new Point(0,0);$.each(c.particles,function(t,s){r.add(s.p);q++});if(q==0){return}var p=r.divide(-q);$.each(c.particles,function(t,s){s.applyForce(p)})},applyCenterGravity:function(){$.each(c.particles,function(r,p){var q=p.p.multiply(-1);p.applyForce(q.multiply(i.repulsion/100))})},updateVelocity:function(p){$.each(c.particles,function(t,q){if(q.fixed){q.v=new Point(0,0);q.f=new Point(0,0);return}var s=q.v.magnitude();q.v=q.v.add(q.f.multiply(p)).multiply(1-i.friction);q.f.x=q.f.y=0;var r=q.v.magnitude();if(r>j){q.v=q.v.divide(r*r)}})},updatePosition:function(q){var r=0,p=0,u=0;var t=null;var s=null;$.each(c.particles,function(w,v){v.p=v.p.add(v.v.multiply(q));var x=v.v.magnitude();var z=x*x;r+=z;p=Math.max(z,p);u++;if(!t){t=new Point(v.p.x,v.p.y);s=new Point(v.p.x,v.p.y);return}var y=v.p;if(y.x===null||y.y===null){return}if(y.x>t.x){t.x=y.x}if(y.y>t.y){t.y=y.y}if(y.x<s.x){s.x=y.x}if(y.y<s.y){s.y=y.y}});b={sum:r,max:p,mean:r/u,n:u};g={topleft:s||new Point(-1,-1),bottomright:t||new Point(1,1)}},systemEnergy:function(p){return b}};return i.init()};var _nearParticle=function(b,c){var c=c||0;var a=b.x;var f=b.y;var e=c*2;return new Point(a-c+Math.random()*e,f-c+Math.random()*e)};
+  /*        etc.js */
+  //
+  // etc.js
+  //
+  // misc utilities
+  //
+  
+    var trace = function(msg){
+      if (typeof(window)=='undefined' || !window.console) return
+      var len = arguments.length
+      var args = []
+      for (var i=0; i<len; i++) args.push(arguments[i])
+      console.log.apply(this, args)
+    }  
+  
+    var dirname = function(path){
+      var pth = path.replace(/^\/?(.*?)\/?$/,"$1").split('/')
+      pth.pop()
+      return "/"+pth.join("/")
+    }
+    var basename = function(path){
+      // var pth = path.replace(/^\//,'').split('/')
+      var pth = path.replace(/^\/?(.*?)\/?$/,"$1").split('/')
+      
+      var base = pth.pop()
+      if (base=="") return null
+      else return base
+    }
+  
+    var _ordinalize_re = /(\d)(?=(\d\d\d)+(?!\d))/g
+    var ordinalize = function(num){
+      var norm = ""+num
+      if (num < 11000){
+        norm = (""+num).replace(_ordinalize_re, "$1,")
+      } else if (num < 1000000){
+        norm = Math.floor(num/1000)+"k"
+      } else if (num < 1000000000){
+        norm = (""+Math.floor(num/1000)).replace(_ordinalize_re, "$1,")+"m"
+      }
+      return norm
+    }
+  
+    /* Nano Templates (Tomasz Mazur, Jacek Becela) */
+    var nano = function(template, data){
+      return template.replace(/\{([\w\-\.]*)}/g, function(str, key){
+        var keys = key.split("."), value = data[keys.shift()]
+        $.each(keys, function(){ 
+          if (value.hasOwnProperty(this)) value = value[this] 
+          else value = str
+        })
+        return value
+      })
+    }
+    
+    var objcopy = function(old){
+      if (old===undefined) return undefined
+      if (old===null) return null
+      
+      if (old.parentNode) return old
+      switch (typeof old){
+        case "string":
+        return old.substring(0)
+        break
+        
+        case "number":
+        return old + 0
+        break
+        
+        case "boolean":
+        return old === true
+        break
+      }
+  
+      var newObj = ($.isArray(old)) ? [] : {}
+      $.each(old, function(ik, v){
+        newObj[ik] = objcopy(v)
+      })
+      return newObj
+    }
+    
+    var objmerge = function(dst, src){
+      dst = dst || {}
+      src = src || {}
+      var merge = objcopy(dst)
+      for (var k in src) merge[k] = src[k]
+      return merge
+    }
+    
+    var objcmp = function(a, b, strict_ordering){
+      if (!a || !b) return a===b // handle null+undef
+      if (typeof a != typeof b) return false // handle type mismatch
+      if (typeof a != 'object'){
+        // an atomic type
+        return a===b
+      }else{
+        // a collection type
+        
+        // first compare buckets
+        if ($.isArray(a)){
+          if (!($.isArray(b))) return false
+          if (a.length != b.length) return false
+        }else{
+          var a_keys = []; for (var k in a) if (a.hasOwnProperty(k)) a_keys.push(k)
+          var b_keys = []; for (var k in b) if (b.hasOwnProperty(k)) b_keys.push(k)
+          if (!strict_ordering){
+            a_keys.sort()
+            b_keys.sort()
+          }
+          if (a_keys.join(',') !== b_keys.join(',')) return false
+        }
+        
+        // then compare contents
+        var same = true
+        $.each(a, function(ik){
+          var diff = objcmp(a[ik], b[ik])
+          same = same && diff
+          if (!same) return false
+        })
+        return same
+      }
+    }
+  
+    var objkeys = function(obj){
+      var keys = []
+      $.each(obj, function(k,v){ if (obj.hasOwnProperty(k)) keys.push(k) })
+      return keys
+    }
+    
+    var objcontains = function(obj){
+      if (!obj || typeof obj!='object') return false
+      for (var i=1, j=arguments.length; i<j; i++){
+        if (obj.hasOwnProperty(arguments[i])) return true
+      }
+      return false
+    }
+  
+    var uniq = function(arr){
+      // keep in mind that this is only sensible with a list of strings
+      // anything else, objkey type coercion will turn it into one anyway
+      var len = arr.length
+      var set = {}
+      for (var i=0; i<len; i++){
+        set[arr[i]] = true
+      }
+  
+      return objkeys(set) 
+    }
+  
+    var arbor_path = function(){
+      var candidates = $("script").map(function(elt){
+        var src = $(this).attr('src')
+        if (!src) return
+        if (src.match(/arbor[^\/\.]*.js|dev.js/)){
+          return src.match(/.*\//) || "/"
+        }
+      })
+  
+      if (candidates.length>0) return candidates[0] 
+      else return null
+    }
+    
+  
+  /*     kernel.js */
+  //
+  // kernel.js
+  //
+  // run-loop manager for physics and tween updates
+  //
+      
+    var Kernel = function(pSystem){
+      // in chrome, web workers aren't available to pages with file:// urls
+      var chrome_local_file = window.location.protocol == "file:" &&
+                              navigator.userAgent.toLowerCase().indexOf('chrome') > -1;
+      var USE_WORKER = (window.Worker !== undefined && !chrome_local_file)    
+  
+      var _physics = null
+      var _tween = null
+      var _fpsWindow = [] // for keeping track of the actual frame rate
+      _fpsWindow.last = new Date()
+      var _screenInterval = null
+      var _attached = null
+  
+      var _tickInterval = null
+      var _lastTick = null
+      var _paused = false
+      
+      var that = {
+        system:pSystem,
+        tween:null,
+        nodes:{},
+  
+        init:function(){ 
+          if (typeof(Tween)!='undefined') _tween = Tween()
+          else if (typeof(arbor.Tween)!='undefined') _tween = arbor.Tween()
+          else _tween = {busy:function(){return false},
+                         tick:function(){return true},
+                         to:function(){ trace('Please include arbor-tween.js to enable tweens'); _tween.to=function(){}; return} }
+          that.tween = _tween
+          var params = pSystem.parameters()
+                  
+          if(USE_WORKER){
+            trace('using web workers')
+            _screenInterval = setInterval(that.screenUpdate, params.timeout)
+  
+            _physics = new Worker(arbor_path()+"arbor.js")
+            _physics.onmessage = that.workerMsg
+            _physics.onerror = function(e){ trace('physics:',e) }
+            _physics.postMessage({type:"physics", 
+                                  physics:objmerge(params, 
+                                                  {timeout:Math.ceil(params.timeout)}) })
+          }else{
+            trace("couldn't use web workers, be careful...")
+            _physics = Physics(params.dt, params.stiffness, params.repulsion, params.friction, that.system._updateGeometry)
+            that.start()
+          }
+  
+          return that
+        },
+  
+        //
+        // updates from the ParticleSystem
+        graphChanged:function(changes){
+          // a node or edge was added or deleted
+          if (USE_WORKER) _physics.postMessage({type:"changes","changes":changes})
+          else _physics._update(changes)
+          that.start() // <- is this just to kick things off in the non-worker mode? (yes)
+        },
+  
+        particleModified:function(id, mods){
+          // a particle's position or mass is changed
+          // trace('mod',objkeys(mods))
+          if (USE_WORKER) _physics.postMessage({type:"modify", id:id, mods:mods})
+          else _physics.modifyNode(id, mods)
+          that.start() // <- is this just to kick things off in the non-worker mode? (yes)
+        },
+  
+        physicsModified:function(param){
+  
+          // intercept changes to the framerate in case we're using a worker and
+          // managing our own draw timer
+          if (!isNaN(param.timeout)){
+            if (USE_WORKER){
+              clearInterval(_screenInterval)
+              _screenInterval = setInterval(that.screenUpdate, param.timeout)
+            }else{
+              // clear the old interval then let the call to .start set the new one
+              clearInterval(_tickInterval)
+              _tickInterval=null
+            }
+          }
+  
+          // a change to the physics parameters 
+          if (USE_WORKER) _physics.postMessage({type:'sys',param:param})
+          else _physics.modifyPhysics(param)
+          that.start() // <- is this just to kick things off in the non-worker mode? (yes)
+        },
+        
+        workerMsg:function(e){
+          var type = e.data.type
+          if (type=='geometry'){
+            that.workerUpdate(e.data)
+          }else{
+            trace('physics:',e.data)
+          }
+        },
+        _lastPositions:null,
+        workerUpdate:function(data){
+          that._lastPositions = data
+          that._lastBounds = data.bounds
+        },
+        
+  
+        // 
+        // the main render loop when running in web worker mode
+        _lastFrametime:new Date().valueOf(),
+        _lastBounds:null,
+        _currentRenderer:null,
+        screenUpdate:function(){        
+          var now = new Date().valueOf()
+          
+          var shouldRedraw = false
+          if (that._lastPositions!==null){
+            that.system._updateGeometry(that._lastPositions)
+            that._lastPositions = null
+            shouldRedraw = true
+          }
+          
+          if (_tween && _tween.busy()) shouldRedraw = true
+  
+          if (that.system._updateBounds(that._lastBounds)) shouldRedraw=true
+          
+  
+          if (shouldRedraw){
+            var render = that.system.renderer
+            if (render!==undefined){
+              if (render !== _attached){
+                 render.init(that.system)
+                 _attached = render
+              }          
+              
+              if (_tween) _tween.tick()
+              render.redraw()
+  
+              var prevFrame = _fpsWindow.last
+              _fpsWindow.last = new Date()
+              _fpsWindow.push(_fpsWindow.last-prevFrame)
+              if (_fpsWindow.length>50) _fpsWindow.shift()
+            }
+          }
+        },
+  
+        // 
+        // the main render loop when running in non-worker mode
+        physicsUpdate:function(){
+          if (_tween) _tween.tick()
+          _physics.tick()
+  
+          var stillActive = that.system._updateBounds()
+          if (_tween && _tween.busy()) stillActive = true
+  
+          var render = that.system.renderer
+          var now = new Date()        
+          var render = that.system.renderer
+          if (render!==undefined){
+            if (render !== _attached){
+              render.init(that.system)
+              _attached = render
+            }          
+            render.redraw({timestamp:now})
+          }
+  
+          var prevFrame = _fpsWindow.last
+          _fpsWindow.last = now
+          _fpsWindow.push(_fpsWindow.last-prevFrame)
+          if (_fpsWindow.length>50) _fpsWindow.shift()
+  
+          // but stop the simulation when energy of the system goes below a threshold
+          var sysEnergy = _physics.systemEnergy()
+          if ((sysEnergy.mean + sysEnergy.max)/2 < 0.05){
+            if (_lastTick===null) _lastTick=new Date().valueOf()
+            if (new Date().valueOf()-_lastTick>1000){
+              // trace('stopping')
+              clearInterval(_tickInterval)
+              _tickInterval = null
+            }else{
+              // trace('pausing')
+            }
+          }else{
+            // trace('continuing')
+            _lastTick = null
+          }
+        },
+  
+  
+        fps:function(newTargetFPS){
+          if (newTargetFPS!==undefined){
+            var timeout = 1000/Math.max(1,targetFps)
+            that.physicsModified({timeout:timeout})
+          }
+          
+          var totInterv = 0
+          for (var i=0, j=_fpsWindow.length; i<j; i++) totInterv+=_fpsWindow[i]
+          var meanIntev = totInterv/Math.max(1,_fpsWindow.length)
+          if (!isNaN(meanIntev)) return Math.round(1000/meanIntev)
+          else return 0
+        },
+  
+        // 
+        // start/stop simulation
+        // 
+        start:function(unpause){
+        	if (_tickInterval !== null) return; // already running
+          if (_paused && !unpause) return; // we've been .stopped before, wait for unpause
+          _paused = false
+          
+          if (USE_WORKER){
+             _physics.postMessage({type:"start"})
+          }else{
+            _lastTick = null
+            _tickInterval = setInterval(that.physicsUpdate, 
+                                        that.system.parameters().timeout)
+          }
+        },
+        stop:function(){
+          _paused = true
+          if (USE_WORKER){
+             _physics.postMessage({type:"stop"})
+          }else{
+            if (_tickInterval!==null){
+              clearInterval(_tickInterval)
+              _tickInterval = null
+            }
+          }
+        
+        }
+      }
+      
+      return that.init()    
+    }
+    
+  /*      atoms.js */
+  //
+  // atoms.js
+  //
+  // particle system- or physics-related datatypes
+  //
+  
+  var Node = function(data){
+  	this._id = _nextNodeId++; // simple ints to allow the Kernel & ParticleSystem to chat
+  	this.data = data || {};  // the user-serviceable parts
+  	this._mass = (data.mass!==undefined) ? data.mass : 1
+  	this._fixed = (data.fixed===true) ? true : false
+  	this._p = new Point((typeof(data.x)=='number') ? data.x : null,
+                       (typeof(data.y)=='number') ? data.y : null)
+    delete this.data.x
+    delete this.data.y
+    delete this.data.mass
+    delete this.data.fixed
+  };
+  var _nextNodeId = 1
+  
+  var Edge = function(source, target, data){
+  	this._id = _nextEdgeId--;
+  	this.source = source;
+  	this.target = target;
+  	this.length = (data.length!==undefined) ? data.length : 1
+  	this.data = (data!==undefined) ? data : {};
+  	delete this.data.length
+  };
+  var _nextEdgeId = -1
+  
+  var Particle = function(position, mass){
+    this.p = position;
+    this.m = mass;
+  	this.v = new Point(0, 0); // velocity
+  	this.f = new Point(0, 0); // force
+  };
+  Particle.prototype.applyForce = function(force){
+  	this.f = this.f.add(force.divide(this.m));
+  };
+  
+  var Spring = function(point1, point2, length, k)
+  {
+  	this.point1 = point1; // a particle
+  	this.point2 = point2; // another particle
+  	this.length = length; // spring length at rest
+  	this.k = k;           // stiffness
+  };
+  Spring.prototype.distanceToParticle = function(point)
+  {
+    // see http://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment/865080#865080
+    var n = that.point2.p.subtract(that.point1.p).normalize().normal();
+    var ac = point.p.subtract(that.point1.p);
+    return Math.abs(ac.x * n.x + ac.y * n.y);
+  };
+  
+  var Point = function(x, y){
+    if (x && x.hasOwnProperty('y')){
+      y = x.y; x=x.x;
+    }
+    this.x = x;
+    this.y = y;
+  }
+  
+  Point.random = function(radius){
+    radius = (radius!==undefined) ? radius : 5
+  	return new Point(2*radius * (Math.random() - 0.5), 2*radius* (Math.random() - 0.5));
+  }
+  
+  Point.prototype = {
+    exploded:function(){
+      return ( isNaN(this.x) || isNaN(this.y) )
+    },
+    add:function(v2){
+    	return new Point(this.x + v2.x, this.y + v2.y);
+    },
+    subtract:function(v2){
+    	return new Point(this.x - v2.x, this.y - v2.y);
+    },
+    multiply:function(n){
+    	return new Point(this.x * n, this.y * n);
+    },
+    divide:function(n){
+    	return new Point(this.x / n, this.y / n);
+    },
+    magnitude:function(){
+    	return Math.sqrt(this.x*this.x + this.y*this.y);
+    },
+    normal:function(){
+    	return new Point(-this.y, this.x);
+    },
+    normalize:function(){
+    	return this.divide(this.magnitude());
+    },
+    radian:function(n){
+      var p = n.subtract(this);
+      rad = Math.acos(Math.abs(p.x)/p.magnitude());
+  
+      // I'm sure there is a better way to do this. I think my
+      // trig book is in the attic some place
+      if(p.x<0){
+        if(p.y<0){
+  	//console.log('a', rad);
+        }else{
+  	rad *= -1;
+  	//console.log('b',rad);
+        }
+      }else if(p.y<0){
+        rad += Math.PI;
+        rad *= -1;
+        //console.log('c',rad);
+      }else{
+        rad += Math.PI;
+        //console.log('d',rad);
+      }
+  
+      return rad;
+    }
+  };
+  
+  
+  /*     system.js */
+  //
+  // system.js
+  //
+  // the main controller object for creating/modifying graphs
+  //
+  
+    var ParticleSystem = function(repulsion, stiffness, friction, centerGravity, targetFps, dt, precision){
+    // also callable with ({stiffness:, repulsion:, friction:, timestep:, fps:, dt:, gravity:})
+  
+      var _changes=[]
+      var _notification=null
+      var _epoch = 0
+  
+      var _screenSize = null
+      var _screenStep = .04
+      var _screenPadding = [20,20,20,20]
+      var _bounds = null
+      var _boundsTarget = null
+  
+      if (typeof repulsion=='object'){
+        var _p = repulsion
+        friction = _p.friction
+        repulsion = _p.repulsion
+        targetFps = _p.fps
+        dt = _p.dt
+        stiffness = _p.stiffness
+        centerGravity = _p.gravity
+        precision = _p.precision
+      }
+  
+      friction = isNaN(friction) ? .5 : friction
+      repulsion = isNaN(repulsion) ? 1000 : repulsion
+      targetFps = isNaN(targetFps) ? 55 : targetFps
+      stiffness = isNaN(stiffness) ? 600 : stiffness
+      dt = isNaN(dt) ? 0.02 : dt
+      precision = isNaN(precision) ? .6 : precision
+      centerGravity = (centerGravity===true)
+      var _systemTimeout = (targetFps!==undefined) ? 1000/targetFps : 1000/50
+      var _parameters = {repulsion:repulsion, stiffness:stiffness, friction:friction, dt:dt, gravity:centerGravity, precision:precision, timeout:_systemTimeout}
+      var _energy
+  
+      var state = {
+        renderer:null, // this is set by the library user
+        tween:null, // gets filled in by the Kernel
+        nodes:{}, // lookup based on node _id's from the worker
+        edges:{}, // likewise
+        adjacency:{}, // {name1:{name2:{}, name3:{}}}
+        names:{}, // lookup table based on 'name' field in data objects
+        kernel: null
+      }
+  
+      var that={
+        parameters:function(newParams){
+          if (newParams!==undefined){
+            if (!isNaN(newParams.precision)){
+              newParams.precision = Math.max(0, Math.min(1, newParams.precision))
+            }
+            $.each(_parameters, function(p, v){
+              if (newParams[p]!==undefined) _parameters[p] = newParams[p]
+            })
+            state.kernel.physicsModified(newParams)
+          }
+          return _parameters
+        },
+  
+        fps:function(newFPS){
+          if (newFPS===undefined) return state.kernel.fps()
+          else that.parameters({timeout:1000/(newFPS||50)})
+        },
+  
+  
+        start:function(unpause){
+          state.kernel.start(unpause === false ? false : true)
+        },
+        stop:function(){
+          state.kernel.stop()
+        },
+  
+        addNode:function(name, data){
+          data = data || {}
+          var priorNode = state.names[name]
+          if (priorNode){
+            priorNode.data = data
+            return priorNode
+          }else if (name!=undefined){
+            // the data object has a few magic fields that are actually used
+            // by the simulation:
+            //   'mass' overrides the default of 1
+            //   'fixed' overrides the default of false
+            //   'x' & 'y' will set a starting position rather than
+            //             defaulting to random placement
+            var x = (data.x!=undefined) ? data.x : null
+            var y = (data.y!=undefined) ? data.y : null
+            var fixed = (data.fixed) ? 1 : 0
+  
+            var node = new Node(data)
+            node.name = name
+            state.names[name] = node
+            state.nodes[node._id] = node;
+  
+            _changes.push({t:"addNode", id:node._id, m:node.mass, x:x, y:y, f:fixed})
+            that._notify();
+            return node;
+  
+          }
+        },
+  
+        // remove a node and its associated edges from the graph
+        pruneNode:function(nodeOrName) {
+          var node = that.getNode(nodeOrName)
+  
+          if (typeof(state.nodes[node._id]) !== 'undefined'){
+            delete state.nodes[node._id]
+            delete state.names[node.name]
+          }
+  
+  
+          $.each(state.edges, function(id, e){
+            if (e.source._id === node._id || e.target._id === node._id){
+              that.pruneEdge(e);
+            }
+          })
+  
+          _changes.push({t:"dropNode", id:node._id})
+          that._notify();
+        },
+  
+        getNode:function(nodeOrName){
+          if (nodeOrName._id!==undefined){
+            return nodeOrName
+          }else if (typeof nodeOrName=='string' || typeof nodeOrName=='number'){
+            return state.names[nodeOrName]
+          }
+          // otherwise let it return undefined
+        },
+  
+        eachNode:function(callback){
+          // callback should accept two arguments: Node, Point
+          $.each(state.nodes, function(id, n){
+            if (n._p.x==null || n._p.y==null) return
+            var pt = (_screenSize!==null) ? that.toScreen(n._p) : n._p
+            callback.call(that, n, pt);
+          })
+        },
+  
+        addEdge:function(source, target, data){
+          source = that.getNode(source) || that.addNode(source)
+          target = that.getNode(target) || that.addNode(target)
+          data = data || {}
+          var edge = new Edge(source, target, data);
+  
+          var src = source._id
+          var dst = target._id
+          state.adjacency[src] = state.adjacency[src] || {}
+          state.adjacency[src][dst] = state.adjacency[src][dst] || []
+  
+          var exists = (state.adjacency[src][dst].length > 0)
+          if (exists){
+            // probably shouldn't allow multiple edges in same direction
+            // between same nodes? for now just overwriting the data...
+            $.extend(state.adjacency[src][dst].data, edge.data)
+            return
+          }else{
+            state.edges[edge._id] = edge
+            state.adjacency[src][dst].push(edge)
+            var len = (edge.length!==undefined) ? edge.length : 1
+            _changes.push({t:"addSpring", id:edge._id, fm:src, to:dst, l:len})
+            that._notify()
+          }
+  
+          return edge;
+  
+        },
+  
+        // remove an edge and its associated lookup entries
+        pruneEdge:function(edge) {
+  
+          _changes.push({t:"dropSpring", id:edge._id})
+          delete state.edges[edge._id]
+  
+          for (var x in state.adjacency){
+            for (var y in state.adjacency[x]){
+              var edges = state.adjacency[x][y];
+  
+              for (var j=edges.length - 1; j>=0; j--)  {
+                if (state.adjacency[x][y][j]._id === edge._id){
+                  state.adjacency[x][y].splice(j, 1);
+                }
+              }
+            }
+          }
+  
+          that._notify();
+        },
+  
+        // find the edges from node1 to node2
+        getEdges:function(node1, node2) {
+          node1 = that.getNode(node1)
+          node2 = that.getNode(node2)
+          if (!node1 || !node2) return []
+  
+          if (typeof(state.adjacency[node1._id]) !== 'undefined'
+            && typeof(state.adjacency[node1._id][node2._id]) !== 'undefined'){
+            return state.adjacency[node1._id][node2._id];
+          }
+  
+          return [];
+        },
+  
+        getEdgesFrom:function(node) {
+          node = that.getNode(node)
+          if (!node) return []
+  
+          if (typeof(state.adjacency[node._id]) !== 'undefined'){
+            var nodeEdges = []
+            $.each(state.adjacency[node._id], function(id, subEdges){
+              nodeEdges = nodeEdges.concat(subEdges)
+            })
+            return nodeEdges
+          }
+  
+          return [];
+        },
+  
+        getEdgesTo:function(node) {
+          node = that.getNode(node)
+          if (!node) return []
+  
+          var nodeEdges = []
+          $.each(state.edges, function(edgeId, edge){
+            if (edge.target == node) nodeEdges.push(edge)
+          })
+  
+          return nodeEdges;
+        },
+  
+        eachEdge:function(callback){
+          // callback should accept two arguments: Edge, Point
+          $.each(state.edges, function(id, e){
+            var p1 = state.nodes[e.source._id]._p
+            var p2 = state.nodes[e.target._id]._p
+  
+  
+            if (p1.x==null || p2.x==null) return
+  
+            p1 = (_screenSize!==null) ? that.toScreen(p1) : p1
+            p2 = (_screenSize!==null) ? that.toScreen(p2) : p2
+  
+            if (p1 && p2) callback.call(that, e, p1, p2);
+          })
+        },
+  
+  
+        prune:function(callback){
+          // callback should be of the form ƒ(node, {from:[],to:[]})
+  
+          var changes = {dropped:{nodes:[], edges:[]}}
+          if (callback===undefined){
+            $.each(state.nodes, function(id, node){
+              changes.dropped.nodes.push(node)
+              that.pruneNode(node)
+            })
+          }else{
+            that.eachNode(function(node){
+              var drop = callback.call(that, node, {from:that.getEdgesFrom(node), to:that.getEdgesTo(node)})
+              if (drop){
+                changes.dropped.nodes.push(node)
+                that.pruneNode(node)
+              }
+            })
+          }
+          // trace('prune', changes.dropped)
+          return changes
+        },
+  
+        graft:function(branch){
+          // branch is of the form: { nodes:{name1:{d}, name2:{d},...},
+          //                          edges:{fromNm:{toNm1:{d}, toNm2:{d}}, ...} }
+  
+          var changes = {added:{nodes:[], edges:[]}}
+          if (branch.nodes) $.each(branch.nodes, function(name, nodeData){
+            var oldNode = that.getNode(name)
+            // should probably merge any x/y/m data as well...
+            // if (oldNode) $.extend(oldNode.data, nodeData)
+  
+            if (oldNode) oldNode.data = nodeData
+            else changes.added.nodes.push( that.addNode(name, nodeData) )
+  
+            state.kernel.start()
+          })
+  
+          if (branch.edges) $.each(branch.edges, function(src, dsts){
+            var srcNode = that.getNode(src)
+            if (!srcNode) changes.added.nodes.push( that.addNode(src, {}) )
+  
+            $.each(dsts, function(dst, edgeData){
+  
+              // should probably merge any x/y/m data as well...
+              // if (srcNode) $.extend(srcNode.data, nodeData)
+  
+  
+              // i wonder if it should spawn any non-existant nodes that are part
+              // of one of these edge requests...
+              var dstNode = that.getNode(dst)
+              if (!dstNode) changes.added.nodes.push( that.addNode(dst, {}) )
+  
+              var oldEdges = that.getEdges(src, dst)
+              if (oldEdges.length>0){
+                // trace("update",src,dst)
+                oldEdges[0].data = edgeData
+              }else{
+              // trace("new ->",src,dst)
+                changes.added.edges.push( that.addEdge(src, dst, edgeData) )
+              }
+            })
+          })
+  
+          // trace('graft', changes.added)
+          return changes
+        },
+  
+        merge:function(branch){
+          var changes = {added:{nodes:[], edges:[]}, dropped:{nodes:[], edges:[]}}
+  
+          $.each(state.edges, function(id, edge){
+            // if ((branch.edges[edge.source.name]===undefined || branch.edges[edge.source.name][edge.target.name]===undefined) &&
+            //     (branch.edges[edge.target.name]===undefined || branch.edges[edge.target.name][edge.source.name]===undefined)){
+            if ((branch.edges[edge.source.name]===undefined || branch.edges[edge.source.name][edge.target.name]===undefined)){
+                  that.pruneEdge(edge)
+                  changes.dropped.edges.push(edge)
+                }
+          })
+  
+          var prune_changes = that.prune(function(node, edges){
+            if (branch.nodes[node.name] === undefined){
+              changes.dropped.nodes.push(node)
+              return true
+            }
+          })
+          var graft_changes = that.graft(branch)
+          changes.added.nodes = changes.added.nodes.concat(graft_changes.added.nodes)
+          changes.added.edges = changes.added.edges.concat(graft_changes.added.edges)
+          changes.dropped.nodes = changes.dropped.nodes.concat(prune_changes.dropped.nodes)
+          changes.dropped.edges = changes.dropped.edges.concat(prune_changes.dropped.edges)
+  
+          // trace('changes', changes)
+          return changes
+        },
+  
+  
+        tweenNode:function(nodeOrName, dur, to){
+          var node = that.getNode(nodeOrName)
+          if (node) state.tween.to(node, dur, to)
+        },
+  
+        tweenEdge:function(a,b,c,d){
+          if (d===undefined){
+            // called with (edge, dur, to)
+            that._tweenEdge(a,b,c)
+          }else{
+            // called with (node1, node2, dur, to)
+            var edges = that.getEdges(a,b)
+            $.each(edges, function(i, edge){
+              that._tweenEdge(edge, c, d)
+            })
+          }
+        },
+  
+        _tweenEdge:function(edge, dur, to){
+          if (edge && edge._id!==undefined) state.tween.to(edge, dur, to)
+        },
+  
+        _updateGeometry:function(e){
+          if (e != undefined){
+            var stale = (e.epoch<_epoch)
+  
+            _energy = e.energy
+            var pts = e.geometry // an array of the form [id1,x1,y1, id2,x2,y2, ...]
+            if (pts!==undefined){
+              for (var i=0, j=pts.length/3; i<j; i++){
+                var id = pts[3*i]
+  
+                // canary silencer...
+                if (stale && state.nodes[id]==undefined) continue
+  
+                state.nodes[id]._p.x = pts[3*i + 1]
+                state.nodes[id]._p.y = pts[3*i + 2]
+              }
+            }
+          }
+        },
+  
+        // convert to/from screen coordinates
+        screen:function(opts){
+          if (opts == undefined) return {size:(_screenSize)? objcopy(_screenSize) : undefined,
+                                         padding:_screenPadding.concat(),
+                                         step:_screenStep}
+          if (opts.size!==undefined) that.screenSize(opts.size.width, opts.size.height)
+          if (!isNaN(opts.step)) that.screenStep(opts.step)
+          if (opts.padding!==undefined) that.screenPadding(opts.padding)
+        },
+  
+        screenSize:function(canvasWidth, canvasHeight){
+          _screenSize = {width:canvasWidth,height:canvasHeight}
+          that._updateBounds()
+        },
+  
+        screenPadding:function(t,r,b,l){
+          if ($.isArray(t)) trbl = t
+          else trbl = [t,r,b,l]
+  
+          var top = trbl[0]
+          var right = trbl[1]
+          var bot = trbl[2]
+          if (right===undefined) trbl = [top,top,top,top]
+          else if (bot==undefined) trbl = [top,right,top,right]
+  
+          _screenPadding = trbl
+        },
+  
+        screenStep:function(stepsize){
+          _screenStep = stepsize
+        },
+  
+        toScreen:function(p) {
+          if (!_bounds || !_screenSize) return
+          // trace(p.x, p.y)
+  
+          var _padding = _screenPadding || [0,0,0,0]
+          var size = _bounds.bottomright.subtract(_bounds.topleft)
+          var sx = _padding[3] + p.subtract(_bounds.topleft).divide(size.x).x * (_screenSize.width - (_padding[1] + _padding[3]))
+          var sy = _padding[0] + p.subtract(_bounds.topleft).divide(size.y).y * (_screenSize.height - (_padding[0] + _padding[2]))
+  
+          // return arbor.Point(Math.floor(sx), Math.floor(sy))
+          return arbor.Point(sx, sy)
+        },
+  
+        fromScreen:function(s) {
+          if (!_bounds || !_screenSize) return
+  
+          var _padding = _screenPadding || [0,0,0,0]
+          var size = _bounds.bottomright.subtract(_bounds.topleft)
+          var px = (s.x-_padding[3]) / (_screenSize.width-(_padding[1]+_padding[3]))  * size.x + _bounds.topleft.x
+          var py = (s.y-_padding[0]) / (_screenSize.height-(_padding[0]+_padding[2])) * size.y + _bounds.topleft.y
+  
+          return arbor.Point(px, py);
+        },
+  
+        _updateBounds:function(newBounds){
+          // step the renderer's current bounding box closer to the true box containing all
+          // the nodes. if _screenStep is set to 1 there will be no lag. if _screenStep is
+          // set to 0 the bounding box will remain stationary after being initially set
+          if (_screenSize===null) return
+  
+          if (newBounds) _boundsTarget = newBounds
+          else _boundsTarget = that.bounds()
+  
+          // _boundsTarget = newBounds || that.bounds()
+          // _boundsTarget.topleft = new Point(_boundsTarget.topleft.x,_boundsTarget.topleft.y)
+          // _boundsTarget.bottomright = new Point(_boundsTarget.bottomright.x,_boundsTarget.bottomright.y)
+  
+          var bottomright = new Point(_boundsTarget.bottomright.x, _boundsTarget.bottomright.y)
+          var topleft = new Point(_boundsTarget.topleft.x, _boundsTarget.topleft.y)
+          var dims = bottomright.subtract(topleft)
+          var center = topleft.add(dims.divide(2))
+  
+  
+          var MINSIZE = 4                                   // perfect-fit scaling
+          // MINSIZE = Math.max(Math.max(MINSIZE,dims.y), dims.x) // proportional scaling
+  
+          var size = new Point(Math.max(dims.x,MINSIZE), Math.max(dims.y,MINSIZE))
+          _boundsTarget.topleft = center.subtract(size.divide(2))
+          _boundsTarget.bottomright = center.add(size.divide(2))
+  
+          if (!_bounds){
+            if ($.isEmptyObject(state.nodes)) return false
+            _bounds = _boundsTarget
+            return true
+          }
+  
+          // var stepSize = (Math.max(dims.x,dims.y)<MINSIZE) ? .2 : _screenStep
+          var stepSize = _screenStep
+          _newBounds = {
+            bottomright: _bounds.bottomright.add( _boundsTarget.bottomright.subtract(_bounds.bottomright).multiply(stepSize) ),
+            topleft: _bounds.topleft.add( _boundsTarget.topleft.subtract(_bounds.topleft).multiply(stepSize) )
+          }
+  
+          // return true if we're still approaching the target, false if we're ‘close enough’
+          var diff = new Point(_bounds.topleft.subtract(_newBounds.topleft).magnitude(), _bounds.bottomright.subtract(_newBounds.bottomright).magnitude())
+          if (diff.x*_screenSize.width>1 || diff.y*_screenSize.height>1){
+            _bounds = _newBounds
+            return true
+          }else{
+           return false
+          }
+        },
+  
+        energy:function(){
+          return _energy
+        },
+  
+        bounds:function(){
+          //  TL   -1
+          //     -1   1
+          //        1   BR
+          var bottomright = null
+          var topleft = null
+  
+          // find the true x/y range of the nodes
+          $.each(state.nodes, function(id, node){
+            if (!bottomright){
+              bottomright = new Point(node._p)
+              topleft = new Point(node._p)
+              return
+            }
+  
+            var point = node._p
+            if (point.x===null || point.y===null) return
+            if (point.x > bottomright.x) bottomright.x = point.x;
+            if (point.y > bottomright.y) bottomright.y = point.y;
+            if   (point.x < topleft.x)   topleft.x = point.x;
+            if   (point.y < topleft.y)   topleft.y = point.y;
+          })
+  
+  
+          // return the true range then let to/fromScreen handle the padding
+          if (bottomright && topleft){
+            return {bottomright: bottomright, topleft: topleft}
+          }else{
+            return {topleft: new Point(-1,-1), bottomright: new Point(1,1)};
+          }
+        },
+  
+        // Find the nearest node to a particular position
+        nearest:function(pos){
+          if (_screenSize!==null) pos = that.fromScreen(pos)
+          // if screen size has been specified, presume pos is in screen pixel
+          // units and convert it back to the particle system coordinates
+  
+          var min = {node: null, point: null, distance: null};
+          var t = that;
+  
+          $.each(state.nodes, function(id, node){
+            var pt = node._p
+            if (pt.x===null || pt.y===null) return
+            var distance = pt.subtract(pos).magnitude();
+            if (min.distance === null || distance < min.distance){
+              min = {node: node, point: pt, distance: distance};
+              if (_screenSize!==null) min.screenPoint = that.toScreen(pt)
+            }
+          })
+  
+          if (min.node){
+            if (_screenSize!==null) min.distance = that.toScreen(min.node.p).subtract(that.toScreen(pos)).magnitude()
+             return min
+          }else{
+             return null
+          }
+        },
+  
+        _notify:function() {
+          // pass on graph changes to the physics object in the worker thread
+          // (using a short timeout to batch changes)
+          if (_notification===null) _epoch++
+          else clearTimeout(_notification)
+  
+          _notification = setTimeout(that._synchronize,20)
+          // that._synchronize()
+        },
+        _synchronize:function(){
+          if (_changes.length>0){
+            state.kernel.graphChanged(_changes)
+            _changes = []
+            _notification = null
+          }
+        }
+      }
+  
+      state.kernel = Kernel(that)
+      state.tween = state.kernel.tween || null
+  
+      // some magic attrs to make the Node objects phone-home their physics-relevant changes
+  
+      var defineProperty = (window.__defineGetter__ == null || window.__defineSetter__ == null) ?
+        function (obj, name, desc){
+          if(!obj.hasOwnProperty(name)){
+  Object.defineProperty(obj, name, desc);
+          }
+        }
+          :
+        function (obj, name, desc) {
+          if (desc.get)
+            obj.__defineGetter__(name, desc.get)
+          if (desc.set)
+            obj.__defineSetter__(name, desc.set)
+        };
+  
+      var RoboPoint = function (n) {
+        this._n = n;
+      }
+      RoboPoint.prototype = new Point();
+      defineProperty(RoboPoint.prototype, "x", {
+        get: function(){ return this._n._p.x; },
+        set: function(newX){ state.kernel.particleModified(this._n._id, {x:newX}) }
+      })
+      defineProperty(RoboPoint.prototype, "y", {
+        get: function(){ return this._n._p.y; },
+        set: function(newY){ state.kernel.particleModified(this._n._id, {y:newY}) }
+      })
+  
+      defineProperty(Node.prototype, "p", {
+        get: function() {
+          return new RoboPoint(this)
+        },
+        set: function(newP) {
+          this._p.x = newP.x
+          this._p.y = newP.y
+          state.kernel.particleModified(this._id, {x:newP.x, y:newP.y})
+        }
+      })
+  
+      defineProperty(Node.prototype, "mass", {
+        get: function() { return this._mass; },
+        set: function(newM) {
+          this._mass = newM
+          state.kernel.particleModified(this._id, {m:newM})
+        }
+      })
+  
+      defineProperty(Node.prototype, "tempMass", {
+        set: function(newM) {
+          state.kernel.particleModified(this._id, {_m:newM})
+        }
+      })
+  
+      defineProperty(Node.prototype, "fixed", {
+        get: function() { return this._fixed; },
+        set:function(isFixed) {
+          this._fixed = isFixed
+          state.kernel.particleModified(this._id, {f:isFixed?1:0})
+        }
+      })
+      
+      return that
+    }
+  
+  /* barnes-hut.js */
+  //
+  //  barnes-hut.js
+  //
+  //  implementation of the barnes-hut quadtree algorithm for n-body repulsion
+  //  http://www.cs.princeton.edu/courses/archive/fall03/cs126/assignments/barnes-hut.html
+  //
+  //  Created by Christian Swinehart on 2011-01-14.
+  //  Copyright (c) 2011 Samizdat Drafting Co. All rights reserved.
+  //
+  
+    var BarnesHutTree = function(){
+      var _branches = []
+      var _branchCtr = 0
+      var _root = null
+      var _theta = .5
+      
+      var that = {
+        init:function(topleft, bottomright, theta){
+          _theta = theta
+  
+          // create a fresh root node for these spatial bounds
+          _branchCtr = 0
+          _root = that._newBranch()
+          _root.origin = topleft
+          _root.size = bottomright.subtract(topleft)
+        },
+        
+        insert:function(newParticle){
+          // add a particle to the tree, starting at the current _root and working down
+          var node = _root
+          var queue = [newParticle]
+  
+          while (queue.length){
+            var particle = queue.shift()
+            var p_mass = particle._m || particle.m
+            var p_quad = that._whichQuad(particle, node)
+  
+            if (node[p_quad]===undefined){
+              // slot is empty, just drop this node in and update the mass/c.o.m.
+              node[p_quad] = particle
+              node.mass += p_mass
+              if (node.p){
+                node.p = node.p.add(particle.p.multiply(p_mass))
+              }else{
+                node.p = particle.p.multiply(p_mass)
+              }
+              
+            }else if ('origin' in node[p_quad]){
+              // slot conatins a branch node, keep iterating with the branch
+              // as our new root
+              node.mass += (p_mass)
+              if (node.p) node.p = node.p.add(particle.p.multiply(p_mass))
+              else node.p = particle.p.multiply(p_mass)
+              
+              node = node[p_quad]
+              queue.unshift(particle)
+            }else{
+              // slot contains a particle, create a new branch and recurse with
+              // both points in the queue now
+              var branch_size = node.size.divide(2)
+              var branch_origin = new Point(node.origin)
+              if (p_quad[0]=='s') branch_origin.y += branch_size.y
+              if (p_quad[1]=='e') branch_origin.x += branch_size.x
+  
+              // replace the previously particle-occupied quad with a new internal branch node
+              var oldParticle = node[p_quad]
+              node[p_quad] = that._newBranch()
+              node[p_quad].origin = branch_origin
+              node[p_quad].size = branch_size
+              node.mass = p_mass
+              node.p = particle.p.multiply(p_mass)
+              node = node[p_quad]
+  
+              if (oldParticle.p.x===particle.p.x && oldParticle.p.y===particle.p.y){
+                // prevent infinite bisection in the case where two particles
+                // have identical coordinates by jostling one of them slightly
+                var x_spread = branch_size.x*.08
+                var y_spread = branch_size.y*.08
+                oldParticle.p.x = Math.min(branch_origin.x+branch_size.x,  
+                                           Math.max(branch_origin.x,  
+                                                    oldParticle.p.x - x_spread/2 + 
+                                                    Math.random()*x_spread))
+                oldParticle.p.y = Math.min(branch_origin.y+branch_size.y,  
+                                           Math.max(branch_origin.y,  
+                                                    oldParticle.p.y - y_spread/2 + 
+                                                    Math.random()*y_spread))
+              }
+  
+              // keep iterating but now having to place both the current particle and the
+              // one we just replaced with the branch node
+              queue.push(oldParticle)
+              queue.unshift(particle)
+            }
+  
+          }
+  
+        },
+  
+        applyForces:function(particle, repulsion){
+          // find all particles/branch nodes this particle interacts with and apply
+          // the specified repulsion to the particle
+          var queue = [_root]
+          while (queue.length){
+            node = queue.shift()
+            if (node===undefined) continue
+            if (particle===node) continue
+            
+            if ('f' in node){
+              // this is a particle leafnode, so just apply the force directly
+              var d = particle.p.subtract(node.p);
+              var distance = Math.max(1.0, d.magnitude());
+              var direction = ((d.magnitude()>0) ? d : Point.random(1)).normalize()
+              particle.applyForce(direction.multiply(repulsion*(node._m||node.m))
+                                        .divide(distance * distance) );
+            }else{
+              // it's a branch node so decide if it's cluster-y and distant enough
+              // to summarize as a single point. if it's too complex, open it and deal
+              // with its quadrants in turn
+              var dist = particle.p.subtract(node.p.divide(node.mass)).magnitude()
+              var size = Math.sqrt(node.size.x * node.size.y)
+              if (size/dist > _theta){ // i.e., s/d > Θ
+                // open the quad and recurse
+                queue.push(node.ne)
+                queue.push(node.nw)
+                queue.push(node.se)
+                queue.push(node.sw)
+              }else{
+                // treat the quad as a single body
+                var d = particle.p.subtract(node.p.divide(node.mass));
+                var distance = Math.max(1.0, d.magnitude());
+                var direction = ((d.magnitude()>0) ? d : Point.random(1)).normalize()
+                particle.applyForce(direction.multiply(repulsion*(node.mass))
+                                             .divide(distance * distance) );
+              }
+            }
+          }
+        },
+        
+        _whichQuad:function(particle, node){
+          // sort the particle into one of the quadrants of this node
+          if (particle.p.exploded()) return null
+          var particle_p = particle.p.subtract(node.origin)
+          var halfsize = node.size.divide(2)
+          if (particle_p.y < halfsize.y){
+            if (particle_p.x < halfsize.x) return 'nw'
+            else return 'ne'
+          }else{
+            if (particle_p.x < halfsize.x) return 'sw'
+            else return 'se'
+          }
+        },
+        
+        _newBranch:function(){
+          // to prevent a gc horrorshow, recycle the tree nodes between iterations
+          if (_branches[_branchCtr]){
+            var branch = _branches[_branchCtr]
+            branch.ne = branch.nw = branch.se = branch.sw = undefined
+            branch.mass = 0
+            delete branch.p
+          }else{
+            branch = {origin:null, size:null, 
+                      nw:undefined, ne:undefined, sw:undefined, se:undefined, mass:0}
+            _branches[_branchCtr] = branch
+          }
+  
+          _branchCtr++
+          return branch
+        }
+      }
+      
+      return that
+    }
+  
+  
+  /*    physics.js */
+  //
+  // physics.js
+  //
+  // the particle system itself. either run inline or in a worker (see worker.js)
+  //
+  
+    var Physics = function(dt, stiffness, repulsion, friction, updateFn){
+      var bhTree = BarnesHutTree() // for computing particle repulsion
+      var active = {particles:{}, springs:{}}
+      var free = {particles:{}}
+      var particles = []
+      var springs = []
+      var _epoch=0
+      var _energy = {sum:0, max:0, mean:0}
+      var _bounds = {topleft:new Point(-1,-1), bottomright:new Point(1,1)}
+  
+      var SPEED_LIMIT = 1000 // the max particle velocity per tick
+      
+      var that = {
+        stiffness:(stiffness!==undefined) ? stiffness : 1000,
+        repulsion:(repulsion!==undefined)? repulsion : 600,
+        friction:(friction!==undefined)? friction : .3,
+        gravity:false,
+        dt:(dt!==undefined)? dt : 0.02,
+        theta:.4, // the criterion value for the barnes-hut s/d calculation
+        
+        init:function(){
+          return that
+        },
+  
+        modifyPhysics:function(param){
+          $.each(['stiffness','repulsion','friction','gravity','dt','precision'], function(i, p){
+            if (param[p]!==undefined){
+              if (p=='precision'){
+                that.theta = 1-param[p]
+                return
+              }
+              that[p] = param[p]
+               
+              if (p=='stiffness'){
+                var stiff=param[p]
+                $.each(active.springs, function(id, spring){
+                  spring.k = stiff
+                })             
+              }
+            }
+          })
+        },
+  
+        addNode:function(c){
+          var id = c.id
+          var mass = c.m
+  
+          var w = _bounds.bottomright.x - _bounds.topleft.x
+          var h = _bounds.bottomright.y - _bounds.topleft.y
+          var randomish_pt = new Point((c.x != null) ? c.x: _bounds.topleft.x + w*Math.random(),
+                                       (c.y != null) ? c.y: _bounds.topleft.y + h*Math.random())
+  
+          
+          active.particles[id] = new Particle(randomish_pt, mass);
+          active.particles[id].connections = 0
+          active.particles[id].fixed = (c.f===1)
+          free.particles[id] = active.particles[id]
+          particles.push(active.particles[id])        
+        },
+  
+        dropNode:function(c){
+          var id = c.id
+          var dropping = active.particles[id]
+          var idx = $.inArray(dropping, particles)
+          if (idx>-1) particles.splice(idx,1)
+          delete active.particles[id]
+          delete free.particles[id]
+        },
+  
+        modifyNode:function(id, mods){
+          if (id in active.particles){
+            var pt = active.particles[id]
+            if ('x' in mods) pt.p.x = mods.x
+            if ('y' in mods) pt.p.y = mods.y
+            if ('m' in mods) pt.m = mods.m
+            if ('f' in mods) pt.fixed = (mods.f===1)
+            if ('_m' in mods){
+              if (pt._m===undefined) pt._m = pt.m
+              pt.m = mods._m            
+            }
+          }
+        },
+  
+        addSpring:function(c){
+          var id = c.id
+          var length = c.l
+          var from = active.particles[c.fm]
+          var to = active.particles[c.to]
+          
+          if (from!==undefined && to!==undefined){
+            active.springs[id] = new Spring(from, to, length, that.stiffness)
+            springs.push(active.springs[id])
+            
+            from.connections++
+            to.connections++
+            
+            delete free.particles[c.fm]
+            delete free.particles[c.to]
+          }
+        },
+  
+        dropSpring:function(c){
+          var id = c.id
+          var dropping = active.springs[id]
+          
+          dropping.point1.connections--
+          dropping.point2.connections--
+          
+          var idx = $.inArray(dropping, springs)
+          if (idx>-1){
+             springs.splice(idx,1)
+          }
+          delete active.springs[id]
+        },
+  
+        _update:function(changes){
+          // batch changes phoned in (automatically) by a ParticleSystem
+          _epoch++
+          
+          $.each(changes, function(i, c){
+            if (c.t in that) that[c.t](c)
+          })
+          return _epoch
+        },
+  
+  
+        tick:function(){
+          that.tendParticles()
+          that.eulerIntegrator(that.dt)
+          that.tock()
+        },
+  
+        tock:function(){
+          var coords = []
+          $.each(active.particles, function(id, pt){
+            coords.push(id)
+            coords.push(pt.p.x)
+            coords.push(pt.p.y)
+          })
+  
+          if (updateFn) updateFn({geometry:coords, epoch:_epoch, energy:_energy, bounds:_bounds})
+        },
+  
+        tendParticles:function(){
+          $.each(active.particles, function(id, pt){
+            // decay down any of the temporary mass increases that were passed along
+            // by using an {_m:} instead of an {m:} (which is to say via a Node having
+            // its .tempMass attr set)
+            if (pt._m!==undefined){
+              if (Math.abs(pt.m-pt._m)<1){
+                pt.m = pt._m
+                delete pt._m
+              }else{
+                pt.m *= .98
+              }
+            }
+  
+            // zero out the velocity from one tick to the next
+            pt.v.x = pt.v.y = 0           
+          })
+  
+        },
+        
+        
+        // Physics stuff
+        eulerIntegrator:function(dt){
+          if (that.repulsion>0){
+            if (that.theta>0) that.applyBarnesHutRepulsion()
+            else that.applyBruteForceRepulsion()
+          }
+          if (that.stiffness>0) that.applySprings()
+          that.applyCenterDrift()
+          if (that.gravity) that.applyCenterGravity()
+          that.updateVelocity(dt)
+          that.updatePosition(dt)
+        },
+  
+        applyBruteForceRepulsion:function(){
+          $.each(active.particles, function(id1, point1){
+            $.each(active.particles, function(id2, point2){
+              if (point1 !== point2){
+                var d = point1.p.subtract(point2.p);
+                var distance = Math.max(1.0, d.magnitude());
+                var direction = ((d.magnitude()>0) ? d : Point.random(1)).normalize()
+  
+                // apply force to each end point
+                // (consult the cached `real' mass value if the mass is being poked to allow
+                // for repositioning. the poked mass will still be used in .applyforce() so
+                // all should be well)
+                point1.applyForce(direction.multiply(that.repulsion*(point2._m||point2.m)*.5)
+                                           .divide(distance * distance * 0.5) );
+                point2.applyForce(direction.multiply(that.repulsion*(point1._m||point1.m)*.5)
+                                           .divide(distance * distance * -0.5) );
+  
+              }
+            })          
+          })
+        },
+        
+        applyBarnesHutRepulsion:function(){
+          if (!_bounds.topleft || !_bounds.bottomright) return
+          var bottomright = new Point(_bounds.bottomright)
+          var topleft = new Point(_bounds.topleft)
+  
+          // build a barnes-hut tree...
+          bhTree.init(topleft, bottomright, that.theta)        
+          $.each(active.particles, function(id, particle){
+            bhTree.insert(particle)
+          })
+          
+          // ...and use it to approximate the repulsion forces
+          $.each(active.particles, function(id, particle){
+            bhTree.applyForces(particle, that.repulsion)
+          })
+        },
+        
+        applySprings:function(){
+          $.each(active.springs, function(id, spring){
+            var d = spring.point2.p.subtract(spring.point1.p); // the direction of the spring
+            var displacement = spring.length - d.magnitude()//Math.max(.1, d.magnitude());
+            var direction = ( (d.magnitude()>0) ? d : Point.random(1) ).normalize()
+  
+            // BUG:
+            // since things oscillate wildly for hub nodes, should probably normalize spring
+            // forces by the number of incoming edges for each node. naive normalization 
+            // doesn't work very well though. what's the `right' way to do it?
+  
+            // apply force to each end point
+            spring.point1.applyForce(direction.multiply(spring.k * displacement * -0.5))
+            spring.point2.applyForce(direction.multiply(spring.k * displacement * 0.5))
+          });
+        },
+  
+  
+        applyCenterDrift:function(){
+          // find the centroid of all the particles in the system and shift everything
+          // so the cloud is centered over the origin
+          var numParticles = 0
+          var centroid = new Point(0,0)
+          $.each(active.particles, function(id, point) {
+            centroid.add(point.p)
+            numParticles++
+          });
+  
+          if (numParticles==0) return
+          
+          var correction = centroid.divide(-numParticles)
+          $.each(active.particles, function(id, point) {
+            point.applyForce(correction)
+          })
+          
+        },
+        applyCenterGravity:function(){
+          // attract each node to the origin
+          $.each(active.particles, function(id, point) {
+            var direction = point.p.multiply(-1.0);
+            point.applyForce(direction.multiply(that.repulsion / 100.0));
+          });
+        },
+        
+        updateVelocity:function(timestep){
+          // translate forces to a new velocity for this particle
+          $.each(active.particles, function(id, point) {
+            if (point.fixed){
+               point.v = new Point(0,0)
+               point.f = new Point(0,0)
+               return
+            }
+  
+            var was = point.v.magnitude()
+            point.v = point.v.add(point.f.multiply(timestep)).multiply(1-that.friction);
+            point.f.x = point.f.y = 0
+  
+            var speed = point.v.magnitude()          
+            if (speed>SPEED_LIMIT) point.v = point.v.divide(speed*speed)
+          });
+        },
+  
+        updatePosition:function(timestep){
+          // translate velocity to a position delta
+          var sum=0, max=0, n = 0;
+          var bottomright = null
+          var topleft = null
+  
+          $.each(active.particles, function(i, point) {
+            // move the node to its new position
+            point.p = point.p.add(point.v.multiply(timestep));
+            
+            // keep stats to report in systemEnergy
+            var speed = point.v.magnitude();
+            var e = speed*speed
+            sum += e
+            max = Math.max(e,max)
+            n++
+  
+            if (!bottomright){
+              bottomright = new Point(point.p.x, point.p.y)
+              topleft = new Point(point.p.x, point.p.y)
+              return
+            }
+          
+            var pt = point.p
+            if (pt.x===null || pt.y===null) return
+            if (pt.x > bottomright.x) bottomright.x = pt.x;
+            if (pt.y > bottomright.y) bottomright.y = pt.y;          
+            if   (pt.x < topleft.x)   topleft.x = pt.x;
+            if   (pt.y < topleft.y)   topleft.y = pt.y;
+          });
+          
+          _energy = {sum:sum, max:max, mean:sum/n, n:n}
+          _bounds = {topleft:topleft||new Point(-1,-1), bottomright:bottomright||new Point(1,1)}
+        },
+  
+        systemEnergy:function(timestep){
+          // system stats
+          return _energy
+        }
+  
+        
+      }
+      return that.init()
+    }
+    
+    var _nearParticle = function(center_pt, r){
+        var r = r || .0
+        var x = center_pt.x
+        var y = center_pt.y
+        var d = r*2
+        return new Point(x-r+Math.random()*d, y-r+Math.random()*d)
+    }
+  
 
   // if called as a worker thread, set up a run loop for the Physics object and bail out
   if (typeof(window)=='undefined') return (function(){
-  /* hermetic.js */  $={each:function(d,e){if($.isArray(d)){for(var c=0,b=d.length;c<b;c++){e(c,d[c])}}else{for(var a in d){e(a,d[a])}}},map:function(a,c){var b=[];$.each(a,function(f,e){var d=c(e);if(d!==undefined){b.push(d)}});return b},extend:function(c,b){if(typeof b!="object"){return c}for(var a in b){if(b.hasOwnProperty(a)){c[a]=b[a]}}return c},isArray:function(a){if(!a){return false}return(a.constructor.toString().indexOf("Array")!=-1)},inArray:function(c,a){for(var d=0,b=a.length;d<b;d++){if(a[d]===c){return d}}return -1},isEmptyObject:function(a){if(typeof a!=="object"){return false}var b=true;$.each(a,function(c,d){b=false});return b},};
-  /*     worker.js */  var PhysicsWorker=function(){var b=20;var a=null;var d=null;var c=null;var g=[];var f=new Date().valueOf();var e={init:function(h){e.timeout(h.timeout);a=Physics(h.dt,h.stiffness,h.repulsion,h.friction,e.tock);return e},timeout:function(h){if(h!=b){b=h;if(d!==null){e.stop();e.go()}}},go:function(){if(d!==null){return}c=null;d=setInterval(e.tick,b)},stop:function(){if(d===null){return}clearInterval(d);d=null},tick:function(){a.tick();var h=a.systemEnergy();if((h.mean+h.max)/2<0.05){if(c===null){c=new Date().valueOf()}if(new Date().valueOf()-c>1000){e.stop()}else{}}else{c=null}},tock:function(h){h.type="geometry";postMessage(h)},modifyNode:function(i,h){a.modifyNode(i,h);e.go()},modifyPhysics:function(h){a.modifyPhysics(h)},update:function(h){var i=a._update(h)}};return e};var physics=PhysicsWorker();onmessage=function(a){if(!a.data.type){postMessage("¿kérnèl?");return}if(a.data.type=="physics"){var b=a.data.physics;physics.init(a.data.physics);return}switch(a.data.type){case"modify":physics.modifyNode(a.data.id,a.data.mods);break;case"changes":physics.update(a.data.changes);physics.go();break;case"start":physics.go();break;case"stop":physics.stop();break;case"sys":var b=a.data.param||{};if(!isNaN(b.timeout)){physics.timeout(b.timeout)}physics.modifyPhysics(b);physics.go();break}};
+  /* hermetic.js */
+  //
+  // hermetic.js
+  //
+  // the parts of jquery i can't live without (e.g., while in a web worker)
+  //
+  $ = {
+    each:function(obj, callback){
+      if ($.isArray(obj)){
+        for (var i=0, j=obj.length; i<j; i++) callback(i, obj[i])
+      }else{
+        for (var k in obj) callback(k, obj[k])
+      }
+    },
+    map:function(arr, fn){
+      var out = []
+      $.each(arr, function(i, elt){
+        var result = fn(elt)
+        if (result!==undefined) out.push(result)
+      })
+      return out
+    },
+    extend:function(dst, src){
+      if (typeof src!='object') return dst
+      
+      for (var k in src){
+        if (src.hasOwnProperty(k)) dst[k] = src[k]
+      }
+      
+      return dst
+    },
+    isArray:function(obj){
+      if (!obj) return false
+      return (obj.constructor.toString().indexOf("Array") != -1)
+    },
+  
+    inArray:function(elt, arr){
+      for (var i=0, j=arr.length; i<j; i++) if (arr[i]===elt) return i;
+      return -1
+    },
+    isEmptyObject:function(obj){
+      if (typeof obj!=='object') return false
+      var isEmpty = true
+      $.each(obj, function(k, elt){
+        isEmpty = false
+      })
+      return isEmpty
+    },
+  }
+  
+  /*     worker.js */
+  //
+  // worker.js
+  //
+  // wraps physics.js in an onMessage/postMessage protocol that the
+  // Kernel object can deal with
+  //
+  var PhysicsWorker = function(){
+    var _timeout = 20
+    var _physics = null
+    var _physicsInterval = null
+    var _lastTick = null
+    
+    var times = []
+    var last = new Date().valueOf()
+    
+    var that = {  
+      init:function(param){
+        that.timeout(param.timeout)
+        _physics = Physics(param.dt, param.stiffness, param.repulsion, param.friction, that.tock)
+        return that
+      },
+      timeout:function(newTimeout){
+        if (newTimeout!=_timeout){
+          _timeout = newTimeout
+          if (_physicsInterval!==null){
+            that.stop()
+            that.go()
+          }
+        }
+      },
+      go:function(){
+        if (_physicsInterval!==null) return
+  
+        // postMessage('starting')
+        _lastTick=null
+        _physicsInterval = setInterval(that.tick, _timeout)
+      },
+      stop:function(){
+        if (_physicsInterval===null) return
+        clearInterval(_physicsInterval);
+        _physicsInterval = null;
+        // postMessage('stopping')
+      },
+      tick:function(){
+        // iterate the system
+        _physics.tick()    
+  
+  
+        // but stop the simulation when energy of the system goes below a threshold
+        var sysEnergy = _physics.systemEnergy()
+        if ((sysEnergy.mean + sysEnergy.max)/2 < 0.05){
+          if (_lastTick===null) _lastTick=new Date().valueOf()
+          if (new Date().valueOf()-_lastTick>1000){
+            that.stop()
+          }else{
+            // postMessage('pausing')
+          }
+        }else{
+          _lastTick = null
+        }
+        
+      },
+  
+      tock:function(sysData){
+        sysData.type = "geometry"
+        postMessage(sysData)
+      },
+      
+      modifyNode:function(id, mods){
+        _physics.modifyNode(id, mods)  
+        that.go()
+      },
+  
+      modifyPhysics:function(param){
+        _physics.modifyPhysics(param)
+      },
+      
+      update:function(changes){
+        var epoch = _physics._update(changes)
+      }
+    }
+    
+    return that
+  }
+  
+  
+  var physics = PhysicsWorker()
+  
+  onmessage = function(e){
+    if (!e.data.type){
+      postMessage("¿kérnèl?")
+      return
+    }
+    
+    if (e.data.type=='physics'){
+      var param = e.data.physics
+      physics.init(e.data.physics)
+      return
+    }
+    
+    switch(e.data.type){
+      case "modify":
+        physics.modifyNode(e.data.id, e.data.mods)
+        break
+  
+      case "changes":
+        physics.update(e.data.changes)
+        physics.go()
+        break
+        
+      case "start":
+        physics.go()
+        break
+        
+      case "stop":
+        physics.stop()
+        break
+        
+      case "sys":
+        var param = e.data.param || {}
+        if (!isNaN(param.timeout)) physics.timeout(param.timeout)
+        physics.modifyPhysics(param)
+        physics.go()
+        break
+      }  
+  }
   })()
 
 

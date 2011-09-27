@@ -19,7 +19,9 @@ relationships:: Decides which relationship types and directions should be follow
  * +all+
  * +in+
  * +out+
-uniqueness:: Decides how uniqueness should be calculated. Possible values:
+uniqueness:: Decides how uniqueness should be calculated.
+ For details on different uniqueness values see the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/Uniqueness.html[Java API on Uniqueness].
+ Possible values:
  * +node_global+
  * +none+
  * +relationship_global+
@@ -38,7 +40,8 @@ The +position+ object in the body of the +return_filter+ and +prune_evaluator+ i
 +http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Path.html[Path]+
 object representing the path from the start node to the current traversal position.
 
-Out of the box, the REST API supports JavaScript code in filters/evaluators.
+Out of the box, the REST API supports JavaScript code in filters and evaluators.
+The script body will be executed in a Java context which has access to the full Neo4j http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/[Java API].
 See the examples for the exact syntax of the request.
 
 

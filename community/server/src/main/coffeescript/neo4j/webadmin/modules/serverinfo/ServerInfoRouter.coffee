@@ -35,10 +35,12 @@ define(
         @server = @appState.get "server"
 
       base : =>
+        @saveLocation()
         @appState.set( mainView : @getServerInfoView() )
         @serverInfo.fetch()
 
       bean : (domain, name) => 
+        @saveLocation()
         @appState.set( mainView : @getServerInfoView() )
         @serverInfo.setCurrent(decodeURIComponent(domain), decodeURIComponent(name))
 

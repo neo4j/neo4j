@@ -69,6 +69,16 @@ class WhereTest extends DocumentingTestBase {
       (p) => assertEquals(List(node("Andres")), p.columnAs[Node]("n").toList))
   }
 
+  @Test def compare_if_property_exists() {
+    testQuery(
+      title = "Compare if property exists",
+      text = "If you want to compare a property on a graph element, but only if it exists, use the nullable property syntax. It is the property" +
+        " with the dot notation, followed by a question mark",
+      queryText = """start n=(%Andres%, %Tobias%) where n.belt? = 'white' return n""",
+      returns = "All nodes, even those without the belt property",
+      (p) => assertEquals(List(node("Andres"), node("Tobias")), p.columnAs[Node]("n").toList))
+  }
+
   @Test def filter_on_relationship_type() {
     testQuery(
       title = "Filtering on relationship type",
