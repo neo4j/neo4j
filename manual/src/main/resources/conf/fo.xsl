@@ -15,6 +15,7 @@
                 xmlns:fo="http://www.w3.org/1999/XSL/Format">
 <xsl:import href="http://docbook.sourceforge.net/release/xsl/current/fo/docbook.xsl"/>
 <xsl:import href="common.xsl"/>
+<xsl:param name="qanda.defaultlabel">qanda</xsl:param>
 
 <xsl:param name="fop1.extensions" select="1" />
 <xsl:param name="variablelist.as.blocks" select="1" />

@@ -91,6 +91,10 @@ include::community/index.txt[]
 
 include::manpages.txt[]
 
+:leveloffset: 0
+
+include::qanda/index.txt[]
+
 ////
 :leveloffset: 0
 include::glossary.txt[]

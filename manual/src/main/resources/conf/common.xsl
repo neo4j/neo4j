@@ -16,6 +16,8 @@
   </xsl:choose>
 </xsl:param>
 
+<xsl:param name="qanda.defaultlabel">none</xsl:param>
+
 <xsl:param name="suppress.navigation" select="0"/>
 <xsl:param name="navig.graphics.extension" select="'.png'"/>
 <xsl:param name="navig.graphics" select="0"/>
