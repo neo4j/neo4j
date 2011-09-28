@@ -201,7 +201,7 @@ pdf: docbook-shortinfo copyimages
 	cd $(FOPDIR)
 	xsltproc --xinclude --output $(FOPFILE) $(CONFDIR)/fo.xsl $(DOCBOOKFILEPDF)
 	ln -s $(SRCDIR)/images $(FOPDIR)/images
-	export FOP_OPTS="-Xmx2024m"
+	export FOP_OPTS="-Xmx2048m"
 	fop -fo $(FOPFILE) -pdf $(FOPPDF)
 
 latexpdf:  manpages copyimages

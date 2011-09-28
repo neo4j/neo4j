@@ -27,11 +27,13 @@
   part      toc,title
   preface   toc,title
   qandadiv  toc
-  qandaset  toc
+  qandaset  nop
   reference toc,title
   section   toc
   set       toc,title
   </xsl:param>
+
+<xsl:param name="qanda.defaultlabel">qanda</xsl:param>
 
   <xsl:template match="book/bookinfo/title | article/articleinfo/title" mode="titlepage.mode">
       <hr />

@@ -1,6 +1,9 @@
-[[qanda]]
-Q & A
-=====
+[[questions]]
+[appendix]
+Questions & Answers
+===================
+
+[qanda]
 
 What is the maximum number of nodes supported?  What is the maximum number of edges supported per node?::
         At the moment it is 34.4 billion nodes, 34.4 billion relationships, and 68.7 billion properties, in total.
@@ -10,8 +13,7 @@ What is the largest complete connected graph supported (i.e. every node is conne
  
 Are read/write depending on the number of nodes/edges in the DB?::
         This question can mean a couple of different things. The performance of a single read/write operation does not depend on the size of the DB. Whether the graph has 10 nodes or 10 million nodes does not matter.
-
-        There is however another facet here, which is that if your graph is big on disk, you may not be able to fit it all into the cache in RAM. Therefore, you may end up hitting disk more often. Most customers don't have graphs of this size, but some do. If you happen to reach these sizes, we have approaches for scaling out on multiple machines to mitigate the performance impact by increasing the cache "surface area" across machines.
+        -- There is however another facet here, which is that if your graph is big on disk, you may not be able to fit it all into the cache in RAM. Therefore, you may end up hitting disk more often. Most customers don't have graphs of this size, but some do. If you happen to reach these sizes, we have approaches for scaling out on multiple machines to mitigate the performance impact by increasing the cache "surface area" across machines.
  
 How many concurrent read/write requests supported?::
         There is no limit on the number of concurrent requests. The amount of requests we can serve per second depends very much on the operation performed (heavy write operation, simple read, complex traversal, etc.), and the hardware used. A rough estimate is 1,000 hops per millisecond while traversing the graph in the simplest way possible. After a discussion about the specific use case, we would be able to give a better idea of the performance one can expect.
@@ -52,7 +54,10 @@ What are suitable use cases for Neo4j?::
 
 How does locking work?::
         Pessimistic locking.
-        Locks are never required for reading. Writers will not block readers. It's impossible to make a read operation block without using explicit locking facilities.        Read locks prevent writes. Acquiring a read lock means consistent view for all holders while held.        Grabbing write locks is done automatically when a node/rel is modified/created, or through explicit locking facilities. It can be used to provide read committed semantics and data consistency when necessary.        
+        Locks are never required for reading. Writers will not block readers. It's impossible to make a read operation block without using explicit locking facilities.
+        Read locks prevent writes. Acquiring a read lock means consistent view for all holders while held.
+        Grabbing write locks is done automatically when a node/rel is modified/created, or through explicit locking facilities. It can be used to provide read committed semantics and data consistency when necessary.
+        
 What about on-size storage?::
         Neo4j is currently not suitable for storing BLOBs/CLOBs.
         Nodes, relationships, and properties are not co-located on disk. This might be introduced in the future.
@@ -79,7 +84,7 @@ How do I tune Neo4j for performance?::
         Larger heap sizes good, however 12G and beyond is impractical with GC.
         100x performance improvement with memory mapped file cache and 1000 improvement with Java heap comparing to fetching from disk I/O
 
-ACID transactions between master & slaves:
+ACID transactions between master & slaves::
         Synchronous between slave-initiated transaction to master, eventual from master to slaves.
         Concurrent multi slave-initiated transaction support with deadlock detection.
         It's fully consistent from a data integrity point of view, but eventually consistent from sync point of view.
