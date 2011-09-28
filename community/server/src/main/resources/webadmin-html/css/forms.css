@@ -16,6 +16,7 @@ input {
   -moz-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.8) inset;
   -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.8) inset;
   padding: 4px 2px;
+  width: 190px;
 }
 
 input.small {
@@ -77,9 +78,19 @@ button {
   padding: 2px 2px 4px;
 }
 
+/* LABELS */
+
+.form-label {
+  line-height: 24px;
+  display: inline;
+  padding:0;
+  font-weight:normal;
+  float:none;
+}
+
 /* SORTABLE LISTS */
 
-.sortHandle {
+.form-sort-handle {
   background: url("../img/icons/glyphish/draggable.png") no-repeat scroll 0 0 transparent;
   border: 1px solid #ccc;
   border-radius: 3px 3px 3px 3px;
@@ -88,12 +99,86 @@ button {
   width: 24px;
 }
 
-/* TOOLTIP */
+/* HELP */
+
+.form-help-text {
+  color: #444;
+  font-size:11px;
+}
 
 .form-tooltip {
-  color: #444444;
-  font-size: 11px;
-  padding: 2px 0;
+  font-size: 12px;
+  padding: 3px 0;
+  float:right;
+}
+
+.form-tooltip a {
+  display: block;
+  cursor: pointer;
+  position:relative;
+}
+
+.form-tooltip a .form-tooltip-icon {
+  background: url("../img/icons/16x16/apps/help-browser.png") no-repeat scroll center center transparent;
+  display: block;
+  height: 18px;
+  text-decoration: none;
+  width: 20px;
+  border: 1px solid transparent;
+  border-bottom:none;
+  left: -22px;
+  position: absolute;
+}
+
+.form-tooltip a .form-tooltip-text {
+  
+  background: none repeat scroll 0 0 #EFEFEF;
+  border: 1px solid #AAAAAA;
+  box-shadow: 0 0 8px 0 #888888;
+  color: #444;
+  
+  display:none;
+  
+  padding: 5px 10px;
+  position: absolute;
+  text-decoration: none !important;
+  z-index:100;
+  right:0;    
+  top: 18px;
+  
+  width:200px;
+
+  -moz-border-radius:4px;
+  -webkit-border-radius:4px;
+  border-radius:4px;
+  border-top-right-radius:0px
+  
+}
+
+.form-tooltip a:hover .form-tooltip-icon {
+  background-color: #EFEFEF;
+  border: 1px solid #AAAAAA;
+  border-bottom:none;
+  border-top-right-radius:4px;
+  border-top-left-radius:4px;
+  z-index:101;
+  
+  box-shadow: 0 -2px 2px 0 #888888;
+}
+
+.form-tooltip a:hover .form-tooltip-text {
+  display:block;
+}
+
+/* ERRORS */
+
+.form-error {
+  background: url("../img/icons/16x16/status/dialog-error.png") no-repeat scroll left center transparent;
+  color: #8A0000;
+  font-size: 10px;
+  line-height: 12px;
+  padding: 4px 2px 4px 20px;
+  font-weight:bold;
 }
 
 /* DROPDOWN */
@@ -102,6 +187,7 @@ button {
   background: none repeat scroll 0 0 #EFEFEF;
   border: 1px solid #AAAAAA;
   box-shadow: 0 0 8px 0 #888888;
+  border-radius:2px;  
 }
 
 .dropdown > ul {

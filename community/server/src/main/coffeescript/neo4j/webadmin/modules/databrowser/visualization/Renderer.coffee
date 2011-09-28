@@ -71,13 +71,18 @@ define(
           
         # determine the box size and round off the coords if we'll be
         # drawing a text label (awful alignment jitter otherwise...)
-        w = 10
-        h = 10
         labels = []
+        fontSize = style.labelStyle.size
+        lineHeight = Math.ceil(fontSize + fontSize / 5)
+        @ctx.font = "#{fontSize}px #{style.labelStyle.font}"
+        
+        w = fontSize
+        h = Math.floor(fontSize - fontSize / 5)
+        
         for label in (""+style.labelText).split(";")
           labelSize = @ctx.measureText(""+label)
-          w = labelSize.width + 10 if (labelSize.width + 10) > w
-          h += 12
+          w = labelSize.width + fontSize if (labelSize.width + fontSize) > w
+          h += fontSize
           labels.push label
         
         if labels.length > 0
@@ -103,14 +108,12 @@ define(
 
         # draw the text
         if labels
-          @ctx.font = style.labelStyle.font
           @ctx.textAlign = "center"
           @ctx.fillStyle = style.labelStyle.color
-        
-          yOffset = (h/-2) + 15
+          yOffset = (h/-2) + lineHeight
           for label in labels
             @ctx.fillText(label||"", pt.x, pt.y+yOffset)
-            yOffset += 12
+            yOffset += lineHeight
 
       renderEdge : (edge, pt1, pt2) =>
         # edge: {source:Node, target:Node, length:#, data:{}}
