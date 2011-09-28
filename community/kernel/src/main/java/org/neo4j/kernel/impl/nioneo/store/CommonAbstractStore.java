@@ -63,7 +63,7 @@ public abstract class CommonAbstractStore
      *
      * @return This store's implementation type and version identifier
      */
-    public abstract String getTypeAndVersionDescriptor();
+    public abstract String getTypeDescriptor();
 
     /**
      * Called from the constructor after the end header has been checked. The
@@ -690,5 +690,10 @@ public abstract class CommonAbstractStore
         {
             setHighId( highId );
         }
+    }
+
+    protected String getTypeAndVersionDescriptor()
+    {
+        return getTypeDescriptor() + " " + ALL_STORES_VERSION;
     }
 }

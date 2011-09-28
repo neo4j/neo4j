@@ -71,7 +71,7 @@ public abstract class AbstractStore extends CommonAbstractStore
      * store.
      * <p>
      * This method will create a empty store containing the descriptor returned
-     * by the <CODE>getTypeAndVersionDescriptor()</CODE>. The id generator
+     * by the <CODE>getTypeDescriptor()</CODE>. The id generator
      * used by this store will also be created
      *
      * @param fileName
@@ -194,7 +194,7 @@ public abstract class AbstractStore extends CommonAbstractStore
         }
         setWindowPool( new PersistenceWindowPool( getStorageFileName(),
                 getRecordSize(), getFileChannel(), calculateMappedMemory(
-                        getConfig(), storageFileName ),
+                getConfig(), storageFileName ),
             getIfMemoryMapped(), isReadOnly() && !isBackupSlave() ) );
     }
 
@@ -208,24 +208,6 @@ public abstract class AbstractStore extends CommonAbstractStore
     {
         super.setHighId( id );
     }
-
-//    @Override
-//    protected void updateHighId()
-//    {
-//        try
-//        {
-//            long highId = getFileChannel().size() / getRecordSize();
-//
-//            if ( highId > getHighId() )
-//            {
-//                setHighId( highId );
-//            }
-//        }
-//        catch ( IOException e )
-//        {
-//            throw new UnderlyingStorageException( e );
-//        }
-//    }
 
     private long findHighIdBackwards() throws IOException
     {

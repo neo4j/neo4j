@@ -63,7 +63,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
      * bytes.
      * <p>
      * This method will create a empty store with descriptor returned by the
-     * {@link #getTypeAndVersionDescriptor()}. The internal id generator used by
+     * {@link #getTypeDescriptor()}. The internal id generator used by
      * this store will also be created.
      *
      * @param fileName
@@ -149,13 +149,11 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
     {
         try
         {
+            String expectedTypeDescriptorAndVersion = getTypeDescriptor() + " " + ALL_STORES_VERSION;
+            int expectedVersionLength = UTF8.encode( expectedTypeDescriptorAndVersion ).length;
             long fileSize = getFileChannel().size();
-            String expectedVersion = getTypeAndVersionDescriptor();
-            byte version[] = new byte[UTF8.encode( expectedVersion ).length];
-            ByteBuffer buffer = ByteBuffer.wrap( version );
-            getFileChannel().position( fileSize - version.length );
-            getFileChannel().read( buffer );
-            buffer = ByteBuffer.allocate( 4 );
+            areTypeDescriptorAndVersionPresentAtTheEndOfTheFileAndDoTheyMatchTheCurrentVersion( expectedTypeDescriptorAndVersion, fileSize );
+            ByteBuffer buffer = ByteBuffer.allocate( 4 );
             getFileChannel().position( 0 );
             getFileChannel().read( buffer );
             buffer.flip();
@@ -165,20 +163,13 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
                 throw new InvalidRecordException( "Illegal block size: " +
                     blockSize + " in " + getStorageFileName() );
             }
-            if ( !expectedVersion.equals( UTF8.decode( version ) ) )
-            {
-                if ( !versionFound( UTF8.decode( version ) ) && !isReadOnly() )
-                {
-                    setStoreNotOk();
-                }
-            }
-            if ( (fileSize - version.length) % blockSize != 0 && !isReadOnly() )
+            if ( (fileSize - expectedVersionLength) % blockSize != 0 && !isReadOnly() )
             {
                 setStoreNotOk();
             }
             if ( getStoreOk() && !isReadOnly() )
             {
-                getFileChannel().truncate( fileSize - version.length );
+                getFileChannel().truncate( fileSize - expectedVersionLength );
             }
         }
         catch ( IOException e )
@@ -217,6 +208,33 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         setWindowPool( new PersistenceWindowPool( getStorageFileName(),
             getBlockSize(), getFileChannel(), calculateMappedMemory( getConfig(), storageFileName ),
             getIfMemoryMapped(), isReadOnly() && !isBackupSlave() ) );
+    }
+
+    private boolean areTypeDescriptorAndVersionPresentAtTheEndOfTheFileAndDoTheyMatchTheCurrentVersion( String expectedTypeDescriptorAndVersion, long fileSize ) throws IOException
+    {
+        byte bytes[] = new byte[UTF8.encode( expectedTypeDescriptorAndVersion ).length];
+        ByteBuffer buffer = ByteBuffer.wrap( bytes );
+        getFileChannel().position( fileSize - bytes.length );
+        getFileChannel().read( buffer );
+        String foundTypeDescriptorAndVersion = UTF8.decode( bytes );
+
+        if ( expectedTypeDescriptorAndVersion.equals( foundTypeDescriptorAndVersion ) )
+        {
+            return true;
+        }
+        else
+        {
+            if ( foundTypeDescriptorAndVersion.startsWith( getTypeDescriptor() )) {
+                String foundVersion = foundTypeDescriptorAndVersion.substring( getTypeDescriptor().length() + 1 );
+                throw new NotCurrentStoreVersionException( ALL_STORES_VERSION, foundVersion, "", canAutomaticallyUpgradeFrom(foundVersion) );
+            }
+            return false;
+        }
+    }
+
+    protected boolean canAutomaticallyUpgradeFrom( String foundVersion )
+    {
+        return true;
     }
 
     /**

@@ -42,6 +42,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 {
     // store version, each store ends with this string (byte encoded)
     private static final String VERSION = buildVersionString(RelationshipTypeStore.class);
+    private static final String TYPE_DESCRIPTOR = "RelationshipTypeStore";
 
     // record header size
     // in_use(byte)+type_blockId(int)
@@ -106,9 +107,9 @@ public class RelationshipTypeStore extends AbstractStore implements Store
     }
 
     @Override
-    public String getTypeAndVersionDescriptor()
+    public String getTypeDescriptor()
     {
-        return VERSION;
+        return TYPE_DESCRIPTOR;
     }
 
     @Override
@@ -437,23 +438,23 @@ public class RelationshipTypeStore extends AbstractStore implements Store
                 // 0xFFFF magic -1
                 if ( recordCount > 0xFFFF )
                 {
-                    throw new IllegalStoreVersionException( "Store version[" + version +
+                    throw new NotCurrentStoreVersionException( VERSION, VERSION, "Store version[" + version +
                             "] has " + recordCount + " different relationship types " +
-                            "(limit is " + 0xFFFF + ") and can not be upgraded to a newer version." );
+                            "(limit is " + 0xFFFF + ") and can not be upgraded to a newer version.", false );
                 }
             }
             catch ( IOException e )
             {
-                throw new IllegalStoreVersionException(
-                        "Unable to verify relationship type count, can not upgrade " +
-                        "store from version[" + version + "]" );
+                throw new NotCurrentStoreVersionException(
+                        VERSION, VERSION, "Unable to verify relationship type count, can not upgrade " +
+                        "store from version[" + version + "]", false );
             }
             return true;
         }
-        throw new IllegalStoreVersionException( "Store version [" + version  +
+        throw new NotCurrentStoreVersionException( VERSION, VERSION, "Store version [" + version  +
             "]. Please make sure you are not running old Neo4j kernel " +
             " towards a store that has been created by newer version " +
-            " of Neo4j." );
+            " of Neo4j.", false );
     }
 
     @Override

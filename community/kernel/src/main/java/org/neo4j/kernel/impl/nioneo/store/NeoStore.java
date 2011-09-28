@@ -43,6 +43,7 @@ public class NeoStore extends AbstractStore
 {
     // store version, each store ends with this string (byte encoded)
     private static final String VERSION = buildVersionString(NeoStore.class);
+    private static final String TYPE_DESCRIPTOR = "NeoStore";
 
     // 4 longs in header (long + in use), time | random | version | txid
     private static final int RECORD_SIZE = 9;
@@ -142,9 +143,9 @@ public class NeoStore extends AbstractStore
     }
 
     @Override
-    public String getTypeAndVersionDescriptor()
+    public String getTypeDescriptor()
     {
-        return VERSION;
+        return TYPE_DESCRIPTOR;
     }
 
     public IdGeneratorFactory getIdGeneratorFactory()
@@ -416,20 +417,20 @@ public class NeoStore extends AbstractStore
 //            closeIdGenerator();
 //            return false;
 //        }
-        if ( version.equals( "NeoStore v0.9.6" ) )
-        {
-            if ( !configSaysOkToUpgrade() )
-            {
-                throw new IllegalStoreVersionException( "Store version [" + version + "] is older " +
-                    "than expected, but could be upgraded automatically if '" +
-                    Config.ALLOW_STORE_UPGRADE + "' configuration " + "parameter was set to 'true'." );
-            }
-            LogIoUtils.moveAllLogicalLogs( new File( getStoreDir() ), "1.2-logs" );
+//        if ( version.equals( "NeoStore v0.9.6" ) )
+//        {
+//            if ( !configSaysOkToUpgrade() )
+//            {
+//                throw new IllegalStoreVersionException( "Store version [" + version + "] is older " +
+//                    "than expected, but could be upgraded automatically if '" +
+//                    Config.ALLOW_STORE_UPGRADE + "' configuration " + "parameter was set to 'true'." );
+//            }
+//            LogIoUtils.moveAllLogicalLogs( new File( getStoreDir() ), "1.2-logs" );
             return true;
-        }
-        throw new IllegalStoreVersionException( "Store version [" + version  +
-            "]. Please make sure you are not running old Neo4j kernel " +
-            "on a store that has been created by newer version of Neo4j." );
+//        }
+//        throw new IllegalStoreVersionException( "Store version [" + version  +
+//            "]. Please make sure you are not running old Neo4j kernel " +
+//            "on a store that has been created by newer version of Neo4j." );
     }
 
     private boolean configSaysOkToUpgrade()

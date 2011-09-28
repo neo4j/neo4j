@@ -31,6 +31,7 @@ public class DynamicStringStore extends AbstractDynamicStore
 {
     // store version, each store ends with this string (byte encoded)
     static final String VERSION = "StringPropertyStore v0.A.0";
+    static final String TYPE_DESCRIPTOR = "StringPropertyStore";
 
     public DynamicStringStore( String fileName, Map<?,?> config, IdType idType )
     {
@@ -38,9 +39,9 @@ public class DynamicStringStore extends AbstractDynamicStore
     }
 
     @Override
-    public String getTypeAndVersionDescriptor()
+    public String getTypeDescriptor()
     {
-        return VERSION;
+        return TYPE_DESCRIPTOR;
     }
 
     public static void createStore( String fileName, int blockSize,
@@ -81,15 +82,15 @@ public class DynamicStringStore extends AbstractDynamicStore
             // 0xFFFF + 13 for inUse,length,prev,next
             if ( blockSize > 0xFFFF+BLOCK_HEADER_SIZE )
             {
-                throw new IllegalStoreVersionException( "Store version[" + version +
+                throw new NotCurrentStoreVersionException( VERSION, VERSION, "Store version[" + version +
                         "] has " + (blockSize - BLOCK_HEADER_SIZE) + " block size " +
-                        "(limit is " + 0xFFFF + ") and can not be upgraded to a newer version." );
+                        "(limit is " + 0xFFFF + ") and can not be upgraded to a newer version.", false );
             }
             return true;
         }
-        throw new IllegalStoreVersionException( "Store version [" + version  +
+        throw new NotCurrentStoreVersionException( VERSION, VERSION, "Store version [" + version  +
             "]. Please make sure you are not running old Neo4j kernel " +
             " towards a store that has been created by newer version " +
-            " of Neo4j." );
+            " of Neo4j.", false );
     }
 }

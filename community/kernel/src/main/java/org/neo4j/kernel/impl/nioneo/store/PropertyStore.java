@@ -47,6 +47,7 @@ public class PropertyStore extends AbstractStore implements Store
 
     // store version, each store ends with this string (byte encoded)
     private static final String VERSION = buildVersionString( PropertyStore.class );
+    private static final String TYPE_DESCRIPTOR = "PropertyStore";
 
     public static final int RECORD_SIZE = 1/*next and prev high bits*/
     + 4/*next*/
@@ -122,9 +123,9 @@ public class PropertyStore extends AbstractStore implements Store
     }
 
     @Override
-    public String getTypeAndVersionDescriptor()
+    public String getTypeDescriptor()
     {
-        return VERSION;
+        return TYPE_DESCRIPTOR;
     }
 
     @Override
@@ -681,10 +682,10 @@ public class PropertyStore extends AbstractStore implements Store
         {
             return true;
         }
-        throw new IllegalStoreVersionException( "Store version [" + version  +
+        throw new NotCurrentStoreVersionException( VERSION, VERSION, "Store version [" + version  +
             "]. Please make sure you are not running old Neo4j kernel " +
             " towards a store that has been created by newer version " +
-            " of Neo4j." );
+            " of Neo4j.", false );
     }
 
     @Override

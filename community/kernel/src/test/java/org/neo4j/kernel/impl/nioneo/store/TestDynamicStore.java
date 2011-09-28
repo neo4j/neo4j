@@ -311,7 +311,7 @@ public class TestDynamicStore
 //                    IdGeneratorFactory.class, idGenerator, "store_dir", storeDir ), IdType.ARRAY_BLOCK );
 //        }
 //
-//        public String getTypeAndVersionDescriptor()
+//        public String getTypeDescriptor()
 //        {
 //            return VERSION;
 //        }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +34,7 @@ public class NodeStore extends AbstractStore implements Store
     // node store version, each node store should end with this string
     // (byte encoded)
     private static final String VERSION = buildVersionString( NodeStore.class );
+    private static final String TYPE_DESCRIPTOR = "NodeStore";
 
     // in_use(byte)+next_rel_id(int)+next_prop_id(int)
     public static final int RECORD_SIZE = 9;
@@ -44,9 +44,9 @@ public class NodeStore extends AbstractStore implements Store
         super( fileName, config, IdType.NODE );
     }
 
-    public String getTypeAndVersionDescriptor()
+    public String getTypeDescriptor()
     {
-        return VERSION;
+        return TYPE_DESCRIPTOR;
     }
 
     public int getRecordSize()
@@ -231,10 +231,10 @@ public class NodeStore extends AbstractStore implements Store
         {
             return true;
         }
-        throw new IllegalStoreVersionException( "Store version [" + version  + 
+        throw new NotCurrentStoreVersionException( VERSION, VERSION, "Store version [" + version  +
             "]. Please make sure you are not running old Neo4j kernel " + 
             " towards a store that has been created by newer version " + 
-            " of Neo4j." );
+            " of Neo4j.", false );
     }
 
     public List<WindowPoolStats> getAllWindowPoolStats()

@@ -85,7 +85,7 @@ public class StoreVersionTest
         try {
             new NodeStore( workingFile.getPath(), config );
             fail( "Should have thrown exception" );
-        } catch ( IllegalStoreVersionException e ) {
+        } catch ( NotCurrentStoreVersionException e ) {
             //expected
         }
     }

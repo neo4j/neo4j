@@ -35,6 +35,7 @@ public class RelationshipStore extends AbstractStore implements Store
     // relationship store version, each rel store ends with this
     // string (byte encoded)
     private static final String VERSION = buildVersionString( RelationshipStore.class );
+    private static final String TYPE_DESCRIPTOR = "RelationshipStore";
 
     // record header size
     // directed|in_use(byte)+first_node(int)+second_node(int)+rel_type(int)+
@@ -50,17 +51,9 @@ public class RelationshipStore extends AbstractStore implements Store
         super( fileName, config, IdType.RELATIONSHIP );
     }
 
-    /**
-     * See {@link AbstractStore#AbstractStore(String)}
-     */
-//    public RelationshipStore( String fileName )
-//    {
-//        super( fileName );
-//    }
-
-    public String getTypeAndVersionDescriptor()
+    public String getTypeDescriptor()
     {
-        return VERSION;
+        return TYPE_DESCRIPTOR;
     }
 
     public int getRecordSize()
@@ -313,10 +306,10 @@ public class RelationshipStore extends AbstractStore implements Store
         {
             return true;
         }
-        throw new IllegalStoreVersionException( "Store version [" + version  + 
+        throw new NotCurrentStoreVersionException( VERSION, VERSION, "Store version [" + version  +
             "]. Please make sure you are not running old Neo4j kernel " + 
             " towards a store that has been created by newer version " + 
-            " of Neo4j." );
+            " of Neo4j.", false );
     }
 
     public RelationshipRecord getChainRecord( long relId )

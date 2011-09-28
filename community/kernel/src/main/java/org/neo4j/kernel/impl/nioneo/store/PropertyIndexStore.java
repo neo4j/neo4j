@@ -36,6 +36,7 @@ public class PropertyIndexStore extends AbstractStore implements Store
 {
     // store version, should end with this string (byte encoded)
     private static final String VERSION = buildVersionString( PropertyIndexStore.class );
+    private static final String TYPE_DESCRIPTOR = "PropertyIndexStore";
 
     private static final int KEY_STORE_BLOCK_SIZE = 30;
 
@@ -49,20 +50,15 @@ public class PropertyIndexStore extends AbstractStore implements Store
         super( fileName, config, IdType.PROPERTY_INDEX );
     }
 
-//    public PropertyIndexStore( String fileName )
-//    {
-//        super( fileName );
-//    }
-
     protected void initStorage()
     {
         keyPropertyStore = new DynamicStringStore( getStorageFileName()
             + ".keys", getConfig(), IdType.PROPERTY_INDEX_BLOCK );
     }
 
-    public String getTypeAndVersionDescriptor()
+    public String getTypeDescriptor()
     {
-        return VERSION;
+        return TYPE_DESCRIPTOR;
     }
 
     public int getRecordSize()
@@ -352,10 +348,10 @@ public class PropertyIndexStore extends AbstractStore implements Store
         {
             return true;
         }
-        throw new IllegalStoreVersionException( "Store version [" + version  + 
+        throw new NotCurrentStoreVersionException( VERSION, VERSION, "Store version [" + version  +
             "]. Please make sure you are not running old Neo4j kernel " + 
             " towards a store that has been created by newer version " + 
-            " of Neo4j." );
+            " of Neo4j.", false );
     }
 
     public List<WindowPoolStats> getAllWindowPoolStats()

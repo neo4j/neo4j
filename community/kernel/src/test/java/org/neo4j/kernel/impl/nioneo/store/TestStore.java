@@ -142,6 +142,7 @@ public class TestStore
     {
         // store version, each store ends with this string (byte encoded)
         private static final String VERSION = "TestVersion v0.1";
+        private static final String TYPE_DESCRIPTOR = "TestVersion";
         private static final int RECORD_SIZE = 1;
 
         public Store( String fileName ) throws IOException
@@ -170,9 +171,9 @@ public class TestStore
             return RECORD_SIZE;
         }
 
-        public String getTypeAndVersionDescriptor()
+        public String getTypeDescriptor()
         {
-            return VERSION;
+            return TYPE_DESCRIPTOR;
         }
 
         public static Store createStore( String fileName ) throws IOException
