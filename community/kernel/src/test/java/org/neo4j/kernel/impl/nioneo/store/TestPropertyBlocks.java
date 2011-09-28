@@ -535,6 +535,9 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
 
     @Test
     @Ignore
+    /*
+     * Assumes space to put a block is searched along the whole chain - that is not the case currently.
+     */
     public void testAdditionsHappenAtTheFirstRecordWhenFits()
     {
         Node node = getGraphDb().createNode();
@@ -625,6 +628,9 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
 
     @Test
     @Ignore
+    /*
+     * Assumes space to put a block is searched along the whole chain - that is not the case currently.
+     */
     public void testPackingAndOverflowingValueChangeInMiddleRecord()
     {
         Node node = getGraphDb().createNode();
@@ -903,5 +909,27 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     public void testStringYoYoWithoutTx()
     {
         testStringYoYoBase( false );
+    }
+
+    @Test
+    public void testRemoveFirstOfTwo()
+    {
+        Node node = getGraphDb().createNode();
+
+        long recordsInUseAtStart = propertyRecordsInUse();
+
+        node.setProperty( "Double1", 1.0 );
+        node.setProperty( "Int1", 1 );
+        node.setProperty( "Int2", 2 );
+        node.setProperty( "Int2", 1.2 );
+        node.setProperty( "Int2", 2 );
+        node.setProperty( "Double3", 3.0 );
+        assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
+        newTransaction();
+        clearCache();
+        assertEquals( new Double( 1.0 ), node.getProperty( "Double1" ) );
+        assertEquals( new Integer( 1 ), node.getProperty( "Int1" ) );
+        assertEquals( new Integer( 2 ), node.getProperty( "Int2" ) );
+        assertEquals( new Double( 3.0 ), node.getProperty( "Double3" ) );
     }
 }
