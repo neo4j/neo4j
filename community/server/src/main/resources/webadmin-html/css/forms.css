@@ -70,7 +70,7 @@ button {
 .form-fieldset {
   list-style:none;
   margin: 0;
-  padding: 0;
+  padding: 0 5px 0;
   width: 200px;
 }
 
@@ -181,6 +181,27 @@ button {
   font-weight:bold;
 }
 
+/* IMAGE PICKER */
+
+.imagepicker-image {
+  border: 1px solid #EEEEEE;
+  padding: 10px;
+  margin:5px;
+  border-radius:2px;
+  cursor:pointer;
+  width: 25px;
+  height:25px;
+}
+
+.imagepicker-image:hover {
+  border-color: #333;
+}
+
+.imagepicker-dialog {
+  width: 460px;
+  margin:0 auto !important;
+}
+
 /* DROPDOWN */
 
 .dropdown {
@@ -233,4 +254,20 @@ button {
 
 .dropdown-controls {
   float:right;
+}
+
+/* GRID */
+
+.grid, .grid > li > ul {
+  list-style:none;
+  padding:0;
+  margin:0;
+}
+
+.grid > li {
+  clear:both;
+}
+
+.grid > li > ul > li {
+  float: left;
 }

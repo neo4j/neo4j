@@ -47,7 +47,6 @@ define(
         @render()
         @positionFor(target)
         @el.show()
-        
         setTimeout @activateHideOnClickAnywhere, 0
         
       positionFor : (target) ->
@@ -75,9 +74,6 @@ define(
       clickedAnywhere : =>
         $('body').unbind 'click', @clickedAnywhere
         @hide()
-        
-      hide : () =>
-        @el.hide()
         
       #
       # Helpers for generating dropdown items

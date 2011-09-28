@@ -173,7 +173,34 @@ define(
         for url, visualNode of @dataModel.getVisualGraph().nodes
           @profile.styleNode visualNode
         
-        @sys.merge @dataModel.getVisualGraph()
-        @start()
+        @_preloadIcons () =>
+          @sys.merge @dataModel.getVisualGraph()
+          @start()
+        
+      _preloadIcons : (done) ->
+        @_images ?= {}
+        
+        @imagesLoading ?= 0
+        hasGoneThroughAllNodes = false
+        
+        for url, visualNode of @dataModel.getVisualGraph().nodes
+          style = visualNode.style
+          if style.shapeStyle.shape is "icon"
+            url = style.iconUrl
+            if not @_images[url]?
+              img = new Image()
+              img.src = url
+              @_images[url] = img
+              
+              @imagesLoading += 1
+              img.onload = () =>
+                @imagesLoading -= 1
+                if @imagesLoading == 0 and hasGoneThroughAllNodes
+                  done()
+              
+            style.icon = @_images[url]
+        
+        hasGoneThroughAllNodes = true
+        if @imagesLoading == 0 then done()
 
 )
