@@ -72,9 +72,6 @@ public abstract class CommonAbstractStore
      * are needed by overriding this implementation.
      * <p>
      * This default implementation does nothing.
-     *
-     * @throws IOException
-     *             If unable to initialize
      */
     protected void initStorage()
     {
@@ -92,28 +89,19 @@ public abstract class CommonAbstractStore
      * {@link #initStorage()} method.
      * <p>
      * This default implementation does nothing.
-     *
-     * @throws IOException
-     *             If unable to close
      */
     protected void closeStorage()
     {
-    };
+    }
 
     /**
      * Should do first validation on store validating stuff like version and id
      * generator. This method is called by constructors.
-     *
-     * @throws IOException
-     *             If unable to load store
      */
     protected abstract void loadStorage();
 
     /**
      * Should rebuild the id generator from scratch.
-     *
-     * @throws IOException
-     *             If unable to rebuild id generator.
      */
     protected abstract void rebuildIdGenerator();
 
@@ -121,7 +109,7 @@ public abstract class CommonAbstractStore
     protected static final int DEFAULT_ID_GRAB_SIZE = 50000;
 
     protected final String storageFileName;
-    private final IdGeneratorFactory idGeneratorFactory;
+    private IdGeneratorFactory idGeneratorFactory = null;
     private IdGenerator idGenerator = null;
     private FileChannel fileChannel = null;
     private PersistenceWindowPool windowPool;
@@ -142,9 +130,9 @@ public abstract class CommonAbstractStore
      * validation the <CODE>initStorage</CODE> method is called.
      * <p>
      * If the store had a clean shutdown it will be marked as <CODE>ok</CODE>
-     * and the {@link #validate()} method will not throw exception when invoked.
+     * and the {@link #getStoreOk()} method will return true.
      * If a problem was found when opening the store the {@link #makeStoreOk()}
-     * must be invoked else {@link #validate()} will throw exception.
+     * must be invoked.
      *
      * throws IOException if the unable to open the storage or if the
      * <CODE>initStorage</CODE> method fails
@@ -153,8 +141,8 @@ public abstract class CommonAbstractStore
      *            The name of the store
      * @param config
      *            The configuration for store (may be null)
-     * @throws IOException
-     *             If store doesn't exist
+     * @param idType
+     *            The Id used to index into this store
      */
     public CommonAbstractStore( String fileName, Map<?,?> config, IdType idType )
     {
@@ -168,27 +156,13 @@ public abstract class CommonAbstractStore
             {
                 grabFileLock = false;
             }
+            this.idGeneratorFactory = (IdGeneratorFactory)
+                    config.get( IdGeneratorFactory.class );
         }
-        this.idGeneratorFactory = (IdGeneratorFactory)
-                config.get( IdGeneratorFactory.class );
 
-//        try
-//        {
-            checkStorage();
-            loadStorage();
-            initStorage();
-//        }
-//        catch ( RuntimeException e )
-//        {
-//            closeFileChannelIfOpened();
-//            if ( idGenerator != null )
-//            {
-//                idGenerator.close();
-//                idGenerator = null;
-//            }
-//            closeStorage();
-//            throw e;
-//        }
+        checkStorage();
+        loadStorage();
+        initStorage();
     }
 
     boolean isReadOnly()
@@ -200,32 +174,6 @@ public abstract class CommonAbstractStore
     {
         return backupSlave;
     }
-
-    /**
-     * Opens and validates the store contained in <CODE>fileName</CODE>.
-     * After validation the <CODE>initStorage</CODE> method is called.
-     * <p>
-     * If the store had a clean shutdown it will be marked as <CODE>ok</CODE>
-     * and the {@link #validate()} method will not throw exception when invoked.
-     * If a problem was found when opening the store the {@link #makeStoreOk()}
-     * must be invoked else {@link #validate()} will throw exception.
-     *
-     * throws IOException if the unable to open the storage or if the
-     * <CODE>initStorage</CODE> method fails
-     *
-     * @param fileName
-     *            The name of the store
-     * @throws IOException
-     *             If store doesn't exist
-     */
-//    public CommonAbstractStore( String fileName )
-//    {
-//        this.storageFileName = fileName;
-//        idGeneratorFactory = IdGeneratorFactory.DEFAULT;
-//        checkStorage();
-//        loadStorage();
-//        initStorage();
-//    }
 
     protected FileSystemAbstraction getFileSystem()
     {
@@ -290,22 +238,6 @@ public abstract class CommonAbstractStore
         }
     }
 
-    private void closeFileChannelIfOpened()
-    {
-        if ( this.fileChannel != null )
-        {
-            try
-            {
-                this.fileChannel.close();
-                this.fileChannel = null;
-            }
-            catch ( IOException e )
-            {
-                // Unable to close!
-            }
-        }
-    }
-
     /**
      * Marks this store as "not ok".
      *
@@ -335,8 +267,10 @@ public abstract class CommonAbstractStore
      * this is set in the {@link #loadStorage()} method. This method must be
      * invoked with a valid "pool" before any of the
      * {@link #acquireWindow(long, OperationType)}
-     * {@link #releaseWindow(PersistenceWindow)} {@link #flush(int)}
-     * {@link #forget(int)} {@link #close()} methods are invoked.
+     * {@link #releaseWindow(PersistenceWindow)}
+     * {@link #flushAll()}
+     * {@link #close()}
+     * methods are invoked.
      *
      * @param pool
      *            The window pool this store should use
@@ -350,8 +284,6 @@ public abstract class CommonAbstractStore
      * Returns the next id for this store's {@link IdGenerator}.
      *
      * @return The next free id
-     * @throws IOException
-     *             If unable to get next free id
      */
     public long nextId()
     {
@@ -363,18 +295,11 @@ public abstract class CommonAbstractStore
      *
      * @param id
      *            The id to free
-     * @throws IOException
-     *             If unable to free the id
      */
     public void freeId( long id )
     {
-        idGenerator.freeId( id ); // makeUnsignedInt( id ) );
+        idGenerator.freeId( id );
     }
-
-//    private long makeUnsignedInt( int signedInteger )
-//    {
-//        return signedInteger & 0xFFFFFFFFL;
-//    }
 
     /**
      * Return the highest id in use.
@@ -410,7 +335,7 @@ public abstract class CommonAbstractStore
     {
         String configValue = getConfig() != null ?
                 (String) getConfig().get( Config.USE_MEMORY_MAPPED_BUFFERS ) : null;
-        return configValue != null ? Boolean.parseBoolean( configValue ) : true;
+        return configValue == null || Boolean.parseBoolean( configValue );
     }
 
     /**
@@ -420,8 +345,8 @@ public abstract class CommonAbstractStore
      * this stores name.
      *
      * @return The number of bytes memory mapped windows this store has
-     * @param config
-     * @param storageFileName
+     * @param config Map of configuration parameters
+     * @param storageFileName Name of the file on disk
      */
     public static long calculateMappedMemory( Map<?, ?> config, String storageFileName )
     {
@@ -467,9 +392,6 @@ public abstract class CommonAbstractStore
      * If store is not ok a call to this method will rebuild the {@link
      * IdGenerator} used by this store and if successful mark it as
      * <CODE>ok</CODE>.
-     *
-     * @throws IOException
-     *             If unable to rebuild id generator
      */
     public void makeStoreOk()
     {
@@ -522,8 +444,6 @@ public abstract class CommonAbstractStore
      * @param type
      *            The operation type
      * @return a persistence window encapsulating the record
-     * @throws IOException
-     *             If unable to acquire window
      */
     protected PersistenceWindow acquireWindow( long position, OperationType type )
     {
@@ -542,9 +462,6 @@ public abstract class CommonAbstractStore
      *
      * @param window
      *            The window to be released
-     * @throws IOException
-     *             If window was a <CODE>DirectPersistenceRow</CODE> and
-     *             unable to write out its data to the store
      */
     protected void releaseWindow( PersistenceWindow window )
     {
@@ -585,9 +502,6 @@ public abstract class CommonAbstractStore
 
     /**
      * Opens the {@link IdGenerator} used by this store.
-     *
-     * @throws IOException
-     *             If unable to open the id generator
      */
     protected void openIdGenerator()
     {
@@ -623,9 +537,6 @@ public abstract class CommonAbstractStore
 
     /**
      * Closed the {@link IdGenerator} used by this store
-     *
-     * @throws IOException
-     *             If unable to close this store
      */
     protected void closeIdGenerator()
     {
@@ -643,9 +554,6 @@ public abstract class CommonAbstractStore
      * This method will start by invoking the {@link #closeStorage} method
      * giving the implementing store way to do anything that it needs to do
      * before the fileChannel is closed.
-     *
-     * @throws IOException
-     *             If problem when invoking {@link #closeStorage()}
      */
     public void close()
     {
