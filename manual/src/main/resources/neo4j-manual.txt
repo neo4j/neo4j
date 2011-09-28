@@ -40,6 +40,10 @@ include::{importdir}/neo4j-server-examples-docs-jar/dev/index.txt[]
 
 :leveloffset: 1
 
+include::{importdir}/neo4j-examples-docs-jar/dev/domain-modeling.txt[]
+
+:leveloffset: 1
+
 [[tutorials-rest]]
 Using the Neo4j REST API
 ========================
