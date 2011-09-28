@@ -16,10 +16,6 @@ include::installation.txt[]
 
 :leveloffset: 2
 
-include::configuration.txt[]
-
-:leveloffset: 2
-
 include::{importdir}/neo4j-docs-jar/ops/upgrades.txt[]
 
 :leveloffset: 2
