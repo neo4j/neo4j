@@ -44,10 +44,17 @@ define(
       save : () =>
         name = $('#profile-name',@el).val()
         
+        if name.length == 0
+          alert "Please enter a name for this profile."
+          return
+          
+        for ruleView in @styleRuleViews
+          if not ruleView.validates()
+            alert "There are errors in one or more of your style rules, please fix those before saving."
+            return
+        
         @profile.setName name
-        
         @_updateRuleOrderFromUI()
-        
         if @isInCreateMode
           @profiles.add @profile
         @profile.save()
@@ -65,6 +72,9 @@ define(
         
       addStyleRuleElement : (rule) ->
         view = new StyleRuleView( rule : rule, rules:@profile.styleRules )
+        
+        @styleRuleViews.push view
+        
         li = $ view.render().el
         li.attr('id', "styleRule_#{rule.getOrder()}")
         @styleRuleContainer.append li
@@ -73,6 +83,7 @@ define(
 
         $(@el).html(template( name : @profile.getName(), isInCreateMode:@isInCreateMode ))
         
+        @styleRuleViews = []
         @styleRuleContainer = $('.styleRules',@el)
         
         sortId = 0
@@ -80,7 +91,7 @@ define(
           @addStyleRuleElement rule, sortId++
         
         @styleRuleContainer.sortable({
-          handle : '.sortHandle'
+          handle : '.form-sort-handle'
         })
         
         return this

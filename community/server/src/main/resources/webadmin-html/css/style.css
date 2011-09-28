@@ -397,7 +397,7 @@ body {
   padding:5px 5px 2px 10px;
 }
 
-.ruleTitle .sortHandle {
+.ruleTitle .form-sort-handle {
   margin: 15px 14px;
   clear: both;
 }
@@ -804,11 +804,6 @@ pre {
 
 .helpbox a:hover .helptext {
   display:block;
-}
-
-.error {
-  font-size: 10px;
-  padding: 0 5px;
 }
 
 /**

@@ -27,21 +27,27 @@ define(
   (View, HtmlEscaper,Nano) ->
     exports = {}
     
+    
     exports.ModelForm = class ModelForm extends View
 
-      fields : {}
+      createFields : () -> {}
 
       initialize : (opts)->
         @instance = opts.instance
+        @fields = @createFields()
         
       render : =>
         wrap = $("<ul class='form'></ul>")
-        model = @model
         for key, fieldset of @_getFieldSets()
-          wrap.append fieldset.renderLi model
+          wrap.append fieldset.renderLi @model
         
         $(@el).html(wrap)
         return this
+        
+      validates : () ->
+        for k, field of @fields
+          if not field.validates() then return false
+        return true
         
       _getFieldSets : () ->
         sets = 
@@ -57,7 +63,8 @@ define(
         if not hasDefaultFieldset
           delete sets._default
         return sets
-        
+       
+    
     exports.FieldSet = class FieldSet 
     
       constructor : (@label="", @fields={}) ->
@@ -67,16 +74,33 @@ define(
       
       renderLi : (model) ->
         ul = $("<ul class='form-fieldset'></ul>")
+        
         for key, field of @fields
           do (key)->
             valChanger = (newValue) =>
               model.set key, newValue
-            ul.append field.renderLi(model.get(key), valChanger)
+            
+            ul.append field.renderLi model.get(key), valChanger
+        
         wrap = $("<li></li>")
         if @label
           wrap.append "<h3>#{htmlEscape(@label)}</h3>"
         wrap.append ul
         wrap
+        
+      validates : () ->
+        for k, field of @fields
+          if not field.validates() then return false
+        return true
+        
+    #
+    # FORM ERRORS
+    #
+    
+    exports.ValueException = class ValueException extends Error
+      
+      constructor : (@errorMessage) ->
+        super(@errorMessage)
         
     #
     # FIELDS
@@ -84,32 +108,85 @@ define(
     
     exports.Field = class Field
       
+      LI_TEMPLATE : """
+        <li>
+          {label}
+          {tooltip}
+          <div class='form-error' style='display:none;'></div>
+          {input} 
+        </li>"""
+        
+      errors : []
+      
       constructor : (@label, opts={}) -> 
         @tooltip = opts.tooltip or ""
       
       renderLi : (value, triggerValueChange, onValueChange, opts={}) ->
-        @renderWithTemplate "<li>{label}: {input} <div class='form-tooltip'>{tooltip}</div></li>", value, triggerValueChange
+        @renderWithTemplate @LI_TEMPLATE, value, triggerValueChange
       
       renderWithTemplate : (tpl, value, triggerValueChange, onValueChange, opts) ->
+        
+        tooltipHtml = if @tooltip.length > 0 then "<div class='form-tooltip'><a><span class='form-tooltip-icon'></span><span class='form-tooltip-text'>#{@tooltip}</span></a></div>" else ""
         r = $ Nano.compile tpl, {
-          label : @label
-          input : "<div class='PLACEHOLDER'></div>"
-          tooltip : @tooltip
+          label : "<label class='form-label'>#{@label}</label>"
+          input : "<div class='__PLACEHOLDER__'></div>"
+          tooltip : tooltipHtml
         }
         
-        $('.PLACEHOLDER', r).replaceWith(@renderElement(value, triggerValueChange))
+        wrappedTriggerValueChange = (val) =>
+          try
+            @hideError()
+            @setErrors []
+            triggerValueChange @cleanValue val
+          catch e
+            @setErrors [e.errorMessage]
+            @showError r, e.errorMessage
+        
+        $('.__PLACEHOLDER__', r).replaceWith(@createElement(value, wrappedTriggerValueChange))
         r
+      
+      ### Called with a value from the UI, meant to make
+      sure the value is ready to be inserted into the model.
+      
+      Override this to add UI validation code. If the value is
+      not to your liking, throw a ValueException with a description
+      of why the value is incorrect.
+      ###
+      cleanValue : (value) -> value
+      
+      setErrors : (@errors) ->
+      
+      validates : () -> @errors.length == 0 
+      
+      hideError : (element) ->
+        $('.form-error', element).hide()
+      
+      showError : (element, errorMessage) ->
+        errorEl = $('.form-error', element)
+        errorEl.html(errorMessage)
+        errorEl.show()
+    
     
     exports.TextField = class TextField extends Field
 
-      renderElement : (value, triggerValueChange) =>
+      createElement : (value, triggerValueChange) =>
         el = $ "<input type='text' value='#{htmlEscape(value)}' />"
         el.change () -> triggerValueChange(el.val())
         el
-        
+    
+    
+    exports.NumberField = class NumberField extends TextField
+
+      cleanValue : (value) -> 
+        value = Number(value)
+        if !_(value).isNumber()
+          throw new ValueException("Value must be a number")
+        value
+    
+    
     exports.ColorField = class ColorField extends Field
       
-      renderElement : (value, triggerValueChange) =>
+      createElement : (value, triggerValueChange) =>
         el = $ "<div class='colorpicker-input' style='background-color: #{htmlEscape(value)}'></div>"
         el.ColorPicker
           onChange: (hsb, hex, rgb) ->

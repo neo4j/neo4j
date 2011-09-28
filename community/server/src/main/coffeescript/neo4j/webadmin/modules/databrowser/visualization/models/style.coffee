@@ -29,29 +29,16 @@ define(
         
     class NodeStyleView extends forms.ModelForm
       
-      fields :
-      
-        shape : new forms.FieldSet({
-          shapeColor : new forms.ColorField("Background")
-          labelColor : new forms.ColorField("Label color")
-        })
-        label : new forms.FieldSet({
-          labelPattern : new forms.TextField("Label", {tooltip:'You can use placeholders here, {id} for node id, {prop.PROPERTYNAME} for properties. Use ";" to create multiline labels. Example: "id: {id};name: {prop.name}"'})
-        })
-
-    
-    class GroupStyleView extends forms.ModelForm
-      
-      fields :
-      
-        shape : new forms.FieldSet({
-          shapeColor : new forms.ColorField("Background")
-        })
-        label : new forms.FieldSet({
-          labelColor : new forms.ColorField("Color")
-          labelPattern : new forms.TextField("Text", {tooltip:'You can use {count} here to show the number of nodes in the group. Use ";" to create multiline labels.'})
-        })
-     
+      createFields : () -> 
+        {
+          shape : new forms.FieldSet
+            shapeColor : new forms.ColorField("Background")
+            labelColor : new forms.ColorField("Label color")
+          
+          label : new forms.FieldSet
+            labelPattern : new forms.TextField("Label", {tooltip:'You can use placeholders here, {id} for node id, {prop.PROPERTYNAME} for properties. Use ";" to create multiline labels. Example: "id: {id};name: {prop.name}"'})
+            labelSize : new forms.NumberField("Font size")
+        }
 
     exports.NodeStyle = class NodeStyle extends LocalModel
       
@@ -63,6 +50,7 @@ define(
         shapeColor : '#000000'
         
         labelFont : "monospace"
+        labelSize : 10
         labelColor : "#eeeeee"
         labelPattern : "{id}"
         
@@ -83,6 +71,7 @@ define(
         visualNode.style.labelStyle = 
           font : @get 'labelFont'
           color : @get 'labelColor'
+          size : @get 'labelSize'
           
         labelCtx = @getLabelCtx(visualNode)
         visualNode.style.labelText = Nano.compile @getLabelPattern(), labelCtx
@@ -103,11 +92,10 @@ define(
         
         shapeColor : '#590101'
         
+        labelSize : 10
         labelFont : "monospace"
         labelColor : "#eeeeee"
         labelPattern : "{count};nodes"
-        
-      getViewClass : -> GroupStyleView
         
       getLabelCtx : (visualNode) ->
         return {
