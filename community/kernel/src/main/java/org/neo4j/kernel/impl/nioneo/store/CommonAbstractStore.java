@@ -40,6 +40,13 @@ import org.neo4j.kernel.impl.core.ReadOnlyDbException;
  */
 public abstract class CommonAbstractStore
 {
+    public static final String ALL_STORES_VERSION = "v0.A.0";
+
+    static String buildVersionString( Class<? extends CommonAbstractStore> storeClass )
+    {
+        return storeClass.getSimpleName() + " " + ALL_STORES_VERSION;
+    }
+
     protected static final Logger logger = Logger
         .getLogger( CommonAbstractStore.class.getName() );
 
@@ -49,6 +56,7 @@ public abstract class CommonAbstractStore
     }
 
     private long highestUpdateRecordId = -1;
+
 
     /**
      * Returns the type and version that identifies this store.

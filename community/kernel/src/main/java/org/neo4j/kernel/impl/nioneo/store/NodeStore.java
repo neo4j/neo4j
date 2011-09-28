@@ -34,26 +34,15 @@ public class NodeStore extends AbstractStore implements Store
 {
     // node store version, each node store should end with this string
     // (byte encoded)
-    private static final String VERSION = "NodeStore v0.9.9";
+    private static final String VERSION = buildVersionString( NodeStore.class );
 
     // in_use(byte)+next_rel_id(int)+next_prop_id(int)
     public static final int RECORD_SIZE = 9;
 
-    /**
-     * See {@link AbstractStore#AbstractStore(String, Map)}
-     */
     public NodeStore( String fileName, Map<?,?> config )
     {
         super( fileName, config, IdType.NODE );
     }
-
-    /**
-     * See {@link AbstractStore#AbstractStore(String)}
-     */
-//    public NodeStore( String fileName )
-//    {
-//        super( fileName );
-//    }
 
     public String getTypeAndVersionDescriptor()
     {
@@ -72,8 +61,8 @@ public class NodeStore extends AbstractStore implements Store
      * 
      * @param fileName
      *            File name of the new node store
-     * @throws IOException
-     *             If unable to create node store or name null
+     * @param config
+     *            Map of configuration parameters
      */
     public static void createStore( String fileName, Map<?, ?> config )
     {

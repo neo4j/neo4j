@@ -39,6 +39,7 @@ import javax.transaction.xa.Xid;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -912,6 +913,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         ds.close();
     }
 
+    @Test
+    @Ignore
     public void testRels2() throws Exception
     {
         initializeStores();
@@ -948,6 +951,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         ds.close();
     }
 
+    @Test
     public void testRels3() throws Exception
     {
         // test linked list stuff during relationship delete
@@ -998,6 +1002,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         ds.close();
     }
 
+    @Test
     public void testProps1() throws Exception
     {
         initializeStores();

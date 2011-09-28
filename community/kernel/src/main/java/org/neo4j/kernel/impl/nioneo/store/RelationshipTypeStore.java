@@ -41,7 +41,7 @@ import org.neo4j.kernel.IdType;
 public class RelationshipTypeStore extends AbstractStore implements Store
 {
     // store version, each store ends with this string (byte encoded)
-    private static final String VERSION = "RelationshipTypeStore v0.9.9";
+    private static final String VERSION = buildVersionString(RelationshipTypeStore.class);
 
     // record header size
     // in_use(byte)+type_blockId(int)

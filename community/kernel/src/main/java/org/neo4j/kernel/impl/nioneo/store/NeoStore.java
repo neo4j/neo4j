@@ -41,9 +41,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
  */
 public class NeoStore extends AbstractStore
 {
-    // neo store version, store should end with this string
-    // (byte encoded)
-    private static final String VERSION = "NeoStore v0.9.9";
+    // store version, each store ends with this string (byte encoded)
+    private static final String VERSION = buildVersionString(NeoStore.class);
 
     // 4 longs in header (long + in use), time | random | version | txid
     private static final int RECORD_SIZE = 9;

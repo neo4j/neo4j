@@ -37,11 +37,6 @@ public class DynamicStringStore extends AbstractDynamicStore
         super( fileName, config, idType );
     }
 
-//    public DynamicStringStore( String fileName )
-//    {
-//        super( fileName );
-//    }
-
     @Override
     public String getTypeAndVersionDescriptor()
     {

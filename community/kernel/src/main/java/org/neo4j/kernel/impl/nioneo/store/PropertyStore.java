@@ -44,9 +44,9 @@ public class PropertyStore extends AbstractStore implements Store
 {
     public static final int DEFAULT_DATA_BLOCK_SIZE = 120;
     public static final int DEFAULT_PAYLOAD_SIZE = 32;
-    
+
     // store version, each store ends with this string (byte encoded)
-    private static final String VERSION = "PropertyStore v0.A.0";
+    private static final String VERSION = buildVersionString( PropertyStore.class );
 
     public static final int RECORD_SIZE = 1/*next and prev high bits*/
     + 4/*next*/
@@ -58,9 +58,6 @@ public class PropertyStore extends AbstractStore implements Store
     private PropertyIndexStore propertyIndexStore;
     private DynamicArrayStore arrayPropertyStore;
 
-    /**
-     * See {@link AbstractStore#AbstractStore(String, Map)}
-     */
     public PropertyStore( String fileName, Map<?,?> config )
     {
         super( fileName, config, IdType.PROPERTY );
@@ -184,7 +181,7 @@ public class PropertyStore extends AbstractStore implements Store
             stringStoreBlockSize, idGeneratorFactory, IdType.STRING_BLOCK );
         PropertyIndexStore.createStore( fileName + ".index", idGeneratorFactory );
         DynamicArrayStore.createStore( fileName + ".arrays",
-            arrayStoreBlockSize, idGeneratorFactory );
+                arrayStoreBlockSize, idGeneratorFactory );
     }
 
     private long nextStringBlockId()
@@ -579,8 +576,8 @@ public class PropertyStore extends AbstractStore implements Store
 
     private void setSingleBlockValue( PropertyBlock block, int keyId, PropertyType type, long longValue )
     {
-        block.setSingleBlock( keyId | ( ( (long) type.intValue() ) << 24 )
-                              | ( longValue << 28 ) );
+        block.setSingleBlock( keyId | (((long) type.intValue()) << 24)
+                | (longValue << 28) );
     }
 
     public static byte[] encodeString( String string )

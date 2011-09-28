@@ -34,7 +34,7 @@ public class RelationshipStore extends AbstractStore implements Store
 {
     // relationship store version, each rel store ends with this
     // string (byte encoded)
-    private static final String VERSION = "RelationshipStore v0.9.9";
+    private static final String VERSION = buildVersionString( RelationshipStore.class );
 
     // record header size
     // directed|in_use(byte)+first_node(int)+second_node(int)+rel_type(int)+
