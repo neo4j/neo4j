@@ -26,17 +26,86 @@ define(
    'lib/rgbcolor'], 
   (LocalModel, Nano, forms, View) ->
     exports = {}
-        
-    class NodeStyleView extends forms.ModelForm
+    
+    LABEL_PATTERN_TOOLTIP = """You can use placeholders here.<br/>{id} for node id<br/>{prop.PROPERTYNAME} for properties.<br/><br/>Use ";" to create multiline labels.<br/><br/>Example: "id: {id};name: {prop.name}"
+"""
+    
+    class BoxOrCircleStyleForm extends forms.ModelForm
+      createFields : () ->
+        {
+          shapeColor : new forms.ColorField("Background")
+          labelColor : new forms.ColorField("Label color")
+        }
+    
+    class IconForm extends forms.ModelForm
+      createFields : () ->
+        {
+          iconUrl : new forms.ImageURLField("Icon url", {
+            imageUrls : [
+              "img/icons/glyphish/21-skull.png"
+              "img/icons/glyphish/07-map-marker.png"
+              "img/icons/glyphish/08-chat.png"
+              "img/icons/glyphish/10-medical.png"
+              "img/icons/glyphish/11-clock.png"
+              "img/icons/glyphish/12-eye.png"
+              "img/icons/glyphish/13-target.png"
+              "img/icons/glyphish/14-tag.png"
+              "img/icons/glyphish/18-envelope.png"
+              "img/icons/glyphish/19-gear.png"
+              "img/icons/glyphish/21-skull.png"
+              "img/icons/glyphish/22-skull-n-bones.png"
+              "img/icons/glyphish/23-bird.png"
+              "img/icons/glyphish/24-gift.png"
+              "img/icons/glyphish/25-weather.png"
+              "img/icons/glyphish/26-bandaid.png"
+              "img/icons/glyphish/27-planet.png"
+              "img/icons/glyphish/28-star.png"
+              "img/icons/glyphish/29-heart.png"
+              "img/icons/glyphish/52-pine-tree.png"
+              "img/icons/glyphish/53-house.png"
+              "img/icons/glyphish/56-cloud.png"
+              "img/icons/glyphish/64-zap.png"
+              "img/icons/glyphish/71-compass.png"
+              "img/icons/glyphish/76-baby.png"
+              "img/icons/glyphish/82-dog-paw.png"
+              "img/icons/glyphish/84-lightbulb.png"
+              "img/icons/glyphish/90-life-buoy.png"
+              "img/icons/glyphish/94-pill.png"
+              "img/icons/glyphish/99-umbrella.png"
+              "img/icons/glyphish/102-walk.png"
+              "img/icons/glyphish/109-chicken.png"
+              "img/icons/glyphish/110-bug.png"
+              "img/icons/glyphish/111-user.png"
+              "img/icons/glyphish/112-group.png"
+              "img/icons/glyphish/113-navigation.png"
+              "img/icons/glyphish/114-balloon.png"
+              "img/icons/glyphish/116-controller.png"
+              "img/icons/glyphish/119-piggy-bank.png"
+              "img/icons/glyphish/132-ghost.png"
+              "img/icons/glyphish/133-ufo.png"
+              "img/icons/glyphish/134-viking.png"
+              "img/icons/glyphish/136-tractor.png"
+              "img/icons/glyphish/145-persondot.png"
+              "img/icons/glyphish/170-butterfly.png"
+              "img/icons/glyphish/171-sun.png"
+              "img/icons/glyphish/195-barcode.png"
+              "img/icons/glyphish/196-radiation.png"
+            ]
+          })
+          labelColor : new forms.ColorField("Label color")
+        }
+    
+    class NodeStyleForm extends forms.ModelForm
       
       createFields : () -> 
         {
-          shape : new forms.FieldSet
-            shapeColor : new forms.ColorField("Background")
-            labelColor : new forms.ColorField("Label color")
+          shape : new forms.FormChooserField "Show as",
+            box  : new forms.FormChooserOption("Box",    new BoxOrCircleStyleForm(model:@model))
+            dot  : new forms.FormChooserOption("Circle", new BoxOrCircleStyleForm(model:@model))
+            icon : new forms.FormChooserOption("Icon",   new IconForm(model:@model))
           
           label : new forms.FieldSet
-            labelPattern : new forms.TextField("Label", {tooltip:'You can use placeholders here, {id} for node id, {prop.PROPERTYNAME} for properties. Use ";" to create multiline labels. Example: "id: {id};name: {prop.name}"'})
+            labelPattern : new forms.TextField("Label", {tooltip:LABEL_PATTERN_TOOLTIP})
             labelSize : new forms.NumberField("Font size")
         }
 
@@ -54,7 +123,7 @@ define(
         labelColor : "#eeeeee"
         labelPattern : "{id}"
         
-      getViewClass : -> NodeStyleView
+      getViewClass : -> NodeStyleForm
       
       getLabelPattern : -> @get 'labelPattern'
         
@@ -62,11 +131,12 @@ define(
         visualNode.style ?= {} 
         
         shapeColor = new RGBColor @get 'shapeColor'
-        #strokeColor = new RGBColor @get 'strokeColor'
         
         visualNode.style.shapeStyle = 
           fill : shapeColor.toHex()
           shape : @get "shape"
+        
+        visualNode.style.iconUrl = @get "iconUrl"
           
         visualNode.style.labelStyle = 
           font : @get 'labelFont'
@@ -74,7 +144,12 @@ define(
           size : @get 'labelSize'
           
         labelCtx = @getLabelCtx(visualNode)
-        visualNode.style.labelText = Nano.compile @getLabelPattern(), labelCtx
+        
+        labelPattern = @getLabelPattern()
+        if labelPattern != null and labelPattern.length > 0
+          visualNode.style.labelText = Nano.compile @getLabelPattern(), labelCtx
+        else
+          visualNode.style.labelText = ""
         
       getLabelCtx : (visualNode) ->
         return {

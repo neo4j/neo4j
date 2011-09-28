@@ -27,12 +27,20 @@ define(
     class Dialog extends View
       
       className: "dialog"
+      
+      constructor : (@wrappedView) ->
+        super()
 
       initialize : () ->
+        @el = $ @el
         @wrapper = $("<div class='dialog-wrap'></div>")
         @wrapper.append(@el)
         @attachedToBody = false
         @overlay = new Overlay()
+        
+      render : () ->
+        @el.html()
+        @el.append @wrappedView.render().el
 
       show : (timeout=false) =>
         

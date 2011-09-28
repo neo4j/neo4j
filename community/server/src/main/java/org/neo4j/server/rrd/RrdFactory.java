@@ -154,6 +154,10 @@ public class RrdFactory
                 // RRD file may has become corrupt
                 LOG.error( "Unable to open rrd store, attempting to recreate it", e );
                 return recreateArchive( rrdFile, sampleables );
+            } catch (IllegalArgumentException e) {
+                // RRD file may has become corrupt
+                LOG.error( "Unable to open rrd store, attempting to recreate it", e );
+                return recreateArchive( rrdFile, sampleables );
             }
         } else
         {
@@ -172,15 +176,17 @@ public class RrdFactory
     }
 
     private boolean validateStepSize( File rrdFile ) throws IOException
-    {
-        RrdDb r = new RrdDb( rrdFile.getAbsolutePath(), true );
+    {   
+        RrdDb r = null; 
         try
         {
+            r = new RrdDb( rrdFile.getAbsolutePath(), true );
             return ( r.getRrdDef().getStep() == STEP_SIZE );
         }
         finally
-        {
-            r.close();
+        {   
+            if(r != null)
+                r.close();
         }
     }
 
