@@ -58,6 +58,11 @@ public class DynamicArrayStore extends AbstractDynamicStore
     private Collection<DynamicRecord> allocateFromNumbers( long startBlock, Object array )
     {
         ShortArray type = ShortArray.typeOf( array );
+        if (type == null)
+        {
+            throw new IllegalArgumentException( array
+                                                + " not a valid array type." );
+        }
         int arrayLength = Array.getLength( array );
         int requiredBits = type.calculateRequiredBitsForArray( array );
         int totalBits = requiredBits*arrayLength;
@@ -76,7 +81,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
         }
         return allocateRecords( startBlock, bits.asBytes() );
     }
-    
+
     private Collection<DynamicRecord> allocateFromString( long startBlock,
         String[] array )
     {
@@ -88,7 +93,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
             stringsAsBytes.add( bytes );
             totalBytesRequired += 4/*byte[].length*/ + bytes.length;
         }
-        
+
         ByteBuffer buf = ByteBuffer.allocate( totalBytesRequired );
         buf.put( PropertyType.STRING.byteValue() );
         buf.putInt( array.length );
