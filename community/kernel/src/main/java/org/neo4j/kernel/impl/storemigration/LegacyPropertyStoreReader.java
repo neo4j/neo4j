@@ -19,16 +19,20 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import org.neo4j.kernel.impl.nioneo.store.*;
+import static org.neo4j.kernel.impl.storemigration.LegacyStore.longFromIntAndMod;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.text.MessageFormat;
-import java.util.Map;
 
-import static org.neo4j.kernel.impl.storemigration.LegacyStore.*;
+import org.neo4j.kernel.impl.nioneo.store.Buffer;
+import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
+import org.neo4j.kernel.impl.nioneo.store.OperationType;
+import org.neo4j.kernel.impl.nioneo.store.PersistenceWindow;
+import org.neo4j.kernel.impl.nioneo.store.PersistenceWindowPool;
+import org.neo4j.kernel.impl.nioneo.store.Record;
 
 public class LegacyPropertyStoreReader
 {
