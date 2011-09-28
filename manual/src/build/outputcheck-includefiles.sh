@@ -10,13 +10,16 @@ do
 	elif [[ "$line" == "Error:"* ]]
 	then
 		errors="${errors}${line}"'\n'
+	elif [[ "$line" == "asciidoc: WARNING"* ]]
+	then
+		errors="${errors}${line}"'\n'
 	fi
 done
 
 if [ -n "$errors" ]
 then
 	echo "================================"
-	echo "There are errors:"
+	echo "There are errors/warnings:"
 	echo "================================"
 	echo -e $errors
 	exit 1

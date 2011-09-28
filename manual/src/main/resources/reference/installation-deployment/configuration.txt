@@ -157,7 +157,7 @@ When running Neo4j on Windows the size of the memory-mapped nioneo configuration
 
 Most modern CPUs implement a http://en.wikipedia.org/wiki/Non-Uniform_Memory_Access[Non-Uniform Memory Access (NUMA) architecture], where different parts of the memory have different access speeds. Suns Hotspot JVM is able to allocate objects with awareness of the NUMA structure as of version 1.6.0 update 18. When enabled this can give up to 40% performance improvements. To enabled the NUMA awareness, specify the +-XX:+UseNUMA+ parameter (works only when using the Parallel Scavenger garbage collector (default or -XX:+UseParallelGC not the concurrent mark and sweep one).
 
-==== Guidelines for heap size ====
+=== Guidelines for heap size ===
 
 This table is a guideline for how much memory to assign to various parts of the system for a web application using Neo4j, running on server hardware with mechanical disks.
 
@@ -264,5 +264,5 @@ that strings will consume twice the string length in bytes so a string
 block size of 60 will be able to fit a string of length 30 in a single
 block.
 
-TIP:
-Note that the block sizes can only be configured at creation time.
+TIP: Note that the block sizes can only be configured at creation time.
+
