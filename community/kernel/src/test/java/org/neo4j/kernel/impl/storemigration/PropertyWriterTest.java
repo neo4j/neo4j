@@ -33,6 +33,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.util.FileUtils;
 
@@ -73,6 +74,7 @@ public class PropertyWriterTest
     @Test
     public void shouldStoreMultiplePropertiesAcrossASeriesOfRecords() throws IOException
     {
+        final int OneBlockPropertyBlockCount = 100;
         HashMap config = MigrationTestUtils.defaultConfig();
         File outputDir = new File( "target/outputDatabase" );
         FileUtils.deleteRecursively( outputDir );
@@ -86,13 +88,15 @@ public class PropertyWriterTest
 
         PropertyWriter propertyWriter = new PropertyWriter( propertyStore );
         ArrayList<Pair<Integer, Object>> properties = new ArrayList<Pair<Integer, Object>>();
-        for ( int i = 0; i < 100; i++ )
+        for ( int i = 0; i < OneBlockPropertyBlockCount; i++ )
         {
             properties.add( Pair.of( i, (Object) i ) );
         }
         long propertyRecordId = propertyWriter.writeProperties( properties );
 
-        assertEquals( 25, propertyStore.getHighId() );
+        assertEquals(
+                OneBlockPropertyBlockCount / PropertyType.getPayloadSizeLongs(),
+                propertyStore.getHighId() );
         assertEquals( 0, propertyRecordId );
 
         List<PropertyBlock> propertyBlocks = new ArrayList<PropertyBlock>( );
@@ -106,7 +110,7 @@ public class PropertyWriterTest
             propertyBlocks.addAll( propertyStore.getRecord( propertyRecordId ).getPropertyBlocks() );
         }
 
-        assertEquals( 100, propertyBlocks.size() );
+        assertEquals( OneBlockPropertyBlockCount, propertyBlocks.size() );
 
         propertyStore.close();
     }

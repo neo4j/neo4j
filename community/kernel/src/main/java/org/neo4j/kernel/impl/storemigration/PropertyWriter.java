@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.helpers.Pair;
@@ -26,6 +27,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
+import org.neo4j.kernel.impl.nioneo.store.Record;
 
 public class PropertyWriter
 {
@@ -36,31 +38,64 @@ public class PropertyWriter
         this.propertyStore = propertyStore;
     }
 
+    /**
+     * Transforms a mapping of key index ids to values into a property chain.
+     * Mostly copied-pasted from BatchTransactionImpl.
+     *
+     * @param properties The mapping, as a list of Pairs of keys and values
+     * @return a long value valid for a property record id that is the id of the
+     *         head of the chain, suitable for a nextProp() value on a
+     *         primitive.
+     */
     public long writeProperties( List<Pair<Integer, Object>> properties )
     {
-        PropertyRecord propertyRecord = new PropertyRecord( propertyStore.nextId() );
-        long startOfPropertyList = propertyRecord.getId();
+        if ( properties == null || properties.isEmpty() )
+        {
+            return Record.NO_NEXT_PROPERTY.intValue();
+        }
+        // To hold the records, we will write them out in reverse order
+        List<PropertyRecord> propRecords = new ArrayList<PropertyRecord>();
+        // There is at least one property, so we will create at least one record.
+        PropertyRecord currentRecord = new PropertyRecord( propertyStore.nextId() );
+        currentRecord.setInUse( true );
+        currentRecord.setCreated();
+        propRecords.add( currentRecord );
 
-        for ( Pair<Integer, Object> property : properties )
+        for ( Pair<Integer, Object> propertyDatum : properties )
         {
             PropertyBlock block = new PropertyBlock();
-            propertyStore.encodeValue( block, property.first(), property.other() );
-            int newBlockSizeInBytes = block.getSize();
-            if ( propertyRecord.size() + newBlockSizeInBytes > PropertyType.getPayloadSize() )
+            propertyStore.encodeValue( block, propertyDatum.first(),
+                    propertyDatum.other() );
+            if ( currentRecord.size() + block.getSize() > PropertyType.getPayloadSize() )
             {
-                long currentId = propertyRecord.getId();
-                long nextId = propertyStore.nextId();
-                propertyRecord.setNextProp( nextId );
-                propertyStore.updateRecord( propertyRecord );
-                propertyRecord = new PropertyRecord( nextId );
-                propertyRecord.setPrevProp( currentId );
+                // Here it means the current block is done for
+                PropertyRecord prevRecord = currentRecord;
+                // Create new record
+                long propertyId = propertyStore.nextId();
+                currentRecord = new PropertyRecord( propertyId );
+                currentRecord.setInUse( true );
+                currentRecord.setCreated();
+                // Set up links
+                prevRecord.setNextProp( propertyId );
+                currentRecord.setPrevProp( prevRecord.getId() );
+                propRecords.add( currentRecord );
+                // Now current is ready to start picking up blocks
             }
-            propertyRecord.addPropertyBlock( block );
-            propertyRecord.setInUse( true );
+            currentRecord.addPropertyBlock( block );
         }
-
-        propertyStore.updateRecord( propertyRecord );
-
-        return startOfPropertyList;
+        /*
+         * Add the property records in reverse order, which means largest
+         * id first. That is to make sure we expand the property store file
+         * only once.
+         */
+        for ( int i = propRecords.size() - 1; i >= 0; i-- )
+        {
+            propertyStore.updateRecord( propRecords.get( i ) );
+        }
+        /*
+         *  0 will always exist, if the map was empty we wouldn't be here
+         *  and even one property will create at least one record.
+         */
+        return propRecords.get( 0 ).getId();
     }
 }
