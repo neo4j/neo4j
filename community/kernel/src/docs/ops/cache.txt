@@ -49,6 +49,9 @@ Each cache window contains an even number of storage records.
 The cache holds the most active cache windows in memory and tracks hit vs. miss ratio for the windows.
 When the hit ratio of an uncached window gets higher than the miss ratio of a cached window, the cached window gets evicted and the previously uncached window is cached instead.
 
+TIP:
+Note that the block sizes can only be configured at store creation time.
+
 Configuration
 ~~~~~~~~~~~~~
 
@@ -140,6 +143,14 @@ The available cache types are:
                  It will never release memory held by the cache.
                  Provides optimal performance if your graph is small enough to fit in memory.
 |==========================================
+
+You can read about references and relevant JVM settings for Sun HotSpot here:
+
+* http://weblogs.java.net/blog/enicholas/archive/2006/05/understanding_w.html[Understanding soft/weak references]
+
+* http://jeremymanson.blogspot.com/2009/07/how-hotspot-decides-to-clear_07.html[How Hotspot Decides to Clear SoftReferences]
+
+* http://java.sun.com/docs/hotspot/HotSpotFAQ.html#gc_softrefs[HotSpot FAQ]
 
 
 Heap memory usage

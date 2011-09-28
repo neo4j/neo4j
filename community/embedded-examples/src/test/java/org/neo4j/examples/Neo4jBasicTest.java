@@ -27,6 +27,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
@@ -90,6 +92,18 @@ public class Neo4jBasicTest
     }
 
 
+    @Test
+    public void startWithConfiguration()
+    {
+     // START SNIPPET: startDbWithConfig
+        Map<String, String> config = new HashMap<String, String>();
+        config.put( "neostore.nodestore.db.mapped_memory", "10M" );
+        config.put( "string_block_size", "60" );
+        config.put( "array_block_size", "300" );
+        EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( "target/mydb", config  );
+        db.shutdown();
+     // END SNIPPET: startDbWithConfig
+    }
     @Test
     public void shouldCreateNode()
     {
