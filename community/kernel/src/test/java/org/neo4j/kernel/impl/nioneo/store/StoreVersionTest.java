@@ -21,15 +21,18 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.internal.matchers.StringContains.containsString;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.util.HashMap;
 
 import org.junit.Test;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 public class StoreVersionTest
@@ -40,7 +43,7 @@ public class StoreVersionTest
         File outputDir = new File( "target/var/" + StoreVersionTest.class.getSimpleName() );
         FileUtils.deleteRecursively( outputDir );
         assertTrue( outputDir.mkdirs() );
-        String storeFileName = new File(outputDir, "neostore").getPath();
+        String storeFileName = new File( outputDir, "neostore" ).getPath();
 
         HashMap config = new HashMap();
         config.put( IdGeneratorFactory.class, CommonFactories.defaultIdGeneratorFactory() );
@@ -60,7 +63,30 @@ public class StoreVersionTest
 
         for ( CommonAbstractStore store : stores )
         {
-            assertThat(store.getTypeAndVersionDescriptor(), containsString( CommonAbstractStore.ALL_STORES_VERSION ));
+            assertThat( store.getTypeAndVersionDescriptor(), containsString( CommonAbstractStore.ALL_STORES_VERSION ) );
+        }
+    }
+
+    @Test
+    public void shouldFailToCreateAStoreContainingOldVersionNumber() throws IOException
+    {
+        File outputDir = new File( "target/var/" + StoreVersionTest.class.getSimpleName() );
+        FileUtils.deleteRecursively( outputDir );
+        assertTrue( outputDir.mkdirs() );
+
+        URL legacyStoreResource = StoreMigrator.class.getResource( "oldformatstore/neostore.nodestore.db" );
+        File workingFile = new File( outputDir, "neostore.nodestore.db" );
+        FileUtils.copyFile( new File( legacyStoreResource.getFile() ), workingFile );
+
+        HashMap config = new HashMap();
+        config.put( IdGeneratorFactory.class, CommonFactories.defaultIdGeneratorFactory() );
+        config.put( FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
+
+        try {
+            new NodeStore( workingFile.getPath(), config );
+            fail( "Should have thrown exception" );
+        } catch ( IllegalStoreVersionException e ) {
+            //expected
         }
     }
 }
