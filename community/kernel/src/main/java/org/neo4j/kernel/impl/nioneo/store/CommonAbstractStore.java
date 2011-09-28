@@ -112,7 +112,7 @@ public abstract class CommonAbstractStore
     // default id generator grab size
     protected static final int DEFAULT_ID_GRAB_SIZE = 50000;
 
-    private final String storageFileName;
+    protected final String storageFileName;
     private final IdGeneratorFactory idGeneratorFactory;
     private IdGenerator idGenerator = null;
     private FileChannel fileChannel = null;
@@ -412,15 +412,17 @@ public abstract class CommonAbstractStore
      * this stores name.
      *
      * @return The number of bytes memory mapped windows this store has
+     * @param config
+     * @param storageFileName
      */
-    protected long getMappedMem()
+    public static long calculateMappedMemory( Map<?, ?> config, String storageFileName )
     {
-        if ( getConfig() != null )
+        if ( config != null )
         {
             String convertSlash = storageFileName.replace( '\\', '/' );
             String realName = convertSlash.substring( convertSlash
                 .lastIndexOf( '/' ) + 1 );
-            String mem = (String) getConfig().get( realName + ".mapped_memory" );
+            String mem = (String) config.get( realName + ".mapped_memory" );
             if ( mem != null )
             {
                 long multiplier = 1;

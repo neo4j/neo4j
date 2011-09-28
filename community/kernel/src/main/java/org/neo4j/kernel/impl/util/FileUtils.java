@@ -20,6 +20,9 @@
 package org.neo4j.kernel.impl.util;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
@@ -208,5 +211,22 @@ public class FileUtils
             path = path.replace( '\\', '/' );
         }
         return path;
+    }
+
+    public static void copyFile( File srcFile, File dstFile ) throws IOException
+    {
+        //noinspection ResultOfMethodCallIgnored
+        dstFile.getParentFile().mkdirs();
+        FileInputStream input = new FileInputStream( srcFile );
+        FileOutputStream output = new FileOutputStream( dstFile );
+        int bufferSize = 1024;
+        byte[] buffer = new byte[bufferSize];
+        int bytesRead;
+        while ( (bytesRead = input.read( buffer )) != -1 )
+        {
+            output.write( buffer, 0, bytesRead );
+        }
+        input.close();
+        output.close();
     }
 }

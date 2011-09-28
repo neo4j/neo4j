@@ -215,7 +215,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         }
 
         setWindowPool( new PersistenceWindowPool( getStorageFileName(),
-            getBlockSize(), getFileChannel(), getMappedMem(),
+            getBlockSize(), getFileChannel(), calculateMappedMemory( getConfig(), storageFileName ),
             getIfMemoryMapped(), isReadOnly() && !isBackupSlave() ) );
     }
 
