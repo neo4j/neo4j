@@ -46,7 +46,7 @@ public class PropertyWriter
             PropertyBlock block = new PropertyBlock();
             propertyStore.encodeValue( block, property.first(), property.other() );
             int newBlockSizeInBytes = block.getSize();
-            if ( propertyRecord.getUsedPayloadBytes() + newBlockSizeInBytes > PropertyType.getPayloadSize() )
+            if ( propertyRecord.size() + newBlockSizeInBytes > PropertyType.getPayloadSize() )
             {
                 long currentId = propertyRecord.getId();
                 long nextId = propertyStore.nextId();

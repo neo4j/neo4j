@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.getBestSuitedEncoding;
+import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
 
 import java.io.File;
 import java.io.IOException;
@@ -138,8 +138,8 @@ public class StoreMigrator
         record.setCreated();
         int keyBlockId = (int) relationshipTypeStore.nextBlockId();
         record.setTypeBlock( keyBlockId );
-        Collection<DynamicRecord> keyRecords =
-                relationshipTypeStore.allocateTypeNameRecords( keyBlockId, getBestSuitedEncoding( name ) );
+        Collection<DynamicRecord> keyRecords = relationshipTypeStore.allocateTypeNameRecords(
+                keyBlockId, encodeString( name ) );
         for ( DynamicRecord keyRecord : keyRecords )
         {
             record.addTypeRecord( keyRecord );
@@ -174,8 +174,8 @@ public class StoreMigrator
         record.setCreated();
         int keyBlockId = propIndexStore.nextKeyBlockId();
         record.setKeyBlockId( keyBlockId );
-        Collection<DynamicRecord> keyRecords =
-                propIndexStore.allocateKeyRecords( keyBlockId, getBestSuitedEncoding( key ) );
+        Collection<DynamicRecord> keyRecords = propIndexStore.allocateKeyRecords(
+                keyBlockId, encodeString( key ) );
         for ( DynamicRecord keyRecord : keyRecords )
         {
             record.addKeyRecord( keyRecord );
