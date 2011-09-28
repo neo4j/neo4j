@@ -31,7 +31,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -108,7 +107,6 @@ public class TestBatchInsert
     }
 
     @Test
-    @Ignore
     public void testMore()
     {
         BatchInserter graphDb = newBatchInserter();
@@ -131,7 +129,6 @@ public class TestBatchInsert
     }
 
     @Test
-    @Ignore
     public void makeSureLoopsCanBeCreated()
     {
         BatchInserter graphDb = newBatchInserter();
