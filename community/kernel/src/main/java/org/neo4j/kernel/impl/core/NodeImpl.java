@@ -111,9 +111,9 @@ class NodeImpl extends Primitive
 
     @Override
     protected ArrayMap<Integer, PropertyData> loadProperties(
-            NodeManager nodeManager, boolean light, boolean readOnly )
+            NodeManager nodeManager, boolean light )
     {
-        return nodeManager.loadProperties( this, light, readOnly );
+        return nodeManager.loadProperties( this, light );
     }
 
     List<RelIdIterator> getAllRelationships( NodeManager nodeManager, DirectionWrapper direction )

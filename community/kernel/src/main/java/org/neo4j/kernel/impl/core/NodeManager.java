@@ -669,18 +669,16 @@ public class NodeManager
          relCache.putAll( map );
     }
 
-    ArrayMap<Integer,PropertyData> loadProperties( NodeImpl node,
-            boolean light, boolean readOnly )
+    ArrayMap<Integer, PropertyData> loadProperties( NodeImpl node, boolean light )
     {
-        return persistenceManager.loadNodeProperties( node.getId(), light,
-                readOnly );
+        return persistenceManager.loadNodeProperties( node.getId(), light );
     }
 
     ArrayMap<Integer,PropertyData> loadProperties(
-            RelationshipImpl relationship, boolean light, boolean readOnly )
+            RelationshipImpl relationship, boolean light )
     {
         return persistenceManager.loadRelProperties( relationship.getId(),
-                light, readOnly );
+                light );
     }
 
     public void clearCache()

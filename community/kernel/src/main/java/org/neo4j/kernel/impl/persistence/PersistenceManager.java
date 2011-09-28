@@ -109,31 +109,16 @@ public class PersistenceManager
     }
 
     public ArrayMap<Integer,PropertyData> loadNodeProperties( long nodeId,
-            boolean light, boolean readOnly )
+            boolean light )
     {
-        if ( readOnly )
-        {
-            return getReadOnlyResourceIfPossible().nodeLoadProperties( nodeId,
-                    light );
-        }
-        else
-        {
-            return getResource( true ).nodeLoadProperties( nodeId, light );
-        }
+        return getReadOnlyResourceIfPossible().nodeLoadProperties( nodeId,
+                light );
     }
 
     public ArrayMap<Integer,PropertyData> loadRelProperties( long relId,
-            boolean light, boolean readOnly )
+            boolean light )
     {
-        if ( readOnly )
-        {
-            return getReadOnlyResourceIfPossible().relLoadProperties( relId,
-                    light );
-        }
-        else
-        {
-            return getResource( true ).relLoadProperties( relId, light );
-        }
+        return getReadOnlyResourceIfPossible().relLoadProperties( relId, light );
     }
 
     public RelationshipRecord loadLightRelationship( long id )
@@ -230,8 +215,11 @@ public class PersistenceManager
             // con is put in map on write operation, see getResoure()
             // createReadOnlyResourceConnection just return a single final
             // resource and does not create a new object
-            return ((NioNeoDbPersistenceSource)
+            /*
+             * return ((NioNeoDbPersistenceSource)
                 persistenceSource ).createReadOnlyResourceConnection();
+             */
+            return getReadOnlyResource();
         }
         return con;
     }

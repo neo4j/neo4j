@@ -43,7 +43,7 @@ abstract class Primitive
             PropertyData property );
 
     protected abstract ArrayMap<Integer, PropertyData> loadProperties(
-            NodeManager nodeManager, boolean light, boolean readOnly );
+            NodeManager nodeManager, boolean light );
 
     Primitive( boolean newPrimitive )
     {
@@ -69,7 +69,7 @@ abstract class Primitive
         ArrayMap<Integer,PropertyData> addMap =
             nodeManager.getCowPropertyAddMap( this );
 
-        ensureFullProperties( nodeManager, true );
+        ensureFullProperties( nodeManager );
         List<Object> values = new ArrayList<Object>();
 
         for ( PropertyData property : properties )
@@ -102,7 +102,7 @@ abstract class Primitive
         ArrayMap<Integer,PropertyData> addMap =
             nodeManager.getCowPropertyAddMap( this );
 
-        ensureFullProperties( nodeManager, true );
+        ensureFullProperties( nodeManager );
         List<String> keys = new ArrayList<String>();
 
         for ( PropertyData property : properties )
@@ -139,7 +139,7 @@ abstract class Primitive
         ArrayMap<Integer,PropertyData> addMap =
             nodeManager.getCowPropertyAddMap( this );
 
-        ensureFullProperties( nodeManager, true );
+        ensureFullProperties( nodeManager );
         for ( PropertyIndex index : nodeManager.index( key ) )
         {
             if ( skipMap != null && skipMap.get( index.getKeyId() ) != null )
@@ -240,7 +240,7 @@ abstract class Primitive
         ArrayMap<Integer,PropertyData> addMap =
             nodeManager.getCowPropertyAddMap( this );
 
-        ensureFullProperties( nodeManager, true );
+        ensureFullProperties( nodeManager );
         for ( PropertyIndex index : nodeManager.index( key ) )
         {
             if ( skipMap != null && skipMap.get( index.getKeyId() ) != null )
@@ -281,7 +281,7 @@ abstract class Primitive
         ArrayMap<Integer,PropertyData> addMap =
             nodeManager.getCowPropertyAddMap( this );
 
-        ensureFullProperties( nodeManager, true );
+        ensureFullProperties( nodeManager );
         for ( PropertyIndex index : nodeManager.index( key ) )
         {
             if ( skipMap != null && skipMap.get( index.getKeyId() ) != null )
@@ -321,7 +321,7 @@ abstract class Primitive
         boolean success = false;
         try
         {
-            ensureFullProperties( nodeManager, false );
+            ensureFullProperties( nodeManager );
             ArrayMap<Integer,PropertyData> addMap =
                 nodeManager.getCowPropertyAddMap( this, true );
             ArrayMap<Integer,PropertyData> skipMap =
@@ -434,7 +434,7 @@ abstract class Primitive
         boolean success = false;
         try
         {
-            ensureFullProperties( nodeManager, false );
+            ensureFullProperties( nodeManager );
             PropertyData property = null;
             ArrayMap<Integer,PropertyData> addMap =
                 nodeManager.getCowPropertyAddMap( this );
@@ -644,13 +644,12 @@ abstract class Primitive
         return null;
     }
 
-    private boolean ensureFullProperties( NodeManager nodeManager,
-            boolean readOnly )
+    private boolean ensureFullProperties( NodeManager nodeManager )
     {
         if ( properties == null )
         {
             this.properties = toPropertyArray( loadProperties( nodeManager,
-                    false, readOnly ) );
+                    false ) );
             return true;
         }
         return false;
@@ -672,13 +671,12 @@ abstract class Primitive
         return result;
     }
 
-    private boolean ensureFullLightProperties( NodeManager nodeManager,
-            boolean readOnly )
+    private boolean ensureFullLightProperties( NodeManager nodeManager )
     {
         if ( properties == null )
         {
             this.properties = toPropertyArray( loadProperties( nodeManager,
-                    true, readOnly ) );
+                    true ) );
             return true;
         }
         return false;
@@ -686,7 +684,7 @@ abstract class Primitive
 
     protected List<PropertyEventData> getAllCommittedProperties( NodeManager nodeManager )
     {
-        ensureFullLightProperties( nodeManager, true );
+        ensureFullLightProperties( nodeManager );
         if ( properties == null )
         {
             return new ArrayList<PropertyEventData>();
@@ -704,7 +702,7 @@ abstract class Primitive
 
     protected Object getCommittedPropertyValue( NodeManager nodeManager, String key )
     {
-        ensureFullLightProperties( nodeManager, true );
+        ensureFullLightProperties( nodeManager );
         for ( PropertyIndex index : nodeManager.index( key ) )
         {
             PropertyData property = getPropertyForIndex( index.getKeyId() );
