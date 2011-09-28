@@ -42,9 +42,14 @@ public abstract class CommonAbstractStore
 {
     public static final String ALL_STORES_VERSION = "v0.A.0";
 
-    static String buildVersionString( Class<? extends CommonAbstractStore> storeClass )
+    public String getTypeAndVersionDescriptor()
     {
-        return storeClass.getSimpleName() + " " + ALL_STORES_VERSION;
+        return buildTypeAndVersionDescriptor( getTypeDescriptor() );
+    }
+
+    protected static String buildTypeAndVersionDescriptor( String typeDescriptor )
+    {
+        return typeDescriptor + " " + ALL_STORES_VERSION;
     }
 
     protected static final Logger logger = Logger
@@ -692,8 +697,4 @@ public abstract class CommonAbstractStore
         }
     }
 
-    protected String getTypeAndVersionDescriptor()
-    {
-        return getTypeDescriptor() + " " + ALL_STORES_VERSION;
-    }
 }

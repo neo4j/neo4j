@@ -31,9 +31,6 @@ import org.neo4j.kernel.IdType;
  */
 public class NodeStore extends AbstractStore implements Store
 {
-    // node store version, each node store should end with this string
-    // (byte encoded)
-    private static final String VERSION = buildVersionString( NodeStore.class );
     private static final String TYPE_DESCRIPTOR = "NodeStore";
 
     // in_use(byte)+next_rel_id(int)+next_prop_id(int)
@@ -68,7 +65,7 @@ public class NodeStore extends AbstractStore implements Store
     {
         IdGeneratorFactory idGeneratorFactory = (IdGeneratorFactory) config.get(
                 IdGeneratorFactory.class );
-        createEmptyStore( fileName, VERSION, idGeneratorFactory );
+        createEmptyStore( fileName, buildTypeAndVersionDescriptor(TYPE_DESCRIPTOR), idGeneratorFactory );
         NodeStore store = new NodeStore( fileName, config );
         NodeRecord nodeRecord = new NodeRecord( store.nextId() );
         nodeRecord.setInUse( true );
@@ -227,14 +224,14 @@ public class NodeStore extends AbstractStore implements Store
 //            closeIdGenerator();
 //            return true;
 //        }
-        if ( version.equals( "NodeStore v0.9.5" ) )
-        {
+//        if ( version.equals( "NodeStore v0.9.5" ) )
+//        {
             return true;
-        }
-        throw new NotCurrentStoreVersionException( VERSION, VERSION, "Store version [" + version  +
-            "]. Please make sure you are not running old Neo4j kernel " + 
-            " towards a store that has been created by newer version " + 
-            " of Neo4j.", false );
+//        }
+//        throw new NotCurrentStoreVersionException( VERSION, VERSION, "Store version [" + version  +
+//            "]. Please make sure you are not running old Neo4j kernel " +
+//            " towards a store that has been created by newer version " +
+//            " of Neo4j.", false );
     }
 
     public List<WindowPoolStats> getAllWindowPoolStats()

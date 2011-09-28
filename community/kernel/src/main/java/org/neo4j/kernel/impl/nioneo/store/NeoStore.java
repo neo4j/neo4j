@@ -41,8 +41,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
  */
 public class NeoStore extends AbstractStore
 {
-    // store version, each store ends with this string (byte encoded)
-    private static final String VERSION = buildVersionString(NeoStore.class);
     private static final String TYPE_DESCRIPTOR = "NeoStore";
 
     // 4 longs in header (long + in use), time | random | version | txid
@@ -174,7 +172,7 @@ public class NeoStore extends AbstractStore
         StoreId storeId = (StoreId) config.get( StoreId.class );
         if ( storeId == null ) storeId = new StoreId();
 
-        createEmptyStore( fileName, VERSION, idGeneratorFactory );
+        createEmptyStore( fileName, buildTypeAndVersionDescriptor(TYPE_DESCRIPTOR), idGeneratorFactory );
         NodeStore.createStore( fileName + ".nodestore.db", config );
         RelationshipStore.createStore( fileName + ".relationshipstore.db", idGeneratorFactory );
         PropertyStore.createStore( fileName + ".propertystore.db", config );

@@ -40,8 +40,6 @@ import org.neo4j.kernel.IdType;
  */
 public class RelationshipTypeStore extends AbstractStore implements Store
 {
-    // store version, each store ends with this string (byte encoded)
-    private static final String VERSION = buildVersionString(RelationshipTypeStore.class);
     private static final String TYPE_DESCRIPTOR = "RelationshipTypeStore";
 
     // record header size
@@ -52,21 +50,10 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 
     private DynamicStringStore typeNameStore;
 
-    /**
-     * See {@link AbstractStore#AbstractStore(String, Map)}
-     */
     public RelationshipTypeStore( String fileName, Map<?,?> config, IdType idType )
     {
         super( fileName, config, idType );
     }
-
-    /**
-     * See {@link AbstractStore#AbstractStore(String)}
-     */
-//    public RelationshipTypeStore( String fileName )
-//    {
-//        super( fileName );
-//    }
 
     @Override
     protected void setRecovered()
@@ -132,7 +119,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
     {
         IdGeneratorFactory idGeneratorFactory = (IdGeneratorFactory) config.get(
                 IdGeneratorFactory.class );
-        createEmptyStore( fileName, VERSION, idGeneratorFactory );
+        createEmptyStore( fileName, buildTypeAndVersionDescriptor(TYPE_DESCRIPTOR), idGeneratorFactory );
         DynamicStringStore.createStore( fileName + ".names",
             TYPE_STORE_BLOCK_SIZE, idGeneratorFactory, IdType.RELATIONSHIP_TYPE_BLOCK );
         RelationshipTypeStore store = new RelationshipTypeStore(
@@ -428,33 +415,33 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 //            closeIdGenerator();
 //            return true;
 //        }
-        String nineFiveVersionString = "RelationshipTypeStore v0.9.5";
-        if ( version.equals( nineFiveVersionString ) )
-        {
-            try
-            {
-                long fileSize = getFileChannel().size();
-                long recordCount = (fileSize - UTF8.encode( nineFiveVersionString ).length) / getRecordSize();
-                // 0xFFFF magic -1
-                if ( recordCount > 0xFFFF )
-                {
-                    throw new NotCurrentStoreVersionException( VERSION, VERSION, "Store version[" + version +
-                            "] has " + recordCount + " different relationship types " +
-                            "(limit is " + 0xFFFF + ") and can not be upgraded to a newer version.", false );
-                }
-            }
-            catch ( IOException e )
-            {
-                throw new NotCurrentStoreVersionException(
-                        VERSION, VERSION, "Unable to verify relationship type count, can not upgrade " +
-                        "store from version[" + version + "]", false );
-            }
+//        String nineFiveVersionString = "RelationshipTypeStore v0.9.5";
+//        if ( version.equals( nineFiveVersionString ) )
+//        {
+//            try
+//            {
+//                long fileSize = getFileChannel().size();
+//                long recordCount = (fileSize - UTF8.encode( nineFiveVersionString ).length) / getRecordSize();
+//                // 0xFFFF magic -1
+//                if ( recordCount > 0xFFFF )
+//                {
+//                    throw new NotCurrentStoreVersionException( VERSION, VERSION, "Store version[" + version +
+//                            "] has " + recordCount + " different relationship types " +
+//                            "(limit is " + 0xFFFF + ") and can not be upgraded to a newer version.", false );
+//                }
+//            }
+//            catch ( IOException e )
+//            {
+//                throw new NotCurrentStoreVersionException(
+//                        VERSION, VERSION, "Unable to verify relationship type count, can not upgrade " +
+//                        "store from version[" + version + "]", false );
+//            }
             return true;
-        }
-        throw new NotCurrentStoreVersionException( VERSION, VERSION, "Store version [" + version  +
-            "]. Please make sure you are not running old Neo4j kernel " +
-            " towards a store that has been created by newer version " +
-            " of Neo4j.", false );
+//        }
+//        throw new NotCurrentStoreVersionException( VERSION, VERSION, "Store version [" + version  +
+//            "]. Please make sure you are not running old Neo4j kernel " +
+//            " towards a store that has been created by newer version " +
+//            " of Neo4j.", false );
     }
 
     @Override

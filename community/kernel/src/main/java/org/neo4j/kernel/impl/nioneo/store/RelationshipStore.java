@@ -32,9 +32,6 @@ import org.neo4j.kernel.IdType;
  */
 public class RelationshipStore extends AbstractStore implements Store
 {
-    // relationship store version, each rel store ends with this
-    // string (byte encoded)
-    private static final String VERSION = buildVersionString( RelationshipStore.class );
     private static final String TYPE_DESCRIPTOR = "RelationshipStore";
 
     // record header size
@@ -79,7 +76,7 @@ public class RelationshipStore extends AbstractStore implements Store
      */
     public static void createStore( String fileName, IdGeneratorFactory idGeneratorFactory )
     {
-        createEmptyStore( fileName, VERSION, idGeneratorFactory );
+        createEmptyStore( fileName, buildTypeAndVersionDescriptor(TYPE_DESCRIPTOR), idGeneratorFactory );
     }
 
     public RelationshipRecord getRecord( long id )
@@ -302,14 +299,14 @@ public class RelationshipStore extends AbstractStore implements Store
 //            closeIdGenerator();
 //            return true;
 //        }
-        if ( version.equals( "RelationshipStore v0.9.5" ) )
-        {
+//        if ( version.equals( "RelationshipStore v0.9.5" ) )
+//        {
             return true;
-        }
-        throw new NotCurrentStoreVersionException( VERSION, VERSION, "Store version [" + version  +
-            "]. Please make sure you are not running old Neo4j kernel " + 
-            " towards a store that has been created by newer version " + 
-            " of Neo4j.", false );
+//        }
+//        throw new NotCurrentStoreVersionException( VERSION, VERSION, "Store version [" + version  +
+//            "]. Please make sure you are not running old Neo4j kernel " +
+//            " towards a store that has been created by newer version " +
+//            " of Neo4j.", false );
     }
 
     public RelationshipRecord getChainRecord( long relId )
