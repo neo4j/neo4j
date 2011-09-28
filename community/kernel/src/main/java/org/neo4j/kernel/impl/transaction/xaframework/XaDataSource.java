@@ -368,7 +368,7 @@ public abstract class XaDataSource
         throw new UnsupportedOperationException( getClass().getName() );
     }
 
-    public ClosableIterable<File> listStoreFiles() throws IOException
+    public ClosableIterable<File> listStoreFiles( boolean includeLogicalLogs ) throws IOException
     {
         throw new UnsupportedOperationException( getClass().getName() );
     }

@@ -151,7 +151,7 @@ define(
       start : () =>
         if @sys.renderer?
           @sys.renderer.start()
-        @sys.start()
+        @sys.start(true)
 
         # Force a redraw
         @sys.renderer.redraw()

@@ -421,6 +421,16 @@ body {
   margin: 0 1px;
 }
 
+.styleRule .filters .filter .filterBooleanOp {
+  float: left;
+  line-height: 25px;
+  width: 22px;
+}
+
+.styleRule .filters li:first-child .filter .filterBooleanOp {
+  color: transparent;
+}
+
 .styleRule .filters .filter .filterType {
   float:left;    
   line-height: 25px;

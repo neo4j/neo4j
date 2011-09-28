@@ -35,13 +35,12 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
-import org.mortbay.jetty.Connector;
-import org.mortbay.jetty.nio.SelectChannelConnector;
-
 import org.mortbay.jetty.SessionManager;
 import org.mortbay.jetty.handler.MovedContextHandler;
+import org.mortbay.jetty.nio.SelectChannelConnector;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.HashSessionManager;
 import org.mortbay.jetty.servlet.ServletHolder;

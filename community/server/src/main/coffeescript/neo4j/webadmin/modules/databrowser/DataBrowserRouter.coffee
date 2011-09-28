@@ -34,6 +34,7 @@ define(
         @queryChanged()
 
       search : (query) =>
+        @saveLocation()
         query = decodeURIComponent query
         while query.charAt(query.length-1) == "/"
           query = query.substr(0, query.length - 1)
@@ -42,16 +43,19 @@ define(
         @appState.set( mainView : @getDataBrowserView() )
 
       visualizationSettings : () =>
+        @saveLocation()
         @visualizationSettingsView ?= new VisualizationSettingsView
           dataBrowserSettings : @getDataBrowserSettings()
         @appState.set mainView : @visualizationSettingsView
         
       createVisualizationProfile : () =>
+        @saveLocation()
         v = @getVisualizationProfileView()
         v.setIsCreateMode(true)
         @appState.set mainView : v
         
       editVisualizationProfile : (id) =>
+        @saveLocation()
         profiles = @getDataBrowserSettings().getVisualizationProfiles()
         profile = profiles.get id
         

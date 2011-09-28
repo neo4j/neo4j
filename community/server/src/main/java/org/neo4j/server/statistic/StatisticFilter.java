@@ -19,7 +19,9 @@
  */
 package org.neo4j.server.statistic;
 
-import org.mortbay.jetty.Response;
+import static java.lang.System.nanoTime;
+
+import java.io.IOException;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -28,9 +30,8 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.ServletResponseWrapper;
-import java.io.IOException;
 
-import static java.lang.System.nanoTime;
+import org.mortbay.jetty.Response;
 
 /**
  * @author tbaum

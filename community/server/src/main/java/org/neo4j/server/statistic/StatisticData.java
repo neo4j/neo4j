@@ -29,6 +29,8 @@ import java.io.Serializable;
  */
 public class StatisticData implements Serializable
 {
+    private static final long serialVersionUID = 1006656694124740870L;
+    
     private static final int MEDIAN_MAX = 3000;
     private int[] requests = new int[MEDIAN_MAX];
     private int count = 0;
@@ -117,7 +119,7 @@ public class StatisticData implements Serializable
         sum += value;
         sumSq += value * value;
 
-        int v = value > requests.length ? requests.length :
+        int v = value >= MEDIAN_MAX ? MEDIAN_MAX - 1 :
                 value < 0 ? 0 :
                         (int) value;
 

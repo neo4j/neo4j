@@ -19,17 +19,18 @@
  */
 package org.neo4j.server.rrd;
 
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.server.ServerTestUtils.createTempDir;
+
+import java.io.IOException;
+
+import javax.management.MalformedObjectNameException;
+
 import org.junit.Test;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rrd.sampler.DatabasePrimitivesSampleableBase;
 import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
-
-import javax.management.MalformedObjectNameException;
-import java.io.IOException;
-
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.server.ServerTestUtils.createTempDir;
 
 public class DatabasePrimitivesSampleableBaseTest
 {

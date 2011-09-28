@@ -19,6 +19,21 @@
  */
 package org.neo4j.server.modules;
 
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.test.ReflectionUtil.setStaticFinalField;
+
+import java.net.URI;
+import java.util.Collections;
+import java.util.HashMap;
+
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import javax.management.openmbean.CompositeDataSupport;
+
 import org.apache.commons.configuration.MapConfiguration;
 import org.junit.Test;
 import org.neo4j.jmx.JmxUtils;
@@ -31,20 +46,6 @@ import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.web.WebServer;
 import org.rrd4j.core.RrdDb;
-
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
-import javax.management.openmbean.CompositeDataSupport;
-import java.net.URI;
-import java.util.Collections;
-import java.util.HashMap;
-
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.neo4j.test.ReflectionUtil.setStaticFinalField;
 
 public class WebAdminModuleTest
 {

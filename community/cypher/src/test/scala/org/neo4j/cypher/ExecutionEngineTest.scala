@@ -792,6 +792,19 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     assert(result.lastRelationship() === r1)
   }
 
+  @Test def shouldReturnShortestPathUnboundLength() {
+    createNodes("A", "B")
+    val r1 = relate("A" -> "KNOWS" -> "B")
+
+    val query = Query.
+      start(NodeById("a", 1), NodeById("b", 2)).
+      namedPaths(NamedPath("p", ShortestPath("  UNNAMED1", "a", "b", None, Direction.BOTH, None, false))).
+      returns(ValueReturnItem(EntityValue("p")))
+
+    //Checking that we don't get an exception
+    execute(query).toList
+  }
+
   @Test def shouldBeAbleToTakeParamsInDifferentTypes() {
     createNodes("A", "B", "C", "D", "E")
 

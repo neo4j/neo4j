@@ -105,24 +105,21 @@ define(
           @getViz().setProfile @settings.getCurrentVisualizationProfile()
 
       render : =>
-        if @browserHasRequiredFeatures()
-          if @vizEl? then @getViz().detach()
-          $(@el).html(template())
+        if @vizEl? then @getViz().detach()
+        $(@el).html(template())
 
-          @vizEl = $("#visualization", @el)
-          @getViz().attach(@vizEl)
+        @vizEl = $("#visualization", @el)
+        @getViz().attach(@vizEl)
 
-          switch @dataModel.get("type")
-            when "node"
-              @visualizeFromNode @dataModel.getData().getItem()
-            when "nodeList"
-              @visualizeFromNodes @dataModel.getData().getRawNodes()
-            when "relationship"
-              @visualizeFromRelationships [@dataModel.getData().getItem()]
-            when "relationshipList"
-              @visualizeFromRelationships @dataModel.getData().getRawRelationships()
-        else 
-          @showBrowserNotSupportedMessage()
+        switch @dataModel.get("type")
+          when "node"
+            @visualizeFromNode @dataModel.getData().getItem()
+          when "nodeList"
+            @visualizeFromNodes @dataModel.getData().getRawNodes()
+          when "relationship"
+            @visualizeFromRelationships [@dataModel.getData().getItem()]
+          when "relationshipList"
+            @visualizeFromRelationships @dataModel.getData().getRawRelationships()
 
         return this
         
@@ -175,34 +172,22 @@ define(
         @settingsChanged()
         return @viz
 
-      browserHasRequiredFeatures : ->
-        Object.prototype.__defineGetter__?
-
-      showBrowserNotSupportedMessage : ->
-        $(@el).html """<div class='pad'>
-          <h1>I currently do not support visualization in this browser :(</h1>
-          <p>I can't find the __defineGetter__ API method, which the visualization lib I use, Arbor.js, needs.</p>
-          <p>If you really want to use visualization (it's pretty awesome), please consider using Google Chrome, Firefox or Safari.</p>
-          </div>""" 
-      
       reflowGraphLayout : () =>
         @viz.reflow() if @viz?
 
       remove : =>
-        if @browserHasRequiredFeatures()
-          @dataModel.unbind("change:data", @render)
-          @getViz().stop()
+        @dataModel.unbind("change:data", @render)
+        @getViz().stop()
         super()
 
       detach : =>
-        if @browserHasRequiredFeatures()
-          @dataModel.unbind("change:data", @render)
-          @getViz().stop()
+        @dataModel.unbind("change:data", @render)
+        @getViz().stop()
         super()
 
       attach : (parent) =>
         super(parent)
-        if @browserHasRequiredFeatures() and @vizEl?
+        if @vizEl?
           @getViz().start()
           @dataModel.bind("change:data", @render)
           

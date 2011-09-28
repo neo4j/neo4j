@@ -57,6 +57,7 @@ define(
             lang: "http"
           
       console : (type=false) =>
+        @saveLocation()
         if type is false then type = @consoleType
         @consoleType = type
         @appState.set( mainView : @getConsoleView(type) )

@@ -22,12 +22,10 @@ package org.neo4j.server.rest;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -238,11 +236,18 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
                 .key("method")
                 .value("POST")
                 .key("to")
-                .value("/index/relationship/my_rels/name/bob")
+                .value("/index/relationship/my_rels")
                 .key("id")
                 .value(4)
                 .key("body")
+                .object()
+                .key("key")
+                .value("name")
+                .key("value")
+                .value("bob")
+                .key("uri")
                 .value("{3}")
+                .endObject()
                 .endObject()
                 .endArray()
                 .toString();
@@ -383,34 +388,5 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
             count++;
         }
         return count;
-    }
-
-    @Ignore
-    @Test
-    public void testlargerequest() {    
-        testlargerequest(1000);
-        testlargerequest(5000);
-        testlargerequest(10000);
-        testlargerequest(50000);
-        testlargerequest(100000);
-        testlargerequest(500000);
-        testlargerequest(1000000);
-    }
-    
-    private void testlargerequest(int number) {
-        StringBuilder largereq = new StringBuilder();
-        largereq.append("[");
-        for(int i=0;i<number; i++) {
-            largereq.append("{\"method\":\"post\",\"to\":\"/node\", \"body\":{ \"age\":1 } },");
-        }
-        largereq.append("{\"method\":\"post\",\"to\":\"/node\", \"body\":{ \"age\":1 } }]");
-        
-        Date d = new Date();
-        JaxRsResponse response = RestRequest.req().post(batchUri(), largereq.toString());
-
-        System.out.println(number + "\t:" + ((new Date()).getTime() - d.getTime()) + "ms");
-        
-        assertEquals(200, response.getStatus());
-        
     }
 }

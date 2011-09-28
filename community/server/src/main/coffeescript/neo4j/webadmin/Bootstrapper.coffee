@@ -23,7 +23,7 @@ define(
    "ribcage/security/HtmlEscaper"
    "lib/jquery"
    "lib/neo4js"
-   "lib/backbone"], 
+   "lib/backbone"],
   (ApplicationState, HtmlEscaper) ->
   
     class Bootstrapper
@@ -45,5 +45,5 @@ define(
         jQuery () ->
         m.init(appState) for m in modules
         Backbone.history.start()
-
+      
 )

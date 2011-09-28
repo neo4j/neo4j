@@ -942,7 +942,7 @@ public class RestfulGraphDatabaseTest
         assertEquals( response.getMetadata()
                 .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
     }
-
+    
     @Test
     public void shouldBeAbleToIndexNode() throws DatabaseBlockedException, JsonParseException
     {
@@ -950,9 +950,13 @@ public class RestfulGraphDatabaseTest
         URI nodeUri = (URI) response.getMetadata()
                 .getFirst( "Location" );
 
-        String key = "key";
-        String value = "value";
-        response = service.addToNodeIndex( "node", key, value, JsonHelper.createJsonFrom( nodeUri.toString() ) );
+        Map<String, String> postBody = new HashMap<String, String>();
+        postBody.put( "key", "mykey" );
+        postBody.put( "value", "my/key" );
+        postBody.put( "uri", nodeUri.toString() );
+
+        response = service.addToNodeIndex( "node", JsonHelper.createJsonFrom( postBody ) );
+
         assertEquals( 201, response.getStatus() );
         assertNotNull( response.getMetadata()
                 .getFirst( "Location" ) );
@@ -1498,8 +1502,10 @@ public class RestfulGraphDatabaseTest
 
         assertEquals(
                 Status.CREATED.getStatusCode(),
-                service.addToNodeIndex( "node", "foo", "bar",
-                        markWithUnicodeMarker( JsonHelper.createJsonFrom( nodeLocation ) ) )
+                service.addToNodeIndex(
+                        "node",
+                        markWithUnicodeMarker( "{\"key\":\"foo\", \"value\":\"bar\", \"uri\": \"" + nodeLocation
+                                               + "\"}" ) )
                         .getStatus() );
 
         assertEquals( Status.OK.getStatusCode(),

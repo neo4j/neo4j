@@ -26,16 +26,7 @@ import static org.neo4j.visualization.asciidoc.AsciidocHelper.createCypherSnippe
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphViz;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
 
-import java.util.Map;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.cypher.javacompat.CypherParser;
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.Evaluation;
@@ -45,21 +36,11 @@ import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
-import org.neo4j.test.GraphHolder;
-import org.neo4j.test.ImpermanentGraphDatabase;
-import org.neo4j.test.JavaTestDocsGenerator;
-import org.neo4j.test.TestData;
 
-public class ShortDocumentationExamplesTest implements GraphHolder
+public class ShortDocumentationExamplesTest extends AbstractJavaDocTestbase
 {
-    public @Rule
-    TestData<JavaTestDocsGenerator> gen = TestData.producedThrough( JavaTestDocsGenerator.PRODUCER );
-    public @Rule
-    TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
-            this, true ) );
- 
+    
     /**
      * Uniqueness of Paths in traversals.
      * 
@@ -217,7 +198,7 @@ public class ShortDocumentationExamplesTest implements GraphHolder
      *=== What files are owned by whom? ===
      * 
      *If we introduce the concept of ownership on files, we then can ask for the owners of the files we find -
-     *connected via +owns+ realtionships to file nodes.
+     *connected via +owns+ relationships to file nodes.
      * 
      *@@query2
      * 
@@ -312,42 +293,69 @@ public class ShortDocumentationExamplesTest implements GraphHolder
         
     }
     
+    /**
+     * This example shows a multi-relational
+     * network between persons and things they like.
+     * 
+     * @@graph1
+     * 
+     * Below are some typical questions asked of such a network:
+     * 
+     * == Who +FOLLOWS+ or +LIKES+ me back?
+     * 
+     * @@query1
+     * 
+     * @@result1
+     * 
+     */
     @Test
-    @Graph(value = {"A FOLLOW B", "B FOLLOW A", "B FOLLOW C"}, autoIndexNodes = true)
-    public void find_the_followers_that_follow_me_back()
+    @Documented
+    @Graph(value = {"Joe FOLLOWS Sara", "Sara FOLLOWS Joe", "Joe LIKES Maria","Maria LIKES Joe","Sara FOLLOWS Ben", "Joe FOLLOWS Ben"}, autoIndexNodes = true)
+    public void social_network_with_multiple_relations()
     {
         data.get();
-        String query = "START b=(node_auto_index,'name:B') " +
-        		"MATCH a-[:FOLLOW]->b-[:FOLLOW]->a RETURN a ";
+        gen.get().addSnippet( "graph1", createGraphViz("The Domain Structure", graphdb(), gen.get().getTitle()) );
+        String query = "START me=(node_auto_index,'name:Joe') " +
+        		"MATCH me-[r]->other-[r]->me WHERE type(r) =~ /FOLLOWS|LIKES/ RETURN me, other, type(r) ";
         String result = engine.execute( parser.parse( query ) ).toString();
-        assertTrue(result.contains( "A" ));
-        assertFalse(result.contains( "C" ));
-    }
-
-    private static ImpermanentGraphDatabase db;
-    private CypherParser parser;
-    private ExecutionEngine engine;
-    @BeforeClass
-    public static void init()
-    {
-        db = new ImpermanentGraphDatabase("target/descendants");
+        gen.get().addSnippet( "query1", createCypherSnippet( query ) );
+        gen.get().addSnippet( "result1", createOutputSnippet( result ) );
+        
+        assertTrue(result.contains( "Sara" ));
+        assertTrue(result.contains( "Maria" ));
     }
     
-    @Before
-    public void setUp() {
-        db.cleanContent();
-        gen.get().setGraph( db );
-        parser = new CypherParser();
-        engine = new ExecutionEngine(db);
-    }
-    @After
-    public void doc() {
-        gen.get().document("target/docs","examples");
-    }
-    @Override
-    public GraphDatabaseService graphdb()
+    /**
+     * This example shows a multi-relational
+     * network between persons and things they like.
+     * 
+     * @@graph1
+     * 
+     * Below are some typical questions asked of such a network:
+     * 
+     * == Who +FOLLOWS+ or +LIKES+ me back?
+     * 
+     * @@query1
+     * 
+     * @@result1
+     * 
+     */
+    @Test
+    @Documented
+    @Graph(value = {"Joe FOLLOWS Sara", "Sara FOLLOWS Joe", "Joe LIKES Maria","Maria LIKES Joe","Sara FOLLOWS Ben", "Joe FOLLOWS Ben"}, autoIndexNodes = true)
+    public void role_modeling_in_a_graph()
     {
-        return db;
+        data.get();
+        gen.get().addSnippet( "graph1", createGraphViz("The Domain Structure", graphdb(), gen.get().getTitle()) );
+        String query = "START me=(node_auto_index,'name:Joe') " +
+                "MATCH me-[r]->other-[r]->me WHERE type(r) =~ /FOLLOWS|LIKES/ RETURN me, other, type(r) ";
+        String result = engine.execute( parser.parse( query ) ).toString();
+        gen.get().addSnippet( "query1", createCypherSnippet( query ) );
+        gen.get().addSnippet( "result1", createOutputSnippet( result ) );
+        
+        assertTrue(result.contains( "Sara" ));
+        assertTrue(result.contains( "Maria" ));
     }
+
 
 }

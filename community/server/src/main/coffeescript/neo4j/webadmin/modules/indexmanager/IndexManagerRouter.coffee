@@ -34,6 +34,7 @@ define(
         @idxMgr = new IndexManager(server:@appState.get("server"))
 
       idxManager : =>
+        @saveLocation()
         @appState.set( mainView : @getIndexManagerView() )
 
       getIndexManagerView : =>

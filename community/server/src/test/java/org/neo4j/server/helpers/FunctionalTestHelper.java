@@ -191,15 +191,16 @@ public final class FunctionalTestHelper
     {
         return nodeIndexUri() + indexName;
     }
+    
+    public String indexNodeUri( String indexName, String key, Object value )
+    {
+        return indexNodeUri( indexName ) + "/" + key + "/" + value;
+    }
+    
 
     public String indexRelationshipUri( String indexName )
     {
         return relationshipIndexUri() + indexName;
-    }
-
-    public String indexNodeUri( String indexName, String key, Object value )
-    {
-        return indexNodeUri( indexName ) + "/" + key + "/" + value;
     }
 
     public String indexRelationshipUri( String indexName, String key, Object value )
@@ -261,5 +262,15 @@ public final class FunctionalTestHelper
 
     public void put(String path, String data) {
         request.put(path, data);
+    }
+
+    public long getNodeIdFromUri( String nodeUri )
+    {
+        return Long.valueOf( nodeUri.substring( nodeUri.lastIndexOf( "/" ) +1 , nodeUri.length() ) );
+    }
+
+    public long getRelationshipIdFromUri( String relationshipUri )
+    {
+        return getNodeIdFromUri( relationshipUri );
     }
 }

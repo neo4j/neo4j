@@ -27,7 +27,7 @@ class ParameterPipe(params: Map[String, Any]) extends Pipe {
     f(params)
   }
 
-  val identifiers: Seq[Identifier] = params.keys.map(k => LiteralIdentifier("$" + k)).toSeq
+  val identifiers: Seq[Identifier] = params.keys.map(k => LiteralIdentifier(k)).toSeq
 
   val symbols: SymbolTable = new SymbolTable(identifiers)
 }

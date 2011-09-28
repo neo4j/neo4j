@@ -103,10 +103,10 @@ public class RestfulGraphDatabase
 
     public static final String PATH_AUTO_NODE_INDEX = "index/auto/node";
     protected static final String PATH_AUTO_NODE_INDEX_GET = PATH_AUTO_NODE_INDEX + "/{key}/{value}";
-    
+
     public static final String PATH_AUTO_RELATIONSHIP_INDEX = "index/auto/relationship";
     protected static final String PATH_AUTO_RELATIONSHIP_INDEX_GET = PATH_AUTO_RELATIONSHIP_INDEX + "/{key}/{value}";
-    
+
     private static final String SIXTY_SECONDS = "60";
     private static final String FIFTY = "50";
 
@@ -147,6 +147,11 @@ public class RestfulGraphDatabase
         {
             throw new BadInputException( ex );
         }
+    }
+    
+    private long extractRelationshipId(String uri) throws BadInputException
+    {
+        return extractNodeId( uri );
     }
 
     @GET
@@ -666,12 +671,15 @@ public class RestfulGraphDatabase
     @Consumes( MediaType.APPLICATION_JSON )
     public Response deleteNodeIndex( @PathParam( "indexName" ) String indexName )
     {
-    	try {
-	        actions.removeNodeIndex( indexName );
-	        return output.noContent();
-    	} catch(UnsupportedOperationException e) {
-    		return output.methodNotAllowed(e);
-    	}
+        try
+        {
+            actions.removeNodeIndex( indexName );
+            return output.noContent();
+        }
+        catch ( UnsupportedOperationException e )
+        {
+            return output.methodNotAllowed( e );
+        }
     }
 
     @DELETE
@@ -679,30 +687,33 @@ public class RestfulGraphDatabase
     @Consumes( MediaType.APPLICATION_JSON )
     public Response deleteRelationshipIndex( @PathParam( "indexName" ) String indexName )
     {
-    	try {
-	        actions.removeRelationshipIndex( indexName );
-	        return output.noContent();
-    	} catch(UnsupportedOperationException e) {
-    		return output.methodNotAllowed(e);
-    	}
+        try
+        {
+            actions.removeRelationshipIndex( indexName );
+            return output.noContent();
+        }
+        catch ( UnsupportedOperationException e )
+        {
+            return output.methodNotAllowed( e );
+        }
     }
 
     @POST
-    @Path( PATH_NODE_INDEX_GET )
+    @Path( PATH_NAMED_NODE_INDEX )
     @Consumes( MediaType.APPLICATION_JSON )
-    public Response addToNodeIndex( @PathParam( "indexName" ) String indexName, @PathParam( "key" ) String key,
-            @PathParam( "value" ) String value, String objectUri )
+    public Response addToNodeIndex( @PathParam( "indexName" ) String indexName, String postBody )
     {
+        
         try
         {
-            return output.created( actions.addToNodeIndex( indexName, key, value,
-                    extractNodeId( input.readUri( objectUri )
-                            .toString() ) ) );   
-		}
-        catch(UnsupportedOperationException e) 
+            Map<String, Object> entityBody = input.readMap( postBody );
+            return output.created( actions.addToNodeIndex( indexName, String.valueOf( entityBody.get( "key" ) ),
+                    String.valueOf( entityBody.get( "value" ) ), extractNodeId( entityBody.get( "uri" ).toString() ) ) );
+        }
+        catch ( UnsupportedOperationException e )
         {
-			return output.methodNotAllowed(e);
-		}
+            return output.methodNotAllowed( e );
+        }
         catch ( BadInputException e )
         {
             return output.badRequest( e );
@@ -711,23 +722,23 @@ public class RestfulGraphDatabase
         {
             return output.serverError( e );
         }
+        
     }
 
     @POST
-    @Path( PATH_RELATIONSHIP_INDEX_GET )
-    public Response addToRelationshipIndex( @PathParam( "indexName" ) String indexName, @PathParam( "key" ) String key,
-            @PathParam( "value" ) String value, String objectUri )
+    @Path( PATH_NAMED_RELATIONSHIP_INDEX )
+    public Response addToRelationshipIndex( @PathParam( "indexName" ) String indexName, String postBody )
     {
         try
         {
-            return output.created( actions.addToRelationshipIndex( indexName, key, value,
-                    extractNodeId( input.readUri( objectUri )
-                            .toString() ) ) );
+            Map<String, Object> entityBody = input.readMap( postBody );
+            return output.created( actions.addToRelationshipIndex( indexName, String.valueOf( entityBody.get( "key" ) ),
+                    String.valueOf( entityBody.get( "value" ) ), extractRelationshipId( entityBody.get( "uri" ).toString() ) ) );
         }
-        catch(UnsupportedOperationException e) 
+        catch ( UnsupportedOperationException e )
         {
-			return output.methodNotAllowed(e);
-		}
+            return output.methodNotAllowed( e );
+        }
         catch ( BadInputException e )
         {
             return output.badRequest( e );
@@ -786,8 +797,7 @@ public class RestfulGraphDatabase
 
     @GET
     @Path( PATH_AUTO_NODE_INDEX_GET )
-    public Response getIndexedNodes( @PathParam( "key" ) String key,
-            @PathParam( "value" ) String value )
+    public Response getIndexedNodes( @PathParam( "key" ) String key, @PathParam( "value" ) String value )
     {
         try
         {
@@ -840,7 +850,7 @@ public class RestfulGraphDatabase
             return output.serverError( e );
         }
     }
-    
+
     @GET
     @Path( PATH_AUTO_RELATIONSHIP_INDEX_GET )
     public Response getIndexedRelationships( @PathParam( "key" ) String key, @PathParam( "value" ) String value )
@@ -858,7 +868,7 @@ public class RestfulGraphDatabase
             return output.serverError( e );
         }
     }
-    
+
     @GET
     @Path( PATH_AUTO_RELATIONSHIP_INDEX )
     public Response getAutoIndexedRelationshipsByQuery( @QueryParam( "query" ) String query )
@@ -925,10 +935,10 @@ public class RestfulGraphDatabase
             actions.removeFromNodeIndex( indexName, key, value, id );
             return nothing();
         }
-        catch(UnsupportedOperationException e) 
+        catch ( UnsupportedOperationException e )
         {
-			return output.methodNotAllowed(e);
-		}
+            return output.methodNotAllowed( e );
+        }
         catch ( NotFoundException nfe )
         {
             return output.notFound( nfe );
@@ -949,10 +959,10 @@ public class RestfulGraphDatabase
             actions.removeFromNodeIndexNoValue( indexName, key, id );
             return nothing();
         }
-        catch(UnsupportedOperationException e) 
+        catch ( UnsupportedOperationException e )
         {
-			return output.methodNotAllowed(e);
-		}
+            return output.methodNotAllowed( e );
+        }
         catch ( NotFoundException nfe )
         {
             return output.notFound( nfe );
@@ -973,10 +983,10 @@ public class RestfulGraphDatabase
             actions.removeFromNodeIndexNoKeyValue( indexName, id );
             return nothing();
         }
-        catch(UnsupportedOperationException e) 
+        catch ( UnsupportedOperationException e )
         {
-			return output.methodNotAllowed(e);
-		}
+            return output.methodNotAllowed( e );
+        }
         catch ( NotFoundException nfe )
         {
             return output.notFound( nfe );
@@ -997,10 +1007,10 @@ public class RestfulGraphDatabase
             actions.removeFromRelationshipIndex( indexName, key, value, id );
             return nothing();
         }
-        catch(UnsupportedOperationException e) 
+        catch ( UnsupportedOperationException e )
         {
-			return output.methodNotAllowed(e);
-		}
+            return output.methodNotAllowed( e );
+        }
         catch ( NotFoundException nfe )
         {
             return output.notFound( nfe );
@@ -1021,10 +1031,10 @@ public class RestfulGraphDatabase
             actions.removeFromRelationshipIndexNoValue( indexName, key, id );
             return nothing();
         }
-        catch(UnsupportedOperationException e) 
+        catch ( UnsupportedOperationException e )
         {
-			return output.methodNotAllowed(e);
-		}
+            return output.methodNotAllowed( e );
+        }
         catch ( NotFoundException nfe )
         {
             return output.notFound( nfe );
@@ -1045,10 +1055,10 @@ public class RestfulGraphDatabase
             actions.removeFromRelationshipIndexNoKeyValue( indexName, id );
             return nothing();
         }
-        catch(UnsupportedOperationException e) 
+        catch ( UnsupportedOperationException e )
         {
-			return output.methodNotAllowed(e);
-		}
+            return output.methodNotAllowed( e );
+        }
         catch ( NotFoundException nfe )
         {
             return output.notFound( nfe );

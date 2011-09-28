@@ -33,6 +33,10 @@ define(
 
       constructor : (canvas, @nodeStyler, @relationshipStyler) ->
         @canvas = $(canvas).get(0)
+        
+        if not @canvas.getContext # Excanvas
+          @canvas = window.G_vmlCanvasManager.initElement @canvas
+        
         @ctx = @canvas.getContext("2d")
         @gfx = arbor.Graphics(@canvas)
 
@@ -49,7 +53,6 @@ define(
       redraw : () =>
         if not @particleSystem or @stopped is true
           return
-
         @gfx.clear()
 
         # This contains the edge boxes, is populated by @renderNode and used by @renderEdge
@@ -194,11 +197,9 @@ define(
 
         $(@canvas).mousedown(@clicked)
 
-      start : =>
-        @stopped = false
+      start : => @stopped = false
 
-      stop : =>
-        @stopped = true
+      stop : => @stopped = true
 
       clicked: (e) =>
         pos = $(@canvas).offset()

@@ -107,7 +107,7 @@ public class JavaTestDocsGenerator extends AsciiDocGenerator
         if ( description.contains( SNIPPET_MARKER ) )
         {
             Pattern p = Pattern.compile( ".*" + SNIPPET_MARKER
-                                         + "([a-zA-Z_0-9]*).*" );
+                                         + "([a-zA-Z_\\-0-9]*).*" );
             Matcher m = p.matcher( description );
             m.find();
             String group = m.group( 1 );

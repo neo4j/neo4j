@@ -85,7 +85,7 @@ public class PropertyFileConfiguratorTest
                 .build();
 
         InMemoryAppender appender = new InMemoryAppender( PropertyFileConfigurator.log );
-        PropertyFileConfigurator configurator = new PropertyFileConfigurator( emptyPropertyFile );
+        new PropertyFileConfigurator( emptyPropertyFile );
 
         assertThat( appender.toString(), containsString( String.format(
                 "INFO: No database tuning file explicitly set, defaulting to [%s]",
