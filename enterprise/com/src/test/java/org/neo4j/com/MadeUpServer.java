@@ -19,11 +19,8 @@
  */
 package org.neo4j.com;
 
+import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
-import org.neo4j.com.RequestType;
-import org.neo4j.com.Server;
-import org.neo4j.com.SlaveContext;
-import org.neo4j.com.MadeUpClient.DumbRequestType;
 
 public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
 {
@@ -44,7 +41,7 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
     @Override
     protected RequestType<MadeUpCommunicationInterface> getRequestContext( byte id )
     {
-        return DumbRequestType.values()[id];
+        return MadeUpRequestType.values()[id];
     }
 
     @Override
@@ -55,5 +52,68 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
     public boolean responseHasBeenWritten()
     {
         return responseWritten;
+    }
+
+    static enum MadeUpRequestType implements RequestType<MadeUpCommunicationInterface>
+    {
+        MULTIPLY( new MasterCaller<MadeUpCommunicationInterface, Integer>()
+        {
+            @Override
+            public Response<Integer> callMaster( MadeUpCommunicationInterface master,
+                    SlaveContext context, ChannelBuffer input, ChannelBuffer target )
+            {
+                int value1 = input.readInt();
+                int value2 = input.readInt();
+                return master.multiply( value1, value2 );
+            }
+        }, Protocol.INTEGER_SERIALIZER ),
+        
+        STREAM_SOME_DATA( new MasterCaller<MadeUpCommunicationInterface, Void>()
+        {
+            @Override
+            public Response<Void> callMaster( MadeUpCommunicationInterface master,
+                    SlaveContext context, ChannelBuffer input, ChannelBuffer target )
+            {
+                int dataSize = input.readInt();
+                return master.streamSomeData( new ToChannelBufferWriter( target ), dataSize );
+            }
+        }, Protocol.VOID_SERIALIZER ),
+        
+        THROW_EXCEPTION( new MasterCaller<MadeUpCommunicationInterface, Integer>()
+        {
+            @Override
+            public Response<Integer> callMaster( MadeUpCommunicationInterface master,
+                    SlaveContext context, ChannelBuffer input, ChannelBuffer target )
+            {
+                return master.throwException( readString( input ) );
+            }
+        }, Protocol.VOID_SERIALIZER );
+        
+        private final MasterCaller masterCaller;
+        private final ObjectSerializer serializer;
+        
+        MadeUpRequestType( MasterCaller masterCaller, ObjectSerializer serializer )
+        {
+            this.masterCaller = masterCaller;
+            this.serializer = serializer;
+        }
+
+        @Override
+        public MasterCaller getMasterCaller()
+        {
+            return this.masterCaller;
+        }
+
+        @Override
+        public ObjectSerializer getObjectSerializer()
+        {
+            return this.serializer;
+        }
+
+        @Override
+        public byte id()
+        {
+            return (byte) ordinal();
+        }
     }
 }

@@ -19,11 +19,15 @@
  */
 package org.neo4j.com;
 
-public interface MadeUpCommunicationInterface
+public class MadeUpException extends RuntimeException
 {
-    Response<Integer> multiply( int value1, int value2 );
-    
-    Response<Void> streamSomeData( MadeUpWriter writer, int dataSize );
-    
-    Response<Integer> throwException( String messageInException );
+    public MadeUpException( String message )
+    {
+        super( message );
+    }
+
+    public MadeUpException( String message, Throwable cause )
+    {
+        super( message, cause );
+    }
 }

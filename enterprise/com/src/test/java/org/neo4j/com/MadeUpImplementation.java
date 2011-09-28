@@ -45,6 +45,12 @@ public class MadeUpImplementation implements MadeUpCommunicationInterface
         return new Response<Void>( null, storeIdToRespondWith, TransactionStream.EMPTY );
     }
     
+    @Override
+    public Response<Integer> throwException( String messageInException )
+    {
+        throw new MadeUpException( messageInException, new Exception( "The cause of it" ) );
+    }
+    
     public boolean gotCalled()
     {
         return this.gotCalled;

@@ -19,7 +19,9 @@
  */
 package org.neo4j.com;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Collections;
@@ -64,7 +66,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public abstract class Server<M, R> extends Protocol implements ChannelPipelineFactory
 {
     public static final int DEFAULT_BACKUP_PORT = 6362;
-
+    
     // It's ok if there are more transactions, since these worker threads doesn't
     // do any actual work themselves, but spawn off other worker threads doing the
     // actual work. So this is more like a core Netty I/O pool worker size.
@@ -379,8 +381,8 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
                 }
                 catch ( Throwable e )
                 {
-                    e.printStackTrace();
-                    channel.close();
+                    targetBuffer.clear( true );
+                    writeFailureResponse( e, targetBuffer );
                     tryToFinishOffChannel( channel, context );
                     throw Exceptions.launderedException( e );
                 }
@@ -393,6 +395,23 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         };
     }
     
+    private void writeFailureResponse( Throwable exception, ChunkingChannelBuffer buffer )
+    {
+        try
+        {
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            ObjectOutputStream out = new ObjectOutputStream( bytes );
+            out.writeObject( exception );
+            out.close();
+            buffer.writeBytes( bytes.toByteArray() );
+            buffer.done();
+        }
+        catch ( IOException e )
+        {
+            msgLog.logMessage( "Couldn't send cause of error to client", exception );
+        }
+    }
+
     protected void responseWritten( RequestType<M> type, Channel channel, SlaveContext context )
     {
     }

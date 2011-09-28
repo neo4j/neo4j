@@ -19,16 +19,24 @@
  */
 package org.neo4j.com;
 
-public class FailedResponse<T> extends Response<T>
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
+public class FailingByteChannel extends KnownDataByteChannel
 {
-    public FailedResponse()
+    private final String failWithMessage;
+    private final int sizeToFailAt;
+
+    public FailingByteChannel( int sizeToFailAt, String failWithMessage )
     {
-        super( null, null, null );
+        super( sizeToFailAt*2 );
+        this.sizeToFailAt = sizeToFailAt;
+        this.failWithMessage = failWithMessage;
     }
-    
-    @Override
-    public T response() throws MasterFailureException
+
+    public int read( ByteBuffer dst ) throws IOException
     {
-        throw new MasterFailureException();
+        if ( position > sizeToFailAt ) throw new MadeUpException( failWithMessage );
+        return super.read( dst );
     }
 }

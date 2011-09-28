@@ -33,7 +33,7 @@ import java.nio.channels.ReadableByteChannel;
  */
 public class KnownDataByteChannel implements ReadableByteChannel
 {
-    private int counter;
+    protected int position;
     private final int size;
     
     public KnownDataByteChannel( int size )
@@ -63,13 +63,13 @@ public class KnownDataByteChannel implements ReadableByteChannel
         
         for ( int i = 0; i < toRead; i++ )
         {
-            dst.put( (byte)((counter++)%10) );
+            dst.put( (byte)((position++)%10) );
         }
         return toRead;
     }
 
     private int left()
     {
-        return size-counter;
+        return size-position;
     }
 }

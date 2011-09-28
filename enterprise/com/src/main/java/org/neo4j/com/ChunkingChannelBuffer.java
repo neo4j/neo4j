@@ -41,6 +41,8 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
 {
     static final byte CONTINUATION_LAST = 0;
     static final byte CONTINUATION_MORE = 1;
+    static final byte OUTCOME_SUCCESS = 0;
+    static final byte OUTCOME_FAILURE = 1;
     private static final int MAX_WRITE_AHEAD_CHUNKS = 5;
     
     private ChannelBuffer buffer;
@@ -48,6 +50,7 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
     private final int capacity;
     private int continuationPosition;
     private final AtomicInteger writeAheadCounter = new AtomicInteger();
+    private volatile boolean failure;
 
     public ChunkingChannelBuffer( ChannelBuffer buffer, Channel channel, int capacity )
     {
@@ -60,7 +63,13 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
     private void addRoomForContinuationHeader()
     {
         continuationPosition = writerIndex();
-        buffer.writeByte( CONTINUATION_LAST );
+        // [    ,  oc]
+        buffer.writeByte( header( failure, false ) );
+    }
+    
+    private static byte header( boolean failure, boolean more )
+    {
+        return (byte) (((failure?OUTCOME_FAILURE:OUTCOME_SUCCESS) << 1) | (more?CONTINUATION_MORE:CONTINUATION_LAST));
     }
     
     private void setContinuation( byte value )
@@ -133,9 +142,16 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
         return buffer.writable();
     }
 
-    public void clear()
+    public void clear( boolean failure )
     {
         buffer.clear();
+        this.failure = failure;
+        addRoomForContinuationHeader();
+    }
+    
+    public void clear()
+    {
+        clear( false );
     }
 
     public void markReaderIndex()

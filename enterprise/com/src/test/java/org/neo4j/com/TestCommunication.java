@@ -130,6 +130,36 @@ public class TestCommunication
     }
     
     @Test
+    public void clientThrowsServerSideErrorMidwayThroughStreaming() throws Exception
+    {
+        final String failureMessage = "Just failing";
+        MadeUpImplementation serverImplementation = new MadeUpImplementation( storeIdToUse )
+        {
+            @Override
+            public Response<Void> streamSomeData( MadeUpWriter writer, int dataSize )
+            {
+                writer.write( new FailingByteChannel( dataSize, failureMessage ) );
+                return new Response<Void>( null, storeIdToUse, TransactionStream.EMPTY );
+            }
+        };
+        MadeUpServer server = new MadeUpServer( serverImplementation, PORT );
+        MadeUpClient client = new MadeUpClient( PORT, storeIdToUse );
+        
+        try
+        {
+            client.streamSomeData( new ToAssertionWriter(), 1024*1024*20 /*20 Mb, the important thing here is that it must be bigger than one chunk*/ );
+            fail( "Should have thrown " + MadeUpException.class.getSimpleName() );
+        }
+        catch ( ComException e )
+        {
+            assertCause( e, MadeUpException.class, failureMessage );
+        }
+        
+        client.shutdown();
+        server.shutdown();
+    }
+    
+    @Test
     public void communicateBetweenJvms() throws Exception
     {
         ServerInterface server = new MadeUpServerProcess().start(
@@ -142,5 +172,35 @@ public class TestCommunication
         
         client.shutdown();
         server.shutdown();
+    }
+    
+    @Test
+    public void throwingServerSideExceptionBackToClient() throws Exception
+    {
+        MadeUpImplementation serverImplementation = new MadeUpImplementation( storeIdToUse );
+        MadeUpServer server = new MadeUpServer( serverImplementation, PORT );
+        MadeUpClient client = new MadeUpClient( PORT, storeIdToUse );
+        
+        String exceptionMessage = "The message";
+        try
+        {
+            client.throwException( exceptionMessage );
+            fail( "Should have thrown " + MadeUpException.class.getSimpleName() );
+        }
+        catch ( ComException e )
+        {
+            assertCause( e, MadeUpException.class, exceptionMessage );
+        }
+        
+        client.shutdown();
+        server.shutdown();
+    }
+
+    private <E extends Exception> void assertCause( ComException comException,
+            Class<E> expectedCause, String expectedCauseMessagee )
+    {
+        Throwable cause = comException.getCause();
+        assertTrue( expectedCause.isInstance( cause ) );
+        assertEquals( expectedCauseMessagee, cause.getMessage() );
     }
 }

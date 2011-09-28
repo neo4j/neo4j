@@ -44,6 +44,7 @@ import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.AbstractGraphDatabase;
@@ -155,6 +156,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
             BlockingReadHandler<ChannelBuffer> reader = (BlockingReadHandler<ChannelBuffer>)
                     channel.getPipeline().get( "blockingHandler" );
             DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader, readTimeout );
+            
             R response = deserializer.read( dechunkingBuffer, channelContext.third() );
             StoreId storeId = readStoreId( dechunkingBuffer, channelContext.third() );
             if ( shouldCheckStoreId( type ) )
@@ -164,13 +166,13 @@ public abstract class Client<M> implements ChannelPipelineFactory
             TransactionStream txStreams = readTransactionStreams( dechunkingBuffer );
             return new Response<R>( response, storeId, txStreams );
         }
-        catch ( Exception e )
+        catch ( Throwable e )
         {
             if ( channelContext != null )
             {
                 closeChannel( channelContext );
             }
-            throw new ComException( e );
+            throw Exceptions.launderedException( ComException.class, e );
         }
         finally
         {

@@ -35,7 +35,6 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 
-import org.neo4j.com.FailedResponse;
 import org.neo4j.com.MasterUtil;
 import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
@@ -54,7 +53,6 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
@@ -359,8 +357,7 @@ public class MasterImpl implements Master
         }
         catch ( IOException e )
         {
-            e.printStackTrace();
-            return new FailedResponse<Long>();
+            throw new RuntimeException( e );
         }
         finally
         {
@@ -410,28 +407,15 @@ public class MasterImpl implements Master
         }
         catch ( IOException e )
         {
-            msgLog.logMessage( "Couldn't get master ID for " + txId, e );
+            throw new RuntimeException( "Couldn't get master ID for " + txId, e );
         }
         return MasterUtil.packResponseWithoutTransactionStream( graphDb, SlaveContext.EMPTY, masterId );
     }
 
     public Response<Void> copyStore( SlaveContext context, StoreWriter writer )
     {
-        try
-        {
-            context = MasterUtil.rotateLogsAndStreamStoreFiles( graphDb, true, writer );
-        }
-        catch ( Exception e )
-        {
-            return new FailedResponse<Void>();
-        }
+        context = MasterUtil.rotateLogsAndStreamStoreFiles( graphDb, true, writer );
         writer.done();
-
-        // If no transactions have been applied during the time this store was copied
-        // then pack the last transaction anyways so that the receiver gets at least
-        // one transaction (the only way to get masterId for txId).
-//        context = makeSureThereIsAtLeastOneKernelTx( context );
-
         return packResponse( context, null );
     }
     
@@ -441,26 +425,25 @@ public class MasterImpl implements Master
         unfinishedTransactionsExecutor.shutdown();
     }
 
-    private SlaveContext makeSureThereIsAtLeastOneKernelTx( SlaveContext context )
-    {
-        Collection<Pair<String, Long>> txs = new ArrayList<Pair<String, Long>>();
-        for ( Pair<String, Long> txEntry : context.lastAppliedTransactions() )
-        {
-            String resourceName = txEntry.first();
-            XaDataSource dataSource = graphDbConfig.getTxModule().getXaDataSourceManager()
-                    .getXaDataSource( resourceName );
-            long startedCopyAtTxId = txEntry.other();
-            if ( dataSource instanceof NeoStoreXaDataSource )
-            {
-                if ( startedCopyAtTxId == 1 ) return context;
-                if ( startedCopyAtTxId == dataSource.getLastCommittedTxId() ) startedCopyAtTxId--;
-//                startedCopyAtTxId = Math.max( 2, startedCopyAtTxId-100 );
-            }
-            txs.add( Pair.of( resourceName, startedCopyAtTxId ) );
-        }
-        return new SlaveContext( context.getSessionId(), context.machineId(),
-                context.getEventIdentifier(), txs.toArray( new Pair[0] ) );
-    }
+//    private SlaveContext makeSureThereIsAtLeastOneKernelTx( SlaveContext context )
+//    {
+//        Collection<Pair<String, Long>> txs = new ArrayList<Pair<String, Long>>();
+//        for ( Pair<String, Long> txEntry : context.lastAppliedTransactions() )
+//        {
+//            String resourceName = txEntry.first();
+//            XaDataSource dataSource = graphDbConfig.getTxModule().getXaDataSourceManager()
+//                    .getXaDataSource( resourceName );
+//            long startedCopyAtTxId = txEntry.other();
+//            if ( dataSource instanceof NeoStoreXaDataSource )
+//            {
+//                if ( startedCopyAtTxId == 1 ) return context;
+//                if ( startedCopyAtTxId == dataSource.getLastCommittedTxId() ) startedCopyAtTxId--;
+//            }
+//            txs.add( Pair.of( resourceName, startedCopyAtTxId ) );
+//        }
+//        return new SlaveContext( context.getSessionId(), context.machineId(),
+//                context.getEventIdentifier(), txs.toArray( new Pair[0] ) );
+//    }
 
     private static interface LockGrabber
     {

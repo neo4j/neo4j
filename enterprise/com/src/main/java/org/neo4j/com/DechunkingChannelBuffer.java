@@ -21,6 +21,7 @@ package org.neo4j.com;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -42,6 +43,7 @@ public class DechunkingChannelBuffer implements ChannelBuffer
     private boolean more;
     private boolean hasMarkedReaderIndex;
     private final int timeoutSeconds;
+    private boolean failure;
 
     DechunkingChannelBuffer( BlockingReadHandler<ChannelBuffer> reader, int timeoutSeconds )
     {
@@ -83,12 +85,9 @@ public class DechunkingChannelBuffer implements ChannelBuffer
     {
         ChannelBuffer readBuffer = readNext();
         byte header = readBuffer.readByte();
-        switch ( header )
-        {
-        case ChunkingChannelBuffer.CONTINUATION_LAST: more = false; break;
-        case ChunkingChannelBuffer.CONTINUATION_MORE: more = true; break;
-        default: throw new ComException( "Unexpected header " + header );
-        }
+        more = (header & 0x1) != 0;
+        failure = (header & 0x2) != 0;
+        if ( (header & 0xFC) != 0 ) throw new ComException( "Unexpected header " + header );
         
         if ( !more && buffer == null )
         {
@@ -102,11 +101,33 @@ public class DechunkingChannelBuffer implements ChannelBuffer
             discardReadBytes();
             buffer.writeBytes( readBuffer );
         }
+        
+        if ( failure ) readAndThrowFailureResponse();
+    }
+
+    private void readAndThrowFailureResponse()
+    {
+        Throwable cause = null;
+        try
+        {
+            ObjectInputStream input = new ObjectInputStream( asInputStream() );
+            cause = (Throwable) input.readObject();
+        }
+        catch ( Exception e )
+        {
+            throw new ComException( "Couldn't read failure response", e );
+        }
+        throw new ComException( cause );
     }
 
     public ChannelBufferFactory factory()
     {
         return buffer.factory();
+    }
+    
+    public boolean failure()
+    {
+        return failure;
     }
 
     /**
@@ -831,5 +852,67 @@ public class DechunkingChannelBuffer implements ChannelBuffer
     public String toString()
     {
         return buffer.toString();
+    }
+    
+    private InputStream asInputStream()
+    {
+        return new InputStream()
+        {
+            @Override
+            public int read( byte[] b ) throws IOException
+            {
+                readBytes( b );
+                return b.length;
+            }
+
+            @Override
+            public int read( byte[] b, int off, int len ) throws IOException
+            {
+                readBytes( b, off, len );
+                return len;
+            }
+
+            @Override
+            public long skip( long n ) throws IOException
+            {
+                skipBytes( (int)n );
+                return n;
+            }
+
+            @Override
+            public int available() throws IOException
+            {
+                return super.available();
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+            }
+
+            @Override
+            public synchronized void mark( int readlimit )
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public synchronized void reset() throws IOException
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public boolean markSupported()
+            {
+                return false;
+            }
+
+            @Override
+            public int read() throws IOException
+            {
+                return readByte();
+            }
+        };
     }
 }
