@@ -386,7 +386,7 @@ body {
 }
 
 .ruleFilters {
-  width: 470px;
+  width: 500px;
   font-size:12px;
   border-left: 1px solid #ccc;
   border-right: 1px solid #ccc;
@@ -414,7 +414,7 @@ body {
 }
 
 .styleRule .filters .filter {
-  width:390px;
+  width:460px;
 }
 
 .styleRule .filters .filter > * {
