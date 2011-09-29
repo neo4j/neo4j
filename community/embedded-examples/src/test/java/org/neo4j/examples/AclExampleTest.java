@@ -211,7 +211,7 @@ public class AclExampleTest extends AbstractJavaDocTestbase
         		"parent<-[?:canRead]-role2-[:member]->readUserMoreThan1DirUp, " +
                 "dir<-[?:canRead]-role1-[:member]->readUser1DirUp " +
         		//TODO: would like to get results the order I specify
-        		"RETURN path, file, role1, readUser1DirUp, role2, readUserMoreThan1DirUp";
+        		"RETURN file, role1, readUser1DirUp, role2, readUserMoreThan1DirUp";
         gen.get().addSnippet( "query3", createCypherSnippet( query ) );
         result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("File1") );
