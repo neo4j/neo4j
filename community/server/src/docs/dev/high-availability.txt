@@ -11,13 +11,13 @@ Instructing the server to start the database in high availability mode is as eas
 The default value for this parameter is +single+, which will start the database in standalone mode without participating in a cluster, still giving you Online Backup.
 
 Configuring the Neo4j database for operating in high availability mode requires specifying a few properties in 'conf/neo4j.properties'.
-First you need to specify +ha.machine_id+, this is a positive integer id that uniquely identifies this server in the cluster.
+First you need to specify +ha.server_id+, this is a positive integer id that uniquely identifies this server in the cluster.
 
-Example: +ha.machine_id = 1+
+Example: +ha.server_id = 1+
 
-Then you have to specify +ha.zoo_keeper_servers+, this is a comma separated list of hosts and ports for communicating with each member of the Neo4j Coordinator cluster.
+Then you have to specify +ha.coordinators+, this is a comma separated list of hosts and ports for communicating with each member of the Neo4j Coordinator cluster.
 
-For example: +ha.zoo_keeper_servers = neo4j-manager-01:2180,neo4j-manager-02:2180,neo4j-manager-03:2180+.
+For example: +ha.coordinators = neo4j-manager-01:2180,neo4j-manager-02:2180,neo4j-manager-03:2180+.
 
 You can also, optionally, configure the +ha.cluster_name+.
 This is the name of the cluster this instance is supposed to join.
