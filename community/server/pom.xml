@@ -497,7 +497,81 @@ the relevant Commercial Agreement.
         </executions>
       </plugin>
       
+      <plugin>
+        <groupId>com.voltvoodoo</groupId>
+        <artifactId>brew</artifactId>
+        <version>0.2.7</version>
+        <executions>
+          <execution>
+            <id>compile-webadmin</id>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+            <phase>compile</phase>
+          </execution>
+          <execution>
+            <id>minify-webadmin</id>
+            <goals>
+              <goal>optimize</goal>
+            </goals>
+            <phase>process-classes</phase>
+          </execution>
+        </executions>
+        <configuration>
+          <modules>
+            <module>
+              <name>webadmin</name>
+              <exclude>
+                <exclude>lib/arbor.js</exclude>
+              </exclude>
+            </module>
+            <module>
+              <name>visualization</name>
+              <exclude>
+                <exclude>lib/arbor.js</exclude>
+              </exclude>
+            </module>
+          </modules>
+          <coffeeOutputDir>${project.build.outputDirectory}/webadmin-html/js</coffeeOutputDir>
+          <hamlOutputDir>${project.build.outputDirectory}/webadmin-html/js</hamlOutputDir>
+          
+          <optimizeSourceDir>${project.build.outputDirectory}/webadmin-html/js</optimizeSourceDir>
+          <optimizeOutputDir>${project.build.outputDirectory}/webadmin-html/js</optimizeOutputDir>
+        </configuration>
+      </plugin>
+      
     </plugins>
+
+    <pluginManagement>
+      <plugins>
+        <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+        <plugin>
+          <groupId>org.eclipse.m2e</groupId>
+          <artifactId>lifecycle-mapping</artifactId>
+          <version>1.0.0</version>
+          <configuration>
+            <lifecycleMappingMetadata>
+              <pluginExecutions>
+                <pluginExecution>
+                  <pluginExecutionFilter>
+                    <groupId>com.voltvoodoo</groupId>
+                    <artifactId>brew</artifactId>
+                    <versionRange>[0.2.7,)</versionRange>
+                    <goals>
+                      <goal>compile</goal>
+                      <goal>optimize</goal>
+                    </goals>
+                  </pluginExecutionFilter>
+                  <action>
+                    <ignore/>
+                  </action>
+                </pluginExecution>
+              </pluginExecutions>
+            </lifecycleMappingMetadata>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
 
   <profiles>
@@ -600,57 +674,7 @@ the relevant Commercial Agreement.
         </plugins>
       </build>
     </profile>
-
-    <profile>
-      <id>build-webadmin</id>
-      <build>
-        <plugins>
-    <plugin>
-      <groupId>com.voltvoodoo</groupId>
-      <artifactId>brew</artifactId>
-      <version>0.2.7</version>
-      <executions>
-        <execution>
-          <id>compile-webadmin</id>
-          <goals>
-            <goal>compile</goal>
-          </goals>
-          <phase>compile</phase>
-        </execution>
-        <execution>
-          <id>optimize-webadmin</id>
-          <goals>
-            <goal>optimize</goal>
-          </goals>
-          <phase>process-classes</phase>
-        </execution>
-      </executions>
-      <configuration>
-        <modules>
-          <module>
-            <name>webadmin</name>
-            <exclude>
-              <exclude>lib/arbor.js</exclude>
-            </exclude>
-          </module>
-          <module>
-            <name>visualization</name>
-            <exclude>
-              <exclude>lib/arbor.js</exclude>
-            </exclude>
-          </module>
-        </modules>
-        <coffeeOutputDir>${project.build.outputDirectory}/webadmin-html/js</coffeeOutputDir>
-        <hamlOutputDir>${project.build.outputDirectory}/webadmin-html/js</hamlOutputDir>
-        
-        <optimizeSourceDir>${project.build.outputDirectory}/webadmin-html/js</optimizeSourceDir>
-        <optimizeOutputDir>${project.build.outputDirectory}/webadmin-html/js</optimizeOutputDir>
-      </configuration>
-    </plugin>
-        </plugins>
-      </build>  
-    </profile>
-
+    
     <profile>
       <id>neodev</id>
       <!-- Expands the number of things skipped by the neodev profile defined in parent-central pom. This is meant to be used by maven exec, it does not guarantee producing working artifacts. -->
