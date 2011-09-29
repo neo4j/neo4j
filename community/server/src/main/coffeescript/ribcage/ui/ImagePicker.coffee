@@ -50,5 +50,9 @@ define(
         
       imageClicked : (url) =>
         @trigger "image:clicked", {url:url}
+      
+    _(ImagePicker.prototype).extend(Backbone.Events)
+    ImagePicker
+    
         
 )
