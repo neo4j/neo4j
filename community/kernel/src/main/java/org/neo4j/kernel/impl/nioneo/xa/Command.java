@@ -82,28 +82,17 @@ public abstract class Command extends XaCommand
         assert blockSize > 0 : blockSize + " is not a valid block size value";
         buffer.put( blockSize ); // 1
         long[] propBlockValues = block.getValueBlocks();
-        switch ( propBlockValues.length )
+        for ( int k = 0; k < propBlockValues.length; k++ )
         {
-        case 4:
-            buffer.putLong( propBlockValues[0] );
-            buffer.putLong( propBlockValues[1] );
-            buffer.putLong( propBlockValues[2] );
-            buffer.putLong( propBlockValues[3] );
-            break;
-        case 3:
-            buffer.putLong( propBlockValues[0] );
-            buffer.putLong( propBlockValues[1] );
-            buffer.putLong( propBlockValues[2] );
-            break;
-        case 2:
-            buffer.putLong( propBlockValues[0] );
-            buffer.putLong( propBlockValues[1] );
-            break;
-        case 1:
-            buffer.putLong( propBlockValues[0] );
-            break;
+            buffer.putLong( propBlockValues[k] );
         }
-        if ( block.isLight() )
+        /*
+         * For each block we need to keep its dynamic record chain if
+         * it is just created. Deleted dynamic records are in the property
+         * record and dynamic records are never modified. Also, they are
+         * assigned as a whole, so just checking the first should be enough.
+         */
+        if ( block.isLight() || !block.getValueRecords().get( 0 ).isCreated() )
         {
             /*
              *  This has to be int. If this record is not light
@@ -203,6 +192,8 @@ public abstract class Command extends XaCommand
                 {
                     return null;
                 }
+                dr.setCreated(); // writePropertyBlock always writes only newly
+                                 // created chains
                 toReturn.addValueRecord( dr );
             }
             assert toReturn.getValueRecords().size() == noOfDynRecs : "read in "

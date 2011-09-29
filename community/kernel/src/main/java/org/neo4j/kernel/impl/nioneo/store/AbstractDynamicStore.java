@@ -466,7 +466,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         record.setInUse( true );
         record.setLength( nrOfBytes );
         record.setNextBlock( longNextBlock );
-        // if ( loadData )
+        if ( loadData )
         {
             byte byteArrayElement[] = new byte[nrOfBytes];
             buffer.get( byteArrayElement );

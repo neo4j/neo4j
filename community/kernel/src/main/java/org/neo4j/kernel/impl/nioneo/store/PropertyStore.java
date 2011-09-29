@@ -263,30 +263,23 @@ public class PropertyStore extends AbstractStore implements Store
             {
                 PropertyBlock block = blocks.get( i );
                 long[] propBlockValues = block.getValueBlocks();
-                switch ( propBlockValues.length )
+                for ( int k = 0; k < propBlockValues.length; k++ )
                 {
-                case 4:
-                    buffer.putLong( propBlockValues[0] );
-                    buffer.putLong( propBlockValues[1] );
-                    buffer.putLong( propBlockValues[2] );
-                    buffer.putLong( propBlockValues[3] );
-                    break;
-                case 3:
-                    buffer.putLong( propBlockValues[0] );
-                    buffer.putLong( propBlockValues[1] );
-                    buffer.putLong( propBlockValues[2] );
-                    break;
-                case 2:
-                    buffer.putLong( propBlockValues[0] );
-                    buffer.putLong( propBlockValues[1] );
-                    break;
-                case 1:
-                    buffer.putLong( propBlockValues[0] );
-                    break;
+                    buffer.putLong( propBlockValues[k] );
                 }
 
                 longsAppended += propBlockValues.length;
-                updateDynamicRecords( block.getValueRecords() );
+                /*
+                 * For each block we need to update its dynamic record chain if
+                 * it is just created. Deleted dynamic records are in the property
+                 * record and dynamic records are never modified. Also, they are
+                 * assigned as a whole, so just checking the first should be enough.
+                 */
+                if ( !block.isLight()
+                     && block.getValueRecords().get( 0 ).isCreated() )
+                {
+                    updateDynamicRecords( block.getValueRecords() );
+                }
             }
             if ( longsAppended < PropertyType.getPayloadSizeLongs() )
             {
@@ -555,7 +548,7 @@ public class PropertyStore extends AbstractStore implements Store
         else if ( value.getClass().isArray() )
         {   // Try short array first, i.e. inlined in the property block
             if ( ShortArray.encode( keyId, value, block, DEFAULT_PAYLOAD_SIZE ) ) return;
-            
+
             // Fall back to dynamic array store
             long arrayBlockId = nextArrayBlockId();
             setSingleBlockValue( block, keyId, PropertyType.ARRAY, arrayBlockId );
