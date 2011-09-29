@@ -23,8 +23,8 @@ import matching.MatchingContext
 import org.neo4j.cypher.SymbolTable
 import org.neo4j.cypher.commands._
 
-class MatchPipe(source: Pipe, patterns: Seq[Pattern]) extends Pipe {
-  val matchingContext = new MatchingContext(patterns, source.symbols, Seq())
+class MatchPipe(source: Pipe, patterns: Seq[Pattern], predicates:Seq[Clause]) extends Pipe {
+  val matchingContext = new MatchingContext(patterns, source.symbols, predicates)
 
   val symbols = source.symbols ++ new SymbolTable(patterns.flatMap(_ match {
     case RelatedTo(left, right, rel, relType, dir, optional) => Seq(NodeIdentifier(left), NodeIdentifier(right), RelationshipIdentifier(rel))

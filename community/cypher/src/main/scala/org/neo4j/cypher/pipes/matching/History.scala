@@ -29,14 +29,16 @@ object History
 class History(seen: Seq[MatchingPair])
 {
   def filter(relationships: Set[PatternRelationship]): Set[PatternRelationship] = relationships.filterNot(r => seen.exists(_.matches(r)))
-  def filter2(relationships:Seq[GraphRelationship]):Seq[GraphRelationship] = relationships.filterNot( gr => gr match {
-      case SingleGraphRelationship(r) => seen.exists(h => h.matches(r))
-      case VariableLengthGraphRelationship(p) => seen.exists(h => h.matches(p))
-    }).toSeq
+
+  def filter(relationships: Seq[GraphRelationship]): Seq[GraphRelationship] = relationships.filterNot(gr => gr match
+  {
+    case SingleGraphRelationship(r) => seen.exists(h => h.matches(r))
+    case VariableLengthGraphRelationship(p) => seen.exists(h => h.matches(p))
+  }).toSeq
 
   def add(pair: MatchingPair): History = new History(seen ++ Seq(pair))
 
-  def toMap: Map[String, Object] = seen.flatMap(_ match
+  def toMap: Map[String, Any] = seen.flatMap(_ match
   {
     case MatchingPair(p, e) => (p, e) match
     {
