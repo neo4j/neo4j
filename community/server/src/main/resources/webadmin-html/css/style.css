@@ -206,8 +206,10 @@ body {
   border-top: 1px solid #DDD;
 }
 
-.data-console-wrap .helpbox {
-  padding: 3px 5px;
+.data-console-wrap .form-tooltip {
+  float: left;
+  padding-left: 25px;
+  padding-top: 0;
 }
 
 .data-toolbar {

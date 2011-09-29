@@ -31,7 +31,7 @@ define(
       Based on the Halfviz renderer from Arbor.js
       ###
 
-      constructor : (canvas, @nodeStyler, @relationshipStyler) ->
+      constructor : (canvas, @relationshipStyler) ->
         @canvas = $(canvas).get(0)
         @bgColor = "#EEEEEE"
         
