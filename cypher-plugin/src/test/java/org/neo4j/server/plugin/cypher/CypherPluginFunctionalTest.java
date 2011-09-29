@@ -90,6 +90,7 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
         assertEquals( 3, ( JsonHelper.jsonToMap( response ) ).size() );
     }
 
+    
 
     
     /**
@@ -113,4 +114,24 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
         assertTrue(response.contains( "you" ));
     }
     
+    /**
+     * The plugin can return a JSONTable representation
+     * of the results. For details, see 
+     * http://code.google.com/apis/chart/interactive/docs/reference.html#dataparam[Google Data Table Format]
+     */
+    @Test
+    @Documented
+    @Graph( "I know you" )
+    public void return_JSON_table_format() throws UnsupportedEncodingException, Exception
+    {
+        String script = "start x  = (" + data.get().get( "I" ).getId()
+                        + ") match path = (x--friend) return path, friend.name";
+        gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
+                "{\"query\": \"" + script + "\",\"format\": \"json-data-table\"}" ).description(
+                        AsciidocHelper.createCypherSnippet( script ));
+        String response = gen.get().post( ENDPOINT ).entity();
+        assertEquals( 2, ( JsonHelper.jsonToMap( response ) ).size() );
+        assertTrue(response.contains( "cols" ));
+        assertTrue(response.contains( "rows" ));
+    }
 }

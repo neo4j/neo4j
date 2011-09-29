@@ -91,7 +91,7 @@ public class CypherPluginTest implements GraphHolder
     private Representation testQuery( String query ) throws Exception
     {
 
-        return plugin.executeScript( db, query );
+        return plugin.executeScript( db, query, null );
     }
 
     @Override

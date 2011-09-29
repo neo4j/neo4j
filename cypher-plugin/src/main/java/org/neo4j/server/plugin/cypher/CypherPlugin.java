@@ -32,6 +32,7 @@ import org.neo4j.server.plugins.PluginTarget;
 import org.neo4j.server.plugins.ServerPlugin;
 import org.neo4j.server.plugins.Source;
 import org.neo4j.server.rest.repr.CypherResultRepresentation;
+import org.neo4j.server.rest.repr.JSONTableRepresentation;
 import org.neo4j.server.rest.repr.Representation;
 
 /* This is a class that will represent a server side
@@ -50,12 +51,15 @@ import org.neo4j.server.rest.repr.Representation;
 public class CypherPlugin extends ServerPlugin
 {
 
+    public final String DATA_TABLE = "json-data-table";
     @Name( "execute_query" )
     @Description( "execute a query" )
     @PluginTarget( GraphDatabaseService.class )
     public Representation executeScript(
             @Source final GraphDatabaseService neo4j,
-            @Description( "The query string" ) @Parameter( name = "query", optional = false ) final String query )
+            @Description( "The query string" ) @Parameter( name = "query", optional = false ) final String query,
+            @Description( "The return format. Default is Neo4j REST. Allowed: 'json-data-table' " +
+            		"to return Google Data Table JSON." ) @Parameter( name = "format", optional = true ) final String format)
             throws SyntaxException
     {
         CypherParser parser = new CypherParser();
@@ -63,6 +67,9 @@ public class CypherPlugin extends ServerPlugin
         Query compiledQuery = parser.parse( query );
         ExecutionEngine engine = new ExecutionEngine( neo4j );
         result = engine.execute( compiledQuery );
+        if(format!=null && format.equals(DATA_TABLE)) {
+            return new JSONTableRepresentation( result );
+        }
         return new CypherResultRepresentation( result );
 
     }
