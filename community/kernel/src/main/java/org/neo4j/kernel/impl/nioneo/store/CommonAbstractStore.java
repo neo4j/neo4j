@@ -43,6 +43,69 @@ public abstract class CommonAbstractStore
 {
     public static final String ALL_STORES_VERSION = "v0.A.0";
 
+    // default id generator grab size
+    protected static final int DEFAULT_ID_GRAB_SIZE = 50000;
+
+    protected static final Logger logger = Logger
+        .getLogger( CommonAbstractStore.class.getName() );
+
+    protected final String storageFileName;
+    private final IdType idType;
+    private IdGeneratorFactory idGeneratorFactory = null;
+    private IdGenerator idGenerator = null;
+    private FileChannel fileChannel = null;
+    private PersistenceWindowPool windowPool;
+    private boolean storeOk = true;
+    private FileLock fileLock;
+    private boolean grabFileLock = true;
+
+    private Map<?,?> config = null;
+
+    private boolean readOnly = false;
+    private boolean backupSlave = false;
+    private long highestUpdateRecordId = -1;
+
+    /**
+     * Opens and validates the store contained in <CODE>fileName</CODE>
+     * loading any configuration defined in <CODE>config</CODE>. After
+     * validation the <CODE>initStorage</CODE> method is called.
+     * <p>
+     * If the store had a clean shutdown it will be marked as <CODE>ok</CODE>
+     * and the {@link #getStoreOk()} method will return true.
+     * If a problem was found when opening the store the {@link #makeStoreOk()}
+     * must be invoked.
+     *
+     * throws IOException if the unable to open the storage or if the
+     * <CODE>initStorage</CODE> method fails
+     *
+     * @param fileName
+     *            The name of the store
+     * @param config
+     *            The configuration for store (may be null)
+     * @param idType
+     *            The Id used to index into this store
+     */
+    public CommonAbstractStore( String fileName, Map<?,?> config, IdType idType )
+    {
+        this.storageFileName = fileName;
+        this.config = config;
+        this.idType = idType;
+        if ( config != null )
+        {
+            String fileLock = (String) config.get( "grab_file_lock" );
+            if ( fileLock != null && fileLock.toLowerCase().equals( "false" ) )
+            {
+                grabFileLock = false;
+            }
+            this.idGeneratorFactory = (IdGeneratorFactory)
+                    config.get( IdGeneratorFactory.class );
+        }
+
+        checkStorage();
+        loadStorage();
+        initStorage();
+    }
+
     public String getTypeAndVersionDescriptor()
     {
         return buildTypeDescriptorAndVersion( getTypeDescriptor() );
@@ -53,16 +116,10 @@ public abstract class CommonAbstractStore
         return typeDescriptor + " " + ALL_STORES_VERSION;
     }
 
-    protected static final Logger logger = Logger
-        .getLogger( CommonAbstractStore.class.getName() );
-
     protected static long longFromIntAndMod( long base, long modifier )
     {
         return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base|modifier;
     }
-
-    private long highestUpdateRecordId = -1;
-
 
     /**
      * Returns the type and version that identifies this store.
@@ -71,28 +128,62 @@ public abstract class CommonAbstractStore
      */
     public abstract String getTypeDescriptor();
 
-    /**
-     * Called from the constructor after the end header has been checked. The
-     * store implementation can setup it's
-     * {@link PersistenceWindow persistence windows} and other resources that
-     * are needed by overriding this implementation.
-     * <p>
-     * This default implementation does nothing.
-     */
-    protected void initStorage()
+    private void checkStorage()
     {
-    }
-
-    /**
-     * This method should close/release all resources that the implementation of
-     * this store has allocated and is called just before the <CODE>close()</CODE>
-     * method returns. Override this method to clean up stuff created in
-     * {@link #initStorage()} method.
-     * <p>
-     * This default implementation does nothing.
-     */
-    protected void closeStorage()
-    {
+        if ( config != null )
+        {
+            Boolean isReadOnly = Boolean.parseBoolean( (String) config.get( Config.READ_ONLY ) );
+            if ( isReadOnly != null )
+            {
+                readOnly = isReadOnly;
+            }
+        }
+        if ( config != null )
+        {
+            String str = (String) config.get( "backup_slave" );
+            if ( "true".equals( str ) )
+            {
+                backupSlave = true;
+            }
+        }
+        if ( !new File( storageFileName ).exists() )
+        {
+            throw new IllegalStateException( "No such store[" + storageFileName
+                + "]" );
+        }
+        try
+        {
+            this.fileChannel = getFileSystem().open( storageFileName, readOnly ? "r" : "rw" );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( "Unable to open file "
+                + storageFileName, e );
+        }
+        try
+        {
+            if ( (!readOnly || backupSlave) && grabFileLock )
+            {
+                this.fileLock = getFileSystem().tryLock( storageFileName, fileChannel );
+                if ( fileLock == null )
+                {
+                    throw new IllegalStateException( "Unable to lock store ["
+                        + storageFileName + "], this is usually a result of some "
+                        + "other Neo4j kernel running using the same store." );
+                }
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( "Unable to lock store["
+                + storageFileName + "]" );
+        }
+        catch ( OverlappingFileLockException e )
+        {
+            throw new IllegalStateException( "Unable to lock store [" + storageFileName +
+                    "], this is usually caused by another Neo4j kernel already running in " +
+                    "this JVM for this particular store" );
+        }
     }
 
     /**
@@ -193,64 +284,28 @@ public abstract class CommonAbstractStore
      */
     protected abstract void rebuildIdGenerator();
 
-    // default id generator grab size
-    protected static final int DEFAULT_ID_GRAB_SIZE = 50000;
-
-    protected final String storageFileName;
-    private IdGeneratorFactory idGeneratorFactory = null;
-    private IdGenerator idGenerator = null;
-    private FileChannel fileChannel = null;
-    private PersistenceWindowPool windowPool;
-    private boolean storeOk = true;
-    private FileLock fileLock;
-    private boolean grabFileLock = true;
-
-    private Map<?,?> config = null;
-
-    private boolean readOnly = false;
-    private boolean backupSlave = false;
-
-    private final IdType idType;
+    /**
+     * Called from the constructor after the end header has been checked. The
+     * store implementation can setup it's
+     * {@link PersistenceWindow persistence windows} and other resources that
+     * are needed by overriding this implementation.
+     * <p>
+     * This default implementation does nothing.
+     */
+    protected void initStorage()
+    {
+    }
 
     /**
-     * Opens and validates the store contained in <CODE>fileName</CODE>
-     * loading any configuration defined in <CODE>config</CODE>. After
-     * validation the <CODE>initStorage</CODE> method is called.
+     * This method should close/release all resources that the implementation of
+     * this store has allocated and is called just before the <CODE>close()</CODE>
+     * method returns. Override this method to clean up stuff created in
+     * {@link #initStorage()} method.
      * <p>
-     * If the store had a clean shutdown it will be marked as <CODE>ok</CODE>
-     * and the {@link #getStoreOk()} method will return true.
-     * If a problem was found when opening the store the {@link #makeStoreOk()}
-     * must be invoked.
-     *
-     * throws IOException if the unable to open the storage or if the
-     * <CODE>initStorage</CODE> method fails
-     *
-     * @param fileName
-     *            The name of the store
-     * @param config
-     *            The configuration for store (may be null)
-     * @param idType
-     *            The Id used to index into this store
+     * This default implementation does nothing.
      */
-    public CommonAbstractStore( String fileName, Map<?,?> config, IdType idType )
+    protected void closeStorage()
     {
-        this.storageFileName = fileName;
-        this.config = config;
-        this.idType = idType;
-        if ( config != null )
-        {
-            String fileLock = (String) config.get( "grab_file_lock" );
-            if ( fileLock != null && fileLock.toLowerCase().equals( "false" ) )
-            {
-                grabFileLock = false;
-            }
-            this.idGeneratorFactory = (IdGeneratorFactory)
-                    config.get( IdGeneratorFactory.class );
-        }
-
-        checkStorage();
-        loadStorage();
-        initStorage();
     }
 
     boolean isReadOnly()
@@ -266,64 +321,6 @@ public abstract class CommonAbstractStore
     protected FileSystemAbstraction getFileSystem()
     {
         return (FileSystemAbstraction) config.get( FileSystemAbstraction.class );
-    }
-
-    private void checkStorage()
-    {
-        if ( config != null )
-        {
-            Boolean isReadOnly = Boolean.parseBoolean( (String) config.get( Config.READ_ONLY ) );
-            if ( isReadOnly != null )
-            {
-                readOnly = isReadOnly;
-            }
-        }
-        if ( config != null )
-        {
-            String str = (String) config.get( "backup_slave" );
-            if ( "true".equals( str ) )
-            {
-                backupSlave = true;
-            }
-        }
-        if ( !new File( storageFileName ).exists() )
-        {
-            throw new IllegalStateException( "No such store[" + storageFileName
-                + "]" );
-        }
-        try
-        {
-            this.fileChannel = getFileSystem().open( storageFileName, readOnly ? "r" : "rw" );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( "Unable to open file "
-                + storageFileName, e );
-        }
-        try
-        {
-            if ( (!readOnly || backupSlave) && grabFileLock )
-            {
-                this.fileLock = getFileSystem().tryLock( storageFileName, fileChannel );
-                if ( fileLock == null )
-                {
-                    throw new IllegalStateException( "Unable to lock store ["
-                        + storageFileName + "], this is usually a result of some "
-                        + "other Neo4j kernel running using the same store." );
-                }
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( "Unable to lock store["
-                + storageFileName + "]" );
-        }
-        catch ( OverlappingFileLockException e )
-        {
-            throw new IllegalStateException( "Unable to lock store [" + storageFileName +
-                    "], this is usually caused by another Neo4j kernel already running in " +
-                    "this JVM for this particular store" );
-        }
     }
 
     /**
