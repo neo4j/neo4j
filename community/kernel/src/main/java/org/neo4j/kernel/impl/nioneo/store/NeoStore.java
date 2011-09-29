@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,7 +30,6 @@ import org.neo4j.kernel.Config;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
-import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 
 /**
  * This class contains the references to the "NodeStore,RelationshipStore,
