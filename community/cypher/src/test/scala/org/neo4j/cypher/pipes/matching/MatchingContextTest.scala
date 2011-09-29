@@ -22,9 +22,9 @@ package org.neo4j.cypher.pipes.matching
 
 import org.scalatest.Assertions
 import org.neo4j.cypher.{SymbolTable, GraphDatabaseTestBase}
-import org.neo4j.cypher.commands.{NodeIdentifier, VarLengthRelatedTo, RelatedTo, Pattern}
 import org.neo4j.graphdb.{Node, Direction}
-import org.junit.{Before, Ignore, Test}
+import org.junit.{Before, Test}
+import org.neo4j.cypher.commands._
 
 class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
   var a: Node = null
@@ -306,10 +306,26 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
       Map("pA" -> a, "pR1" -> r2, "pB" -> c, "pC" -> b, "pR2" -> r1))
   }
 
-  @Test
-  @Ignore def zeroLengthVariableLengthPatternNotAllowed() {
-    // TBD?
+  @Test def clauseConcerningRelationship() {
+    val r = relate(a, b, "rel", Map("age" -> 15))
+    val r2 = relate(a, b, "rel", Map("age" -> 5))
+
+    val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.OUTGOING, false))
+    val matchingContext = new MatchingContext(patterns, bind("a"), Seq(Equals(PropertyValue("r", "age"), Literal(5))))
+
+    assertMatches(matchingContext.getMatches(Map("a" -> a)), 1, Map("a" -> a, "b" -> b, "r" -> r2))
   }
+
+  @Test def clauseConcerningNode() {
+    val a = createNode(Map("prop"->"value"))
+    val r = relate(a, b, "rel")
+
+    val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.OUTGOING, false))
+    val matchingContext = new MatchingContext(patterns, bind("a"), Seq(Equals(PropertyValue("a", "prop"), Literal("not value"))))
+
+    assert(matchingContext.getMatches(Map("a" -> a)).toSeq.length === 0)
+  }
+
 
   def bind(boundSymbols: String*): SymbolTable = {
     val toSet = boundSymbols.map(NodeIdentifier(_))

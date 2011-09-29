@@ -37,9 +37,9 @@ public class TestStringLogger
     {
         String path = "target/test-data/stringlogger";
         deleteRecursively( new File( path ) );
-        File logFile = new File( path, "messages.log" );
-        File oldFile = new File( path, "messages.log.1" );
-        File oldestFile = new File( path, "messages.log.2" );
+        File logFile = new File( path, StringLogger.DEFAULT_NAME );
+        File oldFile = new File( path, StringLogger.DEFAULT_NAME + ".1" );
+        File oldestFile = new File( path, StringLogger.DEFAULT_NAME + ".2" );
         StringLogger logger = getLogger( path, 1 );
         assertFalse( oldFile.exists() );
         int counter = 0;
@@ -78,7 +78,7 @@ public class TestStringLogger
             if ( logFile.length() < previousSize ) break;
             previousSize = logFile.length();
         }
-        assertFalse( new File( path, "messages.log.3" ).exists() );
+        assertFalse( new File( path, StringLogger.DEFAULT_NAME + ".3" ).exists() );
         assertTrue( firstLineOfFile( oldestFile ).contains( prefix + (mark1+1) ) );
         assertTrue( lastLineOfFile( oldestFile ).contains( prefix + mark2 ) );
     }

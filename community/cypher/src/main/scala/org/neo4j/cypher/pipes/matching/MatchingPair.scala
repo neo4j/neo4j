@@ -35,7 +35,7 @@ case class MatchingPair(patternElement: PatternElement, entity: Any) {
     patternElement.key + "/" + value
   }
 
-  def getGraphRelationships(pRel:PatternRelationship, history:Seq[MatchingPair]) = patternElement.asInstanceOf[PatternNode].getGraphRelationships(entity.asInstanceOf[Node], pRel, history)
+  def getGraphRelationships(pRel:PatternRelationship): Seq[GraphRelationship] = patternElement.asInstanceOf[PatternNode].getGraphRelationships(entity.asInstanceOf[Node], pRel)
 
   def getPatternAndGraphPoint: (PatternNode, Node) = (patternElement.asInstanceOf[PatternNode], entity.asInstanceOf[Node])
 

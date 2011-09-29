@@ -1,6 +1,6 @@
 [[configuration-io-examples]]
-Memory mapped I-O settings
-==========================
+Memory mapped IO settings
+=========================
 
 Each file in the Neo4j store can use memory mapped I/O for reading/writing.
 Best performance is achieved if the full file can be memory mapped but if 
@@ -8,7 +8,7 @@ there isn't enough memory for that Neo4j will try and make the best use of
 the memory it gets (regions of the file that get accessed often will more
 likely be memory mapped).
 
-Neo4j makes heavy use of the +java.nio+ package that got introduced in Java 1.4. Native I/O may result in memory being allocated outside the normal Java heap so that memory usage needs to be taken into consideration. A well configured OS with large disk caches will help a lot once we get cache misses in the node and relationship caches, therefore it is not a good idea to use all available memory as Java heap. 
+Neo4j makes heavy use of the +java.nio+ package that got introduced in Java 1.4. Native I/O may result in memory being allocated outside the normal Java heap so that memory usage needs to be taken into consideration. A well configured OS with large disk caches will help a lot once we get cache misses in the node and relationship caches. Therefore it is not a good idea to use all available memory as Java heap. 
 
 If you look into the directory of your Neo4j database, you will find its store files, all prefixed by +neostore+:
 
@@ -45,8 +45,7 @@ To tune the memory mapping settings start by investigating the size of the diffe
 
 In this example the application is running on a machine with 4GB of RAM. We've reserved about 2GB for the OS and other programs. The Java heap is set to 1.5GB, that leaves about 500MB of RAM that can be used for memory mapping.
 
-TIP: 
-If traversal speed is the highest priority it is good to memory map as much as possible of the node- and relationship stores.
+TIP: If traversal speed is the highest priority it is good to memory map as much as possible of the node- and relationship stores.
 
 An example configuration on the example machine focusing on traversal speed would then look something like: 
 

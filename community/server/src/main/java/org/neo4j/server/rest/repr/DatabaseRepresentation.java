@@ -51,7 +51,7 @@ public class DatabaseRepresentation extends MappingRepresentation implements Ext
         }
         catch ( NotFoundException e )
         {
-            serializer.putString( "reference_node","null" );
+//            serializer.putString( "reference_node","null" );
         }
         serializer.putUri( "node_index", "index/node" );
         serializer.putUri( "relationship_index", "index/relationship" );

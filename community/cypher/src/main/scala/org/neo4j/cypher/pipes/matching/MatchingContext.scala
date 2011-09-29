@@ -24,7 +24,7 @@ import org.neo4j.graphdb.{Relationship, Node}
 import org.neo4j.cypher.commands._
 import collection.immutable.Map
 
-class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable) {
+class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, clauses:Seq[Clause]=Seq()) {
   type PatternGraph = Map[String, PatternElement]
 
   val patternGraph: PatternGraph = buildPatternGraph()
@@ -50,7 +50,7 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable) {
 
     pinnedPatternNode.pin(pinnedNode.asInstanceOf[Node])
 
-    new PatternMatcher(pinnedPatternNode, boundPairs).map(matchedGraph => {
+    new PatternMatcher(pinnedPatternNode, boundPairs, clauses).map(matchedGraph => {
       matchedGraph ++ createNullValuesForOptionalElements(matchedGraph)
     })
   }

@@ -41,6 +41,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public class TestBatchInsert
 {
@@ -291,6 +292,6 @@ public class TestBatchInsert
         BatchInserter inserter = newBatchInserter();
         String storeDir = inserter.getStore();
         inserter.shutdown();
-        assertTrue( new File( storeDir, "messages.log" ).delete() );
+        assertTrue( new File( storeDir, StringLogger.DEFAULT_NAME ).delete() );
     }
 }
