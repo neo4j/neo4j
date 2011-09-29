@@ -9,6 +9,10 @@ The following sections describe how to tune these.
 
 :leveloffset: 2
 
+include::introduction.txt[]
+
+:leveloffset: 2
+
 include::cache.txt[]
 
 include::jvm.txt[]
@@ -17,3 +21,4 @@ include::filesystem.txt[]
 
 include::short-strings.txt[]
 
+include::io-examples.txt[]
