@@ -15,7 +15,7 @@ Neo4j works fine with the default stack space configuration, but if your applica
 
 - The stack size is set by specifying the +-Xss???m+ parameter to hotspot, where +???+ is the stack size in megabytes. Default stack size is 512kB for 32bit JVMs on Solaris, 320kB for 32bit JVMs on Linux (and Windows), and 1024kB for 64bit JVMs.
 
-Most modern CPUs implement a http://en.wikipedia.org/wiki/Non-Uniform_Memory_Access[Non-Uniform Memory Access (NUMA) architecture], where different parts of the memory have different access speeds. Suns Hotspot JVM is able to allocate objects with awareness of the NUMA structure as of version 1.6.0 update 18. When enabled this can give up to 40% performance improvements. To enabled the NUMA awareness, specify the +-XX:+UseNUMA+ parameter (works only when using the Parallel Scavenger garbage collector (default or -XX:+UseParallelGC not the concurrent mark and sweep one).
+Most modern CPUs implement a http://en.wikipedia.org/wiki/Non-Uniform_Memory_Access[Non-Uniform Memory Access (NUMA) architecture], where different parts of the memory have different access speeds. Suns Hotspot JVM is able to allocate objects with awareness of the NUMA structure as of version 1.6.0 update 18. When enabled this can give up to 40% performance improvements. To enabled the NUMA awareness, specify the +-XX:+UseNUMA+ parameter (works only when using the Parallel Scavenger garbage collector (default or +-XX:+UseParallelGC+ not the concurrent mark and sweep one).
 
 Properly configuring memory utilization of the JVM is crucial for optimal performance. 
 As an example, a poorly configured JVM could spend all CPU time performing garbage collection (blocking all threads from performing any work). 
@@ -38,7 +38,7 @@ The weak reference cache basically needs enough heap to handle the peak load of 
 It is well suited for low latency requirements were GC interuptions are not acceptable.
 
 [IMPORTANT]
-When running Neo4j on Windows, keep in mind that the memory mapped buffers are allocated on heap by default, so need to be taken into consideration when determining heap size.
+When running Neo4j on Windows, keep in mind that the memory mapped buffers are allocated on heap by default, so they need to be taken into account when determining heap size.
 
 .Guidelines for heap size
 [format="csv",width="75%",cols="4"]
@@ -51,22 +51,24 @@ Number of primitives,RAM size,Heap configuration,Reserved RAM for the OS
 |======================================================================================================
 
 [TIP]
-The recommended garbage collector to use when running Neo4j in production is the Concurrent Mark and Sweep Compactor turned on by supplying -XX:+UseConcMarkSweepGC as a JVM parameter.
+The recommended garbage collector to use when running Neo4j in production is the Concurrent Mark and Sweep Compactor turned on by supplying +-XX:+UseConcMarkSweepGC+ as a JVM parameter.
 
-When having made sure that the heap size is well configured the second thing to tune in order to tune the garbage collector for your application is to specify the sizes of the different generations of the heap. The default settings are well tuned for "normal" applications, and work quite well for most applications, but if you have an application with either really high allocation rate, or a lot of long lived objects you might want to consider tuning the sizes of the heap generation. The ratio between the young and tenured generation of the heap is specified by using the +-XX:NewRatio=#+ command line option (where +#+ is replaced with a number). The default ratio is 1:12 for client mode JVM, and 1:8 for server mode JVM. You can also specify the size of the young generation explicitly using the +-Xmn+ command line option, which works just like the +-Xmx+ option that specifies the total heap space.
+When having made sure that the heap size is well configured the second thing to tune in order to tune the garbage collector for your application is to specify the sizes of the different generations of the heap. The default settings are well tuned for "normal" applications, and work quite well for most applications, but if you have an application with either really high allocation rate, or a lot of long lived objects you might want to consider tuning the sizes of the heap generation. The ratio between the young and tenured generation of the heap is specified by using the +-XX:NewRatio=\#+ command line option (where +#+ is replaced by a number). The default ratio is 1:12 for client mode JVM, and 1:8 for server mode JVM. You can also specify the size of the young generation explicitly using the +-Xmn+ command line option, which works just like the +-Xmx+ option that specifies the total heap space.
 
+[options="header", cols=",,m,"]
 |====
 |GC shortname |Generation | Command line parameter |Comment
-|Copy | Young |+-XX:+UseSerialGC+ |+The Copying collector+
-|MarkSweepCompact |Tenured |+-XX:+UseSerialGC+ |+The Mark and Sweep Compactor+
-|ConcurrentMarkSweep |Tenured |+-XX:+UseConcMarkSweepGC+ |+The Concurrent Mark and Sweep Compactor+
-|ParNew |Young |+-XX:+UseParNewGC+ |+The parallel Young Generation Collector+ Can only be used with the Concurrent mark and sweep compactor.
-|PS Scavenge |Young |+-XX:+UseParallelGC+ |+The parallel object scavenger+
-|PS MarkSweep |Tenured |+-XX:+UseParallelGC+ |+The parallel mark and sweep collector+
+|Copy | Young |-XX:+UseSerialGC |The Copying collector
+|MarkSweepCompact |Tenured |-XX:+UseSerialGC |The Mark and Sweep Compactor
+|ConcurrentMarkSweep |Tenured |-XX:+UseConcMarkSweepGC |The Concurrent Mark and Sweep Compactor
+|ParNew |Young |-XX:+UseParNewGC |The parallel Young Generation Collector -- can only be used with the Concurrent mark and sweep compactor.
+|PS Scavenge |Young |-XX:+UseParallelGC |The parallel object scavenger
+|PS MarkSweep |Tenured |-XX:+UseParallelGC |The parallel mark and sweep collector
 |====
 
 These are the default configurations on some platforms according to our non-exhaustive research:
 
+[options="header"]
 |====
 |JVM |-d32 -client |-d32 -server |-d64 -client |-d64 -server
 |Mac OS X Snow Leopard, 64-bit, Hotspot 1.6.0_17 |+ParNew+ and +ConcurrentMarkSweep+ |+PS Scavenge+ and +PS MarkSweep+ | +ParNew+ and +ConcurrentMarkSweep+ |+PS Scavenge+ and +PS MarkSweep+
