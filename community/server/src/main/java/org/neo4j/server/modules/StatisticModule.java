@@ -21,7 +21,6 @@ package org.neo4j.server.modules;
 
 import org.mortbay.jetty.Server;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
-import org.neo4j.server.database.Database;
 import org.neo4j.server.statistic.StatisticCollector;
 import org.neo4j.server.statistic.StatisticFilter;
 import org.neo4j.server.statistic.StatisticStartupListener;
