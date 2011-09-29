@@ -59,7 +59,7 @@ class ExecutionEngine(graph: GraphDatabaseService)
       context = addFilters(context)
 
       context = createMatchPipe(matching, namedPaths, context)
-      context = addFilters(context)
+//      context = addFilters(context)
 
       context.pipe = createShortestPathPipe(context.pipe, matching, namedPaths)
       context = addFilters(context)
@@ -150,18 +150,12 @@ class ExecutionEngine(graph: GraphDatabaseService)
       case Seq() =>
       case x =>
       {
-        context.pipe = new MatchPipe(context.pipe, x)
+        context.pipe = new MatchPipe(context.pipe, x, context.clauses)
       }
     }
 
     context
   }
-
-  def extractSymbols(patterns: Seq[Pattern]): Set[String] = patterns.flatMap(_ match
-  {
-    case RelatedTo(a, b, r, _, _, _) => Seq(a, b, r)
-    case VarLengthRelatedTo(p, a, b, _, _, _, _, _) => Seq(p, a, b)
-  }).toSet
 
   private def createSourcePumps(pipe: Pipe, items: List[StartItem]): Pipe =
   {
