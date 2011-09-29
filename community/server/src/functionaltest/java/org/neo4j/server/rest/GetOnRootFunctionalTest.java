@@ -25,10 +25,14 @@ import static org.junit.Assert.assertNotNull;
 import java.util.Map;
 
 import org.junit.Test;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.Version;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestData;
+import org.neo4j.test.GraphDescription.Graph;
 
 public class GetOnRootFunctionalTest extends AbstractRestFunctionalTestBase
 {
@@ -36,19 +40,24 @@ public class GetOnRootFunctionalTest extends AbstractRestFunctionalTestBase
      * The service root is your starting point to discover the REST API.
      * It contains the basic starting points for the databse, and some
      * version and extension information. The +reference_node+ entry will
-     * contain an URI if set, +"null"+ otherwise.
+     * only be present if there is a reference node set and exists in the database.
      */
     @Documented
     @Test
+    @Graph("I know you")
     @TestData.Title( "Get service root" )
     public void assert200OkFromGet() throws Exception
     {
+        
+        EmbeddedGraphDatabase db = (EmbeddedGraphDatabase)((ImpermanentGraphDatabase)graphdb()).getInner();
+        Transaction tx = db.beginTx();
+        db.getConfig().getGraphDbModule().setReferenceNodeId( data.get().get("I").getId() );
+        tx.success();
+        tx.finish();
         String body = gen.get().expectedStatus( 200 ).get( getDataUri() ).entity();
         Map<String, Object> map = JsonHelper.jsonToMap( body );
         assertEquals( getDataUri() + "node", map.get( "node" ) );
-        // TODO: is it intended not to have reference node link if no reference
-        // node is found?
-        // assertNotNull( map.get( "reference_node" ) );
+        assertNotNull( map.get( "reference_node" ) );
         assertNotNull( map.get( "node_index" ) );
         assertNotNull( map.get( "relationship_index" ) );
         assertNotNull( map.get( "extensions_info" ) );
@@ -57,7 +66,7 @@ public class GetOnRootFunctionalTest extends AbstractRestFunctionalTestBase
 
         // Make sure advertised urls work
             JaxRsResponse response = RestRequest.req().get( getDataUri() );
-        if ( !map.get( "reference_node" ).equals( "null" ) )
+        if ( map.get( "reference_node" ) != null )
         {
             response = RestRequest.req().get(
                     (String) map.get( "reference_node" ) );
