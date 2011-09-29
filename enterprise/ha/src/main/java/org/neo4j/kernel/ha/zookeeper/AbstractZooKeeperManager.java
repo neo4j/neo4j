@@ -56,13 +56,15 @@ public abstract class AbstractZooKeeperManager implements Watcher
     private final GraphDatabaseService graphDb;
     private final StringLogger msgLog;
     private final int maxConcurrentChannelsPerSlave;
+    private final int clientReadTimeout;
 
     public AbstractZooKeeperManager( String servers, GraphDatabaseService graphDb,
-            int maxConcurrentChannelsPerSlave )
+            int clientReadTimeout, int maxConcurrentChannelsPerSlave )
     {
         this.servers = servers;
         this.graphDb = graphDb;
         this.maxConcurrentChannelsPerSlave = maxConcurrentChannelsPerSlave;
+        this.clientReadTimeout = clientReadTimeout;
         if ( graphDb != null )
         {
             String storeDir = ((AbstractGraphDatabase) graphDb).getStoreDir();
@@ -138,7 +140,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
             if ( master != Machine.NO_MACHINE && master.getMachineId() != getMyMachineId() )
             {
                 masterClient = new MasterClient( master.getServer().first(), master.getServer().other(), graphDb,
-                        maxConcurrentChannelsPerSlave );
+                        clientReadTimeout, maxConcurrentChannelsPerSlave );
             }
             cachedMaster = Pair.<Master, Machine>of( masterClient, master );
         }

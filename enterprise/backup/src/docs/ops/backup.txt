@@ -30,7 +30,7 @@ The database to be backed up is specified using a URI with syntax
 
 Running mode must be defined and is either _single_ for non-HA or _ha_ for HA clusters. The <host>[:port] part
 points to a host running the database, on port _port_ if not the default. The additional _host:port_ arguments
-are useful for passing multiple ZooKeeper instances
+are useful for passing multiple coordinator instances
 
 [IMPORTANT]
 Backups can only be performed on databases which have the configuration parameter `enable_online_backup=true` set.
@@ -54,13 +54,13 @@ To perform a backup from a running embedded or server database run:
 
 == High Availability ==
 
-To perform a backup on an HA cluster you specify one or more ZooKeeper services managing that cluster.
+To perform a backup on an HA cluster you specify one or more coordinators managing that cluster.
 [source,shell]
 ----
-# Performing a full backup from HA cluster, specifying two possible ZooKeeper services
+# Performing a full backup from HA cluster, specifying two possible coordinators
 ./neo4j-backup -full -from ha://192.168.1.15:2181,192.168.1.16:2181 -to /mnt/backup/neo4j-backup
 
-# Performing an incremental backup from HA cluster, specifying only one ZooKeeper service
+# Performing an incremental backup from HA cluster, specifying only one coordinator
 ./neo4j-backup -incremental -from ha://192.168.1.15:2181 -to /mnt/backup/neo4j-backup
 ----
 

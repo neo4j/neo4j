@@ -39,9 +39,9 @@ public class Neo4jHaCluster
             int haPort, Map<String, String> config )
     {
         config = new HashMap<String, String>( config );
-        config.put( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "1" );
-        config.put( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS, zk.getConnectionString() );
-        config.put( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVER, ( "127.0.0.1:" + haPort ) );
+        config.put( HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID, "1" );
+        config.put( HighlyAvailableGraphDatabase.CONFIG_KEY_COORDINATORS, zk.getConnectionString() );
+        config.put( HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER, ( "127.0.0.1:" + haPort ) );
         config.put( Config.ENABLE_REMOTE_SHELL, "true" );
         config.put( Config.KEEP_LOGICAL_LOGS, "true" );
         return new HighlyAvailableGraphDatabase( storeDir.getAbsolutePath(), config );

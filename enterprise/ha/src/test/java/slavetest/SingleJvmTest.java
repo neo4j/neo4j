@@ -67,7 +67,7 @@ public class SingleJvmTest extends AbstractHaTest
         PlaceHolderGraphDatabaseService placeHolderDb = new PlaceHolderGraphDatabaseService( slavePath.getAbsolutePath() );
         Broker broker = makeSlaveBroker( master, 0, machineId, placeHolderDb );
         Map<String,String> cfg = new HashMap<String, String>(config);
-        cfg.put( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, Integer.toString(machineId) );
+        cfg.put( HighlyAvailableGraphDatabase.CONFIG_KEY_OLD_SERVER_ID, Integer.toString(machineId) );
         cfg.put( Config.KEEP_LOGICAL_LOGS, "true" );
         HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase(
                 slavePath.getAbsolutePath(), cfg, wrapBrokerAndSetPlaceHolderDb( placeHolderDb, broker ) );
@@ -96,7 +96,7 @@ public class SingleJvmTest extends AbstractHaTest
     {
         int masterId = 0;
         Map<String, String> config = MapUtil.stringMap( extraConfig,
-                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, String.valueOf( masterId ) );
+                HighlyAvailableGraphDatabase.CONFIG_KEY_OLD_SERVER_ID, String.valueOf( masterId ) );
         String path = dbPath( 0 ).getAbsolutePath();
         PlaceHolderGraphDatabaseService placeHolderDb = new PlaceHolderGraphDatabaseService( path );
         Broker broker = makeMasterBroker( masterId, placeHolderDb );

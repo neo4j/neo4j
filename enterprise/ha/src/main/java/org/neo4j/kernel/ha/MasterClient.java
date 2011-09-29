@@ -81,10 +81,10 @@ public class MasterClient extends Client<Master> implements Master
         }
     };
 
-    public MasterClient( String hostNameOrIp, int port, GraphDatabaseService graphDb, int maxConcurrentChannels )
+    public MasterClient( String hostNameOrIp, int port, GraphDatabaseService graphDb,
+            int readTimeoutSeconds, int maxConcurrentChannels )
     {
-        super( hostNameOrIp, port, graphDb, MasterServer.FRAME_LENGTH,
-                DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
+        super( hostNameOrIp, port, graphDb, MasterServer.FRAME_LENGTH, readTimeoutSeconds,
                 maxConcurrentChannels, Math.min( maxConcurrentChannels, DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ) );
     }
 

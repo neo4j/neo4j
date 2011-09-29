@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel;
 
+import static java.util.Arrays.asList;
 import static org.neo4j.backup.OnlineBackupExtension.parsePort;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
 import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -76,21 +78,29 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
+import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         implements GraphDatabaseService, ResponseReceiver
 {
-    public static final String CONFIG_KEY_HA_MACHINE_ID = "ha.machine_id";
-    public static final String CONFIG_KEY_HA_ZOO_KEEPER_SERVERS = "ha.zoo_keeper_servers";
-    public static final String CONFIG_KEY_HA_SERVER = "ha.server";
-    public static final String CONFIG_KEY_HA_CLUSTER_NAME = "ha.cluster_name";
-    private static final String CONFIG_DEFAULT_HA_CLUSTER_NAME = "neo4j.ha";
-    private static final int CONFIG_DEFAULT_PORT = 6361;
-    public static final String CONFIG_KEY_HA_PULL_INTERVAL = "ha.pull_interval";
+    public static final String CONFIG_KEY_OLD_SERVER_ID = "ha.machine_id";
+    public static final String CONFIG_KEY_SERVER_ID = "ha.server_id";
+    
+    public static final String CONFIG_KEY_OLD_COORDINATORS = "ha.zoo_keeper_servers";
+    public static final String CONFIG_KEY_COORDINATORS = "ha.coordinators";
+    
+    public static final String CONFIG_KEY_SERVER = "ha.server";
+    public static final String CONFIG_KEY_CLUSTER_NAME = "ha.cluster_name";
+    public static final String CONFIG_KEY_PULL_INTERVAL = "ha.pull_interval";
     public static final String CONFIG_KEY_ALLOW_INIT_CLUSTER = "ha.allow_init_cluster";
     public static final String CONFIG_KEY_MAX_CONCURRENT_CHANNELS_PER_SLAVE = "ha.max_concurrent_channels_per_slave";
+    public static final String CONFIG_KEY_BRANCHED_DATA_POLICY = "ha.branched_data_policy";
+    public static final String CONFIG_KEY_READ_TIMEOUT = "ha.read_timeout";
 
+    private static final String CONFIG_DEFAULT_HA_CLUSTER_NAME = "neo4j.ha";
+    private static final int CONFIG_DEFAULT_PORT = 6361;
+    
     private final String storeDir;
     private final Map<String, String> config;
     private final BrokerFactory brokerFactory;
@@ -102,6 +112,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     private volatile long updateTime = 0;
     private volatile Throwable causeOfShutdown;
     private final long startupTime;
+    private final BranchedDataPolicy branchedDataPolicy;
 
     private final List<KernelEventHandler> kernelEventHandlers =
             new CopyOnWriteArrayList<KernelEventHandler>();
@@ -138,6 +149,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         this.machineId = getMachineIdFromConfig( config );
         this.broker = this.brokerFactory.create( this, config );
         this.msgLog = StringLogger.getLogger( storeDir );
+        this.branchedDataPolicy = getBranchedDataPolicyFromConfig( config );
 
         boolean allowInitFromConfig = getAllowInitFromConfig( config );
         startUp( allowInitFromConfig );
@@ -180,7 +192,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         // Assume it's shut down at this point
 
         internalShutdown( false );
-        moveAwayCurrentDatabase();
+        makeWayForNewDb();
 
         Exception exception = null;
         for ( int i = 0; i < 60; i++ )
@@ -202,32 +214,11 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         throw new RuntimeException( "Gave up trying to copy store from master", exception );
     }
 
-    private void moveAwayCurrentDatabase()
+    void makeWayForNewDb()
     {
-        // TODO This could be solved by moving the db directory to <dbPath>-broken-<date>
-        // maybe <dbPath>/broken-<date> since we it may be the case that the current user
-        // only has got permissions on the dbPath, not the parent.
-        this.msgLog.logMessage( "Cleaning database " + storeDir + " to make way for new db from master" );
-
-        File oldDir = new File( storeDir, "branched-" + System.currentTimeMillis() );
-        oldDir.mkdirs();
-        for ( File file : new File( storeDir ).listFiles() )
-        {
-            if (    // Exclude messages.log since it's good to have in one piece in
-                    // the active directory.
-                    !file.getName().equals( "messages.log" ) && 
-                    
-                    // Exclude any previous branched-??? directories, otherwise this
-                    // becomes like a linked list of old directories.
-                    !(file.isDirectory() && file.getName().startsWith( "branched-" ) ) )
-            {
-                File dest = new File( oldDir, file.getName() );
-                if ( !file.renameTo( dest ) )
-                {
-                    msgLog.logMessage( "Couldn't move " + file.getPath() );
-                }
-            }
-        }
+        this.msgLog.logMessage( "Cleaning database " + storeDir + " (" + branchedDataPolicy.name() +
+                ") to make way for new db from master" );
+        branchedDataPolicy.handle( this );
     }
 
     public static Map<String,String> loadConfigurations( String file )
@@ -342,17 +333,52 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             {
                 return new ZooKeeperBroker( graphDb,
                         getClusterNameFromConfig( config ),
-                        getMachineIdFromConfig( config ),
-                        getZooKeeperServersFromConfig( config ),
+                        machineId,
+                        getCoordinatorsFromConfig( config ),
                         getHaServerFromConfig( config ),
                         getBackupPortFromConfig( config ),
-                        getMaxConcurrentChannelsPerSlave( config ),
+                        getClientReadTimeoutFromConfig( config ),
+                        getMaxConcurrentChannelsPerSlaveFromConfig( config ),
                         HighlyAvailableGraphDatabase.this );
             }
         };
     }
+    
+    private static String getConfigValue( Map<String, String> config, String... oneKeyOutOf/*prioritized in descending order*/ )
+    {
+        String firstFound = null;
+        int foundIndex = -1;
+        for ( int i = 0; i < oneKeyOutOf.length; i++ )
+        {
+            String toTry = oneKeyOutOf[i];
+            String value = config.get( toTry );
+            if ( value != null )
+            {
+                if ( firstFound != null ) throw new RuntimeException( "Multiple configuration values set for the same logical key: " + asList( oneKeyOutOf ) );
+                firstFound = value;
+                foundIndex = i;
+            }
+        }
+        if ( firstFound == null ) throw new RuntimeException( "No configuration set for any of: " + asList( oneKeyOutOf ) );
+        if ( foundIndex > 0 ) System.err.println( "Deprecated configuration key '" + oneKeyOutOf[foundIndex] +
+                "' used instead of the preferred '" + oneKeyOutOf[0] + "'" );
+        return firstFound;
+    }
 
-    private int getMaxConcurrentChannelsPerSlave( Map<String, String> config )
+    private BranchedDataPolicy getBranchedDataPolicyFromConfig( Map<String, String> config )
+    {
+        return config.containsKey( CONFIG_KEY_BRANCHED_DATA_POLICY ) ?
+                BranchedDataPolicy.valueOf( config.get( CONFIG_KEY_BRANCHED_DATA_POLICY ) ) :
+                BranchedDataPolicy.keep_all;
+    }
+    
+    private int getClientReadTimeoutFromConfig( Map<String, String> config2 )
+    {
+        String value = config.get( CONFIG_KEY_READ_TIMEOUT );
+        return value != null ? Integer.parseInt( value ) : Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT;
+    }
+
+    private int getMaxConcurrentChannelsPerSlaveFromConfig( Map<String, String> config )
     {
         String value = config.get( CONFIG_KEY_MAX_CONCURRENT_CHANNELS_PER_SLAVE );
         return value != null ? Integer.parseInt( value ) : Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT;
@@ -369,14 +395,14 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
     private static String getClusterNameFromConfig( Map<?, ?> config )
     {
-        String clusterName = (String) config.get( CONFIG_KEY_HA_CLUSTER_NAME );
+        String clusterName = (String) config.get( CONFIG_KEY_CLUSTER_NAME );
         if ( clusterName == null ) clusterName = CONFIG_DEFAULT_HA_CLUSTER_NAME;
         return clusterName;
     }
 
     private static String getHaServerFromConfig( Map<?, ?> config )
     {
-        String haServer = (String) config.get( CONFIG_KEY_HA_SERVER );
+        String haServer = (String) config.get( CONFIG_KEY_SERVER );
         if ( haServer == null )
         {
             InetAddress host = null;
@@ -391,7 +417,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             if ( host == null )
             {
                 throw new IllegalStateException(
-                        "Could not auto configure host name, please supply " + CONFIG_KEY_HA_SERVER );
+                        "Could not auto configure host name, please supply " + CONFIG_KEY_SERVER );
             }
             haServer = host.getHostAddress() + ":" + CONFIG_DEFAULT_PORT;
         }
@@ -405,15 +431,15 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         return Boolean.parseBoolean( allowInit );
     }
 
-    private static String getZooKeeperServersFromConfig( Map<String, String> config )
+    private static String getCoordinatorsFromConfig( Map<String, String> config )
     {
-        return config.get( CONFIG_KEY_HA_ZOO_KEEPER_SERVERS );
+        return getConfigValue( config, CONFIG_KEY_COORDINATORS, CONFIG_KEY_OLD_COORDINATORS );
     }
 
     private static int getMachineIdFromConfig( Map<String, String> config )
     {
         // Fail fast if null
-        return Integer.parseInt( config.get( CONFIG_KEY_HA_MACHINE_ID ) );
+        return Integer.parseInt( getConfigValue( config, CONFIG_KEY_SERVER_ID, CONFIG_KEY_OLD_SERVER_ID ) );
     }
 
     public Broker getBroker()
@@ -614,7 +640,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
     private void instantiateAutoUpdatePullerIfConfigSaysSo()
     {
-        String pullInterval = this.config.get( CONFIG_KEY_HA_PULL_INTERVAL );
+        String pullInterval = this.config.get( CONFIG_KEY_PULL_INTERVAL );
         if ( pullInterval != null )
         {
             long timeMillis = TimeUtil.parseTimeMillis( pullInterval );
@@ -882,5 +908,103 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     public void shutdownBroker()
     {
         this.broker.shutdown();
+    }
+
+    enum BranchedDataPolicy
+    {
+        keep_all
+        {
+            @Override
+            void handle( HighlyAvailableGraphDatabase db )
+            {
+                moveAwayDb( db, branchedDataDir( db ) );
+            }
+        },
+        keep_last
+        {
+            @Override
+            void handle( HighlyAvailableGraphDatabase db )
+            {
+                File branchedDataDir = branchedDataDir( db );
+                moveAwayDb( db, branchedDataDir );
+                for ( File file : new File( db.storeDir ).listFiles() )
+                {
+                    if ( isBranchedDataDirectory( file ) && !file.equals( branchedDataDir ) )
+                    {
+                        try
+                        {
+                            FileUtils.deleteRecursively( file );
+                        }
+                        catch ( IOException e )
+                        {
+                            db.msgLog.logMessage( "Couldn't delete old branched data directory " + file, e );
+                        }
+                    }
+                }
+            }
+        },
+        keep_none
+        {
+            @Override
+            void handle( HighlyAvailableGraphDatabase db )
+            {
+                for ( File file : relevantDbFiles( db ) )
+                {
+                    try
+                    {
+                        FileUtils.deleteRecursively( file );
+                    }
+                    catch ( IOException e )
+                    {
+                        db.msgLog.logMessage( "Couldn't delete file " + file, e );
+                    }
+                }
+            }
+        },
+        shutdown
+        {
+            @Override
+            void handle( HighlyAvailableGraphDatabase db )
+            {
+                db.shutdown();
+            }
+        };
+        
+        static String BRANCH_PREFIX = "branched-";
+
+        abstract void handle( HighlyAvailableGraphDatabase db );
+        
+        protected void moveAwayDb( HighlyAvailableGraphDatabase db, File branchedDataDir )
+        {
+            for ( File file : relevantDbFiles( db ) )
+            {
+                File dest = new File( branchedDataDir, file.getName() );
+                if ( !file.renameTo( dest ) ) db.msgLog.logMessage( "Couldn't move " + file.getPath() );
+            }
+        }
+
+        File branchedDataDir( HighlyAvailableGraphDatabase db )
+        {
+            File result = new File( db.storeDir, BRANCH_PREFIX + System.currentTimeMillis() );
+            result.mkdirs();
+            return result;
+        }
+        
+        File[] relevantDbFiles( HighlyAvailableGraphDatabase db )
+        {
+            return new File( db.storeDir ).listFiles( new FileFilter()
+            {
+                @Override
+                public boolean accept( File file )
+                {
+                    return !file.equals( StringLogger.DEFAULT_NAME ) && !isBranchedDataDirectory( file );
+                }
+            } );
+        }
+
+        boolean isBranchedDataDirectory( File file )
+        {
+            return file.isDirectory() && file.getName().startsWith( BRANCH_PREFIX );
+        }
     }
 }

@@ -25,7 +25,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.HighlyAvailableGraphDatabase.CONFIG_KEY_HA_PULL_INTERVAL;
+import static org.neo4j.kernel.HighlyAvailableGraphDatabase.CONFIG_KEY_PULL_INTERVAL;
 
 import java.io.File;
 import java.io.IOException;
@@ -662,7 +662,7 @@ public abstract class AbstractHaTest
     {
         startUpMaster( stringMap() );
         int waitTime = 2;
-        addDb( stringMap( CONFIG_KEY_HA_PULL_INTERVAL, String.valueOf( waitTime ) ), true );
+        addDb( stringMap( CONFIG_KEY_PULL_INTERVAL, String.valueOf( waitTime ) ), true );
         Long nodeId = executeJobOnMaster( new CommonJobs.CreateSubRefNodeJob( "PULL", "key", "value" ) );
         sleeep( waitTime*1000*2 );
         assertTrue( executeJob( new CommonJobs.GetNodeByIdJob( nodeId ), 0 ) );

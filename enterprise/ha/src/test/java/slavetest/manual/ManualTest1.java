@@ -48,9 +48,9 @@ public class ManualTest1
     private static GraphDatabaseService startDb() throws IOException
     {
         return new HighlyAvailableGraphDatabase( PATH.getPath(), MapUtil.stringMap(
-                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "1",
-                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS, "127.0.0.1:2181,127.0.0.1:2182",
-                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVER, ME,
+                HighlyAvailableGraphDatabase.CONFIG_KEY_OLD_SERVER_ID, "1",
+                HighlyAvailableGraphDatabase.CONFIG_KEY_OLD_COORDINATORS, "127.0.0.1:2181,127.0.0.1:2182",
+                HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER, ME,
                 Config.ENABLE_REMOTE_SHELL, "true",
                 Config.KEEP_LOGICAL_LOGS, "true" ) );
     }

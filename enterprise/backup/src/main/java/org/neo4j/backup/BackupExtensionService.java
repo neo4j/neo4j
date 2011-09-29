@@ -34,7 +34,7 @@ import org.neo4j.helpers.Service;
  * <i>host:port</i> combination.
  * </p>
  * <p>
- * The prime consumer of this API is the HA component, where a set of ZooKeeper
+ * The prime consumer of this API is the HA component, where a set of coordinator
  * instances can be passed as targets to backup but only one will be used. It is
  * expected therefore that a {@link Service} implementation will be present on
  * the classpath that will properly communicate with the cluster and find the

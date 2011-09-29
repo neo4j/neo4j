@@ -57,9 +57,9 @@ public class StartHaDb
     private static GraphDatabaseService startDb() throws IOException
     {
         return new HighlyAvailableGraphDatabase( PATH.getPath(), MapUtil.stringMap(
-                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "" + MY_MACHINE_ID,
-                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS, join( ZOO_KEEPER_SERVERS, "," ),
-                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVER, ME,
+                HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID, "" + MY_MACHINE_ID,
+                HighlyAvailableGraphDatabase.CONFIG_KEY_COORDINATORS, join( ZOO_KEEPER_SERVERS, "," ),
+                HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER, ME,
                 Config.ENABLE_REMOTE_SHELL, "true",
                 Config.KEEP_LOGICAL_LOGS, "true" ) );
     }

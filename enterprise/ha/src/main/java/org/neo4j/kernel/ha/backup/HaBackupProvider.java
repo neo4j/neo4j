@@ -47,7 +47,7 @@ public final class HaBackupProvider extends BackupExtensionService
         String master = null;
         try
         {
-            System.out.println( "Asking ZooKeeper service at '" + address
+            System.out.println( "Asking coordinator service at '" + address
                                 + "' for master" );
             master = getMasterServerInCluster( address.getSchemeSpecificPart().substring(
                     2 ) ); // skip the "//" part

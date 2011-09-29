@@ -86,9 +86,9 @@ for HA in "${INSTANCES[@]}"; do
         rm -rf data/ha$HA
         cp -R data/empty data/ha$HA
 
-        echo ha.machine_id = $HA                > $HACONF
+        echo ha.server_id = $HA                 > $HACONF
         echo ha.server = localhost:600$HA       >>$HACONF
-        echo ha.zoo_keeper_servers = $ZKCLUSTER >>$HACONF
+        echo ha.coordinators = $ZKCLUSTER       >>$HACONF
         echo enable_remote_shell = port=133$HA  >>$HACONF
     fi
 

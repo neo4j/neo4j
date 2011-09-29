@@ -26,9 +26,9 @@ import static org.neo4j.backup.TestBackupToolEmbedded.createSomeData;
 import static org.neo4j.backup.TestBackupToolEmbedded.runBackupToolFromOtherJvmToGetExitCode;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
-import static org.neo4j.kernel.HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID;
-import static org.neo4j.kernel.HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVER;
-import static org.neo4j.kernel.HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS;
+import static org.neo4j.kernel.HighlyAvailableGraphDatabase.CONFIG_KEY_COORDINATORS;
+import static org.neo4j.kernel.HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID;
+import static org.neo4j.kernel.HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -62,9 +62,9 @@ public class TestBackupToolHa
         {
             String storeDir = new File( PATH, "" + i ).getAbsolutePath();
             Map<String, String> config = stringMap(
-                    CONFIG_KEY_HA_MACHINE_ID, "" + i,
-                    CONFIG_KEY_HA_SERVER, "localhost:" + (6666+i),
-                    CONFIG_KEY_HA_ZOO_KEEPER_SERVERS, zk.getConnectionString(),
+                    CONFIG_KEY_SERVER_ID, "" + i,
+                    CONFIG_KEY_SERVER, "localhost:" + (6666+i),
+                    CONFIG_KEY_COORDINATORS, zk.getConnectionString(),
                     ENABLE_ONLINE_BACKUP, "port=" + (4444+i) );
             GraphDatabaseService instance = new HighlyAvailableGraphDatabase( storeDir, config );
             instances.add( instance );

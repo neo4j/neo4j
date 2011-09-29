@@ -21,7 +21,6 @@ package slavetest.manual;
 
 import java.io.File;
 
-
 public class ManualZooKeepers
 {
     public static final File PATH = new File( "var/zoo" );

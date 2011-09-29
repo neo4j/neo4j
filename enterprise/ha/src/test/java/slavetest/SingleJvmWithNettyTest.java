@@ -51,6 +51,7 @@ import org.neo4j.kernel.ha.MasterClient;
 import org.neo4j.kernel.ha.MasterImpl;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public class SingleJvmWithNettyTest extends SingleJvmTest
 {
@@ -69,7 +70,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         final Machine masterMachine = new Machine( masterId, -1, 1, -1,
                 "localhost:" + Protocol.PORT );
         final Master client = new MasterClient( masterMachine.getServer().first(), masterMachine.getServer().other(), graphDb,
-                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT);
+                Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS, Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT);
         return new AbstractBroker( id, graphDb )
         {
             public boolean iAmMaster()
@@ -139,7 +140,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         t1.join();
         t2.join();
         
-        assertEquals( 2, countOccurences( "Opened a new channel", new File( dbPath( 1 ), "messages.log" ) ) );
+        assertEquals( 2, countOccurences( "Opened a new channel", new File( dbPath( 1 ), StringLogger.DEFAULT_NAME ) ) );
     }
 
     private int countOccurences( String string, File file ) throws Exception
@@ -264,7 +265,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         shutdownDbs();
         // Strings copied from XaLogicalLog#applyTransactionWithoutTxId
         Collection<String> toLookFor = asList( "applyTxWithoutTxId log version", "Applied external tx and generated" );
-        assertEquals( 0, countMentionsInMessagesLog( new File( dbPath( 0 ), "messages.log" ), toLookFor ) );
+        assertEquals( 0, countMentionsInMessagesLog( new File( dbPath( 0 ), StringLogger.DEFAULT_NAME ), toLookFor ) );
     }
 
     private int countMentionsInMessagesLog( File file, Collection<String> toLookFor )

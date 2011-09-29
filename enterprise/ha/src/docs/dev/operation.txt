@@ -4,7 +4,7 @@ How Neo4j HA operates
 
 A Neo4j HA cluster operates cooperatively, coordinating activity through Zookeeper.
 
-On startup a Neo4j HA instance will connect to the ZooKeeper service to register itself and ask, "who is master?"
+On startup a Neo4j HA instance will connect to the coordinator service (ZooKeeper) to register itself and ask, "who is master?"
 If some other machine is master, the new instance will start as slave and connect to that master.
 If the machine starting up was the first to register -- or should become master according to the master election algorithm -- it will start as master.
 
@@ -22,7 +22,7 @@ Without polling, updates will only happen on slaves whenever they synchronize a 
 Having all writes go through slaves has the benefit that the data will be replicated on two machines.
 This is recommended to avoid rollbacks in case of a master failure that could potentially happen when the new master is elected.
 
-Whenever a machine becomes unavailable the ZooKeeper service will detect that and remove it from the cluster.
+Whenever a server running a neo4j database becomes unavailable the coordinator service will detect that and remove it from the cluster.
 If the master goes down a new master will automatically be elected.
 Normally a new master is elected and started within just a few seconds and during this time no writes can take place (the write will throw an exception).
 A machine that becomes available after being unavailable will automatically reconnect to the cluster.

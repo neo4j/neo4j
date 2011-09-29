@@ -57,9 +57,9 @@ public class StandaloneDatabase
             String[] extraArgs )
     {
         List<String> args = new ArrayList<String>();
-        args.add( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVER );
+        args.add( HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER );
         args.add( haServer );
-        args.add( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS );
+        args.add( HighlyAvailableGraphDatabase.CONFIG_KEY_COORDINATORS );
         args.add( zooKeeper.getConnectionString() );
         args.addAll( asList( extraArgs ) );
 
@@ -115,7 +115,8 @@ public class StandaloneDatabase
                 else
                 {
                     broker = new FakeSlaveBroker( new MasterClient( "localhost",
-                            Protocol.PORT, placeHolderGraphDb, Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ),
+                            Protocol.PORT, placeHolderGraphDb, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
+                            Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ),
                             masterId, machineId, placeHolderGraphDb );
                 }
                 config = removeDashes( config );
@@ -264,8 +265,7 @@ public class StandaloneDatabase
         final HighlyAvailableGraphDatabase start()
         {
             Map<String, String> params = new HashMap<String, String>();
-            params.put( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID,
-                    Integer.toString( machineId ) );
+            params.put( HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID, Integer.toString( machineId ) );
             for ( int i = 0; i < config.length; i += 2 )
             {
                 params.put( config[i], config[i + 1] );
