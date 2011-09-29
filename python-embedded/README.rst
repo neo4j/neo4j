@@ -36,12 +36,17 @@ To install neo4j-embedded from this source tree, use the maven build tool to pro
   cd target/neo4j-embedded
   python setup.py install
 
-Deploying to pypi
+Releasing
 ------------------------
 
-Make sure you have a .pypirc file in your home folder with correct login information for the neo4j-embedded package. Then do the following:
+Make sure you have a .pypirc file in your home folder with correct login information for the neo4j-embedded package on pypi.python.org. The release builds windows installers, so it needs to run on a windows machine.
 
-::
+Step 1:
+  Set appropriate version numbers for release
+  
+Step 2: 
+  Run `mvn clean install -Ppypi`
 
-  mvn clean install -Ppypi
+Step 3:
+  
 

@@ -26,7 +26,21 @@
 	<packaging>jar</packaging>
 	<description>
     Python bindings for the embedded Neo4j graph database.
-  </description>
+	</description>
+
+	<properties>
+		<license-text.header>GPL-3-header.txt</license-text.header>
+		<python>python</python>
+
+		<!-- Paths used while testing. These are overridden for windows platforms, 
+			see the profiles section. -->
+		<pythonpath>../../main/python:$PYTHONPATH</pythonpath>
+		<jythonpath>../../main/python:$JYTHONPATH</jythonpath>
+		<build.number>0</build.number>
+
+		<neo-version>${project.version}</neo-version>
+		<gremlin.version>1.2</gremlin.version>
+	</properties>
 
 	<licenses>
 		<license>
@@ -48,51 +62,12 @@ the relevant Commercial Agreement.
 		</license>
 	</licenses>
 
-	<properties>
-		<license-text.header>GPL-3-header.txt</license-text.header>
-		<python>python</python>
-
-		<!-- Paths used while testing. These are overridden for windows platforms, 
-			see the profiles section. -->
-		<pythonpath>../../main/python:$PYTHONPATH</pythonpath>
-		<jythonpath>../../main/python:$JYTHONPATH</jythonpath>
-		<build.number>0</build.number>
-
-		<neo-version>1.5-SNAPSHOT</neo-version>
-		<gremlin.version>1.2</gremlin.version>
-	</properties>
-
 	<dependencies>
 		<dependency>
 			<groupId>org.neo4j</groupId>
 			<artifactId>neo4j</artifactId>
 			<version>${neo-version}</version>
 		</dependency>
-
-		<dependency>
-			<groupId>com.tinkerpop</groupId>
-			<artifactId>gremlin</artifactId>
-			<version>1.2</version>
-			<type>jar</type>
-			<exclusions>
-				<!-- Sail support not needed -->
-				<exclusion>
-					<groupId>com.tinkerpop.blueprints</groupId>
-					<artifactId>blueprints-sail-graph</artifactId>
-				</exclusion>
-				<!-- "readline" not needed -->
-				<exclusion>
-					<groupId>jline</groupId>
-					<artifactId>jline</artifactId>
-				</exclusion>
-
-				<exclusion>
-					<groupId>org.codehaus.gmaven</groupId>
-					<artifactId>gmaven-plugin</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-
 
 	</dependencies>
 
@@ -112,14 +87,36 @@ the relevant Commercial Agreement.
 		<plugins>
 			<!-- Generate appropriate python version from current project version. 
 				See: http://www.python.org/dev/peps/pep-0386/ -->
-			<!-- plugin> <groupId>org.codehaus.gmaven</groupId> <artifactId>gmaven-plugin</artifactId> 
-				<version>1.3</version> <executions> <execution> <id>pythonificate-version-number</id> 
-				<phase>generate-resources</phase> <goals> <goal>execute</goal> </goals> <configuration> 
-				<source> def version = project.version // 1.5-SNAPSHOT -> 1.5.dev1 version 
-				= version.replace("-SNAPSHOT", ".dev" + project.properties['build.number']) 
-				// 1.5.RC1 -> 1.5.c1 version = version.replace("RC","c") // 1.5.M01 -> 1.5.b1 
-				version = version.replace("M0","b") version = version.replace("M","b") project.properties['pythonic_version'] 
-				= version </source> </configuration> </execution> </executions> </plugin -->
+			<plugin>
+				<groupId>org.codehaus.gmaven</groupId>
+				<artifactId>gmaven-plugin</artifactId>
+				<version>1.3</version>
+				<executions>
+					<execution>
+						<id>pythonificate-version-number</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>execute</goal>
+						</goals>
+						<configuration>
+							<source> 
+							def version = project.version
+							
+							// 1.5-SNAPSHOT -> 1.5.dev1
+							version = version.replace("-SNAPSHOT", ".dev" + project.properties['build.number'])
+							
+							// 1.5.RC1 -> 1.5.c1 
+						    version = version.replace("RC","c")
+
+							// 1.5.M01 -> 1.5.b1
+							version = version.replace("M0","b") 
+							version = version.replace("M","b")
+							project.properties['pythonic_version']	= version
+							</source>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 
 			<!-- Produce source jars, for our documentation -->
 			<plugin>
