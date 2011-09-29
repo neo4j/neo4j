@@ -62,7 +62,7 @@ public class RolesTest extends AbstractJavaDocTestbase
      * directed acyclic graphs] (DAGs) 
      * in SQL based DBs. DAGs are almost trees, but with a twist: it may be possible to reach 
      * the same node through different paths. Trees are restricted from this possibility, which 
-     * makes them much easier to handle. In our case it is ''Ali'' and ''Engin'' that brake 
+     * makes them much easier to handle. In our case it is "Ali" and "Engin" that brake 
      * the tree pattern, as they are both admins and users. Reality often looks this way and 
      * can't be captured by tree structures.
      * 
@@ -70,10 +70,10 @@ public class RolesTest extends AbstractJavaDocTestbase
      * that also have some support from scientists, is to pre-calculate all possible (transitive) paths. 
      * Pros and cons of this approach:
      * 
-     * - decent performance on read
-     * - low performance on insert
-     * - wastes ''lots'' of space
-     * - relies on stored procedures
+     * * decent performance on read
+     * * low performance on insert
+     * * wastes _lots_ of space
+     * * relies on stored procedures
      * 
      * In Neo4j storing the roles is trivial. In this case we use +PART_OF+ (blue edges) relationships 
      * to model the group hierarchy and +MEMBER_OF+ (green edges) to model membership in groups. 
@@ -92,17 +92,17 @@ public class RolesTest extends AbstractJavaDocTestbase
      * 
      * @@o-get-admins
      * 
-     * As Cypher, this looks like
+     * As Cypher, this looks like:
      * 
      * @@query-get-admins
      * 
-     * resulting in
+     * resulting in:
      * 
      * @@o-query-get-admins
      *
      * == Get the group memberships of a user ==
      * 
-     * Using the <<graphdb-neo4j-traversal>>[Neo4j Java Traversal API], this query looks like:
+     * Using the <<graphdb-neo4j-traversal,Neo4j Java Traversal API>>, this query looks like:
      * 
      * @@get-user-memberships
      * 
@@ -142,7 +142,7 @@ public class RolesTest extends AbstractJavaDocTestbase
      * 
      * @@o-get-members
      * 
-     * In Cypher, this requires to match users at two points due to the start and endpoint of the
+     * In Cypher, this requires to match users at two points due to the start- and end point of the
      * variable length path being potentially matched on:
      * 
      * @@query-get-members
@@ -165,11 +165,9 @@ public class RolesTest extends AbstractJavaDocTestbase
             "Can MEMBER_OF Users", "Gul MEMBER_OF Managers",
             "Fuat MEMBER_OF Managers", "Hakan MEMBER_OF Technicians",
             "Irmak MEMBER_OF Technicians", "Jale MEMBER_OF ABCTechnicians"
-
     } )
     public void user_roles_in_graphs()
     {
-
         // get Admins
         gen.get().addSnippet( "get-admins", createSourceSnippet("get-admins", this.getClass()) );
         System.out.println( "All admins:" );

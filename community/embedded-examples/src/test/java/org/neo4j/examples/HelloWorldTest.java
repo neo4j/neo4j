@@ -48,6 +48,7 @@ public class HelloWorldTest extends AbstractJavaDocTestbase
      * Hello World.
      * 
      * Learn how to create and access nodes, relationships and properties.
+     * For information on project setup, see <<tutorials-java-embedded-setup>>.
      * 
      * Remember, from <<what-is-a-graphdb>>, that a Neo4j graph consist of:
      * 
@@ -92,7 +93,7 @@ public class HelloWorldTest extends AbstractJavaDocTestbase
      * @@transaction
      * 
      * For more information on transactions, see <<transactions>> and
-     * http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Transaction.html[Java API for Transaction].
+     * http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Transaction.html[Java API for +Transaction+].
      * 
      * == Create a small graph ==
      * 
@@ -159,6 +160,8 @@ public class HelloWorldTest extends AbstractJavaDocTestbase
         {
             // Mutating operations go here
             // END SNIPPET: transaction
+            graphDb.getReferenceNode()
+                    .delete();
             // START SNIPPET: addData
             Node firstNode = graphDb.createNode();
             Node secondNode = graphDb.createNode();
