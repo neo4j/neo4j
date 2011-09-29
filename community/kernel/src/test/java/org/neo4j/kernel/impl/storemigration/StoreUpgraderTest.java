@@ -32,7 +32,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 import org.junit.Test;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.UTF8;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 public class StoreUpgraderTest
@@ -47,11 +49,31 @@ public class StoreUpgraderTest
         FileUtils.deleteRecursively( workingDirectory );
         assertTrue( workingDirectory.mkdirs() );
 
-        copyRecursively( resourceDirectory, workingDirectory );
+        MigrationTestUtils.copyRecursively( resourceDirectory, workingDirectory );
 
         assertFalse( allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
 
         new StoreUpgrader( new File( workingDirectory, "neostore" ).getPath(), defaultConfig() ).attemptUpgrade();
+
+        assertTrue( allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
+    }
+
+    @Test
+    public void shouldUpgradeAutomaticallyOnDatabaseStartup() throws IOException
+    {
+        URL legacyStoreResource = getClass().getResource( "oldformatstore/neostore" );
+        File resourceDirectory = new File( legacyStoreResource.getFile() ).getParentFile();
+        File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
+
+        FileUtils.deleteRecursively( workingDirectory );
+        assertTrue( workingDirectory.mkdirs() );
+
+        MigrationTestUtils.copyRecursively( resourceDirectory, workingDirectory );
+
+        assertFalse( allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
+
+        GraphDatabaseService database = new EmbeddedGraphDatabase( workingDirectory.getPath() );
+        database.shutdown();
 
         assertTrue( allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
     }
@@ -90,19 +112,4 @@ public class StoreUpgraderTest
         return true;
     }
 
-    private void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
-    {
-        for ( File fromFile : fromDirectory.listFiles() )
-        {
-            File toFile = new File( toDirectory, fromFile.getName() );
-            if ( fromFile.isDirectory() )
-            {
-                assertTrue( toFile.mkdir() );
-                copyRecursively( fromFile, toFile );
-            } else
-            {
-                FileUtils.copyFile( fromFile, toFile );
-            }
-        }
-    }
 }

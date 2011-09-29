@@ -19,11 +19,16 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import static org.junit.Assert.assertTrue;
+
+import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.util.FileUtils;
 
 public class MigrationTestUtils
 {
@@ -52,5 +57,21 @@ public class MigrationTestUtils
             builder.append("characters");
         }
         return builder.toString();
+    }
+
+    static void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
+    {
+        for ( File fromFile : fromDirectory.listFiles() )
+        {
+            File toFile = new File( toDirectory, fromFile.getName() );
+            if ( fromFile.isDirectory() )
+            {
+                assertTrue( toFile.mkdir() );
+                copyRecursively( fromFile, toFile );
+            } else
+            {
+                FileUtils.copyFile( fromFile, toFile );
+            }
+        }
     }
 }

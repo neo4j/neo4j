@@ -247,7 +247,7 @@ public abstract class CommonAbstractStore
         }
     }
 
-    private void verifyCorrectTypeDescriptorAndVersion() throws IOException
+    protected void verifyCorrectTypeDescriptorAndVersion() throws IOException
     {
         String expectedTypeDescriptorAndVersion = getTypeAndVersionDescriptor();
         int length = UTF8.encode( expectedTypeDescriptorAndVersion ).length;

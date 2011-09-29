@@ -76,6 +76,12 @@ public class NeoStore extends AbstractStore
     }
 
     @Override
+    protected void verifyCorrectTypeDescriptorAndVersion() throws IOException
+    {
+        // not required for NeoStore, leave version checks to child stores
+    }
+
+    @Override
     protected void initStorage()
     {
         try
@@ -106,7 +112,7 @@ public class NeoStore extends AbstractStore
 
     private void tryToUpgradeStores()
     {
-        new StoreUpgrader( getStorageFileName(), getConfig() );
+        new StoreUpgrader( getStorageFileName(), getConfig() ).attemptUpgrade();
     }
 
     /**
