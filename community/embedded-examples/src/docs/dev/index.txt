@@ -8,7 +8,7 @@ include::setup.txt[]
 
 :leveloffset: 2
 
-include::hello-world.txt[]
+include::examples/hello-world.txt[]
 
 :leveloffset: 2
 

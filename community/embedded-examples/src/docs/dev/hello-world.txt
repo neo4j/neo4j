@@ -2,10 +2,11 @@
 Hello world
 ===========
 
+Learn how to create and access nodes and relationships.
 
-Create and access nodes and relationships.
-
-To begin with, we define the relationship types we want to use:
+All relationships have a type, which can be created by using an +enum+.
+In this example we only need a single relationship type.
+This is how to define it:
 
 [snippet,java]
 ----
@@ -15,7 +16,8 @@ classifier=sources
 tag=createReltype
 ----
 
-The next step is to start the database server:
+The next step is to start the database server.
+Note that if the directory given for the database doesn't already exist, it will be created.
 
 [snippet,java]
 ----
@@ -24,6 +26,10 @@ source=org/neo4j/examples/EmbeddedNeo4j.java
 classifier=sources
 tag=startDb
 ----
+
+Note that starting a server is an expensive operation, so don't start up and shut down new instances every time you need to interact with the database!
+The instance can be shared by multiple threads, where transactions will be thread confined.
+
 
 As seen, we register a shutdown hook that will make sure the database shuts down when the JVM exits.
 Now it's time to interact with the database:
@@ -35,6 +41,9 @@ source=org/neo4j/examples/EmbeddedNeo4j.java
 classifier=sources
 tag=operationsInATransaction
 ----
+
+For more information on transactions, see <<transactions>> and
+http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Transaction.html[Java API for Transaction].
 
 At this point this is how the database looks:
 
