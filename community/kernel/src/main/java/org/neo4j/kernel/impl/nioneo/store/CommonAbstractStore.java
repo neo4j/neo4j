@@ -33,6 +33,7 @@ import org.neo4j.kernel.Config;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Contains common implementation for {@link AbstractStore} and
@@ -44,10 +45,10 @@ public abstract class CommonAbstractStore
 
     public String getTypeAndVersionDescriptor()
     {
-        return buildTypeAndVersionDescriptor( getTypeDescriptor() );
+        return buildTypeDescriptorAndVersion( getTypeDescriptor() );
     }
 
-    protected static String buildTypeAndVersionDescriptor( String typeDescriptor )
+    protected static String buildTypeDescriptorAndVersion( String typeDescriptor )
     {
         return typeDescriptor + " " + ALL_STORES_VERSION;
     }
@@ -103,7 +104,86 @@ public abstract class CommonAbstractStore
      * Should do first validation on store validating stuff like version and id
      * generator. This method is called by constructors.
      */
-    protected abstract void loadStorage();
+    protected void loadStorage()
+    {
+        try
+        {
+            verifyCorrectTypeDescriptorAndVersion();
+            readAndVerifyBlockSize();
+            verifyFileSizeAndTruncate();
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( "Unable to load storage "
+                + getStorageFileName(), e );
+        }
+        loadIdGenerator();
+
+        setWindowPool( new PersistenceWindowPool( getStorageFileName(),
+            getEffectiveRecordSize(), getFileChannel(), calculateMappedMemory( getConfig(), storageFileName ),
+            getIfMemoryMapped(), isReadOnly() && !isBackupSlave() ) );
+    }
+
+    protected abstract int getEffectiveRecordSize();
+
+    protected abstract void verifyFileSizeAndTruncate() throws IOException;
+
+    protected abstract void readAndVerifyBlockSize() throws IOException;
+
+    private void loadIdGenerator()
+    {
+        try
+        {
+            if ( !isReadOnly() || isBackupSlave() )
+            {
+                openIdGenerator();
+            }
+            else
+            {
+                openReadOnlyIdGenerator( getEffectiveRecordSize());
+            }
+        }
+        catch ( InvalidIdGeneratorException e )
+        {
+            setStoreNotOk();
+        }
+        finally
+        {
+            if ( !getStoreOk() )
+            {
+                if ( getConfig() != null )
+                {
+                    String storeDir = (String) getConfig().get( "store_dir" );
+                    StringLogger msgLog = StringLogger.getLogger( storeDir );
+                    msgLog.logMessage( getStorageFileName() + " non clean shutdown detected", true );
+                }
+            }
+        }
+    }
+
+    private void verifyCorrectTypeDescriptorAndVersion() throws IOException
+    {
+        String expectedTypeDescriptorAndVersion = getTypeAndVersionDescriptor();
+        int length = UTF8.encode( expectedTypeDescriptorAndVersion ).length;
+        byte bytes[] = new byte[length];
+        ByteBuffer buffer = ByteBuffer.wrap( bytes );
+        long fileSize = getFileChannel().size();
+        if ( fileSize >= length )
+        {
+            getFileChannel().position( fileSize - length );
+        }
+        else if ( !isReadOnly() )
+        {
+            setStoreNotOk();
+        }
+        getFileChannel().read( buffer );
+        String foundTypeDescriptorAndVersion = UTF8.decode( bytes );
+
+        if ( !expectedTypeDescriptorAndVersion.equals( foundTypeDescriptorAndVersion ) )
+        {
+            throw new NotCurrentStoreVersionException( ALL_STORES_VERSION, foundTypeDescriptorAndVersion, "", false );
+        }
+    }
 
     /**
      * Should rebuild the id generator from scratch.
@@ -696,5 +776,6 @@ public abstract class CommonAbstractStore
             setHighId( highId );
         }
     }
+
 
 }

@@ -76,7 +76,7 @@ public class RelationshipStore extends AbstractStore implements Store
      */
     public static void createStore( String fileName, IdGeneratorFactory idGeneratorFactory )
     {
-        createEmptyStore( fileName, buildTypeAndVersionDescriptor(TYPE_DESCRIPTOR), idGeneratorFactory );
+        createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), idGeneratorFactory );
     }
 
     public RelationshipRecord getRecord( long id )

@@ -147,7 +147,7 @@ public class PropertyStore extends AbstractStore implements Store
         IdGeneratorFactory idGeneratorFactory = (IdGeneratorFactory) config.get(
                 IdGeneratorFactory.class );
 
-        createEmptyStore( fileName, buildTypeAndVersionDescriptor(TYPE_DESCRIPTOR), idGeneratorFactory );
+        createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), idGeneratorFactory );
         int stringStoreBlockSize = DEFAULT_DATA_BLOCK_SIZE;
         int arrayStoreBlockSize = DEFAULT_DATA_BLOCK_SIZE;
         try

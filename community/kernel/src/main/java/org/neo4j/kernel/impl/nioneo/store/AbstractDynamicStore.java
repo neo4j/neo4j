@@ -140,101 +140,40 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
 //        super( fileName );
 //    }
 
-    /**
-     * Loads this store validating version and id generator. Also the block size
-     * is loaded (contained in first block)
-     */
     @Override
-    protected void loadStorage()
+    protected int getEffectiveRecordSize()
     {
-        try
-        {
-            String expectedTypeDescriptorAndVersion = getTypeDescriptor() + " " + ALL_STORES_VERSION;
-            int expectedVersionLength = UTF8.encode( expectedTypeDescriptorAndVersion ).length;
-            long fileSize = getFileChannel().size();
-            areTypeDescriptorAndVersionPresentAtTheEndOfTheFileAndDoTheyMatchTheCurrentVersion( expectedTypeDescriptorAndVersion, fileSize );
-            ByteBuffer buffer = ByteBuffer.allocate( 4 );
-            getFileChannel().position( 0 );
-            getFileChannel().read( buffer );
-            buffer.flip();
-            blockSize = buffer.getInt();
-            if ( blockSize <= 0 )
-            {
-                throw new InvalidRecordException( "Illegal block size: " +
-                    blockSize + " in " + getStorageFileName() );
-            }
-            if ( (fileSize - expectedVersionLength) % blockSize != 0 && !isReadOnly() )
-            {
-                setStoreNotOk();
-            }
-            if ( getStoreOk() && !isReadOnly() )
-            {
-                getFileChannel().truncate( fileSize - expectedVersionLength );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( "Unable to load storage "
-                + getStorageFileName(), e );
-        }
-        try
-        {
-            if ( !isReadOnly() || isBackupSlave() )
-            {
-                openIdGenerator();
-            }
-            else
-            {
-                openReadOnlyIdGenerator( getBlockSize() );
-            }
-        }
-        catch ( InvalidIdGeneratorException e )
+        return getBlockSize();
+    }
+
+    @Override
+    protected void verifyFileSizeAndTruncate() throws IOException
+    {
+        int expectedVersionLength = UTF8.encode( buildTypeDescriptorAndVersion( getTypeDescriptor() ) ).length;
+        long fileSize = getFileChannel().size();
+        if ( (fileSize - expectedVersionLength) % blockSize != 0 && !isReadOnly() )
         {
             setStoreNotOk();
         }
-        finally
+        if ( getStoreOk() && !isReadOnly() )
         {
-            if ( !getStoreOk() )
-            {
-                if ( getConfig() != null )
-                {
-                    String storeDir = (String) getConfig().get( "store_dir" );
-                    StringLogger msgLog = StringLogger.getLogger( storeDir );
-                    msgLog.logMessage( getStorageFileName() + " non clean shutdown detected", true );
-                }
-            }
+            getFileChannel().truncate( fileSize - expectedVersionLength );
         }
-
-        setWindowPool( new PersistenceWindowPool( getStorageFileName(),
-            getBlockSize(), getFileChannel(), calculateMappedMemory( getConfig(), storageFileName ),
-            getIfMemoryMapped(), isReadOnly() && !isBackupSlave() ) );
     }
 
-    private boolean areTypeDescriptorAndVersionPresentAtTheEndOfTheFileAndDoTheyMatchTheCurrentVersion( String expectedTypeDescriptorAndVersion, long fileSize ) throws IOException
+    @Override
+    protected void readAndVerifyBlockSize() throws IOException
     {
-        byte bytes[] = new byte[UTF8.encode( expectedTypeDescriptorAndVersion ).length];
-        ByteBuffer buffer = ByteBuffer.wrap( bytes );
-        getFileChannel().position( fileSize - bytes.length );
+        ByteBuffer buffer = ByteBuffer.allocate( 4 );
+        getFileChannel().position( 0 );
         getFileChannel().read( buffer );
-        String foundTypeDescriptorAndVersion = UTF8.decode( bytes );
-
-        if ( expectedTypeDescriptorAndVersion.equals( foundTypeDescriptorAndVersion ) )
+        buffer.flip();
+        blockSize = buffer.getInt();
+        if ( blockSize <= 0 )
         {
-            return true;
+            throw new InvalidRecordException( "Illegal block size: " +
+            blockSize + " in " + getStorageFileName() );
         }
-        else
-        {
-            if ( foundTypeDescriptorAndVersion.startsWith( getTypeDescriptor() )) {
-                String foundVersion = foundTypeDescriptorAndVersion.substring( getTypeDescriptor().length() + 1 );
-                throw new NotCurrentStoreVersionException( ALL_STORES_VERSION, foundVersion, "", canAutomaticallyUpgradeFrom(foundVersion) );
-            }
-            return false;
-        }
-    }
-
-    protected boolean canAutomaticallyUpgradeFrom( String foundVersion )
-    {
-        return true;
     }
 
     /**

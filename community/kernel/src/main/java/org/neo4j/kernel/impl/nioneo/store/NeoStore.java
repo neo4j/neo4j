@@ -74,26 +74,38 @@ public class NeoStore extends AbstractStore
         idGeneratorFactory = (IdGeneratorFactory) config.get( IdGeneratorFactory.class );
     }
 
-//    public NeoStore( String fileName )
-//    {
-//        super( fileName );
-//        REL_GRAB_SIZE = DEFAULT_REL_GRAB_SIZE;
-//    }
+    @Override
+    protected void initStorage()
+    {
+        try
+        {
+            instantiateChildStores();
+        }
+        catch ( NotCurrentStoreVersionException e )
+        {
+            tryToUpgradeStores();
+            instantiateChildStores();
+        }
+    }
 
     /**
      * Initializes the node,relationship,property and relationship type stores.
      */
-    @Override
-    protected void initStorage()
+    private void instantiateChildStores()
     {
         relTypeStore = new RelationshipTypeStore( getStorageFileName()
-            + ".relationshiptypestore.db", getConfig(), IdType.RELATIONSHIP_TYPE );
+        + ".relationshiptypestore.db", getConfig(), IdType.RELATIONSHIP_TYPE );
         propStore = new PropertyStore( getStorageFileName()
-            + ".propertystore.db", getConfig() );
+        + ".propertystore.db", getConfig() );
         relStore = new RelationshipStore( getStorageFileName()
-            + ".relationshipstore.db", getConfig() );
+        + ".relationshipstore.db", getConfig() );
         nodeStore = new NodeStore( getStorageFileName() + ".nodestore.db",
-            getConfig() );
+        getConfig() );
+    }
+
+    private void tryToUpgradeStores()
+    {
+        // Upgrade process triggered from here
     }
 
     /**
@@ -170,7 +182,7 @@ public class NeoStore extends AbstractStore
         StoreId storeId = (StoreId) config.get( StoreId.class );
         if ( storeId == null ) storeId = new StoreId();
 
-        createEmptyStore( fileName, buildTypeAndVersionDescriptor(TYPE_DESCRIPTOR), idGeneratorFactory );
+        createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), idGeneratorFactory );
         NodeStore.createStore( fileName + ".nodestore.db", config );
         RelationshipStore.createStore( fileName + ".relationshipstore.db", idGeneratorFactory );
         PropertyStore.createStore( fileName + ".propertystore.db", config );
