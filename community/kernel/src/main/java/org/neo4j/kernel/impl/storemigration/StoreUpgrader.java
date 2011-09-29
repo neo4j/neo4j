@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.util.FileUtils;
 
 public class StoreUpgrader
 {
@@ -44,7 +43,9 @@ public class StoreUpgrader
         {
             File workingDirectory = new File( storageFileName ).getParentFile();
             File upgradeDirectory = new File( workingDirectory, "upgrade" );
+            File backupDirectory = new File( workingDirectory, "upgrade_backup" );
             upgradeDirectory.mkdir();
+
             String upgradeFileName = new File( upgradeDirectory, "neostore" ).getPath();
             Map<Object, Object> upgradeConfig = new HashMap<Object, Object>( originalConfig );
             upgradeConfig.put( "neo_store", upgradeFileName );
@@ -54,17 +55,24 @@ public class StoreUpgrader
             new StoreMigrator( new LegacyStore( storageFileName ) ).migrateTo( neoStore );
             neoStore.close();
 
-            // TODO: this is an unsafe copy - more work needed here
-            for ( File file : upgradeDirectory.listFiles() )
-            {
-                if (!file.isDirectory()) {
-                    FileUtils.copyFile( file, new File( workingDirectory, file.getName() ) );
-                }
-            }
+            backupDirectory.mkdir();
+            moveStoreFiles( workingDirectory, backupDirectory );
+            moveStoreFiles( upgradeDirectory, workingDirectory );
 
         } catch ( IOException e )
         {
             throw new RuntimeException( e );
+        }
+    }
+
+    private void moveStoreFiles( File fromDirectory, File toDirectory ) throws IOException
+    {
+        // TODO: change the order that files are moved to handle failure conditions properly
+        for ( File file : fromDirectory.listFiles() )
+        {
+            if (file.getName().startsWith( "neostore" )) {
+                file.renameTo( new File( toDirectory, file.getName() ) );
+            }
         }
     }
 }
