@@ -209,30 +209,6 @@ public class NodeStore extends AbstractStore implements Store
     {
         return "NodeStore";
     }
-    
-    @Override
-    protected boolean versionFound( String version )
-    {
-        if ( !version.startsWith( "NodeStore" ) )
-        {
-            // non clean shutdown, need to do recover with right neo
-            return false;
-        }
-//        if ( version.equals( "NodeStore v0.9.3" ) )
-//        {
-//            rebuildIdGenerator();
-//            closeIdGenerator();
-//            return true;
-//        }
-//        if ( version.equals( "NodeStore v0.9.5" ) )
-//        {
-            return true;
-//        }
-//        throw new NotCurrentStoreVersionException( VERSION, VERSION, "Store version [" + version  +
-//            "]. Please make sure you are not running old Neo4j kernel " +
-//            " towards a store that has been created by newer version " +
-//            " of Neo4j.", false );
-    }
 
     public List<WindowPoolStats> getAllWindowPoolStats()
     {

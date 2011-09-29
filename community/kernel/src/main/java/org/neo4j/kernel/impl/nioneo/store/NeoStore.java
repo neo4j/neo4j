@@ -400,47 +400,6 @@ public class NeoStore extends AbstractStore
         nodeStore.updateHighId();
     }
 
-    @Override
-    protected boolean versionFound( String version )
-    {
-        if ( !version.startsWith( "NeoStore" ) )
-        {
-            // non clean shutdown, need to do recover with right neo
-            return false;
-        }
-//        if ( version.equals( "NeoStore v0.9.5" ) )
-//        {
-//            ByteBuffer buffer = ByteBuffer.wrap( new byte[ RECORD_SIZE ] );
-//            buffer.put( Record.IN_USE.byteValue() ).putLong( 1 );
-//            buffer.flip();
-//            try
-//            {
-//                getFileChannel().write( buffer, 3*RECORD_SIZE );
-//            }
-//            catch ( IOException e )
-//            {
-//                throw new UnderlyingStorageException( e );
-//            }
-//            rebuildIdGenerator();
-//            closeIdGenerator();
-//            return false;
-//        }
-//        if ( version.equals( "NeoStore v0.9.6" ) )
-//        {
-//            if ( !configSaysOkToUpgrade() )
-//            {
-//                throw new IllegalStoreVersionException( "Store version [" + version + "] is older " +
-//                    "than expected, but could be upgraded automatically if '" +
-//                    Config.ALLOW_STORE_UPGRADE + "' configuration " + "parameter was set to 'true'." );
-//            }
-//            LogIoUtils.moveAllLogicalLogs( new File( getStoreDir() ), "1.2-logs" );
-            return true;
-//        }
-//        throw new IllegalStoreVersionException( "Store version [" + version  +
-//            "]. Please make sure you are not running old Neo4j kernel " +
-//            "on a store that has been created by newer version of Neo4j." );
-    }
-
     private boolean configSaysOkToUpgrade()
     {
         String allowUpgrade = (String) getConfig().get( Config.ALLOW_STORE_UPGRADE );

@@ -285,30 +285,6 @@ public class RelationshipStore extends AbstractStore implements Store
         return "RelStore";
     }
 
-    @Override
-    protected boolean versionFound( String version )
-    {
-        if ( !version.startsWith( "RelationshipStore" ) )
-        {
-            // non clean shutdown, need to do recover with right neo
-            return false;
-        }
-//        if ( version.equals( "RelationshipStore v0.9.3" ) )
-//        {
-//            rebuildIdGenerator();
-//            closeIdGenerator();
-//            return true;
-//        }
-//        if ( version.equals( "RelationshipStore v0.9.5" ) )
-//        {
-            return true;
-//        }
-//        throw new NotCurrentStoreVersionException( VERSION, VERSION, "Store version [" + version  +
-//            "]. Please make sure you are not running old Neo4j kernel " +
-//            " towards a store that has been created by newer version " +
-//            " of Neo4j.", false );
-    }
-
     public RelationshipRecord getChainRecord( long relId )
     {
         PersistenceWindow window = null;

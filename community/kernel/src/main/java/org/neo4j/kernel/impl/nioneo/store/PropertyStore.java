@@ -656,30 +656,6 @@ public class PropertyStore extends AbstractStore implements Store
     }
 
     @Override
-    protected boolean versionFound( String version )
-    {
-        if ( !version.startsWith( "PropertyStore" ) )
-        {
-            // non clean shutdown, need to do recover with right neo
-            return false;
-        }
-//        if ( version.equals( "PropertyStore v0.9.3" ) )
-//        {
-//            rebuildIdGenerator();
-//            closeIdGenerator();
-//            return true;
-//        }
-//        if ( version.equals( "PropertyStore v0.9.5" ) )
-//        {
-            return true;
-//        }
-//        throw new NotCurrentStoreVersionException( VERSION, VERSION, "Store version [" + version  +
-//            "]. Please make sure you are not running old Neo4j kernel " +
-//            " towards a store that has been created by newer version " +
-//            " of Neo4j.", false );
-    }
-
-    @Override
     public List<WindowPoolStats> getAllWindowPoolStats()
     {
         List<WindowPoolStats> list = new ArrayList<WindowPoolStats>();
