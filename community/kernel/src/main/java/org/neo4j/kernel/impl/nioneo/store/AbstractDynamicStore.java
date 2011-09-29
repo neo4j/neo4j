@@ -440,8 +440,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
          * [    ,    ][xxxx,xxxx][xxxx,xxxx][xxxx,xxxx] nr of bytes
          *
          */
-
         long firstInteger = buffer.getUnsignedInt();
+
         int inUseByte = (int) ( ( firstInteger & 0xF0000000 ) >> 28 );
         boolean inUse = inUseByte == Record.IN_USE.intValue();
         if ( !inUse )
