@@ -19,11 +19,16 @@
  */
 package org.neo4j.helpers.collection;
 
+import java.io.BufferedOutputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Reader;
+import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -211,11 +216,13 @@ public abstract class MapUtil
         }
         finally
         {
-            if ( stream != null )
-            {
-                stream.close();
-            }
+            closeIfNotNull( stream );
         }
+    }
+
+    private static void closeIfNotNull( Closeable closeable ) throws IOException
+    {
+        if ( closeable != null ) closeable.close();
     }
     
     /**
@@ -232,6 +239,117 @@ public abstract class MapUtil
         try
         {
             return load( file );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+    
+    /**
+     * Stores the data in {@code config} into {@code file} in a standard java
+     * {@link Properties} format.
+     * @param config the data to store in the properties file.
+     * @param file the file to store the properties in.
+     * @throws IOException IO error.
+     */
+    public static void store( Map<String, String> config, File file ) throws IOException
+    {
+        OutputStream stream = null;
+        try
+        {
+            stream = new BufferedOutputStream( new FileOutputStream( file ) );
+            store( config, stream );
+        }
+        finally
+        {
+            closeIfNotNull( stream );
+        }
+    }
+    
+    /**
+     * Stores the data in {@code config} into {@code file} in a standard java
+     * {@link Properties} format. Any {@link IOException} is wrapped and thrown as a
+     * {@link RuntimeException} instead.
+     * @param config the data to store in the properties file.
+     * @param file the file to store the properties in.
+     */
+    public static void storeStrictly( Map<String, String> config, File file )
+    {
+        try
+        {
+            store( config, file );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+    
+    /**
+     * Stores the data in {@code config} into {@code stream} in a standard java
+     * {@link Properties} format.
+     * @param config the data to store in the properties file.
+     * @param stream the {@link OutputStream} to store the properties in.
+     * @throws IOException IO error.
+     */
+    public static void store( Map<String, String> config, OutputStream stream ) throws IOException
+    {
+        Properties properties = new Properties();
+        for ( Map.Entry<String, String> property : config.entrySet() )
+        {
+            properties.setProperty( property.getKey(), property.getValue() );
+        }
+        properties.store( stream, null );
+    }
+    
+    /**
+     * Stores the data in {@code config} into {@code stream} in a standard java
+     * {@link Properties} format. Any {@link IOException} is wrapped and thrown as a
+     * {@link RuntimeException} instead.
+     * @param config the data to store in the properties file.
+     * @param stream the {@link OutputStream} to store the properties in.
+     * @throws IOException IO error.
+     */
+    public static void storeStrictly( Map<String, String> config, OutputStream stream )
+    {
+        try
+        {
+            store( config, stream );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+    
+    /**
+     * Stores the data in {@code config} into {@code writer} in a standard java
+     * {@link Properties} format.
+     * @param config the data to store in the properties file.
+     * @param stream the {@link Writer} to store the properties in.
+     * @throws IOException IO error.
+     */
+    public static void store( Map<String, String> config, Writer writer ) throws IOException
+    {
+        Properties properties = new Properties();
+        properties.putAll( config );
+        properties.store( writer, null );
+    }
+    
+    /**
+     * Stores the data in {@code config} into {@code writer} in a standard java
+     * {@link Properties} format. Any {@link IOException} is wrapped and thrown as a
+     * {@link RuntimeException} instead.
+     * @param config the data to store in the properties file.
+     * @param stream the {@link Writer} to store the properties in.
+     * @throws IOException IO error.
+     */
+    public static void storeStrictly( Map<String, String> config, Writer writer )
+    {
+        try
+        {
+            store( config, writer );
         }
         catch ( IOException e )
         {
