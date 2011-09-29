@@ -913,7 +913,9 @@ public class RestfulGraphDatabaseTest
         String entity = entityAsString( response );
         Map<String, Object> map = JsonHelper.jsonToMap( entity );
         assertNotNull( map.get( "node" ) );
-        assertNotNull( map.get( "reference_node" ) );
+        //this can be null
+//        assertNotNull( map.get( "reference_node" ) );
+        assertNotNull( map.get( "neo4j_version" ) );
         assertNotNull( map.get( "node_index" ) );
         assertNotNull( map.get( "extensions_info" ) );
         assertNotNull( map.get( "relationship_index" ) );

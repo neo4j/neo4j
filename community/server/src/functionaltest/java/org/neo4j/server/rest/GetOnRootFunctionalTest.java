@@ -22,102 +22,71 @@ package org.neo4j.server.rest;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-import java.io.IOException;
 import java.util.Map;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.Version;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.NeoServerWithEmbeddedWebServer;
-import org.neo4j.server.helpers.FunctionalTestHelper;
-import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestData;
+import org.neo4j.test.GraphDescription.Graph;
 
-
-
-public class GetOnRootFunctionalTest
+public class GetOnRootFunctionalTest extends AbstractRestFunctionalTestBase
 {
-
-    private static NeoServerWithEmbeddedWebServer server;
-    private static FunctionalTestHelper functionalTestHelper;
-
-    @BeforeClass
-    public static void setupServer() throws IOException
-    {
-        server = ServerHelper.createServer();
-        functionalTestHelper = new FunctionalTestHelper( server );
-    }
-
-    @Before
-    public void cleanTheDatabase()
-    {
-        ServerHelper.cleanTheDatabase( server );
-    }
-
-    @AfterClass
-    public static void stopServer()
-    {
-        server.stop();
-    }
-
-    public @Rule
-    TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
-
     /**
      * The service root is your starting point to discover the REST API.
+     * It contains the basic starting points for the databse, and some
+     * version and extension information. The +reference_node+ entry will
+     * only be present if there is a reference node set and exists in the database.
      */
     @Documented
     @Test
+    @Graph("I know you")
     @TestData.Title( "Get service root" )
     public void assert200OkFromGet() throws Exception
     {
-        gen.get()
-                .expectedStatus( 200 )
-                .get( functionalTestHelper.dataUri() );
-    }
-
-    @Test
-    public void assertResponseHaveCorrectContentFromGet() throws Exception
-    {
-        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.dataUri());
-        String body = response.getEntity( String.class );
+        
+        EmbeddedGraphDatabase db = (EmbeddedGraphDatabase)((ImpermanentGraphDatabase)graphdb()).getInner();
+        Transaction tx = db.beginTx();
+        db.getConfig().getGraphDbModule().setReferenceNodeId( data.get().get("I").getId() );
+        tx.success();
+        tx.finish();
+        String body = gen.get().expectedStatus( 200 ).get( getDataUri() ).entity();
         Map<String, Object> map = JsonHelper.jsonToMap( body );
-        assertEquals( functionalTestHelper.nodeUri(), map.get( "node" ) );
+        assertEquals( getDataUri() + "node", map.get( "node" ) );
         assertNotNull( map.get( "reference_node" ) );
         assertNotNull( map.get( "node_index" ) );
         assertNotNull( map.get( "relationship_index" ) );
         assertNotNull( map.get( "extensions_info" ) );
         assertNotNull( map.get( "batch" ) );
-        response.close();
+        assertEquals( Version.getKernelRevision(), map.get( "neo4j_version" ) );
 
         // Make sure advertised urls work
-        
-        response = RestRequest.req().get(
-        		(String) map.get( "reference_node" ));
-        assertEquals( 200, response.getStatus() );
-        response.close();
-        
-        response = RestRequest.req().get(
-        		(String) map.get( "node_index" ));
+            JaxRsResponse response = RestRequest.req().get( getDataUri() );
+        if ( map.get( "reference_node" ) != null )
+        {
+            response = RestRequest.req().get(
+                    (String) map.get( "reference_node" ) );
+            assertEquals( 200, response.getStatus() );
+            response.close();
+        }
+        response = RestRequest.req().get( (String) map.get( "node_index" ) );
         assertEquals( 204, response.getStatus() );
         response.close();
-        
+
         response = RestRequest.req().get(
-        		(String) map.get( "relationship_index" ));
+                (String) map.get( "relationship_index" ) );
         assertEquals( 204, response.getStatus() );
         response.close();
-        
-        response = RestRequest.req().get(
-        		(String) map.get( "extensions_info" ));
+
+        response = RestRequest.req().get( (String) map.get( "extensions_info" ) );
         assertEquals( 200, response.getStatus() );
         response.close();
-        
-        response = RestRequest.req().post(
-        		(String) map.get( "batch" ), "[]");
+
+        response = RestRequest.req().post( (String) map.get( "batch" ), "[]" );
         assertEquals( 200, response.getStatus() );
         response.close();
     }
