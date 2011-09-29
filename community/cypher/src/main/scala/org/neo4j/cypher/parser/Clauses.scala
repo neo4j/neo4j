@@ -37,35 +37,16 @@ trait Clauses extends JavaTokenParsers with Tokens with Values {
     case prop => Has(prop.asInstanceOf[PropertyValue])
   }
 
-  def closure: Parser[(String, Clause)] = (explicitClosure | implicitClosure)
-
-  def explicitClosure: Parser[(String, Clause)] = (identity ~ "=>" ~ clause) ^^ {
-    case id ~ "=>" ~ c => (id, c)
-  }
-
-  def implicitClosure: Parser[(String, Clause)] = clause ^^ {
-    case c => ("_", c)
-  }
-
   def sequenceClause: Parser[Clause] = (allInSeq | anyInSeq | noneInSeq | singleInSeq)
 
-  def valueAndClosure = parens( value ~ "," ~ closure ) ^^ { case value ~ "," ~ closure => new ~(value, closure) }
-
-  def allInSeq: Parser[Clause] = ignoreCase("ALL") ~> valueAndClosure ^^ {
-    case seqValue ~ closure => AllInSeq(seqValue, closure._1, closure._2)
+  def symbolIterableClause : Parser[(Value, String, Clause)] = identity ~ ignoreCase("in") ~ value ~ ":" ~ clause ^^{
+    case symbol ~ in ~ iterable ~ ":" ~ klas => (iterable, symbol, klas)
   }
 
-  def anyInSeq: Parser[Clause] = ignoreCase("ANY") ~> valueAndClosure ^^ {
-    case seqValue ~ closure => AnyInSeq(seqValue, closure._1, closure._2)
-  }
-
-  def noneInSeq: Parser[Clause] = ignoreCase("NONE") ~> valueAndClosure ^^ {
-    case seqValue ~ closure => NoneInSeq(seqValue, closure._1, closure._2)
-  }
-
-  def singleInSeq: Parser[Clause] = ignoreCase("SINGLE") ~> valueAndClosure ^^ {
-    case seqValue ~ closure => SingleInSeq(seqValue, closure._1, closure._2)
-  }
+  def allInSeq: Parser[Clause] = ignoreCase("all") ~> parens(symbolIterableClause) ^^ ( x=> AllInSeq(x._1, x._2, x._3))
+  def anyInSeq: Parser[Clause] = ignoreCase("any") ~> parens(symbolIterableClause) ^^ ( x=> AnyInSeq(x._1, x._2, x._3))
+  def noneInSeq: Parser[Clause] = ignoreCase("none") ~> parens(symbolIterableClause) ^^ ( x=> NoneInSeq(x._1, x._2, x._3))
+  def singleInSeq: Parser[Clause] = ignoreCase("single") ~> parens(symbolIterableClause) ^^ ( x=> SingleInSeq(x._1, x._2, x._3))
 
   def equals: Parser[Clause] = value ~ "=" ~ value ^^ {
     case l ~ "=" ~ r => Equals(l, r)

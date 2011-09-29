@@ -56,7 +56,7 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable) {
   }
 
   /*
-  This method is mutable, but it is only called from the constructor of this class. The created PatternGraph
+  This method is mutable, but it is only called from the constructor of this class. The created pattern graph
    is immutable and thread safe.
    */
   private def buildPatternGraph(): PatternGraph = {
@@ -67,7 +67,6 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable) {
       case NodeIdentifier(nodeName) => patternNodeMap(nodeName) = new PatternNode(nodeName)
       case _ => None
     })
-
 
     patterns.foreach(_ match {
       case RelatedTo(left, right, rel, relType, dir, optional) => {
