@@ -81,7 +81,7 @@ public class Neo4jHAPropertiesMustExistRule extends Neo4jPropertiesMustExistRule
                     failureMessage = e.getMessage();
                     return false;
                 }
-                String machineId = dbTuning.getProperty( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID,
+                String machineId = dbTuning.getProperty( HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID,
                         "<not set>" );
                 try
                 {
@@ -90,15 +90,15 @@ public class Neo4jHAPropertiesMustExistRule extends Neo4jPropertiesMustExistRule
                 catch ( NumberFormatException e )
                 {
                     failureMessage = String.format( "%s in %s needs to be a non-negative integer, not %s",
-                            HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, dbTuningFilename, machineId );
+                            HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID, dbTuningFilename, machineId );
                     return false;
                 }
                 String[] zkServers = dbTuning.getProperty(
-                        HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS, "" ).split( "," );
+                        HighlyAvailableGraphDatabase.CONFIG_KEY_COORDINATORS, "" ).split( "," );
                 if ( zkServers.length <= 0 )
                 {
                     failureMessage = String.format( "%s in %s needs to specify at least one server",
-                            HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, dbTuningFilename );
+                            HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID, dbTuningFilename );
                     return false;
                 }
                 for ( String zk : zkServers )
@@ -106,7 +106,7 @@ public class Neo4jHAPropertiesMustExistRule extends Neo4jPropertiesMustExistRule
                     if ( !zk.contains( ":" ) )
                     {
                         failureMessage = String.format( "Invalid server config \"%s\" for %s in %s", zk,
-                                HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, dbTuningFilename );
+                                HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID, dbTuningFilename );
                         return false;
                     }
                 }

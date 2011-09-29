@@ -58,8 +58,8 @@ public class Neo4jHAPropertiesMustExistRuleTest
         File dbTuningFile = ServerTestUtils.createTempPropertyFile();
         ServerTestUtils.writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, dbTuningFile.getAbsolutePath(), serverPropertyFile);
         ServerTestUtils.writePropertyToFile( Configurator.DB_MODE_KEY, "ha", serverPropertyFile );
-        ServerTestUtils.writePropertyToFile( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID, "1", dbTuningFile );
-        ServerTestUtils.writePropertyToFile( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS,
+        ServerTestUtils.writePropertyToFile( HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER, "1", dbTuningFile );
+        ServerTestUtils.writePropertyToFile( HighlyAvailableGraphDatabase.CONFIG_KEY_COORDINATORS,
                 "localhost:0000", dbTuningFile );
 
         assertRule( rule, serverPropertyFile );
