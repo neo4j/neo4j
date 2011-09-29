@@ -49,8 +49,7 @@ Each cache window contains an even number of storage records.
 The cache holds the most active cache windows in memory and tracks hit vs. miss ratio for the windows.
 When the hit ratio of an uncached window gets higher than the miss ratio of a cached window, the cached window gets evicted and the previously uncached window is cached instead.
 
-TIP:
-Note that the block sizes can only be configured at store creation time.
+TIP: Note that the block sizes can only be configured at store creation time.
 
 Configuration
 ~~~~~~~~~~~~~
