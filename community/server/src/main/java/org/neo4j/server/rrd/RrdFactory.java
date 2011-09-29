@@ -151,11 +151,11 @@ public class RrdFactory
                 return new RrdDb( rrdFile.getAbsolutePath() );
             } catch ( IOException e )
             {
-                // RRD file may has become corrupt
+                // RRD file may have become corrupt
                 LOG.error( "Unable to open rrd store, attempting to recreate it", e );
                 return recreateArchive( rrdFile, sampleables );
             } catch (IllegalArgumentException e) {
-                // RRD file may has become corrupt
+                // RRD file may have become corrupt
                 LOG.error( "Unable to open rrd store, attempting to recreate it", e );
                 return recreateArchive( rrdFile, sampleables );
             }
