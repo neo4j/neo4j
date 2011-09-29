@@ -19,16 +19,14 @@
  */
 package org.neo4j.cypher.pipes.matching
 
-import org.neo4j.graphdb.Node
-
 class PatternMatcher(startPoint: PatternNode, bindings: Map[String, MatchingPair]) extends Traversable[Map[String, Any]] {
 
   def foreach[U](f: (Map[String, Any]) => U) {
-    traverseNode(MatchingPair(startPoint, startPoint.pinnedEntity.get), Seq(), bindings.values.toSeq, f)
+    traverseNode(MatchingPair(startPoint, startPoint.pinnedEntity.get), History(), bindings.values.toSeq, f)
   }
 
   private def traverseNode[U](current: MatchingPair,
-                              history: Seq[MatchingPair],
+                              history: History,
                               remaining: Seq[MatchingPair],
                               yielder: Map[String, Any] => U): Boolean = {
     debug(current, history, remaining)
@@ -43,7 +41,7 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, MatchingPair
     val notYetVisited = getPatternRelationshipsNotYetVisited(pNode, history)
 
     if (notYetVisited.isEmpty) {
-      traverseNextNodeOrYield(remaining, history ++ Seq(current), yielder)
+      traverseNextNodeOrYield(remaining, history.add(current), yielder)
     } else {
       /*
       We only care about the first pattern relationship. We'll add this current position
@@ -56,14 +54,14 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, MatchingPair
 
   private def traverseRelationship[U](currentNode: MatchingPair,
                                       currentRel: PatternRelationship,
-                                      history: Seq[MatchingPair],
+                                      history: History,
                                       remaining: Seq[MatchingPair],
                                       yielder: (Map[String, Any]) => U): Boolean = {
     debug(currentNode, currentRel, history, remaining)
 
     val (pNode, gNode) = currentNode.getPatternAndGraphPoint
 
-    val notVisitedRelationships = currentNode.getGraphRelationships(currentRel, history)
+    val notVisitedRelationships = history.filter2(currentNode.getGraphRelationships(currentRel))
 
     val nextPNode = currentRel.getOtherNode(pNode)
 
@@ -73,7 +71,7 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, MatchingPair
      */
     val yielded = notVisitedRelationships.map(rel => {
       val nextNode = rel.getOtherNode(gNode)
-      val newHistory = history ++ Seq(currentNode, MatchingPair(currentRel, rel))
+      val newHistory = history.add(currentNode).add(MatchingPair(currentRel, rel))
       traverseNode(MatchingPair(nextPNode, nextNode), newHistory, remaining, yielder)
     }).foldLeft(false)(_ || _)
 
@@ -82,13 +80,13 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, MatchingPair
     }
 
     if (currentRel.optional) {
-      return traverseNextNodeOrYield(remaining, history ++ Seq(currentNode, MatchingPair(currentRel, null)), yielder)
+      return traverseNextNodeOrYield(remaining, history.add(currentNode).add(MatchingPair(currentRel, null)), yielder)
     }
 
     false
   }
 
-  private def traverseNextNodeOrYield[U](remaining: Seq[MatchingPair], history: Seq[MatchingPair], yielder: Map[String, Any] => U): Boolean = {
+  private def traverseNextNodeOrYield[U](remaining: Seq[MatchingPair], history: History, yielder: Map[String, Any] => U): Boolean = {
     debug(history, remaining)
 
     if (remaining.isEmpty) {
@@ -100,40 +98,24 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, MatchingPair
     }
   }
 
-  def extractResultMap[U](history: scala.Seq[MatchingPair]): Map[String, Object] = {
-    history.flatMap(_ match {
-      case MatchingPair(p, e) => (p, e) match {
-        case (pe: PatternNode, entity: Node) => Seq(pe.key -> entity)
-        case (pe: PatternRelationship, entity: SingleGraphRelationship) => Seq(pe.key -> entity.rel)
-        case (pe: PatternRelationship, null) => Seq(pe.key -> null)
-        case (pe: VariableLengthPatternRelationship, entity: VariableLengthGraphRelationship) => Seq(
-          pe.start.key -> entity.path.startNode(),
-          pe.end.key -> entity.path.endNode(),
-          pe.key -> entity.path
-        )
-      }
-    }).toMap
+  private def yieldThis[U](yielder: Map[String, Any] => U, history: History) {
+    debug(history, history.toMap)
+
+    yielder(history.toMap)
   }
 
-  private def yieldThis[U](yielder: Map[String, Any] => U, history: Seq[MatchingPair]) {
-    val resultMap = extractResultMap(history)
-    debug(history, resultMap)
-
-    yielder(resultMap)
-  }
-
-  private def getPatternRelationshipsNotYetVisited[U](patternNode: PatternNode, history: scala.Seq[MatchingPair]): List[PatternRelationship] = patternNode.getPRels(history).toList
+  private def getPatternRelationshipsNotYetVisited[U](patternNode: PatternNode, history: History): List[PatternRelationship] = history.filter(patternNode.relationships.toSet).toList
 
   val isDebugging = false
 
-  def debug[U](history: Seq[MatchingPair], remaining: Seq[MatchingPair]) {
+  def debug[U](history: History, remaining: Seq[MatchingPair]) {
     if (isDebugging)
       println(String.format("""traverseNextNodeOrYield
       history=%s
       remaining=%s)""", history, remaining))
   }
 
-  def debug[U](current: MatchingPair, history: Seq[MatchingPair], remaining: Seq[MatchingPair]) {
+  def debug[U](current: MatchingPair, history: History, remaining: Seq[MatchingPair]) {
     if (isDebugging)
       println(String.format("""traverseNode
     current=%s
@@ -142,7 +124,7 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, MatchingPair
     """, current, history, remaining))
   }
 
-  def debug[U](current: MatchingPair, pRel: PatternRelationship, history: Seq[MatchingPair], remaining: Seq[MatchingPair]) {
+  def debug[U](current: MatchingPair, pRel: PatternRelationship, history: History, remaining: Seq[MatchingPair]) {
     if (isDebugging)
       println(String.format("""traverseRelationship
     current=%s
@@ -152,7 +134,7 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, MatchingPair
     """, current, pRel, history, remaining))
   }
 
-  def debug[U](history: Seq[MatchingPair], resultMap: Map[String, Object]) {
+  def debug[U](history: History, resultMap: Map[String, Object]) {
     if (isDebugging)
       println(String.format("""yield(history=%s) => %s
     """, history, resultMap))
