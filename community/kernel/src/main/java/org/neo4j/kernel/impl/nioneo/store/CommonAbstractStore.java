@@ -179,9 +179,15 @@ public abstract class CommonAbstractStore
         getFileChannel().read( buffer );
         String foundTypeDescriptorAndVersion = UTF8.decode( bytes );
 
-        if ( !expectedTypeDescriptorAndVersion.equals( foundTypeDescriptorAndVersion ) )
+        if (foundTypeDescriptorAndVersion.startsWith( getTypeDescriptor() )) {
+            if ( !expectedTypeDescriptorAndVersion.equals( foundTypeDescriptorAndVersion ) )
+            {
+                throw new NotCurrentStoreVersionException( ALL_STORES_VERSION, foundTypeDescriptorAndVersion, "", false );
+            }
+        }
+        else
         {
-            throw new NotCurrentStoreVersionException( ALL_STORES_VERSION, foundTypeDescriptorAndVersion, "", false );
+            setStoreNotOk();
         }
     }
 
