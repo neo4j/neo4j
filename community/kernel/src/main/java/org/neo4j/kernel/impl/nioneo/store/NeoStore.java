@@ -30,6 +30,7 @@ import org.neo4j.kernel.Config;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 
 /**
  * This class contains the references to the "NodeStore,RelationshipStore,
@@ -105,7 +106,7 @@ public class NeoStore extends AbstractStore
 
     private void tryToUpgradeStores()
     {
-        // Upgrade process triggered from here
+        new StoreUpgrader( getStorageFileName(), getConfig() );
     }
 
     /**
