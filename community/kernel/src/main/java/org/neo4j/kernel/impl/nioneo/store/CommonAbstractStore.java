@@ -175,19 +175,21 @@ public abstract class CommonAbstractStore
         else if ( !isReadOnly() )
         {
             setStoreNotOk();
+            return;
         }
         getFileChannel().read( buffer );
         String foundTypeDescriptorAndVersion = UTF8.decode( bytes );
 
-        if (foundTypeDescriptorAndVersion.startsWith( getTypeDescriptor() )) {
-            if ( !expectedTypeDescriptorAndVersion.equals( foundTypeDescriptorAndVersion ) )
+        if ( !expectedTypeDescriptorAndVersion.equals( foundTypeDescriptorAndVersion ) && !isReadOnly() )
+        {
+            if ( foundTypeDescriptorAndVersion.startsWith( getTypeDescriptor() ) )
             {
                 throw new NotCurrentStoreVersionException( ALL_STORES_VERSION, foundTypeDescriptorAndVersion, "", false );
             }
-        }
-        else
-        {
-            setStoreNotOk();
+            else
+            {
+                setStoreNotOk();
+            }
         }
     }
 
