@@ -496,49 +496,6 @@ the relevant Commercial Agreement.
           </execution>
         </executions>
       </plugin>
-      
-      <plugin>
-        <groupId>com.voltvoodoo</groupId>
-        <artifactId>brew</artifactId>
-        <version>0.2.7</version>
-        <executions>
-          <execution>
-            <id>compile-webadmin</id>
-            <goals>
-              <goal>compile</goal>
-            </goals>
-            <phase>compile</phase>
-          </execution>
-          <execution>
-            <id>minify-webadmin</id>
-            <goals>
-              <goal>optimize</goal>
-            </goals>
-            <phase>process-classes</phase>
-          </execution>
-        </executions>
-        <configuration>
-          <modules>
-            <module>
-              <name>webadmin</name>
-              <exclude>
-                <exclude>lib/arbor.js</exclude>
-              </exclude>
-            </module>
-            <module>
-              <name>visualization</name>
-              <exclude>
-                <exclude>lib/arbor.js</exclude>
-              </exclude>
-            </module>
-          </modules>
-          <coffeeOutputDir>${project.build.outputDirectory}/webadmin-html/js</coffeeOutputDir>
-          <hamlOutputDir>${project.build.outputDirectory}/webadmin-html/js</hamlOutputDir>
-          
-          <optimizeSourceDir>${project.build.outputDirectory}/webadmin-html/js</optimizeSourceDir>
-          <optimizeOutputDir>${project.build.outputDirectory}/webadmin-html/js</optimizeOutputDir>
-        </configuration>
-      </plugin>
     </plugins>
 
     <pluginManagement>
@@ -670,6 +627,56 @@ the relevant Commercial Agreement.
             </configuration>
           </plugin>
 
+        </plugins>
+      </build>
+    </profile>
+    
+    <profile>
+      <id>webadmin</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.voltvoodoo</groupId>
+            <artifactId>brew</artifactId>
+            <version>0.2.7</version>
+            <executions>
+              <execution>
+                <id>compile-webadmin</id>
+                <goals>
+                  <goal>compile</goal>
+                </goals>
+                <phase>compile</phase>
+              </execution>
+              <execution>
+                <id>minify-webadmin</id>
+                <goals>
+                  <goal>optimize</goal>
+                </goals>
+                <phase>process-classes</phase>
+              </execution>
+            </executions>
+            <configuration>
+              <modules>
+                <module>
+                  <name>webadmin</name>
+                  <exclude>
+                    <exclude>lib/arbor.js</exclude>
+                  </exclude>
+                </module>
+                <module>
+                  <name>visualization</name>
+                  <exclude>
+                    <exclude>lib/arbor.js</exclude>
+                  </exclude>
+                </module>
+              </modules>
+              <coffeeOutputDir>${project.build.outputDirectory}/webadmin-html/js</coffeeOutputDir>
+              <hamlOutputDir>${project.build.outputDirectory}/webadmin-html/js</hamlOutputDir>
+              
+              <optimizeSourceDir>${project.build.outputDirectory}/webadmin-html/js</optimizeSourceDir>
+              <optimizeOutputDir>${project.build.outputDirectory}/webadmin-html/js</optimizeOutputDir>
+            </configuration>
+          </plugin>
         </plugins>
       </build>
     </profile>
