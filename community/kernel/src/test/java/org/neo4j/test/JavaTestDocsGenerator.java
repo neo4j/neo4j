@@ -133,7 +133,34 @@ public class JavaTestDocsGenerator extends AsciiDocGenerator
     public void addSnippet( String key, String content )
     {
         snippets.put( key, content );
-
     }
 
+    /**
+     * Added one or more source snippets, available from javadoc using
+     * @@tagName.
+     * 
+     * @param source the class where the snippet is found
+     * @param tagNames the tag names which should be included
+     */
+    public void addSourceSnippets( Class<?> source, String... tagNames )
+    {
+        for ( String tagName : tagNames )
+        {
+            addSnippet( tagName, createSourceSnippet( tagName, source ) );
+        }
+    }
+
+    public void addGithubLink( String key, Class<?> source, String repo,
+            String dir )
+    {
+        String path = "https://github.com/" + repo
+                         + "/blob/{neo4j-git-tag}/";
+        if ( dir != null )
+        {
+            path += dir + "/";
+        }
+        path += "src/test/java/" + getPath( source );
+        path += "[" + source.getSimpleName() + ".java]";
+        addSnippet( key, path );
+    }
 }

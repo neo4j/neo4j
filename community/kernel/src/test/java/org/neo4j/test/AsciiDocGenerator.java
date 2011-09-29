@@ -136,15 +136,18 @@ public abstract class AsciiDocGenerator
         }
     }
     
-    public static String createSourceSnippet(String tagName, Class source )
+    public static String createSourceSnippet( String tagName, Class<?> source )
     {
-        return "[snippet,java]\n"+
-                "----\n" +
-                "component=${project.artifactId}\n"+
-                "source="+ source.getPackage().getName().replace( ".", "/" ) + "/" + source.getSimpleName() + ".java\n"+
-                "classifier=test-sources\n"+
-                "tag="+tagName+"\n"+
-                "----\n";
+        return "[snippet,java]\n" + "----\n"
+               + "component=${project.artifactId}\n" + "source="
+               + getPath( source ) + "\n" + "classifier=test-sources\n"
+               + "tag=" + tagName + "\n" + "----\n";
     }
 
+    public static String getPath( Class<?> source )
+    {
+        return source.getPackage()
+                .getName()
+                .replace( ".", "/" ) + "/" + source.getSimpleName() + ".java";
+    }
 }
