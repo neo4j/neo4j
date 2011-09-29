@@ -27,7 +27,15 @@ define(
   (LocalModel, Nano, forms, View) ->
     exports = {}
     
-    LABEL_PATTERN_TOOLTIP = """You can use placeholders here.<br/>{id} for node id<br/>{prop.PROPERTYNAME} for properties.<br/><br/>Use ";" to create multiline labels.<br/><br/>Example: "id: {id};name: {prop.name}"
+    LABEL_PATTERN_TOOLTIP = """You can use properties in the label.<br/>
+{id} for node id<br/>
+{prop.PROPERTYNAME} for properties.<br/><br/>
+<b>Truncate values</b><br/>
+{prop.bigproperty|truncate:10}<br/><br/>
+<b>Multiline labels</b><br/>
+Use ";" to create multiline labels.<br/><br/>
+<b>Example</b><br/>
+{id};{prop.description|truncate:20}..
 """
     
     class BoxOrCircleStyleForm extends forms.ModelForm

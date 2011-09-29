@@ -144,13 +144,6 @@ define(
           tooltip : tooltipHtml
         }
         
-        wrappedTriggerValueChange = (val) =>
-          try
-            @setErrors []
-            triggerValueChange @cleanValue val
-          catch e
-            @setErrors [e.errorMessage]
-        
         @widget = @renderWidget()
         $('.__PLACEHOLDER__', @el).replaceWith(@widget)
         
@@ -210,7 +203,7 @@ define(
     exports.TextField = class TextField extends Field
 
       renderWidget : () =>
-        el = $ "<input type='text' value='' />"
+        el = $ "<input type='text' class='form-input' value='' />"
         el.change () => @setModelValue el.val()
         el
     
@@ -226,7 +219,7 @@ define(
     exports.ImageURLField = class ImageURLField extends Field
 
       renderWidget : () =>
-        @urlInput = $ "<input type='text' value='' />"
+        @urlInput = $ "<input type='text' class='form-input' value='' />"
         @urlInput.change () => 
           @setModelValue @urlInput.val()
           @updateImageElementUrl @urlInput.val()
@@ -234,26 +227,31 @@ define(
         @imageElement = $ "<img class='form-image-url-field-preview'/>"
         
         wrap = $ "<div class='form-image-url-field'></div>"
+        metaBar = $ "<div class='form-image-url-field-metabar'></div>"
+        metaBar.append "<span class='form-image-url-field-preview-title small'>Preview:</span>"
+        
         wrap.append @urlInput
-        wrap.append @imageElement
+        wrap.append metaBar
         
         if @opts['imageUrls']?
-          imagePicker ?= new ImagePicker(@opts['imageUrls'])
-          $(imagePicker.el).addClass "imagepicker-dialog"
-          @dialog ?= new Dialog imagePicker
+        
+          @imagePicker ?= new ImagePicker(@opts['imageUrls'])
+          $(@imagePicker.el).addClass "imagepicker-dialog"
+          @dialog ?= new Dialog @imagePicker
           @dialog.el.prepend "<h1>Pick an image you like</h1>"
           
-          neo4j.log imagePicker
-          imagePicker.bind 'image:clicked', (ev) =>
+          @imagePicker.bind 'image:clicked', (ev) =>
             @setUIValue ev.url
             @setModelValue ev.url
             @dialog.hide()
             
-          pickerButton = $ "<a href='#' class='micro-button'>Built in images</a>"
+          pickerButton = $ "<a href='#' class='form-image-url-field-builtin micro-button'>Built in images</a>"
           pickerButton.click (ev) => 
             ev.preventDefault()
             @dialog.show()
-          wrap.append pickerButton
+          metaBar.append pickerButton
+          
+        wrap.append @imageElement
         
         wrap
       
@@ -275,7 +273,7 @@ define(
           onBeforeShow: () ->
             color = new RGBColor(el.css 'background-color')
             el.ColorPickerSetColor color.toHex()
-          onHide: (hsb, hex, rgb) ->
+          onHide: (hsb, hex, rgb) =>
             color = new RGBColor(el.css 'background-color')
             @setModelValue color.toRGB()
         el

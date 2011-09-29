@@ -16,13 +16,16 @@ input {
   -moz-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.8) inset;
   -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.8) inset;
   padding: 4px 2px;
-  width: 190px;
 }
 
 input.small {
   height: 14px;
   line-height: 15px;
   width: 100px;
+}
+
+input.form-input {
+  width: 190px;
 }
 
 input.big {
@@ -170,6 +173,16 @@ button {
   display:block;
 }
 
+/* FORM IMAGE FIELD */
+
+.form-image-url-field-metabar {
+  padding: 5px 0;
+}
+
+.form-image-url-field-builtin {
+  float:right;
+}
+
 /* ERRORS */
 
 .form-error {
@@ -179,6 +192,12 @@ button {
   line-height: 12px;
   padding: 4px 2px 4px 20px;
   font-weight:bold;
+}
+
+/* FORM CHOOSER FIELD */
+
+.form-chooser-form-container .form-fieldset:first-child {
+  padding:0;
 }
 
 /* IMAGE PICKER */

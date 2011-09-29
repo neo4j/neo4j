@@ -116,7 +116,7 @@ define(
                   @dataModel.ungroup filteredNodes
                   @_synchronizeUiWithData()
 
-                dialog = new NodeFilterDialog { nodes : nodes, completeCallback : completeCallback, labelProperties : @labelProperties }
+                dialog = new NodeFilterDialog nodes, completeCallback
                 dialog.show()
 
 

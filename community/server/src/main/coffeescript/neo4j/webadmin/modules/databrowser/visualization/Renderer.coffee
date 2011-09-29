@@ -113,7 +113,7 @@ define(
             
             if ns.alpha?
               fadeStyle = { alpha:1-ns.alpha, fill:@bgColor }
-              @gfx.rect(centerX, centerY, icon.width, icon.height, 4, fadeStyle)
+              @gfx.rect(centerX, centerY, icon.width, icon.height, 0, fadeStyle)
           catch e
             # Throws errors when image is drawn outside of canvas, ignore
           @nodeBoxes[node.name] = [centerX, centerY, icon.width,icon.height]
@@ -126,7 +126,10 @@ define(
         if labels
           @ctx.textAlign = "center"
           @ctx.fillStyle = style.labelStyle.color
-          yOffset = (h/-2) + lineHeight
+          if style.shapeStyle.shape is 'icon'
+            yOffset = h + 2
+          else
+            yOffset = (h/-2) + lineHeight
           for label in labels
             @ctx.fillText(label||"", pt.x, pt.y+yOffset)
             yOffset += lineHeight
