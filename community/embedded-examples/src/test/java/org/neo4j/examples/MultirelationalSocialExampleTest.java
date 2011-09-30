@@ -56,7 +56,7 @@ public class MultirelationalSocialExampleTest extends AbstractJavaDocTestbase
         data.get();
         gen.get().addSnippet( "graph1", createGraphViz("Multi-relational social network", graphdb(), gen.get().getTitle()) );
         String query = "START me=(node_auto_index,'name:Joe') " +
-        		"MATCH me-[r]->other-[r]->me WHERE type(r) =~ /FOLLOWS|LIKES/ RETURN me, other, type(r) ";
+        		"MATCH me-[r1]->other-[r2]->me WHERE type(r1)=type(r2) AND type(r1) =~ /FOLLOWS|LIKES/ RETURN me, other, type(r) ";
         String result = engine.execute( parser.parse( query ) ).toString();
         gen.get().addSnippet( "query1", createCypherSnippet( query ) );
         gen.get().addSnippet( "result1", createOutputSnippet( result ) );
