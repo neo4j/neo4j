@@ -115,7 +115,7 @@ public class CommonFactories
                 return false;
             }
             
-            public void finishTransaction( int eventIdentifier )
+            public void finishTransaction( int eventIdentifier, boolean success )
             {
                 // Do nothing from the ordinary here
             }

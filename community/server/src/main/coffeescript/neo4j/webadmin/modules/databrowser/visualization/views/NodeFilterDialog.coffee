@@ -35,21 +35,15 @@ define(
         'click .cancel'    : 'cancel'
 
       w : ->
-        alert "BLURG!"
-
-      initialize : (opts) ->
-        @completeCallback = opts.completeCallback
+      
+      constructor : (@nodes, @completeCallback, labelProperties = []) ->
+        super()
+        
         @urlResolver = new ItemUrlResolver()
-
-        labelProperties = opts.labelProperties or []
-
-        @nodes = opts.nodes
+        
         filterableItems = for node in @nodes
           id = @urlResolver.extractNodeId(node.getSelf())
-          label = id
-          for labelProp in labelProperties
-            if node.hasProperty(labelProp)
-              label = "#{id}: " + JSON.stringify node.getProperty(labelProp)
+          label = "#{id}: " + JSON.stringify node.getProperties()
           { node : node, key : node.getSelf(), label : label }
 
         @filterList = new FilterList(filterableItems)

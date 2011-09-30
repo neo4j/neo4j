@@ -25,5 +25,5 @@ public interface TxFinishHook
 {
     boolean hasAnyLocks( Transaction tx );
     
-    void finishTransaction( int eventIdentifier );
+    void finishTransaction( int eventIdentifier, boolean success );
 }

@@ -20,7 +20,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 define(
   ['./Renderer'
-   './NodeStyler'
    './RelationshipStyler'
    './VisualDataModel'
    './views/NodeFilterDialog'
@@ -28,7 +27,7 @@ define(
    'order!lib/arbor'
    'order!lib/arbor-graphics'
    'order!lib/arbor-tween'],
-  (Renderer, NodeStyler, RelationshipStyler, VisualDataModel, NodeFilterDialog) ->
+  (Renderer, RelationshipStyler, VisualDataModel, NodeFilterDialog) ->
 
     class VisualGraph
 
@@ -37,7 +36,6 @@ define(
 
         @labelProperties = []
 
-        @nodeStyler = new NodeStyler()
         @relationshipStyler = new RelationshipStyler()
 
         @dataModel = new VisualDataModel()
@@ -55,7 +53,7 @@ define(
 
         @stop()
 
-        @sys.renderer = new Renderer(@el, @nodeStyler, @relationshipStyler)
+        @sys.renderer = new Renderer(@el, @relationshipStyler)
         @sys.renderer.bind "node:click", @nodeClicked
         @sys.renderer.bind "node:dropped", @nodeDropped
         @sys.screenPadding(20)
@@ -116,7 +114,7 @@ define(
                   @dataModel.ungroup filteredNodes
                   @_synchronizeUiWithData()
 
-                dialog = new NodeFilterDialog { nodes : nodes, completeCallback : completeCallback, labelProperties : @labelProperties }
+                dialog = new NodeFilterDialog nodes, completeCallback
                 dialog.show()
 
 
@@ -126,13 +124,6 @@ define(
             altKey:event.altKey, ctrlKey:event.ctrlKey, metaKey:event.metaKey,
             button:event.button,
         })
-
-      setLabelProperties : (labelProps) ->
-        @nodeStyler.setLabelProperties(labelProps)
-        @labelProperties = labelProps
-
-      getNodeStyler : () =>
-        @nodeStyler
 
       reflow : () =>
         @sys.eachNode @floatNode
@@ -173,7 +164,34 @@ define(
         for url, visualNode of @dataModel.getVisualGraph().nodes
           @profile.styleNode visualNode
         
-        @sys.merge @dataModel.getVisualGraph()
-        @start()
+        @_preloadIcons () =>
+          @sys.merge @dataModel.getVisualGraph()
+          @start()
+        
+      _preloadIcons : (done) ->
+        @_images ?= {}
+        
+        @imagesLoading ?= 0
+        hasGoneThroughAllNodes = false
+        
+        for url, visualNode of @dataModel.getVisualGraph().nodes
+          style = visualNode.style
+          if style.shapeStyle.shape is "icon"
+            url = style.iconUrl
+            if not @_images[url]?
+              img = new Image()
+              img.src = url
+              @_images[url] = img
+              
+              @imagesLoading += 1
+              img.onload = () =>
+                @imagesLoading -= 1
+                if @imagesLoading == 0 and hasGoneThroughAllNodes
+                  done()
+              
+            style.icon = @_images[url]
+        
+        hasGoneThroughAllNodes = true
+        if @imagesLoading == 0 then done()
 
 )

@@ -24,6 +24,10 @@ input.small {
   width: 100px;
 }
 
+input.form-input {
+  width: 190px;
+}
+
 input.big {
   width: 300px;
 }
@@ -69,7 +73,7 @@ button {
 .form-fieldset {
   list-style:none;
   margin: 0;
-  padding: 0;
+  padding: 0 5px 0;
   width: 200px;
 }
 
@@ -77,9 +81,19 @@ button {
   padding: 2px 2px 4px;
 }
 
+/* LABELS */
+
+.form-label {
+  line-height: 24px;
+  display: inline;
+  padding:0;
+  font-weight:normal;
+  float:none;
+}
+
 /* SORTABLE LISTS */
 
-.sortHandle {
+.form-sort-handle {
   background: url("../img/icons/glyphish/draggable.png") no-repeat scroll 0 0 transparent;
   border: 1px solid #ccc;
   border-radius: 3px 3px 3px 3px;
@@ -88,12 +102,123 @@ button {
   width: 24px;
 }
 
-/* TOOLTIP */
+/* HELP */
+
+.form-help-text {
+  color: #444;
+  font-size:11px;
+}
 
 .form-tooltip {
-  color: #444444;
-  font-size: 11px;
-  padding: 2px 0;
+  font-size: 12px;
+  padding: 3px 0;
+  float:right;
+}
+
+.form-tooltip a {
+  display: block;
+  cursor: pointer;
+  position:relative;
+}
+
+.form-tooltip a .form-tooltip-icon {
+  background: url("../img/icons/16x16/apps/help-browser.png") no-repeat scroll center center transparent;
+  display: block;
+  height: 18px;
+  text-decoration: none;
+  width: 20px;
+  border: 1px solid transparent;
+  border-bottom:none;
+  left: -22px;
+  position: absolute;
+}
+
+.form-tooltip a .form-tooltip-text {
+  
+  background: none repeat scroll 0 0 #EFEFEF;
+  border: 1px solid #AAAAAA;
+  box-shadow: 0 0 8px 0 #888888;
+  color: #444;
+  
+  display:none;
+  
+  padding: 5px 10px;
+  position: absolute;
+  text-decoration: none !important;
+  z-index:100;
+  right:0;    
+  top: 18px;
+  
+  width:200px;
+
+  -moz-border-radius:4px;
+  -webkit-border-radius:4px;
+  border-radius:4px;
+  border-top-right-radius:0px
+  
+}
+
+.form-tooltip a:hover .form-tooltip-icon {
+  background-color: #EFEFEF;
+  border: 1px solid #AAAAAA;
+  border-bottom:none;
+  border-top-right-radius:4px;
+  border-top-left-radius:4px;
+  z-index:101;
+  
+  box-shadow: 0 -2px 2px 0 #888888;
+}
+
+.form-tooltip a:hover .form-tooltip-text {
+  display:block;
+}
+
+/* FORM IMAGE FIELD */
+
+.form-image-url-field-metabar {
+  padding: 5px 0;
+}
+
+.form-image-url-field-builtin {
+  float:right;
+}
+
+/* ERRORS */
+
+.form-error {
+  background: url("../img/icons/16x16/status/dialog-error.png") no-repeat scroll left center transparent;
+  color: #8A0000;
+  font-size: 10px;
+  line-height: 12px;
+  padding: 4px 2px 4px 20px;
+  font-weight:bold;
+}
+
+/* FORM CHOOSER FIELD */
+
+.form-chooser-form-container .form-fieldset:first-child {
+  padding:0;
+}
+
+/* IMAGE PICKER */
+
+.imagepicker-image {
+  border: 1px solid #EEEEEE;
+  padding: 10px;
+  margin:5px;
+  border-radius:2px;
+  cursor:pointer;
+  width: 25px;
+  height:25px;
+}
+
+.imagepicker-image:hover {
+  border-color: #333;
+}
+
+.imagepicker-dialog {
+  width: 460px;
+  margin:0 auto !important;
 }
 
 /* DROPDOWN */
@@ -102,6 +227,7 @@ button {
   background: none repeat scroll 0 0 #EFEFEF;
   border: 1px solid #AAAAAA;
   box-shadow: 0 0 8px 0 #888888;
+  border-radius:2px;  
 }
 
 .dropdown > ul {
@@ -147,4 +273,20 @@ button {
 
 .dropdown-controls {
   float:right;
+}
+
+/* GRID */
+
+.grid, .grid > li > ul {
+  list-style:none;
+  padding:0;
+  margin:0;
+}
+
+.grid > li {
+  clear:both;
+}
+
+.grid > li > ul > li {
+  float: left;
 }

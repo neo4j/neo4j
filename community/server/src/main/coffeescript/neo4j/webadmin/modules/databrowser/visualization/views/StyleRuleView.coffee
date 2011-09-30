@@ -56,8 +56,8 @@ define(
         
       renderStyleView : () ->
         StyleView = @rule.getStyle().getViewClass()
-        styleView = new StyleView( model : @rule.getStyle() )
-        $('.ruleStyle',@el).append(styleView.render().el)
+        @styleView = new StyleView( model : @rule.getStyle() )
+        $('.ruleStyle',@el).append(@styleView.render().el)
         
       targetChanged : (ev) ->
         @rule.setTarget $(ev.target).val()
@@ -75,4 +75,7 @@ define(
         FilterView = filter.getViewClass()
         view = new FilterView( {filter : filter, filters:@rule.filters} )
         @filterContainer.append view.render().el
+        
+      validates : () ->
+        @styleView.validates()
 )

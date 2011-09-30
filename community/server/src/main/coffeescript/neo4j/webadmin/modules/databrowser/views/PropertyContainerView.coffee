@@ -87,11 +87,18 @@ define(
           id =$(row).find("input.property-id").val()
           prop = @propertyContainer.getProperty(id)
           if prop
-            keyError = if prop.hasKeyError() then prop.getKeyError() else ""
-            valueError = if prop.hasValueError() then prop.getValueError() else ""
-            $(row).find(".property-key-wrap .error").html(keyError)
-            $(row).find(".property-value-wrap .error").html(valueError)
-
+            keyErrorEl = $(row).find(".property-key-wrap .form-error")
+            valueErrorEl = $(row).find(".property-value-wrap .form-error")
+            if prop.hasKeyError() 
+              keyErrorEl.html(prop.getKeyError())
+              keyErrorEl.show()
+            else keyErrorEl.hide()
+            
+            if prop.hasValueError() 
+              valueErrorEl.html(prop.getValueError())
+              valueErrorEl.show()
+            else valueErrorEl.hide()
+            
       updateSaveState : (ev) =>
         state = @propertyContainer.getSaveState()
         switch state
