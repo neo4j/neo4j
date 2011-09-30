@@ -74,7 +74,10 @@ public class PropertyFileConfigurator implements Configurator
             propertyFileDirectory = propertiesFile.getParentFile();
             loadPropertiesConfig( propertiesFile );
             loadDatabaseTuningProperties( propertiesFile );
+            
             normalizeUris();
+            ensureRelativeUris();
+            
             if ( v != null )
             {
                 v.validate( this.configuration() );
@@ -154,6 +157,28 @@ public class PropertyFileConfigurator implements Configurator
                     URI normalizedUri = new URI( (String) configuration().getProperty( key ) ).normalize();
                     configuration().clearProperty( key );
                     configuration().addProperty( key, normalizedUri.toString() );
+                }
+            }
+
+        }
+        catch ( URISyntaxException e )
+        {
+            throw new RuntimeException( e );
+        }
+
+    }
+
+    private void ensureRelativeUris()
+    {
+        try
+        {
+            for ( String key : new String[] { MANAGEMENT_PATH_PROPERTY_KEY, REST_API_PATH_PROPERTY_KEY } )
+            {
+                if ( configuration().containsKey( key ) )
+                {
+                    String path = new URI( (String) configuration().getProperty( key ) ).getPath();
+                    configuration().clearProperty( key );
+                    configuration().addProperty( key, path );
                 }
             }
 

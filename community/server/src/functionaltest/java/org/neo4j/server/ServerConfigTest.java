@@ -78,4 +78,5 @@ public class ServerConfigTest
         assertEquals( 200, response.getStatus() );
         response.close();
     }
+
 }

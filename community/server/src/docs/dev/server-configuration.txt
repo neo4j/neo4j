@@ -46,20 +46,18 @@ Set the location of the round-robin database directory which gathers metrics on 
 org.neo4j.server.webadmin.rrdb.location=data/graph.db/../rrd
 ----
 
-Set the URI path for the REST data API through which the database is accessed. For non-local access, use the full URI of your server e.g. http://example.org:7575/database. For local access use a relative URI, e.g. /db/data
+Set the URI path for the REST data API through which the database is accessed. This should be a relative path.
 [source]
 ----
 org.neo4j.server.webadmin.data.uri=/db/data/
 ----
 
-Setting the management URI for the administration API that the Webadmin tool uses. For non-local access, use the full URI of your server e.g. http://example.org:7575/database/management. For local access use a relative URI, e.g. /db/manage
-
+Setting the management URI for the administration API that the Webadmin tool uses. This should be a relative path.
 [source]
 ----
 org.neo4j.server.webadmin.management.uri=/db/manage
 ----
 
-If you plan to connect to the Webadmin from other than localhost, put in the external hostname of your server instead of localhost, e.g. http://my.host:7474/db/manage.
 Force the server to use IPv4 network addresses, in 'conf/neo4j-wrapper.conf' under the section _Java Additional Parameters_ add a new paramter:
 [source]
 ----
