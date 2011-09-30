@@ -25,14 +25,14 @@ import org.neo4j.graphdb._
 import org.neo4j.kernel.{Uniqueness, Traversal}
 
 class PatternRelationship(key: String,
-                          val leftNode: PatternNode,
-                          val rightNode: PatternNode,
+                          val startNode: PatternNode,
+                          val endNode: PatternNode,
                           relType: Option[String],
                           dir: Direction,
                           val optional: Boolean)
   extends PatternElement(key) {
 
-  def getOtherNode(node: PatternNode) = if (leftNode == node) rightNode else leftNode
+  def getOtherNode(node: PatternNode) = if (startNode == node) endNode else startNode
 
   def getGraphRelationships(node: PatternNode, realNode: Node): Seq[GraphRelationship] = {
     (relType match {
@@ -43,8 +43,8 @@ class PatternRelationship(key: String,
 
   protected def getDirection(node: PatternNode): Direction = {
     dir match {
-      case Direction.OUTGOING => if (node == leftNode) Direction.OUTGOING else Direction.INCOMING
-      case Direction.INCOMING => if (node == rightNode) Direction.OUTGOING else Direction.INCOMING
+      case Direction.OUTGOING => if (node == startNode) Direction.OUTGOING else Direction.INCOMING
+      case Direction.INCOMING => if (node == endNode) Direction.OUTGOING else Direction.INCOMING
       case Direction.BOTH => Direction.BOTH
     }
   }

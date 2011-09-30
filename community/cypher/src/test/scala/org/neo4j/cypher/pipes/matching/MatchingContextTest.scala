@@ -51,7 +51,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
 
 
 
-  @Ignore @Test def singleDirectedRel() {
+  @Test def singleDirectedRel() {
     val r = relate(a, b, "rel")
 
     val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.OUTGOING, false))

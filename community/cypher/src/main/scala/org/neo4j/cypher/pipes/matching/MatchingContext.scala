@@ -34,14 +34,22 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, cla
   }
 
   def getMatches(bindings: Map[String, Any]): Traversable[Map[String, Any]] = {
-    val boundPairs = bindings.map(kv => {
+    val boundPairs: Map[String, MatchingPair] = bindings.flatMap(kv => {
       val patternElement = patternGraph(kv._1)
-      val pair = kv._2 match {
-        case node: Node => MatchingPair(patternElement, node)
-        case rel: Relationship => MatchingPair(patternElement, rel)
-      }
 
-      kv._1 -> pair
+      kv._2 match {
+        case node: Node => {
+          Seq(kv._1 -> MatchingPair(patternElement, node))
+        }
+        case rel: Relationship => {
+          val pr = patternElement.asInstanceOf[PatternRelationship]
+
+          val t1 = pr.startNode.key -> MatchingPair(pr.startNode, rel.getStartNode)
+          val t2 = pr.endNode.key -> MatchingPair(pr.endNode, rel.getEndNode)
+
+          Seq(t1,t2)
+        }
+      }
     })
 
 
@@ -106,8 +114,8 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, cla
         x match {
           case nod: PatternNode => nod.relationships.foreach(visit)
           case rel: PatternRelationship => {
-            visit(rel.leftNode)
-            visit(rel.rightNode)
+            visit(rel.startNode)
+            visit(rel.endNode)
           }
         }
       }

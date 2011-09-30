@@ -85,7 +85,6 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     assertEquals(List(node), result.columnAs[Node]("node").toList)
   }
 
-  @Ignore("graph-matching doesn't support using relationships as start points. revisit when it does.")
   @Test def shouldGetRelationship() {
     val node: Node = createNode()
     val rel: Relationship = relate(refNode, node, "yo")
