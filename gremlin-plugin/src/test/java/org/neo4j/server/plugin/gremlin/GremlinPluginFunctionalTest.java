@@ -28,6 +28,7 @@ import java.net.URLEncoder;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
@@ -41,14 +42,17 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
 
     /**
      * Scripts can be sent as URL-encoded
+     * In this example, the graph has been autoindexed by Neo4j,
+     * so we can look up the name property on nodes.
      */
     @Test
     @Title("Send a Gremlin Script - URL encoded")
     @Documented
-    @Graph( value = { "I know you" } )
+    @Graph( value = { "I know you" }, autoIndexNodes=true )
     public void testGremlinPostURLEncoded() throws UnsupportedEncodingException
     {
-        String script = "i = g.v("+data.get().get( "I" ).getId() +");i.out";
+        data.get();
+        String script = "g.idx('node_auto_index')[[name:'I']].out";
         gen()
         .expectedStatus( Status.OK.getStatusCode() )
         .description( formatGroovy( script ) );
@@ -452,4 +456,19 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
         		"----\n";
     }
 
+    @Test
+    @Ignore
+    @Graph(value = {"A FOLLOW B", "B FOLLOW A", "B FOLLOW C"}, autoIndexNodes = true)
+    public void followers() throws UnsupportedEncodingException
+    {
+        String script = "i = g.v("+data.get().get( "B" ).getId() +").out('FOLLOW')";
+        gen()
+        .expectedStatus( Status.OK.getStatusCode() )
+        .description( formatGroovy( script ) );
+        String response = gen().payload( "script=" + URLEncoder.encode( script, "UTF-8") )
+        .payloadType( MediaType.APPLICATION_FORM_URLENCODED_TYPE )
+        .post( ENDPOINT )
+        .entity();
+        assertTrue(response.contains( "you" ));
+    }
 }

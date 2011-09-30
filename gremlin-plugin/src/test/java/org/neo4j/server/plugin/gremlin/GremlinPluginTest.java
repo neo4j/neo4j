@@ -225,6 +225,14 @@ public class GremlinPluginTest
                 "1",
                 json.format( GremlinPluginTest.executeTestScript( "x", (Map)parser.parse( "{\"x\" : 1}")) ) );
     }
+    
+    @Test
+    public void testExecuteScriptEmptyParams() throws ParseException
+    {
+        Assert.assertEquals(
+                "1",
+                json.format( GremlinPluginTest.executeTestScript( "1", (Map)parser.parse( "{}")) ) );
+    }
 
     @Test
     public void testMultilineScriptWithLinebreaks()
