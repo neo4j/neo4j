@@ -106,7 +106,7 @@ public class MasterImpl implements Master
                             try
                             {
                                 Transaction otherTx = suspendOtherAndResumeThis( entry.getKey() );
-                                rollbackThisAndResumeOther( otherTx, entry.getKey() );
+                                finishThisAndResumeOther( otherTx, entry.getKey(), false );
                                 msgLog.logMessage( "Rolled back old tx " + entry.getKey() + ", " + entry.getValue().first() + ", " + displayableTime );
                             }
                             catch ( IllegalStateException e )
@@ -269,12 +269,13 @@ public class MasterImpl implements Master
         }
     }
 
-    void rollbackThisAndResumeOther( Transaction otherTx, SlaveContext txId )
+    void finishThisAndResumeOther( Transaction otherTx, SlaveContext txId, boolean success )
     {
         try
         {
             TransactionManager txManager = graphDbConfig.getTxModule().getTxManager();
-            txManager.rollback();
+            if ( success ) txManager.commit();
+            else txManager.rollback();
             transactions.remove( txId );
             if ( otherTx != null )
             {
@@ -365,10 +366,10 @@ public class MasterImpl implements Master
         }
     }
 
-    public Response<Void> finishTransaction( SlaveContext context )
+    public Response<Void> finishTransaction( SlaveContext context, boolean success )
     {
         Transaction otherTx = suspendOtherAndResumeThis( context );
-        rollbackThisAndResumeOther( otherTx, context );
+        finishThisAndResumeOther( otherTx, context, success );
         return packResponse( context, null );
     }
 

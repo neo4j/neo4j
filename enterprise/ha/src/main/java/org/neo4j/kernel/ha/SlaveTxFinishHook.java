@@ -26,12 +26,12 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.transaction.TxFinishHook;
 
-public class SlaveTxRollbackHook implements TxFinishHook
+public class SlaveTxFinishHook implements TxFinishHook
 {
     private final Broker broker;
     private final ResponseReceiver receiver;
 
-    public SlaveTxRollbackHook( Broker broker, ResponseReceiver receiver )
+    public SlaveTxFinishHook( Broker broker, ResponseReceiver receiver )
     {
         this.broker = broker;
         this.receiver = receiver;
@@ -42,12 +42,12 @@ public class SlaveTxRollbackHook implements TxFinishHook
         return ((AbstractGraphDatabase) receiver).getConfig().getLockReleaser().hasLocks( tx );
     }
 
-    public void finishTransaction( int eventIdentifier )
+    public void finishTransaction( int eventIdentifier, boolean success )
     {
         try
         {
             receiver.receive( broker.getMaster().first().finishTransaction(
-                    receiver.getSlaveContext( eventIdentifier ) ) );
+                    receiver.getSlaveContext( eventIdentifier ), success ) );
         }
         catch ( ZooKeeperException e )
         {

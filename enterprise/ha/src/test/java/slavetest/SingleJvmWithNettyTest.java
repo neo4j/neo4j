@@ -42,6 +42,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.AbstractBroker;
@@ -150,7 +151,6 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         int counter = 0;
         while ( (line = reader.readLine()) != null )
         {
-            System.out.println( line );
             if ( line.contains( string ) ) counter++;
         }
         reader.close();
@@ -338,5 +338,44 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
             fail( "Shouldn't be able to commit here" );
         }
         catch ( TransactionFailureException e ) { /* Good */ }
+    }
+    
+    @Test
+    public void committsAndRollbacksCountCorrectlyOnMaster() throws Exception
+    {
+        initializeDbs( 1 );
+        GraphDatabaseService master = getMaster().getGraphDb();
+        GraphDatabaseService slave = getSlave( 0 );
+        
+        // A successful tx on the master should increment number of commits on master
+        Pair<Integer, Integer> masterTxsBefore = getTransactionCounts( master );
+        executeJobOnMaster( new CommonJobs.CreateNodeJob() );
+        assertEquals( Pair.of( masterTxsBefore.first()+1, masterTxsBefore.other() ), getTransactionCounts( master ) );
+
+        // A successful tx on slave should increment number of commits on master and slave
+        masterTxsBefore = getTransactionCounts( master );
+        Pair<Integer, Integer> slaveTxsBefore = getTransactionCounts( slave );
+        executeJob( new CommonJobs.CreateNodeJob(), 0 );
+        assertEquals( Pair.of( masterTxsBefore.first()+1, masterTxsBefore.other() ), getTransactionCounts( master ) );
+        assertEquals( Pair.of( slaveTxsBefore.first()+1, slaveTxsBefore.other() ), getTransactionCounts( slave ) );
+        
+        // An unsuccessful tx on master should increment number of rollbacks on master
+        masterTxsBefore = getTransactionCounts( master );
+        executeJobOnMaster( new CommonJobs.CreateNodeJob( false ) );
+        assertEquals( Pair.of( masterTxsBefore.first(), masterTxsBefore.other()+1 ), getTransactionCounts( master ) );
+
+        // An unsuccessful tx on slave should increment number of rollbacks on master and slave
+        masterTxsBefore = getTransactionCounts( master );
+        slaveTxsBefore = getTransactionCounts( slave );
+        executeJob( new CommonJobs.CreateNodeJob( false ), 0 );
+        assertEquals( Pair.of( masterTxsBefore.first(), masterTxsBefore.other()+1 ), getTransactionCounts( master ) );
+        assertEquals( Pair.of( slaveTxsBefore.first(), slaveTxsBefore.other()+1 ), getTransactionCounts( slave ) );
+    }
+
+    private Pair<Integer, Integer> getTransactionCounts( GraphDatabaseService master )
+    {
+        return Pair.of( 
+                ((AbstractGraphDatabase)master).getConfig().getTxModule().getCommittedTxCount(),
+                ((AbstractGraphDatabase)master).getConfig().getTxModule().getRolledbackTxCount() );
     }
 }

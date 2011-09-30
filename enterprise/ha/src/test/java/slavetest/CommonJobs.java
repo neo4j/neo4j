@@ -360,11 +360,23 @@ public abstract class CommonJobs
 
     public static class CreateNodeJob extends TransactionalJob<Long>
     {
+        private final boolean beSuccessful;
+        
+        public CreateNodeJob()
+        {
+            this( true );
+        }
+        
+        public CreateNodeJob( boolean beSuccessful )
+        {
+            this.beSuccessful = beSuccessful;
+        }
+        
         @Override
         protected Long executeInTransaction( GraphDatabaseService db, Transaction tx )
         {
             Node node = db.createNode();
-            tx.success();
+            if ( beSuccessful ) tx.success();
             return node.getId();
         }
     }

@@ -127,6 +127,17 @@ public abstract class Protocol
         return readString( buffer, buffer.readInt() );
     }
 
+    public static boolean readBoolean( ChannelBuffer buffer )
+    {
+        byte value = buffer.readByte();
+        switch ( value )
+        {
+        case 0: return false;
+        case 1: return true;
+        default: throw new ComException( "Invalid boolean value " + value );
+        }
+    }
+    
     public static String readString( ChannelBuffer buffer, int length )
     {
         char[] chars = new char[length];

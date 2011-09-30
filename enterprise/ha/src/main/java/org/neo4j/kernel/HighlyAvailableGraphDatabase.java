@@ -68,7 +68,7 @@ import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
 import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
 import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
 import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
-import org.neo4j.kernel.ha.SlaveTxRollbackHook;
+import org.neo4j.kernel.ha.SlaveTxFinishHook;
 import org.neo4j.kernel.ha.TimeUtil;
 import org.neo4j.kernel.ha.ZooKeeperLastCommittedTxIdSetter;
 import org.neo4j.kernel.ha.zookeeper.Machine;
@@ -561,7 +561,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 new SlaveIdGeneratorFactory( broker, this ),
                 new SlaveRelationshipTypeCreator( broker, this ),
                 new SlaveTxIdGeneratorFactory( broker, this ),
-                new SlaveTxRollbackHook( broker, this ),
+                new SlaveTxFinishHook( broker, this ),
                 new ZooKeeperLastCommittedTxIdSetter( broker ),
                 CommonFactories.defaultFileSystemAbstraction() );
         instantiateAutoUpdatePullerIfConfigSaysSo();

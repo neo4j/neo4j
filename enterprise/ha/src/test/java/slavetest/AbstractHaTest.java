@@ -70,6 +70,7 @@ public abstract class AbstractHaTest
     static final File PARENT_PATH = new File( "target"+File.separator+"havar" );
     static final File DBS_PATH = new File( PARENT_PATH, "dbs" );
     static final File SKELETON_DB_PATH = new File( DBS_PATH, "skeleton" );
+    protected static final int TEST_READ_TIMEOUT = 3;
 
     private boolean expectsResults;
     private int nodeCount;
@@ -202,7 +203,6 @@ public abstract class AbstractHaTest
                 otherNodes.remove( otherNode );
                 vNodeCount++;
             }
-            if ( !otherNodes.isEmpty() ) System.out.println( otherNodes );
             assertTrue( otherNodes.isEmpty() );
 
             if ( expectsResults )

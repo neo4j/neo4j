@@ -25,6 +25,7 @@ import static org.neo4j.com.Protocol.INTEGER_SERIALIZER;
 import static org.neo4j.com.Protocol.LONG_SERIALIZER;
 import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
 import static org.neo4j.com.Protocol.VOID_SERIALIZER;
+import static org.neo4j.com.Protocol.readBoolean;
 import static org.neo4j.com.Protocol.readString;
 import static org.neo4j.com.Protocol.writeString;
 
@@ -177,12 +178,13 @@ public class MasterClient extends Client<Master> implements Master
         });
     }
 
-    public Response<Void> finishTransaction( SlaveContext context )
+    public Response<Void> finishTransaction( SlaveContext context, final boolean success )
     {
         return sendRequest( HaRequestType.FINISH, context, new Serializer()
         {
             public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
             {
+                buffer.writeByte( success ? 1 : 0 );
             }
         }, VOID_DESERIALIZER );
     }
@@ -307,7 +309,7 @@ public class MasterClient extends Client<Master> implements Master
             public Response<Void> callMaster( Master master, SlaveContext context,
                     ChannelBuffer input, ChannelBuffer target )
             {
-                return master.finishTransaction( context );
+                return master.finishTransaction( context, readBoolean( input ) );
             }
         }, VOID_SERIALIZER, true ),
         GET_MASTER_ID_FOR_TX( new MasterCaller<Master, Integer>()

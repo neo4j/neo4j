@@ -55,7 +55,7 @@ public class MasterServer extends Server<Master, Void>
     @Override
     protected void finishOffChannel( Channel channel, SlaveContext context )
     {
-        getMaster().finishTransaction( context );
+        getMaster().finishTransaction( context, false );
     }
     
     @Override

@@ -46,7 +46,7 @@ public interface Master
     Response<Long> commitSingleResourceTransaction( SlaveContext context,
             String resource, TxExtractor txGetter );
 
-    Response<Void> finishTransaction( SlaveContext context );
+    Response<Void> finishTransaction( SlaveContext context, boolean success );
 
     Response<Void> pullUpdates( SlaveContext context );
 
