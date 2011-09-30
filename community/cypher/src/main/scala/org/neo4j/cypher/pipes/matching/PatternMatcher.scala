@@ -21,7 +21,7 @@ package org.neo4j.cypher.pipes.matching
 
 import org.neo4j.cypher.commands.Clause
 
-class PatternMatcher(startPoint: PatternNode, bindings: Map[String, MatchingPair], clauses:Seq[Clause]) extends Traversable[Map[String, Any]] {
+class PatternMatcher(startPoint: PatternNode, bindings: Map[String, MatchingPair], clauses: Seq[Clause]) extends Traversable[Map[String, Any]] {
 
   def foreach[U](f: (Map[String, Any]) => U) {
     traverseNode(MatchingPair(startPoint, startPoint.pinnedEntity.get), History(), bindings.values.toSeq, f)
@@ -41,7 +41,7 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, MatchingPair
     }
 
     val newHistory = history.add(current)
-    if(!isMatchSoFar(newHistory))
+    if (!isMatchSoFar(newHistory))
       return false
 
     val notYetVisited = getPatternRelationshipsNotYetVisited(pNode, history)
@@ -79,14 +79,14 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, MatchingPair
       val nextNode = rel.getOtherNode(gNode)
       val newHistory = history.add(MatchingPair(currentRel, rel))
 
-      if(isMatchSoFar(newHistory))
+      if (isMatchSoFar(newHistory))
         traverseNode(MatchingPair(nextPNode, nextNode), newHistory, remaining, yielder)
       else
         false
 
     }).foldLeft(false)(_ || _)
 
-    if(yielded) {
+    if (yielded) {
       return true
     }
 
@@ -97,10 +97,10 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, MatchingPair
     false
   }
 
-  private def isMatchSoFar(history:History):Boolean = {
+  private def isMatchSoFar(history: History): Boolean = {
     val m = history.toMap
     val validClause = clauses.filter(_.dependsOn.forall(m.contains))
-    validClause.forall( _.isMatch(m) )
+    validClause.forall(_.isMatch(m))
   }
 
   private def traverseNextNodeOrYield[U](remaining: Seq[MatchingPair], history: History, yielder: Map[String, Any] => U): Boolean = {
@@ -108,17 +108,16 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, MatchingPair
 
     if (remaining.isEmpty) {
       yieldThis(yielder, history)
-      true
-    }
-    else {
+    } else {
       traverseNode(remaining.head, history, remaining.tail, yielder)
     }
   }
 
-  private def yieldThis[U](yielder: Map[String, Any] => U, history: History) {
+  private def yieldThis[U](yielder: Map[String, Any] => U, history: History):Boolean= {
     debug(history, history.toMap)
 
     yielder(history.toMap)
+    true
   }
 
   private def getPatternRelationshipsNotYetVisited[U](patternNode: PatternNode, history: History): List[PatternRelationship] = history.filter(patternNode.relationships.toSet).toList

@@ -65,7 +65,7 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, cla
 
     boundIdentifiers.identifiers.foreach(_ match {
       case NodeIdentifier(nodeName) => patternNodeMap(nodeName) = new PatternNode(nodeName)
-      case _ => None
+      case _ =>
     })
 
     patterns.foreach(_ match {

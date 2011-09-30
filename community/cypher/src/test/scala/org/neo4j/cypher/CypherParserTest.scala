@@ -101,17 +101,6 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ValueReturnItem(EntityValue("a"))))
   }
 
-
-  @Test def shouldFilterOutNodesWithoutA() {
-    testQuery(
-      "start a = (1) where a.name = \"andres\" return a",
-      Query.
-        start(NodeById("a", 1)).
-        where(Equals(PropertyValue("a", "name"), Literal("andres"))).
-        returns(ValueReturnItem(EntityValue("a"))))
-  }
-
-
   @Test def shouldFilterOnPropWithDecimals() {
     testQuery(
       "start a = (1) where a.extractReturnItems = 3.1415 return a",

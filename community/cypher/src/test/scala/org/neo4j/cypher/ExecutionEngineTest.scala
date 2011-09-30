@@ -39,6 +39,18 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     assertEquals(List(refNode), result.columnAs[Node]("node").toList)
   }
 
+  @Test def shouldGetRelationshipById() {
+    val n = createNode()
+    val r = relate(n, refNode, "rel")
+
+    val query = Query.
+      start(RelationshipById("r", Literal(0))).
+      returns(ValueReturnItem(EntityValue("r")))
+
+    val result = execute(query)
+    assertEquals(List(r), result.columnAs[Relationship]("r").toList)
+  }
+
   @Test def shouldFilterOnGreaterThan() {
     val query = Query.
       start(NodeById("node", 0)).
@@ -350,12 +362,12 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
   }
 
   @Test def testOnlyIfPropertyExists() {
-    createNode(Map("prop"->"A"))
+    createNode(Map("prop" -> "A"))
     createNode()
 
     val result = parseAndExecute("start a=(1,2) where a.prop? = 'A' return a")
 
-    assert( 2 === result.toSeq.length )
+    assert(2 === result.toSeq.length)
   }
 
   @Test def shouldHandleComparisonBetweenNodeProperties() {

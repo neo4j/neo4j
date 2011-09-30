@@ -26,7 +26,7 @@ abstract sealed class StartItem(val variable:String)
 abstract class RelationshipStartItem(varName:String) extends StartItem(varName)
 abstract class NodeStartItem(varName:String) extends StartItem(varName)
 
-case class RelationshipById(varName:String, id: Long*) extends RelationshipStartItem(varName)
+case class RelationshipById(varName:String, value: Value) extends RelationshipStartItem(varName)
 case class RelationshipByIndex(varName:String, idxName: String, key:String, value: Any) extends RelationshipStartItem(varName)
 
 case class NodeByIndex(varName:String, idxName: String, key:Value, value: Value) extends NodeStartItem(varName)
@@ -35,4 +35,8 @@ case class NodeById(varName:String, value:Value) extends NodeStartItem(varName)
 
 object NodeById {
   def apply(varName:String, id: Long*) = new NodeById(varName, Literal(id))
+}
+
+object RelationshipById {
+  def apply(varName:String, id: Long*) = new RelationshipById(varName, Literal(id))
 }

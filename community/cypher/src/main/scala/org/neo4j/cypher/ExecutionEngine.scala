@@ -197,7 +197,7 @@ class ExecutionEngine(graph: GraphDatabaseService)
       })
 
     case NodeById(varName, id) => new StartPipe(lastPipe, varName, m => makeLongSeq(id(m), varName).map(graph.getNodeById))
-    case RelationshipById(varName, ids@_*) => new StartPipe(lastPipe, varName, ids.map(graph.getRelationshipById))
+    case RelationshipById(varName, id) => new StartPipe(lastPipe, varName, m => makeLongSeq(id(m), varName).map(graph.getRelationshipById))
   }
 
   private def addFilters(context: CurrentContext): CurrentContext =
