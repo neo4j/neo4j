@@ -161,8 +161,8 @@ public class StoreMigratorTest
             {
                 Node node1 = database.createNode();
                 Node node2 = database.createNode();
-                Relationship relationship = node1.createRelationshipTo( node2, withName( "REUSE" ) );
-                assertEquals( 0, relationship.getId() );
+                Relationship relationship1 = node1.createRelationshipTo( node2, withName( "REUSE" ) );
+                assertEquals( 0, relationship1.getId() );
                 transaction.success();
             } finally
             {

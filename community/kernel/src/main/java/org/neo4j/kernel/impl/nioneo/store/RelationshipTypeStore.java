@@ -118,7 +118,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
     {
         IdGeneratorFactory idGeneratorFactory = (IdGeneratorFactory) config.get(
                 IdGeneratorFactory.class );
-        createEmptyStore( fileName, buildTypeAndVersionDescriptor(TYPE_DESCRIPTOR), idGeneratorFactory );
+        createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), idGeneratorFactory );
         DynamicStringStore.createStore( fileName + ".names",
             TYPE_STORE_BLOCK_SIZE, idGeneratorFactory, IdType.RELATIONSHIP_TYPE_BLOCK );
         RelationshipTypeStore store = new RelationshipTypeStore(
@@ -398,49 +398,6 @@ public class RelationshipTypeStore extends AbstractStore implements Store
     {
         typeNameStore.updateHighId();
         this.updateHighId();
-    }
-
-    @Override
-    protected boolean versionFound( String version )
-    {
-        if ( !version.startsWith( "RelationshipTypeStore" ) )
-        {
-            // non clean shutdown, need to do recover with right neo
-            return false;
-        }
-//        if ( version.equals( "RelationshipTypeStore v0.9.3" ) )
-//        {
-//            rebuildIdGenerator();
-//            closeIdGenerator();
-//            return true;
-//        }
-//        String nineFiveVersionString = "RelationshipTypeStore v0.9.5";
-//        if ( version.equals( nineFiveVersionString ) )
-//        {
-//            try
-//            {
-//                long fileSize = getFileChannel().size();
-//                long recordCount = (fileSize - UTF8.encode( nineFiveVersionString ).length) / getRecordSize();
-//                // 0xFFFF magic -1
-//                if ( recordCount > 0xFFFF )
-//                {
-//                    throw new NotCurrentStoreVersionException( VERSION, VERSION, "Store version[" + version +
-//                            "] has " + recordCount + " different relationship types " +
-//                            "(limit is " + 0xFFFF + ") and can not be upgraded to a newer version.", false );
-//                }
-//            }
-//            catch ( IOException e )
-//            {
-//                throw new NotCurrentStoreVersionException(
-//                        VERSION, VERSION, "Unable to verify relationship type count, can not upgrade " +
-//                        "store from version[" + version + "]", false );
-//            }
-            return true;
-//        }
-//        throw new NotCurrentStoreVersionException( VERSION, VERSION, "Store version [" + version  +
-//            "]. Please make sure you are not running old Neo4j kernel " +
-//            " towards a store that has been created by newer version " +
-//            " of Neo4j.", false );
     }
 
     @Override

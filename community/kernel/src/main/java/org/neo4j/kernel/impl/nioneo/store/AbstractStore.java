@@ -120,82 +120,29 @@ public abstract class AbstractStore extends CommonAbstractStore
         super( fileName, config, idType );
     }
 
-//    public AbstractStore( String fileName )
-//    {
-//        super( fileName );
-//    }
-
-    @Override
-    protected void loadStorage()
+    protected int getEffectiveRecordSize()
     {
-        try
-        {
-            long fileSize = getFileChannel().size();
-            String expectedVersion = getTypeAndVersionDescriptor();
-            byte version[] = new byte[UTF8.encode( expectedVersion ).length];
-            ByteBuffer buffer = ByteBuffer.wrap( version );
-            if ( fileSize >= version.length )
-            {
-                getFileChannel().position( fileSize - version.length );
-            }
-            else if ( !isReadOnly() )
-            {
-                setStoreNotOk();
-            }
-            getFileChannel().read( buffer );
-            if ( !expectedVersion.equals( UTF8.decode( version ) ) && !isReadOnly() )
-            {
-                if ( !versionFound( UTF8.decode( version ) ) )
-                {
-                    setStoreNotOk();
-                }
-            }
-            if ( getRecordSize() != 0
-                && (fileSize - version.length) % getRecordSize() != 0  && !isReadOnly() )
-            {
-                setStoreNotOk();
-            }
-            if ( getStoreOk() && !isReadOnly() )
-            {
-                getFileChannel().truncate( fileSize - version.length );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( "Unable to load store "
-                + getStorageFileName(), e );
-        }
-        try
-        {
-            if ( !isReadOnly() || isBackupSlave() )
-            {
-                openIdGenerator();
-            }
-            else
-            {
-                openReadOnlyIdGenerator( getRecordSize() );
-            }
-        }
-        catch ( InvalidIdGeneratorException e )
+        return getRecordSize();
+    }
+
+    protected void readAndVerifyBlockSize() throws IOException
+    {
+        // record size is fixed for non-dynamic stores, so nothing to do here
+    }
+
+    protected void verifyFileSizeAndTruncate() throws IOException
+    {
+        int expectedVersionLength = UTF8.encode( buildTypeDescriptorAndVersion( getTypeDescriptor() ) ).length;
+        long fileSize = getFileChannel().size();
+        if ( getRecordSize() != 0
+            && (fileSize - expectedVersionLength) % getRecordSize() != 0  && !isReadOnly() )
         {
             setStoreNotOk();
         }
-        finally
+        if ( getStoreOk() && !isReadOnly() )
         {
-            if ( !getStoreOk() )
-            {
-                if ( getConfig() != null )
-                {
-                    String storeDir = (String) getConfig().get( "store_dir" );
-                    StringLogger msgLog = StringLogger.getLogger( storeDir );
-                    msgLog.logMessage( getStorageFileName() + " non clean shutdown detected", true );
-                }
-            }
+            getFileChannel().truncate( fileSize - expectedVersionLength );
         }
-        setWindowPool( new PersistenceWindowPool( getStorageFileName(),
-                getRecordSize(), getFileChannel(), calculateMappedMemory(
-                getConfig(), storageFileName ),
-            getIfMemoryMapped(), isReadOnly() && !isBackupSlave() ) );
     }
 
     /**

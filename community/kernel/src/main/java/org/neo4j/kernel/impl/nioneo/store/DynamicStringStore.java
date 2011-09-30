@@ -62,35 +62,4 @@ public class DynamicStringStore extends AbstractDynamicStore
         return super.nextBlockId();
     }
 
-    @Override
-    protected boolean versionFound( String version )
-    {
-        if ( !version.startsWith( "StringPropertyStore" ) )
-        {
-            // non clean shutdown, need to do recover with right neo
-            return false;
-        }
-//        if ( version.equals( "StringPropertyStore v0.9.3" ) )
-//        {
-//            rebuildIdGenerator();
-//            closeIdGenerator();
-//            return true;
-//        }
-        if ( version.equals( "StringPropertyStore v0.9.5" ) )
-        {
-            long blockSize = getBlockSize();
-            // 0xFFFF + 13 for inUse,length,prev,next
-            if ( blockSize > 0xFFFF+BLOCK_HEADER_SIZE )
-            {
-                throw new NotCurrentStoreVersionException( VERSION, VERSION, "Store version[" + version +
-                        "] has " + (blockSize - BLOCK_HEADER_SIZE) + " block size " +
-                        "(limit is " + 0xFFFF + ") and can not be upgraded to a newer version.", false );
-            }
-            return true;
-        }
-        throw new NotCurrentStoreVersionException( VERSION, VERSION, "Store version [" + version  +
-            "]. Please make sure you are not running old Neo4j kernel " +
-            " towards a store that has been created by newer version " +
-            " of Neo4j.", false );
-    }
 }

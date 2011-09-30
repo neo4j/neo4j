@@ -33,6 +33,7 @@ import org.neo4j.kernel.Config;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Contains common implementation for {@link AbstractStore} and
@@ -42,78 +43,14 @@ public abstract class CommonAbstractStore
 {
     public static final String ALL_STORES_VERSION = "v0.A.0";
 
-    public String getTypeAndVersionDescriptor()
-    {
-        return buildTypeAndVersionDescriptor( getTypeDescriptor() );
-    }
-
-    protected static String buildTypeAndVersionDescriptor( String typeDescriptor )
-    {
-        return typeDescriptor + " " + ALL_STORES_VERSION;
-    }
+    // default id generator grab size
+    protected static final int DEFAULT_ID_GRAB_SIZE = 50000;
 
     protected static final Logger logger = Logger
         .getLogger( CommonAbstractStore.class.getName() );
 
-    protected static long longFromIntAndMod( long base, long modifier )
-    {
-        return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base|modifier;
-    }
-
-    private long highestUpdateRecordId = -1;
-
-
-    /**
-     * Returns the type and version that identifies this store.
-     *
-     * @return This store's implementation type and version identifier
-     */
-    public abstract String getTypeDescriptor();
-
-    /**
-     * Called from the constructor after the end header has been checked. The
-     * store implementation can setup it's
-     * {@link PersistenceWindow persistence windows} and other resources that
-     * are needed by overriding this implementation.
-     * <p>
-     * This default implementation does nothing.
-     */
-    protected void initStorage()
-    {
-    }
-
-    protected boolean versionFound( String version )
-    {
-        return true;
-    }
-
-    /**
-     * This method should close/release all resources that the implementation of
-     * this store has allocated and is called just before the <CODE>close()</CODE>
-     * method returns. Override this method to clean up stuff created in
-     * {@link #initStorage()} method.
-     * <p>
-     * This default implementation does nothing.
-     */
-    protected void closeStorage()
-    {
-    }
-
-    /**
-     * Should do first validation on store validating stuff like version and id
-     * generator. This method is called by constructors.
-     */
-    protected abstract void loadStorage();
-
-    /**
-     * Should rebuild the id generator from scratch.
-     */
-    protected abstract void rebuildIdGenerator();
-
-    // default id generator grab size
-    protected static final int DEFAULT_ID_GRAB_SIZE = 50000;
-
     protected final String storageFileName;
+    private final IdType idType;
     private IdGeneratorFactory idGeneratorFactory = null;
     private IdGenerator idGenerator = null;
     private FileChannel fileChannel = null;
@@ -126,8 +63,7 @@ public abstract class CommonAbstractStore
 
     private boolean readOnly = false;
     private boolean backupSlave = false;
-
-    private final IdType idType;
+    private long highestUpdateRecordId = -1;
 
     /**
      * Opens and validates the store contained in <CODE>fileName</CODE>
@@ -170,20 +106,27 @@ public abstract class CommonAbstractStore
         initStorage();
     }
 
-    boolean isReadOnly()
+    public String getTypeAndVersionDescriptor()
     {
-        return readOnly;
+        return buildTypeDescriptorAndVersion( getTypeDescriptor() );
     }
 
-    boolean isBackupSlave()
+    protected static String buildTypeDescriptorAndVersion( String typeDescriptor )
     {
-        return backupSlave;
+        return typeDescriptor + " " + ALL_STORES_VERSION;
     }
 
-    protected FileSystemAbstraction getFileSystem()
+    protected static long longFromIntAndMod( long base, long modifier )
     {
-        return (FileSystemAbstraction) config.get( FileSystemAbstraction.class );
+        return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base|modifier;
     }
+
+    /**
+     * Returns the type and version that identifies this store.
+     *
+     * @return This store's implementation type and version identifier
+     */
+    public abstract String getTypeDescriptor();
 
     private void checkStorage()
     {
@@ -241,6 +184,143 @@ public abstract class CommonAbstractStore
                     "], this is usually caused by another Neo4j kernel already running in " +
                     "this JVM for this particular store" );
         }
+    }
+
+    /**
+     * Should do first validation on store validating stuff like version and id
+     * generator. This method is called by constructors.
+     */
+    protected void loadStorage()
+    {
+        try
+        {
+            verifyCorrectTypeDescriptorAndVersion();
+            readAndVerifyBlockSize();
+            verifyFileSizeAndTruncate();
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( "Unable to load storage "
+                + getStorageFileName(), e );
+        }
+        loadIdGenerator();
+
+        setWindowPool( new PersistenceWindowPool( getStorageFileName(),
+            getEffectiveRecordSize(), getFileChannel(), calculateMappedMemory( getConfig(), storageFileName ),
+            getIfMemoryMapped(), isReadOnly() && !isBackupSlave() ) );
+    }
+
+    protected abstract int getEffectiveRecordSize();
+
+    protected abstract void verifyFileSizeAndTruncate() throws IOException;
+
+    protected abstract void readAndVerifyBlockSize() throws IOException;
+
+    private void loadIdGenerator()
+    {
+        try
+        {
+            if ( !isReadOnly() || isBackupSlave() )
+            {
+                openIdGenerator();
+            }
+            else
+            {
+                openReadOnlyIdGenerator( getEffectiveRecordSize());
+            }
+        }
+        catch ( InvalidIdGeneratorException e )
+        {
+            setStoreNotOk();
+        }
+        finally
+        {
+            if ( !getStoreOk() )
+            {
+                if ( getConfig() != null )
+                {
+                    String storeDir = (String) getConfig().get( "store_dir" );
+                    StringLogger msgLog = StringLogger.getLogger( storeDir );
+                    msgLog.logMessage( getStorageFileName() + " non clean shutdown detected", true );
+                }
+            }
+        }
+    }
+
+    protected void verifyCorrectTypeDescriptorAndVersion() throws IOException
+    {
+        String expectedTypeDescriptorAndVersion = getTypeAndVersionDescriptor();
+        int length = UTF8.encode( expectedTypeDescriptorAndVersion ).length;
+        byte bytes[] = new byte[length];
+        ByteBuffer buffer = ByteBuffer.wrap( bytes );
+        long fileSize = getFileChannel().size();
+        if ( fileSize >= length )
+        {
+            getFileChannel().position( fileSize - length );
+        }
+        else if ( !isReadOnly() )
+        {
+            setStoreNotOk();
+            return;
+        }
+        getFileChannel().read( buffer );
+        String foundTypeDescriptorAndVersion = UTF8.decode( bytes );
+
+        if ( !expectedTypeDescriptorAndVersion.equals( foundTypeDescriptorAndVersion ) && !isReadOnly() )
+        {
+            if ( foundTypeDescriptorAndVersion.startsWith( getTypeDescriptor() ) )
+            {
+                throw new NotCurrentStoreVersionException( ALL_STORES_VERSION, foundTypeDescriptorAndVersion, "", false );
+            }
+            else
+            {
+                setStoreNotOk();
+            }
+        }
+    }
+
+    /**
+     * Should rebuild the id generator from scratch.
+     */
+    protected abstract void rebuildIdGenerator();
+
+    /**
+     * Called from the constructor after the end header has been checked. The
+     * store implementation can setup it's
+     * {@link PersistenceWindow persistence windows} and other resources that
+     * are needed by overriding this implementation.
+     * <p>
+     * This default implementation does nothing.
+     */
+    protected void initStorage()
+    {
+    }
+
+    /**
+     * This method should close/release all resources that the implementation of
+     * this store has allocated and is called just before the <CODE>close()</CODE>
+     * method returns. Override this method to clean up stuff created in
+     * {@link #initStorage()} method.
+     * <p>
+     * This default implementation does nothing.
+     */
+    protected void closeStorage()
+    {
+    }
+
+    boolean isReadOnly()
+    {
+        return readOnly;
+    }
+
+    boolean isBackupSlave()
+    {
+        return backupSlave;
+    }
+
+    protected FileSystemAbstraction getFileSystem()
+    {
+        return (FileSystemAbstraction) config.get( FileSystemAbstraction.class );
     }
 
     /**
@@ -696,5 +776,6 @@ public abstract class CommonAbstractStore
             setHighId( highId );
         }
     }
+
 
 }

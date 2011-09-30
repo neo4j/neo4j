@@ -122,9 +122,9 @@ public class PropertyIndexStore extends AbstractStore implements Store
 
     public static void createStore( String fileName, IdGeneratorFactory idGeneratorFactory )
     {
-        createEmptyStore( fileName, buildTypeAndVersionDescriptor(TYPE_DESCRIPTOR), idGeneratorFactory );
+        createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), idGeneratorFactory );
         DynamicStringStore.createStore( fileName + ".keys",
-            KEY_STORE_BLOCK_SIZE, idGeneratorFactory, IdType.PROPERTY_INDEX_BLOCK );
+                KEY_STORE_BLOCK_SIZE, idGeneratorFactory, IdType.PROPERTY_INDEX_BLOCK );
     }
 
     public PropertyIndexData[] getPropertyIndexes( int count )
@@ -326,30 +326,6 @@ public class PropertyIndexStore extends AbstractStore implements Store
     public String toString()
     {
         return "PropertyIndexStore";
-    }
-
-    @Override
-    protected boolean versionFound( String version )
-    {
-        if ( !version.startsWith( "PropertyIndex" ) )
-        {
-            // non clean shutdown, need to do recover with right neo
-            return false;
-        }
-//        if ( version.equals( "PropertyIndex v0.9.3" ) )
-//        {
-//            rebuildIdGenerator();
-//            closeIdGenerator();
-//            return true;
-//        }
-//        if ( version.equals( "PropertyIndex v0.9.5" ) )
-//        {
-            return true;
-//        }
-//        throw new NotCurrentStoreVersionException( VERSION, VERSION, "Store version [" + version  +
-//            "]. Please make sure you are not running old Neo4j kernel " +
-//            " towards a store that has been created by newer version " +
-//            " of Neo4j.", false );
     }
 
     public List<WindowPoolStats> getAllWindowPoolStats()
