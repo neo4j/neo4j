@@ -127,9 +127,9 @@ public class StoreMigrator
     public void createRelationshipType( RelationshipTypeStore relationshipTypeStore, String name, int id )
     {
         long nextIdFromStore = relationshipTypeStore.nextId();
-        if ( nextIdFromStore != id )
+        while ( nextIdFromStore < id )
         {
-            throw new IllegalStateException( String.format( "Expected next id from store %d to match legacy id %d", nextIdFromStore, id ) );
+            nextIdFromStore = relationshipTypeStore.nextId();
         }
 
         RelationshipTypeRecord record = new RelationshipTypeRecord( id );
@@ -163,9 +163,9 @@ public class StoreMigrator
     public void createPropertyIndex( PropertyIndexStore propIndexStore, String key, int id )
     {
         long nextIdFromStore = propIndexStore.nextId();
-        if ( nextIdFromStore != id )
+        while ( nextIdFromStore < id )
         {
-            throw new IllegalStateException( String.format( "Expected next id from store %d to match legacy id %d", nextIdFromStore, id ) );
+            nextIdFromStore = propIndexStore.nextId();
         }
 
         PropertyIndexRecord record = new PropertyIndexRecord( id );

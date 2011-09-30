@@ -66,10 +66,10 @@ public class ReadRecordsTest
     {
         URL propertyStoreFile = getClass().getResource( "oldformatstore/neostore.propertystore.db" );
 
-        LegacyPropertyRecord propertyRecord = new LegacyPropertyStoreReader( propertyStoreFile.getFile() ).readPropertyRecord( 22 );
+        LegacyPropertyRecord propertyRecord = new LegacyPropertyStoreReader( propertyStoreFile.getFile() ).readPropertyRecord( 24 );
 
         int keyIndexId = propertyRecord.getKeyIndexId();
-        assertEquals( 0, keyIndexId );
+        assertEquals( 2, keyIndexId );
         Object value = propertyRecord.getType().getValue( propertyRecord, null );
         assertEquals( Integer.MAX_VALUE, value );
     }
@@ -81,10 +81,10 @@ public class ReadRecordsTest
         URL stringStoreFile = getClass().getResource( "oldformatstore/neostore.propertystore.db.strings" );
         URL arrayStoreFile = getClass().getResource( "oldformatstore/neostore.propertystore.db.arrays" );
 
-        LegacyPropertyRecord propertyRecord = new LegacyPropertyStoreReader( propertyStoreFile.getFile() ).readPropertyRecord( 23 );
+        LegacyPropertyRecord propertyRecord = new LegacyPropertyStoreReader( propertyStoreFile.getFile() ).readPropertyRecord( 25 );
 
         int keyIndexId = propertyRecord.getKeyIndexId();
-        assertEquals( 1, keyIndexId );
+        assertEquals( 3, keyIndexId );
         Object value = propertyRecord.getType().getValue( propertyRecord, new LegacyDynamicRecordFetcher( stringStoreFile.getFile(), arrayStoreFile.getFile() ) );
         assertEquals( 1000, ((String) value).length() );
     }
@@ -96,10 +96,10 @@ public class ReadRecordsTest
         URL stringStoreFile = getClass().getResource( "oldformatstore/neostore.propertystore.db.strings" );
         URL arrayStoreFile = getClass().getResource( "oldformatstore/neostore.propertystore.db.arrays" );
 
-        LegacyPropertyRecord propertyRecord2 = new LegacyPropertyStoreReader( propertyStoreFile.getFile() ).readPropertyRecord( 30 );
+        LegacyPropertyRecord propertyRecord2 = new LegacyPropertyStoreReader( propertyStoreFile.getFile() ).readPropertyRecord( 32 );
 
         int keyIndexId = propertyRecord2.getKeyIndexId();
-        assertEquals( 8, keyIndexId );
+        assertEquals( 10, keyIndexId );
         Object value = propertyRecord2.getType().getValue( propertyRecord2, new LegacyDynamicRecordFetcher( stringStoreFile.getFile(), arrayStoreFile.getFile() ) );
         assertArrayEquals( MigrationTestUtils.makeLongArray(), (int[]) value );
     }
@@ -116,7 +116,7 @@ public class ReadRecordsTest
         {
             recordCount++;
         }
-        assertEquals( 11, recordCount );
+        assertEquals( 12, recordCount );
     }
 
     @Test
