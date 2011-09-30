@@ -29,7 +29,6 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.defaultCon
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.URL;
