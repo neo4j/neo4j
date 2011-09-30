@@ -667,6 +667,7 @@ public class TxManager extends AbstractTransactionManager
         }
 
         boolean hasAnyLocks = false;
+        boolean successful = false;
         try
         {
             hasAnyLocks = finishHook.hasAnyLocks( tx );
@@ -693,12 +694,13 @@ public class TxManager extends AbstractTransactionManager
                 throw logAndReturn("TM error tx commit",new IllegalStateException( "Tx status is: "
                     + getTxStatusAsString( tx.getStatus() ) ));
             }
+            successful = true;
         }
         finally
         {
             if ( hasAnyLocks )
             {
-                finishHook.finishTransaction( tx.getEventIdentifier() );
+                finishHook.finishTransaction( tx.getEventIdentifier(), successful );
             }
         }
     }
@@ -723,9 +725,8 @@ public class TxManager extends AbstractTransactionManager
             catch ( XAException e )
             {
                 xaErrorCode = e.errorCode;
-                log.log( Level.SEVERE, "Commit failed, status="
-                    + getTxStatusAsString( tx.getStatus() ) + ", errorCode="
- + xaErrorCode, e );
+                log.log( Level.SEVERE, "Commit failed, status=" + getTxStatusAsString( tx.getStatus() ) +
+                        ", errorCode=" + xaErrorCode, e );
                 if ( tx.getStatus() == Status.STATUS_COMMITTED )
                 {
                     // this should never be
@@ -922,7 +923,7 @@ public class TxManager extends AbstractTransactionManager
         {
             if ( hasAnyLocks )
             {
-                finishHook.finishTransaction( tx.getEventIdentifier() );
+                finishHook.finishTransaction( tx.getEventIdentifier(), false );
             }
         }
     }
