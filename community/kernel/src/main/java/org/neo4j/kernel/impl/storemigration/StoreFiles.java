@@ -42,7 +42,13 @@ public class StoreFiles
         // TODO: change the order that files are moved to handle failure conditions properly
         for ( String fileName : fileNames )
         {
-            new File( fromDirectory, fileName ).renameTo( new File( toDirectory, fileName ) );
+            moveFile( fileName, fromDirectory, toDirectory );
+            moveFile( fileName + ".id", fromDirectory, toDirectory );
         }
+    }
+
+    private static void moveFile( String fileName, File fromDirectory, File toDirectory )
+    {
+        new File( fromDirectory, fileName ).renameTo( new File( toDirectory, fileName ) );
     }
 }
