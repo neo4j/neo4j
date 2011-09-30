@@ -80,20 +80,8 @@ public class StoreUpgraderTest
 
     private boolean allStoreFilesHaveVersion( File workingDirectory, String version ) throws IOException
     {
-        String[] fileNames = {
-                "neostore",
-                "neostore.nodestore.db",
-                "neostore.propertystore.db",
-                "neostore.propertystore.db.arrays",
-                "neostore.propertystore.db.index",
-                "neostore.propertystore.db.index.keys",
-                "neostore.propertystore.db.strings",
-                "neostore.relationshipstore.db",
-                "neostore.relationshiptypestore.db",
-                "neostore.relationshiptypestore.db.names",
-        };
 
-        for ( String fileName : fileNames )
+        for ( String fileName : StoreFiles.fileNames )
         {
             FileChannel channel = new RandomAccessFile( new File( workingDirectory, fileName ), "r" ).getChannel();
             int length = UTF8.encode( version ).length;
