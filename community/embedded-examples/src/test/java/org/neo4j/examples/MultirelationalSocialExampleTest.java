@@ -27,11 +27,15 @@ import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.GraphDescription.Graph;
 
-public class ShortDocumentationExamplesTest extends AbstractJavaDocTestbase
+public class MultirelationalSocialExampleTest extends AbstractJavaDocTestbase
 {
     /**
+     * Multi-relational social network.
+     * 
      * This example shows a multi-relational
      * network between persons and things they like.
+     * A multi-relational graph is a graph with more than
+     * one kind of relationship between nodes.
      * 
      * @@graph1
      * 
@@ -50,46 +54,14 @@ public class ShortDocumentationExamplesTest extends AbstractJavaDocTestbase
     public void social_network_with_multiple_relations()
     {
         data.get();
-        gen.get().addSnippet( "graph1", createGraphViz("The Domain Structure", graphdb(), gen.get().getTitle()) );
+        gen.get().addSnippet( "graph1", createGraphViz("Multi-relational social network", graphdb(), gen.get().getTitle()) );
         String query = "START me=(node_auto_index,'name:Joe') " +
-        		"MATCH me-[r]->other-[r]->me WHERE type(r) =~ /FOLLOWS|LIKES/ RETURN me, other, type(r) ";
+        		"MATCH me-[r1]->other-[r2]->me WHERE type(r1)=type(r2) AND type(r1) =~ /FOLLOWS|LIKES/ RETURN me, other, type(r1) ";
         String result = engine.execute( parser.parse( query ) ).toString();
         gen.get().addSnippet( "query1", createCypherSnippet( query ) );
         gen.get().addSnippet( "result1", createOutputSnippet( result ) );
         
         assertTrue(result.contains( "Sara" ));
         assertTrue(result.contains( "Maria" ));
-    }
-    
-    /**
-     * This example shows a multi-relational
-     * network between persons and things they like.
-     * 
-     * @@graph1
-     * 
-     * Below are some typical questions asked of such a network:
-     * 
-     * == Who +FOLLOWS+ or +LIKES+ me back?
-     * 
-     * @@query1
-     * 
-     * @@result1
-     * 
-     */
-    @Test
-    @Documented
-    @Graph(value = {"Joe FOLLOWS Sara", "Sara FOLLOWS Joe", "Joe LIKES Maria","Maria LIKES Joe","Sara FOLLOWS Ben", "Joe FOLLOWS Ben"}, autoIndexNodes = true)
-    public void role_modeling_in_a_graph()
-    {
-        data.get();
-        gen.get().addSnippet( "graph1", createGraphViz("The Domain Structure", graphdb(), gen.get().getTitle()) );
-        String query = "START me=(node_auto_index,'name:Joe') " +
-                "MATCH me-[r]->other-[r]->me WHERE type(r) =~ /FOLLOWS|LIKES/ RETURN me, other, type(r) ";
-        String result = engine.execute( parser.parse( query ) ).toString();
-        gen.get().addSnippet( "query1", createCypherSnippet( query ) );
-        gen.get().addSnippet( "result1", createOutputSnippet( result ) );
-        
-        assertTrue(result.contains( "Sara" ));
-        assertTrue(result.contains( "Maria" ));
-    }
+    }    
 }

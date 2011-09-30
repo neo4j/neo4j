@@ -60,11 +60,11 @@ public class UniquenessOfPathsTest extends AbstractJavaDocTestbase
      * @@output
      * 
      * Let's create a new +TraversalDescription+ from the old one,
-     * having +NODE_GLOBAL+ uniqueness.
+     * having +NODE_GLOBAL+ uniqueness to see the difference.
      * 
-     * TIP: The +TraversalDescription+ is immutable,
+     * TIP: The +TraversalDescription+ object is immutable,
      *      so we have to use the new instance returned
-     *      when setting the uniqueness.
+     *      with the new uniqueness setting.
      * 
      * @@traverseNodeGlobal
      * 
@@ -122,8 +122,8 @@ public class UniquenessOfPathsTest extends AbstractJavaDocTestbase
         assertEquals( 2, count );
 
         // START SNIPPET: traverseNodeGlobal
-        td = td.uniqueness( Uniqueness.NODE_GLOBAL );
-        results = td.traverse( start );
+        TraversalDescription nodeGlobalTd = td.uniqueness( Uniqueness.NODE_GLOBAL );
+        results = nodeGlobalTd.traverse( start );
         // END SNIPPET: traverseNodeGlobal
         String output2 = "";
         count = 0;

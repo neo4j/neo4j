@@ -21,10 +21,10 @@ package org.neo4j.cypher.pipes.matching
 
 import org.neo4j.cypher.commands.Clause
 
-class PatternMatcher(startPoint: PatternNode, bindings: Map[String, MatchingPair], clauses: Seq[Clause]) extends Traversable[Map[String, Any]] {
+class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause]) extends Traversable[Map[String, Any]] {
 
   def foreach[U](f: (Map[String, Any]) => U) {
-    traverseNode(MatchingPair(startPoint, startPoint.pinnedEntity.get), History(), bindings.values.toSeq, f)
+    traverseNode(bindings.values.head, History(), bindings.values.toSeq, f)
   }
 
   private def traverseNode[U](current: MatchingPair,
@@ -67,7 +67,8 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, MatchingPair
 
     val (pNode, gNode) = currentNode.getPatternAndGraphPoint
 
-    val notVisitedRelationships = history.filter(currentNode.getGraphRelationships(currentRel))
+    val notVisitedRelationships: Seq[GraphRelationship] = history.filter(currentNode.getGraphRelationships(currentRel))
+
 
     val nextPNode = currentRel.getOtherNode(pNode)
 
@@ -113,7 +114,7 @@ class PatternMatcher(startPoint: PatternNode, bindings: Map[String, MatchingPair
     }
   }
 
-  private def yieldThis[U](yielder: Map[String, Any] => U, history: History):Boolean= {
+  private def yieldThis[U](yielder: Map[String, Any] => U, history: History): Boolean = {
     debug(history, history.toMap)
 
     yielder(history.toMap)

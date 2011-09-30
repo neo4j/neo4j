@@ -55,6 +55,11 @@ class SematicErrorTest extends ExecutionEngineHelper {
       "Expected n to be an iterable, but it is not.")
   }
 
+  @Test def cantReUseRelationshipIdentifier() {
+    expectedError("start a=(0) match a-[r]->b-[r]->a return r",
+      "Can't re-use pattern relationship 'r' with different start/end nodes.")
+  }
+
   @Test def shortestPathNeedsBothEndNodes() {
     expectedError("start n=(0) match p=shortestPath(n-->b) return p",
       "Shortest path needs both ends of the path to be provided. Couldn't find b")

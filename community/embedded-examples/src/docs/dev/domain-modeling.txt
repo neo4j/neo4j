@@ -16,5 +16,4 @@ include::examples/acl-structures-in-graphs.txt[]
 
 :leveloffset: 2
 
-include::examples/social-network-with-multiple-relations.txt[]
-
+include::examples/multi-relational-social-network.txt[]

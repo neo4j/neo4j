@@ -34,23 +34,26 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, cla
   }
 
   def getMatches(bindings: Map[String, Any]): Traversable[Map[String, Any]] = {
-    val (pinnedName, pinnedNode) = bindings.head
-
-    val pinnedPatternNode = patternGraph(pinnedName).asInstanceOf[PatternNode]
-
-    val boundPairs = bindings.map(kv => {
+    val boundPairs: Map[String, MatchingPair] = bindings.flatMap(kv => {
       val patternElement = patternGraph(kv._1)
-      val pair = kv._2 match {
-        case node: Node => MatchingPair(patternElement, node)
-        case rel: Relationship => MatchingPair(patternElement, rel)
-      }
 
-      kv._1 -> pair
+      kv._2 match {
+        case node: Node => {
+          Seq(kv._1 -> MatchingPair(patternElement, node))
+        }
+        case rel: Relationship => {
+          val pr = patternElement.asInstanceOf[PatternRelationship]
+
+          val t1 = pr.startNode.key -> MatchingPair(pr.startNode, rel.getStartNode)
+          val t2 = pr.endNode.key -> MatchingPair(pr.endNode, rel.getEndNode)
+
+          Seq(t1,t2)
+        }
+      }
     })
 
-    pinnedPatternNode.pin(pinnedNode.asInstanceOf[Node])
 
-    new PatternMatcher(pinnedPatternNode, boundPairs, clauses).map(matchedGraph => {
+    new PatternMatcher(boundPairs, clauses).map(matchedGraph => {
       matchedGraph ++ createNullValuesForOptionalElements(matchedGraph)
     })
   }
@@ -72,6 +75,11 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, cla
       case RelatedTo(left, right, rel, relType, dir, optional) => {
         val leftNode: PatternNode = patternNodeMap.getOrElseUpdate(left, new PatternNode(left))
         val rightNode: PatternNode = patternNodeMap.getOrElseUpdate(right, new PatternNode(right))
+
+        if(patternRelMap.contains(rel))
+        {
+          throw new SyntaxException("Can't re-use pattern relationship '%s' with different start/end nodes.".format(rel))
+        }
 
         patternRelMap(rel) = leftNode.relateTo(rel, rightNode, relType, dir, optional)
       }
@@ -106,8 +114,8 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, cla
         x match {
           case nod: PatternNode => nod.relationships.foreach(visit)
           case rel: PatternRelationship => {
-            visit(rel.leftNode)
-            visit(rel.rightNode)
+            visit(rel.startNode)
+            visit(rel.endNode)
           }
         }
       }
