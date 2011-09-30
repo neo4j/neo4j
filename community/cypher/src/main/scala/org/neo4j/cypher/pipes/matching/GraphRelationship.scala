@@ -37,7 +37,11 @@ case class SingleGraphRelationship(rel: Relationship) extends GraphRelationship 
   override def equals(obj: Any) = obj match {
     case VariableLengthGraphRelationship(p) => p.relationships().asScala.exists(_ == rel)
     case p:Path => p.relationships().asScala.exists(_ == rel)
-    case x => x == this || x == rel
+    case x => {
+      val a = x == this
+      val b = x == rel
+      a || b
+    }
   }
 
   override def toString = rel.getProperty("name").toString

@@ -22,9 +22,11 @@ package org.neo4j.cypher.pipes.matching
 import org.neo4j.cypher.commands.Clause
 
 class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause]) extends Traversable[Map[String, Any]] {
+  val boundNodes = bindings.filter(_._2.patternElement.isInstanceOf[PatternNode])
+  val boundRels = bindings.filter(_._2.patternElement.isInstanceOf[PatternRelationship])
 
   def foreach[U](f: (Map[String, Any]) => U) {
-    traverseNode(bindings.values.head, History(), bindings.values.toSeq, f)
+    traverseNode(boundNodes.values.head, History(), boundNodes.values.toSeq, f)
   }
 
   private def traverseNode[U](current: MatchingPair,
@@ -35,7 +37,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause]) 
 
     val (pNode, gNode) = current.getPatternAndGraphPoint
 
-    bindings.get(pNode.key) match {
+    boundNodes.get(pNode.key) match {
       case Some(pinnedNode) => if (pinnedNode.entity != gNode) return false
       case None =>
     }
@@ -78,6 +80,12 @@ class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause]) 
      */
     val yielded = notVisitedRelationships.map(rel => {
       val nextNode = rel.getOtherNode(gNode)
+
+      boundRels.get(currentRel.key) match {
+        case Some(pinnedRel) => if (!pinnedRel.matches(rel)) return false
+        case None =>
+      }
+
       val newHistory = history.add(MatchingPair(currentRel, rel))
 
       if (isMatchSoFar(newHistory))

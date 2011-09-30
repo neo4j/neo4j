@@ -46,8 +46,9 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, cla
 
           val t1 = pr.startNode.key -> MatchingPair(pr.startNode, rel.getStartNode)
           val t2 = pr.endNode.key -> MatchingPair(pr.endNode, rel.getEndNode)
+          val t3 = pr.key -> MatchingPair(pr, rel)
 
-          Seq(t1,t2)
+          Seq(t1,t2,t3)
         }
       }
     })

@@ -52,7 +52,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
 
 
   @Test def singleDirectedRel() {
-    val r = relate(a, b, "rel")
+    val r = relate(a, b, "rel", "r")
 
     val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.OUTGOING, false))
     val matchingContext = new MatchingContext(patterns, bind("a"))
@@ -96,7 +96,6 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
       Map("pA" -> a, "pB" -> b, "pR" -> r1))
   }
 
-  @Ignore
   @Test def boundNodeAndRel() {
     val r1 = relate(a, b, "rel", "r1")
     relate(a, b, "rel", "r2")
