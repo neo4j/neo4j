@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 
-import org.neo4j.kernel.Config;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
@@ -405,12 +404,6 @@ public class NeoStore extends AbstractStore
         propStore.updateIdGenerators();
         relStore.updateHighId();
         nodeStore.updateHighId();
-    }
-
-    private boolean configSaysOkToUpgrade()
-    {
-        String allowUpgrade = (String) getConfig().get( Config.ALLOW_STORE_UPGRADE );
-        return Boolean.parseBoolean( allowUpgrade );
     }
 
     public int getRelationshipGrabSize()

@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 
 public class StoreUpgrader
@@ -39,6 +40,11 @@ public class StoreUpgrader
 
     public void attemptUpgrade()
     {
+        if (!configSaysOkToUpgrade()) {
+            throw new UpgradeNotAllowedByConfigurationException(
+                    String.format( "To enable automatic upgrade, please set %s in configuration properties",
+                            Config.ALLOW_STORE_UPGRADE ) );
+        }
         try
         {
             File workingDirectory = new File( storageFileName ).getParentFile();
@@ -69,6 +75,12 @@ public class StoreUpgrader
         {
             throw new RuntimeException( e );
         }
+    }
+
+    private boolean configSaysOkToUpgrade()
+    {
+        String allowUpgrade = (String) originalConfig.get( Config.ALLOW_STORE_UPGRADE );
+        return Boolean.parseBoolean( allowUpgrade );
     }
 
     public class UnableToUpgradeException extends RuntimeException

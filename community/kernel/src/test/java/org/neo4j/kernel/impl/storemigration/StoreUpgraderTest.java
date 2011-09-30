@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.storemigration;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.defaultConfig;
 
@@ -30,10 +31,12 @@ import java.io.RandomAccessFile;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.HashMap;
 
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.UTF8;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.util.FileUtils;
 
@@ -42,18 +45,15 @@ public class StoreUpgraderTest
     @Test
     public void shouldUpgradeAnOldFormatStore() throws IOException
     {
-        URL legacyStoreResource = getClass().getResource( "oldformatstore/neostore" );
-        File resourceDirectory = new File( legacyStoreResource.getFile() ).getParentFile();
         File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
-
-        FileUtils.deleteRecursively( workingDirectory );
-        assertTrue( workingDirectory.mkdirs() );
-
-        MigrationTestUtils.copyRecursively( resourceDirectory, workingDirectory );
+        prepareSampleLegacyDatabase( workingDirectory );
 
         assertFalse( allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
 
-        new StoreUpgrader( new File( workingDirectory, "neostore" ).getPath(), defaultConfig() ).attemptUpgrade();
+        HashMap config = defaultConfig();
+        config.put( Config.ALLOW_STORE_UPGRADE, "true" );
+
+        new StoreUpgrader( new File( workingDirectory, "neostore" ).getPath(), config ).attemptUpgrade();
 
         assertTrue( allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
     }
@@ -61,21 +61,48 @@ public class StoreUpgraderTest
     @Test
     public void shouldUpgradeAutomaticallyOnDatabaseStartup() throws IOException
     {
+        File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
+        prepareSampleLegacyDatabase( workingDirectory );
+
+        assertFalse( allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
+
+        HashMap params = new HashMap();
+        params.put( Config.ALLOW_STORE_UPGRADE, "true" );
+
+        GraphDatabaseService database = new EmbeddedGraphDatabase( workingDirectory.getPath(), params );
+        database.shutdown();
+
+        assertTrue( allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
+    }
+
+    @Test
+    public void shouldFailToUpgradeIfConfigParameterIsMissing() throws IOException
+    {
+        File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
+        prepareSampleLegacyDatabase( workingDirectory );
+
+        HashMap config = defaultConfig();
+        assertFalse( config.containsKey( Config.ALLOW_STORE_UPGRADE ) );
+
+        try {
+            new StoreUpgrader( new File( workingDirectory, "neostore" ).getPath(), config ).attemptUpgrade();
+            fail( "Should throw exception" );
+        }
+        catch ( UpgradeNotAllowedByConfigurationException e )
+        {
+            //expected
+        }
+    }
+
+    private void prepareSampleLegacyDatabase( File workingDirectory ) throws IOException
+    {
         URL legacyStoreResource = getClass().getResource( "oldformatstore/neostore" );
         File resourceDirectory = new File( legacyStoreResource.getFile() ).getParentFile();
-        File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
 
         FileUtils.deleteRecursively( workingDirectory );
         assertTrue( workingDirectory.mkdirs() );
 
         MigrationTestUtils.copyRecursively( resourceDirectory, workingDirectory );
-
-        assertFalse( allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
-
-        GraphDatabaseService database = new EmbeddedGraphDatabase( workingDirectory.getPath() );
-        database.shutdown();
-
-        assertTrue( allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
     }
 
     private boolean allStoreFilesHaveVersion( File workingDirectory, String version ) throws IOException
