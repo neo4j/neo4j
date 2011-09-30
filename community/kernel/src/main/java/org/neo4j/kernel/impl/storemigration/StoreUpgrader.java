@@ -62,24 +62,12 @@ public class StoreUpgrader
             neoStore.close();
 
             backupDirectory.mkdir();
-            moveStoreFiles( workingDirectory, backupDirectory );
-            moveStoreFiles( upgradeDirectory, workingDirectory );
+            StoreFiles.move( workingDirectory, backupDirectory );
+            StoreFiles.move( upgradeDirectory, workingDirectory );
 
         } catch ( IOException e )
         {
             throw new RuntimeException( e );
-        }
-    }
-
-    private void moveStoreFiles( File fromDirectory, File toDirectory ) throws IOException
-    {
-        // TODO: change the order that files are moved to handle failure conditions properly
-        for ( File file : fromDirectory.listFiles() )
-        {
-            if ( file.getName().startsWith( "neostore" ) )
-            {
-                file.renameTo( new File( toDirectory, file.getName() ) );
-            }
         }
     }
 
