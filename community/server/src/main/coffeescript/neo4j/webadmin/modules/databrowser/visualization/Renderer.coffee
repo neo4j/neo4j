@@ -300,14 +300,16 @@ define(
             if nearest.distance is null or dist<nearest.distance
               nearest.node = node
               nearest.distance = dist
-        if not (nearest.node is null)
+        if nearest.node?
           if @ptInBox(pos, @nodeBoxes[nearest.node.name])
             return nearest.node
 
       ptInBox : (pt, box) =>
-        [x, y, w, h] = box; [w,h] = [w-2,h-2]
-        delta = pt.subtract(arbor.Point(x,y))
-        return Math.abs(delta.x) < w and Math.abs(delta.y) < h
+        if box?
+          [x, y, w, h] = box; [w,h] = [w-2,h-2]
+          delta = pt.subtract(arbor.Point(x,y))
+          return Math.abs(delta.x) < w and Math.abs(delta.y) < h
+        return false
 
       ghostify : (node) =>
         #node.mass = 10000.001
