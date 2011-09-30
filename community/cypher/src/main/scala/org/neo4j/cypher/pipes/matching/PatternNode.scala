@@ -21,7 +21,7 @@ package org.neo4j.cypher.pipes.matching
 
 import org.neo4j.graphdb.{Direction, Node}
 
-class PatternNode(key: String) extends PatternElement(key) with PinnablePatternElement[Node] {
+class PatternNode(key: String) extends PatternElement(key)  {
   val relationships = scala.collection.mutable.Set[PatternRelationship]()
 
   def getPRels(history: Seq[MatchingPair]): Seq[PatternRelationship] = relationships.filterNot( r => history.exists(_.matches(r)) ).toSeq

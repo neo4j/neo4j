@@ -53,4 +53,5 @@ class History(seen: Seq[MatchingPair])
     }
   }).toMap
 
+  override def toString: String = "History(%s)".format(seen.mkString(","))
 }

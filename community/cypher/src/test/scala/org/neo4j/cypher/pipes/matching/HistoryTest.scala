@@ -19,13 +19,23 @@
  */
 package org.neo4j.cypher.pipes.matching
 
-import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.cypher.GraphDatabaseTestBase
+import org.scalatest.Assertions
+import org.junit.Test
+import org.neo4j.graphdb.{DynamicRelationshipType, Direction}
 
-trait PinnablePatternElement[T <: PropertyContainer] extends PatternElement {
-  var pinnedEntity: Option[T] = None
+class HistoryTest extends GraphDatabaseTestBase with Assertions {
 
-  def pin(entity: T) {
-    pinnedEntity = Some(entity)
+  val typ = DynamicRelationshipType.withName("REL")
+
+  @Test def excludingPatternRelsWorksAsExpected() {
+    val a = new PatternNode("a")
+    val b = new PatternNode("b")
+    val pr = a.relateTo("r", b, None, Direction.BOTH, false)
+    val r = relate( graph.getReferenceNode, graph.getReferenceNode, "rel")
+    val mp = new MatchingPair(pr,r)
+    val history = new History(Seq(mp))
+
+    assert( history.filter(Set[PatternRelationship](pr)) === Set() )
   }
 }
-

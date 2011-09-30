@@ -5,7 +5,7 @@ Cypher Query Language
 A new query language, code-named ``Cypher'', has been added to Neo4j.
 It allows for expressive and efficient querying of the graph store without having to write traversers in code.
 Cypher is still growing and maturing, and that means that there probably will be breaking syntax changes.
-It also means that it has not undergone the same rigorous performance testing that we do to the rest of our database.
+It also means that it has not undergone the same rigorous performance testing as the other components.
 
 Cypher is designed to be a humane query language, suitable for both 
 developers and (importantly, we think) operations professionals who 

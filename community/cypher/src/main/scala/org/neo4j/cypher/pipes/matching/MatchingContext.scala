@@ -34,10 +34,6 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, cla
   }
 
   def getMatches(bindings: Map[String, Any]): Traversable[Map[String, Any]] = {
-    val (pinnedName, pinnedNode) = bindings.head
-
-    val pinnedPatternNode = patternGraph(pinnedName).asInstanceOf[PatternNode]
-
     val boundPairs = bindings.map(kv => {
       val patternElement = patternGraph(kv._1)
       val pair = kv._2 match {
@@ -48,9 +44,8 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, cla
       kv._1 -> pair
     })
 
-    pinnedPatternNode.pin(pinnedNode.asInstanceOf[Node])
 
-    new PatternMatcher(pinnedPatternNode, boundPairs, clauses).map(matchedGraph => {
+    new PatternMatcher(boundPairs, clauses).map(matchedGraph => {
       matchedGraph ++ createNullValuesForOptionalElements(matchedGraph)
     })
   }
@@ -72,6 +67,11 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, cla
       case RelatedTo(left, right, rel, relType, dir, optional) => {
         val leftNode: PatternNode = patternNodeMap.getOrElseUpdate(left, new PatternNode(left))
         val rightNode: PatternNode = patternNodeMap.getOrElseUpdate(right, new PatternNode(right))
+
+        if(patternRelMap.contains(rel))
+        {
+          throw new SyntaxException("Can't re-use pattern relationship '%s' with different start/end nodes.".format(rel))
+        }
 
         patternRelMap(rel) = leftNode.relateTo(rel, rightNode, relType, dir, optional)
       }

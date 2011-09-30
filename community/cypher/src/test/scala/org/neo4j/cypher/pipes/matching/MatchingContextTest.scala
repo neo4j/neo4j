@@ -49,6 +49,8 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     assertMatches(matchingContext.getMatches(Map("a" -> a)), 1, Map("a" -> a, "b" -> b, "r" -> r))
   }
 
+
+
   @Ignore @Test def singleDirectedRel() {
     val r = relate(a, b, "rel")
 
@@ -58,7 +60,8 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     assertMatches(matchingContext.getMatches(Map("r" -> r)), 1, Map("a" -> a, "b" -> b, "r" -> r))
   }
 
-  @Ignore @Test def singleUndirectedRel() {
+  @Ignore
+  @Test def singleUndirectedRel() {
     val r = relate(a, b, "rel")
 
     val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.BOTH, false))
@@ -68,7 +71,6 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
       Map("a" -> a, "b" -> b, "r" -> r),
       Map("a" -> b, "b" -> a, "r" -> r))
   }
-
 
   @Test def singleHopDoubleMatch() {
     val r1 = relate(a, b, "rel", "r1")
@@ -83,7 +85,19 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
       Map("pA" -> a, "pB" -> c, "pR" -> r2))
   }
 
-  @Ignore @Test def boundNodeAndRel() {
+  @Test def twoBoundNodesShouldWork() {
+    val r1 = relate(a, b, "rel", "r1")
+
+    val patterns: Seq[Pattern] = Seq(RelatedTo("pA", "pB", "pR", "rel", Direction.OUTGOING, false))
+    val matchingContext = new MatchingContext(patterns, bind("pA", "pB"))
+
+
+    assertMatches(matchingContext.getMatches(Map("pA" -> a, "pB" -> b)), 1,
+      Map("pA" -> a, "pB" -> b, "pR" -> r1))
+  }
+
+  @Ignore
+  @Test def boundNodeAndRel() {
     val r1 = relate(a, b, "rel", "r1")
     relate(a, b, "rel", "r2")
 
@@ -93,7 +107,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     val matchingContext = new MatchingContext(patterns, symbols)
 
 
-    assertMatches(matchingContext.getMatches(Map("pA" -> a, "pR"->r1)), 1,
+    assertMatches(matchingContext.getMatches(Map("pA" -> a, "pR" -> r1)), 1,
       Map("pA" -> a, "pB" -> b, "pR" -> r1))
   }
 
@@ -352,7 +366,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
   }
 
   @Test def clauseConcerningNode() {
-    val a = createNode(Map("prop"->"value"))
+    val a = createNode(Map("prop" -> "value"))
     val r = relate(a, b, "rel")
 
     val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.OUTGOING, false))
@@ -363,7 +377,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
 
 
   def bind(boundSymbols: String*): SymbolTable = {
-    val toSet = boundSymbols.map( x=>  NodeIdentifier(x))
+    val toSet = boundSymbols.map(x => NodeIdentifier(x))
     new SymbolTable(toSet)
   }
 

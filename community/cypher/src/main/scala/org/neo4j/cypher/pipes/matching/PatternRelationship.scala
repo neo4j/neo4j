@@ -29,17 +29,18 @@ class PatternRelationship(key: String,
                           val rightNode: PatternNode,
                           relType: Option[String],
                           dir: Direction,
-                          val optional:Boolean)
-  extends PatternElement(key)
-  with PinnablePatternElement[Relationship] {
+                          val optional: Boolean)
+  extends PatternElement(key) {
 
-  def getOtherNode(node: PatternNode) = if(leftNode==node) rightNode else leftNode
+  def getOtherNode(node: PatternNode) = if (leftNode == node) rightNode else leftNode
+
   def getGraphRelationships(node: PatternNode, realNode: Node): Seq[GraphRelationship] = {
     (relType match {
       case Some(typeName) => realNode.getRelationships(getDirection(node), DynamicRelationshipType.withName(typeName))
       case None => realNode.getRelationships(getDirection(node))
     }).asScala.map(new SingleGraphRelationship(_)).toSeq
   }
+
   protected def getDirection(node: PatternNode): Direction = {
     dir match {
       case Direction.OUTGOING => if (node == leftNode) Direction.OUTGOING else Direction.INCOMING
@@ -48,17 +49,22 @@ class PatternRelationship(key: String,
     }
   }
 
+  override def equals(other: Any): Boolean = other match {
+    case that: PatternRelationship => this.key == that.key
+    case _ => false
+  }
+
   override def toString = key
 }
 
-class VariableLengthPatternRelationship( pathName: String,
-                                         val start: PatternNode,
-                                         val end: PatternNode,
-                                         minHops: Option[Int],
-                                         maxHops: Option[Int],
-                                         relType: Option[String],
-                                         dir: Direction,
-                                         optional:Boolean)
+class VariableLengthPatternRelationship(pathName: String,
+                                        val start: PatternNode,
+                                        val end: PatternNode,
+                                        minHops: Option[Int],
+                                        maxHops: Option[Int],
+                                        relType: Option[String],
+                                        dir: Direction,
+                                        optional: Boolean)
   extends PatternRelationship(pathName, start, end, relType, dir, optional) {
 
   override def getGraphRelationships(node: PatternNode, realNode: Node): Seq[GraphRelationship] = {
