@@ -42,6 +42,12 @@ public class StoreUpgrader
         try
         {
             File workingDirectory = new File( storageFileName ).getParentFile();
+
+            if ( !new UpgradableStoreVersions().storeFilesUpgradeable( workingDirectory ) )
+            {
+                throw new UnableToUpgradeException();
+            }
+
             File upgradeDirectory = new File( workingDirectory, "upgrade" );
             File backupDirectory = new File( workingDirectory, "upgrade_backup" );
             upgradeDirectory.mkdir();
@@ -70,9 +76,14 @@ public class StoreUpgrader
         // TODO: change the order that files are moved to handle failure conditions properly
         for ( File file : fromDirectory.listFiles() )
         {
-            if (file.getName().startsWith( "neostore" )) {
+            if ( file.getName().startsWith( "neostore" ) )
+            {
                 file.renameTo( new File( toDirectory, file.getName() ) );
             }
         }
+    }
+
+    public class UnableToUpgradeException extends RuntimeException
+    {
     }
 }
