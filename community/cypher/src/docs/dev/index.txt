@@ -2,10 +2,10 @@
 Cypher Query Language
 =====================
 
-CAUTION: This is an experimental feature.
-
 A new query language, code-named ``Cypher'', has been added to Neo4j.
 It allows for expressive and efficient querying of the graph store without having to write traversers in code.
+Cypher is still growing and maturing, and that means that there probably will be breaking syntax changes.
+It also means that it has not undergone the same rigorous performance testing that we do to the rest of our database.
 
 Cypher is designed to be a humane query language, suitable for both 
 developers and (importantly, we think) operations professionals who 
@@ -13,7 +13,7 @@ want to make ad-hoc queries on the database. Its constructs are based
 on English prose and neat iconography, which helps to make it (somewhat) 
 self-explanatory.
 
-Cypher is inspired by a number of different approaches and builds upon 
+Cypher is inspired by a number of different approaches and builds upon
 established practices for expressive querying. Most of the keywords like
 +WHERE+ and +ORDER BY+ are inspired by http://en.wikipedia.org/wiki/SQL[SQL].
 Pattern matching borrows expression approaches from http://en.wikipedia.org/wiki/SPARQL[SPARQL].
