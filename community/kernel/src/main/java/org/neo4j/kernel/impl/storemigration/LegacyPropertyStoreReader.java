@@ -50,38 +50,44 @@ public class LegacyPropertyStoreReader
     public LegacyPropertyRecord readPropertyRecord( long id ) throws IOException
     {
         PersistenceWindow persistenceWindow = windowPool.acquire( id, OperationType.READ );
-
-        Buffer buffer = persistenceWindow.getOffsettedBuffer( id );
-
-        // [    ,   x] in use
-        // [xxxx,    ] high prev prop bits
-        long inUseByte = buffer.get();
-
-        boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
-        if ( !inUse )
+        try
         {
-            throw new IllegalArgumentException( MessageFormat.format( "Record {0} not in use", id ) );
+            Buffer buffer = persistenceWindow.getOffsettedBuffer( id );
+    
+            // [    ,   x] in use
+            // [xxxx,    ] high prev prop bits
+            long inUseByte = buffer.get();
+    
+            boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
+            if ( !inUse )
+            {
+                throw new IllegalArgumentException( MessageFormat.format( "Record {0} not in use", id ) );
+            }
+            LegacyPropertyRecord record = new LegacyPropertyRecord( id );
+    
+            // [    ,    ][    ,    ][xxxx,xxxx][xxxx,xxxx] type
+            // [    ,    ][    ,xxxx][    ,    ][    ,    ] high next prop bits
+            long typeInt = buffer.getInt();
+    
+            record.setType( getEnumType( (int) typeInt & 0xFFFF ) );
+            record.setInUse( true );
+            record.setKeyIndexId( buffer.getInt() );
+            record.setPropBlock( buffer.getLong() );
+    
+            long prevProp = buffer.getUnsignedInt();
+            long prevModifier = (inUseByte & 0xF0L) << 28;
+            long nextProp = buffer.getUnsignedInt();
+            long nextModifier = (typeInt & 0xF0000L) << 16;
+    
+            record.setPrevProp( longFromIntAndMod( prevProp, prevModifier ) );
+            record.setNextProp( longFromIntAndMod( nextProp, nextModifier ) );
+    
+            return record;
         }
-        LegacyPropertyRecord record = new LegacyPropertyRecord( id );
-
-        // [    ,    ][    ,    ][xxxx,xxxx][xxxx,xxxx] type
-        // [    ,    ][    ,xxxx][    ,    ][    ,    ] high next prop bits
-        long typeInt = buffer.getInt();
-
-        record.setType( getEnumType( (int) typeInt & 0xFFFF ) );
-        record.setInUse( true );
-        record.setKeyIndexId( buffer.getInt() );
-        record.setPropBlock( buffer.getLong() );
-
-        long prevProp = buffer.getUnsignedInt();
-        long prevModifier = (inUseByte & 0xF0L) << 28;
-        long nextProp = buffer.getUnsignedInt();
-        long nextModifier = (typeInt & 0xF0000L) << 16;
-
-        record.setPrevProp( longFromIntAndMod( prevProp, prevModifier ) );
-        record.setNextProp( longFromIntAndMod( nextProp, nextModifier ) );
-
-        return record;
+        finally
+        {
+            windowPool.release( persistenceWindow );
+        }
     }
 
     private LegacyPropertyType getEnumType( int type )
