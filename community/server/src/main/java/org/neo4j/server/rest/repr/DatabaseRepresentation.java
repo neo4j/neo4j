@@ -21,6 +21,8 @@ package org.neo4j.server.rest.repr;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.kernel.Version;
+
 
 public class DatabaseRepresentation extends MappingRepresentation implements ExtensibleRepresentation
 {
@@ -49,12 +51,13 @@ public class DatabaseRepresentation extends MappingRepresentation implements Ext
         }
         catch ( NotFoundException e )
         {
-            // No reference node.
+//            serializer.putString( "reference_node","null" );
         }
         serializer.putUri( "node_index", "index/node" );
         serializer.putUri( "relationship_index", "index/relationship" );
         serializer.putUri( "extensions_info", "ext" );
         serializer.putUri( "relationship_types", "relationship/types" );
         serializer.putUri( "batch", "batch" );
+        serializer.putString( "neo4j_version", Version.getKernelRevision() );
     }
 }

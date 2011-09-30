@@ -8,7 +8,7 @@ To gain good performance, these are the things to look into first:
   Monitoring heap usage on an application that uses Neo4j can be a bit confusing since Neo4j will increase the size of caches if there is available memory and decrease if the heap is getting full. 
   The goal is to have a large enough heap to make sure that heavy/peak load will not result in so called GC trashing (performance can drop as much as two orders of magnitude when GC trashing happens).
 * Start the JVM with the -server flag and a good sized heap (see <<configuration-jvm>>). Having too large heap may also hurt performance so you may have to try some different heap sizes.
-* Use the parallel/concurrent garbage collector (we found that -XX:+UseConcMarkSweepGC works well in most use-cases) 
+* Use the parallel/concurrent garbage collector (we found that +-XX:+UseConcMarkSweepGC+ works well in most use-cases) 
 
 == How to add configuration settings ==
 
@@ -24,7 +24,8 @@ tag=startDbWithConfig
 
 If no configuration is provided, the Database Kernel will try to determine suitable settings from the information available via the JVM settings and the underlying operating system. 
 
-The JVM is configured by passing command line flags when starting the JVM, the most important configuration parameters for Neo4j are the ones that control the memory and garbage collector, but some of the parameters for configuring the Just In Time compiler are also of interest.
+The JVM is configured by passing command line flags when starting the JVM.
+The most important configuration parameters for Neo4j are the ones that control the memory and garbage collector, but some of the parameters for configuring the Just In Time compiler are also of interest.
 
 This is an example of starting up your applications main class using 64-bit server VM mode and a heap space of 1GB:
 

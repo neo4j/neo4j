@@ -98,7 +98,6 @@ define(
         @dataModel = options.dataModel
       
         @settings = new DataBrowserSettings(@appState.getSettings())
-        @settings.labelPropertiesChanged @settingsChanged
         @dataModel.bind("change:data", @render)
         
         @settings.onCurrentVisualizationProfileChange () =>
@@ -159,17 +158,12 @@ define(
         allNodes = neo4j.Promise.join.apply(this, nodePromises)
         allNodes.then (nodes) =>
           @getViz().setNodes nodes
-
-      settingsChanged : () =>
-        if @viz?
-          @viz.setLabelProperties(@settings.getLabelProperties())
       
       getViz : () =>
         width = $(document).width() - 40;
         height = $(document).height() - 160;
         profile = @settings.getCurrentVisualizationProfile()
         @viz ?= new VisualGraph(@server, profile, width,height)
-        @settingsChanged()
         return @viz
 
       reflowGraphLayout : () =>

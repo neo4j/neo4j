@@ -51,8 +51,6 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
     private final WebServer webServer;
     private final StartupHealthCheck startupHealthCheck;
 
-    private final AddressResolver addressResolver;
-
     private final List<ServerModule> serverModules = new ArrayList<ServerModule>();
     private PluginInitializer pluginInitializer;
     private final Bootstrapper bootstrapper;
@@ -63,7 +61,6 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
     {
 
         this.bootstrapper = bootstrapper;
-        this.addressResolver = addressResolver;
         this.startupHealthCheck = startupHealthCheck;
         this.configurator = configurator;
         this.webServer = webServer;

@@ -24,7 +24,7 @@ import org.neo4j.graphdb.{Relationship, Node}
 import org.neo4j.cypher.commands._
 import collection.immutable.Map
 
-class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable) {
+class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, clauses:Seq[Clause]=Seq()) {
   type PatternGraph = Map[String, PatternElement]
 
   val patternGraph: PatternGraph = buildPatternGraph()
@@ -50,13 +50,13 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable) {
 
     pinnedPatternNode.pin(pinnedNode.asInstanceOf[Node])
 
-    new PatternMatcher(pinnedPatternNode, boundPairs).map(matchedGraph => {
+    new PatternMatcher(pinnedPatternNode, boundPairs, clauses).map(matchedGraph => {
       matchedGraph ++ createNullValuesForOptionalElements(matchedGraph)
     })
   }
 
   /*
-  This method is mutable, but it is only called from the constructor of this class. The created PatternGraph
+  This method is mutable, but it is only called from the constructor of this class. The created pattern graph
    is immutable and thread safe.
    */
   private def buildPatternGraph(): PatternGraph = {
@@ -67,7 +67,6 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable) {
       case NodeIdentifier(nodeName) => patternNodeMap(nodeName) = new PatternNode(nodeName)
       case _ => None
     })
-
 
     patterns.foreach(_ match {
       case RelatedTo(left, right, rel, relType, dir, optional) => {

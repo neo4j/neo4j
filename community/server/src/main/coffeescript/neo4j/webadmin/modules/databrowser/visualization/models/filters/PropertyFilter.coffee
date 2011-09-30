@@ -102,19 +102,21 @@ define(
       
       matches : (item) =>
         method = @getMethodName()
-        node = item.neoNode
-        if method == 'exists'
-          return node.hasProperty @getPropertyName()
-        else if method == '!exists'
-          return not node.hasProperty @getPropertyName()
-        else if PropertyFilter.compareMethods[method]?
-          cmp = PropertyFilter.compareMethods[method].cmp
-          val = node.getProperty(@getPropertyName())
-          cmpVal = @getCompareValue()
-          
-          cmpVal = Number cmpVal if _(val).isNumber()
-          
-          return cmp val, cmpVal
+        
+        if item.neoNode?
+          node = item.neoNode
+          if method == 'exists'
+            return node.hasProperty @getPropertyName()
+          else if method == '!exists'
+            return not node.hasProperty @getPropertyName()
+          else if PropertyFilter.compareMethods[method]?
+            cmp = PropertyFilter.compareMethods[method].cmp
+            val = node.getProperty(@getPropertyName())
+            cmpVal = @getCompareValue()
+            
+            cmpVal = Number cmpVal if _(val).isNumber()
+            
+            return cmp val, cmpVal
         return false
       
 )

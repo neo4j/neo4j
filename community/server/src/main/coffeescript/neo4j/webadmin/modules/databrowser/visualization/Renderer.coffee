@@ -31,8 +31,9 @@ define(
       Based on the Halfviz renderer from Arbor.js
       ###
 
-      constructor : (canvas, @nodeStyler, @relationshipStyler) ->
+      constructor : (canvas, @relationshipStyler) ->
         @canvas = $(canvas).get(0)
+        @bgColor = "#EEEEEE"
         
         if not @canvas.getContext # Excanvas
           @canvas = window.G_vmlCanvasManager.initElement @canvas
@@ -71,13 +72,18 @@ define(
           
         # determine the box size and round off the coords if we'll be
         # drawing a text label (awful alignment jitter otherwise...)
-        w = 10
-        h = 10
         labels = []
+        fontSize = style.labelStyle.size
+        lineHeight = Math.ceil(fontSize + fontSize / 5)
+        @ctx.font = "#{fontSize}px #{style.labelStyle.font}"
+        
+        w = fontSize
+        h = Math.floor(fontSize - fontSize / 5)
+        
         for label in (""+style.labelText).split(";")
           labelSize = @ctx.measureText(""+label)
-          w = labelSize.width + 10 if (labelSize.width + 10) > w
-          h += 12
+          w = labelSize.width + fontSize if (labelSize.width + fontSize) > w
+          h += fontSize
           labels.push label
         
         if labels.length > 0
@@ -97,20 +103,36 @@ define(
           d = if w>h then w else h
           @gfx.oval(pt.x-d/2, pt.y-d/2, d,d, ns)
           @nodeBoxes[node.name] = [pt.x-d/2, pt.y-d/2, d,d]
+        else if ns.shape == 'icon'
+          icon = style.icon
+          centerX = pt.x-icon.width/2
+          centerY = pt.y-icon.height/2
+          try
+            icon = style.icon
+            @ctx.drawImage(icon, centerX, centerY)
+            
+            if ns.alpha?
+              fadeStyle = { alpha:1-ns.alpha, fill:@bgColor }
+              @gfx.rect(centerX, centerY, icon.width, icon.height, 0, fadeStyle)
+          catch e
+            # Throws errors when image is drawn outside of canvas, ignore
+          @nodeBoxes[node.name] = [centerX, centerY, icon.width,icon.height]
+          
         else
           @gfx.rect(pt.x-w/2, pt.y-h/2, w,h, 4, ns)
           @nodeBoxes[node.name] = [pt.x-w/2, pt.y-h/2, w, h]
 
         # draw the text
         if labels
-          @ctx.font = style.labelStyle.font
           @ctx.textAlign = "center"
           @ctx.fillStyle = style.labelStyle.color
-        
-          yOffset = (h/-2) + 15
+          if style.shapeStyle.shape is 'icon'
+            yOffset = h + 2
+          else
+            yOffset = (h/-2) + lineHeight
           for label in labels
             @ctx.fillText(label||"", pt.x, pt.y+yOffset)
-            yOffset += 12
+            yOffset += lineHeight
 
       renderEdge : (edge, pt1, pt2) =>
         # edge: {source:Node, target:Node, length:#, data:{}}

@@ -51,7 +51,7 @@ class FunctionsTest extends DocumentingTestBase {
       syntax = "ALL(iterable, [symbol =>] predicate-closure)",
       arguments = common_arguments,
       text = """Tests the predicate closure to see if all items in the iterable match.""",
-      queryText = """start a=(%A%), b=(%D%) match p=a-[*1..3]->b where all(nodes(p), x => x.age > 30) return p""",
+      queryText = """start a=(%A%), b=(%D%) match p=a-[*1..3]->b where all(x in nodes(p) : x.age > 30) return p""",
       returns = """All nodes in the path.""",
       (p) => assertEquals(1, p.toSeq.length))
   }
@@ -62,7 +62,7 @@ class FunctionsTest extends DocumentingTestBase {
       syntax = "ANY(iterable, [symbol =>] predicate-closure)",
       arguments = common_arguments,
       text = """Tests the predicate closure to see if at least one item in the iterable match.""",
-      queryText = """start a=(%A%) match p=a-[*1..3]->b where any(nodes(p), x => x.eyes = "blue") return p""",
+      queryText = """start a=(%A%) match p=a-[*1..3]->b where any(x in nodes(p) : x.eyes = "blue") return p""",
       returns = """All nodes in the path.""",
       (p) => assertEquals(3, p.toSeq.length))
   }
@@ -73,7 +73,7 @@ class FunctionsTest extends DocumentingTestBase {
       syntax = "NONE(iterable, [symbol =>] predicate-closure)",
       arguments = common_arguments,
       text = """Tests the predicate closure to see if no items in the iterable match. If even one matches, the function returns false.""",
-      queryText = """start n=(%A%) match p=n-[*1..3]->b where NONE(nodes(p), x => x.age = 25) return p""",
+      queryText = """start n=(%A%) match p=n-[*1..3]->b where NONE(x in nodes(p) : x.age = 25) return p""",
       returns = """All nodes in the path.""",
       (p) => assertEquals(2, p.toSeq.length))
   }
@@ -84,7 +84,7 @@ class FunctionsTest extends DocumentingTestBase {
       syntax = "SINGLE(iterable, [symbol =>] predicate-closure)",
       arguments = common_arguments,
       text = """Returns true if the closure predicate matches exactly one of the items in the iterable.""",
-      queryText = """start n=(%A%) match p=n-->b where SINGLE(nodes(p), _.eyes = "blue") return p""",
+      queryText = """start n=(%A%) match p=n-->b where SINGLE(var in nodes(p) : var.eyes = "blue") return p""",
       returns = """All nodes in the path.""",
       (p) => assertEquals(1, p.toSeq.length))
   }

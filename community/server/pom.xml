@@ -539,6 +539,7 @@ the relevant Commercial Agreement.
           <optimizeOutputDir>${project.build.outputDirectory}/webadmin-html/js</optimizeOutputDir>
         </configuration>
       </plugin>
+      
     </plugins>
 
     <pluginManagement>
@@ -555,7 +556,7 @@ the relevant Commercial Agreement.
                   <pluginExecutionFilter>
                     <groupId>com.voltvoodoo</groupId>
                     <artifactId>brew</artifactId>
-                    <versionRange>[0.2.4,)</versionRange>
+                    <versionRange>[0.2.7,)</versionRange>
                     <goals>
                       <goal>compile</goal>
                       <goal>optimize</goal>
