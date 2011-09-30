@@ -717,7 +717,6 @@ public abstract class CommonJobs
         {
             tx = db.beginTx();
             Node node = db.createNode();
-            System.out.println( Thread.currentThread() + " created node " + node );
             return null;
         }
         
