@@ -26,7 +26,7 @@ import org.neo4j.graphdb.{Path, Node}
 class MatchTest extends DocumentingTestBase {
   override def indexProps: List[String] = List("name")
 
-  def graphDescription: List[String] = List("A KNOWS B", "A BLOCKS C", "D KNOWS A", "B KNOWS E", "C KNOWS E")
+  def graphDescription = List("A KNOWS B", "A BLOCKS C", "D KNOWS A", "B KNOWS E", "C KNOWS E")
 
   def section: String = "MATCH"
 

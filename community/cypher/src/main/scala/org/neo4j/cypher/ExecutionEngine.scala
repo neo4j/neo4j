@@ -59,7 +59,6 @@ class ExecutionEngine(graph: GraphDatabaseService)
       context = addFilters(context)
 
       context = createMatchPipe(matching, namedPaths, context)
-//      context = addFilters(context)
 
       context.pipe = createShortestPathPipe(context.pipe, matching, namedPaths)
       context = addFilters(context)
@@ -69,13 +68,14 @@ class ExecutionEngine(graph: GraphDatabaseService)
         case None =>
         case Some(x) => x.paths.foreach(p => context.pipe = new NamedPathPipe(context.pipe, p))
       }
-      context = addFilters(context)
+
+      if (context.clauses.nonEmpty) {
+        context.pipe = new FilterPipe(context.pipe, context.clauses.reduceLeft(_ ++ _))
+      }
 
       val allReturnItems = extractReturnItems(returns, aggregation, sort)
-      context = addFilters(context)
 
       context.pipe = new TransformPipe(context.pipe, allReturnItems)
-      context = addFilters(context)
 
       aggregation match
       {

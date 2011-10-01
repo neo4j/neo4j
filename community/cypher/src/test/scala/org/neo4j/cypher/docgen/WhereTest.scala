@@ -24,11 +24,12 @@ import org.junit.Assert._
 import org.neo4j.graphdb.{Relationship, Node}
 
 class WhereTest extends DocumentingTestBase {
-  def graphDescription = List("Andres KNOWS Tobias")
+  def graphDescription = List("Andres KNOWS Tobias", "Andres KNOWS Peter")
 
   override val properties = Map(
     "Andres" -> Map("age" -> 36l, "belt" -> "white"),
-    "Tobias" -> Map("age" -> 25l)
+    "Tobias" -> Map("age" -> 25l),
+    "Peter"->Map("age"->34l)
   )
 
   def section = "Where"
@@ -88,5 +89,15 @@ class WhereTest extends DocumentingTestBase {
       queryText = """start n=(%Andres%) match (n)-[r]->() where type(r) =~ /K.*/ return r""",
       returns = """The relationship that has a type whose name starts with K.""",
       (p) => assertEquals("KNOWS", p.columnAs[Relationship]("r").toList.head.getType.name()))
+  }
+
+  @Test def filter_on_null() {
+    testQuery(
+      title = "Filter on null values",
+      text = "Sometimes you might want to test if a value or an identifier is null. This is done just like SQL does it, with IS NULL." +
+        " Also like SQL, the negative is IS NOT NULL, althought NOT(IS NULL x) also works.",
+      queryText = """start a=(%Tobias%), b=(%Andres%, %Peter%) match a<-[r?]-b where r is null return b""",
+      returns = "Nodes that Tobias is not connected to",
+      (p) => assertEquals(List(Map("b"->node("Peter"))), p.toList))
   }
 }

@@ -24,7 +24,7 @@ import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
 
 trait Clauses extends JavaTokenParsers with Tokens with Values {
-  def clause: Parser[Clause] = (orderedComparison | not | notEquals | equals | regexp | hasProperty | parens(clause) | sequenceClause) * (
+  def clause: Parser[Clause] = (isNull | isNotNull | orderedComparison | not | notEquals | equals | regexp | hasProperty | parens(clause) | sequenceClause) * (
     ignoreCase("and") ^^^ { (a: Clause, b: Clause) => And(a, b)  } |
     ignoreCase("or") ^^^  { (a: Clause, b: Clause) => Or(a, b) }
     )
@@ -77,6 +77,9 @@ trait Clauses extends JavaTokenParsers with Tokens with Values {
   def not: Parser[Clause] = ignoreCase("not") ~ "(" ~ clause ~ ")" ^^ {
     case not ~ "(" ~ inner ~ ")" => Not(inner)
   }
+
+  def isNull: Parser[Clause] = (value|entityValue) <~ ignoreCase("is null") ^^ ( x => IsNull(x) )
+  def isNotNull: Parser[Clause] = (value|entityValue) <~ ignoreCase("is not null") ^^ ( x => Not(IsNull(x)) )
 
 }
 

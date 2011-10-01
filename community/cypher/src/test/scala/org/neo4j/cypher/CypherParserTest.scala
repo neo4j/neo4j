@@ -786,6 +786,24 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ValueReturnItem(EntityValue("p"))))
   }
 
+  @Test def testForNull() {
+    testQuery(
+      """start a=(0) where a is null return a""",
+      Query.
+        start(NodeById("a", 0)).
+        where(IsNull(EntityValue("a")))
+        returns(ValueReturnItem(EntityValue("a"))))
+  }
+
+  @Test def testForNotNull() {
+    testQuery(
+      """start a=(0) where a is not null return a""",
+      Query.
+        start(NodeById("a", 0)).
+        where(Not(IsNull(EntityValue("a"))))
+        returns(ValueReturnItem(EntityValue("a"))))
+  }
+
   @Test def consoleModeParserShouldOutputNullableProperties() {
     val query = "start a = (1) return a.name"
     val parser = new ConsoleCypherParser()
