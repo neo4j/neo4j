@@ -61,6 +61,11 @@ public class AsciidocHelper
         return "[source]\n----\n"+output+"\n----\n";
     }
     
+    public static String createQueryResultSnippet( final String output )
+    {
+        return "[queryresult]\n----\n" + output + "\n----\n";
+    }
+
     public static String createCypherSnippet( final String query )
     {
         return "[source,cypher]\n----\n"+query.

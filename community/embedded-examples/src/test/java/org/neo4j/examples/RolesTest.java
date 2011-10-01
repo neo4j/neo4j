@@ -19,10 +19,11 @@
 
 package org.neo4j.examples;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.test.AsciiDocGenerator.createSourceSnippet;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createCypherSnippet;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
@@ -184,7 +185,7 @@ public class RolesTest extends AbstractJavaDocTestbase
         gen.get().addSnippet( "query-get-admins", createCypherSnippet( query ) );
         String result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("Engin") );
-        gen.get().addSnippet( "o-query-get-admins", createOutputSnippet( result ) );
+        gen.get().addSnippet( "o-query-get-admins", createQueryResultSnippet( result ) );
         
         //Jale's memberships
         gen.get().addSnippet( "get-user-memberships", createSourceSnippet("get-user-memberships", this.getClass()) );
@@ -200,7 +201,9 @@ public class RolesTest extends AbstractJavaDocTestbase
         gen.get().addSnippet( "query-get-user-memberships", createCypherSnippet( query ) );
         result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("Users") );
-        gen.get().addSnippet( "o-query-get-user-memberships", createOutputSnippet( result ) );
+        gen.get()
+                .addSnippet( "o-query-get-user-memberships",
+                        createQueryResultSnippet( result ) );
         
         // get all groups
         gen.get().addSnippet( "get-groups", createSourceSnippet("get-groups", this.getClass()) );
@@ -216,7 +219,9 @@ public class RolesTest extends AbstractJavaDocTestbase
         gen.get().addSnippet( "query-get-groups", createCypherSnippet( query ) );
         result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("Users") );
-        gen.get().addSnippet( "o-query-get-groups", createOutputSnippet( result ) );
+        gen.get()
+                .addSnippet( "o-query-get-groups",
+                        createQueryResultSnippet( result ) );
         
         //get all members
         gen.get().addSnippet( "get-members", createSourceSnippet("get-members", this.getClass()) );
@@ -248,7 +253,9 @@ public class RolesTest extends AbstractJavaDocTestbase
         gen.get().addSnippet( "query-get-members", createCypherSnippet( query ) );
         result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("Engin") );
-        gen.get().addSnippet( "o-query-get-members", createOutputSnippet( result ) );
+        gen.get()
+                .addSnippet( "o-query-get-members",
+                        createQueryResultSnippet( result ) );
         
     }
 

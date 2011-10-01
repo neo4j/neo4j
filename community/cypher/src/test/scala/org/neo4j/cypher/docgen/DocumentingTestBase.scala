@@ -66,9 +66,9 @@ abstract class DocumentingTestBase extends JUnitSuite {
     writer.println()
     writer.println("_Result_")
     writer.println()
-    writer.println("[source]")
+    writer.println("[queryresult]")
     writer.println("----")
-    writer.println(" " + result.dumpToString().replace("\n", "\n "))
+    writer.println(result.dumpToString())
     writer.println("----")
     writer.println()
     writer.println()
@@ -85,7 +85,7 @@ abstract class DocumentingTestBase extends JUnitSuite {
     val writer = new GraphvizWriter(new AsciiDocStyle());
     writer.emit(out, Walker.fullGraph(db));
 
-"""
+    """
 _Graph_
 
 ["dot", "graph.svg", "neoviz"]
