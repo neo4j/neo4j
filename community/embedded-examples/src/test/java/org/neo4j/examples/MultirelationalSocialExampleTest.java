@@ -47,21 +47,50 @@ public class MultirelationalSocialExampleTest extends AbstractJavaDocTestbase
      * 
      * @@result1
      * 
+     * == What do my friends like that I do not (yet) like?
+     * 
+     * This is a basic recommendation scenario, ranking the preferred items of my social neighborhood
+     * for things that I am not preferring yet.
+     * 
+     * @@query2
+     * 
+     * @@result2
+     * 
+     * 
      */
     @Test
     @Documented
-    @Graph(value = {"Joe FOLLOWS Sara", "Sara FOLLOWS Joe", "Joe LIKES Maria","Maria LIKES Joe","Sara FOLLOWS Ben", "Joe FOLLOWS Ben"}, autoIndexNodes = true)
+    @Graph(value = {"Joe FOLLOWS Sara", 
+            "Sara FOLLOWS Joe", 
+            "Joe LOVES Maria",
+            "Maria LOVES Joe",
+            "Joe FOLLOWS Maria",
+            "Maria FOLLOWS Joe",
+            "Sara FOLLOWS Ben", 
+            "Joe LIKES bikes",
+            "Sara LIKES bikes",
+            "Sara LIKES cars",
+            "Sara LIKES cats",
+            "Maria LIKES cars"
+            }, autoIndexNodes = true)
     public void social_network_with_multiple_relations()
     {
         data.get();
         gen.get().addSnippet( "graph1", createGraphViz("Multi-relational social network", graphdb(), gen.get().getTitle()) );
         String query = "START me=(node_auto_index,'name:Joe') " +
-        		"MATCH me-[r1]->other-[r2]->me WHERE type(r1)=type(r2) AND type(r1) =~ /FOLLOWS|LIKES/ RETURN me, other, type(r1) ";
+        		"MATCH me-[r1]->other-[r2]->me WHERE type(r1)=type(r2) AND type(r1) =~ /FOLLOWS|LOVES/ RETURN me, other, type(r1) ";
         String result = engine.execute( parser.parse( query ) ).toString();
         gen.get().addSnippet( "query1", createCypherSnippet( query ) );
-        gen.get().addSnippet( "result1", createOutputSnippet( result ) );
-        
+        gen.get().addSnippet( "result1", createOutputSnippet( engine.execute( parser.parse( query ) ).toString() ) );
         assertTrue(result.contains( "Sara" ));
         assertTrue(result.contains( "Maria" ));
+        
+        query = "START joe=(node_auto_index,'name:Joe') " +
+                "MATCH joe-[:FOLLOWS]->other-[:LIKES]->theirStuff, joe-[:LIKES]->joeStuff " +
+                "WHERE NOT(ID(theirStuff) = ID(joeStuff)) RETURN theirStuff, COUNT(theirStuff)" +
+                "ORDER BY COUNT(theirStuff) DESC ";
+        gen.get().addSnippet( "query2", createCypherSnippet( query ) );
+        gen.get().addSnippet( "result2", createOutputSnippet( engine.execute( parser.parse( query ) ).toString() ) );
+        
     }    
 }
