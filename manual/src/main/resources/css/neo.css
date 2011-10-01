@@ -231,12 +231,12 @@ p.copyright
 code.literal
 {
   font-family: Consolas, Monaco, monospace;
-  font-size: .933em;
+  font-size: .9375em;
 }
 
 td code.literal
 {
-  font-size: .867em;
+  font-size: .8em;
 }
 
 li
@@ -290,7 +290,7 @@ div.warning, div.note, div.caution
   margin-top: 1em;
 }
 
-div.table table, div.informaltable table
+div.table table, div.informaltable
 {
   border-collapse: collapse;
 }
