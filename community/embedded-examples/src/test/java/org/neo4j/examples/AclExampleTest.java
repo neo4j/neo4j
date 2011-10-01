@@ -22,7 +22,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createCypherSnippet;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphViz;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
 
 import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -189,7 +189,8 @@ public class AclExampleTest extends AbstractJavaDocTestbase
         gen.get().addSnippet( "query1", createCypherSnippet( query ) );
         String result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("File1") );
-        gen.get().addSnippet( "result1", createOutputSnippet( result ) );
+        gen.get()
+                .addSnippet( "result1", createQueryResultSnippet( result ) );
         
         //Ownership
         query = "start root=(node_auto_index,name, 'FileRoot') match (root)-[:contains*]->()-[:leaf]->(file)<-[:owns]-(user) return file, user";
@@ -201,7 +202,8 @@ public class AclExampleTest extends AbstractJavaDocTestbase
         assertTrue( result.contains("File2") );
         assertFalse( result.contains("Admin1") );
         assertFalse( result.contains("Admin2") );
-        gen.get().addSnippet( "result2", createOutputSnippet( result ) );
+        gen.get()
+                .addSnippet( "result2", createQueryResultSnippet( result ) );
         
         //ACL
         query = "START file=(node_auto_index, 'name:File*') " +
@@ -218,6 +220,7 @@ public class AclExampleTest extends AbstractJavaDocTestbase
         assertTrue( result.contains("File2") );
         assertTrue( result.contains("Admin1") );
         assertTrue( result.contains("Admin2") );
-        gen.get().addSnippet( "result3", createOutputSnippet( result ) );
+        gen.get()
+                .addSnippet( "result3", createQueryResultSnippet( result ) );
     }
 }

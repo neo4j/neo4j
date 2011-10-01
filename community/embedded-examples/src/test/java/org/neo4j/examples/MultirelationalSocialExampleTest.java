@@ -21,7 +21,7 @@ package org.neo4j.examples;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createCypherSnippet;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphViz;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
 
 import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -59,7 +59,7 @@ public class MultirelationalSocialExampleTest extends AbstractJavaDocTestbase
         		"MATCH me-[r1]->other-[r2]->me WHERE type(r1)=type(r2) AND type(r1) =~ /FOLLOWS|LIKES/ RETURN me, other, type(r1) ";
         String result = engine.execute( parser.parse( query ) ).toString();
         gen.get().addSnippet( "query1", createCypherSnippet( query ) );
-        gen.get().addSnippet( "result1", createOutputSnippet( result ) );
+        gen.get().addSnippet( "result1", createQueryResultSnippet( result ) );
         
         assertTrue(result.contains( "Sara" ));
         assertTrue(result.contains( "Maria" ));
