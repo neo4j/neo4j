@@ -60,7 +60,15 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     assertMatches(matchingContext.getMatches(Map("r" -> r)), 1, Map("a" -> a, "b" -> b, "r" -> r))
   }
 
-  @Ignore
+  @Test def singleDirectedRelTurnedTheWrongWay() {
+    val r = relate(a, b, "rel", "r")
+
+    val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.INCOMING, false))
+    val matchingContext = new MatchingContext(patterns, bind("a"))
+
+    assertMatches(matchingContext.getMatches(Map("r" -> r)), 1, Map("a" -> b, "b" -> a, "r" -> r))
+  }
+
   @Test def singleUndirectedRel() {
     val r = relate(a, b, "rel")
 
@@ -70,6 +78,22 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     assertMatches(matchingContext.getMatches(Map("r" -> r)), 2,
       Map("a" -> a, "b" -> b, "r" -> r),
       Map("a" -> b, "b" -> a, "r" -> r))
+  }
+
+  @Test def twoUndirectedRel() {
+    val r1 = relate(a, b, "rel", "r1")
+    val r2 = relate(b, c, "rel", "r2")
+
+    val patterns: Seq[Pattern] = Seq(
+      RelatedTo("a", "b", "r1", "rel", Direction.BOTH, false),
+      RelatedTo("b", "c", "r2", "rel", Direction.BOTH, false)
+    )
+
+    val symbols = new SymbolTable(Set[Identifier](RelationshipIdentifier("r1"), RelationshipIdentifier("r2")))
+
+    val matchingContext = new MatchingContext(patterns, symbols)
+
+    assertMatches(matchingContext.getMatches(Map("r1" -> r1, "r2"->r2)), 1)
   }
 
   @Test def singleHopDoubleMatch() {

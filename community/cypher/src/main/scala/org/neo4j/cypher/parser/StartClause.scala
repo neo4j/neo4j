@@ -49,13 +49,14 @@ trait StartClause extends JavaTokenParsers with Tokens {
     case varName ~ "=" ~ "(" ~ index ~ "," ~ query ~ ")" => NodeByIndexQuery(varName, index, Literal(query))
   }
 
-  def relsByIds = identity ~ "=" ~ "<" ~ rep1sep(wholeNumber, ",") ~ ">" ^^ {
-    case varName ~ "=" ~ "<" ~ id ~ ">" => RelationshipById(varName, id.map(_.toLong).toSeq: _*)
+  def relsByIds = identity ~ "=" ~ "[" ~ rep1sep(wholeNumber, ",") ~ "]" ^^ {
+    case varName ~ "=" ~ "[" ~ id ~ "]" => RelationshipById(varName, id.map(_.toLong).toSeq: _*)
   }
 
-  def relsByIndex = identity ~ "=" ~ "<" ~ identity ~ "," ~ identity ~ "," ~ string ~ ">" ^^ {
-    case varName ~ "=" ~ "<" ~ index ~ "," ~ key ~ "," ~ value ~ ">" => RelationshipByIndex(varName, index, key, value)
+  def relsByIndex = identity ~ "=" ~ "[" ~ identity ~ "," ~ param ~ "," ~ paramString ~ "]" ^^ {
+    case varName ~ "=" ~ "[" ~ index ~ "," ~ key ~ "," ~ value ~ "]" => RelationshipByIndex(varName, index, key, value)
   }
+
 }
 
 

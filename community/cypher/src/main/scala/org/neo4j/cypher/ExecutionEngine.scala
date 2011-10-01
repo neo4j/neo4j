@@ -188,6 +188,15 @@ class ExecutionEngine(graph: GraphDatabaseService)
         indexHits.asScala
       })
 
+    case RelationshipByIndex(varName, idxName, key, value) =>
+      new StartPipe(lastPipe, varName, m =>
+      {
+        val keyVal = key(m).toString
+        val valueVal = value(m)
+        val indexHits: Iterable[Relationship] = graph.index.forRelationships(idxName).get(keyVal, valueVal)
+        indexHits.asScala
+      })
+
     case NodeByIndexQuery(varName, idxName, query) =>
       new StartPipe(lastPipe, varName, m =>
       {

@@ -133,16 +133,26 @@ _Graph_
 
   def node(name: String): Node = nodes.getOrElse(name, throw new NotFoundException(name))
 
+  def rel(id: Long): Relationship = db.getRelationshipById(id)
+
   @After
   def teardown() {
     db.shutdown()
   }
 
   private def removeReferenceNode(db: GraphDatabaseService) {
+    inTx(() => db.getReferenceNode.delete())
+  }
+
+  def inTx[U](f: () => U): U = {
     val tx = db.beginTx()
-    db.getReferenceNode.delete()
-    tx.success()
-    tx.finish()
+    try {
+      val x = f()
+      tx.success()
+      x
+    } finally {
+      tx.finish()
+    }
   }
 
   @Before
@@ -152,25 +162,22 @@ _Graph_
 
     removeReferenceNode(db)
 
-    val tx = db.beginTx()
+    inTx(() => {
+      nodeIndex = db.index().forNodes("nodes")
+      relIndex = db.index().forRelationships("rels")
+      val description = GraphDescription.create(graphDescription: _*)
 
-    nodeIndex = db.index().forNodes("nodes")
-    relIndex = db.index().forRelationships("rels")
-    val description = GraphDescription.create(graphDescription: _*)
+      nodes = description.create(db).asScala.toMap
 
-    nodes = description.create(db).asScala.toMap
+      db.getAllNodes.asScala.foreach((n) => {
+        indexProperties(n, nodeIndex)
+        n.getRelationships(Direction.OUTGOING).asScala.foreach(indexProperties(_, relIndex))
+      })
 
-    db.getAllNodes.asScala.foreach((n) => {
-      indexProperties(n, nodeIndex)
-      n.getRelationships(Direction.OUTGOING).asScala.foreach(indexProperties(_, relIndex))
+      properties.foreach((n) => {
+        val nod = node(n._1)
+        n._2.foreach((kv) => nod.setProperty(kv._1, kv._2))
+      })
     })
-
-    properties.foreach((n) => {
-      val nod = node(n._1)
-      n._2.foreach((kv) => nod.setProperty(kv._1, kv._2))
-    })
-
-    tx.success()
-    tx.finish()
   }
 }

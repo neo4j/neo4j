@@ -10,8 +10,10 @@ index lookups.
 include::graph.txt[]
 
 include::node-by-id.txt[]
+include::relationship-by-id.txt[]
 include::multiple-nodes-by-id.txt[]
 include::node-by-index-lookup.txt[]
+include::relationship-by-index-lookup.txt[]
 include::node-by-index-query.txt[]
 include::multiple-start-points.txt[]
 

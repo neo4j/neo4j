@@ -53,7 +53,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
   @Test def shouldParseEasiestPossibleRelationshipQuery() {
     testQuery(
-      "start s = <1> return s",
+      "start s = [1] return s",
       Query.
         start(RelationshipById("s", 1)).
         returns(ValueReturnItem(EntityValue("s"))))
@@ -61,9 +61,9 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
   @Test def sourceIsARelationshipIndex() {
     testQuery(
-      """start a = <index, key, "value"> return a""",
+      """start a = [index, key, "value"] return a""",
       Query.
-        start(RelationshipByIndex("a", "index", "key", "value")).
+        start(RelationshipByIndex("a", "index", Literal("key"), Literal("value"))).
         returns(ValueReturnItem(EntityValue("a"))))
   }
 
