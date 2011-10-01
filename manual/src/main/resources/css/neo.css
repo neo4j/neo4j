@@ -326,6 +326,34 @@ div.table table, div.informaltable table
   background: #d7e3e6 url("table-bg.png");
 }
 
+div.queryresult table tbody td p code.literal
+{
+  color: #000000;
+}
+
+div.queryresult table thead tr,
+div.queryresult table tfoot tr
+{
+  background: #cad9dc;
+}
+
+div.queryresult table tbody
+{
+  background: #d1dee1;
+}
+
+div.queryresult table tbody tr.evenresult
+{
+  background: #dfe8eb;
+}
+
+div.queryresult table thead th,
+div.queryresult table tfoot th
+{
+  font-size: 0.9375em;
+}
+
+
 div.table table th, div.informaltable table th,
 div.table-contents td p span.strong strong
 {

@@ -48,6 +48,10 @@
 
 <script type="text/javascript" src="js/imagescaler.js"></script>
 
+<!-- Table Styler -->
+
+<script type="text/javascript" src="js/tablestyler.js"></script>
+
 <!-- Version Switcher -->
 
 <script type="text/javascript" src="js/versionswitcher.js"></script>
