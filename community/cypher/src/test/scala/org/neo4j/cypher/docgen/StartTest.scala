@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.neo4j.graphdb.Node
 import scala.collection.JavaConverters._
 import org.junit.Assert.assertThat
 import org.junit.Assert.assertEquals
 import org.junit.matchers.JUnitMatchers.hasItem
 import org.junit.Test
+import org.neo4j.graphdb.{Relationship, Node}
+import org.neo4j.graphdb.index.{Index, RelationshipIndex}
 
 class StartTest extends DocumentingTestBase {
   def graphDescription = List("A KNOWS B", "A KNOWS C")
@@ -42,6 +43,15 @@ class StartTest extends DocumentingTestBase {
       (p) => assertThat(p.columnAs[Node]("n").toList.asJava, hasItem(node("A"))))
   }
 
+  @Test def relationships_by_id() {
+    testQuery(
+      title = "Relationship by id",
+      text = "Including a relationship as a start point is done by using square brackets.",
+      queryText = "start r=[0] return r",
+      returns = "The relationshop with id 0 is returned",
+      (p) => assertThat(p.columnAs[Relationship]("r").toList.asJava, hasItem(rel(0))))
+  }
+
   @Test def multiple_nodes_by_id() {
     testQuery(
       title = "Multiple nodes by id",
@@ -54,10 +64,28 @@ class StartTest extends DocumentingTestBase {
   @Test def nodes_by_index() {
     testQuery(
       title = "Node by index lookup",
-      text = "If the start point can be found by index lookups, it can be done like this: (index-name, key, \"value\"). Like this: ",
+      text = "If the start point can be found by index lookups, it can be done like this: (index-name, key, \"value\").",
       queryText = """start n=(nodes,name,"A") return n""",
       returns = """The node indexed with name "A" is returned""",
       (p) => assertEquals(List(Map("n" -> node("A"))), p.toList))
+  }
+
+  @Test def relationships_by_index() {
+    inTx(()=>{
+      val r = db.getRelationshipById(0)
+      val property = "property"
+      val value = "some_value"
+      r.setProperty(property, value)
+      val relIndex: Index[Relationship] = db.index().forRelationships("rels")
+      relIndex.add(r, property, value)
+    })
+
+    testQuery(
+      title = "Relationship by index lookup",
+      text = "If the start point can be found by index lookups, it can be done like this: [index-name, key, \"value\"].",
+      queryText = """start r=[rels,property,"some_value"] return r""",
+      returns = """The relationship indexed with property "some_value" is returned""",
+      (p) => assertEquals(List(Map("r" -> rel(0))), p.toList))
   }
 
   @Test def nodes_by_index_query() {

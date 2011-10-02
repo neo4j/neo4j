@@ -20,11 +20,12 @@
 package org.neo4j.cypher.pipes.matching
 
 import org.neo4j.cypher.{SyntaxException, SymbolTable}
-import org.neo4j.graphdb.{Relationship, Node}
 import org.neo4j.cypher.commands._
 import collection.immutable.Map
+import org.neo4j.graphdb.{Direction, Relationship, Node}
+import collection.{Seq, Iterable}
 
-class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, clauses:Seq[Clause]=Seq()) {
+class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, clauses: Seq[Clause] = Seq()) {
   type PatternGraph = Map[String, PatternElement]
 
   val patternGraph: PatternGraph = buildPatternGraph()
@@ -33,31 +34,55 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, cla
     (patternGraph.keySet -- matchedGraph.keySet).map(_ -> null).toMap
   }
 
-  def getMatches(bindings: Map[String, Any]): Traversable[Map[String, Any]] = {
-    val boundPairs: Map[String, MatchingPair] = bindings.flatMap(kv => {
-      val patternElement = patternGraph(kv._1)
+  def createListOfBoundRelationshipsWithHangingNodes(undirectedBoundRelationships: Iterable[PatternRelationship], bindings: Map[String, Any]) = {
+    val toList = undirectedBoundRelationships.map(patternRel => {
+      val rel = bindings(patternRel.key).asInstanceOf[Relationship]
+      val x = patternRel.key -> MatchingPair(patternRel, rel)
 
-      kv._2 match {
-        case node: Node => {
-          Seq(kv._1 -> MatchingPair(patternElement, node))
-        }
-        case rel: Relationship => {
-          val pr = patternElement.asInstanceOf[PatternRelationship]
+      // Outputs the first direction of the pattern relationship
+      val a1 = patternRel.startNode.key -> MatchingPair(patternRel.startNode, rel.getStartNode)
+      val a2 = patternRel.endNode.key -> MatchingPair(patternRel.endNode, rel.getEndNode)
 
-          val t1 = pr.startNode.key -> MatchingPair(pr.startNode, rel.getStartNode)
-          val t2 = pr.endNode.key -> MatchingPair(pr.endNode, rel.getEndNode)
-          val t3 = pr.key -> MatchingPair(pr, rel)
+      // Outputs the second direction of the pattern relationship
+      val b1 = patternRel.startNode.key -> MatchingPair(patternRel.startNode, rel.getEndNode)
+      val b2 = patternRel.endNode.key -> MatchingPair(patternRel.endNode, rel.getStartNode)
 
-          Seq(t1,t2,t3)
-        }
-      }
-    })
+      Seq(Map(x, a1, a2), Map(x, b1, b2))
+    }).toList
+    cartesian(toList).map(_.reduceLeft(_++_))
+  }
 
-
+  def createPatternMatcher(boundPairs: Map[String, MatchingPair]): scala.Traversable[Map[String, Any]] = {
     new PatternMatcher(boundPairs, clauses).map(matchedGraph => {
       matchedGraph ++ createNullValuesForOptionalElements(matchedGraph)
     })
   }
+
+  def getMatches(bindings: Map[String, Any]): Traversable[Map[String, Any]] = {
+    val boundPairs: Map[String, MatchingPair] = extractBoundMatchingPairs(bindings)
+
+    val undirectedBoundRelationships: Iterable[PatternRelationship] = bindings.keys.
+      filter(patternGraph(_).isInstanceOf[PatternRelationship]).
+      map(patternGraph(_).asInstanceOf[PatternRelationship]).
+      filter(_.dir == Direction.BOTH)
+
+    if (undirectedBoundRelationships.isEmpty) {
+      createPatternMatcher(boundPairs)
+    } else {
+      val boundRels: Seq[Map[String, MatchingPair]] = createListOfBoundRelationshipsWithHangingNodes(undirectedBoundRelationships, bindings)
+
+      boundRels.map( relMap => createPatternMatcher(relMap ++ boundPairs)  ).reduceLeft(_++_)
+    }
+
+  }
+
+  // This method takes  a Seq of Seq and produces the cartesian product of all inner Seqs
+  // I'm committing this code, but it's all Tobias' doing.
+  private def cartesian[T](lst: Seq[Seq[T]]): Seq[Seq[T]] =
+    lst.foldRight(List(List[T]()))(// <- the type T needs to be specified here
+      (element: Seq[T], result: List[List[T]]) => // types for better readability
+        result.flatMap(r => element.map(e => e :: r))
+    ).toSeq
 
   /*
   This method is mutable, but it is only called from the constructor of this class. The created pattern graph
@@ -77,8 +102,7 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, cla
         val leftNode: PatternNode = patternNodeMap.getOrElseUpdate(left, new PatternNode(left))
         val rightNode: PatternNode = patternNodeMap.getOrElseUpdate(right, new PatternNode(right))
 
-        if(patternRelMap.contains(rel))
-        {
+        if (patternRelMap.contains(rel)) {
           throw new SyntaxException("Can't re-use pattern relationship '%s' with different start/end nodes.".format(rel))
         }
 
@@ -98,11 +122,46 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, cla
     pattern.map(x => x.key -> x).toMap
   }
 
-  def validatePattern( patternNodes: Map[String, PatternNode],
-                       patternRels: Map[String, PatternRelationship],
-                       bindings: SymbolTable):Map[String,PatternElement] = {
+
+  private def extractBoundMatchingPairs(bindings: Map[String, Any]): Map[String, MatchingPair] = {
+    bindings.flatMap(kv => {
+      val patternElement = patternGraph(kv._1)
+
+      kv._2 match {
+        case node: Node => {
+          Seq(kv._1 -> MatchingPair(patternElement, node))
+        }
+        case rel: Relationship => {
+          val pr = patternElement.asInstanceOf[PatternRelationship]
+
+          val x = pr.dir match {
+            case Direction.OUTGOING => Some((pr.startNode, pr.endNode))
+            case Direction.INCOMING => Some((pr.endNode, pr.startNode))
+            case Direction.BOTH => None
+          }
+
+          //We only want directed bound relationships. Undirected relationship patterns
+          //have to be treated a little differently
+          x match {
+            case Some((a, b)) => {
+              val t1 = a.key -> MatchingPair(a, rel.getStartNode)
+              val t2 = b.key -> MatchingPair(b, rel.getEndNode)
+              val t3 = pr.key -> MatchingPair(pr, rel)
+
+              Seq(t1, t2, t3)
+            }
+            case None => Seq()
+          }
+        }
+      }
+    })
+  }
+
+  def validatePattern(patternNodes: Map[String, PatternNode],
+                      patternRels: Map[String, PatternRelationship],
+                      bindings: SymbolTable): Map[String, PatternElement] = {
     val overlaps = patternNodes.keys.filter(patternRels.keys.toSeq contains)
-    if(overlaps.nonEmpty) {
+    if (overlaps.nonEmpty) {
       throw new SyntaxException("Some identifiers are used as both relationships and nodes: " + overlaps.mkString(", "))
     }
 

@@ -32,6 +32,8 @@ class ExecutionEngine(graph: GraphDatabaseService)
 {
   checkScalaVersion()
 
+  require( graph != null, "Can't work with a null graph database" )
+
   // This is here because the JavaAPI looks funny with default values
   @throws(classOf[SyntaxException])
   def execute(query: Query): ExecutionResult = execute(query, Map[String, Any]())
@@ -180,7 +182,7 @@ class ExecutionEngine(graph: GraphDatabaseService)
   private def createStartPipe(lastPipe: Pipe, item: StartItem): Pipe = item match
   {
     case NodeByIndex(varName, idxName, key, value) =>
-      new StartPipe(lastPipe, varName, m =>
+      new NodeStartPipe(lastPipe, varName, m =>
       {
         val keyVal = key(m).toString
         val valueVal = value(m)
@@ -188,16 +190,25 @@ class ExecutionEngine(graph: GraphDatabaseService)
         indexHits.asScala
       })
 
+    case RelationshipByIndex(varName, idxName, key, value) =>
+      new RelationshipStartPipe(lastPipe, varName, m =>
+      {
+        val keyVal = key(m).toString
+        val valueVal = value(m)
+        val indexHits: Iterable[Relationship] = graph.index.forRelationships(idxName).get(keyVal, valueVal)
+        indexHits.asScala
+      })
+
     case NodeByIndexQuery(varName, idxName, query) =>
-      new StartPipe(lastPipe, varName, m =>
+      new NodeStartPipe(lastPipe, varName, m =>
       {
         val queryText = query(m)
         val indexHits: Iterable[Node] = graph.index.forNodes(idxName).query(queryText)
         indexHits.asScala
       })
 
-    case NodeById(varName, id) => new StartPipe(lastPipe, varName, m => makeLongSeq(id(m), varName).map(graph.getNodeById))
-    case RelationshipById(varName, id) => new StartPipe(lastPipe, varName, m => makeLongSeq(id(m), varName).map(graph.getRelationshipById))
+    case NodeById(varName, id) => new NodeStartPipe(lastPipe, varName, m => makeLongSeq(id(m), varName).map(graph.getNodeById))
+    case RelationshipById(varName, id) => new RelationshipStartPipe(lastPipe, varName, m => makeLongSeq(id(m), varName).map(graph.getRelationshipById))
   }
 
   private def addFilters(context: CurrentContext): CurrentContext =

@@ -21,7 +21,7 @@ package org.neo4j.cypher.docgen
 
 import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.graphdb.{Path, Node}
+import org.neo4j.graphdb.{DynamicRelationshipType, Path, Node}
 
 class MatchTest extends DocumentingTestBase {
   override def indexProps: List[String] = List("name")
@@ -83,11 +83,16 @@ class MatchTest extends DocumentingTestBase {
   }
 
   @Test def relationshipsByTypeWithSpace() {
+    inTx(() => {
+      val a = node("A")
+      val b = node("A")
+      a.createRelationshipTo(b, DynamicRelationshipType.withName("TYPE WITH SPACE IN IT"))
+    })
     testQuery(
       title = "Relationship types with uncommon characters",
       text = "Sometime your database will have types with non-letter characters, or with spaces in them. Use ` to escape these.",
-      queryText = """start n=(%A%) match (n)-[r:BLOCKS]->() return r""",
-      returns = """All +BLOCKS+ relationship going out from A.""",
+      queryText = """start n=(%A%) match (n)-[r:`TYPE WITH SPACE IN IT`]->() return r""",
+      returns = """This returns a relationship of a type with spaces in it.""",
       (p) => assertEquals(1, p.size)
     )
   }
@@ -121,7 +126,7 @@ class MatchTest extends DocumentingTestBase {
       text = "Elements that are a fixed number of hops away can be matched by using [*numberOfHops]. ",
       queryText = """start a=(%D%) match p=a-[*3]->() return p""",
       returns = "The two paths that go from node D to node E",
-      (p) => assert( p.toSeq.length === 2 )
+      (p) => assert(p.toSeq.length === 2)
     )
   }
 
@@ -156,7 +161,7 @@ class MatchTest extends DocumentingTestBase {
       queryText = """start d=(%D%), e=(%E%) match p = shortestPath( d-[*..15]->e ) return p""",
       returns = """This means: find the shortest path between two nodes, as long as the path is max 15 relationships long. Inside of the parenthesis
  you can write """,
-      (p) => assertEquals(3, p.toList.head("p").asInstanceOf[Path].length() )
+      (p) => assertEquals(3, p.toList.head("p").asInstanceOf[Path].length())
     )
   }
 
@@ -168,9 +173,7 @@ class MatchTest extends DocumentingTestBase {
 match (a)-[:KNOWS]->(b)-[:KNOWS]->(c), (a)-[:BLOCKS]-(d)-[:KNOWS]-(c)
 return a,b,c,d""",
       returns = """The four nodes in the path.""",
-      p => {
-        assertEquals(List(Map("a" -> node("A"), "b" -> node("B"), "c" -> node("E"), "d" -> node("C"))), p.toList)
-      }
+      p => assertEquals(List(Map("a" -> node("A"), "b" -> node("B"), "c" -> node("E"), "d" -> node("C"))), p.toList)
     )
   }
 
@@ -184,4 +187,14 @@ return a,b,c,d""",
     )
   }
 
+  @Test def match_on_bound_relationship() {
+    testQuery(
+      title = "Matching on a bound relationship",
+      text = """When your pattern contains a bound relationship, and that relationship pattern doesn specify direction,
+Cypher will try to match the relationship where the connected nodes switch sides.""",
+      queryText = """start r=[0] match a-[r]-b return a,b""",
+      returns = "This returns the two connected nodes, once as the start node, and once as the end node",
+      p => assertEquals(2, p.toSeq.length)
+    )
+  }
 }
