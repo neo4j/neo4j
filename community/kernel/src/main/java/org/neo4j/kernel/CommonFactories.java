@@ -130,6 +130,11 @@ public class CommonFactories
             {
                 // Do nothing
             }
+            
+            @Override
+            public void close()
+            {
+            }
         };
     }
     

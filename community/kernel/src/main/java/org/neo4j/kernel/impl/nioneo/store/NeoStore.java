@@ -106,6 +106,7 @@ public class NeoStore extends AbstractStore
     @Override
     protected void closeStorage()
     {
+        lastCommittedTxIdSetter.close();
         if ( relTypeStore != null )
         {
             relTypeStore.close();
