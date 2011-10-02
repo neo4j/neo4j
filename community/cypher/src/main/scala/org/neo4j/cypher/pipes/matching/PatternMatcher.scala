@@ -69,15 +69,19 @@ class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause]) 
 
     val (pNode, gNode) = currentNode.getPatternAndGraphPoint
 
-    val notVisitedRelationships: Seq[GraphRelationship] = history.filter(currentNode.getGraphRelationships(currentRel))
-
+    val notVisitedRelationships: Seq[GraphRelationship] = history.
+      filter(currentNode.getGraphRelationships(currentRel)).
+      filter(x => boundRels.get(currentRel.key) match {
+      case Some(pinnedRel) => pinnedRel.matches(x)
+      case None => true
+    })
 
     val nextPNode = currentRel.getOtherNode(pNode)
 
     /*
-    We need to know if any of these sub-calls results in a yield. If none do, and we're
-    looking at an optional pattern relationship, we'll output a null as match.
-     */
+   We need to know if any of these sub-calls results in a yield. If none do, and we're
+   looking at an optional pattern relationship, we'll output a null as match.
+    */
     val yielded = notVisitedRelationships.map(rel => {
       val nextNode = rel.getOtherNode(gNode)
 
@@ -137,7 +141,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause]) 
     if (isDebugging)
       println(String.format("""traverseNextNodeOrYield
       history=%s
-      remaining=%s)""", history, remaining))
+      remaining=%s)""", history, remaining.toList))
   }
 
   def debug[U](current: MatchingPair, history: History, remaining: Seq[MatchingPair]) {
@@ -146,7 +150,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause]) 
     current=%s
     history=%s
     remaining=%s
-    """, current, history, remaining))
+    """, current, history, remaining.toList))
   }
 
   def debug[U](current: MatchingPair, pRel: PatternRelationship, history: History, remaining: Seq[MatchingPair]) {
@@ -156,7 +160,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause]) 
     pRel=%s
     history=%s
     remaining=%s
-    """, current, pRel, history, remaining))
+    """, current, pRel, history, remaining.toList))
   }
 
   def debug[U](history: History, resultMap: Map[String, Any]) {

@@ -180,7 +180,7 @@ class ExecutionEngine(graph: GraphDatabaseService)
   private def createStartPipe(lastPipe: Pipe, item: StartItem): Pipe = item match
   {
     case NodeByIndex(varName, idxName, key, value) =>
-      new StartPipe(lastPipe, varName, m =>
+      new NodeStartPipe(lastPipe, varName, m =>
       {
         val keyVal = key(m).toString
         val valueVal = value(m)
@@ -189,7 +189,7 @@ class ExecutionEngine(graph: GraphDatabaseService)
       })
 
     case RelationshipByIndex(varName, idxName, key, value) =>
-      new StartPipe(lastPipe, varName, m =>
+      new RelationshipStartPipe(lastPipe, varName, m =>
       {
         val keyVal = key(m).toString
         val valueVal = value(m)
@@ -198,15 +198,15 @@ class ExecutionEngine(graph: GraphDatabaseService)
       })
 
     case NodeByIndexQuery(varName, idxName, query) =>
-      new StartPipe(lastPipe, varName, m =>
+      new NodeStartPipe(lastPipe, varName, m =>
       {
         val queryText = query(m)
         val indexHits: Iterable[Node] = graph.index.forNodes(idxName).query(queryText)
         indexHits.asScala
       })
 
-    case NodeById(varName, id) => new StartPipe(lastPipe, varName, m => makeLongSeq(id(m), varName).map(graph.getNodeById))
-    case RelationshipById(varName, id) => new StartPipe(lastPipe, varName, m => makeLongSeq(id(m), varName).map(graph.getRelationshipById))
+    case NodeById(varName, id) => new NodeStartPipe(lastPipe, varName, m => makeLongSeq(id(m), varName).map(graph.getNodeById))
+    case RelationshipById(varName, id) => new RelationshipStartPipe(lastPipe, varName, m => makeLongSeq(id(m), varName).map(graph.getRelationshipById))
   }
 
   private def addFilters(context: CurrentContext): CurrentContext =

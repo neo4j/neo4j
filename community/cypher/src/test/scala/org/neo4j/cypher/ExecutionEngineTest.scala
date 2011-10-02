@@ -446,6 +446,16 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     assertEquals(List(Map("a" -> refNode, "count(*)" -> 2)), result.toList)
   }
 
+  @Test def shouldReturnTwoSubgraphsWithBoundUndirectedRelationship() {
+    val a = createNode("a")
+    val b = createNode("b")
+    relate(a, b, "rel", "r")
+
+    val result = parseAndExecute("start r=[0] match a-[r]-b return a,b")
+
+    assertEquals( List(Map("a"->a, "b"->b), Map("a"->b, "b"->a)),  result.toList )
+  }
+
   @Test def shouldLimitToTwoHits() {
     createNodes("A", "B", "C", "D", "E")
 
