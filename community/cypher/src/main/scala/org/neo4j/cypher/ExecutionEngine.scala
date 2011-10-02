@@ -32,6 +32,8 @@ class ExecutionEngine(graph: GraphDatabaseService)
 {
   checkScalaVersion()
 
+  require( graph != null, "Can't work with a null graph database" )
+
   // This is here because the JavaAPI looks funny with default values
   @throws(classOf[SyntaxException])
   def execute(query: Query): ExecutionResult = execute(query, Map[String, Any]())
