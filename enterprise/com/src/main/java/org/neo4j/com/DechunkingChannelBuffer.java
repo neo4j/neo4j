@@ -102,10 +102,14 @@ public class DechunkingChannelBuffer implements ChannelBuffer
             buffer.writeBytes( readBuffer );
         }
         
-        if ( failure ) readAndThrowFailureResponse();
+        if ( failure )
+        {
+            Throwable failure = readAndThrowFailureResponse();
+            throw new ComException( "Server side exception", failure );
+        }
     }
 
-    private void readAndThrowFailureResponse()
+    private Throwable readAndThrowFailureResponse()
     {
         Throwable cause = null;
         try

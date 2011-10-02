@@ -24,14 +24,84 @@ import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
 public class ZooKeeperLastCommittedTxIdSetter implements LastCommittedTxIdSetter
 {
     private final Broker broker;
+    private final Updater updater;
 
     public ZooKeeperLastCommittedTxIdSetter( Broker broker )
     {
         this.broker = broker;
+        this.updater = new Updater();
+        this.updater.start();
     }
 
     public void setLastCommittedTxId( long txId )
     {
-        broker.setLastCommittedTxId( txId );
+        updater.setTarget( txId );
+    }
+    
+    private class Updater extends Thread
+    {
+        private volatile long targetTxId;
+        private long lastUpdatedTxId;
+        private boolean halted;
+        
+        @Override
+        public void run()
+        {
+            while ( !halted )
+            {
+                long txId = targetTxId;
+                if ( txId == lastUpdatedTxId )
+                {
+                    waitForAChange();
+                    continue;
+                }
+                
+                try
+                {
+                    broker.setLastCommittedTxId( txId );
+                    lastUpdatedTxId = txId;
+                }
+                catch ( Exception e )
+                {   // OK
+                }
+            }
+        }
+        
+        private synchronized void setTarget( long txId )
+        {
+            targetTxId = txId;
+            notify();
+        }
+
+        private synchronized void waitForAChange()
+        {
+            try
+            {
+                wait();
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.interrupted();
+            }
+        }
+        
+        private synchronized void halt()
+        {
+            halted = true;
+            notify();
+        }
+    }
+    
+    public void close()
+    {
+        updater.halt();
+        try
+        {
+            updater.join();
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.interrupted();
+        }
     }
 }
