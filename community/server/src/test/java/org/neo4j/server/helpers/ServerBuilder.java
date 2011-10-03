@@ -82,6 +82,7 @@ public class ServerBuilder
     private String[] autoIndexedNodeKeys = null;
     private String[] autoIndexedRelationshipKeys = null;
     private String host = null;
+    private String[] securityRuleClassNames;
 
     public static ServerBuilder server()
     {
@@ -147,8 +148,7 @@ public class ServerBuilder
         writePropertyToFile( Configurator.MANAGEMENT_PATH_PROPERTY_KEY, webAdminUri, temporaryConfigFile );
         writePropertyToFile( Configurator.REST_API_PATH_PROPERTY_KEY, webAdminDataUri, temporaryConfigFile );
 
-        if ( thirdPartyPackages.keySet()
-                .size() > 0 )
+        if ( thirdPartyPackages.keySet().size() > 0 )
         {
             writePropertiesToFile( Configurator.THIRD_PARTY_PACKAGES_KEY, thirdPartyPackages, temporaryConfigFile );
         }
@@ -159,14 +159,19 @@ public class ServerBuilder
             String propertyKeys = org.apache.commons.lang.StringUtils.join( autoIndexedNodeKeys, "," );
             writePropertyToFile( "node_keys_indexable", propertyKeys, temporaryConfigFile );
         }
-        
+
         if ( autoIndexedRelationshipKeys != null && autoIndexedRelationshipKeys.length > 0 )
         {
-            
-            System.out.println("RELS HERE");
+
             writePropertyToFile( "relationship_auto_indexing", "true", temporaryConfigFile );
             String propertyKeys = org.apache.commons.lang.StringUtils.join( autoIndexedRelationshipKeys, "," );
             writePropertyToFile( "relationship_keys_indexable", propertyKeys, temporaryConfigFile );
+        }
+
+        if ( securityRuleClassNames != null && securityRuleClassNames.length > 0 )
+        {
+            String propertyKeys = org.apache.commons.lang.StringUtils.join( securityRuleClassNames, "," );
+            writePropertyToFile( Configurator.SECURITY_RULES_KEY, propertyKeys, temporaryConfigFile );
         }
     }
 
@@ -349,15 +354,22 @@ public class ServerBuilder
         autoIndexedNodeKeys = keys;
         return this;
     }
-    
+
     public ServerBuilder withAutoIndexingEnabledForRelationships( String... keys )
     {
         autoIndexedRelationshipKeys = keys;
         return this;
     }
 
-    public ServerBuilder onHost(String host) {
-        this.host  = host;
+    public ServerBuilder onHost( String host )
+    {
+        this.host = host;
+        return this;
+    }
+
+    public ServerBuilder withSecurityRules( String... securityRuleClassNames )
+    {
+        this.securityRuleClassNames = securityRuleClassNames;
         return this;
     }
 }

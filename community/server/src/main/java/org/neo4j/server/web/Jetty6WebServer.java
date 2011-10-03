@@ -31,10 +31,13 @@ import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import javax.servlet.Filter;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.mortbay.component.LifeCycle;
+import org.mortbay.component.LifeCycle.Listener;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
@@ -42,6 +45,7 @@ import org.mortbay.jetty.SessionManager;
 import org.mortbay.jetty.handler.MovedContextHandler;
 import org.mortbay.jetty.nio.SelectChannelConnector;
 import org.mortbay.jetty.servlet.Context;
+import org.mortbay.jetty.servlet.FilterHolder;
 import org.mortbay.jetty.servlet.HashSessionManager;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.jetty.servlet.SessionHandler;
@@ -50,6 +54,8 @@ import org.mortbay.resource.Resource;
 import org.mortbay.thread.QueuedThreadPool;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.logging.Logger;
+import org.neo4j.server.rest.security.SecurityFilter;
+import org.neo4j.server.rest.security.SecurityRule;
 import org.neo4j.server.rest.web.AllowAjaxFilter;
 
 import com.sun.jersey.api.core.ResourceConfig;
@@ -146,7 +152,7 @@ public class Jetty6WebServer implements WebServer
         {
             jetty = new Server();
             Connector connector = new SelectChannelConnector();
-            
+
             connector.setPort( jettyPort );
             connector.setHost( jettyAddr );
             jetty.addConnector( connector );
@@ -329,5 +335,56 @@ public class Jetty6WebServer implements WebServer
     public Server getJetty()
     {
         return jetty;
+    }
+
+    @Override
+    public void addSecurityRules( final SecurityRule... rules )
+    {
+        jetty.addLifeCycleListener( new Listener()
+        {
+
+            @Override
+            public void lifeCycleStopping( LifeCycle arg0 )
+            {
+            }
+
+            @Override
+            public void lifeCycleStopped( LifeCycle arg0 )
+            {
+            }
+
+            @Override
+            public void lifeCycleStarting( LifeCycle arg0 )
+            {
+            }
+
+            @Override
+            public void lifeCycleStarted( LifeCycle arg0 )
+            {
+                for ( Handler handler : jetty.getHandlers() )
+                {
+                    if ( handler instanceof Context )
+                    {
+                        final Context context = (Context) handler;
+                        for ( SecurityRule rule : rules )
+                        {
+                            if ( context.getContextPath()
+                                    .equals( rule.forUriPath() ) )
+                            {
+                                final Filter jettyFilter = new SecurityFilter( rule );
+                                context.addFilter( new FilterHolder( jettyFilter ), "/*", Handler.ALL );
+                                log.info( "Security rule [%s] installed on server", rule.getClass().getCanonicalName() );
+                            }
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void lifeCycleFailure( LifeCycle arg0, Throwable arg1 )
+            {
+            }
+        } );
+
     }
 }

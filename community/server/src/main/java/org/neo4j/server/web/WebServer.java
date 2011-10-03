@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.mortbay.jetty.Server;
 import org.neo4j.server.NeoServer;
+import org.neo4j.server.rest.security.SecurityRule;
 
 public interface WebServer
 {
@@ -51,6 +52,9 @@ public interface WebServer
 
     void invokeDirectly( String targetUri, HttpServletRequest request, HttpServletResponse response )
             throws IOException, ServletException;
+    
+    void addSecurityRules(SecurityRule ... rules);
 
+    @Deprecated
     Server getJetty();
 }
