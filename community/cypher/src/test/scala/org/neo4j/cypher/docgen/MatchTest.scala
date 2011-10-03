@@ -34,7 +34,7 @@ class MatchTest extends DocumentingTestBase {
     testQuery(
       title = "Related nodes",
       text = "The symbol `--` means related to, without regard to type or direction.",
-      queryText = """start n=(%A%) match (n)--(x) return x""",
+      queryText = """start n=node(%A%) match (n)--(x) return x""",
       returns = """All nodes related to A are returned""",
       (p) => assertEquals(List(node("B"), node("D"), node("C")), p.columnAs[Node]("x").toList)
     )
@@ -44,7 +44,7 @@ class MatchTest extends DocumentingTestBase {
     testQuery(
       title = "Outgoing relationships",
       text = "When the direction of a relationship is interesting, it is shown by using `-->` or `<--`, like this: ",
-      queryText = """start n=(%A%) match (n)-->(x) return x""",
+      queryText = """start n=node(%A%) match (n)-->(x) return x""",
       returns = """All nodes that A has outgoing relationships to.""",
       (p) => assertEquals(List(node("B"), node("C")), p.columnAs[Node]("x").toList)
     )
@@ -55,7 +55,7 @@ class MatchTest extends DocumentingTestBase {
       title = "Directed relationships and identifier",
       text = "If an identifier is needed, either for filtering on properties of the relationship, or to return the relationship, " +
         "this is how you introduce the identifier.",
-      queryText = """start n=(%A%) match (n)-[r]->() return r""",
+      queryText = """start n=node(%A%) match (n)-[r]->() return r""",
       returns = """All outgoing relationships from node A.""",
       (p) => assertEquals(2, p.size)
     )
@@ -65,7 +65,7 @@ class MatchTest extends DocumentingTestBase {
     testQuery(
       title = "Match by relationship type",
       text = "When you know the relationship type you want to match on, you can specify it by using a colon.",
-      queryText = """start n=(%A%) match (n)-[:BLOCKS]->(x) return x""",
+      queryText = """start n=node(%A%) match (n)-[:BLOCKS]->(x) return x""",
       returns = """All nodes that are BLOCKed by A.""",
       (p) => assertEquals(List(node("C")), p.columnAs[Node]("x").toList)
     )
@@ -76,7 +76,7 @@ class MatchTest extends DocumentingTestBase {
       title = "Match by relationship type and use an identifier",
       text = "If you both want to introduce an identifier to hold the relationship, and specify the relationship type you want, " +
         "just add them both, like this.",
-      queryText = """start n=(%A%) match (n)-[r:BLOCKS]->() return r""",
+      queryText = """start n=node(%A%) match (n)-[r:BLOCKS]->() return r""",
       returns = """All +BLOCKS+ relationship going out from A.""",
       (p) => assertEquals(1, p.size)
     )
@@ -91,7 +91,7 @@ class MatchTest extends DocumentingTestBase {
     testQuery(
       title = "Relationship types with uncommon characters",
       text = "Sometime your database will have types with non-letter characters, or with spaces in them. Use ` to escape these.",
-      queryText = """start n=(%A%) match (n)-[r:`TYPE WITH SPACE IN IT`]->() return r""",
+      queryText = """start n=node(%A%) match (n)-[r:`TYPE WITH SPACE IN IT`]->() return r""",
       returns = """This returns a relationship of a type with spaces in it.""",
       (p) => assertEquals(1, p.size)
     )
@@ -102,7 +102,7 @@ class MatchTest extends DocumentingTestBase {
       title = "Multiple relationships",
       text = "Relationships can be expressed by using multiple statements in the form of `()--()`, or they can be stringed together, " +
         "like this:",
-      queryText = """start a=(%A%) match (a)-[:KNOWS]->(b)-[:KNOWS]->(c) return a,b,c""",
+      queryText = """start a=node(%A%) match (a)-[:KNOWS]->(b)-[:KNOWS]->(c) return a,b,c""",
       returns = """The three nodes in the path.""",
       (p) => assertEquals(List(Map("a" -> node("A"), "b" -> node("B"), "c" -> node("E"))), p.toList)
     )
@@ -112,7 +112,7 @@ class MatchTest extends DocumentingTestBase {
     testQuery(
       title = "Variable length relationships",
       text = "Nodes that are variable number of relationship->node hops can be found using `-[:TYPE*minHops..maxHops]->`. ",
-      queryText = """start a=(%A%), x=(%E%, %B%) match a-[:KNOWS*1..3]->x return a,x""",
+      queryText = """start a=node(%A%), x=node(%E%, %B%) match a-[:KNOWS*1..3]->x return a,x""",
       returns = "Returns the start and end point, if there is a path between 1 and 3 relationships away",
       (p) => assertEquals(List(
         Map("a" -> node("A"), "x" -> node("E")),
@@ -124,7 +124,7 @@ class MatchTest extends DocumentingTestBase {
     testQuery(
       title = "Fixed length relationships",
       text = "Elements that are a fixed number of hops away can be matched by using [*numberOfHops]. ",
-      queryText = """start a=(%D%) match p=a-[*3]->() return p""",
+      queryText = """start a=node(%D%) match p=a-[*3]->() return p""",
       returns = "The two paths that go from node D to node E",
       (p) => assert(p.toSeq.length === 2)
     )
@@ -137,7 +137,7 @@ class MatchTest extends DocumentingTestBase {
         "works, if the relationship is there, it is returned. If it's not, +null+ is returned in it's place. Remember that " +
         "anything hanging of an optional relation, is in turn optional, unless it is connected with a bound node some other " +
         "path.",
-      queryText = """start a=(%E%) match a-[?]->x return a,x""",
+      queryText = """start a=node(%E%) match a-[?]->x return a,x""",
       returns = """A node, and +null+, since the node has no relationships.""",
       (p) => assertEquals(List(Map("a" -> node("E"), "x" -> null)), p.toList)
     )
@@ -148,7 +148,7 @@ class MatchTest extends DocumentingTestBase {
       title = "Optional typed and named relationship",
       text = "Just as with a normal relationship, you can decide which identifier it goes into, and what relationship type " +
         "you need.",
-      queryText = """start a=(%A%) match a-[r?:LOVES]->() return a,r""",
+      queryText = """start a=node(%A%) match a-[r?:LOVES]->() return a,r""",
       returns = """A node, and +null+, since the node has no relationships.""",
       (p) => assertEquals(List(Map("a" -> node("A"), "r" -> null)), p.toList)
     )
@@ -158,7 +158,7 @@ class MatchTest extends DocumentingTestBase {
     testQuery(
       title = "Shortest path",
       text = "Finding the shortest path between two nodes is as easy as using the shortestPath-function, like this.",
-      queryText = """start d=(%D%), e=(%E%) match p = shortestPath( d-[*..15]->e ) return p""",
+      queryText = """start d=node(%D%), e=node(%E%) match p = shortestPath( d-[*..15]->e ) return p""",
       returns = """This means: find the shortest path between two nodes, as long as the path is max 15 relationships long. Inside of the parenthesis
  you can write """,
       (p) => assertEquals(3, p.toList.head("p").asInstanceOf[Path].length())
@@ -169,7 +169,7 @@ class MatchTest extends DocumentingTestBase {
     testQuery(
       title = "Complex matching",
       text = "Using Cypher, you can also express more complex patterns to match on, like a diamond shape pattern.",
-      queryText = """start a=(%A%)
+      queryText = """start a=node(%A%)
 match (a)-[:KNOWS]->(b)-[:KNOWS]->(c), (a)-[:BLOCKS]-(d)-[:KNOWS]-(c)
 return a,b,c,d""",
       returns = """The four nodes in the path.""",
@@ -181,7 +181,7 @@ return a,b,c,d""",
     testQuery(
       title = "Named path",
       text = "If you want to return or filter on a path in your pattern graph, you can a introduce a named path.",
-      queryText = """start a=(%A%) match p = a-->b return p""",
+      queryText = """start a=node(%A%) match p = a-->b return p""",
       returns = """The two paths starting from the first node.""",
       (p) => assertEquals(2, p.toSeq.length)
     )
@@ -192,7 +192,7 @@ return a,b,c,d""",
       title = "Matching on a bound relationship",
       text = """When your pattern contains a bound relationship, and that relationship pattern doesn specify direction,
 Cypher will try to match the relationship where the connected nodes switch sides.""",
-      queryText = """start r=[0] match a-[r]-b return a,b""",
+      queryText = """start r=rel(0) match a-[r]-b return a,b""",
       returns = "This returns the two connected nodes, once as the start node, and once as the end node",
       p => assertEquals(2, p.toSeq.length)
     )

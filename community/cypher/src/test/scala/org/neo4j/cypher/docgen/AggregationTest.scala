@@ -39,7 +39,7 @@ class AggregationTest extends DocumentingTestBase {
     testQuery(
       title = "Count nodes",
       text = "To count the number of nodes, for example the number of nodes connected to one node, you can use +count(*)+.",
-      queryText = "start n=(%A%) match (n)-->(x) return n, count(*)",
+      queryText = "start n=node(%A%) match (n)-->(x) return n, count(*)",
       returns = "The start node and the count of related nodes.",
       (p) => assertEquals(Map("n" -> node("A"), "count(*)" -> 3), p.toList.head))
   }
@@ -48,7 +48,7 @@ class AggregationTest extends DocumentingTestBase {
     testQuery(
       title = "Group Count Relationship Types",
       text = "To count the groups of relationship types, return the types and count them with +count(*)+.",
-      queryText = "start n=(%A%) match (n)-[r]->() return type(r), count(*)",
+      queryText = "start n=node(%A%) match (n)-[r]->() return type(r), count(*)",
       returns = "The relationship types and their group count.",
       (p) => assertEquals(Map("TYPE(r)" -> "KNOWS", "count(*)" -> 3), p.toList.head))
   }
@@ -58,7 +58,7 @@ class AggregationTest extends DocumentingTestBase {
       title = "Count entities",
       text = "Instead of counting the number of results with +count(*)+, it might be more expressive to include " +
         "the name of the identifier you care about.",
-      queryText = "start n=(%A%) match (n)-->(x) return count(x)",
+      queryText = "start n=node(%A%) match (n)-->(x) return count(x)",
       returns = "The number of connected nodes from the start node.",
       (p) => assertEquals(Map("count(x)" -> 3), p.toList.head))
   }
@@ -67,7 +67,7 @@ class AggregationTest extends DocumentingTestBase {
     testQuery(
       title = "Count non null values",
       text = "You can count the non-null values by using +count(<identifier>)+.",
-      queryText = "start n=(%A%,%B%,%C%,%D%) return count(n.property?)",
+      queryText = "start n=node(%A%,%B%,%C%,%D%) return count(n.property?)",
       returns = "The count of related nodes.",
       (p) => assertEquals(Map("count(n.property)" -> 3), p.toList.head))
   }
@@ -77,7 +77,7 @@ class AggregationTest extends DocumentingTestBase {
       title = "SUM",
       text = "The +SUM+ aggregation function simply sums all the numeric values it encounters. " +
         "Null values are silently dropped. This is an example of how you can use +SUM+.",
-      queryText = "start n=(%A%,%B%,%C%) return sum(n.property)",
+      queryText = "start n=node(%A%,%B%,%C%) return sum(n.property)",
       returns = "The sum of all the values in the property 'property'.",
       (p) => assertEquals(Map("sum(n.property)" -> (13 + 33 + 44)), p.toList.head))
   }
@@ -86,7 +86,7 @@ class AggregationTest extends DocumentingTestBase {
     testQuery(
       title = "AVG",
       text = "+AVG+ calculates the average of a numeric column.",
-      queryText = "start n=(%A%,%B%,%C%) return avg(n.property)",
+      queryText = "start n=node(%A%,%B%,%C%) return avg(n.property)",
       returns = "The average of all the values in the property 'property'.",
       (p) => assertEquals(Map("avg(n.property)" -> 30), p.toList.head))
   }
@@ -95,7 +95,7 @@ class AggregationTest extends DocumentingTestBase {
     testQuery(
       title = "MIN",
       text = "+MIN+ takes a numeric property as input, and returns the smallest value in that column.",
-      queryText = "start n=(%A%,%B%,%C%) return min(n.property)",
+      queryText = "start n=node(%A%,%B%,%C%) return min(n.property)",
       returns = "The smallest of all the values in the property 'property'.",
       (p) => assertEquals(Map("min(n.property)" -> 13), p.toList.head))
   }
@@ -104,7 +104,7 @@ class AggregationTest extends DocumentingTestBase {
     testQuery(
       title = "MAX",
       text = "+MAX+ find the largets value in a numeric column.",
-      queryText = "start n=(%A%,%B%,%C%) return max(n.property)",
+      queryText = "start n=node(%A%,%B%,%C%) return max(n.property)",
       returns = "The largest of all the values in the property 'property'.",
       (p) => assertEquals(Map("max(n.property)" -> 44), p.toList.head))
   }

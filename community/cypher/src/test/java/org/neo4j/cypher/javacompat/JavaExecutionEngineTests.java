@@ -56,7 +56,7 @@ public class JavaExecutionEngineTests
 // START SNIPPET: JavaQuery
         CypherParser parser = new CypherParser();
         ExecutionEngine engine = new ExecutionEngine(db);
-        Query query = parser.parse( "start n=(0) where 1=1 return n" );
+        Query query = parser.parse( "start n=node(0) where 1=1 return n" );
         ExecutionResult result = engine.execute( query );
 
         assertThat( result.columns(), hasItem( "n" ) );
@@ -69,7 +69,7 @@ public class JavaExecutionEngineTests
     @Test
     public void exampleConsole() throws Exception
     {
-        Query query = CypherParser.parseConsole("start n=(0) where 1=1 return n.name");
+        Query query = CypherParser.parseConsole("start n=node(0) where 1=1 return n.name");
         ExecutionResult result = engine.execute(query);
 
         assertThat( result.columns(), hasItem( "n.name" ) );
@@ -82,7 +82,7 @@ public class JavaExecutionEngineTests
     @Test
     public void exampleWithParameters() throws Exception
     {
-        Query query = CypherParser.parseConsole("start n=({id}) return n.name");
+        Query query = CypherParser.parseConsole("start n=node({id}) return n.name");
         Map<String, Object> params = new HashMap<String, Object>();
         params.put("id", 0);
         ExecutionResult result = engine.execute(query, params);

@@ -185,7 +185,7 @@ public class AclExampleTest extends AbstractJavaDocTestbase
         
         //Files
         //TODO: can we do open ended?
-        String query = "start root=(node_auto_index,name,'FileRoot') match (root)-[:contains*]->()-[:leaf]->(file) return file";
+        String query = "start root=node:node_auto_index(name = 'FileRoot') match (root)-[:contains*]->()-[:leaf]->(file) return file";
         gen.get().addSnippet( "query1", createCypherSnippet( query ) );
         String result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("File1") );
@@ -193,7 +193,7 @@ public class AclExampleTest extends AbstractJavaDocTestbase
                 .addSnippet( "result1", createQueryResultSnippet( result ) );
         
         //Ownership
-        query = "start root=(node_auto_index,name, 'FileRoot') match (root)-[:contains*]->()-[:leaf]->(file)<-[:owns]-(user) return file, user";
+        query = "start root=node:node_auto_index(name = 'FileRoot') match (root)-[:contains*]->()-[:leaf]->(file)<-[:owns]-(user) return file, user";
         gen.get().addSnippet( "query2", createCypherSnippet( query ) );
         result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("File1") );
@@ -206,7 +206,7 @@ public class AclExampleTest extends AbstractJavaDocTestbase
                 .addSnippet( "result2", createQueryResultSnippet( result ) );
         
         //ACL
-        query = "START file=(node_auto_index, 'name:File*') " +
+        query = "START file=node:node_auto_index('name:File*') " +
         		"MATCH " +
         		"file<-[:leaf]-dir, " +
         		"path = dir<-[:contains*]-parent," +
