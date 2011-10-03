@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.batchinsert;
 
 import static java.lang.Boolean.parseBoolean;
 import static org.neo4j.kernel.Config.ALLOW_STORE_UPGRADE;
+import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -48,11 +49,13 @@ import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
@@ -400,7 +403,10 @@ public class BatchInserterImpl implements BatchInserter
         }
         PropertyStore propStore = getPropertyStore();
         List<PropertyRecord> propRecords = new ArrayList<PropertyRecord>();
-        PropertyRecord prevRecord = null;
+        PropertyRecord currentRecord = new PropertyRecord( propStore.nextId() );
+        currentRecord.setInUse( true );
+        currentRecord.setCreated();
+        propRecords.add( currentRecord );
         for ( Entry<String,Object> entry : properties.entrySet() )
         {
             int keyId = indexHolder.getKeyId( entry.getKey() );
@@ -408,64 +414,79 @@ public class BatchInserterImpl implements BatchInserter
             {
                 keyId = createNewPropertyIndex( entry.getKey() );
             }
-            long propertyId = propStore.nextId();
-            PropertyRecord propertyRecord = new PropertyRecord( propertyId );
-            propertyRecord.setInUse( true );
-            propertyRecord.setCreated();
-            propertyRecord.setKeyIndexId( keyId );
-            propStore.encodeValue( propertyRecord, entry.getValue() );
-            if ( prevRecord != null )
+
+            PropertyBlock block = new PropertyBlock();
+            propStore.encodeValue( block, keyId, entry.getValue() );
+            if ( currentRecord.size() + block.getSize() > PropertyType.getPayloadSize() )
             {
-                prevRecord.setPrevProp( propertyId );
-                propertyRecord.setNextProp( prevRecord.getId() );
+                // Here it means the current block is done for
+                PropertyRecord prevRecord = currentRecord;
+                // Create new record
+                long propertyId = propStore.nextId();
+                currentRecord = new PropertyRecord( propertyId );
+                currentRecord.setInUse( true );
+                currentRecord.setCreated();
+                // Set up links
+                prevRecord.setNextProp( propertyId );
+                currentRecord.setPrevProp( prevRecord.getId() );
+                propRecords.add( currentRecord );
+                // Now current is ready to start picking up blocks
             }
-            propRecords.add( propertyRecord );
-            prevRecord = propertyRecord;
+            currentRecord.addPropertyBlock( block );
         }
-        // reverse order results in forward update to store
+        /*
+         * Add the property records in reverse order, which means largest
+         * id first. That is to make sure we expand the property store file
+         * only once.
+         */
         for ( int i = propRecords.size() - 1; i >=0; i-- )
         {
             propStore.updateRecord( propRecords.get( i ) );
         }
-        if ( prevRecord != null )
-        {
-            return prevRecord.getId();
-        }
-        return Record.NO_NEXT_PROPERTY.intValue();
+        /*
+         *  0 will always exist, if the map was empty we wouldn't be here
+         *  and even one property will create at least one record.
+         */
+        return propRecords.get( 0 ).getId();
     }
 
-    private void deletePropertyChain( long propertyId )
+    private void deletePropertyChain( long nextProp )
     {
         PropertyStore propStore = getPropertyStore();
-        PropertyRecord propertyRecord = propStore.getRecord( propertyId );
-        propertyRecord.setInUse( false );
-        for ( DynamicRecord record : propertyRecord.getValueRecords() )
+        while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            record.setInUse( false );
-        }
-        propStore.updateRecord( propertyRecord );
-    }
-
-    private Map<String,Object> getPropertyChain( long propertyId )
-    {
-        PropertyStore propStore = getPropertyStore();
-        PropertyRecord propertyRecord = propStore.getRecord( propertyId );
-        long nextProperty = -1;
-        Map<String,Object> properties = new HashMap<String,Object>();
-        do
-        {
-            nextProperty = propertyRecord.getNextProp();
-            propStore.makeHeavy( propertyRecord );
-            String key = indexHolder.getStringKey(
-                propertyRecord.getKeyIndexId() );
-            Object value = propStore.getValue( propertyRecord );
-            properties.put( key, value );
-            if ( nextProperty != Record.NO_NEXT_PROPERTY.intValue() )
+            PropertyRecord propRecord = propStore.getRecord( nextProp );
+            for ( PropertyBlock propBlock : propRecord.getPropertyBlocks() )
             {
-                propertyRecord =
-                    propStore.getRecord( propertyRecord.getNextProp() );
+                propStore.makeHeavy( propBlock );
+                for ( DynamicRecord rec : propBlock.getValueRecords() )
+                {
+                    rec.setInUse( false );
+                    propRecord.addDeletedRecord( rec );
+                }
             }
-        } while ( nextProperty != Record.NO_NEXT_PROPERTY.intValue() );
+            propRecord.setInUse( false );
+            nextProp = propRecord.getNextProp();
+            propStore.updateRecord( propRecord );
+        }
+    }
+
+    private Map<String, Object> getPropertyChain( long nextProp )
+    {
+        PropertyStore propStore = getPropertyStore();
+        Map<String,Object> properties = new HashMap<String,Object>();
+
+        while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
+        {
+            PropertyRecord propRecord = propStore.getLightRecord( nextProp );
+            for ( PropertyBlock propBlock : propRecord.getPropertyBlocks() )
+            {
+                String key = indexHolder.getStringKey( propBlock.getKeyIndexId() );
+                properties.put( key,
+                        propBlock.newPropertyData( propRecord ) );
+            }
+            nextProp = propRecord.getNextProp();
+        }
         return properties;
     }
 
@@ -478,11 +499,8 @@ public class BatchInserterImpl implements BatchInserter
         record.setCreated();
         int keyBlockId = idxStore.nextKeyBlockId();
         record.setKeyBlockId( keyBlockId );
-        int length = stringKey.length();
-        char[] chars = new char[length];
-        stringKey.getChars( 0, length, chars, 0 );
         Collection<DynamicRecord> keyRecords =
-            idxStore.allocateKeyRecords( keyBlockId, chars );
+            idxStore.allocateKeyRecords( keyBlockId, encodeString( stringKey ) );
         for ( DynamicRecord keyRecord : keyRecords )
         {
             record.addKeyRecord( keyRecord );
@@ -501,11 +519,8 @@ public class BatchInserterImpl implements BatchInserter
         record.setCreated();
         int typeBlockId = (int) typeStore.nextBlockId();
         record.setTypeBlock( typeBlockId );
-        int length = name.length();
-        char[] chars = new char[length];
-        name.getChars( 0, length, chars, 0 );
         Collection<DynamicRecord> typeRecords =
-            typeStore.allocateTypeNameRecords( typeBlockId, chars );
+            typeStore.allocateTypeNameRecords( typeBlockId, encodeString( name ) );
         for ( DynamicRecord typeRecord : typeRecords )
         {
             record.addTypeRecord( typeRecord );

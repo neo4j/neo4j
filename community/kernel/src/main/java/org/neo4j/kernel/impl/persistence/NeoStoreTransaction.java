@@ -43,7 +43,7 @@ import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 public interface NeoStoreTransaction
 {
     public void setXaConnection( XaConnection connection );
-    
+
     /**
      * Returns the {@link javax.transaction.xa.XAResource} that represents this
      * connection.
@@ -51,49 +51,207 @@ public interface NeoStoreTransaction
      */
     public XAResource getXAResource();
 
+    /**
+     * Destroy this transaction. Makes it not known to anyone.
+     */
     public void destroy();
 
+    /**
+     * Deletes a node by its id, returning its properties which are now removed.
+     *
+     * @param nodeId The id of the node to delete.
+     * @return The properties of the node that were removed during the delete.
+     */
     public ArrayMap<Integer,PropertyData> nodeDelete( long nodeId );
 
+    /**
+     * Adds a property to the given node, with the given index and value.
+     *
+     * @param nodeId The id of the node to which to add the property.
+     * @param index The index of the key of the property to add.
+     * @param value The value of the property.
+     * @return The added property, as a PropertyData object.
+     */
     public PropertyData nodeAddProperty( long nodeId, PropertyIndex index, Object value );
 
-    public PropertyData nodeChangeProperty( long nodeId, long propertyId, Object value );
+    /**
+     * Changes an existing property of the given node, with the given index to
+     * the passed value
+     *
+     * @param nodeId The id of the node which holds the property to change.
+     * @param index The index of the key of the property to change.
+     * @param value The new value of the property.
+     * @return The changed property, as a PropertyData object.
+     */
+    public PropertyData nodeChangeProperty( long nodeId, PropertyData index,
+            Object value );
 
-    public void nodeRemoveProperty( long nodeId, long propertyId );
+    /**
+     * Removes the given property identified by indexKeyId of the node with the
+     * given id.
+     *
+     * @param nodeId The id of the node that is to have the property removed.
+     * @param index The index key of the property.
+     */
+    public void nodeRemoveProperty( long nodeId, PropertyData index );
 
+    /**
+     * Creates a node for the given id
+     *
+     * @param id The id of the node to create.
+     */
     public void nodeCreate( long id );
 
+    /**
+     * Creates a relationship with the given id, from the nodes identified by id
+     * and of type typeId
+     *
+     * @param id The id of the relationship to create.
+     * @param typeId The id of the relationship type this relationship will
+     *            have.
+     * @param startNodeId The id of the start node.
+     * @param endNodeId The id of the end node.
+     */
     public void relationshipCreate( long id, int typeId, long startNodeId,
         long endNodeId );
 
+    /**
+     * Deletes a relationship by its id, returning its properties which are now
+     * removed. It is assumed that the nodes it connects have already been
+     * deleted in this
+     * transaction.
+     *
+     * @param relId The id of the relationship to delete.
+     * @return The properties of the relationship that were removed during the
+     *         delete.
+     */
     public ArrayMap<Integer,PropertyData> relDelete( long relId );
 
+    /**
+     * Adds a property to the given relationship, with the given index and
+     * value.
+     *
+     * @param relId The id of the relationship to which to add the property.
+     * @param index The index of the key of the property to add.
+     * @param value The value of the property.
+     * @return The added property, as a PropertyData object.
+     */
     public PropertyData relAddProperty( long relId, PropertyIndex index, Object value );
 
-    public PropertyData relChangeProperty( long relId, long propertyId, Object value );
+    /**
+     * Changes an existing property's value of the given relationship, with the
+     * given index to the passed value
+     *
+     * @param relId The id of the relationship which holds the property to
+     *            change.
+     * @param index The index of the key of the property to change.
+     * @param value The new value of the property.
+     * @return The changed property, as a PropertyData object.
+     */
+    public PropertyData relChangeProperty( long relId, PropertyData index,
+            Object value );
 
-    public void relRemoveProperty( long relId, long propertyId );
+    /**
+     * Removes the given property identified by its index from the relationship
+     * with the given id.
+     *
+     * @param relId The id of the relationship that is to have the property
+     *            removed.
+     * @param index The index key of the property.
+     */
+    public void relRemoveProperty( long relId, PropertyData index );
 
+    /**
+     * Tries to load the light node with the given id, returns true on success.
+     *
+     * @param id The id of the node to load.
+     * @return True iff the node record can be found.
+     */
     public boolean nodeLoadLight( long id );
 
-    public Object loadPropertyValue( long id );
+    /**
+     * Attempts to load the value off the store forthe given PropertyData
+     * object.
+     *
+     * @param property The property to make heavy
+     * @return The property data
+     */
+    public Object loadPropertyValue( PropertyData property );
 
+    /**
+     * Loads the value object for the given property index record id if the
+     * record is light.
+     *
+     * @param id The id of the property index record to make heavy
+     * @return The property index value
+     */
     public String loadIndex( int id );
 
+    /**
+     * Tries to load as heavy records as many property index records as
+     * specified in the argument.
+     *
+     * @param maxCount The maximum number of property index records to load.
+     * @return An array of the PropertyIndexData that were loaded - can be less
+     *         than the number requested.
+     */
     public PropertyIndexData[] loadPropertyIndexes( int maxCount );
 
+    /**
+     * Loads the complete property chain for the given node and returns it as a
+     * map from property index id to property data.
+     *
+     * @param nodeId The id of the node whose properties to load.
+     * @param light If the properties should be loaded light or not.
+     * @return The properties loaded, as a map from property index id to
+     *         property data.
+     */
     public ArrayMap<Integer,PropertyData> nodeLoadProperties( long nodeId,
             boolean light );
 
+    /**
+     * Loads the complete property chain for the given relationship and returns
+     * it as a map from property index id to property data.
+     *
+     * @param relId The id of the relationship whose properties to load.
+     * @param light If the properties should be loaded light or not.
+     * @return The properties loaded, as a map from property index id to
+     *         property data.
+     */
     public ArrayMap<Integer,PropertyData> relLoadProperties( long relId,
             boolean light);
 
+    /**
+     * Tries to load the light relationship with the given id, returns the
+     * record on success.
+     *
+     * @param id The id of the relationship to load.
+     * @return The light RelationshipRecord if it was found, null otherwise.
+     */
     public RelationshipRecord relLoadLight( long id );
 
+    /**
+     * Loads and returns all the available RelationshipTypes that are stored.
+     *
+     * @return All the stored RelationshipTypes, as a RelationshipTypeData array
+     */
     public RelationshipTypeData[] loadRelationshipTypes();
 
+    /**
+     * Creates a property index entry out of the given id and string.
+     *
+     * @param key The key of the property index, as a string.
+     * @param id The property index record id.
+     */
     public void createPropertyIndex( String key, int id );
 
+    /**
+     * Creates a new RelationshipType record with the given id that has the
+     * given name.
+     *
+     * @param id The id of the new relationship type record.
+     * @param name The name of the relationship type.
+     */
     public void createRelationshipType( int id, String name );
 
     public long getRelationshipChainPosition( long nodeId );
@@ -103,18 +261,46 @@ public interface NeoStoreTransaction
      * 0: outgoing relationships
      * 1: incoming relationships
      * 2: loop relationships
-     * 
+     *
      * Long is the relationship chain position as it stands after this
      * batch of relationships has been loaded.
      */
     public Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, Long> getMoreRelationships(
             long nodeId, long position );
 
+    /**
+     * Returns an array view of the ids of the nodes that have been created in
+     * this transaction.
+     *
+     * @return An array of the ids of the nodes created in this transaction.
+     */
     public RelIdArray getCreatedNodes();
 
+    /**
+     * Check if the node with the given id was created in this transaction.
+     *
+     * @param nodeId The node id to check.
+     * @return True iff a node with the given id was created in this
+     *         transaction.
+     */
     public boolean isNodeCreated( long nodeId );
 
+    /**
+     * Check if the node with the given id was created in this transaction.
+     *
+     * @param nodeId The node id to check.
+     * @return True iff a node with the given id was created in this
+     *         transaction.
+     */
     public boolean isRelationshipCreated( long relId );
 
-    public int getKeyIdForProperty( long propertyId );
+    /**
+     * Returns the index key ids that are contained within the property record
+     * with the specified id.
+     *
+     * @param property The PropertyData of the property record.
+     * @return an array that contains all the property index ids of the blocks
+     *         in the record.
+     */
+    public int getKeyIdForProperty( PropertyData property );
 }

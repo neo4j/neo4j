@@ -19,11 +19,16 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
+
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import javax.transaction.xa.XAException;
@@ -41,6 +46,8 @@ import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
+import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
@@ -74,8 +81,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
 {
     private final Map<Long,NodeRecord> nodeRecords =
         new HashMap<Long,NodeRecord>();
-    private final Map<Long,PropertyRecord> propertyRecords =
-        new HashMap<Long,PropertyRecord>();
+    private final Map<Long, PropertyRecord> propertyRecords = new HashMap<Long, PropertyRecord>();
     private final Map<Long,RelationshipRecord> relRecords =
         new HashMap<Long,RelationshipRecord>();
     private final Map<Integer,RelationshipTypeRecord> relTypeRecords =
@@ -202,7 +208,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         for ( PropertyRecord record : propertyRecords.values() )
         {
             Command.PropertyCommand command = new Command.PropertyCommand(
-                neoStore.getPropertyStore(), record );
+                    neoStore.getPropertyStore(), record );
             propCommands.add( command );
             addCommand( command );
         }
@@ -308,27 +314,27 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 if ( record.isCreated() )
                 {
                     getPropertyStore().freeId( record.getId() );
-                    for ( DynamicRecord dynamicRecord : record
-                        .getValueRecords() )
+                    for ( PropertyBlock block : record.getPropertyBlocks() )
                     {
-                        if ( dynamicRecord.isCreated() )
+                        for ( DynamicRecord dynamicRecord : block.getValueRecords() )
                         {
-                            if ( dynamicRecord.getType() ==
-                                PropertyType.STRING.intValue() )
+                            if ( dynamicRecord.isCreated() )
                             {
-                                getPropertyStore().freeStringBlockId(
-                                    dynamicRecord.getId() );
-                            }
-                            else if ( dynamicRecord.getType() ==
-                                PropertyType.ARRAY.intValue() )
-                            {
-                                getPropertyStore().freeArrayBlockId(
-                                    dynamicRecord.getId() );
-                            }
-                            else
-                            {
-                                throw new InvalidRecordException(
-                                    "Unknown type on " + dynamicRecord );
+                                if ( dynamicRecord.getType() == PropertyType.STRING.intValue() )
+                                {
+                                    getPropertyStore().freeStringBlockId(
+                                            dynamicRecord.getId() );
+                                }
+                                else if ( dynamicRecord.getType() == PropertyType.ARRAY.intValue() )
+                                {
+                                    getPropertyStore().freeArrayBlockId(
+                                            dynamicRecord.getId() );
+                                }
+                                else
+                                {
+                                    throw new InvalidRecordException(
+                                            "Unknown type on " + dynamicRecord );
+                                }
                             }
                         }
                     }
@@ -462,7 +468,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
     }
 
-    private static void executeCreated( ArrayList<? extends Command>... commands )
+    private static void executeCreated(
+            ArrayList<? extends Command>... commands )
     {
         for ( ArrayList<? extends Command> c : commands ) for ( Command command : c )
         {
@@ -473,7 +480,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
     }
 
-    private static void executeModified( ArrayList<? extends Command>... commands )
+    private static void executeModified(
+            ArrayList<? extends Command>... commands )
     {
         for ( ArrayList<? extends Command> c : commands ) for ( Command command : c )
         {
@@ -484,7 +492,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
     }
 
-    private static void executeDeleted( ArrayList<? extends Command>... commands )
+    private static void executeDeleted(
+            ArrayList<? extends Command>... commands )
     {
         for ( ArrayList<? extends Command> c : commands ) for ( Command command : c )
         {
@@ -609,6 +618,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         return neoStore.getPropertyStore();
     }
 
+    @Override
     public boolean nodeLoadLight( long nodeId )
     {
         NodeRecord nodeRecord = getNodeRecord( nodeId );
@@ -619,6 +629,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         return getNodeStore().loadLightNode( nodeId );
     }
 
+    @Override
     public RelationshipRecord relLoadLight( long id )
     {
         RelationshipRecord relRecord = getRelationshipRecord( id );
@@ -639,6 +650,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         return null;
     }
 
+    @Override
     public ArrayMap<Integer,PropertyData> nodeDelete( long nodeId )
     {
         NodeRecord nodeRecord = getNodeRecord( nodeId );
@@ -653,50 +665,12 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             "] since it has already been deleted." );
         }
         nodeRecord.setInUse( false );
-        ArrayMap<Integer,PropertyData> propertyMap =
-            new ArrayMap<Integer,PropertyData>( 9, false, true );
         long nextProp = nodeRecord.getNextProp();
-        while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
-        {
-            PropertyRecord propRecord = getPropertyRecord( nextProp );
-            if ( propRecord == null )
-            {
-                propRecord = getPropertyStore().getRecord( nextProp );
-                addPropertyRecord( propRecord );
-            }
-            if ( propRecord.isLight() )
-            {
-                getPropertyStore().makeHeavy( propRecord );
-            }
-            if ( !propRecord.isCreated() )
-            {
-                if ( !propRecord.isChanged() )
-                {
-                    propertyMap.put( propRecord.getKeyIndexId(), propRecord.newPropertyData(
-                            propertyGetValueOrNull( propRecord ) ) );
-                }
-                else
-                {
-                    // we have to re-read committed value since property has
-                    // changed and old value is erased in memory
-                    PropertyRecord diskValue = getPropertyStore().getRecord( propRecord.getId() );
-                    getPropertyStore().makeHeavy( diskValue );
-                    propertyMap.put( diskValue.getKeyIndexId(), diskValue.newPropertyData(
-                            propertyGetValueOrNull( propRecord ) ) );
-                }
-            }
-
-            nextProp = propRecord.getNextProp();
-            propRecord.setInUse( false );
-            // TODO: update count on property index record
-            for ( DynamicRecord valueRecord : propRecord.getValueRecords() )
-            {
-                valueRecord.setInUse( false );
-            }
-        }
+        ArrayMap<Integer, PropertyData> propertyMap = getAndDeletePropertyChain( nextProp );
         return propertyMap;
     }
 
+    @Override
     public ArrayMap<Integer,PropertyData> relDelete( long id )
     {
         RelationshipRecord record = getRelationshipRecord( id );
@@ -710,50 +684,56 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             throw new IllegalStateException( "Unable to delete relationship[" +
                 id + "] since it is already deleted." );
         }
-        ArrayMap<Integer,PropertyData> propertyMap =
-            new ArrayMap<Integer,PropertyData>( 9, false, true );
         long nextProp = record.getNextProp();
-        while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
-        {
-            PropertyRecord propRecord = getPropertyRecord( nextProp );
-            if ( propRecord == null )
-            {
-                propRecord = getPropertyStore().getRecord( nextProp );
-                addPropertyRecord( propRecord );
-            }
-            if ( propRecord.isLight() )
-            {
-                getPropertyStore().makeHeavy( propRecord );
-            }
-            if ( !propRecord.isCreated() )
-            {
-                if ( !propRecord.isChanged() )
-                {
-                    propertyMap.put( propRecord.getKeyIndexId(),
-                            propRecord.newPropertyData( propertyGetValueOrNull( propRecord ) ) );
-                }
-                else
-                {
-                    // we have to re-read committed value since property has
-                    // changed and old value is erased in memory
-                    PropertyRecord diskValue = getPropertyStore().getRecord( propRecord.getId() );
-                    getPropertyStore().makeHeavy( diskValue );
-                    propertyMap.put( diskValue.getKeyIndexId(), diskValue.newPropertyData(
-                            propertyGetValueOrNull( propRecord ) ) );
-                }
-            }
-            nextProp = propRecord.getNextProp();
-            propRecord.setInUse( false );
-            // TODO: update count on property index record
-            for ( DynamicRecord valueRecord : propRecord.getValueRecords() )
-            {
-                valueRecord.setInUse( false );
-            }
-        }
+        ArrayMap<Integer, PropertyData> propertyMap = getAndDeletePropertyChain( nextProp );
         disconnectRelationship( record );
         updateNodes( record );
         record.setInUse( false );
         return propertyMap;
+    }
+
+    private ArrayMap<Integer, PropertyData> getAndDeletePropertyChain(
+            long startingAt )
+    {
+        ArrayMap<Integer, PropertyData> result = new ArrayMap<Integer, PropertyData>(
+                9, false, true );
+        long nextProp = startingAt;
+        while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
+        {
+            PropertyRecord propRecord = getPropertyRecord( nextProp, false,
+                    true );
+            if ( !propRecord.isCreated() && propRecord.isChanged() )
+            {
+                // Being here means a new value could be on disk. Re-read
+                propRecord = getPropertyStore().getRecord( propRecord.getId() );
+            }
+            for ( PropertyBlock block : propRecord.getPropertyBlocks() )
+            {
+                if ( block.isLight() )
+                {
+                    getPropertyStore().makeHeavy( block );
+                }
+                if ( !block.isCreated() && !propRecord.isChanged() )
+                {
+                    result.put( block.getKeyIndexId(),
+                            block.newPropertyData( propRecord,
+                                    propertyGetValueOrNull( block ) ) );
+                }
+                // TODO: update count on property index record
+                for ( DynamicRecord valueRecord : block.getValueRecords() )
+                {
+                    assert valueRecord.inUse();
+                    valueRecord.setInUse( false );
+                    propRecord.addDeletedRecord( valueRecord );
+                }
+            }
+            nextProp = propRecord.getNextProp();
+            propRecord.setInUse( false );
+            propRecord.setChanged();
+            // We do not remove them individually, but all together here
+            propRecord.getPropertyBlocks().clear();
+        }
+        return result;
     }
 
     private void disconnectRelationship( RelationshipRecord rel )
@@ -930,8 +910,10 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
     }
 
-    public void relRemoveProperty( long relId, long propertyId )
+    @Override
+    public void relRemoveProperty( long relId, PropertyData propertyData )
     {
+        long propertyId = propertyData.getId();
         RelationshipRecord relRecord = getRelationshipRecord( relId );
         if ( relRecord == null )
         {
@@ -942,64 +924,52 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             throw new IllegalStateException( "Property remove on relationship[" +
                 relId + "] illegal since it has been deleted." );
         }
-        PropertyRecord propRecord = getPropertyRecord( propertyId );
-        if ( propRecord == null )
-        {
-            propRecord = getPropertyStore().getRecord( propertyId );
-            addPropertyRecord( propRecord );
-        }
+        assert assertPropertyChain( relRecord );
+        PropertyRecord propRecord = getPropertyRecord( propertyId, false, true );
         if ( !propRecord.inUse() )
         {
             throw new IllegalStateException( "Unable to delete property[" +
                 propertyId + "] since it is already deleted." );
         }
         propRecord.setRelId( relId );
-        if ( propRecord.isLight() )
+
+        PropertyBlock block = propRecord.removePropertyBlock( propertyData.getIndex() );
+        if ( block == null )
         {
-            getPropertyStore().makeHeavy( propRecord );
+            throw new IllegalStateException( "Property with index["
+                                             + propertyData.getIndex()
+                                             + "] is not present in property["
+                                             + propertyId + "]" );
         }
 
-        propRecord.setInUse( false );
+        if ( block.isLight() )
+        {
+            getPropertyStore().makeHeavy( block );
+        }
+
         // TODO: update count on property index record
-        for ( DynamicRecord valueRecord : propRecord.getValueRecords() )
+        for ( DynamicRecord valueRecord : block.getValueRecords() )
         {
-            if ( valueRecord.inUse() )
-            {
-                valueRecord.setInUse( false, propRecord.getType().intValue() );
-            }
+            assert valueRecord.inUse();
+            valueRecord.setInUse( false, block.getType().intValue() );
+            propRecord.addDeletedRecord( valueRecord );
         }
-        long prevProp = propRecord.getPrevProp();
-        long nextProp = propRecord.getNextProp();
-        if ( relRecord.getNextProp() == propertyId )
+        if ( propRecord.size() > 0 )
         {
-            relRecord.setNextProp( nextProp );
-            // re-adding not a problem
-            addRelationshipRecord( relRecord );
+            propRecord.setChanged();
+            assert assertPropertyChain( relRecord );
+            return;
         }
-        if ( prevProp != Record.NO_PREVIOUS_PROPERTY.intValue() )
+        else
         {
-            PropertyRecord prevPropRecord = getPropertyRecord( prevProp );
-            if ( prevPropRecord == null )
+            if ( unlinkPropertyRecord( propRecord, relRecord ) )
             {
-                prevPropRecord = getPropertyStore().getLightRecord( prevProp );
-                addPropertyRecord( prevPropRecord );
+                addRelationshipRecord( relRecord );
             }
-            assert prevPropRecord.inUse();
-            prevPropRecord.setNextProp( nextProp );
-        }
-        if ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
-        {
-            PropertyRecord nextPropRecord = getPropertyRecord( nextProp );
-            if ( nextPropRecord == null )
-            {
-                nextPropRecord = getPropertyStore().getLightRecord( nextProp );
-                addPropertyRecord( nextPropRecord );
-            }
-            assert nextPropRecord.inUse();
-            nextPropRecord.setPrevProp( prevProp );
         }
     }
 
+    @Override
     public ArrayMap<Integer,PropertyData> relLoadProperties( long relId,
             boolean light )
     {
@@ -1022,9 +992,11 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             throw new InvalidRecordException( "Relationship[" + relId +
                 "] not in use" );
         }
-        return ReadTransaction.loadProperties( getPropertyStore(), relRecord.getNextProp() );
+        return ReadTransaction.loadProperties( getPropertyStore(),
+                relRecord.getNextProp() );
     }
 
+    @Override
     public ArrayMap<Integer,PropertyData> nodeLoadProperties( long nodeId, boolean light )
     {
         NodeRecord nodeRecord = getNodeRecord( nodeId );
@@ -1046,95 +1018,150 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             throw new InvalidRecordException( "Node[" + nodeId +
                 "] not in use" );
         }
-        return ReadTransaction.loadProperties( getPropertyStore(), nodeRecord.getNextProp() );
+        return ReadTransaction.loadProperties( getPropertyStore(),
+                nodeRecord.getNextProp() );
     }
 
-    public Object propertyGetValueOrNull( PropertyRecord propertyRecord )
+    public Object propertyGetValueOrNull( PropertyBlock block )
     {
-        return propertyRecord.getType().getValue( propertyRecord, propertyRecord.isLight() ? null : getPropertyStore() );
+        return block.getType().getValue( block,
+                block.isLight() ? null : getPropertyStore() );
     }
 
-    public Object loadPropertyValue( long id )
+    @Override
+    public Object loadPropertyValue( PropertyData propertyData )
     {
-        PropertyRecord propertyRecord = getPropertyStore().getRecord( id );
-        if ( propertyRecord.isLight() )
+        PropertyRecord propertyRecord = propertyRecords.get( propertyData.getId() );
+        if ( propertyRecord == null )
         {
-            getPropertyStore().makeHeavy( propertyRecord );
+            propertyRecord = getPropertyStore().getRecord( propertyData.getId() );
         }
-        return propertyRecord.getType().getValue( propertyRecord, getPropertyStore() );
+        PropertyBlock block = propertyRecord.getPropertyBlock( propertyData.getIndex() );
+        if ( block == null )
+        {
+            throw new IllegalStateException( "Property with index["
+                                             + propertyData.getIndex()
+                                             + "] is not present in property["
+                                             + propertyData.getId() + "]" );
+        }
+        if ( block.isLight() )
+        {
+            getPropertyStore().makeHeavy( block );
+        }
+        return block.getType().getValue( block, getPropertyStore() );
     }
 
-    public void nodeRemoveProperty( long nodeId, long propertyId )
+    @Override
+    public void nodeRemoveProperty( long nodeId, PropertyData propertyData )
     {
+        long propertyId = propertyData.getId();
         NodeRecord nodeRecord = getNodeRecord( nodeId );
         if ( nodeRecord == null )
         {
             nodeRecord = getNodeStore().getRecord( nodeId );
+            addNodeRecord( nodeRecord );
         }
         if ( !nodeRecord.inUse() )
         {
             throw new IllegalStateException( "Property remove on node[" +
                 nodeId + "] illegal since it has been deleted." );
         }
-        PropertyRecord propRecord = getPropertyRecord( propertyId );
-        if ( propRecord == null )
-        {
-            propRecord = getPropertyStore().getRecord( propertyId );
-            addPropertyRecord( propRecord );
-        }
+        assert assertPropertyChain( nodeRecord );
+        PropertyRecord propRecord = getPropertyRecord( propertyId, false, true );
         if ( !propRecord.inUse() )
         {
             throw new IllegalStateException( "Unable to delete property[" +
                 propertyId + "] since it is already deleted." );
         }
         propRecord.setNodeId( nodeId );
-        if ( propRecord.isLight() )
+
+        PropertyBlock block = propRecord.removePropertyBlock( propertyData.getIndex() );
+        if ( block == null )
         {
-            getPropertyStore().makeHeavy( propRecord );
+            throw new IllegalStateException( "Property with index["
+                                             + propertyData.getIndex()
+                                             + "] is not present in property["
+                                             + propertyId + "]" );
         }
 
-        propRecord.setInUse( false );
-        // TODO: update count on property index record
-        for ( DynamicRecord valueRecord : propRecord.getValueRecords() )
+        if ( block.isLight() )
         {
-            if ( valueRecord.inUse() )
-            {
-                valueRecord.setInUse( false, propRecord.getType().intValue() );
-            }
+            getPropertyStore().makeHeavy( block );
         }
-        long prevProp = propRecord.getPrevProp();
-        long nextProp = propRecord.getNextProp();
-        if ( nodeRecord.getNextProp() == propertyId )
+        for ( DynamicRecord valueRecord : block.getValueRecords() )
         {
-            nodeRecord.setNextProp( nextProp );
-            // re-adding not a problem
-            addNodeRecord( nodeRecord );
+            assert valueRecord.inUse();
+            valueRecord.setInUse( false, block.getType().intValue() );
+            propRecord.addDeletedRecord( valueRecord );
         }
-        if ( prevProp != Record.NO_PREVIOUS_PROPERTY.intValue() )
+        // propRecord.removeBlock( propertyData.getIndex() );
+        if (propRecord.size() > 0)
         {
-            PropertyRecord prevPropRecord = getPropertyRecord( prevProp );
-            if ( prevPropRecord == null )
-            {
-                prevPropRecord = getPropertyStore().getLightRecord( prevProp );
-                addPropertyRecord( prevPropRecord );
-            }
-            assert prevPropRecord.inUse();
-            prevPropRecord.setNextProp( nextProp );
+            /*
+             * There are remaining blocks in the record. We do not unlink yet.
+             */
+            propRecord.setChanged();
+            assert assertPropertyChain( nodeRecord );
+            return;
         }
-        if ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
+        else
         {
-            PropertyRecord nextPropRecord = getPropertyRecord( nextProp );
-            if ( nextPropRecord == null )
+            if ( unlinkPropertyRecord( propRecord, nodeRecord ) )
             {
-                nextPropRecord = getPropertyStore().getLightRecord( nextProp );
-                addPropertyRecord( nextPropRecord );
+                addNodeRecord( nodeRecord );
             }
-            assert nextPropRecord.inUse();
-            nextPropRecord.setPrevProp( prevProp );
         }
     }
 
-    public PropertyData relChangeProperty( long relId, long propertyId, Object value )
+    private boolean unlinkPropertyRecord( PropertyRecord propRecord,
+            PrimitiveRecord primitive )
+    {
+        assert assertPropertyChain( primitive );
+        assert propRecord.size() == 0;
+        boolean primitiveChanged = false;
+        long prevProp = propRecord.getPrevProp();
+        long nextProp = propRecord.getNextProp();
+        if ( primitive.getNextProp() == propRecord.getId() )
+        {
+            assert propRecord.getPrevProp() == Record.NO_PREVIOUS_PROPERTY.intValue() : propRecord
+                                                                                        + " for "
+                                                                                        + primitive;
+            primitive.setNextProp( nextProp );
+            primitiveChanged = true;
+        }
+        if ( prevProp != Record.NO_PREVIOUS_PROPERTY.intValue() )
+        {
+            PropertyRecord prevPropRecord = getPropertyRecord( prevProp, true,
+                    true );
+            assert prevPropRecord.inUse() : prevPropRecord + "->" + propRecord
+                                            + " for " + primitive;
+            prevPropRecord.setNextProp( nextProp );
+            prevPropRecord.setChanged();
+        }
+        if ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
+        {
+            PropertyRecord nextPropRecord = getPropertyRecord( nextProp, true,
+                    true );
+            assert nextPropRecord.inUse() : propRecord + "->" + nextPropRecord
+                                            + " for " + primitive;
+            nextPropRecord.setPrevProp( prevProp );
+            nextPropRecord.setChanged();
+        }
+        propRecord.setInUse( false );
+        /*
+         *  The following two are not needed - the above line does all the work (PropertyStore
+         *  does not write out the prev/next for !inUse records). It is nice to set this
+         *  however to check for consistency when assertPropertyChain().
+         */
+        propRecord.setPrevProp( Record.NO_PREVIOUS_PROPERTY.intValue() );
+        propRecord.setNextProp( Record.NO_NEXT_PROPERTY.intValue() );
+        assert assertPropertyChain( primitive );
+        return primitiveChanged;
+    }
+
+    @Override
+    public PropertyData relChangeProperty( long relId,
+            PropertyData propertyData, Object value )
     {
         RelationshipRecord relRecord = getRelationshipRecord( relId );
         if ( relRecord == null )
@@ -1146,49 +1173,12 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             throw new IllegalStateException( "Property change on relationship[" +
                 relId + "] illegal since it has been deleted." );
         }
-        PropertyRecord propertyRecord = getPropertyRecord( propertyId );
-        if ( propertyRecord == null )
-        {
-            propertyRecord = getPropertyStore().getRecord( propertyId );
-            addPropertyRecord( propertyRecord );
-        }
-        if ( !propertyRecord.inUse() )
-        {
-            throw new IllegalStateException( "Unable to change property[" +
-                propertyId + "] since it is deleted." );
-        }
-        propertyRecord.setRelId( relId );
-        if ( propertyRecord.isLight() )
-        {
-            getPropertyStore().makeHeavy( propertyRecord );
-        }
-        propertyRecord.setChanged();
-        if ( propertyRecord.getType() == PropertyType.STRING )
-        {
-            for ( DynamicRecord record : propertyRecord.getValueRecords() )
-            {
-                if ( record.inUse() )
-                {
-                    record.setInUse( false, PropertyType.STRING.intValue() );
-                }
-            }
-        }
-        else if ( propertyRecord.getType() == PropertyType.ARRAY )
-        {
-            for ( DynamicRecord record : propertyRecord.getValueRecords() )
-            {
-                if ( record.inUse() )
-                {
-                    record.setInUse( false, PropertyType.ARRAY.intValue() );
-                }
-            }
-        }
-        getPropertyStore().encodeValue( propertyRecord, value );
-        addPropertyRecord( propertyRecord );
-        return propertyRecord.newPropertyData( value );
+        return primitiveChangeProperty( relRecord, propertyData, value, false );
     }
 
-    public PropertyData nodeChangeProperty( long nodeId, long propertyId, Object value )
+    @Override
+    public PropertyData nodeChangeProperty( long nodeId,
+            PropertyData propertyData, Object value )
     {
         NodeRecord nodeRecord = getNodeRecord( nodeId );
         if ( nodeRecord == null )
@@ -1200,53 +1190,75 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             throw new IllegalStateException( "Property change on node[" +
                 nodeId + "] illegal since it has been deleted." );
         }
-        PropertyRecord propertyRecord = getPropertyRecord( propertyId );
-        if ( propertyRecord == null )
-        {
-            propertyRecord = getPropertyStore().getRecord( propertyId );
-            addPropertyRecord( propertyRecord );
-        }
-        if ( !propertyRecord.inUse() )
-        {
-            throw new IllegalStateException( "Unable to change property[" +
-                propertyId + "] since it is deleted." );
-        }
-        propertyRecord.setNodeId( nodeId );
-        if ( propertyRecord.isLight() )
-        {
-            getPropertyStore().makeHeavy( propertyRecord );
-        }
-        propertyRecord.setChanged();
-        if ( propertyRecord.getType() == PropertyType.STRING )
-        {
-            for ( DynamicRecord record : propertyRecord.getValueRecords() )
-            {
-                if ( record.inUse() )
-                {
-                    record.setInUse( false, PropertyType.STRING.intValue() );
-                }
-            }
-        }
-        else if ( propertyRecord.getType() == PropertyType.ARRAY )
-        {
-            for ( DynamicRecord record : propertyRecord.getValueRecords() )
-            {
-                if ( record.inUse() )
-                {
-                    record.setInUse( false, PropertyType.ARRAY.intValue() );
-                }
-            }
-        }
-        getPropertyStore().encodeValue( propertyRecord, value );
-        addPropertyRecord( propertyRecord );
-        return propertyRecord.newPropertyData( value );
+        return primitiveChangeProperty( nodeRecord, propertyData, value, true );
     }
 
-    /*
-     * Public for testing only
-     */
-    public PropertyRecord relAddProperty( long relId, long propertyId, PropertyIndex index,
-        Object value )
+    private PropertyData primitiveChangeProperty( PrimitiveRecord primitive,
+            PropertyData propertyData, Object value, boolean isNode )
+    {
+        assert assertPropertyChain( primitive );
+        long propertyId = propertyData.getId();
+        PropertyRecord propertyRecord = getPropertyRecord( propertyId, true,
+                true );
+        if ( !propertyRecord.inUse() )
+        {
+            throw new IllegalStateException( "Unable to change property["
+                                             + propertyId
+                                             + "] since it has been deleted." );
+        }
+        if ( isNode )
+        {
+            propertyRecord.setNodeId( primitive.getId() );
+        }
+        else
+        {
+            propertyRecord.setRelId( primitive.getId() );
+        }
+
+        PropertyBlock block = propertyRecord.getPropertyBlock( propertyData.getIndex() );
+        if ( block == null )
+        {
+            throw new IllegalStateException( "Property with index["
+                                             + propertyData.getIndex()
+                                             + "] is not present in property["
+                                             + propertyId + "]" );
+        }
+        if ( block.isLight() )
+        {
+            getPropertyStore().makeHeavy( block );
+        }
+        propertyRecord.setChanged();
+        for ( DynamicRecord record : block.getValueRecords() )
+        {
+            assert record.inUse();
+            record.setInUse( false, block.getType().intValue() );
+            propertyRecord.addDeletedRecord( record );
+        }
+        getPropertyStore().encodeValue( block, propertyData.getIndex(),
+                value );
+        if ( propertyRecord.size() > PropertyType.getPayloadSize() )
+        {
+            propertyRecord.removePropertyBlock( propertyData.getIndex() );
+            /*
+             * The record should never, ever be above max size. Less obviously, it should
+             * never remain empty. If removing a property because it won't fit when changing
+             * it leaves the record empty it means that this block was the last one which
+             * means that it doesn't fit in an empty record. Where i come from, we call this
+             * weird.
+             *
+             assert propertyRecord.size() <= PropertyType.getPayloadSize() : propertyRecord;
+             assert propertyRecord.size() > 0 : propertyRecord;
+             */
+            propertyRecord = addPropertyBlockToPrimitive( block, primitive,
+                    isNode );
+        }
+        assert assertPropertyChain( primitive );
+        return block.newPropertyData( propertyRecord, value );
+    }
+
+    @Override
+    public PropertyData relAddProperty( long relId,
+            PropertyIndex index, Object value )
     {
         RelationshipRecord relRecord = getRelationshipRecord( relId );
         if ( relRecord == null )
@@ -1259,37 +1271,18 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             throw new IllegalStateException( "Property add on relationship[" +
                 relId + "] illegal since it has been deleted." );
         }
-        PropertyRecord propertyRecord = new PropertyRecord( propertyId );
-        propertyRecord.setInUse( true );
-        propertyRecord.setCreated();
-        propertyRecord.setRelId( relId );
-        if ( relRecord.getNextProp() != Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {
-            PropertyRecord prevProp = getPropertyRecord(
-                relRecord.getNextProp() );
-            if ( prevProp == null )
-            {
-                prevProp = getPropertyStore().getLightRecord(
-                    relRecord.getNextProp() );
-                addPropertyRecord( prevProp );
-            }
-            assert prevProp.getPrevProp() ==
-                Record.NO_PREVIOUS_PROPERTY.intValue();
-            prevProp.setPrevProp( propertyId );
-            propertyRecord.setNextProp( prevProp.getId() );
-        }
-        int keyIndexId = index.getKeyId();
-        propertyRecord.setKeyIndexId( keyIndexId );
-        getPropertyStore().encodeValue( propertyRecord, value );
-        relRecord.setNextProp( propertyId );
-        addPropertyRecord( propertyRecord );
-        return propertyRecord;
+        assert assertPropertyChain( relRecord );
+        PropertyBlock block = new PropertyBlock();
+        block.setCreated();
+        getPropertyStore().encodeValue( block, index.getKeyId(), value );
+        PropertyRecord host = addPropertyBlockToPrimitive( block, relRecord,
+        /*isNode*/false );
+        assert assertPropertyChain( relRecord );
+        return block.newPropertyData( host, value );
     }
 
-    /*
-     * Public for testing only
-     */
-    public PropertyRecord nodeAddProperty( long nodeId, long propertyId, PropertyIndex index,
+    @Override
+    public PropertyData nodeAddProperty( long nodeId, PropertyIndex index,
         Object value )
     {
         NodeRecord nodeRecord = getNodeRecord( nodeId );
@@ -1304,36 +1297,92 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 nodeId + "] illegal since it has been deleted." );
         }
 
-        PropertyRecord propertyRecord = new PropertyRecord( propertyId );
-        propertyRecord.setInUse( true );
-        propertyRecord.setCreated();
-        propertyRecord.setNodeId( nodeId );
-        // encoding has to be set here before anything is change
-        // (exception is thrown in encodeValue now and tx not marked
-        // rollback only
-        getPropertyStore().encodeValue( propertyRecord, value );
-        if ( nodeRecord.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
-        {
-            PropertyRecord prevProp = getPropertyRecord(
-                nodeRecord.getNextProp() );
-            if ( prevProp == null )
-            {
-                prevProp = getPropertyStore().getLightRecord(
-                    nodeRecord.getNextProp() );
-                addPropertyRecord( prevProp );
-            }
-            assert prevProp.getPrevProp() ==
-                Record.NO_PREVIOUS_PROPERTY.intValue();
-            prevProp.setPrevProp( propertyId );
-            propertyRecord.setNextProp( prevProp.getId() );
-        }
-        int keyIndexId = index.getKeyId();
-        propertyRecord.setKeyIndexId( keyIndexId );
-        nodeRecord.setNextProp( propertyId );
-        addPropertyRecord( propertyRecord );
-        return propertyRecord;
+        assert assertPropertyChain( nodeRecord );
+        PropertyBlock block = new PropertyBlock();
+        block.setCreated();
+        /*
+         * Encoding has to be set here before anything is changed,
+         * since an exception could be thrown in encodeValue now and tx not marked
+         * rollback only.
+         */
+        getPropertyStore().encodeValue( block, index.getKeyId(), value );
+        PropertyRecord host = addPropertyBlockToPrimitive( block, nodeRecord,
+        /*isNode*/true );
+        assert assertPropertyChain( nodeRecord );
+        return block.newPropertyData( host, value );
     }
 
+    private PropertyRecord addPropertyBlockToPrimitive( PropertyBlock block,
+            PrimitiveRecord primitive, boolean isNode )
+    {
+        assert assertPropertyChain( primitive );
+        int newBlockSizeInBytes = block.getSize();
+        /*
+         * Here we could either iterate over the whole chain or just go for the first record
+         * which is the most likely to be the less full one. Currently we opt for the second
+         * to perform better.
+         */
+        PropertyRecord host = null;
+        long firstProp = primitive.getNextProp();
+        if ( firstProp != Record.NO_NEXT_PROPERTY.intValue() )
+        {
+            // We do not store in map - might not have enough space
+            PropertyRecord propRecord = getPropertyRecord( firstProp, false,
+                    false );
+            assert propRecord.getPrevProp() == Record.NO_PREVIOUS_PROPERTY.intValue() : propRecord
+                                                                                        + " for "
+                                                                                        + primitive;
+            assert propRecord.inUse() : propRecord;
+            int propSize = propRecord.size();
+            assert propSize > 0 : propRecord;
+            if ( propSize + newBlockSizeInBytes <= PropertyType.getPayloadSize() )
+            {
+                host = propRecord;
+                host.addPropertyBlock( block );
+                host.setChanged();
+            }
+        }
+        if ( host == null )
+        {
+            // First record in chain didn't fit, make new one
+            host = new PropertyRecord( getPropertyStore().nextId() );
+            host.setCreated();
+            if ( primitive.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
+            {
+                PropertyRecord prevProp = getPropertyRecord(
+                        primitive.getNextProp(), true, true );
+                if ( isNode )
+                {
+                    addNodeRecord( (NodeRecord) primitive );
+                }
+                else
+                {
+                    addRelationshipRecord( (RelationshipRecord) primitive );
+                }
+                assert prevProp.getPrevProp() == Record.NO_PREVIOUS_PROPERTY.intValue();
+                prevProp.setPrevProp( host.getId() );
+                host.setNextProp( prevProp.getId() );
+                prevProp.setChanged();
+            }
+            primitive.setNextProp( host.getId() );
+            host.addPropertyBlock( block );
+            host.setInUse( true );
+        }
+        // Ok, here host does for the job. Use it
+        if ( isNode )
+        {
+            host.setNodeId( primitive.getId() );
+        }
+        else
+        {
+            host.setRelId( primitive.getId() );
+        }
+        addPropertyRecord( host );
+        assert assertPropertyChain( primitive );
+        return host;
+    }
+
+    @Override
     public void relationshipCreate( long id, int type, long firstNodeId, long secondNodeId )
     {
         NodeRecord firstNode = getNodeRecord( firstNodeId );
@@ -1409,6 +1458,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
     }
 
+    @Override
     public void nodeCreate( long nodeId )
     {
         NodeRecord nodeRecord = new NodeRecord( nodeId );
@@ -1417,6 +1467,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         addNodeRecord( nodeRecord );
     }
 
+    @Override
     public String loadIndex( int id )
     {
         PropertyIndexStore indexStore = getPropertyStore().getIndexStore();
@@ -1432,12 +1483,14 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         return indexStore.getStringFor( index );
     }
 
+    @Override
     public PropertyIndexData[] loadPropertyIndexes( int count )
     {
         PropertyIndexStore indexStore = getPropertyStore().getIndexStore();
         return indexStore.getPropertyIndexes( count );
     }
 
+    @Override
     public void createPropertyIndex( String key, int id )
     {
         PropertyIndexRecord record = new PropertyIndexRecord( id );
@@ -1446,11 +1499,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         PropertyIndexStore propIndexStore = getPropertyStore().getIndexStore();
         int keyBlockId = propIndexStore.nextKeyBlockId();
         record.setKeyBlockId( keyBlockId );
-        int length = key.length();
-        char[] chars = new char[length];
-        key.getChars( 0, length, chars, 0 );
         Collection<DynamicRecord> keyRecords =
-            propIndexStore.allocateKeyRecords( keyBlockId, chars );
+            propIndexStore.allocateKeyRecords( keyBlockId, encodeString( key ) );
         for ( DynamicRecord keyRecord : keyRecords )
         {
             record.addKeyRecord( keyRecord );
@@ -1458,6 +1508,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         addPropertyIndexRecord( record );
     }
 
+    @Override
     public void createRelationshipType( int id, String name )
     {
         RelationshipTypeRecord record = new RelationshipTypeRecord( id );
@@ -1465,11 +1516,11 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         record.setCreated();
         int blockId = (int) getRelationshipTypeStore().nextBlockId();
         record.setTypeBlock( blockId );
-        int length = name.length();
-        char[] chars = new char[length];
-        name.getChars( 0, length, chars, 0 );
+//        int length = name.length();
+//        char[] chars = new char[length];
+//        name.getChars( 0, length, chars, 0 );
         Collection<DynamicRecord> typeNameRecords =
-            getRelationshipTypeStore().allocateTypeNameRecords( blockId, chars );
+            getRelationshipTypeStore().allocateTypeNameRecords( blockId, encodeString( name ) );
         for ( DynamicRecord typeRecord : typeNameRecords )
         {
             record.addTypeRecord( typeRecord );
@@ -1540,9 +1591,26 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         propertyRecords.put( record.getId(), record );
     }
 
-    PropertyRecord getPropertyRecord( long propertyId )
+    PropertyRecord getPropertyRecord( long propertyId, boolean light,
+            boolean store )
     {
-        return propertyRecords.get( propertyId );
+        PropertyRecord result = propertyRecords.get( propertyId );
+        if ( result == null )
+        {
+            if ( light )
+            {
+                result = getPropertyStore().getLightRecord( propertyId );
+            }
+            else
+            {
+                result = getPropertyStore().getRecord( propertyId );
+            }
+            if ( store )
+            {
+                addPropertyRecord( result );
+            }
+        }
+        return result;
     }
 
     void addRelationshipTypeRecord( RelationshipTypeRecord record )
@@ -1569,81 +1637,97 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             this.id = id;
         }
 
+        @Override
         public void delete()
         {
             throw new UnsupportedOperationException( "Lockable rel" );
         }
 
+        @Override
         public Node getEndNode()
         {
             throw new UnsupportedOperationException( "Lockable rel" );
         }
 
+        @Override
         public long getId()
         {
             return this.id;
         }
 
+        @Override
         public GraphDatabaseService getGraphDatabase()
         {
             throw new UnsupportedOperationException( "Lockable rel" );
         }
 
+        @Override
         public Node[] getNodes()
         {
             throw new UnsupportedOperationException( "Lockable rel" );
         }
 
+        @Override
         public Node getOtherNode( Node node )
         {
             throw new UnsupportedOperationException( "Lockable rel" );
         }
 
+        @Override
         public Object getProperty( String key )
         {
             throw new UnsupportedOperationException( "Lockable rel" );
         }
 
+        @Override
         public Object getProperty( String key, Object defaultValue )
         {
             throw new UnsupportedOperationException( "Lockable rel" );
         }
 
+        @Override
         public Iterable<String> getPropertyKeys()
         {
             throw new UnsupportedOperationException( "Lockable rel" );
         }
 
+        @Override
         public Iterable<Object> getPropertyValues()
         {
             throw new UnsupportedOperationException( "Lockable rel" );
         }
 
+        @Override
         public Node getStartNode()
         {
             throw new UnsupportedOperationException( "Lockable rel" );
         }
 
+        @Override
         public RelationshipType getType()
         {
             throw new UnsupportedOperationException( "Lockable rel" );
         }
 
+        @Override
         public boolean isType( RelationshipType type )
         {
             throw new UnsupportedOperationException( "Lockable rel" );
         }
 
+        @Override
         public boolean hasProperty( String key )
         {
             throw new UnsupportedOperationException( "Lockable rel" );
         }
 
+        @Override
         public Object removeProperty( String key )
         {
             throw new UnsupportedOperationException( "Lockable rel" );
         }
 
+        @Override
         public void setProperty( String key, Object value )
         {
             throw new UnsupportedOperationException( "Lockable rel" );
@@ -1672,6 +1756,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
     }
 
+    @Override
     public RelIdArray getCreatedNodes()
     {
         RelIdArray createdNodes = new RelIdArray( null );
@@ -1686,6 +1771,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         return createdNodes;
     }
 
+    @Override
     public boolean isNodeCreated( long nodeId )
     {
         NodeRecord record = nodeRecords.get( nodeId );
@@ -1696,6 +1782,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         return false;
     }
 
+    @Override
     public boolean isRelationshipCreated( long relId )
     {
         RelationshipRecord record = relRecords.get( relId );
@@ -1706,14 +1793,11 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         return false;
     }
 
-    public int getKeyIdForProperty( long propertyId )
+    @Override
+    public int getKeyIdForProperty( PropertyData property )
     {
-        PropertyRecord propRecord = getPropertyRecord( propertyId );
-        if ( propRecord == null )
-        {
-            propRecord = getPropertyStore().getLightRecord( propertyId );
-        }
-        return propRecord.getKeyIndexId();
+        return ReadTransaction.getKeyIdForProperty( property,
+                getPropertyStore() );
     }
 
     @Override
@@ -1735,20 +1819,6 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     }
 
     @Override
-    public PropertyData nodeAddProperty( long nodeId, PropertyIndex index, Object value )
-    {
-        long propertyId = neoStore.getPropertyStore().nextId();
-        return nodeAddProperty( nodeId, propertyId, index, value ).newPropertyData( value );
-    }
-
-    @Override
-    public PropertyData relAddProperty( long relId, PropertyIndex index, Object value )
-    {
-        long propertyId = neoStore.getPropertyStore().nextId();
-        return relAddProperty( relId, propertyId, index, value ).newPropertyData( value );
-    }
-
-    @Override
     public RelationshipTypeData[] loadRelationshipTypes()
     {
         RelationshipTypeData relTypeData[] = neoStore.getRelationshipTypeStore().getRelationshipTypes();;
@@ -1759,5 +1829,46 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 relTypeData[i].getId(), relTypeData[i].getName() );
         }
         return rawRelTypeData;
+    }
+
+    private boolean assertPropertyChain( PrimitiveRecord primitive )
+    {
+        List<PropertyRecord> toCheck = new LinkedList<PropertyRecord>();
+        long nextIdToFetch = primitive.getNextProp();
+        while ( nextIdToFetch != Record.NO_NEXT_PROPERTY.intValue() )
+        {
+            PropertyRecord toAdd = getPropertyRecord( nextIdToFetch, true,
+                    false );
+            toCheck.add( toAdd );
+            assert toAdd.inUse() : primitive + "->"
+                                   + Arrays.toString( toCheck.toArray() );
+            nextIdToFetch = toAdd.getNextProp();
+        }
+        if ( toCheck.isEmpty() )
+        {
+            assert primitive.getNextProp() == Record.NO_NEXT_PROPERTY.intValue() : primitive;
+            return true;
+        }
+        PropertyRecord first = toCheck.get( 0 );
+        PropertyRecord last = toCheck.get( toCheck.size() - 1 );
+        assert first.getPrevProp() == Record.NO_PREVIOUS_PROPERTY.intValue() : primitive
+                                                                               + "->"
+                                                                               + Arrays.toString( toCheck.toArray() );
+        assert last.getNextProp() == Record.NO_NEXT_PROPERTY.intValue() : primitive
+                                                                          + "->"
+                                                                          + Arrays.toString( toCheck.toArray() );
+        PropertyRecord current, previous = first;
+        for ( int i = 1; i < toCheck.size(); i++ )
+        {
+            current = toCheck.get( i );
+            assert current.getPrevProp() == previous.getId() : primitive
+                                                               + "->"
+                                                               + Arrays.toString( toCheck.toArray() );
+            assert previous.getNextProp() == current.getId() : primitive
+                                                               + "->"
+                                                               + Arrays.toString( toCheck.toArray() );
+            previous = current;
+        }
+        return true;
     }
 }

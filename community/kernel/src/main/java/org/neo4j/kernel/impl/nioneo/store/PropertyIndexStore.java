@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -35,8 +34,8 @@ import org.neo4j.kernel.IdType;
  */
 public class PropertyIndexStore extends AbstractStore implements Store
 {
-    // store version, should end with this string (byte encoded)
-    private static final String VERSION = "PropertyIndex v0.9.9";
+    private static final String TYPE_DESCRIPTOR = "PropertyIndexStore";
+
     private static final int KEY_STORE_BLOCK_SIZE = 30;
 
     // in_use(byte)+prop_count(int)+key_block_id(int)
@@ -49,20 +48,15 @@ public class PropertyIndexStore extends AbstractStore implements Store
         super( fileName, config, IdType.PROPERTY_INDEX );
     }
 
-//    public PropertyIndexStore( String fileName )
-//    {
-//        super( fileName );
-//    }
-
     protected void initStorage()
     {
         keyPropertyStore = new DynamicStringStore( getStorageFileName()
             + ".keys", getConfig(), IdType.PROPERTY_INDEX_BLOCK );
     }
 
-    public String getTypeAndVersionDescriptor()
+    public String getTypeDescriptor()
     {
-        return VERSION;
+        return TYPE_DESCRIPTOR;
     }
 
     public int getRecordSize()
@@ -128,9 +122,9 @@ public class PropertyIndexStore extends AbstractStore implements Store
 
     public static void createStore( String fileName, IdGeneratorFactory idGeneratorFactory )
     {
-        createEmptyStore( fileName, VERSION, idGeneratorFactory );
+        createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), idGeneratorFactory );
         DynamicStringStore.createStore( fileName + ".keys",
-            KEY_STORE_BLOCK_SIZE, idGeneratorFactory, IdType.PROPERTY_INDEX_BLOCK );
+                KEY_STORE_BLOCK_SIZE, idGeneratorFactory, IdType.PROPERTY_INDEX_BLOCK );
     }
 
     public PropertyIndexData[] getPropertyIndexes( int count )
@@ -201,6 +195,11 @@ public class PropertyIndexStore extends AbstractStore implements Store
         return record;
     }
 
+    public Collection<DynamicRecord> allocateKeyRecords( int keyBlockId, byte[] chars )
+    {
+        return keyPropertyStore.allocateRecords( keyBlockId, chars );
+    }
+    
     public PropertyIndexRecord getLightRecord( int id )
     {
         PersistenceWindow window = acquireWindow( id, OperationType.READ );
@@ -250,12 +249,6 @@ public class PropertyIndexStore extends AbstractStore implements Store
                 keyPropertyStore.updateRecord( keyRecord );
             }
         }
-    }
-
-    public Collection<DynamicRecord> allocateKeyRecords( int keyBlockId,
-        char[] chars )
-    {
-        return keyPropertyStore.allocateRecords( keyBlockId, chars );
     }
 
     public int nextKeyBlockId()
@@ -313,71 +306,26 @@ public class PropertyIndexStore extends AbstractStore implements Store
     {
         int recordToFind = propRecord.getKeyBlockId();
         Iterator<DynamicRecord> records = propRecord.getKeyRecords().iterator();
-        List<char[]> charList = new LinkedList<char[]>();
-        int totalSize = 0;
-        while ( recordToFind != Record.NO_NEXT_BLOCK.intValue() && 
-            records.hasNext() )
+        Collection<DynamicRecord> relevantRecords = new ArrayList<DynamicRecord>();
+        while ( recordToFind != Record.NO_NEXT_BLOCK.intValue() &&  records.hasNext() )
         {
             DynamicRecord record = records.next();
             if ( record.inUse() && record.getId() == recordToFind )
             {
-                if ( record.isLight() )
-                {
-                    keyPropertyStore.makeHeavy( record );
-                }
-                if ( !record.isCharData() )
-                {
-                    ByteBuffer buf = ByteBuffer.wrap( record.getData() );
-                    char[] chars = new char[record.getData().length / 2];
-                    totalSize += chars.length;
-                    buf.asCharBuffer().get( chars );
-                    charList.add( chars );
-                }
-                else
-                {
-                    charList.add( record.getDataAsChar() );
-                }
                 recordToFind = (int) record.getNextBlock();
-                // TODO: optimize here, high chance next is right one
+//                // TODO: optimize here, high chance next is right one
+                relevantRecords.add( record );
                 records = propRecord.getKeyRecords().iterator();
             }
         }
-        StringBuilder buf = new StringBuilder();
-        for ( char[] str : charList )
-        {
-            buf.append( str );
-        }
-        return buf.toString();
+        return (String) PropertyStore.getStringFor( PropertyStore.readFullByteArray(
+                propRecord.getKeyBlockId(), relevantRecords, keyPropertyStore ) );
     }
 
     @Override
     public String toString()
     {
         return "PropertyIndexStore";
-    }
-
-    @Override
-    protected boolean versionFound( String version )
-    {
-        if ( !version.startsWith( "PropertyIndex" ) )
-        {
-            // non clean shutdown, need to do recover with right neo
-            return false;
-        }
-//        if ( version.equals( "PropertyIndex v0.9.3" ) )
-//        {
-//            rebuildIdGenerator();
-//            closeIdGenerator();
-//            return true;
-//        }
-        if ( version.equals( "PropertyIndex v0.9.5" ) )
-        {
-            return true;
-        }
-        throw new IllegalStoreVersionException( "Store version [" + version  + 
-            "]. Please make sure you are not running old Neo4j kernel " + 
-            " towards a store that has been created by newer version " + 
-            " of Neo4j." );
     }
 
     public List<WindowPoolStats> getAllWindowPoolStats()

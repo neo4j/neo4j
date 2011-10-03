@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -32,32 +31,19 @@ import org.neo4j.kernel.IdType;
  */
 public class NodeStore extends AbstractStore implements Store
 {
-    // node store version, each node store should end with this string
-    // (byte encoded)
-    private static final String VERSION = "NodeStore v0.9.9";
+    private static final String TYPE_DESCRIPTOR = "NodeStore";
 
     // in_use(byte)+next_rel_id(int)+next_prop_id(int)
     public static final int RECORD_SIZE = 9;
 
-    /**
-     * See {@link AbstractStore#AbstractStore(String, Map)}
-     */
     public NodeStore( String fileName, Map<?,?> config )
     {
         super( fileName, config, IdType.NODE );
     }
 
-    /**
-     * See {@link AbstractStore#AbstractStore(String)}
-     */
-//    public NodeStore( String fileName )
-//    {
-//        super( fileName );
-//    }
-
-    public String getTypeAndVersionDescriptor()
+    public String getTypeDescriptor()
     {
-        return VERSION;
+        return TYPE_DESCRIPTOR;
     }
 
     public int getRecordSize()
@@ -72,14 +58,14 @@ public class NodeStore extends AbstractStore implements Store
      * 
      * @param fileName
      *            File name of the new node store
-     * @throws IOException
-     *             If unable to create node store or name null
+     * @param config
+     *            Map of configuration parameters
      */
     public static void createStore( String fileName, Map<?, ?> config )
     {
         IdGeneratorFactory idGeneratorFactory = (IdGeneratorFactory) config.get(
                 IdGeneratorFactory.class );
-        createEmptyStore( fileName, VERSION, idGeneratorFactory );
+        createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), idGeneratorFactory );
         NodeStore store = new NodeStore( fileName, config );
         NodeRecord nodeRecord = new NodeRecord( store.nextId() );
         nodeRecord.setInUse( true );
@@ -222,30 +208,6 @@ public class NodeStore extends AbstractStore implements Store
     public String toString()
     {
         return "NodeStore";
-    }
-    
-    @Override
-    protected boolean versionFound( String version )
-    {
-        if ( !version.startsWith( "NodeStore" ) )
-        {
-            // non clean shutdown, need to do recover with right neo
-            return false;
-        }
-//        if ( version.equals( "NodeStore v0.9.3" ) )
-//        {
-//            rebuildIdGenerator();
-//            closeIdGenerator();
-//            return true;
-//        }
-        if ( version.equals( "NodeStore v0.9.5" ) )
-        {
-            return true;
-        }
-        throw new IllegalStoreVersionException( "Store version [" + version  + 
-            "]. Please make sure you are not running old Neo4j kernel " + 
-            " towards a store that has been created by newer version " + 
-            " of Neo4j." );
     }
 
     public List<WindowPoolStats> getAllWindowPoolStats()

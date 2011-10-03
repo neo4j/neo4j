@@ -110,7 +110,8 @@ class NodeImpl extends Primitive
     }
 
     @Override
-    protected ArrayMap<Integer, PropertyData> loadProperties( NodeManager nodeManager, boolean light )
+    protected ArrayMap<Integer, PropertyData> loadProperties(
+            NodeManager nodeManager, boolean light )
     {
         return nodeManager.loadProperties( this, light );
     }
