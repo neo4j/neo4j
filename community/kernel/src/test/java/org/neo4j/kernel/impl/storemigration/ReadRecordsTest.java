@@ -38,13 +38,15 @@ public class ReadRecordsTest
     {
         URL nodeStoreFile = getClass().getResource( "oldformatstore/neostore.nodestore.db" );
 
-        Iterable<NodeRecord> records = new LegacyNodeStoreReader( nodeStoreFile.getFile() ).readNodeStore();
+        LegacyNodeStoreReader nodeStoreReader = new LegacyNodeStoreReader( nodeStoreFile.getFile() );
+        Iterable<NodeRecord> records = nodeStoreReader.readNodeStore();
         int nodeCount = 0;
         for ( NodeRecord record : records )
         {
             nodeCount++;
         }
         assertEquals( 501, nodeCount );
+        nodeStoreReader.close();
     }
 
     @Test
@@ -52,13 +54,15 @@ public class ReadRecordsTest
     {
         URL nodeStoreFile = getClass().getResource( "oldformatstore/neostore.relationshipstore.db" );
 
-        Iterable<RelationshipRecord> records = new LegacyRelationshipStoreReader( nodeStoreFile.getFile() ).readRelationshipStore();
+        LegacyRelationshipStoreReader relationshipStoreReader = new LegacyRelationshipStoreReader( nodeStoreFile.getFile() );
+        Iterable<RelationshipRecord> records = relationshipStoreReader.readRelationshipStore();
         int relationshipCount = 0;
         for ( RelationshipRecord record : records )
         {
             relationshipCount++;
         }
         assertEquals( 500, relationshipCount );
+        relationshipStoreReader.close();
     }
 
     @Test

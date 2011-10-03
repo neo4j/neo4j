@@ -73,6 +73,7 @@ public class StoreMigrator
             nodeStore.setHighId( nodeRecord.getId() + 1 );
             nodeStore.updateRecord( nodeRecord );
         }
+        legacyStore.getNodeStoreReader().close();
     }
 
     private void migrateRelationships( RelationshipStore relationshipStore, PropertyWriter propertyWriter ) throws IOException
@@ -89,6 +90,7 @@ public class StoreMigrator
             relationshipStore.setHighId( relationshipRecord.getId() + 1 );
             relationshipStore.updateRecord( relationshipRecord );
         }
+        legacyStore.getRelationshipStoreReader().close();
     }
 
     private long migrateProperties( long startOfPropertyChain, PropertyWriter propertyWriter ) throws IOException

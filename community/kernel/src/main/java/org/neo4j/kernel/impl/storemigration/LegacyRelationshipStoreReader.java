@@ -35,21 +35,22 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 
 public class LegacyRelationshipStoreReader
 {
-    private String fileName;
+    public static final int RECORD_LENGTH = 33;
 
-    public LegacyRelationshipStoreReader( String fileName )
+    private final FileChannel fileChannel;
+    private final long maxId;
+
+    public LegacyRelationshipStoreReader( String fileName ) throws IOException
     {
-        this.fileName = fileName;
+        fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
+        int endHeaderSize = UTF8.encode( FROM_VERSION ).length;
+        maxId = (fileChannel.size() - endHeaderSize) / RECORD_LENGTH;
     }
 
     public Iterable<RelationshipRecord> readRelationshipStore() throws IOException
     {
-        final FileChannel fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
-        int recordLength = 33;
-        int endHeaderSize = UTF8.encode( FROM_VERSION ).length;
-        final long maxId = (fileChannel.size() - endHeaderSize) / recordLength;
 
-        final ByteBuffer buffer = ByteBuffer.allocateDirect( recordLength );
+        final ByteBuffer buffer = ByteBuffer.allocateDirect( RECORD_LENGTH );
 
         return new Iterable<RelationshipRecord>()
         {
@@ -144,4 +145,8 @@ public class LegacyRelationshipStoreReader
         };
     }
 
+    public void close() throws IOException
+    {
+        fileChannel.close();
+    }
 }
