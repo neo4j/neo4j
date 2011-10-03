@@ -453,7 +453,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val result = parseAndExecute("start r=rel(0) match a-[r]-b return a,b")
 
-    assertEquals( List(Map("a"->a, "b"->b), Map("a"->b, "b"->a)),  result.toList )
+    assertEquals(List(Map("a" -> a, "b" -> b), Map("a" -> b, "b" -> a)), result.toList)
   }
 
   @Test def shouldLimitToTwoHits() {
@@ -880,6 +880,16 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     assert(1 === execute(query, "name" -> "Andres").toList.size)
   }
 
+  @Test def shouldHandlePatternMatchingWithParameters() {
+    val a = createNode()
+    val b = createNode(Map("name" -> "you"))
+    relate(a, b, "KNOW")
+
+    val result = parseAndExecute("start x  = node({startId}) match x-[r]-friend where friend.name = {name} return TYPE(r)", "startId" -> 1, "name" -> "you")
+
+    assert(List(Map("TYPE(r)" -> "KNOW")) === result.toList)
+  }
+
   @Test(expected = classOf[ParameterNotFoundException]) def shouldComplainWhenMissingParams() {
     val query = Query.
       start(NodeById("pA", ParameterValue("a"))).
@@ -897,9 +907,9 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     }
   }
 
-  private def parseAndExecute(q: String): ExecutionResult = {
+  private def parseAndExecute(q: String, params: (String, Any)*): ExecutionResult = {
     val query = new CypherParser().parse(q)
-    execute(query)
+    execute(query, params: _*)
   }
 }
 
