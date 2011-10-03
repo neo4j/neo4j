@@ -221,6 +221,12 @@ public class NeoStore extends AbstractStore
         neoStore.close();
     }
     
+    /**
+     * Sets the version for the given neostore file in {@code storeDir}.
+     * @param storeDir the store dir to locate the neostore file in.
+     * @param version the version to set.
+     * @return the previous version before writing.
+     */
     public static long setVersion( String storeDir, long version )
     {
         RandomAccessFile file = null;
