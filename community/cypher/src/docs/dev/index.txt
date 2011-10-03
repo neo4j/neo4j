@@ -54,24 +54,37 @@ tag=JavaQuery
 classifier=test-sources
 ----
 
+[[cypher-paramters]]
+== Parameters ==
+
+Cypher supports querying with parameters, which in Java looks like
+
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
+tag=ParameterJavaQuery
+classifier=test-sources
+----
+
 [[cypher-identifiers]]
 == Identifiers ==
 
 When you reference parts of the pattern, you do so by naming them.
 
-[source,cypher]
-----
-start identifier=(0) return identifier
-----
-
 Identifiers can be lower or upper case, and may contain underscore.
 If other characters are needed, you can use the +`+ sign.
 The same rules apply to property names.
 
-[source,cypher]
+[snippet,cypher]
 ----
-start a=(0) return a.`property.with.periods`
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
+tag=Identifier
+classifier=test-sources
 ----
+
+
 
 :leveloffset: 2
 

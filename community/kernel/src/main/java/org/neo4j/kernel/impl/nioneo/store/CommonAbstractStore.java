@@ -128,7 +128,7 @@ public abstract class CommonAbstractStore
      */
     public abstract String getTypeDescriptor();
 
-    private void checkStorage()
+    protected void checkStorage()
     {
         if ( config != null )
         {
@@ -270,6 +270,7 @@ public abstract class CommonAbstractStore
         {
             if ( foundTypeDescriptorAndVersion.startsWith( getTypeDescriptor() ) )
             {
+                getFileChannel().close();
                 throw new NotCurrentStoreVersionException( ALL_STORES_VERSION, foundTypeDescriptorAndVersion, "", false );
             }
             else

@@ -67,7 +67,7 @@ public class LegacyPropertyIndexStoreReader
                 records.add( record );
             }
         }
+        fileChannel.close();
         return records;
     }
-
 }

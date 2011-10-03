@@ -51,12 +51,13 @@ public class UpgradableStoreVersions
     {
         for ( String fileName : fileNamesToExpectedVersions.keySet() )
         {
-            System.out.println( "fileName = " + fileName );
+            // System.out.println( "fileName = " + fileName );
             String expectedVersion = fileNamesToExpectedVersions.get( fileName );
+            FileChannel fileChannel = null;
             byte[] expectedVersionBytes = UTF8.encode( expectedVersion );
             try
             {
-                FileChannel fileChannel = new RandomAccessFile( new File( storeDirectory, fileName ), "r" ).getChannel();
+                fileChannel = new RandomAccessFile( new File( storeDirectory, fileName ), "r" ).getChannel();
                 fileChannel.position( fileChannel.size() - expectedVersionBytes.length );
                 byte[] foundVersionBytes = new byte[expectedVersionBytes.length];
                 fileChannel.read( ByteBuffer.wrap( foundVersionBytes ) );
@@ -69,6 +70,20 @@ public class UpgradableStoreVersions
             } catch ( IOException e )
             {
                 throw new RuntimeException( e );
+            }
+            finally
+            {
+                if ( fileChannel != null )
+                {
+                    try
+                    {
+                        fileChannel.close();
+                    }
+                    catch ( IOException e )
+                    {
+                        throw new RuntimeException( e );
+                    }
+                }
             }
         }
         return true;

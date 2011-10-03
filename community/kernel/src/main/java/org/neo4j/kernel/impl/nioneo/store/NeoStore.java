@@ -95,7 +95,10 @@ public class NeoStore extends AbstractStore
         }
         catch ( NotCurrentStoreVersionException e )
         {
+            close();
             tryToUpgradeStores();
+            checkStorage();
+            loadStorage();
             instantiateChildStores();
         }
     }

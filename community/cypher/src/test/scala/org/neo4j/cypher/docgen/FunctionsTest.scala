@@ -51,7 +51,7 @@ class FunctionsTest extends DocumentingTestBase {
       syntax = "ALL(iterable, [symbol =>] predicate-closure)",
       arguments = common_arguments,
       text = """Tests the predicate closure to see if all items in the iterable match.""",
-      queryText = """start a=(%A%), b=(%D%) match p=a-[*1..3]->b where all(x in nodes(p) : x.age > 30) return p""",
+      queryText = """start a=node(%A%), b=node(%D%) match p=a-[*1..3]->b where all(x in nodes(p) : x.age > 30) return p""",
       returns = """All nodes in the path.""",
       (p) => assertEquals(1, p.toSeq.length))
   }
@@ -62,7 +62,7 @@ class FunctionsTest extends DocumentingTestBase {
       syntax = "ANY(iterable, [symbol =>] predicate-closure)",
       arguments = common_arguments,
       text = """Tests the predicate closure to see if at least one item in the iterable match.""",
-      queryText = """start a=(%A%) match p=a-[*1..3]->b where any(x in nodes(p) : x.eyes = "blue") return p""",
+      queryText = """start a=node(%A%) match p=a-[*1..3]->b where any(x in nodes(p) : x.eyes = "blue") return p""",
       returns = """All nodes in the path.""",
       (p) => assertEquals(3, p.toSeq.length))
   }
@@ -73,7 +73,7 @@ class FunctionsTest extends DocumentingTestBase {
       syntax = "NONE(iterable, [symbol =>] predicate-closure)",
       arguments = common_arguments,
       text = """Tests the predicate closure to see if no items in the iterable match. If even one matches, the function returns false.""",
-      queryText = """start n=(%A%) match p=n-[*1..3]->b where NONE(x in nodes(p) : x.age = 25) return p""",
+      queryText = """start n=node(%A%) match p=n-[*1..3]->b where NONE(x in nodes(p) : x.age = 25) return p""",
       returns = """All nodes in the path.""",
       (p) => assertEquals(2, p.toSeq.length))
   }
@@ -84,7 +84,7 @@ class FunctionsTest extends DocumentingTestBase {
       syntax = "SINGLE(iterable, [symbol =>] predicate-closure)",
       arguments = common_arguments,
       text = """Returns true if the closure predicate matches exactly one of the items in the iterable.""",
-      queryText = """start n=(%A%) match p=n-->b where SINGLE(var in nodes(p) : var.eyes = "blue") return p""",
+      queryText = """start n=node(%A%) match p=n-->b where SINGLE(var in nodes(p) : var.eyes = "blue") return p""",
       returns = """All nodes in the path.""",
       (p) => assertEquals(1, p.toSeq.length))
   }
@@ -95,7 +95,7 @@ class FunctionsTest extends DocumentingTestBase {
       syntax = "TYPE( relationship )",
       arguments = List("relationship" -> "A relationship"),
       text = """Returns a string representation of the relationship type.""",
-      queryText = """start n=(%A%) match (n)-[r]->() return type(r)""",
+      queryText = """start n=node(%A%) match (n)-[r]->() return type(r)""",
       returns = """The relationship type of r.""",
       (p) => assertEquals("KNOWS", p.columnAs[String]("TYPE(r)").toList.head))
   }
@@ -106,7 +106,7 @@ class FunctionsTest extends DocumentingTestBase {
       syntax = "LENGTH( iterable )",
       arguments = List("iterable" -> "An iterable, value or function call"),
       text = """To return or filter on the length of a path, use the special property LENGTH""",
-      queryText = """start a=(%A%) match p=a-->b-->c return length(p)""",
+      queryText = """start a=node(%A%) match p=a-->b-->c return length(p)""",
       returns = """The length of the path p.""",
       (p) => assertEquals(2, p.columnAs[Int]("LENGTH(p)").toList.head))
   }
@@ -117,7 +117,7 @@ class FunctionsTest extends DocumentingTestBase {
       syntax = "NODES( path )",
       arguments = List("path" -> "A path"),
       text = """Returns all nodes in a path""",
-      queryText = """start a=(%A%), c=(%E%) match p=a-->b-->c return NODES(p)""",
+      queryText = """start a=node(%A%), c=node(%E%) match p=a-->b-->c return NODES(p)""",
       returns = """All the nodes in the path p.""",
       (p) => assert(List(node("A"), node("B"), node("E")) === p.columnAs[List[Node]]("NODES(p)").toList.head)
     )
@@ -129,7 +129,7 @@ class FunctionsTest extends DocumentingTestBase {
       syntax = "RELATIONSHIPS( path )",
       arguments = List("path" -> "A path"),
       text = """Returns all relationships in a path""",
-      queryText = """start a=(%A%), c=(%E%) match p=a-->b-->c return RELATIONSHIPS(p)""",
+      queryText = """start a=node(%A%), c=node(%E%) match p=a-->b-->c return RELATIONSHIPS(p)""",
       returns = """All the nodes in the path p.""",
       (p) => assert(2 === p.columnAs[List[Node]]("RELATIONSHIPS(p)").toSeq.head.length)
     )
@@ -141,7 +141,7 @@ class FunctionsTest extends DocumentingTestBase {
       syntax = "ID( property-container )",
       arguments = List("property-container" -> "A node or a relationship"),
       text = """Returns the id of the relationship or node""",
-      queryText = """start a=(%A%, %B%, %C%) return ID(a)""",
+      queryText = """start a=node(%A%, %B%, %C%) return ID(a)""",
       returns = """The node id for three nodes.""",
       (p) => assert(Seq(node("A").getId, node("B").getId, node("C").getId) === p.columnAs[Int]("ID(a)").toSeq)
     )

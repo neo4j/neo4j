@@ -66,6 +66,7 @@ public class LegacyRelationshipTypeStoreReader
                 records.add( record );
             }
         }
+        fileChannel.close();
         return records;
     }
 }

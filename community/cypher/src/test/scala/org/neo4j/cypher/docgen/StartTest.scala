@@ -25,7 +25,7 @@ import org.junit.Assert.assertEquals
 import org.junit.matchers.JUnitMatchers.hasItem
 import org.junit.Test
 import org.neo4j.graphdb.{Relationship, Node}
-import org.neo4j.graphdb.index.{Index, RelationshipIndex}
+import org.neo4j.graphdb.index.Index
 
 class StartTest extends DocumentingTestBase {
   def graphDescription = List("A KNOWS B", "A KNOWS C")
@@ -37,8 +37,8 @@ class StartTest extends DocumentingTestBase {
   @Test def nodes_by_id() {
     testQuery(
       title = "Node by id",
-      text = "Including a node as a start point is done by using parenthesis.",
-      queryText = "start n=(%A%) return n",
+      text = "Binding a node as a start point is done with the node(*) function .",
+      queryText = "start n=node(%A%) return n",
       returns = "The reference node is returned",
       (p) => assertThat(p.columnAs[Node]("n").toList.asJava, hasItem(node("A"))))
   }
@@ -46,8 +46,8 @@ class StartTest extends DocumentingTestBase {
   @Test def relationships_by_id() {
     testQuery(
       title = "Relationship by id",
-      text = "Including a relationship as a start point is done by using square brackets.",
-      queryText = "start r=[0] return r",
+      text = "Binding a relationship as a start point is done with the relationship(*) function, which can also be abbreviated rel(*).",
+      queryText = "start r=relationship(0) return r",
       returns = "The relationshop with id 0 is returned",
       (p) => assertThat(p.columnAs[Relationship]("r").toList.asJava, hasItem(rel(0))))
   }
@@ -56,7 +56,7 @@ class StartTest extends DocumentingTestBase {
     testQuery(
       title = "Multiple nodes by id",
       text = "Multiple nodes are selected by listing them separated by commas.",
-      queryText = "start n=(%A%, %B%, %C%) return n",
+      queryText = "start n=node(%A%, %B%, %C%) return n",
       returns = "The nodes listed in the START statement.",
       (p) => assertEquals(List(node("A"), node("B"), node("C")), p.columnAs[Node]("n").toList))
   }
@@ -64,8 +64,8 @@ class StartTest extends DocumentingTestBase {
   @Test def nodes_by_index() {
     testQuery(
       title = "Node by index lookup",
-      text = "If the start point can be found by index lookups, it can be done like this: (index-name, key, \"value\").",
-      queryText = """start n=(nodes,name,"A") return n""",
+      text = "If the start point can be found by index lookups, it can be done like this: node:index-name(key = \"value\"). In this example, there exists a node index named 'nodes'.",
+      queryText = """start n=node:nodes(name = "A") return n""",
       returns = """The node indexed with name "A" is returned""",
       (p) => assertEquals(List(Map("n" -> node("A"))), p.toList))
   }
@@ -82,8 +82,8 @@ class StartTest extends DocumentingTestBase {
 
     testQuery(
       title = "Relationship by index lookup",
-      text = "If the start point can be found by index lookups, it can be done like this: [index-name, key, \"value\"].",
-      queryText = """start r=[rels,property,"some_value"] return r""",
+      text = "If the start point can be found by index lookups, it can be done like this: relationship:index-name(key = \"value\"].",
+      queryText = """start r=relationship:rels(property = "some_value") return r""",
       returns = """The relationship indexed with property "some_value" is returned""",
       (p) => assertEquals(List(Map("r" -> rel(0))), p.toList))
   }
@@ -91,9 +91,9 @@ class StartTest extends DocumentingTestBase {
   @Test def nodes_by_index_query() {
     testQuery(
       title = "Node by index query",
-      text = "If the start point can be found by index queries, it can be done like this: (index-name, \"query\")." +
+      text = "If the start point can be found by index more complex lucene queries: node:index-name(\"query\")." +
         "This allows you to write more advanced index queries",
-      queryText = """start n=(nodes,"name:A") return n""",
+      queryText = """start n=node:nodes("name:A") return n""",
       returns = """The node indexed with name "A" is returned""",
       (p) => assertEquals(List(Map("n" -> node("A"))), p.toList))
   }
@@ -102,7 +102,7 @@ class StartTest extends DocumentingTestBase {
     testQuery(
       title = "Multiple start points",
       text = "Sometimes you want to bind multiple start points. Just list them separated by commas.",
-      queryText = """start a=(%A%), b=(%B%) return a,b""",
+      queryText = """start a=node(%A%), b=node(%B%) return a,b""",
       returns = """Both the A and the B node are returned""",
       (p) => println(p.toList))
   }

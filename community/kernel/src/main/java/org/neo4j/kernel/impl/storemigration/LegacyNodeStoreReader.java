@@ -35,21 +35,21 @@ import org.neo4j.kernel.impl.nioneo.store.Record;
 
 public class LegacyNodeStoreReader
 {
-    private String fileName;
+    public static final int RECORD_LENGTH = 9;
 
-    public LegacyNodeStoreReader( String fileName )
+    private final FileChannel fileChannel;
+    private final long maxId;
+
+    public LegacyNodeStoreReader( String fileName ) throws IOException
     {
-        this.fileName = fileName;
+        fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
+        int endHeaderSize = UTF8.encode( FROM_VERSION ).length;
+        maxId = (fileChannel.size() - endHeaderSize) / RECORD_LENGTH;
     }
 
     public Iterable<NodeRecord> readNodeStore() throws IOException
     {
-        final FileChannel fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
-        int recordLength = 9;
-        int endHeaderSize = UTF8.encode( FROM_VERSION ).length;
-        final long maxId = (fileChannel.size() - endHeaderSize) / recordLength;
-
-        final ByteBuffer buffer = ByteBuffer.allocateDirect( recordLength );
+        final ByteBuffer buffer = ByteBuffer.allocateDirect( RECORD_LENGTH );
 
         return new Iterable<NodeRecord>()
         {
@@ -113,4 +113,8 @@ public class LegacyNodeStoreReader
         };
     }
 
+    public void close() throws IOException
+    {
+        fileChannel.close();
+    }
 }

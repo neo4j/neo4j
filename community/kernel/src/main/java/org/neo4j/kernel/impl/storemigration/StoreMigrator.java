@@ -55,8 +55,10 @@ public class StoreMigrator
         migrateNodes( neoStore.getNodeStore(), new PropertyWriter( neoStore.getPropertyStore() ) );
         migrateRelationships( neoStore.getRelationshipStore(), new PropertyWriter( neoStore.getPropertyStore() ) );
         migratePropertyIndexes( neoStore.getPropertyStore().getIndexStore() );
+        legacyStore.getPropertyStoreReader().close();
         migrateRelationshipTypes( neoStore.getRelationshipTypeStore() );
         migrateIdGenerators( neoStore );
+        legacyStore.getDynamicRecordFetcher().close();
     }
 
     private void migrateNodes( NodeStore nodeStore, PropertyWriter propertyWriter ) throws IOException
@@ -73,6 +75,7 @@ public class StoreMigrator
             nodeStore.setHighId( nodeRecord.getId() + 1 );
             nodeStore.updateRecord( nodeRecord );
         }
+        legacyStore.getNodeStoreReader().close();
     }
 
     private void migrateRelationships( RelationshipStore relationshipStore, PropertyWriter propertyWriter ) throws IOException
@@ -89,6 +92,7 @@ public class StoreMigrator
             relationshipStore.setHighId( relationshipRecord.getId() + 1 );
             relationshipStore.updateRecord( relationshipRecord );
         }
+        legacyStore.getRelationshipStoreReader().close();
     }
 
     private long migrateProperties( long startOfPropertyChain, PropertyWriter propertyWriter ) throws IOException
@@ -122,6 +126,7 @@ public class StoreMigrator
             String name = LegacyDynamicRecordFetcher.joinRecordsIntoString( relationshipTypeRecord.getTypeBlock(), dynamicRecords );
             createRelationshipType( relationshipTypeStore, name, relationshipTypeRecord.getId() );
         }
+        relationshipTypeNameStoreReader.close();
     }
 
     public void createRelationshipType( RelationshipTypeStore relationshipTypeStore, String name, int id )
@@ -158,6 +163,7 @@ public class StoreMigrator
             String key = LegacyDynamicRecordFetcher.joinRecordsIntoString( propertyIndexRecord.getKeyBlockId(), dynamicRecords );
             createPropertyIndex( propIndexStore, key, propertyIndexRecord.getId() );
         }
+        propertyIndexKeyStoreReader.close();
     }
 
     public void createPropertyIndex( PropertyIndexStore propIndexStore, String key, int id )

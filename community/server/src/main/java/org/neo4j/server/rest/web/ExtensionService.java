@@ -143,7 +143,7 @@ public class ExtensionService
         }
         catch ( Exception e )
         {
-            return output.serverError( e.getCause() );
+            return output.serverError( e );
         }
     }
 
