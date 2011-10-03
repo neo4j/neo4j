@@ -28,6 +28,8 @@ abstract class NodeStartItem(varName:String) extends StartItem(varName)
 
 case class RelationshipById(varName:String, value: Value) extends RelationshipStartItem(varName)
 case class RelationshipByIndex(varName:String, idxName: String, key:Value, value: Value) extends RelationshipStartItem(varName)
+case class RelationshipByIndexQuery(varName:String, idxName: String, query: Value) extends RelationshipStartItem(varName)
+
 
 case class NodeByIndex(varName:String, idxName: String, key:Value, value: Value) extends NodeStartItem(varName)
 case class NodeByIndexQuery(varName:String, idxName: String, query: Value) extends NodeStartItem(varName)

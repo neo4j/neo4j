@@ -24,42 +24,60 @@ import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
 
 trait StartClause extends JavaTokenParsers with Tokens {
-  def start: Parser[Start] = ignoreCase("start") ~> rep1sep(nodeByParam | nodeByIds | nodeByIndex | nodeByIndexQuery | relsByIds | relsByIndex, ",") ^^ (Start(_: _*))
+  def start: Parser[Start] = ignoreCase("start") ~> rep1sep(startBit, ",") ^^ (x => Start(x: _*))
 
-  def param: Parser[Value] = (literalValue | paramValue)
-  def paramString: Parser[Value] = (paramValue | literalString)
-
-  def literalString : Parser[Value] = string ^^ { case x => Literal(x) }
-  def literalValue : Parser[Value] = identity ^^ { case x => Literal(x) }
-  def paramValue: Parser[Value] = "{" ~> identity <~ "}" ^^ { case x => ParameterValue(x) }
-
-  def nodeByParam = identity ~ "=" ~ parens( curly( identity ))^^ {
-    case varName ~ "=" ~ paramName => NodeById(varName, ParameterValue(paramName))
+  def startBit = identity ~ "=" ~ lookup ^^ {
+    case id ~ "=" ~ l => l(id)
   }
 
-  def nodeByIds = identity ~ "=" ~ parens( rep1sep(wholeNumber, ",") ) ^^ {
-    case varName ~ "=" ~ id  => NodeById(varName, Literal(id.map(_.toLong)))
+  def nodes = ignoreCase("node") ^^ (x => "node")
+
+  def rels = (ignoreCase("relationship") | ignoreCase("rel")) ^^ (x => "rel")
+
+  def lookup: Parser[(String) => StartItem] = (nodes | rels) ~ (parens(param) | ids | idxLookup | idxString) ^^ {
+    case "node" ~ l => l match {
+      case l: Value => (id: String) => NodeById(id, l)
+      case x: (String, Value, Value) => (id: String) => NodeByIndex(id, x._1, x._2, x._3)
+      case x: (String, Value) => (id: String) => NodeByIndexQuery(id, x._1, x._2)
+    }
+
+    case "rel" ~ l => l match {
+      case l: Value => (id: String) => RelationshipById(id, l)
+      case x: (String, Value, Value) => (id: String) => RelationshipByIndex(id, x._1, x._2, x._3)
+      case x: (String, Value) => (id: String) => RelationshipByIndexQuery(id, x._1, x._2)
+    }
   }
 
-  def nodeByIndex = identity ~ "=" ~ "(" ~ identity ~ "," ~ param ~ "," ~ paramString ~ ")" ^^ {
-    case varName ~ "=" ~ "(" ~ index ~ "," ~ key ~ "," ~ value ~ ")" => NodeByIndex(varName, index, key, value)
+  def ids = parens(rep1sep(wholeNumber, ",")) ^^ (x => Literal(x.map(_.toLong)))
+
+  def idxString: Parser[(String, Value)] = ":" ~> identity ~ parens(string) ^^ {
+    case id ~ valu => (id, Literal(valu))
   }
 
-  def nodeByIndexQuery = identity ~ "=" ~ "(" ~ identity ~ "," ~ string ~ ")" ^^ {
-    case varName ~ "=" ~ "(" ~ index ~ "," ~ query ~ ")" => NodeByIndexQuery(varName, index, Literal(query))
+  def idxLookup: Parser[(String, Value, Value)] = ":" ~> identity ~ parens(idxQueries) ^^ {
+    case a ~ b => (a, b._1, b._2)
   }
 
-  def relsByIds = identity ~ "=" ~ "[" ~ rep1sep(wholeNumber, ",") ~ "]" ^^ {
-    case varName ~ "=" ~ "[" ~ id ~ "]" => RelationshipById(varName, id.map(_.toLong).toSeq: _*)
+  def idxQueries: Parser[(Value, Value)] = idxQuery
+
+  def idxQuery: Parser[(Value, Value)] = (id | param) ~ "=" ~ (param | stringLit) ^^ {
+    case k ~ "=" ~ v => (k, v)
   }
 
-  def relsByIndex = identity ~ "=" ~ "[" ~ identity ~ "," ~ param ~ "," ~ paramString ~ "]" ^^ {
-    case varName ~ "=" ~ "[" ~ index ~ "," ~ key ~ "," ~ value ~ "]" => RelationshipByIndex(varName, index, key, value)
+  def id: Parser[Value] = identity ^^ (x => Literal(x))
+
+  def stringLit: Parser[Value] = string ^^ (x => Literal(x))
+
+  def param: Parser[Value] = curly(identity) ^^ (x => ParameterValue(x))
+
+  def andQuery: Parser[String] = idxQuery ~ ignoreCase("and") ~ idxQueries ^^ {
+    case q ~ and ~ qs => q + " AND " + qs
   }
 
+  def orQuery: Parser[String] = idxQuery ~ ignoreCase("or") ~ idxQueries ^^ {
+    case q ~ or ~ qs => q + " OR " + qs
+  }
 }
-
-
 
 
 

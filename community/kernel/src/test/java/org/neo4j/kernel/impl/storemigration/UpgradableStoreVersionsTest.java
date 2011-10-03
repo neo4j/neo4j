@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.storemigration;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,12 +30,18 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 public class UpgradableStoreVersionsTest
 {
+    @Before
+    public void checkOperatingSystem() {
+        assumeTrue( !System.getProperty( "os.name" ).startsWith( "Windows" ) );
+    }
+
     @Test
     public void shouldAcceptTheStoresInTheSampleDatabaseAsBeingEligibleForUpgrade() throws IOException
     {

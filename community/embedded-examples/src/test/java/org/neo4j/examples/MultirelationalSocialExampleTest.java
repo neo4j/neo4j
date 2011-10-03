@@ -78,7 +78,7 @@ public class MultirelationalSocialExampleTest extends AbstractJavaDocTestbase
     {
         data.get();
         gen.get().addSnippet( "graph1", createGraphViz("Multi-relational social network", graphdb(), gen.get().getTitle()) );
-        String query = "START me=(node_auto_index,'name:Joe') " +
+        String query = "START me=node:node_auto_index(name = 'Joe') " +
         		"MATCH me-[r1]->other-[r2]->me WHERE type(r1)=type(r2) AND type(r1) =~ /FOLLOWS|LOVES/ RETURN other, type(r1) ";
         String result = engine.execute( parser.parse( query ) ).toString();
         gen.get().addSnippet( "query1", createCypherSnippet( query ) );
@@ -86,7 +86,7 @@ public class MultirelationalSocialExampleTest extends AbstractJavaDocTestbase
         assertTrue(result.contains( "Sara" ));
         assertTrue(result.contains( "Maria" ));
         
-        query = "START joe=(node_auto_index,'name:Joe') " +
+        query = "START joe=node:node_auto_index(name='Joe') " +
                 "MATCH joe-[:FOLLOWS]->other-[:LIKES]->theirStuff, joe-[:LIKES]->joeStuff " +
                 "WHERE NOT(ID(theirStuff) = ID(joeStuff)) RETURN theirStuff, COUNT(theirStuff)" +
                 "ORDER BY COUNT(theirStuff) DESC ";
