@@ -65,7 +65,7 @@ public class CypherPluginTest implements GraphHolder
     public void runSimpleQuery() throws Exception
     {
         Node i = data.get().get( "I" );
-        Representation result = testQuery( "start n=(" + i.getId()
+        Representation result = testQuery( "start n=node(" + i.getId()
                                            + ") return n" );
         assertTrue( json.format( result ).contains( "I" ) );
     }
@@ -79,7 +79,7 @@ public class CypherPluginTest implements GraphHolder
     public void checkColumns() throws Exception
     {
         Node i = data.get().get( "I" );
-        Representation result = testQuery( "start x =("
+        Representation result = testQuery( "start x =node("
                                            + i.getId()
                                            + ") match (x) -- (n) return n, n.name?, n.bool?, n.int?" );
         String formatted = json.format( result );
