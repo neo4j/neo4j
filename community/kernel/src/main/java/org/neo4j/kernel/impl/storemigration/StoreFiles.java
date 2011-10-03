@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.util.FileUtils;
+
 public class StoreFiles
 {
     public static final String[] fileNames = {
@@ -37,12 +39,30 @@ public class StoreFiles
             "neostore.relationshiptypestore.db.names",
     };
 
-    public static void move( File fromDirectory, File toDirectory ) throws IOException
+    /**
+     * Moves a database's store files (minus the .id files) from one directory
+     * to another. Since it just renames files (the standard way of moving with
+     * JDK6) from and to must be on the same disk partition.
+     *
+     * @param fromDirectory The directory that hosts the database files.
+     * @param toDirectory The directory to move the database files to.
+     * @throws IOException If any of the move operations fail for any reason.
+     */
+    public static void move( File fromDirectory, File toDirectory )
+            throws IOException
     {
         // TODO: change the order that files are moved to handle failure conditions properly
         for ( String fileName : fileNames )
         {
-            new File( fromDirectory, fileName ).renameTo( new File( toDirectory, fileName ) );
+            if ( FileUtils.moveFile( new File( fromDirectory, fileName ),
+                    toDirectory ) == null )
+            {
+                throw new IOException( "Move of file " + fileName + " from "
+                                       + fromDirectory.getAbsolutePath()
+                                       + " to directory "
+                                       + toDirectory.getAbsolutePath()
+                                       + " failed" );
+            }
         }
     }
 }

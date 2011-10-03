@@ -98,7 +98,7 @@ public class FileUtils
         while ( !deleted && count <= WINDOWS_RETRY_COUNT );
         return deleted;
     }
-    
+
     public static File[] deleteFiles( File directory, String regexPattern )
             throws IOException
     {
@@ -116,6 +116,28 @@ public class FileUtils
             }
         }
         return deletedFiles.toArray( new File[deletedFiles.size()] );
+    }
+
+    /**
+     * Utility method that moves a file from its current location to the
+     * provided target directory. This is not a rename,
+     * use {@link #renameFile(File, File)} instead. The reason this exists is
+     * for convenience and error checking.
+     * 
+     * @param toMove The File object to move. Cannot be a directory.
+     * @param targetDirectory
+     * @return the new file, null iff the move was unsuccessful
+     */
+    public static File moveFile( File toMove, File targetDirectory )
+    {
+        if ( !targetDirectory.isDirectory() )
+        {
+            throw new IllegalArgumentException(
+                    "Move target must be a directory, not " + targetDirectory );
+        }
+        String oldName = toMove.getName();
+        File endFile = new File( targetDirectory, oldName );
+        return renameFile( toMove, endFile ) ? toMove : null;
     }
 
     public static boolean renameFile( File srcFile, File renameToFile )
@@ -171,7 +193,7 @@ public class FileUtils
             throw cause;
         }
     }
-    
+
     public static void truncateFile( File file, long position ) throws IOException
     {
         RandomAccessFile access = new RandomAccessFile( file, "rw" );
