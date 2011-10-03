@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -69,8 +70,9 @@ public class TestMigration
         verifyConfiguration( db, indexThree, LuceneIndexImplementation.EXACT_CONFIG );
         db.shutdown();
     }
-    
+
     @Test
+    @Ignore
     public void canUpgradeFromPreviousVersion() throws Exception
     {
         GraphDatabaseService db = unpackDbFrom( "db-with-v3.0.1.zip" );
@@ -124,7 +126,7 @@ public class TestMigration
         }
         out.close();
     }
-    
+
     @Test
     public void providerGetsFilledInAutomatically()
     {
@@ -139,7 +141,7 @@ public class TestMigration
         assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );
         assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "w-provider", MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" ) ) ) );
         graphDb.shutdown();
-        
+
         removeProvidersFromIndexDbFile( storeDir );
         graphDb = new EmbeddedGraphDatabase( storeDir.getPath() );
         // Getting the index w/o exception means that the provider has been reinstated
@@ -150,7 +152,7 @@ public class TestMigration
         assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "wo-provider", MapUtil.stringMap( "type", "exact" ) ) ) );
         assertEquals( correctConfig, graphDb.index().getConfiguration( graphDb.index().forRelationships( "w-provider", MapUtil.stringMap( "type", "exact", IndexManager.PROVIDER, "lucene" ) ) ) );
         graphDb.shutdown();
-        
+
         removeProvidersFromIndexDbFile( storeDir );
         graphDb = new EmbeddedGraphDatabase( storeDir.getPath() );
         // Getting the index w/o exception means that the provider has been reinstated

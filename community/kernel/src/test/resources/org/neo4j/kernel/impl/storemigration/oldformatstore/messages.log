@@ -1,0 +1,44 @@
+Fri Sep 30 15:29:17 BST 2011: Creating new db @ target/output-database/neostore
+Fri Sep 30 15:29:17 BST 2011: Opened [target/output-database/nioneo_logical.log.1] clean empty log, version=0
+Fri Sep 30 15:29:17 BST 2011: Opened [/Users/apcj/projects/neo4j/legacy-store-creator/target/output-database/index/lucene.log.1] clean empty log, version=0
+Fri Sep 30 15:29:17 BST 2011: TM new log: tm_tx_log.1
+Fri Sep 30 15:29:17 BST 2011: --- CONFIGURATION START ---
+Fri Sep 30 15:29:17 BST 2011: Physical mem: 8192MB, Heap size: 123MB
+Fri Sep 30 15:29:17 BST 2011: Kernel version: Neo4j - Graph Database Kernel 1.4.1
+Fri Sep 30 15:29:17 BST 2011: Neo4j - Graph Database Kernel 1.4.1
+Fri Sep 30 15:29:17 BST 2011: Operating System: Mac OS X; version: 10.7.1; arch: x86_64; cpus: 8
+Fri Sep 30 15:29:17 BST 2011: VM Name: Java HotSpot(TM) 64-Bit Server VM
+Fri Sep 30 15:29:17 BST 2011: VM Vendor: Apple Inc.
+Fri Sep 30 15:29:17 BST 2011: VM Version: 20.1-b02-383
+Fri Sep 30 15:29:17 BST 2011: Boot Class Path: /System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Classes/jsfd.jar:/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Classes/classes.jar:/System/Library/Frameworks/JavaVM.framework/Frameworks/JavaRuntimeSupport.framework/Resources/Java/JavaRuntimeSupport.jar:/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Classes/ui.jar:/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Classes/laf.jar:/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Classes/sunrsasign.jar:/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Classes/jsse.jar:/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Classes/jce.jar:/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Classes/charsets.jar
+Fri Sep 30 15:29:17 BST 2011: Class Path: /System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/lib/deploy.jar:/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/lib/dt.jar:/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/lib/javaws.jar:/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/lib/jce.jar:/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/lib/jconsole.jar:/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/lib/management-agent.jar:/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/lib/plugin.jar:/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/lib/sa-jdi.jar:/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/../Classes/alt-rt.jar:/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/../Classes/alt-string.jar:/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/../Classes/charsets.jar:/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/../Classes/classes.jar:/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/../Classes/jsse.jar:/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/../Classes/ui.jar:/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/lib/ext/apple_provider.jar:/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/lib/ext/dnsns.jar:/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/lib/ext/localedata.jar:/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/lib/ext/sunjce_provider.jar:/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/lib/ext/sunpkcs11.jar:/Users/apcj/projects/neo4j/legacy-store-creator/target/classes:/Users/apcj/.m2/repository/org/neo4j/neo4j/1.4.1/neo4j-1.4.1.jar:/Users/apcj/.m2/repository/org/neo4j/neo4j-kernel/1.4.1/neo4j-kernel-1.4.1.jar:/Users/apcj/.m2/repository/org/apache/geronimo/specs/geronimo-jta_1.1_spec/1.1.1/geronimo-jta_1.1_spec-1.1.1.jar:/Users/apcj/.m2/repository/org/neo4j/neo4j-lucene-index/1.4.1/neo4j-lucene-index-1.4.1.jar:/Users/apcj/.m2/repository/org/apache/lucene/lucene-core/3.1.0/lucene-core-3.1.0.jar:/Users/apcj/.m2/repository/org/neo4j/neo4j-graph-algo/1.4.1/neo4j-graph-algo-1.4.1.jar:/Users/apcj/.m2/repository/org/neo4j/neo4j-udc/1.4.1/neo4j-udc-1.4.1.jar:/Users/apcj/.m2/repository/org/neo4j/neo4j-graph-matching/1.4.1/neo4j-graph-matching-1.4.1.jar:/Users/apcj/.m2/repository/org/neo4j/neo4j-cypher/1.4.1/neo4j-cypher-1.4.1.jar:/Users/apcj/.m2/repository/org/scala-lang/scala-library/2.9.0-1/scala-library-2.9.0-1.jar:/Users/apcj/.m2/repository/org/neo4j/neo4j-jmx/1.4.1/neo4j-jmx-1.4.1.jar:/Users/apcj/.m2/repository/org/neo4j/neo4j-kernel/1.4.1/neo4j-kernel-1.4.1-tests.jar:/Applications/IntelliJ IDEA 10 CE.app/lib/idea_rt.jar
+Fri Sep 30 15:29:17 BST 2011: Library Path: /Applications/IntelliJ IDEA 10 CE.app/Contents/Resources/Java:/System/Library/PrivateFrameworks/JavaApplicationLauncher.framework/Resources:.:/Library/Java/Extensions:/System/Library/Java/Extensions:/usr/lib/java
+Fri Sep 30 15:29:17 BST 2011: Garbage Collector: ParNew: [Par Eden Space, Par Survivor Space]
+Fri Sep 30 15:29:17 BST 2011: Garbage Collector: ConcurrentMarkSweep: [Par Eden Space, Par Survivor Space, CMS Old Gen, CMS Perm Gen]
+Fri Sep 30 15:29:17 BST 2011: VM Arguments: [-Didea.launcher.port=7538, -Didea.launcher.bin.path=/Applications/IntelliJ, IDEA, 10, CE.app/bin, -Dfile.encoding=UTF-8]
+Fri Sep 30 15:29:17 BST 2011: 
+Fri Sep 30 15:29:17 BST 2011: create=true
+Fri Sep 30 15:29:17 BST 2011: logical_log=target/output-database/nioneo_logical.log
+Fri Sep 30 15:29:17 BST 2011: neo_store=target/output-database/neostore
+Fri Sep 30 15:29:17 BST 2011: neostore.nodestore.db.mapped_memory=20M
+Fri Sep 30 15:29:17 BST 2011: neostore.propertystore.db.arrays.mapped_memory=130M
+Fri Sep 30 15:29:17 BST 2011: neostore.propertystore.db.index.keys.mapped_memory=1M
+Fri Sep 30 15:29:17 BST 2011: neostore.propertystore.db.index.mapped_memory=1M
+Fri Sep 30 15:29:17 BST 2011: neostore.propertystore.db.mapped_memory=90M
+Fri Sep 30 15:29:17 BST 2011: neostore.propertystore.db.strings.mapped_memory=130M
+Fri Sep 30 15:29:17 BST 2011: neostore.relationshipstore.db.mapped_memory=100M
+Fri Sep 30 15:29:17 BST 2011: node_auto_indexing=false
+Fri Sep 30 15:29:17 BST 2011: rebuild_idgenerators_fast=true
+Fri Sep 30 15:29:17 BST 2011: relationship_auto_indexing=false
+Fri Sep 30 15:29:17 BST 2011: store_dir=target/output-database
+Fri Sep 30 15:29:17 BST 2011: use_memory_mapped_buffers=true
+Fri Sep 30 15:29:17 BST 2011: --- CONFIGURATION END ---
+Fri Sep 30 15:29:17 BST 2011: Extension org.neo4j.kernel.KernelExtension[kernel udc] loaded ok
+Fri Sep 30 15:29:17 BST 2011: Extension org.neo4j.kernel.KernelExtension[kernel jmx] loaded ok
+Fri Sep 30 15:29:17 BST 2011: Extension org.neo4j.kernel.KernelExtension[dummy] loaded ok
+Fri Sep 30 15:29:17 BST 2011: Extension org.neo4j.kernel.KernelExtension[other dummy] loaded ok
+Fri Sep 30 15:29:19 BST 2011: Closed log target/output-database/nioneo_logical.log
+Fri Sep 30 15:29:19 BST 2011: NeoStore closed
+Fri Sep 30 15:29:19 BST 2011: Closed log /Users/apcj/projects/neo4j/legacy-store-creator/target/output-database/index/lucene.log
+Fri Sep 30 15:29:19 BST 2011: NeoStore closed
+Fri Sep 30 15:29:19 BST 2011: TM shutting down

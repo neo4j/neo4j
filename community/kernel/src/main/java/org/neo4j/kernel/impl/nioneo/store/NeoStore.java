@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,11 +26,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 
-import org.neo4j.kernel.Config;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
-import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 
 /**
  * This class contains the references to the "NodeStore,RelationshipStore,
@@ -41,9 +39,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
  */
 public class NeoStore extends AbstractStore
 {
-    // neo store version, store should end with this string
-    // (byte encoded)
-    private static final String VERSION = "NeoStore v0.9.9";
+    private static final String TYPE_DESCRIPTOR = "NeoStore";
 
     // 4 longs in header (long + in use), time | random | version | txid
     private static final int RECORD_SIZE = 9;
@@ -78,26 +74,44 @@ public class NeoStore extends AbstractStore
         idGeneratorFactory = (IdGeneratorFactory) config.get( IdGeneratorFactory.class );
     }
 
-//    public NeoStore( String fileName )
-//    {
-//        super( fileName );
-//        REL_GRAB_SIZE = DEFAULT_REL_GRAB_SIZE;
-//    }
+    @Override
+    protected void verifyCorrectTypeDescriptorAndVersion() throws IOException
+    {
+        // not required for NeoStore, leave version checks to child stores
+    }
+
+    @Override
+    protected void initStorage()
+    {
+        try
+        {
+            instantiateChildStores();
+        }
+        catch ( NotCurrentStoreVersionException e )
+        {
+            tryToUpgradeStores();
+            instantiateChildStores();
+        }
+    }
 
     /**
      * Initializes the node,relationship,property and relationship type stores.
      */
-    @Override
-    protected void initStorage()
+    private void instantiateChildStores()
     {
         relTypeStore = new RelationshipTypeStore( getStorageFileName()
-            + ".relationshiptypestore.db", getConfig(), IdType.RELATIONSHIP_TYPE );
+        + ".relationshiptypestore.db", getConfig(), IdType.RELATIONSHIP_TYPE );
         propStore = new PropertyStore( getStorageFileName()
-            + ".propertystore.db", getConfig() );
+        + ".propertystore.db", getConfig() );
         relStore = new RelationshipStore( getStorageFileName()
-            + ".relationshipstore.db", getConfig() );
+        + ".relationshipstore.db", getConfig() );
         nodeStore = new NodeStore( getStorageFileName() + ".nodestore.db",
-            getConfig() );
+        getConfig() );
+    }
+
+    private void tryToUpgradeStores()
+    {
+        new StoreUpgrader( getStorageFileName(), getConfig() ).attemptUpgrade();
     }
 
     /**
@@ -143,9 +157,9 @@ public class NeoStore extends AbstractStore
     }
 
     @Override
-    public String getTypeAndVersionDescriptor()
+    public String getTypeDescriptor()
     {
-        return VERSION;
+        return TYPE_DESCRIPTOR;
     }
 
     public IdGeneratorFactory getIdGeneratorFactory()
@@ -174,7 +188,7 @@ public class NeoStore extends AbstractStore
         StoreId storeId = (StoreId) config.get( StoreId.class );
         if ( storeId == null ) storeId = new StoreId();
 
-        createEmptyStore( fileName, VERSION, idGeneratorFactory );
+        createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), idGeneratorFactory );
         NodeStore.createStore( fileName + ".nodestore.db", config );
         RelationshipStore.createStore( fileName + ".relationshipstore.db", idGeneratorFactory );
         PropertyStore.createStore( fileName + ".propertystore.db", config );
@@ -390,53 +404,6 @@ public class NeoStore extends AbstractStore
         propStore.updateIdGenerators();
         relStore.updateHighId();
         nodeStore.updateHighId();
-    }
-
-    @Override
-    protected boolean versionFound( String version )
-    {
-        if ( !version.startsWith( "NeoStore" ) )
-        {
-            // non clean shutdown, need to do recover with right neo
-            return false;
-        }
-//        if ( version.equals( "NeoStore v0.9.5" ) )
-//        {
-//            ByteBuffer buffer = ByteBuffer.wrap( new byte[ RECORD_SIZE ] );
-//            buffer.put( Record.IN_USE.byteValue() ).putLong( 1 );
-//            buffer.flip();
-//            try
-//            {
-//                getFileChannel().write( buffer, 3*RECORD_SIZE );
-//            }
-//            catch ( IOException e )
-//            {
-//                throw new UnderlyingStorageException( e );
-//            }
-//            rebuildIdGenerator();
-//            closeIdGenerator();
-//            return false;
-//        }
-        if ( version.equals( "NeoStore v0.9.6" ) )
-        {
-            if ( !configSaysOkToUpgrade() )
-            {
-                throw new IllegalStoreVersionException( "Store version [" + version + "] is older " +
-                    "than expected, but could be upgraded automatically if '" +
-                    Config.ALLOW_STORE_UPGRADE + "' configuration " + "parameter was set to 'true'." );
-            }
-            LogIoUtils.moveAllLogicalLogs( new File( getStoreDir() ), "1.2-logs" );
-            return true;
-        }
-        throw new IllegalStoreVersionException( "Store version [" + version  +
-            "]. Please make sure you are not running old Neo4j kernel " +
-            "on a store that has been created by newer version of Neo4j." );
-    }
-
-    private boolean configSaysOkToUpgrade()
-    {
-        String allowUpgrade = (String) getConfig().get( Config.ALLOW_STORE_UPGRADE );
-        return Boolean.parseBoolean( allowUpgrade );
     }
 
     public int getRelationshipGrabSize()

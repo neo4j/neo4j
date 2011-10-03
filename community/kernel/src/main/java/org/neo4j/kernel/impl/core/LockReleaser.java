@@ -779,7 +779,7 @@ public class LockReleaser
             {
                 for ( PropertyData data : relElement.propertyAddMap.values() )
                 {
-                    String key = nodeManager.getKeyForProperty( data.getId() );
+                    String key = nodeManager.getKeyForProperty( data );
                     Object oldValue = relImpl.getCommittedPropertyValue( nodeManager, key );
                     Object newValue = data.getValue();
                     result.assignedProperty( rel, key, newValue, oldValue );
@@ -789,7 +789,7 @@ public class LockReleaser
             {
                 for ( PropertyData data : relElement.propertyRemoveMap.values() )
                 {
-                    String key = nodeManager.getKeyForProperty( data.getId() );
+                    String key = nodeManager.getKeyForProperty( data );
                     Object oldValue = data.getValue();
                     if ( oldValue != null && !relElement.deleted )
                     {
@@ -848,7 +848,7 @@ public class LockReleaser
             {
                 for ( PropertyData data : nodeElement.propertyAddMap.values() )
                 {
-                    String key = nodeManager.getKeyForProperty( data.getId() );
+                    String key = nodeManager.getKeyForProperty( data );
                     Object oldValue = nodeImpl.getCommittedPropertyValue( nodeManager, key );
                     Object newValue = data.getValue();
                     result.assignedProperty( node, key, newValue, oldValue );
@@ -858,7 +858,7 @@ public class LockReleaser
             {
                 for ( PropertyData data : nodeElement.propertyRemoveMap.values() )
                 {
-                    String key = nodeManager.getKeyForProperty( data.getId() );
+                    String key = nodeManager.getKeyForProperty( data );
                     Object oldValue = data.getValue();
                     if ( oldValue == null && !nodeElement.deleted )
                     {
