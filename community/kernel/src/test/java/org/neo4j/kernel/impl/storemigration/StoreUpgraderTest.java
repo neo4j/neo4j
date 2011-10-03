@@ -63,7 +63,6 @@ public class StoreUpgraderTest
     }
 
     @Test
-    @Ignore("In progress")
     public void shouldLeaveACopyOfOriginalStoreFilesInBackupDirectory() throws IOException
     {
         File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
@@ -82,11 +81,7 @@ public class StoreUpgraderTest
         for ( File originalFile : original.listFiles() )
         {
             File otherFile = new File( other, originalFile.getName() );
-            if (originalFile.isDirectory())
-            {
-                verifyFilesHaveSameContent( originalFile, otherFile );
-            }
-            else
+            if ( !originalFile.isDirectory() )
             {
                 BufferedInputStream originalStream = new BufferedInputStream( new FileInputStream( originalFile ) );
                 BufferedInputStream otherStream = new BufferedInputStream( new FileInputStream( otherFile ) );

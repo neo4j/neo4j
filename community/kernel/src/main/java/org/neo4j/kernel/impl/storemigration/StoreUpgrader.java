@@ -40,7 +40,8 @@ public class StoreUpgrader
 
     public void attemptUpgrade()
     {
-        if (!configSaysOkToUpgrade()) {
+        if ( !configSaysOkToUpgrade() )
+        {
             throw new UpgradeNotAllowedByConfigurationException(
                     String.format( "To enable automatic upgrade, please set %s in configuration properties",
                             Config.ALLOW_STORE_UPGRADE ) );
@@ -69,6 +70,7 @@ public class StoreUpgrader
 
             backupDirectory.mkdir();
             StoreFiles.move( workingDirectory, backupDirectory );
+            LogFiles.copy( workingDirectory, backupDirectory );
             StoreFiles.move( upgradeDirectory, workingDirectory );
 
         } catch ( IOException e )
