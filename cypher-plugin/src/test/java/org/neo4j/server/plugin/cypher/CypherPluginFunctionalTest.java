@@ -19,6 +19,13 @@
  */
 package org.neo4j.server.plugin.cypher;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.io.UnsupportedEncodingException;
+
+import javax.ws.rs.core.Response.Status;
+
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -31,12 +38,6 @@ import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphDescription.REL;
 import org.neo4j.test.TestData.Title;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
-
-import javax.ws.rs.core.Response.Status;
-import java.io.UnsupportedEncodingException;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
 {
@@ -77,7 +78,7 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
      */
     @Test
     @Documented
-    @Title( "Return on syntax errors" )
+    @Title( "Server errors" )
     @Graph( "I know you" )
     public void error_gets_returned_as_json() throws UnsupportedEncodingException, Exception
     {

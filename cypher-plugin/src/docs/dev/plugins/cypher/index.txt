@@ -13,7 +13,7 @@ include::send-a-query.txt[]
 
 include::return-paths.txt[]
 
-include::return-on-syntax-errors.txt[]
-
 include::return-json-table-format.txt[]
+
+include::server-errors.txt[]
 
