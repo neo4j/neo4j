@@ -20,7 +20,7 @@
 package org.neo4j.server.rest.security;
 
 import javax.servlet.http.HttpServletRequest;
-
+//START SNIPPET: failingRule
 public class PermanentlyFailingSecurityRule implements SecurityRule {
     
     public static final String REALM = "WallyWorld"; // as per RFC2617 :-);
@@ -43,3 +43,4 @@ public class PermanentlyFailingSecurityRule implements SecurityRule {
         return REALM;
     }
 }
+//END SNIPPET: failingRule

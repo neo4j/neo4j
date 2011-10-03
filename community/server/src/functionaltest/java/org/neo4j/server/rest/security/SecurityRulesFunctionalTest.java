@@ -25,12 +25,14 @@ import static org.junit.Assert.assertThat;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.test.TestData;
+import org.neo4j.test.TestData.Title;
 
 public class SecurityRulesFunctionalTest
 {
@@ -50,7 +52,25 @@ public class SecurityRulesFunctionalTest
         }
     }
 
+    /**
+     * In this case, a failing security rule is registered to deny all URI
+     * access to the server by listing the rules class in +neo4j-server.properties+:
+     * 
+     * [source]
+     * ----
+     * org.neo4j.server.rest.security_rules=my.rules.PermanentlyFailingSecurityRule
+     * ----
+     * 
+     * with the rule source code of:
+     * 
+     * @@failingRule
+     * 
+     * With this rule registered, any access to the server will be denied.
+     * 
+     */
     @Test
+    @Documented
+    @Title("Enforcing dynamic security rules")
     public void should401WithBasicChallengeWhenASecurityRuleFails() throws Exception
     {
         server = ServerBuilder.server()
@@ -58,8 +78,9 @@ public class SecurityRulesFunctionalTest
                 .withSecurityRules( PermanentlyFailingSecurityRule.class.getCanonicalName() )
                 .build();
         server.start();
+        gen.get().addSourceSnippets( PermanentlyFailingSecurityRule.class, "failingRule" );
         functionalTestHelper = new FunctionalTestHelper( server );
-
+        gen.get().setSection( "ops" );
         JaxRsResponse response = gen.get()
                 .expectedStatus( 401 )
                 .expectedHeader( "WWW-Authenticate" )

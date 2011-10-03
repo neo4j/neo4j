@@ -75,3 +75,16 @@ ProxyPassReverse / http://localhost:7474/
     Substitute s/localhost:7474/myproxy.example.com/n
 </Location>
 ----
+
+== Dynamic security rules ==
+
+[WARNING]
+This feature is experimental and may change in futurre releases.
+
+In order to implement dynamic and context specific security in the Neo4j Server, SecurityRules can be
+registered and implemented in the server. This makes scenarios like user and role based security and
+authentication against external lookup services possible.
+
+:leveloffset: 0
+
+include::enforcing-dynamic-security-rules.txt[]
