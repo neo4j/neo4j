@@ -19,6 +19,9 @@
  */
 package org.neo4j.server.plugin.cypher;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.neo4j.cypher.SyntaxException;
 import org.neo4j.cypher.commands.Query;
 import org.neo4j.cypher.javacompat.CypherParser;
@@ -58,15 +61,19 @@ public class CypherPlugin extends ServerPlugin
     public Representation executeScript(
             @Source final GraphDatabaseService neo4j,
             @Description( "The query string" ) @Parameter( name = "query", optional = false ) final String query,
+            @Description( "The query parameters" ) @Parameter( name = "parameters", optional = true ) Map parameters,
             @Description( "The return format. Default is Neo4j REST. Allowed: 'json-data-table' " +
             		"to return Google Data Table JSON." ) @Parameter( name = "format", optional = true ) final String format)
             throws SyntaxException
     {
+        if(parameters == null) {
+            parameters = new HashMap<String, Object>();
+        }
         CypherParser parser = new CypherParser();
         ExecutionResult result;
         Query compiledQuery = parser.parse( query );
         ExecutionEngine engine = new ExecutionEngine( neo4j );
-        result = engine.execute( compiledQuery );
+        result = engine.execute( compiledQuery, parameters );
         if(format!=null && format.equals(DATA_TABLE)) {
             return new JSONTableRepresentation( result );
         }

@@ -134,4 +134,23 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
         assertTrue(response.contains( "cols" ));
         assertTrue(response.contains( "rows" ));
     }
+    
+    /**
+     * Cypher supports queries with parameters
+     * which are submitted as a JSON map.
+     */ 
+    @Test
+    @Documented
+    @Graph( "I know you" )
+    public void send_queries_with_parameters() throws UnsupportedEncodingException, Exception
+    {
+        String script = "start x  = ({startId}) match path = (x-[r]-friend) where friend.name = {name} return TYPE(r)";
+        gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
+                "{\"query\": \"" + script + "\",\"parameters\": {\"startId\":" + data.get().get( "I" ).getId()+", \"name\":\"you\"}}" ).description(
+                        AsciidocHelper.createCypherSnippet( script ));
+        String response = gen.get().post( ENDPOINT ).entity();
+        assertEquals( 2, ( JsonHelper.jsonToMap( response ) ).size() );
+        assertTrue(response.contains( "cols" ));
+        assertTrue(response.contains( "rows" ));
+    }
 }
