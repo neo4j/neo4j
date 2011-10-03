@@ -385,6 +385,5 @@ public class Jetty6WebServer implements WebServer
             {
             }
         } );
-
     }
 }

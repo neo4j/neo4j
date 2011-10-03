@@ -48,6 +48,7 @@ import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.ListRepresentation;
+import org.neo4j.server.rest.repr.MediaTypeNotSupportedException;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.PropertiesRepresentation;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;

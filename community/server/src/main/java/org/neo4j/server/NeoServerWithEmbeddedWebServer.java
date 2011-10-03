@@ -196,6 +196,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
 
         for ( String classname : configuration.getStringArray( Configurator.SECURITY_RULES_KEY ) )
         {
+            System.out.println("::::: " + classname);
             try
             {
                 rules.add( (SecurityRule) Class.forName( classname ).newInstance() );
