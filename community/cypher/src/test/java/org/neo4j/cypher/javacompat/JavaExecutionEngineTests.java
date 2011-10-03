@@ -89,7 +89,7 @@ public class JavaExecutionEngineTests
         Map<String, Object> params = new HashMap<String, Object>();
         params.put("id", 0);
         ExecutionResult result = engine.execute("start n=node({id}) return n.name?", params);
-     // START SNIPPET: ParameterJavaQuery
+     // END SNIPPET: ParameterJavaQuery
 
         assertThat( result.columns(), hasItem( "n.name" ) );
         Iterator<Object> n_column = result.columnAs( "n.name" );
