@@ -63,7 +63,12 @@ public class StoreMigrationTool
         NeoStore.createStore( targetStoreFile.getPath(), config );
         NeoStore neoStore = new NeoStore( config );
 
+        long startTime = System.currentTimeMillis();
+
         new StoreMigrator( legacyStore ).migrateTo( neoStore );
+
+        long duration = System.currentTimeMillis() - startTime;
+        System.out.printf( "Migration completed in %d s%n", duration / 1000 );
 
         neoStore.close();
 
