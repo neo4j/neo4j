@@ -53,6 +53,9 @@ The role defines their responsibilities and privileges:
 ** define new components and assign component maintainership.
 ** drive, mentor and coach Neo4j component development.
 
+==== Code Style ====
+
+The Neo4j Code style is maintained on GIThub in https://github.com/neo4j/neo4j.github.com/tree/master/code-style[styles for the different IDEs].
 
 ==== Commit messages ====
 
