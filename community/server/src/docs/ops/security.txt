@@ -10,6 +10,8 @@ If you need to enable access from external machines, configure Jetty in the +con
 The neo4j server exposes remote scripting functionality by default that allow full access to the underlying system. 
 Exposing your server without an added security layer (see below) poses a severe security threat.
 
+== Secure the port and remote client connection accepts ==
+
 [source]
 ----
 # http port (for all data, administrative, and UI access)
@@ -56,3 +58,20 @@ BalancerMember http://192.168.1.51:80
 ProxyPass /test balancer://mycluster
 --------------
 
+==  Rewriting URLs with a Proxy installation ==
+
+When installing Neo4j Server behind proxies, you need to enable rewriting of the JSON calls, 
+otherwise they will point back to the servers own base URL (normally http://localhost:7474).
+
+To do this, you can use http://httpd.apache.org/docs/2.2/mod/mod_substitute.html[Apache mod_substitute]
+
+[source]
+----
+ProxyPass / http://localhost:7474/
+ProxyPassReverse / http://localhost:7474/
+<Location />
+    AddOutputFilterByType SUBSTITUTE application/json
+    AddOutputFilterByType SUBSTITUTE text/html
+    Substitute s/localhost:7474/myproxy.example.com/n
+</Location>
+----
