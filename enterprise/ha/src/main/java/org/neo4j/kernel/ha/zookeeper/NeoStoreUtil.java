@@ -25,6 +25,8 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+
 public class NeoStoreUtil
 {
     private static final int RECORD_SIZE = 9;
@@ -38,7 +40,7 @@ public class NeoStoreUtil
     {
         try
         {
-            FileChannel fileChannel = new RandomAccessFile( storeDir + File.separator + "neostore", "r" ).getChannel();
+            FileChannel fileChannel = new RandomAccessFile( storeDir + File.separator + NeoStore.DEFAULT_NAME, "r" ).getChannel();
             ByteBuffer buf = ByteBuffer.allocate( 4*9 );
             if ( fileChannel.read( buf ) != 4*9 )
             {

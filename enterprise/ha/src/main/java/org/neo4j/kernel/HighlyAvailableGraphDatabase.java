@@ -19,11 +19,15 @@
  */
 package org.neo4j.kernel;
 
+import static java.lang.Math.max;
 import static java.util.Arrays.asList;
 import static org.neo4j.backup.OnlineBackupExtension.parsePort;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
 import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryFileNamePattern;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryLogVersion;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -38,6 +42,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 import org.neo4j.com.Client;
 import org.neo4j.com.ComException;
@@ -75,6 +80,7 @@ import org.neo4j.kernel.ha.ZooKeeperLastCommittedTxIdSetter;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
@@ -230,7 +236,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     private synchronized void startUp( boolean allowInit )
     {
         StoreId storeId = null;
-        if ( !new File( storeDir, "neostore" ).exists() )
+        if ( !new File( storeDir, NeoStore.DEFAULT_NAME ).exists() )
         {   // Try for 
             long endTime = System.currentTimeMillis()+60000;
             Exception exception = null;
@@ -295,6 +301,8 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         msgLog.logMessage( "Copying store from master" );
         Response<Void> response = master.first().copyStore( new SlaveContext( 0, machineId, 0, new Pair[0] ),
                 new ToFileStoreWriter( storeDir ) );
+        long highestLogVersion = highestLogVersion();
+        if ( highestLogVersion > -1 ) NeoStore.setVersion( storeDir, highestLogVersion + 1 );
         EmbeddedGraphDatabase copiedDb = new EmbeddedGraphDatabase( storeDir, stringMap( KEEP_LOGICAL_LOGS, "true" ) );
         try
         {
@@ -305,6 +313,21 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             copiedDb.shutdown();
         }
         msgLog.logMessage( "Done copying store from master" );
+    }
+
+    private long highestLogVersion()
+    {
+        Pattern logFilePattern = getHistoryFileNamePattern( LOGICAL_LOG_DEFAULT_NAME );
+        long highest = -1;
+        for ( File file : new File( storeDir ).listFiles() )
+        {
+            if ( logFilePattern.matcher( file.getName() ).matches() )
+            {
+                highest = max( highest, getHistoryLogVersion( file ) );
+            }
+        }
+        System.out.println( "Found highest log version " + highest );
+        return highest;
     }
 
     private EmbeddedGraphDbImpl localGraph()

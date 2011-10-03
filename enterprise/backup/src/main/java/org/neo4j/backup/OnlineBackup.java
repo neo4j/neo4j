@@ -36,6 +36,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -95,7 +96,7 @@ public class OnlineBackup
     
     private boolean directoryContainsDb( String targetDirectory )
     {
-        return new File( targetDirectory, "neostore" ).exists();
+        return new File( targetDirectory, NeoStore.DEFAULT_NAME ).exists();
     }
 
     public int getPort()

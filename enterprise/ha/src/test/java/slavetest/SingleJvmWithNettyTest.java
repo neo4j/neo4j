@@ -51,6 +51,7 @@ import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterClient;
 import org.neo4j.kernel.ha.MasterImpl;
 import org.neo4j.kernel.ha.zookeeper.Machine;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -294,7 +295,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         // the relationship store file f.ex.
         FileUtils.deleteFiles( dbPath( slaveMachineId ), "nioneo.*\\.v.*" );
         FileUtils.deleteRecursively( new File( dbPath( slaveMachineId ), "index" ) );
-        assertTrue( new File( dbPath( slaveMachineId ), "neostore" ).delete() );
+        assertTrue( new File( dbPath( slaveMachineId ), NeoStore.DEFAULT_NAME ).delete() );
         assertTrue( new File( dbPath( slaveMachineId ), "neostore.relationshipstore.db" ).delete() );
         File propertyStoreFile = new File( dbPath( slaveMachineId ), "neostore.propertystore.db" );
         FileUtils.truncateFile( propertyStoreFile, propertyStoreFile.length()/2 );
