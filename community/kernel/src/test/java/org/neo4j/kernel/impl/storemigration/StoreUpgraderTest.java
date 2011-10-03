@@ -23,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.defaultConfig;
 
@@ -36,7 +37,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
 
-import org.junit.Ignore;
+import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.UTF8;
@@ -46,6 +47,11 @@ import org.neo4j.kernel.impl.util.FileUtils;
 
 public class StoreUpgraderTest
 {
+    @Before
+    public void checkOperatingSystem() {
+        assumeTrue( !System.getProperty( "os.name" ).startsWith( "Windows" ) );
+    }
+
     @Test
     public void shouldUpgradeAnOldFormatStore() throws IOException
     {
