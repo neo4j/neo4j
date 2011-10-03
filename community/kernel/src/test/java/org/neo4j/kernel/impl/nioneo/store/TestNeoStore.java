@@ -1051,9 +1051,14 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         String storeDir = "target/test-data/set-version";
         FileUtils.deleteRecursively( new File( storeDir ) );
         new EmbeddedGraphDatabase( storeDir ).shutdown();
-        System.out.println( "------------" );
         assertEquals( 0, NeoStore.setVersion( storeDir, 10 ) );
-        System.out.println( "------------" );
         assertEquals( 10, NeoStore.setVersion( storeDir, 12 ) );
+        
+        NeoStore neoStore = new NeoStore( MapUtil.map(
+                "neo_store", new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsolutePath(),
+                FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction(),
+                IdGeneratorFactory.class, CommonFactories.defaultIdGeneratorFactory() ) );
+        assertEquals( 12, neoStore.getVersion() );
+        neoStore.close();
     }
 }
