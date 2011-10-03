@@ -20,49 +20,50 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * PropertyRecord is a container for PropertyBlocks. PropertyRecords form
+ * a double linked list and each one holds one or more PropertyBlocks that
+ * are the actual property key/value pairs. Because PropertyBlocks are of
+ * variable length, a full PropertyRecord can be holding just one
+ * PropertyBlock.
+ */
 public class PropertyRecord extends Abstract64BitRecord
 {
-    private PropertyType type;
-    private int keyIndexId = Record.NO_NEXT_BLOCK.intValue();
-    private long propBlock = Record.NO_NEXT_BLOCK.intValue();
-    private long prevProp = Record.NO_PREVIOUS_PROPERTY.intValue();
     private long nextProp = Record.NO_NEXT_PROPERTY.intValue();
-    private List<DynamicRecord> valueRecords = new ArrayList<DynamicRecord>();
-    private boolean isLight = false;
-    private long nodeRelId = -1;
-    private boolean nodeIdSet = false;
-    private boolean isChanged = false;
+    private long prevProp = Record.NO_PREVIOUS_PROPERTY.intValue();
+    private final List<PropertyBlock> blockRecords = new ArrayList<PropertyBlock>(
+            4 );
+    private long entityId = -1;
+    private boolean nodeIdSet;
+    private boolean isChanged;
+    private final List<DynamicRecord> deletedRecords = new LinkedList<DynamicRecord>();
 
     public PropertyRecord( long id )
     {
         super( id );
     }
 
-    public void setType( PropertyType type )
-    {
-        this.type = type;
-    }
-
     public void setNodeId( long nodeId )
     {
         nodeIdSet = true;
-        nodeRelId = nodeId;
+        entityId = nodeId;
     }
 
     public void setRelId( long relId )
     {
         nodeIdSet = false;
-        nodeRelId = relId;
+        entityId = relId;
     }
 
     public long getNodeId()
     {
         if ( nodeIdSet )
         {
-            return nodeRelId;
+            return entityId;
         }
         return -1;
     }
@@ -71,66 +72,74 @@ public class PropertyRecord extends Abstract64BitRecord
     {
         if ( !nodeIdSet )
         {
-            return nodeRelId;
+            return entityId;
         }
         return -1;
     }
 
-    void setIsLight( boolean status )
+    /**
+     * Gets the sum of the sizes of the blocks in this record, in bytes.
+     *
+     * @return
+     */
+    public int size()
     {
-        isLight = status;
+        int result = 0;
+        for ( PropertyBlock block : blockRecords )
+        {
+            result += block.getSize();
+        }
+        return result;
     }
 
-    public boolean isLight()
+    public List<PropertyBlock> getPropertyBlocks()
     {
-        return isLight;
+        return blockRecords;
     }
 
-    public Collection<DynamicRecord> getValueRecords()
+    public List<DynamicRecord> getDeletedRecords()
     {
-        assert !isLight;
-        return valueRecords;
+        return deletedRecords;
     }
 
-    public void addValueRecord( DynamicRecord record )
+    public void addDeletedRecord( DynamicRecord record )
     {
-        assert !isLight;
-        valueRecords.add( record );
+        deletedRecords.add( record );
     }
 
-    public PropertyType getType()
+    public void addPropertyBlock(PropertyBlock block)
     {
-        return type;
+        assert size() + block.getSize() <= PropertyType.getPayloadSize() :
+            ("Exceeded capacity of property record " + this
+                             + ". My current size is reported as " + size() + "The added block was " + block + " (note that size is "
+          + block.getSize() + ")"
+        );
+
+        blockRecords.add( block );
     }
 
-    public int getKeyIndexId()
+    public PropertyBlock getPropertyBlock( int keyIndex )
     {
-        return keyIndexId;
+        for ( PropertyBlock block : blockRecords )
+        {
+            if ( block.getKeyIndexId() == keyIndex )
+            {
+                return block;
+            }
+        }
+        return null;
     }
 
-    public void setKeyIndexId( int keyId )
+    public PropertyBlock removePropertyBlock( int keyIndex )
     {
-        this.keyIndexId = keyId;
-    }
-
-    public long getPropBlock()
-    {
-        return propBlock;
-    }
-
-    public void setPropBlock( long propBlock )
-    {
-        this.propBlock = propBlock;
-    }
-
-    public long getPrevProp()
-    {
-        return prevProp;
-    }
-
-    public void setPrevProp( long prevProp )
-    {
-        this.prevProp = prevProp;
+        for ( int i = 0; i < blockRecords.size(); i++ )
+        {
+            if ( blockRecords.get( i ).getKeyIndexId() == keyIndex )
+            {
+                return blockRecords.remove( i );
+            }
+        }
+        return null;
     }
 
     public long getNextProp()
@@ -143,40 +152,57 @@ public class PropertyRecord extends Abstract64BitRecord
         this.nextProp = nextProp;
     }
 
-    public PropertyData newPropertyData()
-    {
-        return getType().newPropertyData( this, null );
-    }
-    
-    public PropertyData newPropertyData( Object extractedValue )
-    {
-        return getType().newPropertyData( this, extractedValue );
-    }
-    
     @Override
     public String toString()
     {
         StringBuffer buf = new StringBuffer();
         buf.append( "PropertyRecord[" ).append( getId() ).append( "," ).append(
-            inUse() ).append( "," ).append( type ).append( "," ).append(
-            keyIndexId ).append( "," ).append( propBlock ).append( "," )
-            .append( prevProp ).append( "," ).append( nextProp );
-        buf.append( ", Value[" );
-        for ( DynamicRecord record : valueRecords )
+                inUse() ).append( "," ).append( prevProp ).append( "," ).append(
+                nextProp ).append( ", Value[" );
+        Iterator<PropertyBlock> itr = blockRecords.iterator();
+        while ( itr.hasNext() )
         {
-            buf.append( record );
+            buf.append( itr.next() );
+            if ( itr.hasNext() )
+            {
+                buf.append( ", " );
+            }
+        }
+        buf.append( "], DeletedDynRecs[" );
+
+        if ( !deletedRecords.isEmpty() )
+        {
+            Iterator<DynamicRecord> it = deletedRecords.iterator();
+            while ( it.hasNext() )
+            {
+                buf.append( it.next() );
+                if ( it.hasNext() )
+                {
+                    buf.append( ", " );
+                }
+            }
         }
         buf.append( "]]" );
         return buf.toString();
     }
-    
+
     public boolean isChanged()
     {
         return isChanged;
     }
-    
+
     public void setChanged()
     {
         isChanged = true;
+    }
+
+    public long getPrevProp()
+    {
+        return prevProp;
+    }
+
+    public void setPrevProp( long prev )
+    {
+        prevProp = prev;
     }
 }

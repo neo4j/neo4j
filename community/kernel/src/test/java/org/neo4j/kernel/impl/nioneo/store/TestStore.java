@@ -140,8 +140,7 @@ public class TestStore
 
     private static class Store extends AbstractStore
     {
-        // store version, each store ends with this string (byte encoded)
-        private static final String VERSION = "TestVersion v0.1";
+        private static final String TYPE_DESCRIPTOR = "TestVersion";
         private static final int RECORD_SIZE = 1;
 
         public Store( String fileName ) throws IOException
@@ -156,34 +155,21 @@ public class TestStore
         {
         }
 
-//        protected void closeImpl()
-//        {
-//        }
-
-//        protected boolean fsck( boolean modify )
-//        {
-//            return false;
-//        }
-
         public int getRecordSize()
         {
             return RECORD_SIZE;
         }
 
-        public String getTypeAndVersionDescriptor()
+        public String getTypeDescriptor()
         {
-            return VERSION;
+            return TYPE_DESCRIPTOR;
         }
 
         public static Store createStore( String fileName ) throws IOException
         {
-            createEmptyStore( fileName, VERSION, ID_GENERATOR_FACTORY );
+            createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), ID_GENERATOR_FACTORY );
             return new Store( fileName );
         }
-
-//        public void flush()
-//        {
-//        }
 
         protected void rebuildIdGenerator()
         {

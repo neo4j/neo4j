@@ -19,200 +19,268 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import org.neo4j.kernel.impl.util.Bits;
+
 /**
  * Defines valid property types.
  */
 public enum PropertyType
 {
-    ILLEGAL( 0 )
+    BOOL( 1 )
     {
         @Override
-        public Object getValue( PropertyRecord record, PropertyStore store )
+        public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            throw new InvalidRecordException( "Invalid type: 0 for record " + record );
+            return getValue( block.getSingleValueLong() );
         }
 
-        @Override
-        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
-        {
-            throw new InvalidRecordException( "Invalid type: 0 for record " + record );
-        }
-    },
-    INT( 1 )
-    {
-        @Override
-        public Object getValue( PropertyRecord record, PropertyStore store )
-        {
-            return Integer.valueOf( (int) record.getPropBlock() );
-        }
-
-        @Override
-        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
-        {
-            return PropertyDatas.forInt( record.getKeyIndexId(), record.getId(), (int) record.getPropBlock() );
-        }
-    },
-    STRING( 2 )
-    {
-        @Override
-        public Object getValue( PropertyRecord record, PropertyStore store )
-        {
-            if ( store == null ) return null;
-            return store.getStringFor( record );
-        }
-
-        @Override
-        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
-        {
-            return PropertyDatas.forStringOrArray( record.getKeyIndexId(), record.getId(), extractedValue );
-        }
-    },
-    BOOL( 3 )
-    {
-        @Override
-        public Object getValue( PropertyRecord record, PropertyStore store )
-        {
-            return getValue( record.getPropBlock() );
-        }
-        
         private Boolean getValue( long propBlock )
         {
-            return propBlock == 1 ? Boolean.TRUE : Boolean.FALSE;
+            return ( propBlock & 0x1 ) == 1 ? Boolean.TRUE : Boolean.FALSE;
         }
 
         @Override
-        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        public PropertyData newPropertyData( PropertyBlock block,
+                long propertyId, Object extractedValue )
         {
-            return PropertyDatas.forBoolean( record.getKeyIndexId(), record.getId(),
-                    getValue( record.getPropBlock() ).booleanValue() );
+            // TODO : The masking off of bits should not happen here
+            return PropertyDatas.forBoolean( block.getKeyIndexId(), propertyId,
+                    getValue( block.getSingleValueLong() ).booleanValue() );
         }
     },
-    DOUBLE( 4 )
+    BYTE( 2 )
     {
         @Override
-        public Object getValue( PropertyRecord record, PropertyStore store )
+        public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            return Double.valueOf( Double.longBitsToDouble( record.getPropBlock() ) );
+            return Byte.valueOf( (byte) block.getSingleValueByte() );
+        }
+
+        @Override
+        public PropertyData newPropertyData( PropertyBlock block,
+                long propertyId, Object extractedValue )
+        {
+            // TODO : The masking off of bits should not happen here
+            return PropertyDatas.forByte( block.getKeyIndexId(), propertyId,
+                    block.getSingleValueByte() );
+        }
+    },
+    SHORT( 3 )
+    {
+        @Override
+        public Object getValue( PropertyBlock block, PropertyStore store )
+        {
+            return Short.valueOf( block.getSingleValueShort() );
+        }
+
+        @Override
+        public PropertyData newPropertyData( PropertyBlock block,
+                long propertyId, Object extractedValue )
+        {
+            // TODO : The masking off of bits should not happen here
+            return PropertyDatas.forShort( block.getKeyIndexId(), propertyId,
+                    block.getSingleValueShort() );
+        }
+    },
+    CHAR( 4 )
+    {
+        @Override
+        public Object getValue( PropertyBlock block, PropertyStore store )
+        {
+            return Character.valueOf( (char) block.getSingleValueShort() );
+        }
+
+        @Override
+        public PropertyData newPropertyData( PropertyBlock block,
+                long propertyId, Object extractedValue )
+        {
+            // TODO : The masking off of bits should not happen here
+            return PropertyDatas.forChar( block.getKeyIndexId(), propertyId,
+                    (char) block.getSingleValueShort() );
+        }
+    },
+    INT( 5 )
+    {
+        @Override
+        public Object getValue( PropertyBlock block, PropertyStore store )
+        {
+            return Integer.valueOf( block.getSingleValueInt() );
+        }
+
+        @Override
+        public PropertyData newPropertyData( PropertyBlock block,
+                long propertyId, Object extractedValue )
+        {
+            // TODO : The masking off of bits should not happen here
+            return PropertyDatas.forInt( block.getKeyIndexId(), propertyId,
+                    block.getSingleValueInt() );
+        }
+    },
+    LONG( 6 )
+    {
+        @Override
+        public Object getValue( PropertyBlock block, PropertyStore store )
+        {
+            return Long.valueOf( getLongValue( block ) );
         }
         
+        private long getLongValue( PropertyBlock block )
+        {
+            long firstBlock = block.getSingleValueBlock();
+            return valueIsInlined( firstBlock ) ? (block.getSingleValueLong() >>> 1) :
+                    block.getValueBlocks()[1];
+        }
+
+        @Override
+        public PropertyData newPropertyData( PropertyBlock block,
+                long propertyId, Object extractedValue )
+        {
+            return PropertyDatas.forLong( block.getKeyIndexId(), propertyId, getLongValue( block ) );
+        }
+        
+        private boolean valueIsInlined( long firstBlock )
+        {
+            // [][][][][   i,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
+            return (firstBlock & 0x10000000L) > 0;
+        }
+
+        @Override
+        public int calculateNumberOfBlocksUsed( long firstBlock )
+        {
+            return valueIsInlined( firstBlock ) ? 1 : 2;
+        }
+    },
+    FLOAT( 7 )
+    {
+        @Override
+        public Object getValue( PropertyBlock block, PropertyStore store )
+        {
+            return Float.valueOf( getValue( block.getSingleValueInt() ) );
+        }
+
+        private float getValue( int propBlock )
+        {
+            return Float.intBitsToFloat( (int) propBlock );
+        }
+
+        @Override
+        public PropertyData newPropertyData( PropertyBlock block,
+                long propertyId, Object extractedValue )
+        {
+            return PropertyDatas.forFloat( block.getKeyIndexId(), propertyId,
+                    getValue( block.getSingleValueInt() ) );
+        }
+    },
+    DOUBLE( 8 )
+    {
+        @Override
+        public Object getValue( PropertyBlock block, PropertyStore store )
+        {
+            return Double.valueOf( getValue( block.getValueBlocks()[1] ) );
+        }
+
         private double getValue( long propBlock )
         {
             return Double.longBitsToDouble( propBlock );
         }
 
         @Override
-        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        public PropertyData newPropertyData( PropertyBlock block,
+                long propertyId, Object extractedValue )
         {
-            return PropertyDatas.forDouble( record.getKeyIndexId(), record.getId(), getValue( record.getPropBlock() ) );
-        }
-    },
-    FLOAT( 5 )
-    {
-        @Override
-        public Object getValue( PropertyRecord record, PropertyStore store )
-        {
-            return Float.valueOf( getValue( record.getPropBlock() ) );
-        }
-        
-        private float getValue( long propBlock )
-        {
-            return Float.intBitsToFloat( (int) propBlock );
+            return PropertyDatas.forDouble( block.getKeyIndexId(), propertyId,
+                    getValue( block.getValueBlocks()[1] ) );
         }
 
         @Override
-        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        public int calculateNumberOfBlocksUsed( long firstBlock )
         {
-            return PropertyDatas.forFloat( record.getKeyIndexId(), record.getId(), getValue( record.getPropBlock() ) );
+            return 2;
         }
     },
-    LONG( 6 )
+    STRING( 9 )
     {
         @Override
-        public Object getValue( PropertyRecord record, PropertyStore store )
-        {
-            return Long.valueOf( record.getPropBlock() );
-        }
-
-        @Override
-        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
-        {
-            return PropertyDatas.forLong( record.getKeyIndexId(), record.getId(), record.getPropBlock() );
-        }
-    },
-    BYTE( 7 )
-    {
-        @Override
-        public Object getValue( PropertyRecord record, PropertyStore store )
-        {
-            return Byte.valueOf( (byte) record.getPropBlock() );
-        }
-
-        @Override
-        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
-        {
-            return PropertyDatas.forByte( record.getKeyIndexId(), record.getId(), (byte) record.getPropBlock() );
-        }
-    },
-    CHAR( 8 )
-    {
-        @Override
-        public Object getValue( PropertyRecord record, PropertyStore store )
-        {
-            return Character.valueOf( (char) record.getPropBlock() );
-        }
-
-        @Override
-        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
-        {
-            return PropertyDatas.forChar( record.getKeyIndexId(), record.getId(), (char) record.getPropBlock() );
-        }
-    },
-    ARRAY( 9 )
-    {
-        @Override
-        public Object getValue( PropertyRecord record, PropertyStore store )
+        public Object getValue( PropertyBlock block, PropertyStore store )
         {
             if ( store == null ) return null;
-            return store.getArrayFor( record );
+            return store.getStringFor( block );
         }
 
         @Override
-        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        public PropertyData newPropertyData( PropertyBlock block,
+                long propertyId, Object extractedValue )
         {
-            return PropertyDatas.forStringOrArray( record.getKeyIndexId(), record.getId(), extractedValue );
+            return PropertyDatas.forStringOrArray( block.getKeyIndexId(),
+                    propertyId, extractedValue );
         }
     },
-    SHORT( 10 )
+    ARRAY( 10 )
     {
         @Override
-        public Object getValue( PropertyRecord record, PropertyStore store )
+        public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            return Short.valueOf( (short) record.getPropBlock() );
+            if ( store == null ) return null;
+            return store.getArrayFor( block );
         }
 
         @Override
-        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        public PropertyData newPropertyData( PropertyBlock block,
+                long propertyId, Object extractedValue )
         {
-            return PropertyDatas.forShort( record.getKeyIndexId(), record.getId(), (short) record.getPropBlock() );
+            return PropertyDatas.forStringOrArray( block.getKeyIndexId(),
+                    propertyId, extractedValue );
         }
     },
     SHORT_STRING( 11 )
     {
         @Override
-        public Object getValue( PropertyRecord record, PropertyStore store )
+        public Object getValue( PropertyBlock block, PropertyStore store )
         {
-            return ShortString.decode( record.getPropBlock() );
+            return LongerShortString.decode( block );
         }
 
         @Override
-        public PropertyData newPropertyData( PropertyRecord record, Object extractedValue )
+        public PropertyData newPropertyData( PropertyBlock block,
+                long propertyId, Object extractedValue )
         {
-            return PropertyDatas.forStringOrArray( record.getKeyIndexId(), record.getId(), getValue( record, null ) );
+            return PropertyDatas.forStringOrArray( block.getKeyIndexId(),
+                    propertyId, getValue( block, null ) );
         }
-    }
-    ;
 
-    private int type;
+        @Override
+        public int calculateNumberOfBlocksUsed( long firstBlock )
+        {
+            return LongerShortString.calculateNumberOfBlocksUsed( firstBlock );
+        }
+    },
+    SHORT_ARRAY( 12 )
+    {
+        @Override
+        public Object getValue( PropertyBlock block, PropertyStore store )
+        {
+            return ShortArray.decode( block );
+        }
+
+        @Override
+        public PropertyData newPropertyData( PropertyBlock block,
+                long propertyId, Object extractedValue )
+        {
+            return PropertyDatas.forStringOrArray( block.getKeyIndexId(),
+                    propertyId, getValue( block, null ) );
+        }
+        
+        @Override
+        public int calculateNumberOfBlocksUsed( long firstBlock )
+        {
+            return ShortArray.calculateNumberOfBlocksUsed( firstBlock );
+        }
+    };
+
+    private final int type;
+
+    // TODO In wait of a better place
+    private static int payloadSize = PropertyStore.DEFAULT_PAYLOAD_SIZE;
 
     PropertyType( int type )
     {
@@ -229,40 +297,88 @@ public enum PropertyType
         return type;
     }
 
-    public abstract Object getValue( PropertyRecord record, PropertyStore store );
-    
-    public abstract PropertyData newPropertyData( PropertyRecord record, Object extractedValue );
-
-    public static PropertyType getPropertyType( int type, boolean nullOnIllegal )
+    /**
+     * Returns a byte value representing the type. As long as there are
+     * &lt 128 PropertyTypes, this should be equal to intValue(). When this
+     * statement no longer holds, this method should be removed.
+     *
+     * @return The byte value for this property type
+     */
+    public byte byteValue()
     {
+        return (byte) type;
+    }
+
+    public abstract Object getValue( PropertyBlock block, PropertyStore store );
+
+    public abstract PropertyData newPropertyData( PropertyBlock block,
+            long propertyId, Object extractedValue );
+
+    public static PropertyType getPropertyType( long propBlock, boolean nullOnIllegal )
+    {
+        // [][][][][    ,tttt][kkkk,kkkk][kkkk,kkkk][kkkk,kkkk]
+        int type = (int)((propBlock&0x000000000F000000L)>>24);
         switch ( type )
         {
-        case 0:
-            if ( nullOnIllegal ) return null;
-            break;
         case 1:
-            return INT;
-        case 2:
-            return STRING;
-        case 3:
             return BOOL;
+        case 2:
+            return BYTE;
+        case 3:
+            return SHORT;
         case 4:
-            return DOUBLE;
+            return CHAR;
         case 5:
-            return FLOAT;
+            return INT;
         case 6:
             return LONG;
         case 7:
-            return BYTE;
+            return FLOAT;
         case 8:
-            return CHAR;
+            return DOUBLE;
         case 9:
-            return ARRAY;
+            return STRING;
         case 10:
-            return SHORT;
+            return ARRAY;
         case 11:
             return SHORT_STRING;
+        case 12:
+            return SHORT_ARRAY;
+        default: if (nullOnIllegal) return null;
+            throw new InvalidRecordException( "Unknown property type for type "
+                                              + type );
         }
-        throw new InvalidRecordException( "Unknown property type:" + type );
+    }
+    
+    public static void main( String[] args )
+    {
+        System.out.println( Bits.bits( 8 ).put( (long)-78 ) );
+    }
+
+    // TODO In wait of a better place
+    public static int getPayloadSize()
+    {
+        return payloadSize;
+    }
+
+    // TODO In wait of a better place
+    public static int getPayloadSizeLongs()
+    {
+        return payloadSize >>> 3;
+    }
+
+    // TODO In wait of a better place
+    public static void setPayloadSize( int newPayloadSize )
+    {
+        if ( newPayloadSize%8 != 0 )
+        {
+            throw new RuntimeException( "Payload must be divisible by 8" );
+        }
+        payloadSize = newPayloadSize;
+    }
+
+    public int calculateNumberOfBlocksUsed( long firstBlock )
+    {
+        return 1;
     }
 }
