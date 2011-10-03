@@ -38,10 +38,11 @@ public class LegacyPropertyStoreReader
 {
     public static final int RECORD_LENGTH = 25;
     private PersistenceWindowPool windowPool;
+    private final FileChannel fileChannel;
 
     public LegacyPropertyStoreReader( String fileName ) throws FileNotFoundException
     {
-        FileChannel fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
+        fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
         windowPool = new PersistenceWindowPool( fileName,
                 RECORD_LENGTH, fileChannel, CommonAbstractStore.calculateMappedMemory( null, fileName ),
                 true, true );
@@ -53,35 +54,35 @@ public class LegacyPropertyStoreReader
         try
         {
             Buffer buffer = persistenceWindow.getOffsettedBuffer( id );
-    
+
             // [    ,   x] in use
             // [xxxx,    ] high prev prop bits
             long inUseByte = buffer.get();
-    
+
             boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
             if ( !inUse )
             {
                 throw new IllegalArgumentException( MessageFormat.format( "Record {0} not in use", id ) );
             }
             LegacyPropertyRecord record = new LegacyPropertyRecord( id );
-    
+
             // [    ,    ][    ,    ][xxxx,xxxx][xxxx,xxxx] type
             // [    ,    ][    ,xxxx][    ,    ][    ,    ] high next prop bits
             long typeInt = buffer.getInt();
-    
+
             record.setType( getEnumType( (int) typeInt & 0xFFFF ) );
             record.setInUse( true );
             record.setKeyIndexId( buffer.getInt() );
             record.setPropBlock( buffer.getLong() );
-    
+
             long prevProp = buffer.getUnsignedInt();
             long prevModifier = (inUseByte & 0xF0L) << 28;
             long nextProp = buffer.getUnsignedInt();
             long nextModifier = (typeInt & 0xF0000L) << 16;
-    
+
             record.setPrevProp( longFromIntAndMod( prevProp, prevModifier ) );
             record.setNextProp( longFromIntAndMod( nextProp, nextModifier ) );
-    
+
             return record;
         }
         finally
@@ -95,4 +96,8 @@ public class LegacyPropertyStoreReader
         return LegacyPropertyType.getPropertyType( type, false );
     }
 
+    public void close() throws IOException
+    {
+        fileChannel.close();
+    }
 }

@@ -23,7 +23,6 @@ import static org.neo4j.kernel.impl.storemigration.LegacyStore.FROM_VERSION;
 import static org.neo4j.kernel.impl.storemigration.LegacyStore.getUnsignedInt;
 import static org.neo4j.kernel.impl.storemigration.LegacyStore.longFromIntAndMod;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
