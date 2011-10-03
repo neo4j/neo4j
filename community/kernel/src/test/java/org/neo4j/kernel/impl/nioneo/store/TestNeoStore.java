@@ -48,6 +48,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.CombiningIterable;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.CommonFactories;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.LockReleaser;
@@ -59,6 +60,7 @@ import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 public class TestNeoStore extends AbstractNeo4jTestCase
@@ -1041,5 +1043,17 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         assertEquals( 302 + AbstractDynamicStore.BLOCK_HEADER_SIZE,
                 pStore.getArrayBlockSize() );
         ds.close();
+    }
+    
+    @Test
+    public void setVersion() throws Exception
+    {
+        String storeDir = "target/test-data/set-version";
+        FileUtils.deleteRecursively( new File( storeDir ) );
+        new EmbeddedGraphDatabase( storeDir ).shutdown();
+        System.out.println( "------------" );
+        assertEquals( 0, NeoStore.setVersion( storeDir, 10 ) );
+        System.out.println( "------------" );
+        assertEquals( 10, NeoStore.setVersion( storeDir, 12 ) );
     }
 }

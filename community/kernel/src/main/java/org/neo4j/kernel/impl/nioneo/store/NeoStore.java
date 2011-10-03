@@ -19,7 +19,11 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,6 +48,8 @@ public class NeoStore extends AbstractStore
     // 4 longs in header (long + in use), time | random | version | txid
     private static final int RECORD_SIZE = 9;
     private static final int DEFAULT_REL_GRAB_SIZE = 100;
+
+    public static final String DEFAULT_NAME = "neostore";
 
     private NodeStore nodeStore;
     private PropertyStore propStore;
@@ -120,7 +126,7 @@ public class NeoStore extends AbstractStore
     @Override
     protected void closeStorage()
     {
-        lastCommittedTxIdSetter.close();
+        if ( lastCommittedTxIdSetter != null ) lastCommittedTxIdSetter.close();
         if ( relTypeStore != null )
         {
             relTypeStore.close();
@@ -210,6 +216,41 @@ public class NeoStore extends AbstractStore
         neoStore.setVersion( 0 );
         neoStore.setLastCommittedTx( 1 );
         neoStore.close();
+    }
+    
+    public static long setVersion( String storeDir, long version )
+    {
+        RandomAccessFile file = null;
+        try
+        {
+            file = new RandomAccessFile( new File( storeDir, NeoStore.DEFAULT_NAME ), "rw" );
+            FileChannel channel = file.getChannel();
+            channel.position( RECORD_SIZE*2+1/*inUse*/ );
+            ByteBuffer buffer = ByteBuffer.allocate( 8 );
+            channel.read( buffer );
+            buffer.flip();
+            long previous = buffer.getLong();
+            channel.position( RECORD_SIZE*2+1/*inUse*/ );
+            buffer.clear();
+            buffer.putLong( version ).flip();
+            channel.write( buffer );
+            return previous;
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+        finally
+        {
+            try
+            {
+                if ( file != null ) file.close();
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
     }
 
     public StoreId getStoreId()
@@ -427,5 +468,23 @@ public class NeoStore extends AbstractStore
     {
         return getStoreOk() && relTypeStore.getStoreOk() &&
             propStore.getStoreOk() && relStore.getStoreOk() && nodeStore.getStoreOk();
+    }
+    
+    public static class WithoutChildStores extends NeoStore
+    {
+        public WithoutChildStores( Map<?, ?> config )
+        {
+            super( config );
+        }
+        
+        @Override
+        protected void initStorage()
+        {   // Don't initialize child stores
+        }
+        
+        @Override
+        protected void closeStorage()
+        {   // Don't have to close child stores
+        }
     }
 }

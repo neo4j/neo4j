@@ -59,7 +59,7 @@ public class StoreUpgrader
             File backupDirectory = new File( workingDirectory, "upgrade_backup" );
             upgradeDirectory.mkdir();
 
-            String upgradeFileName = new File( upgradeDirectory, "neostore" ).getPath();
+            String upgradeFileName = new File( upgradeDirectory, NeoStore.DEFAULT_NAME ).getPath();
             Map<Object, Object> upgradeConfig = new HashMap<Object, Object>( originalConfig );
             upgradeConfig.put( "neo_store", upgradeFileName );
 

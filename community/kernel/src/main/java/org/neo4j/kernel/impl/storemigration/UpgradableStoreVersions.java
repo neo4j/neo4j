@@ -35,7 +35,7 @@ public class UpgradableStoreVersions
 
     public UpgradableStoreVersions()
     {
-//        fileNamesToExpectedVersions.put( "neostore", "NeoStore v0.9.9" );
+//        fileNamesToExpectedVersions.put( NeoStore.DEFAULT_NAME, "NeoStore v0.9.9" );
         fileNamesToExpectedVersions.put( "neostore.nodestore.db", "NodeStore v0.9.9" );
         fileNamesToExpectedVersions.put( "neostore.propertystore.db", "PropertyStore v0.9.9" );
         fileNamesToExpectedVersions.put( "neostore.propertystore.db.arrays", "ArrayPropertyStore v0.9.9" );

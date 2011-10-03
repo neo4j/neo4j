@@ -44,7 +44,7 @@ public class StoreVersionTest
         File outputDir = new File( "target/var/" + StoreVersionTest.class.getSimpleName() );
         FileUtils.deleteRecursively( outputDir );
         assertTrue( outputDir.mkdirs() );
-        String storeFileName = new File( outputDir, "neostore" ).getPath();
+        String storeFileName = new File( outputDir, NeoStore.DEFAULT_NAME ).getPath();
 
         HashMap config = new HashMap();
         config.put( IdGeneratorFactory.class, CommonFactories.defaultIdGeneratorFactory() );

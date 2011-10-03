@@ -38,6 +38,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.core.LockReleaser;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
 import org.neo4j.kernel.impl.transaction.LockManager;
@@ -97,11 +98,11 @@ class GraphDbInstance
         // params.putAll( config.getInputParams() );
 
         String separator = System.getProperty( "file.separator" );
-        String store = storeDir + separator + "neostore";
+        String store = storeDir + separator + NeoStore.DEFAULT_NAME;
         params.put( "store_dir", storeDir );
         params.put( "neo_store", store );
         params.put( "create", String.valueOf( create ) );
-        String logicalLog = storeDir + separator + "nioneo_logical.log";
+        String logicalLog = storeDir + separator + NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
         params.put( "logical_log", logicalLog );
         params.put( LockManager.class, config.getLockManager() );
         params.put( LockReleaser.class, config.getLockReleaser() );

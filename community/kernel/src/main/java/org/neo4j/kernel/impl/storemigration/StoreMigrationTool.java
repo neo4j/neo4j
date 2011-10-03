@@ -41,7 +41,7 @@ public class StoreMigrationTool
 
     private void run( String legacyStoreDirectory, String targetStoreDirectory ) throws IOException
     {
-        LegacyStore legacyStore = new LegacyStore( new File( new File( legacyStoreDirectory ), "neostore" ).getPath() );
+        LegacyStore legacyStore = new LegacyStore( new File( new File( legacyStoreDirectory ), NeoStore.DEFAULT_NAME ).getPath() );
 
         HashMap config = new HashMap();
         config.put( IdGeneratorFactory.class, CommonFactories.defaultIdGeneratorFactory() );
@@ -58,7 +58,7 @@ public class StoreMigrationTool
             throw new IllegalStateException( "Failed to create directory" );
         }
 
-        File targetStoreFile = new File( targetStoreDirectory, "neostore" );
+        File targetStoreFile = new File( targetStoreDirectory, NeoStore.DEFAULT_NAME );
         config.put( "neo_store", targetStoreFile.getPath() );
         NeoStore.createStore( targetStoreFile.getPath(), config );
         NeoStore neoStore = new NeoStore( config );

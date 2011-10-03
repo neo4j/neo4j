@@ -32,6 +32,7 @@ import java.util.TreeSet;
 
 import javax.transaction.xa.Xid;
 
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
@@ -81,7 +82,7 @@ public class DumpLogicalLog
     protected static boolean isAGraphDatabaseDirectory( String fileName )
     {
         File file = new File( fileName );
-        return file.isDirectory() && new File( file, "neostore" ).exists();
+        return file.isDirectory() && new File( file, NeoStore.DEFAULT_NAME ).exists();
     }
 
     protected boolean readAndPrintEntry( FileChannel fileChannel, ByteBuffer buffer, XaCommandFactory cf )

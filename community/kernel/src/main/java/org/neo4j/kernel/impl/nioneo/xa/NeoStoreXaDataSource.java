@@ -73,7 +73,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
 {
     public static final byte BRANCH_ID[] = UTF8.encode( "414141" );
     private static final String REBUILD_IDGENERATORS_FAST = "rebuild_idgenerators_fast";
-
+    public static final String LOGICAL_LOG_DEFAULT_NAME = "nioneo_logical.log";
+    
     private static Logger logger = Logger.getLogger(
         NeoStoreXaDataSource.class.getName() );
 
@@ -501,11 +502,11 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
             // maybe should be
             if ( dbFile.isFile() )
             {
-                if ( name.equals( "neostore" ) )
+                if ( name.equals( NeoStore.DEFAULT_NAME ) )
                 {
                     neostoreFile = dbFile;
                 }
-                else if ( (name.startsWith( "neostore" ) ||
+                else if ( (name.startsWith( NeoStore.DEFAULT_NAME ) ||
                         name.equals( IndexStore.INDEX_DB_FILE_NAME )) && !name.endsWith( ".id" ) )
                 {   // Store files
                     files.add( dbFile );

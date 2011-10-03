@@ -1485,7 +1485,7 @@ public class XaLogicalLog
 //        DumpLogicalLog.main( new String[] { currentLogFile } );
 //        System.out.println( " ----- end ----" );
         msgLog.logMessage( "Rotating [" + currentLogFile + "] @ version=" +
-                currentVersion + " to " +  newLogFile + "from position " +
+                currentVersion + " to " +  newLogFile + " from position " +
                 writeBuffer.getFileChannelPosition(), true );
         long endPosition = writeBuffer.getFileChannelPosition();
         writeBuffer.force();
@@ -1677,7 +1677,21 @@ public class XaLogicalLog
 
     public Pattern getHistoryFileNamePattern()
     {
-        return Pattern.compile( new File( fileName ).getName() + "\\.v\\d+" );
+        return getHistoryFileNamePattern( new File( fileName ).getName() );
+    }
+    
+    public static Pattern getHistoryFileNamePattern( String baseFileName )
+    {
+        return Pattern.compile( baseFileName + "\\.v\\d+" );
+    }
+    
+    public static long getHistoryLogVersion( File historyLogFile )
+    {   // Get version based on the name
+        String name = historyLogFile.getName();
+        String toFind = ".v";
+        int index = name.lastIndexOf( toFind );
+        if ( index == -1 ) throw new RuntimeException( "Invalid log file '" + historyLogFile + "'" );
+        return Integer.parseInt( name.substring( index + toFind.length() ) );
     }
 
     public boolean wasNonClean()

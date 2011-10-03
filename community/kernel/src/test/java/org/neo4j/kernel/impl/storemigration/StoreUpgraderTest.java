@@ -36,12 +36,12 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 public class StoreUpgraderTest
@@ -57,7 +57,7 @@ public class StoreUpgraderTest
         HashMap config = defaultConfig();
         config.put( Config.ALLOW_STORE_UPGRADE, "true" );
 
-        new StoreUpgrader( new File( workingDirectory, "neostore" ).getPath(), config ).attemptUpgrade();
+        new StoreUpgrader( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath(), config ).attemptUpgrade();
 
         assertTrue( allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
     }
@@ -71,7 +71,7 @@ public class StoreUpgraderTest
         HashMap config = defaultConfig();
         config.put( Config.ALLOW_STORE_UPGRADE, "true" );
 
-        new StoreUpgrader( new File( workingDirectory, "neostore" ).getPath(), config ).attemptUpgrade();
+        new StoreUpgrader( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath(), config ).attemptUpgrade();
 
         verifyFilesHaveSameContent( findOldFormatStoreDirectory(), new File( workingDirectory, "upgrade_backup" ) );
     }
@@ -125,7 +125,7 @@ public class StoreUpgraderTest
         assertFalse( config.containsKey( Config.ALLOW_STORE_UPGRADE ) );
 
         try {
-            new StoreUpgrader( new File( workingDirectory, "neostore" ).getPath(), config ).attemptUpgrade();
+            new StoreUpgrader( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath(), config ).attemptUpgrade();
             fail( "Should throw exception" );
         }
         catch ( UpgradeNotAllowedByConfigurationException e )

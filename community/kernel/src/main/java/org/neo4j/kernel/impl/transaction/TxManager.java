@@ -230,7 +230,8 @@ public class TxManager extends AbstractTransactionManager
                 changeActiveLog( txLog1FileName );
             }
             else {
-                setTmNotOk();
+                setTmNotOk( new Exception( "Unknown active tx log file[" + txLog.getName()
+                        + "], unable to switch." ) );
                 log.severe("Unknown active tx log file[" + txLog.getName()
                         + "], unable to switch.");
                 final IOException ex = new IOException("Unknown txLogFile[" + txLog.getName()
@@ -254,10 +255,10 @@ public class TxManager extends AbstractTransactionManager
         fc.close();
     }
 
-    void setTmNotOk()
+    void setTmNotOk( Throwable cause )
     {
         tmOk = false;
-        msgLog.logMessage( "setting TM not OK", new Throwable() );
+        msgLog.logMessage( "setting TM not OK", cause );
         kpe.generateEvent( ErrorState.TX_MANAGER_NOT_OK );
     }
     
@@ -634,8 +635,8 @@ public class TxManager extends AbstractTransactionManager
     {
         if ( !tmOk )
         {
-            throw logAndReturn("TM error " + source, new SystemException( "TM has encountered some problem, "
-                + "please perform neccesary action (tx recovery/restart)" ));
+            throw new SystemException( "TM has encountered some problem, "
+                + "please perform neccesary action (tx recovery/restart)" );
         }
     }
 
@@ -649,7 +650,7 @@ public class TxManager extends AbstractTransactionManager
         catch ( IOException e )
         {
             log.log( Level.SEVERE, "Error writing transaction log", e );
-            setTmNotOk();
+            setTmNotOk( e );
             throw logAndReturn("TM error write start record",Exceptions.withCause( new SystemException( "TM encountered a problem, "
                                                              + " error writing transaction log," ), e ));
         }
@@ -730,7 +731,7 @@ public class TxManager extends AbstractTransactionManager
                 if ( tx.getStatus() == Status.STATUS_COMMITTED )
                 {
                     // this should never be
-                    setTmNotOk();
+                    setTmNotOk( e );
                     throw logAndReturn("TM error tx commit",new TransactionFailureException(
                         "commit threw exception but status is committed?", e ));
                 }
@@ -753,7 +754,7 @@ public class TxManager extends AbstractTransactionManager
                     + "Some resources may be commited others not. "
                     + "Neo4j kernel should be SHUTDOWN for "
                                        + "resource maintance and transaction recovery ---->", e );
-                setTmNotOk();
+                setTmNotOk( e );
                 String commitError;
                 if ( commitFailureCause != null )
                 {
@@ -779,7 +780,7 @@ public class TxManager extends AbstractTransactionManager
             catch ( IOException e )
             {
                 log.log( Level.SEVERE, "Error writing transaction log", e );
-                setTmNotOk();
+                setTmNotOk( e );
                 throw logAndReturn("TM error tx commit",Exceptions.withCause( new SystemException( "TM encountered a problem, "
                                                                  + " error writing transaction log" ), e ));
             }
@@ -809,7 +810,7 @@ public class TxManager extends AbstractTransactionManager
         catch ( IOException e )
         {
             log.log( Level.SEVERE, "Error writing transaction log", e );
-            setTmNotOk();
+            setTmNotOk( e );
             throw logAndReturn("TM error tx commit",
                     Exceptions.withCause( new SystemException( "TM encountered a problem, "
                                                              + " error writing transaction log" ), e ));
@@ -830,7 +831,7 @@ public class TxManager extends AbstractTransactionManager
                 + "Some resources may be commited others not. "
                 + "Neo4j kernel should be SHUTDOWN for "
                                    + "resource maintance and transaction recovery ---->", e );
-            setTmNotOk();
+            setTmNotOk( e );
             throw logAndReturn("TM error tx rollback commit",Exceptions.withCause(
                     new HeuristicMixedException( "Unable to rollback " + " ---> error code for rollback: "
                                                  + e.errorCode ), e ));
@@ -848,7 +849,7 @@ public class TxManager extends AbstractTransactionManager
         catch ( IOException e )
         {
             log.log( Level.SEVERE, "Error writing transaction log", e );
-            setTmNotOk();
+            setTmNotOk( e );
             throw logAndReturn("TM error tx rollback commit",Exceptions.withCause( new SystemException( "TM encountered a problem, "
                                                              + " error writing transaction log" ), e ));
         }
@@ -889,7 +890,7 @@ public class TxManager extends AbstractTransactionManager
                         + "Some resources may be commited others not. "
                         + "Neo4j kernel should be SHUTDOWN for "
                                            + "resource maintance and transaction recovery ---->", e );
-                    setTmNotOk();
+                    setTmNotOk( e );
                     throw logAndReturn("TM error tx rollback", Exceptions.withCause(
                             new SystemException( "Unable to rollback " + " ---> error code for rollback: "
                                                  + e.errorCode ), e ));
@@ -906,7 +907,7 @@ public class TxManager extends AbstractTransactionManager
                 catch ( IOException e )
                 {
                     log.log( Level.SEVERE, "Error writing transaction log", e );
-                    setTmNotOk();
+                    setTmNotOk( e );
                     throw logAndReturn("TM error tx rollback", Exceptions.withCause(
                             new SystemException( "TM encountered a problem, "
                                                  + " error writing transaction log" ), e ));

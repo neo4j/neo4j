@@ -280,7 +280,7 @@ public class TestUpgradeStore
     private void setOlderNeoStoreVersion( String path ) throws IOException
     {
         String oldVersion = "NeoStore v0.9.6";
-        FileChannel channel = new RandomAccessFile( new File( path, "neostore" ), "rw" ).getChannel();
+        FileChannel channel = new RandomAccessFile( new File( path, NeoStore.DEFAULT_NAME ), "rw" ).getChannel();
         channel.position( channel.size() - UTF8.encode( oldVersion ).length );
         ByteBuffer buffer = ByteBuffer.wrap( UTF8.encode( oldVersion ) );
         channel.write( buffer );

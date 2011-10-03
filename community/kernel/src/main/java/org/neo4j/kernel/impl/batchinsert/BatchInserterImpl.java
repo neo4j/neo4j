@@ -587,7 +587,7 @@ public class BatchInserterImpl implements BatchInserter
         }
         dir = FileUtils.fixSeparatorsInPath( dir );
         String fileSeparator = System.getProperty( "file.separator" );
-        String store = dir + fileSeparator + "neostore";
+        String store = dir + fileSeparator + NeoStore.DEFAULT_NAME;
         if ( !new File( store ).exists() )
         {
             NeoStore.createStore( store, config );
