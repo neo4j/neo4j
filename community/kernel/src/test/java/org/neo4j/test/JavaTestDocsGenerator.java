@@ -22,10 +22,6 @@ package org.neo4j.test;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.neo4j.test.TestData.Producer;
 
@@ -55,12 +51,10 @@ public class JavaTestDocsGenerator extends AsciiDocGenerator
             // TODO: invoke some complete method here?
         }
     };
-    private static final String SNIPPET_MARKER = "@@";
-    private Map<String, String> snippets = new HashMap<String, String>();
-
+    
     public JavaTestDocsGenerator( String title )
     {
-        super( title );
+        super( "docs", title );
     }
 
     @Override
@@ -73,7 +67,8 @@ public class JavaTestDocsGenerator extends AsciiDocGenerator
 
     public void document( String directory, String sectionName )
     {
-        FileWriter fw = getFW( directory + File.separator + sectionName, title );
+        this.setSection( sectionName );
+        FileWriter fw = getFW( directory + File.separator + section, title );
         String name = title.replace( " ", "-" ).toLowerCase();
         description = replaceSnippets( description );
         try
@@ -101,66 +96,5 @@ public class JavaTestDocsGenerator extends AsciiDocGenerator
         }
     }
 
-    private String replaceSnippets( String description )
-    {
-        String result = description;
-        if ( description.contains( SNIPPET_MARKER ) )
-        {
-            Pattern p = Pattern.compile( ".*" + SNIPPET_MARKER
-                                         + "([a-zA-Z_\\-0-9]*).*" );
-            Matcher m = p.matcher( description );
-            m.find();
-            String group = m.group( 1 );
-            if ( !snippets.containsKey( group ) )
-            {
-                throw new Error( "No snippet '" + group + "' found." );
-            }
-            result = description.replace( SNIPPET_MARKER + group,
-                    snippets.get( group ) );
-            result = replaceSnippets( result );
-        }
-        return result;
-    }
-
-    /**
-     * Add snippets that will be replaced into corresponding
-     * 
-     * @@snippetname placeholders in the content of the description.
-     * 
-     * @param key the snippet key, without @@
-     * @param content the content to be inserted
-     */
-    public void addSnippet( String key, String content )
-    {
-        snippets.put( key, content );
-    }
-
-    /**
-     * Added one or more source snippets, available from javadoc using
-     * @@tagName.
-     * 
-     * @param source the class where the snippet is found
-     * @param tagNames the tag names which should be included
-     */
-    public void addSourceSnippets( Class<?> source, String... tagNames )
-    {
-        for ( String tagName : tagNames )
-        {
-            addSnippet( tagName, createSourceSnippet( tagName, source ) );
-        }
-    }
-
-    public void addGithubLink( String key, Class<?> source, String repo,
-            String dir )
-    {
-        String path = "https://github.com/" + repo
-                         + "/blob/{neo4j-git-tag}/";
-        if ( dir != null )
-        {
-            path += dir + "/";
-        }
-        path += "src/test/java/" + getPath( source );
-        path += "[" + source.getSimpleName() + ".java]";
-        addSnippet( key, path );
-    }
+    
 }
