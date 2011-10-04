@@ -43,7 +43,7 @@ public class UpgradableStoreVersionsTest
     @Test
     public void shouldAcceptTheStoresInTheSampleDatabaseAsBeingEligibleForUpgrade() throws IOException
     {
-        URL legacyStoreResource = getClass().getResource( "oldformatstore/neostore" );
+        URL legacyStoreResource = getClass().getResource( "legacystore/exampledb/neostore" );
         File resourceDirectory = new File( legacyStoreResource.getFile() ).getParentFile();
         File workingDirectory = new File( "target/" + UpgradableStoreVersionsTest.class.getSimpleName() );
 
@@ -58,7 +58,7 @@ public class UpgradableStoreVersionsTest
     @Test
     public void shouldRejectStoresIfOneFileHasIncorrectVersion() throws IOException
     {
-        URL legacyStoreResource = getClass().getResource( "oldformatstore/neostore" );
+        URL legacyStoreResource = getClass().getResource( "legacystore/exampledb/neostore" );
         File resourceDirectory = new File( legacyStoreResource.getFile() ).getParentFile();
         File workingDirectory = new File( "target/" + UpgradableStoreVersionsTest.class.getSimpleName() );
 

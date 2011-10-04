@@ -182,7 +182,7 @@ public class StoreUpgraderTest
 
     private File findOldFormatStoreDirectory()
     {
-        URL legacyStoreResource = getClass().getResource( "oldformatstore/neostore" );
+        URL legacyStoreResource = getClass().getResource( "legacystore/exampledb/neostore" );
         return new File( legacyStoreResource.getFile() ).getParentFile();
     }
 

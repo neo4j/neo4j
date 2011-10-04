@@ -17,26 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration;
+package org.neo4j.kernel.impl.storemigration.legacystore;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+
+import java.io.IOException;
+import java.net.URL;
 
 import org.junit.Test;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
-
-import java.io.IOException;
-import java.net.URL;
-
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 
 public class ReadRecordsTest
 {
     @Test
     public void shouldReadNodeRecords() throws IOException
     {
-        URL nodeStoreFile = getClass().getResource( "oldformatstore/neostore.nodestore.db" );
+        URL nodeStoreFile = getClass().getResource( "exampledb/neostore.nodestore.db" );
 
         LegacyNodeStoreReader nodeStoreReader = new LegacyNodeStoreReader( nodeStoreFile.getFile() );
         Iterable<NodeRecord> records = nodeStoreReader.readNodeStore();
@@ -52,7 +53,7 @@ public class ReadRecordsTest
     @Test
     public void shouldReadRelationshipRecords() throws IOException
     {
-        URL nodeStoreFile = getClass().getResource( "oldformatstore/neostore.relationshipstore.db" );
+        URL nodeStoreFile = getClass().getResource( "exampledb/neostore.relationshipstore.db" );
 
         LegacyRelationshipStoreReader relationshipStoreReader = new LegacyRelationshipStoreReader( nodeStoreFile.getFile() );
         Iterable<RelationshipRecord> records = relationshipStoreReader.readRelationshipStore();
@@ -68,7 +69,7 @@ public class ReadRecordsTest
     @Test
     public void shouldReadASimplePropertyRecordById() throws IOException
     {
-        URL propertyStoreFile = getClass().getResource( "oldformatstore/neostore.propertystore.db" );
+        URL propertyStoreFile = getClass().getResource( "exampledb/neostore.propertystore.db" );
 
         LegacyPropertyRecord propertyRecord = new LegacyPropertyStoreReader( propertyStoreFile.getFile() ).readPropertyRecord( 24 );
 
@@ -81,9 +82,9 @@ public class ReadRecordsTest
     @Test
     public void shouldReadAStringPropertyRecordById() throws IOException
     {
-        URL propertyStoreFile = getClass().getResource( "oldformatstore/neostore.propertystore.db" );
-        URL stringStoreFile = getClass().getResource( "oldformatstore/neostore.propertystore.db.strings" );
-        URL arrayStoreFile = getClass().getResource( "oldformatstore/neostore.propertystore.db.arrays" );
+        URL propertyStoreFile = getClass().getResource( "exampledb/neostore.propertystore.db" );
+        URL stringStoreFile = getClass().getResource( "exampledb/neostore.propertystore.db.strings" );
+        URL arrayStoreFile = getClass().getResource( "exampledb/neostore.propertystore.db.arrays" );
 
         LegacyPropertyRecord propertyRecord = new LegacyPropertyStoreReader( propertyStoreFile.getFile() ).readPropertyRecord( 25 );
 
@@ -96,9 +97,9 @@ public class ReadRecordsTest
     @Test
     public void shouldReadAnArrayPropertyRecordById() throws IOException
     {
-        URL propertyStoreFile = getClass().getResource( "oldformatstore/neostore.propertystore.db" );
-        URL stringStoreFile = getClass().getResource( "oldformatstore/neostore.propertystore.db.strings" );
-        URL arrayStoreFile = getClass().getResource( "oldformatstore/neostore.propertystore.db.arrays" );
+        URL propertyStoreFile = getClass().getResource( "exampledb/neostore.propertystore.db" );
+        URL stringStoreFile = getClass().getResource( "exampledb/neostore.propertystore.db.strings" );
+        URL arrayStoreFile = getClass().getResource( "exampledb/neostore.propertystore.db.arrays" );
 
         LegacyPropertyRecord propertyRecord2 = new LegacyPropertyStoreReader( propertyStoreFile.getFile() ).readPropertyRecord( 32 );
 
@@ -111,7 +112,7 @@ public class ReadRecordsTest
     @Test
     public void shouldReadPropertyIndexRecords() throws IOException
     {
-        URL legacyStoreResource = getClass().getResource( "oldformatstore/neostore" );
+        URL legacyStoreResource = getClass().getResource( "exampledb/neostore" );
         LegacyStore legacyStore = new LegacyStore( legacyStoreResource.getFile() );
 
         LegacyPropertyIndexStoreReader propertyIndexStoreReader = legacyStore.getPropertyIndexStoreReader();
@@ -126,7 +127,7 @@ public class ReadRecordsTest
     @Test
     public void shouldReadRelationshipTypeRecords() throws IOException
     {
-        URL legacyStoreResource = getClass().getResource( "oldformatstore/neostore" );
+        URL legacyStoreResource = getClass().getResource( "exampledb/neostore" );
         LegacyStore legacyStore = new LegacyStore( legacyStoreResource.getFile() );
 
         LegacyRelationshipTypeStoreReader relationshipTypeStoreReader = legacyStore.getRelationshipTypeStoreReader();

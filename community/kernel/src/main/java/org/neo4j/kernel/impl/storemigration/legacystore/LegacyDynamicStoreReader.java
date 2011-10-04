@@ -17,9 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration;
-
-import static org.neo4j.kernel.impl.storemigration.LegacyStore.longFromIntAndMod;
+package org.neo4j.kernel.impl.storemigration.legacystore;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -114,7 +112,7 @@ public class LegacyDynamicStoreReader
         long nextBlock = buffer.getUnsignedInt();
         long nextModifier = (nrOfBytesInt & 0xF000000L) << 8;
 
-        long longNextBlock = longFromIntAndMod( nextBlock, nextModifier );
+        long longNextBlock = LegacyStore.longFromIntAndMod( nextBlock, nextModifier );
         if ( longNextBlock != Record.NO_NEXT_BLOCK.intValue()
                 && nrOfBytes < dataSize || nrOfBytes > dataSize )
         {
@@ -124,7 +122,7 @@ public class LegacyDynamicStoreReader
         }
         record.setInUse( true );
         record.setLength( nrOfBytes );
-        record.setPrevBlock( longFromIntAndMod( prevBlock, prevModifier ) );
+        record.setPrevBlock( LegacyStore.longFromIntAndMod( prevBlock, prevModifier ) );
         record.setNextBlock( longNextBlock );
         byte byteArrayElement[] = new byte[nrOfBytes];
         buffer.get( byteArrayElement );

@@ -17,11 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration;
-
-import static org.neo4j.kernel.impl.storemigration.LegacyStore.FROM_VERSION;
-import static org.neo4j.kernel.impl.storemigration.LegacyStore.getUnsignedInt;
-import static org.neo4j.kernel.impl.storemigration.LegacyStore.longFromIntAndMod;
+package org.neo4j.kernel.impl.storemigration.legacystore;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -44,7 +40,7 @@ public class LegacyRelationshipStoreReader
     public LegacyRelationshipStoreReader( String fileName ) throws IOException
     {
         fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
-        int endHeaderSize = UTF8.encode( FROM_VERSION ).length;
+        int endHeaderSize = UTF8.encode( LegacyStore.FROM_VERSION ).length;
         maxId = (fileChannel.size() - endHeaderSize) / RECORD_LENGTH;
     }
 
@@ -81,10 +77,10 @@ public class LegacyRelationshipStoreReader
                             boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
                             if ( inUse )
                             {
-                                long firstNode = getUnsignedInt( buffer );
+                                long firstNode = LegacyStore.getUnsignedInt( buffer );
                                 long firstNodeMod = (inUseByte & 0xEL) << 31;
 
-                                long secondNode = getUnsignedInt( buffer );
+                                long secondNode = LegacyStore.getUnsignedInt( buffer );
 
                                 // [ xxx,    ][    ,    ][    ,    ][    ,    ] second node high order bits,     0x70000000
                                 // [    ,xxx ][    ,    ][    ,    ][    ,    ] first prev rel high order bits,  0xE000000
@@ -97,30 +93,30 @@ public class LegacyRelationshipStoreReader
                                 int type = (int) (typeInt & 0xFFFF);
 
                                 record = new RelationshipRecord( id,
-                                        longFromIntAndMod( firstNode, firstNodeMod ),
-                                        longFromIntAndMod( secondNode, secondNodeMod ), type );
+                                        LegacyStore.longFromIntAndMod( firstNode, firstNodeMod ),
+                                        LegacyStore.longFromIntAndMod( secondNode, secondNodeMod ), type );
                                 record.setInUse( inUse );
 
-                                long firstPrevRel = getUnsignedInt( buffer );
+                                long firstPrevRel = LegacyStore.getUnsignedInt( buffer );
                                 long firstPrevRelMod = (typeInt & 0xE000000L) << 7;
-                                record.setFirstPrevRel( longFromIntAndMod( firstPrevRel, firstPrevRelMod ) );
+                                record.setFirstPrevRel( LegacyStore.longFromIntAndMod( firstPrevRel, firstPrevRelMod ) );
 
-                                long firstNextRel = getUnsignedInt( buffer );
+                                long firstNextRel = LegacyStore.getUnsignedInt( buffer );
                                 long firstNextRelMod = (typeInt & 0x1C00000L) << 10;
-                                record.setFirstNextRel( longFromIntAndMod( firstNextRel, firstNextRelMod ) );
+                                record.setFirstNextRel( LegacyStore.longFromIntAndMod( firstNextRel, firstNextRelMod ) );
 
-                                long secondPrevRel = getUnsignedInt( buffer );
+                                long secondPrevRel = LegacyStore.getUnsignedInt( buffer );
                                 long secondPrevRelMod = (typeInt & 0x380000L) << 13;
-                                record.setSecondPrevRel( longFromIntAndMod( secondPrevRel, secondPrevRelMod ) );
+                                record.setSecondPrevRel( LegacyStore.longFromIntAndMod( secondPrevRel, secondPrevRelMod ) );
 
-                                long secondNextRel = getUnsignedInt( buffer );
+                                long secondNextRel = LegacyStore.getUnsignedInt( buffer );
                                 long secondNextRelMod = (typeInt & 0x70000L) << 16;
-                                record.setSecondNextRel( longFromIntAndMod( secondNextRel, secondNextRelMod ) );
+                                record.setSecondNextRel( LegacyStore.longFromIntAndMod( secondNextRel, secondNextRelMod ) );
 
-                                long nextProp = getUnsignedInt( buffer );
+                                long nextProp = LegacyStore.getUnsignedInt( buffer );
                                 long nextPropMod = (inUseByte & 0xF0L) << 28;
 
-                                record.setNextProp( longFromIntAndMod( nextProp, nextPropMod ) );
+                                record.setNextProp( LegacyStore.longFromIntAndMod( nextProp, nextPropMod ) );
                             }
                             else
                             {

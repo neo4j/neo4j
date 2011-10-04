@@ -41,6 +41,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 public class StoreMigratorTest
@@ -49,7 +50,7 @@ public class StoreMigratorTest
     @Test
     public void shouldRewrite() throws IOException
     {
-        URL legacyStoreResource = getClass().getResource( "oldformatstore/neostore" );
+        URL legacyStoreResource = getClass().getResource( "legacystore/exampledb/neostore" );
 
         LegacyStore legacyStore = new LegacyStore( legacyStoreResource.getFile() );
 

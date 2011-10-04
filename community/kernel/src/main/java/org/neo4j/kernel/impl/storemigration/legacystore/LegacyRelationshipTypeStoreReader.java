@@ -17,9 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration;
-
-import static org.neo4j.kernel.impl.storemigration.LegacyStore.FROM_VERSION;
+package org.neo4j.kernel.impl.storemigration.legacystore;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -28,26 +26,26 @@ import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 
 import org.neo4j.helpers.UTF8;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 
-public class LegacyPropertyIndexStoreReader
+public class LegacyRelationshipTypeStoreReader
 {
     private String fileName;
 
-    public LegacyPropertyIndexStoreReader( String fileName )
+    public LegacyRelationshipTypeStoreReader( String fileName )
     {
         this.fileName = fileName;
     }
 
-    public Iterable<PropertyIndexRecord> readPropertyIndexStore() throws IOException
+    public Iterable<RelationshipTypeRecord> readRelationshipTypes() throws IOException
     {
         FileChannel fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
-        int recordLength = 9;
-        int endHeaderSize = UTF8.encode( FROM_VERSION ).length;
+        int recordLength = 5;
+        int endHeaderSize = UTF8.encode( LegacyStore.FROM_VERSION ).length;
         long recordCount = (fileChannel.size() - endHeaderSize) / recordLength;
 
-        LinkedList<PropertyIndexRecord> records = new LinkedList<PropertyIndexRecord>();
+        LinkedList<RelationshipTypeRecord> records = new LinkedList<RelationshipTypeRecord>();
 
         ByteBuffer buffer = ByteBuffer.allocateDirect( recordLength );
 
@@ -60,10 +58,9 @@ public class LegacyPropertyIndexStoreReader
 
             boolean inUse = inUseByte == Record.IN_USE.byteValue();
             if (inUse) {
-                PropertyIndexRecord record = new PropertyIndexRecord( id );
+                RelationshipTypeRecord record = new RelationshipTypeRecord( id );
                 record.setInUse( inUse );
-                record.setPropertyCount( buffer.getInt() );
-                record.setKeyBlockId( buffer.getInt() );
+                record.setTypeBlock( buffer.getInt() );
                 records.add( record );
             }
         }
