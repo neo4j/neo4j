@@ -65,9 +65,9 @@ public class LegacyRelationshipStoreReader
                     protected RelationshipRecord fetchNextOrNull()
                     {
                         RelationshipRecord record = null;
-                        do
+                        while ( record == null && id <= maxId )
                         {
-                            buffer.position( 0 );
+                            buffer.clear();
                             try
                             {
                                 fileChannel.read( buffer );
@@ -79,7 +79,6 @@ public class LegacyRelationshipStoreReader
                             long inUseByte = buffer.get();
 
                             boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
-
                             if ( inUse )
                             {
                                 long firstNode = getUnsignedInt( buffer );
@@ -123,8 +122,13 @@ public class LegacyRelationshipStoreReader
 
                                 record.setNextProp( longFromIntAndMod( nextProp, nextPropMod ) );
                             }
+                            else
+                            {
+                                record = new RelationshipRecord( id, -1, -1, -1 );
+                                record.setInUse( false );
+                            }
                             id++;
-                        } while ( record == null && id < maxId );
+                        }
 
                         return record;
                     }

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.storemigration;
 
 import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,6 +39,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
+import org.neo4j.kernel.impl.util.FileUtils;
 
 public class StoreMigrator
 {
@@ -64,14 +66,21 @@ public class StoreMigrator
         Iterable<NodeRecord> records = legacyStore.getNodeStoreReader().readNodeStore();
         for ( NodeRecord nodeRecord : records )
         {
-            long startOfPropertyChain = nodeRecord.getNextProp();
-            if ( startOfPropertyChain != Record.NO_NEXT_RELATIONSHIP.intValue() )
-            {
-                long propertyRecordId = migrateProperties( startOfPropertyChain, propertyWriter );
-                nodeRecord.setNextProp( propertyRecordId );
-            }
             nodeStore.setHighId( nodeRecord.getId() + 1 );
-            nodeStore.updateRecord( nodeRecord );
+            if ( nodeRecord.inUse() )
+            {            
+                long startOfPropertyChain = nodeRecord.getNextProp();
+                if ( startOfPropertyChain != Record.NO_NEXT_RELATIONSHIP.intValue() )
+                {
+                    long propertyRecordId = migrateProperties( startOfPropertyChain, propertyWriter );
+                    nodeRecord.setNextProp( propertyRecordId );
+                }
+                nodeStore.updateRecord( nodeRecord );
+            }
+            else
+            {
+                nodeStore.freeId( nodeRecord.getId() );
+            }
         }
         legacyStore.getNodeStoreReader().close();
     }
@@ -81,14 +90,21 @@ public class StoreMigrator
         Iterable<RelationshipRecord> records = legacyStore.getRelationshipStoreReader().readRelationshipStore();
         for ( RelationshipRecord relationshipRecord : records )
         {
-            long startOfPropertyChain = relationshipRecord.getNextProp();
-            if ( startOfPropertyChain != Record.NO_NEXT_RELATIONSHIP.intValue() )
-            {
-                long propertyRecordId = migrateProperties( startOfPropertyChain, propertyWriter );
-                relationshipRecord.setNextProp( propertyRecordId );
-            }
             relationshipStore.setHighId( relationshipRecord.getId() + 1 );
-            relationshipStore.updateRecord( relationshipRecord );
+            if ( relationshipRecord.inUse() )
+            {
+                long startOfPropertyChain = relationshipRecord.getNextProp();
+                if ( startOfPropertyChain != Record.NO_NEXT_RELATIONSHIP.intValue() )
+                {
+                    long propertyRecordId = migrateProperties( startOfPropertyChain, propertyWriter );
+                    relationshipRecord.setNextProp( propertyRecordId );
+                }
+                relationshipStore.updateRecord( relationshipRecord );
+            }
+            else
+            {
+                relationshipStore.freeId( relationshipRecord.getId() );
+            }
         }
         legacyStore.getRelationshipStoreReader().close();
     }
@@ -187,13 +203,13 @@ public class StoreMigrator
         propIndexStore.updateRecord( record );
     }
 
-//    private void migrateIdGenerators( NeoStore neoStore ) throws IOException
-//    {
-//        String[] idGeneratorSuffixes = new String[]{".nodestore.db.id", ".relationshipstore.db.id"};
-//        for ( String suffix : idGeneratorSuffixes )
-//        {
-//            FileUtils.copyFile( new File( legacyStore.getStorageFileName() + suffix ),
-//                    new File( neoStore.getStorageFileName() + suffix ) );
-//        }
-//    }
+    private void migrateIdGenerators( NeoStore neoStore ) throws IOException
+    {
+        String[] idGeneratorSuffixes = new String[]{".nodestore.db.id", ".relationshipstore.db.id"};
+        for ( String suffix : idGeneratorSuffixes )
+        {
+            FileUtils.copyFile( new File( legacyStore.getStorageFileName() + suffix ),
+                    new File( neoStore.getStorageFileName() + suffix ) );
+        }
+    }
 }

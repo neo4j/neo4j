@@ -65,9 +65,9 @@ public class LegacyNodeStoreReader
                     protected NodeRecord fetchNextOrNull()
                     {
                         NodeRecord nodeRecord = null;
-                        do
+                        while ( nodeRecord == null && id <= maxId )
                         {
-                            buffer.position( 0 );
+                            buffer.clear();
                             try
                             {
                                 fileChannel.read( buffer );
@@ -79,6 +79,8 @@ public class LegacyNodeStoreReader
                             long inUseByte = buffer.get();
 
                             boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
+                            nodeRecord = new NodeRecord( id );
+                            nodeRecord.setInUse( inUse );
                             if ( inUse )
                             {
                                 long nextRel = getUnsignedInt( buffer );
@@ -87,14 +89,11 @@ public class LegacyNodeStoreReader
                                 long relModifier = (inUseByte & 0xEL) << 31;
                                 long propModifier = (inUseByte & 0xF0L) << 28;
 
-                                nodeRecord = new NodeRecord( id );
-                                nodeRecord.setInUse( inUse );
                                 nodeRecord.setNextRel( longFromIntAndMod( nextRel, relModifier ) );
                                 nodeRecord.setNextProp( longFromIntAndMod( nextProp, propModifier ) );
                             }
                             id++;
-                        } while ( nodeRecord == null && id < maxId );
-
+                        }
                         return nodeRecord;
                     }
 
