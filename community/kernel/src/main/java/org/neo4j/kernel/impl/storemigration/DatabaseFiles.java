@@ -26,6 +26,13 @@ public class DatabaseFiles
 {
     public void moveToBackupDirectory( File workingDirectory, File backupDirectory )
     {
+        if (backupDirectory.exists())
+        {
+            throw new StoreUpgrader.UnableToUpgradeException( String.format( "Cannot proceed with upgrade " +
+                    "because there is an existing upgrade backup in the way at %s. If you do not need this " +
+                    "backup please delete it or move it out of the way before re-attempting upgrade.",
+                    backupDirectory.getAbsolutePath() ) );
+        }
         backupDirectory.mkdir();
         move( workingDirectory, backupDirectory );
     }

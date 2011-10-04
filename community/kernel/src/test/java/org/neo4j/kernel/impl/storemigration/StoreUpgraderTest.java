@@ -31,9 +31,7 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.defaultCon
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
 import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 
 import org.junit.Test;
@@ -62,7 +60,7 @@ public class StoreUpgraderTest
 
         new StoreUpgrader( defaultConfig(), alwaysAllowed(), new UpgradableDatabase(), new StoreMigrator(), new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
 
-        verifyFilesHaveSameContent( MigrationTestUtils.findOldFormatStoreDirectory(), new File( workingDirectory, "upgrade_backup" ) );
+        MigrationTestUtils.verifyFilesHaveSameContent( MigrationTestUtils.findOldFormatStoreDirectory(), new File( workingDirectory, "upgrade_backup" ) );
     }
 
     @Test
@@ -109,7 +107,7 @@ public class StoreUpgraderTest
             // expected
         }
 
-        verifyFilesHaveSameContent( comparisonDirectory, workingDirectory );
+        MigrationTestUtils.verifyFilesHaveSameContent( comparisonDirectory, workingDirectory );
     }
 
     @Test
@@ -132,29 +130,7 @@ public class StoreUpgraderTest
             // expected
         }
 
-        verifyFilesHaveSameContent( comparisonDirectory, workingDirectory );
-    }
-
-    private void verifyFilesHaveSameContent( File original, File other ) throws IOException
-    {
-        for ( File originalFile : original.listFiles() )
-        {
-            File otherFile = new File( other, originalFile.getName() );
-            if ( !originalFile.isDirectory() )
-            {
-                BufferedInputStream originalStream = new BufferedInputStream( new FileInputStream( originalFile ) );
-                BufferedInputStream otherStream = new BufferedInputStream( new FileInputStream( otherFile ) );
-
-                int aByte;
-                while ( (aByte = originalStream.read()) != -1 )
-                {
-                    assertEquals( "Different content in " + originalFile.getName(), aByte, otherStream.read() );
-                }
-
-                originalStream.close();
-                otherStream.close();
-            }
-        }
+        MigrationTestUtils.verifyFilesHaveSameContent( comparisonDirectory, workingDirectory );
     }
 
 }

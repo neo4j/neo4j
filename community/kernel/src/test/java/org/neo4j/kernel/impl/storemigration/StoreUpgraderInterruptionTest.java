@@ -26,6 +26,7 @@ import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.alwaysAllowed;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.defaultConfig;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,7 +43,8 @@ public class StoreUpgraderInterruptionTest
         File workingDirectory = new File( "target/" + StoreUpgraderInterruptionTest.class.getSimpleName() );
         MigrationTestUtils.prepareSampleLegacyDatabase( workingDirectory );
 
-        StoreMigrator failingStoreMigrator = new StoreMigrator() {
+        StoreMigrator failingStoreMigrator = new StoreMigrator()
+        {
 
             public void migrate( LegacyStore legacyStore, NeoStore neoStore ) throws IOException
             {
@@ -68,6 +70,45 @@ public class StoreUpgraderInterruptionTest
         new StoreUpgrader( defaultConfig(), alwaysAllowed(), new UpgradableDatabase(), new StoreMigrator(), new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
 
         assertTrue( allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
+    }
+
+    @Test
+    public void shouldFailOnSecondAttemptIfPreviousAttemptMadeABackupToAvoidDamagingBackup() throws IOException
+    {
+        File workingDirectory = new File( "target/" + StoreUpgraderInterruptionTest.class.getSimpleName() );
+        MigrationTestUtils.prepareSampleLegacyDatabase( workingDirectory );
+
+        DatabaseFiles failsOnBackup = new DatabaseFiles()
+        {
+
+            public void moveToBackupDirectory( File workingDirectory, File backupDirectory )
+            {
+                backupDirectory.mkdir();
+                throw new RuntimeException( "Failing to backup working directory" );
+            }
+        };
+
+        assertTrue( allStoreFilesHaveVersion( workingDirectory, "v0.9.9" ) );
+
+        try
+        {
+            new StoreUpgrader( defaultConfig(), alwaysAllowed(), new UpgradableDatabase(), new StoreMigrator(), failsOnBackup ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+            fail( "Should throw exception" );
+        }
+        catch ( RuntimeException e )
+        {
+            assertEquals( "Failing to backup working directory", e.getMessage() );
+        }
+
+        try
+        {
+            new StoreUpgrader( defaultConfig(), alwaysAllowed(), new UpgradableDatabase(), new StoreMigrator(), new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+            fail( "Should throw exception" );
+        }
+        catch ( Exception e )
+        {
+            assertTrue( e.getMessage().startsWith( "Cannot proceed with upgrade because there is an existing upgrade backup in the way at " ) );
+        }
     }
 
 }

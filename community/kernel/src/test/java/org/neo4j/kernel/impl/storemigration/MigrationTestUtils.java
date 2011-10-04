@@ -19,10 +19,13 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.URL;
@@ -134,6 +137,28 @@ public class MigrationTestUtils
             }
         }
         return true;
+    }
+
+    public static void verifyFilesHaveSameContent( File original, File other ) throws IOException
+    {
+        for ( File originalFile : original.listFiles() )
+        {
+            File otherFile = new File( other, originalFile.getName() );
+            if ( !originalFile.isDirectory() )
+            {
+                BufferedInputStream originalStream = new BufferedInputStream( new FileInputStream( originalFile ) );
+                BufferedInputStream otherStream = new BufferedInputStream( new FileInputStream( otherFile ) );
+
+                int aByte;
+                while ( (aByte = originalStream.read()) != -1 )
+                {
+                    assertEquals( "Different content in " + originalFile.getName(), aByte, otherStream.read() );
+                }
+
+                originalStream.close();
+                otherStream.close();
+            }
+        }
     }
 
     static class AlwaysAllowedUpgradeConfiguration implements UpgradeConfiguration
