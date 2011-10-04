@@ -26,6 +26,7 @@ import java.util.Map;
 
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.util.FileUtils;
 
 public class StoreUpgrader
 {
@@ -70,10 +71,19 @@ public class StoreUpgrader
 
             backupDirectory.mkdir();
             StoreFiles.move( workingDirectory, backupDirectory );
-            LogFiles.copy( workingDirectory, backupDirectory );
-            StoreFiles.move( upgradeDirectory, workingDirectory );
+            LogFiles.move( workingDirectory, backupDirectory );
+            /*
+             * Keep an intact copy of the messages log, but let the new db
+             * append there.
+             */
+            FileUtils.copyFile( new File( workingDirectory, "messages.log" ),
+                    new File( backupDirectory, "messages.log" ) );
 
-        } catch ( IOException e )
+            StoreFiles.move( upgradeDirectory, workingDirectory );
+            LogFiles.move( upgradeDirectory, workingDirectory );
+
+        }
+        catch ( IOException e )
         {
             throw new RuntimeException( e );
         }

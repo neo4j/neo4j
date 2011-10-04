@@ -20,39 +20,52 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
-
-import org.neo4j.kernel.impl.util.FileUtils;
 
 public class LogFiles
 {
-    public static void copy( File fromDirectory, File toDirectory ) throws IOException
+    private static final class LogicalLogFilenameFilter implements
+            FilenameFilter
     {
-        for ( File file : fromDirectory.listFiles() )
+        private static final String[] logFilenamePatterns = { "active_tx_log",
+                "nioneo_logical\\.log.*", /* covers current log, active log marker
+                                            and backups */
+                "tm_tx_log\\..*" };
+
+        @Override
+        public boolean accept( File dir, String name )
         {
-            if ( recognisedAsLogFile( file ) )
+            for ( String pattern : logFilenamePatterns )
             {
-                FileUtils.copyFile( file, new File( toDirectory, file.getName() ) );
+                if ( name.matches( pattern ) )
+                {
+                    return true;
+                }
             }
+            return false;
         }
     }
 
-    private static boolean recognisedAsLogFile( File file )
+    /**
+     * Moves all logical logs of a database from one directory
+     * to another. Since it just renames files (the standard way of moving with
+     * JDK6) from and to must be on the same disk partition.
+     *
+     * @param filename The base filename for the logical logs
+     * @param fromDirectory The directory that hosts the database and its logs
+     * @param toDirectory The directory to move the log files to
+     * @throws IOException If any of the move operations fail for any reason.
+     */
+    public static void move( File fromDirectory,
+            File toDirectory ) throws IOException
     {
-        String fileName = file.getName();
-        String[] logFileMatchers = {
-                "active_tx_log",
-                "messages\\.log",
-                "nioneo_logical\\.log\\.active",
-                "tm_tx_log\\..*"
-        };
-        for ( String matcher : logFileMatchers )
+        assert fromDirectory.isDirectory();
+        assert toDirectory.isDirectory();
+
+        for ( String logFile : fromDirectory.list( new LogicalLogFilenameFilter() ) )
         {
-            if ( fileName.matches( matcher ) )
-            {
-                return true;
-            }
+            StoreFiles.moveFile( logFile, fromDirectory, toDirectory );
         }
-        return false;
     }
 }
