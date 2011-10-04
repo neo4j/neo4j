@@ -24,6 +24,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.copyRecursively;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.defaultConfig;
 
 import java.io.BufferedInputStream;
@@ -52,7 +54,7 @@ public class StoreUpgraderTest
         File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
         prepareSampleLegacyDatabase( workingDirectory );
 
-        assertFalse( allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
+        assertTrue( allStoreFilesHaveVersion( workingDirectory, "v0.9.9" ) );
 
         HashMap config = defaultConfig();
         config.put( Config.ALLOW_STORE_UPGRADE, "true" );
@@ -112,6 +114,32 @@ public class StoreUpgraderTest
         }
     }
 
+    @Test
+    public void shouldLeaveAllFilesUntouchedIfWrongVersionNumberFound() throws IOException
+    {
+        File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
+        File comparisonDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() + "-comparison" );
+        prepareSampleLegacyDatabase( workingDirectory );
+
+        HashMap config = defaultConfig();
+        config.put( Config.ALLOW_STORE_UPGRADE, "true" );
+
+        changeVersionNumber( new File( workingDirectory, "neostore.nodestore.db" ), "v0.9.5" );
+        copyRecursively( workingDirectory, comparisonDirectory );
+
+        try
+        {
+            new StoreUpgrader( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath(), config ).attemptUpgrade();
+            fail( "Should have thrown exception" );
+        }
+        catch ( StoreUpgrader.UnableToUpgradeException e )
+        {
+            // expected
+        }
+
+        verifyFilesHaveSameContent( comparisonDirectory, workingDirectory );
+    }
+
     private void prepareSampleLegacyDatabase( File workingDirectory ) throws IOException
     {
         File resourceDirectory = findOldFormatStoreDirectory();
@@ -119,7 +147,7 @@ public class StoreUpgraderTest
         FileUtils.deleteRecursively( workingDirectory );
         assertTrue( workingDirectory.mkdirs() );
 
-        MigrationTestUtils.copyRecursively( resourceDirectory, workingDirectory );
+        copyRecursively( resourceDirectory, workingDirectory );
     }
 
     private File findOldFormatStoreDirectory()
@@ -163,7 +191,7 @@ public class StoreUpgraderTest
                 int aByte;
                 while( (aByte = originalStream.read()) != -1)
                 {
-                    assertEquals( aByte, otherStream.read() );
+                    assertEquals( "Different content in " + originalFile.getName(), aByte, otherStream.read() );
                 }
 
                 originalStream.close();

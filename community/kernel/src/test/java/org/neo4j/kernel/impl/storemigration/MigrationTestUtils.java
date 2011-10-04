@@ -23,8 +23,12 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.HashMap;
 
+import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -73,5 +77,14 @@ public class MigrationTestUtils
                 FileUtils.copyFile( fromFile, toFile );
             }
         }
+    }
+
+    static void changeVersionNumber( File storeFile, String versionString ) throws IOException
+    {
+        byte[] versionBytes = UTF8.encode( versionString );
+        FileChannel fileChannel = new RandomAccessFile( storeFile, "rw" ).getChannel();
+        fileChannel.position( storeFile.length() - versionBytes.length );
+        fileChannel.write( ByteBuffer.wrap( versionBytes ) );
+        fileChannel.close();
     }
 }
