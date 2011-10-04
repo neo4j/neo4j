@@ -24,7 +24,11 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.copyRecursively;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.defaultConfig;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
+import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -52,7 +56,7 @@ public class StoreUpgraderTest
         File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
         prepareSampleLegacyDatabase( workingDirectory );
 
-        assertFalse( allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
+        assertTrue( allStoreFilesHaveVersion( workingDirectory, "v0.9.9" ) );
 
         HashMap config = defaultConfig();
         config.put( Config.ALLOW_STORE_UPGRADE, "true" );
@@ -108,23 +112,77 @@ public class StoreUpgraderTest
         }
         catch ( UpgradeNotAllowedByConfigurationException e )
         {
-            //expected
+            // expected
         }
+    }
+
+    @Test
+    public void shouldLeaveAllFilesUntouchedIfWrongVersionNumberFound() throws IOException
+    {
+        File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
+        File comparisonDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() + "-comparison" );
+        prepareSampleLegacyDatabase( workingDirectory );
+
+        HashMap config = defaultConfig();
+        config.put( Config.ALLOW_STORE_UPGRADE, "true" );
+
+        changeVersionNumber( new File( workingDirectory, "neostore.nodestore.db" ), "v0.9.5" );
+        deleteRecursively( comparisonDirectory );
+        copyRecursively( workingDirectory, comparisonDirectory );
+
+        try
+        {
+            new StoreUpgrader( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath(), config ).attemptUpgrade();
+            fail( "Should throw exception" );
+        }
+        catch ( StoreUpgrader.UnableToUpgradeException e )
+        {
+            // expected
+        }
+
+        verifyFilesHaveSameContent( comparisonDirectory, workingDirectory );
+    }
+
+    @Test
+    public void shouldRefuseToUpgradeIfAnyOfTheStoresWeNotShutDownCleanly() throws IOException
+    {
+        File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
+        File comparisonDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() + "-comparison" );
+        prepareSampleLegacyDatabase( workingDirectory );
+
+        HashMap config = defaultConfig();
+        config.put( Config.ALLOW_STORE_UPGRADE, "true" );
+
+        truncateFile( new File( workingDirectory, "neostore.propertystore.db.index.keys" ), "StringPropertyStore v0.9.9" );
+        deleteRecursively( comparisonDirectory );
+        copyRecursively( workingDirectory, comparisonDirectory );
+
+        try
+        {
+            new StoreUpgrader( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath(), config ).attemptUpgrade();
+            fail( "Should throw exception" );
+        }
+        catch ( StoreUpgrader.UnableToUpgradeException e )
+        {
+            // expected
+        }
+
+        verifyFilesHaveSameContent( comparisonDirectory, workingDirectory );
     }
 
     private void prepareSampleLegacyDatabase( File workingDirectory ) throws IOException
     {
         File resourceDirectory = findOldFormatStoreDirectory();
 
-        FileUtils.deleteRecursively( workingDirectory );
+        deleteRecursively( workingDirectory );
         assertTrue( workingDirectory.mkdirs() );
 
-        MigrationTestUtils.copyRecursively( resourceDirectory, workingDirectory );
+        copyRecursively( resourceDirectory, workingDirectory );
     }
 
     private File findOldFormatStoreDirectory()
     {
-        URL legacyStoreResource = getClass().getResource( "oldformatstore/neostore" );
+        URL legacyStoreResource = getClass().getResource( "legacystore/exampledb/neostore" );
         return new File( legacyStoreResource.getFile() ).getParentFile();
     }
 
@@ -163,7 +221,7 @@ public class StoreUpgraderTest
                 int aByte;
                 while( (aByte = originalStream.read()) != -1)
                 {
-                    assertEquals( aByte, otherStream.read() );
+                    assertEquals( "Different content in " + originalFile.getName(), aByte, otherStream.read() );
                 }
 
                 originalStream.close();

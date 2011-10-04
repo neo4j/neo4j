@@ -17,11 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration;
-
-import static org.neo4j.kernel.impl.storemigration.LegacyStore.FROM_VERSION;
-import static org.neo4j.kernel.impl.storemigration.LegacyStore.getUnsignedInt;
-import static org.neo4j.kernel.impl.storemigration.LegacyStore.longFromIntAndMod;
+package org.neo4j.kernel.impl.storemigration.legacystore;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -44,7 +40,7 @@ public class LegacyNodeStoreReader
     public LegacyNodeStoreReader( String fileName ) throws IOException
     {
         fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
-        int endHeaderSize = UTF8.encode( FROM_VERSION ).length;
+        int endHeaderSize = UTF8.encode( LegacyStore.FROM_VERSION ).length;
         maxId = (fileChannel.size() - endHeaderSize) / RECORD_LENGTH;
     }
 
@@ -83,14 +79,14 @@ public class LegacyNodeStoreReader
                             nodeRecord.setInUse( inUse );
                             if ( inUse )
                             {
-                                long nextRel = getUnsignedInt( buffer );
-                                long nextProp = getUnsignedInt( buffer );
+                                long nextRel = LegacyStore.getUnsignedInt( buffer );
+                                long nextProp = LegacyStore.getUnsignedInt( buffer );
 
                                 long relModifier = (inUseByte & 0xEL) << 31;
                                 long propModifier = (inUseByte & 0xF0L) << 28;
 
-                                nodeRecord.setNextRel( longFromIntAndMod( nextRel, relModifier ) );
-                                nodeRecord.setNextProp( longFromIntAndMod( nextProp, propModifier ) );
+                                nodeRecord.setNextRel( LegacyStore.longFromIntAndMod( nextRel, relModifier ) );
+                                nodeRecord.setNextProp( LegacyStore.longFromIntAndMod( nextProp, propModifier ) );
                             }
                             id++;
                         }

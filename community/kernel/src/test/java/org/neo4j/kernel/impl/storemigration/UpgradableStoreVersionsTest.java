@@ -22,17 +22,15 @@ package org.neo4j.kernel.impl.storemigration;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.copyRecursively;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.net.URL;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 public class UpgradableStoreVersionsTest
@@ -45,14 +43,14 @@ public class UpgradableStoreVersionsTest
     @Test
     public void shouldAcceptTheStoresInTheSampleDatabaseAsBeingEligibleForUpgrade() throws IOException
     {
-        URL legacyStoreResource = getClass().getResource( "oldformatstore/neostore" );
+        URL legacyStoreResource = getClass().getResource( "legacystore/exampledb/neostore" );
         File resourceDirectory = new File( legacyStoreResource.getFile() ).getParentFile();
         File workingDirectory = new File( "target/" + UpgradableStoreVersionsTest.class.getSimpleName() );
 
         FileUtils.deleteRecursively( workingDirectory );
         assertTrue( workingDirectory.mkdirs() );
 
-        MigrationTestUtils.copyRecursively( resourceDirectory, workingDirectory );
+        copyRecursively( resourceDirectory, workingDirectory );
 
         assertTrue( new UpgradableStoreVersions().storeFilesUpgradeable( workingDirectory ) );
     }
@@ -60,26 +58,18 @@ public class UpgradableStoreVersionsTest
     @Test
     public void shouldRejectStoresIfOneFileHasIncorrectVersion() throws IOException
     {
-        URL legacyStoreResource = getClass().getResource( "oldformatstore/neostore" );
+        URL legacyStoreResource = getClass().getResource( "legacystore/exampledb/neostore" );
         File resourceDirectory = new File( legacyStoreResource.getFile() ).getParentFile();
         File workingDirectory = new File( "target/" + UpgradableStoreVersionsTest.class.getSimpleName() );
 
         FileUtils.deleteRecursively( workingDirectory );
         assertTrue( workingDirectory.mkdirs() );
 
-        MigrationTestUtils.copyRecursively( resourceDirectory, workingDirectory );
+        copyRecursively( resourceDirectory, workingDirectory );
 
         changeVersionNumber( new File( workingDirectory, "neostore.nodestore.db" ), "v0.9.5" );
 
         assertFalse( new UpgradableStoreVersions().storeFilesUpgradeable( workingDirectory ) );
     }
 
-    private void changeVersionNumber( File storeFile, String versionString ) throws IOException
-    {
-        byte[] versionBytes = UTF8.encode( versionString );
-        FileChannel fileChannel = new RandomAccessFile( storeFile, "rw" ).getChannel();
-        fileChannel.position( storeFile.length() - versionBytes.length );
-        fileChannel.write( ByteBuffer.wrap( versionBytes ) );
-        fileChannel.close();
-    }
 }

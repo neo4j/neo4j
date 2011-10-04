@@ -76,7 +76,7 @@ public class StoreVersionTest
         FileUtils.deleteRecursively( outputDir );
         assertTrue( outputDir.mkdirs() );
 
-        URL legacyStoreResource = StoreMigrator.class.getResource( "oldformatstore/neostore.nodestore.db" );
+        URL legacyStoreResource = StoreMigrator.class.getResource( "legacystore/exampledb/neostore.nodestore.db" );
         File workingFile = new File( outputDir, "neostore.nodestore.db" );
         FileUtils.copyFile( new File( legacyStoreResource.getFile() ), workingFile );
 

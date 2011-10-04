@@ -39,6 +39,13 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyDynamicRecord;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyDynamicRecordFetcher;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyDynamicStoreReader;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyPropertyIndexStoreReader;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyPropertyRecord;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipTypeStoreReader;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 public class StoreMigrator
