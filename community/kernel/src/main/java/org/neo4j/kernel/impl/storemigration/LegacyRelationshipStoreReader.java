@@ -30,6 +30,7 @@ import java.nio.channels.FileChannel;
 import java.util.Iterator;
 
 import org.neo4j.helpers.UTF8;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 
@@ -49,7 +50,6 @@ public class LegacyRelationshipStoreReader
 
     public Iterable<RelationshipRecord> readRelationshipStore() throws IOException
     {
-
         final ByteBuffer buffer = ByteBuffer.allocateDirect( RECORD_LENGTH );
 
         return new Iterable<RelationshipRecord>()
@@ -57,18 +57,12 @@ public class LegacyRelationshipStoreReader
             @Override
             public Iterator<RelationshipRecord> iterator()
             {
-                return new Iterator<RelationshipRecord>()
+                return new PrefetchingIterator<RelationshipRecord>()
                 {
                     long id = 0;
 
                     @Override
-                    public boolean hasNext()
-                    {
-                        return id < maxId;
-                    }
-
-                    @Override
-                    public RelationshipRecord next()
+                    protected RelationshipRecord fetchNextOrNull()
                     {
                         RelationshipRecord record = null;
                         do

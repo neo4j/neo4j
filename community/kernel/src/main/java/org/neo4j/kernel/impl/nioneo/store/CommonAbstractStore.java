@@ -43,9 +43,6 @@ public abstract class CommonAbstractStore
 {
     public static final String ALL_STORES_VERSION = "v0.A.0";
 
-    // default id generator grab size
-    protected static final int DEFAULT_ID_GRAB_SIZE = 50000;
-
     protected static final Logger logger = Logger
         .getLogger( CommonAbstractStore.class.getName() );
 
@@ -592,7 +589,7 @@ public abstract class CommonAbstractStore
     protected void openIdGenerator()
     {
         idGenerator = openIdGenerator( storageFileName + ".id",
-            DEFAULT_ID_GRAB_SIZE );
+            idType.getGrabSize() );
     }
 
     protected IdGenerator openIdGenerator( String fileName, int grabSize )

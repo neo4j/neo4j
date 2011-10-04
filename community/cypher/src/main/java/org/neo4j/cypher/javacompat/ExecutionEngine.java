@@ -54,6 +54,18 @@ public class ExecutionEngine
     }
 
     /**
+     * Executes a query and returns an iterable that contains the result set
+     * @param query The query to execute
+     * @return A ExecutionResult that contains the result set
+     * @throws org.neo4j.cypher.SyntaxException If the Query contains errors,
+     * a SyntaxException exception might be thrown
+     */
+    public ExecutionResult execute( String query ) throws SyntaxException
+    {
+        return new ExecutionResult(inner.execute( query ));
+    }
+
+    /**
      * Executes a {@link Query} and returns an iterable that contains the result set
      * @param query The query to execute
      * @param params Parameters for the query
@@ -62,6 +74,19 @@ public class ExecutionEngine
      * a SyntaxException exception might be thrown
      */
     public ExecutionResult execute( Query query, Map<String, Object> params) throws SyntaxException
+    {
+        return new ExecutionResult(inner.execute(query, params));
+    }
+
+    /**
+     * Executes a {@link Query} and returns an iterable that contains the result set
+     * @param query The query to execute
+     * @param params Parameters for the query
+     * @return A ExecutionResult that contains the result set
+     * @throws org.neo4j.cypher.SyntaxException If the Query contains errors,
+     * a SyntaxException exception might be thrown
+     */
+    public ExecutionResult execute( String query, Map<String, Object> params) throws SyntaxException
     {
         return new ExecutionResult(inner.execute(query, params));
     }

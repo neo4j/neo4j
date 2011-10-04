@@ -30,6 +30,7 @@ import java.nio.channels.FileChannel;
 import java.util.Iterator;
 
 import org.neo4j.helpers.UTF8;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 
@@ -56,18 +57,12 @@ public class LegacyNodeStoreReader
             @Override
             public Iterator<NodeRecord> iterator()
             {
-                return new Iterator<NodeRecord>()
+                return new PrefetchingIterator<NodeRecord>()
                 {
                     long id = 0;
 
                     @Override
-                    public boolean hasNext()
-                    {
-                        return id < maxId;
-                    }
-
-                    @Override
-                    public NodeRecord next()
+                    protected NodeRecord fetchNextOrNull()
                     {
                         NodeRecord nodeRecord = null;
                         do

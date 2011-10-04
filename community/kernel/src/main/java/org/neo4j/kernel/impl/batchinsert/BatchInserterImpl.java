@@ -241,6 +241,17 @@ public class BatchInserterImpl implements BatchInserter
         if ( record.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
         {
             deletePropertyChain( record.getNextProp() );
+            /*
+             * Batch inserter does not make any attempt to maintain the store's
+             * integrity. It makes sense however to keep some things intact where
+             * the cost is relatively low. So here, when we delete the property
+             * chain we first make sure that the node record (or the relationship
+             * record below) does not point anymore to the deleted properties. This
+             * way, if during creation, something goes wrong, it will not have the properties
+             * expected instead of throwing invalid record exceptions.
+             */
+            record.setNextProp( Record.NO_NEXT_PROPERTY.intValue() );
+            getNodeStore().updateRecord( record );
         }
         record.setNextProp( createPropertyChain( properties ) );
         getNodeStore().updateRecord( record );
@@ -253,6 +264,12 @@ public class BatchInserterImpl implements BatchInserter
         if ( record.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
         {
             deletePropertyChain( record.getNextProp() );
+            /*
+             * See setNodeProperties above for an explanation of what goes on
+             * here
+             */
+            record.setNextProp( Record.NO_NEXT_PROPERTY.intValue() );
+            getRelationshipStore().updateRecord( record );
         }
         record.setNextProp( createPropertyChain( properties ) );
         getRelationshipStore().updateRecord( record );
@@ -478,12 +495,12 @@ public class BatchInserterImpl implements BatchInserter
 
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            PropertyRecord propRecord = propStore.getLightRecord( nextProp );
+            PropertyRecord propRecord = propStore.getRecord( nextProp );
             for ( PropertyBlock propBlock : propRecord.getPropertyBlocks() )
             {
                 String key = indexHolder.getStringKey( propBlock.getKeyIndexId() );
                 properties.put( key,
-                        propBlock.newPropertyData( propRecord ) );
+                        propBlock.newPropertyData( propRecord ).getValue() );
             }
             nextProp = propRecord.getNextProp();
         }

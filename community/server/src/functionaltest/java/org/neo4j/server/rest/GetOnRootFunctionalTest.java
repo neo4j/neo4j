@@ -30,9 +30,9 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.Version;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestData;
-import org.neo4j.test.GraphDescription.Graph;
 
 public class GetOnRootFunctionalTest extends AbstractRestFunctionalTestBase
 {

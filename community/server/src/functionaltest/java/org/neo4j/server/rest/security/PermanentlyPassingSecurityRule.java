@@ -17,30 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.web.security;
+package org.neo4j.server.rest.security;
 
-/**
- * <p>
- * A runtime exception representing a failure to provide correct authentication
- * credentials.
- * </p>
- */
-public class AuthenticationException extends RuntimeException
-{
+import javax.servlet.http.HttpServletRequest;
 
-    private static final long serialVersionUID = 3662922094534872711L;
+public class PermanentlyPassingSecurityRule implements SecurityRule {
+    
+    public static final String REALM = "WallyWorld"; // as per RFC2617 :-);
 
-    private String realm;
-
-    public AuthenticationException( String msg, String realm )
+    @Override
+    public boolean isAuthorized( HttpServletRequest request )
     {
-        super( msg );
-        this.realm = realm;
+        return true; // always passes
     }
 
-    public String getRealm()
+    @Override
+    public String forUriPath()
     {
-        return this.realm;
+        return SecurityRule.DEFAULT_DATABASE_PATH;
     }
 
+    @Override
+    public String forRealm()
+    {
+        return REALM;
+    }
 }

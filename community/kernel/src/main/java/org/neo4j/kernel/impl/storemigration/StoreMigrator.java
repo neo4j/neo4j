@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.storemigration;
 
 import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,7 +38,6 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
-import org.neo4j.kernel.impl.util.FileUtils;
 
 public class StoreMigrator
 {
@@ -57,7 +55,7 @@ public class StoreMigrator
         migratePropertyIndexes( neoStore.getPropertyStore().getIndexStore() );
         legacyStore.getPropertyStoreReader().close();
         migrateRelationshipTypes( neoStore.getRelationshipTypeStore() );
-        migrateIdGenerators( neoStore );
+//        migrateIdGenerators( neoStore );
         legacyStore.getDynamicRecordFetcher().close();
     }
 
@@ -189,13 +187,13 @@ public class StoreMigrator
         propIndexStore.updateRecord( record );
     }
 
-    private void migrateIdGenerators( NeoStore neoStore ) throws IOException
-    {
-        String[] idGeneratorSuffixes = new String[]{".nodestore.db.id", ".relationshipstore.db.id"};
-        for ( String suffix : idGeneratorSuffixes )
-        {
-            FileUtils.copyFile( new File( legacyStore.getStorageFileName() + suffix ),
-                    new File( neoStore.getStorageFileName() + suffix ) );
-        }
-    }
+//    private void migrateIdGenerators( NeoStore neoStore ) throws IOException
+//    {
+//        String[] idGeneratorSuffixes = new String[]{".nodestore.db.id", ".relationshipstore.db.id"};
+//        for ( String suffix : idGeneratorSuffixes )
+//        {
+//            FileUtils.copyFile( new File( legacyStore.getStorageFileName() + suffix ),
+//                    new File( neoStore.getStorageFileName() + suffix ) );
+//        }
+//    }
 }

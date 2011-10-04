@@ -27,10 +27,17 @@
   </formats>
   <fileSets>
     <fileSet>
-      <directory>target/rest-api</directory>
+      <filtered>true</filtered>
+      <directory>target/docs/rest-api</directory>
       <outputDirectory>/dev/rest</outputDirectory>
     </fileSet>
     <fileSet>
+      <filtered>true</filtered>
+      <directory>target/docs/ops</directory>
+      <outputDirectory>/ops</outputDirectory>
+    </fileSet>
+    <fileSet>
+      <filtered>true</filtered>
       <directory>src/docs</directory>
       <outputDirectory>/</outputDirectory>
     </fileSet>

@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import commands._
+import parser.CypherParser
 import pipes._
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
@@ -34,7 +35,17 @@ class ExecutionEngine(graph: GraphDatabaseService)
 
   require( graph != null, "Can't work with a null graph database" )
 
-  // This is here because the JavaAPI looks funny with default values
+  val parser = new CypherParser()
+
+  @throws(classOf[SyntaxException])
+  def execute(query:String): ExecutionResult = execute(parser.parse(query))
+
+  @throws(classOf[SyntaxException])
+  def execute(query:String, params: Map[String, Any]): ExecutionResult = { execute(parser.parse(query), params) }
+
+  @throws(classOf[SyntaxException])
+  def execute(query:String, params: JavaMap[String, Any]): ExecutionResult = { execute(parser.parse(query), params.asScala.toMap) }
+
   @throws(classOf[SyntaxException])
   def execute(query: Query): ExecutionResult = execute(query, Map[String, Any]())
 
