@@ -33,12 +33,14 @@ public class StoreUpgrader
     private Map<?, ?> originalConfig;
     private UpgradeConfiguration upgradeConfiguration;
     private UpgradableDatabase upgradableDatabase;
+    private StoreMigrator storeMigrator;
 
-    public StoreUpgrader( Map<?, ?> originalConfig, UpgradeConfiguration upgradeConfiguration, UpgradableDatabase upgradableDatabase )
+    public StoreUpgrader( Map<?, ?> originalConfig, UpgradeConfiguration upgradeConfiguration, UpgradableDatabase upgradableDatabase, StoreMigrator storeMigrator )
     {
         this.originalConfig = originalConfig;
         this.upgradeConfiguration = upgradeConfiguration;
         this.upgradableDatabase = upgradableDatabase;
+        this.storeMigrator = storeMigrator;
     }
 
     public void attemptUpgrade( String storageFileName )
@@ -59,7 +61,7 @@ public class StoreUpgrader
 
             NeoStore.createStore( upgradeFileName, upgradeConfig );
             NeoStore neoStore = new NeoStore( upgradeConfig );
-            new StoreMigrator().migrate( new LegacyStore( storageFileName ), neoStore );
+            storeMigrator.migrate( new LegacyStore( storageFileName ), neoStore );
             neoStore.close();
 
             backupDirectory.mkdir();

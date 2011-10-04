@@ -47,7 +47,7 @@ public class StoreUpgraderTest
 
         assertTrue( MigrationTestUtils.allStoreFilesHaveVersion( workingDirectory, "v0.9.9" ) );
 
-        new StoreUpgrader( defaultConfig(), new AlwaysAllowedUpgradeConfiguration(), new UpgradableDatabase() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+        new StoreUpgrader( defaultConfig(), new AlwaysAllowedUpgradeConfiguration(), new UpgradableDatabase(), new StoreMigrator() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
 
         assertTrue( MigrationTestUtils.allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
     }
@@ -58,7 +58,7 @@ public class StoreUpgraderTest
         File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
         MigrationTestUtils.prepareSampleLegacyDatabase( workingDirectory );
 
-        new StoreUpgrader( defaultConfig(), new AlwaysAllowedUpgradeConfiguration(), new UpgradableDatabase() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+        new StoreUpgrader( defaultConfig(), new AlwaysAllowedUpgradeConfiguration(), new UpgradableDatabase(), new StoreMigrator() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
 
         verifyFilesHaveSameContent( MigrationTestUtils.findOldFormatStoreDirectory(), new File( workingDirectory, "upgrade_backup" ) );
     }
@@ -79,7 +79,7 @@ public class StoreUpgraderTest
 
         try
         {
-            new StoreUpgrader( defaultConfig(), vetoingUpgradeConfiguration, new UpgradableDatabase() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+            new StoreUpgrader( defaultConfig(), vetoingUpgradeConfiguration, new UpgradableDatabase(), new StoreMigrator() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
             fail( "Should throw exception" );
         } catch ( UpgradeNotAllowedByConfigurationException e )
         {
@@ -100,7 +100,7 @@ public class StoreUpgraderTest
 
         try
         {
-            new StoreUpgrader( defaultConfig(), new AlwaysAllowedUpgradeConfiguration(), new UpgradableDatabase() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+            new StoreUpgrader( defaultConfig(), new AlwaysAllowedUpgradeConfiguration(), new UpgradableDatabase(), new StoreMigrator() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
             fail( "Should throw exception" );
         } catch ( StoreUpgrader.UnableToUpgradeException e )
         {
@@ -123,7 +123,7 @@ public class StoreUpgraderTest
 
         try
         {
-            new StoreUpgrader( defaultConfig(), new AlwaysAllowedUpgradeConfiguration(), new UpgradableDatabase() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+            new StoreUpgrader( defaultConfig(), new AlwaysAllowedUpgradeConfiguration(), new UpgradableDatabase(), new StoreMigrator() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
             fail( "Should throw exception" );
         } catch ( StoreUpgrader.UnableToUpgradeException e )
         {
