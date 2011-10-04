@@ -57,10 +57,7 @@ public class StoreUpgraderTest
 
         assertTrue( allStoreFilesHaveVersion( workingDirectory, "v0.9.9" ) );
 
-        HashMap config = defaultConfig();
-        config.put( Config.ALLOW_STORE_UPGRADE, "true" );
-
-        new StoreUpgrader( config ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+        new StoreUpgrader( defaultConfig(), new AlwaysAllowedUpgradeConfiguration() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
 
         assertTrue( allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
     }
@@ -71,10 +68,7 @@ public class StoreUpgraderTest
         File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
         prepareSampleLegacyDatabase( workingDirectory );
 
-        HashMap config = defaultConfig();
-        config.put( Config.ALLOW_STORE_UPGRADE, "true" );
-
-        new StoreUpgrader( config ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+        new StoreUpgrader( defaultConfig(), new AlwaysAllowedUpgradeConfiguration() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
 
         verifyFilesHaveSameContent( findOldFormatStoreDirectory(), new File( workingDirectory, "upgrade_backup" ) );
     }
@@ -105,11 +99,11 @@ public class StoreUpgraderTest
         HashMap config = defaultConfig();
         assertFalse( config.containsKey( Config.ALLOW_STORE_UPGRADE ) );
 
-        try {
-            new StoreUpgrader( config ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+        try
+        {
+            new StoreUpgrader( config, new ConfigMapUpgradeConfiguration( config ) ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
             fail( "Should throw exception" );
-        }
-        catch ( UpgradeNotAllowedByConfigurationException e )
+        } catch ( UpgradeNotAllowedByConfigurationException e )
         {
             // expected
         }
@@ -122,19 +116,15 @@ public class StoreUpgraderTest
         File comparisonDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() + "-comparison" );
         prepareSampleLegacyDatabase( workingDirectory );
 
-        HashMap config = defaultConfig();
-        config.put( Config.ALLOW_STORE_UPGRADE, "true" );
-
         changeVersionNumber( new File( workingDirectory, "neostore.nodestore.db" ), "v0.9.5" );
         deleteRecursively( comparisonDirectory );
         copyRecursively( workingDirectory, comparisonDirectory );
 
         try
         {
-            new StoreUpgrader( config ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+            new StoreUpgrader( defaultConfig(), new AlwaysAllowedUpgradeConfiguration() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
             fail( "Should throw exception" );
-        }
-        catch ( StoreUpgrader.UnableToUpgradeException e )
+        } catch ( StoreUpgrader.UnableToUpgradeException e )
         {
             // expected
         }
@@ -149,19 +139,15 @@ public class StoreUpgraderTest
         File comparisonDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() + "-comparison" );
         prepareSampleLegacyDatabase( workingDirectory );
 
-        HashMap config = defaultConfig();
-        config.put( Config.ALLOW_STORE_UPGRADE, "true" );
-
         truncateFile( new File( workingDirectory, "neostore.propertystore.db.index.keys" ), "StringPropertyStore v0.9.9" );
         deleteRecursively( comparisonDirectory );
         copyRecursively( workingDirectory, comparisonDirectory );
 
         try
         {
-            new StoreUpgrader( config ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+            new StoreUpgrader( defaultConfig(), new AlwaysAllowedUpgradeConfiguration() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
             fail( "Should throw exception" );
-        }
-        catch ( StoreUpgrader.UnableToUpgradeException e )
+        } catch ( StoreUpgrader.UnableToUpgradeException e )
         {
             // expected
         }
@@ -218,7 +204,7 @@ public class StoreUpgraderTest
                 BufferedInputStream otherStream = new BufferedInputStream( new FileInputStream( otherFile ) );
 
                 int aByte;
-                while( (aByte = originalStream.read()) != -1)
+                while ( (aByte = originalStream.read()) != -1 )
                 {
                     assertEquals( "Different content in " + originalFile.getName(), aByte, otherStream.read() );
                 }
@@ -229,4 +215,10 @@ public class StoreUpgraderTest
         }
     }
 
+    private static class AlwaysAllowedUpgradeConfiguration implements UpgradeConfiguration
+    {
+        public void checkConfigurationAllowsAutomaticUpgrade()
+        {
+        }
+    }
 }
