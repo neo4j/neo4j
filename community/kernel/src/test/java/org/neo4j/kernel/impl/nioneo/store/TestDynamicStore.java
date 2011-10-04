@@ -38,7 +38,6 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -344,7 +343,7 @@ public class TestDynamicStore
     {
         return new byte[length];
     }
-    
+
     private byte[] createRandomBytes( Random r )
     {
         return new byte[r.nextInt( 1024 )];
@@ -358,70 +357,65 @@ public class TestDynamicStore
             assertEquals( data1[i], data2[i] );
         }
     }
-    
-    private long create( int length, DynamicArrayStore store )
+
+    private long create( DynamicArrayStore store, Object arrayToStore )
     {
-        byte[] bytes = createBytes( length );
         long blockId = store.nextBlockId();
-        Collection<DynamicRecord> records = store.allocateRecords( blockId, (Object) bytes );
+        Collection<DynamicRecord> records = store.allocateRecords( blockId,
+                arrayToStore );
         for ( DynamicRecord record : records )
         {
             store.updateRecord( record );
         }
         return blockId;
     }
-    
-    private void remove( long blockId, int length, DynamicArrayStore store )
-    {
-        store.getLightRecords( blockId );
-        byte[] bytes = (byte[]) PropertyStore.getArrayFor( blockId, store.getRecords( blockId ), store );
-        assertEquals( length, bytes.length );
-        
-        Collection<DynamicRecord> records = store.getLightRecords( blockId );
-        for ( DynamicRecord record : records )
-        {
-            record.setInUse( false );
-            store.updateRecord( record );
-        }
-    }
 
-    @Ignore
     @Test
-    public void testAddDeleteSequence()
+    public void testAddDeleteSequenceEmptyNumberArray()
     {
         createEmptyStore( dynamicStoreFile(), 30 );
         DynamicArrayStore store = newStore();
         try
         {
-            create( 0, store );
-            remove( 1, 0, store );
-            
-//            create( 768, store );
-//            create( 911, store );
-//            remove( 1, 768, store );
-//            create( 960, store );
-//            create( 624, store );
-//            create( 268, store );
-//            create( 977, store );
-//            create( 0, store );
-//            create( 812, store );
-//            create( 874, store );
-//            create( 690, store );
-//            create( 786, store );
-//            create( 463, store );
-//
-//            remove( 21, 812, store );
-//            
-//            create( 972, store );
-//            create( 347, store );
-//            
-//            remove( 5, 911, store );
-//            
-//            create( 412, store );
-//            create( 508, store );
-//            remove( 5, 412, store );
-//            create( 541, store );
-//            remove( 20, 0, store );            
+            byte[] emptyToWrite = createBytes( 0 );
+            long blockId = create( store, emptyToWrite );
+            store.getLightRecords( blockId );
+            byte[] bytes = (byte[]) PropertyStore.getArrayFor( blockId, store.getRecords( blockId ), store );
+            assertEquals( 0, bytes.length );
+
+            Collection<DynamicRecord> records = store.getLightRecords( blockId );
+            for ( DynamicRecord record : records )
+            {
+                record.setInUse( false );
+                store.updateRecord( record );
+            }
+        }
+        finally
+        {
+            store.close();
+            deleteBothFiles();
+        }
+    }
+
+    @Test
+    public void testAddDeleteSequenceEmptyStringArray()
+    {
+        createEmptyStore( dynamicStoreFile(), 30 );
+        DynamicArrayStore store = newStore();
+        try
+        {
+            long blockId = create( store, new String[0] );
+            store.getLightRecords( blockId );
+            String[] readBack = (String[]) PropertyStore.getArrayFor( blockId,
+                    store.getRecords( blockId ), store );
+            assertEquals( 0, readBack.length );
+
+            Collection<DynamicRecord> records = store.getLightRecords( blockId );
+            for ( DynamicRecord record : records )
+            {
+                record.setInUse( false );
+                store.updateRecord( record );
+            }
         }
         finally
         {
