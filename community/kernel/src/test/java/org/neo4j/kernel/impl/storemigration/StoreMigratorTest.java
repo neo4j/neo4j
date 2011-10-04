@@ -48,7 +48,7 @@ public class StoreMigratorTest
 {
     @SuppressWarnings({"unchecked"})
     @Test
-    public void shouldRewrite() throws IOException
+    public void shouldMigrate() throws IOException
     {
         URL legacyStoreResource = getClass().getResource( "legacystore/exampledb/neostore" );
 
