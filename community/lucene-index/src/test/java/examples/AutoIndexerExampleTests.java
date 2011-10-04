@@ -37,12 +37,11 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.index.ReadableIndex;
 import org.neo4j.graphdb.index.AutoIndexer;
+import org.neo4j.graphdb.index.ReadableIndex;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.util.FileUtils;
-import org.neo4j.metatest.TestGraphDescription;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphHolder;
@@ -51,7 +50,7 @@ import org.neo4j.test.TestData;
 
 public class AutoIndexerExampleTests implements GraphHolder
 {
-    private static final TargetDirectory target = TargetDirectory.forTest( TestGraphDescription.class );
+    private static final TargetDirectory target = TargetDirectory.forTest( AutoIndexerExampleTests.class );
 
     private static EmbeddedGraphDatabase graphdb;
     public @Rule
