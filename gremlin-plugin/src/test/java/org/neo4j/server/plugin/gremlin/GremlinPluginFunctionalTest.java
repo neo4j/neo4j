@@ -431,22 +431,21 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
 
     /**
      * Multiple traversals can be combined into
-     * a single result, using variables.
+     * a single result, using splitting and merging pipes 
+     * in a lazy fashion.
      */
     @Test
     @Documented
-    @Graph( {"Peter knows Ian", "Ian knows Peter", "Peter likes Bikes"} )
+    @Graph( value={"Peter knows Ian", "Ian knows Peter", "Marie likes Peter"}, autoIndexNodes=true )
     public void collect_multiple_traversal_results() throws UnsupportedEncodingException, Exception
     {
-        long id = data.get().get( "Peter" ).getId();
-        String script = "results = [];" +
-                "g.v(" + id + ").out('knows').name >> results;" +
-                "g.v(" + id + ").out('likes').name >> results;";
+        data.get();
+        String script = "g.idx('node_auto_index')[['name':'Peter']].copySplit(_().out('knows'), _().in('likes')).fairMerge.name";
         String payload = "{\"script\":\""+script+"\"}";
         description( formatGroovy(script) );
         gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(JSONPrettifier.parse( payload ) );
         String response = gen.get().post( ENDPOINT ).entity();
-        assertTrue(response.contains( "Bikes" ));
+        assertTrue(response.contains( "Marie" ));
         assertTrue(response.contains( "Ian" ));
     }
     
