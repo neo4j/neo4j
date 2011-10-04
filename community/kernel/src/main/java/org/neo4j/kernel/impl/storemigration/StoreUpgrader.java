@@ -31,16 +31,14 @@ import org.neo4j.kernel.impl.util.FileUtils;
 
 public class StoreUpgrader
 {
-    private String storageFileName;
     private Map<?, ?> originalConfig;
 
-    public StoreUpgrader( String storageFileName, Map<?, ?> originalConfig )
+    public StoreUpgrader( Map<?, ?> originalConfig )
     {
-        this.storageFileName = storageFileName;
         this.originalConfig = originalConfig;
     }
 
-    public void attemptUpgrade()
+    public void attemptUpgrade( String storageFileName )
     {
         if ( !configSaysOkToUpgrade() )
         {

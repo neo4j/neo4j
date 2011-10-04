@@ -46,7 +46,6 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.util.FileUtils;
 
 public class StoreUpgraderTest
 {
@@ -61,7 +60,7 @@ public class StoreUpgraderTest
         HashMap config = defaultConfig();
         config.put( Config.ALLOW_STORE_UPGRADE, "true" );
 
-        new StoreUpgrader( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath(), config ).attemptUpgrade();
+        new StoreUpgrader( config ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
 
         assertTrue( allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
     }
@@ -75,7 +74,7 @@ public class StoreUpgraderTest
         HashMap config = defaultConfig();
         config.put( Config.ALLOW_STORE_UPGRADE, "true" );
 
-        new StoreUpgrader( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath(), config ).attemptUpgrade();
+        new StoreUpgrader( config ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
 
         verifyFilesHaveSameContent( findOldFormatStoreDirectory(), new File( workingDirectory, "upgrade_backup" ) );
     }
@@ -107,7 +106,7 @@ public class StoreUpgraderTest
         assertFalse( config.containsKey( Config.ALLOW_STORE_UPGRADE ) );
 
         try {
-            new StoreUpgrader( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath(), config ).attemptUpgrade();
+            new StoreUpgrader( config ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
             fail( "Should throw exception" );
         }
         catch ( UpgradeNotAllowedByConfigurationException e )
@@ -132,7 +131,7 @@ public class StoreUpgraderTest
 
         try
         {
-            new StoreUpgrader( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath(), config ).attemptUpgrade();
+            new StoreUpgrader( config ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
             fail( "Should throw exception" );
         }
         catch ( StoreUpgrader.UnableToUpgradeException e )
@@ -159,7 +158,7 @@ public class StoreUpgraderTest
 
         try
         {
-            new StoreUpgrader( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath(), config ).attemptUpgrade();
+            new StoreUpgrader( config ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
             fail( "Should throw exception" );
         }
         catch ( StoreUpgrader.UnableToUpgradeException e )

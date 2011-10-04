@@ -119,7 +119,7 @@ public class NeoStore extends AbstractStore
 
     private void tryToUpgradeStores()
     {
-        new StoreUpgrader( getStorageFileName(), getConfig() ).attemptUpgrade();
+        new StoreUpgrader( getConfig() ).attemptUpgrade( getStorageFileName() );
     }
 
     /**
