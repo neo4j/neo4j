@@ -20,10 +20,12 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
@@ -32,6 +34,7 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 public class MigrationTestUtils
@@ -94,5 +97,42 @@ public class MigrationTestUtils
         FileChannel fileChannel = new RandomAccessFile( storeFile, "rw" ).getChannel();
         fileChannel.truncate( storeFile.length() - versionBytes.length );
         fileChannel.close();
+    }
+
+    public static void prepareSampleLegacyDatabase( File workingDirectory ) throws IOException
+    {
+        File resourceDirectory = findOldFormatStoreDirectory();
+
+        deleteRecursively( workingDirectory );
+        assertTrue( workingDirectory.mkdirs() );
+
+        copyRecursively( resourceDirectory, workingDirectory );
+    }
+
+    public static File findOldFormatStoreDirectory()
+    {
+        URL legacyStoreResource = LegacyStore.class.getResource( "exampledb/neostore" );
+        return new File( legacyStoreResource.getFile() ).getParentFile();
+    }
+
+    public static boolean allStoreFilesHaveVersion( File workingDirectory, String version ) throws IOException
+    {
+        for ( String fileName : StoreFiles.fileNames )
+        {
+            FileChannel channel = new RandomAccessFile( new File( workingDirectory, fileName ), "r" ).getChannel();
+            int length = UTF8.encode( version ).length;
+            byte[] bytes = new byte[length];
+            ByteBuffer buffer = ByteBuffer.wrap( bytes );
+            channel.position( channel.size() - length );
+            channel.read( buffer );
+            channel.close();
+
+            String foundVersion = UTF8.decode( bytes );
+            if ( !version.equals( foundVersion ) )
+            {
+                return false;
+            }
+        }
+        return true;
     }
 }

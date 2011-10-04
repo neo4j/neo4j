@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
@@ -34,17 +33,8 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.net.URL;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.util.HashMap;
 
 import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.helpers.UTF8;
-import org.neo4j.kernel.Config;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 
 public class StoreUpgraderTest
@@ -53,55 +43,43 @@ public class StoreUpgraderTest
     public void shouldUpgradeAnOldFormatStore() throws IOException
     {
         File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
-        prepareSampleLegacyDatabase( workingDirectory );
+        MigrationTestUtils.prepareSampleLegacyDatabase( workingDirectory );
 
-        assertTrue( allStoreFilesHaveVersion( workingDirectory, "v0.9.9" ) );
+        assertTrue( MigrationTestUtils.allStoreFilesHaveVersion( workingDirectory, "v0.9.9" ) );
 
         new StoreUpgrader( defaultConfig(), new AlwaysAllowedUpgradeConfiguration() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
 
-        assertTrue( allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
+        assertTrue( MigrationTestUtils.allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
     }
 
     @Test
     public void shouldLeaveACopyOfOriginalStoreFilesInBackupDirectory() throws IOException
     {
         File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
-        prepareSampleLegacyDatabase( workingDirectory );
+        MigrationTestUtils.prepareSampleLegacyDatabase( workingDirectory );
 
         new StoreUpgrader( defaultConfig(), new AlwaysAllowedUpgradeConfiguration() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
 
-        verifyFilesHaveSameContent( findOldFormatStoreDirectory(), new File( workingDirectory, "upgrade_backup" ) );
+        verifyFilesHaveSameContent( MigrationTestUtils.findOldFormatStoreDirectory(), new File( workingDirectory, "upgrade_backup" ) );
     }
 
     @Test
-    public void shouldUpgradeAutomaticallyOnDatabaseStartup() throws IOException
+    public void shouldHaltUpgradeIfUpgradeConfigurationVetoesTheProcess() throws IOException
     {
         File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
-        prepareSampleLegacyDatabase( workingDirectory );
+        MigrationTestUtils.prepareSampleLegacyDatabase( workingDirectory );
 
-        assertTrue( allStoreFilesHaveVersion( workingDirectory, "v0.9.9" ) );
-
-        HashMap params = new HashMap();
-        params.put( Config.ALLOW_STORE_UPGRADE, "true" );
-
-        GraphDatabaseService database = new EmbeddedGraphDatabase( workingDirectory.getPath(), params );
-        database.shutdown();
-
-        assertTrue( allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
-    }
-
-    @Test
-    public void shouldFailToUpgradeIfConfigParameterIsMissing() throws IOException
-    {
-        File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
-        prepareSampleLegacyDatabase( workingDirectory );
-
-        HashMap config = defaultConfig();
-        assertFalse( config.containsKey( Config.ALLOW_STORE_UPGRADE ) );
+        UpgradeConfiguration vetoingUpgradeConfiguration = new UpgradeConfiguration()
+        {
+            public void checkConfigurationAllowsAutomaticUpgrade()
+            {
+                throw new UpgradeNotAllowedByConfigurationException( "vetoed" );
+            }
+        };
 
         try
         {
-            new StoreUpgrader( config, new ConfigMapUpgradeConfiguration( config ) ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+            new StoreUpgrader( defaultConfig(), vetoingUpgradeConfiguration ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
             fail( "Should throw exception" );
         } catch ( UpgradeNotAllowedByConfigurationException e )
         {
@@ -114,7 +92,7 @@ public class StoreUpgraderTest
     {
         File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
         File comparisonDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() + "-comparison" );
-        prepareSampleLegacyDatabase( workingDirectory );
+        MigrationTestUtils.prepareSampleLegacyDatabase( workingDirectory );
 
         changeVersionNumber( new File( workingDirectory, "neostore.nodestore.db" ), "v0.9.5" );
         deleteRecursively( comparisonDirectory );
@@ -137,7 +115,7 @@ public class StoreUpgraderTest
     {
         File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
         File comparisonDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() + "-comparison" );
-        prepareSampleLegacyDatabase( workingDirectory );
+        MigrationTestUtils.prepareSampleLegacyDatabase( workingDirectory );
 
         truncateFile( new File( workingDirectory, "neostore.propertystore.db.index.keys" ), "StringPropertyStore v0.9.9" );
         deleteRecursively( comparisonDirectory );
@@ -153,44 +131,6 @@ public class StoreUpgraderTest
         }
 
         verifyFilesHaveSameContent( comparisonDirectory, workingDirectory );
-    }
-
-    private void prepareSampleLegacyDatabase( File workingDirectory ) throws IOException
-    {
-        File resourceDirectory = findOldFormatStoreDirectory();
-
-        deleteRecursively( workingDirectory );
-        assertTrue( workingDirectory.mkdirs() );
-
-        copyRecursively( resourceDirectory, workingDirectory );
-    }
-
-    private File findOldFormatStoreDirectory()
-    {
-        URL legacyStoreResource = getClass().getResource( "legacystore/exampledb/neostore" );
-        return new File( legacyStoreResource.getFile() ).getParentFile();
-    }
-
-    private boolean allStoreFilesHaveVersion( File workingDirectory, String version ) throws IOException
-    {
-
-        for ( String fileName : StoreFiles.fileNames )
-        {
-            FileChannel channel = new RandomAccessFile( new File( workingDirectory, fileName ), "r" ).getChannel();
-            int length = UTF8.encode( version ).length;
-            byte[] bytes = new byte[length];
-            ByteBuffer buffer = ByteBuffer.wrap( bytes );
-            channel.position( channel.size() - length );
-            channel.read( buffer );
-            channel.close();
-
-            String foundVersion = UTF8.decode( bytes );
-            if ( !version.equals( foundVersion ) )
-            {
-                return false;
-            }
-        }
-        return true;
     }
 
     private void verifyFilesHaveSameContent( File original, File other ) throws IOException
