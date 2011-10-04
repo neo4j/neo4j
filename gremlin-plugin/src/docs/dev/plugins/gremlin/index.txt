@@ -35,3 +35,5 @@ include::emit-a-sample-graph.txt[]
 include::hyperedges---find-user-roles-in-groups.txt[]
 
 include::group-count.txt[]
+
+include::collect-multiple-traversal-results.txt[]

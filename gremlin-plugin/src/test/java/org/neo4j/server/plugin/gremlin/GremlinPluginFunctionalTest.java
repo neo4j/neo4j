@@ -412,7 +412,8 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     /**
      * This example is showing a group count in Germlin,
      * for instance the counting of the different relationship types connected
-     * to some the start node.
+     * to some the start node. The result is collected into a variable 
+     * that then is returned.
      */
     @Test
     @Documented
@@ -429,6 +430,26 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
         assertTrue(response.contains( "knows=2" ));
     }
 
+    /**
+     * Multiple traversals can be combined into
+     * a single result, using variables.
+     */
+    @Test
+    @Documented
+    @Graph( {"Peter knows Ian", "Ian knows Peter", "Peter likes Bikes"} )
+    public void collect_multiple_traversal_results() throws UnsupportedEncodingException, Exception
+    {
+        long id = data.get().get( "Peter" ).getId();
+        String script = "results = [];" +
+                "g.v(" + id + ").out('knows').name >> results;" +
+                "g.v(" + id + ").out('likes').name >> results;";
+        String payload = "{\"script\":\""+script+"\"}";
+        description( formatGroovy(script) );
+        gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(JSONPrettifier.parse( payload ) );
+        String response = gen.get().post( ENDPOINT ).entity();
+        assertTrue(response.contains( "Bikes" ));
+        assertTrue(response.contains( "Ian" ));
+    }
     
     @Test
     public void getExtension()
