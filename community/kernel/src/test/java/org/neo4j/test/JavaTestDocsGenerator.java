@@ -54,7 +54,7 @@ public class JavaTestDocsGenerator extends AsciiDocGenerator
     
     public JavaTestDocsGenerator( String title )
     {
-        super( "docs", title );
+        super( title, "docs" );
     }
 
     @Override
