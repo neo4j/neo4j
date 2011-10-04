@@ -36,20 +36,19 @@ body {
   text-shadow: 1px 1px 2px #555555
 }
 
-
 #splash {
   margin: 15% auto;
   width: 152px;
 }
 
 #splash h1 {
-  background: url("../img/icons/glyphish/stol.png") no-repeat scroll center top transparent;
+  background: url("../img/icons/glyphish/bord.png") no-repeat scroll center top transparent;
   color: #DDDDDD;
   font-family: Georgia,serif;
   font-size: 13px;
   font-weight: bold;
   margin-top: 5px;
-  padding: 35px 0 0;
+  padding: 30px 0 0;
   text-align: center;
   text-shadow: 1px 1px 5px #555555
 }

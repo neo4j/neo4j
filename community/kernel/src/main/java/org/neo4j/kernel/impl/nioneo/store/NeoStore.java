@@ -83,24 +83,23 @@ public class NeoStore extends AbstractStore
     @Override
     protected void verifyCorrectTypeDescriptorAndVersion() throws IOException
     {
-        // not required for NeoStore, leave version checks to child stores
-    }
-
-    @Override
-    protected void initStorage()
-    {
         try
         {
-            instantiateChildStores();
+            super.verifyCorrectTypeDescriptorAndVersion();
         }
         catch ( NotCurrentStoreVersionException e )
         {
             close();
             tryToUpgradeStores();
             checkStorage();
-            loadStorage();
-            instantiateChildStores();
+            super.verifyCorrectTypeDescriptorAndVersion();
         }
+    }
+
+    @Override
+    protected void initStorage()
+    {
+        instantiateChildStores();
     }
 
     /**
@@ -188,8 +187,8 @@ public class NeoStore extends AbstractStore
      *
      * @param fileName
      *            The name of store
-     * @throws IOException
-     *             If unable to create stores or name null
+     * @param config
+     *            Map of configuration parameters
      */
     public static void createStore( String fileName, Map<?,?> config )
     {
@@ -335,11 +334,6 @@ public class NeoStore extends AbstractStore
             }
         }
         lastCommittedTx = txId;
-    }
-
-    public long getNextCommitId()
-    {
-        return getRecord( 3 ) + 1;
     }
 
     public synchronized long getLastCommittedTx()

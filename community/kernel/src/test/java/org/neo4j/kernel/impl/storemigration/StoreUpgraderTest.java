@@ -104,7 +104,7 @@ public class StoreUpgraderTest
         File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
         prepareSampleLegacyDatabase( workingDirectory );
 
-        assertFalse( allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
+        assertTrue( allStoreFilesHaveVersion( workingDirectory, "v0.9.9" ) );
 
         HashMap params = new HashMap();
         params.put( Config.ALLOW_STORE_UPGRADE, "true" );

@@ -44,7 +44,7 @@ public class StoreFiles
      * Moves a database's store files from one directory
      * to another. Since it just renames files (the standard way of moving with
      * JDK6) from and to must be on the same disk partition.
-     * 
+     *
      * @param fromDirectory The directory that hosts the database files.
      * @param toDirectory The directory to move the database files to.
      * @throws IOException If any of the move operations fail for any reason.
@@ -60,7 +60,17 @@ public class StoreFiles
         }
     }
 
-    private static void moveFile( String fileName, File fromDirectory,
+    /**
+     * Moves a file from one directory to another, by a rename op.
+     *
+     * @param fileName The base filename of the file to move, not the complete
+     *            path
+     * @param fromDirectory The directory currently containing filename
+     * @param toDirectory The directory to host filename - must be in the same
+     *            disk partition as filename
+     * @throws IOException
+     */
+    static void moveFile( String fileName, File fromDirectory,
             File toDirectory ) throws IOException
     {
         if ( FileUtils.moveFile( new File( fromDirectory, fileName ),
