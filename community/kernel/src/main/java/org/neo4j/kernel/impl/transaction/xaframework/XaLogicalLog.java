@@ -380,7 +380,7 @@ public class XaLogicalLog
         xidIdentMap.remove( identifier );
         // force to make sure done record is there if 2PC tx and global log
         // marks tx as committed
-        fileChannel.force( false );
+//        fileChannel.force( false );
     }
 
     // [TX_2P_COMMIT][identifier]
