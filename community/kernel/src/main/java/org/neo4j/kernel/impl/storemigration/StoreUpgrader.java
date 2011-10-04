@@ -76,6 +76,16 @@ public class StoreUpgrader
 
     private void migrateToIsolatedDirectory( String storageFileName, File upgradeDirectory )
     {
+        if (upgradeDirectory.exists()) {
+            try
+            {
+                FileUtils.deleteRecursively( upgradeDirectory );
+            }
+            catch ( IOException e )
+            {
+                throw new UnableToUpgradeException( e );
+            }
+        }
         upgradeDirectory.mkdir();
 
         String upgradeFileName = new File( upgradeDirectory, NeoStore.DEFAULT_NAME ).getPath();

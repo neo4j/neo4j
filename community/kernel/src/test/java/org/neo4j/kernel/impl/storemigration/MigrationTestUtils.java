@@ -135,4 +135,16 @@ public class MigrationTestUtils
         }
         return true;
     }
+
+    static class AlwaysAllowedUpgradeConfiguration implements UpgradeConfiguration
+    {
+        public void checkConfigurationAllowsAutomaticUpgrade()
+        {
+        }
+    }
+
+    public static UpgradeConfiguration alwaysAllowed()
+    {
+        return new AlwaysAllowedUpgradeConfiguration();
+    }
 }

@@ -23,6 +23,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.alwaysAllowed;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.copyRecursively;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.defaultConfig;
@@ -45,11 +47,11 @@ public class StoreUpgraderTest
         File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
         MigrationTestUtils.prepareSampleLegacyDatabase( workingDirectory );
 
-        assertTrue( MigrationTestUtils.allStoreFilesHaveVersion( workingDirectory, "v0.9.9" ) );
+        assertTrue( allStoreFilesHaveVersion( workingDirectory, "v0.9.9" ) );
 
-        new StoreUpgrader( defaultConfig(), new AlwaysAllowedUpgradeConfiguration(), new UpgradableDatabase(), new StoreMigrator(), new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+        new StoreUpgrader( defaultConfig(), alwaysAllowed(), new UpgradableDatabase(), new StoreMigrator(), new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
 
-        assertTrue( MigrationTestUtils.allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
+        assertTrue( allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
     }
 
     @Test
@@ -58,7 +60,7 @@ public class StoreUpgraderTest
         File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
         MigrationTestUtils.prepareSampleLegacyDatabase( workingDirectory );
 
-        new StoreUpgrader( defaultConfig(), new AlwaysAllowedUpgradeConfiguration(), new UpgradableDatabase(), new StoreMigrator(), new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+        new StoreUpgrader( defaultConfig(), alwaysAllowed(), new UpgradableDatabase(), new StoreMigrator(), new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
 
         verifyFilesHaveSameContent( MigrationTestUtils.findOldFormatStoreDirectory(), new File( workingDirectory, "upgrade_backup" ) );
     }
@@ -100,7 +102,7 @@ public class StoreUpgraderTest
 
         try
         {
-            new StoreUpgrader( defaultConfig(), new AlwaysAllowedUpgradeConfiguration(), new UpgradableDatabase(), new StoreMigrator(), new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+            new StoreUpgrader( defaultConfig(), alwaysAllowed(), new UpgradableDatabase(), new StoreMigrator(), new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
             fail( "Should throw exception" );
         } catch ( StoreUpgrader.UnableToUpgradeException e )
         {
@@ -123,7 +125,7 @@ public class StoreUpgraderTest
 
         try
         {
-            new StoreUpgrader( defaultConfig(), new AlwaysAllowedUpgradeConfiguration(), new UpgradableDatabase(), new StoreMigrator(), new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+            new StoreUpgrader( defaultConfig(), alwaysAllowed(), new UpgradableDatabase(), new StoreMigrator(), new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
             fail( "Should throw exception" );
         } catch ( StoreUpgrader.UnableToUpgradeException e )
         {
@@ -155,10 +157,4 @@ public class StoreUpgraderTest
         }
     }
 
-    private static class AlwaysAllowedUpgradeConfiguration implements UpgradeConfiguration
-    {
-        public void checkConfigurationAllowsAutomaticUpgrade()
-        {
-        }
-    }
 }

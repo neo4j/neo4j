@@ -28,7 +28,6 @@ public class DatabaseFiles
     {
         backupDirectory.mkdir();
         move( workingDirectory, backupDirectory );
-
     }
 
     public void moveToWorkingDirectory( File upgradeDirectory, File workingDirectory )
