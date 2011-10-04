@@ -58,7 +58,7 @@ BalancerMember http://192.168.1.51:80
 ProxyPass /test balancer://mycluster
 --------------
 
-==  Rewriting URLs with a Proxy installation ==
+== Rewriting URLs with a Proxy installation ==
 
 When installing Neo4j Server behind proxies, you need to enable rewriting of the JSON calls, 
 otherwise they will point back to the servers own base URL (normally http://localhost:7474).
@@ -85,6 +85,5 @@ In order to implement dynamic and context specific security in the Neo4j Server,
 registered and implemented in the server. This makes scenarios like user and role based security and
 authentication against external lookup services possible.
 
-:leveloffset: 0
-
 include::enforcing-dynamic-security-rules.txt[]
+
