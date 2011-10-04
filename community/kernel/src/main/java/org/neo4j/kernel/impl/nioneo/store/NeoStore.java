@@ -34,6 +34,7 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
 import org.neo4j.kernel.impl.storemigration.ConfigMapUpgradeConfiguration;
+import org.neo4j.kernel.impl.storemigration.DatabaseFiles;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
@@ -122,7 +123,7 @@ public class NeoStore extends AbstractStore
 
     private void tryToUpgradeStores()
     {
-        new StoreUpgrader( getConfig(), new ConfigMapUpgradeConfiguration(getConfig()), new UpgradableDatabase(), new StoreMigrator() ).attemptUpgrade( getStorageFileName() );
+        new StoreUpgrader( getConfig(), new ConfigMapUpgradeConfiguration(getConfig()), new UpgradableDatabase(), new StoreMigrator(), new DatabaseFiles() ).attemptUpgrade( getStorageFileName() );
     }
 
     /**

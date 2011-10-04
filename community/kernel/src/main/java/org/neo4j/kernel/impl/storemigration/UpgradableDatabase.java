@@ -52,7 +52,7 @@ public class UpgradableDatabase
     {
         if (!storeFilesUpgradeable( storeFile ))
         {
-            throw new StoreUpgrader.UnableToUpgradeException();
+            throw new StoreUpgrader.UnableToUpgradeException( "Not all store files match the version required for successful upgrade" );
         }
     }
 

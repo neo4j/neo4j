@@ -34,56 +34,80 @@ public class StoreUpgrader
     private UpgradeConfiguration upgradeConfiguration;
     private UpgradableDatabase upgradableDatabase;
     private StoreMigrator storeMigrator;
+    private DatabaseFiles databaseFiles;
 
-    public StoreUpgrader( Map<?, ?> originalConfig, UpgradeConfiguration upgradeConfiguration, UpgradableDatabase upgradableDatabase, StoreMigrator storeMigrator )
+    public StoreUpgrader( Map<?, ?> originalConfig, UpgradeConfiguration upgradeConfiguration, UpgradableDatabase upgradableDatabase, StoreMigrator storeMigrator, DatabaseFiles databaseFiles )
     {
         this.originalConfig = originalConfig;
         this.upgradeConfiguration = upgradeConfiguration;
         this.upgradableDatabase = upgradableDatabase;
         this.storeMigrator = storeMigrator;
+        this.databaseFiles = databaseFiles;
     }
 
     public void attemptUpgrade( String storageFileName )
     {
         upgradeConfiguration.checkConfigurationAllowsAutomaticUpgrade();
         upgradableDatabase.checkUpgradeable( new File( storageFileName ) );
+
+        File workingDirectory = new File( storageFileName ).getParentFile();
+        File upgradeDirectory = new File( workingDirectory, "upgrade" );
+        File backupDirectory = new File( workingDirectory, "upgrade_backup" );
+
+        migrateToIsolatedDirectory( storageFileName, upgradeDirectory );
+
+        databaseFiles.moveToBackupDirectory( workingDirectory, backupDirectory );
+        backupMessagesLogLeavingInPlaceForNewDatabaseMessages( workingDirectory, backupDirectory );
+        databaseFiles.moveToWorkingDirectory( upgradeDirectory, workingDirectory );
+    }
+
+    private void backupMessagesLogLeavingInPlaceForNewDatabaseMessages( File workingDirectory, File backupDirectory )
+    {
         try
         {
-            File workingDirectory = new File( storageFileName ).getParentFile();
-
-            File upgradeDirectory = new File( workingDirectory, "upgrade" );
-            File backupDirectory = new File( workingDirectory, "upgrade_backup" );
-            upgradeDirectory.mkdir();
-
-            String upgradeFileName = new File( upgradeDirectory, NeoStore.DEFAULT_NAME ).getPath();
-            Map<Object, Object> upgradeConfig = new HashMap<Object, Object>( originalConfig );
-            upgradeConfig.put( "neo_store", upgradeFileName );
-
-            NeoStore.createStore( upgradeFileName, upgradeConfig );
-            NeoStore neoStore = new NeoStore( upgradeConfig );
-            storeMigrator.migrate( new LegacyStore( storageFileName ), neoStore );
-            neoStore.close();
-
-            backupDirectory.mkdir();
-            StoreFiles.move( workingDirectory, backupDirectory );
-            LogFiles.move( workingDirectory, backupDirectory );
-            /*
-             * Keep an intact copy of the messages log, but let the new db
-             * append there.
-             */
             FileUtils.copyFile( new File( workingDirectory, "messages.log" ),
                     new File( backupDirectory, "messages.log" ) );
-
-            StoreFiles.move( upgradeDirectory, workingDirectory );
-            LogFiles.move( upgradeDirectory, workingDirectory );
-
-        } catch ( IOException e )
+        }
+        catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new UnableToUpgradeException( e );
+        }
+    }
+
+    private void migrateToIsolatedDirectory( String storageFileName, File upgradeDirectory )
+    {
+        upgradeDirectory.mkdir();
+
+        String upgradeFileName = new File( upgradeDirectory, NeoStore.DEFAULT_NAME ).getPath();
+        Map<Object, Object> upgradeConfig = new HashMap<Object, Object>( originalConfig );
+        upgradeConfig.put( "neo_store", upgradeFileName );
+
+        NeoStore.createStore( upgradeFileName, upgradeConfig );
+        NeoStore neoStore = new NeoStore( upgradeConfig );
+        try
+        {
+            storeMigrator.migrate( new LegacyStore( storageFileName ), neoStore );
+        }
+        catch ( IOException e )
+        {
+            throw new UnableToUpgradeException( e );
+        }
+        finally
+        {
+            neoStore.close();
         }
     }
 
     public static class UnableToUpgradeException extends RuntimeException
     {
+        public UnableToUpgradeException( Exception cause )
+        {
+            super( cause );
+        }
+
+        public UnableToUpgradeException( String message )
+        {
+            super( message );
+        }
     }
 }
