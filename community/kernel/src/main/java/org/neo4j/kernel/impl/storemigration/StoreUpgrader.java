@@ -24,30 +24,24 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 public class StoreUpgrader
 {
-    private String storageFileName;
     private Map<?, ?> originalConfig;
+    private UpgradeConfiguration upgradeConfiguration;
 
-    public StoreUpgrader( String storageFileName, Map<?, ?> originalConfig )
+    public StoreUpgrader( Map<?, ?> originalConfig, UpgradeConfiguration upgradeConfiguration )
     {
-        this.storageFileName = storageFileName;
         this.originalConfig = originalConfig;
+        this.upgradeConfiguration = upgradeConfiguration;
     }
 
-    public void attemptUpgrade()
+    public void attemptUpgrade( String storageFileName )
     {
-        if ( !configSaysOkToUpgrade() )
-        {
-            throw new UpgradeNotAllowedByConfigurationException(
-                    String.format( "To enable automatic upgrade, please set %s in configuration properties",
-                            Config.ALLOW_STORE_UPGRADE ) );
-        }
+        upgradeConfiguration.checkConfigurationAllowsAutomaticUpgrade();
         try
         {
             File workingDirectory = new File( storageFileName ).getParentFile();
@@ -83,17 +77,10 @@ public class StoreUpgrader
             StoreFiles.move( upgradeDirectory, workingDirectory );
             LogFiles.move( upgradeDirectory, workingDirectory );
 
-        }
-        catch ( IOException e )
+        } catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
-    }
-
-    private boolean configSaysOkToUpgrade()
-    {
-        String allowUpgrade = (String) originalConfig.get( Config.ALLOW_STORE_UPGRADE );
-        return Boolean.parseBoolean( allowUpgrade );
     }
 
     public class UnableToUpgradeException extends RuntimeException
