@@ -40,16 +40,9 @@ import org.apache.commons.configuration.Configuration;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.logging.Logger;
-import org.neo4j.server.rrd.sampler.MemoryUsedSampleable;
 import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
 import org.neo4j.server.rrd.sampler.PropertyCountSampleable;
 import org.neo4j.server.rrd.sampler.RelationshipCountSampleable;
-import org.neo4j.server.rrd.sampler.RequestBytesSampleable;
-import org.neo4j.server.rrd.sampler.RequestCountSampleable;
-import org.neo4j.server.rrd.sampler.RequestMaxTimeSampleable;
-import org.neo4j.server.rrd.sampler.RequestMeanTimeSampleable;
-import org.neo4j.server.rrd.sampler.RequestMedianTimeSampleable;
-import org.neo4j.server.rrd.sampler.RequestMinTimeSampleable;
 import org.rrd4j.ConsolFun;
 import org.rrd4j.core.DsDef;
 import org.rrd4j.core.RrdDb;
@@ -73,19 +66,19 @@ public class RrdFactory
     public RrdDb createRrdDbAndSampler( final Database db, JobScheduler scheduler )
     {
         Sampleable[] primitives = {
-                new MemoryUsedSampleable(),
+//                new MemoryUsedSampleable(),
                 new NodeIdsInUseSampleable( db.graph ),
                 new PropertyCountSampleable( db.graph ),
                 new RelationshipCountSampleable( db.graph )
         };
 
         Sampleable[] usage = {
-                new RequestBytesSampleable( db ),
-                new RequestMeanTimeSampleable( db ),
-                new RequestMedianTimeSampleable( db ),
-                new RequestMaxTimeSampleable( db ),
-                new RequestMinTimeSampleable( db ),
-                new RequestCountSampleable( db )
+//                new RequestBytesSampleable( db ),
+//                new RequestMeanTimeSampleable( db ),
+//                new RequestMedianTimeSampleable( db ),
+//                new RequestMaxTimeSampleable( db ),
+//                new RequestMinTimeSampleable( db ),
+//                new RequestCountSampleable( db )
         };
 
         final String basePath = config.getString( RRDB_LOCATION_PROPERTY_KEY,
@@ -99,20 +92,20 @@ public class RrdFactory
                 SECONDS.toMillis( 3 )
         );
 
-        scheduler.scheduleAtFixedRate(
-                new RrdJob( new RrdSamplerImpl( rrdb, usage )
-                {
-                    @Override
-                    public void updateSample()
-                    {
-                        db.statisticCollector().createSnapshot();
-                        super.updateSample();
-                    }
-                } ),
-                RRD_THREAD_NAME + "[usage]",
-                SECONDS.toMillis( 1 ),
-                SECONDS.toMillis( 60 )
-        );
+//        scheduler.scheduleAtFixedRate(
+//                new RrdJob( new RrdSamplerImpl( rrdb, usage )
+//                {
+//                    @Override
+//                    public void updateSample()
+//                    {
+//                        db.statisticCollector().createSnapshot();
+//                        super.updateSample();
+//                    }
+//                } ),
+//                RRD_THREAD_NAME + "[usage]",
+//                SECONDS.toMillis( 1 ),
+//                SECONDS.toMillis( 60 )
+//        );
         return rrdb;
     }
 

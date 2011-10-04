@@ -51,7 +51,7 @@ define ['lib/DateFormat', 'lib/backbone'], (DateFormat) ->
 
     getMetrics : (keys, fromTimestamp=0, granularity=10000) =>
       # fromTimestamp and granularity handling here is
-      # to keep data points low in order to keep charting and so on fast.
+      # to keep data points low in order to lower the memory overhead of the charts.
       startIndex = @getClosestPreceedingTimestampIndex(fromTimestamp)
       if startIndex is -1
         startIndex = 0
@@ -61,7 +61,7 @@ define ['lib/DateFormat', 'lib/backbone'], (DateFormat) ->
       for key in keys
         val = @get "metric:#{key}"
         if val and startIndex < val.length
-          @extractValues(val, indexesToInclude)
+          @pickFromArray(val, indexesToInclude)
         else 
           []
 
