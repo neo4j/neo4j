@@ -30,5 +30,7 @@
 <xsl:param name="html.cellspacing">0</xsl:param>
 <xsl:param name="html.cellpadding">0</xsl:param>
 
+<xsl:param name="html.extra.head.links" select="1"></xsl:param>
+
 </xsl:stylesheet>
 
