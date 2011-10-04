@@ -148,7 +148,7 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
         data.get();
         String script = "start x  = node:node_auto_index(name={startName}) match path = (x-[r]-friend) where friend.name = {name} return TYPE(r)";
         gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
-                "{\"query\": \"" + script + "\",\"parameters\": {\"startName\":\"I\",\"name\":\"you\"}}" ).description(
+                "{\"query\": \"" + script + "\",\"params\": {\"startName\":\"I\",\"name\":\"you\"}}" ).description(
                         AsciidocHelper.createCypherSnippet( script ));
         String response = gen.get().post( ENDPOINT ).entity();
         assertEquals( 2, ( JsonHelper.jsonToMap( response ) ).size() );

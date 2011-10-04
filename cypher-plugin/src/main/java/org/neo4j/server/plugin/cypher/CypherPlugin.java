@@ -61,7 +61,7 @@ public class CypherPlugin extends ServerPlugin
     public Representation executeScript(
             @Source final GraphDatabaseService neo4j,
             @Description( "The query string" ) @Parameter( name = "query", optional = false ) final String query,
-            @Description( "The query parameters" ) @Parameter( name = "parameters", optional = true ) Map parameters,
+            @Description( "The query parameters" ) @Parameter( name = "params", optional = true ) Map parameters,
             @Description( "The return format. Default is Neo4j REST. Allowed: 'json-data-table' " +
             		"to return Google Data Table JSON." ) @Parameter( name = "format", optional = true ) final String format)
             throws SyntaxException
