@@ -87,4 +87,12 @@ public class MigrationTestUtils
         fileChannel.write( ByteBuffer.wrap( versionBytes ) );
         fileChannel.close();
     }
+
+    static void truncateFile( File storeFile, String suffixToDetermineTruncationLength ) throws IOException
+    {
+        byte[] versionBytes = UTF8.encode( suffixToDetermineTruncationLength );
+        FileChannel fileChannel = new RandomAccessFile( storeFile, "rw" ).getChannel();
+        fileChannel.truncate( storeFile.length() - versionBytes.length );
+        fileChannel.close();
+    }
 }

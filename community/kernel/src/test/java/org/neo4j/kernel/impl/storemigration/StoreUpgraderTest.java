@@ -27,6 +27,8 @@ import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.copyRecursively;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.defaultConfig;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
+import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -110,7 +112,7 @@ public class StoreUpgraderTest
         }
         catch ( UpgradeNotAllowedByConfigurationException e )
         {
-            //expected
+            // expected
         }
     }
 
@@ -125,12 +127,40 @@ public class StoreUpgraderTest
         config.put( Config.ALLOW_STORE_UPGRADE, "true" );
 
         changeVersionNumber( new File( workingDirectory, "neostore.nodestore.db" ), "v0.9.5" );
+        deleteRecursively( comparisonDirectory );
         copyRecursively( workingDirectory, comparisonDirectory );
 
         try
         {
             new StoreUpgrader( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath(), config ).attemptUpgrade();
-            fail( "Should have thrown exception" );
+            fail( "Should throw exception" );
+        }
+        catch ( StoreUpgrader.UnableToUpgradeException e )
+        {
+            // expected
+        }
+
+        verifyFilesHaveSameContent( comparisonDirectory, workingDirectory );
+    }
+
+    @Test
+    public void shouldRefuseToUpgradeIfAnyOfTheStoresWeNotShutDownCleanly() throws IOException
+    {
+        File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
+        File comparisonDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() + "-comparison" );
+        prepareSampleLegacyDatabase( workingDirectory );
+
+        HashMap config = defaultConfig();
+        config.put( Config.ALLOW_STORE_UPGRADE, "true" );
+
+        truncateFile( new File( workingDirectory, "neostore.propertystore.db.index.keys" ), "StringPropertyStore v0.9.9" );
+        deleteRecursively( comparisonDirectory );
+        copyRecursively( workingDirectory, comparisonDirectory );
+
+        try
+        {
+            new StoreUpgrader( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath(), config ).attemptUpgrade();
+            fail( "Should throw exception" );
         }
         catch ( StoreUpgrader.UnableToUpgradeException e )
         {
@@ -144,7 +174,7 @@ public class StoreUpgraderTest
     {
         File resourceDirectory = findOldFormatStoreDirectory();
 
-        FileUtils.deleteRecursively( workingDirectory );
+        deleteRecursively( workingDirectory );
         assertTrue( workingDirectory.mkdirs() );
 
         copyRecursively( resourceDirectory, workingDirectory );
