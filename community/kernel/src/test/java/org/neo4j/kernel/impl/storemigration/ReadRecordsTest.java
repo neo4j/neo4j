@@ -43,7 +43,7 @@ public class ReadRecordsTest
         int nodeCount = 0;
         for ( NodeRecord record : records )
         {
-            nodeCount++;
+            if ( record.inUse() ) nodeCount++;
         }
         assertEquals( 501, nodeCount );
         nodeStoreReader.close();
@@ -59,7 +59,7 @@ public class ReadRecordsTest
         int relationshipCount = 0;
         for ( RelationshipRecord record : records )
         {
-            relationshipCount++;
+            if ( record.inUse() ) relationshipCount++;
         }
         assertEquals( 500, relationshipCount );
         relationshipStoreReader.close();
