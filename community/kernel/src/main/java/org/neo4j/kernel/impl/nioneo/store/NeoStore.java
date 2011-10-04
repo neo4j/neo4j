@@ -180,8 +180,8 @@ public class NeoStore extends AbstractStore
      *
      * @param fileName
      *            The name of store
-     * @throws IOException
-     *             If unable to create stores or name null
+     * @param config
+     *            Map of configuration parameters
      */
     public static void createStore( String fileName, Map<?,?> config )
     {
@@ -286,11 +286,6 @@ public class NeoStore extends AbstractStore
             }
         }
         lastCommittedTx = txId;
-    }
-
-    public long getNextCommitId()
-    {
-        return getRecord( 3 ) + 1;
     }
 
     public synchronized long getLastCommittedTx()
