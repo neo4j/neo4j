@@ -52,7 +52,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     public void testGremlinPostURLEncoded() throws UnsupportedEncodingException
     {
         data.get();
-        String script = "g.idx('node_auto_index')[[name:'I']].out";
+        String script = "g.idx('node_auto_index')[[name:'I']]._().out()";
         gen()
         .expectedStatus( Status.OK.getStatusCode() )
         .description( formatGroovy( script ) );
@@ -206,12 +206,11 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     @Test
     @Documented
     @Title("Sort a result using raw Groovy operations")
-    @Graph( value = { "I know you", "I know him" } )
+    @Graph( value = { "I know you", "I know him" }, autoIndexNodes=true )
     public void testSortResults() throws UnsupportedEncodingException
     {
-        String script = "g.v(" + data.get()
-        .get( "I" )
-        .getId() + ").out.sort{it.name}.toList()";
+        data.get();
+        String script = "g.idx('node_auto_index').get('name','I').toList()._().out().sort{it.name}.toList()";
         String payload = "{\"script\":\""+script +"\"}";
         description( formatGroovy( script ) );
         String response = gen()
