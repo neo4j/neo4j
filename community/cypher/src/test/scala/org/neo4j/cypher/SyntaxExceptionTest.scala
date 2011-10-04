@@ -116,6 +116,12 @@ class SyntaxExceptionTest extends JUnitSuite {
       "Shortest path does not support having multiple path segments")
   }
 
+  @Test def oldNodeSyntaxGivesHelpfulError() {
+    expectError(
+      "start a=(0) return a",
+      "The syntax for bound nodes has changed in v1.5 of Neo4j. Now, it is START a=node(<nodeId>), or START a=node:idxName(key='value').")
+  }
+
   @Ignore @Test def nodeParenthesisMustBeClosed() {
     expectError(
       "start s=node(1) match s-->(x return x",
