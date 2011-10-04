@@ -35,7 +35,7 @@ public class UpgradableStoreVersions
 
     public UpgradableStoreVersions()
     {
-//        fileNamesToExpectedVersions.put( "neostore", "NeoStore v0.9.9" );
+        fileNamesToExpectedVersions.put( "neostore", "NeoStore v0.9.9" );
         fileNamesToExpectedVersions.put( "neostore.nodestore.db", "NodeStore v0.9.9" );
         fileNamesToExpectedVersions.put( "neostore.propertystore.db", "PropertyStore v0.9.9" );
         fileNamesToExpectedVersions.put( "neostore.propertystore.db.arrays", "ArrayPropertyStore v0.9.9" );
@@ -51,7 +51,6 @@ public class UpgradableStoreVersions
     {
         for ( String fileName : fileNamesToExpectedVersions.keySet() )
         {
-            // System.out.println( "fileName = " + fileName );
             String expectedVersion = fileNamesToExpectedVersions.get( fileName );
             FileChannel fileChannel = null;
             byte[] expectedVersionBytes = UTF8.encode( expectedVersion );
@@ -63,8 +62,6 @@ public class UpgradableStoreVersions
                 fileChannel.read( ByteBuffer.wrap( foundVersionBytes ) );
                 if ( !expectedVersion.equals( UTF8.decode( foundVersionBytes ) ) )
                 {
-                    System.out.println( "fileName = " + fileName );
-                    System.out.println( "UTF8.decode( foundVersionBytes ) = " + UTF8.decode( foundVersionBytes ) );
                     return false;
                 }
             } catch ( IOException e )
@@ -81,7 +78,7 @@ public class UpgradableStoreVersions
                     }
                     catch ( IOException e )
                     {
-                        throw new RuntimeException( e );
+                        // Ignore exception on close
                     }
                 }
             }
