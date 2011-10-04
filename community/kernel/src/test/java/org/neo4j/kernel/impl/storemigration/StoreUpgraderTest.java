@@ -76,28 +76,6 @@ public class StoreUpgraderTest
         verifyFilesHaveSameContent( findOldFormatStoreDirectory(), new File( workingDirectory, "upgrade_backup" ) );
     }
 
-    private void verifyFilesHaveSameContent( File original, File other ) throws IOException
-    {
-        for ( File originalFile : original.listFiles() )
-        {
-            File otherFile = new File( other, originalFile.getName() );
-            if ( !originalFile.isDirectory() )
-            {
-                BufferedInputStream originalStream = new BufferedInputStream( new FileInputStream( originalFile ) );
-                BufferedInputStream otherStream = new BufferedInputStream( new FileInputStream( otherFile ) );
-
-                int aByte;
-                while( (aByte = originalStream.read()) != -1)
-                {
-                    assertEquals( aByte, otherStream.read() );
-                }
-
-                originalStream.close();
-                otherStream.close();
-            }
-        }
-    }
-
     @Test
     public void shouldUpgradeAutomaticallyOnDatabaseStartup() throws IOException
     {
@@ -170,6 +148,28 @@ public class StoreUpgraderTest
             }
         }
         return true;
+    }
+
+    private void verifyFilesHaveSameContent( File original, File other ) throws IOException
+    {
+        for ( File originalFile : original.listFiles() )
+        {
+            File otherFile = new File( other, originalFile.getName() );
+            if ( !originalFile.isDirectory() )
+            {
+                BufferedInputStream originalStream = new BufferedInputStream( new FileInputStream( originalFile ) );
+                BufferedInputStream otherStream = new BufferedInputStream( new FileInputStream( otherFile ) );
+
+                int aByte;
+                while( (aByte = originalStream.read()) != -1)
+                {
+                    assertEquals( aByte, otherStream.read() );
+                }
+
+                originalStream.close();
+                otherStream.close();
+            }
+        }
     }
 
 }

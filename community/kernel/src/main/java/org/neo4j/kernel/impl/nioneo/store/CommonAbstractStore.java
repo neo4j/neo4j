@@ -692,12 +692,7 @@ public abstract class CommonAbstractStore
                     fileChannel.write( buffer );
                     fileChannel.truncate( fileChannel.position() );
                     fileChannel.force( false );
-                    if ( fileLock != null )
-                    {
-                        fileLock.release();
-                    }
-                    fileChannel.close();
-                    fileChannel = null;
+                    releaseFileLockAndCloseFileChannel();
                     success = true;
                     break;
                 }
@@ -710,25 +705,33 @@ public abstract class CommonAbstractStore
         }
         else
         {
-            try
-            {
-                if ( fileLock != null )
-                {
-                    fileLock.release();
-                }
-                fileChannel.close();
-                success = true;
-            }
-            catch ( IOException e )
-            {
-                logger.log( Level.WARNING, "Could not close fileChannel [" + storageFileName + "]", e );
-            }
+            releaseFileLockAndCloseFileChannel();
+            success = true;
         }
         if ( !success )
         {
             throw new UnderlyingStorageException( "Unable to close store "
                 + getStorageFileName(), storedIoe );
         }
+    }
+
+    private void releaseFileLockAndCloseFileChannel()
+    {
+        try
+        {
+            if ( fileLock != null )
+            {
+                fileLock.release();
+            }
+            if ( fileChannel != null )
+            {
+                fileChannel.close();
+            }
+        } catch ( IOException e )
+        {
+            logger.log( Level.WARNING, "Could not close [" + storageFileName + "]", e );
+        }
+        fileChannel = null;
     }
 
     /**
