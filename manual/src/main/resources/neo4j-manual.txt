@@ -12,9 +12,11 @@ include::preface/preface.txt[]
 [[introduction]]
 Introduction
 ============
-////
+
 [partintro]
-////
+--
+This part gives a bird's eye view of what a graph database is, and then outlines some specifics of Neo4j.
+--
 
 :leveloffset: 1
 
@@ -55,6 +57,22 @@ include::{importdir}/neo4j-server-examples-docs-jar/dev/server-java-rest-client.
 :leveloffset: 0
 
 include::reference/index.txt[]
+
+:leveloffset: 0
+
+[[operations]]
+Operations
+==========
+
+[partintro]
+--
+This part describes how to maintain a Neo4j installation.
+This includes topics such as backing up the database and monitoring the health of the database as well as diagnosing issues.
+--
+
+:leveloffset: 1
+
+include::operations/index.txt[]
 
 :leveloffset: 0
 

@@ -7,12 +7,13 @@ This is the reference manual for Neo4j version {neo4j-version}, written by the N
 
 The main parts of the manual are:
 
-* <<introduction>> - introducing graph database concepts and Neo4j.
-* <<tutorials>> - learn how to use Neo4j.
-* <<reference-documentation>> - detailed information on Neo4j.
-* <<tools>> - guides on tools.
-* <<community>> - getting help from, contributing to
-* <<manpages>> - command line documentation.
+* <<introduction>> -- introducing graph database concepts and Neo4j.
+* <<tutorials>> -- learn how to use Neo4j.
+* <<reference-documentation>> -- detailed information on Neo4j.
+* <<tools>> -- guides on tools.
+* <<community>> -- getting help from, contributing to.
+* <<manpages>> -- command line documentation.
+* <<questions> -- common questions.
 
 The material is practical, technical, and focused on answering specific questions. 
 It addresses how things work, what to do and what to avoid to successfully run Neo4j in a production environment.

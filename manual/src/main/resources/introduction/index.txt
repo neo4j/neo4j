@@ -7,6 +7,8 @@ include::highlights.txt[]
 Graph Database Concepts
 =======================
 
+
+
 :leveloffset: 2
 
 include::what-is-a-graphdb.txt[]
