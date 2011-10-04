@@ -32,24 +32,22 @@ public class StoreUpgrader
 {
     private Map<?, ?> originalConfig;
     private UpgradeConfiguration upgradeConfiguration;
+    private UpgradableDatabase upgradableDatabase;
 
-    public StoreUpgrader( Map<?, ?> originalConfig, UpgradeConfiguration upgradeConfiguration )
+    public StoreUpgrader( Map<?, ?> originalConfig, UpgradeConfiguration upgradeConfiguration, UpgradableDatabase upgradableDatabase )
     {
         this.originalConfig = originalConfig;
         this.upgradeConfiguration = upgradeConfiguration;
+        this.upgradableDatabase = upgradableDatabase;
     }
 
     public void attemptUpgrade( String storageFileName )
     {
         upgradeConfiguration.checkConfigurationAllowsAutomaticUpgrade();
+        upgradableDatabase.checkUpgradeable( new File( storageFileName ) );
         try
         {
             File workingDirectory = new File( storageFileName ).getParentFile();
-
-            if ( !new UpgradableStoreVersions().storeFilesUpgradeable( workingDirectory ) )
-            {
-                throw new UnableToUpgradeException();
-            }
 
             File upgradeDirectory = new File( workingDirectory, "upgrade" );
             File backupDirectory = new File( workingDirectory, "upgrade_backup" );
@@ -83,7 +81,7 @@ public class StoreUpgrader
         }
     }
 
-    public class UnableToUpgradeException extends RuntimeException
+    public static class UnableToUpgradeException extends RuntimeException
     {
     }
 }

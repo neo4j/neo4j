@@ -30,11 +30,11 @@ import java.util.Map;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 
-public class UpgradableStoreVersions
+public class UpgradableDatabase
 {
     private Map<String, String> fileNamesToExpectedVersions = new HashMap<String, String>();
 
-    public UpgradableStoreVersions()
+    public UpgradableDatabase()
     {
         fileNamesToExpectedVersions.put( NeoStore.DEFAULT_NAME, "NeoStore v0.9.9" );
         fileNamesToExpectedVersions.put( "neostore.nodestore.db", "NodeStore v0.9.9" );
@@ -48,8 +48,17 @@ public class UpgradableStoreVersions
         fileNamesToExpectedVersions.put( "neostore.relationshiptypestore.db.names", "StringPropertyStore v0.9.9" );
     }
 
-    public boolean storeFilesUpgradeable( File storeDirectory )
+    public void checkUpgradeable( File storeFile )
     {
+        if (!storeFilesUpgradeable( storeFile ))
+        {
+            throw new StoreUpgrader.UnableToUpgradeException();
+        }
+    }
+
+    public boolean storeFilesUpgradeable( File storeFile )
+    {
+        File storeDirectory = storeFile.getParentFile();
         for ( String fileName : fileNamesToExpectedVersions.keySet() )
         {
             String expectedVersion = fileNamesToExpectedVersions.get( fileName );
@@ -68,16 +77,14 @@ public class UpgradableStoreVersions
             } catch ( IOException e )
             {
                 throw new RuntimeException( e );
-            }
-            finally
+            } finally
             {
                 if ( fileChannel != null )
                 {
                     try
                     {
                         fileChannel.close();
-                    }
-                    catch ( IOException e )
+                    } catch ( IOException e )
                     {
                         // Ignore exception on close
                     }

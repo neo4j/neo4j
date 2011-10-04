@@ -33,7 +33,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.kernel.impl.util.FileUtils;
 
-public class UpgradableStoreVersionsTest
+public class UpgradableDatabaseTest
 {
     @Before
     public void checkOperatingSystem() {
@@ -45,14 +45,14 @@ public class UpgradableStoreVersionsTest
     {
         URL legacyStoreResource = getClass().getResource( "legacystore/exampledb/neostore" );
         File resourceDirectory = new File( legacyStoreResource.getFile() ).getParentFile();
-        File workingDirectory = new File( "target/" + UpgradableStoreVersionsTest.class.getSimpleName() );
+        File workingDirectory = new File( "target/" + UpgradableDatabaseTest.class.getSimpleName() );
 
         FileUtils.deleteRecursively( workingDirectory );
         assertTrue( workingDirectory.mkdirs() );
 
         copyRecursively( resourceDirectory, workingDirectory );
 
-        assertTrue( new UpgradableStoreVersions().storeFilesUpgradeable( workingDirectory ) );
+        assertTrue( new UpgradableDatabase().storeFilesUpgradeable( new File( workingDirectory, "neostore" ) ) );
     }
 
     @Test
@@ -60,7 +60,7 @@ public class UpgradableStoreVersionsTest
     {
         URL legacyStoreResource = getClass().getResource( "legacystore/exampledb/neostore" );
         File resourceDirectory = new File( legacyStoreResource.getFile() ).getParentFile();
-        File workingDirectory = new File( "target/" + UpgradableStoreVersionsTest.class.getSimpleName() );
+        File workingDirectory = new File( "target/" + UpgradableDatabaseTest.class.getSimpleName() );
 
         FileUtils.deleteRecursively( workingDirectory );
         assertTrue( workingDirectory.mkdirs() );
@@ -69,7 +69,7 @@ public class UpgradableStoreVersionsTest
 
         changeVersionNumber( new File( workingDirectory, "neostore.nodestore.db" ), "v0.9.5" );
 
-        assertFalse( new UpgradableStoreVersions().storeFilesUpgradeable( workingDirectory ) );
+        assertFalse( new UpgradableDatabase().storeFilesUpgradeable( new File( workingDirectory, "neostore" ) ) );
     }
 
 }
