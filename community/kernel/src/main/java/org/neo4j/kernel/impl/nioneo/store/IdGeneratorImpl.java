@@ -92,10 +92,6 @@ public class IdGeneratorImpl implements IdGenerator
     // in memory newly free defragged ids that havn't been flushed to disk yet
     private final LinkedList<Long> releasedIdList =
         new LinkedList<Long>();
-    // buffer used in readIdBatch()
-    private ByteBuffer readBuffer = null;
-    // buffer used in writeIdBatch() and close()
-    private ByteBuffer writeBuffer = null;
 
     private final long max;
     private final boolean aggressiveReuse;
@@ -135,8 +131,6 @@ public class IdGeneratorImpl implements IdGenerator
         this.max = max;
         this.fileName = fileName;
         this.grabSize = grabSize;
-        readBuffer = ByteBuffer.allocate( grabSize * 8 );
-        writeBuffer = ByteBuffer.allocate( grabSize * 8 );
         initGenerator();
     }
 
@@ -298,7 +292,7 @@ public class IdGeneratorImpl implements IdGenerator
         defraggedIdCount++;
         if ( releasedIdList.size() >= grabSize )
         {
-            writeIdBatch();
+            writeIdBatch( ByteBuffer.allocate( grabSize*8 ) );
         }
     }
 
@@ -322,9 +316,10 @@ public class IdGeneratorImpl implements IdGenerator
         }
 
         // write out lists
+        ByteBuffer writeBuffer = ByteBuffer.allocate( grabSize*8 );
         if ( releasedIdList.size() > 0 )
         {
-            writeIdBatch();
+            writeIdBatch( writeBuffer );
         }
         if ( defragedIdList.size() > 0 )
         {
@@ -332,7 +327,7 @@ public class IdGeneratorImpl implements IdGenerator
             {
                 releasedIdList.add( defragedIdList.removeFirst() );
             }
-            writeIdBatch();
+            writeIdBatch( writeBuffer );
         }
 
         // write header
@@ -491,6 +486,7 @@ public class IdGeneratorImpl implements IdGenerator
         }
         try
         {
+            ByteBuffer readBuffer = ByteBuffer.allocate( grabSize*8 );
             if ( totalBytesRead + readBuffer.capacity() > readBlocksTo )
             {
                 readBuffer.clear();
@@ -526,7 +522,7 @@ public class IdGeneratorImpl implements IdGenerator
     }
 
     // writes a batch of defragged ids to file
-    private void writeIdBatch()
+    private void writeIdBatch( ByteBuffer writeBuffer )
     {
         // position at end
         try
