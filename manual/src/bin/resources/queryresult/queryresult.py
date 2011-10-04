@@ -34,12 +34,16 @@ def split_line(line):
     strings.append(escape(line[position['left']:position['right']]))
   return strings
 
-def table_header(headings, info_line):
+def table_header(title, headings, info_line):
   column_count = len(headings)
   if len(headings[0]) == 0:
     sys.exit("The first table heading is empty.")
   buff = []
-  buff.append('<informaltable tabstyle="queryresult table" frame="all" rowsep="1" colsep="1">')
+  if title:
+    buff.append('<table tabstyle="queryresult table" role="NotInToc" frame="all" rowsep="1" colsep="1">')
+    buff.append('<title>' + title + '</title>')
+  else:
+    buff.append('<informaltable tabstyle="queryresult table" frame="all" rowsep="1" colsep="1">')
   buff.append('<tgroup cols="')
   buff.append(str(column_count))
   buff.append('">')
@@ -61,7 +65,9 @@ data = sys.stdin.readlines()
 data.pop(0)
 first_line = split_line(data.pop(0))
 data.pop(0)
-
+query_title = False
+if len(sys.argv) > 1:
+  query_title = sys.argv[1]
 body = []
 body.append('<tbody>')
 for line in data:
@@ -69,7 +75,11 @@ for line in data:
     body.extend(out_entries(split_line(line), 1))
 body.append('</tbody>')
 
-sys.stdout.write(''.join(table_header(first_line, line)))
+sys.stdout.write(''.join(table_header(query_title, first_line, line)))
 sys.stdout.write(''.join(body))
-sys.stdout.write('</tgroup></informaltable>')
+sys.stdout.write('</tgroup>')
+if query_title:
+  sys.stdout.write('</table>')
+else:
+  sys.stdout.write('</informaltable>')
 
