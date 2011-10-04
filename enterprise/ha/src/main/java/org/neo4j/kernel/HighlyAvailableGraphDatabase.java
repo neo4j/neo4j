@@ -326,7 +326,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 highest = max( highest, getHistoryLogVersion( file ) );
             }
         }
-        System.out.println( "Found highest log version " + highest );
         return highest;
     }
 
