@@ -64,7 +64,7 @@ public class StoreMigratorTest
         NeoStore.createStore( storeFileName, config );
         NeoStore neoStore = new NeoStore( config );
 
-        new StoreMigrator( legacyStore ).migrateTo( neoStore );
+        new StoreMigrator().migrate( legacyStore, neoStore );
 
         neoStore.close();
 

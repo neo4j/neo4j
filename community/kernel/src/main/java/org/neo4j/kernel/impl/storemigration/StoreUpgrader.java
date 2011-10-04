@@ -59,7 +59,7 @@ public class StoreUpgrader
 
             NeoStore.createStore( upgradeFileName, upgradeConfig );
             NeoStore neoStore = new NeoStore( upgradeConfig );
-            new StoreMigrator( new LegacyStore( storageFileName ) ).migrateTo( neoStore );
+            new StoreMigrator().migrate( new LegacyStore( storageFileName ), neoStore );
             neoStore.close();
 
             backupDirectory.mkdir();
