@@ -63,6 +63,17 @@ case class Not(a: Clause) extends Clause {
   def dependsOn: Set[String] = a.dependsOn
 }
 
+case class IsNull(value: Value) extends Clause {
+  def isMatch(m: Map[String, Any]): Boolean = value(m) == null
+
+  def dependsOn: Set[String] = value match {
+    case x:EntityValue => Set("I depened on something that should never exist as an identifier!")
+    case x => x.dependsOn
+  }
+
+  def atoms: Seq[Clause] = Seq(this)
+}
+
 case class True() extends Clause {
   def isMatch(m: Map[String, Any]): Boolean = true
 

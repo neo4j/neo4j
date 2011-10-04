@@ -25,7 +25,7 @@ public abstract class Abstract64BitRecord
     private final long id;
     private boolean created = false;
 
-    Abstract64BitRecord( long id )
+    protected Abstract64BitRecord( long id )
     {
         this.id = id;
     }

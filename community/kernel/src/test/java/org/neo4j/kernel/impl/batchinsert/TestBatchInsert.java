@@ -285,7 +285,7 @@ public class TestBatchInsert
         tx.finish();
         db.shutdown();
     }
-    
+
     @Test
     public void messagesLogGetsClosed() throws Exception
     {

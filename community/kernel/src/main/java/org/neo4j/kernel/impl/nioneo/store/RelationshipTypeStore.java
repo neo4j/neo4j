@@ -30,7 +30,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 
@@ -40,8 +39,7 @@ import org.neo4j.kernel.IdType;
  */
 public class RelationshipTypeStore extends AbstractStore implements Store
 {
-    // store version, each store ends with this string (byte encoded)
-    private static final String VERSION = "RelationshipTypeStore v0.9.9";
+    private static final String TYPE_DESCRIPTOR = "RelationshipTypeStore";
 
     // record header size
     // in_use(byte)+type_blockId(int)
@@ -51,21 +49,10 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 
     private DynamicStringStore typeNameStore;
 
-    /**
-     * See {@link AbstractStore#AbstractStore(String, Map)}
-     */
     public RelationshipTypeStore( String fileName, Map<?,?> config, IdType idType )
     {
         super( fileName, config, idType );
     }
-
-    /**
-     * See {@link AbstractStore#AbstractStore(String)}
-     */
-//    public RelationshipTypeStore( String fileName )
-//    {
-//        super( fileName );
-//    }
 
     @Override
     protected void setRecovered()
@@ -98,17 +85,20 @@ public class RelationshipTypeStore extends AbstractStore implements Store
         }
     }
 
+    @Override
     public void flushAll()
     {
         typeNameStore.flushAll();
         super.flushAll();
     }
 
-    public String getTypeAndVersionDescriptor()
+    @Override
+    public String getTypeDescriptor()
     {
-        return VERSION;
+        return TYPE_DESCRIPTOR;
     }
 
+    @Override
     public int getRecordSize()
     {
         return RECORD_SIZE;
@@ -116,9 +106,9 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 
     /**
      * Creates a new relationship type store contained in <CODE>fileName</CODE>
-     * If filename is <CODE>null</CODE> or the file already exists an 
+     * If filename is <CODE>null</CODE> or the file already exists an
      * <CODE>IOException</CODE> is thrown.
-     * 
+     *
      * @param fileName
      *            File name of the new relationship type store
      * @throws IOException
@@ -128,7 +118,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
     {
         IdGeneratorFactory idGeneratorFactory = (IdGeneratorFactory) config.get(
                 IdGeneratorFactory.class );
-        createEmptyStore( fileName, VERSION, idGeneratorFactory );
+        createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), idGeneratorFactory );
         DynamicStringStore.createStore( fileName + ".names",
             TYPE_STORE_BLOCK_SIZE, idGeneratorFactory, IdType.RELATIONSHIP_TYPE_BLOCK );
         RelationshipTypeStore store = new RelationshipTypeStore(
@@ -150,7 +140,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
     }
 
     public Collection<DynamicRecord> allocateTypeNameRecords( int startBlock,
-        char src[] )
+        byte src[] )
     {
         return typeNameStore.allocateRecords( startBlock, src );
     }
@@ -200,7 +190,6 @@ public class RelationshipTypeStore extends AbstractStore implements Store
         {
             releaseWindow( window );
         }
-        // }
         if ( record != null )
         {
             Collection<DynamicRecord> nameRecords = typeNameStore.getRecords(
@@ -228,7 +217,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
             unsetRecovered();
         }
     }
-    
+
     public RelationshipTypeData getRelationshipType( int id )
     {
         RelationshipTypeRecord record = getRecord( id );
@@ -238,7 +227,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
 
     public RelationshipTypeData[] getRelationshipTypes()
     {
-        LinkedList<RelationshipTypeData> typeDataList = 
+        LinkedList<RelationshipTypeData> typeDataList =
             new LinkedList<RelationshipTypeData>();
         for ( int i = 0;; i++ )
         {
@@ -251,14 +240,14 @@ public class RelationshipTypeStore extends AbstractStore implements Store
             {
                 break;
             }
-            if ( record != null && 
+            if ( record != null &&
                 record.getTypeBlock() != Record.RESERVED.intValue() )
             {
                 String name = getStringFor( record );
                 typeDataList.add( new RelationshipTypeData( i, name ) );
             }
         }
-        return typeDataList.toArray( 
+        return typeDataList.toArray(
             new RelationshipTypeData[typeDataList.size()] );
     }
 
@@ -289,7 +278,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
         }
         if ( inUse != Record.IN_USE.byteValue() )
         {
-            throw new InvalidRecordException( "Record[" + id + 
+            throw new InvalidRecordException( "Record[" + id +
                 "] unknown in use flag[" + inUse + "]" );
         }
         RelationshipTypeRecord record = new RelationshipTypeRecord( id );
@@ -298,7 +287,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
         return record;
     }
 
-    private void updateRecord( RelationshipTypeRecord record, 
+    private void updateRecord( RelationshipTypeRecord record,
         PersistenceWindow window )
     {
         int id = record.getId();
@@ -362,7 +351,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException( 
+            throw new UnderlyingStorageException(
                 "Unable to rebuild id generator " + getStorageFileName(), e );
         }
         setHighId( highId );
@@ -374,43 +363,21 @@ public class RelationshipTypeStore extends AbstractStore implements Store
     public String getStringFor( RelationshipTypeRecord relTypeRecord )
     {
         long recordToFind = relTypeRecord.getTypeBlock();
-        Iterator<DynamicRecord> records = 
-            relTypeRecord.getTypeRecords().iterator();
-        List<char[]> charList = new LinkedList<char[]>();
-        int totalSize = 0;
-        while ( recordToFind != Record.NO_NEXT_BLOCK.intValue() && 
-            records.hasNext() )
+        Iterator<DynamicRecord> records = relTypeRecord.getTypeRecords().iterator();
+        Collection<DynamicRecord> relevantRecords = new ArrayList<DynamicRecord>();
+        while ( recordToFind != Record.NO_NEXT_BLOCK.intValue() && records.hasNext() )
         {
             DynamicRecord record = records.next();
             if ( record.inUse() && record.getId() == recordToFind )
             {
-                if ( record.isLight() )
-                {
-                    typeNameStore.makeHeavy( record );
-                }
-                if ( !record.isCharData() )
-                {
-                    ByteBuffer buf = ByteBuffer.wrap( record.getData() );
-                    char[] chars = new char[record.getData().length / 2];
-                    totalSize += chars.length;
-                    buf.asCharBuffer().get( chars );
-                    charList.add( chars );
-                }
-                else
-                {
-                    charList.add( record.getDataAsChar() );
-                }
                 recordToFind = record.getNextBlock();
                 // TODO: optimize here, high chance next is right one
+                relevantRecords.add( record );
                 records = relTypeRecord.getTypeRecords().iterator();
             }
         }
-        StringBuilder buf = new StringBuilder();
-        for ( char[] str : charList )
-        {
-            buf.append( str );
-        }
-        return buf.toString();
+        return (String) PropertyStore.getStringFor( PropertyStore.readFullByteArray(
+                relTypeRecord.getTypeBlock(), relevantRecords, typeNameStore ) );
     }
 
     @Override
@@ -434,48 +401,6 @@ public class RelationshipTypeStore extends AbstractStore implements Store
     }
 
     @Override
-    protected boolean versionFound( String version )
-    {
-        if ( !version.startsWith( "RelationshipTypeStore" ) )
-        {
-            // non clean shutdown, need to do recover with right neo
-            return false;
-        }
-//        if ( version.equals( "RelationshipTypeStore v0.9.3" ) )
-//        {
-//            rebuildIdGenerator();
-//            closeIdGenerator();
-//            return true;
-//        }
-        String nineFiveVersionString = "RelationshipTypeStore v0.9.5";
-        if ( version.equals( nineFiveVersionString ) )
-        {
-            try
-            {
-                long fileSize = getFileChannel().size();
-                long recordCount = (fileSize - UTF8.encode( nineFiveVersionString ).length) / getRecordSize();
-                // 0xFFFF magic -1
-                if ( recordCount > 0xFFFF )
-                {
-                    throw new IllegalStoreVersionException( "Store version[" + version +
-                            "] has " + recordCount + " different relationship types " +
-                            "(limit is " + 0xFFFF + ") and can not be upgraded to a newer version." );
-                }
-            }
-            catch ( IOException e )
-            {
-                throw new IllegalStoreVersionException(
-                        "Unable to verify relationship type count, can not upgrade " +
-                        "store from version[" + version + "]" );
-            }
-            return true;
-        }
-        throw new IllegalStoreVersionException( "Store version [" + version  + 
-            "]. Please make sure you are not running old Neo4j kernel " + 
-            " towards a store that has been created by newer version " + 
-            " of Neo4j." );
-    }
-
     public List<WindowPoolStats> getAllWindowPoolStats()
     {
         List<WindowPoolStats> list = new ArrayList<WindowPoolStats>();

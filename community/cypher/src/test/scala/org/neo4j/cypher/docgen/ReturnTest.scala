@@ -34,7 +34,7 @@ class ReturnTest extends DocumentingTestBase {
     testQuery(
       title = "Return nodes",
       text = "To return a node, list it in the return statemenet.",
-      queryText = """start n=(%B%) return n""",
+      queryText = """start n=node(%B%) return n""",
       returns = """The node.""",
       (p) => assertEquals(List(Map("n" -> node("B"))), p.toList))
   }
@@ -43,7 +43,7 @@ class ReturnTest extends DocumentingTestBase {
     testQuery(
       title = "Return relationships",
       text = "To return a relationship, just include it in the return list.",
-      queryText = """start n=(%A%) match (n)-[r:KNOWS]->(c) return r""",
+      queryText = """start n=node(%A%) match (n)-[r:KNOWS]->(c) return r""",
       returns = """The relationship.""",
       (p) => assertEquals(1, p.size))
   }
@@ -52,7 +52,7 @@ class ReturnTest extends DocumentingTestBase {
     testQuery(
       title = "Return property",
       text = "To return a property, use the dot separator, like this:",
-      queryText = """start n=(%A%) return n.name""",
+      queryText = """start n=node(%A%) return n.name""",
       returns = """The the value of the property 'name'.""",
       (p) => assertEquals(List(Map("n.name" -> "A")), p.toList))
   }
@@ -63,7 +63,7 @@ class ReturnTest extends DocumentingTestBase {
       title = "Identifier with uncommon characters",
       text = """To introduce a placeholder that is made up of characters that are
       outside of the english alphabet, you can use the +`+ to enclose the identifier, like this:""",
-      queryText = """start `This isn't a common identifier`=(%A%)
+      queryText = """start `This isn't a common identifier`=node(%A%)
 return `This isn't a common identifier`.`<<!!__??>>`""",
       returns = """The node indexed with name "A" is returned""",
       (p) => assertEquals(List(Map("This isn't a common identifier.<<!!__??>>" -> "Yes!")), p.toList))
@@ -74,7 +74,7 @@ return `This isn't a common identifier`.`<<!!__??>>`""",
       title = "Optional properties",
       text = """If a property might or might not be there, you can select it optionally by adding a questionmark to the identifier,
 like this:""",
-      queryText = """start n=(%A%, %B%) return n.age?""",
+      queryText = """start n=node(%A%, %B%) return n.age?""",
       returns = """The age when the node has that property, or +null+ if the property is not there.""",
       (p) => assertEquals(List(55, null), p.columnAs[Int]("n.age").toList))
   }
@@ -83,7 +83,7 @@ like this:""",
     testQuery(
       title = "Unique results",
       text = """`DISTINCT` retrieves only unique rows depending on the columns that have been selected to output.""",
-      queryText = """start a=(%A%) match (a)-->(b) return distinct b""",
+      queryText = """start a=node(%A%) match (a)-->(b) return distinct b""",
       returns = """The node named B, but only once.""",
       (p) => assertEquals(List(node("B")), p.columnAs[Node]("b").toList))
   }

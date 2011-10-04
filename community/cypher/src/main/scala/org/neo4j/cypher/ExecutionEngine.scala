@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import commands._
+import parser.CypherParser
 import pipes._
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
@@ -32,7 +33,19 @@ class ExecutionEngine(graph: GraphDatabaseService)
 {
   checkScalaVersion()
 
-  // This is here because the JavaAPI looks funny with default values
+  require( graph != null, "Can't work with a null graph database" )
+
+  val parser = new CypherParser()
+
+  @throws(classOf[SyntaxException])
+  def execute(query:String): ExecutionResult = execute(parser.parse(query))
+
+  @throws(classOf[SyntaxException])
+  def execute(query:String, params: Map[String, Any]): ExecutionResult = { execute(parser.parse(query), params) }
+
+  @throws(classOf[SyntaxException])
+  def execute(query:String, params: JavaMap[String, Any]): ExecutionResult = { execute(parser.parse(query), params.asScala.toMap) }
+
   @throws(classOf[SyntaxException])
   def execute(query: Query): ExecutionResult = execute(query, Map[String, Any]())
 
@@ -59,7 +72,6 @@ class ExecutionEngine(graph: GraphDatabaseService)
       context = addFilters(context)
 
       context = createMatchPipe(matching, namedPaths, context)
-//      context = addFilters(context)
 
       context.pipe = createShortestPathPipe(context.pipe, matching, namedPaths)
       context = addFilters(context)
@@ -69,13 +81,14 @@ class ExecutionEngine(graph: GraphDatabaseService)
         case None =>
         case Some(x) => x.paths.foreach(p => context.pipe = new NamedPathPipe(context.pipe, p))
       }
-      context = addFilters(context)
+
+      if (context.clauses.nonEmpty) {
+        context.pipe = new FilterPipe(context.pipe, context.clauses.reduceLeft(_ ++ _))
+      }
 
       val allReturnItems = extractReturnItems(returns, aggregation, sort)
-      context = addFilters(context)
 
       context.pipe = new TransformPipe(context.pipe, allReturnItems)
-      context = addFilters(context)
 
       aggregation match
       {
@@ -180,7 +193,7 @@ class ExecutionEngine(graph: GraphDatabaseService)
   private def createStartPipe(lastPipe: Pipe, item: StartItem): Pipe = item match
   {
     case NodeByIndex(varName, idxName, key, value) =>
-      new StartPipe(lastPipe, varName, m =>
+      new NodeStartPipe(lastPipe, varName, m =>
       {
         val keyVal = key(m).toString
         val valueVal = value(m)
@@ -188,16 +201,25 @@ class ExecutionEngine(graph: GraphDatabaseService)
         indexHits.asScala
       })
 
+    case RelationshipByIndex(varName, idxName, key, value) =>
+      new RelationshipStartPipe(lastPipe, varName, m =>
+      {
+        val keyVal = key(m).toString
+        val valueVal = value(m)
+        val indexHits: Iterable[Relationship] = graph.index.forRelationships(idxName).get(keyVal, valueVal)
+        indexHits.asScala
+      })
+
     case NodeByIndexQuery(varName, idxName, query) =>
-      new StartPipe(lastPipe, varName, m =>
+      new NodeStartPipe(lastPipe, varName, m =>
       {
         val queryText = query(m)
         val indexHits: Iterable[Node] = graph.index.forNodes(idxName).query(queryText)
         indexHits.asScala
       })
 
-    case NodeById(varName, id) => new StartPipe(lastPipe, varName, m => makeLongSeq(id(m), varName).map(graph.getNodeById))
-    case RelationshipById(varName, id) => new StartPipe(lastPipe, varName, m => makeLongSeq(id(m), varName).map(graph.getRelationshipById))
+    case NodeById(varName, id) => new NodeStartPipe(lastPipe, varName, m => makeLongSeq(id(m), varName).map(graph.getNodeById))
+    case RelationshipById(varName, id) => new RelationshipStartPipe(lastPipe, varName, m => makeLongSeq(id(m), varName).map(graph.getRelationshipById))
   }
 
   private def addFilters(context: CurrentContext): CurrentContext =

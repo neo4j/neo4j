@@ -21,31 +21,43 @@ package org.neo4j.kernel;
 
 public enum IdType
 {
-    NODE( 35 ),
-    RELATIONSHIP( 35 ),
-    PROPERTY( 36 ),
-    STRING_BLOCK( 36 ),
-    ARRAY_BLOCK( 36 ),
-    PROPERTY_INDEX,
-    PROPERTY_INDEX_BLOCK,
-    RELATIONSHIP_TYPE( 16 ),
-    RELATIONSHIP_TYPE_BLOCK,
-    NEOSTORE_BLOCK;
-    
+    NODE( 35, false ),
+    RELATIONSHIP( 35, false ),
+    PROPERTY( 36, true ), // This one
+    STRING_BLOCK( 36, true ), // This one
+    ARRAY_BLOCK( 36, true ), // This one
+    PROPERTY_INDEX( false ),
+    PROPERTY_INDEX_BLOCK( false ),
+    RELATIONSHIP_TYPE( 16, false ),
+    RELATIONSHIP_TYPE_BLOCK( false ),
+    NEOSTORE_BLOCK( false );
+
     private final long max;
-    
-    private IdType()
+    private final boolean allowAggressiveReuse;
+
+    private IdType( boolean allowAggressiveReuse )
     {
-        this( 32 );
+        this( 32, allowAggressiveReuse );
     }
 
-    private IdType( int bits )
+    private IdType( int bits, boolean allowAggressiveReuse )
     {
+        this.allowAggressiveReuse = allowAggressiveReuse;
         this.max = (long)Math.pow( 2, bits )-1;
     }
-    
+
     public long getMaxValue()
     {
         return this.max;
+    }
+
+    public boolean allowAggressiveReuse()
+    {
+        return allowAggressiveReuse;
+    }
+    
+    public int getGrabSize()
+    {
+        return allowAggressiveReuse ? 20000 : 1024;
     }
 }

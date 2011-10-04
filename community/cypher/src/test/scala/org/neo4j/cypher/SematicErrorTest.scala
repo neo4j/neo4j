@@ -26,42 +26,42 @@ import parser.CypherParser
 
 class SematicErrorTest extends ExecutionEngineHelper {
   @Test def returnNodeThatsNotThere() {
-    expectedError("start x=(0) return bar",
+    expectedError("start x=node(0) return bar",
       """Unknown identifier "bar".""")
   }
 
   @Test def throwOnDisconnectedPattern() {
-    expectedError("start x=(0) match a-[rel]->b return x",
+    expectedError("start x=node(0) match a-[rel]->b return x",
       "All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These identifiers were found to be disconnected: a, b, rel")
   }
 
   @Test def defineNodeAndTreatItAsARelationship() {
-    expectedError("start r=(0) match a-[r]->b return r",
+    expectedError("start r=node(0) match a-[r]->b return r",
       "Some identifiers are used as both relationships and nodes: r")
   }
 
   @Test def redefineSymbolInMatch() {
-    expectedError("start a=(0) match a-[r]->b-->r return r",
+    expectedError("start a=node(0) match a-[r]->b-->r return r",
       "Some identifiers are used as both relationships and nodes: r")
   }
 
   @Test def cantUseTYPEOnNodes() {
-    expectedError("start r=(0) return type(r)",
+    expectedError("start r=node(0) return type(r)",
       "Expected r to be a RelationshipIdentifier but it was NodeIdentifier")
   }
 
   @Test def cantUseLENGTHOnNodes() {
-    expectedError("start n=(0) return length(n)",
+    expectedError("start n=node(0) return length(n)",
       "Expected n to be an iterable, but it is not.")
   }
 
   @Test def cantReUseRelationshipIdentifier() {
-    expectedError("start a=(0) match a-[r]->b-[r]->a return r",
+    expectedError("start a=node(0) match a-[r]->b-[r]->a return r",
       "Can't re-use pattern relationship 'r' with different start/end nodes.")
   }
 
   @Test def shortestPathNeedsBothEndNodes() {
-    expectedError("start n=(0) match p=shortestPath(n-->b) return p",
+    expectedError("start n=node(0) match p=shortestPath(n-->b) return p",
       "Shortest path needs both ends of the path to be provided. Couldn't find b")
   }
 

@@ -19,13 +19,14 @@
  */
 package org.neo4j.shell;
 
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.regex.Pattern;
 
 import org.junit.Test;
@@ -62,7 +63,7 @@ public class TestApps extends AbstractShellTest
         executeCommand( "cd " + relationships[1].getEndNode().getId() );
         executeCommand( "pwd", pwdOutputFor( relationships[0].getStartNode(), relationships[0].getEndNode(), relationships[1].getEndNode() ) );
     }
-    
+
     @Test
     public void canSetPropertiesAndLsWithFilters() throws Exception
     {
@@ -87,7 +88,7 @@ public class TestApps extends AbstractShellTest
         executeCommand( "ls -pf name:Something", "!<-", "!->", "!Neo" );
         executeCommand( "ls -pf name:Neo", "!<-", "!->", "Neo" );
     }
-    
+
     @Test
     public void canSetAndRemoveProperties() throws Exception
     {
@@ -101,30 +102,31 @@ public class TestApps extends AbstractShellTest
         executeCommand( "set \"some property\" -t long[] \"[1234,5678]" );
         assertEquals( name, node.getProperty( "name" ) );
         assertEquals( age, node.getProperty( "age" ) );
-        assertEquals( asList( 1234L, 5678L ), asList( (Long[])node.getProperty( "some property" ) ) );
-        
+        long[] value = (long[]) node.getProperty( "some property" );
+        assertTrue( Arrays.equals( new long[] { 1234L, 5678L }, value ) );
+
         executeCommand( "rm age" );
         assertNull( node.getProperty( "age", null ) );
         assertEquals( name, node.getProperty( "name" ) );
     }
-    
+
     @Test
     public void canCreateRelationshipsAndNodes() throws Exception
     {
         RelationshipType type1 = withName( "type1" );
         RelationshipType type2 = withName( "type2" );
         RelationshipType type3 = withName( "type3" );
-        
+
         // No type supplied
         executeCommandExpectingException( "mkrel -c", "type" );
-        
+
         executeCommand( "mkrel -ct " + type1.name() );
         Relationship relationship = db.getReferenceNode().getSingleRelationship( type1, Direction.OUTGOING );
         Node node = relationship.getEndNode();
         executeCommand( "mkrel -t " + type2.name() + " " + node.getId() );
         Relationship otherRelationship = db.getReferenceNode().getSingleRelationship( type2, Direction.OUTGOING );
         assertEquals( node, otherRelationship.getEndNode() );
-        
+
         // With properties
         executeCommand( "mkrel -ct " + type3.name() + " --np \"{'name':'Neo','destiny':'The one'}\" --rp \"{'number':11}\"" );
         Relationship thirdRelationship = db.getReferenceNode().getSingleRelationship( type3, Direction.OUTGOING );
@@ -137,49 +139,49 @@ public class TestApps extends AbstractShellTest
         assertNull( thirdRelationship.getProperty( "number", null ) );
         assertEquals( 11, thirdRelationship.getProperty( "other-number" ) );
     }
-    
+
     @Test
     public void rmrelCanLeaveStrandedIslands() throws Exception
     {
         Relationship[] relationships = createRelationshipChain( 4 );
         executeCommand( "cd -a " + relationships[1].getEndNode().getId() );
-        
+
         Relationship relToDelete = relationships[2];
         executeCommandExpectingException( "rmrel " + relToDelete.getId(), "decoupled" );
         assertRelationshipExists( relToDelete );
-        
+
         Node otherNode = relToDelete.getEndNode();
         executeCommand( "rmrel -fd " + relToDelete.getId() );
         assertRelationshipDoesntExist( relToDelete );
         assertNodeExists( otherNode );
     }
-    
+
     @Test
     public void rmrelCanLeaveStrandedNodes() throws Exception
     {
         Relationship[] relationships = createRelationshipChain( 1 );
         Node otherNode = relationships[0].getEndNode();
-        
+
         executeCommandExpectingException( "rmrel " + relationships[0].getId(), "decoupled" );
         assertRelationshipExists( relationships[0] );
         assertNodeExists( otherNode );
-        
+
         executeCommand( "rmrel -f " + relationships[0].getId() );
         assertRelationshipDoesntExist( relationships[0] );
         assertNodeExists( otherNode );
     }
-    
+
     @Test
     public void rmrelCanDeleteStrandedNodes() throws Exception
     {
         Relationship[] relationships = createRelationshipChain( 1 );
         Node otherNode = relationships[0].getEndNode();
-        
+
         executeCommand( "rmrel -fd " + relationships[0].getId(), "not having any relationships" );
         assertRelationshipDoesntExist( relationships[0] );
         assertNodeDoesntExist( otherNode );
     }
-    
+
     @Test
     public void rmrelCanDeleteRelationshipSoThatCurrentNodeGetsStranded() throws Exception
     {
@@ -194,7 +196,7 @@ public class TestApps extends AbstractShellTest
         executeCommand( "cd -a " + db.getReferenceNode().getId() );
         executeCommand( "pwd" );
     }
-    
+
     @Test
     public void rmnodeCanDeleteStrandedNodes() throws Exception
     {
@@ -204,7 +206,7 @@ public class TestApps extends AbstractShellTest
         executeCommand( "rmnode " + strandedNode.getId() );
         assertNodeDoesntExist( strandedNode );
     }
-    
+
     @Test
     public void rmnodeCanDeleteConnectedNodes() throws Exception
     {
@@ -217,32 +219,32 @@ public class TestApps extends AbstractShellTest
         assertNodeDoesntExist( middleNode );
         assertRelationshipDoesntExist( relationships[0] );
         assertRelationshipDoesntExist( relationships[1] );
-        
+
         assertNodeExists( endNode );
         executeCommand( "cd -a " + endNode.getId() );
         executeCommand( "rmnode " + endNode.getId() );
         executeCommand( "pwd", Pattern.quote( "(?)" ) );
     }
-    
+
     @Test
     public void pwdWorksOnDeletedNode() throws Exception
     {
         Relationship[] relationships = createRelationshipChain( 1 );
         executeCommand( "cd " + relationships[0].getEndNode().getId() );
-        
+
         // Delete the relationship and node we're standing on
         Transaction tx = db.beginTx();
         relationships[0].getEndNode().delete();
         relationships[0].delete();
         tx.success();
         tx.finish();
-        
+
         Relationship[] otherRelationships = createRelationshipChain( 1 );
         executeCommand( "pwd", "\\(0\\)-->\\(\\?\\)" );
         executeCommand( "cd -a " + otherRelationships[0].getEndNode().getId() );
         executeCommand( "ls" );
     }
-    
+
     @Test
     public void startEvenIfReferenceNodeHasBeenDeleted() throws Exception
     {
@@ -256,7 +258,7 @@ public class TestApps extends AbstractShellTest
         node.setProperty( "name", name );
         tx.success();
         tx.finish();
-        
+
         GraphDatabaseShellServer server = new GraphDatabaseShellServer( newDb );
         ShellClient client = new SameJvmClient( server );
         executeCommand( server, client, "pwd", Pattern.quote( "(?)" ) );

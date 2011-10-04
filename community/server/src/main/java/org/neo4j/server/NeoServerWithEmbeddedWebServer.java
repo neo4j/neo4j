@@ -37,6 +37,7 @@ import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.plugins.PluginManager;
+import org.neo4j.server.rest.security.SecurityRule;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.web.WebServer;
@@ -185,6 +186,25 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
         webServer.init();
     }
 
+    private SecurityRule[] createSecurityRulesFrom( Configuration configuration )
+    {
+        ArrayList<SecurityRule> rules = new ArrayList<SecurityRule>();
+
+        for ( String classname : configuration.getStringArray( Configurator.SECURITY_RULES_KEY ) )
+        {
+            try
+            {
+                rules.add( (SecurityRule) Class.forName( classname ).newInstance() );
+            }
+            catch ( Exception e) {
+                log.error( "Could not load server security rule [%s], exception details: ", classname, e.getMessage() );
+                e.printStackTrace();
+            }
+        }
+
+        return rules.toArray( new SecurityRule[0] );
+    }
+
     private int getMaxThreads()
     {
         return configurator.configuration()
@@ -202,6 +222,8 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
     {
         try
         {
+            webServer.addSecurityRules( createSecurityRulesFrom( configurator.configuration() ) );
+
             webServer.start();
             log.info( "Server started on [%s]", baseUri() );
         }
@@ -220,7 +242,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
 
     protected String getWebServerAddress()
     {
-       return configurator.configuration()
+        return configurator.configuration()
                 .getString( Configurator.WEBSERVER_ADDRESS_PROPERTY_KEY, Configurator.DEFAULT_WEBSERVER_ADDRESS );
     }
 
@@ -301,7 +323,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
 
         }
         sb.append( "://" );
-        //sb.append( addressResolver.getHostname() );
+        // sb.append( addressResolver.getHostname() );
         sb.append( getWebServerAddress() );
 
         if ( webServerPort != 80 )

@@ -61,16 +61,21 @@ public class AsciidocHelper
         return "[source]\n----\n"+output+"\n----\n";
     }
     
+    public static String createQueryResultSnippet( final String output )
+    {
+        return "[queryresult]\n----\n" + output + "\n----\n";
+    }
+
     public static String createCypherSnippet( final String query )
     {
         return "[source,cypher]\n----\n"+query.
-                replace("start", "START").
-                replace("where", "WHERE").
-                replace("match", "MATCH").
-                replace("return", "RETURN").
-                replace(" MATCH", "\nMATCH").
-                replace(" RETURN", "\nRETURN").
-                replace(" WHERE", "\nWHERE").
-                replace("where", "WHERE")+"\n----\n";
+                replace("start ", "START ").
+                replace("where ", "WHERE ").
+                replace("match ", "MATCH ").
+                replace("return ", "RETURN ").
+                replace(" MATCH ", "\nMATCH ").
+                replace(" RETURN ", "\nRETURN ").
+                replace(" WHERE ", "\nWHERE ").
+                replace("where ", "WHERE ")+"\n----\n";
     }
 }

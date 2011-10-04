@@ -42,8 +42,8 @@ abstract class Primitive
     protected abstract void removeProperty( NodeManager nodeManager,
             PropertyData property );
 
-    protected abstract ArrayMap<Integer, PropertyData> loadProperties( NodeManager nodeManager,
-            boolean light );
+    protected abstract ArrayMap<Integer, PropertyData> loadProperties(
+            NodeManager nodeManager, boolean light );
 
     Primitive( boolean newPrimitive )
     {
@@ -234,6 +234,7 @@ abstract class Primitive
         {
             throw new IllegalArgumentException( "null key" );
         }
+
         ArrayMap<Integer,PropertyData> skipMap =
             nodeManager.getCowPropertyRemoveMap( this );
         ArrayMap<Integer,PropertyData> addMap =
@@ -539,9 +540,11 @@ abstract class Primitive
         Object value = property.getValue();
         if ( value == null )
         {
-            // This will only happen for "heavy" property value, such as
-            // strings/arrays
-            value = nodeManager.loadPropertyValue( property.getId() );
+            /*
+             * This will only happen for "heavy" property value, such as
+             * strings/arrays
+             */
+            value = nodeManager.loadPropertyValue( property );
             property.setNewValue( value );
         }
         return value;
@@ -645,7 +648,8 @@ abstract class Primitive
     {
         if ( properties == null )
         {
-            this.properties = toPropertyArray( loadProperties( nodeManager, false ) );
+            this.properties = toPropertyArray( loadProperties( nodeManager,
+                    false ) );
             return true;
         }
         return false;
@@ -671,7 +675,8 @@ abstract class Primitive
     {
         if ( properties == null )
         {
-            this.properties = toPropertyArray( loadProperties( nodeManager, true ) );
+            this.properties = toPropertyArray( loadProperties( nodeManager,
+                    true ) );
             return true;
         }
         return false;

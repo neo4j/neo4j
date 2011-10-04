@@ -82,9 +82,9 @@ public class PersistenceManager
         return getReadOnlyResourceIfPossible().nodeLoadLight( id );
     }
 
-    public Object loadPropertyValue( long id )
+    public Object loadPropertyValue( PropertyData property )
     {
-        return getReadOnlyResource().loadPropertyValue( id );
+        return getReadOnlyResource().loadPropertyValue( property );
     }
 
     public String loadIndex( int id )
@@ -111,7 +111,8 @@ public class PersistenceManager
     public ArrayMap<Integer,PropertyData> loadNodeProperties( long nodeId,
             boolean light )
     {
-        return getReadOnlyResourceIfPossible().nodeLoadProperties( nodeId, light );
+        return getReadOnlyResourceIfPossible().nodeLoadProperties( nodeId,
+                light );
     }
 
     public ArrayMap<Integer,PropertyData> loadRelProperties( long relId,
@@ -140,14 +141,15 @@ public class PersistenceManager
         return getResource( true ).nodeAddProperty( nodeId, index, value );
     }
 
-    public PropertyData nodeChangeProperty( long nodeId, long propertyId, Object value )
+    public PropertyData nodeChangeProperty( long nodeId, PropertyData data,
+            Object value )
     {
-        return getResource( true ).nodeChangeProperty( nodeId, propertyId, value );
+        return getResource( true ).nodeChangeProperty( nodeId, data, value );
     }
 
-    public void nodeRemoveProperty( long nodeId, long propertyId )
+    public void nodeRemoveProperty( long nodeId, PropertyData data )
     {
-        getResource( true ).nodeRemoveProperty( nodeId, propertyId );
+        getResource( true ).nodeRemoveProperty( nodeId, data );
     }
 
     public void nodeCreate( long id )
@@ -171,14 +173,15 @@ public class PersistenceManager
         return getResource( true ).relAddProperty( relId, index, value );
     }
 
-    public PropertyData relChangeProperty( long relId, long propertyId, Object value )
+    public PropertyData relChangeProperty( long relId, PropertyData data,
+            Object value )
     {
-        return getResource( true ).relChangeProperty( relId, propertyId, value );
+        return getResource( true ).relChangeProperty( relId, data, value );
     }
 
-    public void relRemoveProperty( long relId, long propertyId )
+    public void relRemoveProperty( long relId, PropertyData data )
     {
-        getResource( true ).relRemoveProperty( relId, propertyId );
+        getResource( true ).relRemoveProperty( relId, data );
     }
 
     public void createPropertyIndex( String key, int id )
@@ -212,8 +215,11 @@ public class PersistenceManager
             // con is put in map on write operation, see getResoure()
             // createReadOnlyResourceConnection just return a single final
             // resource and does not create a new object
-            return ((NioNeoDbPersistenceSource)
+            /*
+             * return ((NioNeoDbPersistenceSource)
                 persistenceSource ).createReadOnlyResourceConnection();
+             */
+            return getReadOnlyResource();
         }
         return con;
     }
@@ -389,9 +395,8 @@ public class PersistenceManager
         return getResource( true ).isRelationshipCreated( relId );
     }
 
-    public int getKeyIdForProperty( long propertyId )
+    public int getKeyIdForProperty( PropertyData property )
     {
-        return getReadOnlyResourceIfPossible().getKeyIdForProperty( propertyId );
+        return getReadOnlyResourceIfPossible().getKeyIdForProperty( property );
     }
-
 }
