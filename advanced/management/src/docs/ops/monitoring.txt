@@ -7,6 +7,7 @@ NOTE: Most of the monitoring features are only available in the Advanced and Ent
 In order to be able to continuously get an overview of the health of a Neo4j database, there are different levels of monitoring facilities available.
 
 
+[[operations-jmx]]
 == JMX ==
 
 === How to connect to a Neo4j instance using JMX and JConsole ===
