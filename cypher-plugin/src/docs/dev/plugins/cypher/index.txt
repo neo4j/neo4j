@@ -13,6 +13,8 @@ include::send-a-query.txt[]
 
 include::return-paths.txt[]
 
+include::send-queries-with-parameters.txt[]
+
 include::return-json-table-format.txt[]
 
 include::server-errors.txt[]

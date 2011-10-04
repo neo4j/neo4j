@@ -141,7 +141,6 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
      * which are submitted as a JSON map.
      */ 
     @Test
-    @Ignore
     @Documented
     @Graph( "I know you" )
     public void send_queries_with_parameters() throws UnsupportedEncodingException, Exception
@@ -152,7 +151,7 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
                         AsciidocHelper.createCypherSnippet( script ));
         String response = gen.get().post( ENDPOINT ).entity();
         assertEquals( 2, ( JsonHelper.jsonToMap( response ) ).size() );
-        assertTrue(response.contains( "cols" ));
-        assertTrue(response.contains( "rows" ));
+        assertTrue(response.contains( "know" ));
+        assertTrue(response.contains( "data" ));
     }
 }
