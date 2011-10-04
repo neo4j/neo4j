@@ -122,6 +122,12 @@ class SyntaxExceptionTest extends JUnitSuite {
       "The syntax for bound nodes has changed in v1.5 of Neo4j. Now, it is START a=node(<nodeId>), or START a=node:idxName(key='value').")
   }
 
+  @Test def unknownFunction() {
+    expectError(
+      "start a=node(0) return foo(a)",
+      "No function 'foo' exists.")
+  }
+
   @Ignore @Test def nodeParenthesisMustBeClosed() {
     expectError(
       "start s=node(1) match s-->(x return x",

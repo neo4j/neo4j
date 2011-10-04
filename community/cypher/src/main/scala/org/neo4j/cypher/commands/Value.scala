@@ -87,6 +87,10 @@ case class Avg(anInner: Value) extends AggregationValue("avg", anInner) {
   def createAggregationFunction = new AvgFunction(anInner)
 }
 
+case class Collect(anInner: Value) extends AggregationValue("collect", anInner) {
+  def createAggregationFunction = new CollectFunction(anInner)
+}
+
 case class NullablePropertyValue(subEntity: String, subProperty: String) extends PropertyValue(subEntity, subProperty) {
   protected override def handleNotFound(propertyContainer: PropertyContainer, x: NotFoundException): Any = null
 }
@@ -136,14 +140,14 @@ case class IdValue(inner: Value) extends FunctionValue("ID", inner) {
   }
 }
 
-case class PathNodesValue(path: EntityValue) extends FunctionValue("NODES", path) {
+case class PathNodesValue(path: Value) extends FunctionValue("NODES", path) {
   def apply(m: Map[String, Any]): Any = path(m) match {
     case p: Path => p.nodes().asScala.toSeq
     case x => throw new SyntaxException("Expected " + path.identifier.name + " to be a path.")
   }
 }
 
-case class PathRelationshipsValue(path: EntityValue) extends FunctionValue("RELATIONSHIPS", path) {
+case class PathRelationshipsValue(path: Value) extends FunctionValue("RELATIONSHIPS", path) {
   def apply(m: Map[String, Any]): Any = path(m) match {
     case p: Path => p.relationships().asScala.toSeq
     case x => throw new SyntaxException("Expected " + path.identifier.name + " to be a path.")

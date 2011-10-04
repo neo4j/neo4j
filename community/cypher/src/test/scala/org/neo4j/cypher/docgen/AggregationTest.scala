@@ -43,7 +43,7 @@ class AggregationTest extends DocumentingTestBase {
       returns = "The start node and the count of related nodes.",
       (p) => assertEquals(Map("n" -> node("A"), "count(*)" -> 3), p.toList.head))
   }
-  
+
   @Test def countRelationshipsByType() {
     testQuery(
       title = "Group Count Relationship Types",
@@ -107,5 +107,14 @@ class AggregationTest extends DocumentingTestBase {
       queryText = "start n=node(%A%,%B%,%C%) return max(n.property)",
       returns = "The largest of all the values in the property 'property'.",
       (p) => assertEquals(Map("max(n.property)" -> 44), p.toList.head))
+  }
+
+  @Test def collect() {
+    testQuery(
+      title = "COLLECT",
+      text = "+COLLECT+ collects all the values into a list.",
+      queryText = "start n=node(%A%,%B%,%C%) return collect(n.property)",
+      returns = "Returns a single row, with all the values collected.",
+      (p) => assertEquals(Map("collect(n.property)" -> Seq(13,33,44)), p.toList.head))
   }
 }

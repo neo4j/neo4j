@@ -26,7 +26,7 @@ import org.neo4j.cypher.SyntaxException
 trait Tokens extends JavaTokenParsers {
   val keywords = List("start", "where", "return", "limit", "skip", "order", "by")
 
-  def ignoreCase(str: String): Parser[String] = ("""(?i)\Q""" + str + """\E""").r
+  def ignoreCase(str: String): Parser[String] = ("""(?i)\Q""" + str + """\E""").r ^^ (x => x.toLowerCase)
 
   def identity: Parser[String] = (nonKeywordIdentifier | escapedIdentity)
 
