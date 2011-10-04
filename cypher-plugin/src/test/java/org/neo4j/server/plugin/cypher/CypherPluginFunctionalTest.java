@@ -26,7 +26,6 @@ import java.io.UnsupportedEncodingException;
 
 import javax.ws.rs.core.Response.Status;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
@@ -125,6 +124,7 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
     @Graph( "I know you" )
     public void return_JSON_table_format() throws UnsupportedEncodingException, Exception
     {
+        data.get();
         String script = "start x  = node(" + data.get().get( "I" ).getId()
                         + ") match path = (x--friend) return path, friend.name";
         gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
@@ -142,12 +142,13 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
      */ 
     @Test
     @Documented
-    @Graph( "I know you" )
+    @Graph( value = {"I know you"}, autoIndexNodes= true )
     public void send_queries_with_parameters() throws UnsupportedEncodingException, Exception
     {
-        String script = "start x  = node({startId}) match path = (x-[r]-friend) where friend.name = {name} return TYPE(r)";
+        data.get();
+        String script = "start x  = node:node_auto_index(name={startName}) match path = (x-[r]-friend) where friend.name = {name} return TYPE(r)";
         gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
-                "{\"query\": \"" + script + "\",\"parameters\": {\"startId\":" + data.get().get( "I" ).getId()+", \"name\":\"you\"}}" ).description(
+                "{\"query\": \"" + script + "\",\"parameters\": {\"startName\":\"I\",\"name\":\"you\"}}" ).description(
                         AsciidocHelper.createCypherSnippet( script ));
         String response = gen.get().post( ENDPOINT ).entity();
         assertEquals( 2, ( JsonHelper.jsonToMap( response ) ).size() );
