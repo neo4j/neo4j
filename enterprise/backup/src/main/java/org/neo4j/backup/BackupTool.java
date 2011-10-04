@@ -156,7 +156,8 @@ public class BackupTool
             }
             else
             {
-                throw e;
+                exitAbnormally( "TransactionFailureException from existing backup at '"
+                                + from + "': , " + e.getMessage() );
             }
         }
         catch ( ComException e )
