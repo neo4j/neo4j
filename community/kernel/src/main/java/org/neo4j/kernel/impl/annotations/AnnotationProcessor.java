@@ -23,12 +23,15 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
+import java.lang.annotation.Annotation;
 import java.net.URI;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
 import javax.annotation.processing.AbstractProcessor;
+import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
@@ -39,8 +42,20 @@ import javax.tools.Diagnostic.Kind;
 import javax.tools.FileObject;
 import javax.tools.StandardLocation;
 
-abstract class AnnotationProcessor extends AbstractProcessor
+public abstract class AnnotationProcessor extends AbstractProcessor
 {
+    private CompilationManipulator manipulator = null;
+
+    @Override
+    public synchronized void init( @SuppressWarnings( "hiding" ) ProcessingEnvironment processingEnv )
+    {
+        super.init( processingEnv );
+        manipulator = CompilationManipulator.load( this, processingEnv );
+        if ( manipulator == null )
+            processingEnv.getMessager().printMessage( Kind.NOTE,
+                    "Cannot write values to this compiler: " + processingEnv.getClass().getName() );
+    }
+
     @Override
     public boolean process( Set<? extends TypeElement> annotations, RoundEnvironment roundEnv )
     {
@@ -60,7 +75,8 @@ abstract class AnnotationProcessor extends AbstractProcessor
                         catch ( Exception e )
                         {
                             e.printStackTrace();
-                            processingEnv.getMessager().printMessage( Kind.ERROR, e.toString(), annotated, mirror );
+                            processingEnv.getMessager().printMessage( Kind.ERROR, "Internal error: " + e.toString(),
+                                    annotated, mirror );
                         }
                     }
                 }
@@ -71,7 +87,6 @@ abstract class AnnotationProcessor extends AbstractProcessor
 
     protected final void warn( Element element, String message )
     {
-
         processingEnv.getMessager().printMessage( Kind.WARNING, message, element );
     }
 
@@ -80,7 +95,50 @@ abstract class AnnotationProcessor extends AbstractProcessor
         processingEnv.getMessager().printMessage( Kind.WARNING, message, element, annotation );
     }
 
-    abstract void process( TypeElement annotationType, Element annotated, AnnotationMirror annotation,
+    protected final void error( Element element, String message )
+    {
+        processingEnv.getMessager().printMessage( Kind.ERROR, message, element );
+    }
+
+    protected final void error( Element element, AnnotationMirror annotation, String message )
+    {
+        processingEnv.getMessager().printMessage( Kind.ERROR, message, element, annotation );
+    }
+
+    protected final boolean updateAnnotationValue( Element annotated, AnnotationMirror annotation, String key,
+            String value )
+    {
+        return manipulator != null && manipulator.updateAnnotationValue( annotated, annotation, key, value );
+    }
+
+    protected final boolean addAnnotation( Element target, Class<? extends Annotation> annotation, Object value )
+    {
+        return addAnnotation( target, annotation, Collections.singletonMap( "value", value ) );
+    }
+
+    protected final boolean addAnnotation( Element target, Class<? extends Annotation> annotation, String key,
+            Object value )
+    {
+        return addAnnotation( target, annotation, Collections.singletonMap( key, value ) );
+    }
+
+    protected final boolean addAnnotation( Element target, Class<? extends Annotation> annotation )
+    {
+        return addAnnotation( target, annotation, Collections.<String, Object>emptyMap() );
+    }
+
+    protected final boolean addAnnotation( Element target, Class<? extends Annotation> annotation,
+            Map<String, Object> parameters )
+    {
+        return manipulator != null && manipulator.addAnnotation( target, nameOf( annotation ), parameters );
+    }
+
+    private static String nameOf( Class<? extends Annotation> annotation )
+    {
+        return annotation.getName().replace( '$', '.' );
+    }
+
+    protected abstract void process( TypeElement annotationType, Element annotated, AnnotationMirror annotation,
             Map<? extends ExecutableElement, ? extends AnnotationValue> values ) throws IOException;
 
     private static Pattern nl = Pattern.compile( "\n" );
@@ -104,6 +162,10 @@ abstract class AnnotationProcessor extends AbstractProcessor
             {
                 if ( line.equals( previous ) ) return;
             }
+        }
+        else
+        {
+            file.getParentFile().mkdirs();
         }
         new FileWriter( file, true ).append( line ).append( "\n" ).close();
     }
