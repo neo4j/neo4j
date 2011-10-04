@@ -472,22 +472,4 @@ public class NeoStore extends AbstractStore
         return getStoreOk() && relTypeStore.getStoreOk() &&
             propStore.getStoreOk() && relStore.getStoreOk() && nodeStore.getStoreOk();
     }
-    
-    public static class WithoutChildStores extends NeoStore
-    {
-        public WithoutChildStores( Map<?, ?> config )
-        {
-            super( config );
-        }
-        
-        @Override
-        protected void initStorage()
-        {   // Don't initialize child stores
-        }
-        
-        @Override
-        protected void closeStorage()
-        {   // Don't have to close child stores
-        }
-    }
 }
