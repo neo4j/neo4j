@@ -19,13 +19,19 @@
  */
 package org.neo4j.backup;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.NoSuchElementException;
 
 import org.neo4j.com.ComException;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.impl.storemigration.LogFiles;
+import org.neo4j.kernel.impl.storemigration.StoreFiles;
+import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 
 public class BackupTool
 {
@@ -51,8 +57,7 @@ public class BackupTool
         }
         catch ( URISyntaxException e )
         {
-            System.out.println( "Please properly specify a location to backup as a valid URI in the form <scheme>://<host>[:port], where scheme is the target database's running mode, eg ha" );
-            exitAbnormally();
+            exitAbnormally( "Please properly specify a location to backup as a valid URI in the form <scheme>://<host>[:port], where scheme is the target database's running mode, eg ha" );
         }
         String module = backupURI.getScheme();
 
@@ -69,10 +74,9 @@ public class BackupTool
             }
             catch ( NoSuchElementException e )
             {
-                System.out.println( String.format(
+                exitAbnormally( String.format(
                         "%s was specified as a backup module but it was not found. Please make sure that the implementing service is on the classpath.",
                         module ) );
-                exitAbnormally();
             }
         }
         if ( service != null )
@@ -90,50 +94,110 @@ public class BackupTool
         boolean incremental = arguments.has( INCREMENTAL );
         if ( full&incremental || !(full|incremental) )
         {
-            System.out.println( "Specify either " + dash( FULL ) + " or " + dash( INCREMENTAL ) );
-            exitAbnormally();
+            exitAbnormally( "Specify either " + dash( FULL ) + " or "
+                            + dash( INCREMENTAL ) );
         }
 
         if ( arguments.get( FROM, null ) == null )
         {
-            System.out.println( "Please specify " + dash( FROM ) );
-            exitAbnormally();
+            exitAbnormally( "Please specify " + dash( FROM ) );
         }
 
         if ( arguments.get( TO, null ) == null )
         {
-            System.out.println( "Specify target location with " + dash( TO ) + " <target-directory>" );
-            exitAbnormally();
+            exitAbnormally( "Specify target location with " + dash( TO )
+                            + " <target-directory>" );
         }
     }
 
     private static void doBackup( boolean trueForFullFalseForIncremental,
             URI from, String to )
     {
+        if ( trueForFullFalseForIncremental )
+        {
+            doBackupFull( from, to );
+        }
+        else
+        {
+            doBackupIncremental( from, to );
+        }
+        System.out.println( "Done" );
+    }
+
+    private static void doBackupFull( URI from, String to )
+    {
+        System.out.println( "Performing full backup from '" + from + "'" );
         OnlineBackup backup = newOnlineBackup( from );
         try
         {
-            if ( trueForFullFalseForIncremental )
-            {
-                System.out.println( "Performing full backup from '" + from + "'" );
                 backup.full( to );
-            }
-            else
-            {
-                System.out.println( "Performing incremental backup from '" + from + "'" );
-                backup.incremental( to );
-            }
-            System.out.println( "Done" );
         }
         catch ( ComException e )
         {
-            System.out.println( "Couldn't connect to '" + from + "', " + e.getMessage() );
-            exitAbnormally();
+            exitAbnormally( "Couldn't connect to '" + from + "', "
+                            + e.getMessage() );
         }
     }
 
-    private static void exitAbnormally()
+    private static void doBackupIncremental( URI from, String to )
     {
+        System.out.println( "Performing incremental backup from '" + from + "'" );
+        OnlineBackup backup = newOnlineBackup( from );
+        boolean failedBecauseOfStoreVersionMismatch = false;
+        try
+        {
+            backup.incremental( to );
+        }
+        catch ( TransactionFailureException e )
+        {
+            if ( e.getCause() instanceof UpgradeNotAllowedByConfigurationException )
+            {
+                failedBecauseOfStoreVersionMismatch = true;
+            }
+            else
+            {
+                throw e;
+            }
+        }
+        catch ( ComException e )
+        {
+            exitAbnormally( "Couldn't connect to '" + from + "', "
+                            + e.getMessage() );
+        }
+        if ( failedBecauseOfStoreVersionMismatch )
+        {
+            System.out.println( "The database present in the target directory is of an older version. Backing that up in "
+                        + "target"
+                        + " and performing a full backup from source" );
+            try
+            {
+                moveExistingDatabase( to );
+            }
+            catch ( IOException e )
+            {
+                exitAbnormally( "There was a problem moving the old database out of the way - cannot continue, aborting: "
+                                + e.getMessage() );
+            }
+            doBackupFull( from, to );
+        }
+    }
+
+    private static void moveExistingDatabase( String to ) throws IOException
+    {
+        File toDir = new File(to);
+        File backupDir = new File( toDir, "old-version" );
+        if ( !backupDir.mkdir() )
+        {
+            throw new IOException( "Trouble making target backup directory "
+                                   + backupDir.getAbsolutePath() );
+        }
+        StoreFiles.move( toDir, backupDir );
+        LogFiles.move( toDir, backupDir );
+    }
+
+    private static void exitAbnormally( String message )
+    {
+        System.out.println( message );
         System.exit( 1 );
     }
 

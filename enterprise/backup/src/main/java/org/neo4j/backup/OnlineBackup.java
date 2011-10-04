@@ -51,25 +51,25 @@ public class OnlineBackup
     {
         return new OnlineBackup( hostNameOrIp, port );
     }
-    
+
     public static OnlineBackup from( String hostNameOrIp )
     {
         return new OnlineBackup( hostNameOrIp, BackupServer.DEFAULT_PORT );
     }
-    
+
     private OnlineBackup( String hostNameOrIp, int port )
     {
         this.hostNameOrIp = hostNameOrIp;
         this.port = port;
     }
-    
+
     public OnlineBackup full( String targetDirectory )
     {
         if ( directoryContainsDb( targetDirectory ) )
         {
             throw new RuntimeException( targetDirectory + " already contains a database" );
         }
-        
+
         //                                                     TODO OMG this is ugly
         BackupClient client = new BackupClient( hostNameOrIp, port, new NotYetExistingGraphDatabase( targetDirectory ) );
         try
@@ -93,7 +93,7 @@ public class OnlineBackup
         }
         return this;
     }
-    
+
     private boolean directoryContainsDb( String targetDirectory )
     {
         return new File( targetDirectory, NeoStore.DEFAULT_NAME ).exists();
@@ -103,12 +103,12 @@ public class OnlineBackup
     {
         return port;
     }
-    
+
     public String getHostNameOrIp()
     {
         return hostNameOrIp;
     }
-    
+
     public Map<String, Long> getLastCommittedTxs()
     {
         return Collections.unmodifiableMap( lastCommittedTxs );
@@ -118,15 +118,15 @@ public class OnlineBackup
     {
         return new EmbeddedGraphDatabase( targetDirectory );
     }
-    
+
     public OnlineBackup incremental( String targetDirectory )
     {
         if ( !directoryContainsDb( targetDirectory ) )
         {
             throw new RuntimeException( targetDirectory + " doesn't contain a database" );
         }
-        
         GraphDatabaseService targetDb = startTemporaryDb( targetDirectory );
+
         try
         {
             return incremental( targetDb );
@@ -150,7 +150,7 @@ public class OnlineBackup
         }
         return this;
     }
-    
+
     private void unpackResponse( Response<Void> response, GraphDatabaseService graphDb, TxHandler txHandler )
     {
         try
@@ -163,7 +163,7 @@ public class OnlineBackup
             throw new RuntimeException( "Unable to apply received transactions", e );
         }
     }
-    
+
     private void getLastCommittedTxs( GraphDatabaseService graphDb )
     {
         for ( XaDataSource ds : ((AbstractGraphDatabase) graphDb).getConfig().getTxModule().getXaDataSourceManager().getAllRegisteredDataSources() )
@@ -180,7 +180,7 @@ public class OnlineBackup
         List<Pair<String, Long>> txs = new ArrayList<Pair<String,Long>>();
         for ( XaDataSource ds : dsManager.getAllRegisteredDataSources() )
         {
-            txs.add( Pair.of( ds.getName(), ds.getLastCommittedTxId() ) ); 
+            txs.add( Pair.of( ds.getName(), ds.getLastCommittedTxId() ) );
         }
         return SlaveContext.anonymous( txs.toArray( new Pair[0] ) );
     }
