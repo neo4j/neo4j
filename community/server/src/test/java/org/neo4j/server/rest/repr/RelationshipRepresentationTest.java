@@ -107,7 +107,6 @@ public class RelationshipRepresentationTest
         return relationship;
     }
 
-    @SuppressWarnings( "unchecked" )
     public static void verifySerialisation( Map<String, Object> relrep )
     {
         assertUriMatches( RELATIONSHIP_URI_PATTERN, relrep.get( "self" )

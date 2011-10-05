@@ -20,15 +20,18 @@
 package org.neo4j.server.rest.security;
 
 import javax.servlet.http.HttpServletRequest;
+
 //START SNIPPET: failingRule
-public class PermanentlyFailingSecurityRule implements SecurityRule {
-    
+public class PermanentlyFailingSecurityRule implements SecurityRule
+{
+
     public static final String REALM = "WallyWorld"; // as per RFC2617 :-);
 
     @Override
     public boolean isAuthorized( HttpServletRequest request )
     {
-        return false; // always fails
+        return false; // always fails - a production implementation performs
+                      // deployment-specific authorization logic here
     }
 
     @Override
@@ -38,9 +41,9 @@ public class PermanentlyFailingSecurityRule implements SecurityRule {
     }
 
     @Override
-    public String forRealm()
+    public String wwwAuthenticateHeader()
     {
-        return REALM;
+        return SecurityFilter.basicAuthenticationResponse(REALM);
     }
 }
-//END SNIPPET: failingRule
+// END SNIPPET: failingRule

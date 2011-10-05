@@ -42,9 +42,9 @@ public interface SecurityRule
     String forUriPath();
 
     /**
-     * @return the opaque string representing the realm for which the rule
-     *         applies. Will be used to formulate a correct <code>401</code>
-     *         response code if the rule denies a request.
+     * @return the opaque string representing the WWW-Authenticate header to
+     *         which the rule applies. Will be used to formulate a
+     *         <code>401</code> response code if the rule denies a request.
      */
-    String forRealm();
+    String wwwAuthenticateHeader();
 }

@@ -38,7 +38,7 @@ public class PermanentlyPassingSecurityRule implements SecurityRule {
     }
 
     @Override
-    public String forRealm()
+    public String wwwAuthenticateHeader()
     {
         return REALM;
     }

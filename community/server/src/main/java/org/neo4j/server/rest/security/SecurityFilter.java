@@ -86,11 +86,16 @@ public class SecurityFilter implements Filter
     {
         HttpServletResponse httpServletResponse = (HttpServletResponse) response;
         httpServletResponse.setStatus( 401 );
-        httpServletResponse.addHeader( "WWW-Authenticate", "Basic realm=\"" + rule.forRealm() + "\"" );
+        httpServletResponse.addHeader( "WWW-Authenticate", rule.wwwAuthenticateHeader() );
     }
 
     @Override
     public void destroy()
     {
+    }
+
+    public static String basicAuthenticationResponse( String realm )
+    {
+        return "Basic realm=\"" + realm + "\"";
     }
 }

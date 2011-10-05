@@ -42,8 +42,7 @@ public class EntityOutputFormat extends OutputFormat
     }
 
     @Override
-    protected Response response( Response.ResponseBuilder response,
-            @SuppressWarnings( "hiding" ) Representation representation )
+    protected Response response( Response.ResponseBuilder response, Representation representation )
     {
         this.representation = representation;
 

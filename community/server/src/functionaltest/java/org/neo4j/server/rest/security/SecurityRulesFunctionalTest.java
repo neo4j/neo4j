@@ -53,24 +53,27 @@ public class SecurityRulesFunctionalTest
     }
 
     /**
-     * In this case, a failing security rule is registered to deny all URI
-     * access to the server by listing the rules class in +neo4j-server.properties+:
+     * In this example, a (dummy) failing security rule is registered to deny
+     * access to all URIs to the server by listing the rules class in
+     * +neo4j-server.properties+:
      * 
-     * [source]
-     * ----
-     * org.neo4j.server.rest.security_rules=my.rules.PermanentlyFailingSecurityRule
-     * ----
+     * [source] ---- org.neo4j.server.rest.security_rules=my.rules.
+     * PermanentlyFailingSecurityRule ----
      * 
      * with the rule source code of:
      * 
      * @@failingRule
      * 
-     * With this rule registered, any access to the server will be denied.
+     *               With this rule registered, any access to the server will be
+     *               denied. In a production-quality implementation the rule
+     *               will likely lookup credentials/claims in a 3rd party
+     *               directory service (e.g. LDAP) or in a local database of
+     *               authorized users.
      * 
      */
     @Test
     @Documented
-    @Title("Enforcing dynamic security rules")
+    @Title( "Enforcing Server Authorization Rules" )
     public void should401WithBasicChallengeWhenASecurityRuleFails() throws Exception
     {
         server = ServerBuilder.server()
@@ -78,9 +81,11 @@ public class SecurityRulesFunctionalTest
                 .withSecurityRules( PermanentlyFailingSecurityRule.class.getCanonicalName() )
                 .build();
         server.start();
-        gen.get().addSourceSnippets( PermanentlyFailingSecurityRule.class, "failingRule" );
+        gen.get()
+                .addSourceSnippets( PermanentlyFailingSecurityRule.class, "failingRule" );
         functionalTestHelper = new FunctionalTestHelper( server );
-        gen.get().setSection( "ops" );
+        gen.get()
+                .setSection( "ops" );
         JaxRsResponse response = gen.get()
                 .expectedStatus( 401 )
                 .expectedHeader( "WWW-Authenticate" )
@@ -88,7 +93,8 @@ public class SecurityRulesFunctionalTest
                 .response();
 
         assertThat( response.getHeaders()
-                .getFirst( "WWW-Authenticate" ), containsString( PermanentlyFailingSecurityRule.REALM ) );
+                .getFirst( "WWW-Authenticate" ), containsString( "Basic realm=\""
+                                                                 + PermanentlyFailingSecurityRule.REALM + "\"" ) );
     }
 
     @Test
@@ -109,7 +115,8 @@ public class SecurityRulesFunctionalTest
                 .response();
 
         assertThat( response.getHeaders()
-                .getFirst( "WWW-Authenticate" ), containsString( PermanentlyFailingSecurityRule.REALM ) );
+                .getFirst( "WWW-Authenticate" ), containsString( "Basic realm=\""
+                                                                 + PermanentlyFailingSecurityRule.REALM + "\"" ) );
     }
 
     @Test

@@ -76,14 +76,18 @@ ProxyPassReverse / http://localhost:7474/
 </Location>
 ----
 
-== Dynamic security rules ==
+== Server Authorization Rules ==
 
-[WARNING]
-This feature is experimental and may change in futurre releases.
+By default, Neo4j server allows access via the REST API from any local process via HTTP, which can be opened
+up to any host (and in turn restricted to specific hosts by using external agents like front-end Web servers).
 
-In order to implement dynamic and context specific security in the Neo4j Server, SecurityRules can be
-registered and implemented in the server. This makes scenarios like user and role based security and
+However administrators may require more fine-grained security policies to be applied, allowing or disallowing
+access the specific aspects of the database predicated on credentials that users or applications provide.
+
+To facilitate domain-specific authorization policies in Neo4j Server, SecurityRules can be implemented and
+registered with the server. This makes scenarios like user and role based security and
 authentication against external lookup services possible.
 
-include::enforcing-dynamic-security-rules.txt[]
+:leveloffset: 0
 
+include::enforcing-server-authorization-rules.txt[]
