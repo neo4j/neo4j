@@ -80,7 +80,7 @@ abstract class DocumentingTestBase extends JUnitSuite {
     "target/docs/ql/"
   }
 
-  private def emitGraphviz(): String = {
+  private def emitGraphviz(fileName:String): String = {
     val out = new ByteArrayOutputStream();
     val writer = new GraphvizWriter(new AsciiDocStyle());
     writer.emit(out, Walker.fullGraph(db));
@@ -88,7 +88,7 @@ abstract class DocumentingTestBase extends JUnitSuite {
     """
 _Graph_
 
-["dot", "graph.svg", "neoviz"]
+["dot", """" + fileName + """.svg", "neoviz"]
 ----
 %s
 ----
@@ -96,8 +96,8 @@ _Graph_
 """.format(out)
   }
 
-  def dumpGraphViz(graphViz: PrintWriter) {
-    val foo = emitGraphviz()
+  def dumpGraphViz(graphViz: PrintWriter, fileName:String) {
+    val foo = emitGraphviz(fileName)
     graphViz.write(foo)
     graphViz.flush()
     graphViz.close()
@@ -118,9 +118,9 @@ _Graph_
     val writer = new PrintWriter(new FileWriter(new File(dir, nicefy(title) + ".txt")))
     dumpToFile(writer, title, query, returns, text, result)
 
-    val graphFileName = "cypher-" + this.getClass.getSimpleName.replaceAll("Test", "").toLowerCase + "-graph.txt"
-    val graphViz = new PrintWriter(new FileWriter(new File(dir, graphFileName)))
-    dumpGraphViz(graphViz)
+    val graphFileName = "cypher-" + this.getClass.getSimpleName.replaceAll("Test", "").toLowerCase + "-graph"
+    val graphViz = new PrintWriter(new FileWriter(new File(dir, graphFileName+ ".txt")))
+    dumpGraphViz(graphViz, graphFileName)
   }
 
   def indexProperties[T <: PropertyContainer](n: T, index: Index[T]) {
