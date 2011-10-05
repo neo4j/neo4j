@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.batchinsert;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -32,6 +33,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -304,12 +306,26 @@ public class TestBatchInsert
         // Assert for node
         long nodeId = inserter.createNode( map() );
         inserter.getNodeProperties( nodeId );
+        //cp=N U http://www.w3.org/1999/02/22-rdf-syntax-ns#type, c=N
 
         // Assert for relationship
         long anotherNodeId = inserter.createNode( null );
         long relId = inserter.createRelationship( nodeId, anotherNodeId, RelTypes.BATCH_TEST, map() );
         inserter.getRelationshipProperties( relId );
+        inserter.shutdown();
+    }
+    
+    @Test
+    @Ignore
+    public void createEntitiesWithStringPropertiesMap() throws Exception
+    {
+        BatchInserter inserter = newBatchInserter();
         
+        // Assert for node
+        long nodeId = inserter.createNode( map("key", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" ) );
+        Map<String, Object> nodeProperties = inserter.getNodeProperties( nodeId );
+        assertNotNull(nodeProperties.get( "key" ));
+
         inserter.shutdown();
     }
 }
