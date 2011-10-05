@@ -15,7 +15,6 @@ JSDIR            = $(SRCDIR)/js
 CONFDIR          = $(SRCDIR)/conf
 DOCBOOKFILE      = $(BUILDDIR)/neo4j-manual.xml
 DOCBOOKSHORTINFOFILE = $(BUILDDIR)/neo4j-manual-shortinfo.xml
-DOCBOOKFILEPDF   = $(BUILDDIR)/neo4j-manual-pdf.xml
 DOCBOOKFILEHTML  = $(BUILDDIR)/neo4j-manual-html.xml
 FOPDIR           = $(BUILDDIR)/pdf
 FOPFILE          = $(FOPDIR)/neo4j-manual.fo
@@ -196,22 +195,22 @@ pdf: docbook-shortinfo copyimages
 	# Building PDF.
 	#
 	#
-	sed -e 's/\&#8594;/\&#8211;\&gt;/g' -e 's/\&#8592;/\&lt;\&#8211;/g' <$(DOCBOOKSHORTINFOFILE) >$(DOCBOOKFILEPDF)
 	mkdir -p $(FOPDIR)
 	cd $(FOPDIR)
-	xsltproc --xinclude --output $(FOPFILE) $(CONFDIR)/fo.xsl $(DOCBOOKFILEPDF)
+	xsltproc --xinclude --output $(FOPFILE) $(CONFDIR)/fo.xsl $(DOCBOOKSHORTINFOFILE)
 	ln -s $(SRCDIR)/images $(FOPDIR)/images
 	export FOP_OPTS="-Xmx2048m"
-	fop -fo $(FOPFILE) -pdf $(FOPPDF)
+	fop -fo $(FOPFILE) -pdf $(FOPPDF) -c $(CONFDIR)/fop.xml
 
-latexpdf:  manpages copyimages
+latexpdf: docbook-shortinfo copyimages
 	#
 	#
 	# Building PDF using LaTex.
 	#
 	#
 	mkdir -p $(BUILDDIR)/dblatex
-	a2x $(A2X_FLAGS) -L -f pdf -D $(BUILDDIR)/dblatex --conf-file=$(CONFDIR)/dblatex.conf $(SRCFILE)
+	cp -f $(DOCBOOKSHORTINFOFILE) $(BUILDDIR)/dblatex/neo4j-manual-shortinfo.xml
+	a2x $(A2X_FLAGS) -L -f pdf -D $(BUILDDIR)/dblatex --conf-file=$(CONFDIR)/dblatex.conf $(DOCBOOKSHORTINFOFILE)
 
 html: manpages copyimages docbook-html
 	#
