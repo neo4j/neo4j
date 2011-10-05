@@ -45,6 +45,11 @@ public class LegacyRelationshipStoreReader
         maxId = (fileChannel.size() - endHeaderSize) / RECORD_LENGTH;
     }
 
+    public long getMaxId()
+    {
+        return maxId;
+    }
+
     public Iterable<RelationshipRecord> readRelationshipStore() throws IOException
     {
         final ByteBuffer buffer = ByteBuffer.allocateDirect( RECORD_LENGTH );

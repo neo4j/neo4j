@@ -57,6 +57,7 @@ public class ReadRecordsTest
         URL nodeStoreFile = getClass().getResource( "exampledb/neostore.relationshipstore.db" );
 
         LegacyRelationshipStoreReader relationshipStoreReader = new LegacyRelationshipStoreReader( nodeStoreFile.getFile() );
+        assertEquals( 1500, relationshipStoreReader.getMaxId() );
         Iterable<RelationshipRecord> records = relationshipStoreReader.readRelationshipStore();
         int relationshipCount = 0;
         for ( RelationshipRecord record : records )
