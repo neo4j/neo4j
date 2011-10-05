@@ -5,7 +5,7 @@ Where
 If you need filtering apart from the pattern of the data that you are looking
 for, you can add clauses in the where part of the query.
 
-include::graph.txt[]
+include::cypher-where-graph.txt[]
 
 include::boolean-operations.txt[]
 include::filter-on-node-property.txt[]

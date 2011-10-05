@@ -6,7 +6,7 @@ To calculate aggregated data, Cypher offers aggregation, much like SQL's +GROUP 
 If any aggregation functions are found in the +RETURN+ statement, all the columns without aggregating functions are used as the grouping key.
 
 
-include::graph.txt[]
+include::cypher-aggregation-graph.txt[]
 
 == COUNT ==
 +COUNT+ is used to count the number of rows. +COUNT+ can be used in two forms - +COUNT(*)+

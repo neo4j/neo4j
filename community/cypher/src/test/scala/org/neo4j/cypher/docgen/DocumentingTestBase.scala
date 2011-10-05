@@ -118,7 +118,8 @@ _Graph_
     val writer = new PrintWriter(new FileWriter(new File(dir, nicefy(title) + ".txt")))
     dumpToFile(writer, title, query, returns, text, result)
 
-    val graphViz = new PrintWriter(new FileWriter(new File(dir, "graph.txt")))
+    val graphFileName = "cypher-" + this.getClass.getSimpleName.replaceAll("Test", "").toLowerCase + "-graph.txt"
+    val graphViz = new PrintWriter(new FileWriter(new File(dir, graphFileName)))
     dumpGraphViz(graphViz)
   }
 

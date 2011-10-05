@@ -7,7 +7,7 @@ bound points. A bound point is a relationship or a node that form the starting
 points for a pattern match. You can either bind points by id, or by
 index lookups.
 
-include::graph.txt[]
+include::cypher-start-graph.txt[]
 
 include::node-by-id.txt[]
 include::relationship-by-id.txt[]
