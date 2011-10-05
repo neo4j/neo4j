@@ -26,7 +26,6 @@ import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.alwaysAllowed;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.defaultConfig;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
 
 import java.io.File;
 import java.io.IOException;

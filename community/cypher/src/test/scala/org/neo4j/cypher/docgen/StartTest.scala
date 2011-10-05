@@ -104,7 +104,7 @@ class StartTest extends DocumentingTestBase {
       text = "Sometimes you want to bind multiple start points. Just list them separated by commas.",
       queryText = """start a=node(%A%), b=node(%B%) return a,b""",
       returns = """Both the A and the B node are returned""",
-      (p) => println(p.toList))
+      p => assertEquals(List(Map("a"->node("A"), "b"->node("B"))), p.toList))
   }
 }
 

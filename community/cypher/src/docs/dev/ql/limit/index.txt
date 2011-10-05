@@ -4,6 +4,6 @@ Limit
 
 +LIMIT+ enables the return of only subsets of the total result.
 
-include::graph.txt[]
+include::cypher-limit-graph.txt[]
 
 include::return-first-part.txt[]

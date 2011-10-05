@@ -31,6 +31,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -39,6 +40,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -293,5 +295,16 @@ public class TestBatchInsert
         String storeDir = inserter.getStore();
         inserter.shutdown();
         assertTrue( new File( storeDir, StringLogger.DEFAULT_NAME ).delete() );
+    }
+    
+    @Test
+    @Ignore
+    public void testSetNodeProps() throws Exception
+    {
+        BatchInserter inserter = newBatchInserter();
+        long nodeId = inserter.createNode( new HashMap<String, Object>() );
+        Map props = MapUtil.stringMap( "id", "idString" ); 
+        inserter.setNodeProperties( nodeId, props );
+        inserter.shutdown();
     }
 }

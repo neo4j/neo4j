@@ -7,7 +7,7 @@ pattern is made up of one or more paths, separated by commas.
 
 All parts of the pattern must be directly or indirectly bound to a start point.
 
-include::graph.txt[]
+include::cypher-match-graph.txt[]
 
 include::related-nodes.txt[]
 include::outgoing-relationships.txt[]
