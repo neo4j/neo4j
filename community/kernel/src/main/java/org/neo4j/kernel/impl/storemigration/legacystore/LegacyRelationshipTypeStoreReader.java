@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 
 public class LegacyRelationshipTypeStoreReader
 {
+    public static final String FROM_VERSION = "RelationshipTypeStore v0.9.9";
     private String fileName;
 
     public LegacyRelationshipTypeStoreReader( String fileName )
@@ -42,7 +43,7 @@ public class LegacyRelationshipTypeStoreReader
     {
         FileChannel fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
         int recordLength = 5;
-        int endHeaderSize = UTF8.encode( LegacyStore.FROM_VERSION ).length;
+        int endHeaderSize = UTF8.encode( FROM_VERSION ).length;
         long recordCount = (fileChannel.size() - endHeaderSize) / recordLength;
 
         LinkedList<RelationshipTypeRecord> records = new LinkedList<RelationshipTypeRecord>();

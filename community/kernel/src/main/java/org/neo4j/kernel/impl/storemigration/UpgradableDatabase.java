@@ -29,6 +29,13 @@ import java.util.Map;
 
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyDynamicStoreReader;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyPropertyIndexStoreReader;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyPropertyStoreReader;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipTypeStoreReader;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 
 public class UpgradableDatabase
 {
@@ -36,16 +43,16 @@ public class UpgradableDatabase
 
     public UpgradableDatabase()
     {
-        fileNamesToExpectedVersions.put( NeoStore.DEFAULT_NAME, "NeoStore v0.9.9" );
-        fileNamesToExpectedVersions.put( "neostore.nodestore.db", "NodeStore v0.9.9" );
-        fileNamesToExpectedVersions.put( "neostore.propertystore.db", "PropertyStore v0.9.9" );
-        fileNamesToExpectedVersions.put( "neostore.propertystore.db.arrays", "ArrayPropertyStore v0.9.9" );
-        fileNamesToExpectedVersions.put( "neostore.propertystore.db.index", "PropertyIndex v0.9.9" );
-        fileNamesToExpectedVersions.put( "neostore.propertystore.db.index.keys", "StringPropertyStore v0.9.9" );
-        fileNamesToExpectedVersions.put( "neostore.propertystore.db.strings", "StringPropertyStore v0.9.9" );
-        fileNamesToExpectedVersions.put( "neostore.relationshipstore.db", "RelationshipStore v0.9.9" );
-        fileNamesToExpectedVersions.put( "neostore.relationshiptypestore.db", "RelationshipTypeStore v0.9.9" );
-        fileNamesToExpectedVersions.put( "neostore.relationshiptypestore.db.names", "StringPropertyStore v0.9.9" );
+        fileNamesToExpectedVersions.put( NeoStore.DEFAULT_NAME, LegacyStore.FROM_VERSION );
+        fileNamesToExpectedVersions.put( "neostore.nodestore.db", LegacyNodeStoreReader.FROM_VERSION );
+        fileNamesToExpectedVersions.put( "neostore.propertystore.db", LegacyPropertyStoreReader.FROM_VERSION );
+        fileNamesToExpectedVersions.put( "neostore.propertystore.db.arrays", LegacyDynamicStoreReader.FROM_VERSION_ARRAY );
+        fileNamesToExpectedVersions.put( "neostore.propertystore.db.index", LegacyPropertyIndexStoreReader.FROM_VERSION );
+        fileNamesToExpectedVersions.put( "neostore.propertystore.db.index.keys", LegacyDynamicStoreReader.FROM_VERSION_STRING );
+        fileNamesToExpectedVersions.put( "neostore.propertystore.db.strings", LegacyDynamicStoreReader.FROM_VERSION_STRING );
+        fileNamesToExpectedVersions.put( "neostore.relationshipstore.db", LegacyRelationshipStoreReader.FROM_VERSION );
+        fileNamesToExpectedVersions.put( "neostore.relationshiptypestore.db", LegacyRelationshipTypeStoreReader.FROM_VERSION );
+        fileNamesToExpectedVersions.put( "neostore.relationshiptypestore.db.names", LegacyDynamicStoreReader.FROM_VERSION_STRING );
     }
 
     public void checkUpgradeable( File storeFile )

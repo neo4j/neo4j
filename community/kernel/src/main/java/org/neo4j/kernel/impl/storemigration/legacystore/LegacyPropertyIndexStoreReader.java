@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.nioneo.store.Record;
 
 public class LegacyPropertyIndexStoreReader
 {
+    public static final String FROM_VERSION = "PropertyIndex v0.9.9";
     private String fileName;
 
     public LegacyPropertyIndexStoreReader( String fileName )
@@ -42,7 +43,7 @@ public class LegacyPropertyIndexStoreReader
     {
         FileChannel fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
         int recordLength = 9;
-        int endHeaderSize = UTF8.encode( LegacyStore.FROM_VERSION ).length;
+        int endHeaderSize = UTF8.encode( FROM_VERSION ).length;
         long recordCount = (fileChannel.size() - endHeaderSize) / recordLength;
 
         LinkedList<PropertyIndexRecord> records = new LinkedList<PropertyIndexRecord>();

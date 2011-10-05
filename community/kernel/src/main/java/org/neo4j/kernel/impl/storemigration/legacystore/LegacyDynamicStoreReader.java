@@ -37,6 +37,9 @@ import org.neo4j.kernel.impl.nioneo.store.Record;
 
 public class LegacyDynamicStoreReader
 {
+    public static final String FROM_VERSION_ARRAY = "ArrayPropertyStore v0.9.9";
+    public static final String FROM_VERSION_STRING = "StringPropertyStore v0.9.9";
+
     private PersistenceWindowPool windowPool;
     private int blockSize;
 
@@ -44,11 +47,11 @@ public class LegacyDynamicStoreReader
     protected static final int BLOCK_HEADER_SIZE = 1 + 4 + 4 + 4;
     private final FileChannel fileChannel;
 
-    public LegacyDynamicStoreReader( String fileName ) throws IOException
+    public LegacyDynamicStoreReader( String fileName, String fromVersionArray ) throws IOException
     {
         fileChannel = new RandomAccessFile( fileName, "r" ).getChannel();
         long fileSize = fileChannel.size();
-        String expectedVersion = LegacyStore.FROM_VERSION;
+        String expectedVersion = fromVersionArray;
         byte version[] = new byte[UTF8.encode( expectedVersion ).length];
         ByteBuffer buffer = ByteBuffer.wrap( version );
         fileChannel.position( fileSize - version.length );

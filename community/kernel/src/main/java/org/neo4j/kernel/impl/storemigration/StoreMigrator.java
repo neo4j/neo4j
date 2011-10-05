@@ -80,6 +80,7 @@ public class StoreMigrator
         private void migrateNodes( NodeStore nodeStore, PropertyWriter propertyWriter ) throws IOException
         {
             Iterable<NodeRecord> records = legacyStore.getNodeStoreReader().readNodeStore();
+            // estimate total number of nodes using file size then calc number of dots or percentage complete
             for ( NodeRecord nodeRecord : records )
             {
                 nodeStore.setHighId( nodeRecord.getId() + 1 );

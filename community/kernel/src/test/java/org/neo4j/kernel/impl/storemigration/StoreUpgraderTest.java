@@ -28,6 +28,7 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVers
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.copyRecursively;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.defaultConfig;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
 import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
 import java.io.File;
@@ -59,7 +60,7 @@ public class StoreUpgraderTest
 
         new StoreUpgrader( defaultConfig(), alwaysAllowed(), new UpgradableDatabase(), new StoreMigrator(), new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
 
-        MigrationTestUtils.verifyFilesHaveSameContent( MigrationTestUtils.findOldFormatStoreDirectory(), new File( workingDirectory, "upgrade_backup" ) );
+        verifyFilesHaveSameContent( MigrationTestUtils.findOldFormatStoreDirectory(), new File( workingDirectory, "upgrade_backup" ) );
     }
 
     @Test
@@ -106,7 +107,7 @@ public class StoreUpgraderTest
             // expected
         }
 
-        MigrationTestUtils.verifyFilesHaveSameContent( comparisonDirectory, workingDirectory );
+        verifyFilesHaveSameContent( comparisonDirectory, workingDirectory );
     }
 
     @Test
@@ -129,7 +130,7 @@ public class StoreUpgraderTest
             // expected
         }
 
-        MigrationTestUtils.verifyFilesHaveSameContent( comparisonDirectory, workingDirectory );
+        verifyFilesHaveSameContent( comparisonDirectory, workingDirectory );
     }
 
 }

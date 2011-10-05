@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.nioneo.store.Record;
 
 public class LegacyPropertyStoreReader
 {
+    public static final String FROM_VERSION = "PropertyStore v0.9.9";
     public static final int RECORD_LENGTH = 25;
     private PersistenceWindowPool windowPool;
     private final FileChannel fileChannel;

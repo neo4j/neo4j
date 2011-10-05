@@ -26,7 +26,8 @@ import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 
 public class LegacyStore
 {
-    static final String FROM_VERSION = "NodeStore v0.9.9";
+    public static final String FROM_VERSION = "NeoStore v0.9.9";
+
     private String storageFileName;
     private LegacyPropertyStoreReader propertyStoreReader;
     private LegacyNodeStoreReader nodeStoreReader;
@@ -50,9 +51,9 @@ public class LegacyStore
         nodeStoreReader = new LegacyNodeStoreReader( getStorageFileName() + ".nodestore.db" );
         relationshipStoreReader = new LegacyRelationshipStoreReader( getStorageFileName() + ".relationshipstore.db" );
         relationshipTypeStoreReader = new LegacyRelationshipTypeStoreReader( getStorageFileName() + ".relationshiptypestore.db" );
-        relationshipTypeNameStoreReader = new LegacyDynamicStoreReader( getStorageFileName() + ".relationshiptypestore.db.names" );
+        relationshipTypeNameStoreReader = new LegacyDynamicStoreReader( getStorageFileName() + ".relationshiptypestore.db.names", LegacyDynamicStoreReader.FROM_VERSION_STRING );
         propertyIndexStoreReader = new LegacyPropertyIndexStoreReader( getStorageFileName() + ".propertystore.db.index" );
-        propertyIndexKeyStoreReader = new LegacyDynamicStoreReader( getStorageFileName() + ".propertystore.db.index.keys" );
+        propertyIndexKeyStoreReader = new LegacyDynamicStoreReader( getStorageFileName() + ".propertystore.db.index.keys", LegacyDynamicStoreReader.FROM_VERSION_STRING );
     }
 
     public String getStorageFileName()
