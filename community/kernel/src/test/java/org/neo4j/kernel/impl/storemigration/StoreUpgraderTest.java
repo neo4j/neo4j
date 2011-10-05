@@ -23,15 +23,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.alwaysAllowed;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.copyRecursively;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.defaultConfig;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
 import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 
 import org.junit.Test;
@@ -45,11 +45,11 @@ public class StoreUpgraderTest
         File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
         MigrationTestUtils.prepareSampleLegacyDatabase( workingDirectory );
 
-        assertTrue( MigrationTestUtils.allStoreFilesHaveVersion( workingDirectory, "v0.9.9" ) );
+        assertTrue( allStoreFilesHaveVersion( workingDirectory, "v0.9.9" ) );
 
-        new StoreUpgrader( defaultConfig(), new AlwaysAllowedUpgradeConfiguration() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+        new StoreUpgrader( defaultConfig(), alwaysAllowed(), new UpgradableDatabase(), new StoreMigrator(), new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
 
-        assertTrue( MigrationTestUtils.allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
+        assertTrue( allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
     }
 
     @Test
@@ -58,9 +58,9 @@ public class StoreUpgraderTest
         File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
         MigrationTestUtils.prepareSampleLegacyDatabase( workingDirectory );
 
-        new StoreUpgrader( defaultConfig(), new AlwaysAllowedUpgradeConfiguration() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+        new StoreUpgrader( defaultConfig(), alwaysAllowed(), new UpgradableDatabase(), new StoreMigrator(), new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
 
-        verifyFilesHaveSameContent( MigrationTestUtils.findOldFormatStoreDirectory(), new File( workingDirectory, "upgrade_backup" ) );
+        MigrationTestUtils.verifyFilesHaveSameContent( MigrationTestUtils.findOldFormatStoreDirectory(), new File( workingDirectory, "upgrade_backup" ) );
     }
 
     @Test
@@ -79,7 +79,7 @@ public class StoreUpgraderTest
 
         try
         {
-            new StoreUpgrader( defaultConfig(), vetoingUpgradeConfiguration ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+            new StoreUpgrader( defaultConfig(), vetoingUpgradeConfiguration, new UpgradableDatabase(), new StoreMigrator(), new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
             fail( "Should throw exception" );
         } catch ( UpgradeNotAllowedByConfigurationException e )
         {
@@ -100,14 +100,14 @@ public class StoreUpgraderTest
 
         try
         {
-            new StoreUpgrader( defaultConfig(), new AlwaysAllowedUpgradeConfiguration() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+            new StoreUpgrader( defaultConfig(), alwaysAllowed(), new UpgradableDatabase(), new StoreMigrator(), new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
             fail( "Should throw exception" );
         } catch ( StoreUpgrader.UnableToUpgradeException e )
         {
             // expected
         }
 
-        verifyFilesHaveSameContent( comparisonDirectory, workingDirectory );
+        MigrationTestUtils.verifyFilesHaveSameContent( comparisonDirectory, workingDirectory );
     }
 
     @Test
@@ -123,42 +123,14 @@ public class StoreUpgraderTest
 
         try
         {
-            new StoreUpgrader( defaultConfig(), new AlwaysAllowedUpgradeConfiguration() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+            new StoreUpgrader( defaultConfig(), alwaysAllowed(), new UpgradableDatabase(), new StoreMigrator(), new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
             fail( "Should throw exception" );
         } catch ( StoreUpgrader.UnableToUpgradeException e )
         {
             // expected
         }
 
-        verifyFilesHaveSameContent( comparisonDirectory, workingDirectory );
+        MigrationTestUtils.verifyFilesHaveSameContent( comparisonDirectory, workingDirectory );
     }
 
-    private void verifyFilesHaveSameContent( File original, File other ) throws IOException
-    {
-        for ( File originalFile : original.listFiles() )
-        {
-            File otherFile = new File( other, originalFile.getName() );
-            if ( !originalFile.isDirectory() )
-            {
-                BufferedInputStream originalStream = new BufferedInputStream( new FileInputStream( originalFile ) );
-                BufferedInputStream otherStream = new BufferedInputStream( new FileInputStream( otherFile ) );
-
-                int aByte;
-                while ( (aByte = originalStream.read()) != -1 )
-                {
-                    assertEquals( "Different content in " + originalFile.getName(), aByte, otherStream.read() );
-                }
-
-                originalStream.close();
-                otherStream.close();
-            }
-        }
-    }
-
-    private static class AlwaysAllowedUpgradeConfiguration implements UpgradeConfiguration
-    {
-        public void checkConfigurationAllowsAutomaticUpgrade()
-        {
-        }
-    }
 }
