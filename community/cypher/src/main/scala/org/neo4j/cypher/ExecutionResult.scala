@@ -25,7 +25,7 @@ import org.neo4j.graphdb.{PropertyContainer, Relationship, NotFoundException, No
 import collection.Traversable
 
 trait ExecutionResult extends Traversable[Map[String, Any]] with StringExtras {
-  val symbols:SymbolTable
+  val symbols: SymbolTable
 
   val columns: List[String] = symbols.identifiers.map(_.name).toList
 
@@ -34,18 +34,18 @@ trait ExecutionResult extends Traversable[Map[String, Any]] with StringExtras {
   def javaColumnAs[T](column: String) = columnAs[T](column).asJava
 
   def columnAs[T](column: String): Iterator[T] = {
-    this.map((map) => {
-      val item: Any = map.getOrElse(column, throw new NotFoundException("No column named '" + column + "' was found."))
+    this.map(m => {
+      val item: Any = m.getOrElse(column, throw new NotFoundException("No column named '" + column + "' was found."))
       item.asInstanceOf[T]
     }).toIterator
   }
 
-  def javaIterator: java.util.Iterator[java.util.Map[String, Any]] = this.map((m) => m.asJava).toIterator.asJava
+  def javaIterator: java.util.Iterator[java.util.Map[String, Any]] = this.map(m => m.asJava).toIterator.asJava
 
-  def calculateColumnSizes: Map[String, Int] = {
-    val columnSizes = new scala.collection.mutable.HashMap[String, Int] ++ columns.map( name => name -> name.size)
+  def calculateColumnSizes(result:Seq[Map[String,Any]]): Map[String, Int] = {
+    val columnSizes = new scala.collection.mutable.HashMap[String, Int] ++ columns.map(name => name -> name.size)
 
-    this.foreach((m) => {
+    result.foreach((m) => {
       m.foreach((kv) => {
         val length = text(kv._2).size
         if (!columnSizes.contains(kv._1) || columnSizes.get(kv._1).get < length) {
@@ -58,31 +58,33 @@ trait ExecutionResult extends Traversable[Map[String, Any]] with StringExtras {
 
   def dumpToString(): String = {
     val start = System.currentTimeMillis()
+    val result = this.toList
+    val timeTaken = System.currentTimeMillis() - start
 
-    val columnSizes = calculateColumnSizes
+    val columnSizes = calculateColumnSizes(result)
 
     val headers = columns.map((c) => Map[String, Any](c -> c)).reduceLeft(_ ++ _)
     val headerLine: String = createString(columns, columnSizes, headers)
     val lineWidth: Int = headerLine.length - 2
     val --- = "+" + repeat("-", lineWidth) + "+"
 
-    val resultLines: Traversable[String] = map(createString(columns, columnSizes, _))
-    val timeTaken = System.currentTimeMillis() - start
+    val resultLines: Traversable[String] = result.map(createString(columns, columnSizes, _))
+
     val footer = "%d rows, %d ms".format(resultLines.size, timeTaken)
 
 
     val lines = List(
-          --- ,
-          headerLine ,
-          --- ) ++
-          resultLines ++
-          List(---)
+      ---,
+      headerLine,
+      ---) ++
+      resultLines ++
+      List(---)
 
     lines.mkString("\r\n") + "\r\n" + footer
   }
 
 
-  def props(x: PropertyContainer): String = x.getPropertyKeys.asScala.map((key) => key + "->" + quoteString(x.getProperty(key))).mkString("{", ",", "}")
+  def props(x: PropertyContainer): String = x.getPropertyKeys.asScala.map(key => key + "->" + quoteString(x.getProperty(key))).mkString("{", ",", "}")
 
   def text(obj: Any): String = obj match {
     case x: Node => x.toString + props(x)
@@ -97,13 +99,11 @@ trait ExecutionResult extends Traversable[Map[String, Any]] with StringExtras {
   }
 
   def createString(columns: List[String], columnSizes: Map[String, Int], m: Map[String, Any]): String = {
-    columns.map((c) => {
+    columns.map(c => {
       val length = columnSizes.get(c).get
       val txt = text(m.get(c).get)
       val value = makeSize(txt, length)
       value
-    }).mkString("| ", " | " ,  " |")
+    }).mkString("| ", " | ", " |")
   }
-
-
 }
