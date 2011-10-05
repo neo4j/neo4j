@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.batchinsert;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.MapUtil.map;
 
 import java.io.File;
 import java.util.Arrays;
@@ -31,7 +32,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -40,7 +40,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -298,13 +297,19 @@ public class TestBatchInsert
     }
     
     @Test
-    @Ignore
-    public void testSetNodeProps() throws Exception
+    public void createEntitiesWithEmptyPropertiesMap() throws Exception
     {
         BatchInserter inserter = newBatchInserter();
-        long nodeId = inserter.createNode( new HashMap<String, Object>() );
-        Map props = MapUtil.stringMap( "id", "idString" ); 
-        inserter.setNodeProperties( nodeId, props );
+        
+        // Assert for node
+        long nodeId = inserter.createNode( map() );
+        inserter.getNodeProperties( nodeId );
+
+        // Assert for relationship
+        long anotherNodeId = inserter.createNode( null );
+        long relId = inserter.createRelationship( nodeId, anotherNodeId, RelTypes.BATCH_TEST, map() );
+        inserter.getRelationshipProperties( relId );
+        
         inserter.shutdown();
     }
 }

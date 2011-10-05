@@ -414,7 +414,7 @@ public class BatchInserterImpl implements BatchInserter
 
     private long createPropertyChain( Map<String,Object> properties )
     {
-        if ( properties == null )
+        if ( properties == null || properties.isEmpty() )
         {
             return Record.NO_NEXT_PROPERTY.intValue();
         }
