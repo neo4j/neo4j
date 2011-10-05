@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
+import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 
 public class StoreMigrationTool
 {
@@ -67,7 +68,7 @@ public class StoreMigrationTool
 
         long startTime = System.currentTimeMillis();
 
-        new StoreMigrator( new SilentMigrationProgressMonitor() ) .migrate( legacyStore, neoStore );
+        new StoreMigrator( new VisibleMigrationProgressMonitor() ) .migrate( legacyStore, neoStore );
 
         long duration = System.currentTimeMillis() - startTime;
         System.out.printf( "Migration completed in %d s%n", duration / 1000 );
