@@ -19,7 +19,10 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-public interface UpgradeConfiguration
+public class SilentMigrationProgressMonitor implements MigrationProgressMonitor
 {
-    void checkConfigurationAllowsAutomaticUpgrade();
+    @Override
+    public void percentComplete( int percent )
+    {
+    }
 }

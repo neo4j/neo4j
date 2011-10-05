@@ -28,7 +28,9 @@ import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
@@ -64,9 +66,13 @@ public class StoreMigratorTest
         NeoStore.createStore( storeFileName, config );
         NeoStore neoStore = new NeoStore( config );
 
-        new StoreMigrator().migrate( legacyStore, neoStore );
+        ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();
+
+        new StoreMigrator( monitor ).migrate( legacyStore, neoStore );
 
         neoStore.close();
+
+        assertEquals( 100, monitor.events.size() );
 
         GraphDatabaseService database = new EmbeddedGraphDatabase( outputDir.getPath() );
 
@@ -169,6 +175,15 @@ public class StoreMigratorTest
             {
                 transaction.finish();
             }
+        }
+    }
+
+    private class ListAccumulatorMigrationProgressMonitor implements MigrationProgressMonitor
+    {
+        private List<Integer> events = new ArrayList<Integer>();
+        public void percentComplete( int percent )
+        {
+            events.add( percent );
         }
     }
 }

@@ -50,20 +50,30 @@ import org.neo4j.kernel.impl.util.FileUtils;
 
 public class StoreMigrator
 {
+    private MigrationProgressMonitor progressMonitor;
+
+    public StoreMigrator( MigrationProgressMonitor progressMonitor )
+    {
+        this.progressMonitor = progressMonitor;
+    }
+
     public void migrate( LegacyStore legacyStore, NeoStore neoStore ) throws IOException
     {
         new Migration( legacyStore, neoStore ).migrate();
     }
 
-    protected static class Migration
+    protected class Migration
     {
         private LegacyStore legacyStore;
         private NeoStore neoStore;
+        private long totalEntities;
+        private int percentComplete = 0;
 
         public Migration( LegacyStore legacyStore, NeoStore neoStore )
         {
             this.legacyStore = legacyStore;
             this.neoStore = neoStore;
+            totalEntities = legacyStore.getNodeStoreReader().getMaxId() + legacyStore.getRelationshipStoreReader().getMaxId();
         }
 
         private void migrate() throws IOException
@@ -83,6 +93,7 @@ public class StoreMigrator
             // estimate total number of nodes using file size then calc number of dots or percentage complete
             for ( NodeRecord nodeRecord : records )
             {
+                reportProgress(nodeRecord.getId());
                 nodeStore.setHighId( nodeRecord.getId() + 1 );
                 if ( nodeRecord.inUse() )
                 {
@@ -103,9 +114,12 @@ public class StoreMigrator
 
         private void migrateRelationships( RelationshipStore relationshipStore, PropertyWriter propertyWriter ) throws IOException
         {
+            long nodeMaxId = legacyStore.getNodeStoreReader().getMaxId();
+
             Iterable<RelationshipRecord> records = legacyStore.getRelationshipStoreReader().readRelationshipStore();
             for ( RelationshipRecord relationshipRecord : records )
             {
+                reportProgress( nodeMaxId + relationshipRecord.getId() );
                 relationshipStore.setHighId( relationshipRecord.getId() + 1 );
                 if ( relationshipRecord.inUse() )
                 {
@@ -122,6 +136,15 @@ public class StoreMigrator
                 }
             }
             legacyStore.getRelationshipStoreReader().close();
+        }
+
+        private void reportProgress( long id )
+        {
+            int newPercent = (int) (id * 100 / totalEntities);
+            if ( newPercent > percentComplete ) {
+                percentComplete = newPercent;
+                progressMonitor.percentComplete( percentComplete );
+            }
         }
 
         private long migrateProperties( long startOfPropertyChain, PropertyWriter propertyWriter ) throws IOException

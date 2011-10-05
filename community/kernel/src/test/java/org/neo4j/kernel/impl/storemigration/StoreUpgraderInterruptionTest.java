@@ -42,7 +42,7 @@ public class StoreUpgraderInterruptionTest
         File workingDirectory = new File( "target/" + StoreUpgraderInterruptionTest.class.getSimpleName() );
         MigrationTestUtils.prepareSampleLegacyDatabase( workingDirectory );
 
-        StoreMigrator failingStoreMigrator = new StoreMigrator()
+        StoreMigrator failingStoreMigrator = new StoreMigrator( new SilentMigrationProgressMonitor() )
         {
 
             public void migrate( LegacyStore legacyStore, NeoStore neoStore ) throws IOException
@@ -66,7 +66,7 @@ public class StoreUpgraderInterruptionTest
 
         assertTrue( allStoreFilesHaveVersion( workingDirectory, "v0.9.9" ) );
 
-        new StoreUpgrader( defaultConfig(), alwaysAllowed(), new UpgradableDatabase(), new StoreMigrator(), new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+        new StoreUpgrader( defaultConfig(), alwaysAllowed(), new UpgradableDatabase(), new StoreMigrator( new SilentMigrationProgressMonitor() ), new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
 
         assertTrue( allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
     }
@@ -91,7 +91,7 @@ public class StoreUpgraderInterruptionTest
 
         try
         {
-            new StoreUpgrader( defaultConfig(), alwaysAllowed(), new UpgradableDatabase(), new StoreMigrator(), failsOnBackup ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+            new StoreUpgrader( defaultConfig(), alwaysAllowed(), new UpgradableDatabase(), new StoreMigrator( new SilentMigrationProgressMonitor() ) , failsOnBackup ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
             fail( "Should throw exception" );
         }
         catch ( RuntimeException e )
@@ -101,7 +101,7 @@ public class StoreUpgraderInterruptionTest
 
         try
         {
-            new StoreUpgrader( defaultConfig(), alwaysAllowed(), new UpgradableDatabase(), new StoreMigrator(), new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
+            new StoreUpgrader( defaultConfig(), alwaysAllowed(), new UpgradableDatabase(), new StoreMigrator( new SilentMigrationProgressMonitor() ) , new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
             fail( "Should throw exception" );
         }
         catch ( Exception e )
