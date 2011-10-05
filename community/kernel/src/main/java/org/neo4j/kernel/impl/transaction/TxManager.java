@@ -261,7 +261,7 @@ public class TxManager extends AbstractTransactionManager
         msgLog.logMessage( "setting TM not OK", cause );
         kpe.generateEvent( ErrorState.TX_MANAGER_NOT_OK );
     }
-    
+
     @Override
     public void attemptWaitForTxCompletionAndBlockFutureTransactions( long maxWaitTimeMillis )
     {
@@ -292,7 +292,7 @@ public class TxManager extends AbstractTransactionManager
         }
         msgLog.logMessage( "TxManager blocked transactions" + ((failedTransactions.isEmpty() ? "" :
                 ", but failed for: " + failedTransactions.toString())) );
-        
+
         long endTime = System.currentTimeMillis()+maxWaitTimeMillis;
         while ( txThreadMap.size() > 0 && System.currentTimeMillis() < endTime ) Thread.yield();
     }
@@ -410,7 +410,7 @@ public class TxManager extends AbstractTransactionManager
                 msgLog.logMessage( "TM: no match found for in total " + rollbackList.size() +
                         " transaction that should have been rolled back", true );
             }
-            
+
             // Rotate the logs of the participated data sources, making sure that
             // done-records are written so that even if the tm log gets truncated,
             // which it will be after this recovery, that transaction information
@@ -537,7 +537,7 @@ public class TxManager extends AbstractTransactionManager
         {
             return xidList.toArray( new XidImpl[xidList.size()] );
         }
-        
+
         @Override
         public String toString()
         {
@@ -611,7 +611,7 @@ public class TxManager extends AbstractTransactionManager
             throw new SystemException( "TxManager is preventing new transactions from starting " +
             		"due a shutdown is imminent" );
         }
-        
+
         assertTmOk( "tx begin" );
         Thread thread = Thread.currentThread();
         TransactionImpl tx = txThreadMap.get( thread );
@@ -748,7 +748,7 @@ public class TxManager extends AbstractTransactionManager
             {
                 tx.doRollback();
             }
-            catch ( XAException e )
+            catch ( Throwable e )
             {
                 log.log( Level.SEVERE, "Unable to rollback transaction. "
                     + "Some resources may be commited others not. "
@@ -764,9 +764,14 @@ public class TxManager extends AbstractTransactionManager
                 {
                     commitError = "error code in commit: " + xaErrorCode;
                 }
+                String rollbackErrorCode = "Uknown error code";
+                if ( e instanceof XAException )
+                {
+                    rollbackErrorCode = Integer.toString( ( (XAException) e ).errorCode );
+                }
                 throw logAndReturn("TM error tx commit",Exceptions.withCause( new HeuristicMixedException( "Unable to rollback ---> " + commitError
-                                                                         + " ---> error code for rollback: "
-                                                                         + e.errorCode ), e ));
+                                        + " ---> error code for rollback: "
+                                        + rollbackErrorCode ), e ) );
             }
             tx.doAfterCompletion();
             txThreadMap.remove( thread );
