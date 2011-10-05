@@ -489,6 +489,10 @@ body {
   z-index:100;
 }
 
+.console-multiline-help {
+  color: #888888;
+}
+
 /**
  * INDEX MANAGER
  */

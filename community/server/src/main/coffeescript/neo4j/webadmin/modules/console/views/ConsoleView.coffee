@@ -38,7 +38,14 @@ define(
         @consoleState.bind("change", @renderConsole)
 
       consoleKeyUp : (ev) =>
-        @consoleState.setStatement $("#console-input").val(), silent : true
+        statement = $("#console-input").val()
+        @consoleState.setStatement statement, silent : true
+        
+        if statement.length > 0
+          $(".console-multiline-help",@el).hide()
+        else
+          $(".console-multiline-help",@el).show()
+        
         
         if ev.keyCode is 13 # ENTER
           @consoleState.eval()
@@ -51,17 +58,19 @@ define(
         $("#console-input").focus()
 
       renderConsole : ()=>
+        neo4j.log  @consoleState.get "showMultilineHelp" or false
         $("#console-base",@el).html consoleTemplate(
           lines : @consoleState.get "lines"
           prompt : @consoleState.get "prompt"
           showPrompt : @consoleState.get "showPrompt"
+          showMultilineHelp : @consoleState.get "showMultilineHelp" or false
           current : @lang
           promptPrefix : @lang)
         
         @delegateEvents()
         $("#console-input").focus()
         @scrollToBottomOfConsole()
-
+        
       scrollToBottomOfConsole : () =>
         wrap = $("#console",@el)
         if wrap[0]

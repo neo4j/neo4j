@@ -15,3 +15,6 @@
       :if showPrompt
         =htmlEscape(promptPrefix+"> ") 
         %input#console-input(type="text" value="#{htmlEscape(prompt)}")
+    :if showMultilineHelp
+      %li.console-multiline-help
+        (Hit return again to execute)
