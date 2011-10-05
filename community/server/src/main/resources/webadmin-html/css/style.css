@@ -230,6 +230,9 @@ body {
 #visualization-reflow .icon {
   background:url("../img/icons/glyphish/05-shuffle.png") no-repeat scroll center center;
 }
+#visualization-clear .icon {
+  background:url("../img/icons/glyphish/clear.png") no-repeat scroll center center;
+}
 
 #data-create-node .icon, #data-create-relationship .icon {
   background:url("../img/icons/glyphish/add.png") no-repeat scroll 5px center;
