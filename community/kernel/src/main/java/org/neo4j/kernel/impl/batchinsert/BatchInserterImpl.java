@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
+import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexStore;
@@ -499,8 +500,10 @@ public class BatchInserterImpl implements BatchInserter
             for ( PropertyBlock propBlock : propRecord.getPropertyBlocks() )
             {
                 String key = indexHolder.getStringKey( propBlock.getKeyIndexId() );
-                properties.put( key,
-                        propBlock.newPropertyData( propRecord ).getValue() );
+                PropertyData propertyData = propBlock.newPropertyData( propRecord );
+                Object value = propertyData.getValue() != null ? propertyData.getValue() :
+                        propBlock.getType().getValue( propBlock, getPropertyStore() );
+                properties.put( key, value );
             }
             nextProp = propRecord.getNextProp();
         }

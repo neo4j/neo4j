@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.batchinsert;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -33,7 +32,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -316,16 +314,34 @@ public class TestBatchInsert
     }
     
     @Test
-    @Ignore
-    public void createEntitiesWithStringPropertiesMap() throws Exception
+    public void createEntitiesWithDynamicPropertiesMap() throws Exception
     {
         BatchInserter inserter = newBatchInserter();
         
-        // Assert for node
-        long nodeId = inserter.createNode( map("key", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" ) );
-        Map<String, Object> nodeProperties = inserter.getNodeProperties( nodeId );
-        assertNotNull(nodeProperties.get( "key" ));
-
+        setAndGet( inserter, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" );
+        setAndGet( inserter, intArray( 20 ) );
+        
         inserter.shutdown();
+    }
+
+    private void setAndGet( BatchInserter inserter, Object value )
+    {
+        long nodeId = inserter.createNode( map( "key", value ) );
+        Object readValue = inserter.getNodeProperties( nodeId ).get( "key" );
+        if ( readValue.getClass().isArray() )
+        {
+            assertTrue( Arrays.equals( (int[])value, (int[])readValue ) );
+        }
+        else
+        {
+            assertEquals( value, readValue );
+        }
+    }
+
+    private int[] intArray( int length )
+    {
+        int[] array = new int[length];
+        for ( int i = 0, startValue = (int)Math.pow( 2, 30 ); i < length; i++ ) array[i] = startValue+i;
+        return array;
     }
 }
