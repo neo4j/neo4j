@@ -36,6 +36,7 @@ import java.io.IOException;
 
 import org.junit.Test;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 
 public class StoreUpgraderTest
 {

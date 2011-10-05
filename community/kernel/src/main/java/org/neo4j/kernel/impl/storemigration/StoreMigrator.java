@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.LegacyPropertyIndexStore
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyPropertyRecord;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipTypeStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
+import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.FileUtils;
 
 public class StoreMigrator
