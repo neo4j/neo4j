@@ -50,8 +50,8 @@ trait StartClause extends JavaTokenParsers with Tokens {
 
   def ids = parens(rep1sep(wholeNumber, ",")) ^^ (x => Literal(x.map(_.toLong)))
 
-  def idxString: Parser[(String, Value)] = ":" ~> identity ~ parens(string) ^^ {
-    case id ~ valu => (id, Literal(valu))
+  def idxString: Parser[(String, Value)] = ":" ~> identity ~ parens(param|stringLit) ^^ {
+    case id ~ valu => (id, valu)
   }
 
   def idxLookup: Parser[(String, Value, Value)] = ":" ~> identity ~ parens(idxQueries) ^^ {

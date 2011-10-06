@@ -24,15 +24,15 @@ import org.junit.Test;
 import org.neo4j.cypher.commands.Query;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
+import static java.util.Arrays.asList;
+import static org.junit.Assert.*;
 import static org.junit.matchers.JUnitMatchers.containsString;
 import static org.junit.matchers.JUnitMatchers.hasItem;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
@@ -42,12 +42,33 @@ public class JavaExecutionEngineTests
 
     private GraphDatabaseService db;
     private ExecutionEngine engine;
+    private Node andreasNode;
+    private Node johanNode;
+    private Node michaelaNode;
 
     @Before public void setUp() throws IOException {
-// START SNIPPET: JavaQuery
         db = new ImpermanentGraphDatabase();
         engine = new ExecutionEngine( db );
-// END SNIPPET: JavaQuery
+        Transaction tx = db.beginTx();
+        andreasNode = db.createNode();
+        johanNode = db.createNode();
+        michaelaNode = db.getReferenceNode();
+        andreasNode.setProperty("name", "Andreas");
+        johanNode.setProperty("name", "Johan");
+        michaelaNode.setProperty("name", "Michaela");
+
+        index(andreasNode);
+        index(johanNode);
+        index(michaelaNode);
+
+
+        tx.success();
+        tx.finish();
+    }
+
+    private void index(Node n)
+    {
+        db.index().forNodes("people").add(n, "name", n.getProperty("name"));
     }
 
     @Test
@@ -69,31 +90,85 @@ public class JavaExecutionEngineTests
     {
         Query query = CypherParser.parseConsole("" +
                  //START SNIPPET: Identifier
-        		"start n=node(0) return n.name"
+        		"start n=node(0) return n.NOT_EXISTING"
         		//END SNIPPET: Identifier
                 );
         
         ExecutionResult result = engine.execute(query);
 
-        assertThat( result.columns(), hasItem( "n.name" ) );
-        Iterator<Object> n_column = result.columnAs( "n.name" );
+        assertThat( result.columns(), hasItem( "n.NOT_EXISTING" ) );
+        Iterator<Object> n_column = result.columnAs( "n.NOT_EXISTING" );
         assertNull( n_column.next() );
         assertThat( result.toString(), containsString("null") );
     }
 
-
     @Test
-    public void exampleWithParameters() throws Exception
+    public void exampleWithParameterForNodeId() throws Exception
     {
-     // START SNIPPET: ParameterJavaQuery
+     // START SNIPPET: exampleWithParameterForNodeId
         Map<String, Object> params = new HashMap<String, Object>();
         params.put("id", 0);
-        ExecutionResult result = engine.execute("start n=node({id}) return n.name?", params);
-     // END SNIPPET: ParameterJavaQuery
+        ExecutionResult result = engine.execute("start n=node({id}) return n.name", params);
+     // END SNIPPET: exampleWithParameterForNodeId
 
         assertThat( result.columns(), hasItem( "n.name" ) );
         Iterator<Object> n_column = result.columnAs( "n.name" );
-        assertNull( n_column.next() );
-        assertThat( result.toString(), containsString("null") );
+        assertEquals("Michaela", n_column.next());
+    }
+
+    @Test
+    public void exampleWithParameterForMultipleNodeIds() throws Exception
+    {
+     // START SNIPPET: exampleWithParameterForMultipleNodeIds
+        Map<String, Object> params = new HashMap<String, Object>();
+        params.put("id", Arrays.asList(0,1,2));
+        ExecutionResult result = engine.execute("start n=node({id}) return n.name", params);
+     // END SNIPPET: exampleWithParameterForMultipleNodeIds
+
+        assertEquals( asList("Michaela", "Andreas", "Johan"), this.<String>toList(result, "n.name")  );
+    }
+
+    private <T> List<T> toList( ExecutionResult result, String column  )
+    {
+        List<T> results = new ArrayList<T>();
+        IteratorUtil.addToCollection(result.<T>columnAs( column ), results);
+        return results;
+    }
+
+    @Test
+    public void exampleWithStringLiteralAsParameter() throws Exception
+    {
+     // START SNIPPET: exampleWithStringLiteralAsParameter
+        Map<String, Object> params = new HashMap<String, Object>();
+        params.put("name", "Johan");
+        ExecutionResult result = engine.execute("start n=node(0,1,2) where n.name = {name} return n", params);
+     // END SNIPPET: exampleWithStringLiteralAsParameter
+
+        assertEquals( asList(johanNode), this.<Node>toList(result, "n") );
+    }
+
+    @Test
+    public void exampleWithParametersForIndexKeyAndValue() throws Exception
+    {
+     // START SNIPPET: exampleWithParametersForIndexKeyAndValue
+        Map<String, Object> params = new HashMap<String, Object>();
+        params.put("key", "name");
+        params.put("value", "Michaela");
+        ExecutionResult result = engine.execute("start n=node:people({key} = {value}) return n", params);
+     // END SNIPPET: exampleWithParametersForIndexKeyAndValue
+
+        assertEquals( asList(michaelaNode), this.<Node>toList(result, "n") );
+    }
+
+    @Test
+    public void exampleWithParametersForQuery() throws Exception
+    {
+     // START SNIPPET: exampleWithParametersForQuery
+        Map<String, Object> params = new HashMap<String, Object>();
+        params.put("query", "name:Andreas");
+        ExecutionResult result = engine.execute("start n=node:people({query}) return n", params);
+     // END SNIPPET: exampleWithParametersForQuery
+
+        assertEquals( asList(andreasNode), this.<Node>toList(result, "n") );
     }
 }

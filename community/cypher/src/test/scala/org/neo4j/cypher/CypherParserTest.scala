@@ -776,6 +776,14 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ValueReturnItem(EntityValue("pA"))))
   }
 
+  @Test def testParamForIndexQuery() {
+    testQuery(
+      """start pA = node:idx({query}) return pA""",
+      Query.
+        start(NodeByIndexQuery("pA", "idx", ParameterValue("query"))).
+        returns(ValueReturnItem(EntityValue("pA"))))
+  }
+
   @Test def testShortestPath() {
     testQuery(
       """start a=node(0), b=node(1) match p = shortestPath( a-->b ) return p""",

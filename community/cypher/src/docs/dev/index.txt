@@ -54,7 +54,7 @@ tag=JavaQuery
 classifier=test-sources
 ----
 
-[[cypher-paramters]]
+[[cypher-parameters]]
 == Parameters ==
 
 Cypher supports querying with parameters. This allows developers to not to have to do string building
@@ -64,11 +64,45 @@ Parameters can be used for literals in the +WHERE+ clause, for the index key and
 clause, index queries, and finally for node/relationship ids.
 
 
+Here follows a few examples of how you can use parameters from Java.
+
 [snippet,java]
 ----
 component=neo4j-cypher
 source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
-tag=ParameterJavaQuery
+tag=exampleWithParameterForNodeId
+classifier=test-sources
+----
+
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
+tag=exampleWithParameterForMultipleNodeIds
+classifier=test-sources
+----
+
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
+tag=exampleWithStringLiteralAsParameter
+classifier=test-sources
+----
+
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
+tag=exampleWithParametersForIndexKeyAndValue
+classifier=test-sources
+----
+
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
+tag=exampleWithParametersForQuery
 classifier=test-sources
 ----
 
