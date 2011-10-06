@@ -12,7 +12,7 @@ classifier=test-sources
 
 === Creating a database, with configuration ===
 
-Please see <<configuration>> for what options you can use here.
+Please see <<embedded-configuration>> for what options you can use here.
 
 [snippet,python]
 ----
