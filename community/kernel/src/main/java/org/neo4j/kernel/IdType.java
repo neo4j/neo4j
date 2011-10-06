@@ -58,6 +58,6 @@ public enum IdType
     
     public int getGrabSize()
     {
-        return allowAggressiveReuse ? 20000 : 1024;
+        return allowAggressiveReuse ? 50000 : 1024;
     }
 }
