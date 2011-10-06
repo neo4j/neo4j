@@ -347,12 +347,16 @@ div.queryresult table tbody tr.evenresult
   background: #dfe8eb;
 }
 
-div.queryresult table thead th,
-div.queryresult table tfoot th
+div.queryresult table thead th
 {
   font-size: 0.9375em;
 }
 
+div.queryresult table tfoot th
+{
+  font-size: 0.8125em;
+  font-weight: normal;
+}
 
 div.table table th, div.informaltable table th,
 div.table-contents td p span.strong strong
