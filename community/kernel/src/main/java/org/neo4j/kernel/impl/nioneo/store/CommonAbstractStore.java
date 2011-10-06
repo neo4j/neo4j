@@ -62,7 +62,6 @@ public abstract class CommonAbstractStore
     private boolean readOnly = false;
     private boolean backupSlave = false;
     private long highestUpdateRecordId = -1;
-    protected boolean typeDescriptorAndVersionTruncated = false;
 
     /**
      * Opens and validates the store contained in <CODE>fileName</CODE>
@@ -269,6 +268,7 @@ public abstract class CommonAbstractStore
         {
             if ( foundTypeDescriptorAndVersion.startsWith( getTypeDescriptor() ) )
             {
+                getFileChannel().close();
                 throw new NotCurrentStoreVersionException( ALL_STORES_VERSION, foundTypeDescriptorAndVersion, "", false );
             }
             else
@@ -664,12 +664,8 @@ public abstract class CommonAbstractStore
             }
             return;
         }
+        long highId = idGenerator.getHighId();
         int recordSize = -1;
-        long highId = -1;
-        if (idGenerator != null)
-        {
-            highId = idGenerator.getHighId();
-        }
         if ( this instanceof AbstractDynamicStore )
         {
             recordSize = ((AbstractDynamicStore) this).getBlockSize();
@@ -681,9 +677,9 @@ public abstract class CommonAbstractStore
         closeIdGenerator();
         boolean success = false;
         IOException storedIoe = null;
-        if ( typeDescriptorAndVersionTruncated )
+        // hack for WINBLOWS
+        if ( !readOnly || backupSlave )
         {
-            // try multiple times to work around problems on Windows
             for ( int i = 0; i < 10; i++ )
             {
                 try
@@ -709,6 +705,16 @@ public abstract class CommonAbstractStore
         {
             releaseFileLockAndCloseFileChannel();
             success = true;
+//=======
+//            try
+//            {
+//                fileChannel.close();
+//            }
+//            catch ( IOException e )
+//            {
+//                logger.log( Level.WARNING, "Could not close fileChannel [" + storageFileName + "]", e );
+//            }
+//>>>>>>> parent of 739f974... Change start-up sequence so that version number in neostore gets checked, not just in the child stores
         }
         if ( !success )
         {

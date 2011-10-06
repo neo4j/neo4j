@@ -88,23 +88,24 @@ public class NeoStore extends AbstractStore
     @Override
     protected void verifyCorrectTypeDescriptorAndVersion() throws IOException
     {
+        // not required for NeoStore, leave version checks to child stores
+    }
+
+    @Override
+    protected void initStorage()
+    {
         try
         {
-            super.verifyCorrectTypeDescriptorAndVersion();
+            instantiateChildStores();
         }
         catch ( NotCurrentStoreVersionException e )
         {
             close();
             tryToUpgradeStores();
             checkStorage();
-            super.verifyCorrectTypeDescriptorAndVersion();
+            loadStorage();
+            instantiateChildStores();
         }
-    }
-
-    @Override
-    protected void initStorage()
-    {
-        instantiateChildStores();
     }
 
     /**

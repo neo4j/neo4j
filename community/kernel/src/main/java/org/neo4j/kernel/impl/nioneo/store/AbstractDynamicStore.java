@@ -158,7 +158,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         if ( getStoreOk() && !isReadOnly() )
         {
             getFileChannel().truncate( fileSize - expectedVersionLength );
-            typeDescriptorAndVersionTruncated = true;
         }
     }
 

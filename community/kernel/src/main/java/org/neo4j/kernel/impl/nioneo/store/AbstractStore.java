@@ -142,7 +142,6 @@ public abstract class AbstractStore extends CommonAbstractStore
         if ( getStoreOk() && !isReadOnly() )
         {
             getFileChannel().truncate( fileSize - expectedVersionLength );
-            typeDescriptorAndVersionTruncated = true;
         }
     }
 
