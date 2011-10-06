@@ -153,7 +153,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         long fileSize = getFileChannel().size();
         if ( (fileSize - expectedVersionLength) % blockSize != 0 && !isReadOnly() )
         {
-            setStoreNotOk();
+            setStoreNotOk( new IllegalStateException( "Misaligned file size " + fileSize + " for " + this + ", expected version length " + expectedVersionLength ) );
         }
         if ( getStoreOk() && !isReadOnly() )
         {

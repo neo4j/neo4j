@@ -137,7 +137,7 @@ public abstract class AbstractStore extends CommonAbstractStore
         if ( getRecordSize() != 0
             && (fileSize - expectedVersionLength) % getRecordSize() != 0  && !isReadOnly() )
         {
-            setStoreNotOk();
+            setStoreNotOk( new IllegalStateException( "Misaligned file size " + fileSize + " for " + this + ", expected version length:" + expectedVersionLength ) );
         }
         if ( getStoreOk() && !isReadOnly() )
         {

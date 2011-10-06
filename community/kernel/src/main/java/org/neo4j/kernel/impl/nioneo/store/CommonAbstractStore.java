@@ -53,6 +53,7 @@ public abstract class CommonAbstractStore
     private FileChannel fileChannel = null;
     private PersistenceWindowPool windowPool;
     private boolean storeOk = true;
+    private Throwable causeOfStoreNotOk;
     private FileLock fileLock;
     private boolean grabFileLock = true;
 
@@ -229,7 +230,7 @@ public abstract class CommonAbstractStore
         }
         catch ( InvalidIdGeneratorException e )
         {
-            setStoreNotOk();
+            setStoreNotOk( e );
         }
         finally
         {
@@ -258,7 +259,7 @@ public abstract class CommonAbstractStore
         }
         else if ( !isReadOnly() )
         {
-            setStoreNotOk();
+            setStoreNotOk( new IllegalStateException( "Invalid file size " + fileSize + " for " + this + ". Expected " + length + " or bigger" ) );
             return;
         }
         getFileChannel().read( buffer );
@@ -272,7 +273,7 @@ public abstract class CommonAbstractStore
             }
             else
             {
-                setStoreNotOk();
+                setStoreNotOk( new IllegalStateException( "Unexpected version " + foundTypeDescriptorAndVersion + ", expected " + expectedTypeDescriptorAndVersion ) );
             }
         }
     }
@@ -325,7 +326,7 @@ public abstract class CommonAbstractStore
      * Marks this store as "not ok".
      *
      */
-    protected void setStoreNotOk()
+    protected void setStoreNotOk( Throwable cause )
     {
         if ( readOnly && !isBackupSlave() )
         {
@@ -333,6 +334,7 @@ public abstract class CommonAbstractStore
                 "Cannot start up on non clean store as read only" );
         }
         storeOk = false;
+        causeOfStoreNotOk = cause;
     }
 
     /**
@@ -534,7 +536,7 @@ public abstract class CommonAbstractStore
         {
             throw new InvalidRecordException( "Position[" + position
                 + "] requested for operation is high id["
-                + getHighId() + "], store is ok[" + storeOk + "]" );
+                + getHighId() + "], store is ok[" + storeOk + "]", causeOfStoreNotOk );
         }
         return windowPool.acquire( position, type );
     }
