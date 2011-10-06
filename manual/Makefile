@@ -79,7 +79,7 @@ ASCIIDOC_FLAGS = $(V) $(VERS) $(GITVERS) $(IMPDIR)
 
 A2X_FLAGS = $(K) $(ASCIIDOC_FLAGS)
 
-.PHONY: all dist docbook help clean pdf latexpdf html offline-html singlehtml text cleanup annotated manpages upgrade installfilter html-check text-check meta check
+.PHONY: all dist docbook help clean pdf html offline-html singlehtml text cleanup annotated manpages upgrade installfilter html-check text-check check
 
 help:
 	@echo "Please use 'make <target>' where <target> is one of"
@@ -199,18 +199,9 @@ pdf: docbook-shortinfo copyimages
 	cd $(FOPDIR)
 	xsltproc --xinclude --output $(FOPFILE) $(CONFDIR)/fo.xsl $(DOCBOOKSHORTINFOFILE)
 	ln -s $(SRCDIR)/images $(FOPDIR)/images
-	export FOP_OPTS="-Xmx2048m"
-	fop -fo $(FOPFILE) -pdf $(FOPPDF) -c $(CONFDIR)/fop.xml
-
-latexpdf: docbook-shortinfo copyimages
-	#
-	#
-	# Building PDF using LaTex.
-	#
-	#
-	mkdir -p $(BUILDDIR)/dblatex
-	cp -f $(DOCBOOKSHORTINFOFILE) $(BUILDDIR)/dblatex/neo4j-manual-shortinfo.xml
-	a2x $(A2X_FLAGS) -L -f pdf -D $(BUILDDIR)/dblatex --conf-file=$(CONFDIR)/dblatex.conf $(DOCBOOKSHORTINFOFILE)
+	#export FOP_OPTS="-Xmx2048m"
+	#fop -fo $(FOPFILE) -pdf $(FOPPDF) -c $(CONFDIR)/fop.xml
+	MAVEN_OPTS="-Xmx2048m" mvn exec:java -Dexec.mainClass="org.apache.fop.cli.Main" -Djava.awt.headless=true -Dexec.args="-fo $(FOPFILE) -pdf $(FOPPDF) -c $(CONFDIR)/fop.xml" 2>&1 | $(SCRIPTDIR)/outputcheck-images-fop.sh
 
 html: manpages copyimages docbook-html
 	#
@@ -318,20 +309,4 @@ upgrade:
 	mkdir -p $(UPGRADE)
 	a2x -k -f text -D $(UPGRADE) $(IMPORTDIR)/neo4j-docs-jar/ops/upgrades.txt
 	mv $(UPGRADE)/upgrades.text $(UPGRADE)/UPGRADE.txt
-
-meta:
-	#
-	#
-	# Building metadocs.
-	#
-	#
-	rm -rf $(METASRCDIR)
-	cp -fr $(METAFROMDIR) $(METASRCDIR)
-	ln -s $(METAFROMCSSDIR) $(METASRCDIR)/css
-	ln -s $(METAFROMIMGDIR) $(METASRCDIR)/images
-	rm -rf $(METAHTMLDIR)
-	mkdir -p $(METAHTMLDIR)
-	cp -fr $(METAFROMCSSDIR) $(METAHTMLDIR)/css
-	a2x -L -f xhtml -D $(METAHTMLDIR) --conf-file=$(CONFDIR)/xhtml.conf --asciidoc-opts "--conf-file=$(CONFDIR)/asciidoc.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/docbook45.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/linkedimages.conf" --xsl-file=$(CONFDIR)/xhtml.xsl --xsltproc-opts "--stringparam admon.graphics 1" --resource $(IMGDIR) $(METASRCFILE)
-	cp -fr $(JSDIR) $(METAHTMLDIR)/js
 

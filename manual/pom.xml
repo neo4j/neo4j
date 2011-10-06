@@ -39,6 +39,11 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.apache.xmlgraphics</groupId>
+      <artifactId>fop</artifactId>
+      <version>1.0</version>
+    </dependency>
+    <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
       <version>${neo4j.version}</version>
@@ -227,6 +232,7 @@
               <excludes>META-INF,META-INF/**</excludes>
               <type>jar</type>
               <outputDirectory>${docs.sources}</outputDirectory>
+              <excludeGroupIds>org.apache.xmlgraphics</excludeGroupIds>
             </configuration>
           </execution>
           <execution>
@@ -244,6 +250,7 @@
               <excludes>META-INF,META-INF/**</excludes>
               <type>jar</type>
               <outputDirectory>${docs.test-sources}</outputDirectory>
+              <excludeGroupIds>org.apache.xmlgraphics</excludeGroupIds>
             </configuration>
           </execution>
           <execution>
@@ -261,6 +268,7 @@
               <excludes>META-INF,META-INF/**</excludes>
               <type>jar</type>
               <outputDirectory>${docs.sourcecode}</outputDirectory>
+              <excludeGroupIds>org.apache.xmlgraphics</excludeGroupIds>
             </configuration>
           </execution>
         </executions>
