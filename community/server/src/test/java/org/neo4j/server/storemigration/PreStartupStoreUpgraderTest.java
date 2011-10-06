@@ -75,8 +75,8 @@ public class PreStartupStoreUpgraderTest
         assertEquals( 1, exit );
 
         String[] lines = new String( outputStream.toByteArray() ).split( "\n" );
-        assertEquals("To enable automatic upgrade, please set configuration parameter " +
-                "\"allow_store_upgrade=true\"", lines[0] );
+        assertTrue(lines[0].contains("To enable automatic upgrade, please set configuration parameter " +
+                "\"allow_store_upgrade=true\"")  );
     }
 
     @Test
