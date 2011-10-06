@@ -68,7 +68,7 @@ public class AsciidocHelper
 
     public static String createCypherSnippet( final String query )
     {
-        return "[source,cypher]\n----\n"+query.
+        String result = "[source,cypher]\n----\n"+query.
                 replace("start ", "START ").
                 replace("where ", "WHERE ").
                 replace("match ", "MATCH ").
@@ -77,5 +77,15 @@ public class AsciidocHelper
                 replace(" RETURN ", "\nRETURN ").
                 replace(" WHERE ", "\nWHERE ").
                 replace("where ", "WHERE ")+"\n----\n";
+        //cut to max 123 chars for PDF compliance
+        String[] tokens = result.split( "\n" );
+        String finalRes = "";
+        for(String token : tokens) {
+            if (token.length() > 123 ) {
+                token = token.replaceAll( ", ", ",\n" );
+            }
+            finalRes += token + "\n";
+        }
+        return finalRes;
     }
 }
