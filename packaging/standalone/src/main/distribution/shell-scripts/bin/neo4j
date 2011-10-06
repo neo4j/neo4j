@@ -60,7 +60,6 @@ function parseConfig {
 
 findBaseDirAndCdThere
 source bin/utils
-findBaseDirAndCdThere
 parseConfig
 
 NEO4J_OPTS="-Dlog4j.configuration=file:conf/log4j.properties -Dorg.neo4j.server.properties="${NEO4J_INSTANCE}"/conf/neo4j-server.properties -Djava.util.logging.config.file="${NEO4J_INSTANCE}/conf/logging.properties" -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}""
