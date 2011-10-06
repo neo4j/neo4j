@@ -100,6 +100,7 @@ public abstract class CommonAbstractStore
         }
 
         checkStorage();
+        checkVersion();
         loadStorage();
         initStorage();
     }
@@ -184,6 +185,19 @@ public abstract class CommonAbstractStore
         }
     }
 
+    protected void checkVersion()
+    {
+        try
+        {
+            verifyCorrectTypeDescriptorAndVersion();
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( "Unable to check version "
+                    + getStorageFileName(), e );
+        }
+    }
+
     /**
      * Should do first validation on store validating stuff like version and id
      * generator. This method is called by constructors.
@@ -192,7 +206,6 @@ public abstract class CommonAbstractStore
     {
         try
         {
-            verifyCorrectTypeDescriptorAndVersion();
             readAndVerifyBlockSize();
             verifyFileSizeAndTruncate();
         }
@@ -268,7 +281,6 @@ public abstract class CommonAbstractStore
         {
             if ( foundTypeDescriptorAndVersion.startsWith( getTypeDescriptor() ) )
             {
-                getFileChannel().close();
                 throw new NotCurrentStoreVersionException( ALL_STORES_VERSION, foundTypeDescriptorAndVersion, "", false );
             }
             else
@@ -723,7 +735,7 @@ public abstract class CommonAbstractStore
         }
     }
 
-    private void releaseFileLockAndCloseFileChannel()
+    protected void releaseFileLockAndCloseFileChannel()
     {
         try
         {

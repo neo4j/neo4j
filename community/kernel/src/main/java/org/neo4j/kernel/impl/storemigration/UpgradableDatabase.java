@@ -43,7 +43,7 @@ public class UpgradableDatabase
 
     public UpgradableDatabase()
     {
-//        fileNamesToExpectedVersions.put( NeoStore.DEFAULT_NAME, LegacyStore.FROM_VERSION );
+        fileNamesToExpectedVersions.put( NeoStore.DEFAULT_NAME, LegacyStore.FROM_VERSION );
         fileNamesToExpectedVersions.put( "neostore.nodestore.db", LegacyNodeStoreReader.FROM_VERSION );
         fileNamesToExpectedVersions.put( "neostore.propertystore.db", LegacyPropertyStoreReader.FROM_VERSION );
         fileNamesToExpectedVersions.put( "neostore.propertystore.db.arrays", LegacyDynamicStoreReader.FROM_VERSION_ARRAY );

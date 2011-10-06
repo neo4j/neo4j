@@ -86,26 +86,29 @@ public class NeoStore extends AbstractStore
     }
 
     @Override
-    protected void verifyCorrectTypeDescriptorAndVersion() throws IOException
+    protected void checkVersion()
     {
-        // not required for NeoStore, leave version checks to child stores
+        try
+        {
+            verifyCorrectTypeDescriptorAndVersion();
+        }
+        catch ( NotCurrentStoreVersionException e )
+        {
+            releaseFileLockAndCloseFileChannel();
+            tryToUpgradeStores();
+            checkStorage();
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( "Unable to check version "
+                    + getStorageFileName(), e );
+        }
     }
 
     @Override
     protected void initStorage()
     {
-        try
-        {
-            instantiateChildStores();
-        }
-        catch ( NotCurrentStoreVersionException e )
-        {
-            close();
-            tryToUpgradeStores();
-            checkStorage();
-            loadStorage();
-            instantiateChildStores();
-        }
+        instantiateChildStores();
     }
 
     /**
