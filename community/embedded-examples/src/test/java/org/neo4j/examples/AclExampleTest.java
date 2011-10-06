@@ -209,7 +209,7 @@ public class AclExampleTest extends AbstractJavaDocTestbase
         query = "START file=node:node_auto_index('name:File*') " +
         		"MATCH " +
         		"file<-[:leaf]-dir, " +
-        		"path = dir<-[:contains*]-parent," +
+        		"path = dir<-[:contains*]-parent, " +
         		"parent<-[?:canRead]-role2-[:member]->readUserMoreThan1DirUp, " +
                 "dir<-[?:canRead]-role1-[:member]->readUser1DirUp " +
         		//TODO: would like to get results the order I specify
