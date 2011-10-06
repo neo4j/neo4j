@@ -250,4 +250,20 @@ public class FileUtils
         input.close();
         output.close();
     }
+
+    public static void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
+    {
+        for ( File fromFile : fromDirectory.listFiles() )
+        {
+            File toFile = new File( toDirectory, fromFile.getName() );
+            if ( fromFile.isDirectory() )
+            {
+                toFile.mkdir();
+                copyRecursively( fromFile, toFile );
+            } else
+            {
+                copyFile( fromFile, toFile );
+            }
+        }
+    }
 }

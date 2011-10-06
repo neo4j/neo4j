@@ -69,22 +69,6 @@ public class MigrationTestUtils
         return builder.toString();
     }
 
-    static void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
-    {
-        for ( File fromFile : fromDirectory.listFiles() )
-        {
-            File toFile = new File( toDirectory, fromFile.getName() );
-            if ( fromFile.isDirectory() )
-            {
-                assertTrue( toFile.mkdir() );
-                copyRecursively( fromFile, toFile );
-            } else
-            {
-                FileUtils.copyFile( fromFile, toFile );
-            }
-        }
-    }
-
     static void changeVersionNumber( File storeFile, String versionString ) throws IOException
     {
         byte[] versionBytes = UTF8.encode( versionString );
@@ -109,7 +93,7 @@ public class MigrationTestUtils
         deleteRecursively( workingDirectory );
         assertTrue( workingDirectory.mkdirs() );
 
-        copyRecursively( resourceDirectory, workingDirectory );
+        FileUtils.copyRecursively( resourceDirectory, workingDirectory );
     }
 
     public static File findOldFormatStoreDirectory()

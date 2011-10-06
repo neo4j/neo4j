@@ -21,6 +21,7 @@ package org.neo4j.server.storemigration;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
 import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
 import java.io.ByteArrayOutputStream;
@@ -149,21 +150,4 @@ public class PreStartupStoreUpgraderTest
         URL legacyStoreResource = PreStartupStoreUpgraderTest.class.getResource( "legacystore/exampledb/neostore" );
         return new File( legacyStoreResource.getFile() ).getParentFile();
     }
-
-    static void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
-    {
-        for ( File fromFile : fromDirectory.listFiles() )
-        {
-            File toFile = new File( toDirectory, fromFile.getName() );
-            if ( fromFile.isDirectory() )
-            {
-                assertTrue( toFile.mkdir() );
-                copyRecursively( fromFile, toFile );
-            } else
-            {
-                FileUtils.copyFile( fromFile, toFile );
-            }
-        }
-    }
-
 }
