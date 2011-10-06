@@ -29,7 +29,7 @@ class WhereTest extends DocumentingTestBase {
   override val properties = Map(
     "Andres" -> Map("age" -> 36l, "belt" -> "white"),
     "Tobias" -> Map("age" -> 25l),
-    "Peter"->Map("age"->34l)
+    "Peter" -> Map("age" -> 34l)
   )
 
   def section = "Where"
@@ -98,6 +98,6 @@ class WhereTest extends DocumentingTestBase {
         " Also like SQL, the negative is IS NOT NULL, althought NOT(IS NULL x) also works.",
       queryText = """start a=node(%Tobias%), b=node(%Andres%, %Peter%) match a<-[r?]-b where r is null return b""",
       returns = "Nodes that Tobias is not connected to",
-      (p) => assertEquals(List(Map("b"->node("Peter"))), p.toList))
+      (p) => assertEquals(List(Map("b" -> node("Peter"))), p.toList))
   }
 }

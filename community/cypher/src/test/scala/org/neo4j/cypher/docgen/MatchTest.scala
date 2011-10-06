@@ -28,6 +28,14 @@ class MatchTest extends DocumentingTestBase {
 
   def graphDescription = List("A KNOWS B", "A BLOCKS C", "D KNOWS A", "B KNOWS E", "C KNOWS E")
 
+  override val properties = Map(
+    "A" -> Map("name" -> "Anders"),
+    "B" -> Map("name" -> "Bossman"),
+    "C" -> Map("name" -> "Cesar"),
+    "D" -> Map("name" -> "David"),
+    "E" -> Map("name" -> "Emil")
+  )
+
   def section: String = "MATCH"
 
   @Test def allRelationships() {
@@ -140,6 +148,16 @@ class MatchTest extends DocumentingTestBase {
       queryText = """start a=node(%E%) match a-[?]->x return a,x""",
       returns = """A node, and +null+, since the node has no relationships.""",
       (p) => assertEquals(List(Map("a" -> node("E"), "x" -> null)), p.toList)
+    )
+  }
+
+  @Test def nodePropertyFromOptionalNode() {
+    testQuery(
+      title = "Properties on optional elements",
+      text = "Returning a property from an optional element that is +null+ will also return +null+.",
+      queryText = """start a=node(%E%) match a-[?]->x return x, x.name""",
+      returns = """The element x (null in this query), and null as it's name.""",
+      (p) => assertEquals(List(Map("x" -> null, "x.name" -> null)), p.toList)
     )
   }
 

@@ -28,7 +28,8 @@ abstract class Value extends (Map[String, Any] => Any) {
   def identifier: Identifier
 
   def checkAvailable(symbols: SymbolTable)
-  def dependsOn:Set[String]
+
+  def dependsOn: Set[String]
 }
 
 case class Literal(v: Any) extends Value {
@@ -99,11 +100,13 @@ case class PropertyValue(entity: String, property: String) extends Value {
   protected def handleNotFound(propertyContainer: PropertyContainer, x: NotFoundException): Any = throw new SyntaxException("%s.%s does not exist on %s".format(entity, property, propertyContainer), x)
 
   def apply(m: Map[String, Any]): Any = {
-    val propertyContainer = m(entity).asInstanceOf[PropertyContainer]
-    try {
-      propertyContainer.getProperty(property)
-    } catch {
-      case x: NotFoundException => handleNotFound(propertyContainer, x)
+    m(entity).asInstanceOf[PropertyContainer] match {
+      case null => null
+      case propertyContainer => try {
+        propertyContainer.getProperty(property)
+      } catch {
+        case x: NotFoundException => handleNotFound(propertyContainer, x)
+      }
     }
   }
 
