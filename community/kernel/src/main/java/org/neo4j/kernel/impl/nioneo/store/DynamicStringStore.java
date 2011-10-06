@@ -31,7 +31,7 @@ public class DynamicStringStore extends AbstractDynamicStore
 {
     // store version, each store ends with this string (byte encoded)
     static final String VERSION = "StringPropertyStore v0.A.0";
-    static final String TYPE_DESCRIPTOR = "StringPropertyStore";
+    public static final String TYPE_DESCRIPTOR = "StringPropertyStore";
 
     public DynamicStringStore( String fileName, Map<?,?> config, IdType idType )
     {

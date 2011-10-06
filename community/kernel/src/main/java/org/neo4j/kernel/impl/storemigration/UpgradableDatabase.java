@@ -55,17 +55,17 @@ public class UpgradableDatabase
         fileNamesToExpectedVersions.put( "neostore.relationshiptypestore.db.names", LegacyDynamicStoreReader.FROM_VERSION_STRING );
     }
 
-    public void checkUpgradeable( File storeFile )
+    public void checkUpgradeable( File neoStoreFile )
     {
-        if (!storeFilesUpgradeable( storeFile ))
+        if (!storeFilesUpgradeable( neoStoreFile ))
         {
             throw new StoreUpgrader.UnableToUpgradeException( "Not all store files match the version required for successful upgrade" );
         }
     }
 
-    public boolean storeFilesUpgradeable( File storeFile )
+    public boolean storeFilesUpgradeable( File neoStoreFile )
     {
-        File storeDirectory = storeFile.getParentFile();
+        File storeDirectory = neoStoreFile.getParentFile();
         for ( String fileName : fileNamesToExpectedVersions.keySet() )
         {
             String expectedVersion = fileNamesToExpectedVersions.get( fileName );
@@ -73,7 +73,11 @@ public class UpgradableDatabase
             byte[] expectedVersionBytes = UTF8.encode( expectedVersion );
             try
             {
-                fileChannel = new RandomAccessFile( new File( storeDirectory, fileName ), "r" ).getChannel();
+                File storeFile = new File( storeDirectory, fileName );
+                if (!storeFile.exists()) {
+                    return false;
+                }
+                fileChannel = new RandomAccessFile( storeFile, "r" ).getChannel();
                 fileChannel.position( fileChannel.size() - expectedVersionBytes.length );
                 byte[] foundVersionBytes = new byte[expectedVersionBytes.length];
                 fileChannel.read( ByteBuffer.wrap( foundVersionBytes ) );

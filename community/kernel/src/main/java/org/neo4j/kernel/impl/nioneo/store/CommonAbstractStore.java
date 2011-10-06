@@ -110,7 +110,7 @@ public abstract class CommonAbstractStore
         return buildTypeDescriptorAndVersion( getTypeDescriptor() );
     }
 
-    protected static String buildTypeDescriptorAndVersion( String typeDescriptor )
+    public static String buildTypeDescriptorAndVersion( String typeDescriptor )
     {
         return typeDescriptor + " " + ALL_STORES_VERSION;
     }

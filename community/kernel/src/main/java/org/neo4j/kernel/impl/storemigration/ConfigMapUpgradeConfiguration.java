@@ -39,7 +39,7 @@ public class ConfigMapUpgradeConfiguration implements UpgradeConfiguration
         if ( !Boolean.parseBoolean( allowUpgrade ) )
         {
             throw new UpgradeNotAllowedByConfigurationException(
-                    String.format( "To enable automatic upgrade, please set %s in configuration properties",
+                    String.format( "To enable automatic upgrade, please set configuration parameter \"%s=true\"",
                             Config.ALLOW_STORE_UPGRADE ) );
         }
     }

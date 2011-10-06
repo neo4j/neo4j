@@ -39,7 +39,7 @@ import org.neo4j.kernel.IdType;
  */
 public class RelationshipTypeStore extends AbstractStore implements Store
 {
-    private static final String TYPE_DESCRIPTOR = "RelationshipTypeStore";
+    public static final String TYPE_DESCRIPTOR = "RelationshipTypeStore";
 
     // record header size
     // in_use(byte)+type_blockId(int)

@@ -31,7 +31,7 @@ import org.neo4j.kernel.IdType;
  */
 public class NodeStore extends AbstractStore implements Store
 {
-    private static final String TYPE_DESCRIPTOR = "NodeStore";
+    public static final String TYPE_DESCRIPTOR = "NodeStore";
 
     // in_use(byte)+next_rel_id(int)+next_prop_id(int)
     public static final int RECORD_SIZE = 9;

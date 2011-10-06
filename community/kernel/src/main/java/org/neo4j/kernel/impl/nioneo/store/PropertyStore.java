@@ -45,7 +45,7 @@ public class PropertyStore extends AbstractStore implements Store
     public static final int DEFAULT_DATA_BLOCK_SIZE = 120;
     public static final int DEFAULT_PAYLOAD_SIZE = 32;
 
-    private static final String TYPE_DESCRIPTOR = "PropertyStore";
+    public static final String TYPE_DESCRIPTOR = "PropertyStore";
 
     public static final int RECORD_SIZE = 1/*next and prev high bits*/
     + 4/*next*/

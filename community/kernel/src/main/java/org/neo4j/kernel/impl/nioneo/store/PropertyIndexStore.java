@@ -34,7 +34,7 @@ import org.neo4j.kernel.IdType;
  */
 public class PropertyIndexStore extends AbstractStore implements Store
 {
-    private static final String TYPE_DESCRIPTOR = "PropertyIndexStore";
+    public static final String TYPE_DESCRIPTOR = "PropertyIndexStore";
 
     private static final int KEY_STORE_BLOCK_SIZE = 30;
 

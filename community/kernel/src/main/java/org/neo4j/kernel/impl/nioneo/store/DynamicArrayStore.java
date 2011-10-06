@@ -37,7 +37,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
 {
     // store version, each store ends with this string (byte encoded)
     static final String VERSION = "ArrayPropertyStore v0.A.0";
-    static final String TYPE_DESCRIPTOR = "ArrayPropertyStore";
+    public static final String TYPE_DESCRIPTOR = "ArrayPropertyStore";
 
     public DynamicArrayStore( String fileName, Map<?,?> config, IdType idType )
     {

@@ -48,7 +48,7 @@ import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressM
  */
 public class NeoStore extends AbstractStore
 {
-    private static final String TYPE_DESCRIPTOR = "NeoStore";
+    public static final String TYPE_DESCRIPTOR = "NeoStore";
 
     // 4 longs in header (long + in use), time | random | version | txid
     private static final int RECORD_SIZE = 9;

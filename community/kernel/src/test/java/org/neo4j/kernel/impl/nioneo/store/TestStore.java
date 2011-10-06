@@ -140,7 +140,7 @@ public class TestStore
 
     private static class Store extends AbstractStore
     {
-        private static final String TYPE_DESCRIPTOR = "TestVersion";
+        public static final String TYPE_DESCRIPTOR = "TestVersion";
         private static final int RECORD_SIZE = 1;
 
         public Store( String fileName ) throws IOException
