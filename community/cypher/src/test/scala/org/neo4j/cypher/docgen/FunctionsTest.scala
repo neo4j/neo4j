@@ -151,7 +151,7 @@ class FunctionsTest extends DocumentingTestBase {
     val argsText = arguments.map(x => "* _" + x._1 + ":_ " + x._2).mkString("\r\n\r\n")
     val fullText = String.format("""%s
 
-*Syntax:* +%s+
+*Syntax:* `%s`
 
 *Arguments:*
 
