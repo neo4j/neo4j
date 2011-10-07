@@ -53,7 +53,7 @@ public class JmxMBeanRepresentation extends ObjectRepresentation
     @Mapping( "name" )
     public ValueRepresentation getName()
     {
-        return ValueRepresentation.string( beanName.toString() );
+        return ValueRepresentation.string( beanName.getCanonicalName() );
     }
 
     @Mapping( "url" )

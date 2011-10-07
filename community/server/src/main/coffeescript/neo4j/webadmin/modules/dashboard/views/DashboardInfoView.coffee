@@ -21,8 +21,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 define( 
   ['./info',
    'ribcage/View',
+   'ribcage/ui/NumberFormatter',
    'lib/backbone'], 
-  (template,View) ->
+  (template,View, NumberFormatter) ->
   
     class DashboardInfoView extends View
       
@@ -39,9 +40,10 @@ define(
 
       render : =>
         $(@el).html @template
-          primitives : @primitives
-          diskUsage  : @diskUsage
-          cacheUsage : @cacheUsage
+          primitives  : @primitives
+          diskUsage   : @diskUsage
+          cacheUsage  : @cacheUsage
+          fancyNumber : NumberFormatter.fancy
         return this
 
       remove : =>

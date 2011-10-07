@@ -1,7 +1,7 @@
 
 :if typeof(bean) != "undefined"
   .pad
-    %h2= htmlEscape(bean.getName())
+    %h2= htmlEscape(bean.name)
     %p.small= htmlEscape(bean.description)
   %table.data-table(cellspacing="0")
     %tbody
