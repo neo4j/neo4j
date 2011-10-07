@@ -21,8 +21,15 @@ package org.neo4j.kernel.impl.storemigration.monitoring;
 
 public class SilentMigrationProgressMonitor implements MigrationProgressMonitor
 {
-    @Override
+    public void started()
+    {
+    }
+
     public void percentComplete( int percent )
+    {
+    }
+
+    public void finished()
     {
     }
 }

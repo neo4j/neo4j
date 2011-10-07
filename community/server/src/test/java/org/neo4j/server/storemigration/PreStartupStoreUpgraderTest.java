@@ -74,9 +74,9 @@ public class PreStartupStoreUpgraderTest
 
         assertEquals( 1, exit );
 
-        String[] lines = new String( outputStream.toByteArray() ).split( "\n" );
-        assertTrue(lines[0].contains("To enable automatic upgrade, please set configuration parameter " +
-                "\"allow_store_upgrade=true\"")  );
+        String[] lines = new String( outputStream.toByteArray() ).split( "\\r?\\n" );
+        assertTrue( lines[0].contains( "To enable automatic upgrade, please set configuration parameter " +
+                "\"allow_store_upgrade=true\"" ) );
     }
 
     @Test
@@ -108,7 +108,10 @@ public class PreStartupStoreUpgraderTest
 
         assertEquals( 0, exit );
 
-        assertEquals( "", new String( outputStream.toByteArray() ) );
+        String[] lines = new String( outputStream.toByteArray() ).split( "\\r?\\n" );
+        assertEquals( "Starting upgrade of database store files", lines[0] );
+        assertEquals( dots(100), lines[1] );
+        assertEquals( "Finished upgrade of database store files", lines[2] );
     }
 
     private Properties buildProperties(boolean allowStoreUpgrade) throws IOException
@@ -149,5 +152,14 @@ public class PreStartupStoreUpgraderTest
     {
         URL legacyStoreResource = PreStartupStoreUpgraderTest.class.getResource( "legacystore/exampledb/neostore" );
         return new File( legacyStoreResource.getFile() ).getParentFile();
+    }
+
+    private String dots( int count )
+    {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < count; i++) {
+            builder.append( "." );
+        }
+        return builder.toString();
     }
 }

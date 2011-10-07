@@ -1,6 +1,6 @@
 [[query-function]]
-Functions in Cypher
-===================
+Functions
+=========
 
 Here is a list of the functions in Cypher, seperated into three different sections: Predicates, Scalar functions and Aggregated functions
 

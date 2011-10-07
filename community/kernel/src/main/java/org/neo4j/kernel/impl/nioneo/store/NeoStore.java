@@ -129,7 +129,7 @@ public class NeoStore extends AbstractStore
     private void tryToUpgradeStores()
     {
         new StoreUpgrader( getConfig(), new ConfigMapUpgradeConfiguration(getConfig()),
-                new UpgradableDatabase(), new StoreMigrator( new VisibleMigrationProgressMonitor() ),
+                new UpgradableDatabase(), new StoreMigrator( new VisibleMigrationProgressMonitor( System.out ) ),
                 new DatabaseFiles() ).attemptUpgrade( getStorageFileName() );
     }
 

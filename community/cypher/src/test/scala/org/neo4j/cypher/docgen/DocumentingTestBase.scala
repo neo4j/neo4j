@@ -32,6 +32,7 @@ import org.scalatest.junit.JUnitSuite
 import java.io.ByteArrayOutputStream
 import org.neo4j.visualization.graphviz.{AsciiDocStyle, GraphvizWriter}
 import org.neo4j.walk.Walker
+import org.neo4j.visualization.asciidoc.AsciidocHelper
 
 abstract class DocumentingTestBase extends JUnitSuite {
   var db: GraphDatabaseService = null
@@ -57,18 +58,12 @@ abstract class DocumentingTestBase extends JUnitSuite {
     writer.println()
     writer.println("_Query_")
     writer.println()
-    writer.println("[source,cypher]")
-    writer.println("----")
-    writer.println(query)
-    writer.println("----")
+    writer.println(AsciidocHelper.createCypherSnippet(query))
     writer.println()
     writer.println(returns)
     writer.println()
     writer.println(".Result")
-    writer.println("[queryresult]")
-    writer.println("----")
-    writer.println(result.dumpToString())
-    writer.println("----")
+    writer.println(AsciidocHelper.createQueryResultSnippet(result.dumpToString()))
     writer.println()
     writer.println()
     writer.flush()
@@ -79,7 +74,7 @@ abstract class DocumentingTestBase extends JUnitSuite {
     "target/docs/ql/"
   }
 
-  private def emitGraphviz(fileName:String): String = {
+  private def emitGraphviz(fileName: String): String = {
     val out = new ByteArrayOutputStream();
     val writer = new GraphvizWriter(new AsciiDocStyle());
     writer.emit(out, Walker.fullGraph(db));
@@ -95,7 +90,7 @@ _Graph_
 """.format(out)
   }
 
-  def dumpGraphViz(graphViz: PrintWriter, fileName:String) {
+  def dumpGraphViz(graphViz: PrintWriter, fileName: String) {
     val foo = emitGraphviz(fileName)
     graphViz.write(foo)
     graphViz.flush()
@@ -118,7 +113,7 @@ _Graph_
     dumpToFile(writer, title, query, returns, text, result)
 
     val graphFileName = "cypher-" + this.getClass.getSimpleName.replaceAll("Test", "").toLowerCase + "-graph"
-    val graphViz = new PrintWriter(new FileWriter(new File(dir, graphFileName+ ".txt")))
+    val graphViz = new PrintWriter(new FileWriter(new File(dir, graphFileName + ".txt")))
     dumpGraphViz(graphViz, graphFileName)
   }
 
