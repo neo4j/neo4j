@@ -155,10 +155,30 @@ startit() {
         -Dorg.neo4j.server.properties=\"${NEO4J_INSTANCE}/conf/neo4j-server.properties\" \
         -Djava.util.logging.config.file=\"${NEO4J_INSTANCE}/conf/logging.properties\" \
         -Dneo4j.home=\"${NEO4J_HOME}\" -Dneo4j.instance=\"${NEO4J_INSTANCE}\" \
+        org.neo4j.server.storemigration.PreStartupStoreUpgrader"
+      
+      if [ $? -ne 0 ] ; then
+        exit 1
+      fi
+      
+      su $NEO4J_USER -c "$JAVACMD -cp '$CLASSPATH' $JAVA_OPTS -Dlog4j.configuration=file:conf/log4j.properties \
+        -Dorg.neo4j.server.properties=\"${NEO4J_INSTANCE}/conf/neo4j-server.properties\" \
+        -Djava.util.logging.config.file=\"${NEO4J_INSTANCE}/conf/logging.properties\" \
+        -Dneo4j.home=\"${NEO4J_HOME}\" -Dneo4j.instance=\"${NEO4J_INSTANCE}\" \
         org.neo4j.server.Bootstrapper >> \"$NEO4J_INSTANCE/data/log/console.log\" 2>&1 & echo \$! > \"$PID_FILE\" "
     else
       checkwriteaccess
       echo "WARNING: not changing user"
+      $JAVACMD -cp "${CLASSPATH}" $JAVA_OPTS -Dlog4j.configuration=file:conf/log4j.properties \
+        -Dorg.neo4j.server.properties="${NEO4J_INSTANCE}/conf/neo4j-server.properties" \
+        -Djava.util.logging.config.file="${NEO4J_INSTANCE}/conf/logging.properties" \
+        -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}" \
+        org.neo4j.server.storemigration.PreStartupStoreUpgrader
+
+      if [ $? -ne 0 ] ; then
+        exit 1
+      fi
+
       $JAVACMD -cp "${CLASSPATH}" $JAVA_OPTS -Dlog4j.configuration=file:conf/log4j.properties \
         -Dorg.neo4j.server.properties="${NEO4J_INSTANCE}/conf/neo4j-server.properties" \
         -Djava.util.logging.config.file="${NEO4J_INSTANCE}/conf/logging.properties" \
