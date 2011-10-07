@@ -60,7 +60,9 @@ public class StoreMigrator
 
     public void migrate( LegacyStore legacyStore, NeoStore neoStore ) throws IOException
     {
+        progressMonitor.started();
         new Migration( legacyStore, neoStore ).migrate();
+        progressMonitor.finished();
     }
 
     protected class Migration
