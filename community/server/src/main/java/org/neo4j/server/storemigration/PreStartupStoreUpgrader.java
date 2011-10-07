@@ -96,7 +96,7 @@ public class PreStartupStoreUpgrader
             }
 
             StoreUpgrader storeUpgrader = new StoreUpgrader( config, new ConfigMapUpgradeConfiguration( config ),
-                    new UpgradableDatabase(), new StoreMigrator( new VisibleMigrationProgressMonitor() ),
+                    new UpgradableDatabase(), new StoreMigrator( new VisibleMigrationProgressMonitor( out ) ),
                     new DatabaseFiles() );
 
             try

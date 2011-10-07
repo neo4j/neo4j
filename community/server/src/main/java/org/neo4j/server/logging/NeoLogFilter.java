@@ -32,7 +32,8 @@ public class NeoLogFilter implements Filter
     @Override
     public boolean isLoggable( LogRecord logRecord )
     {
-        return logRecord.getLoggerName()
-                .startsWith( "org.neo4j.server" );
+        String loggerName = logRecord.getLoggerName();
+        return loggerName.startsWith( "org.neo4j.server" )
+                && !loggerName.startsWith( "org.neo4j.server.storemigration" );
     }
 }

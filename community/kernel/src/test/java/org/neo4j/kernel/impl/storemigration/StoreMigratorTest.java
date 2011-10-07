@@ -74,6 +74,8 @@ public class StoreMigratorTest
         neoStore.close();
 
         assertEquals( 100, monitor.events.size() );
+        assertTrue( monitor.started );
+        assertTrue( monitor.finished );
 
         GraphDatabaseService database = new EmbeddedGraphDatabase( outputDir.getPath() );
 
@@ -182,9 +184,22 @@ public class StoreMigratorTest
     private class ListAccumulatorMigrationProgressMonitor implements MigrationProgressMonitor
     {
         private List<Integer> events = new ArrayList<Integer>();
+        private boolean started = false;
+        private boolean finished = false;
+
+        public void started()
+        {
+            started = true;
+        }
+
         public void percentComplete( int percent )
         {
             events.add( percent );
+        }
+
+        public void finished()
+        {
+            finished = true;
         }
     }
 }
