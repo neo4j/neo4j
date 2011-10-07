@@ -253,6 +253,7 @@ annotated:  manpages copyimages
 	cp -fr $(SRCDIR)/js $(ANNOTATEDDIR)/js
 	cp -fr $(SRCDIR)/css/* $(ANNOTATEDDIR)/css
 	cp -fr $(SRCDIR)/images/*.svg $(ANNOTATEDDIR)/images
+	mv $(ANNOTATEDDIR)/neo4j-manual.html $(ANNOTATEDDIR)/index.html
 
 text: docbook-shortinfo
 	#
