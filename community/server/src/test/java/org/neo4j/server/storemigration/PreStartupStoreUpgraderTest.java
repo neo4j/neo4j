@@ -74,7 +74,7 @@ public class PreStartupStoreUpgraderTest
 
         assertEquals( 1, exit );
 
-        String[] lines = new String( outputStream.toByteArray() ).split( "\n" );
+        String[] lines = new String( outputStream.toByteArray() ).split( "\\r?\\n" );
         assertTrue( lines[0].contains( "To enable automatic upgrade, please set configuration parameter " +
                 "\"allow_store_upgrade=true\"" ) );
     }
@@ -108,7 +108,7 @@ public class PreStartupStoreUpgraderTest
 
         assertEquals( 0, exit );
 
-        String[] lines = new String( outputStream.toByteArray() ).split( "\n" );
+        String[] lines = new String( outputStream.toByteArray() ).split( "\\r?\\n" );
         assertEquals( "Starting upgrade of database store files", lines[0] );
         assertEquals( dots(100), lines[1] );
         assertEquals( "Finished upgrade of database store files", lines[2] );
