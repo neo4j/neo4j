@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 
@@ -41,7 +42,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 public abstract class AsciiDocGenerator
 {
     private static final String DOCUMENTATION_END = "\n...\n";
-
+    private Logger log = Logger.getLogger( AsciiDocGenerator.class.getName() );
     protected String title = null;
     protected String description = null;
     protected GraphDatabaseService graph;
@@ -170,7 +171,7 @@ public abstract class AsciiDocGenerator
             description = replaceSnippet( description, key );
         }
         if(description.contains( SNIPPET_MARKER )) {
-            throw new IllegalArgumentException("missing snippet in " + description);
+            log.severe( "missing snippet in " + description);
         }
         return description;
     }
@@ -183,7 +184,7 @@ public abstract class AsciiDocGenerator
             description = description.replace( snippetString + "\n",
                     snippets.get( key ) );
         } else {
-            throw new IllegalArgumentException( "could not find " + snippetString + "\\n in "+ description );
+            log.severe( "could not find " + snippetString + "\\n in "+ description );
         }
         return description;
     }

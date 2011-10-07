@@ -21,7 +21,6 @@ package org.neo4j.metatest;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -32,7 +31,6 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.internal.runners.statements.Fail;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -82,19 +80,11 @@ public class TestJavaTestDocsGenerator implements GraphHolder
     @Documented( value = "@@snippet1\n" )
     @Test
     @Graph( "I know you" )
-    public void will_complain_about_missing_snippets() throws Exception
+    public void will_not_complain_about_missing_snippets() throws Exception
     {
         data.get();
         JavaTestDocsGenerator doc = gen.get();
-        try
-        {
-            doc.document( directory, sectionName );
-            fail();
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // ok
-        }
+        doc.document( directory, sectionName );
     }
 
     /**
