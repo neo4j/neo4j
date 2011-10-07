@@ -126,6 +126,27 @@ buildclasspath() {
   CLASSPATH=${ALL_JARS}
 }
 
+checkupgrade() {
+    if [ $UID == 0 ] ; then
+      su $NEO4J_USER -c "$JAVACMD -cp '$CLASSPATH' $JAVA_OPTS -Dlog4j.configuration=file:conf/log4j.properties \
+        -Dorg.neo4j.server.properties=\"${NEO4J_INSTANCE}/conf/neo4j-server.properties\" \
+        -Djava.util.logging.config.file=\"${NEO4J_INSTANCE}/conf/logging.properties\" \
+        -Dneo4j.home=\"${NEO4J_HOME}\" -Dneo4j.instance=\"${NEO4J_INSTANCE}\" \
+        org.neo4j.server.storemigration.PreStartupStoreUpgrader"
+    else
+      checkwriteaccess
+      $JAVACMD -cp "${CLASSPATH}" $JAVA_OPTS -Dlog4j.configuration=file:conf/log4j.properties \
+        -Dorg.neo4j.server.properties="${NEO4J_INSTANCE}/conf/neo4j-server.properties" \
+        -Djava.util.logging.config.file="${NEO4J_INSTANCE}/conf/logging.properties" \
+        -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}" \
+        org.neo4j.server.storemigration.PreStartupStoreUpgrader
+    fi
+
+    if [ $? -ne 0 ] ; then
+      exit 1
+    fi
+}
+
 startit() {
 
   detectos
@@ -149,18 +170,9 @@ startit() {
     printf "Starting $FRIENDLY_NAME..."
 
     buildclasspath
+    checkupgrade
 
     if [ $UID == 0 ] ; then
-      su $NEO4J_USER -c "$JAVACMD -cp '$CLASSPATH' $JAVA_OPTS -Dlog4j.configuration=file:conf/log4j.properties \
-        -Dorg.neo4j.server.properties=\"${NEO4J_INSTANCE}/conf/neo4j-server.properties\" \
-        -Djava.util.logging.config.file=\"${NEO4J_INSTANCE}/conf/logging.properties\" \
-        -Dneo4j.home=\"${NEO4J_HOME}\" -Dneo4j.instance=\"${NEO4J_INSTANCE}\" \
-        org.neo4j.server.storemigration.PreStartupStoreUpgrader"
-      
-      if [ $? -ne 0 ] ; then
-        exit 1
-      fi
-      
       su $NEO4J_USER -c "$JAVACMD -cp '$CLASSPATH' $JAVA_OPTS -Dlog4j.configuration=file:conf/log4j.properties \
         -Dorg.neo4j.server.properties=\"${NEO4J_INSTANCE}/conf/neo4j-server.properties\" \
         -Djava.util.logging.config.file=\"${NEO4J_INSTANCE}/conf/logging.properties\" \
@@ -169,16 +181,6 @@ startit() {
     else
       checkwriteaccess
       echo "WARNING: not changing user"
-      $JAVACMD -cp "${CLASSPATH}" $JAVA_OPTS -Dlog4j.configuration=file:conf/log4j.properties \
-        -Dorg.neo4j.server.properties="${NEO4J_INSTANCE}/conf/neo4j-server.properties" \
-        -Djava.util.logging.config.file="${NEO4J_INSTANCE}/conf/logging.properties" \
-        -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}" \
-        org.neo4j.server.storemigration.PreStartupStoreUpgrader
-
-      if [ $? -ne 0 ] ; then
-        exit 1
-      fi
-
       $JAVACMD -cp "${CLASSPATH}" $JAVA_OPTS -Dlog4j.configuration=file:conf/log4j.properties \
         -Dorg.neo4j.server.properties="${NEO4J_INSTANCE}/conf/neo4j-server.properties" \
         -Djava.util.logging.config.file="${NEO4J_INSTANCE}/conf/logging.properties" \
