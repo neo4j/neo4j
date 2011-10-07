@@ -29,6 +29,8 @@ FRIENDLY_NAME="Neo4j Server"
 LAUNCHD_NAME="org.neo4j.server"
 
 function findBaseDirAndCdThere {
+# This seems to not be safe to run at any time. If that
+# is the case, it should be fixed to be so, if possible.
   SCRIPT=$0
 
   cd "`dirname "$SCRIPT"`"
