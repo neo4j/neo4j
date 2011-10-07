@@ -21,6 +21,7 @@ package org.neo4j.metatest;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -31,6 +32,7 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.internal.runners.statements.Fail;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -51,10 +53,10 @@ public class TestJavaTestDocsGenerator implements GraphHolder
     public @Rule
     TestData<JavaTestDocsGenerator> gen = TestData.producedThrough( JavaTestDocsGenerator.PRODUCER );
 
-    String directory = "target"+File.separator+"testdocs";
+    String directory = "target" + File.separator + "testdocs";
     String sectionName = "testsection";
-    
-    @Documented(value="Title1.\n\nhej\n@@snippet1\n\nmore docs\n@@snippet_2-1.")
+
+    @Documented( value = "Title1.\n\nhej\n@@snippet1\n\nmore docs\n@@snippet_2-1\n@@snippet12\n." )
     @Test
     @Graph( "I know you" )
     public void can_create_docs_from_method_name() throws Exception
@@ -62,24 +64,45 @@ public class TestJavaTestDocsGenerator implements GraphHolder
         data.get();
         JavaTestDocsGenerator doc = gen.get();
         doc.setGraph( graphdb );
-        assertNotNull(data.get().get( "I" ));
+        assertNotNull( data.get().get( "I" ) );
         String snippet1 = "snippet1-value";
+        String snippet12 = "snippet12-value";
         String snippet2 = "snippet2-value";
-        doc.addSnippet("snippet1", snippet1 );
-        doc.addSnippet("snippet_2-1", snippet2 );
-        doc.document(directory, sectionName);
-        String result = readFileAsString( doc.out);
-        System.out.println(result);
-        assertTrue(result.contains( snippet1 ));
-        assertTrue(result.contains( snippet2 ));
+        doc.addSnippet( "snippet1", snippet1 );
+        doc.addSnippet( "snippet12", snippet12 );
+        doc.addSnippet( "snippet_2-1", snippet2 );
+        doc.document( directory, sectionName );
+        String result = readFileAsString( doc.out );
+        System.out.println( result );
+        assertTrue( result.contains( snippet1 ) );
+        assertTrue( result.contains( snippet12 ) );
+        assertTrue( result.contains( snippet2 ) );
     }
-    
+
+    @Documented( value = "@@snippet1\n" )
+    @Test
+    @Graph( "I know you" )
+    public void will_complain_about_missing_snippets() throws Exception
+    {
+        data.get();
+        JavaTestDocsGenerator doc = gen.get();
+        try
+        {
+            doc.document( directory, sectionName );
+            fail();
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // ok
+        }
+    }
+
     /**
      * Title2.
      * 
      * @@snippet1
      * 
-     * more stuff
+     *            more stuff
      * 
      * 
      * @@snippet2
@@ -92,31 +115,33 @@ public class TestJavaTestDocsGenerator implements GraphHolder
         data.get();
         JavaTestDocsGenerator doc = gen.get();
         doc.setGraph( graphdb );
-        assertNotNull(data.get().get( "I" ));
+        assertNotNull( data.get().get( "I" ) );
         String snippet1 = "snippet1-value";
         String snippet2 = "snippet2-value";
-        doc.addSnippet("snippet1", snippet1 );
-        doc.addSnippet("snippet2", snippet2 );
-        doc.document(directory, sectionName);
-        String result = readFileAsString( doc.out);
-        assertTrue(result.contains( snippet1 ));
-        assertTrue(result.contains( snippet2 ));
+        doc.addSnippet( "snippet1", snippet1 );
+        doc.addSnippet( "snippet2", snippet2 );
+        doc.document( directory, sectionName );
+        String result = readFileAsString( doc.out );
+        assertTrue( result.contains( snippet1 ) );
+        assertTrue( result.contains( snippet2 ) );
     }
 
-    
-    private static String readFileAsString(File file) throws java.io.IOException{
+    private static String readFileAsString( File file )
+            throws java.io.IOException
+    {
         byte[] buffer = new byte[(int) file.length()];
-        BufferedInputStream f = new BufferedInputStream(new FileInputStream(file));
-        f.read(buffer);
-        return new String(buffer);
+        BufferedInputStream f = new BufferedInputStream( new FileInputStream(
+                file ) );
+        f.read( buffer );
+        return new String( buffer );
     }
-    
+
     @Override
     public GraphDatabaseService graphdb()
     {
         return graphdb;
     }
-    
+
     @Before
     public void setUp()
     {
