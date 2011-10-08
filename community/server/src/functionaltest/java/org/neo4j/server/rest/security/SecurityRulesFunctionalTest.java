@@ -57,10 +57,9 @@ public class SecurityRulesFunctionalTest
      * access to all URIs to the server by listing the rules class in
      * +neo4j-server.properties+:
      * 
-     * [source] ---- org.neo4j.server.rest.security_rules=my.rules.
-     * PermanentlyFailingSecurityRule ----
+     * @@config
      * 
-     * with the rule source code of:
+     *          with the rule source code of:
      * 
      * @@failingRule
      * 
@@ -74,65 +73,55 @@ public class SecurityRulesFunctionalTest
     @Test
     @Documented
     @Title( "Enforcing Server Authorization Rules" )
-    public void should401WithBasicChallengeWhenASecurityRuleFails() throws Exception
+    public void should401WithBasicChallengeWhenASecurityRuleFails()
+            throws Exception
     {
-        server = ServerBuilder.server()
-                .withDefaultDatabaseTuning()
-                .withSecurityRules( PermanentlyFailingSecurityRule.class.getCanonicalName() )
-                .build();
+        server = ServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
+                PermanentlyFailingSecurityRule.class.getCanonicalName() ).build();
         server.start();
-        gen.get()
-                .addSourceSnippets( PermanentlyFailingSecurityRule.class, "failingRule" );
+        gen.get().addSnippet(
+                "config",
+                "\n[source]\n---- org.neo4j.server.rest.security_rules=my.rules.PermanentlyFailingSecurityRule\n----\n" );
+        gen.get().addSourceSnippets( PermanentlyFailingSecurityRule.class,
+                "failingRule" );
         functionalTestHelper = new FunctionalTestHelper( server );
-        gen.get()
-                .setSection( "ops" );
-        JaxRsResponse response = gen.get()
-                .expectedStatus( 401 )
-                .expectedHeader( "WWW-Authenticate" )
-                .post( functionalTestHelper.nodeUri() )
-                .response();
+        gen.get().setSection( "ops" );
+        JaxRsResponse response = gen.get().expectedStatus( 401 ).expectedHeader(
+                "WWW-Authenticate" ).post( functionalTestHelper.nodeUri() ).response();
 
-        assertThat( response.getHeaders()
-                .getFirst( "WWW-Authenticate" ), containsString( "Basic realm=\""
-                                                                 + PermanentlyFailingSecurityRule.REALM + "\"" ) );
+        assertThat( response.getHeaders().getFirst( "WWW-Authenticate" ),
+                containsString( "Basic realm=\""
+                                + PermanentlyFailingSecurityRule.REALM + "\"" ) );
     }
 
     @Test
-    public void should401WithBasicChallengeIfAnyOneOfTheRulesFails() throws Exception
+    public void should401WithBasicChallengeIfAnyOneOfTheRulesFails()
+            throws Exception
     {
-        server = ServerBuilder.server()
-                .withDefaultDatabaseTuning()
-                .withSecurityRules( PermanentlyPassingSecurityRule.class.getCanonicalName(),
-                        PermanentlyFailingSecurityRule.class.getCanonicalName() )
-                .build();
+        server = ServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
+                PermanentlyPassingSecurityRule.class.getCanonicalName(),
+                PermanentlyFailingSecurityRule.class.getCanonicalName() ).build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper( server );
 
-        JaxRsResponse response = gen.get()
-                .expectedStatus( 401 )
-                .expectedHeader( "WWW-Authenticate" )
-                .post( functionalTestHelper.nodeUri() )
-                .response();
+        JaxRsResponse response = gen.get().expectedStatus( 401 ).expectedHeader(
+                "WWW-Authenticate" ).post( functionalTestHelper.nodeUri() ).response();
 
-        assertThat( response.getHeaders()
-                .getFirst( "WWW-Authenticate" ), containsString( "Basic realm=\""
-                                                                 + PermanentlyFailingSecurityRule.REALM + "\"" ) );
+        assertThat( response.getHeaders().getFirst( "WWW-Authenticate" ),
+                containsString( "Basic realm=\""
+                                + PermanentlyFailingSecurityRule.REALM + "\"" ) );
     }
 
     @Test
-    public void shouldRespondWith201IfAllTheRulesPassWhenCreatingANode() throws Exception
+    public void shouldRespondWith201IfAllTheRulesPassWhenCreatingANode()
+            throws Exception
     {
-        server = ServerBuilder.server()
-                .withDefaultDatabaseTuning()
-                .withSecurityRules( PermanentlyPassingSecurityRule.class.getCanonicalName() )
-                .build();
+        server = ServerBuilder.server().withDefaultDatabaseTuning().withSecurityRules(
+                PermanentlyPassingSecurityRule.class.getCanonicalName() ).build();
         server.start();
         functionalTestHelper = new FunctionalTestHelper( server );
 
-        gen.get()
-                .expectedStatus( 201 )
-                .expectedHeader( "Location" )
-                .post( functionalTestHelper.nodeUri() )
-                .response();
+        gen.get().expectedStatus( 201 ).expectedHeader( "Location" ).post(
+                functionalTestHelper.nodeUri() ).response();
     }
 }
