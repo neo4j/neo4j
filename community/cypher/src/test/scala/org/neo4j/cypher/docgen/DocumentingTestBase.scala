@@ -32,6 +32,7 @@ import org.scalatest.junit.JUnitSuite
 import java.io.ByteArrayOutputStream
 import org.neo4j.visualization.graphviz.{AsciiDocStyle, GraphvizWriter}
 import org.neo4j.walk.Walker
+import org.neo4j.visualization.asciidoc.AsciidocHelper
 
 abstract class DocumentingTestBase extends JUnitSuite {
   var db: GraphDatabaseService = null
@@ -57,19 +58,12 @@ abstract class DocumentingTestBase extends JUnitSuite {
     writer.println()
     writer.println("_Query_")
     writer.println()
-    writer.println("[source,cypher]")
-    writer.println("----")
-    writer.println(query)
-    writer.println("----")
+    writer.println(AsciidocHelper.createCypherSnippet(query))
     writer.println()
     writer.println(returns)
     writer.println()
-    writer.println("_Result_")
-    writer.println()
-    writer.println("[source]")
-    writer.println("----")
-    writer.println(" " + result.dumpToString().replace("\n", "\n "))
-    writer.println("----")
+    writer.println(".Result")
+    writer.println(AsciidocHelper.createQueryResultSnippet(result.dumpToString()))
     writer.println()
     writer.println()
     writer.flush()
@@ -80,15 +74,15 @@ abstract class DocumentingTestBase extends JUnitSuite {
     "target/docs/ql/"
   }
 
-  private def emitGraphviz(): String = {
+  private def emitGraphviz(fileName: String): String = {
     val out = new ByteArrayOutputStream();
     val writer = new GraphvizWriter(new AsciiDocStyle());
     writer.emit(out, Walker.fullGraph(db));
 
-"""
+    """
 _Graph_
 
-["dot", "graph.svg", "neoviz"]
+["dot", """" + fileName + """.svg", "neoviz"]
 ----
 %s
 ----
@@ -96,8 +90,8 @@ _Graph_
 """.format(out)
   }
 
-  def dumpGraphViz(graphViz: PrintWriter) {
-    val foo = emitGraphviz()
+  def dumpGraphViz(graphViz: PrintWriter, fileName: String) {
+    val foo = emitGraphviz(fileName)
     graphViz.write(foo)
     graphViz.flush()
     graphViz.close()
@@ -118,8 +112,9 @@ _Graph_
     val writer = new PrintWriter(new FileWriter(new File(dir, nicefy(title) + ".txt")))
     dumpToFile(writer, title, query, returns, text, result)
 
-    val graphViz = new PrintWriter(new FileWriter(new File(dir, "graph.txt")))
-    dumpGraphViz(graphViz)
+    val graphFileName = "cypher-" + this.getClass.getSimpleName.replaceAll("Test", "").toLowerCase + "-graph"
+    val graphViz = new PrintWriter(new FileWriter(new File(dir, graphFileName + ".txt")))
+    dumpGraphViz(graphViz, graphFileName)
   }
 
   def indexProperties[T <: PropertyContainer](n: T, index: Index[T]) {
@@ -133,16 +128,26 @@ _Graph_
 
   def node(name: String): Node = nodes.getOrElse(name, throw new NotFoundException(name))
 
+  def rel(id: Long): Relationship = db.getRelationshipById(id)
+
   @After
   def teardown() {
     db.shutdown()
   }
 
   private def removeReferenceNode(db: GraphDatabaseService) {
+    inTx(() => db.getReferenceNode.delete())
+  }
+
+  def inTx[U](f: () => U): U = {
     val tx = db.beginTx()
-    db.getReferenceNode.delete()
-    tx.success()
-    tx.finish()
+    try {
+      val x = f()
+      tx.success()
+      x
+    } finally {
+      tx.finish()
+    }
   }
 
   @Before
@@ -152,25 +157,22 @@ _Graph_
 
     removeReferenceNode(db)
 
-    val tx = db.beginTx()
+    inTx(() => {
+      nodeIndex = db.index().forNodes("nodes")
+      relIndex = db.index().forRelationships("rels")
+      val description = GraphDescription.create(graphDescription: _*)
 
-    nodeIndex = db.index().forNodes("nodes")
-    relIndex = db.index().forRelationships("rels")
-    val description = GraphDescription.create(graphDescription: _*)
+      nodes = description.create(db).asScala.toMap
 
-    nodes = description.create(db).asScala.toMap
+      db.getAllNodes.asScala.foreach((n) => {
+        indexProperties(n, nodeIndex)
+        n.getRelationships(Direction.OUTGOING).asScala.foreach(indexProperties(_, relIndex))
+      })
 
-    db.getAllNodes.asScala.foreach((n) => {
-      indexProperties(n, nodeIndex)
-      n.getRelationships(Direction.OUTGOING).asScala.foreach(indexProperties(_, relIndex))
+      properties.foreach((n) => {
+        val nod = node(n._1)
+        n._2.foreach((kv) => nod.setProperty(kv._1, kv._2))
+      })
     })
-
-    properties.foreach((n) => {
-      val nod = node(n._1)
-      n._2.foreach((kv) => nod.setProperty(kv._1, kv._2))
-    })
-
-    tx.success()
-    tx.finish()
   }
 }

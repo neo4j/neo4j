@@ -28,7 +28,7 @@ class PatternRelationship(key: String,
                           val startNode: PatternNode,
                           val endNode: PatternNode,
                           relType: Option[String],
-                          dir: Direction,
+                          val dir: Direction,
                           val optional: Boolean)
   extends PatternElement(key) {
 

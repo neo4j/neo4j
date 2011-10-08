@@ -23,13 +23,14 @@ define ['./Console'], (Console) ->
   class MultiLineInputConsole extends Console
     
     inputBuffer : []
-
+    
     executeStatement : (statement) ->
       if statement is ""
         statement = @inputBuffer.join "\n"
+        @set {"showMultilineHelp":false}
         @inputBuffer = []
         super statement
       else
         @inputBuffer.push statement
-        @set {"showPrompt":true}
+        @set {"showPrompt":true, "showMultilineHelp":true}
    

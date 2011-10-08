@@ -152,7 +152,7 @@ class TransactionImpl implements Transaction
                     catch ( IOException e )
                     {
                         log.log( Level.SEVERE, "Error writing transaction log", e );
-                        txManager.setTmNotOk();
+                        txManager.setTmNotOk( e );
                         throw Exceptions.withCause( new SystemException( "TM encountered a problem, "
                                                                          + " error writing transaction log" ), e );
                     }
@@ -203,7 +203,7 @@ class TransactionImpl implements Transaction
                     catch ( IOException e )
                     {
                         log.log( Level.SEVERE, "Error writing transaction log", e );
-                        txManager.setTmNotOk();
+                        txManager.setTmNotOk( e );
                         throw Exceptions.withCause( new SystemException( "TM encountered a problem, "
                                                                          + " error writing transaction log" ), e );
                     }
@@ -516,7 +516,7 @@ class TransactionImpl implements Transaction
             catch ( IOException e )
             {
                 log.log( Level.SEVERE, "Error writing transaction log", e );
-                txManager.setTmNotOk();
+                txManager.setTmNotOk( e );
                 throw Exceptions.withCause( new SystemException( "TM encountered a problem, "
                                                                  + " error writing transaction log" ), e );
             }

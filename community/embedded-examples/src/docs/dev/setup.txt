@@ -157,5 +157,5 @@ tag=startDbWithConfig
 
 Or you could of course create you own +Map<String, String>+ programatically and use that instead.
 
-For configuration settings, see <<configuration>>.
+For configuration settings, see <<embedded-configuration>>.
 

@@ -66,6 +66,10 @@ define(
           meanEnergy = energy.mean
           if meanEnergy < 0.01 then @sys.stop()
 
+      clear : () =>
+        @dataModel.clear()
+        @_synchronizeUiWithData()
+
       setNode : (node) =>
         @setNodes([node])
 

@@ -52,7 +52,7 @@ public abstract class FileLock
         if ( Config.osIsWindows() )
         {
             // Only grab one lock, say for the "neostore" file
-            if ( fileName.endsWith( "neostore" ) )
+            if ( fileName.endsWith( NeoStore.DEFAULT_NAME ) )
             {
                 return getLockFileBasedFileLock( new File( fileName ).getParentFile() );
             }
@@ -60,7 +60,7 @@ public abstract class FileLock
             // For the rest just return placebo locks
             return new PlaceboFileLock();
         }
-        else if ( fileName.endsWith( "neostore" ) )
+        else if ( fileName.endsWith( NeoStore.DEFAULT_NAME ) )
         {
             FileLock regular = wrapOrNull( channel.tryLock() );
             if ( regular == null ) return null;

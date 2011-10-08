@@ -22,6 +22,7 @@ package org.neo4j.cypher.parser
 
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
+import org.neo4j.cypher.SyntaxException
 
 trait Values extends JavaTokenParsers with Tokens {
 
@@ -29,7 +30,7 @@ trait Values extends JavaTokenParsers with Tokens {
     case x => EntityValue(x)
   }
 
-  def value: Parser[Value] = (boolean | functionCall | nullableProperty | property | stringValue | decimal | parameter )
+  def value: Parser[Value] = (boolean | function | nullableProperty | property | stringValue | decimal | parameter)
 
   def property: Parser[Value] = identity ~ "." ~ identity ^^ {
     case v ~ "." ~ p => PropertyValue(v, p)
@@ -51,33 +52,18 @@ trait Values extends JavaTokenParsers with Tokens {
 
   def parameter: Parser[Value] = curly(identity) ^^ (x => ParameterValue(x))
 
-  def functionCall: Parser[Value] = (typeFunc | lengthFunc | nodesFunc | relsFunc | idFunc)
-
-  def functionArguments(numArgs: Int): Parser[List[Value]] = parens((value | entityValue) ~ repN(numArgs - 1, "," ~> (value | entityValue))) ^^ {
-    case firstArg ~ nextArguments => firstArg :: nextArguments
-  }
-
-  def typeFunc: Parser[Value] = ignoreCase("type") ~> functionArguments(1) ^^ {
-    case v => RelationshipTypeValue(v.head)
-  }
-
-  def idFunc: Parser[Value] = ignoreCase("id") ~> functionArguments(1) ^^ {
-    case v => IdValue(v.head)
-  }
-
-  def lengthFunc: Parser[Value] = ignoreCase("length") ~> functionArguments(1) ^^ {
-    case v => ArrayLengthValue(v.head)
-  }
-
-  def nodesFunc: Parser[Value] = ignoreCase("nodes") ~> parens(entityValue) ^^ {
-    case v => PathNodesValue(v)
-  }
-
-  def relsFunc: Parser[Value] = (ignoreCase("rels") | ignoreCase("relationships")) ~> parens(entityValue) ^^ {
-    case v => PathRelationshipsValue(v)
+  def function: Parser[Value] = ident ~ parens(value | entityValue) ^^{
+    case functionName ~ inner => functionName.toLowerCase match {
+      case "type" => RelationshipTypeValue(inner)
+      case "id" => IdValue(inner)
+      case "length" => ArrayLengthValue(inner)
+      case "nodes" => PathNodesValue(inner)
+      case "rels" => PathRelationshipsValue(inner)
+      case "relationships" => PathRelationshipsValue(inner)
+      case x => throw new SyntaxException("No function '" + x + "' exists.")
+    }
   }
 }
-
 
 
 

@@ -28,7 +28,8 @@ abstract class Value extends (Map[String, Any] => Any) {
   def identifier: Identifier
 
   def checkAvailable(symbols: SymbolTable)
-  def dependsOn:Set[String]
+
+  def dependsOn: Set[String]
 }
 
 case class Literal(v: Any) extends Value {
@@ -87,6 +88,10 @@ case class Avg(anInner: Value) extends AggregationValue("avg", anInner) {
   def createAggregationFunction = new AvgFunction(anInner)
 }
 
+case class Collect(anInner: Value) extends AggregationValue("collect", anInner) {
+  def createAggregationFunction = new CollectFunction(anInner)
+}
+
 case class NullablePropertyValue(subEntity: String, subProperty: String) extends PropertyValue(subEntity, subProperty) {
   protected override def handleNotFound(propertyContainer: PropertyContainer, x: NotFoundException): Any = null
 }
@@ -95,11 +100,13 @@ case class PropertyValue(entity: String, property: String) extends Value {
   protected def handleNotFound(propertyContainer: PropertyContainer, x: NotFoundException): Any = throw new SyntaxException("%s.%s does not exist on %s".format(entity, property, propertyContainer), x)
 
   def apply(m: Map[String, Any]): Any = {
-    val propertyContainer = m(entity).asInstanceOf[PropertyContainer]
-    try {
-      propertyContainer.getProperty(property)
-    } catch {
-      case x: NotFoundException => handleNotFound(propertyContainer, x)
+    m(entity).asInstanceOf[PropertyContainer] match {
+      case null => null
+      case propertyContainer => try {
+        propertyContainer.getProperty(property)
+      } catch {
+        case x: NotFoundException => handleNotFound(propertyContainer, x)
+      }
     }
   }
 
@@ -136,14 +143,14 @@ case class IdValue(inner: Value) extends FunctionValue("ID", inner) {
   }
 }
 
-case class PathNodesValue(path: EntityValue) extends FunctionValue("NODES", path) {
+case class PathNodesValue(path: Value) extends FunctionValue("NODES", path) {
   def apply(m: Map[String, Any]): Any = path(m) match {
     case p: Path => p.nodes().asScala.toSeq
     case x => throw new SyntaxException("Expected " + path.identifier.name + " to be a path.")
   }
 }
 
-case class PathRelationshipsValue(path: EntityValue) extends FunctionValue("RELATIONSHIPS", path) {
+case class PathRelationshipsValue(path: Value) extends FunctionValue("RELATIONSHIPS", path) {
   def apply(m: Map[String, Any]): Any = path(m) match {
     case p: Path => p.relationships().asScala.toSeq
     case x => throw new SyntaxException("Expected " + path.identifier.name + " to be a path.")

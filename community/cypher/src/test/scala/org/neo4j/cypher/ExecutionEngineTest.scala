@@ -364,7 +364,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     createNode(Map("prop" -> "A"))
     createNode()
 
-    val result = parseAndExecute("start a=(1,2) where a.prop? = 'A' return a")
+    val result = parseAndExecute("start a=node(1,2) where a.prop? = 'A' return a")
 
     assert(2 === result.toSeq.length)
   }
@@ -444,6 +444,16 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val result = execute(query)
 
     assertEquals(List(Map("a" -> refNode, "count(*)" -> 2)), result.toList)
+  }
+
+  @Test def shouldReturnTwoSubgraphsWithBoundUndirectedRelationship() {
+    val a = createNode("a")
+    val b = createNode("b")
+    relate(a, b, "rel", "r")
+
+    val result = parseAndExecute("start r=rel(0) match a-[r]-b return a,b")
+
+    assertEquals(List(Map("a" -> a, "b" -> b), Map("a" -> b, "b" -> a)), result.toList)
   }
 
   @Test def shouldLimitToTwoHits() {
@@ -657,7 +667,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     relate("A" -> "KNOWS" -> "B")
     relate("A" -> "HATES" -> "C")
 
-    val result = parseAndExecute("start n=(1) match (n)-[r]->(x) where type(r)='KNOWS' or type(r) = 'HATES' return x")
+    val result = parseAndExecute("start n=node(1) match (n)-[r]->(x) where type(r)='KNOWS' or type(r) = 'HATES' return x")
 
     assertEquals(nodes.slice(1, 3), result.columnAs[Node]("x").toList)
   }
@@ -666,7 +676,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     createNodes("A", "B")
     relate("A" -> "KNOWS" -> "B")
 
-    val result = parseAndExecute("start n=(1) match p = n-->x where length(p) = 10 return x")
+    val result = parseAndExecute("start n=node(1) match p = n-->x where length(p) = 10 return x")
 
     assertTrue("Result set should be empty, but it wasn't", result.isEmpty)
   }
@@ -676,7 +686,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     createNodes("A", "B")
     relate("A" -> "KNOWS" -> "B")
 
-    val result = parseAndExecute("start n=(1) match x<--n, p = n-->x return p")
+    val result = parseAndExecute("start n=node(1) match x<--n, p = n-->x return p")
 
     assertEquals(1, result.toSeq.length)
   }
@@ -685,7 +695,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     createNodes("A", "B")
     relate("A" -> "KNOWS" -> "B")
 
-    val result = parseAndExecute("start n=(1) match p = n-->x where length(p)=1 return x")
+    val result = parseAndExecute("start n=node(1) match p = n-->x where length(p)=1 return x")
 
     assertTrue("Result set should not be empty, but it was", !result.isEmpty)
   }
@@ -694,7 +704,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     createNodes("A", "B")
     relate("A" -> "KNOWS" -> "B")
 
-    val result = parseAndExecute("start n=(1) match p = n-->x return length(p)")
+    val result = parseAndExecute("start n=node(1) match p = n-->x return length(p)")
 
     assertEquals(List(1), result.columnAs[Int]("LENGTH(p)").toList)
   }
@@ -741,7 +751,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val r1 = relate("A" -> "KNOWS" -> "B")
     val r2 = relate("B" -> "KNOWS" -> "C")
 
-    val result = parseAndExecute("start n=(1) match p=n-[:KNOWS*1..2]->x return p")
+    val result = parseAndExecute("start n=node(1) match p=n-[:KNOWS*1..2]->x return p")
 
     assertEquals(List(
       PathImpl(node("A"), r1, node("B")),
@@ -754,7 +764,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val r1 = relate("A" -> "KNOWS" -> "B")
     val r2 = relate("B" -> "KNOWS" -> "C")
 
-    val result = parseAndExecute("start n=(1) match p=n-[:KNOWS*..2]->x return p")
+    val result = parseAndExecute("start n=node(1) match p=n-[:KNOWS*..2]->x return p")
 
     assertEquals(List(
       PathImpl(node("A"), r1, node("B")),
@@ -767,7 +777,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val r1 = relate("A" -> "KNOWS" -> "B")
     val r2 = relate("B" -> "KNOWS" -> "C")
 
-    val result = parseAndExecute("start n=(1) match p=n-[:KNOWS*..]->x return p")
+    val result = parseAndExecute("start n=node(1) match p=n-[:KNOWS*..]->x return p")
 
     assertEquals(List(
       PathImpl(node("A"), r1, node("B")),
@@ -780,7 +790,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     createNodes("A", "B", "C")
     relate("A" -> "KNOWS" -> "B")
 
-    val result = parseAndExecute("start a=(1), c = (3) match a-->b return a,b,c").toList
+    val result = parseAndExecute("start a=node(1), c = node(3) match a-->b return a,b,c").toList
 
     assert(List(Map("a" -> node("A"), "b" -> node("B"), "c" -> node("C"))) === result)
   }
@@ -852,7 +862,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
   @Test def shouldBeAbleToTakeParamsFromParsedStuff() {
     createNodes("A")
 
-    val query = new CypherParser().parse("start pA = ({a}) return pA")
+    val query = new CypherParser().parse("start pA = node({a}) return pA")
     val result = execute(query, "a" -> Seq[Long](1))
 
     assertEquals(List(Map("pA" -> node("A"))), result.toList)
@@ -870,6 +880,16 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     assert(1 === execute(query, "name" -> "Andres").toList.size)
   }
 
+  @Test def shouldHandlePatternMatchingWithParameters() {
+    val a = createNode()
+    val b = createNode(Map("name" -> "you"))
+    relate(a, b, "KNOW")
+
+    val result = parseAndExecute("start x  = node({startId}) match x-[r]-friend where friend.name = {name} return TYPE(r)", "startId" -> 1, "name" -> "you")
+
+    assert(List(Map("TYPE(r)" -> "KNOW")) === result.toList)
+  }
+
   @Test(expected = classOf[ParameterNotFoundException]) def shouldComplainWhenMissingParams() {
     val query = Query.
       start(NodeById("pA", ParameterValue("a"))).
@@ -879,7 +899,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
   }
 
   @Test def shouldThrowNiceErrorMessageWhenPropertyIsMissing() {
-    val query = new CypherParser().parse("start n=(0) return n.A_PROPERTY_THAT_IS_MISSING")
+    val query = new CypherParser().parse("start n=node(0) return n.A_PROPERTY_THAT_IS_MISSING")
     try {
       execute(query).toList
     } catch {
@@ -887,9 +907,9 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     }
   }
 
-  private def parseAndExecute(q: String): ExecutionResult = {
+  private def parseAndExecute(q: String, params: (String, Any)*): ExecutionResult = {
     val query = new CypherParser().parse(q)
-    execute(query)
+    execute(query, params: _*)
   }
 }
 

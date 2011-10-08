@@ -71,7 +71,7 @@ table.info-table {
 
 table.info-table tr td, table.info-table tr th {    
   vertical-align: top;
-  padding: 0 5px 5px;
+  padding: 0 5px 10px;
   margin: 2px 0;
 }
 
@@ -83,7 +83,7 @@ table.info-table tr th {
 }
 
 table.info-table tr td {
-  font-size:22px;
+  font-size:18px;
   text-align:right;
 }
 

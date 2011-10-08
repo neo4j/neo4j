@@ -46,6 +46,7 @@ public class RelationshipFunctionalTest extends
     public void shouldReturn204WhenPropertiesAreRemovedFromRelationship()
             throws DatabaseBlockedException
     {
+        data.get();
         Relationship loves = getNode( "Romeo" ).getRelationships().iterator().next();
         gen.get().
                 expectedStatus(
@@ -56,12 +57,14 @@ public class RelationshipFunctionalTest extends
  
     
     @Test
+    @Documented
     @Graph( nodes = { @NODE( name = "Romeo", setNameProperty = true ),
             @NODE( name = "Juliet", setNameProperty = true ) }, relationships = { @REL( start = "Romeo", end = "Juliet", type = "LOVES", properties = { @PROP( key = "cost", value = "high", type = GraphDescription.PropType.STRING ) } ) } )
     @Title("Remove property from a relationship")
     public void shouldReturn204WhenPropertyIsRemovedFromRelationship()
             throws DatabaseBlockedException
     {
+        data.get();
         Relationship loves = getNode( "Romeo" ).getRelationships().iterator().next();
         gen.get().
                 description( startGraph( "Remove property from a relationship1" ) );
@@ -78,6 +81,7 @@ public class RelationshipFunctionalTest extends
             @NODE( name = "Juliet", setNameProperty = true ) }, relationships = { @REL( start = "Romeo", end = "Juliet", type = "LOVES", properties = { @PROP( key = "cost", value = "high", type = GraphDescription.PropType.STRING ) } ) } )
     public void shouldReturn404WhenPropertyWhichDoesNotExistRemovedFromRelationship()
     {
+        data.get();
         Relationship loves = getNode( "Romeo" ).getRelationships().iterator().next();
         gen.get().expectedStatus(
                 Status.NOT_FOUND.getStatusCode() ).delete(
@@ -85,22 +89,24 @@ public class RelationshipFunctionalTest extends
     }
 
     @Test
-    @Graph( nodes = { @NODE( name = "Romeo", setNameProperty = true ),
-            @NODE( name = "Juliet", setNameProperty = true ) }, relationships = { @REL( start = "Romeo", end = "Juliet", type = "LOVES", properties = { @PROP( key = "cost", value = "high", type = GraphDescription.PropType.STRING ) } ) } )
+    @Graph("I know you")
+    @Documented
     @Title("Remove properties from a non-existing relationship")
     public void shouldReturn404WhenPropertiesRemovedFromARelationshipWhichDoesNotExist()
     {
+        data.get();
         gen.get().expectedStatus(
                 Status.NOT_FOUND.getStatusCode() ).delete("http://localhost:7474/db/data/relationship/1234/properties" ).entity();
 
     }
     
     @Test
-    @Graph( nodes = { @NODE( name = "Romeo", setNameProperty = true ),
-            @NODE( name = "Juliet", setNameProperty = true ) }, relationships = { @REL( start = "Romeo", end = "Juliet", type = "LOVES", properties = { @PROP( key = "cost", value = "high", type = GraphDescription.PropType.STRING ) } ) } )
+    @Graph("I know you")
+    @Documented
     @Title("Remove property from a non-existing relationship")
     public void shouldReturn404WhenPropertyRemovedFromARelationshipWhichDoesNotExist()
     {
+        data.get();
         gen.get().expectedStatus(
                 Status.NOT_FOUND.getStatusCode() ).delete("http://localhost:7474/db/data/relationship/1234/properties/cost" ).entity();
 
@@ -112,6 +118,7 @@ public class RelationshipFunctionalTest extends
     @Title("Delete relationship")
     public void removeRelationship()
     {
+        data.get();
         Relationship loves = getNode( "Romeo" ).getRelationships().iterator().next();
         gen.get().description( startGraph( "Delete relationship1" ) );
         gen.get().expectedStatus(

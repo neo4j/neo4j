@@ -73,7 +73,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
 {
     public static final byte BRANCH_ID[] = UTF8.encode( "414141" );
     private static final String REBUILD_IDGENERATORS_FAST = "rebuild_idgenerators_fast";
-
+    public static final String LOGICAL_LOG_DEFAULT_NAME = "nioneo_logical.log";
+    
     private static Logger logger = Logger.getLogger(
         NeoStoreXaDataSource.class.getName() );
 
@@ -87,7 +88,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     private final boolean readOnly;
 
     private boolean logApplied = false;
-    
+
     private final StringLogger msgLog;
 
     /**
@@ -272,7 +273,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         logger.fine( "NeoStore closed" );
         msgLog.logMessage( "NeoStore closed", true );
     }
-    
+
     public StoreId getStoreId()
     {
         return neoStore.getStoreId();
@@ -439,6 +440,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     }
 
     // used for testing, do not use.
+    @Override
     public void setLastCommittedTxId( long txId )
     {
         neoStore.setRecoveredStatus( true );
@@ -466,19 +468,19 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     {
         return neoStore.getAllWindowPoolStats();
     }
-    
+
     @Override
     public long getLastCommittedTxId()
     {
         return neoStore.getLastCommittedTx();
     }
-    
+
     @Override
     public XaContainer getXaContainer()
     {
         return xaContainer;
     }
-    
+
     @Override
     public boolean setRecovered( boolean recovered )
     {
@@ -486,7 +488,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         neoStore.setRecoveredStatus( true );
         return currentValue;
     }
-    
+
     @Override
     public ClosableIterable<File> listStoreFiles( boolean includeLogicalLogs )
     {
@@ -497,14 +499,14 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         {
             String name = dbFile.getName();
             // To filter for "neostore" is quite future proof, but the "index.db" file
-            // maybe should be 
+            // maybe should be
             if ( dbFile.isFile() )
             {
-                if ( name.equals( "neostore" ) )
+                if ( name.equals( NeoStore.DEFAULT_NAME ) )
                 {
                     neostoreFile = dbFile;
                 }
-                else if ( (name.startsWith( "neostore" ) ||
+                else if ( (name.startsWith( NeoStore.DEFAULT_NAME ) ||
                         name.equals( IndexStore.INDEX_DB_FILE_NAME )) && !name.endsWith( ".id" ) )
                 {   // Store files
                     files.add( dbFile );
@@ -516,7 +518,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
             }
         }
         files.add( neostoreFile );
-        
+
         return new ClosableIterable<File>()
         {
 

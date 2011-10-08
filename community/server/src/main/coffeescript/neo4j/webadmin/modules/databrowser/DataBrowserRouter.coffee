@@ -66,7 +66,6 @@ define(
       focusOnSearchField : (ev) =>
         @base()
         setTimeout( () -> 
-          $("#data-console").val("")
           $("#data-console").focus()
         1)
 

@@ -28,10 +28,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.After;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.neo4j.kernel.impl.util.FileUtils;
 
 public class TestDefaultSettings
 {
+    private static final File DB_PATH = new File( "target", "defaults" );
 
     private EmbeddedGraphDatabase db;
 
@@ -44,11 +47,17 @@ public class TestDefaultSettings
         }
         db = null;
     }
+    
+    @BeforeClass
+    public static void deleteDb() throws Exception
+    {
+        FileUtils.deleteRecursively( DB_PATH );
+    }
 
     @Test
     public void testDefaults()
     {
-        db = new EmbeddedGraphDatabase( "target" + File.separator + "defaults" );
+        db = new EmbeddedGraphDatabase( DB_PATH.getAbsolutePath());
 
         Config config = db.getConfig();
         assertTrue( config.getInputParams().entrySet().isEmpty() );
@@ -98,8 +107,7 @@ public class TestDefaultSettings
         overrides.put( Config.ALLOW_STORE_UPGRADE, "true" );
         overrides.put( Config.DUMP_CONFIGURATION, "true" );
 
-        db = new EmbeddedGraphDatabase( "target" + File.separator + "defaults",
-                overrides );
+        db = new EmbeddedGraphDatabase( DB_PATH.getAbsolutePath(), overrides );
 
         Config config = db.getConfig();
         assertEquals( 10, config.getInputParams().entrySet().size() );

@@ -23,4 +23,5 @@ define ['./JmxBackedModel','lib/backbone'], (JmxBackedModel) ->
   class CacheUsage extends JmxBackedModel
     
     beans :
-      cache : { domain : 'neo4j', name:'Cache' }
+      node : { domain : 'neo4j', name:'Cache,name0=NodeCache' }
+      relationship : { domain : 'neo4j', name:'Cache,name0=RelationshipCache' }

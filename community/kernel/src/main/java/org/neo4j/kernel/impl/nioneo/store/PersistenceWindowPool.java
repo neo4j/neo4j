@@ -38,7 +38,7 @@ import java.util.logging.Logger;
  * that the most frequently used records/blocks (be it for read or write
  * operations) are encapsulated by a memory mapped persistence window.
  */
-class PersistenceWindowPool
+public class PersistenceWindowPool
 {
     private static final int MAX_BRICK_COUNT = 100000;
 
@@ -82,7 +82,7 @@ class PersistenceWindowPool
      * @throws IOException
      *             If unable to create pool
      */
-    PersistenceWindowPool( String storeName, int blockSize,
+    public PersistenceWindowPool( String storeName, int blockSize,
         FileChannel fileChannel, long mappedMem,
         boolean useMemoryMappedBuffers, boolean readOnly )
     {
@@ -116,7 +116,7 @@ class PersistenceWindowPool
      * @throws IOException
      *             If unable to acquire the window
      */
-    PersistenceWindow acquire( long position, OperationType operationType )
+    public PersistenceWindow acquire( long position, OperationType operationType )
     {
         LockableWindow window = null;
         boolean readPos = false;
@@ -201,7 +201,7 @@ class PersistenceWindowPool
      * @throws IOException
      *             If unable to release window
      */
-    void release( PersistenceWindow window )
+    public void release( PersistenceWindow window )
     {
         if ( window instanceof PersistenceRow )
         {

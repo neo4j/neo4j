@@ -54,7 +54,7 @@ public class TestBigJumpingStore
     private static final RelationshipType TYPE = DynamicRelationshipType.withName( "KNOWS" );
     private static final RelationshipType TYPE2 = DynamicRelationshipType.withName( "DROP_KICKS" );
     private GraphDatabaseService db;
-    
+
     @Before
     public void doBefore()
     {
@@ -63,7 +63,7 @@ public class TestBigJumpingStore
                 new JumpingIdGeneratorFactory( SIZE_PER_JUMP ),
                 new JumpingFileSystemAbstraction( SIZE_PER_JUMP ) );
     }
-    
+
     private Map<String, String> configForNoMemoryMapping()
     {
         return stringMap(
@@ -74,7 +74,7 @@ public class TestBigJumpingStore
                 "neostore.propertystore.db.strings.mapped_memory", "0M",
                 "neostore.propertystore.db.arrays.mapped_memory", "0M" );
     }
-    
+
     @After
     public void doAfter()
     {
@@ -99,7 +99,7 @@ public class TestBigJumpingStore
             node.setProperty( "array", arrayValue );
             nodes.add( node );
         }
-        
+
         int numberOfRels = numberOfNodes-100;
         for ( int i = 0; i < numberOfRels; i++ )
         {
@@ -107,10 +107,10 @@ public class TestBigJumpingStore
             Node node2 = nodes.get( i+1 );
             node1.createRelationshipTo( node2, TYPE );
         }
-        
+
         tx.success();
         tx.finish();
-        
+
         // Verify
         int relCount = 0;
         for ( int t = 0; t < 2; t++ )
@@ -126,7 +126,7 @@ public class TestBigJumpingStore
             ((AbstractGraphDatabase)db).getConfig().getGraphDbModule().getNodeManager().clearCache();
         }
         assertEquals( numberOfRels, relCount );
-        
+
         // Remove stuff
         tx = db.beginTx();
         for ( int i = 0; i < nodes.size(); i++ )
@@ -137,7 +137,7 @@ public class TestBigJumpingStore
             case 0: node.removeProperty( "number" ); break;
             case 1: node.removeProperty( "string" ); break;
             case 2: node.removeProperty( "array" ); break;
-            case 3: 
+            case 3:
                 node.removeProperty( "number" );
                 node.removeProperty( "string" );
                 node.removeProperty( "array" );
@@ -153,7 +153,7 @@ public class TestBigJumpingStore
                     node.setProperty( "string", stringValue );
                 }
             }
-            
+
             if ( count( node.getRelationships() ) > 50 )
             {
                 if ( i % 2 == 0 )
@@ -165,7 +165,7 @@ public class TestBigJumpingStore
                 {
                     deleteEveryOther( node.getRelationships() );
                 }
-                
+
                 setPropertyOnAll( node.getRelationships( Direction.OUTGOING ), "relprop", "rel value" );
             }
             else if ( i % 20 == 0 )
@@ -177,7 +177,7 @@ public class TestBigJumpingStore
         }
         tx.success();
         tx.finish();
-        
+
         // Verify again
         for ( int t = 0; t < 2; t++ )
         {
@@ -195,7 +195,7 @@ public class TestBigJumpingStore
                 case 5: assertProperties( map( "number", nodeCount, "string", stringValue, "array", arrayValue ), node ); break;
                 default:
                 }
-                
+
                 for ( Relationship rel : node.getRelationships( Direction.OUTGOING ) )
                 {
                     if ( rel.isType( TYPE ) )

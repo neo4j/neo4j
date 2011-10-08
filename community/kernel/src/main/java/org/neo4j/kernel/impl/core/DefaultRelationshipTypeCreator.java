@@ -44,7 +44,7 @@ public class DefaultRelationshipTypeCreator implements RelationshipTypeCreator
                     createrThread.wait( 50 );
                 }
                 catch ( InterruptedException e )
-                { 
+                {
                     Thread.interrupted();
                 }
             }
@@ -55,7 +55,7 @@ public class DefaultRelationshipTypeCreator implements RelationshipTypeCreator
             relTypeHolder.addRawRelationshipType( new RelationshipTypeData( id, name ) );
             return id;
         }
-        throw new TransactionFailureException( 
+        throw new TransactionFailureException(
                 "Unable to create relationship type " + name );
     }
 
@@ -89,6 +89,7 @@ public class DefaultRelationshipTypeCreator implements RelationshipTypeCreator
             return id;
         }
 
+        @Override
         public synchronized void run()
         {
             try

@@ -144,7 +144,6 @@ public class TestContinueKeepLogs
             if ( pattern.matcher( file.getName() ).matches() )
             {
                 assertTrue( versionSet.remove( getLogVersion( file ) ) );
-                System.out.println( "yo " + file );
             }
         }
         assertEquals( "Expected logs " + versionSet, 0, versionSet.size() );

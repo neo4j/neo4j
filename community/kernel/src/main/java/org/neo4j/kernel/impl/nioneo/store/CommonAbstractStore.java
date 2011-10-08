@@ -33,6 +33,7 @@ import org.neo4j.kernel.Config;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Contains common implementation for {@link AbstractStore} and
@@ -40,84 +41,19 @@ import org.neo4j.kernel.impl.core.ReadOnlyDbException;
  */
 public abstract class CommonAbstractStore
 {
+    public static final String ALL_STORES_VERSION = "v0.A.0";
+
     protected static final Logger logger = Logger
         .getLogger( CommonAbstractStore.class.getName() );
 
-    protected static long longFromIntAndMod( long base, long modifier )
-    {
-        return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base|modifier;
-    }
-
-    private long highestUpdateRecordId = -1;
-
-    /**
-     * Returns the type and version that identifies this store.
-     *
-     * @return This store's implementation type and version identifier
-     */
-    public abstract String getTypeAndVersionDescriptor();
-
-    /**
-     * Called from the constructor after the end header has been checked. The
-     * store implementation can setup it's
-     * {@link PersistenceWindow persistence windows} and other resources that
-     * are needed by overriding this implementation.
-     * <p>
-     * This default implementation does nothing.
-     *
-     * @throws IOException
-     *             If unable to initialize
-     */
-    protected void initStorage()
-    {
-    }
-
-    protected boolean versionFound( String version )
-    {
-        return true;
-    }
-
-    /**
-     * This method should close/release all resources that the implementation of
-     * this store has allocated and is called just before the <CODE>close()</CODE>
-     * method returns. Override this method to clean up stuff created in
-     * {@link #initStorage()} method.
-     * <p>
-     * This default implementation does nothing.
-     *
-     * @throws IOException
-     *             If unable to close
-     */
-    protected void closeStorage()
-    {
-    };
-
-    /**
-     * Should do first validation on store validating stuff like version and id
-     * generator. This method is called by constructors.
-     *
-     * @throws IOException
-     *             If unable to load store
-     */
-    protected abstract void loadStorage();
-
-    /**
-     * Should rebuild the id generator from scratch.
-     *
-     * @throws IOException
-     *             If unable to rebuild id generator.
-     */
-    protected abstract void rebuildIdGenerator();
-
-    // default node store id generator grab size
-    protected static final int DEFAULT_ID_GRAB_SIZE = 1024;
-
-    private final String storageFileName;
-    private final IdGeneratorFactory idGeneratorFactory;
+    protected final String storageFileName;
+    private final IdType idType;
+    private IdGeneratorFactory idGeneratorFactory = null;
     private IdGenerator idGenerator = null;
     private FileChannel fileChannel = null;
     private PersistenceWindowPool windowPool;
     private boolean storeOk = true;
+    private Throwable causeOfStoreNotOk;
     private FileLock fileLock;
     private boolean grabFileLock = true;
 
@@ -125,8 +61,7 @@ public abstract class CommonAbstractStore
 
     private boolean readOnly = false;
     private boolean backupSlave = false;
-
-    private final IdType idType;
+    private long highestUpdateRecordId = -1;
 
     /**
      * Opens and validates the store contained in <CODE>fileName</CODE>
@@ -134,9 +69,9 @@ public abstract class CommonAbstractStore
      * validation the <CODE>initStorage</CODE> method is called.
      * <p>
      * If the store had a clean shutdown it will be marked as <CODE>ok</CODE>
-     * and the {@link #validate()} method will not throw exception when invoked.
+     * and the {@link #getStoreOk()} method will return true.
      * If a problem was found when opening the store the {@link #makeStoreOk()}
-     * must be invoked else {@link #validate()} will throw exception.
+     * must be invoked.
      *
      * throws IOException if the unable to open the storage or if the
      * <CODE>initStorage</CODE> method fails
@@ -145,8 +80,8 @@ public abstract class CommonAbstractStore
      *            The name of the store
      * @param config
      *            The configuration for store (may be null)
-     * @throws IOException
-     *             If store doesn't exist
+     * @param idType
+     *            The Id used to index into this store
      */
     public CommonAbstractStore( String fileName, Map<?,?> config, IdType idType )
     {
@@ -160,71 +95,39 @@ public abstract class CommonAbstractStore
             {
                 grabFileLock = false;
             }
+            this.idGeneratorFactory = (IdGeneratorFactory)
+                    config.get( IdGeneratorFactory.class );
         }
-        this.idGeneratorFactory = (IdGeneratorFactory)
-                config.get( IdGeneratorFactory.class );
 
-//        try
-//        {
-            checkStorage();
-            loadStorage();
-            initStorage();
-//        }
-//        catch ( RuntimeException e )
-//        {
-//            closeFileChannelIfOpened();
-//            if ( idGenerator != null )
-//            {
-//                idGenerator.close();
-//                idGenerator = null;
-//            }
-//            closeStorage();
-//            throw e;
-//        }
+        checkStorage();
+        checkVersion();
+        loadStorage();
+        initStorage();
     }
 
-    boolean isReadOnly()
+    public String getTypeAndVersionDescriptor()
     {
-        return readOnly;
+        return buildTypeDescriptorAndVersion( getTypeDescriptor() );
     }
 
-    boolean isBackupSlave()
+    public static String buildTypeDescriptorAndVersion( String typeDescriptor )
     {
-        return backupSlave;
+        return typeDescriptor + " " + ALL_STORES_VERSION;
+    }
+
+    protected static long longFromIntAndMod( long base, long modifier )
+    {
+        return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base|modifier;
     }
 
     /**
-     * Opens and validates the store contained in <CODE>fileName</CODE>.
-     * After validation the <CODE>initStorage</CODE> method is called.
-     * <p>
-     * If the store had a clean shutdown it will be marked as <CODE>ok</CODE>
-     * and the {@link #validate()} method will not throw exception when invoked.
-     * If a problem was found when opening the store the {@link #makeStoreOk()}
-     * must be invoked else {@link #validate()} will throw exception.
+     * Returns the type and version that identifies this store.
      *
-     * throws IOException if the unable to open the storage or if the
-     * <CODE>initStorage</CODE> method fails
-     *
-     * @param fileName
-     *            The name of the store
-     * @throws IOException
-     *             If store doesn't exist
+     * @return This store's implementation type and version identifier
      */
-//    public CommonAbstractStore( String fileName )
-//    {
-//        this.storageFileName = fileName;
-//        idGeneratorFactory = IdGeneratorFactory.DEFAULT;
-//        checkStorage();
-//        loadStorage();
-//        initStorage();
-//    }
+    public abstract String getTypeDescriptor();
 
-    protected FileSystemAbstraction getFileSystem()
-    {
-        return (FileSystemAbstraction) config.get( FileSystemAbstraction.class );
-    }
-
-    private void checkStorage()
+    protected void checkStorage()
     {
         if ( config != null )
         {
@@ -282,27 +185,160 @@ public abstract class CommonAbstractStore
         }
     }
 
-    private void closeFileChannelIfOpened()
+    protected void checkVersion()
     {
-        if ( this.fileChannel != null )
+        try
         {
-            try
+            verifyCorrectTypeDescriptorAndVersion();
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( "Unable to check version "
+                    + getStorageFileName(), e );
+        }
+    }
+
+    /**
+     * Should do first validation on store validating stuff like version and id
+     * generator. This method is called by constructors.
+     */
+    protected void loadStorage()
+    {
+        try
+        {
+            readAndVerifyBlockSize();
+            verifyFileSizeAndTruncate();
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( "Unable to load storage "
+                + getStorageFileName(), e );
+        }
+        loadIdGenerator();
+
+        setWindowPool( new PersistenceWindowPool( getStorageFileName(),
+            getEffectiveRecordSize(), getFileChannel(), calculateMappedMemory( getConfig(), storageFileName ),
+            getIfMemoryMapped(), isReadOnly() && !isBackupSlave() ) );
+    }
+
+    protected abstract int getEffectiveRecordSize();
+
+    protected abstract void verifyFileSizeAndTruncate() throws IOException;
+
+    protected abstract void readAndVerifyBlockSize() throws IOException;
+
+    private void loadIdGenerator()
+    {
+        try
+        {
+            if ( !isReadOnly() || isBackupSlave() )
             {
-                this.fileChannel.close();
-                this.fileChannel = null;
+                openIdGenerator();
             }
-            catch ( IOException e )
+            else
             {
-                // Unable to close!
+                openReadOnlyIdGenerator( getEffectiveRecordSize());
             }
         }
+        catch ( InvalidIdGeneratorException e )
+        {
+            setStoreNotOk( e );
+        }
+        finally
+        {
+            if ( !getStoreOk() )
+            {
+                if ( getConfig() != null )
+                {
+                    String storeDir = (String) getConfig().get( "store_dir" );
+                    StringLogger msgLog = StringLogger.getLogger( storeDir );
+                    msgLog.logMessage( getStorageFileName() + " non clean shutdown detected", true );
+                }
+            }
+        }
+    }
+
+    protected void verifyCorrectTypeDescriptorAndVersion() throws IOException
+    {
+        String expectedTypeDescriptorAndVersion = getTypeAndVersionDescriptor();
+        int length = UTF8.encode( expectedTypeDescriptorAndVersion ).length;
+        byte bytes[] = new byte[length];
+        ByteBuffer buffer = ByteBuffer.wrap( bytes );
+        long fileSize = getFileChannel().size();
+        if ( fileSize >= length )
+        {
+            getFileChannel().position( fileSize - length );
+        }
+        else if ( !isReadOnly() )
+        {
+            setStoreNotOk( new IllegalStateException( "Invalid file size " + fileSize + " for " + this + ". Expected " + length + " or bigger" ) );
+            return;
+        }
+        getFileChannel().read( buffer );
+        String foundTypeDescriptorAndVersion = UTF8.decode( bytes );
+
+        if ( !expectedTypeDescriptorAndVersion.equals( foundTypeDescriptorAndVersion ) && !isReadOnly() )
+        {
+            if ( foundTypeDescriptorAndVersion.startsWith( getTypeDescriptor() ) )
+            {
+                throw new NotCurrentStoreVersionException( ALL_STORES_VERSION, foundTypeDescriptorAndVersion, "", false );
+            }
+            else
+            {
+                setStoreNotOk( new IllegalStateException( "Unexpected version " + foundTypeDescriptorAndVersion + ", expected " + expectedTypeDescriptorAndVersion ) );
+            }
+        }
+    }
+
+    /**
+     * Should rebuild the id generator from scratch.
+     */
+    protected abstract void rebuildIdGenerator();
+
+    /**
+     * Called from the constructor after the end header has been checked. The
+     * store implementation can setup it's
+     * {@link PersistenceWindow persistence windows} and other resources that
+     * are needed by overriding this implementation.
+     * <p>
+     * This default implementation does nothing.
+     */
+    protected void initStorage()
+    {
+    }
+
+    /**
+     * This method should close/release all resources that the implementation of
+     * this store has allocated and is called just before the <CODE>close()</CODE>
+     * method returns. Override this method to clean up stuff created in
+     * {@link #initStorage()} method.
+     * <p>
+     * This default implementation does nothing.
+     */
+    protected void closeStorage()
+    {
+    }
+
+    boolean isReadOnly()
+    {
+        return readOnly;
+    }
+
+    boolean isBackupSlave()
+    {
+        return backupSlave;
+    }
+
+    protected FileSystemAbstraction getFileSystem()
+    {
+        return (FileSystemAbstraction) config.get( FileSystemAbstraction.class );
     }
 
     /**
      * Marks this store as "not ok".
      *
      */
-    protected void setStoreNotOk()
+    protected void setStoreNotOk( Throwable cause )
     {
         if ( readOnly && !isBackupSlave() )
         {
@@ -310,6 +346,7 @@ public abstract class CommonAbstractStore
                 "Cannot start up on non clean store as read only" );
         }
         storeOk = false;
+        causeOfStoreNotOk = cause;
     }
 
     /**
@@ -327,8 +364,10 @@ public abstract class CommonAbstractStore
      * this is set in the {@link #loadStorage()} method. This method must be
      * invoked with a valid "pool" before any of the
      * {@link #acquireWindow(long, OperationType)}
-     * {@link #releaseWindow(PersistenceWindow)} {@link #flush(int)}
-     * {@link #forget(int)} {@link #close()} methods are invoked.
+     * {@link #releaseWindow(PersistenceWindow)}
+     * {@link #flushAll()}
+     * {@link #close()}
+     * methods are invoked.
      *
      * @param pool
      *            The window pool this store should use
@@ -342,8 +381,6 @@ public abstract class CommonAbstractStore
      * Returns the next id for this store's {@link IdGenerator}.
      *
      * @return The next free id
-     * @throws IOException
-     *             If unable to get next free id
      */
     public long nextId()
     {
@@ -355,18 +392,11 @@ public abstract class CommonAbstractStore
      *
      * @param id
      *            The id to free
-     * @throws IOException
-     *             If unable to free the id
      */
     public void freeId( long id )
     {
-        idGenerator.freeId( id ); // makeUnsignedInt( id ) );
+        idGenerator.freeId( id );
     }
-
-//    private long makeUnsignedInt( int signedInteger )
-//    {
-//        return signedInteger & 0xFFFFFFFFL;
-//    }
 
     /**
      * Return the highest id in use.
@@ -402,7 +432,7 @@ public abstract class CommonAbstractStore
     {
         String configValue = getConfig() != null ?
                 (String) getConfig().get( Config.USE_MEMORY_MAPPED_BUFFERS ) : null;
-        return configValue != null ? Boolean.parseBoolean( configValue ) : true;
+        return configValue == null || Boolean.parseBoolean( configValue );
     }
 
     /**
@@ -412,15 +442,17 @@ public abstract class CommonAbstractStore
      * this stores name.
      *
      * @return The number of bytes memory mapped windows this store has
+     * @param config Map of configuration parameters
+     * @param storageFileName Name of the file on disk
      */
-    protected long getMappedMem()
+    public static long calculateMappedMemory( Map<?, ?> config, String storageFileName )
     {
-        if ( getConfig() != null )
+        if ( config != null )
         {
             String convertSlash = storageFileName.replace( '\\', '/' );
             String realName = convertSlash.substring( convertSlash
                 .lastIndexOf( '/' ) + 1 );
-            String mem = (String) getConfig().get( realName + ".mapped_memory" );
+            String mem = (String) config.get( realName + ".mapped_memory" );
             if ( mem != null )
             {
                 long multiplier = 1;
@@ -457,9 +489,6 @@ public abstract class CommonAbstractStore
      * If store is not ok a call to this method will rebuild the {@link
      * IdGenerator} used by this store and if successful mark it as
      * <CODE>ok</CODE>.
-     *
-     * @throws IOException
-     *             If unable to rebuild id generator
      */
     public void makeStoreOk()
     {
@@ -512,8 +541,6 @@ public abstract class CommonAbstractStore
      * @param type
      *            The operation type
      * @return a persistence window encapsulating the record
-     * @throws IOException
-     *             If unable to acquire window
      */
     protected PersistenceWindow acquireWindow( long position, OperationType type )
     {
@@ -521,7 +548,7 @@ public abstract class CommonAbstractStore
         {
             throw new InvalidRecordException( "Position[" + position
                 + "] requested for operation is high id["
-                + getHighId() + "], store is ok[" + storeOk + "]" );
+                + getHighId() + "], store is ok[" + storeOk + "]", causeOfStoreNotOk );
         }
         return windowPool.acquire( position, type );
     }
@@ -532,9 +559,6 @@ public abstract class CommonAbstractStore
      *
      * @param window
      *            The window to be released
-     * @throws IOException
-     *             If window was a <CODE>DirectPersistenceRow</CODE> and
-     *             unable to write out its data to the store
      */
     protected void releaseWindow( PersistenceWindow window )
     {
@@ -575,14 +599,11 @@ public abstract class CommonAbstractStore
 
     /**
      * Opens the {@link IdGenerator} used by this store.
-     *
-     * @throws IOException
-     *             If unable to open the id generator
      */
     protected void openIdGenerator()
     {
         idGenerator = openIdGenerator( storageFileName + ".id",
-            DEFAULT_ID_GRAB_SIZE );
+            idType.getGrabSize() );
     }
 
     protected IdGenerator openIdGenerator( String fileName, int grabSize )
@@ -613,9 +634,6 @@ public abstract class CommonAbstractStore
 
     /**
      * Closed the {@link IdGenerator} used by this store
-     *
-     * @throws IOException
-     *             If unable to close this store
      */
     protected void closeIdGenerator()
     {
@@ -633,9 +651,6 @@ public abstract class CommonAbstractStore
      * This method will start by invoking the {@link #closeStorage} method
      * giving the implementing store way to do anything that it needs to do
      * before the fileChannel is closed.
-     *
-     * @throws IOException
-     *             If problem when invoking {@link #closeStorage()}
      */
     public void close()
     {
@@ -687,12 +702,7 @@ public abstract class CommonAbstractStore
                     fileChannel.write( buffer );
                     fileChannel.truncate( fileChannel.position() );
                     fileChannel.force( false );
-                    if ( fileLock != null )
-                    {
-                        fileLock.release();
-                    }
-                    fileChannel.close();
-                    fileChannel = null;
+                    releaseFileLockAndCloseFileChannel();
                     success = true;
                     break;
                 }
@@ -705,20 +715,43 @@ public abstract class CommonAbstractStore
         }
         else
         {
-            try
-            {
-                fileChannel.close();
-            }
-            catch ( IOException e )
-            {
-                logger.log( Level.WARNING, "Could not close fileChannel [" + storageFileName + "]", e );
-            }
+            releaseFileLockAndCloseFileChannel();
+            success = true;
+//=======
+//            try
+//            {
+//                fileChannel.close();
+//            }
+//            catch ( IOException e )
+//            {
+//                logger.log( Level.WARNING, "Could not close fileChannel [" + storageFileName + "]", e );
+//            }
+//>>>>>>> parent of 739f974... Change start-up sequence so that version number in neostore gets checked, not just in the child stores
         }
         if ( !success )
         {
             throw new UnderlyingStorageException( "Unable to close store "
                 + getStorageFileName(), storedIoe );
         }
+    }
+
+    protected void releaseFileLockAndCloseFileChannel()
+    {
+        try
+        {
+            if ( fileLock != null )
+            {
+                fileLock.release();
+            }
+            if ( fileChannel != null )
+            {
+                fileChannel.close();
+            }
+        } catch ( IOException e )
+        {
+            logger.log( Level.WARNING, "Could not close [" + storageFileName + "]", e );
+        }
+        fileChannel = null;
     }
 
     /**
@@ -773,4 +806,6 @@ public abstract class CommonAbstractStore
             setHighId( highId );
         }
     }
+
+
 }

@@ -22,11 +22,9 @@ package org.neo4j.kernel.impl.nioneo.store;
 public class DynamicRecord extends Abstract64BitRecord
 {
     private byte[] data = null;
-    private char[] charData = null;
     private int length;
-    private long prevBlock = Record.NO_PREV_BLOCK.intValue();
     private long nextBlock = Record.NO_NEXT_BLOCK.intValue();
-    private boolean isLight = false;
+    private boolean isLight = true;
     private int type;
 
     public DynamicRecord( long id )
@@ -39,7 +37,7 @@ public class DynamicRecord extends Abstract64BitRecord
         return type;
     }
 
-    void setType( int type )
+    public void setType( int type )
     {
         this.type = type;
     }
@@ -59,6 +57,7 @@ public class DynamicRecord extends Abstract64BitRecord
         this.length = length;
     }
 
+    @Override
     public void setInUse( boolean inUse )
     {
         super.setInUse( inUse );
@@ -81,13 +80,6 @@ public class DynamicRecord extends Abstract64BitRecord
         this.data = data;
     }
 
-    public void setCharData( char[] data )
-    {
-        isLight = false;
-        this.length = data.length * 2;
-        this.charData = data;
-    }
-
     public int getLength()
     {
         return length;
@@ -95,31 +87,7 @@ public class DynamicRecord extends Abstract64BitRecord
 
     public byte[] getData()
     {
-        assert !isLight;
-        assert charData == null;
         return data;
-    }
-
-    public boolean isCharData()
-    {
-        return charData != null;
-    }
-
-    public char[] getDataAsChar()
-    {
-        assert !isLight;
-        assert data == null;
-        return charData;
-    }
-
-    public long getPrevBlock()
-    {
-        return prevBlock;
-    }
-
-    public void setPrevBlock( long prevBlock )
-    {
-        this.prevBlock = prevBlock;
     }
 
     public long getNextBlock()
@@ -137,13 +105,20 @@ public class DynamicRecord extends Abstract64BitRecord
     {
         StringBuffer buf = new StringBuffer();
         buf.append( "DynamicRecord[" ).append( getId() ).append( "," ).append(
-            inUse() );
+                inUse() );
         if ( inUse() )
         {
-            buf.append( "," ).append( prevBlock ).append( "," ).append(
-                isLight || data == null ? null : data.length ).append( "," ).append( nextBlock )
-                .append( "]" );
+            buf.append( "," );
+            if ( isLight )
+            {
+                buf.append( "isLight" );
+            }
+            if ( data != null )
+            {
+                buf.append( "byte[" + data.length + "]" );
+            }
         }
+        buf.append( "," ).append( nextBlock ).append( "]" );
         return buf.toString();
     }
 }

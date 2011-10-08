@@ -24,7 +24,7 @@ import java.lang.IllegalArgumentException
 import scala.collection.JavaConverters._
 
 abstract class GraphRelationship {
-  def getOtherNode(node:Node): Node
+  def getOtherNode(node: Node): Node
 }
 
 case class SingleGraphRelationship(rel: Relationship) extends GraphRelationship {
@@ -36,7 +36,7 @@ case class SingleGraphRelationship(rel: Relationship) extends GraphRelationship 
 
   override def equals(obj: Any) = obj match {
     case VariableLengthGraphRelationship(p) => p.relationships().asScala.exists(_ == rel)
-    case p:Path => p.relationships().asScala.exists(_ == rel)
+    case p: Path => p.relationships().asScala.exists(_ == rel)
     case x => {
       val a = x == this
       val b = x == rel
@@ -44,7 +44,11 @@ case class SingleGraphRelationship(rel: Relationship) extends GraphRelationship 
     }
   }
 
-  override def toString = rel.getProperty("name").toString
+  override def toString = try {
+    rel.getProperty("name").toString
+  } catch {
+    case _ => rel.toString
+  }
 }
 
 case class VariableLengthGraphRelationship(path: Path) extends GraphRelationship {
@@ -59,7 +63,7 @@ case class VariableLengthGraphRelationship(path: Path) extends GraphRelationship
     that.isInstanceOf[SingleGraphRelationship]
 
   override def equals(obj: Any) = obj match {
-    case r:Relationship => path.relationships().asScala.exists(_ == r)
+    case r: Relationship => path.relationships().asScala.exists(_ == r)
     case x => obj == this || obj == path
   }
 

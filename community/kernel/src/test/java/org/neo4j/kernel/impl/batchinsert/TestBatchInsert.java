@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.batchinsert;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.MapUtil.map;
 
 import java.io.File;
 import java.util.Arrays;
@@ -285,7 +286,7 @@ public class TestBatchInsert
         tx.finish();
         db.shutdown();
     }
-    
+
     @Test
     public void messagesLogGetsClosed() throws Exception
     {
@@ -293,5 +294,54 @@ public class TestBatchInsert
         String storeDir = inserter.getStore();
         inserter.shutdown();
         assertTrue( new File( storeDir, StringLogger.DEFAULT_NAME ).delete() );
+    }
+    
+    @Test
+    public void createEntitiesWithEmptyPropertiesMap() throws Exception
+    {
+        BatchInserter inserter = newBatchInserter();
+        
+        // Assert for node
+        long nodeId = inserter.createNode( map() );
+        inserter.getNodeProperties( nodeId );
+        //cp=N U http://www.w3.org/1999/02/22-rdf-syntax-ns#type, c=N
+
+        // Assert for relationship
+        long anotherNodeId = inserter.createNode( null );
+        long relId = inserter.createRelationship( nodeId, anotherNodeId, RelTypes.BATCH_TEST, map() );
+        inserter.getRelationshipProperties( relId );
+        inserter.shutdown();
+    }
+    
+    @Test
+    public void createEntitiesWithDynamicPropertiesMap() throws Exception
+    {
+        BatchInserter inserter = newBatchInserter();
+        
+        setAndGet( inserter, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" );
+        setAndGet( inserter, intArray( 20 ) );
+        
+        inserter.shutdown();
+    }
+
+    private void setAndGet( BatchInserter inserter, Object value )
+    {
+        long nodeId = inserter.createNode( map( "key", value ) );
+        Object readValue = inserter.getNodeProperties( nodeId ).get( "key" );
+        if ( readValue.getClass().isArray() )
+        {
+            assertTrue( Arrays.equals( (int[])value, (int[])readValue ) );
+        }
+        else
+        {
+            assertEquals( value, readValue );
+        }
+    }
+
+    private int[] intArray( int length )
+    {
+        int[] array = new int[length];
+        for ( int i = 0, startValue = (int)Math.pow( 2, 30 ); i < length; i++ ) array[i] = startValue+i;
+        return array;
     }
 }

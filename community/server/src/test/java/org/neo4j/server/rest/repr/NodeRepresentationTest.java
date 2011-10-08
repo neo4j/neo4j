@@ -124,7 +124,6 @@ public class NodeRepresentationTest
         return node;
     }
 
-    @SuppressWarnings( "unchecked" )
     public static void verifySerialisation( Map<String, Object> noderep )
     {
         assertUriMatches( uriPattern( "" ), noderep.get( "self" )

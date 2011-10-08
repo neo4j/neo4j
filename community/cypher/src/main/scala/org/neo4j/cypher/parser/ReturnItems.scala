@@ -30,14 +30,15 @@ trait ReturnItems extends JavaTokenParsers with Tokens with Values {
 
   def returnValues: Parser[Value] = nullableProperty | value | entityValue
 
-  def countFunc: Parser[AggregationItem] = ignoreCase("count") ~> parens(returnValues) ^^ { case inner => ValueAggregationItem(Count(inner)) }
-  def sumFunc: Parser[AggregationItem] = ignoreCase("sum") ~> parens(returnValues) ^^ { case inner => ValueAggregationItem(Sum(inner)) }
-  def minFunc: Parser[AggregationItem] = ignoreCase("min") ~> parens(returnValues) ^^ { case inner => ValueAggregationItem(Min(inner)) }
-  def maxFunc: Parser[AggregationItem] = ignoreCase("max") ~> parens(returnValues) ^^ { case inner => ValueAggregationItem(Max(inner)) }
-  def avgFunc: Parser[AggregationItem] = ignoreCase("avg") ~> parens(returnValues) ^^ { case inner => ValueAggregationItem(Avg(inner)) }
-  def countStar: Parser[AggregationItem] = ignoreCase("count") ~> parens("*") ^^ { case "*" => CountStar()  }
+  def countFunc: Parser[AggregationItem] = ignoreCase("count") ~> parens(returnValues) ^^ ( inner => ValueAggregationItem(Count(inner)))
+  def sumFunc: Parser[AggregationItem] = ignoreCase("sum") ~> parens(returnValues) ^^ ( inner => ValueAggregationItem(Sum(inner)))
+  def minFunc: Parser[AggregationItem] = ignoreCase("min") ~> parens(returnValues) ^^ ( inner => ValueAggregationItem(Min(inner)))
+  def maxFunc: Parser[AggregationItem] = ignoreCase("max") ~> parens(returnValues) ^^ ( inner => ValueAggregationItem(Max(inner)))
+  def avgFunc: Parser[AggregationItem] = ignoreCase("avg") ~> parens(returnValues) ^^ ( inner => ValueAggregationItem(Avg(inner)))
+  def collectFunc: Parser[AggregationItem] = ignoreCase("collect") ~> parens(returnValues) ^^ ( inner => ValueAggregationItem(Collect(inner)))
+  def countStar: Parser[AggregationItem] = ignoreCase("count") ~> parens("*") ^^ { case "*" => CountStar() }
 
-  def aggregate:Parser[AggregationItem] = (countStar | countFunc | sumFunc | minFunc | maxFunc | avgFunc)
+  def aggregate:Parser[AggregationItem] = (countStar | countFunc | sumFunc | minFunc | maxFunc | avgFunc | collectFunc)
 }
 
 

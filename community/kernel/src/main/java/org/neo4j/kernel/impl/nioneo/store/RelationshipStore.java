@@ -32,9 +32,7 @@ import org.neo4j.kernel.IdType;
  */
 public class RelationshipStore extends AbstractStore implements Store
 {
-    // relationship store version, each rel store ends with this
-    // string (byte encoded)
-    private static final String VERSION = "RelationshipStore v0.9.9";
+    public static final String TYPE_DESCRIPTOR = "RelationshipStore";
 
     // record header size
     // directed|in_use(byte)+first_node(int)+second_node(int)+rel_type(int)+
@@ -50,17 +48,9 @@ public class RelationshipStore extends AbstractStore implements Store
         super( fileName, config, IdType.RELATIONSHIP );
     }
 
-    /**
-     * See {@link AbstractStore#AbstractStore(String)}
-     */
-//    public RelationshipStore( String fileName )
-//    {
-//        super( fileName );
-//    }
-
-    public String getTypeAndVersionDescriptor()
+    public String getTypeDescriptor()
     {
-        return VERSION;
+        return TYPE_DESCRIPTOR;
     }
 
     public int getRecordSize()
@@ -86,7 +76,7 @@ public class RelationshipStore extends AbstractStore implements Store
      */
     public static void createStore( String fileName, IdGeneratorFactory idGeneratorFactory )
     {
-        createEmptyStore( fileName, VERSION, idGeneratorFactory );
+        createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), idGeneratorFactory );
     }
 
     public RelationshipRecord getRecord( long id )
@@ -293,30 +283,6 @@ public class RelationshipStore extends AbstractStore implements Store
     public String toString()
     {
         return "RelStore";
-    }
-
-    @Override
-    protected boolean versionFound( String version )
-    {
-        if ( !version.startsWith( "RelationshipStore" ) )
-        {
-            // non clean shutdown, need to do recover with right neo
-            return false;
-        }
-//        if ( version.equals( "RelationshipStore v0.9.3" ) )
-//        {
-//            rebuildIdGenerator();
-//            closeIdGenerator();
-//            return true;
-//        }
-        if ( version.equals( "RelationshipStore v0.9.5" ) )
-        {
-            return true;
-        }
-        throw new IllegalStoreVersionException( "Store version [" + version  + 
-            "]. Please make sure you are not running old Neo4j kernel " + 
-            " towards a store that has been created by newer version " + 
-            " of Neo4j." );
     }
 
     public RelationshipRecord getChainRecord( long relId )

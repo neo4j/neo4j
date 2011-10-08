@@ -1,4 +1,4 @@
-[[configuration]]
+[[embedded-configuration]]
 Configuration & Performance
 ===========================
 
@@ -22,3 +22,5 @@ include::filesystem.txt[]
 include::short-strings.txt[]
 
 include::io-examples.txt[]
+
+include::linux-performance.txt[]

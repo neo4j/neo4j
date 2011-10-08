@@ -23,6 +23,9 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Logger;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 
@@ -39,15 +42,20 @@ import org.neo4j.graphdb.GraphDatabaseService;
 public abstract class AsciiDocGenerator
 {
     private static final String DOCUMENTATION_END = "\n...\n";
-
+    private Logger log = Logger.getLogger( AsciiDocGenerator.class.getName() );
     protected String title = null;
     protected String description = null;
     protected GraphDatabaseService graph;
+    protected static final String SNIPPET_MARKER = "@@";
+    protected Map<String, String> snippets = new HashMap<String, String>();
 
     public File out;
 
-    public AsciiDocGenerator( final String title )
+    protected String section;
+
+    public AsciiDocGenerator( final String title, final String section )
     {
+        this.section = section;
         this.title = title.replace( "_", " " );
     }
 
@@ -61,6 +69,13 @@ public abstract class AsciiDocGenerator
     {
         return title;
     }
+    
+    public AsciiDocGenerator setSection(final String section)
+    {
+        this.section = section;
+        return this;
+    }
+
 
     /**
      * Add a description to the test (in asciidoc format). Adding multiple
@@ -149,5 +164,72 @@ public abstract class AsciiDocGenerator
         return source.getPackage()
                 .getName()
                 .replace( ".", "/" ) + "/" + source.getSimpleName() + ".java";
+    }
+    protected String replaceSnippets( String description )
+    {
+        for (String key : snippets.keySet()) {
+            description = replaceSnippet( description, key );
+        }
+        if(description.contains( SNIPPET_MARKER )) {
+            log.severe( "missing snippet in " + description);
+        }
+        return description;
+    }
+
+    private String replaceSnippet( String description, String key )
+    {
+        String snippetString = SNIPPET_MARKER+key;
+        if ( description.contains( snippetString + "\n") )
+        {
+            description = description.replace( snippetString + "\n",
+                    snippets.get( key ) );
+        } else {
+            log.severe( "could not find " + snippetString + "\\n in "+ description );
+        }
+        return description;
+    }
+
+    /**
+     * Add snippets that will be replaced into corresponding.
+     * 
+     * A snippet needs to be on its own line, terminated by "\n".
+     * 
+     * @@snippetname placeholders in the content of the description.
+     * 
+     * @param key the snippet key, without @@
+     * @param content the content to be inserted
+     */
+    public void addSnippet( String key, String content )
+    {
+        snippets.put( key, content );
+    }
+
+    /**
+     * Added one or more source snippets, available from javadoc using
+     * @@tagName.
+     * 
+     * @param source the class where the snippet is found
+     * @param tagNames the tag names which should be included
+     */
+    public void addSourceSnippets( Class<?> source, String... tagNames )
+    {
+        for ( String tagName : tagNames )
+        {
+            addSnippet( tagName, createSourceSnippet( tagName, source ) );
+        }
+    }
+
+    public void addGithubLink( String key, Class<?> source, String repo,
+            String dir )
+    {
+        String path = "https://github.com/" + repo
+                         + "/blob/{neo4j-git-tag}/";
+        if ( dir != null )
+        {
+            path += dir + "/";
+        }
+        path += "src/test/java/" + getPath( source );
+        path += "[" + source.getSimpleName() + ".java]";
+        addSnippet( key, path );
     }
 }

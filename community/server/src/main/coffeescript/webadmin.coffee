@@ -44,7 +44,7 @@ require(
         new ServerInfoRouter
 
         new ConnectionMonitor
-        #new SplashScreen
+        new SplashScreen
         new GlobalLoadingIndicator
         new MoreInfo
     ]

@@ -22,7 +22,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createCypherSnippet;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphViz;
-import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
 
 import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -185,14 +185,15 @@ public class AclExampleTest extends AbstractJavaDocTestbase
         
         //Files
         //TODO: can we do open ended?
-        String query = "start root=(node_auto_index,name,'FileRoot') match (root)-[:contains*]->()-[:leaf]->(file) return file";
+        String query = "start root=node:node_auto_index(name = 'FileRoot') match (root)-[:contains*]->()-[:leaf]->(file) return file";
         gen.get().addSnippet( "query1", createCypherSnippet( query ) );
         String result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("File1") );
-        gen.get().addSnippet( "result1", createOutputSnippet( result ) );
+        gen.get()
+                .addSnippet( "result1", createQueryResultSnippet( result ) );
         
         //Ownership
-        query = "start root=(node_auto_index,name, 'FileRoot') match (root)-[:contains*]->()-[:leaf]->(file)<-[:owns]-(user) return file, user";
+        query = "start root=node:node_auto_index(name = 'FileRoot') match (root)-[:contains*]->()-[:leaf]->(file)<-[:owns]-(user) return file, user";
         gen.get().addSnippet( "query2", createCypherSnippet( query ) );
         result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("File1") );
@@ -201,13 +202,14 @@ public class AclExampleTest extends AbstractJavaDocTestbase
         assertTrue( result.contains("File2") );
         assertFalse( result.contains("Admin1") );
         assertFalse( result.contains("Admin2") );
-        gen.get().addSnippet( "result2", createOutputSnippet( result ) );
+        gen.get()
+                .addSnippet( "result2", createQueryResultSnippet( result ) );
         
         //ACL
-        query = "START file=(node_auto_index, 'name:File*') " +
+        query = "START file=node:node_auto_index('name:File*') " +
         		"MATCH " +
         		"file<-[:leaf]-dir, " +
-        		"path = dir<-[:contains*]-parent," +
+        		"path = dir<-[:contains*]-parent, " +
         		"parent<-[?:canRead]-role2-[:member]->readUserMoreThan1DirUp, " +
                 "dir<-[?:canRead]-role1-[:member]->readUser1DirUp " +
         		//TODO: would like to get results the order I specify
@@ -218,6 +220,7 @@ public class AclExampleTest extends AbstractJavaDocTestbase
         assertTrue( result.contains("File2") );
         assertTrue( result.contains("Admin1") );
         assertTrue( result.contains("Admin2") );
-        gen.get().addSnippet( "result3", createOutputSnippet( result ) );
+        gen.get()
+                .addSnippet( "result3", createQueryResultSnippet( result ) );
     }
 }

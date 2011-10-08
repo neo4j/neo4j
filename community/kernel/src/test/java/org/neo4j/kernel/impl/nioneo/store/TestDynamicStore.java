@@ -48,29 +48,29 @@ public class TestDynamicStore
 {
     public static IdGeneratorFactory ID_GENERATOR_FACTORY =
             CommonFactories.defaultIdGeneratorFactory();
-    
+
     private String path()
     {
         String path = AbstractNeo4jTestCase.getStorePath( "dynamicstore" );
         new File( path ).mkdirs();
         return path;
     }
-    
+
     private String file( String name )
     {
         return path() + File.separator + name;
     }
-    
+
     private String dynamicStoreFile()
     {
         return file( "testDynamicStore.db" );
     }
-    
+
     private String dynamicStoreIdFile()
     {
         return file( "testDynamicStore.db.id" );
     }
-    
+
     @Test
     public void testCreateStore()
     {
@@ -111,9 +111,10 @@ public class TestDynamicStore
     private void createEmptyStore( String fileName, int blockSize )
     {
         DynamicArrayStore.createEmptyStore( fileName, blockSize,
-                "ArrayPropertyStore v0.9.9", ID_GENERATOR_FACTORY, IdType.ARRAY_BLOCK );
+                DynamicArrayStore.VERSION, ID_GENERATOR_FACTORY,
+                IdType.ARRAY_BLOCK );
     }
-    
+
     private DynamicArrayStore newStore()
     {
         return new DynamicArrayStore( dynamicStoreFile(), config(), IdType.ARRAY_BLOCK );
@@ -310,7 +311,7 @@ public class TestDynamicStore
 //                    IdGeneratorFactory.class, idGenerator, "store_dir", storeDir ), IdType.ARRAY_BLOCK );
 //        }
 //
-//        public String getTypeAndVersionDescriptor()
+//        public String getTypeDescriptor()
 //        {
 //            return VERSION;
 //        }
@@ -338,6 +339,11 @@ public class TestDynamicStore
 ////        }
 //    }
 
+    private byte[] createBytes( int length )
+    {
+        return new byte[length];
+    }
+
     private byte[] createRandomBytes( Random r )
     {
         return new byte[r.nextInt( 1024 )];
@@ -349,6 +355,72 @@ public class TestDynamicStore
         for ( int i = 0; i < data1.length; i++ )
         {
             assertEquals( data1[i], data2[i] );
+        }
+    }
+
+    private long create( DynamicArrayStore store, Object arrayToStore )
+    {
+        long blockId = store.nextBlockId();
+        Collection<DynamicRecord> records = store.allocateRecords( blockId,
+                arrayToStore );
+        for ( DynamicRecord record : records )
+        {
+            store.updateRecord( record );
+        }
+        return blockId;
+    }
+
+    @Test
+    public void testAddDeleteSequenceEmptyNumberArray()
+    {
+        createEmptyStore( dynamicStoreFile(), 30 );
+        DynamicArrayStore store = newStore();
+        try
+        {
+            byte[] emptyToWrite = createBytes( 0 );
+            long blockId = create( store, emptyToWrite );
+            store.getLightRecords( blockId );
+            byte[] bytes = (byte[]) PropertyStore.getArrayFor( blockId, store.getRecords( blockId ), store );
+            assertEquals( 0, bytes.length );
+
+            Collection<DynamicRecord> records = store.getLightRecords( blockId );
+            for ( DynamicRecord record : records )
+            {
+                record.setInUse( false );
+                store.updateRecord( record );
+            }
+        }
+        finally
+        {
+            store.close();
+            deleteBothFiles();
+        }
+    }
+
+    @Test
+    public void testAddDeleteSequenceEmptyStringArray()
+    {
+        createEmptyStore( dynamicStoreFile(), 30 );
+        DynamicArrayStore store = newStore();
+        try
+        {
+            long blockId = create( store, new String[0] );
+            store.getLightRecords( blockId );
+            String[] readBack = (String[]) PropertyStore.getArrayFor( blockId,
+                    store.getRecords( blockId ), store );
+            assertEquals( 0, readBack.length );
+
+            Collection<DynamicRecord> records = store.getLightRecords( blockId );
+            for ( DynamicRecord record : records )
+            {
+                record.setInUse( false );
+                store.updateRecord( record );
+            }
+        }
+        finally
+        {
+            store.close();
+            deleteBothFiles();
         }
     }
 }

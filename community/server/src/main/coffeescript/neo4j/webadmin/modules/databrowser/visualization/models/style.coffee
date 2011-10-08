@@ -27,7 +27,7 @@ define(
   (LocalModel, Nano, forms, View) ->
     exports = {}
     
-    LABEL_PATTERN_TOOLTIP = """You can use properties in the label.<br/>
+    LABEL_PATTERN_TOOLTIP = """You can use placeholders in the label.<br/>
 {id} for node id<br/>
 {prop.PROPERTYNAME} for properties.<br/><br/>
 <b>Truncate values</b><br/>

@@ -26,13 +26,13 @@ define ['./JmxBackedModel','lib/backbone'], (JmxBackedModel) ->
       diskUsage : { domain : 'neo4j', name:'Store file sizes' }
 
     getDatabaseSize : =>
-      @get("TotalStoreSize") - @get("LogicalLogSize")
+      @get("diskUsage").TotalStoreSize - @get("diskUsage").LogicalLogSize
       
     getDatabasePercentage : =>
-      Math.round( ((@get("TotalStoreSize") - @get("LogicalLogSize")) / @get("TotalStoreSize")) * 100 )
+      Math.round( ((@get("diskUsage").TotalStoreSize - @get("diskUsage").LogicalLogSize) / @get("diskUsage").TotalStoreSize) * 100 )
 
     getLogicalLogSize : =>
-      @get("LogicalLogSize")
+      @get("diskUsage").LogicalLogSize
 
     getLogicalLogPercentage : =>
-      Math.round((@get("LogicalLogSize") / @get("TotalStoreSize")) * 100)
+      Math.round((@get("diskUsage").LogicalLogSize / @get("diskUsage").TotalStoreSize) * 100)

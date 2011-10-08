@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-public class RelationshipRecord extends Abstract64BitRecord
+public class RelationshipRecord extends PrimitiveRecord
 {
     private final long firstNode;
     private final long secondNode;
@@ -28,7 +28,6 @@ public class RelationshipRecord extends Abstract64BitRecord
     private long firstNextRel = Record.NO_NEXT_RELATIONSHIP.intValue();
     private long secondPrevRel = Record.NO_PREV_RELATIONSHIP.intValue();
     private long secondNextRel = Record.NO_NEXT_RELATIONSHIP.intValue();
-    private long nextProp = Record.NO_NEXT_PROPERTY.intValue();
 
     public RelationshipRecord( long id, long firstNode, long secondNode, int type )
     {
@@ -93,26 +92,16 @@ public class RelationshipRecord extends Abstract64BitRecord
         this.secondNextRel = secondNextRel;
     }
 
-    public long getNextProp()
-    {
-        return nextProp;
-    }
-
-    public void setNextProp( long nextProp )
-    {
-        this.nextProp = nextProp;
-    }
-
     @Override
     public String toString()
     {
         StringBuffer buf = new StringBuffer();
-        buf.append( "RelationshipRecord[" ).append( getId() ).append( "," )
-            .append( inUse() ).append( "," ).append( firstNode ).append( "," )
-            .append( secondNode ).append( "," ).append( type ).append( "," )
-            .append( firstPrevRel ).append( "," ).append( firstNextRel )
-            .append( "," ).append( secondPrevRel ).append( "," ).append(
-                secondNextRel ).append( "," ).append( nextProp ).append( "]" );
+        buf.append( "RelationshipRecord[" ).append( getId() ).append( "," ).append(
+                inUse() ).append( "," ).append( firstNode ).append( "," ).append(
+                secondNode ).append( "," ).append( type ).append( "," ).append(
+                firstPrevRel ).append( "," ).append( firstNextRel ).append( "," ).append(
+                secondPrevRel ).append( "," ).append( secondNextRel ).append(
+                "," ).append( getNextProp() ).append( "]" );
         return buf.toString();
     }
 }

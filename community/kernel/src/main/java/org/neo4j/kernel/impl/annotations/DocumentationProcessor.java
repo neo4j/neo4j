@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.annotations;
 import java.io.IOException;
 import java.util.Map;
 
-import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
@@ -39,7 +38,7 @@ public class DocumentationProcessor extends AnnotationProcessor
     private static final String DEFAULT_VALUE;
     static
     {
-        String defaultValue = "";
+        String defaultValue = Documented.DEFAULT_VALUE;
         try
         {
             defaultValue = (String) Documented.class.getMethod( "value" ).getDefaultValue();
@@ -50,17 +49,9 @@ public class DocumentationProcessor extends AnnotationProcessor
         }
         DEFAULT_VALUE = defaultValue;
     }
-    private CompilationManipulator manipulator = null;
 
     @Override
-    public synchronized void init( ProcessingEnvironment processingEnv )
-    {
-        super.init( processingEnv );
-        manipulator = CompilationManipulator.load( processingEnv );
-    }
-
-    @Override
-    void process( TypeElement annotationType, Element annotated, AnnotationMirror annotation,
+    protected void process( TypeElement annotationType, Element annotated, AnnotationMirror annotation,
             Map<? extends ExecutableElement, ? extends AnnotationValue> values ) throws IOException
     {
         if ( values.size() != 1 )
@@ -71,11 +62,6 @@ public class DocumentationProcessor extends AnnotationProcessor
         String value = (String) values.values().iterator().next().getValue();
         if ( DEFAULT_VALUE.equals( value ) || value == null )
         {
-            if ( manipulator == null )
-            {
-                warn( annotated, annotation, "Cannot update annotation values for this compiler" );
-                return;
-            }
             String javadoc = processingEnv.getElementUtils().getDocComment( annotated );
             if ( javadoc == null )
             {
@@ -83,7 +69,7 @@ public class DocumentationProcessor extends AnnotationProcessor
                 // return no period, since that could mess up Title generation;
                 javadoc = "Documentation not available";
             }
-            if ( !manipulator.updateAnnotationValue( annotated, annotation, "value", javadoc ) )
+            if ( !updateAnnotationValue( annotated, annotation, "value", javadoc ) )
             {
                 warn( annotated, annotation, "Failed to update annotation value" );
             }

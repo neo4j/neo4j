@@ -91,6 +91,7 @@ define(
       events :
         'click #visualization-reflow' : "reflowGraphLayout"
         'click #visualization-profiles-button' : "showProfilesDropdown"
+        'click #visualization-clear' : "clearVisualization"
 
       initialize : (options)->
         @server = options.server
@@ -130,10 +131,10 @@ define(
           @_profilesDropdown.renderFor $("#visualization-profiles-button")
 
       visualizeFromNode : (node) ->
-        @getViz().setNode(node)
+        @getViz().addNode(node)
 
       visualizeFromNodes : (nodes) ->
-        @getViz().setNodes(nodes)
+        @getViz().addNodes(nodes)
 
       visualizeFromRelationships : (rels) ->
 
@@ -157,7 +158,7 @@ define(
 
         allNodes = neo4j.Promise.join.apply(this, nodePromises)
         allNodes.then (nodes) =>
-          @getViz().setNodes nodes
+          @getViz().addNodes nodes
       
       getViz : () =>
         width = $(document).width() - 40;
@@ -168,6 +169,9 @@ define(
 
       reflowGraphLayout : () =>
         @viz.reflow() if @viz?
+        
+      clearVisualization : () =>
+        @viz.clear()
 
       remove : =>
         @dataModel.unbind("change:data", @render)

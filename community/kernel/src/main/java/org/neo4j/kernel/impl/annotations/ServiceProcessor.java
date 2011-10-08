@@ -39,7 +39,7 @@ public class ServiceProcessor extends AnnotationProcessor
 {
     @SuppressWarnings( "unchecked" )
     @Override
-    void process( TypeElement annotationType, Element annotated, AnnotationMirror annotation,
+    protected void process( TypeElement annotationType, Element annotated, AnnotationMirror annotation,
             Map<? extends ExecutableElement, ? extends AnnotationValue> values ) throws IOException
     {
         for ( AnnotationValue o : (List<? extends AnnotationValue>) values.values().iterator().next().getValue() )

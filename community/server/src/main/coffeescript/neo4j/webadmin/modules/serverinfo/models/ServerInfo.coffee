@@ -37,10 +37,17 @@ define ['lib/backbone'], () ->
       @server.manage.jmx.query ["*:*"], @parseJmxBeans
 
     parseJmxBeans : (beans) =>
+    
+      for bean in beans
+        names = []
+        for k,v of bean.properties
+          if k[0...4] is 'name' then names.push v
+        bean.name = names.join(' - ')
+      
       NEO4J_DOMAIN = "org.neo4j"
       beans = beans.sort (a,b) ->
-        aName = if a.domain is NEO4J_DOMAIN then "000" + a.getName() else a.jmxName
-        bName = if b.domain is NEO4J_DOMAIN then "000" + b.getName() else b.jmxName
+        aName = if a.domain is NEO4J_DOMAIN then "000" + a.name else a.jmxName
+        bName = if b.domain is NEO4J_DOMAIN then "000" + b.name else b.jmxName
         aGreaterThanB = aName.toLowerCase() > bName.toLowerCase()
         if aGreaterThanB == true
           return 1
@@ -60,7 +67,7 @@ define ['lib/backbone'], () ->
         currentDomainBeans.push bean
 
         @setBean(bean)
-        if @current? and @current.domain is currentDomainName and @current.beanName is bean.getName()
+        if @current? and @current.domain is currentDomainName and @current.beanName is bean.name
           @set {current : bean }, {silent:true}
 
       if not @current? and domains.length > 0 and domains[0].beans.length > 0
@@ -70,7 +77,7 @@ define ['lib/backbone'], () ->
 
     setBean : (bean) =>
       beanData = {}
-      beanData["#{bean.domain}:#{bean.getName()}"] = bean
+      beanData["#{bean.domain}:#{bean.name}"] = bean
       @set beanData, {silent:true}
 
     getBean : (domain, name) =>
