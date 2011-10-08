@@ -20,7 +20,7 @@
 package org.apache.lucene.index;
 
 /**
- *
+ * IndexWriter.isClosed is package local.
  */
 public class IndexWriterAccessor
 {
