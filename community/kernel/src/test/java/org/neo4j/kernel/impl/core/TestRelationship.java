@@ -23,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -34,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -1039,5 +1041,34 @@ public class TestRelationship extends AbstractNeo4jTestCase
         tx.finish();
         assertEquals( expectedCount, count( node1.getRelationships() ) );
         assertEquals( expectedCount, count( node2.getRelationships() ) );
+    }
+
+    @Ignore( "Triggers a bug, enable this test when fixed, https://github.com/neo4j/community/issues/52" )
+    @Test
+    public void deleteRelsWithCommitInMiddle() throws Exception
+    {
+        Node node = getGraphDb().createNode();
+        Node otherNode = getGraphDb().createNode();
+        RelationshipType[] types = new RelationshipType[] {withName( "r1" ), withName( "r2" ), withName( "r3" ), withName( "r4" )}; 
+        int count = 30; // 30*4 > 100 (rel grabSize)
+        for ( int i = 0; i < types.length*count; i++ )
+        {
+            node.createRelationshipTo( otherNode, types[i%types.length] );
+        }
+        newTransaction();
+        clearCache();
+        int delCount = 0;
+        int loopCount = 0;
+        while ( delCount < count )
+        {
+            loopCount++;
+            for ( Relationship rel : node.getRelationships( types[1] ) )
+            {
+                rel.delete();
+                if ( ++delCount == count/2 ) newTransaction();
+            }
+        }
+        assertEquals( 1, loopCount );
+        assertEquals( count, delCount );
     }
 }
