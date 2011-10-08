@@ -5,52 +5,38 @@
         %tr
           %td
             .box
-              .value= htmlEscape(primitives.get("NumberOfNodeIdsInUse"))
+              .value= htmlEscape(fancyNumber(primitives.get("primitives").NumberOfNodeIdsInUse))
               .title nodes
           %td
             .box
-              .value= htmlEscape(primitives.get("NumberOfPropertyIdsInUse"))
+              .value= htmlEscape(fancyNumber(primitives.get("primitives").NumberOfPropertyIdsInUse))
               .title properties
-          %td
+          %td 
             .box
-              .value= htmlEscape(primitives.get("NumberOfRelationshipIdsInUse"))
+              .value= htmlEscape(fancyNumber(primitives.get("primitives").NumberOfRelationshipIdsInUse))
               .title relationships
           %td
             .box
-              .value= htmlEscape(primitives.get("NumberOfRelationshipTypeIdsInUse"))
+              .value= htmlEscape(fancyNumber(primitives.get("primitives").NumberOfRelationshipTypeIdsInUse))
               .title relationship types
-              
-      :if diskUsage.isDataAvailable()
-        %tr
-          %td
-            .box
-              .value= htmlEscape(Math.round(diskUsage.get("TotalStoreSize") / 1024) + " kB ")
-              .title total disk usage
-          %td
-            .box
-              .value= htmlEscape(Math.round( diskUsage.getDatabaseSize() / 1024) + " kB " + "(" + diskUsage.getDatabasePercentage() + "%)")
-              .title database disk usage
-          %td
-            .box
-              .value= htmlEscape(Math.round( diskUsage.getLogicalLogSize() / 1024) + " kB " + "(" + diskUsage.getLogicalLogPercentage() + "%)")
-              .title logical log disk usage
-          %td
 
-      :if cacheUsage.isDataAvailable()
+      :if cacheUsage.isDataAvailable() && diskUsage.isDataAvailable()
         %tr
           %td
             .box
-              .value= htmlEscape(cacheUsage.get("NodeCacheSize"))
+              .value= htmlEscape(fancyNumber(cacheUsage.get("node").NumberOfCachedElements))
               .title cached nodes
           %td
             .box
-              .value= htmlEscape(cacheUsage.get("RelationshipCacheSize"))
+              .value= htmlEscape(fancyNumber(cacheUsage.get("relationship").NumberOfCachedElements))
               .title cached relationships
           %td
             .box
-              .value= htmlEscape(cacheUsage.get("CacheType"))
-              .title is the cache type
+              .value= htmlEscape(fancyNumber(Math.round( diskUsage.getDatabaseSize() / (1024 * 1024))) + " MB")
+              .title database disk usage
           %td
-
+            .box
+              .value= htmlEscape(fancyNumber(Math.round( diskUsage.getLogicalLogSize() / (1024 * 1024))) + " MB")
+              .title logical log disk usage
   .break
 

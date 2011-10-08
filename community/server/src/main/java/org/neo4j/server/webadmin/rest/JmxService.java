@@ -192,7 +192,7 @@ public class JmxService implements AdvertisableService
     @Path( KERNEL_NAME_PATH )
     public Response currentKernelInstance( @Context Database database ) throws DatabaseBlockedException
     {
-        Kernel kernelBean = database.graph.getManagementBean( Kernel.class );
+        Kernel kernelBean = database.graph.getSingleManagementBean( Kernel.class );
         return Response.ok( "\"" + kernelBean.getMBeanQuery()
                 .toString() + "\"" )
                 .type( MediaType.APPLICATION_JSON )

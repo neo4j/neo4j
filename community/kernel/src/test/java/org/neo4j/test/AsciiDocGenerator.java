@@ -25,8 +25,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.logging.Logger;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 
@@ -43,7 +42,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 public abstract class AsciiDocGenerator
 {
     private static final String DOCUMENTATION_END = "\n...\n";
-
+    private Logger log = Logger.getLogger( AsciiDocGenerator.class.getName() );
     protected String title = null;
     protected String description = null;
     protected GraphDatabaseService graph;
@@ -168,27 +167,32 @@ public abstract class AsciiDocGenerator
     }
     protected String replaceSnippets( String description )
     {
-        String result = description;
-        if ( description.contains( SNIPPET_MARKER ) )
-        {
-            Pattern p = Pattern.compile( ".*" + SNIPPET_MARKER
-                                         + "([a-zA-Z_\\-0-9]*).*" );
-            Matcher m = p.matcher( description );
-            m.find();
-            String group = m.group( 1 );
-            if ( !snippets.containsKey( group ) )
-            {
-                throw new Error( "No snippet '" + group + "' found." );
-            }
-            result = description.replace( SNIPPET_MARKER + group,
-                    snippets.get( group ) );
-            result = replaceSnippets( result );
+        for (String key : snippets.keySet()) {
+            description = replaceSnippet( description, key );
         }
-        return result;
+        if(description.contains( SNIPPET_MARKER )) {
+            log.severe( "missing snippet in " + description);
+        }
+        return description;
+    }
+
+    private String replaceSnippet( String description, String key )
+    {
+        String snippetString = SNIPPET_MARKER+key;
+        if ( description.contains( snippetString + "\n") )
+        {
+            description = description.replace( snippetString + "\n",
+                    snippets.get( key ) );
+        } else {
+            log.severe( "could not find " + snippetString + "\\n in "+ description );
+        }
+        return description;
     }
 
     /**
-     * Add snippets that will be replaced into corresponding
+     * Add snippets that will be replaced into corresponding.
+     * 
+     * A snippet needs to be on its own line, terminated by "\n".
      * 
      * @@snippetname placeholders in the content of the description.
      * 
