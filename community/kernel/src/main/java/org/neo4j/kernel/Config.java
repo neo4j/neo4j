@@ -184,8 +184,18 @@ public class Config
     @Documented
     public static final String RELATIONSHIP_AUTO_INDEXING = "relationship_auto_indexing";
 
+    /**
+     * Integer value that sets the maximum number of open lucene index searchers.
+     * The default is Integer.MAX_VALUE
+     */
+    @Documented
     public static final String LUCENE_SEARCHER_CACHE_SIZE = "lucene_searcher_cache_size";
 
+    /**
+     * Integer value that sets the maximum number of open lucene index writers.
+     * The default is Integer.MAX_VALUE
+     */
+    @Documented
     public static final String LUCENE_WRITER_CACHE_SIZE = "lucene_writer_cache_size";
 
     static final String LOAD_EXTENSIONS = "load_kernel_extensions";
