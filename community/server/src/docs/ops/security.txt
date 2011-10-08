@@ -73,6 +73,7 @@ ProxyPassReverse / http://localhost:7474/
     AddOutputFilterByType SUBSTITUTE application/json
     AddOutputFilterByType SUBSTITUTE text/html
     Substitute s/localhost:7474/myproxy.example.com/n
+    Substitute s/http/https/n
 </Location>
 ----
 
