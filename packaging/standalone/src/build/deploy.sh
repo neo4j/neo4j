@@ -40,7 +40,7 @@ function upload_package {
 function upload_file {
     filename=$1
 #    scpcommand="scp $filename dist-server:$rootpathdist/$filename"
-    uploadcommand="s3cmd put --acl-public --guess-mime-type $filename s3://dist.neo4j.org/$rootpathdist/$filename"
+    uploadcommand="s3cmd put --acl-public --guess-mime-type $filename s3://dist.neo4j.org/$filename"
     run_command "$uploadcommand"
 }
 
