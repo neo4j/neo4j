@@ -81,7 +81,7 @@ public class SecurityRulesFunctionalTest
         server.start();
         gen.get().addSnippet(
                 "config",
-                "\n[source]\n---- org.neo4j.server.rest.security_rules=my.rules.PermanentlyFailingSecurityRule\n----\n" );
+                "\n[source]\n----\norg.neo4j.server.rest.security_rules=my.rules.PermanentlyFailingSecurityRule\n----\n" );
         gen.get().addSourceSnippets( PermanentlyFailingSecurityRule.class,
                 "failingRule" );
         functionalTestHelper = new FunctionalTestHelper( server );
