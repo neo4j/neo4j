@@ -125,10 +125,8 @@ public class LuceneDataSource extends LogBackedXaDataSource
 
     public static final Analyzer KEYWORD_ANALYZER = new KeywordAnalyzer();
 
-    private final Map<IndexIdentifier,Pair<IndexWriter, AtomicBoolean>> indexWriters =
-        new HashMap<IndexIdentifier,Pair<IndexWriter, AtomicBoolean>>();
-    private final Map<IndexIdentifier,IndexSearcherRef> indexSearchers =
-        new HashMap<IndexIdentifier,IndexSearcherRef>();
+    private final IndexWriterLruCache indexWriters;
+    private final IndexSearcherLruCache indexSearchers;
 
     private final XaContainer xaContainer;
     private final String baseStorePath;
@@ -154,6 +152,10 @@ public class LuceneDataSource extends LogBackedXaDataSource
         throws InstantiationException
     {
         super( params );
+        int searcherSize = parseInt( params, Config.LUCENE_SEARCHER_CACHE_SIZE );
+        indexSearchers = new IndexSearcherLruCache( searcherSize );
+        int writerSize = parseInt( params, Config.LUCENE_WRITER_CACHE_SIZE );
+        indexWriters = new IndexWriterLruCache( writerSize );
         caching = new Cache();
         String storeDir = (String) params.get( "store_dir" );
         this.baseStorePath = getStoreDir( storeDir ).first();
@@ -227,6 +229,12 @@ public class LuceneDataSource extends LogBackedXaDataSource
         }
     }
 
+    private int parseInt( Map<Object, Object> params, String param )
+    {
+        String searcherParam = (String) params.get( param );
+        return searcherParam != null ? Integer.parseInt( searcherParam ) : Integer.MAX_VALUE;
+    }
+
     IndexType getType( IndexIdentifier identifier )
     {
         return typeCache.getIndexType( identifier );
@@ -290,11 +298,11 @@ public class LuceneDataSource extends LogBackedXaDataSource
                 return;
             }
             closed = true;
-            for ( IndexSearcherRef searcher : indexSearchers.values() )
+            for ( Pair<IndexSearcherRef, AtomicBoolean> searcher : indexSearchers.values() )
             {
                 try
                 {
-                    searcher.dispose();
+                    searcher.first().dispose();
                 }
                 catch ( IOException e )
                 {
@@ -303,11 +311,11 @@ public class LuceneDataSource extends LogBackedXaDataSource
             }
             indexSearchers.clear();
 
-            for ( Map.Entry<IndexIdentifier, Pair<IndexWriter, AtomicBoolean>> entry : indexWriters.entrySet() )
+            for ( Map.Entry<IndexIdentifier, IndexWriter> entry : indexWriters.entrySet() )
             {
                 try
                 {
-                    entry.getValue().first().close( true );
+                    entry.getValue().close( true );
                 }
                 catch ( IOException e )
                 {
@@ -357,11 +365,11 @@ public class LuceneDataSource extends LogBackedXaDataSource
         @Override
         public void flushAll()
         {
-            for ( Map.Entry<IndexIdentifier, Pair<IndexWriter, AtomicBoolean>> entry : indexWriters.entrySet() )
+            for ( Map.Entry<IndexIdentifier, IndexWriter> entry : indexWriters.entrySet() )
             {
                 try
                 {
-                    entry.getValue().first().commit();
+                    entry.getValue().commit();
                 }
                 catch ( IOException e )
                 {
@@ -421,17 +429,17 @@ public class LuceneDataSource extends LogBackedXaDataSource
      * {@code null}.
      * @throws IOException if there's a problem with the index.
      */
-    private IndexSearcherRef refreshSearcher( IndexSearcherRef searcher )
+    private Pair<IndexSearcherRef, AtomicBoolean> refreshSearcher( Pair<IndexSearcherRef, AtomicBoolean> searcher )
     {
         try
         {
-            IndexReader reader = searcher.getSearcher().getIndexReader();
+            IndexReader reader = searcher.first().getSearcher().getIndexReader();
             IndexReader reopened = reader.reopen();
             if ( reopened != reader )
             {
                 IndexSearcher newSearcher = new IndexSearcher( reopened );
-                searcher.detachOrClose();
-                return new IndexSearcherRef( searcher.getIdentifier(), newSearcher );
+                searcher.first().detachOrClose();
+                return Pair.of( new IndexSearcherRef( searcher.first().getIdentifier(), newSearcher ), new AtomicBoolean() );
             }
             return null;
         }
@@ -481,19 +489,18 @@ public class LuceneDataSource extends LogBackedXaDataSource
     {
         try
         {
-            IndexSearcherRef searcher = indexSearchers.get( identifier );
+            Pair<IndexSearcherRef, AtomicBoolean> searcher = indexSearchers.get( identifier );
             if ( searcher == null )
             {
                 IndexWriter writer = getIndexWriter( identifier );
                 IndexReader reader = IndexReader.open( writer, true );
                 IndexSearcher indexSearcher = new IndexSearcher( reader );
-                searcher = new IndexSearcherRef( identifier, indexSearcher );
+                searcher = Pair.of( new IndexSearcherRef( identifier, indexSearcher ), new AtomicBoolean() );
                 indexSearchers.put( identifier, searcher );
             }
             else
             {
-                Pair<IndexWriter, AtomicBoolean> writer = indexWriters.get( identifier );
-                if ( writer != null && writer.other().compareAndSet( true, false ) )
+                if ( searcher.other().compareAndSet( true, false ) )
                 {
                     searcher = refreshSearcher( searcher );
                     if ( searcher != null )
@@ -504,9 +511,9 @@ public class LuceneDataSource extends LogBackedXaDataSource
             }
             if ( incRef )
             {
-                searcher.incRef();
+                searcher.first().incRef();
             }
-            return searcher;
+            return searcher.first();
         }
         catch ( IOException e )
         {
@@ -522,10 +529,10 @@ public class LuceneDataSource extends LogBackedXaDataSource
 
     synchronized void invalidateIndexSearcher( IndexIdentifier identifier )
     {
-        Pair<IndexWriter, AtomicBoolean> writer = indexWriters.get( identifier );
-        if ( writer != null )
+        Pair<IndexSearcherRef, AtomicBoolean> searcher = indexSearchers.get( identifier );
+        if ( searcher != null )
         {
-            writer.other().set( true );
+            searcher.other().set( true );
         }
     }
 
@@ -570,10 +577,10 @@ public class LuceneDataSource extends LogBackedXaDataSource
     {
         if ( closed ) throw new IllegalStateException( "Index has been shut down" );
 
-        Pair<IndexWriter, AtomicBoolean> writer = indexWriters.get( identifier );
+        IndexWriter writer = indexWriters.get( identifier );
         if ( writer != null )
         {
-            return writer.first();
+            return writer;
         }
 
         try
@@ -589,15 +596,14 @@ public class LuceneDataSource extends LogBackedXaDataSource
                 writerConfig.setSimilarity( similarity );
             }
             IndexWriter indexWriter = new IndexWriter( dir, writerConfig );
-            writer = Pair.of( indexWriter, new AtomicBoolean() );
 
             // TODO We should tamper with this value and see how it affects the
             // general performance. Lucene docs says rather <10 for mixed
             // reads/writes
 //            writer.setMergeFactor( 8 );
 
-            indexWriters.put( identifier, writer );
-            return writer.first();
+            indexWriters.put( identifier, indexWriter );
+            return indexWriter;
         }
         catch ( IOException e )
         {
@@ -665,15 +671,15 @@ public class LuceneDataSource extends LogBackedXaDataSource
     {
         try
         {
-            IndexSearcherRef searcher = indexSearchers.remove( identifier );
-            Pair<IndexWriter, AtomicBoolean> writer = indexWriters.remove( identifier );
+            Pair<IndexSearcherRef, AtomicBoolean> searcher = indexSearchers.remove( identifier );
+            IndexWriter writer = indexWriters.remove( identifier );
             if ( searcher != null )
             {
-                searcher.dispose();
+                searcher.first().dispose();
             }
             if ( writer != null )
             {
-                writer.first().close();
+                writer.close();
             }
         }
         catch ( IOException e )
@@ -694,13 +700,13 @@ public class LuceneDataSource extends LogBackedXaDataSource
 
     Integer getCacheCapacity( IndexIdentifier identifier, String key )
     {
-        LruCache<String, Collection<Long>> cache = this.caching.get( identifier, key );
+        LruCache<String,Collection<Long>> cache = this.caching.get( identifier, key );
         return cache != null ? cache.maxSize() : null;
     }
 
     void invalidateCache( IndexIdentifier identifier, String key, Object value )
     {
-        LruCache<String,Collection<Long>> cache = caching.get( identifier, key );
+        LruCache<String, Collection<Long>> cache = caching.get( identifier, key );
         if ( cache != null )
         {
             cache.remove( value.toString() );
@@ -754,10 +760,10 @@ public class LuceneDataSource extends LogBackedXaDataSource
         final Collection<File> files = new ArrayList<File>();
         final Collection<SnapshotDeletionPolicy> snapshots = new ArrayList<SnapshotDeletionPolicy>();
         makeSureAllIndexesAreInstantiated();
-        for ( Map.Entry<IndexIdentifier, Pair<IndexWriter, AtomicBoolean>> writer : indexWriters.entrySet() )
+        for ( Map.Entry<IndexIdentifier, IndexWriter> writer : indexWriters.entrySet() )
         {
             SnapshotDeletionPolicy deletionPolicy = (SnapshotDeletionPolicy)
-                    writer.getValue().first().getConfig().getIndexDeletionPolicy();
+                    writer.getValue().getConfig().getIndexDeletionPolicy();
             File indexDirectory = getFileDirectory( baseStorePath, writer.getKey() );
             try
             {

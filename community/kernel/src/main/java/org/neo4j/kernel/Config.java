@@ -184,6 +184,10 @@ public class Config
     @Documented
     public static final String RELATIONSHIP_AUTO_INDEXING = "relationship_auto_indexing";
 
+    public static final String LUCENE_SEARCHER_CACHE_SIZE = "lucene_searcher_cache_size";
+
+    public static final String LUCENE_WRITER_CACHE_SIZE = "lucene_writer_cache_size";
+
     static final String LOAD_EXTENSIONS = "load_kernel_extensions";
 
     private final AdaptiveCacheManager cacheManager;

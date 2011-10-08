@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.cache;
 
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Simple implementation of Least-recently-used cache.
@@ -136,6 +138,21 @@ public class LruCache<K,E> implements Cache<K,E>
     public synchronized int size()
     {
         return cache.size();
+    }
+
+    public synchronized Set<K> keySet()
+    {
+        return cache.keySet();
+    }
+
+    public synchronized Collection<E> values()
+    {
+        return cache.values();
+    }
+
+    public synchronized Set<java.util.Map.Entry<K,E>> entrySet()
+    {
+        return cache.entrySet();
     }
 
     /**
