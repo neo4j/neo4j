@@ -171,7 +171,9 @@ public abstract class AsciiDocGenerator
             description = replaceSnippet( description, key );
         }
         if(description.contains( SNIPPET_MARKER )) {
-            log.severe( "missing snippet in " + description);
+            int indexOf = description.indexOf( "@@" );
+            String snippet = description.substring( indexOf, description.indexOf( "\n", indexOf ) );
+            log.severe( "missing snippet ["+snippet+"] in " + description);
         }
         return description;
     }
