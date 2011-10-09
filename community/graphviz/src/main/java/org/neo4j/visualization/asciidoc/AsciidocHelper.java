@@ -31,8 +31,8 @@ import java.io.OutputStream;
 public class AsciidocHelper
 {
 
-    private static final String ILLEGAL_STRINGS = "[:\\(\\)\t;&/\\\\]"; 
-    
+    private static final String ILLEGAL_STRINGS = "[:\\(\\)\t;&/\\\\]";
+
     public static String createGraphViz( String title, GraphDatabaseService graph, String identifier )
     {
         OutputStream out = new ByteArrayOutputStream();
@@ -45,9 +45,9 @@ public class AsciidocHelper
         {
             e.printStackTrace();
         }
-        
+
         String safeTitle = title.replaceAll(ILLEGAL_STRINGS, "");
-        
+
         return "." + title + "\n[\"dot\", \""
                + ( safeTitle + "-" + identifier ).replace( " ", "-" )
                + ".svg\", \"neoviz\"]\n" +
@@ -55,12 +55,12 @@ public class AsciidocHelper
                 out.toString() +
                 "----\n";
     }
-    
+
     public static String createOutputSnippet( final String output )
     {
         return "[source]\n----\n"+output+"\n----\n";
     }
-    
+
     public static String createQueryResultSnippet( final String output )
     {
         return "[queryresult]\n----\n" + output + "\n----\n";
@@ -69,8 +69,8 @@ public class AsciidocHelper
     public static String createCypherSnippet( final String query )
     {
         String[] keywordsToBreakOn = new String[] {"start", "match", "where", "return", "skip", "limit"};
-        
-        String result = "[source,cypher]\n----\n"+query;
+
+        String result = "[source,cypher]\n----\n" + query + "\n----\n";
 
         for(String keyword : keywordsToBreakOn)
         {
