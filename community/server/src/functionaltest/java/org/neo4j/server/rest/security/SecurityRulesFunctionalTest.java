@@ -57,17 +57,18 @@ public class SecurityRulesFunctionalTest
      * access to all URIs to the server by listing the rules class in
      * +neo4j-server.properties+:
      * 
+     * 
      * @@config
      * 
-     *          with the rule source code of:
+     * with the rule source code of:
      * 
      * @@failingRule
      * 
-     *               With this rule registered, any access to the server will be
-     *               denied. In a production-quality implementation the rule
-     *               will likely lookup credentials/claims in a 3rd party
-     *               directory service (e.g. LDAP) or in a local database of
-     *               authorized users.
+     * With this rule registered, any access to the server will be
+     * denied. In a production-quality implementation the rule
+     * will likely lookup credentials/claims in a 3rd party
+     * directory service (e.g. LDAP) or in a local database of
+     * authorized users.
      * 
      */
     @Test
