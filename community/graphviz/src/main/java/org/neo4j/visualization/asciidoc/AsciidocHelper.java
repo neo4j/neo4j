@@ -72,9 +72,13 @@ public class AsciidocHelper
                 replace("start ", "START ").
                 replace("where ", "WHERE ").
                 replace("match ", "MATCH ").
+                replace("skip ", "SKIP ").
+                replace("limit ", "LIMIT ").
                 replace("return ", "RETURN ").
                 replace(" MATCH ", "\nMATCH ").
                 replace(" RETURN ", "\nRETURN ").
+                replace(" SKIP ", "\nSKIP ").
+                replace(" LIMIT ", "\nLIMIT ").
                 replace(" WHERE ", "\nWHERE ").
                 replace("where ", "WHERE ")+"\n----\n";
         //cut to max 123 chars for PDF compliance
