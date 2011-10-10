@@ -42,13 +42,13 @@ class FunctionsTest extends DocumentingTestBase {
   val common_arguments = List(
     "iterable" -> "An array property, or an iterable symbol, or an iterable function.",
     "symbol" -> "The closure will have a symbol introduced in it's context. Here you decide which symbol to use. If you leave the symbol out, the default symbol +_+ (underscore) will be used.",
-    "predicate-closure" -> "A predicate that is tested against all items in iterable"
+    "predicate" -> "A predicate that is tested against all items in iterable"
   )
 
   @Test def all() {
     testThis(
       title = "ALL",
-      syntax = "ALL(iterable, [symbol =>] predicate-closure)",
+      syntax = "ALL(iterable, [symbol =>] predicate)",
       arguments = common_arguments,
       text = """Tests the predicate closure to see if all items in the iterable match.""",
       queryText = """start a=node(%A%), b=node(%D%) match p=a-[*1..3]->b where all(x in nodes(p) : x.age > 30) return p""",
@@ -59,7 +59,7 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def any() {
     testThis(
       title = "ANY",
-      syntax = "ANY(iterable, [symbol =>] predicate-closure)",
+      syntax = "ANY(iterable, [symbol =>] predicate)",
       arguments = common_arguments,
       text = """Tests the predicate closure to see if at least one item in the iterable match.""",
       queryText = """start a=node(%A%) match p=a-[*1..3]->b where any(x in nodes(p) : x.eyes = "blue") return p""",
@@ -70,7 +70,7 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def none() {
     testThis(
       title = "NONE",
-      syntax = "NONE(iterable, [symbol =>] predicate-closure)",
+      syntax = "NONE(iterable, [symbol =>] predicate)",
       arguments = common_arguments,
       text = """Tests the predicate closure to see if no items in the iterable match. If even one matches, the function returns false.""",
       queryText = """start n=node(%A%) match p=n-[*1..3]->b where NONE(x in nodes(p) : x.age = 25) return p""",
@@ -81,7 +81,7 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def single() {
     testThis(
       title = "SINGLE",
-      syntax = "SINGLE(iterable, [symbol =>] predicate-closure)",
+      syntax = "SINGLE(iterable, [symbol =>] predicate)",
       arguments = common_arguments,
       text = """Returns true if the closure predicate matches exactly one of the items in the iterable.""",
       queryText = """start n=node(%A%) match p=n-->b where SINGLE(var in nodes(p) : var.eyes = "blue") return p""",
