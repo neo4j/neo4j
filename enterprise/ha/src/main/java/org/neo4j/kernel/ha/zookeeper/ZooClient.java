@@ -68,10 +68,11 @@ public class ZooClient extends AbstractZooKeeperManager
     private long sessionId = -1;
     private final ResponseReceiver receiver;
     private final int backupPort;
+    private final boolean writeLastCommittedTx;
 
     public ZooClient( String servers, int machineId, RootPathGetter rootPathGetter,
             ResponseReceiver receiver, String haServer, int backupPort, int clientReadTimeout,
-            int maxConcurrentChannelsPerClient, GraphDatabaseService graphDb )
+            int maxConcurrentChannelsPerClient, boolean writeLastCommittedTx, GraphDatabaseService graphDb )
     {
         super( servers, graphDb, clientReadTimeout, maxConcurrentChannelsPerClient );
         this.receiver = receiver;
@@ -79,6 +80,7 @@ public class ZooClient extends AbstractZooKeeperManager
         this.haServer = haServer;
         this.machineId = machineId;
         this.backupPort = backupPort;
+        this.writeLastCommittedTx = writeLastCommittedTx;
         this.sequenceNr = "not initialized yet";
         String storeDir = ((AbstractGraphDatabase) graphDb).getStoreDir();
         this.msgLog = StringLogger.getLogger( storeDir );
@@ -429,7 +431,7 @@ public class ZooClient extends AbstractZooKeeperManager
             writeHaServerConfig();
             String root = getRoot();
             String path = root + "/" + machineId + "_";
-            String created = zooKeeper.create( path, dataRepresentingMe( committedTx ),
+            String created = zooKeeper.create( path, dataRepresentingMe( writeLastCommittedTx ? committedTx : -1L ),
                 ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL );
 
             // Add watches to our master notification nodes

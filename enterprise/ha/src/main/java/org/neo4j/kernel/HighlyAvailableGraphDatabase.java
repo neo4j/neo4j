@@ -80,6 +80,7 @@ import org.neo4j.kernel.ha.ZooKeeperLastCommittedTxIdSetter;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
+import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
@@ -104,6 +105,9 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     public static final String CONFIG_KEY_MAX_CONCURRENT_CHANNELS_PER_SLAVE = "ha.max_concurrent_channels_per_slave";
     public static final String CONFIG_KEY_BRANCHED_DATA_POLICY = "ha.branched_data_policy";
     public static final String CONFIG_KEY_READ_TIMEOUT = "ha.read_timeout";
+    
+    // TODO change name of this property
+    public static final String CONFIG_KEY_SLAVE_UPDATE_MODE = "ha.slave_update_mode";
 
     private static final String CONFIG_DEFAULT_HA_CLUSTER_NAME = "neo4j.ha";
     private static final int CONFIG_DEFAULT_PORT = 6361;
@@ -120,6 +124,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     private volatile Throwable causeOfShutdown;
     private final long startupTime;
     private final BranchedDataPolicy branchedDataPolicy;
+    private final SlaveUpdateMode slaveUpdateMode;
 
     private final List<KernelEventHandler> kernelEventHandlers =
             new CopyOnWriteArrayList<KernelEventHandler>();
@@ -151,6 +156,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         this.storeDir = storeDir;
         this.config = config;
         config.put( Config.KEEP_LOGICAL_LOGS, "true" );
+        this.slaveUpdateMode = getSlaveUpdateModeFromConfig( config );
         this.brokerFactory = brokerFactory != null ? brokerFactory : defaultBrokerFactory(
                 this, config );
         this.machineId = getMachineIdFromConfig( config );
@@ -362,6 +368,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                         getBackupPortFromConfig( config ),
                         getClientReadTimeoutFromConfig( config ),
                         getMaxConcurrentChannelsPerSlaveFromConfig( config ),
+                        slaveUpdateMode.syncWithZooKeeper,
                         HighlyAvailableGraphDatabase.this );
             }
         };
@@ -393,6 +400,13 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         return config.containsKey( CONFIG_KEY_BRANCHED_DATA_POLICY ) ?
                 BranchedDataPolicy.valueOf( config.get( CONFIG_KEY_BRANCHED_DATA_POLICY ) ) :
                 BranchedDataPolicy.keep_all;
+    }
+    
+    private SlaveUpdateMode getSlaveUpdateModeFromConfig( Map<String, String> config )
+    {
+        return config.containsKey( CONFIG_KEY_SLAVE_UPDATE_MODE ) ?
+                SlaveUpdateMode.valueOf( config.get( CONFIG_KEY_SLAVE_UPDATE_MODE ) ) :
+                SlaveUpdateMode.async;
     }
     
     private int getClientReadTimeoutFromConfig( Map<String, String> config2 )
@@ -585,7 +599,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 new SlaveRelationshipTypeCreator( broker, this ),
                 new SlaveTxIdGeneratorFactory( broker, this ),
                 new SlaveTxFinishHook( broker, this ),
-                new AsyncZooKeeperLastCommittedTxIdSetter( broker ),
+                slaveUpdateMode.createUpdater( broker ),
                 CommonFactories.defaultFileSystemAbstraction() );
         instantiateAutoUpdatePullerIfConfigSaysSo();
         msgLog.logMessage( "Started as slave", true );
@@ -1029,5 +1043,42 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         {
             return file.isDirectory() && file.getName().startsWith( BRANCH_PREFIX );
         }
+    }
+    
+    private static enum SlaveUpdateMode
+    {
+        sync( true )
+        {
+            @Override
+            LastCommittedTxIdSetter createUpdater( Broker broker )
+            {
+                return new ZooKeeperLastCommittedTxIdSetter( broker );
+            }
+        },
+        async( true )
+        {
+            @Override
+            LastCommittedTxIdSetter createUpdater( Broker broker )
+            {
+                return new AsyncZooKeeperLastCommittedTxIdSetter( broker );
+            }
+        }/*, TODO for slave-only mode
+        none( false )
+        {
+            @Override
+            LastCommittedTxIdSetter createUpdater( Broker broker )
+            {
+                return CommonFactories.defaultLastCommittedTxIdSetter();
+            }
+        }*/;
+        
+        private final boolean syncWithZooKeeper;
+
+        SlaveUpdateMode( boolean syncWithZooKeeper )
+        {
+            this.syncWithZooKeeper = syncWithZooKeeper;
+        }
+        
+        abstract LastCommittedTxIdSetter createUpdater( Broker broker );
     }
 }

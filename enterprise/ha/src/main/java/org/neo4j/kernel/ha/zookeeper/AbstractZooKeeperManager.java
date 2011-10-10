@@ -165,7 +165,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
         {
             debugData.add( Triplet.of( info.getMachineId(),
                     info.getLastCommittedTxId(), info.getSequenceId() ) );
-            if ( info.getLastCommittedTxId() >= highestTxId )
+            if ( info.getLastCommittedTxId() != -1 && info.getLastCommittedTxId() >= highestTxId )
             {
                 if ( info.getLastCommittedTxId() > highestTxId
                         || info.wasCommittingMaster()
