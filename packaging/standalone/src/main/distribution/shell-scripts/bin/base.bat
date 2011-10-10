@@ -186,7 +186,7 @@ rem
 rem function install
 rem
 :install
-set binPath="%javaPath%\bin\java.exe -Djava.util.logging.config.file=conf/windows-wrapper-logging.properties   -DworkingDir=%~dps0.. -DconfigFile=%configFile% %classpath% %mainclass% -jar %~dps0%wrapperJarFilename% %serviceName%"
+set binPath="%javaPath%\bin\java.exe -Djava.util.logging.config.file=conf/windows-wrapper-logging.properties -DworkingDir="%~dps0.." -DconfigFile=%configFile% %classpath% %mainclass% -jar %~dps0%wrapperJarFilename% %serviceName%"
 sc create "%serviceName%" binPath= %binPath% DisplayName= "%serviceDisplayName%" start= %serviceStartType%
 call:start
 goto:eof
@@ -246,7 +246,7 @@ rem
 rem function console
 rem
 :console
-java -DworkingDir=%~dp0.. -Djava.util.logging.config.file=conf/windows-wrapper-logging.properties   -DconfigFile=%configFile% %classpath% %mainclass% -jar %~dps0%wrapperJarFilename%
+java -DworkingDir="%~dp0.." -Djava.util.logging.config.file=conf/windows-wrapper-logging.properties -DconfigFile=%configFile% %classpath% %mainclass% -jar %~dps0%wrapperJarFilename%
 goto:eof
 
 rem end function console
@@ -285,5 +285,4 @@ rem Factored out switch for setting the variables
 goto:eof
 
 rem end function parseConfig
-
 
