@@ -27,22 +27,17 @@ queries in implementation detail not exposed to the user.
 
 The query language is comprised of several distinct parts.
 
+* +START+: Starting points in the graph, obtained by element IDs or via index lookups
+
+* +MATCH+: The graph pattern to match, bound to the starting points in +START+
+
+* +WHERE+: Filtering criteria
+
+* +RETURN+: What to return
+
 Let's see three of them in action:
 
-For example, here is a query which finds a user called John in 
-an index and then traverses the graph looking for friends of 
-Johns friends (though not his direct friends) before returning 
-both John and any friends-of-friends that are found.
-
-image::friends-of-friends.png["Cypher Example with index lookup",scaledwidth="80%"]
-
-Next up we will add filtering to set all four parts in motion:
-
-In this next example, we take a list of users (by node ID) and traverse 
-the graph looking for those other users that have an outgoing +friend+ relationship, 
-returning only those followed users who are older than 18.
-
-image::basic-filtering.png["Cypher Example with Node id",scaledwidth="80%"]
+include::intro-examples.txt[]
 
 In Java, using the query language looks something like this:
 
