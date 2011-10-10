@@ -85,6 +85,7 @@ public class IntroExamplesTest implements GraphHolder
                 + ","
                 + data.get().get( "Steve" ).getId()
                 + ") MATCH user-[:friend]->follower WHERE follower.name =~ /S.*/ RETURN user, follower.name ";
+        fw.append( "\n" );
         fw.append( createCypherSnippet( query ) );
         fw.append( "\nResulting in \n" );
         fw.append( createQueryResultSnippet( engine.execute(
