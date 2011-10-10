@@ -105,9 +105,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     public static final String CONFIG_KEY_MAX_CONCURRENT_CHANNELS_PER_SLAVE = "ha.max_concurrent_channels_per_slave";
     public static final String CONFIG_KEY_BRANCHED_DATA_POLICY = "ha.branched_data_policy";
     public static final String CONFIG_KEY_READ_TIMEOUT = "ha.read_timeout";
-    
-    // TODO change name of this property
-    public static final String CONFIG_KEY_SLAVE_UPDATE_MODE = "ha.slave_update_mode";
+    public static final String CONFIG_KEY_SLAVE_COORDINATOR_UPDATE_MODE = "ha.slave_coordinator_update_mode";
 
     private static final String CONFIG_DEFAULT_HA_CLUSTER_NAME = "neo4j.ha";
     private static final int CONFIG_DEFAULT_PORT = 6361;
@@ -404,8 +402,8 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     
     private SlaveUpdateMode getSlaveUpdateModeFromConfig( Map<String, String> config )
     {
-        return config.containsKey( CONFIG_KEY_SLAVE_UPDATE_MODE ) ?
-                SlaveUpdateMode.valueOf( config.get( CONFIG_KEY_SLAVE_UPDATE_MODE ) ) :
+        return config.containsKey( CONFIG_KEY_SLAVE_COORDINATOR_UPDATE_MODE ) ?
+                SlaveUpdateMode.valueOf( config.get( CONFIG_KEY_SLAVE_COORDINATOR_UPDATE_MODE ) ) :
                 SlaveUpdateMode.async;
     }
     
