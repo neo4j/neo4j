@@ -62,6 +62,7 @@ public class IntroExamplesTest implements GraphHolder
                 "cypher-intro" ) );
 
         fw.append( "For example, here is a query which finds a user called John in an index and then traverses the graph looking for friends of Johns friends (though not his direct friends) before returning both John and any friends-of-friends that are found." );
+        fw.append( "\n" );
         String query = "START john=node:node_auto_index(name = 'John') "
                        + "MATCH john-[:friend]->()-[:friend]->fof RETURN john, fof ";
         fw.append( createCypherSnippet( query ) );
@@ -87,7 +88,7 @@ public class IntroExamplesTest implements GraphHolder
                 + ") MATCH user-[:friend]->follower WHERE follower.name =~ /S.*/ RETURN user, follower.name ";
         fw.append( "\n" );
         fw.append( createCypherSnippet( query ) );
-        fw.append( "\nResulting in\n\n" );
+        fw.append( "\nResulting in\n" );
         fw.append( createQueryResultSnippet( engine.execute(
                 parser.parse( query ) ).toString() ) );
         fw.close();
