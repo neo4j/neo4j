@@ -1,3 +1,9 @@
+1.5.M02 (2011-10-10)
+--------------------
+o Performance improvements in extraction of logs sent from master to slave in HA.
+o Some deadlock scenarios in HA fixed.
+o Performance improvements in coordinator communication in HA.
+
 1.5.M01 (2011-08-31)
 --------------------
 o Fixed some issues regarding monitoring of open channels and what resources they map to and occupy.
