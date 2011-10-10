@@ -19,9 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
 require(
-  ["order!lib/jquery"
-   "order!lib/neo4js"
-   "order!lib/backbone"
+  ["lib/jquery"
+   "lib/neo4js"
+   "lib/backbone"
    "neo4j/webadmin/modules/dashboard/DashboardRouter"
    "neo4j/webadmin/modules/databrowser/DataBrowserRouter"
    "neo4j/webadmin/modules/console/ConsoleRouter"

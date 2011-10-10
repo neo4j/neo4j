@@ -47,7 +47,7 @@ define ['lib/backbone'], () ->
     beanParser : (key) ->
       (bean) =>
         if bean? and bean.attributes?
-          @dataAvailable = true
+          @setBeanDataAvailable key
           values = {}
           for attribute in bean.attributes
             values[attribute.name] = attribute.value
@@ -55,4 +55,12 @@ define ['lib/backbone'], () ->
           update = {}
           update[key] = values
           @set(update)
-
+    
+    setBeanDataAvailable : (key) ->
+      @beans[key].dataAvailable = true
+      dataAvailable = true
+      for k,b of @beans
+        if not b.dataAvailable
+          dataAvailable = false
+          break            
+      @dataAvailable = dataAvailable
