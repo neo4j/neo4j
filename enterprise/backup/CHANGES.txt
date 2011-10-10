@@ -1,3 +1,11 @@
+1.5.M02 (2011-10-10)
+--------------------
+o Fixed a windows-specific issue for long-running backups in that the active logical log was locked by the backup. Solved by rotating before backup.
+
+1.5.M01
+
+1.4
+
 1.3 GA
 ------
 o Removed dependency on HA. Now it is expected that resolving the master of a ZooKeeper cluster is the responsibility of the HA component, providing it as a @Service.

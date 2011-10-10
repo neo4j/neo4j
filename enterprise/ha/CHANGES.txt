@@ -1,3 +1,15 @@
+1.5.M02 (2011-10-10)
+--------------------
+o Uses new (faster, non-synchronized) way of extracting transactions when streaming transactions from master to slave.
+o Neostore logical logs are included when doing a full store copy from master.
+o Fixed a bug with old free ids not being invalidated correctly after master switch.
+o Channels aren't tied to a transaction, this to prevent some deadlock scenarios where all channels were tied up and a transaction was to be committed.
+o Fixed some possible deadlock scenarios involving at least XaResourceManager and XaLogicalLog.
+o Listens to "tx manager not ok" events and does internal restart for those.
+o How to handle cases of branched data is configurable: keep all, keep last, keep none.
+o Rotates logs before internal restart (slave->master or master->slave) to reduce potential recovery (i.e. switch) times.
+o Does some additional repairing of neostore fail after a full store copy from master so that log version is synced.
+
 1.4.M03 (2011-05-26) 
 --------------------
 o Fixed bug that did not rollback tx associated with dead channels.
