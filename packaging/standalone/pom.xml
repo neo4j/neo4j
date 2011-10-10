@@ -150,7 +150,7 @@ terms of the relevant Commercial Agreement.
               <appendAssemblyId>true</appendAssemblyId>
             </configuration>
           </execution>
- 		  <execution>
+          <execution>
             <id>advanced-windows-dist</id>
             <phase>package</phase>
             <goals>
@@ -281,6 +281,16 @@ terms of the relevant Commercial Agreement.
         </configuration>
       </plugin>
 
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>wagon-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>upload-to-dist-server</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
