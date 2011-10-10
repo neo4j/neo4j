@@ -284,14 +284,6 @@ the relevant Commercial Agreement.
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-all</artifactId>
     </dependency>
-
-    <dependency>
-    	<groupId>org.neo4j</groupId>
-    	<artifactId>neo4j-management</artifactId>
-    	<version>1.5-SNAPSHOT</version>
-    	<type>jar</type>
-    	<scope>compile</scope>
-    </dependency>
   </dependencies>
 
   <build>
