@@ -4,7 +4,7 @@ set -x
 
 DIR=$(cd `dirname $0` && cd ../../ && pwd)
 
-# Deploys build artifacts to relevant servers
+# Uploads different formats of the manual to a public server.
 
 
 # Which version the documentation is now.
@@ -24,7 +24,6 @@ else
 fi
 
 ROOTPATHDOCS=public_html/docs
-ROOTPATHDIST=public_html/dist
 
 echo "VERSION = $VERSION"
 echo "SYMLINKVERSION = $SYMLINKVERSION"
@@ -35,22 +34,21 @@ ssh docs-server mkdir -p $ROOTPATHDOCS/{text,chunked,annotated}/$VERSION
 # Copy artifacts
 rsync -r $DIR/target/text/ docs-server:$ROOTPATHDOCS/text/$VERSION/
 rsync -r --delete $DIR/target/annotated/ docs-server:$ROOTPATHDOCS/annotated/
-#rsync -r --delete $DIR/target/metadocs/ docs-server:$ROOTPATHDOCS/metadocs/
 rsync -r --delete $DIR/target/chunked/ docs-server:$ROOTPATHDOCS/chunked/$VERSION/
-scp $DIR/target/pdf/neo4j-manual.pdf dist-server:$ROOTPATHDIST/neo4j-manual-$VERSION.pdf
+scp $DIR/target/pdf/neo4j-manual.pdf docs-server:$ROOTPATHDOCS/pdf/neo4j-manual-$VERSION.pdf
 
 # Symlink this version to a generic url
-ssh -vvv docs-server "cd $ROOTPATHDOCS/text/ && (rm $SYMLINKVERSION || true); ln -s $VERSION $SYMLINKVERSION"
+ssh docs-server "cd $ROOTPATHDOCS/text/ && (rm $SYMLINKVERSION || true); ln -s $VERSION $SYMLINKVERSION"
 ssh docs-server "cd $ROOTPATHDOCS/chunked/ && (rm $SYMLINKVERSION || true); ln -s $VERSION $SYMLINKVERSION"
-ssh dist-server "cd $ROOTPATHDIST && (rm neo4j-manual-$SYMLINKVERSION.pdf || true); ln -s neo4j-manual-$VERSION.pdf neo4j-manual-$SYMLINKVERSION.pdf"
+ssh docs-server "cd $ROOTPATHDOCS/pdf/ && (rm neo4j-manual-$SYMLINKVERSION.pdf || true); ln -s neo4j-manual-$VERSION.pdf neo4j-manual-$SYMLINKVERSION.pdf"
 
 if [[ $SYMLINKVERSION == stable ]]
 then
   ssh docs-server "cd $ROOTPATHDOCS/text/ && (rm milestone || true); ln -s $VERSION milestone"
   ssh docs-server "cd $ROOTPATHDOCS/chunked/ && (rm milestone || true); ln -s $VERSION milestone"
-  ssh dist-server "cd $ROOTPATHDIST && (rm neo4j-manual-milestone.pdf || true); ln -s neo4j-manual-$VERSION.pdf neo4j-manual-milestone.pdf"
+  ssh docs-server "cd $ROOTPATHDOCS/pdf/ && (rm neo4j-manual-milestone.pdf || true); ln -s neo4j-manual-$VERSION.pdf neo4j-manual-milestone.pdf"
 fi
 
 
-echo Apparently, successfully copied artifacts to docs-server and dist-server.
+echo Apparently, successfully published to docs-server.
 
