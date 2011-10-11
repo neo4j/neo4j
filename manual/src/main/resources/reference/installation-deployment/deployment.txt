@@ -16,7 +16,7 @@ Neo4j can be embedded into your application, run as a standalone server or deplo
 
 Neo4j is normally accessed as a standalone server, either directly through a REST interface or through a language-specific driver.
 More information about Neo4j server is found in <<server>>.
-For running the server in high availability mode, see <<server-ha>>.
+For running the server and embedded installations in high availability mode, see <<ha>>.
 
 == Embedded ==
 
