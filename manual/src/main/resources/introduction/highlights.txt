@@ -2,7 +2,7 @@
 Neo4j Highlights
 ================
 
-As a robust, scalable and high-performance database, Neo4j is suitable for lightweight projects or full enterprise deployment.  
+As a robust, scalable and high-performance database, Neo4j is suitable for full enterprise deployment or a subset of the full server can be used in lightweight projects.
 
 It features:
 
@@ -25,6 +25,7 @@ When data throughput is insufficient, the graph database can be distributed amon
 See <<ha>> to learn more. 
 
 The graph database storage shines when storing richly-connected data. 
-Querying is performed through traversals, which can perform millions of "joins" per second.
+Querying is performed through traversals, which can perform millions of traversal steps per second.
+A traversal step resembles a _join_ in a RDBMS.
 
 
