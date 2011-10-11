@@ -2,26 +2,17 @@
 # depends libxml-simple-perl
 
 tcrepo=http://builder.neo4j.org/guestAuth/repository/download/bt65/lastSuccessful
-rootpathdist=public_html/dist
+rootpathdist=dist
 
 function work {
     upload_packages neo4j-community neo4j-advanced neo4j-enterprise
 }
 
-function repeat_command {
+function run_command {
     thecommand=$1
     echo $thecommand
-    success=0
-    for counter in 1 2 3
-    do
-        if $thecommand
-        then
-            success=1
-            break            
-        fi
-        echo "Command failed ($counter): $thecommand"
-    done
-    if [ $success == 0 ]
+    $thecommand
+    if [ $? -ne 0 ]
     then
         echo "Fatal command failure: $thecommand"
         exit 1
@@ -32,7 +23,7 @@ function fetch_artifact {
     artifact=$1
     filename=$2
     curlcommand="curl -f -O $tcrepo/$artifact/$filename"
-    repeat_command "$curlcommand"
+    run_command "$curlcommand"
 }
 
 function upload_package {
@@ -48,8 +39,9 @@ function upload_package {
 
 function upload_file {
     filename=$1
-    scpcommand="scp $filename dist-server:$rootpathdist/$filename"
-    repeat_command "$scpcommand"
+#    scpcommand="scp $filename dist-server:$rootpathdist/$filename"
+    uploadcommand="s3cmd put --acl-public --guess-mime-type $filename s3://dist.neo4j.org/$filename"
+    run_command "$uploadcommand"
 }
 
 # uses the global $artifact as input
@@ -61,7 +53,7 @@ function get_version {
 }
 
 function upload_packages {
-    artifact="standalone"
+    artifact="neo4j-spring-sdk"
     get_version
     for artifact in $@  ; do
         upload_package $artifact $version
