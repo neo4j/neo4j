@@ -13,6 +13,8 @@ include::introduction.txt[]
 
 :leveloffset: 2
 
+include::performance-guide.txt[]
+
 include::cache.txt[]
 
 include::jvm.txt[]
