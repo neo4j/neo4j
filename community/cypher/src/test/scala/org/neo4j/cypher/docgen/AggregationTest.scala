@@ -126,6 +126,6 @@ class AggregationTest extends DocumentingTestBase {
 So, to count the number of unique eye colours from nodes related to a, this query can be used: """,
       queryText = "start a=node(%A%) match a-->b return count(distinct b.eyes)",
       returns = "Returns the number of eye colours.",
-      p => assertEquals(Map("count(DISTINCT b.eyes)" -> 3), p.toList.head))
+      p => assertEquals(Map("count(DISTINCT b.eyes)" -> 2), p.toList.head))
   }
 }
