@@ -7,17 +7,20 @@ do
 	if [[ "$line" =~ "Image not available" ]]
 	then
 		errors="${errors}${line}"'\n'
+	elif [[ "$line" == "[ERROR]"* ]]
+	then
+		errors="${errors}${line}"'\n'
 	fi
 done
 
 if [ -n "$errors" ]
 then
 	echo "===================================="
-	echo "There are images that FOP can't load"
+	echo " There is a PDF build error"
 	echo "===================================="
 	echo -e $errors
 	exit 1
 else
-	echo "Outputcheck-fop: All images were successfully loaded."
+	echo "Outputcheck-fop: No PDF build errors detected.."
 fi
 
