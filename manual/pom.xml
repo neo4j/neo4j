@@ -5,11 +5,11 @@
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-pom</artifactId>
     <version>25</version>
-    <relativePath/>
+    <relativePath />
   </parent>
   <groupId>org.neo4j.doc</groupId>
   <artifactId>neo4j-manual</artifactId>
-  <version>1.5-SNAPSHOT</version>
+  <version>1.5.M02</version>
   <name>Neo4j - Reference Manual</name>
   <description>Neo4j Reference Manual.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
