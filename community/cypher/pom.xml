@@ -1,11 +1,10 @@
 <?xml version="1.0"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <parent>
         <groupId>org.neo4j.build</groupId>
         <artifactId>parent-central</artifactId>
         <version>25</version>
-        <relativePath/>
+        <relativePath />
     </parent>
 
     <properties>
@@ -18,7 +17,7 @@
     <groupId>org.neo4j</groupId>
     <artifactId>neo4j-cypher</artifactId>
     <packaging>jar</packaging>
-    <version>1.5-SNAPSHOT</version>
+    <version>1.5.M02</version>
     <name>Neo4j - Cypher</name>
     <description>Neo4j query language</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -62,30 +61,30 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-kernel</artifactId>
-            <version>1.5-SNAPSHOT</version>
+            <version>1.5.M02</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-graphviz</artifactId>
-            <version>1.5-SNAPSHOT</version>
+            <version>1.5.M02</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-lucene-index</artifactId>
-            <version>1.5-SNAPSHOT</version>
+            <version>1.5.M02</version>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-kernel</artifactId>
-            <version>1.5-SNAPSHOT</version>
+            <version>1.5.M02</version>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-graph-algo</artifactId>
-            <version>1.5-SNAPSHOT</version>
+            <version>1.5.M02</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -154,7 +153,7 @@
                 <artifactId>clirr-maven-plugin</artifactId>
                 <reportSets>
                     <reportSet>
-                        <reports/>
+                        <reports />
                     </reportSet>
                 </reportSets>
             </plugin>
