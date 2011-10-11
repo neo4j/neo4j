@@ -3,14 +3,14 @@
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-pom</artifactId>
     <version>25</version>
-    <relativePath/>
+    <relativePath />
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.server.plugin</groupId>
   <artifactId>neo4j-gremlin-plugin</artifactId>
   <packaging>jar</packaging>
-  <version>1.5-SNAPSHOT</version>
+  <version>1.5.M02</version>
   <name>neo4j-gremlin-plugin</name>
 
   <properties>
