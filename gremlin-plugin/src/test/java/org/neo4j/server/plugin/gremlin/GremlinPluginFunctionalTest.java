@@ -450,10 +450,21 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
         gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
                 JSONPrettifier.parse( payload ) );
         String response = gen.get().post( ENDPOINT ).entity();
-        payload = "{\"script\":\"n = Object.metaClass.makeNode('uri',[:]\"}";
-        gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
-                JSONPrettifier.parse( payload ) );
-        response = gen.get().post( ENDPOINT ).entity();
-        assertTrue( response.contains( "uri" ) );
+        for (int i = 0; i<1000;i++) {
+            String uri = "uri"+i;
+            payload = "{\"script\":\"n = Object.metaClass.makeNode('"+uri+"',[:]\"}";
+            gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
+                    JSONPrettifier.parse( payload ) );
+            response = gen.get().post( ENDPOINT ).entity();
+            assertTrue( response.contains( uri ) );
+        }
+        for (int i = 0; i<999;i++) {
+            String uri = "uri";
+            payload = "{\"script\":\"n = Object.metaClass.makeEdge('knows','"+uri+i+"','"+uri+(i+1)+"'[:]\"}";
+            gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
+                    JSONPrettifier.parse( payload ) );
+            response = gen.get().post( ENDPOINT ).entity();
+            assertTrue( response.contains( uri ) );
+        }
     }
 }
