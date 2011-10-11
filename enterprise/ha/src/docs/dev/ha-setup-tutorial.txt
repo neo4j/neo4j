@@ -27,22 +27,20 @@ Download and unpack three installations of Neo4j Enterprise
 
 === Setup and start the Coordinator cluster ===
 
-Now, in the +NEO4J_HOME1/conf/coord.cfg+, adjust the coordinator +clienPort+ and let the coordinator search for other coordinator
-cluster members at the localhost port ranges:
+Now, in the +NEO4J_HOME1/conf/coord.cfg+, adjust the coordinator +clienPort+ and let the coordinator search for other coordinator cluster members at the localhost port ranges:
 
 [source,shell]
 ----
 #$NEO4J_HOME1/conf/coord.cfg
-...
+
 server.1=localhost:2888:3888
 server.2=localhost:2889:3889
 server.3=localhost:2890:3890
-...
+
 clientPort=2181
+----
 
----
-
-The other two config files in +$NEO4J_HOME2+ and +$NEO4J_HOME3+ will have a different +clientPort+ set but the other parameters identical to the first one:
+The other two config files in +$NEO4J_HOME2+ and +$NEO4J_HOME3+ will have a different +clienttPort+ set but the other parameters identical to the first one:
 
 [source,shell]
 ----
@@ -232,6 +230,7 @@ And find in the response
 === Start the Neo4j Embedded in HA mode ===
 
 If you are using maven and Neo4j Embedded, simply add the following dependency to your project:
+
 [source,xml]
 ----
       <dependency>
@@ -241,7 +240,7 @@ If you are using maven and Neo4j Embedded, simply add the following dependency t
       </dependency>
 ----
 
-If you prefer to download the jar files manually, they are included in the [http://neo4j.org/download/ Neo4j distribution].
+If you prefer to download the jar files manually, they are included in the http://neo4j.org/download/[Neo4j distribution].
 
 The difference in code when using Neo4j-HA is the creation of the graph database service.
 
@@ -311,8 +310,6 @@ ha.coordinators = localhost:2181,localhost:2182,localhost:2183
 
 enable_remote_shell = port=1332
 ----
-
-We need to change <code>machine id</code>, shell port and listen port of the ha server, then copy the db to a new path and startup:
 
 Now start the shell connecting to port 1332:
 
