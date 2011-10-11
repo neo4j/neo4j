@@ -190,9 +190,44 @@ neo4j_home3$ bin/neo4j start
 
 Now, you should be able to access the 3 servers (the first one being elected as master since it was started first) at 
 http://localhost:7474/webadmin/#/info/org.neo4j/High%20Availability/, http://localhost:7475/webadmin/#/info/org.neo4j/High%20Availability/ and 
-http://localhost:7476/webadmin/#/info/org.neo4j/High%20Availability/ and check the status of the HA configuration.
+http://localhost:7476/webadmin/#/info/org.neo4j/High%20Availability/ and check the status of the HA configuration. Alternatively, the REST
+API is exposing JMX, so you can check the HA JMX bean with e.g.
 
+[source,shell]
+----
+curl -H "Content-Type:application/json" -d '["org.neo4j:*"]' http://localhost:7474/db/manage/server/jmx/query
+----
 
+And find in the response
+
+[source,shell]
+----
+"description" : "Information about all instances in this cluster",
+    "name" : "InstancesInCluster",
+    "value" : [ {
+      "description" : "org.neo4j.management.InstanceInfo",
+      "value" : [ {
+        "description" : "address",
+        "name" : "address"
+      }, {
+        "description" : "instanceId",
+        "name" : "instanceId"
+      }, {
+        "description" : "lastCommittedTransactionId",
+        "name" : "lastCommittedTransactionId",
+        "value" : 1
+      }, {
+        "description" : "machineId",
+        "name" : "machineId",
+        "value" : 1
+      }, {
+        "description" : "master",
+        "name" : "master",
+        "value" : true
+      } ],
+      "type" : "org.neo4j.management.InstanceInfo"
+    }
+----
 
 === Start the Neo4j Embedded in HA mode ===
 
