@@ -39,7 +39,7 @@
 		<jythonpath>../../main/python:$JYTHONPATH</jythonpath>
 		<build.number>0</build.number>
 
-		<neo-version>${project.version}</neo-version>
+		<neo4j.version>1.5-SNAPSHOT</neo4j.version>
 		<gremlin.version>1.2</gremlin.version>
 	</properties>
 
@@ -67,7 +67,7 @@ the relevant Commercial Agreement.
 		<dependency>
 			<groupId>org.neo4j</groupId>
 			<artifactId>neo4j</artifactId>
-			<version>${neo-version}</version>
+			<version>${neo4j.version}</version>
 		</dependency>
 
 	</dependencies>
