@@ -95,7 +95,7 @@ class ExecutionEngine(graph: GraphDatabaseService)
         case None =>
         case Some(aggr) =>
         {
-          context.pipe = new AggregationPipe(context.pipe, returns.returnItems, aggr.aggregationItems)
+          context.pipe = new EagerAggregationPipe(context.pipe, returns.returnItems, aggr.aggregationItems)
         }
       }
 

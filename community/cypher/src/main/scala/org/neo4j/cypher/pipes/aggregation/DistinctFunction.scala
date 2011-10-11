@@ -19,20 +19,18 @@
  */
 package org.neo4j.cypher.pipes.aggregation
 
-/**
- * Base class for aggregation functions. The function is stateful
- * and aggregates by having it's apply method called once for every
- * row that matches the key.
- */
-abstract class AggregationFunction {
-  /**
-   * Adds this data to the aggregated total.
-   */
-  def apply(data: Map[String, Any])
+import org.neo4j.cypher.commands.Value
 
-  /**
-   * The aggregated result.
-   */
-  def result: Any
+class DistinctFunction(value:Value, inner:AggregationFunction) extends AggregationFunction {
+  val seen = scala.collection.mutable.Set[Any]()
+
+  def apply(m: Map[String, Any]) {
+    val data = value(m)
+    if(!seen.contains(data)) {
+      seen += data
+      inner(m)
+    }
+  }
+
+  def result: Any = inner.result
 }
-

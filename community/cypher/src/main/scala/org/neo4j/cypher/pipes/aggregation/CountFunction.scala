@@ -19,20 +19,17 @@
  */
 package org.neo4j.cypher.pipes.aggregation
 
-/**
- * Base class for aggregation functions. The function is stateful
- * and aggregates by having it's apply method called once for every
- * row that matches the key.
- */
-abstract class AggregationFunction {
-  /**
-   * Adds this data to the aggregated total.
-   */
-  def apply(data: Map[String, Any])
+import org.neo4j.cypher.commands.Value
 
-  /**
-   * The aggregated result.
-   */
-  def result: Any
+class CountFunction(value:Value) extends AggregationFunction {
+  var count = 0
+
+  def apply(data: Map[String, Any]) {
+    value(data) match {
+      case null =>
+      case _ => count = count + 1
+    }
+  }
+
+  def result: Int = count
 }
-
