@@ -29,6 +29,12 @@
     Python bindings for the embedded Neo4j graph database.
 	</description>
 
+  <scm>
+    <connection>scm:git:git://github.com/neo4j/python-embedded.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/python-embedded.git</developerConnection>
+    <url>https://github.com/neo4j/python-embedded</url>
+  </scm>
+
 	<properties>
 		<license-text.header>GPL-3-header.txt</license-text.header>
 		<python>python</python>
@@ -284,6 +290,13 @@ the relevant Commercial Agreement.
 		</profile>
 	</profiles>
 
+  
+  <distributionManagement>
+    <site>
+      <id>neo4j-site</id>
+      <url>scpexe://components.neo4j.org/home/neo/components/${project.artifactId}/${project.version}</url>
+    </site>
+  </distributionManagement>
 
 </project>
 
