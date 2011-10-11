@@ -8,7 +8,18 @@ there isn't enough memory for that Neo4j will try and make the best use of
 the memory it gets (regions of the file that get accessed often will more
 likely be memory mapped).
 
-Neo4j makes heavy use of the +java.nio+ package that got introduced in Java 1.4. Native I/O may result in memory being allocated outside the normal Java heap so that memory usage needs to be taken into consideration. A well configured OS with large disk caches will help a lot once we get cache misses in the node and relationship caches. Therefore it is not a good idea to use all available memory as Java heap. 
+[IMPORTANT]
+Neo4j makes heavy use of the +java.nio+ package. Native I/O will result in
+memory being allocated outside the normal Java heap so  that memory usage
+needs to be taken into consideration. Other processes running on the OS will
+impact the availability of such memory. Neo4j will require all of the heap
+memory of the JVM plus the memory to be used for memory mapping to be available
+as physical memory. Other processes may thus not use more than what is
+available after the configured memory allocation is made for Neo4j.
+
+A well configured OS 
+with large disk caches will help a lot once we get cache misses in the node 
+and relationship caches. Therefore it is not a good idea to use all available memory as Java heap. 
 
 If you look into the directory of your Neo4j database, you will find its store files, all prefixed by +neostore+:
 
