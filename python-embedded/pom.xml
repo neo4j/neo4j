@@ -8,9 +8,8 @@
 	WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
 	FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details. 
 	You should have received a copy of the GNU General Public License along with 
-	this program. If not, see <http://www.gnu.org/licenses/>. -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	this program. If not, see <http://www.gnu.org/licenses />. -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.neo4j.build</groupId>
@@ -22,7 +21,7 @@
 	<groupId>org.neo4j.drivers</groupId>
 	<artifactId>neo4j-python-embedded</artifactId>
 	<!-- "RV" is for the release.py script -->
-	<version><!--RV:-->1.5-SNAPSHOT</version>
+	<version><!--RV:-->1.5.M02</version>
 	<name>Embedded Neo4j Python bindings</name>
 	<packaging>jar</packaging>
 	<description>
@@ -109,13 +108,13 @@ the relevant Commercial Agreement.
 							<source> 
 							def version = project.version
 							
-							// 1.5-SNAPSHOT -> 1.5.dev1
+							// 1.5-SNAPSHOT -&gt; 1.5.dev1
 							version = version.replace("-SNAPSHOT", ".dev" + project.properties['build.number'])
 							
-							// 1.5.RC1 -> 1.5.c1 
+							// 1.5.RC1 -&gt; 1.5.c1 
 						    version = version.replace("RC","c")
 
-							// 1.5.M01 -> 1.5.b1
+							// 1.5.M01 -&gt; 1.5.b1
 							version = version.replace("M0","b") 
 							version = version.replace("M","b")
 							project.properties['pythonic_version']	= version
@@ -248,13 +247,10 @@ the relevant Commercial Agreement.
 								</goals>
 								<configuration>
 									<target>
-										<unzip
-											src="${basedir}/target/${project.build.finalName}-python-dist.zip"
-											dest="${basedir}/target/" overwrite="true" />
+										<unzip src="${basedir}/target/${project.build.finalName}-python-dist.zip" dest="${basedir}/target/" overwrite="true" />
 
 										<!-- Windows 32bit installer -->
-										<exec executable="python" failonerror="true"
-											dir="${basedir}/target/neo4j-embedded">
+										<exec executable="python" failonerror="true" dir="${basedir}/target/neo4j-embedded">
 											<arg value="setup.py" />
 											<arg value="build" />
 											<arg value="--plat-name=win-amd64" />
@@ -263,8 +259,7 @@ the relevant Commercial Agreement.
 										</exec>
 
 										<!-- Windows 64bit installer -->
-										<exec executable="python" failonerror="true"
-											dir="${basedir}/target/neo4j-embedded">
+										<exec executable="python" failonerror="true" dir="${basedir}/target/neo4j-embedded">
 											<arg value="setup.py" />
 											<arg value="build" />
 											<arg value="--plat-name=win32" />
@@ -273,8 +268,7 @@ the relevant Commercial Agreement.
 										</exec>
 
 										<!-- Source distribution -->
-										<exec executable="python" failonerror="true"
-											dir="${basedir}/target/neo4j-embedded">
+										<exec executable="python" failonerror="true" dir="${basedir}/target/neo4j-embedded">
 											<arg value="setup.py" />
 											<arg value="sdist" />
 											<arg value="--formats=gztar,zip" />
