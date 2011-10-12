@@ -21,6 +21,8 @@ package slavetest.manual;
 
 import java.io.File;
 
+import org.neo4j.test.ha.LocalhostZooKeeperCluster;
+
 public class ManualZooKeepers
 {
     public static final File PATH = new File( "var/zoo" );
@@ -28,16 +30,10 @@ public class ManualZooKeepers
     public static void main( String[] args ) throws Exception
     {
         System.out.println( "Starting zoo keeper cluster (takes a couple of seconds)..." );
-        final LocalZooKeeperCluster cluster = new LocalZooKeeperCluster( 3, PATH );
-        Runtime.getRuntime().addShutdownHook( new Thread()
-        {
-            @Override
-            public void run()
-            {
-                cluster.shutdown();
-            }
-        } );
+        final LocalhostZooKeeperCluster zoo = new LocalhostZooKeeperCluster( ManualZooKeepers.class, 2181, 2182, 2183 );
         System.out.println( "Zoo keeper cluster started, awaiting ENTER" );
+        System.out.println( zoo.getConnectionString() );
         System.in.read();
+        zoo.shutdown();
     }
 }
