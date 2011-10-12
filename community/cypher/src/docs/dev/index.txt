@@ -156,3 +156,6 @@ include::ql/limit/index.txt[]
 
 include::ql/functions/index.txt[]
 
+:leveloffset: 2
+
+include::ql/cookbook/index.txt[]
