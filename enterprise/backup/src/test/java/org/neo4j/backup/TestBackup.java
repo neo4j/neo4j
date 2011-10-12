@@ -105,14 +105,19 @@ public class TestBackup
     {
         DbRepresentation initialDataSetRepresentation = createInitialDataSet( serverPath );
         ServerInterface server = startServer( serverPath );
+
+        // START SNIPPET: onlineBackup
         OnlineBackup backup = OnlineBackup.from( "localhost" );
         backup.full( backupPath );
+        // END SNIPPET: onlineBackup
         assertEquals( initialDataSetRepresentation, DbRepresentation.of( backupPath ) );
         shutdownServer( server );
 
         DbRepresentation furtherRepresentation = addMoreData( serverPath );
         server = startServer( serverPath );
+        // START SNIPPET: onlineBackup
         backup.incremental( backupPath );
+        // END SNIPPET: onlineBackup
         assertEquals( furtherRepresentation, DbRepresentation.of( backupPath ) );
         shutdownServer( server );
     }
