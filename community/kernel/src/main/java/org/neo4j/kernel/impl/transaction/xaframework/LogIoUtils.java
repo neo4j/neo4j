@@ -117,23 +117,24 @@ public class LogIoUtils
         readIntoBufferAndFlip( ByteBuffer.wrap( branchId ), channel, branchIdLength );
         int identifier = readNextInt( buf, channel );
         int formatId = readNextInt( buf, channel );
+        long timeWritten = readNextLong( buf, channel );
 
         // re-create the transaction
         Xid xid = new XidImpl( globalId, branchId, formatId );
-        return new LogEntry.Start( xid, identifier, -1 );
+        return new LogEntry.Start( xid, identifier, -1, timeWritten );
     }
 
     private static LogEntry.Prepare readTxPrepareEntry( ByteBuffer buf,
             ReadableByteChannel channel ) throws IOException, ReadPastEndException
     {
-        return new LogEntry.Prepare( readNextInt( buf, channel ) );
+        return new LogEntry.Prepare( readNextInt( buf, channel ), readNextLong( buf, channel ) );
     }
 
     private static LogEntry.OnePhaseCommit readTxOnePhaseCommitEntry( ByteBuffer buf,
             ReadableByteChannel channel ) throws IOException, ReadPastEndException
     {
         return new LogEntry.OnePhaseCommit( readNextInt( buf, channel ),
-                readNextLong( buf, channel ), readNextInt( buf, channel ) );
+                readNextLong( buf, channel ), readNextInt( buf, channel ), readNextLong( buf, channel ) );
     }
 
     private static LogEntry.Done readTxDoneEntry( ByteBuffer buf,
@@ -146,7 +147,7 @@ public class LogIoUtils
             ReadableByteChannel channel ) throws IOException, ReadPastEndException
     {
         return new LogEntry.TwoPhaseCommit( readNextInt( buf, channel ),
-                readNextLong( buf, channel ), readNextInt( buf, channel ) );
+                readNextLong( buf, channel ), readNextInt( buf, channel ), readNextLong( buf, channel ) );
     }
 
     private static LogEntry.Command readTxCommandEntry(
@@ -171,7 +172,8 @@ public class LogIoUtils
         }
         else if ( entry instanceof LogEntry.Start )
         {
-            writeStart( buffer, entry.getIdentifier(), ( (LogEntry.Start) entry ).getXid() );
+            writeStart( buffer, entry.getIdentifier(), ( (LogEntry.Start) entry ).getXid(),
+                    ((LogEntry.Start) entry).getTimeWritten() );
         }
         else if ( entry instanceof LogEntry.Done )
         {
@@ -181,30 +183,30 @@ public class LogIoUtils
         {
             LogEntry.Commit commit = (LogEntry.Commit) entry;
             writeCommit( false, buffer, commit.getIdentifier(), commit.getTxId(),
-                    commit.getMasterId() );
+                    commit.getMasterId(), ((LogEntry.OnePhaseCommit) entry).getTimeWritten() );
         }
         else if ( entry instanceof LogEntry.Prepare )
         {
-            writePrepare( buffer, entry.getIdentifier() );
+            writePrepare( buffer, entry.getIdentifier(), ((LogEntry.Prepare) entry).getTimeWritten() );
         }
         else if ( entry instanceof LogEntry.TwoPhaseCommit )
         {
             LogEntry.Commit commit = (LogEntry.Commit) entry;
             writeCommit( true, buffer, commit.getIdentifier(), commit.getTxId(),
-                    commit.getMasterId() );
+                    commit.getMasterId(), ((LogEntry.TwoPhaseCommit) entry).getTimeWritten() );
         }
     }
 
-    public static void writePrepare( LogBuffer buffer, int identifier ) throws IOException
+    public static void writePrepare( LogBuffer buffer, int identifier, long timeWritten ) throws IOException
     {
-        buffer.put( LogEntry.TX_PREPARE ).putInt( identifier );
+        buffer.put( LogEntry.TX_PREPARE ).putInt( identifier ).putLong( timeWritten );
     }
 
     public static void writeCommit( boolean twoPhase, LogBuffer buffer, int identifier, long txId,
-            int masterId ) throws IOException
+            int masterId, long timeWritten ) throws IOException
     {
         buffer.put( twoPhase ? LogEntry.TX_2P_COMMIT : LogEntry.TX_1P_COMMIT )
-              .putInt( identifier ).putLong( txId ).putInt( masterId );
+              .putInt( identifier ).putLong( txId ).putInt( masterId ).putLong( timeWritten );
     }
 
     public static void writeDone( LogBuffer buffer, int identifier ) throws IOException
@@ -217,7 +219,7 @@ public class LogIoUtils
         buffer.put( LogEntry.DONE ).putInt( identifier );
     }
 
-    public static void writeStart( LogBuffer buffer, int identifier, Xid xid )
+    public static void writeStart( LogBuffer buffer, int identifier, Xid xid, long timeWritten )
             throws IOException
     {
         byte globalId[] = xid.getGlobalTransactionId();
@@ -225,7 +227,7 @@ public class LogIoUtils
         int formatId = xid.getFormatId();
         buffer.put( LogEntry.TX_START ).put( (byte) globalId.length ).put(
                 (byte) branchId.length ).put( globalId ).put( branchId ).putInt( identifier ).putInt(
-                formatId );
+                formatId ).putLong( timeWritten );
     }
 
     public static void writeCommand( LogBuffer buffer, int identifier, XaCommand command )

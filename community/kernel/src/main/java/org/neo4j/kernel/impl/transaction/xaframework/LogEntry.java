@@ -21,10 +21,15 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import javax.transaction.xa.Xid;
 
+import org.neo4j.helpers.Format;
+
 public abstract class LogEntry
 {
-    // version 1 as of 2011-02-22
-    static final byte CURRENT_VERSION = (byte) 1;
+    /*
+     * version 1 as of 2011-02-22
+     * version 2 as of 2011-10-12
+     */
+    static final byte CURRENT_VERSION = (byte) 2;
     // empty record due to memory mapped file
     public static final byte EMPTY = (byte) 0;
     public static final byte TX_START = (byte) 1;
@@ -49,13 +54,15 @@ public abstract class LogEntry
     public static class Start extends LogEntry
     {
         private final Xid xid;
+        private final long timeWritten;
         private long startPosition;
 
-        Start( Xid xid, int identifier, long startPosition )
+        Start( Xid xid, int identifier, long startPosition, long timeWritten )
         {
             super( identifier );
             this.xid = xid;
             this.startPosition = startPosition;
+            this.timeWritten = timeWritten;
         }
 
         public Xid getXid()
@@ -72,25 +79,38 @@ public abstract class LogEntry
         {
             this.startPosition = position;
         }
+        
+        public long getTimeWritten()
+        {
+            return timeWritten;
+        }
 
         @Override
         public String toString()
         {
-            return "Start[" + getIdentifier() + ", " + xid + "]";
+            return "Start[" + getIdentifier() + ", " + xid + ", " + timestamp( timeWritten ) + "]";
         }
     }
 
     static class Prepare extends LogEntry
     {
-        Prepare( int identifier )
+        private final long timeWritten;
+
+        Prepare( int identifier, long timeWritten )
         {
             super( identifier );
+            this.timeWritten = timeWritten;
+        }
+        
+        public long getTimeWritten()
+        {
+            return timeWritten;
         }
 
         @Override
         public String toString()
         {
-            return "Prepare[" + getIdentifier() + "]";
+            return "Prepare[" + getIdentifier() + ", " + timestamp( timeWritten ) + "]";
         }
     }
 
@@ -98,12 +118,14 @@ public abstract class LogEntry
     {
         private final long txId;
         private final int masterId;
+        private final long timeWritten;
 
-        Commit( int identifier, long txId, int masterId )
+        Commit( int identifier, long txId, int masterId, long timeWritten )
         {
             super( identifier );
             this.txId = txId;
             this.masterId = masterId;
+            this.timeWritten = timeWritten;
         }
 
         public long getTxId()
@@ -115,19 +137,24 @@ public abstract class LogEntry
         {
             return masterId;
         }
+        
+        public long getTimeWritten()
+        {
+            return timeWritten;
+        }
     }
 
     public static class OnePhaseCommit extends Commit
     {
-        OnePhaseCommit( int identifier, long txId, int masterId )
+        OnePhaseCommit( int identifier, long txId, int masterId, long timeWritten )
         {
-            super( identifier, txId, masterId );
+            super( identifier, txId, masterId, timeWritten );
         }
 
         @Override
         public String toString()
         {
-            return "1PC[" + getIdentifier() + ", txId=" + getTxId() + ", masterId=" + getMasterId() + "]";
+            return "1PC[" + getIdentifier() + ", txId=" + getTxId() + ", masterId=" + getMasterId() + ", " + timestamp( getTimeWritten() ) + "]";
         }
     }
 
@@ -147,15 +174,15 @@ public abstract class LogEntry
 
     public static class TwoPhaseCommit extends Commit
     {
-        TwoPhaseCommit( int identifier, long txId, int masterId )
+        TwoPhaseCommit( int identifier, long txId, int masterId, long timeWritten )
         {
-            super( identifier, txId, masterId );
+            super( identifier, txId, masterId, timeWritten );
         }
 
         @Override
         public String toString()
         {
-            return "2PC[" + getIdentifier() + ", txId=" + getTxId() + ", machineId=" + getMasterId() + "]";
+            return "2PC[" + getIdentifier() + ", txId=" + getTxId() + ", machineId=" + getMasterId() + ", " + timestamp( getTimeWritten() ) + "]";
         }
     }
 
@@ -184,5 +211,10 @@ public abstract class LogEntry
     public void setIdentifier( int newXidIdentifier )
     {
         identifier = newXidIdentifier;
+    }
+
+    public String timestamp( long timeWritten )
+    {
+        return Format.date( timeWritten ) + "/" + timeWritten;
     }
 }

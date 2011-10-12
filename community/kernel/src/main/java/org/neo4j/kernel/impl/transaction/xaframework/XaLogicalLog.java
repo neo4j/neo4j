@@ -278,8 +278,9 @@ public class XaLogicalLog
         try
         {
             long position = writeBuffer.getFileChannelPosition();
-            LogEntry.Start start = new LogEntry.Start( xid, xidIdent, position );
-            LogIoUtils.writeStart( writeBuffer, xidIdent, xid );
+            long timeWritten = System.currentTimeMillis();
+            LogEntry.Start start = new LogEntry.Start( xid, xidIdent, position, timeWritten );
+            LogIoUtils.writeStart( writeBuffer, xidIdent, xid, timeWritten );
             xidIdentMap.put( xidIdent, start );
         }
         catch ( IOException e )
@@ -296,7 +297,7 @@ public class XaLogicalLog
         assert startEntry != null;
         try
         {
-            LogIoUtils.writePrepare( writeBuffer, identifier );
+            LogIoUtils.writePrepare( writeBuffer, identifier, System.currentTimeMillis() );
             writeBuffer.writeOut();
         }
         catch ( IOException e )
@@ -315,7 +316,7 @@ public class XaLogicalLog
         assert txId != -1;
         try
         {
-            LogIoUtils.writeCommit( false, writeBuffer, identifier, txId, masterId );
+            LogIoUtils.writeCommit( false, writeBuffer, identifier, txId, masterId, System.currentTimeMillis() );
             writeBuffer.force();
             cacheTxStartPosition( txId, masterId, startEntry );
         }
@@ -392,7 +393,7 @@ public class XaLogicalLog
         assert txId != -1;
         try
         {
-            LogIoUtils.writeCommit( true, writeBuffer, identifier, txId, masterId );
+            LogIoUtils.writeCommit( true, writeBuffer, identifier, txId, masterId, System.currentTimeMillis() );
             writeBuffer.force();
             cacheTxStartPosition( txId, masterId, startEntry );
         }
@@ -1368,7 +1369,7 @@ public class XaLogicalLog
         startEntry.setStartPosition( startEntryPosition );
 //        System.out.println( "applyTxWithoutTxId#before 1PC @ pos: " + writeBuffer.getFileChannelPosition() );
         LogEntry.OnePhaseCommit commit = new LogEntry.OnePhaseCommit(
-                xidIdent, nextTxId, masterId );
+                xidIdent, nextTxId, masterId, System.currentTimeMillis() );
         LogIoUtils.writeLogEntry( commit, writeBuffer );
         // need to manually force since xaRm.commit will not do it (transaction marked as recovered)
         writeBuffer.force();
