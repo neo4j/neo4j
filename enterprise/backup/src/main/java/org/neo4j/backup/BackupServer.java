@@ -28,13 +28,14 @@ import org.neo4j.com.SlaveContext;
 
 class BackupServer extends Server<TheBackupInterface, Object>
 {
+    static final byte PROTOCOL_VERSION = 1;
     private final BackupRequestType[] contexts = BackupRequestType.values();
     static int DEFAULT_PORT = DEFAULT_BACKUP_PORT;
     static final int FRAME_LENGTH = Protocol.MEGA*4;
     
     public BackupServer( TheBackupInterface realMaster, int port, String storeDir )
     {
-        super( realMaster, port, storeDir, FRAME_LENGTH );
+        super( realMaster, port, storeDir, FRAME_LENGTH, PROTOCOL_VERSION );
     }
 
     @Override

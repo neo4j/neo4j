@@ -44,11 +44,13 @@ public class DechunkingChannelBuffer implements ChannelBuffer
     private boolean hasMarkedReaderIndex;
     private final int timeoutSeconds;
     private boolean failure;
+    private final byte applicationProtocolVersion;
 
-    DechunkingChannelBuffer( BlockingReadHandler<ChannelBuffer> reader, int timeoutSeconds )
+    DechunkingChannelBuffer( BlockingReadHandler<ChannelBuffer> reader, int timeoutSeconds, byte applicationProtocolVersion )
     {
         this.reader = reader;
         this.timeoutSeconds = timeoutSeconds;
+        this.applicationProtocolVersion = applicationProtocolVersion;
         readNextChunk();
     }
     
@@ -84,10 +86,11 @@ public class DechunkingChannelBuffer implements ChannelBuffer
     private void readNextChunk()
     {
         ChannelBuffer readBuffer = readNext();
-        byte header = readBuffer.readByte();
-        more = (header & 0x1) != 0;
-        failure = (header & 0x2) != 0;
-        if ( (header & 0xFC) != 0 ) throw new ComException( "Unexpected header " + header );
+        byte[] header = new byte[2];
+        readBuffer.readBytes( header );
+        more = (header[0] & 0x1) != 0;
+        failure = (header[0] & 0x2) != 0;
+        assertSameProtocolVersion( header, applicationProtocolVersion );
         
         if ( !more && buffer == null )
         {
@@ -106,6 +109,26 @@ public class DechunkingChannelBuffer implements ChannelBuffer
         {
             Throwable failure = readAndThrowFailureResponse();
             throw new ComException( "Server side exception", failure );
+        }
+    }
+
+    static void assertSameProtocolVersion( byte[] header, byte applicationProtocolVersion )
+    {
+        /* [aaaa,aaaa][pppp,ppoc]
+         * Only 6 bits for internal protocol version, yielding 64 values. It's ok to wrap around because
+         * It's highly unlikely that instances that are so far apart in versions will communicate
+         * with each other.
+         */ 
+        byte internalProtocolVersion = (byte) ((header[0] & 0x7C) >>> 2);
+        if ( internalProtocolVersion != Server.INTERNAL_PROTOCOL_VERSION )
+        {
+            throw new ComException( "Unexpected internal protocol version " + internalProtocolVersion +
+                    ", expected " + Server.INTERNAL_PROTOCOL_VERSION );
+        }
+        if ( header[1] != applicationProtocolVersion )
+        {
+            throw new ComException( "Unexpected application protocol version " + header[1] +
+                    ", expected " + applicationProtocolVersion );
         }
     }
 

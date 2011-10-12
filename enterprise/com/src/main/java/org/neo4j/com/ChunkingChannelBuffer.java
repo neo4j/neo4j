@@ -51,30 +51,36 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
     private int continuationPosition;
     private final AtomicInteger writeAheadCounter = new AtomicInteger();
     private volatile boolean failure;
+    private final byte applicationProtocolVersion;
 
-    public ChunkingChannelBuffer( ChannelBuffer buffer, Channel channel, int capacity )
+    public ChunkingChannelBuffer( ChannelBuffer buffer, Channel channel, int capacity, byte applicationProtocolVersion )
     {
         this.buffer = buffer;
         this.channel = channel;
         this.capacity = capacity;
+        this.applicationProtocolVersion = applicationProtocolVersion;
         addRoomForContinuationHeader();
     }
 
     private void addRoomForContinuationHeader()
     {
         continuationPosition = writerIndex();
-        // [    ,  oc]
-        buffer.writeByte( header( failure, false ) );
+        // byte 0: [pppp,ppoc] p: internal protocol version, o: outcome, c: continuation
+        // byte 1: [aaaa,aaaa] a: application protocol version
+        buffer.writeBytes( header( CONTINUATION_LAST ) );
     }
     
-    private static byte header( boolean failure, boolean more )
+    private byte[] header( byte continuation )
     {
-        return (byte) (((failure?OUTCOME_FAILURE:OUTCOME_SUCCESS) << 1) | (more?CONTINUATION_MORE:CONTINUATION_LAST));
+        byte[] header = new byte[2];
+        header[0] = (byte)((Server.INTERNAL_PROTOCOL_VERSION << 2) | ((failure?OUTCOME_FAILURE:OUTCOME_SUCCESS) << 1) | continuation );
+        header[1] = applicationProtocolVersion;
+        return header;
     }
     
-    private void setContinuation( byte value )
+    private void setContinuation( byte continuation )
     {
-        buffer.setByte( continuationPosition, value );
+        buffer.setBytes( continuationPosition, header( continuation ) );
     }
 
     public ChannelBufferFactory factory()

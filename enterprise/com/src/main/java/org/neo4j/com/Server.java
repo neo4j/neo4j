@@ -65,6 +65,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public abstract class Server<M, R> extends Protocol implements ChannelPipelineFactory
 {
+    static final byte INTERNAL_PROTOCOL_VERSION = 1;
     public static final int DEFAULT_BACKUP_PORT = 6362;
     
     // It's ok if there are more transactions, since these worker threads doesn't
@@ -96,17 +97,20 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
     // events to not be sent. This is merely a safety net to catch the remained of the closed
     // channels that netty doesn't tell us about.
     private final ScheduledExecutorService silentChannelExecutor;
+
+    private final byte applicationProtocolVersion;
     
-    public Server( M realMaster, final int port, String storeDir, int frameLength )
+    public Server( M realMaster, final int port, String storeDir, int frameLength, byte applicationProtocolVersion )
     {
-        this( realMaster, port, storeDir, frameLength, DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS );
+        this( realMaster, port, storeDir, frameLength, applicationProtocolVersion, DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS );
     }
     
-    public Server( M realMaster, final int port, String storeDir, int frameLength,
+    public Server( M realMaster, final int port, String storeDir, int frameLength, byte applicationProtocolVersion,
             int maxNumberOfConcurrentTransactions )
     {
         this.realMaster = realMaster;
         this.frameLength = frameLength;
+        this.applicationProtocolVersion = applicationProtocolVersion;
         this.msgLog = StringLogger.getLogger( storeDir );
         executor = Executors.newCachedThreadPool();
         masterCallExecutor = Executors.newCachedThreadPool();
@@ -312,7 +316,10 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
 
     protected void handleRequest( ChannelBuffer buffer, final Channel channel ) throws IOException
     {
-        byte continuation = buffer.readByte();
+        byte[] header = new byte[2];
+        buffer.readBytes( header );
+        DechunkingChannelBuffer.assertSameProtocolVersion( header, applicationProtocolVersion );
+        byte continuation = (byte) (header[0] & 0x1);
         if ( continuation == ChunkingChannelBuffer.CONTINUATION_MORE )
         {
             PartialRequest partialRequest = partialRequests.get( channel );
@@ -356,7 +363,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
             }
 
             bufferToWriteTo.clear();
-            final ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( bufferToWriteTo, channel, frameLength );
+            final ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( bufferToWriteTo, channel, frameLength, applicationProtocolVersion );
             submitSilent( masterCallExecutor, masterCaller( type, channel, context, chunkingBuffer, bufferToReadFrom, targetBuffers.other() ) );
         }
     }

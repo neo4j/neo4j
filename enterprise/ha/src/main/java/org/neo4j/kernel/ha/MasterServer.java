@@ -39,11 +39,13 @@ import org.neo4j.kernel.ha.MasterClient.HaRequestType;
  */
 public class MasterServer extends Server<Master, Void>
 {
+    static final byte PROTOCOL_VERSION = 1;
+    
     static final int FRAME_LENGTH = Protocol.DEFAULT_FRAME_LENGTH;
     
     public MasterServer( Master realMaster, final int port, String storeDir )
     {
-        super( realMaster, port, storeDir, FRAME_LENGTH );
+        super( realMaster, port, storeDir, FRAME_LENGTH, PROTOCOL_VERSION );
     }
     
     @Override

@@ -77,12 +77,14 @@ public abstract class Client<M> implements ChannelPipelineFactory
     private StoreId myStoreId;
     private final int frameLength;
     private final int readTimeout;
+    private final byte applicationProtocolVersion;
 
-    public Client( String hostNameOrIp, int port, GraphDatabaseService graphDb, int frameLength,
+    public Client( String hostNameOrIp, int port, GraphDatabaseService graphDb, int frameLength, byte applicationProtocolVersion,
             int readTimeout, int maxConcurrentChannels, int maxUnusedPoolSize )
     {
         this.graphDb = graphDb;
         this.frameLength = frameLength;
+        this.applicationProtocolVersion = applicationProtocolVersion;
         this.readTimeout = readTimeout;
         channelPool = new ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>>(
                 maxConcurrentChannels, maxUnusedPoolSize )
@@ -145,7 +147,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
             channelContext.second().clear();
             
             ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( channelContext.second(),
-                    channel, frameLength );
+                    channel, frameLength, applicationProtocolVersion );
             chunkingBuffer.writeByte( type.id() );
             writeContext( type, context, chunkingBuffer );
             serializer.write( chunkingBuffer, channelContext.third() );
@@ -155,7 +157,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
             @SuppressWarnings( "unchecked" )
             BlockingReadHandler<ChannelBuffer> reader = (BlockingReadHandler<ChannelBuffer>)
                     channel.getPipeline().get( "blockingHandler" );
-            DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader, readTimeout );
+            DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader, readTimeout, applicationProtocolVersion );
             
             R response = deserializer.read( dechunkingBuffer, channelContext.third() );
             StoreId storeId = readStoreId( dechunkingBuffer, channelContext.third() );

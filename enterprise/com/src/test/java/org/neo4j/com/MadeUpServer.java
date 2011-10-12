@@ -28,7 +28,7 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
 
     public MadeUpServer( MadeUpCommunicationInterface realMaster, int port )
     {
-        super( realMaster, port, null, Protocol.DEFAULT_FRAME_LENGTH );
+        super( realMaster, port, null, Protocol.DEFAULT_FRAME_LENGTH, (byte)0 );
     }
 
     @Override
