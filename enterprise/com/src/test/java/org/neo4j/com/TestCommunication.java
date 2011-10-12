@@ -32,6 +32,9 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
 
 public class TestCommunication
 {
+    private static final byte INTERNAL_PROTOCOL_VERSION = 0;
+    private static final byte APPLICATION_PROTOCOL_VERSION = 0;
+    
     private static final int PORT = 1234;
     private static final String PATH = "target/tmp";
     private StoreId storeIdToUse;
@@ -47,8 +50,8 @@ public class TestCommunication
     public void clientGetResponseFromServerViaComLayer() throws Exception
     {
         MadeUpImplementation serverImplementation = new MadeUpImplementation( storeIdToUse );
-        MadeUpServer server = new MadeUpServer( serverImplementation, PORT );
-        MadeUpClient client = new MadeUpClient( PORT, storeIdToUse );
+        MadeUpServer server = new MadeUpServer( serverImplementation, PORT, INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION );
+        MadeUpClient client = new MadeUpClient( PORT, storeIdToUse, INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION );
         
         int value1 = 10;
         int value2 = 5;
@@ -74,8 +77,8 @@ public class TestCommunication
     public void makeSureClientStoreIdsMustMatch() throws Exception
     {
         MadeUpImplementation serverImplementation = new MadeUpImplementation( storeIdToUse );
-        MadeUpServer server = new MadeUpServer( serverImplementation, PORT );
-        MadeUpClient client = new MadeUpClient( PORT, new StoreId( 10, 10 ) );
+        MadeUpServer server = new MadeUpServer( serverImplementation, PORT, INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION );
+        MadeUpClient client = new MadeUpClient( PORT, new StoreId( 10, 10 ), INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION );
         
         try
         {
@@ -97,8 +100,8 @@ public class TestCommunication
     public void makeSureServerStoreIdsMustMatch() throws Exception
     {
         MadeUpImplementation serverImplementation = new MadeUpImplementation( new StoreId( 10, 10 ) );
-        MadeUpServer server = new MadeUpServer( serverImplementation, PORT );
-        MadeUpClient client = new MadeUpClient( PORT, storeIdToUse );
+        MadeUpServer server = new MadeUpServer( serverImplementation, PORT, INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION );
+        MadeUpClient client = new MadeUpClient( PORT, storeIdToUse, INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION );
         
         try
         {
@@ -120,8 +123,8 @@ public class TestCommunication
     public void makeSureClientCanStreamBigData() throws Exception
     {
         MadeUpImplementation serverImplementation = new MadeUpImplementation( storeIdToUse );
-        MadeUpServer server = new MadeUpServer( serverImplementation, PORT );
-        MadeUpClient client = new MadeUpClient( PORT, storeIdToUse );
+        MadeUpServer server = new MadeUpServer( serverImplementation, PORT, INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION );
+        MadeUpClient client = new MadeUpClient( PORT, storeIdToUse, INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION );
         
         client.streamSomeData( new ToAssertionWriter(), 1024*1024*50 /*50 Mb*/ );
         
@@ -142,8 +145,8 @@ public class TestCommunication
                 return new Response<Void>( null, storeIdToUse, TransactionStream.EMPTY );
             }
         };
-        MadeUpServer server = new MadeUpServer( serverImplementation, PORT );
-        MadeUpClient client = new MadeUpClient( PORT, storeIdToUse );
+        MadeUpServer server = new MadeUpServer( serverImplementation, PORT, INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION );
+        MadeUpClient client = new MadeUpClient( PORT, storeIdToUse, INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION );
         
         try
         {
@@ -162,10 +165,10 @@ public class TestCommunication
     @Test
     public void communicateBetweenJvms() throws Exception
     {
-        ServerInterface server = new MadeUpServerProcess().start(
-                new Long[] {storeIdToUse.getCreationTime(), storeIdToUse.getRandomId()} );
+        ServerInterface server = new MadeUpServerProcess().start( new StartupData(
+                storeIdToUse.getCreationTime(), storeIdToUse.getRandomId(), INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION ) );
         server.awaitStarted();
-        MadeUpClient client = new MadeUpClient( MadeUpServerProcess.PORT, storeIdToUse );
+        MadeUpClient client = new MadeUpClient( MadeUpServerProcess.PORT, storeIdToUse, INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION );
         
         assertEquals( (Integer)(9*5), client.multiply( 9, 5 ).response() );
         client.streamSomeData( new ToAssertionWriter(), 1024*1024*10 );
@@ -178,8 +181,8 @@ public class TestCommunication
     public void throwingServerSideExceptionBackToClient() throws Exception
     {
         MadeUpImplementation serverImplementation = new MadeUpImplementation( storeIdToUse );
-        MadeUpServer server = new MadeUpServer( serverImplementation, PORT );
-        MadeUpClient client = new MadeUpClient( PORT, storeIdToUse );
+        MadeUpServer server = new MadeUpServer( serverImplementation, PORT, INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION );
+        MadeUpClient client = new MadeUpClient( PORT, storeIdToUse, INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION );
         
         String exceptionMessage = "The message";
         try
@@ -195,7 +198,82 @@ public class TestCommunication
         client.shutdown();
         server.shutdown();
     }
+    
+    @Test
+    public void applicationProtocolVersionsMustMatch() throws Exception
+    {
+        MadeUpImplementation serverImplementation = new MadeUpImplementation( storeIdToUse );
+        MadeUpServer server = new MadeUpServer( serverImplementation, PORT, INTERNAL_PROTOCOL_VERSION, (byte) (APPLICATION_PROTOCOL_VERSION+1) );
+        MadeUpClient client = new MadeUpClient( PORT, storeIdToUse, INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION );
+        
+        try
+        {
+            client.multiply( 10, 20 );
+            fail( "Shouldn't be able to communicate with different application protocol versions" );
+        }
+        catch ( IllegalProtocolVersionException e ) { /* Good */ } 
+        
+        client.shutdown();
+        server.shutdown();
+    }
 
+    @Test
+    public void applicationProtocolVersionsMustMatchMultiJvm() throws Exception
+    {
+        ServerInterface server = new MadeUpServerProcess().start( new StartupData(
+                storeIdToUse.getCreationTime(), storeIdToUse.getRandomId(), INTERNAL_PROTOCOL_VERSION, (byte)(APPLICATION_PROTOCOL_VERSION+1) ) );
+        server.awaitStarted();
+        MadeUpClient client = new MadeUpClient( MadeUpServerProcess.PORT, storeIdToUse, INTERNAL_PROTOCOL_VERSION,
+                APPLICATION_PROTOCOL_VERSION );
+        
+        try
+        {
+            client.multiply( 10, 20 );
+            fail( "Shouldn't be able to communicate with different application protocol versions" );
+        }
+        catch ( IllegalProtocolVersionException e ) { /* Good */ } 
+        
+        client.shutdown();
+        server.shutdown();
+    }
+    
+    @Test
+    public void internalProtocolVersionsMustMatch() throws Exception
+    {
+        MadeUpImplementation serverImplementation = new MadeUpImplementation( storeIdToUse );
+        MadeUpServer server = new MadeUpServer( serverImplementation, PORT, (byte)1, APPLICATION_PROTOCOL_VERSION );
+        MadeUpClient client = new MadeUpClient( PORT, storeIdToUse, (byte)2, APPLICATION_PROTOCOL_VERSION );
+        
+        try
+        {
+            client.multiply( 10, 20 );
+            fail( "Shouldn't be able to communicate with different application protocol versions" );
+        }
+        catch ( IllegalProtocolVersionException e ) { /* Good */ } 
+        
+        client.shutdown();
+        server.shutdown();
+    }
+
+    @Test
+    public void internalProtocolVersionsMustMatchMultiJvm() throws Exception
+    {
+        ServerInterface server = new MadeUpServerProcess().start( new StartupData(
+                storeIdToUse.getCreationTime(), storeIdToUse.getRandomId(), (byte)1, APPLICATION_PROTOCOL_VERSION ) );
+        server.awaitStarted();
+        MadeUpClient client = new MadeUpClient( MadeUpServerProcess.PORT, storeIdToUse, (byte)2, APPLICATION_PROTOCOL_VERSION );
+        
+        try
+        {
+            client.multiply( 10, 20 );
+            fail( "Shouldn't be able to communicate with different application protocol versions" );
+        }
+        catch ( IllegalProtocolVersionException e ) { /* Good */ } 
+        
+        client.shutdown();
+        server.shutdown();
+    }
+    
     private <E extends Exception> void assertCause( ComException comException,
             Class<E> expectedCause, String expectedCauseMessagee )
     {

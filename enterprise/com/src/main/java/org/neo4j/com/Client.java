@@ -135,6 +135,14 @@ public abstract class Client<M> implements ChannelPipelineFactory
         msgLog.logMessage( "Client connected to " + hostNameOrIp + ":" + port, true );
     }
     
+    /**
+     * Only exposed so that tests can control it. It's not configurable really.
+     */
+    protected byte getInternalProtocolVersion()
+    {
+        return Server.INTERNAL_PROTOCOL_VERSION;
+    }
+    
     protected <R> Response<R> sendRequest( RequestType<M> type, SlaveContext context,
             Serializer serializer, Deserializer<R> deserializer )
     {
@@ -147,7 +155,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
             channelContext.second().clear();
             
             ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( channelContext.second(),
-                    channel, frameLength, applicationProtocolVersion );
+                    channel, frameLength, getInternalProtocolVersion(), applicationProtocolVersion );
             chunkingBuffer.writeByte( type.id() );
             writeContext( type, context, chunkingBuffer );
             serializer.write( chunkingBuffer, channelContext.third() );
@@ -157,7 +165,8 @@ public abstract class Client<M> implements ChannelPipelineFactory
             @SuppressWarnings( "unchecked" )
             BlockingReadHandler<ChannelBuffer> reader = (BlockingReadHandler<ChannelBuffer>)
                     channel.getPipeline().get( "blockingHandler" );
-            DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader, readTimeout, applicationProtocolVersion );
+            DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader, readTimeout, getInternalProtocolVersion(),
+                    applicationProtocolVersion );
             
             R response = deserializer.read( dechunkingBuffer, channelContext.third() );
             StoreId storeId = readStoreId( dechunkingBuffer, channelContext.third() );

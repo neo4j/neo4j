@@ -25,10 +25,12 @@ import org.jboss.netty.channel.Channel;
 public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
 {
     private volatile boolean responseWritten;
+    private final byte internalProtocolVersion;
 
-    public MadeUpServer( MadeUpCommunicationInterface realMaster, int port )
+    public MadeUpServer( MadeUpCommunicationInterface realMaster, int port, byte internalProtocolVersion, byte applicationProtocolVersion )
     {
-        super( realMaster, port, null, Protocol.DEFAULT_FRAME_LENGTH, (byte)0 );
+        super( realMaster, port, null, Protocol.DEFAULT_FRAME_LENGTH, applicationProtocolVersion );
+        this.internalProtocolVersion = internalProtocolVersion;
     }
 
     @Override
@@ -38,6 +40,12 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
         responseWritten = true;
     }
 
+    @Override
+    protected byte getInternalProtocolVersion()
+    {
+        return internalProtocolVersion;
+    }
+    
     @Override
     protected RequestType<MadeUpCommunicationInterface> getRequestContext( byte id )
     {

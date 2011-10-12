@@ -31,14 +31,23 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
 public class MadeUpClient extends Client<MadeUpCommunicationInterface> implements MadeUpCommunicationInterface
 {
     private final StoreId storeIdToExpect;
+    private final byte internalProtocolVersion;
 
-    public MadeUpClient( int port, StoreId storeIdToExpect )
+    public MadeUpClient( int port, StoreId storeIdToExpect, byte internalProtocolVersion, byte applicationProtocolVersion )
     {
         super( "localhost", port, new NotYetExistingGraphDatabase( "target/something" ),
-                Protocol.DEFAULT_FRAME_LENGTH, (byte)0, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
+                Protocol.DEFAULT_FRAME_LENGTH, applicationProtocolVersion,
+                Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT );
         this.storeIdToExpect = storeIdToExpect;
+        this.internalProtocolVersion = internalProtocolVersion;
+    }
+    
+    @Override
+    protected byte getInternalProtocolVersion()
+    {
+        return internalProtocolVersion;
     }
 
     @Override

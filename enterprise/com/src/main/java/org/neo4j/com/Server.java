@@ -19,6 +19,8 @@
  */
 package org.neo4j.com;
 
+import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -175,6 +177,14 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
             }
         };
     }
+    
+    /**
+     * Only exposed so that tests can control it. It's not configurable really.
+     */
+    protected byte getInternalProtocolVersion()
+    {
+        return INTERNAL_PROTOCOL_VERSION;
+    }
 
     public ChannelPipeline getPipeline() throws Exception
     {
@@ -316,10 +326,8 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
 
     protected void handleRequest( ChannelBuffer buffer, final Channel channel ) throws IOException
     {
-        byte[] header = new byte[2];
-        buffer.readBytes( header );
-        DechunkingChannelBuffer.assertSameProtocolVersion( header, applicationProtocolVersion );
-        byte continuation = (byte) (header[0] & 0x1);
+        Byte continuation = readContinuationHeader( buffer, channel );
+        if ( continuation == null ) return;
         if ( continuation == ChunkingChannelBuffer.CONTINUATION_MORE )
         {
             PartialRequest partialRequest = partialRequests.get( channel );
@@ -363,9 +371,35 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
             }
 
             bufferToWriteTo.clear();
-            final ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( bufferToWriteTo, channel, frameLength, applicationProtocolVersion );
+            final ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( bufferToWriteTo, channel, frameLength,
+                    getInternalProtocolVersion(), applicationProtocolVersion );
             submitSilent( masterCallExecutor, masterCaller( type, channel, context, chunkingBuffer, bufferToReadFrom, targetBuffers.other() ) );
         }
+    }
+
+    private Byte readContinuationHeader( ChannelBuffer buffer, final Channel channel )
+    {
+        byte[] header = new byte[2];
+        buffer.readBytes( header );
+        try
+        {   // Read request header and assert correct internal/application protocol version
+            assertSameProtocolVersion( header, getInternalProtocolVersion(), applicationProtocolVersion );
+        }
+        catch ( final IllegalProtocolVersionException e )
+        {   // Version mismatch, fail with a good exception back to the client
+            final ChunkingChannelBuffer failureResponse = new ChunkingChannelBuffer( ChannelBuffers.dynamicBuffer(), channel,
+                    frameLength, getInternalProtocolVersion(), applicationProtocolVersion );
+            submitSilent( masterCallExecutor, new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    writeFailureResponse( e, failureResponse );
+                }
+            } );
+            return null;
+        }
+        return (byte) (header[0] & 0x1);
     }
 
     private Runnable masterCaller( final RequestType<M> type, final Channel channel, final SlaveContext context,

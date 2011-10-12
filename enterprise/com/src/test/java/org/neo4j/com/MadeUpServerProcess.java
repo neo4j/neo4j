@@ -22,18 +22,20 @@ package org.neo4j.com;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.test.subprocess.SubProcess;
 
-public class MadeUpServerProcess extends SubProcess<ServerInterface, Long[]> implements ServerInterface
+public class MadeUpServerProcess extends SubProcess<ServerInterface, StartupData> implements ServerInterface
 {
+    private static final long serialVersionUID = 1L;
+
     public static final int PORT = 8888;
 
     private volatile transient MadeUpServer server;
 
     @Override
-    protected void startup( Long[] creationTimeAndStoreId ) throws Throwable
+    protected void startup( StartupData data ) throws Throwable
     {
         MadeUpCommunicationInterface implementation = new MadeUpImplementation(
-                new StoreId( creationTimeAndStoreId[0], creationTimeAndStoreId[1] ) );
-        server = new MadeUpServer( implementation, 8888 );
+                new StoreId( data.creationTime, data.storeId ) );
+        server = new MadeUpServer( implementation, 8888, data.internalProtocolVersion, data.applicationProtocolVersion );
     }
 
     @Override

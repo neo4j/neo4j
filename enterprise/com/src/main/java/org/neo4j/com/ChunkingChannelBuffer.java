@@ -52,12 +52,14 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
     private final AtomicInteger writeAheadCounter = new AtomicInteger();
     private volatile boolean failure;
     private final byte applicationProtocolVersion;
+    private final byte internalProtocolVersion;
 
-    public ChunkingChannelBuffer( ChannelBuffer buffer, Channel channel, int capacity, byte applicationProtocolVersion )
+    public ChunkingChannelBuffer( ChannelBuffer buffer, Channel channel, int capacity, byte internalProtocolVersion, byte applicationProtocolVersion )
     {
         this.buffer = buffer;
         this.channel = channel;
         this.capacity = capacity;
+        this.internalProtocolVersion = internalProtocolVersion;
         this.applicationProtocolVersion = applicationProtocolVersion;
         addRoomForContinuationHeader();
     }
@@ -73,7 +75,7 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
     private byte[] header( byte continuation )
     {
         byte[] header = new byte[2];
-        header[0] = (byte)((Server.INTERNAL_PROTOCOL_VERSION << 2) | ((failure?OUTCOME_FAILURE:OUTCOME_SUCCESS) << 1) | continuation );
+        header[0] = (byte)((internalProtocolVersion << 2) | ((failure?OUTCOME_FAILURE:OUTCOME_SUCCESS) << 1) | continuation );
         header[1] = applicationProtocolVersion;
         return header;
     }
