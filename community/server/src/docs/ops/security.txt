@@ -28,8 +28,6 @@ To facilitate domain-specific authorization policies in Neo4j Server, SecurityRu
 registered with the server. This makes scenarios like user and role based security and
 authentication against external lookup services possible.
 
-:leveloffset: 0
-
 include::enforcing-server-authorization-rules.txt[]
 
 == Hosted Scripting ==
