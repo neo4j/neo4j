@@ -291,3 +291,16 @@ removeservice() {
       echo "Sorry, don't know how to install on ${DIST_OS}."
     fi
 }
+
+# Runs before the server command, making sure that whatever should be in place is
+# in place.
+checkandrepairenv() {
+    # Create data/log if missing, change owner if created.
+    if [ ! -d "$NEO4J_HOME"/data/log ]; then
+      echo "${NEO4J_HOME}/data/log was missing, recreating..."
+      mkdir "$NEO4J_HOME"/data/log
+      if [ $UID == 0 ] ; then
+        chown $NEO4J_USER "$NEO4J_HOME"/data/log
+      fi
+    fi
+}

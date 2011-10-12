@@ -124,6 +124,7 @@ startit() {
     printf "Starting $FRIENDLY_NAME..."
 
     buildclasspath
+    checkandrepairenv
 
     if [ $UID == 0 ] ; then
       su $NEO4J_USER -c "$JAVACMD -cp '$CLASSPATH' $JAVA_OPTS -DconfigFile=conf\coord-wrapper.conf \
@@ -167,6 +168,7 @@ console() {
     exitonnojava
     buildclasspath
     checkwriteaccess
+    checkandrepairenv
 
     $JAVACMD -cp "${CLASSPATH}" $JAVA_OPTS -DconfigFile=conf\coord-wrapper.conf \
       -Dlog4j.configuration=file:conf/log4j.properties \
