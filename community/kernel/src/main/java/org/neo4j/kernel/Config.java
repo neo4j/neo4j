@@ -165,10 +165,13 @@ public class Config
      */
     @Documented
     public static final String RELATIONSHIP_KEYS_INDEXABLE = "relationship_keys_indexable";
+
     /**
-     * A list of property names (comma separated) that will be ignored by the
-     * auto indexer.
-     * This applies to Nodes only.
+     * Boolean value (one of true, false) that controls the auto indexing
+     * feature for nodes. Setting to false shuts it down unconditionally,
+     * while true enables it for every property, subject to restrictions
+     * in the configuration.
+     * The default is false.
      */
     @Documented
     public static final String NODE_AUTO_INDEXING = "node_auto_indexing";
@@ -176,9 +179,8 @@ public class Config
     /**
      * Boolean value (one of true, false) that controls the auto indexing
      * feature for relationships. Setting to false shuts it down
-     * unconditionally, while true
-     * enables it for every property, subject to restrictions in the
-     * configuration.
+     * unconditionally, while true enables it for every property, subject
+     * to restrictions in the configuration.
      * The default is false.
      */
     @Documented
@@ -391,7 +393,7 @@ public class Config
             }
         }
     }
-    
+
     public static boolean configValueContainsMultipleParameters( String configValue )
     {
         return configValue != null && configValue.contains( "=" );
