@@ -2,14 +2,6 @@
 Securing access to the Neo4j Server
 ===================================
 
-Per default, the Neo4j Server is bundled with a Jetty instance that binds to host +localhost+ on port +7474+, answering only requests from the local machine. 
-
-If you need to enable access from external machines, configure Jetty in the +conf/neo4j-server.properties+ by setting the related properties, e.g for access by any host, do
-
-[IMPORTANT]
-The neo4j server exposes remote scripting functionality by default that allow full access to the underlying system. 
-Exposing your server without an added security layer (see below) poses a severe security threat.
-
 == Secure the port and remote client connection accepts ==
 
 [source]
@@ -23,9 +15,32 @@ org.neo4j.server.webserver.port=7474
 #org.neo4j.server.webserver.address=0.0.0.0
 ----
 
-The Neo4j server currently does not enforce security on the REST access layer.
-This should be taken care of by external means.
-We strongly recommend to front a running Neo4j Server with a proxy like Apache `mod_proxy` footnote:[http://httpd.apache.org/docs/2.2/mod/mod_proxy.html].
+By default, the Neo4j Server is bundled with a Web server that binds to host +localhost+ on port +7474+, answering only requests from the local machine. 
+
+If you need to enable access from external hosts, configure the Web server in the +conf/neo4j-server.properties+ by setting the property +org.neo4j.server.webserver.address=0.0.0.0+,to enable access from any host.
+
+== Server Authorization Rules ==
+
+Administrators may require more fine-grained security policies in addition to IP-level restrictions on the Web server.  Neo4j server supports 
+administrators in allowing or disallowing access the specific aspects of the database based on credentials that users or applications provide.
+
+To facilitate domain-specific authorization policies in Neo4j Server, SecurityRules can be implemented and
+registered with the server. This makes scenarios like user and role based security and
+authentication against external lookup services possible.
+
+:leveloffset: 0
+
+include::enforcing-server-authorization-rules.txt[]
+
+== Hosted Scripting ==
+
+[IMPORTANT]
+The neo4j server exposes remote scripting functionality by default that allow full access to the underlying system. 
+Exposing your server without implementing a security layer poses a substantial security vulnerability.
+
+== Security in Depth ==
+
+Although the Neo4j server has competent security features built-in, for sensitive deployments it is often sensible to front it with a proxy like Apache `mod_proxy` footnote:[http://httpd.apache.org/docs/2.2/mod/mod_proxy.html].
 This provides a number of advantages:
 
 * Control access to the Neo4j server to specific IP addresses, URL patterns and IP ranges. This can be used to make for instance only the +/db/data+ namespace accessible to non-local clients, while the +/db/admin+ URLs only respond to a specific IP address.
@@ -38,6 +53,8 @@ This provides a number of advantages:
   Allow from 192.168.0
 </Proxy>
 ---------------
+
+While equivalent functionality can be implemented with Neo4j's +SecurityRule+ plugins (see above), for operations professionals configuring servers like Apache is often preferable to developing plugins. However it should be noted that where both approaches are used, they will work harmoniously providing the behavior is consistent across proxy server and +SecurityRule+ plugins.
 
 * Run Neo4j Server as a non-root user on a Linux/Unix system on a port < 1000 (e.g. port 80) using 
 +
@@ -77,18 +94,3 @@ ProxyPassReverse / http://localhost:7474/
 </Location>
 ----
 
-== Server Authorization Rules ==
-
-By default, Neo4j server allows access via the REST API from any local process via HTTP, which can be opened
-up to any host (and in turn restricted to specific hosts by using external agents like front-end Web servers).
-
-However administrators may require more fine-grained security policies to be applied, allowing or disallowing
-access the specific aspects of the database predicated on credentials that users or applications provide.
-
-To facilitate domain-specific authorization policies in Neo4j Server, SecurityRules can be implemented and
-registered with the server. This makes scenarios like user and role based security and
-authentication against external lookup services possible.
-
-:leveloffset: 0
-
-include::enforcing-server-authorization-rules.txt[]
