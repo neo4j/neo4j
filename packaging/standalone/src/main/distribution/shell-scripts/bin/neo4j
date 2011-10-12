@@ -147,6 +147,18 @@ checkupgrade() {
     fi
 }
 
+# Runs before the server command, making sure that whatever should be in place is
+# in place.
+checkandrepairenv() {
+    # Create data/log if missing, change owner if created.
+    if [ ! -d "$NEO4J_HOME"/data/log ]; then
+      mkdir "$NEO4J_HOME"/data/log
+      if [ $UID == 0 ] ; then
+        chown $NEO4J_USER "$NEO4J_HOME"/data/log
+      fi
+    fi
+}
+
 startit() {
 
   detectos
@@ -171,6 +183,7 @@ startit() {
 
     buildclasspath
     checkupgrade
+    checkandrepairenv
 
     if [ $UID == 0 ] ; then
       su $NEO4J_USER -c "$JAVACMD -cp '$CLASSPATH' $JAVA_OPTS -Dlog4j.configuration=file:conf/log4j.properties \
@@ -241,6 +254,7 @@ console() {
     exitonnojava
     buildclasspath
     checkwriteaccess
+    checkandrepairenv
 
     $JAVACMD -cp "${CLASSPATH}" $JAVA_OPTS -Dlog4j.configuration=file:conf/log4j.properties \
         -Dorg.neo4j.server.properties="${NEO4J_INSTANCE}/conf/neo4j-server.properties" \
