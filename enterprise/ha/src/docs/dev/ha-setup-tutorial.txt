@@ -236,7 +236,7 @@ If you are using maven and Neo4j Embedded, simply add the following dependency t
       <dependency>
          <groupId>org.neo4j</groupId>
          <artifactId>neo4j-ha</artifactId>
-         <version>${project.version}</version>
+         <version>{neo4j-version}</version>
       </dependency>
 ----
 
