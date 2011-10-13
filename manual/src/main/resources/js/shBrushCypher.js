@@ -25,7 +25,7 @@
 	{
         var funcs   =   'avg max min sum count not all any none single length type id nodes relationships collect';
 
-        var keywords =  'start match where return skip limit order by descending desc ascending asc distinct true false';
+        var keywords =  'node: relationship: start match where return skip limit order by descending desc ascending asc distinct true false';
 
         var operators = 'TYPE LENGTH or and';
 
