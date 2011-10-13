@@ -73,6 +73,14 @@ classifier=test-sources
 ----
 component=neo4j-cypher
 source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
+tag=exampleWithParameterForNode
+classifier=test-sources
+----
+
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
 tag=exampleWithParameterForMultipleNodeIds
 classifier=test-sources
 ----

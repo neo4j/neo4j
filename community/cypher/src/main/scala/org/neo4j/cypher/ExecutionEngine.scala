@@ -29,22 +29,25 @@ import java.lang.{Error, Iterable}
 import java.util.{Map => JavaMap}
 
 
-class ExecutionEngine(graph: GraphDatabaseService)
-{
+class ExecutionEngine(graph: GraphDatabaseService) {
   checkScalaVersion()
 
-  require( graph != null, "Can't work with a null graph database" )
+  require(graph != null, "Can't work with a null graph database")
 
   val parser = new CypherParser()
 
   @throws(classOf[SyntaxException])
-  def execute(query:String): ExecutionResult = execute(parser.parse(query))
+  def execute(query: String): ExecutionResult = execute(parser.parse(query))
 
   @throws(classOf[SyntaxException])
-  def execute(query:String, params: Map[String, Any]): ExecutionResult = { execute(parser.parse(query), params) }
+  def execute(query: String, params: Map[String, Any]): ExecutionResult = {
+    execute(parser.parse(query), params)
+  }
 
   @throws(classOf[SyntaxException])
-  def execute(query:String, params: JavaMap[String, Any]): ExecutionResult = { execute(parser.parse(query), params.asScala.toMap) }
+  def execute(query: String, params: JavaMap[String, Any]): ExecutionResult = {
+    execute(parser.parse(query), params.asScala.toMap)
+  }
 
   @throws(classOf[SyntaxException])
   def execute(query: Query): ExecutionResult = execute(query, Map[String, Any]())
@@ -54,13 +57,10 @@ class ExecutionEngine(graph: GraphDatabaseService)
   def execute(query: Query, map: JavaMap[String, Any]): ExecutionResult = execute(query, map.asScala.toMap)
 
   @throws(classOf[SyntaxException])
-  def execute(query: Query, params: Map[String, Any]): ExecutionResult = query match
-  {
-    case Query(returns, start, matching, where, aggregation, sort, slice, namedPaths) =>
-    {
+  def execute(query: Query, params: Map[String, Any]): ExecutionResult = query match {
+    case Query(returns, start, matching, where, aggregation, sort, slice, namedPaths) => {
 
-      val clauses = where match
-      {
+      val clauses = where match {
         case None => Seq()
         case Some(w) => w.atoms
       }
@@ -76,8 +76,7 @@ class ExecutionEngine(graph: GraphDatabaseService)
       context.pipe = createShortestPathPipe(context.pipe, matching, namedPaths)
       context = addFilters(context)
 
-      namedPaths match
-      {
+      namedPaths match {
         case None =>
         case Some(x) => x.paths.foreach(p => context.pipe = new NamedPathPipe(context.pipe, p))
       }
@@ -90,26 +89,21 @@ class ExecutionEngine(graph: GraphDatabaseService)
 
       context.pipe = new TransformPipe(context.pipe, allReturnItems)
 
-      aggregation match
-      {
+      aggregation match {
         case None =>
-        case Some(aggr) =>
-        {
+        case Some(aggr) => {
           context.pipe = new EagerAggregationPipe(context.pipe, returns.returnItems, aggr.aggregationItems)
         }
       }
 
-      sort match
-      {
+      sort match {
         case None =>
-        case Some(s) =>
-        {
+        case Some(s) => {
           context.pipe = new SortPipe(context.pipe, s.sortItems.toList)
         }
       }
 
-      slice match
-      {
+      slice match {
         case None =>
         case Some(x) => context.pipe = new SlicePipe(context.pipe, x.from, x.limit)
       }
@@ -122,16 +116,13 @@ class ExecutionEngine(graph: GraphDatabaseService)
     }
   }
 
-  private def createShortestPathPipe(source: Pipe, matching: Option[Match], namedPaths: Option[NamedPaths]): Pipe =
-  {
-    val unnamedShortestPaths = matching match
-    {
+  private def createShortestPathPipe(source: Pipe, matching: Option[Match], namedPaths: Option[NamedPaths]): Pipe = {
+    val unnamedShortestPaths = matching match {
       case Some(m) => m.patterns.filter(_.isInstanceOf[ShortestPath]).map(_.asInstanceOf[ShortestPath])
       case None => Seq()
     }
 
-    val namedShortestPaths = namedPaths match
-    {
+    val namedShortestPaths = namedPaths match {
       case Some(m) => m.paths.flatMap(_.pathPattern).filter(_.isInstanceOf[ShortestPath]).map(_.asInstanceOf[ShortestPath])
       case None => Seq()
     }
@@ -144,25 +135,20 @@ class ExecutionEngine(graph: GraphDatabaseService)
 
   }
 
-  private def createMatchPipe(unnamedPaths: Option[Match], namedPaths: Option[NamedPaths], context: CurrentContext): CurrentContext =
-  {
-    val namedPattern = namedPaths match
-    {
+  private def createMatchPipe(unnamedPaths: Option[Match], namedPaths: Option[NamedPaths], context: CurrentContext): CurrentContext = {
+    val namedPattern = namedPaths match {
       case Some(m) => m.paths.flatten
       case None => Seq()
     }
 
-    val unnamedPattern = unnamedPaths match
-    {
+    val unnamedPattern = unnamedPaths match {
       case Some(m) => m.patterns
       case None => Seq()
     }
 
-    (unnamedPattern ++ namedPattern) match
-    {
+    (unnamedPattern ++ namedPattern) match {
       case Seq() =>
-      case x =>
-      {
+      case x => {
         context.pipe = new MatchPipe(context.pipe, x, context.clauses)
       }
     }
@@ -170,17 +156,14 @@ class ExecutionEngine(graph: GraphDatabaseService)
     context
   }
 
-  private def createSourcePumps(pipe: Pipe, items: List[StartItem]): Pipe =
-  {
-    items match
-    {
+  private def createSourcePumps(pipe: Pipe, items: List[StartItem]): Pipe = {
+    items match {
       case head :: tail => createSourcePumps(createStartPipe(pipe, head), tail)
       case Seq() => pipe
     }
   }
 
-  private def extractReturnItems(returns: Return, aggregation: Option[Aggregation], sort: Option[Sort]): Seq[ReturnItem] =
-  {
+  private def extractReturnItems(returns: Return, aggregation: Option[Aggregation], sort: Option[Sort]): Seq[ReturnItem] = {
     val aggregation1 = aggregation.getOrElse(new Aggregation())
     val sort1 = sort.getOrElse(new Sort())
 
@@ -190,11 +173,9 @@ class ExecutionEngine(graph: GraphDatabaseService)
     returns.returnItems ++ aggregationItems ++ sortItems
   }
 
-  private def createStartPipe(lastPipe: Pipe, item: StartItem): Pipe = item match
-  {
+  private def createStartPipe(lastPipe: Pipe, item: StartItem): Pipe = item match {
     case NodeByIndex(varName, idxName, key, value) =>
-      new NodeStartPipe(lastPipe, varName, m =>
-      {
+      new NodeStartPipe(lastPipe, varName, m => {
         val keyVal = key(m).toString
         val valueVal = value(m)
         val indexHits: Iterable[Node] = graph.index.forNodes(idxName).get(keyVal, valueVal)
@@ -202,8 +183,7 @@ class ExecutionEngine(graph: GraphDatabaseService)
       })
 
     case RelationshipByIndex(varName, idxName, key, value) =>
-      new RelationshipStartPipe(lastPipe, varName, m =>
-      {
+      new RelationshipStartPipe(lastPipe, varName, m => {
         val keyVal = key(m).toString
         val valueVal = value(m)
         val indexHits: Iterable[Relationship] = graph.index.forRelationships(idxName).get(keyVal, valueVal)
@@ -211,37 +191,30 @@ class ExecutionEngine(graph: GraphDatabaseService)
       })
 
     case NodeByIndexQuery(varName, idxName, query) =>
-      new NodeStartPipe(lastPipe, varName, m =>
-      {
+      new NodeStartPipe(lastPipe, varName, m => {
         val queryText = query(m)
         val indexHits: Iterable[Node] = graph.index.forNodes(idxName).query(queryText)
         indexHits.asScala
       })
 
-    case NodeById(varName, id) => new NodeStartPipe(lastPipe, varName, m => makeLongSeq(id(m), varName).map(graph.getNodeById))
-    case RelationshipById(varName, id) => new RelationshipStartPipe(lastPipe, varName, m => makeLongSeq(id(m), varName).map(graph.getRelationshipById))
+    case NodeById(varName, valueGenerator) => new NodeStartPipe(lastPipe, varName, m => makeNodes[Node](valueGenerator(m), varName, graph.getNodeById))
+    case RelationshipById(varName, id) => new RelationshipStartPipe(lastPipe, varName, m => makeNodes[Relationship](id(m), varName, graph.getRelationshipById))
   }
 
-  private def addFilters(context: CurrentContext): CurrentContext =
-  {
-    if ( context.clauses.isEmpty )
-    {
+  private def addFilters(context: CurrentContext): CurrentContext = {
+    if (context.clauses.isEmpty) {
       context
     }
-    else
-    {
+    else {
       val keys = context.pipe.symbols.identifiers.map(_.name)
-      val matchingClauses = context.clauses.filter(x =>
-      {
+      val matchingClauses = context.clauses.filter(x => {
         val unsatisfiedDependencies = x.dependsOn.filterNot(keys contains)
         unsatisfiedDependencies.isEmpty
       })
-      if ( matchingClauses.isEmpty )
-      {
+      if (matchingClauses.isEmpty) {
         context
       }
-      else
-      {
+      else {
         val filterClause = matchingClauses.reduceLeft(_ ++ _)
         val p = new FilterPipe(context.pipe, filterClause)
 
@@ -250,45 +223,29 @@ class ExecutionEngine(graph: GraphDatabaseService)
     }
   }
 
-  def checkScalaVersion()
-  {
-    if ( util.Properties.versionString.matches("^version 2.9.0") )
-    {
+  def checkScalaVersion() {
+    if (util.Properties.versionString.matches("^version 2.9.0")) {
       throw new Error("Cypher can only run with Scala 2.9.0. It looks like the Scala version is: " +
         util.Properties.versionString)
     }
   }
 
-  private def makeLongSeq(result: Any, name: String): Seq[Long] =
-  {
-    if ( result.isInstanceOf[Int] )
-    {
-      return Seq(result.asInstanceOf[Int].toLong)
+  private def makeNodes[T](data: Any, name: String, getElement: Long => T): Seq[T] = {
+    def castElement(x: Any): T = x match {
+      case i: Int => getElement(i)
+      case i: Long => getElement(i)
+      case i: String => getElement(i.toLong)
+      case element:T => element
     }
 
-    if ( result.isInstanceOf[Long] )
-    {
-      return Seq(result.asInstanceOf[Long])
+    data match {
+      case result: Int => Seq(getElement(result))
+      case result: Long => Seq(getElement(result))
+      case result: java.lang.Iterable[_] => result.asScala.map(castElement).toSeq
+      case result: Seq[_] => result.map(castElement).toSeq
+      case element: PropertyContainer => Seq(element.asInstanceOf[T])
+      case x => throw new ParameterWrongTypeException("Expected a propertycontainer or number here, but got: " + x.toString)
     }
-
-    def makeLong(x: Any): Long = x match
-    {
-      case i: Int => i.toLong
-      case i: Long => i
-      case i: String => i.toLong
-    }
-
-    if ( result.isInstanceOf[java.lang.Iterable[_]] )
-    {
-      return result.asInstanceOf[java.lang.Iterable[_]].asScala.map(makeLong).toSeq
-    }
-
-    if ( result.isInstanceOf[Traversable[_]] )
-    {
-      return result.asInstanceOf[Traversable[_]].map(makeLong).toSeq
-    }
-
-    throw new ParameterNotFoundException("Expected " + name + " to be a Long, or an Iterable of Long. It was '" + result + "'")
   }
 }
 
