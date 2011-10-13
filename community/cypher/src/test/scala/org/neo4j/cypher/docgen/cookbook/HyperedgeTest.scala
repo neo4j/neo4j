@@ -33,13 +33,6 @@ class HyperedgeTest extends DocumentingTestBase {
             "U1G2R1 hasGroup Group2", "User1 hasRoleInGroup U1G1R2",
             "U1G1R2 hasRole Role2", "U1G1R2 hasGroup Group1")
 
-
-//  override val properties: Map[String, Map[String, Any]] = Map(
-//    "A" -> Map("property" -> 13),
-//    "B" -> Map("property" -> 33),
-//    "C" -> Map("property" -> 44)
-//  )
-
   def section = "cookbook"
 
   @Test def findGroups() {
@@ -53,7 +46,21 @@ class HyperedgeTest extends DocumentingTestBase {
       		"hyperEdge-[:hasRole]->role " +
       		"where group.name = \"Group2\" " +
       		"return role.name",
-      returns = "The role of .",
+      returns = "The role of +User1+:",
       (p) => assertEquals(Map("role.name" -> "Role1"), p.toList.head))
+  }
+  
+  @Test def findAllGroupsForAUser() {
+    testQuery(
+      title = "Find all groups and roles for a user",
+      text = """Here, find all groups and the roles a user has, sorted by the roles names.""",
+      queryText = "start n=node:node_auto_index(name = \"User1\") " +
+            "match n-[:hasRoleInGroup]->hyperEdge-[:hasGroup]->group, " +
+            "hyperEdge-[:hasRole]->role " +
+            "return role.name, group.name " +
+            "order by role.name asc",
+      returns = "The groups and roles of +User1+",
+      (p) => assertEquals(Map("role.name" -> "Role1", "group.name"->"Group2"), p.toList.head),
+      (p) => assertEquals(Map("role.name" -> "Role2", "group.name"->"Group1"), p.toList(1)))
   }
 }

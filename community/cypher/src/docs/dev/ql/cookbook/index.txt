@@ -19,3 +19,5 @@ include::cypher-hyperedge-graph.txt[]
 :leveloffset: 3
 
 include::find-groups.txt[]
+
+include::find-all-groups-and-roles-for-a-user.txt[]
