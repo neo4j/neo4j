@@ -4,6 +4,10 @@ Securing access to the Neo4j Server
 
 == Secure the port and remote client connection accepts ==
 
+By default, the Neo4j Server is bundled with a Web server that binds to host +localhost+ on port +7474+, answering only requests from the local machine.
+
+This is configured in the +conf/neo4j-server.properties+ file:
+
 [source]
 ----
 # http port (for all data, administrative, and UI access)
@@ -13,11 +17,9 @@ org.neo4j.server.webserver.port=7474
 #is localhost (only accept local connections). Uncomment to allow
 #any connection.
 #org.neo4j.server.webserver.address=0.0.0.0
-----
+---- 
 
-By default, the Neo4j Server is bundled with a Web server that binds to host +localhost+ on port +7474+, answering only requests from the local machine. 
-
-If you need to enable access from external hosts, configure the Web server in the +conf/neo4j-server.properties+ by setting the property +org.neo4j.server.webserver.address=0.0.0.0+,to enable access from any host.
+If you need to enable access from external hosts, configure the Web server in the +conf/neo4j-server.properties+ by setting the property +org.neo4j.server.webserver.address=0.0.0.0+ to enable access from any host.
 
 == Server Authorization Rules ==
 
