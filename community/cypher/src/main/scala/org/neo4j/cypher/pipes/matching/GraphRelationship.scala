@@ -44,11 +44,7 @@ case class SingleGraphRelationship(rel: Relationship) extends GraphRelationship 
     }
   }
 
-  override def toString = try {
-    rel.getProperty("name").toString
-  } catch {
-    case _ => rel.toString
-  }
+  override def toString =    rel.getProperty("name").toString
 }
 
 case class VariableLengthGraphRelationship(path: Path) extends GraphRelationship {

@@ -63,6 +63,8 @@ class GraphDatabaseTestBase extends JUnitSuite {
 
   def nodeIds = nodes.map(_.getId).toArray
 
+  def relate(a:Node,b:Node): Relationship = relate(a,b,"REL")
+
   def relate(n1:Node, n2:Node, relType:String, name:String): Relationship = relate(n1,n2,relType, Map("name"->name))
 
   def relate(n1: Node, n2: Node, relType: String, props: Map[String, Any] = Map()): Relationship = {

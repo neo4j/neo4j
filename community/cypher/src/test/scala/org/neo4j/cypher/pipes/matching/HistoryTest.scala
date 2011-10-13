@@ -32,10 +32,10 @@ class HistoryTest extends GraphDatabaseTestBase with Assertions {
     val a = new PatternNode("a")
     val b = new PatternNode("b")
     val pr = a.relateTo("r", b, None, Direction.BOTH, false)
-    val r = relate( graph.getReferenceNode, graph.getReferenceNode, "rel")
-    val mp = new MatchingPair(pr,r)
-    val history = new History(Seq(mp))
+    val r = relate(graph.getReferenceNode, graph.getReferenceNode, "rel")
+    val mp = new MatchingPair(pr, r)
+    val history = new History(Set(mp))
 
-    assert( history.filter(Set[PatternRelationship](pr)) === Set() )
+    assert(history.filter(Set[PatternRelationship](pr)) === Set())
   }
 }

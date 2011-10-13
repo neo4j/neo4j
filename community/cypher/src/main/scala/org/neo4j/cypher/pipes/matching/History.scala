@@ -21,27 +21,22 @@ package org.neo4j.cypher.pipes.matching
 
 import org.neo4j.graphdb.Node
 
-object History
-{
-  def apply(): History = new History(Seq())
+object History {
+  def apply(): History = new History(Set())
 }
 
-class History(seen: Seq[MatchingPair])
-{
+class History(seen: Set[MatchingPair]) {
   def filter(relationships: Set[PatternRelationship]): Set[PatternRelationship] = relationships.filterNot(r => seen.exists(_.matches(r)))
 
-  def filter(relationships: Seq[GraphRelationship]): Seq[GraphRelationship] = relationships.filterNot(gr => gr match
-  {
+  def filter(relationships: Seq[GraphRelationship]): Seq[GraphRelationship] = relationships.filterNot(gr => gr match {
     case SingleGraphRelationship(r) => seen.exists(h => h.matches(r))
     case VariableLengthGraphRelationship(p) => seen.exists(h => h.matches(p))
   }).toSeq
 
   def add(pair: MatchingPair): History = new History(seen ++ Seq(pair))
 
-  def toMap: Map[String, Any] = seen.flatMap(_ match
-  {
-    case MatchingPair(p, e) => (p, e) match
-    {
+  def toMap: Map[String, Any] = seen.flatMap(_ match {
+    case MatchingPair(p, e) => (p, e) match {
       case (pe: PatternNode, entity: Node) => Seq(pe.key -> entity)
       case (pe: PatternRelationship, entity: SingleGraphRelationship) => Seq(pe.key -> entity.rel)
       case (pe: PatternRelationship, null) => Seq(pe.key -> null)
@@ -53,5 +48,5 @@ class History(seen: Seq[MatchingPair])
     }
   }).toMap
 
-  override def toString: String = "History(%s)".format(seen.mkString(","))
+  override def toString: String = "History(%s)".format(seen.mkString("[", "], [", "]"))
 }
