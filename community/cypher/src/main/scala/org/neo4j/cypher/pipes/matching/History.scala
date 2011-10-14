@@ -40,11 +40,7 @@ class History(seen: Set[MatchingPair]) {
       case (pe: PatternNode, entity: Node) => Seq(pe.key -> entity)
       case (pe: PatternRelationship, entity: SingleGraphRelationship) => Seq(pe.key -> entity.rel)
       case (pe: PatternRelationship, null) => Seq(pe.key -> null)
-      case (pe: VariableLengthPatternRelationship, entity: VariableLengthGraphRelationship) => Seq(
-        pe.start.key -> entity.path.startNode(),
-        pe.end.key -> entity.path.endNode(),
-        pe.key -> entity.path
-      )
+      case (pe: VariableLengthPatternRelationship, entity: VariableLengthGraphRelationship) => Seq(pe.key -> entity.path)
     }
   }).toMap
 

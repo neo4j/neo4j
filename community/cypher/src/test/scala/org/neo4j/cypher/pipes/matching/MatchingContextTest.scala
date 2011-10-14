@@ -359,18 +359,18 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     Graph:
               a
              / \
-            /   \
-           b----c
-           \   /
-            \ /
+            v   v
+           b--->c
+           \   ^
+            v /
              d
 
 
     Pattern:
               pA
              / \
-            /   \
-         p=pB~~~pC
+            v   v
+         p=pB~~>pC
 
     Should match two subgraphs, one where p is b-c, and one where it is b-d-c
      */
@@ -426,7 +426,10 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
 
     expected.foreach(expectation => {
       if (!matches.exists(compare(_, expectation)))
-        throw new Exception("Didn't find the expected row: " + expectation)
+      {
+
+        throw new Exception("Didn't find the expected row: " + expectation + "\r\nActual: " + matches.toList)
+      }
     })
 
   }
