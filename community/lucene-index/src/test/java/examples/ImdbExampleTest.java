@@ -596,7 +596,10 @@ public class ImdbExampleTest
         Map<String, Object> properties = MapUtil.map( "name", "Keanu Reeves" );
         long node = inserter.createNode( properties );
         actors.add( node, properties );
-
+        
+        //make the changes visible for reading, use this sparsely, requires IO!
+        actors.flush();
+        
         // Make sure to shut down the index provider
         indexProvider.shutdown();
         inserter.shutdown();
