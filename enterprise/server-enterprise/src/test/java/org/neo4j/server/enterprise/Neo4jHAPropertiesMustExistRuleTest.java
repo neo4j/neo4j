@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.enterprise;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 
 import java.io.File;
@@ -39,7 +38,7 @@ public class Neo4jHAPropertiesMustExistRuleTest
     {
         File serverPropertyFile = ServerTestUtils.createTempPropertyFile();
         ServerTestUtils.writePropertyToFile( "touch", "me", serverPropertyFile );
-        assertRule( new Neo4jHAPropertiesMustExistRule(), serverPropertyFile );
+        assertRulePass( new Neo4jHAPropertiesMustExistRule(), serverPropertyFile );
     }
 
     @Test
@@ -47,7 +46,7 @@ public class Neo4jHAPropertiesMustExistRuleTest
     {
         File serverPropertyFile = ServerTestUtils.createTempPropertyFile();
         ServerTestUtils.writePropertyToFile( Configurator.DB_MODE_KEY, "faulty", serverPropertyFile );
-        assertFalse( new Neo4jHAPropertiesMustExistRule().execute( propertiesWithConfigFileLocation( serverPropertyFile ) ) );
+        assertRuleFail( new Neo4jHAPropertiesMustExistRule(), serverPropertyFile );
     }
 
     @Test
@@ -62,12 +61,69 @@ public class Neo4jHAPropertiesMustExistRuleTest
         ServerTestUtils.writePropertyToFile( HighlyAvailableGraphDatabase.CONFIG_KEY_COORDINATORS,
                 "localhost:0000", dbTuningFile );
 
-        assertRule( rule, serverPropertyFile );
+        assertRulePass( rule, serverPropertyFile );
 
         serverPropertyFile.delete();
         dbTuningFile.delete();
     }
 
+    @Test
+    public void shouldPassIfHAModeIsSetAndTheDbTuningFileHasBeenSpecifiedAndExistsWithOldConfig() throws IOException
+    {
+        Neo4jHAPropertiesMustExistRule rule = new Neo4jHAPropertiesMustExistRule();
+        File serverPropertyFile = ServerTestUtils.createTempPropertyFile();
+        File dbTuningFile = ServerTestUtils.createTempPropertyFile();
+        ServerTestUtils.writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, dbTuningFile.getAbsolutePath(), serverPropertyFile);
+        ServerTestUtils.writePropertyToFile( Configurator.DB_MODE_KEY, "ha", serverPropertyFile );
+        ServerTestUtils.writePropertyToFile( HighlyAvailableGraphDatabase.CONFIG_KEY_OLD_SERVER_ID, "1", dbTuningFile );
+        ServerTestUtils.writePropertyToFile( HighlyAvailableGraphDatabase.CONFIG_KEY_OLD_COORDINATORS,
+                "localhost:0000", dbTuningFile );
+
+        assertRulePass( rule, serverPropertyFile );
+
+        serverPropertyFile.delete();
+        dbTuningFile.delete();
+    }
+    
+    @Test
+    public void shouldFailIfHAModeIsSetAndTheDbTuningFileHasBeenSpecifiedAndExistsWithDuplicateIdConfig() throws IOException
+    {
+        Neo4jHAPropertiesMustExistRule rule = new Neo4jHAPropertiesMustExistRule();
+        File serverPropertyFile = ServerTestUtils.createTempPropertyFile();
+        File dbTuningFile = ServerTestUtils.createTempPropertyFile();
+        ServerTestUtils.writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, dbTuningFile.getAbsolutePath(), serverPropertyFile);
+        ServerTestUtils.writePropertyToFile( Configurator.DB_MODE_KEY, "ha", serverPropertyFile );
+        ServerTestUtils.writePropertyToFile( HighlyAvailableGraphDatabase.CONFIG_KEY_OLD_SERVER_ID, "1", dbTuningFile );
+        ServerTestUtils.writePropertyToFile( HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID, "1", dbTuningFile );
+        ServerTestUtils.writePropertyToFile( HighlyAvailableGraphDatabase.CONFIG_KEY_COORDINATORS,
+                "localhost:0000", dbTuningFile );
+
+        assertRuleFail( rule, serverPropertyFile );
+
+        serverPropertyFile.delete();
+        dbTuningFile.delete();
+    }
+    
+    @Test
+    public void shouldFailIfHAModeIsSetAndTheDbTuningFileHasBeenSpecifiedAndExistsWithDuplicateCoordinatorConfig() throws IOException
+    {
+        Neo4jHAPropertiesMustExistRule rule = new Neo4jHAPropertiesMustExistRule();
+        File serverPropertyFile = ServerTestUtils.createTempPropertyFile();
+        File dbTuningFile = ServerTestUtils.createTempPropertyFile();
+        ServerTestUtils.writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, dbTuningFile.getAbsolutePath(), serverPropertyFile);
+        ServerTestUtils.writePropertyToFile( Configurator.DB_MODE_KEY, "ha", serverPropertyFile );
+        ServerTestUtils.writePropertyToFile( HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID, "1", dbTuningFile );
+        ServerTestUtils.writePropertyToFile( HighlyAvailableGraphDatabase.CONFIG_KEY_COORDINATORS,
+                "localhost:0000", dbTuningFile );
+        ServerTestUtils.writePropertyToFile( HighlyAvailableGraphDatabase.CONFIG_KEY_OLD_COORDINATORS,
+                "localhost:0000", dbTuningFile );
+
+        assertRuleFail( rule, serverPropertyFile );
+
+        serverPropertyFile.delete();
+        dbTuningFile.delete();
+    }
+    
     @Test
     public void shouldFailIfHAModeIsSetAndTheDbTuningFileHasBeenSpecifiedButDoesNotExist() throws IOException
     {
@@ -77,7 +133,7 @@ public class Neo4jHAPropertiesMustExistRuleTest
         ServerTestUtils.writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, dbTuningFile.getAbsolutePath(), serverPropertyFile);
         ServerTestUtils.writePropertyToFile( Configurator.DB_MODE_KEY, "ha", serverPropertyFile );
 
-        assertFalse( rule.execute( propertiesWithConfigFileLocation( serverPropertyFile ) ) );
+        assertRuleFail( rule, serverPropertyFile );
 
         serverPropertyFile.delete();
         dbTuningFile.delete();
@@ -90,12 +146,12 @@ public class Neo4jHAPropertiesMustExistRuleTest
         File serverPropertyFile = ServerTestUtils.createTempPropertyFile();
         ServerTestUtils.writePropertyToFile( Configurator.DB_MODE_KEY, "ha", serverPropertyFile );
 
-        assertFalse( rule.execute( propertiesWithConfigFileLocation( serverPropertyFile ) ) );
+        assertRuleFail( rule, serverPropertyFile );
 
         serverPropertyFile.delete();
     }
 
-    private void assertRule( Neo4jHAPropertiesMustExistRule rule, File propFile )
+    private void assertRulePass( Neo4jHAPropertiesMustExistRule rule, File propFile )
     {
         if ( !rule.execute( propertiesWithConfigFileLocation( propFile ) ) )
         {
@@ -103,6 +159,14 @@ public class Neo4jHAPropertiesMustExistRuleTest
         }
     }
 
+    private void assertRuleFail( Neo4jHAPropertiesMustExistRule rule, File propFile )
+    {
+        if ( rule.execute( propertiesWithConfigFileLocation( propFile ) ) )
+        {
+            fail( rule + " should have failed" );
+        }
+    }
+    
     private Properties propertiesWithConfigFileLocation( File propertyFile )
     {
         Properties result = new Properties();

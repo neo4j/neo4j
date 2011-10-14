@@ -81,10 +81,11 @@ public class Neo4jHAPropertiesMustExistRule extends Neo4jPropertiesMustExistRule
                     failureMessage = e.getMessage();
                     return false;
                 }
-                String machineId = dbTuning.getProperty( HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID,
-                        "<not set>" );
+                String machineId = null;
                 try
                 {
+                    machineId = getSinglePropertyFromCandidates( dbTuning, HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID,
+                            HighlyAvailableGraphDatabase.CONFIG_KEY_OLD_SERVER_ID, "<not set>" );
                     if ( Integer.parseInt( machineId ) < 0 ) throw new NumberFormatException();
                 }
                 catch ( NumberFormatException e )
@@ -93,8 +94,23 @@ public class Neo4jHAPropertiesMustExistRule extends Neo4jPropertiesMustExistRule
                             HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID, dbTuningFilename, machineId );
                     return false;
                 }
-                String[] zkServers = dbTuning.getProperty(
-                        HighlyAvailableGraphDatabase.CONFIG_KEY_COORDINATORS, "" ).split( "," );
+                catch ( IllegalArgumentException e )
+                {
+                    failureMessage = String.format( "%s in %s", e.getMessage(), dbTuningFilename );
+                    return false;
+                }
+                
+                String[] zkServers = null;
+                try
+                {
+                    zkServers = getSinglePropertyFromCandidates( dbTuning, HighlyAvailableGraphDatabase.CONFIG_KEY_COORDINATORS,
+                            HighlyAvailableGraphDatabase.CONFIG_KEY_OLD_COORDINATORS, "" ).split( "," );
+                }
+                catch ( IllegalArgumentException e )
+                {
+                    failureMessage = String.format( "%s in %s", e.getMessage(), dbTuningFilename );
+                    return false;
+                }
                 if ( zkServers.length <= 0 )
                 {
                     failureMessage = String.format( "%s in %s needs to specify at least one server",
@@ -113,5 +129,16 @@ public class Neo4jHAPropertiesMustExistRule extends Neo4jPropertiesMustExistRule
             }
         }
         return true;
+    }
+
+    private String getSinglePropertyFromCandidates( Properties dbTuning, String first,
+            String other, String defaultValue )
+    {
+        String firstValue = dbTuning.getProperty( first );
+        String otherValue = dbTuning.getProperty( other );
+        if ( firstValue == null && otherValue == null ) return defaultValue;
+        // Perhaps not a correct use of IllegalArgumentException
+        if ( firstValue != null && otherValue != null ) throw new IllegalArgumentException( "Multiple configuration values set for the same logical property [" + first + "," + other + "]" );
+        return firstValue != null ? firstValue : otherValue;
     }
 }
