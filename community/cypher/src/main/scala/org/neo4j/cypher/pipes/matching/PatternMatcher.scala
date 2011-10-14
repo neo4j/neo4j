@@ -47,8 +47,10 @@ class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause]) 
     }
 
     val newHistory = history.add(current)
-    if (!isMatchSoFar(newHistory))
+    if (!isMatchSoFar(newHistory)) {
+      debug("failed subgraph because of clause")
       return false
+    }
 
     val notYetVisited = getPatternRelationshipsNotYetVisited(current.patternNode, history)
 
@@ -81,14 +83,18 @@ class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause]) 
           case None => traverseNode(remaining ++ Set(nextPair), newHistory, yielder)
           case Some(x) => if (x.entity == nextNode)
             traverseNode(remaining ++ Set(nextPair), newHistory, yielder)
-          else
+          else {
+            debug("other side of relationship already found, and doesn't match")
             false
+          }
         }
 
 
       }
-      else
+      else {
+        debug("failed because of a clause")
         false
+      }
     }
 
   }
@@ -102,8 +108,9 @@ class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause]) 
 
     val (pNode, gNode) = currentNode.getPatternAndGraphPoint
 
+    val relationships = currentNode.getGraphRelationships(currentRel)
     val notVisitedRelationships: Seq[GraphRelationship] = history.
-      filter(currentNode.getGraphRelationships(currentRel)).
+      filter(relationships).
       filter(x => boundRels.get(currentRel.key) match {
       case Some(pinnedRel) => pinnedRel.matches(x)
       case None => true
@@ -112,8 +119,8 @@ class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause]) 
     val nextPNode = currentRel.getOtherNode(pNode)
 
     /*
-   We need to know if any of these sub-calls results in a yield. If none do, and we're
-   looking at an optional pattern relationship, we'll output a null as match.
+     We need to know if any of these sub-calls results in a yield. If none do, and we're
+     looking at an optional pattern relationship, we'll output a null as match.
     */
     val yielded = notVisitedRelationships.map(rel => traverseNextNodeFromRelationship(rel, gNode, nextPNode, currentRel, history, remaining, yielder)).foldLeft(false)(_ || _)
 
@@ -125,6 +132,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause]) 
       return traverseNextNodeOrYield(remaining, history.add(currentNode).add(MatchingPair(currentRel, null)), yielder)
     }
 
+    debug("failed to find matching relationship")
     false
   }
 

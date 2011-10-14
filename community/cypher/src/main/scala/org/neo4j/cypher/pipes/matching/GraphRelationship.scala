@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.pipes.matching
 
-import org.neo4j.graphdb.{Path, Node, Relationship}
 import java.lang.IllegalArgumentException
 import scala.collection.JavaConverters._
+import org.neo4j.graphdb.{NotFoundException, Path, Node, Relationship}
 
 abstract class GraphRelationship {
   def getOtherNode(node: Node): Node
@@ -44,7 +44,12 @@ case class SingleGraphRelationship(rel: Relationship) extends GraphRelationship 
     }
   }
 
-  override def toString =    rel.getProperty("name").toString
+  override def toString =
+    try {
+      rel.getProperty("name").toString
+    } catch {
+      case e:NotFoundException => rel.toString
+    }
 }
 
 case class VariableLengthGraphRelationship(path: Path) extends GraphRelationship {

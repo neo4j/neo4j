@@ -1,6 +1,6 @@
 package org.neo4j.cypher.pipes.matching
 
-import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
+import org.neo4j.graphdb.{NotFoundException, Relationship, Node, PropertyContainer}
 
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
@@ -27,12 +27,16 @@ case class MatchingPair(patternElement: PatternElement, entity: Any) {
 
   override def toString = {
     val value = entity match {
-      case propC: PropertyContainer => propC.getProperty("name").toString
+      case propC: PropertyContainer => try {
+        propC.getProperty("name").toString
+      } catch {
+        case e: NotFoundException => propC.toString
+      }
       case null => "null"
       case x => x.toString
     }
 
-    patternElement.key + "/" + value
+    patternElement.key + "=" + value
   }
 
   def matchesBoundEntity(boundNodes: Map[String, MatchingPair]): Boolean = boundNodes.get(patternElement.key) match {
@@ -40,6 +44,10 @@ case class MatchingPair(patternElement: PatternElement, entity: Any) {
       case (a: Node, b: Node) => a == b
       case (a: SingleGraphRelationship, b: Relationship) => a.rel == b
       case (a: Relationship, b: SingleGraphRelationship) => a == b.rel
+      case (a: VariableLengthGraphRelationship, b: VariableLengthGraphRelationship) => a.path == b.path
+      case (a: VariableLengthGraphRelationship, b) => false
+      case (a, b: VariableLengthGraphRelationship) => false
+
     }
     case None => true
   }
