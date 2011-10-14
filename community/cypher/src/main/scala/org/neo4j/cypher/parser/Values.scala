@@ -50,8 +50,6 @@ trait Values extends JavaTokenParsers with Tokens {
 
   def falseX: Parser[Value] = ignoreCase("false") ^^ (x => Literal(false))
 
-  def parameter: Parser[Value] = curly(identity) ^^ (x => ParameterValue(x))
-
   def function: Parser[Value] = ident ~ parens(value | entityValue) ^^{
     case functionName ~ inner => functionName.toLowerCase match {
       case "type" => RelationshipTypeValue(inner)
