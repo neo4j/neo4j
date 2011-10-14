@@ -58,6 +58,8 @@ to create a query, and it also makes caching of execution plans much easier for 
 Parameters can be used for literals in the +WHERE+ clause, for the index key and index value in the +START+
 clause, index queries, and finally for node/relationship ids.
 
+Accepted names for parameter are letters and number, and any combination of these.
+
 
 Here follows a few examples of how you can use parameters from Java.
 

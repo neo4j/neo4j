@@ -446,7 +446,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     assertEquals(List(Map("a" -> refNode, "count(*)" -> 2)), result.toList)
   }
 
-  @Test def shouldReturnTwoSubgraphsWithBoundUndirectedRelationship() {
+  @Test def parametershouldReturnTwoSubgraphsWithBoundUndirectedRelationship() {
     val a = createNode("a")
     val b = createNode("b")
     relate(a, b, "rel", "r")
@@ -834,16 +834,16 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
       NodeById("pA", ParameterValue("a")),
       NodeById("pB", ParameterValue("b")),
       NodeById("pC", ParameterValue("c")),
-      NodeById("pD", ParameterValue("d")),
-      NodeById("pE", ParameterValue("e"))).
+      NodeById("pD", ParameterValue("0")),
+      NodeById("pE", ParameterValue("1"))).
       returns(ValueReturnItem(EntityValue("pA")), ValueReturnItem(EntityValue("pB")), ValueReturnItem(EntityValue("pC")), ValueReturnItem(EntityValue("pD")), ValueReturnItem(EntityValue("pE")))
 
     val result = execute(query,
       "a" -> Seq[Long](1),
       "b" -> 2,
       "c" -> Seq(3L).asJava,
-      "d" -> Seq(4).asJava,
-      "e" -> List(5)
+      "0" -> Seq(4).asJava,
+      "1" -> List(5)
     )
 
     assertEquals(1, result.toList.size)
