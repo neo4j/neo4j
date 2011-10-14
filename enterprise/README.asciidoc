@@ -1,5 +1,4 @@
-Neo4j Graph Database, Enterprise Components
-===========================================
+= Neo4j Graph Database, Enterprise Components =
 
 == Building ==
 
