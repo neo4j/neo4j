@@ -1,6 +1,6 @@
-= Neo4j Graph Database, Enterprise Components =
+== Neo4j Graph Database, Enterprise Components ==
 
-== Building ==
+=== Building ===
 
 To build the latest snapshot of neo4j you just need to add m2.neo4j.org to
 your repository list (it's mostly for getting the parent pom). Here it is:
