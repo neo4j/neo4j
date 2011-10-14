@@ -1,16 +1,41 @@
+1.5.M02
+-------
+o Changes in 1.4.2
+o [STORE FORMAT CHANGE] New layout of the property store(s) which results in roughly a 30% reduction in size on disk as well as fewer I/O read operations for reading properties.
+
+1.4.2 (2011-09-27)
+------------------
+o Fixed bug where properties could temporarily disappear from cache if adding/removing properties on an entity in the same tx.
+o Removed XaLogicalLog#getCommittedTransaction, which focused on extracting a single transaction and instead implemented getLogExtractor.
+  It returns a LogExtractor which extracts transactions and keeps state after each extracted tx making it ideal to extract tx ranges.
+  The implementation has got very limited and short-lived synchronization blocks.
+o Fixed an issue where XaLogicalLog#applyCommittedTransaction didn't check log rotation.
+o Fixed some issues with updating tx start position cache on log rotation.
+o Keeping of logical logs is enabled if previous logs are discovered and configuration not explicitly disallowing it.
+o Added DumpLogicalLog for index logs.
+o Added an kernel panic event about TxManager set to "not OK" (and isn't able to begin any new transaction).
+
 1.5.M01 (2011-08-31)
 --------------------
+o Changes in 1.4.1
+o Auto indexing hooks in on each operation instead of transaction events.
+o Fixed an issue where logical logs wouldn't be rotated if all transactions happened via applyPreparedTransaction (as in HA).
+o Several recovery fixes which could produce an invalid state of the log files after a 2PC recovery.
+o Loosened some synchronized regarding applying and getting committed transactions.
+o Transaction semantics regarding call to success after failure was sync:ed with documentation.
+o messages.log is rotated at 100Mb (configurable) and keeps at most three history files.
+o Fixed bug where XaLogicalLog#applyTxWithoutTxId wouldn't force the logical log.
+o Removed synchronization on TransactionImpl#toString() to avoid a deadlock issue.
+o Fixed bug in StringLogger where it would stop logging to the underlying writer if an I/O error occurred or it was intermittently closed.
+
+1.4.1 (2011-08-02)
+------------------
 o Improved file lock for an open database. Previously the file lock could be released after a full backup.
-o Fixed a NPE exception during commiting relationships to a NodeImpl representation.
+o Fixed a NPE exception during committing relationships to a NodeImpl representation.
 o Fixed a data visibility issue for properties on newly created entities.
 o Fixed a data visibility issue for relationships for nodes that didn't have the full relationship chain loaded.
 o Fixed an issue where deleted relationships could be visible too long within the transaction deleting them.
-o Auto indexing hooks in on each operation instead of transaction events.
 o More relevant logging in messages.log.
-o Fixed an issue where logical logs wouldn't be rotated if all transactions happened via applyPreparedTransaction (as in HA).
-o Several recovery fixes which could produce an invalid state of the log files after a 2PC recovery.
-o Loosened some bottlenecks regarding applying and getting committed transactions.
-o Transaction semantics regarding calle to success after failure was synced with documentation.
 
 1.4 (2011-07-08)
 ----------------

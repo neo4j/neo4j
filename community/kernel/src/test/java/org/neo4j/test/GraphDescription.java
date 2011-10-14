@@ -248,7 +248,7 @@ public class GraphDescription implements GraphDefinition
         }
     }
 
-    static GraphDescription create( Graph graph )
+    public static GraphDescription create( Graph graph )
     {
         if ( graph == null )
         {

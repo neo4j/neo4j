@@ -51,7 +51,7 @@ define(
             try
               item = @deserializeItem item
             catch e
-              neo4j.log "Unable to deserialize model, error was: ", e
+              #neo4j.log "Unable to deserialize model, error was: ", e
               continue
             
           modelFetch = () =>

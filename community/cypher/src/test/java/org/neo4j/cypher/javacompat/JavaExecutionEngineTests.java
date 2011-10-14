@@ -93,7 +93,7 @@ public class JavaExecutionEngineTests
         		"start n=node(0) return n.NOT_EXISTING"
         		//END SNIPPET: Identifier
                 );
-        
+
         ExecutionResult result = engine.execute(query);
 
         assertThat( result.columns(), hasItem( "n.NOT_EXISTING" ) );
@@ -170,5 +170,19 @@ public class JavaExecutionEngineTests
      // END SNIPPET: exampleWithParametersForQuery
 
         assertEquals( asList(andreasNode), this.<Node>toList(result, "n") );
+    }
+
+    @Test
+    public void exampleWithParameterForNode() throws Exception
+    {
+     // START SNIPPET: exampleWithParameterForNode
+        Map<String, Object> params = new HashMap<String, Object>();
+        params.put("node", andreasNode);
+        ExecutionResult result = engine.execute("start n=node({node}) return n.name", params);
+     // END SNIPPET: exampleWithParameterForNode
+
+        assertThat( result.columns(), hasItem( "n.name" ) );
+        Iterator<Object> n_column = result.columnAs( "n.name" );
+        assertEquals("Andreas", n_column.next());
     }
 }

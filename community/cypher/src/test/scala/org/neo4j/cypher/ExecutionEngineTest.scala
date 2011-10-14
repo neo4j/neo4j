@@ -849,7 +849,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     assertEquals(1, result.toList.size)
   }
 
-  @Test(expected = classOf[ParameterNotFoundException]) def parameterTypeErrorShouldBeNicelyExplained() {
+  @Test(expected = classOf[ParameterWrongTypeException]) def parameterTypeErrorShouldBeNicelyExplained() {
     createNodes("A")
 
     val query = Query.

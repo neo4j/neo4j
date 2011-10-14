@@ -17,13 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.pipes.aggregation
 
-class ParameterNotFoundException(message:String, cause:Throwable) extends RuntimeException(message, cause) {
-  def this(message:String)=this(message,null)
+import org.neo4j.cypher.commands.Value
+
+class DistinctFunction(value:Value, inner:AggregationFunction) extends AggregationFunction {
+  val seen = scala.collection.mutable.Set[Any]()
+
+  def apply(m: Map[String, Any]) {
+    val data = value(m)
+    if(!seen.contains(data)) {
+      seen += data
+      inner(m)
+    }
+  }
+
+  def result: Any = inner.result
 }
-
-class ParameterWrongTypeException(message:String, cause:Throwable) extends RuntimeException(message, cause) {
-  def this(message:String)=this(message,null)
-}
-

@@ -1,9 +1,22 @@
+1.5.M02 (2011-10-10)
+--------------------
+o Added a standalone visualization mode for webadmin.
+o Improved documentation generation from tests.
+o Added support for setting ip address for web server.
+o Batch API memory overhead reduction and better response codes in case of failure.
+o RRD refactorings and format changes (old RRD files will be moved).
+o Icons in the visualization in webadmin.
+o Increased query timeout in the console view so that long-running Gremlin/Cypher queries can complete.
+o When adding to an index the value is written in the JSON payload as well as the URI.
+o Added simple security and authorization hooks and configuration.
+
 1.5.M01 (2011-08-31)
 --------------------
 o Fixed bug in statistics sampling
 o Support for querying auto index via REST
 o Some status code corrections to better reflect their intents.
 o Lots of documentation and more integration with the manual as well as using neo4j-graphviz for generating graphs.
+o Rule-based visualization in webadmin.
 
 1.4.M05 (2011-06-23)
 --------------------

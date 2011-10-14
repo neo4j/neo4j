@@ -58,7 +58,6 @@ define(
         $("#console-input").focus()
 
       renderConsole : ()=>
-        neo4j.log  @consoleState.get "showMultilineHelp" or false
         $("#console-base",@el).html consoleTemplate(
           lines : @consoleState.get "lines"
           prompt : @consoleState.get "prompt"

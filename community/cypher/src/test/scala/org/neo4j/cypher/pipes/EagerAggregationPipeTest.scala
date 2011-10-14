@@ -26,13 +26,14 @@ import scala.collection.JavaConverters._
 import org.neo4j.cypher.commands._
 import org.neo4j.cypher.{SyntaxException, SymbolTable}
 import org.scalatest.junit.JUnitSuite
-class AggregationPipeTest extends JUnitSuite {
+
+class EagerAggregationPipeTest extends JUnitSuite {
   @Test def shouldReturnColumnsFromReturnItems() {
     val source = new FakePipe(List(), new SymbolTable(NodeIdentifier("extractReturnItems")))
 
     val returnItems = List(ValueReturnItem(EntityValue("name")))
     val grouping = List(CountStar())
-    val aggregationPipe = new AggregationPipe(source, returnItems, grouping)
+    val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)
 
     assertEquals(
       Set(NodeIdentifier("extractReturnItems"),AggregationIdentifier("count(*)")),
@@ -44,7 +45,7 @@ class AggregationPipeTest extends JUnitSuite {
 
     val returnItems = List(ValueReturnItem(EntityValue("name")))
     val grouping = List(ValueAggregationItem(Count(EntityValue("none-existing-identifier"))))
-    new AggregationPipe(source, returnItems, grouping)
+    new EagerAggregationPipe(source, returnItems, grouping)
   }
 
   @Test def shouldAggregateCountStar() {
@@ -56,7 +57,7 @@ class AggregationPipeTest extends JUnitSuite {
 
     val returnItems = List(ValueReturnItem(EntityValue("name")))
     val grouping = List(CountStar())
-    val aggregationPipe = new AggregationPipe(source, returnItems, grouping)
+    val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)
 
     assertThat(aggregationPipe.toList.asJava, hasItems(
       Map("name" -> "Andres", "count(*)" -> 1),
@@ -73,7 +74,7 @@ class AggregationPipeTest extends JUnitSuite {
 
     val returnItems = List()
     val grouping = List(ValueAggregationItem(Count((EntityValue("name")))))
-    val aggregationPipe = new AggregationPipe(source, returnItems, grouping)
+    val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)
 
     assertEquals(List(Map("count(name)" -> 3)), aggregationPipe.toList)
   }

@@ -17,13 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.pipes.aggregation
 
-class ParameterNotFoundException(message:String, cause:Throwable) extends RuntimeException(message, cause) {
-  def this(message:String)=this(message,null)
-}
+class CountStarFunction extends AggregationFunction {
+  var count = 0
 
-class ParameterWrongTypeException(message:String, cause:Throwable) extends RuntimeException(message, cause) {
-  def this(message:String)=this(message,null)
+  def apply(data: Map[String, Any]) {
+    count = count + 1
+  }
+
+  def result: Int = count
 }
 

@@ -33,9 +33,15 @@ import java.io.ByteArrayOutputStream
 import org.neo4j.visualization.graphviz.{AsciiDocStyle, GraphvizWriter}
 import org.neo4j.walk.Walker
 import org.neo4j.visualization.asciidoc.AsciidocHelper
+import org.neo4j.test.GraphDescription.Graph
+import org.neo4j.test.GraphDescription.NODE
+import org.neo4j.test.GraphDescription.REL
+import org.neo4j.cypher.javacompat.GraphImpl 
+
+
 
 abstract class DocumentingTestBase extends JUnitSuite {
-  var db: GraphDatabaseService = null
+  var db: ImpermanentGraphDatabase = null
   val parser: CypherParser = new CypherParser
   var engine: ExecutionEngine = null
   var nodes: Map[String, Node] = null
@@ -135,11 +141,7 @@ _Graph_
     db.shutdown()
   }
 
-  private def removeReferenceNode(db: GraphDatabaseService) {
-    inTx(() => db.getReferenceNode.delete())
-  }
-
-  def inTx[U](f: () => U): U = {
+    def inTx[U](f: () => U): U = {
     val tx = db.beginTx()
     try {
       val x = f()
@@ -155,12 +157,13 @@ _Graph_
     db = new ImpermanentGraphDatabase()
     engine = new ExecutionEngine(db)
 
-    removeReferenceNode(db)
+    db.cleanContent(false)
 
     inTx(() => {
       nodeIndex = db.index().forNodes("nodes")
       relIndex = db.index().forRelationships("rels")
-      val description = GraphDescription.create(graphDescription: _*)
+      val g = new GraphImpl(graphDescription.toArray[String])
+      val description = GraphDescription.create(g)
 
       nodes = description.create(db).asScala.toMap
 
@@ -176,3 +179,5 @@ _Graph_
     })
   }
 }
+ 
+

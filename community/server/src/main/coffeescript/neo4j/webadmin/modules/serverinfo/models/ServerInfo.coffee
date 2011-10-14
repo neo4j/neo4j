@@ -43,6 +43,7 @@ define ['lib/backbone'], () ->
         for k,v of bean.properties
           if k[0...4] is 'name' then names.push v
         bean.name = names.join(' - ')
+        if bean.name.length == 0 then bean.name = bean.jmxName
       
       NEO4J_DOMAIN = "org.neo4j"
       beans = beans.sort (a,b) ->

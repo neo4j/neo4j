@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.commands
 
-import org.neo4j.cypher.pipes.aggregation._
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
 import org.neo4j.cypher.{ParameterNotFoundException, SyntaxException, SymbolTable}
@@ -54,43 +53,7 @@ abstract case class FunctionValue(functionName: String, arguments: Value*) exten
 }
 
 
-abstract class AggregationValue(functionName: String, inner: Value) extends Value {
-  def apply(m: Map[String, Any]) = m(identifier.name)
 
-  def identifier: Identifier = AggregationIdentifier(functionName + "(" + inner.identifier.name + ")")
-
-  def checkAvailable(symbols: SymbolTable) {
-    inner.checkAvailable(symbols)
-  }
-
-  def createAggregationFunction: AggregationFunction
-
-  def dependsOn: Set[String] = inner.dependsOn
-}
-
-case class Count(anInner: Value) extends AggregationValue("count", anInner) {
-  def createAggregationFunction = new CountFunction(anInner)
-}
-
-case class Sum(anInner: Value) extends AggregationValue("sum", anInner) {
-  def createAggregationFunction = new SumFunction(anInner)
-}
-
-case class Min(anInner: Value) extends AggregationValue("min", anInner) {
-  def createAggregationFunction = new MinFunction(anInner)
-}
-
-case class Max(anInner: Value) extends AggregationValue("max", anInner) {
-  def createAggregationFunction = new MaxFunction(anInner)
-}
-
-case class Avg(anInner: Value) extends AggregationValue("avg", anInner) {
-  def createAggregationFunction = new AvgFunction(anInner)
-}
-
-case class Collect(anInner: Value) extends AggregationValue("collect", anInner) {
-  def createAggregationFunction = new CollectFunction(anInner)
-}
 
 case class NullablePropertyValue(subEntity: String, subProperty: String) extends PropertyValue(subEntity, subProperty) {
   protected override def handleNotFound(propertyContainer: PropertyContainer, x: NotFoundException): Any = null

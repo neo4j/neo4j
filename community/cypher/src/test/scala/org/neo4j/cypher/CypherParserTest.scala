@@ -61,7 +61,6 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ValueReturnItem(EntityValue("a"))))
   }
 
-
   @Ignore
   @Test def parsedOrIdxQuery() {
     testQuery(
@@ -845,6 +844,15 @@ class CypherParserTest extends JUnitSuite with Assertions {
         start(NodeById("a", 0)).
         where(Not(IsNull(EntityValue("a"))))
         returns (ValueReturnItem(EntityValue("a"))))
+  }
+
+  @Test def testCountDistinct() {
+    testQuery(
+      """start a=node(0) return count(distinct a)""",
+      Query.
+        start(NodeById("a", 0)).
+        aggregation(ValueAggregationItem(Distinct(Count(EntityValue("a")), EntityValue("a")))).
+        returns())
   }
 
   @Test def consoleModeParserShouldOutputNullableProperties() {

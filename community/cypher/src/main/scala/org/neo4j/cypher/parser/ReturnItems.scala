@@ -30,15 +30,33 @@ trait ReturnItems extends JavaTokenParsers with Tokens with Values {
 
   def returnValues: Parser[Value] = nullableProperty | value | entityValue
 
-  def countFunc: Parser[AggregationItem] = ignoreCase("count") ~> parens(returnValues) ^^ ( inner => ValueAggregationItem(Count(inner)))
-  def sumFunc: Parser[AggregationItem] = ignoreCase("sum") ~> parens(returnValues) ^^ ( inner => ValueAggregationItem(Sum(inner)))
-  def minFunc: Parser[AggregationItem] = ignoreCase("min") ~> parens(returnValues) ^^ ( inner => ValueAggregationItem(Min(inner)))
-  def maxFunc: Parser[AggregationItem] = ignoreCase("max") ~> parens(returnValues) ^^ ( inner => ValueAggregationItem(Max(inner)))
-  def avgFunc: Parser[AggregationItem] = ignoreCase("avg") ~> parens(returnValues) ^^ ( inner => ValueAggregationItem(Avg(inner)))
-  def collectFunc: Parser[AggregationItem] = ignoreCase("collect") ~> parens(returnValues) ^^ ( inner => ValueAggregationItem(Collect(inner)))
-  def countStar: Parser[AggregationItem] = ignoreCase("count") ~> parens("*") ^^ { case "*" => CountStar() }
+  def functionNames = ignoreCase("count") | ignoreCase("sum") | ignoreCase("min") | ignoreCase("max") | ignoreCase("avg") | ignoreCase("collect")
 
-  def aggregate:Parser[AggregationItem] = (countStar | countFunc | sumFunc | minFunc | maxFunc | avgFunc | collectFunc)
+  def aggregationFunction: Parser[AggregationItem] = functionNames ~ parens(opt(ignoreCase("distinct")) ~ returnValues) ^^ {
+    case name ~ (distinct ~ inner) => {
+      val aggregate = name match {
+        case "count" => Count(inner)
+        case "sum" => Sum(inner)
+        case "min" => Min(inner)
+        case "max" => Max(inner)
+        case "avg" => Avg(inner)
+        case "collect" => Collect(inner)
+      }
+
+      if (distinct.isEmpty) {
+        ValueAggregationItem(aggregate)
+      }
+      else {
+        ValueAggregationItem(Distinct(aggregate, inner))
+      }
+    }
+  }
+
+  def countStar: Parser[AggregationItem] = ignoreCase("count") ~> parens("*") ^^ {
+    case "*" => CountStar()
+  }
+
+  def aggregate: Parser[AggregationItem] = (countStar | aggregationFunction)
 }
 
 
