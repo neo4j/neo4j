@@ -55,7 +55,7 @@ public class TestLuceneDataSource
     public void setup()
     {
         datasourceDirectory = new File( getDbPath() );
-        datasourceDirectory.mkdir();
+        datasourceDirectory.mkdirs();
         indexStore = new IndexStore( getDbPath() );
         addIndex( "foo" );
     }
