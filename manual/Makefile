@@ -1,9 +1,10 @@
 # Makefile for the Neo4j documentation
 #
 
+PROEJCTNAME      = neo4j-manual
 BUILDDIR         = $(CURDIR)/target
 SRCDIR           = $(BUILDDIR)/classes
-SRCFILE          = $(SRCDIR)/neo4j-manual.txt
+SRCFILE          = $(SRCDIR)/$(PROEJCTNAME).txt
 METAFROMDIR      = $(CURDIR)/src/docs
 METAFROMCSSDIR   = $(CURDIR)/src/main/resources/css
 METAFROMIMGDIR   = $(CURDIR)/src/main/resources/images
@@ -13,24 +14,24 @@ IMGDIR           = $(SRCDIR)/images
 CSSDIR           = $(SRCDIR)/css
 JSDIR            = $(SRCDIR)/js
 CONFDIR          = $(SRCDIR)/conf
-DOCBOOKFILE      = $(BUILDDIR)/neo4j-manual.xml
-DOCBOOKSHORTINFOFILE = $(BUILDDIR)/neo4j-manual-shortinfo.xml
-DOCBOOKFILEHTML  = $(BUILDDIR)/neo4j-manual-html.xml
+DOCBOOKFILE      = $(BUILDDIR)/$(PROEJCTNAME).xml
+DOCBOOKSHORTINFOFILE = $(BUILDDIR)/$(PROEJCTNAME)-shortinfo.xml
+DOCBOOKFILEHTML  = $(BUILDDIR)/$(PROEJCTNAME)-html.xml
 FOPDIR           = $(BUILDDIR)/pdf
-FOPFILE          = $(FOPDIR)/neo4j-manual.fo
-FOPPDF           = $(FOPDIR)/neo4j-manual.pdf
+FOPFILE          = $(FOPDIR)/$(PROEJCTNAME).fo
+FOPPDF           = $(FOPDIR)/$(PROEJCTNAME).pdf
 TEXTWIDTH        = 80
 TEXTDIR          = $(BUILDDIR)/text
-TEXTFILE         = $(TEXTDIR)/neo4j-manual.txt
+TEXTFILE         = $(TEXTDIR)/$(PROEJCTNAME).txt
 TEXTHTMLFILE     = $(TEXTFILE).html
 SINGLEHTMLDIR    = $(BUILDDIR)/html
-SINGLEHTMLFILE   = $(SINGLEHTMLDIR)/neo4j-manual.html
+SINGLEHTMLFILE   = $(SINGLEHTMLDIR)/$(PROEJCTNAME).html
 ANNOTATEDDIR     = $(BUILDDIR)/annotated
-ANNOTATEDFILE    = $(HTMLDIR)/neo4j-manual.html
+ANNOTATEDFILE    = $(HTMLDIR)/$(PROEJCTNAME).html
 CHUNKEDHTMLDIR   = $(BUILDDIR)/chunked
 CHUNKEDOFFLINEHTMLDIR = $(BUILDDIR)/chunked-offline
-CHUNKEDTARGET     = $(BUILDDIR)/neo4j-manual.chunked
-CHUNKEDSHORTINFOTARGET = $(BUILDDIR)/neo4j-manual-html.chunked
+CHUNKEDTARGET     = $(BUILDDIR)/$(PROEJCTNAME).chunked
+CHUNKEDSHORTINFOTARGET = $(BUILDDIR)/$(PROEJCTNAME)-html.chunked
 METAHTMLDIR      = $(BUILDDIR)/metadocs
 MANPAGES         = $(BUILDDIR)/manpages
 UPGRADE          = $(BUILDDIR)/upgrade
@@ -253,7 +254,7 @@ annotated:  manpages copyimages
 	cp -fr $(SRCDIR)/js $(ANNOTATEDDIR)/js
 	cp -fr $(SRCDIR)/css/* $(ANNOTATEDDIR)/css
 	cp -fr $(SRCDIR)/images/*.svg $(ANNOTATEDDIR)/images
-	mv $(ANNOTATEDDIR)/neo4j-manual.html $(ANNOTATEDDIR)/index.html
+	mv $(ANNOTATEDDIR)/$(PROEJCTNAME).html $(ANNOTATEDDIR)/index.html
 
 text: docbook-shortinfo
 	#

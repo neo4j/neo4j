@@ -363,7 +363,23 @@
               <attach>true</attach>
             </configuration>
           </execution>
+          <execution>
+            <id>manual-source</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>src/main/assemblies/manual-source.xml</descriptor>
+              </descriptors>
+              <finalName>${project.artifactId}-${project.version}</finalName>
+              <appendAssemblyId>true</appendAssemblyId>
+              <attach>true</attach>
+            </configuration>
+          </execution>
         </executions>
+        
       </plugin>
       <plugin>
         <groupId>com.mycila.maven-license-plugin</groupId>
