@@ -278,12 +278,9 @@ GraphDatabaseService db = new HighlyAvailableGraphDatabase( path, config );
 ----
 
 
-We created a config file with machine id=1 and enabled remote shell. The main method will expect the path to the db as first parameter and the configuration file as the second parameter. Copy the empty db to a path and try to execute:
+We created a config file with machine id=1 and enabled remote shell. The main method will expect the path to the db as first parameter and the configuration file as the second parameter. 
 
-// something missing here?
-
-
-It should now be possible to connect to the instance using the Neo4j Shell:
+It should now be possible to connect to the instance using <<shell>>:
 
 [source,shell]
 ----
