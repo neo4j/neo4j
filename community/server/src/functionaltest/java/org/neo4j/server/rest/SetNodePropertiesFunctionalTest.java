@@ -34,6 +34,8 @@ import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription.Graph;
+import org.neo4j.test.GraphDescription.NODE;
+import org.neo4j.test.GraphDescription.PROP;
 
 public class SetNodePropertiesFunctionalTest extends
         AbstractRestFunctionalTestBase
@@ -102,17 +104,13 @@ public class SetNodePropertiesFunctionalTest extends
      * Setting different properties will retain the existing ones for this node.
      */
     @Documented
-    @Graph( "jim knows joe" )
+    @Graph( nodes = {@NODE(name="jim", properties={@PROP(key="foo2", value="bar2")})} )
     @Test
     public void shouldReturn204WhenPropertyIsSet() throws Exception
     {
         Node jim = data.get().get( "jim" );
         gen.get().payload( JsonHelper.createJsonFrom( "bar" ) ).expectedStatus(
                 204 ).put( getPropertyUri( jim, "foo" ).toString() );
-        assertTrue( jim.hasProperty( "foo" ) );
-        //set another property
-        gen.get().payload( JsonHelper.createJsonFrom( "bar2" ) ).expectedStatus(
-                204 ).put( getPropertyUri( jim, "foo2" ).toString() );
         assertTrue( jim.hasProperty( "foo" ) );
         assertTrue( jim.hasProperty( "foo2" ) );
     }
