@@ -47,6 +47,23 @@ To perform a backup from a running embedded or server database run:
 ./neo4j-backup -incremental -from single://192.168.1.34:9999 -to /mnt/backup/neo4j-backup
 ----
 
+[[backup-java]]
+== Online Backup from Java ==
+
+In order to programmatically backup your data full or subsequently incremental from a 
+JVM based program, you need to write Java code like
+
+[snippet,java]
+----
+component=neo4j-backup
+source=org/neo4j/backup/TestBackup.java
+tag=onlineBackup
+classifier=test-sources
+----
+
+For more information, please see http://components.neo4j.org/neo4j-enterprise/{neo4j-version}/apidocs/org/neo4j/backup/OnlineBackup.html[the Javadocs for 
+OnlineBackup]
+
 [[backup-ha]]
 == High Availability ==
 

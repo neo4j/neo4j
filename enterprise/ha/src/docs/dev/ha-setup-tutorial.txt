@@ -2,8 +2,7 @@
 High Availability setup tutorial
 ================================
 
-This is a guide to set up a Neo4j HA cluster and run embedded Neo4j or Neo4j Server instances participating 
-as cluster nodes.
+This is a guide to set up a Neo4j HA cluster and run embedded Neo4j or Neo4j Server instances participating as cluster nodes.
 
 == Set up a Coordinator cluster ==
 
@@ -13,10 +12,8 @@ a Coordinator cluster is used for cluster collaboration and must be installed an
 before working with the Neo4j database HA instances.
 
 [TIP]
-Neo4j Server (see <<server>>) and Neo4j Embedded (see <<configuration-introduction>> can both be
-used as nodes in the same HA cluster, opening for scenarios where one application can insert and
-update data via a Java or JVM language based application, and other instances can run Neo4j Server
-and expose the data via the REST API (<<rest-api>>).
+Neo4j Server (see <<server>>) and Neo4j Embedded (see <<configuration-introduction>>) can both be used as nodes in the same HA cluster.
+This opens for scenarios where one application can insert and update data via a Java or JVM language based application, and other instances can run Neo4j Server and expose the data via the REST API (<<rest-api>>).
 
 Below, there will be 3 coordinator instances set up on one local machine.
 
@@ -27,9 +24,9 @@ Download and unpack three installations of Neo4j Enterprise
 
 === Setup and start the Coordinator cluster ===
 
-Now, in the +NEO4J_HOME1/conf/coord.cfg+, adjust the coordinator +clienPort+ and let the coordinator search for other coordinator cluster members at the localhost port ranges:
+Now, in the 'NEO4J_HOME1/conf/coord.cfg' file, adjust the coordinator +clientPort+ and let the coordinator search for other coordinator cluster members at the localhost port ranges:
 
-[source,shell]
+[source]
 ----
 #$NEO4J_HOME1/conf/coord.cfg
 
@@ -42,7 +39,7 @@ clientPort=2181
 
 The other two config files in +$NEO4J_HOME2+ and +$NEO4J_HOME3+ will have a different +clienttPort+ set but the other parameters identical to the first one:
 
-[source,shell]
+[source]
 ----
 #$NEO4J_HOME2/conf/coord.cfg
 ...
@@ -53,7 +50,7 @@ server.3=localhost:2890:3890
 clientPort=2182
 ----
 
-[source,shell]
+[source]
 ----
 #$NEO4J_HOME2/conf/coord.cfg
 ...
@@ -65,7 +62,7 @@ clientPort=2183
 ----
 
 Next we need to create a file in each data directory called "myid" that contains an id for each server 
-equal to the number in "server.1" "server.2" and "server.3" from the configuration files.
+equal to the number in +server.1+, +server.2+ and +server.3+ from the configuration files.
 
 [source,shell]
 ----
@@ -78,16 +75,16 @@ We are now ready to start the Coordinator instances:
 
 [source,shell]
 ----
-neo4j_home1$ bin/neo4j-coordinator start
-neo4j_home2$ bin/neo4j-coordinator start
-neo4j_home3$ bin/neo4j-coordinator start
+neo4j_home1$ ./bin/neo4j-coordinator start
+neo4j_home2$ ./bin/neo4j-coordinator start
+neo4j_home3$ ./bin/neo4j-coordinator start
 ----
 
 === Start the Neo4j Servers in HA mode ===
 
-In your +conf/neo4j.properties, enable HA by setting the necessary parameters for all 3 installations, adjusting the +ha.machine_id+ for all instances:
+In your 'conf/neo4j.properties' file, enable HA by setting the necessary parameters for all 3 installations, adjusting the +ha.machine_id+ for all instances:
 
-[source,shell]
+[source]
 ----
 #$NEO4J_HOME1/conf/neo4j.properties
 #unique machine id for this graph database
@@ -101,7 +98,7 @@ ha.server = localhost:6001
 ha.coordinators = localhost:2181,localhost:2182,localhost:2183
 ----
 
-[source,shell]
+[source]
 ----
 #$NEO4J_HOME2/conf/neo4j.properties
 #unique machine id for this graph database
@@ -115,7 +112,7 @@ ha.server = localhost:6001
 ha.coordinators = localhost:2181,localhost:2182,localhost:2183
 ----
 
-[source,shell]
+[source]
 ----
 #$NEO4J_HOME3/conf/neo4j.properties
 #unique machine id for this graph database
@@ -129,10 +126,9 @@ ha.server = localhost:6001
 ha.coordinators = localhost:2181,localhost:2182,localhost:2183
 ----
 
-To avoid port clashes when starting the servers, adjust the ports for the REST endpoints in all instances under +conf/neo4j-server.properties+ 
-and enable HA mode:
+To avoid port clashes when starting the servers, adjust the ports for the REST endpoints in all instances under 'conf/neo4j-server.properties' and enable HA mode:
 
-[source,shell]
+[source]
 ----
 #$NEO4J_HOME1/conf/neo4j-server.properties
 ...
@@ -147,7 +143,7 @@ org.neo4j.server.webserver.port=7474
 org.neo4j.server.database.mode=HA
 ----
 
-[source,shell]
+[source]
 ----
 #$NEO4J_HOME2/conf/neo4j-server.properties
 ...
@@ -162,7 +158,7 @@ org.neo4j.server.webserver.port=7475
 org.neo4j.server.database.mode=HA
 ----
 
-[source,shell]
+[source]
 ----
 #$NEO4J_HOME3/conf/neo4j-server.properties
 ...
@@ -181,15 +177,18 @@ Now, start all three server instances.
 
 [source,shell]
 ----
-neo4j_home1$ bin/neo4j start
-neo4j_home2$ bin/neo4j start
-neo4j_home3$ bin/neo4j start
+neo4j_home1$ ./bin/neo4j start
+neo4j_home2$ ./bin/neo4j start
+neo4j_home3$ ./bin/neo4j start
 ----
 
 Now, you should be able to access the 3 servers (the first one being elected as master since it was started first) at 
-http://localhost:7474/webadmin/#/info/org.neo4j/High%20Availability/, http://localhost:7475/webadmin/#/info/org.neo4j/High%20Availability/ and 
-http://localhost:7476/webadmin/#/info/org.neo4j/High%20Availability/ and check the status of the HA configuration. Alternatively, the REST
-API is exposing JMX, so you can check the HA JMX bean with e.g.
+http://localhost:7474/webadmin/\#/info/org.neo4j/High%20Availability/,
+http://localhost:7475/webadmin/\#/info/org.neo4j/High%20Availability/
+and
+http://localhost:7476/webadmin/#/info/org.neo4j/High%20Availability/
+and check the status of the HA configuration.
+Alternatively, the REST API is exposing JMX, so you can check the HA JMX bean with e.g.
 
 [source,shell]
 ----
@@ -198,7 +197,7 @@ curl -H "Content-Type:application/json" -d '["org.neo4j:*"]' http://localhost:74
 
 And find in the response
 
-[source,shell]
+[source,javascript]
 ----
 "description" : "Information about all instances in this cluster",
     "name" : "InstancesInCluster",
@@ -227,18 +226,20 @@ And find in the response
     }
 ----
 
-=== Start the Neo4j Embedded in HA mode ===
+=== Start Neo4j Embedded in HA mode ===
 
-If you are using maven and Neo4j Embedded, simply add the following dependency to your project:
+If you are using Maven and Neo4j Embedded, simply add the following dependency to your project:
 
 [source,xml]
 ----
-      <dependency>
-         <groupId>org.neo4j</groupId>
-         <artifactId>neo4j-ha</artifactId>
-         <version>${project.version}</version>
-      </dependency>
+<dependency>
+   <groupId>org.neo4j</groupId>
+   <artifactId>neo4j-ha</artifactId>
+   <version>${neo4j-version}</version>
+</dependency>
 ----
+_Where +$\{neo4j-version}+ is the Neo4j version used._
+
 
 If you prefer to download the jar files manually, they are included in the http://neo4j.org/download/[Neo4j distribution].
 
@@ -250,9 +251,9 @@ GraphDatabaseService db = new HighlyAvailableGraphDatabase( path, config );
 ----
 
 The configuration can contain the standard configuration parameters (provided as part of the +config+ above or
-in +neo4j.properties+ but will also have to contain:
+in 'neo4j.properties' but will also have to contain:
 
-[source,shell]
+[source]
 ----
 #HA instance1
 #unique machine id for this graph database
@@ -279,12 +280,14 @@ GraphDatabaseService db = new HighlyAvailableGraphDatabase( path, config );
 
 We created a config file with machine id=1 and enabled remote shell. The main method will expect the path to the db as first parameter and the configuration file as the second parameter. Copy the empty db to a path and try to execute:
 
+// something missing here?
+
 
 It should now be possible to connect to the instance using the Neo4j Shell:
 
 [source,shell]
 ----
-neo4j_home1$ bin/neo4j-shell -port 1331
+neo4j_home1$ ./bin/neo4j-shell -port 1331
 NOTE: Remote Neo4j graph database service 'shell' at port 1331
 Welcome to the Neo4j Shell! Enter 'help' for a list of commands
 
@@ -295,7 +298,7 @@ Connected slaves:
 
 Since it is the first instance to join the cluster it is elected master. Starting another instance would require a second configuration and another path to the db.
 
-[source,shell]
+[source]
 ----
 #HA instance2
 #unique machine id for this graph database
@@ -315,7 +318,7 @@ Now start the shell connecting to port 1332:
 
 [source,shell]
 ----
-neo4j_home1$ bin/neo4j-shell -port 1332
+neo4j_home1$ ./bin/neo4j-shell -port 1332
 NOTE: Remote Neo4j graph database service 'shell' at port 1332
 Welcome to the Neo4j Shell! Enter 'help' for a list of commands
 
