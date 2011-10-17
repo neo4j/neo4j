@@ -131,6 +131,19 @@ public class TestBatchInsert
     }
 
     @Test
+    public void testPropSetAndReset()
+    {
+        BatchInserter graphDb = newBatchInserter();
+        long startNode = graphDb.createNode( properties );
+        assertProperties( graphDb.getGraphDbService().getNodeById( startNode ) );
+        graphDb.setNodeProperties( startNode, properties );
+        assertProperties( graphDb.getGraphDbService().getNodeById( startNode ) );
+        graphDb.setNodeProperties( startNode, properties );
+        assertProperties( graphDb.getGraphDbService().getNodeById( startNode ) );
+        graphDb.shutdown();
+    }
+
+    @Test
     public void makeSureLoopsCanBeCreated()
     {
         BatchInserter graphDb = newBatchInserter();
@@ -193,6 +206,107 @@ public class TestBatchInsert
         for ( String key : properties.keySet() )
         {
             rel.setProperty( key, properties.get( key ) );
+        }
+    }
+
+    private void assertProperties( Node node )
+    {
+        for ( String key : properties.keySet() )
+        {
+            if ( properties.get( key ).getClass().isArray() )
+            {
+                Class<?> component = properties.get( key ).getClass().getComponentType();
+                if ( !component.isPrimitive() ) // then it is String, cast to
+                                                // Object[] is safe
+                {
+                    assertTrue( Arrays.equals(
+                            (Object[]) properties.get( key ),
+                            (Object[]) node.getProperty( key ) ) );
+                }
+                else
+                {
+                    if ( component == Integer.TYPE )
+                    {
+                        if ( component.isPrimitive() )
+                        {
+                            assertTrue( Arrays.equals(
+                                    (int[]) properties.get( key ),
+                                    (int[]) node.getProperty( key ) ) );
+                        }
+                    }
+                    else if ( component == Boolean.TYPE )
+                    {
+                        if ( component.isPrimitive() )
+                        {
+                            assertTrue( Arrays.equals(
+                                    (boolean[]) properties.get( key ),
+                                    (boolean[]) node.getProperty( key ) ) );
+                        }
+                    }
+                    else if ( component == Byte.TYPE )
+                    {
+                        if ( component.isPrimitive() )
+                        {
+                            assertTrue( Arrays.equals(
+                                    (byte[]) properties.get( key ),
+                                    (byte[]) node.getProperty( key ) ) );
+                        }
+                    }
+                    else if ( component == Character.TYPE )
+                    {
+                        if ( component.isPrimitive() )
+                        {
+                            assertTrue( Arrays.equals(
+                                    (char[]) properties.get( key ),
+                                    (char[]) node.getProperty( key ) ) );
+                        }
+                    }
+                    else if ( component == Long.TYPE )
+                    {
+                        if ( component.isPrimitive() )
+                        {
+                            assertTrue( Arrays.equals(
+                                    (long[]) properties.get( key ),
+                                    (long[]) node.getProperty( key ) ) );
+                        }
+                    }
+                    else if ( component == Float.TYPE )
+                    {
+                        if ( component.isPrimitive() )
+                        {
+                            assertTrue( Arrays.equals(
+                                    (float[]) properties.get( key ),
+                                    (float[]) node.getProperty( key ) ) );
+                        }
+                    }
+                    else if ( component == Double.TYPE )
+                    {
+                        if ( component.isPrimitive() )
+                        {
+                            assertTrue( Arrays.equals(
+                                    (double[]) properties.get( key ),
+                                    (double[]) node.getProperty( key ) ) );
+                        }
+                    }
+                    else if ( component == Short.TYPE )
+                    {
+                        if ( component.isPrimitive() )
+                        {
+                            assertTrue( Arrays.equals(
+                                    (short[]) properties.get( key ),
+                                    (short[]) node.getProperty( key ) ) );
+                        }
+                    }
+                }
+            }
+            else
+            {
+                assertEquals( properties.get( key ), node.getProperty( key ) );
+            }
+        }
+        for ( String stored : node.getPropertyKeys() )
+        {
+            assertTrue( properties.containsKey( stored ) );
         }
     }
 
@@ -295,12 +409,12 @@ public class TestBatchInsert
         inserter.shutdown();
         assertTrue( new File( storeDir, StringLogger.DEFAULT_NAME ).delete() );
     }
-    
+
     @Test
     public void createEntitiesWithEmptyPropertiesMap() throws Exception
     {
         BatchInserter inserter = newBatchInserter();
-        
+
         // Assert for node
         long nodeId = inserter.createNode( map() );
         inserter.getNodeProperties( nodeId );
@@ -312,15 +426,15 @@ public class TestBatchInsert
         inserter.getRelationshipProperties( relId );
         inserter.shutdown();
     }
-    
+
     @Test
     public void createEntitiesWithDynamicPropertiesMap() throws Exception
     {
         BatchInserter inserter = newBatchInserter();
-        
+
         setAndGet( inserter, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" );
         setAndGet( inserter, intArray( 20 ) );
-        
+
         inserter.shutdown();
     }
 

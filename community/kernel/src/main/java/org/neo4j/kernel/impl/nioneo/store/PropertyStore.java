@@ -334,6 +334,11 @@ public class PropertyStore extends AbstractStore implements Store
         }
     }
 
+    /*
+     * This will add the value records without checking if they are already
+     * in the block - so make sure to call this after checking isHeavy() or
+     * you will end up with duplicates.
+     */
     public void makeHeavy( PropertyBlock record )
     {
         if ( record.getType() == PropertyType.STRING )
@@ -430,10 +435,10 @@ public class PropertyStore extends AbstractStore implements Store
     {
         Buffer buffer = window.getOffsettedBuffer( id );
         PropertyRecord toReturn = getRecordFromBuffer( id, buffer );
-        if ( !toReturn.inUse() )
-        {
-            throw new InvalidRecordException( "Record[" + id + "] not in use" );
-        }
+        // if ( !toReturn.inUse() )
+        // {
+        // throw new InvalidRecordException( "Record[" + id + "] not in use" );
+        // }
         return toReturn;
     }
 

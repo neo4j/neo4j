@@ -474,9 +474,19 @@ public class BatchInserterImpl implements BatchInserter
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
             PropertyRecord propRecord = propStore.getRecord( nextProp );
+            /*
+             *  The only reason to loop over the blocks is to handle the dynamic
+             *  records that possibly hang under them. Otherwise, we could just
+             *  set the property record not in use and be done with it. The
+             *  residue of the convenience is that we do not remove individual
+             *  property blocks - we just mark the whole record as !inUse.
+             */
             for ( PropertyBlock propBlock : propRecord.getPropertyBlocks() )
             {
-                propStore.makeHeavy( propBlock );
+                if ( propBlock.isLight() )
+                {
+                    propStore.makeHeavy( propBlock );
+                }
                 for ( DynamicRecord rec : propBlock.getValueRecords() )
                 {
                     rec.setInUse( false );
