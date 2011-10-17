@@ -26,13 +26,16 @@ class StartupData implements Serializable
     private static final long serialVersionUID = 1L;
     final long creationTime;
     final long storeId;
+    final long storeVersion;
     final byte applicationProtocolVersion;
     final byte internalProtocolVersion;
-    
-    public StartupData( long creationTime, long storeId, byte internalProtocolVersion, byte applicationProtocolVersion )
+
+    public StartupData( long creationTime, long storeId, long storeVersion,
+            byte internalProtocolVersion, byte applicationProtocolVersion )
     {
         this.creationTime = creationTime;
         this.storeId = storeId;
+        this.storeVersion = storeVersion;
         this.internalProtocolVersion = internalProtocolVersion;
         this.applicationProtocolVersion = applicationProtocolVersion;
     }

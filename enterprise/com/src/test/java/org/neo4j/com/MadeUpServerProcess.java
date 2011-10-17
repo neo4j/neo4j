@@ -34,7 +34,7 @@ public class MadeUpServerProcess extends SubProcess<ServerInterface, StartupData
     protected void startup( StartupData data ) throws Throwable
     {
         MadeUpCommunicationInterface implementation = new MadeUpImplementation(
-                new StoreId( data.creationTime, data.storeId ) );
+                new StoreId( data.creationTime, data.storeId, data.storeVersion ) );
         server = new MadeUpServer( implementation, 8888, data.internalProtocolVersion, data.applicationProtocolVersion );
     }
 

@@ -134,7 +134,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
         msgLog = StringLogger.getLogger( storeDir );
         msgLog.logMessage( "Client connected to " + hostNameOrIp + ":" + port, true );
     }
-    
+
     /**
      * Only exposed so that tests can control it. It's not configurable really.
      */
@@ -142,7 +142,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
     {
         return Server.INTERNAL_PROTOCOL_VERSION;
     }
-    
+
     protected <R> Response<R> sendRequest( RequestType<M> type, SlaveContext context,
             Serializer serializer, Deserializer<R> deserializer )
     {
@@ -153,7 +153,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
             channelContext = getChannel( type );
             Channel channel = channelContext.first();
             channelContext.second().clear();
-            
+
             ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( channelContext.second(),
                     channel, frameLength, getInternalProtocolVersion(), applicationProtocolVersion );
             chunkingBuffer.writeByte( type.id() );
@@ -167,7 +167,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
                     channel.getPipeline().get( "blockingHandler" );
             DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader, readTimeout, getInternalProtocolVersion(),
                     applicationProtocolVersion );
-            
+
             R response = deserializer.read( dechunkingBuffer, channelContext.third() );
             StoreId storeId = readStoreId( dechunkingBuffer, channelContext.third() );
             if ( shouldCheckStoreId( type ) )
@@ -219,7 +219,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
     private StoreId readStoreId( ChannelBuffer source, ByteBuffer byteBuffer )
     {
         byteBuffer.clear();
-        byteBuffer.limit( 16 );
+        byteBuffer.limit( 8 + 8 + 8 );
         source.readBytes( byteBuffer );
         byteBuffer.flip();
         return StoreId.deserialize( byteBuffer );
@@ -238,7 +238,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
             targetBuffer.writeLong( tx.other() );
         }
     }
-    
+
     private Triplet<Channel, ChannelBuffer, ByteBuffer> getChannel( RequestType<M> type ) throws Exception
     {
         // Calling acquire is dangerous since it may be a blocking call... and if this
@@ -262,7 +262,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
     {
         channel.first().close().awaitUninterruptibly();
     }
-    
+
     public ChannelPipeline getPipeline() throws Exception
     {
         ChannelPipeline pipeline = Channels.pipeline();
@@ -287,7 +287,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
         {
             return TransactionStream.EMPTY;
         }
-        
+
         return new TransactionStream()
         {
             @Override
