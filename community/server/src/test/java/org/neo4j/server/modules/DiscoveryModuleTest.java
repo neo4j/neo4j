@@ -19,18 +19,18 @@
  */
 package org.neo4j.server.modules;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import java.net.URI;
 import java.util.List;
 
 import org.junit.Test;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.web.WebServer;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class DiscoveryModuleTest
 {
@@ -46,7 +46,7 @@ public class DiscoveryModuleTest
 
         DiscoveryModule module = new DiscoveryModule();
 
-        module.start( neoServer );
+        module.start( neoServer, null );
 
         verify( webServer ).addJAXRSPackages( any( List.class ), anyString() );
     }

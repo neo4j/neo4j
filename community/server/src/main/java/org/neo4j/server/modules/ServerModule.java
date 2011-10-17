@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.modules;
 
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 
 /**
@@ -27,13 +28,13 @@ import org.neo4j.server.NeoServerWithEmbeddedWebServer;
  */
 public interface ServerModule
 {
-
     /**
      * Start a module within the server
-     * 
+     *
      * @param neoServer The NeoServer that owns the module
+     * @param logger logger for tracking the startup sequence
      */
-    public void start( NeoServerWithEmbeddedWebServer neoServer );
+    public void start( NeoServerWithEmbeddedWebServer neoServer, StringLogger logger );
 
     public void stop();
 }

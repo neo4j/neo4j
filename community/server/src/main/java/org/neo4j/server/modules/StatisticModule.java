@@ -20,6 +20,7 @@
 package org.neo4j.server.modules;
 
 import org.mortbay.jetty.Server;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.statistic.StatisticCollector;
 import org.neo4j.server.statistic.StatisticFilter;
@@ -27,16 +28,15 @@ import org.neo4j.server.statistic.StatisticStartupListener;
 
 public class StatisticModule implements ServerModule
 {
-
     private StatisticStartupListener listener;
 
-    public void start( NeoServerWithEmbeddedWebServer neoServer )
+    public void start( NeoServerWithEmbeddedWebServer neoServer, StringLogger logger )
     {
         Server jetty = neoServer.getWebServer().getJetty();
 
         StatisticCollector statisticCollector =
                 neoServer.getDatabase().statisticCollector();
-        
+
         listener = new StatisticStartupListener( jetty,
                 new StatisticFilter( statisticCollector ) );
         jetty.addLifeCycleListener( listener );

@@ -20,15 +20,24 @@
 package org.neo4j.kernel;
 
 import java.io.File;
+import java.io.IOException;
+import java.lang.management.CompilationMXBean;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryPoolMXBean;
+import java.lang.management.MemoryUsage;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.TreeSet;
 
 import javax.transaction.TransactionManager;
 
@@ -160,8 +169,7 @@ class GraphDbInstance
         kernelExtensionLoader.initializeIndexProviders();
 
         config.getTxModule().start();
-        config.getPersistenceModule().start( config.getTxModule().getTxManager(),
- persistenceSource,
+        config.getPersistenceModule().start( config.getTxModule().getTxManager(), persistenceSource,
                 config.getSyncHookFactory(), config.getLockReleaser() );
         persistenceSource.start( config.getTxModule().getXaDataSourceManager() );
         config.getIdGeneratorModule().start();
@@ -169,38 +177,193 @@ class GraphDbInstance
                 config.getPersistenceModule().getPersistenceManager(),
                 config.getRelationshipTypeCreator(), params );
 
+        logConfig( params, graphDb.getClass(), storeDir, dumpToConsole, logger, autoConfigurator );
+        started = true;
+        return Collections.unmodifiableMap( params );
+    }
+
+    private static void logConfig( Map<Object, Object> params, Class<? extends GraphDatabaseService> graphDb,
+            String storeDir, boolean dumpToConsole, StringLogger logger, AutoConfigurator autoConfigurator )
+    {
         logger.logMessage( "--- CONFIGURATION START ---" );
+        logger.logMessage( "Graph Database: " + graphDb.getName() );
         logger.logMessage( autoConfigurator.getNiceMemoryInformation() );
         logger.logMessage( "Kernel version: " + Version.getKernel() );
+        logger.logMessage( "Neo4j component versions:" );
         for ( Version componentVersion : Service.load( Version.class ) )
         {
-            logger.logMessage( componentVersion.toString() );
+            logger.logMessage( "  " + componentVersion );
         }
         RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
         OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
-        logger.logMessage( String.format( "Operating System: %s; version: %s; arch: %s; cpus: %s",
-                os.getName(), os.getVersion(), os.getArch(), os.getAvailableProcessors() ) );
+        logger.logMessage( String.format( "Operating System: %s; version: %s; arch: %s; cpus: %s", os.getName(),
+                os.getVersion(), os.getArch(), Integer.valueOf( os.getAvailableProcessors() ) ) );
+        logger.logMessage( "Byte order: " + ByteOrder.nativeOrder() );
         logger.logMessage( "VM Name: " + runtime.getVmName() );
         logger.logMessage( "VM Vendor: " + runtime.getVmVendor() );
         logger.logMessage( "VM Version: " + runtime.getVmVersion() );
+        CompilationMXBean compiler = ManagementFactory.getCompilationMXBean();
+        logger.logMessage( "JIT compiler: " + ( ( compiler == null ) ? "unknown" : compiler.getName() ) );
+        Collection<String> classpath;
         if ( runtime.isBootClassPathSupported() )
         {
-            logger.logMessage( "Boot Class Path: " + runtime.getBootClassPath() );
+            classpath = buildClassPath( GraphDbInstance.class.getClassLoader(),
+                    new String[] { "bootstrap", "classpath" }, runtime.getBootClassPath(), runtime.getClassPath() );
         }
-        logger.logMessage( "Class Path: " + runtime.getClassPath() );
-        logger.logMessage( "Library Path: " + runtime.getLibraryPath() );
-        for ( GarbageCollectorMXBean gcBean : ManagementFactory.getGarbageCollectorMXBeans() )
+        else
         {
-            logger.logMessage( "Garbage Collector: " + gcBean.getName() + ": "
-                               + Arrays.toString( gcBean.getMemoryPoolNames() ) );
+            classpath = buildClassPath( GraphDbInstance.class.getClassLoader(), new String[] { "classpath" },
+                    runtime.getClassPath() );
+        }
+        logger.logMessage( "Class Path:" );
+        for ( String path : classpath )
+        {
+            logger.logMessage( "  " + path );
+        }
+        logClassPath( logger, "Library Path:", runtime.getLibraryPath() );
+        for ( GarbageCollectorMXBean gc : ManagementFactory.getGarbageCollectorMXBeans() )
+        {
+            logger.logMessage( "Garbage Collector: " + gc.getName() + ": " + Arrays.toString( gc.getMemoryPoolNames() ) );
+        }
+        for ( MemoryPoolMXBean pool : ManagementFactory.getMemoryPoolMXBeans() )
+        {
+            MemoryUsage usage = pool.getUsage();
+            logger.logMessage( String.format( "Memory Pool: %s (%s): committed=%s, used=%s, max=%s, threshold=%s",
+                    pool.getName(), pool.getType(), usage == null ? "?" : bytes( usage.getCommitted() ),
+                    usage == null ? "?" : bytes( usage.getUsed() ), usage == null ? "?" : bytes( usage.getMax() ),
+                    pool.isUsageThresholdSupported() ? bytes( pool.getUsageThreshold() ) : "?" ) );
         }
         logger.logMessage( "VM Arguments: " + runtime.getInputArguments() );
-        logger.logMessage( "" );
+        logger.logMessage( "System properties:" );
+        for ( Object property : System.getProperties().keySet() )
+        {
+            if ( property instanceof String )
+            {
+                String key = (String) property;
+                if ( key.startsWith( "java." ) || key.startsWith( "os." ) || key.endsWith( ".boot.class.path" )
+                     || key.equals( "line.separator" ) )
+                    continue;
+                logger.logMessage( "  " + key + " = " + System.getProperty( key ) );
+            }
+        }
+        logger.logMessage( "Neo4j Kernel properties:" );
         logConfiguration( params, logger, dumpToConsole );
+        logger.logMessage( "Storage files:" );
+        logStoreFiles( logger, "  ", new File( storeDir ) );
         logger.logMessage( "--- CONFIGURATION END ---" );
         logger.flush();
-        started = true;
-        return Collections.unmodifiableMap( params );
+    }
+
+    private static Collection<String> buildClassPath( ClassLoader loader, String[] pathKeys, String... classPaths )
+    {
+        Map<String, String> paths = new HashMap<String, String>();
+        assert pathKeys.length == classPaths.length;
+        for ( int i = 0; i < classPaths.length; i++ )
+            for ( String path : classPaths[i].split( File.pathSeparator ) )
+                paths.put( canonicalize( path ), pathValue( paths, pathKeys[i], path ) );
+        for ( int level = 0; loader != null; level++ )
+        {
+            if ( loader instanceof URLClassLoader )
+            {
+                URLClassLoader urls = (URLClassLoader) loader;
+                for ( URL url : urls.getURLs() )
+                    if ( "file".equalsIgnoreCase( url.getProtocol() ) )
+                        paths.put( url.toString(), pathValue( paths, "loader." + level, url.getPath() ) );
+            }
+            loader = loader.getParent();
+        }
+        List<String> result = new ArrayList<String>( paths.size() );
+        for ( Map.Entry<String, String> path : paths.entrySet() )
+        {
+            result.add( " [" + path.getValue() + "] " + path.getKey() );
+        }
+        return result;
+    }
+
+    private static String pathValue( Map<String, String> paths, String key, String path )
+    {
+        String value;
+        if ( null != ( value = paths.remove( canonicalize( path ) ) ) )
+        {
+            value += " + " + key;
+        }
+        else
+        {
+            value = key;
+        }
+        return value;
+    }
+
+    private static String canonicalize( String path )
+    {
+        try
+        {
+            return new File( path ).getCanonicalFile().getAbsolutePath();
+        }
+        catch ( IOException e )
+        {
+            return new File( path ).getAbsolutePath();
+        }
+    }
+
+    private static void logClassLoader( StringLogger logger, ClassLoader loader )
+    {
+        if ( loader == null ) return;
+        if ( loader instanceof URLClassLoader )
+        {
+            URLClassLoader urlLoader = (URLClassLoader) loader;
+            for ( URL url : urlLoader.getURLs() )
+            {
+                logger.logMessage( "  " + url );
+            }
+        }
+        logClassLoader( logger, loader.getParent() );
+    }
+
+    private static long logStoreFiles( StringLogger logger, String prefix, File dir )
+    {
+        if ( !dir.isDirectory() ) return 0;
+        long total = 0;
+        for ( File file : dir.listFiles() )
+        {
+            long size;
+            String filename = file.getName();
+            if ( file.isDirectory() )
+            {
+                logger.logMessage( prefix + filename + ":" );
+                size = logStoreFiles( logger, prefix + "  ", file );
+                filename = "- Total";
+            }
+            else
+            {
+                size = file.length();
+            }
+            logger.logMessage( prefix + filename + ": " + bytes( size ) );
+            total += size;
+        }
+        return total;
+    }
+
+    private static final String[] BYTE_SIZES = { "B", "kB", "MB", "GB" };
+
+    private static String bytes( long bytes )
+    {
+        double size = bytes;
+        for ( String suffix : BYTE_SIZES )
+        {
+            if ( size < 1024 ) return String.format( "%.2f %s", Double.valueOf( size ), suffix );
+            size /= 1024;
+        }
+        return String.format( "%.2f TB", Double.valueOf( size ) );
+    }
+
+    private static void logClassPath( StringLogger logger, String title, String classpath )
+    {
+        logger.logMessage( title );
+        for ( String path : classpath.split( File.pathSeparator ) )
+        {
+            logger.logMessage( "  " + path );
+        }
     }
 
     private static Map<Object, Object> subset( Map<Object, Object> source, String... keys )
@@ -216,27 +379,21 @@ class GraphDbInstance
         return result;
     }
 
-    private void logConfiguration( Map<Object, Object> params, StringLogger logger, boolean dumpToConsole )
+    private static void logConfiguration( Map<Object, Object> params, StringLogger logger, boolean dumpToConsole )
     {
-        TreeSet<String> stringKeys = new TreeSet<String>();
         for( Object key : params.keySet())
         {
             if (key instanceof String)
             {
-                stringKeys.add((String)key);
-            }
-        }
+                Object value = params.get( key );
+                String mess = key + "=" + value;
+                if ( dumpToConsole )
+                {
+                    System.out.println( mess );
+                }
 
-        for( String key : stringKeys )
-        {
-            Object value = params.get( key );
-            String mess = key + "=" + value;
-            if ( dumpToConsole )
-            {
-                System.out.println( mess );
+                logger.logMessage( "  " + mess );
             }
-
-            logger.logMessage( mess );
         }
     }
 
