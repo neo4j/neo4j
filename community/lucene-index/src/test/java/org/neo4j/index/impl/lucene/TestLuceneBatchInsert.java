@@ -388,6 +388,38 @@ public class TestLuceneBatchInsert
         inserter.shutdown();
     }
 
+    @Test
+    public void addOrUpdateFlushBehaviour() throws Exception
+    {
+        BatchInserter inserter = new BatchInserterImpl( new File( PATH, "9" ).getAbsolutePath() );
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider(
+                inserter );
+        BatchInserterIndex index = provider.nodeIndex( "update", EXACT_CONFIG );
+        
+        long id = inserter.createNode( null );
+        Map<String, Object> props = new HashMap<String, Object>();
+        props.put( "key", "value" );
+        index.add( id, props );
+        index.updateOrAdd( id, props );
+        assertEquals( 1, index.get( "key", "value" ).size() );
+        index.flush();
+        props.put( "key", "value2" );
+        index.updateOrAdd( id, props );
+        index.flush();
+        assertEquals( 1, index.get( "key", "value2" ).size() );
+        assertEquals( 0, index.get( "key", "value" ).size() );
+        props.put( "key2", "value2" );
+        props.put( "key", "value" );
+        index.updateOrAdd( id, props );
+        assertEquals( 0, index.get( "key2", "value2" ).size() );
+        index.flush();
+        assertEquals( 1, index.get( "key2", "value2" ).size() );
+        assertEquals( 1, index.get( "key", "value" ).size() );
+        
+        
+        provider.shutdown();
+        inserter.shutdown();
+    }
     private enum EdgeType implements RelationshipType
     {
         KNOWS

@@ -42,14 +42,13 @@ Next we will use a small utility that simulates the Neo4j kernel behavior to ben
 //This should be pointing to a new location?
 [source,shell]
 ----
-$ svn co https://svn.neo4j.org/laboratory/users/johan/write-test
-A    write-test/run
+$ git clone git@github.com:johan-neo/tooling.git
 ...
-$ cd write-test/
-write-test$ mvn compile
+$ cd tooling/write-test/
+$ mvn compile
 [INFO] Scanning for projects...
 ...
-write-test$ ./run 
+$ ./run 
 Usage: <large file> <log file> <[record size] [min tx size] [max tx size] [tx count] <[--nosync | --nowritelog | --nowritestore | --noread | --nomemorymap]>>
 ----
 

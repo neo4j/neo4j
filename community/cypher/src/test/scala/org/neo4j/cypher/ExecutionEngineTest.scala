@@ -446,7 +446,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     assertEquals(List(Map("a" -> refNode, "count(*)" -> 2)), result.toList)
   }
 
-  @Test def shouldReturnTwoSubgraphsWithBoundUndirectedRelationship() {
+  @Test def parametershouldReturnTwoSubgraphsWithBoundUndirectedRelationship() {
     val a = createNode("a")
     val b = createNode("b")
     relate(a, b, "rel", "r")
@@ -834,22 +834,22 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
       NodeById("pA", ParameterValue("a")),
       NodeById("pB", ParameterValue("b")),
       NodeById("pC", ParameterValue("c")),
-      NodeById("pD", ParameterValue("d")),
-      NodeById("pE", ParameterValue("e"))).
+      NodeById("pD", ParameterValue("0")),
+      NodeById("pE", ParameterValue("1"))).
       returns(ValueReturnItem(EntityValue("pA")), ValueReturnItem(EntityValue("pB")), ValueReturnItem(EntityValue("pC")), ValueReturnItem(EntityValue("pD")), ValueReturnItem(EntityValue("pE")))
 
     val result = execute(query,
       "a" -> Seq[Long](1),
       "b" -> 2,
       "c" -> Seq(3L).asJava,
-      "d" -> Seq(4).asJava,
-      "e" -> List(5)
+      "0" -> Seq(4).asJava,
+      "1" -> List(5)
     )
 
     assertEquals(1, result.toList.size)
   }
 
-  @Test(expected = classOf[ParameterNotFoundException]) def parameterTypeErrorShouldBeNicelyExplained() {
+  @Test(expected = classOf[ParameterWrongTypeException]) def parameterTypeErrorShouldBeNicelyExplained() {
     createNodes("A")
 
     val query = Query.
@@ -888,6 +888,90 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val result = parseAndExecute("start x  = node({startId}) match x-[r]-friend where friend.name = {name} return TYPE(r)", "startId" -> 1, "name" -> "you")
 
     assert(List(Map("TYPE(r)" -> "KNOW")) === result.toList)
+  }
+
+@Test def twoBoundNodesPointingToOne() {
+    val a = createNode("A")
+    val b = createNode("B")
+    val x1 = createNode("x1")
+    val x2 = createNode("x2")
+
+    relate(a, x1, "REL", "AX1")
+    relate(a, x2, "REL", "AX2")
+
+    relate(b, x1, "REL", "BX1")
+    relate(b, x2, "REL", "BX2")
+
+    val result = parseAndExecute("""
+start a  = node({A}), b = node({B})
+match a-[rA]->x<-[rB]->b
+return x""", "A" -> 1, "B" -> 2)
+
+    assert(List(x1, x2) === result.columnAs[Node]("x").toList)
+  }
+
+
+  @Test def threeBoundNodesPointingToOne() {
+    val a = createNode("A")
+    val b = createNode("B")
+    val c = createNode("C")
+    val x1 = createNode("x1")
+    val x2 = createNode("x2")
+
+    relate(a, x1, "REL", "AX1")
+    relate(a, x2, "REL", "AX2")
+
+    relate(b, x1, "REL", "BX1")
+    relate(b, x2, "REL", "BX2")
+
+    relate(c, x1, "REL", "CX1")
+    relate(c, x2, "REL", "CX2")
+
+    val result = parseAndExecute("""
+start a  = node({A}), b = node({B}), c = node({C})
+match a-[rA]->x, b-[rB]->x, c-[rC]->x
+return x""", "A" -> 1, "B" -> 2, "C" -> 3)
+
+    assert(List(x1, x2) === result.columnAs[Node]("x").toList)
+  }
+
+  @Test def threeBoundNodesPointingToOneWithABunchOfExtraConnections() {
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
+    val d = createNode("d")
+    val e = createNode("e")
+    val f = createNode("f")
+    val g = createNode("g")
+    val h = createNode("h")
+    val i = createNode("i")
+    val j = createNode("j")
+    val k = createNode("k")
+
+    relate(a, d)
+    relate(a, e)
+    relate(a, f)
+    relate(a, g)
+    relate(a, i)
+
+    relate(b, d)
+    relate(b, e)
+    relate(b, f)
+    relate(b, h)
+    relate(b, k)
+
+    relate(c, d)
+    relate(c, e)
+    relate(c, h)
+    relate(c, g)
+    relate(c, j)
+
+    val result = parseAndExecute("""
+start a  = node({A}), b = node({B}), c = node({C})
+match a-->x, b-->x, c-->x
+return x""", "A" -> 1, "B" -> 2, "C" -> 3)
+
+    assert(List(d, e) === result.columnAs[Node]("x").toList)
   }
 
   @Test(expected = classOf[ParameterNotFoundException]) def shouldComplainWhenMissingParams() {

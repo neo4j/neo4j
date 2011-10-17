@@ -1,3 +1,15 @@
+1.5.M02 (2011-10-10)
+--------------------
+o Made it possible for a ManagementBeanProvider to return null in order to not load a bean.
+
+1.5.M01 (2011-08-31)
+--------------------
+o Added Hit/Miss counter to the monitoring information for the Cache management beans.
+
+1.4 (2011-07-08)
+----------------
+o No changes.
+
 1.4.M03 (2011-05-25)
 --------------------
 o No changes.

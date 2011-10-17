@@ -4,7 +4,7 @@
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-pom</artifactId>
     <version>25</version>
-    <relativePath/>
+    <relativePath />
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -562,7 +562,7 @@ the relevant Commercial Agreement.
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore/>
+                    <ignore />
                   </action>
                 </pluginExecution>
               </pluginExecutions>

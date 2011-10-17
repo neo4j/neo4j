@@ -122,3 +122,7 @@ org.neo4j.server.webadmin.data.uri=http://localhost:7475/db/data/
 
 org.neo4j.server.webadmin.management.uri=http://localhost:7475/db/manage/
 ----
+
+== High Availability Mode ==
+
+For information on High Availability, please refer to <<ha>>.

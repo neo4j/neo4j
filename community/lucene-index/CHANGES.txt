@@ -1,3 +1,8 @@
+1.5.M02 (2011-10-10)
+--------------------
+o Fixed an issue where null would be returned for consecutive calls after it got an initial
+  IllegalStateException (if snapshoting an empty index)
+
 1.5.M01 (2011-08-31)
 --------------------
 o Auto indexing hooks in on each operation instead of transaction events.

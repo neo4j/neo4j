@@ -17,25 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes.matching
+package org.neo4j.cypher.pipes.aggregation
 
-import org.neo4j.cypher.GraphDatabaseTestBase
-import org.scalatest.Assertions
-import org.junit.Test
-import org.neo4j.graphdb.{DynamicRelationshipType, Direction}
+import org.neo4j.cypher.commands.Value
 
-class HistoryTest extends GraphDatabaseTestBase with Assertions {
+class CountFunction(value:Value) extends AggregationFunction {
+  var count = 0
 
-  val typ = DynamicRelationshipType.withName("REL")
-
-  @Test def excludingPatternRelsWorksAsExpected() {
-    val a = new PatternNode("a")
-    val b = new PatternNode("b")
-    val pr = a.relateTo("r", b, None, Direction.BOTH, false)
-    val r = relate(graph.getReferenceNode, graph.getReferenceNode, "rel")
-    val mp = new MatchingPair(pr, r)
-    val history = new History(Set(mp))
-
-    assert(history.filter(Set[PatternRelationship](pr)) === Set())
+  def apply(data: Map[String, Any]) {
+    value(data) match {
+      case null =>
+      case _ => count = count + 1
+    }
   }
+
+  def result: Int = count
 }

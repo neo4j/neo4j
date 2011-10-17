@@ -39,7 +39,9 @@ public class ConfigMapUpgradeConfiguration implements UpgradeConfiguration
         if ( !Boolean.parseBoolean( allowUpgrade ) )
         {
             throw new UpgradeNotAllowedByConfigurationException(
-                    String.format( "To enable automatic upgrade, please set configuration parameter \"%s=true\"",
+                    String.format(
+                            "Failed to start Neo4j with an older data store version. "
+                                    + "To enable automatic upgrade, please set configuration parameter \"%s=true\"",
                             Config.ALLOW_STORE_UPGRADE ) );
         }
     }
