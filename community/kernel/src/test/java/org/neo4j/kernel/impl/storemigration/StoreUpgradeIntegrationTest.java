@@ -20,18 +20,23 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
 
 public class StoreUpgradeIntegrationTest
 {
@@ -52,4 +57,56 @@ public class StoreUpgradeIntegrationTest
         assertTrue( allStoreFilesHaveVersion( workingDirectory, ALL_STORES_VERSION ) );
     }
 
+    @Test
+    public void shouldAbortOnNonCleanlyShutdown() throws IOException
+    {
+        File workingDirectory = new File(
+                "target/" + StoreUpgraderTest.class.getSimpleName() );
+        prepareSampleLegacyDatabase( workingDirectory );
+
+        assertTrue( allStoreFilesHaveVersion( workingDirectory, "v0.9.9" ) );
+        StoreUpgraderTest.truncateAllFiles( workingDirectory );
+        // Now everything has lost the version info
+
+        Map<String, String> params = new HashMap<String, String>();
+        params.put( Config.ALLOW_STORE_UPGRADE, "true" );
+
+        try
+        {
+            GraphDatabaseService database = new EmbeddedGraphDatabase(
+                    workingDirectory.getPath(), params );
+            fail( "Should have been unable to start upgrade on old version" );
+        }
+        catch ( TransactionFailureException e )
+        {
+            assertTrue( IllegalStateException.class.isAssignableFrom( e.getCause().getClass() ) );
+        }
+    }
+
+    @Test
+    public void shouldAbortOnCorruptStore() throws IOException
+    {
+        File workingDirectory = new File(
+                "target/" + StoreUpgraderTest.class.getSimpleName() );
+        prepareSampleLegacyDatabase( workingDirectory );
+
+        assertTrue( allStoreFilesHaveVersion( workingDirectory, "v0.9.9" ) );
+        truncateFile( new File( workingDirectory,
+                "neostore.propertystore.db.index.keys" ),
+                "StringPropertyStore v0.9.9" );
+
+        Map<String, String> params = new HashMap<String, String>();
+        params.put( Config.ALLOW_STORE_UPGRADE, "true" );
+
+        try
+        {
+            GraphDatabaseService database = new EmbeddedGraphDatabase(
+                    workingDirectory.getPath(), params );
+            fail( "Should have been unable to start upgrade on old version" );
+        }
+        catch ( TransactionFailureException e )
+        {
+            assertTrue( UnableToUpgradeException.class.isAssignableFrom( e.getCause().getClass() ) );
+        }
+    }
 }
