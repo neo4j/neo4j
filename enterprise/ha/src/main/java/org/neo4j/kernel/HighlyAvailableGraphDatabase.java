@@ -19,16 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import static java.lang.Math.max;
-import static java.util.Arrays.asList;
-import static org.neo4j.backup.OnlineBackupExtension.parsePort;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
-import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryFileNamePattern;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryLogVersion;
-
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -89,15 +79,25 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 
+import static java.lang.Math.max;
+import static java.util.Arrays.asList;
+import static org.neo4j.backup.OnlineBackupExtension.parsePort;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
+import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryFileNamePattern;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryLogVersion;
+
 public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         implements GraphDatabaseService, ResponseReceiver
 {
     public static final String CONFIG_KEY_OLD_SERVER_ID = "ha.machine_id";
     public static final String CONFIG_KEY_SERVER_ID = "ha.server_id";
-    
+
     public static final String CONFIG_KEY_OLD_COORDINATORS = "ha.zoo_keeper_servers";
     public static final String CONFIG_KEY_COORDINATORS = "ha.coordinators";
-    
+
     public static final String CONFIG_KEY_SERVER = "ha.server";
     public static final String CONFIG_KEY_CLUSTER_NAME = "ha.cluster_name";
     public static final String CONFIG_KEY_PULL_INTERVAL = "ha.pull_interval";
@@ -109,7 +109,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
     private static final String CONFIG_DEFAULT_HA_CLUSTER_NAME = "neo4j.ha";
     private static final int CONFIG_DEFAULT_PORT = 6361;
-    
+
     private final String storeDir;
     private final Map<String, String> config;
     private final BrokerFactory brokerFactory;
@@ -241,7 +241,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         StoreId storeId = null;
         if ( !new File( storeDir, NeoStore.DEFAULT_NAME ).exists() )
-        {   // Try for 
+        {   // Try for
             long endTime = System.currentTimeMillis()+60000;
             Exception exception = null;
             while ( System.currentTimeMillis() < endTime )
@@ -371,7 +371,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             }
         };
     }
-    
+
     private static String getConfigValue( Map<String, String> config, String... oneKeyOutOf/*prioritized in descending order*/ )
     {
         String firstFound = null;
@@ -399,14 +399,14 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 BranchedDataPolicy.valueOf( config.get( CONFIG_KEY_BRANCHED_DATA_POLICY ) ) :
                 BranchedDataPolicy.keep_all;
     }
-    
+
     private SlaveUpdateMode getSlaveUpdateModeFromConfig( Map<String, String> config )
     {
         return config.containsKey( CONFIG_KEY_SLAVE_COORDINATOR_UPDATE_MODE ) ?
                 SlaveUpdateMode.valueOf( config.get( CONFIG_KEY_SLAVE_COORDINATOR_UPDATE_MODE ) ) :
                 SlaveUpdateMode.async;
     }
-    
+
     private int getClientReadTimeoutFromConfig( Map<String, String> config2 )
     {
         String value = config.get( CONFIG_KEY_READ_TIMEOUT );
@@ -600,7 +600,15 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 slaveUpdateMode.createUpdater( broker ),
                 CommonFactories.defaultFileSystemAbstraction() );
         instantiateAutoUpdatePullerIfConfigSaysSo();
-        msgLog.logMessage( "Started as slave", true );
+        logHaInfo( "Started as slave" );
+    }
+
+    private void logHaInfo( String started )
+    {
+        msgLog.logMessage( started, true );
+        msgLog.logMessage( "--- HIGH AVAILABILITY CONFIGURATION START ---" );
+        broker.logStatus( msgLog );
+        msgLog.logMessage( "--- HIGH AVAILABILITY CONFIGURATION END ---", true );
     }
 
     private void startAsMaster( StoreId storeId )
@@ -615,7 +623,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 new ZooKeeperLastCommittedTxIdSetter( broker ),
                 CommonFactories.defaultFileSystemAbstraction() );
         this.masterServer = (MasterServer) broker.instantiateMasterServer( this );
-        msgLog.logMessage( "Started as master", true );
+        logHaInfo( "Started as master" );
     }
 
     private void tryToEnsureIAmNotABrokenMachine( Pair<Master, Machine> master )
@@ -1004,11 +1012,11 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 db.shutdown();
             }
         };
-        
+
         static String BRANCH_PREFIX = "branched-";
 
         abstract void handle( HighlyAvailableGraphDatabase db );
-        
+
         protected void moveAwayDb( HighlyAvailableGraphDatabase db, File branchedDataDir )
         {
             for ( File file : relevantDbFiles( db ) )
@@ -1024,7 +1032,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             result.mkdirs();
             return result;
         }
-        
+
         File[] relevantDbFiles( HighlyAvailableGraphDatabase db )
         {
             return new File( db.storeDir ).listFiles( new FileFilter()
@@ -1042,7 +1050,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             return file.isDirectory() && file.getName().startsWith( BRANCH_PREFIX );
         }
     }
-    
+
     private static enum SlaveUpdateMode
     {
         sync( true )
@@ -1069,14 +1077,14 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 return CommonFactories.defaultLastCommittedTxIdSetter();
             }
         }*/;
-        
+
         private final boolean syncWithZooKeeper;
 
         SlaveUpdateMode( boolean syncWithZooKeeper )
         {
             this.syncWithZooKeeper = syncWithZooKeeper;
         }
-        
+
         abstract LastCommittedTxIdSetter createUpdater( Broker broker );
     }
 }

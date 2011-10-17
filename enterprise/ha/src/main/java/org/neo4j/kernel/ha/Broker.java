@@ -24,6 +24,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public interface Broker
 {
@@ -45,7 +46,7 @@ public interface Broker
     void rebindMaster();
 
     void notifyMasterChange( Machine newMaster );
-    
+
     void shutdown();
 
     void setConnectionInformation( KernelData kernel );
@@ -55,4 +56,6 @@ public interface Broker
     ConnectionInformation[] getConnectionInformation();
 
     StoreId createCluster( StoreId storeIdSuggestion );
+
+    void logStatus( StringLogger msgLog );
 }

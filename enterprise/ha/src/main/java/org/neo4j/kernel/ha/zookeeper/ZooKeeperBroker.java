@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.ha.zookeeper;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
 import java.util.Map;
 
 import javax.management.remote.JMXServiceURL;
@@ -34,6 +38,7 @@ import org.neo4j.kernel.ha.MasterImpl;
 import org.neo4j.kernel.ha.MasterServer;
 import org.neo4j.kernel.ha.ResponseReceiver;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.management.Neo4jManager;
 
 public class ZooKeeperBroker extends AbstractBroker
@@ -54,6 +59,65 @@ public class ZooKeeperBroker extends AbstractBroker
         String storeDir = ((AbstractGraphDatabase) graphDb).getStoreDir();
         this.zooClient = new ZooClient( zooKeeperServers, machineId, getRootPathGetter( storeDir ),
                 receiver, haServer, backupPort, clientReadTimeout, maxConcurrentChannelsPerClient, writeLastCommittedTx, graphDb );
+    }
+
+    @Override
+    public void logStatus( StringLogger msgLog )
+    {
+        for ( String server : zooClient.getServers().split( "," ) )
+        {
+            msgLog.logMessage( zkStatus( server, "conf" ) );
+            msgLog.logMessage( zkStatus( server, "envi" ) );
+            msgLog.logMessage( zkStatus( server, "srvr" ) );
+        }
+    }
+
+    private String zkStatus( String server, String command )
+    {
+        StringBuilder result = new StringBuilder( "ZooKeeper status: " ).append( server ).append( " " )
+                .append( command );
+        String[] hostAndPort = server.split( ":" );
+        if ( hostAndPort.length != 2 ) return result.append( " BAD SERVER STRING" ).toString();
+        String host = hostAndPort[0];
+        int port;
+        try
+        {
+            port = Integer.parseInt( hostAndPort[1] );
+        }
+        catch ( NumberFormatException e )
+        {
+            return result.append( " BAD SERVER STRING" ).toString();
+        }
+        try
+        {
+            Socket soc = new Socket( host, port );
+            BufferedReader in = new BufferedReader( new InputStreamReader( soc.getInputStream() ) );
+            try
+            {
+                PrintWriter out = new PrintWriter( soc.getOutputStream(), true );
+                try
+                {
+                    out.println( command );
+                    for ( String line; ( line = in.readLine() ) != null; )
+                    {
+                        result.append( "\n  " ).append( line );
+                    }
+                }
+                finally
+                {
+                    out.close();
+                }
+            }
+            finally
+            {
+                in.close();
+            }
+        }
+        catch ( Exception e )
+        {
+            result.append( " FAILED: " + e );
+        }
+        return result.toString();
     }
 
     @Override
@@ -163,7 +227,7 @@ public class ZooKeeperBroker extends AbstractBroker
     {
         zooClient.setDataChangeWatcher( ZooClient.MASTER_REBOUND_CHILD, machineId );
     }
-    
+
     @Override
     public void notifyMasterChange( Machine newMaster )
     {

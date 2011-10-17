@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.enterprise;
 
-import static org.junit.Assert.assertEquals;
-
 import java.net.URI;
 import java.util.Map;
 
@@ -41,6 +39,8 @@ import org.neo4j.test.server.ha.ServerCluster;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
+
+import static org.junit.Assert.assertEquals;
 
 public class HaServerFunctionalTest
 {
@@ -97,7 +97,7 @@ public class HaServerFunctionalTest
         if ( Config.osIsWindows() ) return;
         cluster = new ServerCluster( testName.getMethodName(), dir, zooKeeper, SERVER_PORTS );
         URI base = cluster.getRandomServerUri();
-        
+
         put( property( node( base, 0 ), "message" ), "hello world" );
         cluster.updateAll();
         base = cluster.getRandomServerUri( base );
@@ -105,13 +105,12 @@ public class HaServerFunctionalTest
     }
 
     @Test
-    public void canWriteToOneServerInTheClusterThenReadFromAnotherAfterShuttingDownTheWriteServer()
-            throws Exception
+    public void canWriteToOneServerInTheClusterThenReadFromAnotherAfterShuttingDownTheWriteServer() throws Exception
     {
         if ( Config.osIsWindows() ) return;
         cluster = new ServerCluster( testName.getMethodName(), dir, zooKeeper, SERVER_PORTS );
         URI base = cluster.getRandomServerUri();
-        
+
         put( property( node( base, 0 ), "message" ), "hello world" );
         cluster.updateAll();
         cluster.kill( base );
@@ -131,9 +130,8 @@ public class HaServerFunctionalTest
 
     private static Object get( URI property )
     {
-        ClientResponse response = CLIENT( property ).accept(
-                MediaType.APPLICATION_JSON_TYPE ).type( MediaType.APPLICATION_JSON_TYPE ).get(
-                ClientResponse.class );
+        ClientResponse response = Client.create().resource( property ).accept( MediaType.APPLICATION_JSON_TYPE )
+                .type( MediaType.APPLICATION_JSON_TYPE ).get( ClientResponse.class );
         try
         {
             if ( 200 == response.getStatus() )
@@ -154,7 +152,7 @@ public class HaServerFunctionalTest
 
     private static void put( URI property, Object value )
     {
-        CLIENT.reCLIENTy ).accept( MediaType.APPLICATION_JSON_TYPE ).type(
-                MediaType.APPLICATION_JSON_TYPE ).entity( JsonHelper.createJsonFrom( value ) ).put();
+        Client.create().resource( property ).accept( MediaType.APPLICATION_JSON_TYPE )
+                .type( MediaType.APPLICATION_JSON_TYPE ).entity( JsonHelper.createJsonFrom( value ) ).put();
     }
 }

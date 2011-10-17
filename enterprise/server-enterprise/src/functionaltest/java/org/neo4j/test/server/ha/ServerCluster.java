@@ -169,13 +169,10 @@ public final class ServerCluster
 
         // Kernel (and HA) configuration
         config( dbConfig, //
-                Pair.of( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_CLUSTER_NAME, name ),//
-                Pair.of( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_SERVER, "localhost:"
-                                                                            + ports.first() ),//
-                Pair.of( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_MACHINE_ID,
-                        Integer.toString( id ) ),//
-                Pair.of( HighlyAvailableGraphDatabase.CONFIG_KEY_HA_ZOO_KEEPER_SERVERS,
-                        keeperCluster.getConnectionString() ) );
+                Pair.of( HighlyAvailableGraphDatabase.CONFIG_KEY_CLUSTER_NAME, name ),//
+                Pair.of( HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER, "localhost:" + ports.first() ),//
+                Pair.of( HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID, Integer.toString( id ) ),//
+                Pair.of( HighlyAvailableGraphDatabase.CONFIG_KEY_COORDINATORS, keeperCluster.getConnectionString() ) );
 
         return Pair.of( serverConfig.getAbsolutePath(), serverDir );
     }

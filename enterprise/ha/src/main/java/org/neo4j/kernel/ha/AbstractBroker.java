@@ -26,6 +26,7 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public abstract class AbstractBroker implements Broker
 {
@@ -47,7 +48,7 @@ public abstract class AbstractBroker implements Broker
     {
         return this.myMachineId;
     }
-    
+
     @Override
     public void notifyMasterChange( Machine newMaster )
     {
@@ -104,5 +105,11 @@ public abstract class AbstractBroker implements Broker
     public StoreId createCluster( StoreId storeIdSuggestion )
     {
         throw new UnsupportedOperationException( getClass().getName() );
+    }
+
+    @Override
+    public void logStatus( StringLogger msgLog )
+    {
+        // defult: log nothing
     }
 }

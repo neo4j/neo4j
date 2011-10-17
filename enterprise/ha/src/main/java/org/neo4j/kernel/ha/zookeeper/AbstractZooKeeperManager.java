@@ -80,7 +80,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
     {
         try
         {
-            return new ZooKeeper( servers, SESSION_TIME_OUT, this );
+            return new ZooKeeper( getServers(), SESSION_TIME_OUT, this );
         }
         catch ( IOException e )
         {
@@ -299,4 +299,9 @@ public abstract class AbstractZooKeeperManager implements Watcher
     }
 
     public abstract void waitForSyncConnected();
+
+    public String getServers()
+    {
+        return servers;
+    }
 }
