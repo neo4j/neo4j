@@ -23,4 +23,4 @@ define ['./JmxBackedModel','lib/backbone'], (JmxBackedModel) ->
   class KernelBean extends JmxBackedModel
     
     beans :
-      version : { domain : 'neo4j', name:'Kernel' }
+      kernel : { domain : 'neo4j', name:'Kernel' }
