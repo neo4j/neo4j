@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyDynamicRecord;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyDynamicRecordFetcher;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyDynamicStoreReader;
+import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNeoStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyPropertyIndexStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyPropertyRecord;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipTypeStoreReader;
@@ -93,11 +94,18 @@ public class StoreMigrator
 
         private void migrateNeoStore( NeoStore neoStore )
         {
-            neoStore.setCreationTime( legacyStore.getNeoStoreReader().getCreationTime() );
-            neoStore.setRandomNumber( legacyStore.getNeoStoreReader().getRandomNumber() );
-            neoStore.setVersion( legacyStore.getNeoStoreReader().getVersion() );
+            LegacyNeoStoreReader neoStoreReader = legacyStore.getNeoStoreReader();
+
+            neoStore.setCreationTime( neoStoreReader.getCreationTime() );
+            neoStore.setRandomNumber( neoStoreReader.getRandomNumber() );
+            neoStore.setVersion( neoStoreReader.getVersion() );
+            updateLastCommittedTxInSimulatedRecoveredStatus( neoStore, neoStoreReader.getLastCommittedTx() );
+        }
+
+        private void updateLastCommittedTxInSimulatedRecoveredStatus( NeoStore neoStore, long lastCommittedTx )
+        {
             neoStore.setRecoveredStatus( true );
-            neoStore.setLastCommittedTx( legacyStore.getNeoStoreReader().getLastCommittedTx() );
+            neoStore.setLastCommittedTx( lastCommittedTx );
             neoStore.setRecoveredStatus( false );
         }
 
