@@ -81,13 +81,24 @@ public class StoreMigrator
 
         private void migrate() throws IOException
         {
+            migrateNeoStore( neoStore );
             migrateNodes( neoStore.getNodeStore(), new PropertyWriter( neoStore.getPropertyStore() ) );
             migrateRelationships( neoStore.getRelationshipStore(), new PropertyWriter( neoStore.getPropertyStore() ) );
             migratePropertyIndexes( neoStore.getPropertyStore().getIndexStore() );
             legacyStore.getPropertyStoreReader().close();
             migrateRelationshipTypes( neoStore.getRelationshipTypeStore() );
 //        migrateIdGenerators( neoStore );
-            legacyStore.getDynamicRecordFetcher().close();
+            legacyStore.close();
+        }
+
+        private void migrateNeoStore( NeoStore neoStore )
+        {
+            neoStore.setCreationTime( legacyStore.getNeoStoreReader().getCreationTime() );
+            neoStore.setRandomNumber( legacyStore.getNeoStoreReader().getRandomNumber() );
+            neoStore.setVersion( legacyStore.getNeoStoreReader().getVersion() );
+            neoStore.setRecoveredStatus( true );
+            neoStore.setLastCommittedTx( legacyStore.getNeoStoreReader().getLastCommittedTx() );
+            neoStore.setRecoveredStatus( false );
         }
 
         private void migrateNodes( NodeStore nodeStore, PropertyWriter propertyWriter ) throws IOException

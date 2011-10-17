@@ -29,6 +29,7 @@ public class LegacyStore
     public static final String FROM_VERSION = "NeoStore v0.9.9";
 
     private String storageFileName;
+    private LegacyNeoStoreReader neoStoreReader;
     private LegacyPropertyStoreReader propertyStoreReader;
     private LegacyNodeStoreReader nodeStoreReader;
     private LegacyDynamicRecordFetcher dynamicRecordFetcher;
@@ -46,6 +47,7 @@ public class LegacyStore
 
     protected void initStorage() throws IOException
     {
+        neoStoreReader = new LegacyNeoStoreReader( getStorageFileName() );
         propertyStoreReader = new LegacyPropertyStoreReader( getStorageFileName() + ".propertystore.db" );
         dynamicRecordFetcher = new LegacyDynamicRecordFetcher( getStorageFileName() + ".propertystore.db.strings", getStorageFileName() + ".propertystore.db.arrays" );
         nodeStoreReader = new LegacyNodeStoreReader( getStorageFileName() + ".nodestore.db" );
@@ -59,6 +61,11 @@ public class LegacyStore
     public String getStorageFileName()
     {
         return storageFileName;
+    }
+
+    public LegacyNeoStoreReader getNeoStoreReader()
+    {
+        return neoStoreReader;
     }
 
     public LegacyPropertyStoreReader getPropertyStoreReader()
@@ -109,5 +116,16 @@ public class LegacyStore
     public LegacyRelationshipTypeStoreReader getRelationshipTypeStoreReader()
     {
         return relationshipTypeStoreReader;
+    }
+
+    public void close() throws IOException
+    {
+        neoStoreReader.close();
+        propertyStoreReader.close();
+        dynamicRecordFetcher.close();
+        nodeStoreReader.close();
+        relationshipStoreReader.close();
+        relationshipTypeNameStoreReader.close();
+        propertyIndexKeyStoreReader.close();
     }
 }
