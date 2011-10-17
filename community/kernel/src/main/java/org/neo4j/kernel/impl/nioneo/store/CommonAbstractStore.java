@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public abstract class CommonAbstractStore
 {
     public static final String ALL_STORES_VERSION = "v0.A.0";
+    public static final String UNKNOWN_VERSION = "Uknown";
 
     protected static final Logger logger = Logger
         .getLogger( CommonAbstractStore.class.getName() );
@@ -100,7 +101,7 @@ public abstract class CommonAbstractStore
         }
 
         checkStorage();
-        checkVersion();
+        checkVersion(); // Overriden in NeoStore
         loadStorage();
         initStorage();
     }

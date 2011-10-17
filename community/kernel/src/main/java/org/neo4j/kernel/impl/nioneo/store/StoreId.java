@@ -27,16 +27,21 @@ public final class StoreId
     private static final Random r = new Random( System.currentTimeMillis() );
     private final long creationTime;
     private final long randomId;
+    private final long storeVersion;
 
     public StoreId()
     {
-        this( System.currentTimeMillis(), r.nextLong() );
+        this(
+                System.currentTimeMillis(),
+                r.nextLong(),
+                NeoStore.versionStringToLong( CommonAbstractStore.ALL_STORES_VERSION ) );
     }
 
-    public StoreId( long creationTime, long randomId )
+    public StoreId( long creationTime, long randomId, long storeVersion )
     {
         this.creationTime = creationTime;
         this.randomId = randomId;
+        this.storeVersion = storeVersion;
     }
 
     public long getCreationTime()
@@ -49,13 +54,18 @@ public final class StoreId
         return randomId;
     }
 
+    public long getStoreVersion()
+    {
+        return storeVersion;
+    }
+
     @Override
     public boolean equals( Object obj )
     {
         if ( obj instanceof StoreId )
         {
             StoreId that = (StoreId) obj;
-            return that.creationTime == this.creationTime && that.randomId == this.randomId;
+            return that.creationTime == this.creationTime && that.randomId == this.randomId && that.storeVersion == this.storeVersion;
         }
         return false;
     }
@@ -63,23 +73,23 @@ public final class StoreId
     @Override
     public int hashCode()
     {
-        return (int) ( creationTime ^ randomId );
+        return (int) (( creationTime ^ randomId ) ^ storeVersion);
     }
 
     public byte[] serialize()
     {
-        return ByteBuffer.wrap( new byte[16] ).putLong( creationTime ).putLong( randomId ).array();
+        return ByteBuffer.wrap( new byte[8+8+8] ).putLong( creationTime ).putLong( randomId ).putLong(storeVersion).array();
     }
-    
+
     @Override
     public String toString()
     {
-        return "StoreId[time:" + creationTime + ", id:" + randomId + "]";
+        return "StoreId[time:" + creationTime + ", id:" + randomId + ", store version: " + storeVersion + "]";
     }
 
     public static StoreId deserialize( byte[] data )
     {
-        assert data.length == 16 : "unexpected data";
+        assert data.length == 8+8+8 : "unexpected data";
         ByteBuffer buffer = ByteBuffer.wrap( data );
         return deserialize( buffer );
     }
@@ -88,6 +98,7 @@ public final class StoreId
     {
         long creationTime = buffer.getLong();
         long randomId = buffer.getLong();
-        return new StoreId( creationTime, randomId );
+        long storeVersion = buffer.getLong();
+        return new StoreId( creationTime, randomId, storeVersion );
     }
 }
