@@ -88,7 +88,6 @@ public class StoreMigrator
             migratePropertyIndexes( neoStore.getPropertyStore().getIndexStore() );
             legacyStore.getPropertyStoreReader().close();
             migrateRelationshipTypes( neoStore.getRelationshipTypeStore() );
-//        migrateIdGenerators( neoStore );
             legacyStore.close();
         }
 
@@ -261,16 +260,6 @@ public class StoreMigrator
                 record.addKeyRecord( keyRecord );
             }
             propIndexStore.updateRecord( record );
-        }
-
-        private void migrateIdGenerators( NeoStore neoStore ) throws IOException
-        {
-            String[] idGeneratorSuffixes = new String[]{".nodestore.db.id", ".relationshipstore.db.id"};
-            for ( String suffix : idGeneratorSuffixes )
-            {
-                FileUtils.copyFile( new File( legacyStore.getStorageFileName() + suffix ),
-                        new File( neoStore.getStorageFileName() + suffix ) );
-            }
         }
     }
 }
