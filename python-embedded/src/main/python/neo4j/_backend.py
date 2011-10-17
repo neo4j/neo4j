@@ -64,29 +64,33 @@ try:
 except: # this isn't jython (and doesn't have the java module)
     import jpype, os
 
-    # Classpath set by environment var
-    classpath = os.getenv('NEO4J_PYTHON_CLASSPATH',None)
-    if classpath is None:
-        # Classpath set by finding bundled jars
-        jars = []
-        from pkg_resources import resource_listdir, resource_filename
-        for name in resource_listdir(__name__, 'javalib'):
-            if name.endswith('.jar'):
-                jars.append(resource_filename(__name__, "javalib/%s" % name))
-        if len(jars) > 0:
-            divider = ';' if sys.platform == "win32" else ':'
-            classpath = divider.join(jars)
-        else:
-            # Last resort
-            classpath = '.'
+    def get_jvm_args():
+        
+        # Classpath set by environment var
+        classpath = os.getenv('NEO4J_PYTHON_CLASSPATH',None)
+        if classpath is None:
+            # Classpath set by finding bundled jars
+            jars = []
+            from pkg_resources import resource_listdir, resource_filename
+            for name in resource_listdir(__name__, 'javalib'):
+                if name.endswith('.jar'):
+                    jars.append(resource_filename(__name__, "javalib/%s" % name))
+            if len(jars) > 0:
+                divider = ';' if sys.platform == "win32" else ':'
+                classpath = divider.join(jars)
+            else:
+                # Last resort
+                classpath = '.'
 
-    jvmargs = ['-Djava.class.path=' + classpath]
+        jvmargs = os.getenv('NEO4J_PYTHON_JVMARGS',"").split(" ")
+        jvmargs = jvmargs + ['-Djava.class.path=' + classpath]
+        
+        if os.getenv('DEBUG',None) is "true":
+            jvmargs = jvmargs + ['-Xdebug', '-Xnoagent', '-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=8000']
+        
+        return jvmargs
     
-    debug = False
-    if debug:
-        jvmargs = jvmargs + ['-Xdebug', '-Xnoagent', '-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=8000']
-    
-    def getJVMPath():
+    def get_jvm_path():
         jvm = jpype.getDefaultJVMPath()
         if sys.platform == "win32" and (jvm is None or not os.path.exists(jvm)):
             # JPype does not always find java correctly
@@ -108,7 +112,7 @@ except: # this isn't jython (and doesn't have the java module)
         return jvm
         
     try:
-      jpype.startJVM(getJVMPath(), *jvmargs)
+      jpype.startJVM(get_jvm_path(), *get_jvm_args())
     except Exception, e:
       raise Exception("Unable to start JVM, even though I found the JVM path. If you are using windows, this may be due to missing system DLL files, please see the windows installation instructions in the neo4j documentation.",e)
     
