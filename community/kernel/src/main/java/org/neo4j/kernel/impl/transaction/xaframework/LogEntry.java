@@ -23,8 +23,10 @@ import javax.transaction.xa.Xid;
 
 public abstract class LogEntry
 {
-    // version 1 as of 2011-02-22
-    static final byte CURRENT_VERSION = (byte) 1;
+    /* version 1 as of 2011-02-22
+     * version 2 as of 2011-10-17
+     */
+    static final byte CURRENT_VERSION = (byte) 2;
     // empty record due to memory mapped file
     public static final byte EMPTY = (byte) 0;
     public static final byte TX_START = (byte) 1;
