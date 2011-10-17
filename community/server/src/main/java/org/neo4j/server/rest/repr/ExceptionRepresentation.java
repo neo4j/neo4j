@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.rest.repr;
 
-class ExceptionRepresentation extends MappingRepresentation
+public class ExceptionRepresentation extends MappingRepresentation
 {
     private final Throwable exception;
 
-    ExceptionRepresentation( Throwable exception )
+    public ExceptionRepresentation( Throwable exception )
     {
         super( RepresentationType.EXCEPTION );
         this.exception = exception;
