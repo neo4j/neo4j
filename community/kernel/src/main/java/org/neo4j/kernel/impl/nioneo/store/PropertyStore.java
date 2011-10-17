@@ -435,10 +435,10 @@ public class PropertyStore extends AbstractStore implements Store
     {
         Buffer buffer = window.getOffsettedBuffer( id );
         PropertyRecord toReturn = getRecordFromBuffer( id, buffer );
-        // if ( !toReturn.inUse() )
-        // {
-        // throw new InvalidRecordException( "Record[" + id + "] not in use" );
-        // }
+        if ( !toReturn.inUse() )
+        {
+            throw new InvalidRecordException( "Record[" + id + "] not in use" );
+        }
         return toReturn;
     }
 
