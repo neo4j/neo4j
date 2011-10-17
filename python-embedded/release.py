@@ -75,7 +75,8 @@ if __name__ == '__main__':
   print 
   print "Build done!"
   print "Creating scm tag.."
-  os.system('git tag -a '+release_version+"-m 'Release "+release_version+"'")
+  os.system('git commit -am "Release '+release_version+'"')
+  os.system('git tag -a '+release_version+' -m "Release "'+release_version+'"')
   print
   print "Done, tag is in local repo."
   
@@ -87,6 +88,6 @@ if __name__ == '__main__':
   
   print
   print "Committing changes.."
-  os.system("git commit -am 'Back to development version.'")
+  os.system('git commit -am "Back to development version."')
   
   
