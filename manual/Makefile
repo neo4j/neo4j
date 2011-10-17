@@ -1,10 +1,10 @@
 # Makefile for the Neo4j documentation
 #
 
-PROEJCTNAME      = neo4j-manual
+PROJECTNAME      = neo4j-manual
 BUILDDIR         = $(CURDIR)/target
 SRCDIR           = $(BUILDDIR)/classes
-SRCFILE          = $(SRCDIR)/$(PROEJCTNAME).txt
+SRCFILE          = $(SRCDIR)/$(PROJECTNAME).txt
 METAFROMDIR      = $(CURDIR)/src/docs
 METAFROMCSSDIR   = $(CURDIR)/src/main/resources/css
 METAFROMIMGDIR   = $(CURDIR)/src/main/resources/images
@@ -14,24 +14,24 @@ IMGDIR           = $(SRCDIR)/images
 CSSDIR           = $(SRCDIR)/css
 JSDIR            = $(SRCDIR)/js
 CONFDIR          = $(SRCDIR)/conf
-DOCBOOKFILE      = $(BUILDDIR)/$(PROEJCTNAME).xml
-DOCBOOKSHORTINFOFILE = $(BUILDDIR)/$(PROEJCTNAME)-shortinfo.xml
-DOCBOOKFILEHTML  = $(BUILDDIR)/$(PROEJCTNAME)-html.xml
+DOCBOOKFILE      = $(BUILDDIR)/$(PROJECTNAME).xml
+DOCBOOKSHORTINFOFILE = $(BUILDDIR)/$(PROJECTNAME)-shortinfo.xml
+DOCBOOKFILEHTML  = $(BUILDDIR)/$(PROJECTNAME)-html.xml
 FOPDIR           = $(BUILDDIR)/pdf
-FOPFILE          = $(FOPDIR)/$(PROEJCTNAME).fo
-FOPPDF           = $(FOPDIR)/$(PROEJCTNAME).pdf
+FOPFILE          = $(FOPDIR)/$(PROJECTNAME).fo
+FOPPDF           = $(FOPDIR)/$(PROJECTNAME).pdf
 TEXTWIDTH        = 80
 TEXTDIR          = $(BUILDDIR)/text
-TEXTFILE         = $(TEXTDIR)/$(PROEJCTNAME).txt
+TEXTFILE         = $(TEXTDIR)/$(PROJECTNAME).txt
 TEXTHTMLFILE     = $(TEXTFILE).html
 SINGLEHTMLDIR    = $(BUILDDIR)/html
-SINGLEHTMLFILE   = $(SINGLEHTMLDIR)/$(PROEJCTNAME).html
+SINGLEHTMLFILE   = $(SINGLEHTMLDIR)/$(PROJECTNAME).html
 ANNOTATEDDIR     = $(BUILDDIR)/annotated
-ANNOTATEDFILE    = $(HTMLDIR)/$(PROEJCTNAME).html
+ANNOTATEDFILE    = $(HTMLDIR)/$(PROJECTNAME).html
 CHUNKEDHTMLDIR   = $(BUILDDIR)/chunked
 CHUNKEDOFFLINEHTMLDIR = $(BUILDDIR)/chunked-offline
-CHUNKEDTARGET     = $(BUILDDIR)/$(PROEJCTNAME).chunked
-CHUNKEDSHORTINFOTARGET = $(BUILDDIR)/$(PROEJCTNAME)-html.chunked
+CHUNKEDTARGET     = $(BUILDDIR)/$(PROJECTNAME).chunked
+CHUNKEDSHORTINFOTARGET = $(BUILDDIR)/$(PROJECTNAME)-html.chunked
 METAHTMLDIR      = $(BUILDDIR)/metadocs
 MANPAGES         = $(BUILDDIR)/manpages
 UPGRADE          = $(BUILDDIR)/upgrade
@@ -254,7 +254,7 @@ annotated:  manpages copyimages
 	cp -fr $(SRCDIR)/js $(ANNOTATEDDIR)/js
 	cp -fr $(SRCDIR)/css/* $(ANNOTATEDDIR)/css
 	cp -fr $(SRCDIR)/images/*.svg $(ANNOTATEDDIR)/images
-	mv $(ANNOTATEDDIR)/$(PROEJCTNAME).html $(ANNOTATEDDIR)/index.html
+	mv $(ANNOTATEDDIR)/$(PROJECTNAME).html $(ANNOTATEDDIR)/index.html
 
 text: docbook-shortinfo
 	#
