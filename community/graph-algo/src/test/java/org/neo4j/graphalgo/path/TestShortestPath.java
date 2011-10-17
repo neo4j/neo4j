@@ -19,12 +19,16 @@
  */
 package org.neo4j.graphalgo.path;
 
+import static common.Neo4jAlgoTestCase.MyRelTypes.R1;
 import static common.SimpleGraphBuilder.KEY_ID;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphalgo.GraphAlgoFactory.shortestPath;
+import static org.neo4j.graphdb.Direction.INCOMING;
+import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.kernel.Traversal.expanderForTypes;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -362,5 +366,26 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         assertEquals( 3, count( shortestPath( expander, 10, 3 ).findAllPaths( a, e ) ) );
         assertEquals( 2, count( shortestPath( expander, 10, 2 ).findAllPaths( a, e ) ) );
         assertEquals( 1, count( shortestPath( expander, 10, 1 ).findAllPaths( a, e ) ) );
+    }
+    
+    @Test
+    public void unfortunateRelationshipOrderingInTriangle()
+    {
+        /*
+         *            (b)
+         *           ^   \
+         *          /     v
+         *        (a)---->(c)
+         *
+         * Relationships are created in such a way that they are iterated in the worst order,
+         * i.e. (S) a-->b, (E) c<--b, (S) a-->c
+         */
+        graph.makeEdgeChain( "a,b,c" );
+        graph.makeEdgeChain( "a,c" );
+        Node a = graph.getNode( "a" );
+        Node c = graph.getNode( "c" );
+        
+        assertPathDef( shortestPath( expanderForTypes( R1, OUTGOING ), 2 ).findSinglePath( a, c ), "a", "c" );
+        assertPathDef( shortestPath( expanderForTypes( R1, INCOMING ), 2 ).findSinglePath( c, a ), "c", "a" );
     }
 }
