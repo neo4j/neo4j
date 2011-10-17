@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
  * Note, the first block of a dynamic store is reserved and contains information
  * about the store.
  */
-public abstract class AbstractDynamicStore extends CommonAbstractStore
+public abstract class AbstractDynamicStore extends CommonAbstractStore implements Store
 {
     /**
      * Creates a new empty store. A factory method returning an implementation
@@ -581,5 +581,11 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore
         {
             throw new RuntimeException( e );
         }
+    }
+
+    @Override
+    public void logIdUsage( StringLogger logger )
+    {
+        NeoStore.logIdUsage( logger, this );
     }
 }

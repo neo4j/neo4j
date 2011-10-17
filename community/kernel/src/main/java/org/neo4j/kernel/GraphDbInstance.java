@@ -177,16 +177,18 @@ class GraphDbInstance
                 config.getPersistenceModule().getPersistenceManager(),
                 config.getRelationshipTypeCreator(), params );
 
-        logConfig( params, graphDb.getClass(), storeDir, dumpToConsole, logger, autoConfigurator );
+        logConfig( params, graphDb.getClass(), storeDir, dumpToConsole, logger, autoConfigurator,
+                (NeoStoreXaDataSource) persistenceSource.getXaDataSource() );
         started = true;
         return Collections.unmodifiableMap( params );
     }
 
     private static void logConfig( Map<Object, Object> params, Class<? extends GraphDatabaseService> graphDb,
-            String storeDir, boolean dumpToConsole, StringLogger logger, AutoConfigurator autoConfigurator )
+            String storeDir, boolean dumpToConsole, StringLogger logger, AutoConfigurator autoConfigurator,
+            NeoStoreXaDataSource ds )
     {
         logger.logMessage( "--- CONFIGURATION START ---" );
-        logger.logMessage( "Graph Database: " + graphDb.getName() );
+        logger.logMessage( "Graph Database: " + graphDb.getName() + " " + ds.getStoreId() );
         logger.logMessage( autoConfigurator.getNiceMemoryInformation() );
         logger.logMessage( "Kernel version: " + Version.getKernel() );
         logger.logMessage( "Neo4j component versions:" );
@@ -194,10 +196,30 @@ class GraphDbInstance
         {
             logger.logMessage( "  " + componentVersion );
         }
+        ds.logStoreVersions();
         RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
+        logger.logMessage( "Process id: " + runtime.getName() );
         OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
         logger.logMessage( String.format( "Operating System: %s; version: %s; arch: %s; cpus: %s", os.getName(),
                 os.getVersion(), os.getArch(), Integer.valueOf( os.getAvailableProcessors() ) ) );
+        logBeanProperty( logger, "Max number of file descriptors: ", os,
+                "com.sun.management.UnixOperatingSystemMXBean", "getMaxFileDescriptorCount" );
+        logBeanProperty( logger, "Number of open file descriptors: ", os,
+                "com.sun.management.UnixOperatingSystemMXBean", "getOpenFileDescriptorCount" );
+        logBeanBytesProperty( logger, "Total Physical memory: ", os, "com.sun.management.OperatingSystemMXBean",
+                "getTotalPhysicalMemorySize" );
+        logBeanBytesProperty( logger, "Free Physical memory: ", os, "com.sun.management.OperatingSystemMXBean",
+                "getFreePhysicalMemorySize" );
+        logBeanBytesProperty( logger, "Committed virtual memory: ", os, "com.sun.management.OperatingSystemMXBean",
+                "getCommittedVirtualMemorySize" );
+        logBeanBytesProperty( logger, "Total swap space: ", os, "com.sun.management.OperatingSystemMXBean",
+                "getTotalSwapSpaceSize" );
+        logBeanBytesProperty( logger, "Free swap space: ", os, "com.sun.management.OperatingSystemMXBean",
+                "getFreeSwapSpaceSize" );
+        logBeanBytesProperty( logger, "Total physical memory: ", os, "com.ibm.lang.management.OperatingSystemMXBean",
+                "getTotalPhysicalMemory" );
+        logBeanBytesProperty( logger, "Free physical memory: ", os, "com.ibm.lang.management.OperatingSystemMXBean",
+                "getFreePhysicalMemorySize" );
         logger.logMessage( "Byte order: " + ByteOrder.nativeOrder() );
         logger.logMessage( "VM Name: " + runtime.getVmName() );
         logger.logMessage( "VM Vendor: " + runtime.getVmVendor() );
@@ -250,8 +272,38 @@ class GraphDbInstance
         logConfiguration( params, logger, dumpToConsole );
         logger.logMessage( "Storage files:" );
         logStoreFiles( logger, "  ", new File( storeDir ) );
+        ds.logIdUsage();
         logger.logMessage( "--- CONFIGURATION END ---" );
         logger.flush();
+    }
+
+    private static void logBeanBytesProperty( StringLogger logger, String message, Object bean, String type,
+            String method )
+    {
+        Object value = getBeanProperty( bean, type, method, null );
+        if ( value instanceof Number ) logger.logMessage( message + bytes( ( (Number) value ).longValue() ) );
+    }
+
+    private static void logBeanProperty( StringLogger logger, String message, Object bean, String type, String method )
+    {
+        Object value = getBeanProperty( bean, type, method, null );
+        if ( value != null ) logger.logMessage( message + value );
+    }
+
+    private static Object getBeanProperty( Object bean, String type, String method, String defVal )
+    {
+        try
+        {
+            return Class.forName( type ).getMethod( method ).invoke( bean );
+        }
+        catch ( Exception e )
+        {
+            return defVal;
+        }
+        catch ( LinkageError e )
+        {
+            return defVal;
+        }
     }
 
     private static Collection<String> buildClassPath( ClassLoader loader, String[] pathKeys, String... classPaths )

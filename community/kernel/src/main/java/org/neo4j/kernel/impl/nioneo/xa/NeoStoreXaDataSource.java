@@ -74,7 +74,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     public static final byte BRANCH_ID[] = UTF8.encode( "414141" );
     private static final String REBUILD_IDGENERATORS_FAST = "rebuild_idgenerators_fast";
     public static final String LOGICAL_LOG_DEFAULT_NAME = "nioneo_logical.log";
-    
+
     private static Logger logger = Logger.getLogger(
         NeoStoreXaDataSource.class.getName() );
 
@@ -531,5 +531,19 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
             {
             }
         };
+    }
+
+    public void logStoreVersions()
+    {
+        msgLog.logMessage( "Store versions:" );
+        neoStore.logVersions( msgLog );
+        msgLog.flush();
+    }
+
+    public void logIdUsage()
+    {
+        msgLog.logMessage( "Id usage:" );
+        neoStore.logIdUsage( msgLog );
+        msgLog.flush();
     }
 }

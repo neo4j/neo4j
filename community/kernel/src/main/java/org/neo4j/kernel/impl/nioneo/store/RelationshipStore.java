@@ -26,6 +26,7 @@ import java.util.Map;
 
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Implementation of the relationship store.
@@ -48,11 +49,13 @@ public class RelationshipStore extends AbstractStore implements Store
         super( fileName, config, IdType.RELATIONSHIP );
     }
 
+    @Override
     public String getTypeDescriptor()
     {
         return TYPE_DESCRIPTOR;
     }
 
+    @Override
     public int getRecordSize()
     {
         return RECORD_SIZE;
@@ -68,7 +71,7 @@ public class RelationshipStore extends AbstractStore implements Store
      * Creates a new relationship store contained in <CODE>fileName</CODE> If
      * filename is <CODE>null</CODE> or the file already exists an <CODE>IOException</CODE>
      * is thrown.
-     * 
+     *
      * @param fileName
      *            File name of the new relationship store
      * @throws IOException
@@ -145,7 +148,7 @@ public class RelationshipStore extends AbstractStore implements Store
         }
     }
 
-    private void updateRecord( RelationshipRecord record, 
+    private void updateRecord( RelationshipRecord record,
         PersistenceWindow window )
     {
         long id = record.getId();
@@ -154,25 +157,25 @@ public class RelationshipStore extends AbstractStore implements Store
         {
             long firstNode = record.getFirstNode();
             short firstNodeMod = (short)((firstNode & 0x700000000L) >> 31);
-            
+
             long secondNode = record.getSecondNode();
             long secondNodeMod = (secondNode & 0x700000000L) >> 4;
-            
+
             long firstPrevRel = record.getFirstPrevRel();
             long firstPrevRelMod = firstPrevRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (firstPrevRel & 0x700000000L) >> 7;
-            
+
             long firstNextRel = record.getFirstNextRel();
             long firstNextRelMod = firstNextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (firstNextRel & 0x700000000L) >> 10;
-            
+
             long secondPrevRel = record.getSecondPrevRel();
             long secondPrevRelMod = secondPrevRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (secondPrevRel & 0x700000000L) >> 13;
-            
+
             long secondNextRel = record.getSecondNextRel();
             long secondNextRelMod = secondNextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (secondNextRel & 0x700000000L) >> 16;
-             
+
             long nextProp = record.getNextProp();
             long nextPropMod = nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (nextProp & 0xF00000000L) >> 28;
-            
+
             // [    ,   x] in use flag
             // [    ,xxx ] first node high order bits
             // [xxxx,    ] next prop high order bits
@@ -185,7 +188,7 @@ public class RelationshipStore extends AbstractStore implements Store
             // [    ,    ][    , xxx][    ,    ][    ,    ] second next rel high order bits, 0x70000
             // [    ,    ][    ,    ][xxxx,xxxx][xxxx,xxxx] type
             int typeInt = (int)(record.getType() | secondNodeMod | firstPrevRelMod | firstNextRelMod | secondPrevRelMod | secondNextRelMod);
-            
+
             buffer.put( (byte)inUseUnsignedByte ).putInt( (int) firstNode ).putInt( (int) secondNode )
                 .putInt( typeInt ).putInt( (int) firstPrevRel ).putInt( (int) firstNextRel )
                 .putInt( (int) secondPrevRel ).putInt( (int) secondNextRel ).putInt( (int) nextProp );
@@ -200,16 +203,16 @@ public class RelationshipStore extends AbstractStore implements Store
         }
     }
 
-    private RelationshipRecord getRecord( long id, PersistenceWindow window, 
+    private RelationshipRecord getRecord( long id, PersistenceWindow window,
         boolean checkInUse )
     {
         Buffer buffer = window.getOffsettedBuffer( id );
-        
+
         // [    ,   x] in use flag
         // [    ,xxx ] first node high order bits
         // [xxxx,    ] next prop high order bits
         long inUseByte = buffer.get();
-        
+
         boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
         if ( !inUse )
         {
@@ -219,12 +222,12 @@ public class RelationshipStore extends AbstractStore implements Store
             }
             throw new InvalidRecordException( "Record[" + id + "] not in use" );
         }
-        
+
         long firstNode = buffer.getUnsignedInt();
         long firstNodeMod = (inUseByte & 0xEL) << 31;
-        
+
         long secondNode = buffer.getUnsignedInt();
-        
+
         // [ xxx,    ][    ,    ][    ,    ][    ,    ] second node high order bits,     0x70000000
         // [    ,xxx ][    ,    ][    ,    ][    ,    ] first prev rel high order bits,  0xE000000
         // [    ,   x][xx  ,    ][    ,    ][    ,    ] first next rel high order bits,  0x1C00000
@@ -234,31 +237,31 @@ public class RelationshipStore extends AbstractStore implements Store
         long typeInt = buffer.getInt();
         long secondNodeMod = (typeInt & 0x70000000L) << 4;
         int type = (int)(typeInt & 0xFFFF);
-        
+
         RelationshipRecord record = new RelationshipRecord( id,
             longFromIntAndMod( firstNode, firstNodeMod ),
             longFromIntAndMod( secondNode, secondNodeMod ), type );
         record.setInUse( inUse );
-        
+
         long firstPrevRel = buffer.getUnsignedInt();
         long firstPrevRelMod = (typeInt & 0xE000000L) << 7;
         record.setFirstPrevRel( longFromIntAndMod( firstPrevRel, firstPrevRelMod ) );
-        
+
         long firstNextRel = buffer.getUnsignedInt();
         long firstNextRelMod = (typeInt & 0x1C00000L) << 10;
         record.setFirstNextRel( longFromIntAndMod( firstNextRel, firstNextRelMod ) );
-        
+
         long secondPrevRel = buffer.getUnsignedInt();
         long secondPrevRelMod = (typeInt & 0x380000L) << 13;
         record.setSecondPrevRel( longFromIntAndMod( secondPrevRel, secondPrevRelMod ) );
-        
+
         long secondNextRel = buffer.getUnsignedInt();
         long secondNextRelMod = (typeInt & 0x70000L) << 16;
         record.setSecondNextRel( longFromIntAndMod( secondNextRel, secondNextRelMod ) );
-        
+
         long nextProp = buffer.getUnsignedInt();
         long nextPropMod = (inUseByte & 0xF0L) << 28;
-        
+
         record.setNextProp( longFromIntAndMod( nextProp, nextPropMod ) );
         return record;
     }
@@ -267,7 +270,7 @@ public class RelationshipStore extends AbstractStore implements Store
 //    {
 //        Buffer buffer = window.getOffsettedBuffer( id );
 //        byte inUse = buffer.get();
-//        boolean inUseFlag = ((inUse & Record.IN_USE.byteValue()) == 
+//        boolean inUseFlag = ((inUse & Record.IN_USE.byteValue()) ==
 //            Record.IN_USE.byteValue());
 //        RelationshipRecord record = new RelationshipRecord( id,
 //            buffer.getInt(), buffer.getInt(), buffer.getInt() );
@@ -279,7 +282,8 @@ public class RelationshipStore extends AbstractStore implements Store
 //        record.setNextProp( buffer.getInt() );
 //        return record;
 //    }
-    
+
+    @Override
     public String toString()
     {
         return "RelStore";
@@ -308,10 +312,17 @@ public class RelationshipStore extends AbstractStore implements Store
         }
     }
 
+    @Override
     public List<WindowPoolStats> getAllWindowPoolStats()
     {
         List<WindowPoolStats> list = new ArrayList<WindowPoolStats>();
         list.add( getWindowPoolStats() );
         return list;
+    }
+
+    @Override
+    public void logIdUsage( StringLogger logger )
+    {
+        NeoStore.logIdUsage( logger, this );
     }
 }

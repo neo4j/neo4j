@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * This class contains the references to the "NodeStore,RelationshipStore,
@@ -230,7 +231,7 @@ public class NeoStore extends AbstractStore
         neoStore.setLastCommittedTx( 1 );
         neoStore.close();
     }
-    
+
     /**
      * Sets the version for the given neostore file in {@code storeDir}.
      * @param storeDir the store dir to locate the neostore file in.
@@ -482,5 +483,29 @@ public class NeoStore extends AbstractStore
     {
         return getStoreOk() && relTypeStore.getStoreOk() &&
             propStore.getStoreOk() && relStore.getStoreOk() && nodeStore.getStoreOk();
+    }
+
+    @Override
+    public void logVersions( StringLogger msgLog )
+    {
+        super.logVersions( msgLog );
+        nodeStore.logVersions( msgLog );
+        relStore.logVersions( msgLog );
+        relTypeStore.logVersions( msgLog );
+        propStore.logVersions( msgLog );
+    }
+
+    public void logIdUsage( StringLogger msgLog )
+    {
+        nodeStore.logIdUsage( msgLog );
+        relStore.logIdUsage( msgLog );
+        relTypeStore.logIdUsage( msgLog );
+        propStore.logIdUsage( msgLog );
+    }
+
+    public static void logIdUsage( StringLogger logger, Store store )
+    {
+        logger.logMessage( String.format( "  %s: used=%s high=%s", store.getTypeDescriptor(),
+                store.getNumberOfIdsInUse(), store.getHighestPossibleIdInUse() ) );
     }
 }

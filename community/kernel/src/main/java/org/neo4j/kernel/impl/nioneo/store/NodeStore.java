@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Implementation of the node store.
@@ -41,11 +42,13 @@ public class NodeStore extends AbstractStore implements Store
         super( fileName, config, IdType.NODE );
     }
 
+    @Override
     public String getTypeDescriptor()
     {
         return TYPE_DESCRIPTOR;
     }
 
+    @Override
     public int getRecordSize()
     {
         return RECORD_SIZE;
@@ -53,9 +56,9 @@ public class NodeStore extends AbstractStore implements Store
 
     /**
      * Creates a new node store contained in <CODE>fileName</CODE> If filename
-     * is <CODE>null</CODE> or the file already exists an 
+     * is <CODE>null</CODE> or the file already exists an
      * <CODE>IOException</CODE> is thrown.
-     * 
+     *
      * @param fileName
      *            File name of the new node store
      * @param config
@@ -144,16 +147,16 @@ public class NodeStore extends AbstractStore implements Store
         }
     }
 
-    private NodeRecord getRecord( long id, PersistenceWindow window, 
+    private NodeRecord getRecord( long id, PersistenceWindow window,
         boolean check )
     {
         Buffer buffer = window.getOffsettedBuffer( id );
-        
+
         // [    ,   x] in use bit
         // [    ,xxx ] higher bits for rel id
         // [xxxx,    ] higher bits for prop id
         long inUseByte = buffer.get();
-        
+
         boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
         if ( !inUse )
         {
@@ -163,20 +166,20 @@ public class NodeStore extends AbstractStore implements Store
             }
             throw new InvalidRecordException( "Record[" + id + "] not in use" );
         }
-        
+
         long nextRel = buffer.getUnsignedInt();
         long nextProp = buffer.getUnsignedInt();
-        
+
         long relModifier = (inUseByte & 0xEL) << 31;
         long propModifier = (inUseByte & 0xF0L) << 28;
-        
+
         NodeRecord nodeRecord = new NodeRecord( id );
         nodeRecord.setInUse( inUse );
         nodeRecord.setNextRel( longFromIntAndMod( nextRel, relModifier ) );
         nodeRecord.setNextProp( longFromIntAndMod( nextProp, propModifier ) );
         return nodeRecord;
     }
-    
+
     private void updateRecord( NodeRecord record, PersistenceWindow window )
     {
         long id = record.getId();
@@ -185,7 +188,7 @@ public class NodeStore extends AbstractStore implements Store
         {
             long nextRel = record.getNextRel();
             long nextProp = record.getNextProp();
-            
+
             short relModifier = nextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((nextRel & 0x700000000L) >> 31);
             short propModifier = nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (short)((nextProp & 0xF00000000L) >> 28);
 
@@ -204,16 +207,24 @@ public class NodeStore extends AbstractStore implements Store
             }
         }
     }
-    
+
+    @Override
     public String toString()
     {
         return "NodeStore";
     }
 
+    @Override
     public List<WindowPoolStats> getAllWindowPoolStats()
     {
         List<WindowPoolStats> list = new ArrayList<WindowPoolStats>();
         list.add( getWindowPoolStats() );
         return list;
+    }
+
+    @Override
+    public void logIdUsage( StringLogger logger )
+    {
+        NeoStore.logIdUsage( logger, this );
     }
 }

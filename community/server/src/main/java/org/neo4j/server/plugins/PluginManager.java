@@ -88,7 +88,7 @@ public final class PluginManager implements ExtensionInjector, PluginInvocator
                         .first().getClass().getName() ) );
                 for ( PluginPoint point : extension.other().all() )
                 {
-                    logger.logMessage( String.format( "  %s.%s: %s", point.forType().getName(), point.name(),
+                    logger.logMessage( String.format( "  %s.%s: %s", point.forType().getSimpleName(), point.name(),
                             point.getDescription() ) );
                 }
             }

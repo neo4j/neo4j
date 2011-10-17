@@ -115,6 +115,11 @@ public abstract class CommonAbstractStore
         return typeDescriptor + " " + ALL_STORES_VERSION;
     }
 
+    public void logVersions( StringLogger msgLog )
+    {
+        msgLog.logMessage( "  " + getTypeAndVersionDescriptor() );
+    }
+
     protected static long longFromIntAndMod( long base, long modifier )
     {
         return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base|modifier;
