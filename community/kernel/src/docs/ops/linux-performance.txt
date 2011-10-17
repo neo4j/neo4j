@@ -42,7 +42,7 @@ Next we will use a small utility that simulates the Neo4j kernel behavior to ben
 //This should be pointing to a new location?
 [source,shell]
 ----
-$ git clone git@github.com:johan-neo/tooling.git
+$ git clone git@github.com:neo4j/tooling.git
 ...
 $ cd tooling/write-test/
 $ mvn compile
