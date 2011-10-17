@@ -22,6 +22,8 @@ package org.neo4j.cypher.docgen
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.graphdb.{DynamicRelationshipType, Path, Node}
+import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
+
 
 class MatchTest extends DocumentingTestBase {
   override def indexProps: List[String] = List("name")
@@ -91,7 +93,7 @@ class MatchTest extends DocumentingTestBase {
   }
 
   @Test def relationshipsByTypeWithSpace() {
-    inTx(() => {
+    db.inTx(() => {
       val a = node("A")
       val b = node("A")
       a.createRelationshipTo(b, DynamicRelationshipType.withName("TYPE WITH SPACE IN IT"))

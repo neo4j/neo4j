@@ -26,6 +26,7 @@ import org.junit.matchers.JUnitMatchers.hasItem
 import org.junit.Test
 import org.neo4j.graphdb.{Relationship, Node}
 import org.neo4j.graphdb.index.Index
+import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
 
 class StartTest extends DocumentingTestBase {
   def graphDescription = List("A KNOWS B", "A KNOWS C")
@@ -71,7 +72,7 @@ class StartTest extends DocumentingTestBase {
   }
 
   @Test def relationships_by_index() {
-    inTx(()=>{
+    db.inTx(()=>{
       val r = db.getRelationshipById(0)
       val property = "property"
       val value = "some_value"

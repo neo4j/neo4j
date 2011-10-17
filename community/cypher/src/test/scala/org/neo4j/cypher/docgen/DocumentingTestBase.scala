@@ -27,20 +27,18 @@ import scala.collection.JavaConverters._
 import java.io.{PrintWriter, File, FileWriter}
 import org.neo4j.graphdb._
 import org.neo4j.cypher.parser.CypherParser
-import org.neo4j.cypher.{ExecutionResult, ExecutionEngine}
 import org.scalatest.junit.JUnitSuite
 import java.io.ByteArrayOutputStream
 import org.neo4j.visualization.graphviz.{AsciiDocStyle, GraphvizWriter}
 import org.neo4j.walk.Walker
 import org.neo4j.visualization.asciidoc.AsciidocHelper
-import org.neo4j.test.GraphDescription.Graph
-import org.neo4j.test.GraphDescription.NODE
-import org.neo4j.test.GraphDescription.REL
-import org.neo4j.cypher.javacompat.GraphImpl 
-
+import org.neo4j.cypher.javacompat.GraphImpl
+import org.neo4j.cypher.{ExecutionResult, ExecutionEngine}
+import org.neo4j.cypher.CuteGraphDatabaseService.gds2cuteGds
 
 
 abstract class DocumentingTestBase extends JUnitSuite {
+
   var db: ImpermanentGraphDatabase = null
   val parser: CypherParser = new CypherParser
   var engine: ExecutionEngine = null
@@ -141,17 +139,6 @@ _Graph_
     db.shutdown()
   }
 
-    def inTx[U](f: () => U): U = {
-    val tx = db.beginTx()
-    try {
-      val x = f()
-      tx.success()
-      x
-    } finally {
-      tx.finish()
-    }
-  }
-
   @Before
   def init() {
     db = new ImpermanentGraphDatabase()
@@ -159,7 +146,7 @@ _Graph_
 
     db.cleanContent(false)
 
-    inTx(() => {
+    db.inTx(() => {
       nodeIndex = db.index().forNodes("nodes")
       relIndex = db.index().forRelationships("rels")
       val g = new GraphImpl(graphDescription.toArray[String])
@@ -179,5 +166,7 @@ _Graph_
     })
   }
 }
- 
+
+
+
 
