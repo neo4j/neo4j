@@ -54,6 +54,9 @@ define(
         
       addNode : (node, relationships, relatedNodes) =>
 
+        if @visualGraph.nodes[node.getSelf()]? and @visualGraph.nodes[node.getSelf()].type is "explored"
+          return
+          
         @ungroup([node])
         @ungroup(relatedNodes)
 

@@ -38,7 +38,6 @@ define(
         @kernelBean.bind "change", @render
 
       render : =>
-        console.log @kernelBean
         $(@el).html @template(
           server : { url : @server.url, version : @kernelBean.get("kernel").KernelVersion } )
 
