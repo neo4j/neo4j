@@ -80,7 +80,7 @@ neo4j_home2$ ./bin/neo4j-coordinator start
 neo4j_home3$ ./bin/neo4j-coordinator start
 ----
 
-=== Start the Neo4j Servers in HA mode ===
+== Start the Neo4j Servers in HA mode ==
 
 In your 'conf/neo4j.properties' file, enable HA by setting the necessary parameters for all 3 installations, adjusting the +ha.server_id+ for all instances:
 
@@ -264,7 +264,7 @@ And find in the response
     }
 ----
 
-=== Start Neo4j Embedded in HA mode ===
+== Start Neo4j Embedded in HA mode ==
 
 If you are using Maven and Neo4j Embedded, simply add the following dependency to your project:
 
