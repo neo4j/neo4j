@@ -31,10 +31,11 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, cla
   val patternGraph: PatternGraph = buildPatternGraph()
 
   def getMatches(sourceRow: Map[String, Any]): Traversable[Map[String, Any]] = {
-    val bindings:Map[String,Any] = sourceRow.filter(_._2.isInstanceOf[PropertyContainer])
+    val bindings: Map[String, Any] = sourceRow.filter(_._2.isInstanceOf[PropertyContainer])
     val boundPairs: Map[String, MatchingPair] = extractBoundMatchingPairs(bindings)
 
     val undirectedBoundRelationships: Iterable[PatternRelationship] = bindings.keys.
+      filter(patternGraph.contains(_)).
       filter(patternGraph(_).isInstanceOf[PatternRelationship]).
       map(patternGraph(_).asInstanceOf[PatternRelationship]).
       filter(_.dir == Direction.BOTH)
@@ -129,41 +130,48 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, cla
         Seq()
       else {
 
-        val patternElement = patternGraph(kv._1)
+        val patternElement = patternGraph.get(kv._1)
 
-        kv._2 match {
-          case node: Node => {
-            Seq(kv._1 -> MatchingPair(patternElement, node))
-          }
-          case rel: Relationship => {
-            val pr = patternElement.asInstanceOf[PatternRelationship]
-
-            val x = pr.dir match {
-              case Direction.OUTGOING => Some((pr.startNode, pr.endNode))
-              case Direction.INCOMING => Some((pr.endNode, pr.startNode))
-              case Direction.BOTH => None
-            }
-
-            //We only want directed bound relationships. Undirected relationship patterns
-            //have to be treated a little differently
-            x match {
-              case Some((a, b)) => {
-                val t1 = a.key -> MatchingPair(a, rel.getStartNode)
-                val t2 = b.key -> MatchingPair(b, rel.getEndNode)
-                val t3 = pr.key -> MatchingPair(pr, rel)
-
-                Seq(t1, t2, t3)
+        patternElement match {
+          case None => Seq()
+          case Some(element) => {
+            kv._2 match {
+              case node: Node => {
+                Seq(kv._1 -> MatchingPair(element, node))
               }
-              case None => Seq()
+              case rel: Relationship => {
+                val pr = element.asInstanceOf[PatternRelationship]
+
+                val x = pr.dir match {
+                  case Direction.OUTGOING => Some((pr.startNode, pr.endNode))
+                  case Direction.INCOMING => Some((pr.endNode, pr.startNode))
+                  case Direction.BOTH => None
+                }
+
+                //We only want directed bound relationships. Undirected relationship patterns
+                //have to be treated a little differently
+                x match {
+                  case Some((a, b)) => {
+                    val t1 = a.key -> MatchingPair(a, rel.getStartNode)
+                    val t2 = b.key -> MatchingPair(b, rel.getEndNode)
+                    val t3 = pr.key -> MatchingPair(pr, rel)
+
+                    Seq(t1, t2, t3)
+                  }
+                  case None => Seq()
+                }
+              }
             }
           }
         }
+
+
       })
   }
 
   private def validatePattern(patternNodes: Map[String, PatternNode],
-                      patternRels: Map[String, PatternRelationship],
-                      bindings: SymbolTable): Map[String, PatternElement] = {
+                              patternRels: Map[String, PatternRelationship],
+                              bindings: SymbolTable): Map[String, PatternElement] = {
     val overlaps = patternNodes.keys.filter(patternRels.keys.toSeq contains)
     if (overlaps.nonEmpty) {
       throw new SyntaxException("Some identifiers are used as both relationships and nodes: " + overlaps.mkString(", "))

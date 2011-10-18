@@ -52,7 +52,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause]) 
       return false
     }
 
-    val notYetVisited = getPatternRelationshipsNotYetVisited(current.patternNode, history)
+    val notYetVisited: List[PatternRelationship] = getPatternRelationshipsNotYetVisited(current.patternNode, history).sortBy(_.optional)
 
     notYetVisited match {
       case List() => traverseNextNodeOrYield(leftToDoAfterThisOne, newHistory, yielder)
@@ -129,6 +129,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause]) 
     }
 
     if (currentRel.optional) {
+      debug("trying with null for " + currentRel)
       return traverseNextNodeOrYield(remaining, history.add(currentNode).add(MatchingPair(currentRel, null)), yielder)
     }
 

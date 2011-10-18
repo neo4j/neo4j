@@ -149,7 +149,14 @@ class ExecutionEngine(graph: GraphDatabaseService) {
     (unnamedPattern ++ namedPattern) match {
       case Seq() =>
       case x => {
-        context.pipe = new MatchPipe(context.pipe, x, context.clauses)
+
+        val mandatoryPatterns = x.filter(p => p.optional == false)
+        if (mandatoryPatterns.nonEmpty)
+          context.pipe = new MatchPipe(context.pipe, mandatoryPatterns, context.clauses)
+
+        val optionalPatterns = x.filter(p => p.optional == true)
+        if (optionalPatterns.nonEmpty)
+          context.pipe = new MatchPipe(context.pipe, optionalPatterns, context.clauses)
       }
     }
 
@@ -235,7 +242,7 @@ class ExecutionEngine(graph: GraphDatabaseService) {
       case i: Int => getElement(i)
       case i: Long => getElement(i)
       case i: String => getElement(i.toLong)
-      case element:T => element
+      case element: T => element
     }
 
     data match {
