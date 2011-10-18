@@ -4,6 +4,55 @@ Using the server with an embedded database
 
 Even if you are using the Neo4j Java API directly, for instance via +EmbeddedGraphDatabase+ or +HighlyAvailableGraphDatabase+, you can still use the features the server provides.
 
+== Getting the libraries ==
+
+=== From the Neo4j Server installation ===
+
+To run the server all the libraries you need are in the 'system/lib/' directory of the http://neo4j.org/download/[download package].
+For further instructions, see <<tutorials-java-embedded-setup>>.
+The only difference to the embedded setup is that 'system/lib/' should be added as well, not only the 'lib/' directory.
+
+=== Via Maven ===
+
+For users of dependency management, an example for http://maven.apache.org[Apache Maven] follows. 
+Note that the web resources are in a different artifact.
+
+.Maven pom.xml snippet
+[source,xml]
+------------------------------------------------
+<dependencies>
+  <dependency>
+    <groupId>org.neo4j.app</groupId>
+    <artifactId>neo4j-server</artifactId>
+    <version>${neo4j-version}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.neo4j.app</groupId>
+    <artifactId>neo4j-server</artifactId>
+    <classifier>static-web</classifier>
+    <version>${neo4j-version}</version>
+  </dependency>
+</dependencies>
+<repositories>
+  <repository>
+    <id>neo4j-release-repository</id>
+    <name>Neo4j Maven 2 release repository</name>
+    <url>http://m2.neo4j.org/releases</url>
+    <releases>
+      <enabled>true</enabled>
+    </releases>
+    <snapshots>
+      <enabled>false</enabled>
+    </snapshots>
+  </repository>
+</repositories>
+------------------------------------------------
+
+_Where +$\{neo4j-version}+ is the intended version._
+
+
+== Starting the Server from Java ==
+
 The Neo4j server exposes a class called
 http://components.neo4j.org/neo4j-server/{neo4j-version}/apidocs/org/neo4j/server/WrappingNeoServerBootstrapper.html[WrappingNeoServerBootstrapper]
 , which is capable of starting a Neo4j server in the same process as your application.
@@ -40,39 +89,5 @@ tag=customConfiguredWrappingNeoServerBootstrapper
 classifier=test-sources
 ----
 
-== Installing ==
-
-To run the server all the libraries you need are in the 'system/lib/' directory of the http://neo4j.org/download/[download package].
-For further instructions, see <<tutorials-java-embedded-setup>>.
-The only difference to the embedded setup is that 'system/lib/' should be added as well, not only the 'lib/' directory.
-
-For users of dependency management, an example for Maven follows.
-
-.Maven pom.xml snippet
-[source,xml]
-------------------------------------------------
-<dependencies>
-  <dependency>
-    <groupId>org.neo4j.app</groupId>
-    <artifactId>neo4j-server</artifactId>
-    <version>${neo4j-version}</version>
-  </dependency>
-</dependencies>
-<repositories>
-  <repository>
-    <id>neo4j-release-repository</id>
-    <name>Neo4j Maven 2 release repository</name>
-    <url>http://m2.neo4j.org/releases</url>
-    <releases>
-      <enabled>true</enabled>
-    </releases>
-    <snapshots>
-      <enabled>false</enabled>
-    </snapshots>
-  </repository>
-</repositories>
-------------------------------------------------
-
-_Where +$\{neo4j-version}+ is the intended version._
 
 
