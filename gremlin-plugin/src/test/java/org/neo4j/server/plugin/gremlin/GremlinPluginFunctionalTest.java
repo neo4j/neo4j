@@ -417,8 +417,38 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
                 MediaType.APPLICATION_FORM_URLENCODED_TYPE ).post( ENDPOINT ).entity();
         assertTrue( response.contains( "you" ) );
     }
+    
+    /**
+     * This example demonstrates basic
+     * collaborative filtering - ordering a traversal after occurence counts and
+     * substracting objects that are not interesting in the final result.
+     * 
+     * Here, we are finding Friends-of-Friends that are not Joes friends already.
+     * The same can be applied to graphs of users that +LIKE+ things and others.
+     */
+    @Documented
+    @Test
+    @Graph( value = { "Joe knows Bill", "Joe knows Sara", "Sara knows Bill", "Sara knows Ian", "Bill knows Derrick",
+            "Bill knows Ian", "Sara knows Jill" }, autoIndexNodes = true )
+    public void collaborative_filtering() throws UnsupportedEncodingException
+    {
+        String script = "x=[];fof=[:];" +
+        		"g.v(" + data.get().get( "Joe" ).getId()
+                        + ").out('knows').aggregate(x).out('knows').except(x).groupCount(fof)>>-1;fof.sort{a,b -> b.value <=> a.value}";
+        gen().expectedStatus( Status.OK.getStatusCode() ).description(
+                formatGroovy( script ) );
+        String response = gen().payload(
+                "script=" + URLEncoder.encode( script, "UTF-8" ) ).payloadType(
+                MediaType.APPLICATION_FORM_URLENCODED_TYPE ).post( ENDPOINT ).entity();
+        assertFalse( response.contains( "v["+ data.get().get( "Bill").getId() ) );
+        assertFalse( response.contains( "v["+ data.get().get( "Sara").getId() ) );
+        assertTrue( response.contains( "v["+ data.get().get( "Ian").getId() ) );
+        assertTrue( response.contains( "v["+ data.get().get( "Jill").getId() ) );
+        assertTrue( response.contains( "v["+ data.get().get( "Derrick").getId() ) );
+    }
 
     @Test
+    @Ignore
     @Graph( value = { "Peter knows Ian", "Ian knows Peter", "Marie likes Peter" }, autoIndexNodes = true, autoIndexRelationships=true )
     public void test_Gremlin_load()
     {
