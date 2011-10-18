@@ -1,3 +1,10 @@
+1.5 (2011-10-18)
+----------------
+o More useful logging to messages.log to help investigating problems.
+o Fixed some issues with detection of version and the need to migrate a store.
+o In webadmin: visualization adds nodes/relationships to the view for each search and search is performed with CTRL+ENTER.
+o Added DISTINCT to all aggregate functions in Cypher.
+
 1.5.M02 (2011-10-10)
 --------------------
 o [STORE FORMAT CHANGE] New layout of the property store(s) which results in roughly a 30% reduction in size on disk as well as fewer I/O read operations for reading properties.

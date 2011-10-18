@@ -1,3 +1,8 @@
+1.5 (2011-10-18)
+----------------
+o Added protocol version to com protocol to be able to fail fast and predictably if two different
+  version tries to communicate with each other.
+
 1.5.M02 (2011-10-10)
 --------------------
 o Performance improvements in extraction of logs sent from master to slave in HA.
