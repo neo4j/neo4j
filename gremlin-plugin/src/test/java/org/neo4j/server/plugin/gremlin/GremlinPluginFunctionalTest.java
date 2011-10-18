@@ -435,11 +435,11 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
         String script = "x=[];fof=[:];" +
         		"g.v(" + data.get().get( "Joe" ).getId()
                         + ").out('knows').aggregate(x).out('knows').except(x).groupCount(fof)>>-1;fof.sort{a,b -> b.value <=> a.value}";
+        String payload = "{\"script\":\"" + script + "\"}";
         gen().expectedStatus( Status.OK.getStatusCode() ).description(
                 formatGroovy( script ) );
         String response = gen().payload(
-                "script=" + URLEncoder.encode( script, "UTF-8" ) ).payloadType(
-                MediaType.APPLICATION_FORM_URLENCODED_TYPE ).post( ENDPOINT ).entity();
+                JSONPrettifier.parse( payload ) ).post( ENDPOINT ).entity();
         assertFalse( response.contains( "v["+ data.get().get( "Bill").getId() ) );
         assertFalse( response.contains( "v["+ data.get().get( "Sara").getId() ) );
         assertTrue( response.contains( "v["+ data.get().get( "Ian").getId() ) );
