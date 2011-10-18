@@ -55,6 +55,12 @@ The examples included here use the top-level artifact approach.
 
 _Where +$\{neo4j-version}+ is the desired version and the +artifactId+ is found in <<editions>>._
 
+=== Eclipse and Maven ===
+
+For development in http://www.eclipse.org[Eclipse], it is recommended to install the http://www.eclipse.org/m2e/[M2Eclipse plugin] and 
+let Maven manage the project build classpath instead, see above. This also adds the possibility to buidl your project both via the command line with maven
+and have a working Eclipse setup for development.
+
 === Ivy ===
 
 Make sure to resolve dependencies from Maven Central, for example using this configuration in your 'ivysettings.xml' file:
