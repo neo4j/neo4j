@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.ha.zookeeper;
 
+import static org.neo4j.kernel.ha.zookeeper.ClusterManager.getSingleRootPath;
+
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.Date;
@@ -338,6 +340,7 @@ public class ZooClient extends AbstractZooKeeperManager
                 throw new ZooKeeperException( "Got interrupted", e );
             }
             // try create root
+            if ( getSingleRootPath( zooKeeper ) != null ) throw new RuntimeException( "There's already an HA cluster managed by this ZooKeeper cluster" );
             try
             {
                 byte data[] = new byte[0];
