@@ -76,6 +76,11 @@ public final class LocalhostZooKeeperCluster
             if ( !success ) shutdown();
         }
     }
+    
+    public static LocalhostZooKeeperCluster standardZoo( Class<?> owningTest)
+    {
+        return new LocalhostZooKeeperCluster( owningTest, 2181, 2182, 2183 );
+    }
 
     private void await( ZooKeeper[] keepers, long timeout, TimeUnit unit )
     {
