@@ -67,6 +67,7 @@ public class StoreVersionTest
         {
             assertThat( store.getTypeAndVersionDescriptor(), containsString( CommonAbstractStore.ALL_STORES_VERSION ) );
         }
+        neoStore.close();
     }
 
     @Test
@@ -97,7 +98,8 @@ public class StoreVersionTest
     public void neoStoreHasCorrectStoreVersionField() throws IOException
     {
         File outputDir = new File( "target/var/"
-                                   + StoreVersionTest.class.getSimpleName() );
+                                   + StoreVersionTest.class.getSimpleName()
+                                   + "test2" );
         FileUtils.deleteRecursively( outputDir );
         assertTrue( outputDir.mkdirs() );
 

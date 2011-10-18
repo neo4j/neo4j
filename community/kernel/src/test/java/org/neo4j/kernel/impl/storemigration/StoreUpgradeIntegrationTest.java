@@ -61,7 +61,8 @@ public class StoreUpgradeIntegrationTest
     public void shouldAbortOnNonCleanlyShutdown() throws IOException
     {
         File workingDirectory = new File(
-                "target/" + StoreUpgraderTest.class.getSimpleName() );
+                "target/" + StoreUpgraderTest.class.getSimpleName()
+                        + "shouldAbordOnNonCleanlyShutdown" );
         prepareSampleLegacyDatabase( workingDirectory );
 
         assertTrue( allStoreFilesHaveVersion( workingDirectory, "v0.9.9" ) );
@@ -87,7 +88,8 @@ public class StoreUpgradeIntegrationTest
     public void shouldAbortOnCorruptStore() throws IOException
     {
         File workingDirectory = new File(
-                "target/" + StoreUpgraderTest.class.getSimpleName() );
+                "target/" + StoreUpgraderTest.class.getSimpleName()
+                        + "shouldAbortOnCorruptStore" );
         prepareSampleLegacyDatabase( workingDirectory );
 
         assertTrue( allStoreFilesHaveVersion( workingDirectory, "v0.9.9" ) );

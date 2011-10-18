@@ -44,7 +44,9 @@ public class StoreUpgraderTest
     @Test
     public void shouldUpgradeAnOldFormatStore() throws IOException
     {
-        File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
+        File workingDirectory = new File(
+                "target/" + StoreUpgraderTest.class.getSimpleName()
+                        + "shouldUpgradeAnOldFormatStore" );
         MigrationTestUtils.prepareSampleLegacyDatabase( workingDirectory );
 
         assertTrue( allStoreFilesHaveVersion( workingDirectory, "v0.9.9" ) );
@@ -57,7 +59,10 @@ public class StoreUpgraderTest
     @Test
     public void shouldLeaveACopyOfOriginalStoreFilesInBackupDirectory() throws IOException
     {
-        File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
+        File workingDirectory = new File(
+                "target/"
+                        + StoreUpgraderTest.class.getSimpleName()
+                        + "shouldLeaveACopyOfOriginalStoreFilesInBackupDirectory" );
         MigrationTestUtils.prepareSampleLegacyDatabase( workingDirectory );
 
         new StoreUpgrader( defaultConfig(), alwaysAllowed(), new UpgradableDatabase(), new StoreMigrator( new SilentMigrationProgressMonitor() ) , new DatabaseFiles() ).attemptUpgrade( new File( workingDirectory, NeoStore.DEFAULT_NAME ).getPath() );
@@ -68,7 +73,10 @@ public class StoreUpgraderTest
     @Test
     public void shouldHaltUpgradeIfUpgradeConfigurationVetoesTheProcess() throws IOException
     {
-        File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
+        File workingDirectory = new File(
+                "target/"
+                        + StoreUpgraderTest.class.getSimpleName()
+                        + "shouldHaltUpgradeIfUpgradeConfigurationVetoesTheProcess" );
         MigrationTestUtils.prepareSampleLegacyDatabase( workingDirectory );
 
         UpgradeConfiguration vetoingUpgradeConfiguration = new UpgradeConfiguration()
@@ -92,8 +100,14 @@ public class StoreUpgraderTest
     @Test
     public void shouldLeaveAllFilesUntouchedIfWrongVersionNumberFound() throws IOException
     {
-        File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
-        File comparisonDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() + "-comparison" );
+        File workingDirectory = new File(
+                "target/"
+                        + StoreUpgraderTest.class.getSimpleName()
+                        + "shouldLeaveAllFilesUntouchedIfWrongVersionNumberFound" );
+        File comparisonDirectory = new File(
+                "target/"
+                        + StoreUpgraderTest.class.getSimpleName()
+                        + "shouldLeaveAllFilesUntouchedIfWrongVersionNumberFound-comparison" );
         MigrationTestUtils.prepareSampleLegacyDatabase( workingDirectory );
 
         changeVersionNumber( new File( workingDirectory, "neostore.nodestore.db" ), "v0.9.5" );
@@ -115,8 +129,14 @@ public class StoreUpgraderTest
     @Test
     public void shouldRefuseToUpgradeIfAnyOfTheStoresWeNotShutDownCleanly() throws IOException
     {
-        File workingDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() );
-        File comparisonDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() + "-comparison" );
+        File workingDirectory = new File(
+                "target/"
+                        + StoreUpgraderTest.class.getSimpleName()
+                        + "shouldRefuseToUpgradeIfAnyOfTheStoresWeNotShutDownCleanly" );
+        File comparisonDirectory = new File(
+                "target/"
+                        + StoreUpgraderTest.class.getSimpleName()
+                        + "shouldRefuseToUpgradeIfAnyOfTheStoresWeNotShutDownCleanly-comparison" );
         MigrationTestUtils.prepareSampleLegacyDatabase( workingDirectory );
 
         truncateFile( new File( workingDirectory,
@@ -142,10 +162,12 @@ public class StoreUpgraderTest
             throws IOException
     {
         File workingDirectory = new File(
-                "target/" + StoreUpgraderTest.class.getSimpleName() );
+                "target/"
+                        + StoreUpgraderTest.class.getSimpleName()
+                        + "shouldRefuseToUpgradeIfAllOfTheStoresWeNotShutDownCleanly" );
         File comparisonDirectory = new File(
                 "target/" + StoreUpgraderTest.class.getSimpleName()
-                        + "-comparison" );
+                        + "shouldRefuseToUpgradeIfAllOfTheStoresWeNotShutDownCleanly-comparison" );
         MigrationTestUtils.prepareSampleLegacyDatabase( workingDirectory );
 
         truncateAllFiles( workingDirectory );
