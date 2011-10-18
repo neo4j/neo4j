@@ -102,6 +102,9 @@ public class SetNodePropertiesFunctionalTest extends
      * Set property on node.
      * 
      * Setting different properties will retain the existing ones for this node.
+     * Note that a single value are submitted not as a map but just as a value
+     * (which is valid JSON) like in the example
+     * below.
      */
     @Documented
     @Graph( nodes = {@NODE(name="jim", properties={@PROP(key="foo2", value="bar2")})} )
