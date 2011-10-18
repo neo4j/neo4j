@@ -416,7 +416,15 @@ public class TestLuceneBatchInsert
         assertEquals( 1, index.get( "key2", "value2" ).size() );
         assertEquals( 1, index.get( "key", "value" ).size() );
         
-        
+        long id2 = inserter.createNode( null );
+        props = new HashMap<String, Object>();
+        props.put("2key","value");
+        index.updateOrAdd( id2, props );
+        props.put("2key","value2");
+        props.put("2key2","value3");
+        index.updateOrAdd( id2, props );
+        index.flush();
+        assertEquals( 1, index.get( "2key", "value2" ).size() );
         provider.shutdown();
         inserter.shutdown();
     }
