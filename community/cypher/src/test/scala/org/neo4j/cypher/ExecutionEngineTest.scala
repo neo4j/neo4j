@@ -446,7 +446,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     assertEquals(List(Map("a" -> refNode, "count(*)" -> 2)), result.toList)
   }
 
-  @Test def parametershouldReturnTwoSubgraphsWithBoundUndirectedRelationship() {
+  @Test def shouldReturnTwoSubgraphsWithBoundUndirectedRelationship() {
     val a = createNode("a")
     val b = createNode("b")
     relate(a, b, "rel", "r")
@@ -454,6 +454,18 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val result = parseAndExecute("start r=rel(0) match a-[r]-b return a,b")
 
     assertEquals(List(Map("a" -> a, "b" -> b), Map("a" -> b, "b" -> a)), result.toList)
+  }
+
+  @Test def shouldReturnTwoSubgraphsWithBoundUndirectedRelationshipAndOptionalRelationship() {
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
+    relate(a, b, "rel", "r")
+    relate(b, c, "rel", "r2")
+
+    val result = parseAndExecute("start r=rel(0) match a-[r]-b-[?]-c return a,b,c")
+
+    assertEquals(List(Map("a" -> a, "b" -> b, "c"->c), Map("a" -> b, "b" -> a, "c"->null)), result.toList)
   }
 
   @Test def shouldLimitToTwoHits() {
@@ -998,11 +1010,24 @@ match a-[r1:knows]->friend-[r2:knows]->foaf, a-[foafR?:knows]->foaf
 where foafR is null
 return foaf, count(*)
 order by count(*)""")
-    //    val result = execute(q)
-    //    println(q)
-    //    println(result.dumpToString())
 
     assert(List(Map("foaf" -> d, "count(*)" -> 1), Map("foaf" -> e, "count(*)" -> 2)) === result.toList)
+  }
+
+  @Test def shouldSplitOptionalMandatoryCleverly() {
+    val a = createNode("A")
+    val b = createNode("B")
+    val c = createNode("C")
+
+    relate(a, b, "knows", "rAB")
+    relate(b, c, "knows", "rBC")
+
+    val result = parseAndExecute("""
+start a  = node(1)
+match a-[r1?:knows]->friend-[r2:knows]->foaf
+return foaf""")
+
+    assert(List(Map("foaf" -> c)) === result.toList)
   }
 
   @Test(expected = classOf[ParameterNotFoundException]) def shouldComplainWhenMissingParams() {

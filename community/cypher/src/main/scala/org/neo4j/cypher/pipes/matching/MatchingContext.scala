@@ -22,13 +22,13 @@ package org.neo4j.cypher.pipes.matching
 import org.neo4j.cypher.{SyntaxException, SymbolTable}
 import org.neo4j.cypher.commands._
 import collection.immutable.Map
-import collection.{Seq, Iterable}
 import org.neo4j.graphdb.{PropertyContainer, Direction, Relationship, Node}
+import collection.{Traversable, Seq, Iterable}
 
 class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, clauses: Seq[Clause] = Seq()) {
   type PatternGraph = Map[String, PatternElement]
 
-  val patternGraph: PatternGraph = buildPatternGraph()
+  val (patternGraph, optionalElements) = buildPatternGraph()
 
   def getMatches(sourceRow: Map[String, Any]): Traversable[Map[String, Any]] = {
     val bindings: Map[String, Any] = sourceRow.filter(_._2.isInstanceOf[PropertyContainer])
@@ -40,13 +40,18 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, cla
       map(patternGraph(_).asInstanceOf[PatternRelationship]).
       filter(_.dir == Direction.BOTH)
 
-    if (undirectedBoundRelationships.isEmpty) {
-      createPatternMatcher(boundPairs)
+    val mandatoryPattern: Traversable[Map[String, Any]] = if (undirectedBoundRelationships.isEmpty) {
+      createPatternMatcher(boundPairs, false)
     } else {
       val boundRels: Seq[Map[String, MatchingPair]] = createListOfBoundRelationshipsWithHangingNodes(undirectedBoundRelationships, bindings)
 
-      boundRels.map(relMap => createPatternMatcher(relMap ++ boundPairs)).reduceLeft(_ ++ _)
+      boundRels.map(relMap => createPatternMatcher(relMap ++ boundPairs, false)).reduceLeft(_ ++ _)
     }
+
+    if (optionalElements.nonEmpty)
+      mandatoryPattern.flatMap(innerMatch => createPatternMatcher(extractBoundMatchingPairs(innerMatch), true))
+    else
+      mandatoryPattern
   }
 
   def createNullValuesForOptionalElements(matchedGraph: Map[String, Any]): Map[String, Null] = {
@@ -71,10 +76,14 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, cla
     cartesian(toList).map(_.reduceLeft(_ ++ _))
   }
 
-  private def createPatternMatcher(boundPairs: Map[String, MatchingPair]): scala.Traversable[Map[String, Any]] = {
-    new PatternMatcher(boundPairs, clauses).map(matchedGraph => {
-      matchedGraph ++ createNullValuesForOptionalElements(matchedGraph)
-    })
+  private def createPatternMatcher(boundPairs: Map[String, MatchingPair], includeOptionals: Boolean): scala.Traversable[Map[String, Any]] = {
+
+    val patternMatcher = new PatternMatcher(boundPairs, clauses, includeOptionals)
+
+    if (includeOptionals)
+      patternMatcher.map(matchedGraph => matchedGraph ++ createNullValuesForOptionalElements(matchedGraph))
+    else
+      patternMatcher
   }
 
   // This method takes  a Seq of Seq and produces the cartesian product of all inner Seqs
@@ -89,7 +98,7 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, cla
   This method is mutable, but it is only called from the constructor of this class. The created pattern graph
    is immutable and thread safe.
    */
-  private def buildPatternGraph(): PatternGraph = {
+  private def buildPatternGraph(): (Map[String, PatternElement], Set[String]) = {
     val patternNodeMap: scala.collection.mutable.Map[String, PatternNode] = scala.collection.mutable.Map()
     val patternRelMap: scala.collection.mutable.Map[String, PatternRelationship] = scala.collection.mutable.Map()
 
@@ -117,10 +126,9 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, cla
       case _ =>
     })
 
-    validatePattern(patternNodeMap.toMap, patternRelMap.toMap, boundIdentifiers)
+    val (elementsMap, optionalElements) = validatePattern(patternNodeMap.toMap, patternRelMap.toMap, boundIdentifiers)
 
-    val pattern = (patternNodeMap.values ++ patternRelMap.values).toSeq
-    pattern.map(x => x.key -> x).toMap
+    (elementsMap, optionalElements)
   }
 
 
@@ -171,13 +179,32 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, cla
 
   private def validatePattern(patternNodes: Map[String, PatternNode],
                               patternRels: Map[String, PatternRelationship],
-                              bindings: SymbolTable): Map[String, PatternElement] = {
+                              bindings: SymbolTable): (Map[String, PatternElement], Set[String]) = {
     val overlaps = patternNodes.keys.filter(patternRels.keys.toSeq contains)
     if (overlaps.nonEmpty) {
       throw new SyntaxException("Some identifiers are used as both relationships and nodes: " + overlaps.mkString(", "))
     }
 
     val elementsMap: Map[String, PatternElement] = (patternNodes.values ++ patternRels.values).map(x => (x.key -> x)).toMap
+    val optionalElements = scala.collection.mutable.Set[String](elementsMap.keys.toSeq: _*)
+
+    def markMandatoryElements(x: PatternElement) {
+      if (optionalElements.contains(x.key)) {
+        x match {
+          case nod: PatternNode => {
+            optionalElements.remove(x.key)
+            nod.relationships.filter(!_.optional).foreach(markMandatoryElements)
+          }
+          case rel: PatternRelationship => if (!rel.optional) {
+            optionalElements.remove(x.key)
+            markMandatoryElements(rel.startNode)
+            markMandatoryElements(rel.endNode)
+          }
+        }
+      }
+    }
+
+
     var visited = scala.collection.mutable.Seq[PatternElement]()
 
     def visit(x: PatternElement) {
@@ -197,7 +224,10 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, cla
       val el = elementsMap.get(id.name)
       el match {
         case None =>
-        case Some(x) => visit(x)
+        case Some(x) => {
+          visit(x)
+          markMandatoryElements(x)
+        }
       }
     })
 
@@ -207,7 +237,7 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, cla
       throw new SyntaxException("All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These identifiers were found to be disconnected: " + notVisited.map(_.key).mkString("", ", ", ""))
     }
 
-    elementsMap
+    (elementsMap, optionalElements.toSet)
   }
 
 }

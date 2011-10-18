@@ -148,16 +148,7 @@ class ExecutionEngine(graph: GraphDatabaseService) {
 
     (unnamedPattern ++ namedPattern) match {
       case Seq() =>
-      case x => {
-
-        val mandatoryPatterns = x.filter(p => p.optional == false)
-        if (mandatoryPatterns.nonEmpty)
-          context.pipe = new MatchPipe(context.pipe, mandatoryPatterns, context.clauses)
-
-        val optionalPatterns = x.filter(p => p.optional == true)
-        if (optionalPatterns.nonEmpty)
-          context.pipe = new MatchPipe(context.pipe, optionalPatterns, context.clauses)
-      }
+      case x => context.pipe = new MatchPipe(context.pipe, x, context.clauses)
     }
 
     context

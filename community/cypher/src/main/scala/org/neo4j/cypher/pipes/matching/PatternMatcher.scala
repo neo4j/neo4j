@@ -22,7 +22,7 @@ package org.neo4j.cypher.pipes.matching
 import org.neo4j.cypher.commands.Clause
 import org.neo4j.graphdb.Node
 
-class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause]) extends Traversable[Map[String, Any]] {
+class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause], includeOptionals:Boolean) extends Traversable[Map[String, Any]] {
   val boundNodes = bindings.filter(_._2.patternElement.isInstanceOf[PatternNode])
   val boundRels = bindings.filter(_._2.patternElement.isInstanceOf[PatternRelationship])
 
@@ -52,7 +52,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause]) 
       return false
     }
 
-    val notYetVisited: List[PatternRelationship] = getPatternRelationshipsNotYetVisited(current.patternNode, history).sortBy(_.optional)
+    val notYetVisited: List[PatternRelationship] = getPatternRelationshipsNotYetVisited(current.patternNode, history)
 
     notYetVisited match {
       case List() => traverseNextNodeOrYield(leftToDoAfterThisOne, newHistory, yielder)
@@ -128,7 +128,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause]) 
       return true
     }
 
-    if (currentRel.optional) {
+    if (currentRel.optional  && includeOptionals) {
       debug("trying with null for " + currentRel)
       return traverseNextNodeOrYield(remaining, history.add(currentNode).add(MatchingPair(currentRel, null)), yielder)
     }
@@ -160,7 +160,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause]) 
     true
   }
 
-  private def getPatternRelationshipsNotYetVisited[U](patternNode: PatternNode, history: History): List[PatternRelationship] = history.filter(patternNode.relationships.toSet).toList
+  private def getPatternRelationshipsNotYetVisited[U](patternNode: PatternNode, history: History): List[PatternRelationship] = history.filter(patternNode.relationships.toSet).filter(_.optional == false || includeOptionals == true).toList
 
   val isDebugging = false
 
