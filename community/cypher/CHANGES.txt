@@ -1,3 +1,8 @@
+1.5 (2011-10-18)
+----------------
+o Added DISTINCT for all aggregate functions
+o Nodes/relationships can be parameters as well
+
 1.5.M02 (2011-10-10)
 --------------------
 o Relationships can now be optional
