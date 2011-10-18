@@ -4,6 +4,8 @@ Cypher Cookbook
 
 The following cookbook aims to provide a few snippets, examples and use-cases and their query-solutions in Cypher.
 
+:leveloffset: 2
+
 == Hyperedges and Cypher ==
 
 Imagine a user being part of different groups. A group can have different roles, and a 
@@ -21,3 +23,18 @@ include::cypher-hyperedge-graph.txt[]
 include::find-groups.txt[]
 
 include::find-all-groups-and-roles-for-a-user.txt[]
+
+:leveloffset: 2
+
+== Basic Collaborative Filtering ==
+
+A very basic technique for recommendation in Graphs is the 
+http://en.wikipedia.org/wiki/Collaborative_filtering[collaborative filtering pattern].
+
+Imagine an example graph like
+
+include::cypher-collabfiltering-graph.txt[]
+
+:leveloffset: 3
+
+include::basic-collaborative-filtering.txt[]
