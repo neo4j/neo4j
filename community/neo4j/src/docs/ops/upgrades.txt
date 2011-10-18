@@ -49,6 +49,14 @@ This upgrade includes a significant change to the layout of property store files
 and improves IO performance.  To achieve this layout change, the upgrade process takes some time to process the
 whole of the existing database.  You should budget for several minutes per gigabyte of data as part of your upgrade planning.
 
+In an HA environment these steps need to be performed:
+
+. shut down all the databases in the cluster
+. shut down the zoo keeper cluster and clear the +version-2+ directories on all the zoo keeper instances
+. start the zoo keeper cluster again
+. remove the databases except the master and start the master database with 1.5, where migration will happen
+. start up the other databases so that they get a copy from the master
+
 [WARNING]
 The upgrade process for this upgrade temporarily requires additional disk space, for the period while the
 upgrade is in progress.  Before starting the upgrade to Neo4J 1.5, you should ensure that the machine performing the
