@@ -21,6 +21,7 @@ package slavetest;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -324,7 +325,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         Transaction slaveTx = slave.beginTx();
         slave.getNodeById( masterNodeId ).setProperty( "key", "value" );
         slave.index().forNodes( "name" ).add( slave.getNodeById( masterNodeId ), "key", "value" );
-        slave.createNode().getId();
+        long slaveNodeId = slave.createNode().getId();
         
         // Restart the master
         getMasterHaDb().shutdown();
@@ -339,6 +340,13 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
             fail( "Shouldn't be able to commit here" );
         }
         catch ( TransactionFailureException e ) { /* Good */ }
+        
+        assertNull( slave.getNodeById( masterNodeId ).getProperty( "key", null ) );
+        try
+        {
+            slave.getNodeById( slaveNodeId );
+        }
+        catch ( NotFoundException e ) { /* Good */ }
     }
     
     @Test
