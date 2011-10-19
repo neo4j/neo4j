@@ -45,7 +45,7 @@ public interface Kernel
     @Description( "The time when this Neo4j graph store was created." )
     Date getStoreCreationDate();
 
-    @Description( "An identifier that uniquely identifies this Neo4j graph store." )
+    @Description( "An identifier that, together with store creation time, uniquely identifies this Neo4j graph store." )
     String getStoreId();
 
     @Description( "The current version of the Neo4j store logical log." )
