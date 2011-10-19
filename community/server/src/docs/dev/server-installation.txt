@@ -58,23 +58,12 @@ Finally, note that if you chose to create a new user account, on uninstall you w
 Neo4j can be installed as a Mac launchd job:
 
 1. `cd $NEO4J_HOME`
-2. `sudo ./bin/neo4j install`
+2. `./bin/neo4j install`
+3. `launchctl list | grep neo`
 +
-if asked, enter your password to gain super-user privileges
+should reveal the launchd "org.neo4j.server.7474" job for running the Neo4j Server
 
-3. `launchctl load ~/Library/LaunchAgents/wrapper.neo4j-server.plist`
-+
-needed to tell launchd about the "job"
-
-4. `launchctl list | grep neo`
-+
-should reveal the launchd "wrapper.neo4j-server" job for running the Neo4j Server
-
-5. `launchctl start wrapper.neo4j-server`
-+
-to start the Neo4j Server under launchd control
-
-6. `./bin/neo4j status`
+4. `./bin/neo4j status`
 +
 should indicate that the server is running
    
