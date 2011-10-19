@@ -207,6 +207,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
             }
             catch ( Throwable e )
             {
+                msgLog.logMessage( "Error handling request", e );
                 ctx.getChannel().close();
                 tryToFinishOffChannel( ctx.getChannel() );
                 e.printStackTrace();
