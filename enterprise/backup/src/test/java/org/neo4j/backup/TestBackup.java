@@ -334,6 +334,7 @@ public class TestBackup
     public void shouldRetainFileLocksAfterFullBackupOnLiveDatabase() throws Exception
     {
         String sourcePath = "target/var/serverdb-lock";
+        FileUtils.deleteDirectory( new File( sourcePath ) );
         GraphDatabaseService db = new EmbeddedGraphDatabase( sourcePath, stringMap( ENABLE_ONLINE_BACKUP, "true" ) );
         try
         {
