@@ -167,7 +167,7 @@ Once you have access to this information, you can use it to for instance expose 
 |MBeanQuery  |An ObjectName that can be used as a query for getting all management beans for this Neo4j instance.|String
 |KernelStartTime  |The time from which this Neo4j instance was in operational mode|Date
 |StoreCreationDate  |The time when this Neo4j graph store was created|Date
-|StoreId  |An identifier that uniquely identifies this Neo4j graph store|String
+|StoreId  |An identifier that, together with store creation time, uniquely identifies this Neo4j graph store|String
 |StoreLogVersion  |The current version of the Neo4j store logical log|String
 |KernelVersion  |The version of Neo4j|String
 |StoreDirectory  |The location where the Neo4j store is located|String
