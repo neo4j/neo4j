@@ -265,7 +265,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
     {
         try
         {
-            finishOffChannel( channel, slave );
+            closeChannel( channel, slave );
             unmapSlave( channel, slave );
         }
         catch ( IllegalStateException e ) // From TxManager.resume (if the tx is already active)
@@ -301,7 +301,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
             {
                 try
                 {
-                    finishOffChannel( null, slave );
+                    closeChannel( null, slave );
                 }
                 catch ( Throwable e )
                 {
@@ -546,8 +546,6 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         synchronized ( connectedSlaveChannels )
         {
             connectedSlaveChannels.remove( channel );
-            channelBuffers.remove( channel );
-            channelGroup.remove( channel );
         }
     }
     
@@ -570,6 +568,16 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
 //        channelFactory.releaseExternalResources();
     }
 
+    protected void closeChannel( Channel channel, SlaveContext context )
+    {
+        synchronized ( connectedSlaveChannels )
+        {
+            channelBuffers.remove( channel );
+            channelGroup.remove( channel );
+        }
+        finishOffChannel( channel, context );
+    }
+    
     protected abstract void finishOffChannel( Channel channel, SlaveContext context );
 
     public Map<Channel, SlaveContext> getConnectedSlaveChannels()
