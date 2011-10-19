@@ -58,7 +58,7 @@ public abstract class IndexRepresentation extends MappingRepresentation implemen
 
     protected String path()
     {
-        return "index/" + propertyContainerType() + "/" + name + "/";
+        return "index/" + propertyContainerType() + "/" + URIHelper.encode(name) + "/";
     }
 
     protected abstract String propertyContainerType();
