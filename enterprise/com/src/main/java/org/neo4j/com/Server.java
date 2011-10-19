@@ -25,7 +25,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -81,8 +80,6 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
     private final ChannelGroup channelGroup;
     private final Map<Channel, Pair<SlaveContext, AtomicLong /*time last heard of*/>> connectedSlaveChannels =
             new HashMap<Channel, Pair<SlaveContext,AtomicLong>>();
-    private final Map<Channel, Pair<ChannelBuffer, ByteBuffer>> channelBuffers =
-            new HashMap<Channel, Pair<ChannelBuffer,ByteBuffer>>();
     private final ExecutorService executor;
     private final ExecutorService masterCallExecutor;
     private final StringLogger msgLog;
@@ -265,7 +262,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
     {
         try
         {
-            closeChannel( channel, slave );
+            finishOffChannel( channel, slave );
             unmapSlave( channel, slave );
         }
         catch ( IllegalStateException e ) // From TxManager.resume (if the tx is already active)
@@ -301,7 +298,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
             {
                 try
                 {
-                    closeChannel( null, slave );
+                    finishOffChannel( null, slave );
                 }
                 catch ( Throwable e )
                 {
@@ -337,8 +334,8 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
                 // This is the first chunk in a multi-chunk request
                 RequestType<M> type = getRequestContext( buffer.readByte() );
                 SlaveContext context = readContext( buffer );
-                Pair<ChannelBuffer, ByteBuffer> targetBuffers = mapSlave( channel, context, type );
-                partialRequest = new PartialRequest( type, context, targetBuffers );
+                ChannelBuffer targetBuffer = mapSlave( channel, context, type );
+                partialRequest = new PartialRequest( type, context, targetBuffer );
                 partialRequests.put( channel, partialRequest );
             }
             partialRequest.add( buffer );
@@ -348,7 +345,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
             PartialRequest partialRequest = partialRequests.remove( channel );
             RequestType<M> type = null;
             SlaveContext context = null;
-            Pair<ChannelBuffer, ByteBuffer> targetBuffers;
+            ChannelBuffer targetBuffer;
             ChannelBuffer bufferToReadFrom = null;
             ChannelBuffer bufferToWriteTo = null;
             if ( partialRequest == null )
@@ -356,25 +353,25 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
                 // This is the one and single chunk in the request
                 type = getRequestContext( buffer.readByte() );
                 context = readContext( buffer );
-                targetBuffers = mapSlave( channel, context, type );
+                targetBuffer = mapSlave( channel, context, type );
                 bufferToReadFrom = buffer;
-                bufferToWriteTo = targetBuffers.first();
+                bufferToWriteTo = targetBuffer;
             }
             else
             {
                 // This is the last chunk in a multi-chunk request
                 type = partialRequest.type;
                 context = partialRequest.context;
-                targetBuffers = partialRequest.buffers;
+                targetBuffer = partialRequest.buffer;
                 partialRequest.add( buffer );
-                bufferToReadFrom = targetBuffers.first();
+                bufferToReadFrom = targetBuffer;
                 bufferToWriteTo = ChannelBuffers.dynamicBuffer();
             }
 
             bufferToWriteTo.clear();
             final ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( bufferToWriteTo, channel, frameLength,
                     getInternalProtocolVersion(), applicationProtocolVersion );
-            submitSilent( masterCallExecutor, masterCaller( type, channel, context, chunkingBuffer, bufferToReadFrom, targetBuffers.other() ) );
+            submitSilent( masterCallExecutor, masterCaller( type, channel, context, chunkingBuffer, bufferToReadFrom ) );
         }
     }
 
@@ -404,7 +401,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
     }
 
     private Runnable masterCaller( final RequestType<M> type, final Channel channel, final SlaveContext context,
-            final ChunkingChannelBuffer targetBuffer, final ChannelBuffer bufferToReadFrom, final ByteBuffer targetByteBuffer )
+            final ChunkingChannelBuffer targetBuffer, final ChannelBuffer bufferToReadFrom )
     {
         return new Runnable()
         {
@@ -417,7 +414,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
                     response = type.getMasterCaller().callMaster( realMaster, context, bufferToReadFrom, targetBuffer );
                     type.getObjectSerializer().write( response.response(), targetBuffer );
                     writeStoreId( response.getStoreId(), targetBuffer );
-                    writeTransactionStreams( response.transactions(), targetBuffer, targetByteBuffer );
+                    writeTransactionStreams( response.transactions(), targetBuffer );
                     targetBuffer.done();
                     responseWritten( type, channel, context );
                 }
@@ -463,8 +460,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         targetBuffer.writeBytes( storeId.serialize() );
     }
     
-    private static <T> void writeTransactionStreams( TransactionStream txStream,
-            ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
+    private static <T> void writeTransactionStreams( TransactionStream txStream, ChannelBuffer buffer ) throws IOException
     {
         if ( !txStream.hasNext() )
         {
@@ -510,10 +506,9 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
 
     protected abstract RequestType<M> getRequestContext( byte id );
 
-    protected Pair<ChannelBuffer, ByteBuffer> mapSlave( Channel channel, SlaveContext slave, RequestType<M> type )
+    protected ChannelBuffer mapSlave( Channel channel, SlaveContext slave, RequestType<M> type )
     {
         channelGroup.add( channel );
-        Pair<ChannelBuffer, ByteBuffer> buffer = null;
         synchronized ( connectedSlaveChannels )
         {
             // Checking for machineId -1 excludes the "empty" slave contexts
@@ -530,15 +525,8 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
                     connectedSlaveChannels.put( channel, Pair.of( slave, new AtomicLong( System.currentTimeMillis() ) ) );
                 }
             }
-            buffer = channelBuffers.get( channel );
-            if ( buffer == null )
-            {
-                buffer = Pair.of( ChannelBuffers.dynamicBuffer(), ByteBuffer.allocateDirect( 1*1024*1024 ) );
-                channelBuffers.put( channel, buffer );
-            }
-            buffer.first().clear();
         }
-        return buffer;
+        return ChannelBuffers.dynamicBuffer();
     }
 
     protected void unmapSlave( Channel channel, SlaveContext slave )
@@ -546,6 +534,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         synchronized ( connectedSlaveChannels )
         {
             connectedSlaveChannels.remove( channel );
+            channelGroup.remove( channel );
         }
     }
     
@@ -568,16 +557,6 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
 //        channelFactory.releaseExternalResources();
     }
 
-    protected void closeChannel( Channel channel, SlaveContext context )
-    {
-        synchronized ( connectedSlaveChannels )
-        {
-            channelBuffers.remove( channel );
-            channelGroup.remove( channel );
-        }
-        finishOffChannel( channel, context );
-    }
-    
     protected abstract void finishOffChannel( Channel channel, SlaveContext context );
 
     public Map<Channel, SlaveContext> getConnectedSlaveChannels()
@@ -601,19 +580,19 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
     private class PartialRequest
     {
         final SlaveContext context;
-        final Pair<ChannelBuffer, ByteBuffer> buffers;
+        final ChannelBuffer buffer;
         final RequestType<M> type;
 
-        public PartialRequest( RequestType<M> type, SlaveContext context, Pair<ChannelBuffer, ByteBuffer> buffers )
+        public PartialRequest( RequestType<M> type, SlaveContext context, ChannelBuffer buffer )
         {
             this.type = type;
             this.context = context;
-            this.buffers = buffers;
+            this.buffer = buffer;
         }
 
         public void add( ChannelBuffer buffer )
         {
-            this.buffers.first().writeBytes( buffer );
+            this.buffer.writeBytes( buffer );
         }
     }
 }
