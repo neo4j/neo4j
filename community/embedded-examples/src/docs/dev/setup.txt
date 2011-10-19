@@ -57,9 +57,8 @@ _Where +$\{neo4j-version}+ is the desired version and the +artifactId+ is found 
 
 === Eclipse and Maven ===
 
-For development in http://www.eclipse.org[Eclipse], it is recommended to install the http://www.eclipse.org/m2e/[M2Eclipse plugin] and 
-let Maven manage the project build classpath instead, see above. This also adds the possibility to buidl your project both via the command line with maven
-and have a working Eclipse setup for development.
+For development in http://www.eclipse.org[Eclipse], it is recommended to install the http://www.eclipse.org/m2e/[M2Eclipse plugin] and let Maven manage the project build classpath instead, see above.
+This also adds the possibility to build your project both via the command line with Maven and have a working Eclipse setup for development.
 
 === Ivy ===
 
