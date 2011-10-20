@@ -30,9 +30,9 @@ class CollabFilteringTest extends DocumentingTestBase {
 
   def section = "cookbook"
 
-  @Test def basciCollborativeFiltering() {
+  @Test def basicCollborativeFiltering() {
     testQuery(
-      title = "Basic Collaborative Filtering",
+      title = "Simple Friend Finder",
       text = """To find out the friends of Joes friends that are not already his friends, Cypher looks like:""",
       queryText = "start joe=node:node_auto_index(name = \"Joe\") " +
       		"match joe-[:knows]->friend-[:knows]->friend_of_friend, " +
@@ -46,3 +46,4 @@ class CollabFilteringTest extends DocumentingTestBase {
           Map("friend_of_friend.name" -> "Jill", "count(*)" -> 1)), p.toList))
   } 
 }
+

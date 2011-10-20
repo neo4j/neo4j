@@ -26,10 +26,7 @@ include::find-all-groups-and-roles-for-a-user.txt[]
 
 :leveloffset: 2
 
-== Basic Collaborative Filtering ==
-
-A very basic technique for recommendation in Graphs is the 
-http://en.wikipedia.org/wiki/Collaborative_filtering[collaborative filtering pattern].
+== Basic Friend finding based on social neighborhood ==
 
 Imagine an example graph like
 
@@ -37,4 +34,10 @@ include::cypher-collabfiltering-graph.txt[]
 
 :leveloffset: 3
 
-include::basic-collaborative-filtering.txt[]
+include::simple-friend-finder.txt[]
+
+
+//== People Similarity based on Favorites ==
+
+//include::cypher-collabfiltering-graph.txt[]
+
