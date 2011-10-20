@@ -23,5 +23,19 @@
     </dependency>
   </dependencies>
 
+  <repositories>
+    <repository>
+    <id>neo4j-release-repository</id>
+    <name>Neo4j Maven 2 release repository</name>
+    <url>http://m2.neo4j.org/releases</url>
+    <releases>
+      <enabled>true</enabled>
+    </releases>
+    <snapshots>
+      <enabled>false</enabled>
+    </snapshots>
+    </repository>
+  </repositories>
+
 </project>
 
