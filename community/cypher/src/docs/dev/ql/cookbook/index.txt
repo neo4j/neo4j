@@ -36,6 +36,27 @@ include::cypher-collabfiltering-graph.txt[]
 
 include::simple-friend-finder.txt[]
 
+:leveloffset: 2
+
+== Co-favorited places ==
+
+:leveloffset: 3
+
+include::cypher-cofavoritedplaces-graph.txt[]
+
+include::co-favorited-places---users-who-like-x-also-like-y.txt[]
+
+include::co-tagged-places---places-related-through-tags.txt[]
+
+:leveloffset: 2
+
+== Find people based on similar favorites ==
+
+:leveloffset: 3
+
+include::cypher-peoplesimilarityfavorites-graph.txt[]
+
+include::find-people-based-on-similar-favorites.txt[]
 
 //== People Similarity based on Favorites ==
 
