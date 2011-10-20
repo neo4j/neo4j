@@ -46,10 +46,10 @@ class PeopleSimilarityTagsTest extends DocumentingTestBase {
               2. What else is tagged with those tags?
               3. Who favorites items tagged with the same tags.
               4. Sort the result by how many of the same things these people like.""",
-      queryText = """START me=node:node_auto_index(name = "Joe")
-                  MATCH me-[:favorite]->myFavorites-[:tagged]->tag<-[:tagged]-(theirFavorites)<-[:favorite]-people
-                  RETURN me.name, people.name, tag.name, count(*)
-                  ORDER BY count(*) DESC""",
+      queryText = "START me=node:node_auto_index(name = \"Joe\") " +
+      		"MATCH me-[:favorite]->myFavorites-[:tagged]->tag<-[:tagged]-(theirFavorites)<-[:favorite]-people " +
+      		"RETURN me.name, people.name, tag.name, count(*) " +
+      		"ORDER BY count(*) DESC",
       returns = "The list of possible friends ranked by them liking similar stuff that are not yet friends.",
       (p) => assertEquals(List(Map("person.name" -> "Sara", "count(stuff)" -> 2),
           Map("person.name" -> "Derrick", "count(stuff)" -> 1)), p.toList))
