@@ -499,7 +499,7 @@ the relevant Commercial Agreement.
       <plugin>
         <groupId>com.voltvoodoo</groupId>
         <artifactId>brew</artifactId>
-        <version>0.2.7</version>
+        <version>0.2.8</version>
         <executions>
           <execution>
             <id>compile-webadmin</id>
