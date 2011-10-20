@@ -44,15 +44,15 @@ class CoFavoritedPlacesTest extends DocumentingTestBase {
 
   @Test def coFavoritedPlaces() {
     testQuery(
-      title = "Users Who Like x Also Like y: Co-Favorited Places",
+      title = "Co-Favorited Places - Users Who Like x Also Like y",
       text = """Find places that people also like who favorite this place:
 
 * Determine who has favorited place x.
 * What else have they favorited that is not place x.""",
-      queryText = """START place=node:node_auto_index(name = "CoffeeShop1")
-                  MATCH place<-[:favorite]-person-[:favorite]->stuff
-                  RETURN stuff.name, count(*)
-                  ORDER BY count(*) DESC, stuff.name""",
+      queryText = "START place=node:node_auto_index(name = \"CoffeeShop1\") " +
+      		"MATCH place<-[:favorite]-person-[:favorite]->stuff " +
+      		"RETURN stuff.name, count(*) " +
+      		"ORDER BY count(*) DESC, stuff.name",
       returns = "The list of places that are favorited by people that favorited the start place.",
       (p) => assertEquals(List(Map("stuff.name" -> "MelsPlace", "count(*)" -> 2),
           Map("stuff.name" -> "CoffeShop2", "count(*)" -> 1),
@@ -61,15 +61,15 @@ class CoFavoritedPlacesTest extends DocumentingTestBase {
   
   @Test def coTaggedPlaces() {
     testQuery(
-      title = "Places Related through Tags: Co-Tagged Places",
+      title = "Co-Tagged Places - Places Related through Tags",
       text = """Find places that are tagged with the same tags:
 
 * Determine the tags for place x.
 * What else is tagged the same as x that is not x.""",
-      queryText = """START place=node:node_auto_index(name = "CoffeeShop1")
-                  MATCH place-[:tagged]->tag<-[:tagged]-otherPlace
-                  RETURN otherPlace.name, collect(tag.name)
-                  ORDER By otherPlace.name desc""",
+      queryText = "START place=node:node_auto_index(name = \"CoffeeShop1\") " +
+      		"MATCH place-[:tagged]->tag<-[:tagged]-otherPlace " +
+      		"RETURN otherPlace.name, collect(tag.name) " +
+      		"ORDER By otherPlace.name desc",
       returns = "The list of possible friends ranked by them liking similar stuff that are not yet friends.",
       (p) => {
         println(p.dumpToString())

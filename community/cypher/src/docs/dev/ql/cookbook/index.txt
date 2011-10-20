@@ -44,9 +44,9 @@ include::simple-friend-finder.txt[]
 
 include::cypher-cofavoritedplaces-graph.txt[]
 
-include::users-who-like-x-also-like-y:-co-favorited-places.txt[]
+include::co-favorited-places---users-who-like-x-also-like-y.txt[]
 
-include::places-related-through-tags:-co-tagged-places.txt[]
+include::co-tagged-places---places-related-through-tags.txt[]
 
 :leveloffset: 2
 
