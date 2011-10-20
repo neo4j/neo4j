@@ -32,6 +32,7 @@ import java.util.Map;
 
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Implementation of the relationship type store. Uses a dynamic store to store
@@ -407,5 +408,11 @@ public class RelationshipTypeStore extends AbstractStore implements Store
         list.add( typeNameStore.getWindowPoolStats() );
         list.add( getWindowPoolStats() );
         return list;
+    }
+
+    @Override
+    public void logIdUsage( StringLogger logger )
+    {
+        NeoStore.logIdUsage( logger, this );
     }
 }

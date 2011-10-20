@@ -39,6 +39,8 @@ import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
+import org.neo4j.kernel.impl.util.Bits;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * This class contains the references to the "NodeStore,RelationshipStore,
@@ -50,7 +52,9 @@ public class NeoStore extends AbstractStore
 {
     public static final String TYPE_DESCRIPTOR = "NeoStore";
 
-    // 4 longs in header (long + in use), time | random | version | txid
+    /*
+     *  5 longs in header (long + in use), time | random | version | txid | store version
+     */
     private static final int RECORD_SIZE = 9;
     private static final int DEFAULT_REL_GRAB_SIZE = 100;
 
@@ -91,6 +95,38 @@ public class NeoStore extends AbstractStore
         try
         {
             verifyCorrectTypeDescriptorAndVersion();
+            /*
+             * If the trailing version string check returns normally, either
+             * the store is not ok and needs recovery or everything is fine. The
+             * latter is boring. The first case however is interesting. If we
+             * need recovery we have no idea what the store version is - we erase
+             * that information on startup and write it back out on clean shutdown.
+             * So, if the above passes and the store is not ok, we check the
+             * version field in our store vs the expected one. If it is the same,
+             * we can recover and proceed, otherwise we are allowed to die a horrible death.
+             */
+            if ( !getStoreOk() )
+            {
+                /*
+                 * Could we check that before? Well, yes. But. When we would read in the store version
+                 * field it could very well overshoot and read in the version descriptor if the
+                 * store is cleanly shutdown. If we are here though the store is not ok, so no
+                 * version descriptor so the file is actually smaller than expected so we won't read
+                 * in garbage.
+                 * Yes, this has to be fixed to be prettier.
+                 */
+                String foundVersion = versionLongToString( getStoreVersion( (String) getConfig().get(
+                        "neo_store" ) ) );
+                if ( !CommonAbstractStore.ALL_STORES_VERSION.equals( foundVersion ) )
+                {
+                    throw new IllegalStateException(
+                            String.format(
+                                    "Mismatching store version found (%s while expecting %s) and the store is not cleanly shutdown."
+                                            + " Recover the database with the previous database version and then attempt to upgrade",
+                                    foundVersion,
+                                    CommonAbstractStore.ALL_STORES_VERSION ) );
+                }
+            }
         }
         catch ( NotCurrentStoreVersionException e )
         {
@@ -222,15 +258,22 @@ public class NeoStore extends AbstractStore
             config = newConfig;
         }
         NeoStore neoStore = new NeoStore( config );
-        // created time | random long | backup version | tx id
-        neoStore.nextId(); neoStore.nextId(); neoStore.nextId(); neoStore.nextId();
+        /*
+         *  created time | random long | backup version | tx id | store version
+         */
+        neoStore.nextId();
+        neoStore.nextId();
+        neoStore.nextId();
+        neoStore.nextId();
+        neoStore.nextId();
         neoStore.setCreationTime( storeId.getCreationTime() );
         neoStore.setRandomNumber( storeId.getRandomId() );
         neoStore.setVersion( 0 );
         neoStore.setLastCommittedTx( 1 );
+        neoStore.setStoreVersion( storeId.getStoreVersion() );
         neoStore.close();
     }
-    
+
     /**
      * Sets the version for the given neostore file in {@code storeDir}.
      * @param storeDir the store dir to locate the neostore file in.
@@ -272,9 +315,50 @@ public class NeoStore extends AbstractStore
         }
     }
 
+    public static long getStoreVersion( String storeDir )
+    {
+        /*
+         * We have to check size, because the store version
+         * field was introduced with 1.5, so if there is a non-clean
+         * shutdown we may have a buffer underflow.
+         */
+        RandomAccessFile file = null;
+        try
+        {
+            file = new RandomAccessFile( new File( storeDir ), "rw" );
+            FileChannel channel = file.getChannel();
+            if ( channel.size() < RECORD_SIZE * 5 )
+            {
+                return -1;
+            }
+            channel.position( RECORD_SIZE * 4 + 1/*inUse*/);
+            ByteBuffer buffer = ByteBuffer.allocate( 8 );
+            channel.read( buffer );
+            buffer.flip();
+            long previous = buffer.getLong();
+            return previous;
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+        finally
+        {
+            try
+            {
+                if ( file != null ) file.close();
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
+    }
+
     public StoreId getStoreId()
     {
-        return new StoreId( getCreationTime(), getRandomNumber() );
+        return new StoreId( getCreationTime(), getRandomNumber(),
+                getStoreVersion() );
     }
 
     public long getCreationTime()
@@ -392,6 +476,16 @@ public class NeoStore extends AbstractStore
         }
     }
 
+    public long getStoreVersion()
+    {
+        return getRecord( 4 );
+    }
+
+    public void setStoreVersion( long version )
+    {
+        setRecord( 4, version );
+    }
+
     /**
      * Returns the node store.
      *
@@ -482,5 +576,99 @@ public class NeoStore extends AbstractStore
     {
         return getStoreOk() && relTypeStore.getStoreOk() &&
             propStore.getStoreOk() && relStore.getStoreOk() && nodeStore.getStoreOk();
+    }
+
+    @Override
+    public void logVersions( StringLogger msgLog )
+    {
+        super.logVersions( msgLog );
+        nodeStore.logVersions( msgLog );
+        relStore.logVersions( msgLog );
+        relTypeStore.logVersions( msgLog );
+        propStore.logVersions( msgLog );
+    }
+
+    public void logIdUsage( StringLogger msgLog )
+    {
+        nodeStore.logIdUsage( msgLog );
+        relStore.logIdUsage( msgLog );
+        relTypeStore.logIdUsage( msgLog );
+        propStore.logIdUsage( msgLog );
+    }
+
+    public static void logIdUsage( StringLogger logger, Store store )
+    {
+        logger.logMessage( String.format( "  %s: used=%s high=%s", store.getTypeDescriptor(),
+                store.getNumberOfIdsInUse(), store.getHighestPossibleIdInUse() ) );
+    }
+
+    /*
+     * The following two methods encode and decode a string that is presumably
+     * the store version into a long via Latin1 encoding. This leaves room for
+     * 7 characters and 1 byte for the length. Current string is
+     * 0.A.0 which is 5 chars, so we have room for expansion. When that
+     * becomes a problem we will be in a yacht, sipping alcoholic
+     * beverages of our choice. Or taking turns crashing golden
+     * helicopters. Anyway, it should suffice for some time and by then
+     * it should have become SEP.
+     */
+
+    public static long versionStringToLong( String storeVersion )
+    {
+        if ( CommonAbstractStore.UNKNOWN_VERSION.equals( storeVersion ) )
+        {
+            return -1;
+        }
+        Bits bits = Bits.bits( 8 );
+        int length = storeVersion.length();
+        if ( length == 0 || length > 7 )
+        {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "The given string %s is not of proper size for a store version string",
+                            storeVersion ) );
+        }
+        bits.put( length, 8 );
+        for ( int i = 0; i < length; i++ )
+        {
+            char c = storeVersion.charAt( i );
+            if ( c < 0 || c >= 256 )
+                throw new IllegalArgumentException(
+                        String.format(
+                                "Store version strings should be encode-able as Latin1 - %s is not",
+                                storeVersion ) );
+            bits.put( c, 8 ); // Just the lower byte
+        }
+        return bits.getLong();
+    }
+
+    public static String versionLongToString( long storeVersion )
+    {
+        if ( storeVersion == -1 )
+        {
+            return CommonAbstractStore.UNKNOWN_VERSION;
+        }
+        Bits bits = Bits.bitsFromLongs( new long[] { storeVersion } );
+        int length = bits.getShort( 8 );
+        if ( length == 0 || length > 7 )
+        {
+            throw new IllegalArgumentException( String.format(
+                    "The read in version string length %d is not proper.",
+                    length ) );
+        }
+        char[] result = new char[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            result[i] = (char) bits.getShort( 8 );
+        }
+        return new String( result );
+    }
+
+    public static void main( String[] args )
+    {
+        long result = versionStringToLong( "f123oo" );
+        String back = versionLongToString( result );
+        System.out.println( result );
+        System.out.println( back );
     }
 }

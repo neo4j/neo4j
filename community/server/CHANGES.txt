@@ -1,3 +1,8 @@
+1.5 (2011-10-18)
+----------------
+o Added useful server logging to data/graph.db/messages.log at startup.
+o Visualization adds nodes/relationships to the view for each search and search is performed with CTRL+ENTER.
+
 1.5.M02 (2011-10-10)
 --------------------
 o Added a standalone visualization mode for webadmin.

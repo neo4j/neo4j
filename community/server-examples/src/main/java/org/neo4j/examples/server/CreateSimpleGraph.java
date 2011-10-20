@@ -119,7 +119,7 @@ public class CreateSimpleGraph
     {
         // START SNIPPET: createNode
         final String nodeEntryPointUri = SERVER_ROOT_URI + "node";
-        // http://localhost:7474/db/manage/node
+        // http://localhost:7474/db/data/node
 
         WebResource resource = Client.create()
                 .resource( nodeEntryPointUri );

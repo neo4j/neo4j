@@ -20,22 +20,15 @@
 package org.neo4j.kernel;
 
 import java.io.File;
-import java.lang.management.GarbageCollectorMXBean;
-import java.lang.management.ManagementFactory;
-import java.lang.management.OperatingSystemMXBean;
-import java.lang.management.RuntimeMXBean;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.TreeSet;
 
 import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.helpers.Service;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -160,8 +153,7 @@ class GraphDbInstance
         kernelExtensionLoader.initializeIndexProviders();
 
         config.getTxModule().start();
-        config.getPersistenceModule().start( config.getTxModule().getTxManager(),
- persistenceSource,
+        config.getPersistenceModule().start( config.getTxModule().getTxManager(), persistenceSource,
                 config.getSyncHookFactory(), config.getLockReleaser() );
         persistenceSource.start( config.getTxModule().getXaDataSourceManager() );
         config.getIdGeneratorModule().start();
@@ -169,37 +161,11 @@ class GraphDbInstance
                 config.getPersistenceModule().getPersistenceManager(),
                 config.getRelationshipTypeCreator(), params );
 
-        logger.logMessage( "--- CONFIGURATION START ---" );
-        logger.logMessage( autoConfigurator.getNiceMemoryInformation() );
-        logger.logMessage( "Kernel version: " + Version.getKernel() );
-        for ( Version componentVersion : Service.load( Version.class ) )
-        {
-            logger.logMessage( componentVersion.toString() );
-        }
-        RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
-        OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
-        logger.logMessage( String.format( "Operating System: %s; version: %s; arch: %s; cpus: %s",
-                os.getName(), os.getVersion(), os.getArch(), os.getAvailableProcessors() ) );
-        logger.logMessage( "VM Name: " + runtime.getVmName() );
-        logger.logMessage( "VM Vendor: " + runtime.getVmVendor() );
-        logger.logMessage( "VM Version: " + runtime.getVmVersion() );
-        if ( runtime.isBootClassPathSupported() )
-        {
-            logger.logMessage( "Boot Class Path: " + runtime.getBootClassPath() );
-        }
-        logger.logMessage( "Class Path: " + runtime.getClassPath() );
-        logger.logMessage( "Library Path: " + runtime.getLibraryPath() );
-        for ( GarbageCollectorMXBean gcBean : ManagementFactory.getGarbageCollectorMXBeans() )
-        {
-            logger.logMessage( "Garbage Collector: " + gcBean.getName() + ": "
-                               + Arrays.toString( gcBean.getMemoryPoolNames() ) );
-        }
-        logger.logMessage( "VM Arguments: " + runtime.getInputArguments() );
-        logger.logMessage( "" );
-        logConfiguration( params, logger, dumpToConsole );
-        logger.logMessage( "--- CONFIGURATION END ---" );
-        logger.flush();
         started = true;
+
+        ConfigurationLogging.logConfig( params, graphDb.getClass(), storeDir, dumpToConsole, logger, autoConfigurator,
+                (NeoStoreXaDataSource) persistenceSource.getXaDataSource() );
+
         return Collections.unmodifiableMap( params );
     }
 
@@ -214,30 +180,6 @@ class GraphDbInstance
             }
         }
         return result;
-    }
-
-    private void logConfiguration( Map<Object, Object> params, StringLogger logger, boolean dumpToConsole )
-    {
-        TreeSet<String> stringKeys = new TreeSet<String>();
-        for( Object key : params.keySet())
-        {
-            if (key instanceof String)
-            {
-                stringKeys.add((String)key);
-            }
-        }
-
-        for( String key : stringKeys )
-        {
-            Object value = params.get( key );
-            String mess = key + "=" + value;
-            if ( dumpToConsole )
-            {
-                System.out.println( mess );
-            }
-
-            logger.logMessage( mess );
-        }
     }
 
     private void cleanWriteLocksInLuceneDirectory( String luceneDir )

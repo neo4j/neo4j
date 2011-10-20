@@ -32,11 +32,11 @@ define(
       template : template
 
       events : 
-        "keyup #data-console" : "search"
+        "keypress #data-console" : "consoleKeyPressed"
         "click #data-create-node" : "createNode"
         "click #data-create-relationship" : "createRelationship"
         "click #data-switch-view" : "switchView"
-        "click #data-execute-console" : "forceSearch"
+        "click #data-execute-console" : "search"
 
       initialize : (options)->
         @dataModel = options.dataModel
@@ -64,9 +64,6 @@ define(
         $("#data-console",@el).val(@dataModel.getQuery())
 
       search : (ev) =>
-        @dataModel.setQuery( $("#data-console",@el).val() )
-
-      forceSearch : (ev) =>
         @dataModel.setQuery( $("#data-console",@el).val(), false, { force:true, silent:true})
         @dataModel.trigger("change:query")
 
@@ -94,6 +91,10 @@ define(
           delete(@createRelationshipDialog)
           $("#data-create-relationship").removeClass("selected")
 
+      consoleKeyPressed : (ev) =>
+        if ev.which is 13 and ev.ctrlKey # ctrl + enter
+          ev.stopPropagation()
+          @search()
 
       switchView : (ev) =>
         if @viewType == "visualized"

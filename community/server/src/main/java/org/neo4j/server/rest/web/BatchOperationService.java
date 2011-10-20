@@ -39,6 +39,8 @@ import org.codehaus.jackson.JsonToken;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.rest.domain.BatchOperationFailedException;
+import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.BatchOperationResults;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.OutputFormat;
@@ -69,7 +71,7 @@ public class BatchOperationService
     }
 
     @POST
-    public Response performBatchOperations( @Context UriInfo uriInfo, InputStream body )
+    public Response performBatchOperations( @Context UriInfo uriInfo, InputStream body ) throws BadInputException
     {
         AbstractGraphDatabase db = database.graph;
 
@@ -121,10 +123,8 @@ public class BatchOperationService
         }
         catch ( Exception e )
         {
-            System.out.println(e.getMessage());
-            e.printStackTrace();
             tx.failure();
-            return output.badRequest( e );
+            return output.serverError( e );
         }
         finally
         {
@@ -159,7 +159,7 @@ public class BatchOperationService
         }
         else
         {
-            throw new RuntimeException( res.getOutputStream()
+            throw new BatchOperationFailedException( res.getStatus(), res.getOutputStream()
                     .toString() );
         }
     }
@@ -195,6 +195,6 @@ public class BatchOperationService
 
     private boolean is2XXStatusCode( int statusCode )
     {
-        return statusCode - 200 >= 0 && statusCode - 200 < 100;
+        return statusCode >= 200 && statusCode < 300;
     }
 }

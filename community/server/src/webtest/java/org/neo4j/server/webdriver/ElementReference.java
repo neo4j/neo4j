@@ -26,8 +26,8 @@ import static org.neo4j.server.webdriver.ElementTextIs.elementTextIs;
 import java.util.List;
 
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
 import org.openqa.selenium.StaleElementReferenceException;
+import org.openqa.selenium.WebElement;
 
 /**
  * This is used rather than a direct

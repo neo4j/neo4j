@@ -138,6 +138,24 @@ public class IndexNodeFunctionalTest
         assertEquals( expectedIndexes, helper.getNodeIndexes().length );
         assertThat( helper.getNodeIndexes(), FunctionalTestHelper.arrayContains( indexName ) );
     }
+    
+    @Test
+    public void shouldCreateANamedNodeIndexWithSpaces() throws JsonParseException
+    {
+        String indexName = "favorites with spaces";
+        int expectedIndexes = helper.getNodeIndexes().length + 1;
+        Map<String, String> indexSpecification = new HashMap<String, String>();
+        indexSpecification.put( "name", indexName );
+
+        gen.get()
+                .payload( JsonHelper.createJsonFrom( indexSpecification ) )
+                .expectedStatus( 201 )
+                .expectedHeader( "Location" )
+                .post( functionalTestHelper.nodeIndexUri() );
+
+        assertEquals( expectedIndexes, helper.getNodeIndexes().length );
+        assertThat( helper.getNodeIndexes(), FunctionalTestHelper.arrayContains( indexName ) );
+    }
 
     /**
      * Create node index with configuration. This request is only necessary if

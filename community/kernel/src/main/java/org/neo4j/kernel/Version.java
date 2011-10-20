@@ -42,6 +42,7 @@ public class Version extends Service
         KERNEL_VERSION = kernelVersion;
     }
     private final String title;
+    @SuppressWarnings( "unused" )
     private final String vendor;
     private final String version;
 
@@ -64,13 +65,15 @@ public class Version extends Service
     {
         if ( version == null || version.equals( "" ) )
         {
-            return "unknown";
+            String revision = getRevision();
+            if ( revision == null || revision.equals( "" ) ) return "unknown";
+            return "revision: " + getRevision();
         }
         else if ( version.contains( "SNAPSHOT" ) )
         {
             String revision = getRevision();
-            if ( revision.equals( "" ) ) return version;
-            return version + " (revision: " + defaultValue( getRevision(), "<unknown>" ) + ")";
+            if ( revision == null || revision.equals( "" ) ) return version;
+            return version + " (revision: " + getRevision() + ")";
         }
         else
         {
@@ -92,7 +95,7 @@ public class Version extends Service
     {
         super( atrifactId );
         Package pkg = getClass().getPackage();
-        this.title = defaultValue( pkg.getImplementationTitle(), null );
+        this.title = defaultValue( pkg.getImplementationTitle(), atrifactId );
         this.vendor = defaultValue( pkg.getImplementationVendor(), "Neo Technology" );
         this.version = defaultValue( pkg.getImplementationVersion(), version );
     }

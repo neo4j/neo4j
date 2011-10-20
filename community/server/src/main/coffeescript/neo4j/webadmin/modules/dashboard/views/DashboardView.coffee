@@ -38,8 +38,9 @@ define(
         @kernelBean.bind "change", @render
 
       render : =>
+        kernelVersion = if @kernelBean.get("kernel")? then @kernelBean.get("kernel").KernelVersion else "N/A"
         $(@el).html @template(
-          server : { url : @server.url, version : @kernelBean.get "KernelVersion" } )
+          server : { url : @server.url, version : kernelVersion } )
 
         if @infoView?
           @infoView.remove()

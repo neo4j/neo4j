@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.neo4j.kernel.Config.ARRAY_BLOCK_SIZE;
-import static org.neo4j.kernel.Config.STRING_BLOCK_SIZE;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -35,6 +32,10 @@ import java.util.logging.Level;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.neo4j.kernel.Config.ARRAY_BLOCK_SIZE;
+import static org.neo4j.kernel.Config.STRING_BLOCK_SIZE;
 
 /**
  * Implementation of the property store. This implementation has two dynamic
@@ -334,6 +335,11 @@ public class PropertyStore extends AbstractStore implements Store
         }
     }
 
+    /*
+     * This will add the value records without checking if they are already
+     * in the block - so make sure to call this after checking isHeavy() or
+     * you will end up with duplicates.
+     */
     public void makeHeavy( PropertyBlock record )
     {
         if ( record.getType() == PropertyType.STRING )
@@ -681,5 +687,23 @@ public class PropertyStore extends AbstractStore implements Store
         // TODO: The next line is an ugly hack, but works.
         Buffer fromByteBuffer = new Buffer( null, buffer );
         return getRecordFromBuffer( 0, fromByteBuffer ).inUse();
+    }
+
+    @Override
+    public void logVersions( StringLogger msgLog )
+    {
+        super.logVersions( msgLog );
+        propertyIndexStore.logVersions( msgLog );
+        stringPropertyStore.logVersions( msgLog );
+        arrayPropertyStore.logVersions( msgLog );
+    }
+
+    @Override
+    public void logIdUsage( StringLogger logger )
+    {
+        NeoStore.logIdUsage( logger, this );
+        propertyIndexStore.logIdUsage( logger );
+        stringPropertyStore.logIdUsage( logger );
+        arrayPropertyStore.logIdUsage( logger );
     }
 }

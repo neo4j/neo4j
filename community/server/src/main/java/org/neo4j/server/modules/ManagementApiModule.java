@@ -19,22 +19,22 @@
  */
 package org.neo4j.server.modules;
 
-import static org.neo4j.server.JAXRSHelper.listFrom;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.Logger;
 
+import static org.neo4j.server.JAXRSHelper.listFrom;
+
 public class ManagementApiModule implements ServerModule
 {
-
     private final Logger log = Logger.getLogger( ManagementApiModule.class );
 
-    public void start( NeoServerWithEmbeddedWebServer neoServer )
+    public void start( NeoServerWithEmbeddedWebServer neoServer, StringLogger logger )
     {
         try
         {
@@ -42,7 +42,8 @@ public class ManagementApiModule implements ServerModule
                     .addJAXRSPackages( listFrom( new String[] { Configurator.MANAGEMENT_API_PACKAGE } ),
                             managementApiUri( neoServer ).toString() );
             log.info( "Mounted management API at [%s]", managementApiUri( neoServer ).toString() );
-
+            if ( logger != null )
+                logger.logMessage( "Mounted management API at: " + managementApiUri( neoServer ).toString() );
         }
         catch ( UnknownHostException e )
         {

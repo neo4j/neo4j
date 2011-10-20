@@ -22,7 +22,9 @@ Make sure parallel/concurrent garbage collector is running (+-XX:+UseConcMarkSwe
 Finally make sure the OS has some memory to manage proper file system 
 caches meaning if your server has 8GB of RAM don't use all of that RAM for 
 heap (unless you turned off memory mapped buffers) but leave a good size of it to the OS. 
-For more information on this see <embedded-configuration>>.
+For more information on this see <<embedded-configuration>>.
+
+For Linux specific tweaks, see <<linux-performance-guide>>.
 
 == Neo4j primitives' lifecycle ==
 

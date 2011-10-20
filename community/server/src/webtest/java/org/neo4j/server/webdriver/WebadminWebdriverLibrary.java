@@ -34,6 +34,7 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
     private String serverUrl;
     private final ElementReference dataBrowserSearchField;
     private final ElementReference dataBrowserItemSubtitle;
+    private final ElementReference dataBrowserSearchButton;
     
     public WebadminWebdriverLibrary(WebDriverFacade wf, ServerIntegrationTestFacade serverFacade) throws InvocationTargetException, IllegalAccessException, InstantiationException {
         super(wf);
@@ -42,6 +43,7 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
         
         dataBrowserItemSubtitle = new ElementReference(this, By.xpath( "//div[@id='data-area']//div[@class='title']//p[@class='small']" ));
         dataBrowserSearchField = new ElementReference(this, By.id( "data-console" ));
+        dataBrowserSearchButton = new ElementReference(this, By.id( "data-execute-console" ));
     }
     
     public void setServerUrl(String url) {
@@ -68,6 +70,7 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
     public void searchForInDataBrowser(CharSequence ... keysToSend) throws Exception {
         clearInput( dataBrowserSearchField );
         dataBrowserSearchField.sendKeys( keysToSend );
+        dataBrowserSearchButton.click();
     }
     
     public String getCurrentDatabrowserItemSubtitle() {

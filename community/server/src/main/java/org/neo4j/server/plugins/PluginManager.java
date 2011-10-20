@@ -29,6 +29,7 @@ import java.util.Set;
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ExtensionInjector;
@@ -40,12 +41,12 @@ public final class PluginManager implements ExtensionInjector, PluginInvocator
     private static final Logger log = Logger.getLogger( PluginManager.class );
     private final Map<String/*name*/, ServerExtender> extensions = new HashMap<String, ServerExtender>();
 
-    public PluginManager( Configuration serverConfig )
+    public PluginManager( Configuration serverConfig, StringLogger logger )
     {
-        this( serverConfig, ServerPlugin.load() );
+        this( serverConfig, ServerPlugin.load(), logger );
     }
 
-    PluginManager( Configuration serverConfig, Iterable<ServerPlugin> plugins )
+    PluginManager( Configuration serverConfig, Iterable<ServerPlugin> plugins, StringLogger logger )
     {
         Map<String, Pair<ServerPlugin, ServerExtender>> extensions = new HashMap<String, Pair<ServerPlugin, ServerExtender>>();
         for ( ServerPlugin plugin : plugins )
@@ -59,24 +60,38 @@ public final class PluginManager implements ExtensionInjector, PluginInvocator
             catch ( Exception ex )
             {
                 log.warn( "Failed to load plugin [%s]: %s", plugin.toString(), ex.getMessage() );
+                if ( logger != null ) logger.logMessage( "Failed to load plugin: " + plugin, ex );
                 continue;
             }
             catch ( LinkageError err )
             {
                 log.warn( "Failed to load plugin [%s]: %s", plugin.toString(), err.getMessage() );
+                if ( logger != null ) logger.logMessage( "Failed to load plugin: " + plugin, err );
                 continue;
             }
             Pair<ServerPlugin, ServerExtender> old = extensions.put( plugin.name, Pair.of( plugin, extender ) );
             if ( old != null )
             {
                 log.warn( String.format( "Extension naming conflict \"%s\" between \"%s\" and \"%s\"", plugin.name,
-                        old.first()
-                                .getClass(), plugin.getClass() ) );
+                        old.first().getClass(), plugin.getClass() ) );
+                if ( logger != null )
+                    logger.logMessage( String.format( "Extension naming conflict \"%s\" between \"%s\" and \"%s\"",
+                            plugin.name, old.first().getClass(), plugin.getClass() ) );
             }
         }
         for ( Pair<ServerPlugin, ServerExtender> extension : extensions.values() )
         {
             log.info( String.format( "Loaded server plugin \"%s\"", extension.first().name ) );
+            if ( logger != null )
+            {
+                logger.logMessage( String.format( "Loaded server plugin \"%s\" (%s)", extension.first().name, extension
+                        .first().getClass().getName() ) );
+                for ( PluginPoint point : extension.other().all() )
+                {
+                    logger.logMessage( String.format( "  %s.%s: %s", point.forType().getSimpleName(), point.name(),
+                            point.getDescription() ) );
+                }
+            }
             this.extensions.put( extension.first().name, extension.other() );
         }
     }

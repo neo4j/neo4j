@@ -61,7 +61,7 @@ public class ShortestPath implements PathFinder<Path>
     private final HitDecider hitDecider;
     
     /**
-     * Constructs a new stortest path algorithm.
+     * Constructs a new shortest path algorithm.
      * @param maxDepth the maximum depth for the traversal. Returned paths
      * will never have a greater {@link Path#length()} than {@code maxDepth}.
      * @param relExpander the {@link RelationshipExpander} to use for deciding
@@ -73,7 +73,7 @@ public class ShortestPath implements PathFinder<Path>
     }
     
     /**
-     * Constructs a new stortest path algorithm.
+     * Constructs a new shortest path algorithm.
      * @param maxDepth the maximum depth for the traversal. Returned paths
      * will never have a greater {@link Path#length()} than {@code maxDepth}.
      * @param relExpander the {@link RelationshipExpander} to use for deciding
@@ -87,7 +87,7 @@ public class ShortestPath implements PathFinder<Path>
     }
     
     /**
-     * Constructs a new stortest path algorithm.
+     * Constructs a new shortest path algorithm.
      * @param maxDepth the maximum depth for the traversal. Returned paths
      * will never have a greater {@link Path#length()} than {@code maxDepth}.
      * @param relExpander the {@link RelationshipExpander} to use for deciding
@@ -214,10 +214,15 @@ public class ShortestPath implements PathFinder<Path>
                         directionData == startSide ? directionData : otherSide;
                 DirectionData endSideData =
                         directionData == startSide ? otherSide : directionData;
-                if ( hits.add( new Hit( startSideData, endSideData, nextNode ), depth ) >= maxResultCount || stopAsap )
+                if ( hits.add( new Hit( startSideData, endSideData, nextNode ), depth ) >= maxResultCount )
                 {
                     directionData.stop = true;
                     otherSide.stop = true;
+                }
+                else if ( stopAsap )
+                {   // This side found a hit, but wait for the other side to complete its current depth
+                    // to see if it finds a shorter path. (i.e. stop this side and freeze the depth).
+                    directionData.stop = true;
                 }
             }
         }

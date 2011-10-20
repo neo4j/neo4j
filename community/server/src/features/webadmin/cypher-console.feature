@@ -20,6 +20,7 @@ Feature: Webadmin has a cypher console
     And I click on the Console tab in webadmin
 
     Then An element should appear that can be found by the xpath //p[contains(.,"Cypher query language")]
+ 
   # We cant currently run this, parenthesis end up
   # as return keys when picked up in js land. Not sure
   # why.

@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.util.StringLogger;
+
 /**
  * Common interface for the node,relationship,property and relationship type
  * stores.
@@ -29,16 +31,20 @@ public interface Store
 {
     /**
      * Returns the id of next free record.
-     * 
+     *
      * @return The id of the next free record
      * @throws IOException
      *             If unable to
      */
     public long nextId();
-    
+
+    public String getTypeDescriptor();
+
     public long getHighestPossibleIdInUse();
 
     public long getNumberOfIdsInUse();
-    
+
     public WindowPoolStats getWindowPoolStats();
+
+    public void logIdUsage( StringLogger logger );
 }

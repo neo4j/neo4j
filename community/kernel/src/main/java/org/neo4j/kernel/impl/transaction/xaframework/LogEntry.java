@@ -25,9 +25,8 @@ import org.neo4j.helpers.Format;
 
 public abstract class LogEntry
 {
-    /*
-     * version 1 as of 2011-02-22
-     * version 2 as of 2011-10-12
+    /* version 1 as of 2011-02-22
+     * version 2 as of 2011-10-17
      */
     static final byte CURRENT_VERSION = (byte) 2;
     // empty record due to memory mapped file

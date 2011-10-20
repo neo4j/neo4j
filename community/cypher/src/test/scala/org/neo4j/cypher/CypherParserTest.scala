@@ -750,6 +750,14 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ValueReturnItem(EntityValue("pA"))))
   }
 
+  @Test def testNumericParamNameAsStartNode() {
+    testQuery(
+      """start pA = node({0}) return pA""",
+      Query.
+        start(NodeById("pA", ParameterValue("0"))).
+        returns(ValueReturnItem(EntityValue("pA"))))
+  }
+
   @Test def testParamForWhereLiteral() {
     testQuery(
       """start pA = node(1) where pA.name = {name} return pA""",

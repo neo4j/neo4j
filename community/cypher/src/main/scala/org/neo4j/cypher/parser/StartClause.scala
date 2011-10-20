@@ -34,7 +34,7 @@ trait StartClause extends JavaTokenParsers with Tokens {
 
   def rels = (ignoreCase("relationship") | ignoreCase("rel")) ^^ (x => "rel")
 
-  def lookup: Parser[(String) => StartItem] = (nodes | rels) ~ (parens(param) | ids | idxLookup | idxString) ^^ {
+  def lookup: Parser[(String) => StartItem] = (nodes | rels) ~ (parens(parameter) | ids | idxLookup | idxString) ^^ {
     case "node" ~ l => l match {
       case l: Value => (id: String) => NodeById(id, l)
       case x: (String, Value, Value) => (id: String) => NodeByIndex(id, x._1, x._2, x._3)
@@ -50,7 +50,7 @@ trait StartClause extends JavaTokenParsers with Tokens {
 
   def ids = parens(rep1sep(wholeNumber, ",")) ^^ (x => Literal(x.map(_.toLong)))
 
-  def idxString: Parser[(String, Value)] = ":" ~> identity ~ parens(param|stringLit) ^^ {
+  def idxString: Parser[(String, Value)] = ":" ~> identity ~ parens(parameter|stringLit) ^^ {
     case id ~ valu => (id, valu)
   }
 
@@ -60,7 +60,7 @@ trait StartClause extends JavaTokenParsers with Tokens {
 
   def idxQueries: Parser[(Value, Value)] = idxQuery
 
-  def idxQuery: Parser[(Value, Value)] = (id | param) ~ "=" ~ (param | stringLit) ^^ {
+  def idxQuery: Parser[(Value, Value)] = (id | parameter) ~ "=" ~ (parameter | stringLit) ^^ {
     case k ~ "=" ~ v => (k, v)
   }
 
@@ -68,7 +68,6 @@ trait StartClause extends JavaTokenParsers with Tokens {
 
   def stringLit: Parser[Value] = string ^^ (x => Literal(x))
 
-  def param: Parser[Value] = curly(identity) ^^ (x => ParameterValue(x))
 
   def andQuery: Parser[String] = idxQuery ~ ignoreCase("and") ~ idxQueries ^^ {
     case q ~ and ~ qs => q + " AND " + qs

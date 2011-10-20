@@ -8,13 +8,13 @@
   </parent>
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-lucene-index</artifactId>
-  <version>1.5-SNAPSHOT</version>
+  <version>1.6-SNAPSHOT</version>
   <name>Neo4j - Lucene Index</name>
   <description>
 Integration layer between Neo4j and Lucene, providing one possible implementation of the Index API.
   </description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
-  
+
   <properties>
     <lucene.groupId>org.apache.lucene</lucene.groupId>
     <lucene.artifactId>lucene-core</lucene.artifactId>
@@ -55,12 +55,12 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.5-SNAPSHOT</version>
+      <version>1.6-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.5-SNAPSHOT</version>
+      <version>1.6-SNAPSHOT</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
@@ -82,6 +82,25 @@ the relevant Commercial Agreement.
         <configuration>
           <argLine>-Xmx300m</argLine>
         </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>docs-assembly</id>
+            <phase>package</phase>
+            <configuration>
+              <attach>true</attach>
+              <appendAssemblyId>true</appendAssemblyId>
+              <descriptors>
+                <descriptor>src/main/assembly/docs-assembly.xml</descriptor>
+              </descriptors>
+            </configuration>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

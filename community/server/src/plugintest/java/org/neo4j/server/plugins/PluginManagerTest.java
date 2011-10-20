@@ -45,7 +45,7 @@ public class PluginManagerTest
     public static void loadExtensionManager() throws Exception
     {
         graphDb = new ImpermanentGraphDatabase();
-        manager = new PluginManager( null );
+        manager = new PluginManager( null, null );
     }
 
     @AfterClass

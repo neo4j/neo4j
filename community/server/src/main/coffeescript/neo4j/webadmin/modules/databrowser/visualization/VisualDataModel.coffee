@@ -54,11 +54,12 @@ define(
         
       addNode : (node, relationships, relatedNodes) =>
 
-        @ungroup([node])
-        @ungroup(relatedNodes)
+        if not @visualGraph.nodes[node.getSelf()]? or @visualGraph.nodes[node.getSelf()].type isnt "explored"
+          @ungroup([node])
+          @ungroup(relatedNodes)
 
-        @data.nodes[node.getSelf()] ?= { node : node, groups : {}  }
-        @visualGraph.nodes[node.getSelf()] = { neoNode : node, type : "explored" }
+          @data.nodes[node.getSelf()] ?= { node : node, groups : {}  }
+          @visualGraph.nodes[node.getSelf()] = { neoNode : node, type : "explored" }
         
         # Add any related nodes to our local cache, if we don't already have them.
         for relatedNode in relatedNodes

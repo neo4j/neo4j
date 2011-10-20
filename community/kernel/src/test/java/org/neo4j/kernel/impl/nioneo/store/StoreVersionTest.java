@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -66,6 +67,7 @@ public class StoreVersionTest
         {
             assertThat( store.getTypeAndVersionDescriptor(), containsString( CommonAbstractStore.ALL_STORES_VERSION ) );
         }
+        neoStore.close();
     }
 
     @Test
@@ -89,6 +91,46 @@ public class StoreVersionTest
             fail( "Should have thrown exception" );
         } catch ( NotCurrentStoreVersionException e ) {
             //expected
+        }
+    }
+
+    @Test
+    public void neoStoreHasCorrectStoreVersionField() throws IOException
+    {
+        File outputDir = new File( "target/var/"
+                                   + StoreVersionTest.class.getSimpleName()
+                                   + "test2" );
+        FileUtils.deleteRecursively( outputDir );
+        assertTrue( outputDir.mkdirs() );
+
+        String storeFileName = new File( outputDir, NeoStore.DEFAULT_NAME ).getPath();
+
+        HashMap config = new HashMap();
+        config.put( IdGeneratorFactory.class,
+                CommonFactories.defaultIdGeneratorFactory() );
+        config.put( FileSystemAbstraction.class,
+                CommonFactories.defaultFileSystemAbstraction() );
+        config.put( "neo_store", storeFileName );
+
+        NeoStore.createStore( storeFileName, config );
+        NeoStore neoStore = new NeoStore( config );
+        // The first checks the instance method, the other the public one
+        assertEquals( CommonAbstractStore.ALL_STORES_VERSION,
+                NeoStore.versionLongToString( neoStore.getStoreVersion() ) );
+        assertEquals( CommonAbstractStore.ALL_STORES_VERSION,
+                NeoStore.versionLongToString( NeoStore.getStoreVersion( storeFileName ) ) );
+    }
+
+    @Test
+    public void testProperEncodingDecodingOfVersionString()
+    {
+        String[] toTest = new String[] { "123", "foo", "0.9.9", "v0.A.0",
+                "bar", "chris", "1234567" };
+        for ( String string : toTest )
+        {
+            assertEquals(
+                    string,
+                    NeoStore.versionLongToString( NeoStore.versionStringToLong( string ) ) );
         }
     }
 }

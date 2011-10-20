@@ -19,23 +19,23 @@
  */
 package org.neo4j.server.modules;
 
-import static org.neo4j.server.JAXRSHelper.listFrom;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.plugins.PluginManager;
 
+import static org.neo4j.server.JAXRSHelper.listFrom;
+
 public class RESTApiModule implements ServerModule
 {
-
     private static final Logger log = Logger.getLogger( RESTApiModule.class );
     private PluginManager plugins;
 
-    public void start( NeoServerWithEmbeddedWebServer neoServer )
+    public void start( NeoServerWithEmbeddedWebServer neoServer, StringLogger logger )
     {
         try
         {
@@ -44,9 +44,10 @@ public class RESTApiModule implements ServerModule
             neoServer.getWebServer()
                     .addJAXRSPackages( listFrom( new String[] { Configurator.REST_API_PACKAGE } ),
                             restApiUri.toString() );
-            loadPlugins( neoServer );
+            loadPlugins( neoServer, logger );
 
             log.info( "Mounted REST API at [%s]", restApiUri.toString() );
+            if ( logger != null ) logger.logMessage( "Mounted REST API at: " + restApiUri.toString() );
         }
         catch ( URISyntaxException e )
         {
@@ -65,9 +66,9 @@ public class RESTApiModule implements ServerModule
                 .getString( Configurator.REST_API_PATH_PROPERTY_KEY, Configurator.DEFAULT_DATA_API_PATH ) );
     }
 
-    private void loadPlugins( NeoServerWithEmbeddedWebServer neoServer )
+    private void loadPlugins( NeoServerWithEmbeddedWebServer neoServer, StringLogger logger )
     {
-        plugins = new PluginManager( neoServer.getConfiguration() );
+        plugins = new PluginManager( neoServer.getConfiguration(), logger );
     }
 
     public PluginManager getPlugins()

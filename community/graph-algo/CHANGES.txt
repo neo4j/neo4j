@@ -1,3 +1,7 @@
+1.5 (2011-10-18)
+----------------
+o Fixed an issue where the shortest path sometimes wouldn't be found (when finding single path)
+
 1.4 (2011-07-08)
 ----------------
 o Stops the shortest path algo as early as possible when finding a single path.

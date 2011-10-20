@@ -313,7 +313,7 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
                 .endObject()
             .endArray()
             .toString());
-        assertEquals(400, response.getStatus());
+        assertEquals(500, response.getStatus());
         Map<String, Object> res = JsonHelper.jsonToMap(response.getEntity());
 
         assertTrue(((String)res.get("message")).startsWith("Invalid JSON array in POST body"));
@@ -331,7 +331,7 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
 
         JaxRsResponse response = RestRequest.req().post(batchUri(), jsonString);
 
-        assertEquals(400, response.getStatus());
+        assertEquals(500, response.getStatus());
         assertEquals(originalNodeCount, countNodes());
 
     }
@@ -348,7 +348,7 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
 
         JaxRsResponse response = RestRequest.req().post(batchUri(), jsonString);
 
-        assertEquals(400, response.getStatus());
+        assertEquals(500, response.getStatus());
         assertEquals(originalNodeCount, countNodes());
 
     }
@@ -364,7 +364,7 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
 
         JaxRsResponse response = RestRequest.req().post(batchUri(), jsonString);
 
-        assertEquals(400, response.getStatus());
+        assertEquals(500, response.getStatus());
         assertEquals(originalNodeCount, countNodes());
 
     }

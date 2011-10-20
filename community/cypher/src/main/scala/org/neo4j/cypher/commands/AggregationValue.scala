@@ -39,7 +39,7 @@ abstract class AggregationValue(val functionName: String, inner: Value) extends 
 
 case class Distinct(innerAggregator: AggregationValue, innerValue: Value) extends AggregationValue("distinct", innerValue) {
   override def identifier: Identifier =
-    AggregationIdentifier("%s(DISTINCT %s)".format(innerAggregator.functionName, innerValue.identifier.name))
+    AggregationIdentifier("%s(distinct %s)".format(innerAggregator.functionName, innerValue.identifier.name))
 
   def createAggregationFunction: AggregationFunction = new DistinctFunction(innerValue, innerAggregator.createAggregationFunction)
 }

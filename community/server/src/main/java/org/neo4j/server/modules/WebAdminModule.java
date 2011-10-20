@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.modules;
 
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.RoundRobinJobScheduler;
 import org.neo4j.server.database.Database;
@@ -28,7 +29,6 @@ import org.rrd4j.core.RrdDb;
 
 public class WebAdminModule implements ServerModule
 {
-
     private static final Logger log = Logger.getLogger( WebAdminModule.class );
 
     private static final String DEFAULT_WEB_ADMIN_PATH = "/webadmin";
@@ -36,7 +36,7 @@ public class WebAdminModule implements ServerModule
 
     private final RoundRobinJobScheduler jobScheduler = new RoundRobinJobScheduler();
 
-    public void start( NeoServerWithEmbeddedWebServer neoServer )
+    public void start( NeoServerWithEmbeddedWebServer neoServer, StringLogger logger )
     {
         try
         {
@@ -50,6 +50,7 @@ public class WebAdminModule implements ServerModule
         neoServer.getWebServer()
                 .addStaticContent( DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION, DEFAULT_WEB_ADMIN_PATH );
         log.info( "Mounted webadmin at [%s]", DEFAULT_WEB_ADMIN_PATH );
+        if ( logger != null ) logger.logMessage( "Mounted webadmin at: " + DEFAULT_WEB_ADMIN_PATH );
     }
 
     public void stop()

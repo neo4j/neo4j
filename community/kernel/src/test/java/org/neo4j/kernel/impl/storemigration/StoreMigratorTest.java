@@ -71,6 +71,8 @@ public class StoreMigratorTest
 
         new StoreMigrator( monitor ).migrate( legacyStore, neoStore );
 
+        verifyNeoStore( neoStore);
+
         neoStore.close();
 
         assertEquals( 100, monitor.events.size() );
@@ -86,6 +88,14 @@ public class StoreMigratorTest
         verifier.verifyRelationshipIdsReused();
 
         database.shutdown();
+    }
+
+    private void verifyNeoStore( NeoStore neoStore )
+    {
+        assertEquals( 1317392957120l, neoStore.getCreationTime() );
+        assertEquals( -472309512128245482l, neoStore.getRandomNumber() );
+        assertEquals( 0l, neoStore.getVersion() );
+        assertEquals( 1004l, neoStore.getLastCommittedTx() );
     }
 
     private static class DatabaseContentVerifier
@@ -179,6 +189,7 @@ public class StoreMigratorTest
                 transaction.finish();
             }
         }
+
     }
 
     private class ListAccumulatorMigrationProgressMonitor implements MigrationProgressMonitor
