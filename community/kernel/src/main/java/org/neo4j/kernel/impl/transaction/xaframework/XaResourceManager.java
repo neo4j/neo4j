@@ -37,7 +37,6 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
-import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -49,8 +48,7 @@ public class XaResourceManager
     private final ArrayMap<Xid,XidStatus> xidMap = 
         new ArrayMap<Xid,XidStatus>();
     private int recoveredTxCount = 0;
-    private Set<Triplet<Integer, Boolean, Long>> recoveredDoneRecords =
-            new HashSet<Triplet<Integer,Boolean,Long>>();
+    private Set<TransactionInfo> recoveredDoneRecords = new HashSet<TransactionInfo>();
 
     private XaLogicalLog log = null;
     private final XaTransactionFactory tf;
@@ -103,7 +101,7 @@ public class XaResourceManager
         xaResourceMap.put( xaResource, xid );
         if ( xidMap.get( xid ) == null )
         {
-            int identifier = log.start( xid );
+            int identifier = log.start( xid, txIdGenerator.getCurrentMasterId() );
             XaTransaction xaTx = tf.create( identifier );
             xidMap.put( xid, new XidStatus( xaTx ) );
         }
@@ -461,8 +459,9 @@ public class XaResourceManager
         }
         else if ( !log.scanIsComplete() || recoveredTxCount > 0 )
         {
-            recoveredDoneRecords.add( Triplet.of( xaTransaction.getIdentifier(), onePhase,
-                    xaTransaction.getCommitTxId() ) );
+            int identifier = xaTransaction.getIdentifier();
+            recoveredDoneRecords.add( new TransactionInfo( identifier, onePhase,
+                    xaTransaction.getCommitTxId(), log.getMasterIdForIdentifier( identifier ) ) );
         }
         xidMap.remove( xid );
         if ( xaTransaction.isRecovered() )
@@ -650,21 +649,13 @@ public class XaResourceManager
             tf.recoveryComplete();
             try
             {
-                for ( Triplet<Integer,Boolean,Long> recoveredTx : recoveredDoneRecords )
+                for ( TransactionInfo recoveredTx : recoveredDoneRecords )
                 {
-                    int identifier = recoveredTx.first();
-                    boolean onePhase = recoveredTx.second();
-                    long txId = recoveredTx.third();
-                    
-                    // TODO We need to be able to recover the correct master ID,
-                    // so that HA functions correctly. It's still OK with -1, but
-                    // there will be unecessary "broken stores".
-                    int masterId = XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
-                    if ( !onePhase )
+                    if ( !recoveredTx.isOnePhase() )
                     {
-                        log.commitTwoPhase( identifier, txId, masterId );
+                        log.commitTwoPhase( recoveredTx.getIdentifier(), recoveredTx.getTxId(), recoveredTx.getMasterId() );
                     }
-                    log.doneInternal( identifier );
+                    log.doneInternal( recoveredTx.getIdentifier() );
                 }
                 recoveredDoneRecords.clear();
             }

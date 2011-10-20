@@ -38,6 +38,7 @@ import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.cache.LruCache;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.BufferedFileChannel;
 import org.neo4j.kernel.impl.util.FileUtils;
@@ -272,15 +273,15 @@ public class XaLogicalLog
 
     // returns identifier for transaction
     // [TX_START][xid[gid.length,bid.lengh,gid,bid]][identifier][format id]
-    public synchronized int start( Xid xid ) throws XAException
+    public synchronized int start( Xid xid, int masterId ) throws XAException
     {
         int xidIdent = getNextIdentifier();
         try
         {
             long position = writeBuffer.getFileChannelPosition();
             long timeWritten = System.currentTimeMillis();
-            LogEntry.Start start = new LogEntry.Start( xid, xidIdent, position, timeWritten );
-            LogIoUtils.writeStart( writeBuffer, xidIdent, xid, timeWritten );
+            LogEntry.Start start = new LogEntry.Start( xid, xidIdent, masterId, position, timeWritten );
+            LogIoUtils.writeStart( writeBuffer, xidIdent, xid, masterId, timeWritten );
             xidIdentMap.put( xidIdent, start );
         }
         catch ( IOException e )
@@ -1079,7 +1080,7 @@ public class XaLogicalLog
             {
                 // Something is wrong with the cached tx start position for this (expected) tx,
                 // remove it from cache so that next request will have to bypass the cache
-//                txStartPositionCache.remove( nextExpectedTxId );
+                logHeaderCache.clear();
                 txStartPositionCache.clear();
                 msgLog.logMessage( fileName + ", " + e.getMessage() + ". Clearing tx start position cache" );
                 if ( e instanceof IOException ) throw (IOException) e;
@@ -1139,11 +1140,24 @@ public class XaLogicalLog
                 e.printStackTrace();
             }
         }
+        
+        public LogEntry.Commit getLastCommitEntry()
+        {
+            return lastCommitEntry;
+        }
     }
 
     public LogExtractor getLogExtractor( long startTxId, long endTxIdHint ) throws IOException
     {
         return new LogExtractor( startTxId, endTxIdHint );
+    }
+    
+    int getMasterIdForIdentifier( int identifier )
+    {
+        // Only called during recovery so ok not thread safe.
+        Start startEntry = xidIdentMap.get( identifier );
+        if ( startEntry == null ) throw new RuntimeException( "No start entry for " + identifier );
+        return startEntry.getMasterId();
     }
 
     public static final int MASTER_ID_REPRESENTING_NO_MASTER = -1;

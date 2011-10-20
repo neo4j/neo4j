@@ -53,13 +53,15 @@ public abstract class LogEntry
     public static class Start extends LogEntry
     {
         private final Xid xid;
+        private final int masterId;
         private final long timeWritten;
         private long startPosition;
 
-        Start( Xid xid, int identifier, long startPosition, long timeWritten )
+        Start( Xid xid, int identifier, int masterId, long startPosition, long timeWritten )
         {
             super( identifier );
             this.xid = xid;
+            this.masterId = masterId;
             this.startPosition = startPosition;
             this.timeWritten = timeWritten;
         }
@@ -67,6 +69,11 @@ public abstract class LogEntry
         public Xid getXid()
         {
             return xid;
+        }
+        
+        public int getMasterId()
+        {
+            return masterId;
         }
 
         public long getStartPosition()
@@ -181,7 +188,7 @@ public abstract class LogEntry
         @Override
         public String toString()
         {
-            return "2PC[" + getIdentifier() + ", txId=" + getTxId() + ", machineId=" + getMasterId() + ", " + timestamp( getTimeWritten() ) + "]";
+            return "2PC[" + getIdentifier() + ", txId=" + getTxId() + ", masterId=" + getMasterId() + ", " + timestamp( getTimeWritten() ) + "]";
         }
     }
 

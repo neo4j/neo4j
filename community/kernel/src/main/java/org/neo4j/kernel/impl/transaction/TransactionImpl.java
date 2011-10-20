@@ -65,7 +65,6 @@ class TransactionImpl implements Transaction
     private final int eventIdentifier;
 
     private final TxManager txManager;
-    private final long timeBegun = System.currentTimeMillis();
 
     TransactionImpl( TxManager txManager )
     {
