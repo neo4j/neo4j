@@ -202,7 +202,8 @@ pdf: docbook-shortinfo copyimages
 	ln -s $(SRCDIR)/images $(FOPDIR)/images
 	#export FOP_OPTS="-Xmx2048m"
 	#fop -fo $(FOPFILE) -pdf $(FOPPDF) -c $(CONFDIR)/fop.xml
-	MAVEN_OPTS="-Xmx2048m" mvn -f="fop-pom.xml" -e exec:java -Dexec.mainClass="org.apache.fop.cli.Main" -Djava.awt.headless=true -Dexec.args="-fo $(FOPFILE) -pdf $(FOPPDF) -c $(CONFDIR)/fop.xml" 2>&1 | $(SCRIPTDIR)/outputcheck-images-fop.sh
+	# For fop 1.0, timezone has to be a non-negative one.
+	MAVEN_OPTS="-Xmx2048m -Duser.timezone=GMT" mvn -f="fop-pom.xml" -e exec:java -Dexec.mainClass="org.apache.fop.cli.Main" -Djava.awt.headless=true -Dexec.args="-fo $(FOPFILE) -pdf $(FOPPDF) -c $(CONFDIR)/fop.xml" 2>&1 | $(SCRIPTDIR)/outputcheck-images-fop.sh
 
 html: manpages copyimages docbook-html
 	#
