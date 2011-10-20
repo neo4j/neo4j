@@ -87,9 +87,9 @@ In your 'conf/neo4j.properties' file, enable HA by setting the necessary paramet
 [source]
 ----
 #$NEO4J_HOME1/conf/neo4j.properties
-#unique machine id for this graph database
+#unique server id for this graph database
 #can not be negative id and must be unique
-ha.machine_id = 1
+ha.server_id = 1
 
 #ip and port for this instance to bind to
 ha.server = localhost:6001
@@ -101,9 +101,9 @@ ha.coordinators = localhost:2181,localhost:2182,localhost:2183
 [source]
 ----
 #$NEO4J_HOME2/conf/neo4j.properties
-#unique machine id for this graph database
+#unique server id for this graph database
 #can not be negative id and must be unique
-ha.machine_id = 2
+ha.server_id = 2
 
 #ip and port for this instance to bind to
 ha.server = localhost:6001
@@ -115,9 +115,9 @@ ha.coordinators = localhost:2181,localhost:2182,localhost:2183
 [source]
 ----
 #$NEO4J_HOME3/conf/neo4j.properties
-#unique machine id for this graph database
+#unique server id for this graph database
 #can not be negative id and must be unique
-ha.machine_id = 3
+ha.server_id = 3
 
 #ip and port for this instance to bind to
 ha.server = localhost:6001
