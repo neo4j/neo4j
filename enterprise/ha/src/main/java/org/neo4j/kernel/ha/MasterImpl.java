@@ -57,7 +57,6 @@ import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -397,20 +396,19 @@ public class MasterImpl implements Master
         return packResponse( context, null );
     }
 
-    public Response<Integer> getMasterIdForCommittedTx( long txId )
+    public Response<Pair<Integer,Long>> getMasterIdForCommittedTx( long txId )
     {
         XaDataSource nioneoDataSource = graphDbConfig.getTxModule().getXaDataSourceManager()
                 .getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
-        int masterId = XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
         try
         {
-            masterId = nioneoDataSource.getMasterForCommittedTx( txId );
+            Pair<Integer, Long> masterId = nioneoDataSource.getMasterForCommittedTx( txId );
+            return MasterUtil.packResponseWithoutTransactionStream( graphDb, SlaveContext.EMPTY, masterId );
         }
         catch ( IOException e )
         {
             throw new RuntimeException( "Couldn't get master ID for " + txId, e );
         }
-        return MasterUtil.packResponseWithoutTransactionStream( graphDb, SlaveContext.EMPTY, masterId );
     }
 
     public Response<Void> copyStore( SlaveContext context, StoreWriter writer )

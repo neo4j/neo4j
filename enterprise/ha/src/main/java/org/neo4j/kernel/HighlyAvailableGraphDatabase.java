@@ -643,7 +643,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         XaDataSource nioneoDataSource = getConfig().getTxModule()
                 .getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
         long myLastCommittedTx = nioneoDataSource.getLastCommittedTxId();
-        int masterForMyHighestCommonTxId = -1;
+        Pair<Integer,Long> masterForMyHighestCommonTxId;
         try
         {
             masterForMyHighestCommonTxId = nioneoDataSource.getMasterForCommittedTx( myLastCommittedTx );
@@ -656,14 +656,15 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             msgLog.logMessage( "Couldn't get master ID for txId " + myLastCommittedTx +
                     ". It may be that a log file is missing due to the db being copied from master?", e );
 //            throw new RuntimeException( e );
+            masterForMyHighestCommonTxId = Pair.of( -1, 0L );
             return;
         }
 
-        int masterForMastersHighestCommonTxId = master.first().getMasterIdForCommittedTx( myLastCommittedTx ).response();
+        Pair<Integer, Long> masterForMastersHighestCommonTxId = master.first().getMasterIdForCommittedTx( myLastCommittedTx ).response();
 
         // Compare those two, if equal -> good
-        if ( masterForMyHighestCommonTxId == XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER // means that tx has been was recovered
-                || masterForMyHighestCommonTxId == masterForMastersHighestCommonTxId )
+        if ( masterForMyHighestCommonTxId.first() == XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER
+                || masterForMyHighestCommonTxId.equals( masterForMastersHighestCommonTxId ) )
         {
             msgLog.logMessage( "Master id for last committed tx ok with highestCommonTxId=" +
                     myLastCommittedTx + " with masterId=" + masterForMyHighestCommonTxId, true );

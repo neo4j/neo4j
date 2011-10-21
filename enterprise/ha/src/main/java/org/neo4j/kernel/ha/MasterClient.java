@@ -20,7 +20,6 @@
 package org.neo4j.kernel.ha;
 
 import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
-import static org.neo4j.com.Protocol.INTEGER_DESERIALIZER;
 import static org.neo4j.com.Protocol.INTEGER_SERIALIZER;
 import static org.neo4j.com.Protocol.LONG_SERIALIZER;
 import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
@@ -199,7 +198,7 @@ public class MasterClient extends Client<Master> implements Master
         return sendRequest( HaRequestType.PULL_UPDATES, context, EMPTY_SERIALIZER, VOID_DESERIALIZER );
     }
 
-    public Response<Integer> getMasterIdForCommittedTx( final long txId )
+    public Response<Pair<Integer,Long>> getMasterIdForCommittedTx( final long txId )
     {
         return sendRequest( HaRequestType.GET_MASTER_ID_FOR_TX, SlaveContext.EMPTY, new Serializer()
         {
@@ -207,7 +206,14 @@ public class MasterClient extends Client<Master> implements Master
             {
                 buffer.writeLong( txId );
             }
-        }, INTEGER_DESERIALIZER );
+        }, new Deserializer<Pair<Integer,Long>>()
+        {
+            @Override
+            public Pair<Integer, Long> read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
+            {
+                return Pair.of( buffer.readInt(), buffer.readLong() );
+            }
+        } );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -312,14 +318,22 @@ public class MasterClient extends Client<Master> implements Master
                 return master.finishTransaction( context, readBoolean( input ) );
             }
         }, VOID_SERIALIZER, true ),
-        GET_MASTER_ID_FOR_TX( new MasterCaller<Master, Integer>()
+        GET_MASTER_ID_FOR_TX( new MasterCaller<Master, Pair<Integer,Long>>()
         {
-            public Response<Integer> callMaster( Master master, SlaveContext context,
+            public Response<Pair<Integer,Long>> callMaster( Master master, SlaveContext context,
                     ChannelBuffer input, ChannelBuffer target )
             {
                 return master.getMasterIdForCommittedTx( input.readLong() );
             }
-        }, INTEGER_SERIALIZER, false ),
+        }, new ObjectSerializer<Pair<Integer,Long>>()
+        {
+            @Override
+            public void write( Pair<Integer, Long> responseObject, ChannelBuffer result ) throws IOException
+            {
+                result.writeInt( responseObject.first() );
+                result.writeLong( responseObject.other() );
+            }
+        }, false ),
         COPY_STORE( new MasterCaller<Master, Void>()
         {
             public Response<Void> callMaster( Master master, SlaveContext context,

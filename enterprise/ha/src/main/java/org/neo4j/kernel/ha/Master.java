@@ -23,6 +23,7 @@ import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
 import org.neo4j.com.StoreWriter;
 import org.neo4j.com.TxExtractor;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.IdType;
 
 /**
@@ -50,7 +51,7 @@ public interface Master
 
     Response<Void> pullUpdates( SlaveContext context );
 
-    Response<Integer> getMasterIdForCommittedTx( long txId );
+    Response<Pair<Integer,Long>> getMasterIdForCommittedTx( long txId );
 
     Response<Void> copyStore( SlaveContext context, StoreWriter writer );
     
