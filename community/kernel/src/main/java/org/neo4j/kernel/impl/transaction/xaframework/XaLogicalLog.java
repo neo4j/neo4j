@@ -37,6 +37,7 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -343,7 +344,7 @@ public class XaLogicalLog
         }
 
         TxPosition result = new TxPosition( logVersion, masterId, startEntry.getIdentifier(),
-                startEntry.getStartPosition() );
+                startEntry.getStartPosition(), startEntry.getTimeWritten() );
         txStartPositionCache.put( txId, result );
         return result;
     }
@@ -1145,6 +1146,11 @@ public class XaLogicalLog
         {
             return lastCommitEntry;
         }
+        
+        public long getLastTxChecksum()
+        {
+            return collector.getLastTxChecksum();
+        }
     }
 
     public LogExtractor getLogExtractor( long startTxId, long endTxIdHint ) throws IOException
@@ -1162,17 +1168,17 @@ public class XaLogicalLog
 
     public static final int MASTER_ID_REPRESENTING_NO_MASTER = -1;
 
-    public synchronized int getMasterIdForCommittedTransaction( long txId ) throws IOException
+    public synchronized Pair<Integer, Long> getMasterIdForCommittedTransaction( long txId ) throws IOException
     {
         if ( txId == 1 )
         {
-            return MASTER_ID_REPRESENTING_NO_MASTER;
+            return Pair.of( MASTER_ID_REPRESENTING_NO_MASTER, 0L );
         }
 
         TxPosition cache = txStartPositionCache.get( txId );
         if ( cache != null )
         {
-            return cache.masterId;
+            return Pair.of( cache.masterId, cache.timeWritten );
         }
 
         LogExtractor extractor = getLogExtractor( txId, txId );
@@ -1180,7 +1186,7 @@ public class XaLogicalLog
         {
             if ( extractor.extractNext( NullLogBuffer.INSTANCE ) != -1 )
             {
-                return extractor.lastCommitEntry.getMasterId();
+                return Pair.of( extractor.lastCommitEntry.getMasterId(), extractor.getLastTxChecksum() );
             }
             throw new RuntimeException( "Unable to find commit entry for txId[" + txId + "]" );// in log[" + version + "]" );
         }
@@ -1720,13 +1726,15 @@ public class XaLogicalLog
         final int masterId;
         final int identifier;
         final long position;
+        final long timeWritten;
 
-        private TxPosition( long version, int masterId, int identifier, long position )
+        private TxPosition( long version, int masterId, int identifier, long position, long timeWritten )
         {
             this.version = version;
             this.masterId = masterId;
             this.identifier = identifier;
             this.position = position;
+            this.timeWritten = timeWritten;
         }
 
         public boolean earlierThan( TxPosition other )
@@ -1747,6 +1755,8 @@ public class XaLogicalLog
     {
         LogEntry collect( LogEntry entry, LogBuffer target ) throws IOException;
 
+        long getLastTxChecksum();
+
         boolean hasInFutureQueue();
 
         int getIdentifier();
@@ -1755,6 +1765,7 @@ public class XaLogicalLog
     private static class KnownIdentifierCollector implements LogEntryCollector
     {
         private final int identifier;
+        private LogEntry.Start startEntry;
 
         KnownIdentifierCollector( int identifier )
         {
@@ -1770,6 +1781,10 @@ public class XaLogicalLog
         {
             if ( entry.getIdentifier() == identifier )
             {
+                if ( entry instanceof LogEntry.Start )
+                {
+                    startEntry = (Start) entry;
+                }
                 if ( target != null )
                 {
                     LogIoUtils.writeLogEntry( entry, target );
@@ -1783,6 +1798,12 @@ public class XaLogicalLog
         public boolean hasInFutureQueue()
         {
             return false;
+        }
+        
+        @Override
+        public long getLastTxChecksum()
+        {
+            return startEntry.getTimeWritten();
         }
     }
 
@@ -1809,6 +1830,12 @@ public class XaLogicalLog
         public boolean hasInFutureQueue()
         {
             return futureQueue.containsKey( nextExpectedTxId );
+        }
+        
+        @Override
+        public long getLastTxChecksum()
+        {
+            return ((LogEntry.Start)transactions.get( identifier ).get( 0 )).getTimeWritten();
         }
 
         public LogEntry collect( LogEntry entry, LogBuffer target ) throws IOException

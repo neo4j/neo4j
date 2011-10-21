@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Map;
 
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.LogExtractor;
 
 public abstract class LogBackedXaDataSource extends XaDataSource
@@ -123,7 +124,7 @@ public abstract class LogBackedXaDataSource extends XaDataSource
     }
 
     @Override
-    public int getMasterForCommittedTx( long txId ) throws IOException
+    public Pair<Integer,Long> getMasterForCommittedTx( long txId ) throws IOException
     {
         return logicalLog.getMasterIdForCommittedTransaction( txId );
     }

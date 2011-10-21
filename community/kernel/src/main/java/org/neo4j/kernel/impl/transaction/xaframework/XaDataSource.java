@@ -363,7 +363,7 @@ public abstract class XaDataSource
         throw new UnsupportedOperationException( getClass().getName() );
     }
 
-    public int getMasterForCommittedTx( long txId ) throws IOException
+    public Pair<Integer,Long> getMasterForCommittedTx( long txId ) throws IOException
     {
         throw new UnsupportedOperationException( getClass().getName() );
     }
