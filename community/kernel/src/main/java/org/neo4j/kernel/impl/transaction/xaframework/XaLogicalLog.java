@@ -1814,6 +1814,7 @@ public class XaLogicalLog
         private int identifier;
         private final Map<Long, List<LogEntry>> futureQueue = new HashMap<Long, List<LogEntry>>();
         private long nextExpectedTxId;
+        private long lastChecksum;
 
         KnownTxIdCollector( long startTxId )
         {
@@ -1835,7 +1836,7 @@ public class XaLogicalLog
         @Override
         public long getLastTxChecksum()
         {
-            return ((LogEntry.Start)transactions.get( identifier ).get( 0 )).getTimeWritten();
+            return lastChecksum;
         }
 
         public LogEntry collect( LogEntry entry, LogBuffer target ) throws IOException
@@ -1843,11 +1844,11 @@ public class XaLogicalLog
             if ( futureQueue.containsKey( nextExpectedTxId ) )
             {
                 List<LogEntry> list = futureQueue.remove( nextExpectedTxId++ );
+                lastChecksum = ((LogEntry.Start)list.get( 0 )).getTimeWritten();
                 writeToBuffer( list, target );
                 return commitEntryOf( list );
             }
 
-//            boolean interesting = false;
             if ( entry instanceof LogEntry.Start )
             {
                 List<LogEntry> list = new LinkedList<LogEntry>();
@@ -1858,7 +1859,6 @@ public class XaLogicalLog
             {
                 long commitTxId = ((LogEntry.Commit) entry).getTxId();
                 if ( commitTxId < startTxId ) return null;
-//                interesting = true;
                 identifier = entry.getIdentifier();
                 List<LogEntry> entries = transactions.get( identifier );
                 if ( entries == null ) return null;
@@ -1879,6 +1879,7 @@ public class XaLogicalLog
 
                 writeToBuffer( entries, target );
                 nextExpectedTxId = commitTxId+1;
+                lastChecksum = ((LogEntry.Start)entries.get( 0 )).getTimeWritten();
                 return entry;
             }
             else if ( entry instanceof LogEntry.Command || entry instanceof LogEntry.Prepare )
