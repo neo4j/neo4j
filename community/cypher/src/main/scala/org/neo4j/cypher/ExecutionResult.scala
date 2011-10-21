@@ -24,6 +24,7 @@ import scala.collection.JavaConverters._
 import org.neo4j.graphdb.{PropertyContainer, Relationship, NotFoundException, Node}
 import collection.Traversable
 
+
 trait ExecutionResult extends Traversable[Map[String, Any]] with StringExtras {
   val symbols: SymbolTable
 
@@ -31,7 +32,7 @@ trait ExecutionResult extends Traversable[Map[String, Any]] with StringExtras {
 
   def javaColumns: java.util.List[String] = columns.asJava
 
-  def javaColumnAs[T](column: String) = columnAs[T](column).asJava
+  def javaColumnAs[T](column: String) = columnAs[T](column).map(x=>makeValueJavaCompatible(x).asInstanceOf[T]).asJava
 
   def columnAs[T](column: String): Iterator[T] = {
     this.map(m => {
@@ -40,9 +41,16 @@ trait ExecutionResult extends Traversable[Map[String, Any]] with StringExtras {
     }).toIterator
   }
 
-  def javaIterator: java.util.Iterator[java.util.Map[String, Any]] = this.map(m => m.asJava).toIterator.asJava
+  def makeValueJavaCompatible(value: Any): Any = value match {
+    case iter: Seq[_] => iter.asJava
+    case x => x
+  }
 
-  def calculateColumnSizes(result:Seq[Map[String,Any]]): Map[String, Int] = {
+  def javaIterator: java.util.Iterator[java.util.Map[String, Any]] = this.map(m => {
+    m.map(kv => kv._1 -> makeValueJavaCompatible(kv._2)).asJava
+  }).toIterator.asJava
+
+  def calculateColumnSizes(result: Seq[Map[String, Any]]): Map[String, Int] = {
     val columnSizes = new scala.collection.mutable.HashMap[String, Int] ++ columns.map(name => name -> name.size)
 
     result.foreach((m) => {
