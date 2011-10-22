@@ -36,12 +36,9 @@ case class SingleGraphRelationship(rel: Relationship) extends GraphRelationship 
 
   override def equals(obj: Any) = obj match {
     case VariableLengthGraphRelationship(p) => p.relationships().asScala.exists(_ == rel)
+
     case p: Path => p.relationships().asScala.exists(_ == rel)
-    case x => {
-      val a = x == this
-      val b = x == rel
-      a || b
-    }
+    case x => x == this || x == rel
   }
 
   override def toString =
@@ -65,7 +62,7 @@ case class VariableLengthGraphRelationship(path: Path) extends GraphRelationship
 
   override def equals(obj: Any) = obj match {
     case r: Relationship => path.relationships().asScala.exists(_ == r)
-    case x => obj == this || obj == path
+    case x => obj == this || (obj == path && path.length() > 0)
   }
 
   override def toString = path.toString

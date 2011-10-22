@@ -128,6 +128,20 @@ class MatchTest extends DocumentingTestBase {
     )
   }
 
+  @Test def zeroLengthPath() {
+    testQuery(
+      title = "Zero length paths",
+      text = "When using variable length paths that have the lower bound zero, it means that two identifiers can point" +
+        " to the same node. If the distance between two nodes is zero, they are, by definition, the same node.",
+      queryText = """start a=node(%A%) match a-[:KNOWS*0..1]->b-[:KNOWS*0..1]->c return a,b,c""",
+      returns = "This query will return three rows, with the different variations of path lengths possible.",
+      (p) => assertEquals(Set(
+        Map("a" -> node("A"), "b" -> node("A"), "c" -> node("A")),
+        Map("a" -> node("A"), "b" -> node("B"), "c" -> node("B")),
+        Map("a" -> node("A"), "b" -> node("B"), "c" -> node("E"))), p.toSet)
+    )
+  }
+
   @Test def fixedLengthPath() {
     testQuery(
       title = "Fixed length relationships",

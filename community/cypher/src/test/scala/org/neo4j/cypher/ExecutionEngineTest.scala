@@ -465,7 +465,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val result = parseAndExecute("start r=rel(0) match a-[r]-b-[?]-c return a,b,c")
 
-    assertEquals(List(Map("a" -> a, "b" -> b, "c"->c), Map("a" -> b, "b" -> a, "c"->null)), result.toList)
+    assertEquals(List(Map("a" -> a, "b" -> b, "c" -> c), Map("a" -> b, "b" -> a, "c" -> null)), result.toList)
   }
 
   @Test def shouldLimitToTwoHits() {
@@ -769,6 +769,36 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
       PathImpl(node("A"), r1, node("B")),
       PathImpl(node("A"), r1, node("B"), r2, node("C"))
     ), result.columnAs[Path]("p").toList)
+  }
+
+  @Test def aVarLengthPathOfLengthZero() {
+    createNodes("A", "B", "C")
+    relate("A" -> "KNOWS" -> "B")
+    relate("B" -> "KNOWS" -> "C")
+
+    val result = parseAndExecute("start a=node(1) match a-[*0..1]->b return a,b")
+
+    assertEquals(
+      Set(
+        Map("a" -> node("A"), "b" -> node("B")),
+        Map("a" -> node("A"), "b" -> node("A"))),
+      result.toSet)
+  }
+
+  @Test def testZeroLengthVarLenPathInTheMiddle() {
+    createNodes("A", "B", "C", "D", "E")
+    relate("A" -> "CONTAINS" -> "B")
+    relate("B" -> "FRIEND" -> "C")
+
+
+    val result = parseAndExecute("start a=node(1) match a-[:CONTAINS*0..1]->b-[:FRIEND*0..1]->c return a,b,c")
+
+    assertEquals(
+      Set(
+        Map("a" -> node("A"), "b" -> node("A"), "c" -> node("A")),
+        Map("a" -> node("A"), "b" -> node("B"), "c" -> node("B")),
+        Map("a" -> node("A"), "b" -> node("B"), "c" -> node("C"))),
+      result.toSet)
   }
 
   @Test def shouldReturnAVarLengthPathWithoutMinimalLength() {

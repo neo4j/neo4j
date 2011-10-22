@@ -22,7 +22,7 @@ package org.neo4j.cypher.pipes.matching
 import org.neo4j.cypher.commands.Clause
 import org.neo4j.graphdb.Node
 
-class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause], includeOptionals:Boolean) extends Traversable[Map[String, Any]] {
+class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause], includeOptionals: Boolean) extends Traversable[Map[String, Any]] {
   val boundNodes = bindings.filter(_._2.patternElement.isInstanceOf[PatternNode])
   val boundRels = bindings.filter(_._2.patternElement.isInstanceOf[PatternRelationship])
 
@@ -63,7 +63,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause], 
   }
 
   def traverseNextNodeFromRelationship[U](rel: GraphRelationship, gNode: Node, nextPNode: PatternNode, currentRel: PatternRelationship, history: History, remaining: Set[MatchingPair], yielder: (Map[String, Any]) => U): Boolean = {
-
+    debug(rel, gNode, nextPNode, currentRel, history, remaining)
     val current = MatchingPair(currentRel, rel)
 
     val boundEntity = current.matchesBoundEntity(boundRels)
@@ -109,8 +109,8 @@ class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause], 
     val (pNode, gNode) = currentNode.getPatternAndGraphPoint
 
     val relationships = currentNode.getGraphRelationships(currentRel)
-    val notVisitedRelationships: Seq[GraphRelationship] = history.
-      filter(relationships).
+    val step1 = history.filter(relationships)
+    val notVisitedRelationships: Seq[GraphRelationship] = step1.
       filter(x => boundRels.get(currentRel.key) match {
       case Some(pinnedRel) => pinnedRel.matches(x)
       case None => true
@@ -128,7 +128,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause], 
       return true
     }
 
-    if (currentRel.optional  && includeOptionals) {
+    if (currentRel.optional && includeOptionals) {
       debug("trying with null for " + currentRel)
       return traverseNextNodeOrYield(remaining, history.add(currentNode).add(MatchingPair(currentRel, null)), yielder)
     }
@@ -196,6 +196,19 @@ class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause], 
       println(String.format("""yield(history=%s) => %s
     """, history, resultMap))
   }
+
+  private def debug(rel: GraphRelationship, node: Node, pNode: PatternNode, pRel: PatternRelationship, history: History, remaining: Set[MatchingPair]) {
+    if (isDebugging)
+      println(String.format("""traverseNextNodeFromRelationship
+    rel=%s
+    node=%s
+    pNode=%s
+    pRel=%s
+    history=%s
+    remaining=%s
+    """, rel, node, pNode, pRel, history, remaining))
+  }
+
 
   def debug(message: String) {
     if (isDebugging) println(message)
