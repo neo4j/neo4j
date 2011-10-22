@@ -648,6 +648,16 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
+  @Ignore
+  @Test def variableLengthPathWithRelationshipIdentifier() {
+    testQuery("start a=node(0) match a -[r:knows*2..]-> x return x",
+      Query.
+        start(NodeById("a", 0)).
+        matches(VarLengthRelatedTo("  UNNAMED1", "a", "x", Some(2), None, "knows", Direction.OUTGOING)).
+        returns(ValueReturnItem(EntityValue("x")))
+    )
+  }
+
   @Test def variableLengthPathWithoutMaxDepth() {
     testQuery("start a=node(0) match a -[:knows*2..]-> x return x",
       Query.

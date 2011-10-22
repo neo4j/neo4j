@@ -785,6 +785,22 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
       result.toSet)
   }
 
+  @Test def aNamedVarLengthPathOfLengthZero() {
+    createNodes("A", "B", "C")
+    val r1 = relate("A" -> "KNOWS" -> "B")
+    val r2 = relate("B" -> "FRIEND" -> "C")
+
+    val result = parseAndExecute("start a=node(1) match p=a-[:KNOWS*0..1]->b-[:FRIEND*0..1]->c return p,a,b,c")
+
+    assertEquals(
+      Set(
+        PathImpl(node("A")),
+        PathImpl(node("A"), r1, node("B")),
+        PathImpl(node("A"), r1, node("B"), r2, node("C"))
+      ),
+      result.columnAs[Path]("p").toSet)
+  }
+
   @Test def testZeroLengthVarLenPathInTheMiddle() {
     createNodes("A", "B", "C", "D", "E")
     relate("A" -> "CONTAINS" -> "B")
