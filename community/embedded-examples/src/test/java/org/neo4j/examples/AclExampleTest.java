@@ -207,13 +207,9 @@ public class AclExampleTest extends AbstractJavaDocTestbase
         
         //ACL
         query = "START file=node:node_auto_index('name:File*') " +
-        		"MATCH " +
-        		"file<-[:leaf]-dir, " +
-        		"path = dir<-[:contains*]-parent, " +
-        		"parent<-[?:canRead]-role2-[:member]->readUserMoreThan1DirUp, " +
-                "dir<-[?:canRead]-role1-[:member]->readUser1DirUp " +
-        		//TODO: would like to get results the order I specify
-        		"RETURN file, role1, readUser1DirUp, role2, readUserMoreThan1DirUp";
+        		"MATCH parent-[:contains*]->dir-[:leaf]->file, " +
+        		"parent<-[?:canRead]-role-[:member]->readUser " +
+        		"RETURN file, role, readUser";
         gen.get().addSnippet( "query3", createCypherSnippet( query ) );
         result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("File1") );
