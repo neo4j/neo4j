@@ -172,7 +172,7 @@ public class RolesTest extends AbstractJavaDocTestbase
         // END SNIPPET: get-admins
         
         gen.get().addSnippet( "o-get-admins", createOutputSnippet( traverserToString( traverser ) ) );
-        String query = "start admins=node("+ admins.getId() +") match admins<-[:MEMBER_OF]-directUser, admins<-[:PART_OF*]-subrole<-[:MEMBER_OF]-indUser return directUser, indUser, subrole";
+        String query = "start admins=node("+ admins.getId() +") match admins<-[:PART_OF*0..]-subrole<-[:MEMBER_OF]-user return user, subrole";
         gen.get().addSnippet( "query-get-admins", createCypherSnippet( query ) );
         String result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("Engin") );
@@ -188,7 +188,7 @@ public class RolesTest extends AbstractJavaDocTestbase
                 Direction.OUTGOING, RoleRels.PART_OF, Direction.OUTGOING );
         // END SNIPPET: get-user-memberships
         gen.get().addSnippet( "o-get-user-memberships", createOutputSnippet( traverserToString( traverser ) ) );
-        query = "start jale=node("+ jale.getId() +") match jale-[:MEMBER_OF]->directRole-[:PART_OF*]->superRole return jale, directRole, superRole";
+        query = "start jale=node("+ jale.getId() +") match jale-[:MEMBER_OF]->()-[:PART_OF*0..]->role return jale, role";
         gen.get().addSnippet( "query-get-user-memberships", createCypherSnippet( query ) );
         result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("Users") );
@@ -206,7 +206,7 @@ public class RolesTest extends AbstractJavaDocTestbase
                 Direction.INCOMING, RoleRels.PART_OF, Direction.INCOMING );
         // END SNIPPET: get-groups
         gen.get().addSnippet( "o-get-groups", createOutputSnippet( traverserToString( traverser ) ) );
-        query = "start refNode=node("+ referenceNode.getId() +") match refNode<-[:ROOT]->topGroup<-[:PART_OF*]-subGroup return refNode, topGroup, subGroup";
+        query = "start refNode=node("+ referenceNode.getId() +") match refNode<-[:ROOT]->()<-[:PART_OF*0..]-group return group";
         gen.get().addSnippet( "query-get-groups", createCypherSnippet( query ) );
         result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("Users") );
