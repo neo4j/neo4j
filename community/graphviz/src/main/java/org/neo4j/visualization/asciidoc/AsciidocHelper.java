@@ -85,6 +85,7 @@ public class AsciidocHelper
         String[] lines = result.split( "\n" );
         String finalRes = "";
         for(String line : lines) {
+            line = line.trim();
             if (line.length() > 123 ) {
                 line = line.replaceAll( ", ", ",\n      " );
             }
