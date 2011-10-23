@@ -28,7 +28,7 @@ class MatchPipe(source: Pipe, patterns: Seq[Pattern], predicates:Seq[Clause]) ex
 
   val symbols = source.symbols ++ new SymbolTable(patterns.flatMap(_ match {
     case RelatedTo(left, right, rel, relType, dir, optional) => Seq(NodeIdentifier(left), NodeIdentifier(right), RelationshipIdentifier(rel))
-    case VarLengthRelatedTo(pathName, left, right, minHops, maxHops, relType, dir, optional) => Seq(NodeIdentifier(left), NodeIdentifier(right))
+    case VarLengthRelatedTo(pathName, left, right, minHops, maxHops, relType, dir, iterableRel, optional) => Seq(NodeIdentifier(left), NodeIdentifier(right))
     case _ => Seq()
   }))
 

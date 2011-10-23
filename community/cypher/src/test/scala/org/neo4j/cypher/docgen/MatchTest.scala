@@ -26,7 +26,7 @@ import org.neo4j.graphdb.{DynamicRelationshipType, Path, Node}
 class MatchTest extends DocumentingTestBase {
   override def indexProps: List[String] = List("name")
 
-  def graphDescription = List("A KNOWS B", "A BLOCKS C", "D KNOWS A", "B KNOWS E", "C KNOWS E")
+  def graphDescription = List("A KNOWS B", "A BLOCKS C", "D KNOWS A", "B KNOWS E", "C KNOWS E", "B BLOCKS D")
 
   override val properties = Map(
     "A" -> Map("name" -> "Anders"),
@@ -133,12 +133,14 @@ class MatchTest extends DocumentingTestBase {
       title = "Zero length paths",
       text = "When using variable length paths that have the lower bound zero, it means that two identifiers can point" +
         " to the same node. If the distance between two nodes is zero, they are, by definition, the same node.",
-      queryText = """start a=node(%A%) match a-[:KNOWS*0..1]->b-[:KNOWS*0..1]->c return a,b,c""",
-      returns = "This query will return three rows, with the different variations of path lengths possible.",
+      queryText = """start a=node(%A%) match p1=a-[:KNOWS*0..1]->b, p2=b-[:BLOCKS*0..1]->c return a,b,c, length(p1), length(p2)""",
+      returns = "This query will return four paths, some of them with length zero.",
       (p) => assertEquals(Set(
-        Map("a" -> node("A"), "b" -> node("A"), "c" -> node("A")),
-        Map("a" -> node("A"), "b" -> node("B"), "c" -> node("B")),
-        Map("a" -> node("A"), "b" -> node("B"), "c" -> node("E"))), p.toSet)
+        Map("a" -> node("A"), "b" -> node("A"), "c" -> node("A"), "LENGTH(p1)" -> 0, "LENGTH(p2)" -> 0),
+        Map("a" -> node("A"), "b" -> node("A"), "c" -> node("C"), "LENGTH(p1)" -> 0, "LENGTH(p2)" -> 1),
+        Map("a" -> node("A"), "b" -> node("B"), "c" -> node("B"), "LENGTH(p1)" -> 1, "LENGTH(p2)" -> 0),
+        Map("a" -> node("A"), "b" -> node("B"), "c" -> node("D"), "LENGTH(p1)" -> 1, "LENGTH(p2)" -> 1))
+        , p.toSet)
     )
   }
 
@@ -147,8 +149,8 @@ class MatchTest extends DocumentingTestBase {
       title = "Fixed length relationships",
       text = "Elements that are a fixed number of hops away can be matched by using [*numberOfHops]. ",
       queryText = """start a=node(%D%) match p=a-[*3]->() return p""",
-      returns = "The two paths that go from node D to node E",
-      (p) => assert(p.toSeq.length === 2)
+      returns = "The three paths that go from node D to node E",
+      (p) => assert(p.toSeq.length === 3)
     )
   }
 
