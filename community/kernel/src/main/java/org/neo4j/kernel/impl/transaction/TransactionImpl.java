@@ -156,6 +156,8 @@ class TransactionImpl implements Transaction
                         throw Exceptions.withCause( new SystemException( "TM encountered a problem, "
                                                                          + " error writing transaction log" ), e );
                     }
+                    // TODO ties HA to our TxManager
+                    if ( !txManager.finishHook.hasAnyLocks( this ) ) txManager.finishHook.initializeTransaction( eventIdentifier );
                     return true;
                 }
                 Xid sameRmXid = null;

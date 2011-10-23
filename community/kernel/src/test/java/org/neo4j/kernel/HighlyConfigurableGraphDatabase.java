@@ -48,7 +48,7 @@ public class HighlyConfigurableGraphDatabase extends AbstractGraphDatabase
         impl = new EmbeddedGraphDbImpl( storeDir, null, config, this, CommonFactories.defaultLockManagerFactory(),
                 idGenerators, CommonFactories.defaultRelationshipTypeCreator(),
                 CommonFactories.defaultTxIdGeneratorFactory(),
-                CommonFactories.defaultTxFinishHook(),
+                CommonFactories.defaultTxHook(),
                 CommonFactories.defaultLastCommittedTxIdSetter(), fileSystem );
     }
 

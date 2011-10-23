@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.LockManager;
-import org.neo4j.kernel.impl.transaction.TxFinishHook;
+import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.transaction.TxModule;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
@@ -106,10 +106,16 @@ public class CommonFactories
         }; 
     }
     
-    public static TxFinishHook defaultTxFinishHook()
+    public static TxHook defaultTxHook()
     {
-        return new TxFinishHook()
+        return new TxHook()
         {
+            @Override
+            public void initializeTransaction( int eventIdentifier )
+            {
+                // Do nothing from the ordinary here
+            }
+            
             public boolean hasAnyLocks( Transaction tx )
             {
                 return false;

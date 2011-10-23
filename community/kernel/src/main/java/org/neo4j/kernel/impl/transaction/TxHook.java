@@ -21,8 +21,10 @@ package org.neo4j.kernel.impl.transaction;
 
 import javax.transaction.Transaction;
 
-public interface TxFinishHook
+public interface TxHook
 {
+    void initializeTransaction( int eventIdentifier );
+    
     boolean hasAnyLocks( Transaction tx );
     
     void finishTransaction( int eventIdentifier, boolean success );

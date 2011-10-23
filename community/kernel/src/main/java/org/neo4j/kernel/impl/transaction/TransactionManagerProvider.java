@@ -40,5 +40,5 @@ public abstract class TransactionManagerProvider extends Service
     }
 
     protected abstract AbstractTransactionManager loadTransactionManager( String txLogDir,
-            KernelPanicEventGenerator kpe, TxFinishHook rollbackHook );
+            KernelPanicEventGenerator kpe, TxHook rollbackHook );
 }

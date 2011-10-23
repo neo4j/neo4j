@@ -81,7 +81,7 @@ public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
                 CommonFactories.defaultIdGeneratorFactory(),
                 CommonFactories.defaultRelationshipTypeCreator(),
                 CommonFactories.defaultTxIdGeneratorFactory(),
-                CommonFactories.defaultTxFinishHook(),
+                CommonFactories.defaultTxHook(),
                 CommonFactories.defaultLastCommittedTxIdSetter(),
                 CommonFactories.defaultFileSystemAbstraction() );
     }

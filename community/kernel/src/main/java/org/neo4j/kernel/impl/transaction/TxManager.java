@@ -93,9 +93,9 @@ public class TxManager extends AbstractTransactionManager
 
     private final StringLogger msgLog;
 
-    final TxFinishHook finishHook;
+    final TxHook finishHook;
 
-    TxManager( String txLogDir, KernelPanicEventGenerator kpe, TxFinishHook finishHook )
+    TxManager( String txLogDir, KernelPanicEventGenerator kpe, TxHook finishHook )
     {
         this.txLogDir = txLogDir;
         this.msgLog = StringLogger.getLogger( txLogDir );

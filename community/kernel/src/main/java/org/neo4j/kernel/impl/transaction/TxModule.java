@@ -25,6 +25,7 @@ import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
@@ -48,10 +49,13 @@ public class TxModule
     private final XaDataSourceManager xaDsManager;
     private final KernelPanicEventGenerator kpe;
 
-    public TxModule( String txLogDir, KernelPanicEventGenerator kpe, TxFinishHook rollbackHook, String serviceName )
+    private final TxHook txHook;
+
+    public TxModule( String txLogDir, KernelPanicEventGenerator kpe, TxHook txHook, String serviceName )
     {
         this.txLogDir = txLogDir;
         this.kpe = kpe;
+        this.txHook = txHook;
         TransactionManagerProvider provider;
         if ( serviceName == null )
         {
@@ -65,7 +69,7 @@ public class TxModule
                                                  + serviceName );
             }
         }
-        txManager = provider.loadTransactionManager( txLogDir, kpe, rollbackHook );
+        txManager = provider.loadTransactionManager( txLogDir, kpe, txHook );
         this.xaDsManager = new XaDataSourceManager();
     }
 
@@ -76,6 +80,7 @@ public class TxModule
         {
             this.txManager = new ReadOnlyTxManager();
             this.xaDsManager = new XaDataSourceManager();
+            this.txHook = CommonFactories.defaultTxHook();
         }
         else
         {
@@ -196,6 +201,11 @@ public class TxModule
     public XaDataSourceManager getXaDataSourceManager()
     {
         return xaDsManager;
+    }
+    
+    public TxHook getTxHook()
+    {
+        return txHook;
     }
 
     public int getStartedTxCount()
