@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.ha;
 
+import javax.transaction.SystemException;
+import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.com.ComException;
@@ -29,6 +31,7 @@ import org.neo4j.kernel.LockManagerFactory;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.LockManager;
+import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.TxModule;
 
@@ -47,18 +50,20 @@ public class SlaveLockManager extends LockManager
         
         public LockManager create( TxModule txModule )
         {
-            return new SlaveLockManager( txModule.getTxManager(), broker, receiver );
+            return new SlaveLockManager( txModule.getTxManager(), txModule.getTxHook(), broker, receiver );
         }
     };
     
     private final Broker broker;
     private final TransactionManager tm;
     private final ResponseReceiver receiver;
+    private final TxHook txHook;
     
-    public SlaveLockManager( TransactionManager tm, Broker broker, ResponseReceiver receiver )
+    public SlaveLockManager( TransactionManager tm, TxHook txHook, Broker broker, ResponseReceiver receiver )
     {
         super( tm );
         this.tm = tm;
+        this.txHook = txHook;
         this.broker = broker;
         this.receiver = receiver;
     }
@@ -89,6 +94,7 @@ public class SlaveLockManager extends LockManager
 //                return;
 //            }
             
+            initializeTxIfFirst();
             LockResult result = null;
             do
             {
@@ -122,6 +128,21 @@ public class SlaveLockManager extends LockManager
         }
     }
 
+    private void initializeTxIfFirst()
+    {
+        // The main point of initializing transaction (for HA) is in TransactionImpl, so this is
+        // for that extra point where grabbing a lock
+        try
+        {
+            Transaction tx = tm.getTransaction();
+            if ( !txHook.hasAnyLocks( tx ) ) txHook.initializeTransaction( ((TxManager)tm).getEventIdentifier() );
+        }
+        catch ( SystemException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
     @Override
     public void getWriteLock( Object resource ) throws DeadlockDetectedException,
             IllegalResourceException
@@ -144,6 +165,7 @@ public class SlaveLockManager extends LockManager
 //              return;
 //          }
             
+            initializeTxIfFirst();
             LockResult result = null;
             do
             {

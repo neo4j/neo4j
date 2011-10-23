@@ -104,7 +104,7 @@ public class MasterImpl implements Master
                             msgLog.logMessage( "Found old tx " + entry.getKey() + ", " + entry.getValue().first() + ", " + displayableTime );
                             try
                             {
-                                Transaction otherTx = suspendOtherAndResumeThis( entry.getKey() );
+                                Transaction otherTx = suspendOtherAndResumeThis( entry.getKey(), false );
                                 finishThisAndResumeOther( otherTx, entry.getKey(), false );
                                 msgLog.logMessage( "Rolled back old tx " + entry.getKey() + ", " + entry.getValue().first() + ", " + displayableTime );
                             }
@@ -133,10 +133,24 @@ public class MasterImpl implements Master
         return this.graphDb;
     }
     
+    @Override
+    public Response<Void> initializeTx( SlaveContext context )
+    {
+        Transaction otherTx = suspendOtherAndResumeThis( context, true );
+        try
+        {
+            return packResponse( context, null );
+        }
+        finally
+        {
+            suspendThisAndResumeOther( otherTx, context );
+        }
+    }
+    
     private <T extends PropertyContainer> Response<LockResult> acquireLock( SlaveContext context,
             LockGrabber lockGrabber, T... entities )
     {
-        Transaction otherTx = suspendOtherAndResumeThis( context );
+        Transaction otherTx = suspendOtherAndResumeThis( context, false );
         try
         {
             LockManager lockManager = graphDbConfig.getLockManager();
@@ -216,7 +230,7 @@ public class MasterImpl implements Master
         }
     }
 
-    Transaction suspendOtherAndResumeThis( SlaveContext txId )
+    Transaction suspendOtherAndResumeThis( SlaveContext txId, boolean allowBegin )
     {
         try
         {
@@ -235,7 +249,14 @@ public class MasterImpl implements Master
                 }
                 if ( transaction == null )
                 {
-                    beginTx( txId );
+                    if ( allowBegin )
+                    {
+                        beginTx( txId );
+                    }
+                    else
+                    {
+                        throw new IllegalStateException( "Transaction for " + txId + " not initialized" );
+                    }
                 }
                 else
                 {
@@ -340,7 +361,7 @@ public class MasterImpl implements Master
     public Response<Long> commitSingleResourceTransaction( SlaveContext context, String resource,
             TxExtractor txGetter )
     {
-        Transaction otherTx = suspendOtherAndResumeThis( context );
+        Transaction otherTx = suspendOtherAndResumeThis( context, false );
         try
         {
             XaDataSource dataSource = graphDbConfig.getTxModule().getXaDataSourceManager()
@@ -367,7 +388,7 @@ public class MasterImpl implements Master
 
     public Response<Void> finishTransaction( SlaveContext context, boolean success )
     {
-        Transaction otherTx = suspendOtherAndResumeThis( context );
+        Transaction otherTx = suspendOtherAndResumeThis( context, false );
         finishThisAndResumeOther( otherTx, context, success );
         return packResponse( context, null );
     }

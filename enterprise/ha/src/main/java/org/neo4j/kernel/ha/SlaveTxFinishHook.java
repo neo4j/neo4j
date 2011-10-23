@@ -24,9 +24,9 @@ import javax.transaction.Transaction;
 import org.neo4j.com.ComException;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
-import org.neo4j.kernel.impl.transaction.TxFinishHook;
+import org.neo4j.kernel.impl.transaction.TxHook;
 
-public class SlaveTxFinishHook implements TxFinishHook
+public class SlaveTxFinishHook implements TxHook
 {
     private final Broker broker;
     private final ResponseReceiver receiver;
@@ -35,6 +35,25 @@ public class SlaveTxFinishHook implements TxFinishHook
     {
         this.broker = broker;
         this.receiver = receiver;
+    }
+    
+    @Override
+    public void initializeTransaction( int eventIdentifier )
+    {
+        try
+        {
+            receiver.receive( broker.getMaster().first().initializeTx( receiver.getSlaveContext( eventIdentifier ) ) );
+        }
+        catch ( ZooKeeperException e )
+        {
+            receiver.newMaster( null, e );
+            throw e;
+        }
+        catch ( ComException e )
+        {
+            receiver.newMaster( null, e );
+            throw e;
+        }
     }
     
     public boolean hasAnyLocks( Transaction tx )

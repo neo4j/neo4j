@@ -128,6 +128,12 @@ public class MasterClient extends Client<Master> implements Master
             }
         } );
     }
+    
+    @Override
+    public Response<Void> initializeTx( SlaveContext context )
+    {
+        return sendRequest( HaRequestType.INITIALIZE_TX, context, EMPTY_SERIALIZER, VOID_DESERIALIZER );
+    }
 
     public Response<LockResult> acquireNodeWriteLock( SlaveContext context, long... nodes )
     {
@@ -342,6 +348,15 @@ public class MasterClient extends Client<Master> implements Master
                 return master.copyStore( context, new ToNetworkStoreWriter( target ) );
             }
             
+        }, VOID_SERIALIZER, true ),
+        INITIALIZE_TX( new MasterCaller<Master, Void>()
+        {
+            @Override
+            public Response<Void> callMaster( Master master, SlaveContext context, ChannelBuffer input,
+                    ChannelBuffer target )
+            {
+                return master.initializeTx( context );
+            }
         }, VOID_SERIALIZER, true );
 
         @SuppressWarnings( "rawtypes" )

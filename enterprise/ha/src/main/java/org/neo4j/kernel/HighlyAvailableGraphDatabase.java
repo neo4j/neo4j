@@ -619,7 +619,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 new MasterIdGeneratorFactory(),
                 CommonFactories.defaultRelationshipTypeCreator(),
                 new MasterTxIdGeneratorFactory( broker ),
-                CommonFactories.defaultTxFinishHook(),
+                CommonFactories.defaultTxHook(),
                 new ZooKeeperLastCommittedTxIdSetter( broker ),
                 CommonFactories.defaultFileSystemAbstraction() );
         this.masterServer = (MasterServer) broker.instantiateMasterServer( this );

@@ -35,6 +35,11 @@ public interface Master
     Response<IdAllocation> allocateIds( IdType idType );
 
     Response<Integer> createRelationshipType( SlaveContext context, String name );
+    
+    /**
+     * Called when the first write operation of lock is performed for a transaction.
+     */
+    Response<Void> initializeTx( SlaveContext context );
 
     Response<LockResult> acquireNodeWriteLock( SlaveContext context, long... nodes );
 
