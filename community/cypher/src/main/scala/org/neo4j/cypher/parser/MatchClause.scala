@@ -55,7 +55,7 @@ trait MatchClause extends JavaTokenParsers with Tokens {
   def shortestPath: Parser[List[Pattern]] = ignoreCase("shortestPath") ~> parens(singlePathSegment) ^^
     { _ match {
         case RelatedTo(left , right , relName , relType, direction , optional) => List(ShortestPath(namer.name(None), left, right, relType, direction, Some(1), optional))
-        case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, direction, optional)  => {
+        case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, direction, relIterable, optional)  => {
           if(minHops.nonEmpty) {
             throw new SyntaxException("Shortest path does not support a minimal length")
           }
@@ -74,7 +74,7 @@ trait MatchClause extends JavaTokenParsers with Tokens {
 
           val result: Pattern = varLength match {
             case None => RelatedTo(fromNode, toNode, namer.name(rel), relType, dir, optional)
-            case Some((minHops, maxHops)) => VarLengthRelatedTo(namer.name(None), fromNode, toNode, minHops, maxHops, relType, dir, optional)
+            case Some((minHops, maxHops)) => VarLengthRelatedTo(namer.name(None), fromNode, toNode, minHops, maxHops, relType, dir, rel, optional)
           }
 
           fromNode = toNode

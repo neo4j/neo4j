@@ -32,11 +32,20 @@ object RelatedTo {
 
 object VarLengthRelatedTo {
   def apply(pathName: String, start: String, end: String, minHops: Option[Int], maxHops: Option[Int], relType: String, direction: Direction, optional: Boolean = false) =
-    new VarLengthRelatedTo(pathName, start, end, minHops, maxHops, Some(relType), direction, optional)
+    new VarLengthRelatedTo(pathName, start, end, minHops, maxHops, Some(relType), direction, None, optional)
 }
 
 case class RelatedTo(left: String, right: String, relName: String, relType: Option[String], direction: Direction, optional:Boolean) extends Pattern
 
-case class VarLengthRelatedTo(pathName: String, start: String, end: String, minHops: Option[Int], maxHops: Option[Int], relType: Option[String], direction: Direction, optional: Boolean) extends Pattern
+case class VarLengthRelatedTo(
+                               pathName: String,
+                               start: String,
+                               end: String,
+                               minHops: Option[Int],
+                               maxHops: Option[Int],
+                               relType: Option[String],
+                               direction: Direction,
+                               relIterator: Option[String],
+                               optional: Boolean) extends Pattern
 
 case class ShortestPath(pipeName: String, startName: String, endName: String, relType:Option[String], dir:Direction, maxDepth:Option[Int], optional: Boolean) extends Pattern
