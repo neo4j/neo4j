@@ -40,11 +40,11 @@ class PeopleSimilarityFavoritesTest extends DocumentingTestBase {
     testQuery(
       title = "Find people based on similar favorites",
       text = """To find out the possible new friends based on them liking similar things as the asking person:""",
-      queryText = """START me=node:node_auto_index(name = "Joe")
-                  MATCH me-[:favorite]->stuff<-[:favorite]-person, me-[r?:friend]-person
-                  WHERE r IS NULL
-                  RETURN person.name, count(stuff)
-                  ORDER BY count(stuff) DESC""",
+      queryText = "START me=node:node_auto_index(name = \"Joe\") " +
+      		"MATCH me-[:favorite]->stuff<-[:favorite]-person, me-[r?:friend]-person " +
+      		"WHERE r IS NULL " +
+      		"RETURN person.name, count(stuff) " +
+      		"ORDER BY count(stuff) DESC",
       returns = "The list of possible friends ranked by them liking similar stuff that are not yet friends.",
       (p) => assertEquals(List(Map("person.name" -> "Derrick", "count(stuff)" -> 2),
           Map("person.name" -> "Jill", "count(stuff)" -> 1)), p.toList))
