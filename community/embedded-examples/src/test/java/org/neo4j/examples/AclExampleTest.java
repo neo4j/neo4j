@@ -141,9 +141,12 @@ public class AclExampleTest extends AbstractJavaDocTestbase
      * * Any user having a role that has been granted +canRead+ access to one of the parent folders of a File has read access.
      * 
      * In order to find users that can read any part of the parent folder hierarchy above the files,
-     * Cypher provides optional relationships that make certain subgraphs of the matching pattern optional.
+     * Cypher provides optional variable length path.
      * 
      * @@query3
+     * 
+     * This will return the +file+, and the directory where the user has the +canRead+ permission along
+     * with the +user+ and their +role+.
      * 
      * @@result3
      * 
@@ -185,7 +188,7 @@ public class AclExampleTest extends AbstractJavaDocTestbase
         
         //Files
         //TODO: can we do open ended?
-        String query = "start root=node:node_auto_index(name = 'FileRoot') match (root)-[:contains*0..]->()-[:leaf]->(file) return file";
+        String query = "start root=node:node_auto_index(name = 'FileRoot') match root-[:contains*0..]->(parentDir)-[:leaf]->file return file";
         gen.get().addSnippet( "query1", createCypherSnippet( query ) );
         String result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("File1") );
@@ -193,7 +196,7 @@ public class AclExampleTest extends AbstractJavaDocTestbase
                 .addSnippet( "result1", createQueryResultSnippet( result ) );
         
         //Ownership
-        query = "start root=node:node_auto_index(name = 'FileRoot') match (root)-[:contains*0..]->()-[:leaf]->(file)<-[:owns]-(user) return file, user";
+        query = "start root=node:node_auto_index(name = 'FileRoot') match root-[:contains*0..]->()-[:leaf]->file<-[:owns]-user return file, user";
         gen.get().addSnippet( "query2", createCypherSnippet( query ) );
         result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("File1") );
@@ -208,9 +211,8 @@ public class AclExampleTest extends AbstractJavaDocTestbase
         //ACL
         query = "START file=node:node_auto_index('name:File*') " +
         		"MATCH " +
-        		"file<-[:leaf]-dir, " +
-        		"dir<-[:contains*0..]-parent<-[?:canRead]-role-[:member]->readUser " +
-        		"RETURN file, dir, role, readUser";
+        		"file<-[:leaf]-()<-[:contains*0..]-dir<-[:canRead]-role-[:member]->readUser " +
+        		"RETURN file.name, dir.name, role.name, readUser.name";
         gen.get().addSnippet( "query3", createCypherSnippet( query ) );
         result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("File1") );
