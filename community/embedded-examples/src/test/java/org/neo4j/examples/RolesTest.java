@@ -134,10 +134,12 @@ public class RolesTest extends AbstractJavaDocTestbase
      * 
      * @@o-get-members
      * 
-     * In Cypher, this requires to match users at two points due to the start- and end point of the
-     * variable length path being potentially matched on:
+     * In Cypher, this looks like:
      * 
      * @@query-get-members
+     * 
+     * and results in the following output, listing even duplicate pathes to users,
+     * see e.g. user +Engin+.
      * 
      * @@o-query-get-members
      * 
@@ -238,9 +240,8 @@ public class RolesTest extends AbstractJavaDocTestbase
         // END SNIPPET: get-members
         gen.get().addSnippet( "o-get-members", createOutputSnippet( traverserToString( traverser ) ) );
         query = "start refNode=node("+ referenceNode.getId() +") " +
-        		"match refNode<-[:ROOT]->topGroup<-[:PART_OF*]-subGroup, " +
-                "topGroup<-[:MEMBER_OF]-topGroupUser, " +
-        		"subGroup<-[:MEMBER_OF]-subGroupUser return topGroup, topGroupUser, subGroup, subGroupUser";
+        		"match p=refNode<-[:ROOT]->parent<-[:PART_OF*0..]-group, group<-[:MEMBER_OF]-user return group.name, user.name, LENGTH(p) " +
+        		"order by LENGTH(p)";
         gen.get().addSnippet( "query-get-members", createCypherSnippet( query ) );
         result = engine.execute( parser.parse( query ) ).toString();
         assertTrue( result.contains("Engin") );
