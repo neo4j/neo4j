@@ -185,6 +185,12 @@ public class LruCache<K,E> implements Cache<K,E>
             }
             else if ( newMaxSize == 0 )
             {
+				java.util.Iterator<Map.Entry<K,E>> itr = cache.entrySet().iterator();
+                while ( itr.hasNext())
+                {
+                    E element = itr.next().getValue();
+                    elementCleaned( element );
+                }
                 cache.clear();
             }
             else
