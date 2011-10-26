@@ -111,6 +111,16 @@ tag=exampleWithParametersForQuery
 classifier=test-sources
 ----
 
+[snippet,java]
+----
+component=neo4j-cypher
+source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
+tag=exampleWithParameterForSkipLimit
+classifier=test-sources
+----
+
+
+
 [[cypher-identifiers]]
 == Identifiers ==
 

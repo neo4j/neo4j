@@ -24,8 +24,8 @@ class QueryBuilder(startItems: Seq[StartItem]) {
   var where: Option[Clause] = None
   var aggregation: Option[Aggregation] = None
   var orderBy: Option[Sort] = None
-  var skip: Option[Int] = None
-  var limit: Option[Int] = None
+  var skip: Option[Value] = None
+  var limit: Option[Value] = None
   var namedPaths: Option[NamedPaths] = None
 
   def matches(patterns: Pattern*): QueryBuilder = store(() => matching = Some(Match(patterns: _*)))
@@ -36,11 +36,15 @@ class QueryBuilder(startItems: Seq[StartItem]) {
 
   def orderBy(sortItems: SortItem*): QueryBuilder = store(() => orderBy = Some(Sort(sortItems: _*)))
 
-  def skip(skipTo: Int): QueryBuilder = store(() => skip = Some(skipTo))
+  def skip(skipTo: Int): QueryBuilder = store(() => skip = Some(Literal(skipTo)))
 
-  def limit(limitTo: Int): QueryBuilder = store(() => limit = Some(limitTo))
+  def skip(skipTo: String): QueryBuilder = store(() => skip = Some(ParameterValue(skipTo)))
 
-  def namedPaths(paths: NamedPath*): QueryBuilder = store(() => namedPaths = Some(NamedPaths(paths:_*)))
+  def limit(limitTo: Int): QueryBuilder = store(() => limit = Some(Literal(limitTo)))
+
+  def limit(limitTo: String): QueryBuilder = store(() => limit = Some(ParameterValue(limitTo)))
+
+  def namedPaths(paths: NamedPath*): QueryBuilder = store(() => namedPaths = Some(NamedPaths(paths: _*)))
 
   def slice: Option[Slice] = (skip, limit) match {
     case (None, None) => None

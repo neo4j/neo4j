@@ -800,6 +800,34 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ValueReturnItem(EntityValue("pA"))))
   }
 
+  @Test def testParamForSkip() {
+    testQuery(
+      """start pA = node(0) return pA skip {skipper}""",
+      Query.
+        start(NodeById("pA", 0)).
+        skip("skipper")
+        returns(ValueReturnItem(EntityValue("pA"))))
+  }
+
+  @Test def testParamForLimit() {
+    testQuery(
+      """start pA = node(0) return pA limit {stop}""",
+      Query.
+        start(NodeById("pA", 0)).
+        limit("stop")
+        returns(ValueReturnItem(EntityValue("pA"))))
+  }
+
+  @Test def testParamForLimitAndSkip() {
+    testQuery(
+      """start pA = node(0) return pA skip {skipper} limit {stop}""",
+      Query.
+        start(NodeById("pA", 0)).
+        skip("skipper")
+        limit("stop")
+        returns(ValueReturnItem(EntityValue("pA"))))
+  }
+
   @Test def testShortestPath() {
     testQuery(
       """start a=node(0), b=node(1) match p = shortestPath( a-->b ) return p""",

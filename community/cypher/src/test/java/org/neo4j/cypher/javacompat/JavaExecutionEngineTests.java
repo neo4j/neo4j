@@ -185,4 +185,19 @@ public class JavaExecutionEngineTests
         Iterator<Object> n_column = result.columnAs( "n.name" );
         assertEquals("Andreas", n_column.next());
     }
+
+    @Test
+    public void exampleWithParameterForSkipAndLimit() throws Exception
+    {
+     // START SNIPPET: exampleWithParameterForSkipLimit
+        Map<String, Object> params = new HashMap<String, Object>();
+        params.put("s", 1);
+        params.put("l", 1);
+        ExecutionResult result = engine.execute("start n=node(0,1,2) return n.name skip {s} limit {l}", params);
+     // END SNIPPET: exampleWithParameterForSkipLimit
+
+        assertThat( result.columns(), hasItem( "n.name" ) );
+        Iterator<Object> n_column = result.columnAs( "n.name" );
+        assertEquals("Andreas", n_column.next());
+    }
 }

@@ -26,9 +26,7 @@ import org.neo4j.cypher.SyntaxException
 
 trait Values extends JavaTokenParsers with Tokens {
 
-  def entityValue: Parser[EntityValue] = identity ^^ {
-    case x => EntityValue(x)
-  }
+  def entityValue: Parser[EntityValue] = identity ^^ ( x => EntityValue(x) )
 
   def value: Parser[Value] = (boolean | function | nullableProperty | property | stringValue | decimal | parameter)
 

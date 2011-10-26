@@ -495,6 +495,20 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     assertEquals(nodes.drop(2).toList, result.columnAs[Node]("start").toList)
   }
 
+  @Test def shouldStartTheResultFromSecondRowByParam() {
+    val nodes = createNodes("A", "B", "C", "D", "E")
+
+    val query = Query.
+      start(NodeById("start", nodeIds: _*)).
+      orderBy(SortItem(ValueReturnItem(PropertyValue("start", "name")), true)).
+      skip("skippa").
+      returns(ValueReturnItem(EntityValue("start")))
+
+    val result = execute(query, "skippa" -> 2)
+
+    assertEquals(nodes.drop(2).toList, result.columnAs[Node]("start").toList)
+  }
+
   @Test def shouldGetStuffInTheMiddle() {
     val nodes = createNodes("A", "B", "C", "D", "E")
 
@@ -506,6 +520,21 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
       returns(ValueReturnItem(EntityValue("start")))
 
     val result = execute(query)
+
+    assertEquals(nodes.slice(2, 4).toList, result.columnAs[Node]("start").toList)
+  }
+
+  @Test def shouldGetStuffInTheMiddleByParam() {
+    val nodes = createNodes("A", "B", "C", "D", "E")
+
+    val query = Query.
+      start(NodeById("start", nodeIds: _*)).
+      orderBy(SortItem(ValueReturnItem(PropertyValue("start", "name")), true)).
+      limit("l").
+      skip("s").
+      returns(ValueReturnItem(EntityValue("start")))
+
+    val result = execute(query, "l" -> 2, "s" -> 2)
 
     assertEquals(nodes.slice(2, 4).toList, result.columnAs[Node]("start").toList)
   }
