@@ -375,4 +375,18 @@ div.informalfigure a img, div.figure a img
   border: none;
 }
 
+/* additional styles for slides */
+
+div.slide h1
+{
+  margin-top: 40px;
+  margin-bottom: 1em;
+  color: white;
+  border-bottom: none;
+}
+
+div.slide p, div.slide li
+{
+  font-size: 1.25em;
+}
 
