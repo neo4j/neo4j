@@ -29,13 +29,15 @@ class SlicePipe(source:Pipe, skip:Option[Value], limit:Option[Value]) extends Pi
   def foreach[U](f: (Map[String, Any]) => U) {
     val first: Map[String, Any] = source.head
 
+    def asInt(v:Value)=v(first).asInstanceOf[Int]
+
     val slicedResult = (skip, limit) match {
       case (None, None) => source
-      case (Some(x), None) => source.drop(x(first).asInstanceOf[Int])
-      case (None, Some(x)) => source.take(x(first).asInstanceOf[Int])
+      case (Some(x), None) => source.drop(asInt(x))
+      case (None, Some(x)) => source.take(asInt(x))
       case (Some(startAt), Some(count)) => {
-        val start = startAt(first).asInstanceOf[Int]
-        source.slice(start, start + count(first).asInstanceOf[Int])
+        val start = asInt(startAt)
+        source.slice(start, start + asInt(count))
       }
     }
 
