@@ -1,0 +1,40 @@
+Music Filter Test
+=================
+
+Details of the filter can be found in `./doc/music-filter.txt`.
+
+
+A tune generated from ABC notation
+----------------------------------
+
+[music,music1.png]
+---------------------------------------------------------------------
+T:The Butterfly
+R:slip jig
+C:Tommy Potts
+H:Fiddle player Tommy Potts made this tune from two older slip jigs,
+H:one of which is called "Skin the Peelers" in Roche's collection.
+D:Bothy Band: 1975.
+M:9/8
+K:Em
+vB2(E G2)(E F3)|B2(E G2)(E F)ED|vB2(E G2)(E F3)|(B2d) d2(uB A)FD:|
+|:(vB2c) (e2f) g3|(uB2d) (g2e) (dBA)|(B2c) (e2f) g2(ua|b2a) (g2e) (dBA):|
+|:~B3 (B2A) G2A|~B3 BA(uB d)BA|~B3 (B2A) G2(A|B2d) (g2e) (dBA):|
+---------------------------------------------------------------------
+
+
+A fragment generated from LilyPond source
+------------------------------------------
+
+["music", "music2.png", "ly", link="music2.ly"]
+---------------------------------------------------------------------
+\version "2.10.0"
+\paper {
+  ragged-right = ##t
+}
+{
+  \time 3/4
+  \clef bass
+  c2 e4 g2. f4 e d c2 r4
+}
+---------------------------------------------------------------------

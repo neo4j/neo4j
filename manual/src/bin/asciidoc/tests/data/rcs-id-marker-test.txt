@@ -1,0 +1,6 @@
+RCS $Id$ Marker Test
+====================
+$Id: mydoc.txt,v 1.5 2009/05/17 17:58:44 jbloggs Exp $
+
+
+Lorum ipsum...

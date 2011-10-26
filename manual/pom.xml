@@ -388,6 +388,7 @@
           <excludes>
             <exclude>src/main/resources/js/**</exclude>
             <exclude>src/main/resources/css/**</exclude>
+            <exclude>src/bin/asciidoc/**</exclude>
           </excludes>
         </configuration>
       </plugin>

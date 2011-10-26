@@ -1,0 +1,87 @@
+<!--
+  article-docinfo.xml
+  Example DocBook document information file for article.txt.
+-->
+
+<authorgroup>
+  <author>
+    <honorific>Dr</honorific>
+    <firstname>Lois</firstname>
+    <surname>Common-Demoninator</surname>
+    <affiliation>
+      <shortaffil>Director, M. Behn School of Coop. Eng.</shortaffil>
+      <jobtitle>Director of Cooperative Efforts</jobtitle>
+      <orgname>The Marguerite Behn International School of
+               Cooperative Engineering</orgname>
+    </affiliation>
+  </author>
+
+  <author>
+    <honorific>Mr</honorific>
+    <firstname>Steven</firstname>
+    <surname>Norman</surname>
+    <othername role='mi'>T</othername>
+    <affiliation>
+      <shortaffil>ATI</shortaffil>
+      <jobtitle>Senior Application Analyst</jobtitle>
+      <orgname>Foobar, Inc.</orgname>
+      <orgdiv>Application Development</orgdiv>
+    </affiliation>
+  </author>
+
+  <editor>
+    <firstname>Peter</firstname>
+    <surname>Pan</surname>
+    <lineage>Sr.</lineage>
+    <othername>Spiderman</othername>
+    <authorblurb>
+      <para>
+      Peter's a super hero in his spare time.
+      </para>
+    </authorblurb>
+  </editor>
+</authorgroup>
+
+<copyright>
+  <year>2009</year>
+  <holder>Behn International</holder>
+</copyright>
+
+<legalnotice>
+  <simpara>
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+  </simpara>
+  <simpara>
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+  </simpara>
+  <simpara>
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+  </simpara>
+</legalnotice>
+
+<revhistory>
+  <revision>
+    <revnumber>1.1</revnumber>
+    <date>May 2009</date>
+    <authorinitials>PP</authorinitials>
+    <revremark>
+      Updates.
+    </revremark>
+  </revision>
+  <revision>
+    <revnumber>1.0</revnumber>
+    <date>October 2003</date>
+    <authorinitials>PP</authorinitials>
+    <revremark>
+      First release.
+    </revremark>
+  </revision>
+</revhistory>

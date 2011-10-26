@@ -1,0 +1,12 @@
+// Deprecated quote attributes.
+[role="foo"]##fun with text##.
+["green","yellow",2,role="foo"]##fun with text##.
+[green,yellow,2]##fun with text##.
+More [red,black,4]*fun with text*.
+Yet more [red,,1.5]**fun with text**.
+Yet more [red,,1.5]+fun with text+.
+Yet more [red,,1.5]'fun with text'.
+
+Yet more [red,,1.5]_fun with text_.
+
+Yet more [orange]'fun with text'.

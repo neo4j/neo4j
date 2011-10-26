@@ -1,0 +1,121 @@
+Embedding LaTeX Math in AsciiDoc dblatex documents
+==================================================
+
+You can include LaTeX math equations in AsciiDoc documents that are
+processed by http://dblatex.sourceforge.net/[dblatex]. The AsciiDoc
+'latexmath' macros and passthrough blocks generate DocBook
+'inlineequation', 'informalequation' and 'equation' elements
+containing the LaTeX markup which is processed by 'dblatex'.
+
+
+Inline equations
+----------------
+This markup:
+
+---------------------------------------------------------------------
+An inline equation latexmath:[$C = \alpha + \beta Y^{\gamma} + \epsilon$]
+using the 'latexmath' inline macro.
+---------------------------------------------------------------------
+
+Renders:
+
+An inline equation latexmath:[$C = \alpha + \beta Y^{\gamma} + \epsilon$]
+using the 'latexmath' inline macro.
+
+
+Informal equations
+------------------
+Informal (untitled) equations are generated with a 'latexmath' style
+passthrough delimited block. This markup:
+
+---------------------------------------------------------------------
+[latexmath]
+++++++++++++++++++++++++++++++++++++++++++++
+\[C = \alpha + \beta Y^{\gamma} + \epsilon\]
+++++++++++++++++++++++++++++++++++++++++++++
+---------------------------------------------------------------------
+
+Renders:
+
+[latexmath]
+++++++++++++++++++++++++++++++++++++++++++++
+\[C = \alpha + \beta Y^{\gamma} + \epsilon\]
+++++++++++++++++++++++++++++++++++++++++++++
+
+Functionally identical block macro syntax:
+
+---------------------------------------------------------------------
+latexmath::[\[C = \alpha + \beta Y^{\gamma} + \epsilon\]]
+---------------------------------------------------------------------
+
+Renders:
+
+latexmath::[\[C = \alpha + \beta Y^{\gamma} + \epsilon\]]
+
+
+Formal equations
+----------------
+Formal equations are titled and are generated with a 'latexmath' style
+passthrough delimited block.
+
+This markup:
+
+---------------------------------------------------------------------
+.First equation
+[latexmath]
+++++++++++++++++++++++++++++++++++++++++++++
+\[C = \alpha + \beta Y^{\gamma} + \epsilon\]
+++++++++++++++++++++++++++++++++++++++++++++
+---------------------------------------------------------------------
+
+Renders:
+
+.First equation
+[latexmath]
+++++++++++++++++++++++++++++++++++++++++++++
+\[C = \alpha + \beta Y^{\gamma} + \epsilon\]
+++++++++++++++++++++++++++++++++++++++++++++
+
+This markup:
+
+---------------------------------------------------------------------
+.Matrix
+[latexmath]
+++++++++++++++++++++++++++++++++++++++++++++
+\[ P^{e \rightarrow c}= \left[
+  \begin{array}{*{3}{r@{}l}}
+  & \cos \theta & & \sin \theta \sin \varphi & & \sin \theta \cos \varphi\\
+
+  & \sin \theta \sin \psi
+  & & \cos \varphi \cos \psi - \cos \theta \sin \varphi \sin \psi
+  & - & \sin \varphi \cos \psi - \cos \theta \cos \varphi \sin \psi\\
+
+  - & \sin \theta \cos \psi
+  & & \cos \varphi \sin \psi + \cos \theta \sin \varphi \cos \psi
+  & - & \sin \varphi \sin \psi + \cos \theta \cos \varphi \cos \psi\\
+  \end{array}
+\right] \]
+++++++++++++++++++++++++++++++++++++++++++++
+---------------------------------------------------------------------
+
+Renders:
+
+.Matrix
+[latexmath]
+++++++++++++++++++++++++++++++++++++++++++++
+\[ P^{e \rightarrow c}= \left[
+  \begin{array}{*{3}{r@{}l}}
+  & \cos \theta & & \sin \theta \sin \varphi & & \sin \theta \cos \varphi\\
+
+  & \sin \theta \sin \psi
+  & & \cos \varphi \cos \psi - \cos \theta \sin \varphi \sin \psi
+  & - & \sin \varphi \cos \psi - \cos \theta \cos \varphi \sin \psi\\
+
+  - & \sin \theta \cos \psi
+  & & \cos \varphi \sin \psi + \cos \theta \sin \varphi \cos \psi
+  & - & \sin \varphi \sin \psi + \cos \theta \cos \varphi \cos \psi\\
+  \end{array}
+\right] \]
+++++++++++++++++++++++++++++++++++++++++++++
+
+

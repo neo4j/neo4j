@@ -1,0 +1,167 @@
+Slidy Example Slideshow
+=======================
+:author:    Joe Bloggs
+:copyright: Foobar Inc.
+:backend:   slidy
+:max-width: 45em
+:data-uri:
+:icons:
+
+
+This preamble will appear on a separate slide.
+
+
+AsciiDoc Elements
+-----------------
+Sagittis in vestibulum. Habitasse ante nulla enim bibendum nulla. Odio
+sed pede litora.
+
+[float]
+=== Titles inside delimited blocks must be floated
+Porta nisl metus. Justo porttitor vel. Cras consequat tincidunt id sed
+conubia. Feugiat felis justo. Nunc amet nulla. Eu ac orci mollis.
+
+.Tiger
+image::images/tiger.png[]
+
+
+Incremental Elements
+--------------------
+The remaining elements on this page are incremental, press the space
+bar to reveal them.
+
+[role="incremental"]
+- Rhoncus pede justo.
+- Velit pede dolor.
+- Iaculis commodo et.
+- Volutpat tristique nec.
+
+[role="incremental"]
+--
+Sagittis in vestibulum. Habitasse ante nulla enim bibendum nulla. Odio
+sed pede litora.
+--
+
+[role="incremental"]
+. Rhoncus pede justo.
+. Velit pede dolor.
+. Iaculis commodo et.
+. Volutpat tristique nec.
+
+
+Outline Elements
+----------------
+The following list is a Slidy 'outline' list -- nested bulleted or
+numbered lists are expanded when the enclosing list item (the ones
+with blue bullet points or numbers) are clicked.
+
+[role="outline"]
+- Rhoncus pede justo.
+  * Rhoncus pede justo.
+  * Velit pede dolor.
+
+- Velit pede dolor.
+  * Iaculis commodo et.
++
+NOTE: 'Note' admonition paragraph.
+
+  * Volutpat tristique nec.
++
+image::images/tiger.png[]
+  * Iaculis commodo et.
+  * Volutpat tristique nec.
+
+- Iaculis commodo et.
+[role="outline"]
+  . Rhoncus pede justo.
+  ** Velit pede dolor.
+  ** Iaculis commodo et.
+  . Volutpat tristique nec.
+
+- Volutpat tristique nec.
+
+
+AsciiDoc Elements
+-----------------
+NOTE: 'Note' admonition paragraph.
+
+IMPORTANT: 'Important' admonition paragraph.
+
+.Sidebar
+*********************************************************************
+Faucibus sagittis commodo sed et eu. Quam nullam ornare. Sed vel est.
+Mauris urna lobortis interdum placerat per id magnis enim.
+*********************************************************************
+
+
+AsciiDoc Elements
+-----------------
+A quote block:
+
+[quote, Bertrand Russell, The World of Mathematics (1956)]
+____________________________________________________________________
+A good notation has subtlety and suggestiveness which at times makes
+it almost seem like a live teacher.
+____________________________________________________________________
+
+A verse block:
+
+[verse, William Blake, from Auguries of Innocence]
+__________________________________________________
+To see a world in a grain of sand,
+And a heaven in a wild flower,
+Hold infinity in the palm of your hand,
+And eternity in an hour.
+__________________________________________________
+
+
+AsciiDoc Elements
+-----------------
+.Horizontal and vertical source data
+[width="80%",cols="3,^2,^2,10",options="header"]
+|=========================================================
+|Date |Duration |Avg HR |Notes
+
+|22-Aug-08 |10:24 | 157 |
+Worked out MSHR (max sustainable heart rate) by going hard
+for this interval.
+
+|22-Aug-08 |23:03 | 152 |
+Back-to-back with previous interval.
+
+|24-Aug-08 |40:00 | 145 |
+Moderately hard interspersed with 3x 3min intervals (2min
+hard + 1min really hard taking the HR up to 160).
+
+|=========================================================
+
+
+Filters
+-------
+[source,python]
+.Python source
+---------------------------------------------------------------------
+''' A multi-line
+    comment.'''
+def sub_word(mo):
+    ''' Single line comment.'''
+    word = mo.group('word')     # Inline comment
+    if word in keywords[language]:
+        return quote + word + quote
+    else:
+        return word
+---------------------------------------------------------------------
+
+[music]
+.Music
+---------------------------------------------------------------------
+\version "2.10.0"
+\paper {
+  ragged-right = ##t
+}
+{
+  \time 3/4
+  \clef bass
+  c2 e4 g2. f4 e d c2 r4
+}
+---------------------------------------------------------------------

@@ -38,6 +38,8 @@ UPGRADE          = $(BUILDDIR)/upgrade
 FILTERSRC        = $(CURDIR)/src/bin/resources
 FILTERDEST       = ~/.asciidoc/filters
 SCRIPTDIR        = $(CURDIR)/src/build
+ASCIIDOC         = $(CURDIR)/src/bin/asciidoc/asciidoc.py
+A2X              = $(CURDIR)/src/bin/asciidoc/a2x.py
 
 ifdef VERBOSE
 	V = -v
@@ -160,7 +162,7 @@ docbook:  manpages copyimages
 	#
 	#
 	mkdir -p $(BUILDDIR)
-	asciidoc $(ASCIIDOC_FLAGS) --backend docbook --attribute docinfo --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --out-file $(DOCBOOKFILE) $(SRCFILE)
+	$(ASCIIDOC) $(ASCIIDOC_FLAGS) --backend docbook --attribute docinfo --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --out-file $(DOCBOOKFILE) $(SRCFILE)
 	xmllint --nonet --noout --xinclude --postvalid $(DOCBOOKFILE)
 
 docbook-shortinfo:  manpages copyimages
@@ -172,7 +174,7 @@ docbook-shortinfo:  manpages copyimages
 	#
 	#
 	mkdir -p $(BUILDDIR)
-	asciidoc $(ASCIIDOC_FLAGS) --backend docbook --attribute docinfo1 --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --out-file $(DOCBOOKSHORTINFOFILE) $(SRCFILE) 2>&1 | $(SCRIPTDIR)/outputcheck-includefiles.sh
+	$(ASCIIDOC) $(ASCIIDOC_FLAGS) --backend docbook --attribute docinfo1 --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --out-file $(DOCBOOKSHORTINFOFILE) $(SRCFILE) 2>&1 | $(SCRIPTDIR)/outputcheck-includefiles.sh
 	xmllint --nonet --noout --xinclude --postvalid $(DOCBOOKSHORTINFOFILE)
 
 docbook-html:  manpages copyimages
@@ -183,7 +185,7 @@ docbook-html:  manpages copyimages
 	#
 	#
 	mkdir -p $(BUILDDIR)
-	asciidoc $(ASCIIDOC_FLAGS) --backend docbook --attribute docinfo1 --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --conf-file=$(CONFDIR)/linkedimages.conf --out-file $(DOCBOOKFILEHTML) $(SRCFILE)
+	$(ASCIIDOC) $(ASCIIDOC_FLAGS) --backend docbook --attribute docinfo1 --doctype book --conf-file=$(CONFDIR)/asciidoc.conf --conf-file=$(CONFDIR)/docbook45.conf --conf-file=$(CONFDIR)/linkedimages.conf --out-file $(DOCBOOKFILEHTML) $(SRCFILE)
 	# replacing svg files with png files by ugly hack
 	sed -e 's/.svg"/.svg.png"/g' <$(DOCBOOKFILEHTML) >$(DOCBOOKFILEHTML).tmp
 	rm $(DOCBOOKFILEHTML)
@@ -212,7 +214,7 @@ html: manpages copyimages docbook-html
 	# Checking for missing images/resources.
 	#
 	#
-	a2x $(V) -L -f chunked -D $(BUILDDIR) --xsl-file=$(CONFDIR)/chunked.xsl -r $(IMGDIR) -r $(CSSDIR) --xsltproc-opts "--stringparam admon.graphics 1" --xsltproc-opts "--xinclude" --xsltproc-opts "--stringparam chunk.section.depth 1" --xsltproc-opts "--stringparam toc.section.depth 1" $(DOCBOOKFILEHTML) 2>&1 | $(SCRIPTDIR)/outputcheck-images.sh
+	$(A2X) $(V) -L -f chunked -D $(BUILDDIR) --xsl-file=$(CONFDIR)/chunked.xsl -r $(IMGDIR) -r $(CSSDIR) --xsltproc-opts "--stringparam admon.graphics 1" --xsltproc-opts "--xinclude" --xsltproc-opts "--stringparam chunk.section.depth 1" --xsltproc-opts "--stringparam toc.section.depth 1" $(DOCBOOKFILEHTML) 2>&1 | $(SCRIPTDIR)/outputcheck-images.sh
 	rm -rf $(CHUNKEDHTMLDIR)
 	mv $(CHUNKEDSHORTINFOTARGET) $(CHUNKEDHTMLDIR)
 	cp -fr $(JSDIR) $(CHUNKEDHTMLDIR)/js
@@ -225,7 +227,7 @@ offline-html:  manpages copyimages docbook-html
 	# Building html output for offline use.
 	#
 	#
-	a2x $(V) -L -f chunked -D $(BUILDDIR) --xsl-file=$(CONFDIR)/chunked-offline.xsl -r $(IMGDIR) -r $(CSSDIR) --xsltproc-opts "--stringparam admon.graphics 1" --xsltproc-opts "--xinclude" --xsltproc-opts "--stringparam chunk.section.depth 1" --xsltproc-opts "--stringparam toc.section.depth 1" $(DOCBOOKFILEHTML)
+	$(A2X) $(V) -L -f chunked -D $(BUILDDIR) --xsl-file=$(CONFDIR)/chunked-offline.xsl -r $(IMGDIR) -r $(CSSDIR) --xsltproc-opts "--stringparam admon.graphics 1" --xsltproc-opts "--xinclude" --xsltproc-opts "--stringparam chunk.section.depth 1" --xsltproc-opts "--stringparam toc.section.depth 1" $(DOCBOOKFILEHTML)
 	rm -rf $(CHUNKEDOFFLINEHTMLDIR)
 	mv $(CHUNKEDSHORTINFOTARGET) $(CHUNKEDOFFLINEHTMLDIR)
 	cp -fr $(JSDIR) $(CHUNKEDOFFLINEHTMLDIR)/js
@@ -240,7 +242,7 @@ singlehtml:  manpages copyimages
 	#
 	#
 	mkdir -p $(SINGLEHTMLDIR)
-	a2x $(A2X_FLAGS) -L -f xhtml -D $(SINGLEHTMLDIR) --conf-file=$(CONFDIR)/xhtml.conf --asciidoc-opts "--conf-file=$(CONFDIR)/asciidoc.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/docbook45.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/linkedimages.conf" --xsl-file=$(CONFDIR)/xhtml.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
+	$(A2X) $(A2X_FLAGS) -L -f xhtml -D $(SINGLEHTMLDIR) --conf-file=$(CONFDIR)/xhtml.conf --asciidoc-opts "--conf-file=$(CONFDIR)/asciidoc.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/docbook45.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/linkedimages.conf" --xsl-file=$(CONFDIR)/xhtml.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
 	cp -fr $(JSDIR) $(SINGLEHTMLDIR)/js
 
 # builds docbook format first
@@ -251,7 +253,7 @@ annotated:  manpages copyimages
 	#
 	#
 	mkdir -p $(ANNOTATEDDIR)
-	a2x $(A2X_FLAGS) -L -a showcomments -f xhtml -D $(ANNOTATEDDIR) --conf-file=$(CONFDIR)/xhtml.conf --asciidoc-opts "--conf-file=$(CONFDIR)/asciidoc.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/docbook45.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/linkedimages.conf" --xsl-file=$(CONFDIR)/xhtml.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
+	$(A2X) $(A2X_FLAGS) -L -a showcomments -f xhtml -D $(ANNOTATEDDIR) --conf-file=$(CONFDIR)/xhtml.conf --asciidoc-opts "--conf-file=$(CONFDIR)/asciidoc.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/docbook45.conf" --asciidoc-opts "--conf-file=$(CONFDIR)/linkedimages.conf" --xsl-file=$(CONFDIR)/xhtml.xsl --xsltproc-opts "--stringparam admon.graphics 1" $(SRCFILE)
 	cp -fr $(SRCDIR)/js $(ANNOTATEDDIR)/js
 	cp -fr $(SRCDIR)/css/* $(ANNOTATEDDIR)/css
 	cp -fr $(SRCDIR)/images/*.svg $(ANNOTATEDDIR)/images
@@ -281,20 +283,20 @@ manpages:
 	#
 	mkdir -p $(MANPAGES)
 	# shell
-	a2x -k $(V) -f manpage -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-shell-docs-jar/man/neo4j-shell.1.txt
-	a2x -k -f text -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-shell-docs-jar/man/neo4j-shell.1.txt
+	$(A2X) -k $(V) -f manpage -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-shell-docs-jar/man/neo4j-shell.1.txt
+	$(A2X) -k -f text -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-shell-docs-jar/man/neo4j-shell.1.txt
 	mv $(MANPAGES)/neo4j-shell.1.text $(MANPAGES)/neo4j-shell.txt
 	# neo4j
-	a2x -k $(V) -f manpage -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-server-docs-jar/man/neo4j.1.txt
-	a2x -k -f text -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-server-docs-jar/man/neo4j.1.txt
+	$(A2X) -k $(V) -f manpage -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-server-docs-jar/man/neo4j.1.txt
+	$(A2X) -k -f text -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-server-docs-jar/man/neo4j.1.txt
 	mv $(MANPAGES)/neo4j.1.text $(MANPAGES)/neo4j.txt
 	# neo4j-coordinator
-	a2x -k $(V) -f manpage -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-server-docs-jar/man/neo4j-coordinator.1.txt
-	a2x -k -f text -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-server-docs-jar/man/neo4j-coordinator.1.txt
+	$(A2X) -k $(V) -f manpage -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-server-docs-jar/man/neo4j-coordinator.1.txt
+	$(A2X) -k -f text -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-server-docs-jar/man/neo4j-coordinator.1.txt
 	mv $(MANPAGES)/neo4j-coordinator.1.text $(MANPAGES)/neo4j-coordinator.txt
 	# neo4j-coordinator-shell
-	a2x -k $(V) -f manpage -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-server-docs-jar/man/neo4j-coordinator-shell.1.txt
-	a2x -k -f text -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-server-docs-jar/man/neo4j-coordinator-shell.1.txt
+	$(A2X) -k $(V) -f manpage -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-server-docs-jar/man/neo4j-coordinator-shell.1.txt
+	$(A2X) -k -f text -d  manpage -D $(MANPAGES) $(IMPORTDIR)/neo4j-server-docs-jar/man/neo4j-coordinator-shell.1.txt
 	mv $(MANPAGES)/neo4j-coordinator-shell.1.text $(MANPAGES)/neo4j-coordinator-shell.txt
 	# clean up
 	mkdir -p $(ANNOTATEDDIR)
@@ -310,6 +312,6 @@ upgrade:
 	#
 	#
 	mkdir -p $(UPGRADE)
-	a2x -k -f text -D $(UPGRADE) $(IMPORTDIR)/neo4j-docs-jar/ops/upgrades.txt
+	$(A2X) -k -f text -D $(UPGRADE) $(IMPORTDIR)/neo4j-docs-jar/ops/upgrades.txt
 	mv $(UPGRADE)/upgrades.text $(UPGRADE)/UPGRADE.txt
 

@@ -1,0 +1,64 @@
+AsciiDoc Old Tables
+===================
+
+Examples of the AsciiDoc 'old tables' syntax. This syntax was used in
+AsciiDoc versions up to 8.2.7 and has since been deprecated in favor
+of the 'new tables' syntax.
+
+Simple table:
+
+`---`---
+1   2
+3   4
+5   6
+--------
+
+Table with title, header and footer:
+
+.An example table
+[grid="all"]
+`-----------.--------------
+Column 1     Column 2
+---------------------------
+1            Item 1
+2            Item 2
+3            Item 3
+---------------------------
+6            Three items
+---------------------------
+
+Four columns totaling 15% of the 'pagewidth', CSV data:
+
+[frame="all"]
+````~15
+1,2,3,4
+a,b,c,d
+A,B,C,D
+~~~~~~~~
+
+A table with a numeric ruler and externally sourced CSV data:
+
+[frame="all", grid="all"]
+`15`20`25`20`~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ID,Customer Name,Contact Name,Customer Address,Phone
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+"AROUT","Around the Horn","Thomas Hardy","120 Hanover Sq.
+London","(171) 555-7788"
+"BERGS","Berglunds snabbkop","Christina Berglund","Berguvsvagen  8
+Lulea","0921-12 34 65"
+"BLAUS","Blauer See Delikatessen","Hanna Moos","Forsterstr. 57
+Mannheim","0621-08460"
+"BLONP","Blondel pere et fils","Frederique Citeaux","24, place Kleber
+Strasbourg","88.60.15.31"
+"BOLID","Bolido Comidas preparadas","Martin Sommer","C/ Araquil, 67
+Madrid","(91) 555 22 82"
+"BONAP","Bon app'","Laurence Lebihan","12, rue des Bouchers
+Marseille","91.24.45.40"
+"BOTTM","Bottom-Dollar Markets","Elizabeth Lincoln","23 Tsawassen Blvd.
+Tsawassen","(604) 555-4729"
+"BSBEV","B's Beverages","Victoria Ashworth","Fauntleroy Circus
+London","(171) 555-1212"
+"CACTU","Cactus Comidas para llevar","Patricio Simpson","Cerrito 333
+Buenos Aires","(1) 135-5555"
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+

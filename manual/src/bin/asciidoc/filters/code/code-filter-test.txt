@@ -1,0 +1,15 @@
+Code Filter Test
+================
+
+[python]
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+''' A multi-line
+    comment.'''
+def sub_word(mo):
+        ''' Single line comment.'''
+        word = mo.group('word') # Inline comment
+        if word in keywords[language]:
+                return quote + word + quote
+        else:
+                return word
+code~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
