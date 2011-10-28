@@ -167,7 +167,7 @@
       <fileMode>0444</fileMode>
       <directoryMode>0777</directoryMode>
       <includes>
-        <include>org.neo4j:neo4j:*:javadoc</include>
+        <include>org.neo4j:neo4j-enterprise:*:javadoc</include>
       </includes>
     </dependencySet>
     <!-- der manual -->
