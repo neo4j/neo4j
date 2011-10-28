@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.batchinsert;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -41,6 +42,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -148,6 +150,58 @@ public class TestBatchInsert
         rel = db.getRelationshipById( relId );
         assertEquals( "three", rel.getProperty( "3" ) );
         db.shutdown();
+    }
+
+    @Test
+    public void testSetAndKeepNodeProperty()
+    {
+        BatchInserter inserter = newBatchInserter();
+
+        long tehNode = inserter.createNode( MapUtil.map( "foo", "bar" ) );
+        inserter.setNodeProperty( tehNode, "foo2", "bar2" );
+        Map<String, Object> props = inserter.getNodeProperties( tehNode );
+        assertEquals( 2, props.size() );
+        assertEquals( "bar", props.get( "foo" ) );
+        assertEquals( "bar2", props.get( "foo2" ) );
+
+        inserter.shutdown();
+
+        inserter = newBatchInserter( false /*delete old dir*/);
+
+        props = inserter.getNodeProperties( tehNode );
+        assertEquals( 2, props.size() );
+        assertEquals( "bar", props.get( "foo" ) );
+        assertEquals( "bar2", props.get( "foo2" ) );
+
+        inserter.setNodeProperty( tehNode, "foo", "bar3" );
+
+        props = inserter.getNodeProperties( tehNode );
+        assertEquals( "bar3", props.get( "foo" ) );
+        assertEquals( 2, props.size() );
+        assertEquals( "bar3", props.get( "foo" ) );
+        assertEquals( "bar2", props.get( "foo2" ) );
+
+        inserter.shutdown();
+        inserter = newBatchInserter( false /*delete old dir*/);
+
+        props = inserter.getNodeProperties( tehNode );
+        assertEquals( "bar3", props.get( "foo" ) );
+        assertEquals( 2, props.size() );
+        assertEquals( "bar3", props.get( "foo" ) );
+        assertEquals( "bar2", props.get( "foo2" ) );
+    }
+
+    @Test
+    public void testNodeHasProperty()
+    {
+        BatchInserter inserter = newBatchInserter();
+
+        long tehNode = inserter.createNode( properties );
+        for ( String key : properties.keySet() )
+        {
+            assertTrue( inserter.nodeHasProperty( tehNode, key ) );
+            assertFalse( inserter.nodeHasProperty( tehNode, key + "-" ) );
+        }
     }
 
     @Test
