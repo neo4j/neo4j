@@ -28,7 +28,7 @@ import collection.Traversable
 trait ExecutionResult extends Traversable[Map[String, Any]] with StringExtras {
   val symbols: SymbolTable
 
-  val columns: List[String] = symbols.identifiers.map(_.name).toList
+  val columns: List[String]
 
   def javaColumns: java.util.List[String] = columns.asJava
 

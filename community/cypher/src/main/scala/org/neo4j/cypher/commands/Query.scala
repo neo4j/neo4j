@@ -24,17 +24,18 @@ object Query {
   def start(startItems: StartItem*) = new QueryBuilder(startItems)
 }
 
-case class Query(returns: Return, start: Start, matching: Option[Match], where: Option[Clause], aggregation: Option[Aggregation],
-                 sort: Option[Sort], slice: Option[Slice], namedPaths: Option[NamedPaths])
+case class Query(returns: Return, start: Start, matching: Option[ Match ], where: Option[ Clause ],
+                 aggregation: Option[ Aggregation ],
+                 sort: Option[ Sort ], slice: Option[ Slice ], namedPaths: Option[ NamedPaths ])
 
-case class Return(returnItems: ReturnItem*)
+case class Return(columns: List[ String ], returnItems: ReturnItem*)
 
 case class Start(startItems: StartItem*)
 
 case class Match(patterns: Pattern*)
 
-case class NamedPaths(paths: NamedPath*) extends Traversable[Pattern] {
-  def foreach[U](f: (Pattern) => U) {
+case class NamedPaths(paths: NamedPath*) extends Traversable[ Pattern ] {
+  def foreach[ U ](f: ( Pattern ) => U) {
     paths.flatten.foreach(f)
   }
 }
@@ -43,4 +44,4 @@ case class Aggregation(aggregationItems: AggregationItem*)
 
 case class Sort(sortItems: SortItem*)
 
-case class Slice(from: Option[Value], limit: Option[Value])
+case class Slice(from: Option[ Value ], limit: Option[ Value ])

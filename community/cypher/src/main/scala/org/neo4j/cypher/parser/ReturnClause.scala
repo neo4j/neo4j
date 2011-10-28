@@ -34,7 +34,7 @@ trait ReturnClause extends JavaTokenParsers with Tokens with ReturnItems {
       }
 
       (
-        Return(items.filter(!_.isInstanceOf[AggregationItem]): _*),
+        Return(items.map(_.columnName).toList, items.filter(!_.isInstanceOf[AggregationItem]): _*),
         list match {
           case List() => none
           case _ => Some(Aggregation(list : _*))
