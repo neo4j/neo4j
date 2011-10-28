@@ -28,7 +28,7 @@ import org.junit.{Ignore, After, Before, Test}
 
 
 @Ignore
-class PerformanceText extends Assertions {
+class PerformanceTest extends Assertions {
   val movies: List[String] = getExistingMovies
   val r = new Random()
 

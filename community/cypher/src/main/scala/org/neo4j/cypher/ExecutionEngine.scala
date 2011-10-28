@@ -108,9 +108,9 @@ class ExecutionEngine(graph: GraphDatabaseService) {
         case Some(x) => context.pipe = new SlicePipe(context.pipe, x.from, x.limit)
       }
 
-      val columns = returns.returnItems ++ aggregation.getOrElse(new Aggregation()).aggregationItems
+      val returnItems = returns.returnItems ++ aggregation.getOrElse(new Aggregation()).aggregationItems
 
-      val result = new ColumnFilterPipe(context.pipe, columns) with ExecutionResult
+      val result = new ColumnFilterPipe(context.pipe, returnItems, returns.columns)
 
       result
     }

@@ -1121,10 +1121,5 @@ return foaf""")
       case x: SyntaxException => assertEquals("n.A_PROPERTY_THAT_IS_MISSING does not exist on Node[0]", x.getMessage)
     }
   }
-
-  private def parseAndExecute(q: String, params: (String, Any)*): ExecutionResult = {
-    val query = new CypherParser().parse(q)
-    execute(query, params: _*)
-  }
 }
 

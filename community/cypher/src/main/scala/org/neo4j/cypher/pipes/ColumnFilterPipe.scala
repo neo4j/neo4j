@@ -20,9 +20,10 @@
 package org.neo4j.cypher.pipes
 
 import org.neo4j.cypher.commands.ReturnItem
-import org.neo4j.cypher.{SyntaxException, SymbolTable}
+import org.neo4j.cypher.{ExecutionResult, SyntaxException, SymbolTable}
 
-class ColumnFilterPipe(source: Pipe, returnItems: Seq[ReturnItem]) extends Pipe {
+class ColumnFilterPipe(source: Pipe, returnItems: Seq[ReturnItem], val columns:List[String]) extends Pipe with ExecutionResult {
+
   val returnItemNames = returnItems.map( _.columnName )
 
   val symbols: SymbolTable = {
