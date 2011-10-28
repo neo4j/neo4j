@@ -19,14 +19,8 @@
  */
 package org.neo4j.server.plugin.cypher;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.io.UnsupportedEncodingException;
-
-import javax.ws.rs.core.Response.Status;
-
 import org.junit.Test;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -38,8 +32,14 @@ import org.neo4j.test.GraphDescription.REL;
 import org.neo4j.test.TestData.Title;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
-public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
-{
+import javax.ws.rs.core.Response.Status;
+import java.io.UnsupportedEncodingException;
+
+import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.*;
+import static org.junit.matchers.JUnitMatchers.containsString;
+
+public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase {
     private static final String ENDPOINT = "http://localhost:7474/db/data/ext/CypherPlugin/graphdb/execute_query";
 
     /**
@@ -52,25 +52,23 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
     @Graph( nodes = {
             @NODE( name = "I", setNameProperty = true ),
             @NODE( name = "you", setNameProperty = true ),
-            @NODE( name = "him", setNameProperty = true, properties = { 
-                    @PROP( key = "age", value = "25", type = GraphDescription.PropType.INTEGER ) } ) }, 
+            @NODE( name = "him", setNameProperty = true, properties = {
+                    @PROP( key = "age", value = "25", type = GraphDescription.PropType.INTEGER ) } ) },
             relationships = {
-            @REL( start = "I", end = "him", type = "know", properties = {} ),
-            @REL( start = "I", end = "you", type = "know", properties = {} ) } )
-    public void testPropertyColumn() throws UnsupportedEncodingException
-    {
-        String script = "start x  = node(" + data.get().get( "I" ).getId()
-                        + ") match (x) -[r]-> (n) return type(r), n.name?, n.age?";
-        gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
-                "{\"query\": \"" + script + "\"}" ).description(
-                        AsciidocHelper.createCypherSnippet(  script ) );
-        String response = gen.get().post( ENDPOINT ).entity();
-        assertTrue( response.contains( "you" ) );
-        assertTrue( response.contains( "him" ) );
-        assertTrue( response.contains( "25" ) );
-        assertTrue( !response.contains( "\"x\"" ) );
+                    @REL( start = "I", end = "him", type = "know", properties = { } ),
+                    @REL( start = "I", end = "you", type = "know", properties = { } ) } )
+    public void testPropertyColumn() throws UnsupportedEncodingException {
+        String script = createScript( "start x  = node(%I%) match (x) -[r]-> (n) return type(r), n.name?, n.age?" );
+
+        String response = doRestCall( script, Status.OK );
+
+        assertThat( response, containsString( "you" ) );
+        assertThat( response, containsString( "him" ) );
+        assertThat( response, containsString( "25" ) );
+        assertThat( response, not( containsString( "\"x\"" ) ) );
     }
-    
+
+
     /**
      * Errors on the server will be reported as a JSON-formatted stacktrace and
      * message.
@@ -79,20 +77,12 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
     @Documented
     @Title( "Server errors" )
     @Graph( "I know you" )
-    public void error_gets_returned_as_json() throws UnsupportedEncodingException, Exception
-    {
-        String script = "start x  = node(" + data.get().get( "I" ).getId()
-                        + ") return x.dummy";
-        gen.get().expectedStatus( Status.BAD_REQUEST.getStatusCode() ).payload(
-                "{\"query\": \"" + script + "\"}" ).description(
-                AsciidocHelper.createCypherSnippet(  script ) );
-        String response = gen.get().post( ENDPOINT ).entity();
+    public void error_gets_returned_as_json() throws Exception {
+        String response = doRestCall( "start x = node(%I%) return x.dummy", Status.BAD_REQUEST );
         assertEquals( 3, ( JsonHelper.jsonToMap( response ) ).size() );
     }
 
-    
 
-    
     /**
      * Paths can be returned
      * together with other return types by just
@@ -101,58 +91,87 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase
     @Test
     @Documented
     @Graph( "I know you" )
-    public void return_paths() throws UnsupportedEncodingException, Exception
-    {
-        String script = "start x  = node(" + data.get().get( "I" ).getId()
-                        + ") match path = (x--friend) return path, friend.name";
-        gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
-                "{\"query\": \"" + script + "\"}" ).description(
-                        AsciidocHelper.createCypherSnippet( script ));
-        String response = gen.get().post( ENDPOINT ).entity();
+    public void return_paths() throws Exception {
+        String script = "start x  = node(%I%) match path = (x--friend) return path, friend.name";
+        String response = doRestCall( script, Status.OK );
+
         assertEquals( 2, ( JsonHelper.jsonToMap( response ) ).size() );
-        assertTrue(response.contains( "data" ));
-        assertTrue(response.contains( "you" ));
+        assertThat( response, containsString( "data" ) );
+        assertThat( response, containsString( "you" ) );
     }
-    
+
     /**
      * The plugin can return a JSONTable representation
-     * of the results. For details, see 
+     * of the results. For details, see
      * http://code.google.com/apis/chart/interactive/docs/reference.html#dataparam[Google Data Table Format]
      */
     @Test
     @Documented
     @Graph( "I know you" )
-    public void return_JSON_table_format() throws UnsupportedEncodingException, Exception
-    {
+    public void return_JSON_table_format() throws Exception {
         data.get();
-        String script = "start x  = node(" + data.get().get( "I" ).getId()
-                        + ") match path = (x--friend) return path, friend.name";
-        gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
-                "{\"query\": \"" + script + "\",\"format\": \"json-data-table\"}" ).description(
-                        AsciidocHelper.createCypherSnippet( script ));
-        String response = gen.get().post( ENDPOINT ).entity();
+        String script = "start x  = node(%I%) match path = (x--friend) return path, friend.name";
+        String response = doRestCall( script, Status.OK );
+
         assertEquals( 2, ( JsonHelper.jsonToMap( response ) ).size() );
-        assertTrue(response.contains( "cols" ));
-        assertTrue(response.contains( "rows" ));
+        assertThat( response, containsString( "path" ) );
+        assertThat( response, containsString( "friend.name" ) );
     }
-    
+
     /**
      * Cypher supports queries with parameters
      * which are submitted as a JSON map.
-     */ 
+     */
     @Test
     @Documented
-    @Graph( value = {"I know you"}, autoIndexNodes= true )
-    public void send_queries_with_parameters() throws UnsupportedEncodingException, Exception
-    {
+    @Graph( value = { "I know you" }, autoIndexNodes = true )
+    public void send_queries_with_parameters() throws Exception {
         data.get();
-        String script = "start x  = node:node_auto_index(name={startName}) match path = (x-[r]-friend) where friend.name = {name} return TYPE(r)";
-        gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
-                "{\"query\": \"" + script + "\",\"params\": {\"startName\":\"I\",\"name\":\"you\"}}" ).description(
-                        AsciidocHelper.createCypherSnippet( script ));
-        String response = gen.get().post( ENDPOINT ).entity();
+        String script = "start x  = node:node_auto_index(name={startName}) match path = (x-[r]-friend) where friend" +
+                ".name = {name} return TYPE(r)";
+        String response = doRestCall( script, Status.OK, Pair.of( "startName", "I" ), Pair.of( "name", "you" ) );
+
+
         assertEquals( 2, ( JsonHelper.jsonToMap( response ) ).size() );
-        assertTrue(response.contains( "know" ));
-        assertTrue(response.contains( "data" ));
+        assertTrue( response.contains( "know" ) );
+        assertTrue( response.contains( "data" ) );
+    }
+
+
+
+    private String doRestCall( String script, Status status, Pair<String, String>... params ) {
+
+        String parameterString = createParameterString( params );
+
+
+        String queryString = "{\"query\": \"" + createScript( script ) + "\"," + parameterString+"},"  ;
+
+        gen.get().expectedStatus( status.getStatusCode() ).payload(
+                queryString ).description(
+                AsciidocHelper.createCypherSnippet( script ) );
+        return gen.get().post( ENDPOINT ).entity();
+    }
+
+    private String createParameterString( Pair<String, String>[] params ) {
+        String paramString = "\"params\": {";
+        for( Pair<String, String> param : params ) {
+            String delimiter = paramString.endsWith( "{" ) ? "" : ",";
+
+            paramString += delimiter + "\"" + param.first() + "\":\"" + param.other() + "\"";
+        }
+        paramString += "}";
+
+        return paramString;
+    }
+
+    private String createScript( String template ) {
+        for( String key : data.get().keySet() ) {
+            template = template.replace( "%" + key + "%", idFor( key ).toString() );
+        }
+        return template;
+    }
+
+    private Long idFor( String name ) {
+        return data.get().get( name ).getId();
     }
 }
