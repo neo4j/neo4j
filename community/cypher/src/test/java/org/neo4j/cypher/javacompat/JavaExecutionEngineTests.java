@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.util.*;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.*;
 import static org.junit.matchers.JUnitMatchers.*;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
@@ -94,6 +95,9 @@ public class JavaExecutionEngineTests {
 
         Iterable<Node> friends = (Iterable<Node>) result.columnAs("collect(friend)").next();
         assertThat(friends, hasItems(andreasNode, johanNode));
+
+        Object friendCollection = result.iterator().next().get("collect(friend)");
+        assertThat(friendCollection, instanceOf(Iterable.class));
     }
 
     @Test
