@@ -4,11 +4,22 @@ Monitoring
 
 NOTE: Most of the monitoring features are only available in the Advanced and Enterprise editions of Neo4j.
 
-In order to be able to continuously get an overview of the health of a Neo4j database, there are different levels of monitoring facilities available.
+In order to be able to continuously get an overview of the health of a Neo4j database, there are different levels of monitoring facilities available. Most of these are exposed through the http://www.oracle.com/technetwork/java/javase/tech/javamanagement-140525.html[JMX API].
 
 
 [[operations-jmx]]
 == JMX ==
+
+=== Adjusting remote JMX access to the Neo4j Server ===
+
+Per default, the Advanved and Enterprise Neo4j Server editions are set up to allow remote JMX connections with certain roles, refer to the +conf/jmx.password+, +conf/jmx.access+ and +conf/wrapper.conf+ for details.
+
+With the default setup, you should be able to connect to JMX monitoring of the Neo4j server using +<IP-OF-SERVER>:3637+, with the username +monitor+ and the password +Neo4j+.
+
+[WARNING]
+For maximum security, please adjust at least the password settings in +conf/jmx.password+ for a production installation.
+
+For more details, see: http://download.oracle.com/javase/6/docs/technotes/guides/management/agent.html
 
 === How to connect to a Neo4j instance using JMX and JConsole ===
 
@@ -33,6 +44,8 @@ image::jconsole_connect.png[scaledwidth="50%", alt="Connecting with JConsole"]
 Now, beside the MBeans exposed by the JVM, you will see an +org.neo4j+ section in the MBeans tab.
 Under that, you will have access to all the monitoring information exposed by Neo4j.
 
+For opening JMX to remote monitoring access, please refer to http://download.oracle.com/javase/1.5.0/docs/guide/management/agent.html#remote[the JMX documention]
+and pass the +com.sun.management.jmxremote.port=portNum+ or other configuration as JVM parameters to your running Java process.
 
 .Neo4j MBeans View
 image::jconsole_beans.png[scaledwidth="50%",alt="Neo4j MBeans view"]
