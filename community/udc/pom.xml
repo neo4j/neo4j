@@ -10,7 +10,7 @@
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-udc</artifactId>
   <name>Neo4j - Usage Data Collection</name>
-  <version>1.6-SNAPSHOT</version>
+  <version>1.5-SNAPSHOT</version>
   <description>Collects simple statistics about server deployment.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
   
@@ -128,7 +128,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.6-SNAPSHOT</version>
+      <version>1.5-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
@@ -158,7 +158,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.6-SNAPSHOT</version>
+      <version>1.5-SNAPSHOT</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>

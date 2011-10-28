@@ -10,7 +10,7 @@
 
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-jmx</artifactId>
-  <version>1.6-SNAPSHOT</version>
+  <version>1.5-SNAPSHOT</version>
   <name>Neo4j - JMX support</name>
   <description>Management support using JMX.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -51,7 +51,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.6-SNAPSHOT</version>
+      <version>1.5-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -62,7 +62,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.6-SNAPSHOT</version>
+      <version>1.5-SNAPSHOT</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
