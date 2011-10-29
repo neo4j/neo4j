@@ -25,83 +25,83 @@ abstract class Clause {
   def ++(other: Clause): Clause = And(this, other)
 
 
-  def isMatch(m: Map[String, Any]): Boolean
+  def isMatch(m: Map[ String, Any ]): Boolean
 
 
   // We need this information to place the filtering as close to the
   // source pipes as possible. The earlier we can filter stuff out,
   // the faster we can be
-  def dependsOn:Set[String]
+  def dependsOn: Set[ String ]
 
 
   // This is the un-dividable list of clauses. They can all be ANDed
   // together
-  def atoms:Seq[Clause]
+  def atoms: Seq[ Clause ]
 }
 
 case class And(a: Clause, b: Clause) extends Clause {
-  def isMatch(m: Map[String, Any]): Boolean = a.isMatch(m) && b.isMatch(m)
+  def isMatch(m: Map[ String, Any ]): Boolean = a.isMatch(m) && b.isMatch(m)
 
-  def atoms: Seq[Clause] = a.atoms ++ b.atoms
+  def atoms: Seq[ Clause ] = a.atoms ++ b.atoms
 
-  def dependsOn: Set[String] = a.dependsOn ++ b.dependsOn
+  def dependsOn: Set[ String ] = a.dependsOn ++ b.dependsOn
 }
 
 case class Or(a: Clause, b: Clause) extends Clause {
-  def isMatch(m: Map[String, Any]): Boolean = a.isMatch(m) || b.isMatch(m)
+  def isMatch(m: Map[ String, Any ]): Boolean = a.isMatch(m) || b.isMatch(m)
 
-  def atoms: Seq[Clause] = Seq(this)
+  def atoms: Seq[ Clause ] = Seq(this)
 
-  def dependsOn: Set[String] = a.dependsOn ++ b.dependsOn
+  def dependsOn: Set[ String ] = a.dependsOn ++ b.dependsOn
 }
 
 case class Not(a: Clause) extends Clause {
-  def isMatch(m: Map[String, Any]): Boolean = !a.isMatch(m)
+  def isMatch(m: Map[ String, Any ]): Boolean = !a.isMatch(m)
 
-  def atoms: Seq[Clause] = a.atoms.map( Not(_) )
+  def atoms: Seq[ Clause ] = a.atoms.map(Not(_))
 
-  def dependsOn: Set[String] = a.dependsOn
+  def dependsOn: Set[ String ] = a.dependsOn
 }
 
 case class IsNull(value: Value) extends Clause {
-  def isMatch(m: Map[String, Any]): Boolean = value(m) == null
+  def isMatch(m: Map[ String, Any ]): Boolean = value(m) == null
 
-  def dependsOn: Set[String] = value match {
-    case x:EntityValue => Set("I depened on something that should never exist as an identifier!")
-    case x => x.dependsOn
+  def dependsOn: Set[ String ] = value match {
+    case x: EntityValue => Set("I depened on something that should never exist as an identifier!")
+    case x              => x.dependsOn
   }
 
-  def atoms: Seq[Clause] = Seq(this)
+  def atoms: Seq[ Clause ] = Seq(this)
 }
 
 case class True() extends Clause {
-  def isMatch(m: Map[String, Any]): Boolean = true
+  def isMatch(m: Map[ String, Any ]): Boolean = true
 
-  def dependsOn: Set[String] = Set()
+  def dependsOn: Set[ String ] = Set()
 
-  def atoms: Seq[Clause] = Seq(this)
+  def atoms: Seq[ Clause ] = Seq(this)
 }
 
 case class Has(property: PropertyValue) extends Clause {
-  def isMatch(m: Map[String, Any]): Boolean = property match {
+  def isMatch(m: Map[ String, Any ]): Boolean = property match {
     case PropertyValue(identifier, propertyName) => {
-      val propContainer = m(identifier).asInstanceOf[PropertyContainer]
+      val propContainer = m(identifier).asInstanceOf[ PropertyContainer ]
       propContainer.hasProperty(propertyName)
     }
   }
 
-  def dependsOn: Set[String] = Set(property.entity)
+  def dependsOn: Set[ String ] = Set(property.entity)
 
-  def atoms: Seq[Clause] = Seq(this)
+  def atoms: Seq[ Clause ] = Seq(this)
 }
 
-case class RegularExpression(a: Value, str: String) extends Clause {
-  def isMatch(m: Map[String, Any]): Boolean = {
-    val value = a.apply(m).asInstanceOf[String]
-    str.r.pattern.matcher(value).matches()
+case class RegularExpression(a: Value, regex: Value) extends Clause {
+  def isMatch(m: Map[ String, Any ]): Boolean = {
+    val value = a.apply(m).asInstanceOf[ String ]
+    regex(m).toString.r.pattern.matcher(value).matches()
   }
 
-  def dependsOn: Set[String] = a.dependsOn
+  def dependsOn: Set[ String ] = a.dependsOn
 
-  def atoms: Seq[Clause] = Seq(this)
+  def atoms: Seq[ Clause ] = Seq(this)
 }

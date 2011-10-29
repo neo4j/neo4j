@@ -187,7 +187,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a = node(1) where \"Andres\" =~ /And.*/ return a",
       Query.
         start(NodeById("a", 1)).
-        where(RegularExpression(Literal("Andres"), "And.*")).
+        where(RegularExpression(Literal("Andres"), Literal("And.*"))).
         returns(ValueReturnItem(EntityValue("a")))
     )
   }
@@ -342,7 +342,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING, false)).
         aggregation(CountStar()).
-        columns("a","b","count(*)").
+        columns("a", "b", "count(*)").
         returns(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
   }
 
@@ -363,7 +363,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING, false)).
         aggregation(ValueAggregationItem(Sum(PropertyValue("a", "age")))).
-        columns("a","b","sum(a.age)").
+        columns("a", "b", "sum(a.age)").
         returns(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
   }
 
@@ -374,7 +374,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING, false)).
         aggregation(ValueAggregationItem(Avg(PropertyValue("a", "age")))).
-        columns("a","b","avg(a.age)").
+        columns("a", "b", "avg(a.age)").
         returns(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
   }
 
@@ -385,7 +385,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING, false)).
         aggregation(ValueAggregationItem(Min(PropertyValue("a", "age")))).
-        columns("a","b","min(a.age)").
+        columns("a", "b", "min(a.age)").
         returns(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
   }
 
@@ -396,7 +396,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING, false)).
         aggregation(ValueAggregationItem(Max(( PropertyValue("a", "age") )))).
-        columns("a","b","max(a.age)").
+        columns("a", "b", "max(a.age)").
         returns(ValueReturnItem(EntityValue("a")), ValueReturnItem(EntityValue("b"))))
   }
 
@@ -569,7 +569,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       Query.
         start(NodeById("a", 1)).
         aggregation(ValueAggregationItem(Count(EntityValue("a")))).
-        columns("a","count(a)").
+        columns("a", "count(a)").
         returns(ValueReturnItem(EntityValue("a"))))
   }
 
@@ -835,6 +835,15 @@ class CypherParserTest extends JUnitSuite with Assertions {
         start(NodeById("pA", 0)).
         skip("skipper")
         limit ( "stop" )
+        returns ( ValueReturnItem(EntityValue("pA")) ))
+  }
+
+  @Test def testParamForRegex() {
+    testQuery(
+      """start pA = node(0) where pA.name =~ {regex} return pA""",
+      Query.
+        start(NodeById("pA", 0)).
+        where(RegularExpression(PropertyValue("pA","name"), ParameterValue("regex")))
         returns ( ValueReturnItem(EntityValue("pA")) ))
   }
 

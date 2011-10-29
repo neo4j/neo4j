@@ -29,8 +29,8 @@ trait Clauses extends JavaTokenParsers with Tokens with Values {
     ignoreCase("or") ^^^  { (a: Clause, b: Clause) => Or(a, b) }
     )
 
-  def regexp: Parser[Clause] = value ~ "=~" ~ regularLiteral ^^ {
-    case a ~ "=~" ~ b => RegularExpression(a, stripQuotes(b))
+  def regexp: Parser[Clause] = value ~ "=~" ~ (regularLiteral|parameter) ^^ {
+    case a ~ "=~" ~ b => RegularExpression(a, b)
   }
 
   def hasProperty: Parser[Clause] = property ^^ {

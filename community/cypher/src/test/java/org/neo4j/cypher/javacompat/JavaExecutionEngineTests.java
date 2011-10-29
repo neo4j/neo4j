@@ -102,8 +102,7 @@ public class JavaExecutionEngineTests {
     }
 
     @Test
-    public void testColumnAreInTheRightOrder() throws Exception
-    {
+    public void testColumnAreInTheRightOrder() throws Exception {
         createTenNodes();
         List<String> columns = asList( "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten" );
         String q = "start one=node(1), two=node(2), three=node(3), four=node(4), five=node(5), six=node(6), " +
@@ -116,7 +115,7 @@ public class JavaExecutionEngineTests {
 
     private void createTenNodes() {
         Transaction tx = db.beginTx();
-        for(int i=0;i<10;i++){
+        for( int i = 0; i < 10; i++ ) {
             db.createNode();
         }
         tx.success();
@@ -125,10 +124,10 @@ public class JavaExecutionEngineTests {
 
     @Test
     public void exampleConsole() throws Exception {
-        Query query = CypherParser.parseConsole( "" +
-                                                         //START SNIPPET: Identifier
-                                                         "start n=node(0) return n.NOT_EXISTING"
-                                                 //END SNIPPET: Identifier
+        Query query = CypherParser.parseConsole(
+//START SNIPPET: Identifier
+                "start n=node(0) return n.NOT_EXISTING"
+//END SNIPPET: Identifier
         );
 
         ExecutionResult result = engine.execute( query );
@@ -228,6 +227,20 @@ public class JavaExecutionEngineTests {
         assertThat( result.columns(), hasItem( "n.name" ) );
         Iterator<Object> n_column = result.columnAs( "n.name" );
         assertEquals( "Andreas", n_column.next() );
+    }
+
+    @Test
+    public void exampleWithParameterRegularExpression() throws Exception {
+        // START SNIPPET: exampleWithParameterRegularExpression
+        Map<String, Object> params = new HashMap<String, Object>();
+        params.put( "regex", ".*h.*" );
+        ExecutionResult result = engine.execute( "start n=node(0,1,2) where n.name =~ {regex} return n.name", params );
+        // END SNIPPET: exampleWithParameterRegularExpression
+
+        assertThat( result.columns(), hasItem( "n.name" ) );
+        Iterator<Object> n_column = result.columnAs( "n.name" );
+        assertEquals( "Michaela", n_column.next() );
+        assertEquals( "Johan", n_column.next() );
     }
 
     private void makeFriends( Node a, Node b ) {

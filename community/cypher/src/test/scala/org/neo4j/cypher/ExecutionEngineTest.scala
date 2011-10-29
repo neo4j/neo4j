@@ -67,7 +67,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val n2 = createNode(Map("name" -> "Jim"))
     val query = Query.
       start(NodeById("node", n1.getId, n2.getId)).
-      where(RegularExpression(PropertyValue("node", "name"), "And.*")).
+      where(RegularExpression(PropertyValue("node", "name"), Literal("And.*"))).
       returns(ValueReturnItem(EntityValue("node")))
 
     val result = execute(query)
