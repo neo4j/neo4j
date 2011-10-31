@@ -51,6 +51,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 
 /**
  * The {@link Master} a slave should use to communicate with its master. It
@@ -204,7 +205,7 @@ public class MasterClient extends Client<Master> implements Master
         return sendRequest( HaRequestType.PULL_UPDATES, context, EMPTY_SERIALIZER, VOID_DESERIALIZER );
     }
 
-    public Response<Pair<Integer,Long>> getMasterIdForCommittedTx( final long txId )
+    public Response<Pair<Integer,Long>> getMasterIdForCommittedTx( final long txId, StoreId storeId )
     {
         return sendRequest( HaRequestType.GET_MASTER_ID_FOR_TX, SlaveContext.EMPTY, new Serializer()
         {
@@ -219,7 +220,7 @@ public class MasterClient extends Client<Master> implements Master
             {
                 return Pair.of( buffer.readInt(), buffer.readLong() );
             }
-        } );
+        }, storeId );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -329,7 +330,7 @@ public class MasterClient extends Client<Master> implements Master
             public Response<Pair<Integer,Long>> callMaster( Master master, SlaveContext context,
                     ChannelBuffer input, ChannelBuffer target )
             {
-                return master.getMasterIdForCommittedTx( input.readLong() );
+                return master.getMasterIdForCommittedTx( input.readLong(), null );
             }
         }, new ObjectSerializer<Pair<Integer,Long>>()
         {

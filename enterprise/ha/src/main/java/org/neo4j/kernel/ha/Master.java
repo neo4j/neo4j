@@ -25,6 +25,7 @@ import org.neo4j.com.StoreWriter;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 
 /**
  * Represents the master-side of the HA communication between master and slave.
@@ -56,7 +57,13 @@ public interface Master
 
     Response<Void> pullUpdates( SlaveContext context );
 
-    Response<Pair<Integer,Long>> getMasterIdForCommittedTx( long txId );
+    /**
+     * Gets the master id for a given txId, also a checksum for that tx.
+     * @param txId the transaction id to get the data for.
+     * @param myStoreId clients store id.
+     * @return the master id for a given txId, also a checksum for that tx.
+     */
+    Response<Pair<Integer,Long>> getMasterIdForCommittedTx( long txId, StoreId myStoreId );
 
     Response<Void> copyStore( SlaveContext context, StoreWriter writer );
     

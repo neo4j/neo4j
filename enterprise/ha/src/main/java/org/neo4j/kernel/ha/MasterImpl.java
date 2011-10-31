@@ -53,6 +53,7 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
@@ -69,7 +70,6 @@ public class MasterImpl implements Master
     private static final int ID_GRAB_SIZE = 1000;
 
     private final GraphDatabaseService graphDb;
-    private final Config graphDbConfig;
     private final StringLogger msgLog;
 
     private final Map<SlaveContext, Pair<Transaction, AtomicLong/*Time since last suspended*/>> transactions = Collections
@@ -79,7 +79,6 @@ public class MasterImpl implements Master
     public MasterImpl( GraphDatabaseService db )
     {
         this.graphDb = db;
-        this.graphDbConfig = ((AbstractGraphDatabase) db).getConfig();
         this.msgLog = StringLogger.getLogger( ((AbstractGraphDatabase) db ).getStoreDir() );
         this.unfinishedTransactionsExecutor = Executors.newSingleThreadScheduledExecutor();
         this.unfinishedTransactionsExecutor.scheduleWithFixedDelay( new Runnable()
@@ -133,6 +132,11 @@ public class MasterImpl implements Master
         return this.graphDb;
     }
     
+    private Config getGraphDbConfig()
+    {
+        return ((AbstractGraphDatabase)this.graphDb).getConfig();
+    }
+    
     @Override
     public Response<Void> initializeTx( SlaveContext context )
     {
@@ -153,8 +157,8 @@ public class MasterImpl implements Master
         Transaction otherTx = suspendOtherAndResumeThis( context, false );
         try
         {
-            LockManager lockManager = graphDbConfig.getLockManager();
-            LockReleaser lockReleaser = graphDbConfig.getLockReleaser();
+            LockManager lockManager = getGraphDbConfig().getLockManager();
+            LockReleaser lockReleaser = getGraphDbConfig().getLockReleaser();
             for ( T entity : entities )
             {
                 lockGrabber.grab( lockManager, lockReleaser, entity );
@@ -214,7 +218,7 @@ public class MasterImpl implements Master
     {
         try
         {
-            TransactionManager txManager = graphDbConfig.getTxModule().getTxManager();
+            TransactionManager txManager = getGraphDbConfig().getTxModule().getTxManager();
             txManager.begin();
             Transaction tx = txManager.getTransaction();
             transactions.put( txId, Pair.of( tx, new AtomicLong() ) );
@@ -234,7 +238,7 @@ public class MasterImpl implements Master
     {
         try
         {
-            TransactionManager txManager = graphDbConfig.getTxModule().getTxManager();
+            TransactionManager txManager = getGraphDbConfig().getTxModule().getTxManager();
             Transaction otherTx = txManager.getTransaction();
             Transaction transaction = getTx( txId );
             if ( otherTx != null && otherTx == transaction )
@@ -275,7 +279,7 @@ public class MasterImpl implements Master
     {
         try
         {
-            TransactionManager txManager = graphDbConfig.getTxModule().getTxManager();
+            TransactionManager txManager = getGraphDbConfig().getTxModule().getTxManager();
             getTxAndUpdateTimestamp( txId );
             txManager.suspend();
             if ( otherTx != null )
@@ -293,7 +297,7 @@ public class MasterImpl implements Master
     {
         try
         {
-            TransactionManager txManager = graphDbConfig.getTxModule().getTxManager();
+            TransactionManager txManager = getGraphDbConfig().getTxModule().getTxManager();
             if ( success ) txManager.commit();
             else txManager.rollback();
             transactions.remove( txId );
@@ -352,7 +356,7 @@ public class MasterImpl implements Master
 
     public Response<IdAllocation> allocateIds( IdType idType )
     {
-        IdGenerator generator = graphDbConfig.getIdGeneratorFactory().get( idType );
+        IdGenerator generator = getGraphDbConfig().getIdGeneratorFactory().get( idType );
         IdAllocation result = new IdAllocation( generator.nextIdBatch( ID_GRAB_SIZE ), generator.getHighId(),
                 generator.getDefragCount() );
         return MasterUtil.packResponseWithoutTransactionStream( graphDb, SlaveContext.EMPTY, result );
@@ -364,7 +368,7 @@ public class MasterImpl implements Master
         Transaction otherTx = suspendOtherAndResumeThis( context, false );
         try
         {
-            XaDataSource dataSource = graphDbConfig.getTxModule().getXaDataSourceManager()
+            XaDataSource dataSource = getGraphDbConfig().getTxModule().getXaDataSourceManager()
                     .getXaDataSource( resource );
             final long txId = dataSource.applyPreparedTransaction( txGetter.extract() );
             Predicate<Long> upUntilThisTx = new Predicate<Long>()
@@ -395,8 +399,10 @@ public class MasterImpl implements Master
 
     public Response<Integer> createRelationshipType( SlaveContext context, String name )
     {
+        Config config = getGraphDbConfig();
+        
         // Does this type exist already?
-        Integer id = graphDbConfig.getRelationshipTypeHolder().getIdFor( name );
+        Integer id = config.getRelationshipTypeHolder().getIdFor( name );
         if ( id != null )
         {
             // OK, return
@@ -404,11 +410,11 @@ public class MasterImpl implements Master
         }
 
         // No? Create it then
-        id = graphDbConfig.getRelationshipTypeCreator().getOrCreate(
-                graphDbConfig.getTxModule().getTxManager(),
-                graphDbConfig.getIdGeneratorModule().getIdGenerator(),
-                graphDbConfig.getPersistenceModule().getPersistenceManager(),
-                graphDbConfig.getRelationshipTypeHolder(), name );
+        id = config.getRelationshipTypeCreator().getOrCreate(
+                config.getTxModule().getTxManager(),
+                config.getIdGeneratorModule().getIdGenerator(),
+                config.getPersistenceModule().getPersistenceManager(),
+                config.getRelationshipTypeHolder(), name );
         return packResponse( context, id );
     }
 
@@ -417,9 +423,9 @@ public class MasterImpl implements Master
         return packResponse( context, null );
     }
 
-    public Response<Pair<Integer,Long>> getMasterIdForCommittedTx( long txId )
+    public Response<Pair<Integer,Long>> getMasterIdForCommittedTx( long txId, StoreId storeId )
     {
-        XaDataSource nioneoDataSource = graphDbConfig.getTxModule().getXaDataSourceManager()
+        XaDataSource nioneoDataSource = getGraphDbConfig().getTxModule().getXaDataSourceManager()
                 .getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
         try
         {

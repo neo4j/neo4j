@@ -146,6 +146,12 @@ public abstract class Client<M> implements ChannelPipelineFactory
     protected <R> Response<R> sendRequest( RequestType<M> type, SlaveContext context,
             Serializer serializer, Deserializer<R> deserializer )
     {
+        return sendRequest( type, context, serializer, deserializer, null );
+    }
+    
+    protected <R> Response<R> sendRequest( RequestType<M> type, SlaveContext context,
+            Serializer serializer, Deserializer<R> deserializer, StoreId specificStoreId )
+    {
         Triplet<Channel, ChannelBuffer, ByteBuffer> channelContext = null;
         try
         {
@@ -172,7 +178,9 @@ public abstract class Client<M> implements ChannelPipelineFactory
             StoreId storeId = readStoreId( dechunkingBuffer, channelContext.third() );
             if ( shouldCheckStoreId( type ) )
             {
-                assertCorrectStoreId( storeId );
+                // specificStoreId is there as a workaround for then the graphDb isn't initialized yet
+                if ( specificStoreId != null ) assertCorrectStoreId( storeId, specificStoreId );
+                else assertCorrectStoreId( storeId, getMyStoreId() );
             }
             TransactionStream txStreams = readTransactionStreams( dechunkingBuffer );
             return new Response<R>( response, storeId, txStreams );
@@ -196,15 +204,14 @@ public abstract class Client<M> implements ChannelPipelineFactory
         return true;
     }
 
-    private void assertCorrectStoreId( StoreId storeId )
+    private void assertCorrectStoreId( StoreId storeId, StoreId myStoreId )
     {
-        StoreId myStoreId = getMyStoreId();
         if ( !myStoreId.equals( storeId ) )
         {
             throw new ComException( storeId + " from response doesn't match my " + myStoreId );
         }
     }
-
+    
     protected StoreId getMyStoreId()
     {
         if ( myStoreId == null )

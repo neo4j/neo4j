@@ -84,6 +84,7 @@ import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
@@ -531,6 +532,12 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         return localGraph().getManagementBeans( type );
     }
+    
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName() + "[" + CONFIG_KEY_SERVER_ID + ":" + machineId + "]";
+    }
 
     protected synchronized void reevaluateMyself( Pair<Master, Machine> master, StoreId storeId )
     {
@@ -568,9 +575,13 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 ensureDataConsistencyWithMaster( newDb != null ? newDb : localGraph, master );
                 msgLog.logMessage( "Data consistent with master" );
             }
-            if ( newDb != null ) doAfterLocalGraphStarted( newDb );
-            // Assign the local graph AFTER it's checked for branching
-            this.localGraph = newDb;
+            if ( newDb != null )
+            {
+                doAfterLocalGraphStarted( newDb );
+                
+                // Assign the db last
+                this.localGraph = newDb;
+            }
         }
         catch ( Throwable t )
         {
@@ -683,7 +694,8 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             throw new BranchedDataException( "Maybe not branched data, but it could solve it", e );
         }
 
-        Pair<Integer, Long> masterForMastersHighestCommonTxId = master.first().getMasterIdForCommittedTx( myLastCommittedTx ).response();
+        Pair<Integer, Long> masterForMastersHighestCommonTxId = master.first().getMasterIdForCommittedTx(
+                myLastCommittedTx, getStoreId( newDb ) ).response();
 
         // Compare those two, if equal -> good
         if ( masterForMyHighestCommonTxId.first() == XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER
@@ -704,6 +716,13 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             shutdown( exception, false );
             throw exception;
         }
+    }
+    
+    private StoreId getStoreId( EmbeddedGraphDbImpl db )
+    {
+        XaDataSource ds = db.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource( 
+                Config.DEFAULT_DATA_SOURCE_NAME );
+        return ((NeoStoreXaDataSource) ds).getStoreId();
     }
 
     private void instantiateAutoUpdatePullerIfConfigSaysSo()
