@@ -67,4 +67,9 @@ public enum Record
     {
         return intValue;
     }
+
+    public boolean value( long value )
+    {
+        return value == intValue;
+    }
 }

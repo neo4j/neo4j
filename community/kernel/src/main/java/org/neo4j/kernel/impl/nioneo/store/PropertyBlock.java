@@ -32,8 +32,17 @@ public class PropertyBlock
 
     public PropertyType getType()
     {
-        return valueBlocks == null ? null : PropertyType.getPropertyType(
-                valueBlocks[0], false );
+        return getType( false );
+    }
+
+    public PropertyType forceGetType()
+    {
+        return getType( true );
+    }
+
+    private PropertyType getType( boolean force )
+    {
+        return valueBlocks == null ? null : PropertyType.getPropertyType( valueBlocks[0], false );
     }
 
     public int getKeyIndexId()
@@ -64,6 +73,9 @@ public class PropertyBlock
         return valueBlocks[0];
     }
 
+    /**
+     * use this for references to the dynamic stores
+     */
     public long getSingleValueLong()
     {
         return (valueBlocks[0] & 0xFFFFFFFFF0000000L) >>> 28;

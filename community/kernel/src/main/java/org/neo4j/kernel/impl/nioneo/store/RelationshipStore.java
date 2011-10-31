@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 /**
  * Implementation of the relationship store.
  */
-public class RelationshipStore extends AbstractStore implements Store
+public class RelationshipStore extends AbstractStore implements Store, RecordStore<RelationshipRecord>
 {
     public static final String TYPE_DESCRIPTOR = "RelationshipStore";
 
@@ -47,6 +47,12 @@ public class RelationshipStore extends AbstractStore implements Store
     public RelationshipStore( String fileName, Map<?,?> config )
     {
         super( fileName, config, IdType.RELATIONSHIP );
+    }
+    
+    @Override
+    public void accept( RecordStore.Processor processor, RelationshipRecord record )
+    {
+        processor.processRelationship( this, record );
     }
 
     @Override
@@ -87,8 +93,21 @@ public class RelationshipStore extends AbstractStore implements Store
         PersistenceWindow window = acquireWindow( id, OperationType.READ );
         try
         {
-            RelationshipRecord record = getRecord( id, window, false );
-            return record;
+            return getRecord( id, window, RecordLoad.NORMAL );
+        }
+        finally
+        {
+            releaseWindow( window );
+        }
+    }
+    
+    @Override
+    public RelationshipRecord forceGetRecord( long id )
+    {
+        PersistenceWindow window = acquireWindow( id, OperationType.READ );
+        try
+        {
+            return getRecord( id, window, RecordLoad.FORCE );
         }
         finally
         {
@@ -110,7 +129,7 @@ public class RelationshipStore extends AbstractStore implements Store
         }
         try
         {
-            RelationshipRecord record = getRecord( id, window, true );
+            RelationshipRecord record = getRecord( id, window, RecordLoad.CHECK );
             return record;
         }
         finally
@@ -140,20 +159,35 @@ public class RelationshipStore extends AbstractStore implements Store
             OperationType.WRITE );
         try
         {
-            updateRecord( record, window );
+            updateRecord( record, window, false );
         }
         finally
         {
             releaseWindow( window );
         }
     }
+    
+    @Override
+    public void forceUpdateRecord( RelationshipRecord record )
+    {
+        PersistenceWindow window = acquireWindow( record.getId(),
+                OperationType.WRITE );
+            try
+            {
+                updateRecord( record, window, true );
+            }
+            finally
+            {
+                releaseWindow( window );
+            }
+    }
 
     private void updateRecord( RelationshipRecord record,
-        PersistenceWindow window )
+        PersistenceWindow window, boolean force )
     {
         long id = record.getId();
         Buffer buffer = window.getOffsettedBuffer( id );
-        if ( record.inUse() )
+        if ( record.inUse() || force )
         {
             long firstNode = record.getFirstNode();
             short firstNodeMod = (short)((firstNode & 0x700000000L) >> 31);
@@ -179,7 +213,7 @@ public class RelationshipStore extends AbstractStore implements Store
             // [    ,   x] in use flag
             // [    ,xxx ] first node high order bits
             // [xxxx,    ] next prop high order bits
-            short inUseUnsignedByte = (short)(Record.IN_USE.byteValue() | firstNodeMod | nextPropMod);
+            short inUseUnsignedByte = (short)((record.inUse() ? Record.IN_USE : Record.NOT_IN_USE).byteValue() | firstNodeMod | nextPropMod);
 
             // [ xxx,    ][    ,    ][    ,    ][    ,    ] second node high order bits,     0x70000000
             // [    ,xxx ][    ,    ][    ,    ][    ,    ] first prev rel high order bits,  0xE000000
@@ -204,7 +238,7 @@ public class RelationshipStore extends AbstractStore implements Store
     }
 
     private RelationshipRecord getRecord( long id, PersistenceWindow window,
-        boolean checkInUse )
+        RecordLoad load )
     {
         Buffer buffer = window.getOffsettedBuffer( id );
 
@@ -216,11 +250,13 @@ public class RelationshipStore extends AbstractStore implements Store
         boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
         if ( !inUse )
         {
-            if ( checkInUse )
+            switch ( load )
             {
+            case NORMAL:
+                throw new InvalidRecordException( "Record[" + id + "] not in use" );
+            case CHECK:
                 return null;
             }
-            throw new InvalidRecordException( "Record[" + id + "] not in use" );
         }
 
         long firstNode = buffer.getUnsignedInt();
@@ -304,7 +340,7 @@ public class RelationshipStore extends AbstractStore implements Store
         try
         {
 //            return getFullRecord( relId, window );
-            return getRecord( relId, window, false );
+            return getRecord( relId, window, RecordLoad.NORMAL );
         }
         finally
         {

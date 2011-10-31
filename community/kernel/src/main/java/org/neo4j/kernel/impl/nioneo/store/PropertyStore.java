@@ -41,7 +41,7 @@ import static org.neo4j.kernel.Config.STRING_BLOCK_SIZE;
  * Implementation of the property store. This implementation has two dynamic
  * stores. One used to store keys and another for string property values.
  */
-public class PropertyStore extends AbstractStore implements Store
+public class PropertyStore extends AbstractStore implements Store, RecordStore<PropertyRecord>
 {
     public static final int DEFAULT_DATA_BLOCK_SIZE = 120;
     public static final int DEFAULT_PAYLOAD_SIZE = 32;
@@ -61,6 +61,12 @@ public class PropertyStore extends AbstractStore implements Store
     public PropertyStore( String fileName, Map<?,?> config )
     {
         super( fileName, config, IdType.PROPERTY );
+    }
+    
+    @Override
+    public void accept( RecordStore.Processor processor, PropertyRecord record )
+    {
+        processor.processProperty( this, record );
     }
 
     @Override
@@ -237,6 +243,12 @@ public class PropertyStore extends AbstractStore implements Store
             releaseWindow( window );
         }
     }
+    
+    @Override
+    public void forceUpdateRecord( PropertyRecord record )
+    {
+        updateRecord( record ); // TODO: should we do something special for property records?
+    }
 
     private void updateRecord( PropertyRecord record, PersistenceWindow window )
     {
@@ -326,7 +338,7 @@ public class PropertyStore extends AbstractStore implements Store
         PersistenceWindow window = acquireWindow( id, OperationType.READ );
         try
         {
-            PropertyRecord record = getRecord( id, window );
+            PropertyRecord record = getRecord( id, window, RecordLoad.NORMAL );
             return record;
         }
         finally
@@ -368,7 +380,7 @@ public class PropertyStore extends AbstractStore implements Store
         PersistenceWindow window = acquireWindow( id, OperationType.READ );
         try
         {
-            record = getRecord( id, window );
+            record = getRecord( id, window, RecordLoad.NORMAL );
         }
         finally
         {
@@ -397,6 +409,20 @@ public class PropertyStore extends AbstractStore implements Store
             }
         }
         return record;
+    }
+    
+    @Override
+    public PropertyRecord forceGetRecord( long id )
+    {
+        PersistenceWindow window = acquireWindow( id, OperationType.READ );
+        try
+        {
+            return getRecord( id, window, RecordLoad.FORCE );
+        }
+        finally
+        {
+            releaseWindow( window );
+        }
     }
 
     private PropertyRecord getRecordFromBuffer( long id, Buffer buffer )
@@ -432,11 +458,11 @@ public class PropertyStore extends AbstractStore implements Store
         return record;
     }
 
-    private PropertyRecord getRecord( long id, PersistenceWindow window )
+    private PropertyRecord getRecord( long id, PersistenceWindow window, RecordLoad load )
     {
         Buffer buffer = window.getOffsettedBuffer( id );
         PropertyRecord toReturn = getRecordFromBuffer( id, buffer );
-        if ( !toReturn.inUse() )
+        if ( !toReturn.inUse() && load != RecordLoad.FORCE )
         {
             throw new InvalidRecordException( "Record[" + id + "] not in use" );
         }

@@ -37,6 +37,12 @@ public class DynamicStringStore extends AbstractDynamicStore
     {
         super( fileName, config, idType );
     }
+    
+    @Override
+    public void accept( RecordStore.Processor processor, DynamicRecord record )
+    {
+        processor.processString( this, record );
+    }
 
     @Override
     public String getTypeDescriptor()
