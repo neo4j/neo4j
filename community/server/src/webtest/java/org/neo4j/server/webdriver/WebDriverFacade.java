@@ -23,6 +23,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
 import org.openqa.selenium.WebDriver;
+
 import cuke4duke.annotation.After;
 
 public class WebDriverFacade {
@@ -50,7 +51,8 @@ public class WebDriverFacade {
     
     @SuppressWarnings("unchecked")
     private Constructor<WebDriver> getDriverConstructor() {
-        String driverName = System.getProperty("webdriver.impl", "org.openqa.selenium.htmlunit.HtmlUnitDriver");
+        
+        String driverName = System.getProperty("webdriver.impl", "org.openqa.selenium.firefox.FirefoxDriver");
         try {
             return (Constructor<WebDriver>) Thread.currentThread().getContextClassLoader().loadClass(driverName).getConstructor();
         } catch (Throwable problem) {

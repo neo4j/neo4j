@@ -21,7 +21,6 @@ package org.neo4j.server.webdriver;
 
 import java.lang.reflect.InvocationTargetException;
 
-import org.neo4j.server.steps.ServerIntegrationTestFacade;
 import org.openqa.selenium.By;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
@@ -36,10 +35,10 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
     private final ElementReference dataBrowserItemSubtitle;
     private final ElementReference dataBrowserSearchButton;
     
-    public WebadminWebdriverLibrary(WebDriverFacade wf, ServerIntegrationTestFacade serverFacade) throws InvocationTargetException, IllegalAccessException, InstantiationException {
+    public WebadminWebdriverLibrary(WebDriverFacade wf, String serverUrl) throws InvocationTargetException, IllegalAccessException, InstantiationException {
         super(wf);
         
-        setServerUrl( serverFacade.getServerUrl() );
+        setServerUrl( serverUrl );
         
         dataBrowserItemSubtitle = new ElementReference(this, By.xpath( "//div[@id='data-area']//div[@class='title']//p[@class='small']" ));
         dataBrowserSearchField = new ElementReference(this, By.id( "data-console" ));
@@ -54,7 +53,7 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
         d.get( serverUrl );
     }
     
-    public void goToWebadminStartPage() throws Exception {
+    public void goToWebadminStartPage() {
         if(isUsingDevDotHTML()) {
             d.get( serverUrl + "webadmin/dev.html" );
         } else {
@@ -67,7 +66,7 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
         getElement( By.xpath( "//ul[@id='mainmenu']//a[contains(.,'"+tab+"')]") ).click();
     }
     
-    public void searchForInDataBrowser(CharSequence ... keysToSend) throws Exception {
+    public void searchForInDataBrowser(CharSequence ... keysToSend) {
         clearInput( dataBrowserSearchField );
         dataBrowserSearchField.sendKeys( keysToSend );
         dataBrowserSearchButton.click();
@@ -77,7 +76,7 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
         return dataBrowserItemSubtitle.getText();
     }
     
-    public String createNodeInDataBrowser() throws Exception {
+    public long createNodeInDataBrowser() {
         goToWebadminStartPage();
         clickOnTab( "Data browser" );
         String prevItemHeadline = getCurrentDatabrowserItemSubtitle();
@@ -86,10 +85,10 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
         
         dataBrowserItemSubtitle.waitForTextToChangeFrom( prevItemHeadline );
         
-        return getCurrentDatabrowserItemSubtitle();
+        return extractEntityIdFromLastSegmentOfUrl(getCurrentDatabrowserItemSubtitle());
     }
     
-    public String createRelationshipInDataBrowser() throws Exception {
+    public long createRelationshipInDataBrowser() {
         createNodeInDataBrowser();
         String prevItemHeadline = getCurrentDatabrowserItemSubtitle();
         
@@ -98,8 +97,8 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
         clickOnButton( "Create" );
         
         dataBrowserItemSubtitle.waitForTextToChangeFrom( prevItemHeadline );
-        
-        return getCurrentDatabrowserItemSubtitle();
+
+        return extractEntityIdFromLastSegmentOfUrl(getCurrentDatabrowserItemSubtitle());
     }
     
     public ElementReference getDataBrowserItemHeadline() {
@@ -136,8 +135,18 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
             InternetExplorerDriver id = (InternetExplorerDriver)d;
             return id.executeScript( script, args );
         } else {
-            throw new RuntimeException("Arbitrary script execution is only available for chrome, ie and firefox.");
+            throw new RuntimeException("Arbitrary script execution is only available for chrome, IE and firefox.");
         }
+    }
+
+    public void writeTo(By by, CharSequence ... toWrite) {
+        ElementReference el = getElement( by );
+        clearInput( el );
+        el.sendKeys( toWrite );
+    }
+    
+    private long extractEntityIdFromLastSegmentOfUrl(String url) {
+        return Long.valueOf(url.substring(url.lastIndexOf("/") + 1,url.length()));
     }
     
 }

@@ -50,7 +50,7 @@ public class WebadminSteps
     }
     
     @When("^I look at the root server page with a web browser$")
-    public void iLookAtTheRootPageWithAWebBrowser()
+    public void gotoServerRoot()
     {
         wl.goToServerRoot();
     }
