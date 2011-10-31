@@ -89,14 +89,14 @@ public class WrappingNeoServerBootstrapperTest
     {
 
         // START SNIPPET: customConfiguredWrappingNeoServerBootstrapper
-        EmbeddedServerConfigurator config = new EmbeddedServerConfigurator(
-                myDb );
+        AbstractGraphDatabase graphdb = getGraphDb();
+        EmbeddedServerConfigurator config;
+        config = new EmbeddedServerConfigurator( graphdb );
         config.configuration().setProperty(
                 Configurator.WEBSERVER_PORT_PROPERTY_KEY, 7575 );
 
-        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(
-                myDb, config );
-
+        WrappingNeoServerBootstrapper srv;
+        srv = new WrappingNeoServerBootstrapper( graphdb, config );
         srv.start();
         // END SNIPPET: customConfiguredWrappingNeoServerBootstrapper
 
