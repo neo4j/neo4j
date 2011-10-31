@@ -19,6 +19,17 @@
  */
 package org.neo4j.kernel;
 
+import static java.lang.Math.max;
+import static java.util.Arrays.asList;
+import static org.neo4j.backup.OnlineBackupExtension.parsePort;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
+import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryFileNamePattern;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryLogVersion;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -78,16 +89,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static java.lang.Math.max;
-import static java.util.Arrays.asList;
-import static org.neo4j.backup.OnlineBackupExtension.parsePort;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
-import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryFileNamePattern;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryLogVersion;
 
 public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         implements GraphDatabaseService, ResponseReceiver
@@ -284,7 +285,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 throw new RuntimeException( "Tried to join the cluster, but was unable to", exception );
             }
         }
-        newMaster( null, storeId, new Exception() );
+        newMaster( null, storeId, new Exception( "Starting up for the first time" ) );
         localGraph();
     }
 
@@ -533,74 +534,74 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
     protected synchronized void reevaluateMyself( Pair<Master, Machine> master, StoreId storeId )
     {
-        if ( master == null )
-        {
-            master = broker.getMasterReally();
-        }
-        boolean restarted = false;
+        if ( master == null ) master = broker.getMasterReally();
         boolean iAmCurrentlyMaster = masterServer != null;
         msgLog.logMessage( "ReevaluateMyself: machineId=" + machineId + " with master[" + master +
                 "] (I am master=" + iAmCurrentlyMaster + ", " + localGraph + ")" );
-        if ( master.other().getMachineId() == machineId )
-        {   // I am the new master
-            if ( this.localGraph == null || !iAmCurrentlyMaster )
-            {   // I am currently a slave, so restart as master
-                internalShutdown( true );
-                startAsMaster( storeId );
-                restarted = true;
-            }
-            // fire rebound event
-            broker.rebindMaster();
-        }
-        else
-        {   // Someone else is the new master
-            broker.notifyMasterChange( master.other() );
-            if ( this.localGraph == null || iAmCurrentlyMaster )
-            {   // I am currently master, so restart as slave.
-                // This will result in clearing of free ids from .id files, see SlaveIdGenerator.
-                internalShutdown( true );
-                startAsSlave( storeId );
-                restarted = true;
+        EmbeddedGraphDbImpl newDb = null;
+        try
+        {
+            if ( master.other().getMachineId() == machineId )
+            {   // I am the new master
+                if ( this.localGraph == null || !iAmCurrentlyMaster )
+                {   // I am currently a slave, so restart as master
+                    internalShutdown( true );
+                    newDb = startAsMaster( storeId );
+                }
+                // fire rebound event
+                broker.rebindMaster();
             }
             else
-            {   // I am already a slave, so just forget the ids I got from the previous master
-                ((SlaveIdGeneratorFactory) getConfig().getIdGeneratorFactory()).forgetIdAllocationsFromMaster();
-            }
+            {   // Someone else is master
+                broker.notifyMasterChange( master.other() );
+                if ( this.localGraph == null || iAmCurrentlyMaster )
+                {   // I am currently master, so restart as slave.
+                    // This will result in clearing of free ids from .id files, see SlaveIdGenerator.
+                    internalShutdown( true );
+                    newDb = startAsSlave( storeId );
+                }
+                else
+                {   // I am already a slave, so just forget the ids I got from the previous master
+                    ((SlaveIdGeneratorFactory) getConfig().getIdGeneratorFactory()).forgetIdAllocationsFromMaster();
+                }
 
-            tryToEnsureIAmNotABrokenMachine( master );
+                ensureDataConsistencyWithMaster( newDb != null ? newDb : localGraph, master );
+                msgLog.logMessage( "Data consistent with master" );
+            }
+            if ( newDb != null ) doAfterLocalGraphStarted( newDb );
+            // Assign the local graph AFTER it's checked for branching
+            this.localGraph = newDb;
         }
-        if ( restarted )
+        catch ( Throwable t )
         {
-            doAfterLocalGraphStarted();
+            safelyShutdownDb( newDb );
+            throw launderedException( t );
+        }
+    }
+    
+    private void safelyShutdownDb( EmbeddedGraphDbImpl newDb )
+    {
+        try
+        {
+            if ( newDb != null ) newDb.shutdown();
+        }
+        catch ( Exception e )
+        {
+            msgLog.logMessage( "Couldn't shut down newly started db", e );
         }
     }
 
-    private void doAfterLocalGraphStarted()
+    private void doAfterLocalGraphStarted( EmbeddedGraphDbImpl newDb )
     {
-        broker.setConnectionInformation( this.localGraph.getKernelData() );
+        broker.setConnectionInformation( newDb.getKernelData() );
         for ( TransactionEventHandler<?> handler : transactionEventHandlers )
         {
-            localGraph().registerTransactionEventHandler( handler );
+            newDb.registerTransactionEventHandler( handler );
         }
         for ( KernelEventHandler handler : kernelEventHandlers )
         {
-            localGraph().registerKernelEventHandler( handler );
+            newDb.registerKernelEventHandler( handler );
         }
-    }
-
-    private void startAsSlave( StoreId storeId )
-    {
-        msgLog.logMessage( "Starting[" + machineId + "] as slave", true );
-        this.localGraph = new EmbeddedGraphDbImpl( storeDir, storeId, config, this,
-                new SlaveLockManagerFactory( broker, this ),
-                new SlaveIdGeneratorFactory( broker, this ),
-                new SlaveRelationshipTypeCreator( broker, this ),
-                new SlaveTxIdGeneratorFactory( broker, this ),
-                new SlaveTxFinishHook( broker, this ),
-                slaveUpdateMode.createUpdater( broker ),
-                CommonFactories.defaultFileSystemAbstraction() );
-        instantiateAutoUpdatePullerIfConfigSaysSo();
-        logHaInfo( "Started as slave" );
     }
 
     private void logHaInfo( String started )
@@ -610,11 +611,27 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         broker.logStatus( msgLog );
         msgLog.logMessage( "--- HIGH AVAILABILITY CONFIGURATION END ---", true );
     }
+    
+    private EmbeddedGraphDbImpl startAsSlave( StoreId storeId )
+    {
+        msgLog.logMessage( "Starting[" + machineId + "] as slave", true );
+        EmbeddedGraphDbImpl result = new EmbeddedGraphDbImpl( storeDir, storeId, config, this,
+                new SlaveLockManagerFactory( broker, this ),
+                new SlaveIdGeneratorFactory( broker, this ),
+                new SlaveRelationshipTypeCreator( broker, this ),
+                new SlaveTxIdGeneratorFactory( broker, this ),
+                new SlaveTxFinishHook( broker, this ),
+                slaveUpdateMode.createUpdater( broker ),
+                CommonFactories.defaultFileSystemAbstraction() );
+        instantiateAutoUpdatePullerIfConfigSaysSo();
+        logHaInfo( "Started as slave" );
+        return result;
+    }
 
-    private void startAsMaster( StoreId storeId )
+    private EmbeddedGraphDbImpl startAsMaster( StoreId storeId )
     {
         msgLog.logMessage( "Starting[" + machineId + "] as master", true );
-        this.localGraph = new EmbeddedGraphDbImpl( storeDir, storeId, config, this,
+        EmbeddedGraphDbImpl result = new EmbeddedGraphDbImpl( storeDir, storeId, config, this,
                 CommonFactories.defaultLockManagerFactory(),
                 new MasterIdGeneratorFactory(),
                 CommonFactories.defaultRelationshipTypeCreator(),
@@ -624,12 +641,14 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 CommonFactories.defaultFileSystemAbstraction() );
         this.masterServer = (MasterServer) broker.instantiateMasterServer( this );
         logHaInfo( "Started as master" );
+        return result;
     }
 
-    private void tryToEnsureIAmNotABrokenMachine( Pair<Master, Machine> master )
+    private void ensureDataConsistencyWithMaster( EmbeddedGraphDbImpl newDb, Pair<Master, Machine> master )
     {
         if ( master.other().getMachineId() == machineId )
         {
+            msgLog.logMessage( "I am master so cannot consistency check data with master" );
             return;
         }
         else if ( master.first() == null )
@@ -640,7 +659,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             throw cause;
         }
 
-        XaDataSource nioneoDataSource = getConfig().getTxModule()
+        XaDataSource nioneoDataSource = newDb.getConfig().getTxModule()
                 .getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
         long myLastCommittedTx = nioneoDataSource.getLastCommittedTxId();
         Pair<Integer,Long> masterForMyHighestCommonTxId;
@@ -658,6 +677,10 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 //            throw new RuntimeException( e );
             masterForMyHighestCommonTxId = Pair.of( -1, 0L );
             return;
+        }
+        catch ( Exception e )
+        {
+            throw new BranchedDataException( "Maybe not branched data, but it could solve it", e );
         }
 
         Pair<Integer, Long> masterForMastersHighestCommonTxId = master.first().getMasterIdForCommittedTx( myLastCommittedTx ).response();
@@ -677,6 +700,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                     master.other().getMachineId() + ") says that it's " + masterForMastersHighestCommonTxId;
             msgLog.logMessage( msg, true );
             RuntimeException exception = new BranchedDataException( msg );
+            safelyShutdownDb( newDb );
             shutdown( exception, false );
             throw exception;
         }
@@ -897,13 +921,13 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         }
         catch ( ZooKeeperException ee )
         {
-            broker.getMasterReally();
             msgLog.logMessage( "ZooKeeper exception in newMaster", ee );
+            broker.getMasterReally();
         }
         catch ( ComException ee )
         {
-            broker.getMasterReally();
             msgLog.logMessage( "Communication exception in newMaster", ee );
+            broker.getMasterReally();
         }
         catch ( BranchedDataException ee )
         {
@@ -913,9 +937,9 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         // sees to that.
         catch ( Throwable t )
         {
-            broker.getMasterReally();
             msgLog.logMessage( "Reevaluation ended in unknown exception " + t
                     + " so shutting down", t, true );
+            broker.getMasterReally();
             shutdown( t, false );
             throw Exceptions.launderedException( t );
         }
