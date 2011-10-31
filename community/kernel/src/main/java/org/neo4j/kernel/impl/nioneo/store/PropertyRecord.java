@@ -155,10 +155,9 @@ public class PropertyRecord extends Abstract64BitRecord
     @Override
     public String toString()
     {
-        StringBuffer buf = new StringBuffer();
-        buf.append( "PropertyRecord[" ).append( getId() ).append( "," ).append(
-                inUse() ).append( "," ).append( prevProp ).append( "," ).append(
-                nextProp ).append( ", Value[" );
+        StringBuilder buf = new StringBuilder();
+        buf.append( "Property[" ).append( getId() ).append( ",used=" ).append( inUse() ).append( ",prev=" ).append(
+                prevProp ).append( ",next=" ).append( nextProp ).append( ", Value[" );
         Iterator<PropertyBlock> itr = blockRecords.iterator();
         while ( itr.hasNext() )
         {
@@ -169,7 +168,6 @@ public class PropertyRecord extends Abstract64BitRecord
             }
         }
         buf.append( "], DeletedDynRecs[" );
-
         if ( !deletedRecords.isEmpty() )
         {
             Iterator<DynamicRecord> it = deletedRecords.iterator();
