@@ -57,7 +57,8 @@ public class ReadOnlyIdGenerator implements IdGenerator
         throw new ReadOnlyDbException();
     }
 
-    public void close()
+    @Override
+    public void close( boolean shutdown )
     {
     }
 
@@ -77,7 +78,7 @@ public class ReadOnlyIdGenerator implements IdGenerator
     }
     
     @Override
-    public void clearFreeIds()
+    public void delete()
     {
         throw new ReadOnlyDbException();
     }
