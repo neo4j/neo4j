@@ -22,7 +22,7 @@
  * while preserving image scaling as much as possible.
  */
 
-jQuery( window ).load(  function()
+jQuery( document ).ready(  function()
 {
   setImageSizes( jQuery );
 });
