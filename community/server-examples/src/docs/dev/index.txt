@@ -3,6 +3,7 @@ Extending the Neo4j Server
 ==========================
 
 The Neo4j Server can be extended by either plugins or unmanaged extensions.
+For more information on the server, see <<server>>.
 
 :leveloffset: 2
 

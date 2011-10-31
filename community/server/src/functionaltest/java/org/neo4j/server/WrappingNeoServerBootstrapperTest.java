@@ -65,18 +65,21 @@ public class WrappingNeoServerBootstrapperTest
         myDb.shutdown();
     }
 
+    private AbstractGraphDatabase getGraphDb()
+    {
+        return myDb;
+    }
+
     @Test
     public void usingWrappingNeoServerBootstrapper()
     {
-
         // START SNIPPET: usingWrappingNeoServerBootstrapper
-        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(
-                myDb );
-
+        AbstractGraphDatabase graphdb = getGraphDb();
+        WrappingNeoServerBootstrapper srv;
+        srv = new WrappingNeoServerBootstrapper( graphdb );
         srv.start();
-
-        // Server is now running
-
+        // The server is now running
+        // until we stop it:
         srv.stop();
         // END SNIPPET: usingWrappingNeoServerBootstrapper
     }

@@ -110,7 +110,7 @@ class MatchTest extends DocumentingTestBase {
   @Test def multiStepRelationships() {
     testQuery(
       title = "Multiple relationships",
-      text = "Relationships can be expressed by using multiple statements in the form of `()--()`, or they can be stringed together, " +
+      text = "Relationships can be expressed by using multiple statements in the form of `()--()`, or they can be strung together, " +
         "like this:",
       queryText = """start a=node(%A%) match (a)-[:KNOWS]->(b)-[:KNOWS]->(c) return a,b,c""",
       returns = """The three nodes in the path.""",

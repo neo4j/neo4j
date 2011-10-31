@@ -32,9 +32,9 @@ include::graph-algo.txt[]
 
 :leveloffset: 2
 
-include::management.txt[]
+include::examples/uniqueness-of-paths-in-traversals.txt[]
 
 :leveloffset: 2
 
-include::examples/uniqueness-of-paths-in-traversals.txt[]
+include::management.txt[]
 
