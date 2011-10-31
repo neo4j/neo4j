@@ -1112,7 +1112,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             {
                 return new AsyncZooKeeperLastCommittedTxIdSetter( broker );
             }
-        }/*, TODO for slave-only mode
+        },
         none( false )
         {
             @Override
@@ -1120,7 +1120,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             {
                 return CommonFactories.defaultLastCommittedTxIdSetter();
             }
-        }*/;
+        };
 
         private final boolean syncWithZooKeeper;
 

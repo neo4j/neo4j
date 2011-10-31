@@ -126,20 +126,28 @@ public class ZooClient extends AbstractZooKeeperManager
                 boolean masterBeforeIWriteDiffers = masterBeforeIWrite.other().getMachineId() != getCachedMaster().other().getMachineId();
                 if ( newSessionId != sessionId || masterBeforeIWriteDiffers )
                 {
-                    sequenceNr = setup();
-                    msgLog.logMessage( "Did setup, seq=" + sequenceNr + " new sessionId=" + newSessionId );
-                    keeperState = KeeperState.SyncConnected;
-                    Pair<Master, Machine> masterAfterIWrote = getMasterFromZooKeeper( false );
-                    msgLog.logMessage( "Get master after write:" + masterAfterIWrote );
-                    int masterId = masterAfterIWrote.other().getMachineId();
-                    msgLog.logMessage( "Setting '" + MASTER_NOTIFY_CHILD + "' to " + masterId );
-                    setDataChangeWatcher( MASTER_NOTIFY_CHILD, masterId );
-                    msgLog.logMessage( "Did set '" + MASTER_NOTIFY_CHILD + "' to " + masterId );
-                    if ( sessionId != -1 )
+                    if ( writeLastCommittedTx )
                     {
-                        receiver.newMaster( masterAfterIWrote, new Exception() );
+                        sequenceNr = setup();
+                        msgLog.logMessage( "Did setup, seq=" + sequenceNr + " new sessionId=" + newSessionId );
+                        keeperState = KeeperState.SyncConnected;
+                        Pair<Master, Machine> masterAfterIWrote = getMasterFromZooKeeper( false );
+                        msgLog.logMessage( "Get master after write:" + masterAfterIWrote );
+                        int masterId = masterAfterIWrote.other().getMachineId();
+                        msgLog.logMessage( "Setting '" + MASTER_NOTIFY_CHILD + "' to " + masterId );
+                        setDataChangeWatcher( MASTER_NOTIFY_CHILD, masterId );
+                        msgLog.logMessage( "Did set '" + MASTER_NOTIFY_CHILD + "' to " + masterId );
+                        if ( sessionId != -1 )
+                        {
+                            receiver.newMaster( masterAfterIWrote, new Exception() );
+                        }
+                        sessionId = newSessionId;
                     }
-                    sessionId = newSessionId;
+                    else
+                    {
+                        msgLog.logMessage( "Didn't do setup due to told not to write" );
+                        keeperState = KeeperState.SyncConnected;
+                    }
                 }
                 else
                 {
@@ -434,7 +442,7 @@ public class ZooClient extends AbstractZooKeeperManager
             writeHaServerConfig();
             String root = getRoot();
             String path = root + "/" + machineId + "_";
-            String created = zooKeeper.create( path, dataRepresentingMe( writeLastCommittedTx ? committedTx : -1L ),
+            String created = zooKeeper.create( path, dataRepresentingMe( committedTx ),
                 ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL );
 
             // Add watches to our master notification nodes
