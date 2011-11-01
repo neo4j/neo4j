@@ -37,15 +37,19 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 
 class ConsistencyCheck extends RecordStore.Processor implements Runnable
 {
-    private final NodeStore nodes;
-    private final RelationshipStore rels;
-    private final PropertyStore props;
-    private final DynamicStringStore strings;
-    private final DynamicArrayStore arrays;
+    private final RecordStore<NodeRecord> nodes;
+    private final RecordStore<RelationshipRecord> rels;
+    private final RecordStore<PropertyRecord> props;
+    private final RecordStore<DynamicRecord> strings;
+    private final RecordStore<DynamicRecord> arrays;
+    /* TODO:
+    private final PropertyIndexStore  propIndexStore;
+    private final RelationshipTypeStore  relTypeStore;
+    //*/
     private long brokenNodes, brokenRels, brokenProps, brokenStrings, brokenArrays;
 
-    ConsistencyCheck( NodeStore nodes, RelationshipStore rels, PropertyStore props, DynamicStringStore strings,
-            DynamicArrayStore arrays )
+    ConsistencyCheck( RecordStore<NodeRecord> nodes, RecordStore<RelationshipRecord> rels,
+            RecordStore<PropertyRecord> props, RecordStore<DynamicRecord> strings, RecordStore<DynamicRecord> arrays )
     {
         this.nodes = nodes;
         this.rels = rels;
@@ -73,31 +77,31 @@ class ConsistencyCheck extends RecordStore.Processor implements Runnable
     }
 
     @Override
-    protected void processNode( NodeStore store, NodeRecord node )
+    protected void processNode( RecordStore<NodeRecord> store, NodeRecord node )
     {
         if ( checkNode( node ) ) brokenNodes++;
     }
 
     @Override
-    protected void processRelationship( RelationshipStore store, RelationshipRecord rel )
+    protected void processRelationship( RecordStore<RelationshipRecord> store, RelationshipRecord rel )
     {
         if ( checkRelationship( rel ) ) brokenRels++;
     }
 
     @Override
-    protected void processProperty( PropertyStore store, PropertyRecord property )
+    protected void processProperty( RecordStore<PropertyRecord> store, PropertyRecord property )
     {
         if ( checkProperty( property ) ) brokenProps++;
     }
-    
+
     @Override
-    protected void processString( DynamicStringStore store, DynamicRecord string )
+    protected void processString( RecordStore<DynamicRecord> store, DynamicRecord string )
     {
         if ( checkDynamic( store, string ) ) brokenStrings++;
     }
-    
+
     @Override
-    protected void processArray( DynamicArrayStore store, DynamicRecord array )
+    protected void processArray( RecordStore<DynamicRecord> store, DynamicRecord array )
     {
         if ( checkDynamic( store, array ) ) brokenArrays++;
     }
@@ -153,8 +157,9 @@ class ConsistencyCheck extends RecordStore.Processor implements Runnable
                 }
             }
         }
-        for (NodeField field : nodeFields) {
-            long nodeId = field.get(rel);
+        for ( NodeField field : nodeFields )
+        {
+            long nodeId = field.get( rel );
             if ( nodeId < 0 )
                 fail = report( rel, "invalid " + field.name() + " node reference" );
             else
@@ -202,21 +207,22 @@ class ConsistencyCheck extends RecordStore.Processor implements Runnable
         }
         for ( PropertyBlock block : property.getPropertyBlocks() )
         {
-            AbstractDynamicStore dynStore = null;
+            RecordStore<DynamicRecord> dynStore = null;
             PropertyType type = block.forceGetType();
             if ( type == null )
             {
                 fail = report( property, "illegal property type" );
             }
-            else switch ( block.getType() )
-            {
-            case STRING:
-                dynStore = strings;
-                break;
-            case ARRAY:
-                dynStore = arrays;
-                break;
-            }
+            else
+                switch ( block.getType() )
+                {
+                case STRING:
+                    dynStore = strings;
+                    break;
+                case ARRAY:
+                    dynStore = arrays;
+                    break;
+                }
             if ( dynStore != null )
             {
                 DynamicRecord dynrec = dynStore.forceGetRecord( block.getSingleValueLong() );
@@ -229,7 +235,7 @@ class ConsistencyCheck extends RecordStore.Processor implements Runnable
         return fail;
     }
 
-    private boolean checkDynamic( AbstractDynamicStore store, DynamicRecord record )
+    private boolean checkDynamic( RecordStore<DynamicRecord> store, DynamicRecord record )
     {
         boolean fail = false;
         long nextId = record.getNextBlock();
@@ -260,7 +266,7 @@ class ConsistencyCheck extends RecordStore.Processor implements Runnable
 
     private static NodeField[] nodeFields = NodeField.values();
     private static RelationshipField[] relFields = RelationshipField.values();
-    
+
     private enum NodeField
     {
         FIRST
