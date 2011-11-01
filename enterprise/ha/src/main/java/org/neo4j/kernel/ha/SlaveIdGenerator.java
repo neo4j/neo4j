@@ -56,7 +56,6 @@ public class SlaveIdGenerator implements IdGenerator
         {
             IdGenerator localIdGenerator = localFactory.open( fileName, grabSize,
                     idType, highestIdInUse );
-            localIdGenerator.clearFreeIds();
             SlaveIdGenerator generator = new SlaveIdGenerator( idType, highestIdInUse, broker,
                     receiver, localIdGenerator );
             generators.put( idType, generator );
@@ -109,10 +108,12 @@ public class SlaveIdGenerator implements IdGenerator
     {
         this.idQueue = EMPTY_ID_RANGE_ITERATOR;
     }
-
-    public void close()
+    
+    @Override
+    public void close( boolean shutdown )
     {
-        this.localIdGenerator.close();
+        this.localIdGenerator.close( shutdown );
+        if ( shutdown ) this.localIdGenerator.delete();
     }
 
     public void freeId( long id )
@@ -199,7 +200,7 @@ public class SlaveIdGenerator implements IdGenerator
     }
     
     @Override
-    public void clearFreeIds()
+    public void delete()
     {
     }
     
