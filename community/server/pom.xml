@@ -612,6 +612,32 @@ the relevant Commercial Agreement.
     </profile>
     
     <profile>
+      <id>all-tests</id>
+      <activation>
+        <property>
+          <name>tests</name>
+          <value>all</value>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <includes>
+                <include>**/*WebIT.java</include>
+                <include>**/Test*.java</include>
+                <include>**/*Test.java</include>
+                <include>**/*TestCase.java</include>
+              </includes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    
+    <profile>
       <id>neodev</id>
       <!-- Expands the number of things skipped by the neodev profile defined in parent-central pom. This is meant to be used by maven exec, it does not guarantee producing working artifacts. -->
       <build>
