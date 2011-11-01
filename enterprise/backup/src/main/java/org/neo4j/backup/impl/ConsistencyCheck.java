@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.backup;
+package org.neo4j.backup.impl;
 
 import org.neo4j.kernel.impl.nioneo.store.Abstract64BitRecord;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.nioneo.store.DynamicStringStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
+import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
@@ -34,28 +35,51 @@ import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
+import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 
+/**
+ * Finds inconsistency in a Neo4j store.
+ * 
+ * Warning: will not find "dangling" records, i.e. records that are correct but
+ * not referenced.
+ * 
+ * Warning: will only find multiple references to the same property chain or
+ * dynamic record chain for incremental checks (if the {@link RecordStore stores}
+ * are {@link DiffRecordStore diff stores}).
+ */
 class ConsistencyCheck extends RecordStore.Processor implements Runnable
 {
+    public static void main( String[] args )
+    {
+        StoreAccess stores = new StoreAccess( args[0] );
+        try
+        {
+            new ConsistencyCheck( stores ).run();
+        }
+        finally
+        {
+            stores.close();
+        }
+    }
+    
     private final RecordStore<NodeRecord> nodes;
     private final RecordStore<RelationshipRecord> rels;
     private final RecordStore<PropertyRecord> props;
-    private final RecordStore<DynamicRecord> strings;
-    private final RecordStore<DynamicRecord> arrays;
-    /* TODO:
-    private final PropertyIndexStore  propIndexStore;
-    private final RelationshipTypeStore  relTypeStore;
-    //*/
+    private final RecordStore<DynamicRecord> strings, arrays;
+    private final RecordStore<PropertyIndexRecord>  propIndexStore;
+    private final RecordStore<RelationshipTypeRecord>  relTypeStore;
     private long brokenNodes, brokenRels, brokenProps, brokenStrings, brokenArrays;
 
-    ConsistencyCheck( RecordStore<NodeRecord> nodes, RecordStore<RelationshipRecord> rels,
-            RecordStore<PropertyRecord> props, RecordStore<DynamicRecord> strings, RecordStore<DynamicRecord> arrays )
+    ConsistencyCheck( StoreAccess stores )
     {
-        this.nodes = nodes;
-        this.rels = rels;
-        this.props = props;
-        this.strings = strings;
-        this.arrays = arrays;
+        this.nodes = stores.getNodeStore();
+        this.rels = stores.getRelationshipStore();
+        this.props = stores.getPropertyStore();
+        this.strings = stores.getStringStore();
+        this.arrays = stores.getArrayStore();
+        this.propIndexStore = stores.getPropertyIndexStore();
+        this.relTypeStore = stores.getRelationshipTypeStore();
     }
 
     @Override
@@ -67,6 +91,11 @@ class ConsistencyCheck extends RecordStore.Processor implements Runnable
         apply( props, RecordStore.IN_USE );
         apply( strings, RecordStore.IN_USE );
         apply( arrays, RecordStore.IN_USE );
+        checkResult();
+    }
+
+    void checkResult() throws AssertionError
+    {
         if ( brokenNodes != 0 || brokenRels != 0 || brokenProps != 0 || brokenStrings != 0 || brokenArrays != 0 )
         {
             throw new AssertionError(
@@ -79,30 +108,35 @@ class ConsistencyCheck extends RecordStore.Processor implements Runnable
     @Override
     protected void processNode( RecordStore<NodeRecord> store, NodeRecord node )
     {
+        if ( !node.inUse() ) return;
         if ( checkNode( node ) ) brokenNodes++;
     }
 
     @Override
     protected void processRelationship( RecordStore<RelationshipRecord> store, RelationshipRecord rel )
     {
+        if ( !rel.inUse() ) return;
         if ( checkRelationship( rel ) ) brokenRels++;
     }
 
     @Override
     protected void processProperty( RecordStore<PropertyRecord> store, PropertyRecord property )
     {
+        if ( !property.inUse() ) return;
         if ( checkProperty( property ) ) brokenProps++;
     }
 
     @Override
     protected void processString( RecordStore<DynamicRecord> store, DynamicRecord string )
     {
+        if ( !string.inUse() ) return;
         if ( checkDynamic( store, string ) ) brokenStrings++;
     }
 
     @Override
     protected void processArray( RecordStore<DynamicRecord> store, DynamicRecord array )
     {
+        if ( !array.inUse() ) return;
         if ( checkDynamic( store, array ) ) brokenArrays++;
     }
 
