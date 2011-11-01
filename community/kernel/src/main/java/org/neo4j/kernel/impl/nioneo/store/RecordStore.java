@@ -125,6 +125,12 @@ public interface RecordStore<R extends Abstract64BitRecord>
                 }
             };
         }
+        
+        public <R extends Abstract64BitRecord> void apply( RecordStore<R> store, Iterable<Long> ids )
+        {
+            for ( R record : scanById( store, ids ) )
+                store.accept( this, record );
+        }
 
         public <R extends Abstract64BitRecord> void apply( RecordStore<R> store, Predicate<? super R>... filters )
         {
