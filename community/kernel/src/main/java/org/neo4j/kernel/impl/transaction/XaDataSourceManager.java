@@ -21,9 +21,11 @@ package org.neo4j.kernel.impl.transaction;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import javax.transaction.xa.XAException;
@@ -189,6 +191,16 @@ public class XaDataSourceManager
                 UTF8.decode( branchId ) + "]" );
         }
         return dataSource.getXaConnection().getXaResource();
+    }
+    
+    public Collection<XAResource> getAllRegisteredXAResources()
+    {
+        List<XAResource> list = new ArrayList<XAResource>();
+        for ( XaDataSource ds : dataSources.values() )
+        {
+            list.add( ds.getXaConnection().getXaResource() );
+        }
+        return list;
     }
     
     // not thread safe

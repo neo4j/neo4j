@@ -194,11 +194,15 @@ public class TxManager extends AbstractTransactionManager
             }
             Iterator<List<TxLog.Record>> danglingRecordList =
                 txLog.getDanglingRecords();
-            if ( danglingRecordList.hasNext() )
+            boolean danglingRecordFound = danglingRecordList.hasNext();
+            if ( danglingRecordFound )
             {
                 log.info( "Unresolved transactions found, " +
                     "recovery started ..." );
-                recover( danglingRecordList );
+            }
+            recover( danglingRecordList );
+            if ( danglingRecordFound )
+            {
                 log.info( "Recovery completed, all transactions have been " +
                     "resolved to a consistent state." );
                 msgLog.logMessage( "Recovery completed, all transactions have been " +
@@ -299,7 +303,10 @@ public class TxManager extends AbstractTransactionManager
 
     private void recover( Iterator<List<TxLog.Record>> danglingRecordList )
     {
-        msgLog.logMessage( "TM non resolved transactions found in " + txLog.getName(), true );
+        if ( danglingRecordList.hasNext() )
+        {
+            msgLog.logMessage( "TM non resolved transactions found in " + txLog.getName(), true );
+        }
         try
         {
             // contains NonCompletedTransaction that needs to be committed
@@ -317,9 +324,10 @@ public class TxManager extends AbstractTransactionManager
             // invoke recover on all xa resources found
             Iterator<Resource> resourceItr = resourceMap.keySet().iterator();
             List<Xid> recoveredXidsList = new LinkedList<Xid>();
-            while ( resourceItr.hasNext() )
+            
+            // check recovered transactions on all registered resources
+            for ( XAResource xaRes : xaDsManager.getAllRegisteredXAResources() )
             {
-                XAResource xaRes = resourceMap.get( resourceItr.next() );
                 Xid xids[] = xaRes.recover( XAResource.TMNOFLAGS );
                 for ( int i = 0; i < xids.length; i++ )
                 {
@@ -336,6 +344,11 @@ public class TxManager extends AbstractTransactionManager
                         }
                         else
                         {
+                            Resource resource = new Resource( xids[i].getBranchQualifier() );
+                            if ( !resourceMap.containsKey( resource ) ) 
+                            {
+                                resourceMap.put( resource, xaRes );
+                            }
                             recoveredXidsList.add( xids[i] );
                         }
                     }
