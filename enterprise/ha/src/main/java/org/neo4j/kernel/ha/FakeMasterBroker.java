@@ -49,7 +49,7 @@ public class FakeMasterBroker extends AbstractBroker
         // throw new UnsupportedOperationException( "I am master" );
     }
 
-    public Pair<Master, Machine> getMasterReally()
+    public Pair<Master, Machine> getMasterReally( boolean allowChange )
     {
         return Pair.<Master, Machine>of( null, new Machine( getMyMachineId(), 0, 1, -1, null ) );
     }

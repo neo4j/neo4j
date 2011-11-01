@@ -201,7 +201,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
     private void getFreshDatabaseFromMaster( Pair<Master, Machine> master )
     {
-        master = master != null ? master : broker.getMasterReally();
+        master = master != null ? master : broker.getMasterReally( true );
         // Assume it's shut down at this point
 
         internalShutdown( false );
@@ -221,7 +221,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 msgLog.logMessage( "Problems copying store from master", e );
                 sleepWithoutInterruption( 1000, "" );
                 exception = e;
-                master = broker.getMasterReally();
+                master = broker.getMasterReally( true );
             }
         }
         throw new RuntimeException( "Gave up trying to copy store from master", exception );
@@ -249,7 +249,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             while ( System.currentTimeMillis() < endTime )
             {
                 // Check if the cluster is up
-                Pair<Master, Machine> master = broker.getMasterReally();
+                Pair<Master, Machine> master = broker.getMasterReally( true );
                 if ( master != null && master.first() != null )
                 { // Join the existing cluster
                     try
@@ -262,7 +262,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                     catch ( Exception e )
                     {
                         exception = e;
-                        master = broker.getMasterReally();
+                        master = broker.getMasterReally( true );
                         msgLog.logMessage( "Problems copying store from master", e );
                     }
                 }
@@ -541,7 +541,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
     protected synchronized void reevaluateMyself( Pair<Master, Machine> master, StoreId storeId )
     {
-        if ( master == null ) master = broker.getMasterReally();
+        if ( master == null ) master = broker.getMasterReally( true );
         boolean iAmCurrentlyMaster = masterServer != null;
         msgLog.logMessage( "ReevaluateMyself: machineId=" + machineId + " with master[" + master +
                 "] (I am master=" + iAmCurrentlyMaster + ", " + localGraph + ")" );
@@ -941,12 +941,12 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         catch ( ZooKeeperException ee )
         {
             msgLog.logMessage( "ZooKeeper exception in newMaster", ee );
-            broker.getMasterReally();
+            throw Exceptions.launderedException( ee );
         }
         catch ( ComException ee )
         {
             msgLog.logMessage( "Communication exception in newMaster", ee );
-            broker.getMasterReally();
+            throw Exceptions.launderedException( ee );
         }
         catch ( BranchedDataException ee )
         {
@@ -958,7 +958,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         {
             msgLog.logMessage( "Reevaluation ended in unknown exception " + t
                     + " so shutting down", t, true );
-            broker.getMasterReally();
             shutdown( t, false );
             throw Exceptions.launderedException( t );
         }

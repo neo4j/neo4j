@@ -40,7 +40,7 @@ public class FakeSlaveBroker extends AbstractBroker
         return Pair.<Master, Machine>of( master, Machine.NO_MACHINE );
     }
 
-    public Pair<Master, Machine> getMasterReally()
+    public Pair<Master, Machine> getMasterReally( boolean allowChange )
     {
         return Pair.<Master, Machine>of( master, Machine.NO_MACHINE );
     }
