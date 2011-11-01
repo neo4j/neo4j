@@ -106,7 +106,7 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
         }
 
         @Override
-        public void close()
+        public void close( boolean shutdown )
         {
         }
 
@@ -123,7 +123,7 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
         }
         
         @Override
-        public void clearFreeIds()
+        public void delete()
         {
         }
     }
@@ -181,7 +181,7 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
         }
 
         @Override
-        public void close()
+        public void close( boolean shutdown )
         {
         }
 
@@ -198,7 +198,7 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
         }
         
         @Override
-        public void clearFreeIds()
+        public void delete()
         {
         }
     }

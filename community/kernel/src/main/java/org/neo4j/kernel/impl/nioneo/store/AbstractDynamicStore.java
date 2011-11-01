@@ -125,7 +125,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         // TODO highestIdInUse = 0 works now, but not when slave can create store files.
         IdGenerator idGenerator = idGeneratorFactory.open( fileName + ".id", 1, idType, 0 );
         idGenerator.nextId(); // reserv first for blockSize
-        idGenerator.close();
+        idGenerator.close( false );
     }
 
     private int blockSize;
