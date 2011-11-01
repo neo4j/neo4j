@@ -324,7 +324,7 @@ public abstract class Command extends XaCommand
         @Override
         public String toString()
         {
-            return "NodeCommand[" + record + "]";
+            return record.toString();
         }
 
         @Override
@@ -448,7 +448,7 @@ public abstract class Command extends XaCommand
         @Override
         public String toString()
         {
-            return "RelationshipCommand[" + record + "]";
+            return record.toString();
         }
 
         @Override
@@ -576,7 +576,7 @@ public abstract class Command extends XaCommand
         @Override
         public String toString()
         {
-            return "PropertyIndexCommand[" + record + "]";
+            return record.toString();
         }
 
         @Override
@@ -708,7 +708,7 @@ public abstract class Command extends XaCommand
         @Override
         public String toString()
         {
-            return "PropertyCommand[" + record + "]";
+            return record.toString();
         }
 
         @Override
@@ -903,7 +903,7 @@ public abstract class Command extends XaCommand
         @Override
         public String toString()
         {
-            return "RelationshipTypeCommand[" + record + "]";
+            return record.toString();
         }
 
         @Override
