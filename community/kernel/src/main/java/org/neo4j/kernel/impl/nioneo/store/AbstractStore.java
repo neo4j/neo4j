@@ -212,7 +212,7 @@ public abstract class AbstractStore extends CommonAbstractStore
             assert success;
         }
         createIdGenerator( getStorageFileName() + ".id" );
-        openIdGenerator();
+        openIdGenerator( false );
         FileChannel fileChannel = getFileChannel();
         long highId = 1;
         long defraggedCount = 0;
@@ -277,7 +277,7 @@ public abstract class AbstractStore extends CommonAbstractStore
         logger.fine( "[" + getStorageFileName() + "] high id=" + getHighId()
             + " (defragged=" + defraggedCount + ")" );
         closeIdGenerator();
-        openIdGenerator();
+        openIdGenerator( false );
     }
 
     public abstract List<WindowPoolStats> getAllWindowPoolStats();

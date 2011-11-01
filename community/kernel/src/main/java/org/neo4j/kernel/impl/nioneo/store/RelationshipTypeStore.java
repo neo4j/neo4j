@@ -317,7 +317,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
             assert success;
         }
         createIdGenerator( getStorageFileName() + ".id" );
-        openIdGenerator();
+        openIdGenerator( false );
         FileChannel fileChannel = getFileChannel();
         long highId = -1;
         int recordSize = getRecordSize();
@@ -358,7 +358,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store
         setHighId( highId );
         logger.fine( "[" + getStorageFileName() + "] high id=" + getHighId() );
         closeIdGenerator();
-        openIdGenerator();
+        openIdGenerator( false );
     }
 
     public String getStringFor( RelationshipTypeRecord relTypeRecord )

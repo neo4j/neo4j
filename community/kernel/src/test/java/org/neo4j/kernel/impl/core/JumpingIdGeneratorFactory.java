@@ -43,7 +43,7 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
     }
     
     public IdGenerator open( String fileName, int grabSize, IdType idType,
-            long highestIdInUse )
+            long highestIdInUse, boolean startup )
     {
         return get( idType );
     }

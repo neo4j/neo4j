@@ -239,7 +239,7 @@ public abstract class CommonAbstractStore
         {
             if ( !isReadOnly() || isBackupSlave() )
             {
-                openIdGenerator();
+                openIdGenerator( true );
             }
             else
             {
@@ -606,16 +606,15 @@ public abstract class CommonAbstractStore
     /**
      * Opens the {@link IdGenerator} used by this store.
      */
-    protected void openIdGenerator()
+    protected void openIdGenerator( boolean firstTime )
     {
-        idGenerator = openIdGenerator( storageFileName + ".id",
-            idType.getGrabSize() );
+        idGenerator = openIdGenerator( storageFileName + ".id", idType.getGrabSize(), firstTime );
     }
 
-    protected IdGenerator openIdGenerator( String fileName, int grabSize )
+    protected IdGenerator openIdGenerator( String fileName, int grabSize, boolean firstTime )
     {
         return idGeneratorFactory.open( fileName, grabSize, getIdType(),
-                figureOutHighestIdInUse() );
+                figureOutHighestIdInUse(), firstTime );
     }
 
     protected abstract long figureOutHighestIdInUse();

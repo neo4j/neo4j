@@ -62,7 +62,7 @@ public class CommonFactories
         private final Map<IdType, IdGenerator> generators = new HashMap<IdType, IdGenerator>();
         
         public IdGenerator open( String fileName, int grabSize, IdType idType,
-                long highestIdInUse )
+                long highestIdInUse, boolean startup )
         {
             IdGenerator generator = new IdGeneratorImpl( fileName, grabSize, idType.getMaxValue(), idType.allowAggressiveReuse() );
             generators.put( idType, generator );
