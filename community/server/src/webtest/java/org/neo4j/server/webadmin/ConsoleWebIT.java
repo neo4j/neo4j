@@ -24,7 +24,7 @@ import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 
-public class ConsoleTest extends AbstractWebadminTest {
+public class ConsoleWebIT extends AbstractWebadminTest {
 
     //
     // CYPHER

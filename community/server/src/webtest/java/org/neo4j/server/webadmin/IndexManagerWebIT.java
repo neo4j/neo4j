@@ -22,7 +22,7 @@ package org.neo4j.server.webadmin;
 import org.junit.Test;
 import org.openqa.selenium.By;
 
-public class IndexManagerTest extends AbstractWebadminTest {
+public class IndexManagerWebIT extends AbstractWebadminTest {
 
     @Test
     public void createNodeIndexTest() 

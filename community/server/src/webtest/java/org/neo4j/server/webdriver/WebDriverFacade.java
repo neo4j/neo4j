@@ -24,8 +24,6 @@ import java.lang.reflect.InvocationTargetException;
 
 import org.openqa.selenium.WebDriver;
 
-import cuke4duke.annotation.After;
-
 public class WebDriverFacade {
 
     private WebDriver browser;
@@ -41,7 +39,6 @@ public class WebDriverFacade {
         return browser;
     }
 
-    @After
     public void closeBrowser() throws IllegalAccessException, InvocationTargetException, InstantiationException {
         if (browser != null) {
             browser.close();

@@ -27,7 +27,7 @@ import org.neo4j.server.webdriver.ElementReference;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 
-public class DatabrowserTest extends AbstractWebadminTest {
+public class DatabrowserWebIT extends AbstractWebadminTest {
 
     //
     // NODE MANAGEMENT
