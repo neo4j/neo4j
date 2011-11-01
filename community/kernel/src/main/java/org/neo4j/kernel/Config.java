@@ -141,6 +141,14 @@ public class Config
      */
     @Documented
     public static final String TXMANAGER_IMPLEMENTATION = "tx_manager_impl";
+
+    /**
+     * The name of the log deserializer implementation to use for externally
+     * supplied transactions. Defaults to native.
+     */
+    @Documented
+    public static final String LOG_DESERIALIZER_IMPLEMENTATION = "log_deserializer_impl";
+
     /**
      * Boolean (one of true,false) defining whether to allow a store upgrade
      * in case the current version of the database starts against an older store
@@ -298,7 +306,7 @@ public class Config
     {
         return persistenceSourceName;
     }
-    
+
     boolean getCreatePersistenceSource()
     {
         return create;
