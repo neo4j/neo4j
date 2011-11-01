@@ -27,8 +27,6 @@ import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.impl.nioneo.store.RecordStore.Processor;
-import org.neo4j.kernel.impl.nioneo.xa.CommandRecordVisitor;
 
 /**
  * Not thread safe (since DiffRecordStore is not thread safe), intended for
@@ -177,7 +175,7 @@ public class StoreAccess
     }
 
     @SuppressWarnings( "unchecked" )
-    protected void apply( Processor processor, RecordStore<?> store )
+    protected void apply( RecordStore.Processor processor, RecordStore<?> store )
     {
         processor.apply( store, RecordStore.IN_USE );
     }
