@@ -26,7 +26,7 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 
-public interface RecordStore<R extends Abstract64BitRecord>
+public interface RecordStore<R extends AbstractBaseRecord>
 {
     public long getHighId();
 
@@ -40,10 +40,10 @@ public interface RecordStore<R extends Abstract64BitRecord>
 
     public void accept( Processor processor, R record );
 
-    public static final Predicate<Abstract64BitRecord> IN_USE = new Predicate<Abstract64BitRecord>()
+    public static final Predicate<AbstractBaseRecord> IN_USE = new Predicate<AbstractBaseRecord>()
     {
         @Override
-        public boolean accept( Abstract64BitRecord item )
+        public boolean accept( AbstractBaseRecord item )
         {
             return item.inUse();
         }
@@ -81,7 +81,7 @@ public interface RecordStore<R extends Abstract64BitRecord>
             throw new UnsupportedOperationException( this + " does not process dynamic records" );
         }
 
-        public static <R extends Abstract64BitRecord> Iterable<R> scan( final RecordStore<R> store,
+        public static <R extends AbstractBaseRecord> Iterable<R> scan( final RecordStore<R> store,
                 final Predicate<? super R>... filters )
         {
             return new Iterable<R>()
@@ -113,7 +113,7 @@ public interface RecordStore<R extends Abstract64BitRecord>
             };
         }
 
-        public static <R extends Abstract64BitRecord> Iterable<R> scanById( final RecordStore<R> store,
+        public static <R extends AbstractBaseRecord> Iterable<R> scanById( final RecordStore<R> store,
                 Iterable<Long> ids )
         {
             return new IterableWrapper<R, Long>( ids )
@@ -126,24 +126,24 @@ public interface RecordStore<R extends Abstract64BitRecord>
             };
         }
         
-        public <R extends Abstract64BitRecord> void apply( RecordStore<R> store, Iterable<Long> ids )
+        public <R extends AbstractBaseRecord> void apply( RecordStore<R> store, Iterable<Long> ids )
         {
             for ( R record : scanById( store, ids ) )
                 store.accept( this, record );
         }
 
-        public <R extends Abstract64BitRecord> void apply( RecordStore<R> store, Predicate<? super R>... filters )
+        public <R extends AbstractBaseRecord> void apply( RecordStore<R> store, Predicate<? super R>... filters )
         {
             apply( store, null, filters );
         }
 
-        public <R extends Abstract64BitRecord> void applyWithTerminalProgress( RecordStore<R> store,
+        public <R extends AbstractBaseRecord> void applyWithTerminalProgress( RecordStore<R> store,
                 Predicate<? super R>... filters )
         {
             apply( store, System.err, filters );
         }
 
-        private final <R extends Abstract64BitRecord> void apply( RecordStore<R> store, final PrintStream out,
+        private final <R extends AbstractBaseRecord> void apply( RecordStore<R> store, final PrintStream out,
                 Predicate<? super R>... filters )
         {
             long highId = store.getHighId();
@@ -154,7 +154,7 @@ public interface RecordStore<R extends Abstract64BitRecord>
                 store.accept( this, record );
                 if ( out != null )
                 {
-                    int permille = (int) ( ( record.getId() * 1000L ) / highId );
+                    int permille = (int) ( ( record.getLongId() * 1000L ) / highId );
                     if ( permille != lastPermille ) progress( out, lastPermille = permille );
                 }
             }

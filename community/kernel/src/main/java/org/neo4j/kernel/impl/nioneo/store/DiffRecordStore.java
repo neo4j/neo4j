@@ -26,7 +26,7 @@ import java.util.Map;
 /**
  * Not thread safe, intended for single threaded use.
  */
-public class DiffRecordStore<R extends Abstract64BitRecord> implements RecordStore<R>, Iterable<Long>
+public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStore<R>, Iterable<Long>
 {
     private final RecordStore<R> actual;
     private final Map<Long, R> diff;
@@ -72,8 +72,8 @@ public class DiffRecordStore<R extends Abstract64BitRecord> implements RecordSto
     @Override
     public void updateRecord( R record )
     {
-        if ( record.getId() > highId ) highId = record.getId();
-        diff.put( record.getId(), record );
+        if ( record.getLongId() > highId ) highId = record.getLongId();
+        diff.put( record.getLongId(), record );
     }
 
     @Override

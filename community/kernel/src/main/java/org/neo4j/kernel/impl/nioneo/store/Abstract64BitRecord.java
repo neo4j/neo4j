@@ -19,45 +19,30 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-public abstract class Abstract64BitRecord
+public abstract class Abstract64BitRecord extends AbstractBaseRecord
 {
-    private boolean inUse = false;
     private final long id;
-    private boolean created = false;
 
     protected Abstract64BitRecord( long id )
     {
+        super( false );
         this.id = id;
     }
 
     Abstract64BitRecord( long id, boolean inUse )
     {
+        super( inUse );
         this.id = id;
-        this.inUse = inUse;
     }
 
     public long getId()
     {
         return id;
     }
-
-    public boolean inUse()
+    
+    @Override
+    public long getLongId()
     {
-        return inUse;
-    }
-
-    public void setInUse( boolean inUse )
-    {
-        this.inUse = inUse;
-    }
-
-    public void setCreated()
-    {
-        this.created = true;
-    }
-
-    public boolean isCreated()
-    {
-        return created;
+        return id;
     }
 }
