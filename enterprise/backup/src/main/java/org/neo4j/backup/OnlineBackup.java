@@ -116,7 +116,8 @@ public class OnlineBackup
 
     private EmbeddedGraphDatabase startTemporaryDb( String targetDirectory )
     {
-        return new EmbeddedGraphDatabase( targetDirectory );
+        return new EmbeddedGraphDatabase( targetDirectory/*, MapUtil.stringMap(
+                                                         Config.LOG_DESERIALIZER_IMPLEMENTATION, "verifying" )*/);
     }
 
     public OnlineBackup incremental( String targetDirectory )
