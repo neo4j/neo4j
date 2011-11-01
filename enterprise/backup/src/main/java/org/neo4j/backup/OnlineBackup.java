@@ -34,9 +34,7 @@ import org.neo4j.com.SlaveContext;
 import org.neo4j.com.ToFileStoreWriter;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
@@ -118,8 +116,8 @@ public class OnlineBackup
 
     private EmbeddedGraphDatabase startTemporaryDb( String targetDirectory )
     {
-        return new EmbeddedGraphDatabase( targetDirectory, MapUtil.stringMap(
-                Config.LOG_DESERIALIZER_IMPLEMENTATION, "verifying" ) );
+        return new EmbeddedGraphDatabase( targetDirectory/*, MapUtil.stringMap(
+                                                         Config.LOG_DESERIALIZER_IMPLEMENTATION, "verifying" )*/);
     }
 
     public OnlineBackup incremental( String targetDirectory )

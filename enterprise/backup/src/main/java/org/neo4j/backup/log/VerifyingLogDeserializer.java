@@ -52,7 +52,7 @@ public class VerifyingLogDeserializer implements LogDeserializer
                                                                        + Xid.MAXBQUALSIZE
                                                                        * 10 );
 
-    private final List<LogEntry> commandEntries;
+    private final List<LogEntry> logEntries;
 
     private LogEntry.Commit commitEntry;
     private LogEntry.Start startEntry;
@@ -64,7 +64,7 @@ public class VerifyingLogDeserializer implements LogDeserializer
         this.writeBuffer = writeBuffer;
         this.applier = applier;
         this.cf = cf;
-        commandEntries = new LinkedList<LogEntry>();
+        logEntries = new LinkedList<LogEntry>();
     }
 
     @Override
@@ -84,6 +84,7 @@ public class VerifyingLogDeserializer implements LogDeserializer
             return false;
         }
         entry.setIdentifier( newXidIdentifier );
+        logEntries.add( entry );
         if ( entry instanceof LogEntry.Commit )
         {
             assert startEntry != null;
@@ -92,10 +93,6 @@ public class VerifyingLogDeserializer implements LogDeserializer
         else if ( entry instanceof LogEntry.Start )
         {
             startEntry = (LogEntry.Start) entry;
-        }
-        else
-        {
-            commandEntries.add( entry );
         }
         return true;
     }
@@ -123,17 +120,10 @@ public class VerifyingLogDeserializer implements LogDeserializer
 
     private void applyAll() throws IOException
     {
-        LogIoUtils.writeLogEntry( startEntry, writeBuffer );
-        applier.apply( startEntry );
-        for ( LogEntry entry : commandEntries )
+        for ( LogEntry entry : logEntries )
         {
             LogIoUtils.writeLogEntry( entry, writeBuffer );
             applier.apply( entry );
-        }
-        if ( commitEntry != null )
-        {
-            LogIoUtils.writeLogEntry( commitEntry, writeBuffer );
-            applier.apply( commitEntry );
         }
     }
 }
