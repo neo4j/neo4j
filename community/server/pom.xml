@@ -437,6 +437,7 @@ the relevant Commercial Agreement.
         <configuration>
           <systemPropertyVariables>
             <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
+            <webdriver.impl.class>${webdriver.impl.class}</webdriver.impl.class>
           </systemPropertyVariables>
           <argLine>-Xmx1024m</argLine>
           <forkMode>once</forkMode>
