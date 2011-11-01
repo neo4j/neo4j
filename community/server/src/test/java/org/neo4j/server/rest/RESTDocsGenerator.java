@@ -21,6 +21,7 @@ package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
@@ -315,7 +316,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         }
         if ( response.getType() != null )
         {
-            assertEquals( "wrong response type: "+ data.entity, type, response.getType() );
+            assertTrue( "wrong response type: "+ data.entity, response.getType().isCompatible( type ) );
         }
         for ( String headerField : headerFields )
         {

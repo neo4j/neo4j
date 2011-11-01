@@ -32,9 +32,6 @@
     <!-- Run integration tests against a server that is started elsewhere. This is used in ServerIntegrationTestFacade, which currently assumes external servers to be running at http://localhost:7474/ -->
     <testWithExternalServer>false</testWithExternalServer>
 
-    <!-- Override this with something like -DcukeArgs=features/webadmin/console.feature:12 -->
-    <cukeArgs>src/features</cukeArgs>
-
     <webdriver.version>2.5.0</webdriver.version>
     <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
 
@@ -229,14 +226,6 @@ the relevant Commercial Agreement.
     </dependency>
 
     <!-- Test dependencies -->
-    <dependency>
-      <groupId>cuke4duke</groupId>
-      <artifactId>cuke4duke</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.picocontainer</groupId>
-      <artifactId>picocontainer</artifactId>
-    </dependency>
 
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
@@ -448,6 +437,7 @@ the relevant Commercial Agreement.
         <configuration>
           <systemPropertyVariables>
             <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
+            <webdriver.impl.class>${webdriver.impl.class}</webdriver.impl.class>
           </systemPropertyVariables>
           <argLine>-Xmx1024m</argLine>
           <forkMode>once</forkMode>
@@ -467,6 +457,7 @@ the relevant Commercial Agreement.
             <configuration>
               <sources>
                 <source>src/functionaltest/java</source>
+                <source>src/webtest/java</source>
               </sources>
             </configuration>
           </execution>
@@ -521,6 +512,9 @@ the relevant Commercial Agreement.
             <module>
               <name>webadmin</name>
               <exclude>
+                <!-- Arbor runs with WebWorkers, webworkers want are started by giving 
+                     the browser a js url to fetch and run, so this needs to be separate 
+                     from the webadmin js file. -->
                 <exclude>lib/arbor.js</exclude>
               </exclude>
             </module>
@@ -599,77 +593,47 @@ the relevant Commercial Agreement.
       <id>web-tests</id>
       <activation>
         <property>
-          <name>tests</name>
-          <value>web</value>
+          <name>tests</name> <value>web</value>
         </property>
       </activation>
       <build>
         <plugins>
           <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>build-helper-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>add-test-source</id>
-                <phase>generate-test-sources</phase>
-                <goals>
-                  <goal>add-test-source</goal>
-                </goals>
-                <configuration>
-                  <sources>
-                    <source>src/webtest/java</source>
-                    <!-- Required b/c we use utility classes from here -->
-                    <source>src/functionaltest/java</source>
-                  </sources>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-
-          <plugin>
-            <groupId>cuke4duke</groupId>
-            <artifactId>cuke4duke-maven-plugin</artifactId>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
-              <jvmArgs>
-                <jvmArg>-Xmx384m</jvmArg>
-                <jvmArg>-Dlog4j.configuration=file:///${project.basedir}/target/test-classes/log4j.properties</jvmArg>
-                <jvmArg>-Dwebdriver.impl=${webdriver.impl.class}</jvmArg>
-                <jvmArg>-DtestWithExternalServer=${testWithExternalServer}</jvmArg>
-                <jvmArg>-DtestWithDevHtmlFile=${testWithDevHtmlFile}</jvmArg>
-              </jvmArgs>
-              <cucumberArgs>
-                <cucumberArg>--verbose</cucumberArg>
-                <cucumberArg>--strict</cucumberArg>
-                <cucumberArg>--color</cucumberArg>
-                <cucumberArg>--require</cucumberArg>
-                <cucumberArg>${basedir}/target/test-classes</cucumberArg>
-                <cucumberArg>--format junit</cucumberArg>
-                <cucumberArg>--out ${project.build.directory}/surefire-reports</cucumberArg>
-                <cucumberArg>${cukeArgs}</cucumberArg>
-              </cucumberArgs>
-              <gems>
-                <gem>install cuke4duke --version ${cuke4duke.version}</gem>
-              </gems>
+              <includes>
+                <!-- WebIT for web integration test -->
+                <include>**/*WebIT.java</include>
+              </includes>
             </configuration>
-            <executions>
-              <execution>
-                <id>run-features</id>
-                <phase>integration-test</phase>
-                <goals>
-                  <goal>cucumber</goal>
-                </goals>
-              </execution>
-            </executions>
           </plugin>
-
+        </plugins>
+      </build>
+    </profile>
+    
+    <profile>
+      <id>all-tests</id>
+      <activation>
+        <property>
+          <name>tests</name>
+          <value>all</value>
+        </property>
+      </activation>
+      <build>
+        <plugins>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
-              <skip>true</skip>
+              <includes>
+                <include>**/*WebIT.java</include>
+                <include>**/Test*.java</include>
+                <include>**/*Test.java</include>
+                <include>**/*TestCase.java</include>
+              </includes>
             </configuration>
           </plugin>
-
         </plugins>
       </build>
     </profile>

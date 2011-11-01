@@ -17,32 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.nioneo.store;
+package org.neo4j.server.webadmin;
 
-public abstract class AbstractRecord extends AbstractBaseRecord
-{
-    private final int id;
+import org.junit.Test;
+import org.openqa.selenium.By;
 
-    AbstractRecord( int id )
-    {
-        super( false );
-        this.id = id;
-    }
+public class ServerInfoWebIT extends AbstractWebadminTest {
 
-    AbstractRecord( int id, boolean inUse )
-    {
-        super( inUse );
-        this.id = id;
-    }
-
-    public int getId()
-    {
-        return id;
-    }
-    
-    @Override
-    public long getLongId()
-    {
-        return id;
+    @Test
+    public void canShowJMXValuesTest() {
+        wl.goToWebadminStartPage();
+        wl.clickOnTab("Server info");
+        wl.clickOnLink("Primitive count");
+        
+        wl.waitForElementToAppear(By.xpath("//h2[contains(.,'Primitive count')]"));
     }
 }

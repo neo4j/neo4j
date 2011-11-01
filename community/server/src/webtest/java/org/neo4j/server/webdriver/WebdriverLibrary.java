@@ -26,6 +26,7 @@ import static org.neo4j.server.webdriver.BrowserUrlIs.browserUrlIs;
 import static org.neo4j.server.webdriver.ElementVisible.elementVisible;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
 
 import org.hamcrest.Matcher;
 import org.openqa.selenium.By;
@@ -46,8 +47,12 @@ public class WebdriverLibrary
         return d;
     }
     
-    public void clickOn(String text) {
-    	clickOnByXpath("//*[contains(.,'"+text+"')]");
+    public void clickOn(String contains) {
+        clickOnByXpath("//*[contains(.,'"+contains+"')]");
+    }
+    
+    public void clickOn(By by) {
+    	getElement( by ).click();
     }
     
     public void clickOnButton(String text) {
@@ -60,7 +65,7 @@ public class WebdriverLibrary
 
     public void clickOnByXpath( String xpath )
     {
-        getElement( By.xpath( xpath ) ).click();
+        clickOn( By.xpath( xpath ) );
     }
     
     public void waitForUrlToBe(String url) {
@@ -81,9 +86,11 @@ public class WebdriverLibrary
     
     public void clearInput(ElementReference el) {
         int len = el.getValue().length();
-        while(len-- >= 0) {
-            el.sendKeys( Keys.BACK_SPACE );
-        }
+        
+        CharSequence[] backspaces = new CharSequence[len];
+        Arrays.fill(backspaces, Keys.BACK_SPACE);
+        
+        el.sendKeys( backspaces );
     }
 
     public void waitUntil(Matcher<WebDriver> matcher, String errorMessage) {

@@ -17,32 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.nioneo.store;
+package org.neo4j.kernel.impl.transaction.xaframework;
 
-public abstract class AbstractRecord extends AbstractBaseRecord
+import java.nio.channels.ReadableByteChannel;
+
+import org.neo4j.helpers.Service;
+
+public abstract class LogDeserializerProvider extends Service
 {
-    private final int id;
-
-    AbstractRecord( int id )
+    public LogDeserializerProvider( String name )
     {
-        super( false );
-        this.id = id;
+        super( name );
     }
 
-    AbstractRecord( int id, boolean inUse )
-    {
-        super( inUse );
-        this.id = id;
-    }
-
-    public int getId()
-    {
-        return id;
-    }
-    
-    @Override
-    public long getLongId()
-    {
-        return id;
-    }
+    public abstract LogDeserializer getLogApplier(
+            ReadableByteChannel byteChannel, LogBuffer writeBuffer,
+            LogApplier applier, XaCommandFactory cf );
 }

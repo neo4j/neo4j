@@ -17,32 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.nioneo.store;
+package org.neo4j.server.webadmin;
 
-public abstract class AbstractRecord extends AbstractBaseRecord
-{
-    private final int id;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
 
-    AbstractRecord( int id )
-    {
-        super( false );
-        this.id = id;
-    }
+public class LoadingSpinnerWebIT extends AbstractWebadminTest {
 
-    AbstractRecord( int id, boolean inUse )
-    {
-        super( inUse );
-        this.id = id;
-    }
-
-    public int getId()
-    {
-        return id;
+    @Test
+    @Ignore
+    public void showsLoadingSpinnerTest() {
+        
+        // Broken due to http://code.google.com/p/selenium/issues/detail?id=1723
+        
+        wl.goToWebadminStartPage();
+        wl.clickOnTab("Console");
+        wl.writeTo(By.id("console-input"), "Thread.sleep(3000);", Keys.RETURN);
+        wl.waitForElementToAppear(By.xpath("//div[@class='loading-spinner']"));
     }
     
-    @Override
-    public long getLongId()
-    {
-        return id;
-    }
 }

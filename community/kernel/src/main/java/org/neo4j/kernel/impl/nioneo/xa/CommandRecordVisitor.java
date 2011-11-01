@@ -17,31 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.steps;
+package org.neo4j.kernel.impl.nioneo.xa;
 
-import cuke4duke.annotation.After;
-import cuke4duke.annotation.I18n.EN.Given;
-import cuke4duke.spring.StepDefinitions;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 
-@StepDefinitions
-public class ServerControlSteps
+/**
+ * Visits the {@link org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord
+ * record} of a {@link Command}.
+ */
+public interface CommandRecordVisitor
 {
-    private final ServerIntegrationTestFacade serverFacade;
+    void visitNode( NodeRecord record );
 
-    public ServerControlSteps( ServerIntegrationTestFacade serverFacade )
-    {
-        this.serverFacade = serverFacade;
-    }
+    void visitRelationship( RelationshipRecord record );
 
-    @Given( "^I have a neo4j server running$" )
-    public void iHaveANeo4jServerRunning() throws Exception
-    {
-        serverFacade.ensureServerIsRunning();
-    }
+    void visitProperty( PropertyRecord record );
 
-    @After
-    public void cleanup()
-    {
-        serverFacade.cleanup();
-    }
+    void visitRelationshipType( RelationshipTypeRecord record );
+    
+    void visitPropertyIndex( PropertyIndexRecord record );
 }

@@ -17,32 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.nioneo.store;
+package org.neo4j.server.webadmin;
 
-public abstract class AbstractRecord extends AbstractBaseRecord
-{
-    private final int id;
+import org.junit.Test;
 
-    AbstractRecord( int id )
-    {
-        super( false );
-        this.id = id;
-    }
+public class RedirectWebIT extends AbstractWebadminTest {
 
-    AbstractRecord( int id, boolean inUse )
-    {
-        super( inUse );
-        this.id = id;
-    }
-
-    public int getId()
-    {
-        return id;
+    @Test
+    public void rootRedirectsToWebadminTest() {
+        wl.goToServerRoot();
+        wl.waitForUrlToBe(".+/webadmin/");
     }
     
-    @Override
-    public long getLongId()
-    {
-        return id;
-    }
 }

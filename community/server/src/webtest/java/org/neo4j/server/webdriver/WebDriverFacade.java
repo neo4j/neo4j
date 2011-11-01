@@ -23,7 +23,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
 import org.openqa.selenium.WebDriver;
-import cuke4duke.annotation.After;
 
 public class WebDriverFacade {
 
@@ -40,7 +39,6 @@ public class WebDriverFacade {
         return browser;
     }
 
-    @After
     public void closeBrowser() throws IllegalAccessException, InvocationTargetException, InstantiationException {
         if (browser != null) {
             browser.close();
@@ -50,7 +48,9 @@ public class WebDriverFacade {
     
     @SuppressWarnings("unchecked")
     private Constructor<WebDriver> getDriverConstructor() {
-        String driverName = System.getProperty("webdriver.impl", "org.openqa.selenium.htmlunit.HtmlUnitDriver");
+        
+        String driverName = System.getProperty("webdriver.impl.class", "org.openqa.selenium.firefox.FirefoxDriver");
+        System.out.println(driverName);System.out.println(driverName);System.out.println(driverName);System.out.println(driverName);System.out.println(driverName);System.out.println(driverName);System.out.println(driverName);System.out.println(driverName);
         try {
             return (Constructor<WebDriver>) Thread.currentThread().getContextClassLoader().loadClass(driverName).getConstructor();
         } catch (Throwable problem) {

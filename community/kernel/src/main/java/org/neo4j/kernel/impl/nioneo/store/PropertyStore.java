@@ -68,6 +68,16 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     {
         processor.processProperty( this, record );
     }
+    
+    DynamicStringStore getStringStore()
+    {
+        return stringPropertyStore;
+    }
+
+    DynamicArrayStore getArrayStore()
+    {
+        return arrayPropertyStore;
+    }
 
     @Override
     protected void initStorage()

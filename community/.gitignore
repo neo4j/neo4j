@@ -24,3 +24,4 @@ server/src/main/resources/webadmin-html/js/webadmin.js
 artifacts
 */bin
 */pom-with-build-number.xml
+*/chromedriver.log

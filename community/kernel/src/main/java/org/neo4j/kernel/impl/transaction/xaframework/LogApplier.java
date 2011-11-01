@@ -17,32 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.nioneo.store;
+package org.neo4j.kernel.impl.transaction.xaframework;
 
-public abstract class AbstractRecord extends AbstractBaseRecord
+import java.io.IOException;
+
+public interface LogApplier
 {
-    private final int id;
-
-    AbstractRecord( int id )
-    {
-        super( false );
-        this.id = id;
-    }
-
-    AbstractRecord( int id, boolean inUse )
-    {
-        super( inUse );
-        this.id = id;
-    }
-
-    public int getId()
-    {
-        return id;
-    }
-    
-    @Override
-    public long getLongId()
-    {
-        return id;
-    }
+    void apply( LogEntry entry ) throws IOException;
 }
