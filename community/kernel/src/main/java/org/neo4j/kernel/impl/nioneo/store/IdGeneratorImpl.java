@@ -308,7 +308,7 @@ public class IdGeneratorImpl implements IdGenerator
      * @throws IOException
      *             If unable to close this id generator
      */
-    public synchronized void close( boolean shutdown )
+    public synchronized void close()
     {
         if ( nextFreeId.get() == -1 )
         {
@@ -577,7 +577,7 @@ public class IdGeneratorImpl implements IdGenerator
             System.out.print( " " + itr.next() );
         }
         System.out.println( "\nNext free id: " + nextFreeId );
-        close( true );
+        close();
     }
 
     public synchronized long getNumberOfIdsInUse()
@@ -602,19 +602,6 @@ public class IdGeneratorImpl implements IdGenerator
         catch ( IOException e )
         {
             throw new RuntimeException( e );
-        }
-    }
-    
-    @Override
-    public void delete()
-    {
-        if ( nextFreeId.get() != -1 )
-        {
-            throw new RuntimeException( "Must be closed to delete" );
-        }
-        if ( !new File( fileName ).delete() )
-        {
-            throw new UnderlyingStorageException( "Unable to delete id generator " + fileName );
         }
     }
 }

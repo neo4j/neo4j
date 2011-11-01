@@ -26,14 +26,8 @@ public interface IdGenerator
     void setHighId( long id );
     long getHighId();
     void freeId( long id );
-    
-    /**
-     * Closes the id generator.
-     * @param shutdown {@code true} if this is during shutdown of the database, {@code false}
-     * if it's an intermediary close, f.ex after rebuilding id generators at startup.
-     */
-    void close( boolean shutdown );
+    void close();
     long getNumberOfIdsInUse();
     long getDefragCount();
-    void delete();
+    void clearFreeIds();
 }

@@ -645,7 +645,7 @@ public abstract class CommonAbstractStore
     {
         if ( idGenerator != null )
         {
-            idGenerator.close( false );
+            idGenerator.close();
         }
     }
 
@@ -692,7 +692,7 @@ public abstract class CommonAbstractStore
         {
             recordSize = ((AbstractStore) this).getRecordSize();
         }
-        idGenerator.close( true );
+        closeIdGenerator();
         boolean success = false;
         IOException storedIoe = null;
         // hack for WINBLOWS
