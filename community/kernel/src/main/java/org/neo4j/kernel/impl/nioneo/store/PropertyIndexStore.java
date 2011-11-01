@@ -52,7 +52,7 @@ public class PropertyIndexStore extends AbstractStore implements Store, RecordSt
     @Override
     public void accept( RecordStore.Processor processor, PropertyIndexRecord record )
     {
-        // do nothing - processing does nothing for this store
+        processor.processPropertyIndex( this, record );
     }
 
     DynamicStringStore getKeyStore()

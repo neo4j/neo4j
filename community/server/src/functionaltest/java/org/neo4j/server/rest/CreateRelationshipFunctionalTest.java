@@ -19,163 +19,124 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.io.IOException;
 import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.database.DatabaseBlockedException;
-import org.neo4j.server.helpers.FunctionalTestHelper;
-import org.neo4j.server.helpers.ServerHelper;
-import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
-import org.neo4j.test.TestData;
+import org.neo4j.test.GraphDescription.Graph;
 
-public class CreateRelationshipFunctionalTest
+import com.sun.jersey.api.client.ClientResponse.Status;
+
+public class CreateRelationshipFunctionalTest extends
+        AbstractRestFunctionalTestBase
 {
     private static String RELATIONSHIP_URI_PATTERN;
 
-    public @Rule
-    TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
-
-    private static NeoServerWithEmbeddedWebServer server;
-    private static FunctionalTestHelper functionalTestHelper;
-    private static GraphDbHelper helper;
-
-    @BeforeClass
-    public static void setupServer() throws IOException
-    {
-        server = ServerHelper.createServer();
-        functionalTestHelper = new FunctionalTestHelper( server );
-        helper = functionalTestHelper.getGraphDbHelper();
-
-        RELATIONSHIP_URI_PATTERN = functionalTestHelper.dataUri() + "relationship/[0-9]+";
-    }
-
-    @Before
-    public void cleanTheDatabase()
-    {
-        ServerHelper.cleanTheDatabase( server );
-    }
-
-    @AfterClass
-    public static void stopServer()
-    {
-        server.stop();
-    }
-
     @Test
-    public void shouldRespondWith201WhenSuccessfullyCreatedRelationshipWithProperties() throws Exception {
-        long startNode = helper.createNode();
-        long endNode = helper.createNode();
-        String jsonString = "{\"to\" : \"" + functionalTestHelper.dataUri() + "node/" + endNode
-                + "\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : \"bar\"}}";
-        JaxRsResponse response = RestRequest.req().post(functionalTestHelper.dataUri() + "node/" + startNode + "/relationships", jsonString);
-        assertEquals(201, response.getStatus());
-        assertTrue(response.getLocation()
-                .toString()
-                .matches(RELATIONSHIP_URI_PATTERN));
-        assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
-        String relationshipUri = response.getLocation()
-                .toString();
-        long relationshipId = Long.parseLong(relationshipUri.substring(relationshipUri.lastIndexOf('/') + 1));
-        Map<String, Object> properties = helper.getRelationshipProperties(relationshipId);
-        assertEquals(MapUtil.map("foo", "bar"), properties);
-        assertProperRelationshipRepresentation(JsonHelper.jsonToMap(response.getEntity(String.class)));
-        response.close();
+    @Graph( "Joe knows Sara" )
+    public void create_a_relationship_with_properties() throws Exception
+    {
+        String jsonString = "{\"to\" : \""
+                            + getDataUri()
+                            + "node/"
+                            + getNode( "Sara" ).getId()
+                            + "\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : \"bar\"}}";
+        Node i = getNode( "Joe" );
+        gen.get().description( startGraph( "Add relationship with properties before" ) );
+        String entity = gen.get().expectedStatus(
+                Status.CREATED.getStatusCode() ).payload( jsonString ).post(
+                getNodeUri( i ) + "/relationships" ).entity();
+        assertTrue( i.hasRelationship( DynamicRelationshipType.withName( "LOVES" ) ) );
     }
 
-    /**
-     * Create relationship.
-     */
     @Documented
     @Test
-    public void shouldRespondWith201WhenSuccessfullyCreatedRelationship() throws Exception {
-        long startNode = helper.createNode();
-        long endNode = helper.createNode();
-        String jsonString = "{\"to\" : \"" + functionalTestHelper.dataUri() + "node/" + endNode
-                + "\", \"type\" : \"LOVES\"}";
-        String uri = functionalTestHelper.dataUri() + "node/" + startNode + "/relationships";
-        JaxRsResponse response = RestRequest.req().post(uri, jsonString);
-        assertEquals(201, response.getStatus());
-        assertTrue(response.getLocation()
-                .toString()
-                .matches(RELATIONSHIP_URI_PATTERN));
-        assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
-        assertProperRelationshipRepresentation(JsonHelper.jsonToMap(response.getEntity(String.class)));
-        gen.get()
-                .payload(jsonString)
-                .expectedStatus(201)
-                .post(uri);
-        response.close();
+    @Graph( "Joe knows Sara" )
+    public void create_relationship() throws Exception
+    {
+        String jsonString = "{\"to\" : \""
+                            + getDataUri()
+                            + "node/"
+                            + getNode( "Sara" ).getId()
+                            + "\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : \"bar\"}}";
+        Node i = getNode( "Joe" );
+        String entity = gen.get().expectedStatus(
+                Status.CREATED.getStatusCode() ).payload( jsonString ).post(
+                getNodeUri( i ) + "/relationships" ).entity();
+        assertTrue( i.hasRelationship( DynamicRelationshipType.withName( "LOVES" ) ) );
+        assertProperRelationshipRepresentation( JsonHelper.jsonToMap( entity ) );
     }
 
     @Test
-    public void shouldRespondWith404WhenStartNodeDoesNotExist() throws DatabaseBlockedException {
-        long endNode = helper.createNode();
-        String jsonString = "{\"to\" : \"" + functionalTestHelper.dataUri() + "node/" + endNode
-                + "\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : \"bar\"}}";
-        JaxRsResponse response = RestRequest.req().post(functionalTestHelper.dataUri() + "node/999999/relationships", jsonString);
-        assertEquals(404, response.getStatus());
-        response.close();
+    @Graph( "Joe knows Sara" )
+    public void shouldRespondWith404WhenStartNodeDoesNotExist()
+            throws DatabaseBlockedException
+    {
+        String jsonString = "{\"to\" : \""
+                            + getDataUri()
+                            + "node/"
+                            + getNode( "Joe" )
+                            + "\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : \"bar\"}}";
+        gen.get().expectedStatus(
+                Status.NOT_FOUND.getStatusCode() ).expectedType( MediaType.TEXT_HTML_TYPE ).payload( jsonString ).post(
+                getDataUri() + "/node/12345/relationships" ).entity();
+            }
+
+    @Test
+    @Graph( "Joe knows Sara" )
+    public void creating_a_relationship_to_a_nonexisting_end_node()
+            throws DatabaseBlockedException
+    {
+        String jsonString = "{\"to\" : \""
+                            + getDataUri()
+                            + "node/"
+                            + "999999\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : \"bar\"}}";
+        gen.get().expectedStatus(
+                Status.BAD_REQUEST.getStatusCode() ).payload( jsonString ).post(
+                        getNodeUri( getNode( "Joe" ) ) + "/relationships" ).entity();
+     }
+
+    @Test
+    @Graph( "Joe knows Sara" )
+    public void creating_a_loop_relationship()
+            throws Exception
+    {
+        
+        Node joe = getNode( "Joe" );
+        String jsonString = "{\"to\" : \"" + getNodeUri( joe )
+                            + "\", \"type\" : \"LOVES\"}";
+        String uri = getNodeUri( joe )
+                     + "/relationships";
+        String entity = gen.get().expectedStatus(
+                Status.CREATED.getStatusCode() ).payload( jsonString ).post(
+                        getNodeUri( getNode( "Joe" ) ) + "/relationships" ).entity();
+        assertProperRelationshipRepresentation( JsonHelper.jsonToMap( entity ) );
     }
 
     @Test
-    public void shouldRespondWith400WhenEndNodeDoesNotExist() throws DatabaseBlockedException {
-        long startNode = helper.createNode();
-        String jsonString = "{\"to\" : \"" + functionalTestHelper.dataUri() + "node/"
-                + "999999\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : \"bar\"}}";
-        JaxRsResponse response = RestRequest.req().post(functionalTestHelper.dataUri() + "node/" + startNode + "/relationships", jsonString);
-        assertEquals(400, response.getStatus());
-        response.close();
+    @Graph( "Joe knows Sara" )
+    public void providing_bad_JSON()
+            throws DatabaseBlockedException
+    {
+        String jsonString = "{\"to\" : \""
+                            + getNodeUri( data.get().get( "Joe" ) )
+                            + "\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : **BAD JSON HERE*** \"bar\"}}";
+        gen.get().expectedStatus(
+                Status.BAD_REQUEST.getStatusCode() ).payload( jsonString ).post(
+                        getNodeUri( getNode( "Joe" ) ) + "/relationships" ).entity();
     }
 
-    @Test
-    public void shouldRespondWith201WhenCreatingALoopRelationship() throws Exception {
-        long theOnlyNode = helper.createNode();
-
-        String jsonString = "{\"to\" : \"" + functionalTestHelper.dataUri() + "node/" + theOnlyNode
-                + "\", \"type\" : \"LOVES\"}";
-        String uri = functionalTestHelper.dataUri() + "node/" + theOnlyNode + "/relationships";
-        JaxRsResponse response = RestRequest.req().post(uri, jsonString);
-        assertEquals(201, response.getStatus());
-        assertTrue(response.getLocation()
-                .toString()
-                .matches(RELATIONSHIP_URI_PATTERN));
-        assertEquals(MediaType.APPLICATION_JSON_TYPE, response.getType());
-        assertProperRelationshipRepresentation(JsonHelper.jsonToMap(response.getEntity(String.class)));
-        gen.get()
-                .payload(jsonString)
-                .expectedStatus(201)
-                .post(uri);
-        response.close();
-    }
-
-    @Test
-    public void shouldRespondWith400WhenBadJsonProvided() throws DatabaseBlockedException {
-        long startNode = helper.createNode();
-        long endNode = helper.createNode();
-        String jsonString = "{\"to\" : \"" + functionalTestHelper.dataUri() + "node/" + endNode
-                + "\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : **BAD JSON HERE*** \"bar\"}}";
-        JaxRsResponse response = RestRequest.req().post(functionalTestHelper.dataUri() + "node/" + startNode + "/relationships", jsonString);
-
-        assertEquals(400, response.getStatus());
-        response.close();
-    }
-
-    private void assertProperRelationshipRepresentation( Map<String, Object> relrep )
+    private void assertProperRelationshipRepresentation(
+            Map<String, Object> relrep )
     {
         RelationshipRepresentationTest.verifySerialisation( relrep );
     }

@@ -60,6 +60,19 @@ public class SetNodePropertiesFunctionalTest extends
                 204 ).put( getPropertiesUri( jim ) );
         assertTrue( jim.hasProperty( "age" ) );
     }
+    
+    @Graph( "jim knows joe" )
+    @Test
+    public void set_node_properties_in_Unicode()
+            throws JsonParseException
+    {
+        Node jim = data.get().get( "jim" );
+        assertFalse( jim.hasProperty( "age" ) );
+        gen.get().payload(
+                JsonHelper.createJsonFrom( MapUtil.map( "name", "\u4f8b\u5b50" ) ) ).expectedStatus(
+                204 ).put( getPropertiesUri( jim ) );
+        assertTrue( jim.getProperty( "name" ).equals( "\u4f8b\u5b50" ) );
+    }
 
     @Test
     @Graph( "jim knows joe" )
