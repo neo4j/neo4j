@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.backup.impl;
+package org.neo4j.backup.check;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -26,7 +26,6 @@ import java.util.Map;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
-import org.neo4j.kernel.impl.nioneo.store.RecordStore.Processor;
 
 /**
  * Not thread safe, intended for single threaded use.
@@ -46,6 +45,11 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
     public void markDirty( long id )
     {
         if ( !diff.containsKey( id ) ) diff.put( id, null );
+    }
+
+    public boolean isModified( long id )
+    {
+        return diff.get( id ) != null;
     }
     
     public R forceGetRaw( long id )

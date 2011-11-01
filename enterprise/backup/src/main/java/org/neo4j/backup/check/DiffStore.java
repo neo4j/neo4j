@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.backup.impl;
+package org.neo4j.backup.check;
 
 import java.util.Collection;
-import java.util.List;
 
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
@@ -47,6 +47,11 @@ import org.neo4j.kernel.impl.nioneo.xa.CommandRecordVisitor;
  */
 public class DiffStore extends StoreAccess implements CommandRecordVisitor
 {
+    public DiffStore( NeoStore store )
+    {
+        super( store );
+    }
+
     public DiffStore( NodeStore nodeStore, RelationshipStore relStore, PropertyStore propStore,
             RelationshipTypeStore typeStore )
     {
@@ -59,7 +64,7 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
         return new DiffRecordStore<R>( store );
     }
 
-    public void verify()
+    public void verify() throws AssertionError
     {
         apply( new ConsistencyCheck( this ) ).checkResult();
     }
