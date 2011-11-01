@@ -550,9 +550,9 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         silentChannelExecutor.shutdown();
         unfinishedTransactionExecutor.shutdown();
         masterCallExecutor.shutdown();
-        msgLog.logMessage( getClass().getSimpleName() + " shutdown, closing all channels", true );
         channelGroup.close().awaitUninterruptibly();
         executor.shutdown();
+        msgLog.logMessage( getClass().getSimpleName() + " shutdown", true );
         // TODO This should work, but blocks with busy wait sometimes
 //        channelFactory.releaseExternalResources();
     }
