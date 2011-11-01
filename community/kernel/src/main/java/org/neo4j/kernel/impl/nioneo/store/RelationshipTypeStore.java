@@ -58,7 +58,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store, Recor
     @Override
     public void accept( RecordStore.Processor processor, RelationshipTypeRecord record )
     {
-        // do nothing - processing does nothing for this store
+        processor.processRelationshipType( this, record );
     }
     
     DynamicStringStore getNameStore()

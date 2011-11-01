@@ -83,6 +83,16 @@ public interface RecordStore<R extends AbstractBaseRecord>
             throw new UnsupportedOperationException( this + " does not process dynamic records" );
         }
 
+        protected void processRelationshipType( RecordStore<RelationshipTypeRecord> store, RelationshipTypeRecord record )
+        {
+            throw new UnsupportedOperationException( this + " does not process RelationshipType records" );
+        }
+
+        protected void processPropertyIndex( RecordStore<PropertyIndexRecord> store, PropertyIndexRecord record )
+        {
+            throw new UnsupportedOperationException( this + " does not process property key records" );
+        }
+
         public static <R extends AbstractBaseRecord> Iterable<R> scan( final RecordStore<R> store,
                 final Predicate<? super R>... filters )
         {
