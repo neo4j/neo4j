@@ -60,6 +60,11 @@ public class RelationshipTypeStore extends AbstractStore implements Store, Recor
     {
         // do nothing - processing does nothing for this store
     }
+    
+    DynamicStringStore getNameStore()
+    {
+        return typeNameStore;
+    }
 
     @Override
     protected void setRecovered()

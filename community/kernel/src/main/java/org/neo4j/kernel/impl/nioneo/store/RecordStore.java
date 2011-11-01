@@ -39,6 +39,8 @@ public interface RecordStore<R extends AbstractBaseRecord>
     public void forceUpdateRecord( R record );
 
     public void accept( Processor processor, R record );
+    
+    public void close();
 
     public static final Predicate<AbstractBaseRecord> IN_USE = new Predicate<AbstractBaseRecord>()
     {

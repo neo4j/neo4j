@@ -34,6 +34,7 @@ import java.util.Set;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -88,8 +89,16 @@ public class TestBatchInsert
 
     private BatchInserter newBatchInserter()
     {
+        return newBatchInserter( true );
+    }
+
+    private BatchInserter newBatchInserter( boolean eraseOld )
+    {
         String storePath = AbstractNeo4jTestCase.getStorePath( "neo-batch" );
-        AbstractNeo4jTestCase.deleteFileOrDirectory( new File( storePath ) );
+        if ( eraseOld )
+        {
+            AbstractNeo4jTestCase.deleteFileOrDirectory( new File( storePath ) );
+        }
         return new BatchInserterImpl( storePath );
     }
 
@@ -106,6 +115,39 @@ public class TestBatchInsert
         assertEquals( rel.getEndNode(), node2 );
         assertEquals( RelTypes.BATCH_TEST.name(), rel.getType().name() );
         graphDb.shutdown();
+    }
+
+    @Test
+    public void testPropertySetFromGraphDbIsPersisted()
+    {
+        BatchInserter inserter = newBatchInserter();
+
+        GraphDatabaseService gds = inserter.getGraphDbService();
+
+        Node from = gds.createNode();
+        long fromId = from.getId();
+
+        Node to = gds.createNode();
+        long toId = to.getId();
+
+        Relationship rel = from.createRelationshipTo( to,
+                DynamicRelationshipType.withName( "PROP_TEST" ) );
+        long relId = rel.getId();
+
+        from.setProperty( "1", "one" );
+        to.setProperty( "2", "two" );
+        rel.setProperty( "3", "three" );
+
+        inserter.shutdown();
+
+        GraphDatabaseService db = newBatchInserter( false /*delete old dir*/).getGraphDbService();
+        from = db.getNodeById( fromId );
+        assertEquals( "one", from.getProperty( "1" ) );
+        to = db.getNodeById( toId );
+        assertEquals( "two", to.getProperty( "2" ) );
+        rel = db.getRelationshipById( relId );
+        assertEquals( "three", rel.getProperty( "3" ) );
+        db.shutdown();
     }
 
     @Test

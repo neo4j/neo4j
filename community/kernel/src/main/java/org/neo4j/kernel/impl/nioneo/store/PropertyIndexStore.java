@@ -28,7 +28,6 @@ import java.util.Map;
 
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.impl.nioneo.store.RecordStore.Processor;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -54,6 +53,11 @@ public class PropertyIndexStore extends AbstractStore implements Store, RecordSt
     public void accept( RecordStore.Processor processor, PropertyIndexRecord record )
     {
         // do nothing - processing does nothing for this store
+    }
+
+    DynamicStringStore getKeyStore()
+    {
+        return keyPropertyStore;
     }
 
     @Override
