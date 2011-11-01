@@ -95,13 +95,10 @@ public class RelationshipRecord extends PrimitiveRecord
     @Override
     public String toString()
     {
-        StringBuffer buf = new StringBuffer();
-        buf.append( "RelationshipRecord[" ).append( getId() ).append( "," ).append(
-                inUse() ).append( "," ).append( firstNode ).append( "," ).append(
-                secondNode ).append( "," ).append( type ).append( "," ).append(
-                firstPrevRel ).append( "," ).append( firstNextRel ).append( "," ).append(
-                secondPrevRel ).append( "," ).append( secondNextRel ).append(
-                "," ).append( getNextProp() ).append( "]" );
-        return buf.toString();
+        return new StringBuilder( "Relationship[" ).append( getId() ).append( ",used=" ).append( inUse() ).append(
+                ",source=" ).append( firstNode ).append( ",target=" ).append( secondNode ).append( ",type=" ).append(
+                type ).append( ",sPrev=" ).append( firstPrevRel ).append( ",sNext=" ).append( firstNextRel ).append(
+                ",tPrev" ).append( secondPrevRel ).append( ",tNext=" ).append( secondNextRel ).append( ",prop=" ).append(
+                getNextProp() ).append( "]" ).toString();
     }
 }

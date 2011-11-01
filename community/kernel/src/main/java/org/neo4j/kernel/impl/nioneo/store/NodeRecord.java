@@ -23,7 +23,6 @@ public class NodeRecord extends PrimitiveRecord
 {
     private long nextRel = Record.NO_NEXT_RELATIONSHIP.intValue();
 
-
     public NodeRecord( long id )
     {
         super( id );
@@ -42,10 +41,7 @@ public class NodeRecord extends PrimitiveRecord
     @Override
     public String toString()
     {
-        StringBuffer buf = new StringBuffer();
-        buf.append( "NodeRecord[" ).append( getId() ).append( "," ).append(
-            inUse() ).append( "," ).append( nextRel ).append( "," ).append(
-                getNextProp() ).append( "]" );
-        return buf.toString();
+        return new StringBuilder( "Node[" ).append( getId() ).append( ",used=" ).append( inUse() ).append( ",rel=" ).append(
+                nextRel ).append( ",prop=" ).append( getNextProp() ).append( "]" ).toString();
     }
 }

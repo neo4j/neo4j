@@ -40,6 +40,8 @@ Your plugin should also:
 * contain the application logic.
 * make sure that the discovery point type in the +@PluginTarget+ and the +@Source+ parameter are of the same type.
 
+// link Node/Rel/Path javadocs here?
+
 An example of a plugin which augments the database (as opposed to nodes or relationships) follows:
 
 .Get all nodes or relationships plugin

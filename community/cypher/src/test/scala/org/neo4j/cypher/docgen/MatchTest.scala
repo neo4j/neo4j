@@ -110,7 +110,7 @@ class MatchTest extends DocumentingTestBase {
   @Test def multiStepRelationships() {
     testQuery(
       title = "Multiple relationships",
-      text = "Relationships can be expressed by using multiple statements in the form of `()--()`, or they can be stringed together, " +
+      text = "Relationships can be expressed by using multiple statements in the form of `()--()`, or they can be strung together, " +
         "like this:",
       queryText = """start a=node(%A%) match (a)-[:KNOWS]->(b)-[:KNOWS]->(c) return a,b,c""",
       returns = """The three nodes in the path.""",
@@ -196,7 +196,8 @@ class MatchTest extends DocumentingTestBase {
       text = "Finding the shortest path between two nodes is as easy as using the shortestPath-function, like this.",
       queryText = """start d=node(%D%), e=node(%E%) match p = shortestPath( d-[*..15]->e ) return p""",
       returns = """This means: find the shortest path between two nodes, as long as the path is max 15 relationships long. Inside of the parenthesis
- you can write """,
+ you write a single link of a path - the starting node, the connecting relationship and the end node. Characteristics describing the relationship
+ like relationship type, max hops and direction are all used when finding the shortest path.""",
       (p) => assertEquals(3, p.toList.head("p").asInstanceOf[Path].length())
     )
   }

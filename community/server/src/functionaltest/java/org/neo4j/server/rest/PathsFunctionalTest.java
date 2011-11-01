@@ -176,19 +176,19 @@ public class PathsFunctionalTest extends AbstractRestFunctionalTestBase
             @NODE( name = "d", setNameProperty = true ), @NODE( name = "e", setNameProperty = true ),
             @NODE( name = "f", setNameProperty = true ), @NODE( name = "x", setNameProperty = true ),
             @NODE( name = "y", setNameProperty = true ) }, relationships = {
-            @REL( start = "start", end = "a", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "a", end = "x", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "a", end = "b", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "b", end = "x", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "b", end = "c", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "c", end = "x", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "c", end = "x", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "c", end = "d", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "d", end = "x", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "d", end = "e", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "e", end = "x", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "e", end = "f", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.DOUBLE ) } ),
-            @REL( start = "x", end = "y", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.DOUBLE ) } ) } )
+            @REL( start = "start", end = "a", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
+            @REL( start = "a", end = "x", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
+            @REL( start = "a", end = "b", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
+            @REL( start = "b", end = "x", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
+            @REL( start = "b", end = "c", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
+            @REL( start = "c", end = "x", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
+            @REL( start = "c", end = "x", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
+            @REL( start = "c", end = "d", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
+            @REL( start = "d", end = "x", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
+            @REL( start = "d", end = "e", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
+            @REL( start = "e", end = "x", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
+            @REL( start = "e", end = "f", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ),
+            @REL( start = "x", end = "y", type = "to", properties = { @PROP( key = "cost", value = "1", type = GraphDescription.PropType.INTEGER ) } ) } )
             @Title( "Execute a Dijkstra algorithm with similar weights on relationships" )
             public void shouldGetCorrectDijkstraPathsWithWeightsWithDefaultCost() throws Exception
             {

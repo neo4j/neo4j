@@ -65,6 +65,11 @@ public class CompareTxStreams
                         branchingDetected = false;
                         System.out.println( "Merged again at " + tx1 );
                     }
+                    else
+                    {
+                        System.out.println( "Still branched at " + tx1 + ": masters:" + extractor1.getLastCommitEntry().getMasterId() + "," + extractor2.getLastCommitEntry().getMasterId() +
+                                " checksums:" + extractor1.getLastTxChecksum() + "," + extractor2.getLastTxChecksum() );
+                    }
                 }
             }
             System.out.println( "Last tx " + lastTx );

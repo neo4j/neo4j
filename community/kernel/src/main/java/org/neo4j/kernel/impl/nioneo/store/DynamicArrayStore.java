@@ -43,6 +43,12 @@ public class DynamicArrayStore extends AbstractDynamicStore
     {
         super( fileName, config, idType );
     }
+    
+    @Override
+    public void accept( RecordStore.Processor processor, DynamicRecord record )
+    {
+        processor.processArray( this, record );
+    }
 
     @Override
     public String getTypeDescriptor()

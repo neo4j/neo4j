@@ -19,30 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-public abstract class AbstractRecord extends AbstractBaseRecord
+enum RecordLoad
 {
-    private final int id;
-
-    AbstractRecord( int id )
-    {
-        super( false );
-        this.id = id;
-    }
-
-    AbstractRecord( int id, boolean inUse )
-    {
-        super( inUse );
-        this.id = id;
-    }
-
-    public int getId()
-    {
-        return id;
-    }
-    
-    @Override
-    public long getLongId()
-    {
-        return id;
-    }
+    NORMAL, CHECK, FORCE
 }

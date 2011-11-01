@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
  * Note, the first block of a dynamic store is reserved and contains information
  * about the store.
  */
-public abstract class AbstractDynamicStore extends CommonAbstractStore implements Store
+public abstract class AbstractDynamicStore extends CommonAbstractStore implements Store, RecordStore<DynamicRecord>
 {
     /**
      * Creates a new empty store. A factory method returning an implementation
@@ -279,6 +279,12 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
             releaseWindow( window );
         }
     }
+    
+    @Override
+    public void forceUpdateRecord( DynamicRecord record )
+    {
+        updateRecord( record );
+    }
 
     protected Collection<DynamicRecord> allocateRecords( long startBlock,
         byte src[] )
@@ -330,7 +336,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
                 OperationType.READ );
             try
             {
-                DynamicRecord record = getRecord( blockId, window, false );
+                DynamicRecord record = getRecord( blockId, window, RecordLoad.CHECK );
                 recordList.add( record );
                 blockId = record.getNextBlock();
             }
@@ -367,7 +373,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         return ( ( buffer.get() & (byte) 0xF0 ) >> 4 ) == Record.IN_USE.byteValue();
     }
 
-    private DynamicRecord getRecord( long blockId, PersistenceWindow window, boolean loadData )
+    private DynamicRecord getRecord( long blockId, PersistenceWindow window, RecordLoad load )
     {
         DynamicRecord record = new DynamicRecord( blockId );
         Buffer buffer = window.getOffsettedBuffer( blockId );
@@ -383,7 +389,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
 
         int inUseByte = (int) ( ( firstInteger & 0xF0000000 ) >> 28 );
         boolean inUse = inUseByte == Record.IN_USE.intValue();
-        if ( !inUse )
+        if ( !inUse && load != RecordLoad.FORCE )
         {
             throw new InvalidRecordException( "Not in use, blockId[" + blockId + "]" );
         }
@@ -405,13 +411,43 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         record.setInUse( true );
         record.setLength( nrOfBytes );
         record.setNextBlock( longNextBlock );
-        if ( loadData )
+        if ( load != RecordLoad.CHECK )
         {
             byte byteArrayElement[] = new byte[nrOfBytes];
             buffer.get( byteArrayElement );
             record.setData( byteArrayElement );
         }
         return record;
+    }
+    
+    @Override
+    public DynamicRecord getRecord( long id )
+    {
+        PersistenceWindow window = acquireWindow( id,
+                OperationType.READ );
+        try
+        {
+            return getRecord( id, window, RecordLoad.NORMAL );
+        }
+        finally
+        {
+            releaseWindow( window );
+        }
+    }
+    
+    @Override
+    public DynamicRecord forceGetRecord( long id )
+    {
+        PersistenceWindow window = acquireWindow( id,
+                OperationType.READ );
+        try
+        {
+            return getRecord( id, window, RecordLoad.FORCE );
+        }
+        finally
+        {
+            releaseWindow( window );
+        }
     }
 
     public Collection<DynamicRecord> getRecords( long startBlockId )
@@ -424,7 +460,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
                 OperationType.READ );
             try
             {
-                DynamicRecord record = getRecord( blockId, window, true );
+                DynamicRecord record = getRecord( blockId, window, RecordLoad.NORMAL );
                 recordList.add( record );
                 blockId = record.getNextBlock();
             }
