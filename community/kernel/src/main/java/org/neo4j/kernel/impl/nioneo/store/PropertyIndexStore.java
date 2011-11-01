@@ -56,6 +56,11 @@ public class PropertyIndexStore extends AbstractStore implements Store, RecordSt
         // do nothing - processing does nothing for this store
     }
 
+    DynamicStringStore getKeyStore()
+    {
+        return keyPropertyStore;
+    }
+
     @Override
     protected void initStorage()
     {

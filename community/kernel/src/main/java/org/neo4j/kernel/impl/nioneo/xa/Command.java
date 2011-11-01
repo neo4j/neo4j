@@ -57,6 +57,8 @@ public abstract class Command extends XaCommand
     {
         this.key = key;
     }
+    
+    public abstract void accept( CommandRecordVisitor visitor );
 
     @Override
     protected void setRecovered()
@@ -294,6 +296,12 @@ public abstract class Command extends XaCommand
             this.record = record;
             this.store = store;
         }
+        
+        @Override
+        public void accept( CommandRecordVisitor visitor )
+        {
+            visitor.visitNode( record );
+        }
 
         @Override
         boolean isCreated()
@@ -402,6 +410,12 @@ public abstract class Command extends XaCommand
             super( record.getId() );
             this.record = record;
             this.store = store;
+        }
+        
+        @Override
+        public void accept( CommandRecordVisitor visitor )
+        {
+            visitor.visitRelationship( record );
         }
 
         @Override
@@ -546,6 +560,12 @@ public abstract class Command extends XaCommand
             this.record = record;
             this.store = store;
         }
+        
+        @Override
+        public void accept( CommandRecordVisitor visitor )
+        {
+            visitor.visitPropertyIndex( record );
+        }
 
         @Override
         boolean isCreated()
@@ -667,6 +687,12 @@ public abstract class Command extends XaCommand
             super( record.getId() );
             this.record = record;
             this.store = store;
+        }
+        
+        @Override
+        public void accept( CommandRecordVisitor visitor )
+        {
+            visitor.visitProperty( record );
         }
 
         @Override
@@ -872,6 +898,12 @@ public abstract class Command extends XaCommand
             super( record.getId() );
             this.record = record;
             this.store = store;
+        }
+        
+        @Override
+        public void accept( CommandRecordVisitor visitor )
+        {
+            visitor.visitRelationshipType( record );
         }
 
         @Override
