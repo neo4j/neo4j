@@ -51,32 +51,32 @@ public interface RecordStore<R extends Abstract64BitRecord>
 
     public static abstract class Processor
     {
-        protected void processNode( NodeStore store, NodeRecord node )
+        protected void processNode( RecordStore<NodeRecord> store, NodeRecord node )
         {
             throw new UnsupportedOperationException( this + " does not process Node records" );
         }
 
-        protected void processRelationship( RelationshipStore store, RelationshipRecord rel )
+        protected void processRelationship( RecordStore<RelationshipRecord> store, RelationshipRecord rel )
         {
             throw new UnsupportedOperationException( this + " does not process Relationship records" );
         }
 
-        protected void processProperty( PropertyStore store, PropertyRecord property )
+        protected void processProperty( RecordStore<PropertyRecord> store, PropertyRecord property )
         {
             throw new UnsupportedOperationException( this + " does not process Property records" );
         }
 
-        protected void processString( DynamicStringStore store, DynamicRecord string )
+        protected void processString( RecordStore<DynamicRecord> store, DynamicRecord string )
         {
             processDynamic( store, string );
         }
 
-        protected void processArray( DynamicArrayStore store, DynamicRecord array )
+        protected void processArray( RecordStore<DynamicRecord> store, DynamicRecord array )
         {
             processDynamic( store, array );
         }
 
-        protected void processDynamic( AbstractDynamicStore store, DynamicRecord record )
+        protected void processDynamic( RecordStore<DynamicRecord> store, DynamicRecord record )
         {
             throw new UnsupportedOperationException( this + " does not process dynamic records" );
         }
