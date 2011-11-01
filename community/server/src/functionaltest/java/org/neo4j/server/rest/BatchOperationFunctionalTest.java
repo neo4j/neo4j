@@ -25,6 +25,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -333,6 +334,23 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
 
         assertEquals(500, response.getStatus());
         assertEquals(originalNodeCount, countNodes());
+
+    }
+    
+    @Test
+    @Ignore
+    public void shouldHandleUnicodeCorrectly() throws JsonParseException, ClientHandlerException,
+            UniformInterfaceException {
+
+        String jsonString = "[" + "{ " + "\"method\":\"POST\"," + "\"to\":\"/node\", " + "\"body\":{ \"name\":\"\u4f8b\u5b50\" }"
+                + "}" + "]";
+
+        String entity = gen.get()
+                .expectedStatus( 200 )
+                .payload( jsonString )
+                .post( batchUri() )
+                .entity();
+        assertTrue(entity.contains( "\u4f8b\u5b50" ));
 
     }
 
