@@ -139,4 +139,10 @@ public class SlaveTxIdGenerator implements TxIdGenerator
     {
         return this.broker.getMaster().other().getMachineId();
     }
+    
+    @Override
+    public int getMyId()
+    {
+        return broker.getMyMachineId();
+    }
 }
