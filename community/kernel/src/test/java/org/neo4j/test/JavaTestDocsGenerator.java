@@ -96,5 +96,11 @@ public class JavaTestDocsGenerator extends AsciiDocGenerator
         }
     }
 
+    public void addImageSnippet( String tagName, String imageName, String title )
+    {
+        this.addSnippet( tagName, "\nimage:"+imageName+"["+title+"scaledwidth=75%]\n" );
+        
+    }
+
     
 }

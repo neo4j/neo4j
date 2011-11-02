@@ -38,6 +38,11 @@
     </fileSet>
     <fileSet>
       <filtered>true</filtered>
+      <directory>target/docs/webadmin</directory>
+      <outputDirectory>/webadmin</outputDirectory>
+    </fileSet>
+    <fileSet>
+      <filtered>true</filtered>
       <directory>src/docs</directory>
       <outputDirectory>/</outputDirectory>
       <includes>

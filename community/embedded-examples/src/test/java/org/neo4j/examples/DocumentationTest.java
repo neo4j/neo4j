@@ -19,6 +19,8 @@
 package org.neo4j.examples;
 
 // START SNIPPET: sampleDocumentation
+// START SNIPPET: sampleDocumentation(fake)
+
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createCypherSnippet;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphViz;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
@@ -90,5 +92,6 @@ public class DocumentationTest extends AbstractJavaDocTestbase
                 createCypherSnippet( "start n = node(" + data.get().get( "I" )
                                      + ") return n" ) );
     }
+    // END SNIPPET: sampleDocumentation(fake)
     // END SNIPPET: sampleDocumentation
 }
