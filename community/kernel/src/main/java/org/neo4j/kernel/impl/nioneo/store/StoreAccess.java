@@ -53,19 +53,15 @@ public class StoreAccess
     {
         params.put( FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
         // these need to be made ok
-        NodeStore nodeStore = new NodeStore( path + "/neostore.nodestore.db", params );
-        RelationshipStore relStore = new RelationshipStore( path + "/neostore.relationshipstore.db", params );
-        PropertyStore propStore = null;
-        RelationshipTypeStore relTypeStore = new RelationshipTypeStore( path + "/neostore.relationshiptypestore.db",
-                params, IdType.RELATIONSHIP_TYPE );
-        this.nodeStore = nodeStore;
-        this.relStore = relStore;
-        this.relTypeStore = relTypeStore;
+        NodeStore nodeStore; RelationshipStore relStore; RelationshipTypeStore relTypeStore; PropertyStore propStore = null;
+        this.nodeStore = wrapStore( nodeStore = new NodeStore( path + "/neostore.nodestore.db", params ) );
+        this.relStore = wrapStore( relStore = new RelationshipStore( path + "/neostore.relationshipstore.db", params ) );
+        this.relTypeStore = wrapStore( relTypeStore = new RelationshipTypeStore(
+                path + "/neostore.relationshiptypestore.db", params, IdType.RELATIONSHIP_TYPE ) );
         this.typeNames = wrapStore( relTypeStore.getNameStore() );
         if ( new File( path + "/neostore.propertystore.db" ).exists() )
         {
-            propStore = new PropertyStore( path + "/neostore.propertystore.db", params );
-            this.propStore = propStore;
+            this.propStore = wrapStore( propStore = new PropertyStore( path + "/neostore.propertystore.db", params ) );
             this.propIndexStore = wrapStore( propStore.getIndexStore() );
             this.propKeys = wrapStore( propStore.getIndexStore().getKeyStore() );
             this.stringStore = wrapStore( propStore.getStringStore() );
