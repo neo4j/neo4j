@@ -33,9 +33,11 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 @Service.Implementation( LogDeserializerProvider.class )
 public class VerifyingLogDeserializerProvider extends LogDeserializerProvider
 {
+    public static final String NAME = "verifying";
+
     public VerifyingLogDeserializerProvider()
     {
-        super( "verifying" );
+        super( NAME );
     }
 
     @Override

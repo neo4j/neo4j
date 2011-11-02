@@ -39,6 +39,7 @@ public class BackupTool
     private static final String FROM = "from";
     private static final String INCREMENTAL = "incremental";
     private static final String FULL = "full";
+    private static final String VERIFY = "verify";
     public static final String DEFAULT_SCHEME = "single";
 
     public static void main( String[] args )
@@ -50,6 +51,7 @@ public class BackupTool
         boolean full = arguments.has( FULL );
         String from = arguments.get( FROM, null );
         String to = arguments.get( TO, null );
+        boolean verify = arguments.getBoolean( VERIFY, true, true );
         URI backupURI = null;
         try
         {
@@ -84,7 +86,7 @@ public class BackupTool
           // passed URI
             backupURI = service.resolve( backupURI );
         }
-        doBackup( full, backupURI, to );
+        doBackup( full, backupURI, to, verify );
     }
 
     private static void checkArguments( Args arguments )
@@ -111,26 +113,26 @@ public class BackupTool
     }
 
     private static void doBackup( boolean trueForFullFalseForIncremental,
-            URI from, String to )
+            URI from, String to, boolean verify )
     {
         if ( trueForFullFalseForIncremental )
         {
-            doBackupFull( from, to );
+            doBackupFull( from, to, verify );
         }
         else
         {
-            doBackupIncremental( from, to );
+            doBackupIncremental( from, to, verify );
         }
         System.out.println( "Done" );
     }
 
-    private static void doBackupFull( URI from, String to )
+    private static void doBackupFull( URI from, String to, boolean verify )
     {
         System.out.println( "Performing full backup from '" + from + "'" );
         OnlineBackup backup = newOnlineBackup( from );
         try
         {
-                backup.full( to );
+            backup.full( to, verify );
         }
         catch ( ComException e )
         {
@@ -139,14 +141,14 @@ public class BackupTool
         }
     }
 
-    private static void doBackupIncremental( URI from, String to )
+    private static void doBackupIncremental( URI from, String to, boolean verify )
     {
         System.out.println( "Performing incremental backup from '" + from + "'" );
         OnlineBackup backup = newOnlineBackup( from );
         boolean failedBecauseOfStoreVersionMismatch = false;
         try
         {
-            backup.incremental( to );
+            backup.incremental( to, verify );
         }
         catch ( TransactionFailureException e )
         {
@@ -179,7 +181,7 @@ public class BackupTool
                 exitAbnormally( "There was a problem moving the old database out of the way - cannot continue, aborting: "
                                 + e.getMessage() );
             }
-            doBackupFull( from, to );
+            doBackupFull( from, to, verify );
         }
     }
 
