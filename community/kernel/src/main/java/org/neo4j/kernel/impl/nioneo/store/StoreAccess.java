@@ -34,11 +34,13 @@ import org.neo4j.kernel.IdType;
  */
 public class StoreAccess
 {
+    // Top level stores
     private final RecordStore<NodeRecord> nodeStore;
     private final RecordStore<RelationshipRecord> relStore;
-    private final RecordStore<PropertyRecord> propStore;
-    private final RecordStore<DynamicRecord> stringStore, arrayStore;
     private final RecordStore<RelationshipTypeRecord> relTypeStore;
+    private final RecordStore<PropertyRecord> propStore;
+    // Transitive stores
+    private final RecordStore<DynamicRecord> stringStore, arrayStore;
     private final RecordStore<PropertyIndexRecord> propIndexStore;
     private final RecordStore<DynamicRecord> typeNames;
     private final RecordStore<DynamicRecord> propKeys;
@@ -153,6 +155,7 @@ public class StoreAccess
         {
             nodeStore.close();
             relStore.close();
+            relTypeStore.close();
             if ( propStore != null ) propStore.close();
         }
         finally
@@ -170,7 +173,10 @@ public class StoreAccess
 
     protected RecordStore<?>[] stores()
     {
-        return new RecordStore<?>[] { nodeStore, relStore, propStore, stringStore, arrayStore, typeNames, propKeys };
+        return new RecordStore<?>[] {
+                nodeStore, relStore, propStore, stringStore, arrayStore, // basic
+                relTypeStore, propIndexStore, typeNames, propKeys, // internal
+                };
     }
 
     protected <R extends AbstractBaseRecord> RecordStore<R> wrapStore( RecordStore<R> store )
