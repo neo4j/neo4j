@@ -27,6 +27,7 @@ import java.util.List;
 
 import javax.transaction.xa.Xid;
 
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.xaframework.LogApplier;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogDeserializer;
@@ -47,6 +48,7 @@ public class VerifyingLogDeserializer implements LogDeserializer
     private final LogBuffer writeBuffer;
     private final LogApplier applier;
     private final XaCommandFactory cf;
+    private final NeoStore store;
     private final ByteBuffer scratchBuffer = ByteBuffer.allocateDirect( 9
                                                                        + Xid.MAXGTRIDSIZE
                                                                        + Xid.MAXBQUALSIZE
@@ -58,12 +60,14 @@ public class VerifyingLogDeserializer implements LogDeserializer
     private LogEntry.Start startEntry;
 
     VerifyingLogDeserializer( ReadableByteChannel byteChannel,
-            LogBuffer writeBuffer, LogApplier applier, XaCommandFactory cf )
+            LogBuffer writeBuffer, LogApplier applier, XaCommandFactory cf,
+            NeoStore store )
     {
         this.byteChannel = byteChannel;
         this.writeBuffer = writeBuffer;
         this.applier = applier;
         this.cf = cf;
+        this.store = store;
         logEntries = new LinkedList<LogEntry>();
     }
 
