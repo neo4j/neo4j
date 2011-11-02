@@ -19,7 +19,6 @@
  */
 package org.neo4j.backup.check;
 
-import org.neo4j.kernel.impl.nioneo.store.Abstract64BitRecord;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -45,7 +44,7 @@ import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
  * are {@link DiffRecordStore diff stores}). Also, this checking is very
  * incomplete.
  */
-class ConsistencyCheck extends RecordStore.Processor implements Runnable
+public class ConsistencyCheck extends RecordStore.Processor implements Runnable
 {
     public static void main( String[] args )
     {
@@ -70,7 +69,7 @@ class ConsistencyCheck extends RecordStore.Processor implements Runnable
     private final RecordStore<DynamicRecord> typeNames;
     private long brokenNodes, brokenRels, brokenProps, brokenStrings, brokenArrays, brokenTypes, brokenKeys;
 
-    ConsistencyCheck( StoreAccess stores )
+    public ConsistencyCheck( StoreAccess stores )
     {
         this.nodes = stores.getNodeStore();
         this.rels = stores.getRelationshipStore();
@@ -92,10 +91,14 @@ class ConsistencyCheck extends RecordStore.Processor implements Runnable
         apply( props, RecordStore.IN_USE );
         apply( strings, RecordStore.IN_USE );
         apply( arrays, RecordStore.IN_USE );
+        apply( relTypes, RecordStore.IN_USE );
+        apply( propIndexes, RecordStore.IN_USE );
+        apply( propKeys, RecordStore.IN_USE );
+        apply( typeNames, RecordStore.IN_USE );
         checkResult();
     }
 
-    void checkResult() throws AssertionError
+    public void checkResult() throws AssertionError
     {
         if ( brokenNodes != 0 || brokenRels != 0 || brokenProps != 0 || brokenStrings != 0 || brokenArrays != 0 || brokenTypes != 0 || brokenKeys != 0 )
         {
@@ -163,7 +166,7 @@ class ConsistencyCheck extends RecordStore.Processor implements Runnable
         {
             RelationshipRecord rel = rels.forceGetRecord( relId );
             if ( !rel.inUse() || !( rel.getFirstNode() == node.getId() || rel.getSecondNode() == node.getId() ) )
-                fail |= report( node, rel, "invalid relationship reference" );
+                fail |= inconsistent( node, rel, "invalid relationship reference" );
         }
         if ( props != null )
         {
@@ -171,7 +174,7 @@ class ConsistencyCheck extends RecordStore.Processor implements Runnable
             if ( !Record.NO_NEXT_PROPERTY.value( propId ) )
             {
                 PropertyRecord prop = props.forceGetRecord( propId );
-                if ( !prop.inUse() ) fail |= report( node, prop, "invalid property reference" );
+                if ( !prop.inUse() ) fail |= inconsistent( node, prop, "invalid property reference" );
             }
         }
         return fail;
@@ -180,11 +183,11 @@ class ConsistencyCheck extends RecordStore.Processor implements Runnable
     private boolean checkRelationship( RelationshipRecord rel )
     {
         boolean fail = false;
-        if ( rel.getType() < 0 ) fail |= report( rel, "invalid type id" );
+        if ( rel.getType() < 0 ) fail |= inconsistent( rel, "invalid type id" );
         else
         {
             RelationshipTypeRecord type = relTypes.forceGetRecord( rel.getType() );
-            if ( !type.inUse() ) fail |= report( rel, type, "type not in use" );
+            if ( !type.inUse() ) fail |= inconsistent( rel, type, "type not in use" );
         }
         for ( RelationshipField field : relFields )
         {
@@ -196,26 +199,26 @@ class ConsistencyCheck extends RecordStore.Processor implements Runnable
                 {
                     NodeRecord node = nodes.forceGetRecord( nodeId );
                     if ( !node.inUse() || node.getNextRel() != rel.getId() )
-                        fail |= report( rel, node, "invalid " + field.name() + " reference" );
+                        fail |= inconsistent( rel, node, "invalid " + field.name() + " reference" );
                 }
             }
             else
             {
                 RelationshipRecord other = rels.forceGetRecord( otherId );
                 if ( !other.inUse() || !field.invConsistent( rel, other ) )
-                    fail |= report( rel, other, "invalid " + field.name() + " reference" );
+                    fail |= inconsistent( rel, other, "invalid " + field.name() + " reference" );
             }
         }
         for ( NodeField field : nodeFields )
         {
             long nodeId = field.get( rel );
             if ( nodeId < 0 )
-                fail |= report( rel, "invalid " + field.name() + " node reference" );
+                fail |= inconsistent( rel, "invalid " + field.name() + " node reference" );
             else
             {
                 NodeRecord node = nodes.forceGetRecord( nodeId );
                 if ( !node.inUse() )
-                    fail |= report( rel, node, "invalid " + field.name() + " node reference" );
+                    fail |= inconsistent( rel, node, "invalid " + field.name() + " node reference" );
             }
         }
         if ( props != null )
@@ -225,7 +228,7 @@ class ConsistencyCheck extends RecordStore.Processor implements Runnable
             {
                 PropertyRecord prop = props.forceGetRecord( propId );
                 if ( !prop.inUse() || !Record.NO_PREVIOUS_PROPERTY.value( prop.getPrevProp() ) )
-                    fail |= report( rel, prop, "invalid property reference" );
+                    fail |= inconsistent( rel, prop, "invalid property reference" );
             }
         }
         return fail;
@@ -239,14 +242,14 @@ class ConsistencyCheck extends RecordStore.Processor implements Runnable
         {
             PropertyRecord next = props.forceGetRecord( nextId );
             if ( !next.inUse() || next.getPrevProp() != property.getId() )
-                fail |= report( property, next, "invalid next reference" );
+                fail |= inconsistent( property, next, "invalid next reference" );
         }
         long prevId = property.getPrevProp();
         if ( !Record.NO_PREVIOUS_PROPERTY.value( prevId ) )
         {
             PropertyRecord prev = props.forceGetRecord( prevId );
             if ( !prev.inUse() || prev.getNextProp() != property.getId() )
-                fail |= report( property, prev, "invalid previous reference" );
+                fail |= inconsistent( property, prev, "invalid previous reference" );
         }
         else // property is first in chain
         {
@@ -258,17 +261,17 @@ class ConsistencyCheck extends RecordStore.Processor implements Runnable
         }
         for ( PropertyBlock block : property.getPropertyBlocks() )
         {
-            if ( block.getKeyIndexId() < 0 ) fail |= report( property, "invalid key id of " + block );
+            if ( block.getKeyIndexId() < 0 ) fail |= inconsistent( property, "invalid key id of " + block );
             else
             {
                 PropertyIndexRecord key = propIndexes.forceGetRecord( block.getKeyIndexId() );
-                if ( !key.inUse() ) fail |= report( property, key, "key not in use for " + block );
+                if ( !key.inUse() ) fail |= inconsistent( property, key, "key not in use for " + block );
             }
             RecordStore<DynamicRecord> dynStore = null;
             PropertyType type = block.forceGetType();
             if ( type == null )
             {
-                fail |= report( property, "illegal property type" );
+                fail |= inconsistent( property, "illegal property type" );
             }
             else switch ( block.getType() )
             {
@@ -283,7 +286,7 @@ class ConsistencyCheck extends RecordStore.Processor implements Runnable
             {
                 DynamicRecord dynrec = dynStore.forceGetRecord( block.getSingleValueLong() );
                 if ( !dynrec.inUse() )
-                    fail |= report( property, dynrec, "first dynamic record not in use" );
+                    fail |= inconsistent( property, dynrec, "first dynamic record not in use" );
             }
         }
         return fail;
@@ -294,7 +297,7 @@ class ConsistencyCheck extends RecordStore.Processor implements Runnable
         boolean fail = false;
         PrimitiveRecord entity = store.forceGetRecord( property.getNodeId() );
         if ( !entity.inUse() || entity.getNextProp() != property.getId() )
-            fail |= report( property, entity, "invalid owner reference" );
+            fail |= inconsistent( property, entity, "invalid owner reference" );
         if ( store instanceof DiffRecordStore<?> )
         {
             DiffRecordStore<? extends PrimitiveRecord> diffs = (DiffRecordStore<? extends PrimitiveRecord>) store;
@@ -305,7 +308,7 @@ class ConsistencyCheck extends RecordStore.Processor implements Runnable
                 if ( old.getNextProp() != property.getId() )
                     // THEN that property record must also have been updated!
                     if ( !( (DiffRecordStore<?>) props ).isModified( old.getNextProp() ) )
-                        fail |= report( property, entity, "overwriting used property record" );
+                        fail |= inconsistent( property, entity, "overwriting used property record" );
         }
         return fail;
     }
@@ -318,13 +321,13 @@ class ConsistencyCheck extends RecordStore.Processor implements Runnable
         {
             DynamicRecord next = store.forceGetRecord( nextId );
             if ( !next.inUse() )
-                fail |= report( record, next, "next record not in use" );
+                fail |= inconsistent( record, next, "next record not in use" );
         }
         if ( store instanceof DiffRecordStore<?> )
         {
             DiffRecordStore<DynamicRecord> diffs = (DiffRecordStore<DynamicRecord>) store;
             DynamicRecord prev = diffs.forceGetRaw( record.getId() );
-            if ( prev.inUse() ) fail |= report( record, prev, "overwriting used dynamic record" );
+            if ( prev.inUse() ) fail |= inconsistent( record, prev, "overwriting used dynamic record" );
         }
         return fail;
     }
@@ -333,7 +336,7 @@ class ConsistencyCheck extends RecordStore.Processor implements Runnable
     {
         if ( Record.NO_NEXT_BLOCK.value( type.getTypeBlock() ) ) return false; // accept this
         DynamicRecord record = typeNames.forceGetRecord( type.getTypeBlock() );
-        if ( !record.inUse() ) return report( type, record, "reference to unused type name" );
+        if ( !record.inUse() ) return inconsistent( type, record, "reference to unused type name" );
         return false;
     }
 
@@ -341,22 +344,32 @@ class ConsistencyCheck extends RecordStore.Processor implements Runnable
     {
         if ( Record.NO_NEXT_BLOCK.value( key.getKeyBlockId() ) ) return false; // accept this
         DynamicRecord record = propKeys.forceGetRecord( key.getKeyBlockId() );
-        if ( !record.inUse() ) return report( key, record, "reference to unused key string" );
+        if ( !record.inUse() ) return inconsistent( key, record, "reference to unused key string" );
         return false;
     }
 
     // Inconsistency between two records
-    boolean report( AbstractBaseRecord record, AbstractBaseRecord referred, String message )
+    private boolean inconsistent( AbstractBaseRecord record, AbstractBaseRecord referred, String message )
     {
-        System.err.println( record + " " + referred + " //" + message );
+        report( record, referred, message );
         return true;
     }
 
     // Internal inconsistency in a single record
-    boolean report( Abstract64BitRecord record, String message )
+    private boolean inconsistent( AbstractBaseRecord record, String message )
+    {
+        report( record, message );
+        return true;
+    }
+
+    protected void report( AbstractBaseRecord record, AbstractBaseRecord referred, String message )
+    {
+        System.err.println( record + " " + referred + " //" + message );
+    }
+
+    protected void report( AbstractBaseRecord record, String message )
     {
         System.err.println( record + " //" + message );
-        return true;
     }
 
     private static NodeField[] nodeFields = NodeField.values();

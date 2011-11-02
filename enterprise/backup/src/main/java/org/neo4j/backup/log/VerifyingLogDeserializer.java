@@ -27,7 +27,10 @@ import java.util.List;
 
 import javax.transaction.xa.Xid;
 
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.backup.check.ConsistencyCheck;
+import org.neo4j.backup.check.DiffStore;
+import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
+import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.LogApplier;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
@@ -36,7 +39,9 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
+import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * This class implements a transaction stream deserializer which verifies
@@ -49,13 +54,14 @@ public class VerifyingLogDeserializer implements LogDeserializer
     private final LogBuffer writeBuffer;
     private final LogApplier applier;
     private final XaCommandFactory cf;
-    private final NeoStore store;
     private final ByteBuffer scratchBuffer = ByteBuffer.allocateDirect( 9
                                                                        + Xid.MAXGTRIDSIZE
                                                                        + Xid.MAXBQUALSIZE
                                                                        * 10 );
 
     private final List<LogEntry> logEntries;
+    private final DiffStore diffs;
+    private final StringLogger msgLog;
 
     private LogEntry.Commit commitEntry;
     private LogEntry.Start startEntry;
@@ -68,8 +74,9 @@ public class VerifyingLogDeserializer implements LogDeserializer
         this.writeBuffer = writeBuffer;
         this.applier = applier;
         this.cf = cf;
-        this.store = ds.getNeoStore();
-        logEntries = new LinkedList<LogEntry>();
+        this.logEntries = new LinkedList<LogEntry>();
+        this.diffs = new DiffStore( ds.getNeoStore() );
+        this.msgLog = ds.getMsgLog();
     }
 
     @Override
@@ -99,6 +106,14 @@ public class VerifyingLogDeserializer implements LogDeserializer
         {
             startEntry = (LogEntry.Start) entry;
         }
+        else if ( entry instanceof LogEntry.Command )
+        {
+            XaCommand command = ( (LogEntry.Command) entry ).getXaCommand();
+            if ( command instanceof Command )
+            {
+                ( (Command) command ).accept( diffs );
+            }
+        }
         return true;
     }
 
@@ -114,13 +129,45 @@ public class VerifyingLogDeserializer implements LogDeserializer
         return startEntry;
     }
 
-    private void verify()
+    private void verify() throws AssertionError
     {
         /*
          *  Here goes the actual verification code. If it passes,
          *  just return - if not, throw RuntimeExeption so that the
          *  store remains safe.
          */
+        ConsistencyCheck consistency = diffs.apply( new ConsistencyCheck( diffs )
+        {
+            protected void report( AbstractBaseRecord record, AbstractBaseRecord referred, String message )
+            {
+                logInconsistency( record + " " + referred + " // " + message );
+            }
+
+            protected void report( AbstractBaseRecord record, String message )
+            {
+                logInconsistency( record + " // " + message );
+            }
+        } );
+        try
+        {
+            consistency.checkResult();
+        }
+        catch ( AssertionError e )
+        {
+            msgLog.logMessage( "Cannot apply log " + logId() + ", " + e.getMessage() );
+            throw e;
+        }
+    }
+
+    private String logId()
+    {
+        if ( startEntry == null ) return "";
+        return Integer.toString( startEntry.getIdentifier() );
+    }
+
+    private void logInconsistency( String inconsistencyMessage )
+    {
+        msgLog.logMessage( "Incosistency from log " + logId() + ": " + inconsistencyMessage );
     }
 
     private void applyAll() throws IOException
