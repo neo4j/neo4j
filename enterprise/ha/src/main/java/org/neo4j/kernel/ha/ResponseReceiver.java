@@ -21,8 +21,6 @@ package org.neo4j.kernel.ha;
 
 import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
-import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.ha.zookeeper.Machine;
 
 public interface ResponseReceiver
 {
@@ -30,5 +28,5 @@ public interface ResponseReceiver
     
     <T> T receive( Response<T> response );
     
-    void newMaster( Pair<Master, Machine> master, Exception e );
+    void newMaster( Exception cause );
 }

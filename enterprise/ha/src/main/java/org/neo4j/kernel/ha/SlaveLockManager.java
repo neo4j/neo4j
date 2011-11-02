@@ -118,12 +118,12 @@ public class SlaveLockManager extends LockManager
         }
         catch ( ZooKeeperException e )
         {
-            receiver.newMaster( null, e );
+            receiver.newMaster( e );
             throw e;
         }
         catch ( ComException e )
         {
-            receiver.newMaster( null, e );
+            receiver.newMaster( e );
             throw e;
         }
     }
@@ -189,12 +189,12 @@ public class SlaveLockManager extends LockManager
         }
         catch ( ZooKeeperException e )
         {
-            receiver.newMaster( null, e );
+            receiver.newMaster( e );
             throw e;
         }
         catch ( ComException e )
         {
-            receiver.newMaster( null, e );
+            receiver.newMaster( e );
             throw e;
         }
     }

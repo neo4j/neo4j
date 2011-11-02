@@ -137,7 +137,7 @@ public class ZooClient extends AbstractZooKeeperManager
                     msgLog.logMessage( "Did set '" + MASTER_NOTIFY_CHILD + "' to " + masterId );
                     if ( sessionId != -1 )
                     {
-                        receiver.newMaster( null, new Exception() );
+                        receiver.newMaster( new Exception() );
                     }
                     sessionId = newSessionId;
                 }
@@ -163,7 +163,7 @@ public class ZooClient extends AbstractZooKeeperManager
                     // it really is master.
                     if ( currentMaster.other().getMachineId() == machineId )
                     {
-                        receiver.newMaster( null, new Exception() );
+                        receiver.newMaster( new Exception() );
                     }
                 }
                 else if ( path.contains( MASTER_REBOUND_CHILD ) )
@@ -175,7 +175,7 @@ public class ZooClient extends AbstractZooKeeperManager
                     // become slaves if they don't already are.
                     if ( currentMaster.other().getMachineId() != machineId )
                     {
-                        receiver.newMaster( null, new Exception() );
+                        receiver.newMaster( new Exception() );
                     }
                 }
                 else

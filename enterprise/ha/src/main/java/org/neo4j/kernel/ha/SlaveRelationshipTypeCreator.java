@@ -51,12 +51,12 @@ public class SlaveRelationshipTypeCreator implements RelationshipTypeCreator
         }
         catch ( ZooKeeperException e )
         {
-            receiver.newMaster( null, e );
+            receiver.newMaster( e );
             throw e;
         }
         catch ( ComException e )
         {
-            receiver.newMaster( null, e );
+            receiver.newMaster( e );
             throw e;
         }
     }

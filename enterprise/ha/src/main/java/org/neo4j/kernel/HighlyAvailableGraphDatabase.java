@@ -199,9 +199,9 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         } );
     }
 
-    private void getFreshDatabaseFromMaster( Pair<Master, Machine> master )
+    private void getFreshDatabaseFromMaster( )
     {
-        master = master != null ? master : broker.getMasterReally( true );
+        Pair<Master, Machine> master = broker.getMasterReally( true );
         // Assume it's shut down at this point
 
         internalShutdown( false );
@@ -286,7 +286,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 throw new RuntimeException( "Tried to join the cluster, but was unable to", exception );
             }
         }
-        newMaster( null, storeId, new Exception( "Starting up for the first time" ) );
+        newMaster( storeId, new Exception( "Starting up for the first time" ) );
         localGraph();
     }
 
@@ -539,9 +539,9 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         return getClass().getSimpleName() + "[" + CONFIG_KEY_SERVER_ID + ":" + machineId + "]";
     }
 
-    protected synchronized void reevaluateMyself( Pair<Master, Machine> master, StoreId storeId )
+    protected synchronized void reevaluateMyself( StoreId storeId )
     {
-        if ( master == null ) master = broker.getMasterReally( true );
+        Pair<Master, Machine> master = broker.getMasterReally( true );
         boolean iAmCurrentlyMaster = masterServer != null;
         msgLog.logMessage( "ReevaluateMyself: machineId=" + machineId + " with master[" + master +
                 "] (I am master=" + iAmCurrentlyMaster + ", " + localGraph + ")" );
@@ -912,31 +912,31 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     }
 
     @Override
-    public void newMaster( Pair<Master, Machine> master, Exception e )
+    public void newMaster( Exception e )
     {
-        newMaster( master, null, e );
+        newMaster( null, e );
     }
 
-    private synchronized void newMaster( Pair<Master, Machine> master, StoreId storeId, Exception e )
+    private synchronized void newMaster( StoreId storeId, Exception e )
     {
         try
         {
-            doNewMaster( master, storeId, e );
+            doNewMaster( storeId, e );
         }
         catch ( BranchedDataException bde )
         {
             msgLog.logMessage( "Branched data occured, retrying" );
-            getFreshDatabaseFromMaster( master );
-            doNewMaster( master, storeId, bde );
+            getFreshDatabaseFromMaster();
+            doNewMaster( storeId, bde );
         }
     }
 
-    private void doNewMaster( Pair<Master, Machine> master, StoreId storeId, Exception e )
+    private void doNewMaster( StoreId storeId, Exception e )
     {
         try
         {
-            msgLog.logMessage( "newMaster(" + master + ") called", true );
-            reevaluateMyself( master, storeId );
+            msgLog.logMessage( "newMaster called", true );
+            reevaluateMyself( storeId );
         }
         catch ( ZooKeeperException ee )
         {

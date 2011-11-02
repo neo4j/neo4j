@@ -46,12 +46,12 @@ public class SlaveTxFinishHook implements TxHook
         }
         catch ( ZooKeeperException e )
         {
-            receiver.newMaster( null, e );
+            receiver.newMaster( e );
             throw e;
         }
         catch ( ComException e )
         {
-            receiver.newMaster( null, e );
+            receiver.newMaster( e );
             throw e;
         }
     }
@@ -70,12 +70,12 @@ public class SlaveTxFinishHook implements TxHook
         }
         catch ( ZooKeeperException e )
         {
-            receiver.newMaster( null, e );
+            receiver.newMaster( e );
             throw e;
         }
         catch ( ComException e )
         {
-            receiver.newMaster( null, e );
+            receiver.newMaster( e );
             throw e;
         }
     }

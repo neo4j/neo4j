@@ -104,12 +104,12 @@ public class SlaveTxIdGenerator implements TxIdGenerator
         }
         catch ( ZooKeeperException e )
         {
-            receiver.newMaster( null, e );
+            receiver.newMaster( e );
             throw e;
         }
         catch ( ComException e )
         {
-            receiver.newMaster( null, e );
+            receiver.newMaster( e );
             throw e;
         }
     }
