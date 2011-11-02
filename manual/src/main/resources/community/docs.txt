@@ -342,6 +342,33 @@ That is, missing includes here will still break the build!
 ////
 ----
 
+== A sample Java based documentation test ==
+
+For Java, there are a couple of premade utilities that keep code and documentation together in
+Javadocs and code snippets that generate ASCIIDOC for the rest of the toolchain.
+
+To illustrate this, look at the following documentation that generating the ASCIIDOC file +hello-world-title.txt+ with a content of:
+
+[source]
+------------------------------
+include::{importdir}/neo4j-examples-docs-jar/dev/examples/hello-world-sample-chapter.txt[]
+------------------------------
+
+this file is included in this documentation via
+
+[source]
+----
+  :leveloffset: 3
+  include::{importdir}/neo4j-examples-docs-jar/dev/examples/hello-world-sample-chapter.txt[] 
+----
+
+which renders the following chapter: 
+
+:leveloffset: 3
+
+include::{importdir}/neo4j-examples-docs-jar/dev/examples/hello-world-sample-chapter.txt[]
+
+:leveloffset: 2
 
 == Toolchain ==
 
