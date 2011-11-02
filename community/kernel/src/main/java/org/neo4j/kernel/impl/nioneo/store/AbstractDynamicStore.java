@@ -147,6 +147,18 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     }
 
     @Override
+    public int getRecordSize()
+    {
+        return getBlockSize();
+    }
+
+    @Override
+    public int getRecordHeaderSize()
+    {
+        return BLOCK_HEADER_SIZE;
+    }
+
+    @Override
     protected void verifyFileSizeAndTruncate() throws IOException
     {
         int expectedVersionLength = UTF8.encode( buildTypeDescriptorAndVersion( getTypeDescriptor() ) ).length;
@@ -279,7 +291,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
             releaseWindow( window );
         }
     }
-    
+
     @Override
     public void forceUpdateRecord( DynamicRecord record )
     {
@@ -421,7 +433,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         }
         return record;
     }
-    
+
     @Override
     public DynamicRecord getRecord( long id )
     {
@@ -436,7 +448,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
             releaseWindow( window );
         }
     }
-    
+
     @Override
     public DynamicRecord forceGetRecord( long id )
     {

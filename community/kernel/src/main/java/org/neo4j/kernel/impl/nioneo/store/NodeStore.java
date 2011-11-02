@@ -41,7 +41,7 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
     {
         super( fileName, config, IdType.NODE );
     }
-    
+
     @Override
     public void accept( RecordStore.Processor processor, NodeRecord record )
     {
@@ -58,6 +58,12 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
     public int getRecordSize()
     {
         return RECORD_SIZE;
+    }
+
+    @Override
+    public int getRecordHeaderSize()
+    {
+        return getRecordSize();
     }
 
     /**
@@ -94,7 +100,7 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
             releaseWindow( window );
         }
     }
-    
+
     @Override
     public NodeRecord forceGetRecord( long id )
     {
@@ -132,7 +138,7 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
             unsetRecovered();
         }
     }
-    
+
     @Override
     public void forceUpdateRecord( NodeRecord record )
     {
