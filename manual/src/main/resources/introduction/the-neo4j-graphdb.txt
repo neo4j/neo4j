@@ -154,6 +154,35 @@ Primitive [shape="record" label="Primitive |{boolean|byte|short|int|long|float|d
 
 For further details on float/double values, see http://java.sun.com/docs/books/jls/third_edition/html/typesValues.html#4.2.3[Java Language Specification].
 
+[[graphdb-neo4j-paths]]
+== Paths ==
+
+A path is one or more nodes with connecting relationships, typically retrieved as a query or traversal result.
+
+["dot", "graphdb-path.svg", "meta"]
+----
+"A Path" [fillcolor="NODEHIGHLIGHT"]
+"A Path" -> "Start Node" [label="has a"]
+"A Path" -> "Relationship" [label="can contain one or more"]
+"Relationship" -> "Node" [label="accompanied by a"]
+"A Path" -> "End Node" [label="has an"]
+----
+
+The shortest possible path has length zero and looks like this:
+
+["dot", "graphdb-path-example1.svg"]
+----
+"Node"
+----
+
+A path of length one:
+
+["dot", "graphdb-path-example2.svg"]
+----
+"Node 1" -> "Node 2" [label="Relationship 1"]
+----
+
+
 [[graphdb-neo4j-traversal]]
 == Traversal ==
 
@@ -207,7 +236,6 @@ Traverser -> Nodes [label="result as"]
 Traverser -> Relationships [label="result as"]
 
 { rank="same"; Traverser; "A Node" }
-
 ----
 
 

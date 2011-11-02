@@ -108,7 +108,7 @@ This is how such a reference looks:
 Which will render like: <<community-docs-overall-flow>>
 
 [NOTE]
-Just write "see \<<target-id>>" and similar, that's enough in most cases.
+Just write "see \<<target-id>>" and similar, that should suffice in most cases.
 
 If you need to link to another document with your own link text, this is what to do:
 
@@ -262,6 +262,45 @@ The optional second argument given to the dot filter defines the style to use:
 CAUTION: Keywords of the DOT language have to be surrounded by double quotes when used for other purposes.
   The keywords include _node, edge, graph, digraph, subgraph,_ and _strict_.
 
+
+== Attributes ==
+
+Common attributes you can use in documents:
+
+* \{neo4j-version} - rendered as "{neo4j-version}"
+* \{neo4j-git-tag} - rendered as "{neo4j-git-tag}"
+
+These can substitute part of URLs that point to for example APIdocs or source code.
+Note that neo4j-git-tag also handles the case of snapshot/master.
+
+== Comments ==
+
+There's a separate build including comments.
+The comments show up with a yellow background.
+It's located at http://docs.neo4j.org/annotated/.
+You can also use this page to search for content, as the full manual is on a single page.
+CAUTION: This version isn't intended for users in general, as the Disqus feature isn't available there.
+
+Here's how to write a comment:
+
+[source]
+----
+// this is a comment
+----
+
+The comments are not visible in the normal build.
+Comment blocks won't be included in the output of any build at all.
+Here's a comment block:
+
+[source]
+----
+////
+Note that includes in here will still be processed, but not make it into the output.
+That is, missing includes here will still break the build!
+////
+----
+
+
 == Code Snippets ==
 
 === Explicitly defined in the document ===
@@ -303,51 +342,89 @@ For other highlighters we could add see http://alexgorbatchev.com/SyntaxHighligh
 
 === Fetched from source code ===
 
-TBD.
+Code can be automatically fetched from source files.
+You need to define:
 
-== Attributes ==
+* component: the +artifactId+ of the Maven coordinates,
+* source: path to the file inside the jar it's deployed to,
+* classifier: +sources+ or +test-sources+ or any other classifier pointing to the artifact,
+* tag: tag name to search the file for,
+* the language of the code, if a corresponding syntax highlighter is available.
 
-Common attributes you can use in documents:
+Note that the artifact has to be included as a Maven dependency of the Manual project so that the files can be found.
 
-* \{neo4j-version} - rendered as "{neo4j-version}"
-* \{neo4j-git-tag} - rendered as "{neo4j-git-tag}"
+The file will be searched for lines including +START SNIPPET: {tag}+ and +END SNIPPET: {tag}+, the lines between those will go into the output. 
+Be aware of that the tag "abc" will match "abcd" as well.
+It's a simple on/off switch, meaning that multiple occurrences will be assembled into a single code snippet in the output.
+This behavior can be user to hide away assertions from code examples sourced from tests.
 
-These can substitute part of URLs that point to for example APIdocs or source code.
-Note that neo4j-git-tag also handles the case of snapshot/master.
-
-== Comments ==
-
-There's a separate build including comments.
-The comments show up with a yellow background.
-It's located at http://docs.neo4j.org/annotated/.
-You can also use this page to search for content, as the full manual is on a single page.
-CAUTION: This version isn't intended for users in general, as the Disqus feature isn't available there.
-
-Here's how to write a comment:
+This is how to define a code snippet inclusion:
 
 [source]
 ----
-// this is a comment
+ [snippet,java]
+ ----
+ component=neo4j-examples
+ source=org/neo4j/examples/HelloWorldTest.java
+ classifier=test-sources
+ tag=startDb
+ ----
 ----
 
-The comments are not visible in the normal build.
-Comment blocks won't be included in the output of any build at all.
-Here's a comment block:
+This is how it renders:
+
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/HelloWorldTest.java
+classifier=test-sources
+tag=startDb
+----
+
+
+=== Query Results ===
+
+There's a special filter for Cypher query results.
+This is how to tag a query result:
 
 [source]
 ----
-////
-Note that includes in here will still be processed, but not make it into the output.
-That is, missing includes here will still break the build!
-////
+ .Result
+ [queryresult]
+ ----
+ +----------------------------------+
+ | friend_of_friend.name | count(*) |
+ +----------------------------------+
+ | Ian                   | 2        |
+ | Derrick               | 1        |
+ | Jill                  | 1        |
+ +----------------------------------+
+ 3 rows, 12 ms
+ ----
 ----
+
+This is how it renders:
+
+.Result
+[queryresult]
+----
++----------------------------------+
+| friend_of_friend.name | count(*) |
++----------------------------------+
+| Ian                   | 2        |
+| Derrick               | 1        |
+| Jill                  | 1        |
++----------------------------------+
+3 rows, 12 ms
+----
+
 
 == A sample Java based documentation test ==
 
 For Java, there are a couple of premade utilities that keep code and documentation together in
-Javadocs and code snippets that generate ASCIIDOC for the rest of the toolchain.
+Javadocs and code snippets that generate Asciidoc for the rest of the toolchain.
 
-To illustrate this, look at the following documentation that generating the ASCIIDOC file +hello-world-title.txt+ with a content of:
+To illustrate this, look at the following documentation that generates the Asciidoc file +hello-world-title.txt+ with a content of:
 
 [source]
 ------------------------------
