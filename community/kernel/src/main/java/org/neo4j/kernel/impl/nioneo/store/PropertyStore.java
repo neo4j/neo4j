@@ -424,7 +424,16 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     @Override
     public PropertyRecord forceGetRecord( long id )
     {
-        PersistenceWindow window = acquireWindow( id, OperationType.READ );
+        PersistenceWindow window = null;
+        try
+        {
+            window = acquireWindow( id, OperationType.READ );
+        }
+        catch ( InvalidRecordException e )
+        {
+            return new PropertyRecord( id );
+        }
+        
         try
         {
             return getRecord( id, window, RecordLoad.FORCE );
