@@ -208,7 +208,9 @@ public class LuceneDataSource extends LogBackedXaDataSource
 
         XaCommandFactory cf = new LuceneCommandFactory();
         XaTransactionFactory tf = new LuceneTransactionFactory();
-        xaContainer = XaContainer.create( this, this.baseStorePath + File.separator + "lucene.log", cf, tf, params );
+        xaContainer = XaContainer.create( this,
+                this.baseStorePath + File.separator + "lucene.log", cf, tf,
+                null, params );
 
         if ( !isReadOnly )
         {

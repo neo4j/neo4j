@@ -39,7 +39,6 @@ import javax.transaction.xa.Xid;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.cache.LruCache;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.BufferedFileChannel;
@@ -91,7 +90,6 @@ public class XaLogicalLog
     private final XaResourceManager xaRm;
     private final XaCommandFactory cf;
     private final XaTransactionFactory xaTf;
-    private final NeoStore neoStore;
     private char currentLog = CLEAN;
     private boolean keepLogs = false;
     private boolean autoRotate = true;
@@ -112,18 +110,17 @@ public class XaLogicalLog
             new LruCache<Long, Long>( "Log header cache", 1000, null );
 
     XaLogicalLog( String fileName, XaResourceManager xaRm, XaCommandFactory cf,
-        XaTransactionFactory xaTf, Map<Object,Object> config )
+            XaTransactionFactory xaTf, LogDeserializerProvider logDeserializer,
+            Map<Object, Object> config )
     {
         this.fileName = fileName;
         this.xaRm = xaRm;
         this.cf = cf;
         this.xaTf = xaTf;
-        this.neoStore = (NeoStore) config.get( NeoStore.class );
         this.logBufferFactory = (LogBufferFactory) config.get( LogBufferFactory.class );
-        LogDeserializerProvider tempLogApplierFactory = (LogDeserializerProvider) config.get( LogDeserializerProvider.class );
-        if ( tempLogApplierFactory != null )
+        if ( logDeserializer != null )
         {
-            logApplierFactory = tempLogApplierFactory;
+            logApplierFactory = logDeserializer;
         }
         else
         {
@@ -1333,9 +1330,10 @@ public class XaLogicalLog
         }
 
         @Override
-        public LogDeserializer getLogApplier( ReadableByteChannel byteChannel,
+        public LogDeserializer getLogDeserializer(
+                ReadableByteChannel byteChannel,
                 LogBuffer buffer, LogApplier applier, XaCommandFactory cf,
-                NeoStore store )
+                XaDataSource ds )
         {
             return new LogDeserializerImpl( byteChannel, applier );
         }
@@ -1421,7 +1419,7 @@ public class XaLogicalLog
 
         long logEntriesFound = 0;
         scanIsComplete = false;
-        LogDeserializer logApplier = logApplierFactory.getLogApplier(
+        LogDeserializer logApplier = logApplierFactory.getLogDeserializer(
                 byteChannel, writeBuffer, new LogApplier()
                 {
                     @Override
@@ -1429,7 +1427,7 @@ public class XaLogicalLog
                     {
                         applyEntry( entry );
                     }
-                }, cf, neoStore );
+                }, cf, xaRm.getDataSource() );
         int xidIdent = getNextIdentifier();
         long startEntryPosition = writeBuffer.getFileChannelPosition();
         while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) )
@@ -1483,7 +1481,7 @@ public class XaLogicalLog
 //        System.out.println( "applyFullTx#start @ pos: " + writeBuffer.getFileChannelPosition() );
         long logEntriesFound = 0;
         scanIsComplete = false;
-        LogDeserializer logApplier = logApplierFactory.getLogApplier(
+        LogDeserializer logApplier = logApplierFactory.getLogDeserializer(
                 byteChannel, writeBuffer, new LogApplier()
                 {
                     @Override
@@ -1491,7 +1489,7 @@ public class XaLogicalLog
                     {
                         applyEntry( entry );
                     }
-                }, cf, neoStore );
+                }, cf, xaRm.getDataSource() );
         int xidIdent = getNextIdentifier();
         long startEntryPosition = writeBuffer.getFileChannelPosition();
         boolean successfullyApplied = false;
