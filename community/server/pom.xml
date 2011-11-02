@@ -21,9 +21,13 @@
     <bundle.namespace>org.neo4j.server</bundle.namespace>
     <short-name>server</short-name>
     <license-text.header>GPL-3-header.txt</license-text.header>
+    
     <neo4j-server.mainClass>org.neo4j.server.Bootstrapper</neo4j-server.mainClass>
     <neo-server.home>target/generated-resources/appassembler/jsw</neo-server.home>
     <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
+    
+    <neo4j.codename>Boden Bord</neo4j.codename>
+    
     <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
     <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
     <blueprints.version>1.0</blueprints.version>

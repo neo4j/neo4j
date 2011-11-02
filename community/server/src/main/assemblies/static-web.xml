@@ -28,8 +28,25 @@
   </formats>
   <fileSets>
     <fileSet>
+      <!-- Filtered files (eg. text files) -->
       <directory>${project.build.outputDirectory}/webadmin-html</directory>
       <outputDirectory>/webadmin-html</outputDirectory>
+      <filtered>true</filtered>
+      <includes>
+        <include>**/*.js</include>
+        <include>**/*.html</include>
+        <include>**/*.css</include>
+      </includes>
+    </fileSet>
+    <fileSet>
+      <!-- Non-Filtered files (eg. binary files) -->
+      <directory>${project.build.outputDirectory}/webadmin-html</directory>
+      <outputDirectory>/webadmin-html</outputDirectory>
+      <excludes>
+      	<exclude>**/*.js</exclude>
+        <exclude>**/*.html</exclude>
+        <exclude>**/*.css</exclude>
+      </excludes>
     </fileSet>
     <fileSet>
       <directory>${project.basedir}</directory>
