@@ -19,6 +19,10 @@
  */
 package org.neo4j.server.webadmin;
 
+import static org.openqa.selenium.OutputType.FILE;
+
+import java.io.File;
+
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -27,6 +31,8 @@ import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.webdriver.WebDriverFacade;
 import org.neo4j.server.webdriver.WebadminWebdriverLibrary;
+import org.openqa.selenium.TakesScreenshot;
+import org.openqa.selenium.WebDriver;
 
 public abstract class AbstractWebadminTest {
     
@@ -44,6 +50,31 @@ public abstract class AbstractWebadminTest {
         wl = new WebadminWebdriverLibrary(webdriverFacade,server.baseUri().toString());
     }
     
+    protected void captureScreenshot( String string )
+    {
+        WebDriver webDriver = wl.getWebDriver();
+        if(webDriver instanceof TakesScreenshot) {
+            
+        try
+        {
+            File screenshotFile = ((TakesScreenshot)webDriver).getScreenshotAs(FILE);
+            System.out.println(screenshotFile.getAbsolutePath());
+            
+        }
+        catch ( SecurityException e )
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        
+        }
+        
+    }
     @Before
     public void cleanDatabase() {
         ServerHelper.cleanTheDatabase(server);

@@ -35,9 +35,12 @@ public class ConsoleWebIT extends AbstractWebadminTest {
         wl.goToWebadminStartPage();
         wl.clickOnTab("Console");
         wl.clickOnLink("Cypher");
+        captureScreenshot("CypherConsole");
         wl.waitForElementToAppear(By
                 .xpath("//ul/li[contains(.,'cypher')]"));
     }
+
+   
 
     @Test
     public void remembersCypherStateWhenSwitchingTabsTest() {
