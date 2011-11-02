@@ -52,15 +52,19 @@ public class StoreAccess
     public StoreAccess( String path, Map<Object, Object> params )
     {
         params.put( FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
-        this.nodeStore = new NodeStore( path + "/neostore.nodestore.db", params );
-        this.relStore = new RelationshipStore( path + "/neostore.relationshipstore.db", params );
+        // these need to be made ok
+        NodeStore nodeStore = new NodeStore( path + "/neostore.nodestore.db", params );
+        RelationshipStore relStore = new RelationshipStore( path + "/neostore.relationshipstore.db", params );
+        PropertyStore propStore = null;
         RelationshipTypeStore relTypeStore = new RelationshipTypeStore( path + "/neostore.relationshiptypestore.db",
                 params, IdType.RELATIONSHIP_TYPE );
+        this.nodeStore = nodeStore;
+        this.relStore = relStore;
         this.relTypeStore = relTypeStore;
         this.typeNames = wrapStore( relTypeStore.getNameStore() );
         if ( new File( path + "/neostore.propertystore.db" ).exists() )
         {
-            PropertyStore propStore = new PropertyStore( path + "/neostore.propertystore.db", params );
+            propStore = new PropertyStore( path + "/neostore.propertystore.db", params );
             this.propStore = propStore;
             this.propIndexStore = wrapStore( propStore.getIndexStore() );
             this.propKeys = wrapStore( propStore.getIndexStore().getKeyStore() );
@@ -76,6 +80,10 @@ public class StoreAccess
             this.arrayStore = null;
         }
         this.closable = true;
+        nodeStore.makeStoreOk();
+        relStore.makeStoreOk();
+        if ( propStore != null ) propStore.makeStoreOk();
+        relTypeStore.makeStoreOk();
     }
 
     public StoreAccess( NeoStore store )
