@@ -24,6 +24,10 @@ else
 fi
 
 ROOTPATHDOCS=public_html/docs
+hostname=$(uname -n)
+
+# If you're not the designated CI server, don't try and deploy the manual
+[ "${hostname}" == 'build1' ] || exit 0
 
 echo "VERSION = $VERSION"
 echo "SYMLINKVERSION = $SYMLINKVERSION"
