@@ -64,11 +64,6 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
         return new DiffRecordStore<R>( store );
     }
 
-    public void verify() throws AssertionError
-    {
-        apply( new ConsistencyCheck( this ) ).checkResult();
-    }
-
     @Override
     protected void apply( Processor processor, RecordStore<?> store )
     {
