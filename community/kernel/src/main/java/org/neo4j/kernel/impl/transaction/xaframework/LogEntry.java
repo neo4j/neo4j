@@ -54,14 +54,16 @@ public abstract class LogEntry
     {
         private final Xid xid;
         private final int masterId;
+        private final int myId;
         private final long timeWritten;
         private long startPosition;
 
-        Start( Xid xid, int identifier, int masterId, long startPosition, long timeWritten )
+        Start( Xid xid, int identifier, int masterId, int myId, long startPosition, long timeWritten )
         {
             super( identifier );
             this.xid = xid;
             this.masterId = masterId;
+            this.myId = myId;
             this.startPosition = startPosition;
             this.timeWritten = timeWritten;
         }
@@ -74,6 +76,11 @@ public abstract class LogEntry
         public int getMasterId()
         {
             return masterId;
+        }
+
+        public int getLocalId()
+        {
+            return myId;
         }
 
         public long getStartPosition()
@@ -94,7 +101,7 @@ public abstract class LogEntry
         @Override
         public String toString()
         {
-            return "Start[" + getIdentifier() + ",xid=" + xid + ",master=" + masterId + ",time=" + timestamp( timeWritten ) + "]";
+            return "Start[" + getIdentifier() + ",xid=" + xid + ",master=" + masterId + ",me=" + myId + ",time=" + timestamp( timeWritten ) + "]";
         }
     }
 
