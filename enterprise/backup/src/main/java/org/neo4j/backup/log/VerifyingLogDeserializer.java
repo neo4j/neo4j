@@ -136,7 +136,8 @@ public class VerifyingLogDeserializer implements LogDeserializer
          *  just return - if not, throw Error so that the
          *  store remains safe.
          */
-        msgLog.logMessage( "Verifying consistency of changes from " + startEntry );
+        // msgLog.logMessage( "Verifying consistency of changes from " +
+        // startEntry );
         ConsistencyCheck consistency = diffs.apply( new ConsistencyCheck( diffs )
         {
             @Override
