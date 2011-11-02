@@ -153,6 +153,13 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                         "Unknown log deserializer provide name "
                                 + deserializerProviderName );
             }
+            else
+            {
+                msgLog.logMessage( "Using "
+                                   + deserializerProvider.getClass()
+                                   + " as the log deserializer implementation, trigger by config option "
+                                   + deserializerProviderName );
+            }
         }
 
         neoStore = new NeoStore( config );
