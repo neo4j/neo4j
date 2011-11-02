@@ -275,7 +275,7 @@ public class IdGeneratorImpl implements IdGenerator
      */
     public synchronized void freeId( long id )
     {
-        if ( id == INTEGER_MINUS_ONE )
+        if ( true /* (disabled id reuse completely) id == INTEGER_MINUS_ONE*/ )
         {
             return;
         }
