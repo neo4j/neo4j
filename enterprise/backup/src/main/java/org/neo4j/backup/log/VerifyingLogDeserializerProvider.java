@@ -22,12 +22,13 @@ package org.neo4j.backup.log;
 import java.nio.channels.ReadableByteChannel;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.LogApplier;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogDeserializer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogDeserializerProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 @Service.Implementation( LogDeserializerProvider.class )
 public class VerifyingLogDeserializerProvider extends LogDeserializerProvider
@@ -38,11 +39,11 @@ public class VerifyingLogDeserializerProvider extends LogDeserializerProvider
     }
 
     @Override
-    public LogDeserializer getLogApplier( ReadableByteChannel byteChannel,
+    public LogDeserializer getLogDeserializer( ReadableByteChannel byteChannel,
             LogBuffer writeBuffer, LogApplier applier, XaCommandFactory cf,
-            NeoStore store )
+            XaDataSource ds )
     {
         return new VerifyingLogDeserializer( byteChannel, writeBuffer, applier,
-                cf, store );
+                cf, (NeoStoreXaDataSource) ds );
     }
 }

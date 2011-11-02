@@ -28,6 +28,7 @@ import java.util.List;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.LogApplier;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogDeserializer;
@@ -61,13 +62,13 @@ public class VerifyingLogDeserializer implements LogDeserializer
 
     VerifyingLogDeserializer( ReadableByteChannel byteChannel,
             LogBuffer writeBuffer, LogApplier applier, XaCommandFactory cf,
-            NeoStore store )
+            NeoStoreXaDataSource ds )
     {
         this.byteChannel = byteChannel;
         this.writeBuffer = writeBuffer;
         this.applier = applier;
         this.cf = cf;
-        this.store = store;
+        this.store = ds.getNeoStore();
         logEntries = new LinkedList<LogEntry>();
     }
 
