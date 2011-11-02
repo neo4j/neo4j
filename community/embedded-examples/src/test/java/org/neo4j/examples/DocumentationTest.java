@@ -16,10 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.neo4j.examples;
-
 // START SNIPPET: sampleDocumentation
-// START SNIPPET: sampleDocumentation(fake)
+// START SNIPPET: _sampleDocumentation
+package org.neo4j.examples;
 
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createCypherSnippet;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphViz;
@@ -31,19 +30,18 @@ import org.neo4j.test.GraphDescription.Graph;
 
 public class DocumentationTest extends AbstractJavaDocTestbase
 {
-
     /**
-     * This is some sample documentation test, demonstrating different ways of
-     * bringing code and other artifacts into ASCIIDOC form. The title of the 
-     * generated document is determined from the method name, replacing +_+ with
-     * + +.
+     * This is a sample documentation test, demonstrating different ways of
+     * bringing code and other artifacts into Asciidoc form. The title of the 
+     * generated document is determined from the method name, replacing "+_+" with
+     * " ".
      * 
      * Below you see a number of different ways to generate text from source,
-     * inserting it into the JavaDoc documentation (really being ASCIIDOC markup)
+     * inserting it into the JavaDoc documentation (really being Asciidoc markup)
      * via the +@@+ snippet markers and programmatic adding with runtime data
      * in the Java code.
      * 
-     * - The annotated graph as http://www.graphviz.org/[GraphViz] - generated visualization:
+     * - The annotated graph as http://www.graphviz.org/[GraphViz]-generated visualization:
      * 
      * @@graph
      * 
@@ -66,14 +64,14 @@ public class DocumentationTest extends AbstractJavaDocTestbase
      * This is the end of this chapter.
      */
     @Test
-    //signaling this to be a documentation test
+    // signaling this to be a documentation test
     @Documented
-    //the graph data setup as simple statements
+    // the graph data setup as simple statements
     @Graph( "I know you" )
-    //title is determined from the method name
+    // title is determined from the method name
     public void hello_world_Sample_Chapter()
     {
-        // initialize the graph with the annotion data
+        // initialize the graph with the annotation data
         data.get();
         gen.get().addSourceSnippets( this.getClass(), "sampleDocumentation" );
         gen.get().addGithubLink( "github", this.getClass(), "neo4j/community",
@@ -86,12 +84,12 @@ public class DocumentationTest extends AbstractJavaDocTestbase
                 "graph",
                 createGraphViz( "Hello World Graph", graphdb(),
                         gen.get().getTitle() ) );
-        //A cypher snippet refering to the generated graph in the start clause
+        // A cypher snippet referring to the generated graph in the start clause
         gen.get().addSnippet(
                 "cypher",
                 createCypherSnippet( "start n = node(" + data.get().get( "I" )
                                      + ") return n" ) );
     }
-    // END SNIPPET: sampleDocumentation(fake)
-    // END SNIPPET: sampleDocumentation
 }
+// END SNIPPET: _sampleDocumentation
+// END SNIPPET: sampleDocumentation

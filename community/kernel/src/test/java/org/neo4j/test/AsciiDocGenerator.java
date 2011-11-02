@@ -231,7 +231,7 @@ public abstract class AsciiDocGenerator
             path += dir + "/";
         }
         path += "src/test/java/" + getPath( source );
-        path += "[" + source.getSimpleName() + ".java]";
+        path += "[" + source.getSimpleName() + ".java]\n";
         addSnippet( key, path );
     }
 }
