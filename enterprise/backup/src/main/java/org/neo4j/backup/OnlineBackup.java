@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.neo4j.backup.check.ConsistencyCheck;
 import org.neo4j.com.MasterUtil;
 import org.neo4j.com.MasterUtil.TxHandler;
 import org.neo4j.com.Response;
@@ -37,6 +38,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -83,6 +85,15 @@ public class OnlineBackup
             finally
             {
                 targetDb.shutdown();
+            }
+            StoreAccess newStore = new StoreAccess( targetDirectory );
+            try
+            {
+                new ConsistencyCheck( newStore ).run();
+            }
+            finally
+            {
+                newStore.close();
             }
         }
         finally

@@ -133,16 +133,18 @@ public class VerifyingLogDeserializer implements LogDeserializer
     {
         /*
          *  Here goes the actual verification code. If it passes,
-         *  just return - if not, throw RuntimeExeption so that the
+         *  just return - if not, throw Error so that the
          *  store remains safe.
          */
         ConsistencyCheck consistency = diffs.apply( new ConsistencyCheck( diffs )
         {
+            @Override
             protected void report( AbstractBaseRecord record, AbstractBaseRecord referred, String message )
             {
                 logInconsistency( record + " " + referred + " // " + message );
             }
 
+            @Override
             protected void report( AbstractBaseRecord record, String message )
             {
                 logInconsistency( record + " // " + message );
