@@ -506,6 +506,7 @@ public abstract class CommonAbstractStore
             }
             rebuildIdGenerator();
             storeOk = true;
+            causeOfStoreNotOk = null;
         }
     }
 

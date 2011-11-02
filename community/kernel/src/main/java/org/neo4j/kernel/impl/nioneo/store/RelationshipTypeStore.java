@@ -238,7 +238,16 @@ public class RelationshipTypeStore extends AbstractStore implements Store, Recor
     @Override
     public RelationshipTypeRecord forceGetRecord( long id )
     {
-        PersistenceWindow window = acquireWindow( id, OperationType.READ );
+        PersistenceWindow window = null;
+        try
+        {
+            window = acquireWindow( id, OperationType.READ );
+        }
+        catch ( InvalidRecordException e )
+        {
+            return new RelationshipTypeRecord( (int)id );
+        }
+        
         try
         {
             return getRecord( (int) id, window, true );

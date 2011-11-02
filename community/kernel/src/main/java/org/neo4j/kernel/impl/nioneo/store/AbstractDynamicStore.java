@@ -440,8 +440,16 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     @Override
     public DynamicRecord forceGetRecord( long id )
     {
-        PersistenceWindow window = acquireWindow( id,
-                OperationType.READ );
+        PersistenceWindow window = null;
+        try
+        {
+            window = acquireWindow( id, OperationType.READ );
+        }
+        catch ( InvalidRecordException e )
+        {
+            return new DynamicRecord( id );
+        }
+        
         try
         {
             return getRecord( id, window, RecordLoad.FORCE );

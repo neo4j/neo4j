@@ -98,7 +98,16 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
     @Override
     public NodeRecord forceGetRecord( long id )
     {
-        PersistenceWindow window = acquireWindow( id, OperationType.READ );
+        PersistenceWindow window = null;
+        try
+        {
+            window = acquireWindow( id, OperationType.READ );
+        }
+        catch ( InvalidRecordException e )
+        {
+            return new NodeRecord( id ); // inUse=false by default
+        }
+        
         try
         {
             return getRecord( id, window, RecordLoad.FORCE );

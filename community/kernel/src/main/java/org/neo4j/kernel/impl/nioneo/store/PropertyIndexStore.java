@@ -219,7 +219,16 @@ public class PropertyIndexStore extends AbstractStore implements Store, RecordSt
     @Override
     public PropertyIndexRecord forceGetRecord( long id )
     {
-        PersistenceWindow window = acquireWindow( id, OperationType.READ );
+        PersistenceWindow window = null;
+        try
+        {
+            window = acquireWindow( id, OperationType.READ );
+        }
+        catch ( InvalidRecordException e )
+        {
+            return new PropertyIndexRecord( (int)id );
+        }
+        
         try
         {
             return getRecord( (int) id, window, true );

@@ -104,7 +104,16 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
     @Override
     public RelationshipRecord forceGetRecord( long id )
     {
-        PersistenceWindow window = acquireWindow( id, OperationType.READ );
+        PersistenceWindow window = null;
+        try
+        {
+            window = acquireWindow( id, OperationType.READ );
+        }
+        catch ( InvalidRecordException e )
+        {
+            return new RelationshipRecord( id, -1, -1, -1 );
+        }
+        
         try
         {
             return getRecord( id, window, RecordLoad.FORCE );
