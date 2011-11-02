@@ -401,17 +401,19 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         long nextModifier = ( firstInteger & 0xF000000L ) << 8;
 
         long longNextBlock = longFromIntAndMod( nextBlock, nextModifier );
+        boolean readData = load != RecordLoad.CHECK;
         if ( longNextBlock != Record.NO_NEXT_BLOCK.intValue()
             && nrOfBytes < dataSize || nrOfBytes > dataSize )
         {
-            throw new InvalidRecordException( "Next block set[" + nextBlock
-                + "] current block illegal size[" + nrOfBytes + "/" + dataSize
-                + "]" );
+            readData = false;
+            if ( load != RecordLoad.FORCE )
+                throw new InvalidRecordException( "Next block set[" + nextBlock
+                + "] current block illegal size[" + nrOfBytes + "/" + dataSize + "]" );
         }
         record.setInUse( true );
         record.setLength( nrOfBytes );
         record.setNextBlock( longNextBlock );
-        if ( load != RecordLoad.CHECK )
+        if ( readData )
         {
             byte byteArrayElement[] = new byte[nrOfBytes];
             buffer.get( byteArrayElement );
