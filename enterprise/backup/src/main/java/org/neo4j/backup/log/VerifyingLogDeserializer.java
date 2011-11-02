@@ -154,20 +154,16 @@ public class VerifyingLogDeserializer implements LogDeserializer
         }
         catch ( AssertionError e )
         {
-            msgLog.logMessage( "Cannot apply log " + logId() + ", " + e.getMessage() );
+            msgLog.logMessage( "Cannot apply log " + startEntry + ", " + e.getMessage() );
             throw e;
         }
     }
 
-    private String logId()
-    {
-        if ( startEntry == null ) return "";
-        return Integer.toString( startEntry.getIdentifier() );
-    }
-
     private void logInconsistency( String inconsistencyMessage )
     {
-        msgLog.logMessage( "Incosistency from log " + logId() + ": " + inconsistencyMessage );
+        String logId = "";
+        if ( startEntry != null ) logId = Integer.toString( startEntry.getIdentifier() );
+        msgLog.logMessage( "Incosistency from log " + logId + ": " + inconsistencyMessage );
     }
 
     private void applyAll() throws IOException
