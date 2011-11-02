@@ -39,7 +39,11 @@ public interface RecordStore<R extends AbstractBaseRecord>
     public void forceUpdateRecord( R record );
 
     public void accept( Processor processor, R record );
-    
+
+    public int getRecordSize();
+
+    public int getRecordHeaderSize();
+
     public void close();
 
     public static final Predicate<AbstractBaseRecord> IN_USE = new Predicate<AbstractBaseRecord>()
@@ -137,7 +141,7 @@ public interface RecordStore<R extends AbstractBaseRecord>
                 }
             };
         }
-        
+
         public <R extends AbstractBaseRecord> void apply( RecordStore<R> store, Iterable<Long> ids )
         {
             for ( R record : scanById( store, ids ) )

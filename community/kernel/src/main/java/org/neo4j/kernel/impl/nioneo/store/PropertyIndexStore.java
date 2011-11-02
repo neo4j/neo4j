@@ -80,6 +80,12 @@ public class PropertyIndexStore extends AbstractStore implements Store, RecordSt
     }
 
     @Override
+    public int getRecordHeaderSize()
+    {
+        return getRecordSize();
+    }
+
+    @Override
     protected void setRecovered()
     {
         super.setRecovered();
@@ -209,13 +215,13 @@ public class PropertyIndexStore extends AbstractStore implements Store, RecordSt
         }
         return record;
     }
-    
+
     @Override
     public PropertyIndexRecord getRecord( long id )
     {
         return getRecord( (int) id );
     }
-    
+
     @Override
     public PropertyIndexRecord forceGetRecord( long id )
     {
@@ -294,7 +300,7 @@ public class PropertyIndexStore extends AbstractStore implements Store, RecordSt
             }
         }
     }
-    
+
     @Override
     public void forceUpdateRecord( PropertyIndexRecord record )
     {
