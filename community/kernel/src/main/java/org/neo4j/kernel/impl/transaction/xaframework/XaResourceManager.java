@@ -43,9 +43,9 @@ import org.neo4j.kernel.impl.util.StringLogger;
 // make package access?
 public class XaResourceManager
 {
-    private final ArrayMap<XAResource,Xid> xaResourceMap = 
+    private final ArrayMap<XAResource,Xid> xaResourceMap =
         new ArrayMap<XAResource,Xid>();
-    private final ArrayMap<Xid,XidStatus> xidMap = 
+    private final ArrayMap<Xid,XidStatus> xidMap =
         new ArrayMap<Xid,XidStatus>();
     private int recoveredTxCount = 0;
     private Set<TransactionInfo> recoveredDoneRecords = new HashSet<TransactionInfo>();
@@ -278,6 +278,7 @@ public class XaResourceManager
             return xaTransaction;
         }
 
+        @Override
         public String toString()
         {
             return "TransactionStatus[" + xaTransaction.getIdentifier()
@@ -363,7 +364,7 @@ public class XaResourceManager
         XaTransaction xaTransaction = txStatus.getTransaction();
         xaTransaction.commit();
     }
-    
+
     synchronized void injectTwoPhaseCommit( Xid xid ) throws XAException
     {
         XidStatus status = xidMap.get( xid );
@@ -378,7 +379,7 @@ public class XaResourceManager
         XaTransaction xaTransaction = txStatus.getTransaction();
         xaTransaction.commit();
     }
-    
+
     synchronized XaTransaction getXaTransaction( Xid xid ) throws XAException
     {
         XidStatus status = xidMap.get( xid );
@@ -390,7 +391,7 @@ public class XaResourceManager
         XaTransaction xaTransaction = txStatus.getTransaction();
         return xaTransaction;
     }
-    
+
     synchronized XaTransaction commit( Xid xid, boolean onePhase )
         throws XAException
     {
@@ -408,12 +409,12 @@ public class XaResourceManager
                 if ( !xaTransaction.isRecovered() )
                 {
                     xaTransaction.prepare();
-                    
+
                     long txId = txIdGenerator.generate( dataSource,
                             xaTransaction.getIdentifier() );
                     int masterId = txIdGenerator.getCurrentMasterId();
                     xaTransaction.setCommitTxId( txId );
-                    log.commitOnePhase( xaTransaction.getIdentifier(), 
+                    log.commitOnePhase( xaTransaction.getIdentifier(),
                             xaTransaction.getCommitTxId(), masterId );
                 }
             }
@@ -569,10 +570,10 @@ public class XaResourceManager
             checkIfRecoveryComplete();
         }
     }
-    
+
     synchronized void checkXids() throws IOException
     {
-        msgLog.logMessage( "XaResourceManager[" + name + "] sorting " + 
+        msgLog.logMessage( "XaResourceManager[" + name + "] sorting " +
                 xidMap.size() + " xids" );
         Iterator<Xid> keyIterator = xidMap.keySet().iterator();
         LinkedList<Xid> xids = new LinkedList<Xid>();
@@ -632,7 +633,7 @@ public class XaResourceManager
                 }
                 else
                 {
-                    logger.fine( "2PC tx [" + name + "] " + txStatus + 
+                    logger.fine( "2PC tx [" + name + "] " + txStatus +
                         " txIdent[" + identifier + "]" );
                 }
             }
@@ -686,7 +687,7 @@ public class XaResourceManager
      * is useful to invoke after the logical log has been opened to detirmine if
      * there are any recovered transactions waiting for the TM to tell them what
      * to do.
-     * 
+     *
      * @return True if recovered transactions exist
      */
     public boolean hasRecoveredTransactions()
@@ -704,11 +705,11 @@ public class XaResourceManager
         }
         else if ( lastCommittedTxId + 1 < txId )
         {
-            throw new IOException( "Tried to apply transaction with txId=" + txId + 
+            throw new IOException( "Tried to apply transaction with txId=" + txId +
                     " but last committed txId=" + lastCommittedTxId );
         }
     }
-    
+
     public synchronized long applyPreparedTransaction(
             ReadableByteChannel transaction ) throws IOException
     {
@@ -717,9 +718,14 @@ public class XaResourceManager
         log.applyTransactionWithoutTxId( transaction, txId, masterId );
         return txId;
     }
-    
+
     public synchronized long rotateLogicalLog() throws IOException
     {
         return log.rotate();
+    }
+
+    XaDataSource getDataSource()
+    {
+        return dataSource;
     }
 }

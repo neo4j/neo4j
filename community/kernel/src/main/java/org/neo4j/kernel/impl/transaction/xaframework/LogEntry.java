@@ -94,7 +94,7 @@ public abstract class LogEntry
         @Override
         public String toString()
         {
-            return "Start[" + getIdentifier() + ", " + xid + ", " + timestamp( timeWritten ) + "]";
+            return "Start[" + getIdentifier() + ",xid=" + xid + ",master=" + masterId + ",time=" + timestamp( timeWritten ) + "]";
         }
     }
 

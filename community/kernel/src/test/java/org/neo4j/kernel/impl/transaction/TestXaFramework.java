@@ -66,17 +66,17 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         new File( path ).mkdirs();
         return path;
     }
-    
+
     private String file( String name )
     {
         return path() + File.separator + name;
     }
-    
+
     private String resourceFile()
     {
         return file( "dummy_resource" );
     }
-    
+
     @Before
     public void setUpFramework()
     {
@@ -95,12 +95,14 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             this.type = type;
         }
 
+        @Override
         public void execute()
         {
         }
 
         // public void writeToFile( FileChannel fileChannel, ByteBuffer buffer )
         // throws IOException
+        @Override
         public void writeToFile( LogBuffer buffer ) throws IOException
         {
             // buffer.clear();
@@ -112,7 +114,8 @@ public class TestXaFramework extends AbstractNeo4jTestCase
 
     private static class DummyCommandFactory extends XaCommandFactory
     {
-        public XaCommand readCommand( ReadableByteChannel byteChannel, 
+        @Override
+        public XaCommand readCommand( ReadableByteChannel byteChannel,
             ByteBuffer buffer ) throws IOException
         {
             buffer.clear();
@@ -136,6 +139,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             setCommitTxId( 0 );
         }
 
+        @Override
         public void doAddCommand( XaCommand command )
         {
             commandList.add( command );
@@ -146,19 +150,23 @@ public class TestXaFramework extends AbstractNeo4jTestCase
 //            return commandList.toArray( new XaCommand[commandList.size()] );
 //        }
 
+        @Override
         public void doPrepare()
         {
 
         }
 
+        @Override
         public void doRollback()
         {
         }
 
+        @Override
         public void doCommit()
         {
         }
 
+        @Override
         public boolean isReadOnly()
         {
             return false;
@@ -167,11 +175,13 @@ public class TestXaFramework extends AbstractNeo4jTestCase
 
     private static class DummyTransactionFactory extends XaTransactionFactory
     {
+        @Override
         public XaTransaction create( int identifier )
         {
             return new DummyTransaction( identifier, getLogicalLog() );
         }
-        
+
+        @Override
         public void flushAll()
         {
         }
@@ -207,8 +217,8 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             {
                 map.put( "store_dir", path() );
                 xaContainer = XaContainer.create( this, resourceFile(),
-                    new DummyCommandFactory(), new DummyTransactionFactory(), 
-                    map );
+                        new DummyCommandFactory(),
+                        new DummyTransactionFactory(), null, map );
                 xaContainer.openLogicalLog();
             }
             catch ( IOException e )
@@ -217,6 +227,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             }
         }
 
+        @Override
         public void close()
         {
             xaContainer.close();
@@ -235,6 +246,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             }
         }
 
+        @Override
         public XaConnection getXaConnection()
         {
             return new DummyXaConnection( xaContainer.getResourceManager() );
@@ -253,7 +265,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             // TODO Auto-generated method stub
 
         }
-        
+
         @Override
         public long getLastCommittedTxId()
         {
@@ -268,6 +280,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             super( xaRm, null );
         }
 
+        @Override
         public boolean isSameRM( XAResource resource )
         {
             if ( resource instanceof DummyXaResource )
@@ -288,6 +301,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             xaResource = new DummyXaResource( xaRm );
         }
 
+        @Override
         public XAResource getXaResource()
         {
             return xaResource;
@@ -343,7 +357,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             catch ( XAException e )
             { // good
             }
-            Xid xid = new XidImpl( new byte[0], new byte[0] ); 
+            Xid xid = new XidImpl( new byte[0], new byte[0] );
             xaC.getXaResource().start( xid, XAResource.TMNOFLAGS );
             try
             {

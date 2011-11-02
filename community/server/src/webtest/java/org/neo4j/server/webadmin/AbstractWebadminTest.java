@@ -43,6 +43,7 @@ import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 
 public abstract class AbstractWebadminTest {
+    
     public @Rule
     TestData<JavaTestDocsGenerator> gen = TestData.producedThrough( JavaTestDocsGenerator.PRODUCER );
 
@@ -59,6 +60,7 @@ public abstract class AbstractWebadminTest {
         webdriverFacade = new WebDriverFacade();
         wl = new WebadminWebdriverLibrary(webdriverFacade,server.baseUri().toString());
     }
+    
     @After
     public void doc() {
         gen.get().document("target/docs","webadmin");
@@ -67,38 +69,26 @@ public abstract class AbstractWebadminTest {
     protected void captureScreenshot( String string )
     {
         WebDriver webDriver = wl.getWebDriver();
-        if(webDriver instanceof TakesScreenshot) {
-            
-        try
+        if(webDriver instanceof TakesScreenshot) 
         {
-            File screenshotFile = ((TakesScreenshot)webDriver).getScreenshotAs(FILE);
-            System.out.println(screenshotFile.getAbsolutePath());
-            File dir = new File("target/docs/webadmin/images");
-            dir.mkdirs();
-            String imageName = string+".png";
-            copyFile( screenshotFile, new File(dir, imageName) );
-            gen.get().addImageSnippet(string, imageName, gen.get().getTitle());
-            
-        }
-        catch ( SecurityException e )
-        {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        catch ( IOException e )
-        {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        
-        }
-        
+            try
+            {
+                File screenshotFile = ((TakesScreenshot)webDriver).getScreenshotAs(FILE);
+                System.out.println(screenshotFile.getAbsolutePath());
+                File dir = new File("target/docs/webadmin/images");
+                dir.mkdirs();
+                String imageName = string+".png";
+                copyFile( screenshotFile, new File(dir, imageName) );
+                gen.get().addImageSnippet(string, imageName, gen.get().getTitle());
+                
+            }
+            catch ( Exception e )
+            {
+                e.printStackTrace();
+            }
+        }    
     }
+    
     @Before
     public void cleanDatabase() {
         ServerHelper.cleanTheDatabase(server);
@@ -110,7 +100,7 @@ public abstract class AbstractWebadminTest {
         server.stop();
     }
     
-    public static void copyFile(File sourceFile, File destFile) throws IOException {
+    private static void copyFile(File sourceFile, File destFile) throws IOException {
         if(!destFile.exists()) {
             destFile.createNewFile();
         }
