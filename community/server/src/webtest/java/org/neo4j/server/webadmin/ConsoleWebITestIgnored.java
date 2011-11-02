@@ -21,23 +21,35 @@ package org.neo4j.server.webadmin;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 
-public class ConsoleWebIT extends AbstractWebadminTest {
+public class ConsoleWebITestIgnored extends AbstractWebadminTest {
 
     //
     // CYPHER
     //
 
+    /**
+     * In order to access the Cypher console,
+     * click on the "Console" tab in the webadmin
+     * and check the "Cypher" link.
+     * 
+     * @@screenshot_CypherConsole
+     */
     @Test
-    public void hasCypherConsoleTest() {
+    @Documented
+    public void accessing_the_Cypher_console() {
         wl.goToWebadminStartPage();
         wl.clickOnTab("Console");
         wl.clickOnLink("Cypher");
         wl.waitForElementToAppear(By
                 .xpath("//ul/li[contains(.,'cypher')]"));
+        captureScreenshot("screenshot_CypherConsole");
     }
+
+   
 
     @Test
     public void remembersCypherStateWhenSwitchingTabsTest() {
@@ -56,7 +68,7 @@ public class ConsoleWebIT extends AbstractWebadminTest {
         
         // Broken due to http://code.google.com/p/selenium/issues/detail?id=1723
         
-        hasCypherConsoleTest();
+        accessing_the_Cypher_console();
         
         wl.writeTo(By.id("console-input"), "start a=node(1)", Keys.RETURN);
         wl.writeTo(By.id("console-input"), "return a", Keys.RETURN);

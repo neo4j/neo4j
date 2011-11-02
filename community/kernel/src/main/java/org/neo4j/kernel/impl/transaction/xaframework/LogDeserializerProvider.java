@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.nio.channels.ReadableByteChannel;
 
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 
 public abstract class LogDeserializerProvider extends Service
 {
@@ -32,5 +33,5 @@ public abstract class LogDeserializerProvider extends Service
 
     public abstract LogDeserializer getLogApplier(
             ReadableByteChannel byteChannel, LogBuffer writeBuffer,
-            LogApplier applier, XaCommandFactory cf );
+            LogApplier applier, XaCommandFactory cf, NeoStore store );
 }

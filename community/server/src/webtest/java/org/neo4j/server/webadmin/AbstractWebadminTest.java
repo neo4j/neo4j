@@ -19,17 +19,33 @@
  */
 package org.neo4j.server.webadmin;
 
+import static org.openqa.selenium.OutputType.FILE;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.channels.FileChannel;
+
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.webdriver.WebDriverFacade;
 import org.neo4j.server.webdriver.WebadminWebdriverLibrary;
+import org.neo4j.test.JavaTestDocsGenerator;
+import org.neo4j.test.TestData;
+import org.openqa.selenium.TakesScreenshot;
+import org.openqa.selenium.WebDriver;
 
 public abstract class AbstractWebadminTest {
-    
+    public @Rule
+    TestData<JavaTestDocsGenerator> gen = TestData.producedThrough( JavaTestDocsGenerator.PRODUCER );
+
     protected static WebadminWebdriverLibrary wl;
     
     private static NeoServerWithEmbeddedWebServer server;
@@ -43,7 +59,46 @@ public abstract class AbstractWebadminTest {
         webdriverFacade = new WebDriverFacade();
         wl = new WebadminWebdriverLibrary(webdriverFacade,server.baseUri().toString());
     }
-    
+    @After
+    public void doc() {
+        gen.get().document("target/docs","webadmin");
+    }
+
+    protected void captureScreenshot( String string )
+    {
+        WebDriver webDriver = wl.getWebDriver();
+        if(webDriver instanceof TakesScreenshot) {
+            
+        try
+        {
+            File screenshotFile = ((TakesScreenshot)webDriver).getScreenshotAs(FILE);
+            System.out.println(screenshotFile.getAbsolutePath());
+            File dir = new File("target/docs/webadmin/images");
+            dir.mkdirs();
+            String imageName = string+".png";
+            copyFile( screenshotFile, new File(dir, imageName) );
+            gen.get().addImageSnippet(string, imageName, gen.get().getTitle());
+            
+        }
+        catch ( SecurityException e )
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        catch ( IOException e )
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        
+        }
+        
+    }
     @Before
     public void cleanDatabase() {
         ServerHelper.cleanTheDatabase(server);
@@ -55,4 +110,26 @@ public abstract class AbstractWebadminTest {
         server.stop();
     }
     
+    public static void copyFile(File sourceFile, File destFile) throws IOException {
+        if(!destFile.exists()) {
+            destFile.createNewFile();
+        }
+
+        FileChannel source = null;
+        FileChannel destination = null;
+
+        try {
+            source = new FileInputStream(sourceFile).getChannel();
+            destination = new FileOutputStream(destFile).getChannel();
+            destination.transferFrom(source, 0, source.size());
+        }
+        finally {
+            if(source != null) {
+                source.close();
+            }
+            if(destination != null) {
+                destination.close();
+            }
+        }
+    }
 }

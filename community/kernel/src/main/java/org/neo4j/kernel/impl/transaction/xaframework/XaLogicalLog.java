@@ -39,6 +39,7 @@ import javax.transaction.xa.Xid;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.cache.LruCache;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.BufferedFileChannel;
@@ -90,6 +91,7 @@ public class XaLogicalLog
     private final XaResourceManager xaRm;
     private final XaCommandFactory cf;
     private final XaTransactionFactory xaTf;
+    private final NeoStore neoStore;
     private char currentLog = CLEAN;
     private boolean keepLogs = false;
     private boolean autoRotate = true;
@@ -116,6 +118,7 @@ public class XaLogicalLog
         this.xaRm = xaRm;
         this.cf = cf;
         this.xaTf = xaTf;
+        this.neoStore = (NeoStore) config.get( NeoStore.class );
         this.logBufferFactory = (LogBufferFactory) config.get( LogBufferFactory.class );
         LogDeserializerProvider tempLogApplierFactory = (LogDeserializerProvider) config.get( LogDeserializerProvider.class );
         if ( tempLogApplierFactory != null )
@@ -1331,7 +1334,8 @@ public class XaLogicalLog
 
         @Override
         public LogDeserializer getLogApplier( ReadableByteChannel byteChannel,
-                LogBuffer buffer, LogApplier applier, XaCommandFactory cf )
+                LogBuffer buffer, LogApplier applier, XaCommandFactory cf,
+                NeoStore store )
         {
             return new LogDeserializerImpl( byteChannel, applier );
         }
@@ -1425,7 +1429,7 @@ public class XaLogicalLog
                     {
                         applyEntry( entry );
                     }
-                }, cf );
+                }, cf, neoStore );
         int xidIdent = getNextIdentifier();
         long startEntryPosition = writeBuffer.getFileChannelPosition();
         while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) )
@@ -1486,9 +1490,8 @@ public class XaLogicalLog
                     public void apply( LogEntry entry ) throws IOException
                     {
                         applyEntry( entry );
-
                     }
-                }, cf );
+                }, cf, neoStore );
         int xidIdent = getNextIdentifier();
         long startEntryPosition = writeBuffer.getFileChannelPosition();
         boolean successfullyApplied = false;
