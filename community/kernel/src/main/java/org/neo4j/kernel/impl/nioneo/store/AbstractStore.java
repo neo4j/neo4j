@@ -120,16 +120,19 @@ public abstract class AbstractStore extends CommonAbstractStore
         super( fileName, config, idType );
     }
 
+    @Override
     protected int getEffectiveRecordSize()
     {
         return getRecordSize();
     }
 
+    @Override
     protected void readAndVerifyBlockSize() throws IOException
     {
         // record size is fixed for non-dynamic stores, so nothing to do here
     }
 
+    @Override
     protected void verifyFileSizeAndTruncate() throws IOException
     {
         int expectedVersionLength = UTF8.encode( buildTypeDescriptorAndVersion( getTypeDescriptor() ) ).length;

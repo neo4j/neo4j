@@ -41,7 +41,7 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
     {
         super( fileName, config, IdType.NODE );
     }
-    
+
     @Override
     public void accept( RecordStore.Processor processor, NodeRecord record )
     {
@@ -58,6 +58,12 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
     public int getRecordSize()
     {
         return RECORD_SIZE;
+    }
+
+    @Override
+    public int getRecordHeaderSize()
+    {
+        return getRecordSize();
     }
 
     /**
@@ -94,11 +100,20 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
             releaseWindow( window );
         }
     }
-    
+
     @Override
     public NodeRecord forceGetRecord( long id )
     {
-        PersistenceWindow window = acquireWindow( id, OperationType.READ );
+        PersistenceWindow window = null;
+        try
+        {
+            window = acquireWindow( id, OperationType.READ );
+        }
+        catch ( InvalidRecordException e )
+        {
+            return new NodeRecord( id ); // inUse=false by default
+        }
+        
         try
         {
             return getRecord( id, window, RecordLoad.FORCE );
@@ -123,7 +138,7 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
             unsetRecovered();
         }
     }
-    
+
     @Override
     public void forceUpdateRecord( NodeRecord record )
     {

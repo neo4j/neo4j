@@ -101,7 +101,7 @@ public class XaResourceManager
         xaResourceMap.put( xaResource, xid );
         if ( xidMap.get( xid ) == null )
         {
-            int identifier = log.start( xid, txIdGenerator.getCurrentMasterId() );
+            int identifier = log.start( xid, txIdGenerator.getCurrentMasterId(), txIdGenerator.getMyId() );
             XaTransaction xaTx = tf.create( identifier );
             xidMap.put( xid, new XidStatus( xaTx ) );
         }

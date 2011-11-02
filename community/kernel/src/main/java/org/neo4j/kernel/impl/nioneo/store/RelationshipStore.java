@@ -48,7 +48,7 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
     {
         super( fileName, config, IdType.RELATIONSHIP );
     }
-    
+
     @Override
     public void accept( RecordStore.Processor processor, RelationshipRecord record )
     {
@@ -65,6 +65,12 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
     public int getRecordSize()
     {
         return RECORD_SIZE;
+    }
+
+    @Override
+    public int getRecordHeaderSize()
+    {
+        return getRecordSize();
     }
 
     @Override
@@ -100,11 +106,20 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
             releaseWindow( window );
         }
     }
-    
+
     @Override
     public RelationshipRecord forceGetRecord( long id )
     {
-        PersistenceWindow window = acquireWindow( id, OperationType.READ );
+        PersistenceWindow window = null;
+        try
+        {
+            window = acquireWindow( id, OperationType.READ );
+        }
+        catch ( InvalidRecordException e )
+        {
+            return new RelationshipRecord( id, -1, -1, -1 );
+        }
+        
         try
         {
             return getRecord( id, window, RecordLoad.FORCE );
@@ -166,7 +181,7 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
             releaseWindow( window );
         }
     }
-    
+
     @Override
     public void forceUpdateRecord( RelationshipRecord record )
     {

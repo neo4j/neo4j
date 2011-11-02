@@ -285,15 +285,15 @@ public class XaLogicalLog
 
     // returns identifier for transaction
     // [TX_START][xid[gid.length,bid.lengh,gid,bid]][identifier][format id]
-    public synchronized int start( Xid xid, int masterId ) throws XAException
+    public synchronized int start( Xid xid, int masterId, int myId ) throws XAException
     {
         int xidIdent = getNextIdentifier();
         try
         {
             long position = writeBuffer.getFileChannelPosition();
             long timeWritten = System.currentTimeMillis();
-            LogEntry.Start start = new LogEntry.Start( xid, xidIdent, masterId, position, timeWritten );
-            LogIoUtils.writeStart( writeBuffer, xidIdent, xid, masterId, timeWritten );
+            LogEntry.Start start = new LogEntry.Start( xid, xidIdent, masterId, myId, position, timeWritten );
+            LogIoUtils.writeStart( writeBuffer, xidIdent, xid, masterId, myId, timeWritten );
             xidIdentMap.put( xidIdent, start );
         }
         catch ( IOException e )

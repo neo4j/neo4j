@@ -34,11 +34,13 @@ import org.neo4j.kernel.IdType;
  */
 public class StoreAccess
 {
+    // Top level stores
     private final RecordStore<NodeRecord> nodeStore;
     private final RecordStore<RelationshipRecord> relStore;
-    private final RecordStore<PropertyRecord> propStore;
-    private final RecordStore<DynamicRecord> stringStore, arrayStore;
     private final RecordStore<RelationshipTypeRecord> relTypeStore;
+    private final RecordStore<PropertyRecord> propStore;
+    // Transitive stores
+    private final RecordStore<DynamicRecord> stringStore, arrayStore;
     private final RecordStore<PropertyIndexRecord> propIndexStore;
     private final RecordStore<DynamicRecord> typeNames;
     private final RecordStore<DynamicRecord> propKeys;
@@ -52,16 +54,16 @@ public class StoreAccess
     public StoreAccess( String path, Map<Object, Object> params )
     {
         params.put( FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
-        this.nodeStore = new NodeStore( path + "/neostore.nodestore.db", params );
-        this.relStore = new RelationshipStore( path + "/neostore.relationshipstore.db", params );
-        RelationshipTypeStore relTypeStore = new RelationshipTypeStore( path + "/neostore.relationshiptypestore.db",
-                params, IdType.RELATIONSHIP_TYPE );
-        this.relTypeStore = relTypeStore;
+        // these need to be made ok
+        NodeStore nodeStore; RelationshipStore relStore; RelationshipTypeStore relTypeStore; PropertyStore propStore = null;
+        this.nodeStore = wrapStore( nodeStore = new NodeStore( path + "/neostore.nodestore.db", params ) );
+        this.relStore = wrapStore( relStore = new RelationshipStore( path + "/neostore.relationshipstore.db", params ) );
+        this.relTypeStore = wrapStore( relTypeStore = new RelationshipTypeStore(
+                path + "/neostore.relationshiptypestore.db", params, IdType.RELATIONSHIP_TYPE ) );
         this.typeNames = wrapStore( relTypeStore.getNameStore() );
         if ( new File( path + "/neostore.propertystore.db" ).exists() )
         {
-            PropertyStore propStore = new PropertyStore( path + "/neostore.propertystore.db", params );
-            this.propStore = propStore;
+            this.propStore = wrapStore( propStore = new PropertyStore( path + "/neostore.propertystore.db", params ) );
             this.propIndexStore = wrapStore( propStore.getIndexStore() );
             this.propKeys = wrapStore( propStore.getIndexStore().getKeyStore() );
             this.stringStore = wrapStore( propStore.getStringStore() );
@@ -76,6 +78,10 @@ public class StoreAccess
             this.arrayStore = null;
         }
         this.closable = true;
+        nodeStore.makeStoreOk();
+        relStore.makeStoreOk();
+        if ( propStore != null ) propStore.makeStoreOk();
+        relTypeStore.makeStoreOk();
     }
 
     public StoreAccess( NeoStore store )
@@ -149,6 +155,7 @@ public class StoreAccess
         {
             nodeStore.close();
             relStore.close();
+            relTypeStore.close();
             if ( propStore != null ) propStore.close();
         }
         finally
@@ -166,7 +173,10 @@ public class StoreAccess
 
     protected RecordStore<?>[] stores()
     {
-        return new RecordStore<?>[] { nodeStore, relStore, propStore, stringStore, arrayStore, typeNames, propKeys };
+        return new RecordStore<?>[] {
+                nodeStore, relStore, propStore, stringStore, arrayStore, // basic
+                relTypeStore, propIndexStore, typeNames, propKeys, // internal
+                };
     }
 
     protected <R extends AbstractBaseRecord> RecordStore<R> wrapStore( RecordStore<R> store )

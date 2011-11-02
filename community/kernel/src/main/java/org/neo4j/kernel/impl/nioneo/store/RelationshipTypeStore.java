@@ -60,7 +60,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store, Recor
     {
         processor.processRelationshipType( this, record );
     }
-    
+
     DynamicStringStore getNameStore()
     {
         return typeNameStore;
@@ -114,6 +114,12 @@ public class RelationshipTypeStore extends AbstractStore implements Store, Recor
     public int getRecordSize()
     {
         return RECORD_SIZE;
+    }
+
+    @Override
+    public int getRecordHeaderSize()
+    {
+        return getRecordSize();
     }
 
     /**
@@ -189,7 +195,7 @@ public class RelationshipTypeStore extends AbstractStore implements Store, Recor
             typeNameStore.updateRecord( typeRecord );
         }
     }
-    
+
     @Override
     public void forceUpdateRecord( RelationshipTypeRecord record )
     {
@@ -228,17 +234,26 @@ public class RelationshipTypeStore extends AbstractStore implements Store, Recor
         }
         return record;
     }
-    
+
     @Override
     public RelationshipTypeRecord getRecord( long id )
     {
         return getRecord( (int) id );
     }
-    
+
     @Override
     public RelationshipTypeRecord forceGetRecord( long id )
     {
-        PersistenceWindow window = acquireWindow( id, OperationType.READ );
+        PersistenceWindow window = null;
+        try
+        {
+            window = acquireWindow( id, OperationType.READ );
+        }
+        catch ( InvalidRecordException e )
+        {
+            return new RelationshipTypeRecord( (int)id );
+        }
+        
         try
         {
             return getRecord( (int) id, window, true );

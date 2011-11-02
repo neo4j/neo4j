@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.neo4j.kernel.Config.ARRAY_BLOCK_SIZE;
+import static org.neo4j.kernel.Config.STRING_BLOCK_SIZE;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -33,9 +36,6 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.neo4j.kernel.Config.ARRAY_BLOCK_SIZE;
-import static org.neo4j.kernel.Config.STRING_BLOCK_SIZE;
 
 /**
  * Implementation of the property store. This implementation has two dynamic
@@ -62,13 +62,13 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     {
         super( fileName, config, IdType.PROPERTY );
     }
-    
+
     @Override
     public void accept( RecordStore.Processor processor, PropertyRecord record )
     {
         processor.processProperty( this, record );
     }
-    
+
     DynamicStringStore getStringStore()
     {
         return stringPropertyStore;
@@ -147,6 +147,12 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     public int getRecordSize()
     {
         return RECORD_SIZE;
+    }
+
+    @Override
+    public int getRecordHeaderSize()
+    {
+        return RECORD_SIZE - DEFAULT_PAYLOAD_SIZE;
     }
 
     /**
@@ -253,7 +259,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
             releaseWindow( window );
         }
     }
-    
+
     @Override
     public void forceUpdateRecord( PropertyRecord record )
     {
@@ -420,11 +426,20 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         }
         return record;
     }
-    
+
     @Override
     public PropertyRecord forceGetRecord( long id )
     {
-        PersistenceWindow window = acquireWindow( id, OperationType.READ );
+        PersistenceWindow window = null;
+        try
+        {
+            window = acquireWindow( id, OperationType.READ );
+        }
+        catch ( InvalidRecordException e )
+        {
+            return new PropertyRecord( id );
+        }
+        
         try
         {
             return getRecord( id, window, RecordLoad.FORCE );

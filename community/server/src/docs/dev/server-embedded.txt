@@ -1,6 +1,6 @@
 [[server-embedded]]
-Using the server with an embedded database
-==========================================
+Using the server (including web administration) with an embedded database
+=========================================================================
 
 Even if you are using the Neo4j Java API directly, for instance via +EmbeddedGraphDatabase+ or +HighlyAvailableGraphDatabase+, you can still use the features the server provides.
 
@@ -54,8 +54,8 @@ _Where +$\{neo4j-version}+ is the intended version._
 == Starting the Server from Java ==
 
 The Neo4j server exposes a class called
-http://components.neo4j.org/neo4j-server/{neo4j-version}/apidocs/org/neo4j/server/WrappingNeoServerBootstrapper.html[WrappingNeoServerBootstrapper]
-, which is capable of starting a Neo4j server in the same process as your application.
+http://components.neo4j.org/neo4j-server/{neo4j-version}/apidocs/org/neo4j/server/WrappingNeoServerBootstrapper.html[WrappingNeoServerBootstrapper],
+ which is capable of starting a Neo4j server in the same process as your application.
 It uses an
 http://components.neo4j.org/neo4j-kernel/{neo4j-version}/apidocs/org/neo4j/kernel/AbstractGraphDatabase.html[AbstractGraphDatabase]
 instance that you provide.
@@ -71,6 +71,8 @@ source=org/neo4j/server/WrappingNeoServerBootstrapperTest.java
 tag=usingWrappingNeoServerBootstrapper
 classifier=test-sources
 ----
+
+Once you have the server up and running, see <<tools-webadmin>> and <<rest-api>> for how to use it!
 
 == Providing custom configuration ==
 

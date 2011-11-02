@@ -32,9 +32,16 @@ public interface TxIdGenerator
         {
             return XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
         }
+        
+        public int getMyId()
+        {
+            return XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
+        }
     };
     
     long generate( XaDataSource dataSource, int identifier );
     
     int getCurrentMasterId();
+
+    int getMyId();
 }

@@ -118,11 +118,12 @@ public class LogIoUtils
         int identifier = readNextInt( buf, channel );
         int formatId = readNextInt( buf, channel );
         int masterId = readNextInt( buf, channel );
+        int myId = readNextInt( buf, channel );
         long timeWritten = readNextLong( buf, channel );
 
         // re-create the transaction
         Xid xid = new XidImpl( globalId, branchId, formatId );
-        return new LogEntry.Start( xid, identifier, masterId, -1, timeWritten );
+        return new LogEntry.Start( xid, identifier, masterId, myId, -1, timeWritten );
     }
 
     private static LogEntry.Prepare readTxPrepareEntry( ByteBuffer buf,
@@ -174,7 +175,8 @@ public class LogIoUtils
         else if ( entry instanceof LogEntry.Start )
         {
             writeStart( buffer, entry.getIdentifier(), ( (LogEntry.Start) entry ).getXid(),
-                    ((LogEntry.Start) entry).getMasterId(), ((LogEntry.Start) entry).getTimeWritten() );
+                    ((LogEntry.Start) entry).getMasterId(), ((LogEntry.Start) entry).getLocalId(),
+                    ((LogEntry.Start) entry).getTimeWritten() );
         }
         else if ( entry instanceof LogEntry.Done )
         {
@@ -220,7 +222,7 @@ public class LogIoUtils
         buffer.put( LogEntry.DONE ).putInt( identifier );
     }
 
-    public static void writeStart( LogBuffer buffer, int identifier, Xid xid, int masterId, long timeWritten )
+    public static void writeStart( LogBuffer buffer, int identifier, Xid xid, int masterId, int myId, long timeWritten )
             throws IOException
     {
         byte globalId[] = xid.getGlobalTransactionId();
@@ -228,7 +230,7 @@ public class LogIoUtils
         int formatId = xid.getFormatId();
         buffer.put( LogEntry.TX_START ).put( (byte) globalId.length ).put(
                 (byte) branchId.length ).put( globalId ).put( branchId ).putInt( identifier ).putInt(
-                formatId ).putInt( masterId ).putLong( timeWritten );
+                formatId ).putInt( masterId ).putInt( myId ).putLong( timeWritten );
     }
 
     public static void writeCommand( LogBuffer buffer, int identifier, XaCommand command )
