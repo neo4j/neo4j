@@ -25,7 +25,7 @@ import org.neo4j.kernel.impl.annotations.Documented;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 
-public class ConsoleWebITest extends AbstractWebadminTest {
+public class ConsoleWebITestIgnored extends AbstractWebadminTest {
 
     //
     // CYPHER
