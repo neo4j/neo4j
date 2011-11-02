@@ -35,10 +35,10 @@ import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 
 /**
  * Finds inconsistency in a Neo4j store.
- * 
+ *
  * Warning: will not find "dangling" records, i.e. records that are correct but
  * not referenced.
- * 
+ *
  * Warning: will only find multiple references to the same property chain or
  * dynamic record chain for incremental checks (if the {@link RecordStore stores}
  * are {@link DiffRecordStore diff stores}). Also, this checking is very
@@ -58,7 +58,7 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
             stores.close();
         }
     }
-    
+
     private final RecordStore<NodeRecord> nodes;
     private final RecordStore<RelationshipRecord> rels;
     private final RecordStore<PropertyRecord> props;
@@ -143,7 +143,7 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
         if ( !array.inUse() ) return;
         if ( checkDynamic( store, array ) ) brokenArrays++;
     }
-    
+
     @Override
     protected void processRelationshipType( RecordStore<RelationshipTypeRecord> store, RelationshipTypeRecord type )
     {
@@ -319,9 +319,24 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
         long nextId = record.getNextBlock();
         if ( !Record.NO_NEXT_BLOCK.value( nextId ) )
         {
+            // If next is set, then it must be in use
             DynamicRecord next = store.forceGetRecord( nextId );
             if ( !next.inUse() )
                 fail |= inconsistent( record, next, "next record not in use" );
+        }
+        else if ( ( record.getLength() == store.getRecordSize()
+                                       - store.getRecordHeaderSize() ) )
+        {
+            // If next is not set, then the size must be less than max
+            fail |= inconsistent( record,
+                    "next record set but length less than maximum" );
+        }
+        if ( record.getLength() > store.getRecordSize()
+                                  - store.getRecordHeaderSize() )
+        {
+            // The length must always be less than or equal to max
+            fail |= inconsistent( record,
+                    "length larger than maximum for store" );
         }
         if ( store instanceof DiffRecordStore<?> )
         {
