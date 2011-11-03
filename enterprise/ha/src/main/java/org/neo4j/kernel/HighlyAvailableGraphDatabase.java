@@ -70,12 +70,13 @@ import org.neo4j.kernel.ha.BrokerFactory;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterIdGeneratorFactory;
 import org.neo4j.kernel.ha.MasterServer;
+import org.neo4j.kernel.ha.MasterTxHook;
 import org.neo4j.kernel.ha.MasterTxIdGenerator.MasterTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.ResponseReceiver;
 import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
 import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
 import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
-import org.neo4j.kernel.ha.SlaveTxFinishHook;
+import org.neo4j.kernel.ha.SlaveTxHook;
 import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.TimeUtil;
 import org.neo4j.kernel.ha.ZooKeeperLastCommittedTxIdSetter;
@@ -632,7 +633,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 new SlaveIdGeneratorFactory( broker, this ),
                 new SlaveRelationshipTypeCreator( broker, this ),
                 new SlaveTxIdGeneratorFactory( broker, this ),
-                new SlaveTxFinishHook( broker, this ),
+                new SlaveTxHook( broker, this ),
                 slaveUpdateMode.createUpdater( broker ),
                 CommonFactories.defaultFileSystemAbstraction() );
         instantiateAutoUpdatePullerIfConfigSaysSo();
@@ -648,7 +649,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 new MasterIdGeneratorFactory(),
                 CommonFactories.defaultRelationshipTypeCreator(),
                 new MasterTxIdGeneratorFactory( broker ),
-                CommonFactories.defaultTxHook(),
+                new MasterTxHook(),
                 new ZooKeeperLastCommittedTxIdSetter( broker ),
                 CommonFactories.defaultFileSystemAbstraction() );
         this.masterServer = (MasterServer) broker.instantiateMasterServer( this );

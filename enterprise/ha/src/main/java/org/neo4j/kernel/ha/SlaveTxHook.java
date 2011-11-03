@@ -26,12 +26,12 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.transaction.TxHook;
 
-public class SlaveTxFinishHook implements TxHook
+public class SlaveTxHook implements TxHook
 {
     private final Broker broker;
     private final ResponseReceiver receiver;
 
-    public SlaveTxFinishHook( Broker broker, ResponseReceiver receiver )
+    public SlaveTxHook( Broker broker, ResponseReceiver receiver )
     {
         this.broker = broker;
         this.receiver = receiver;
@@ -78,5 +78,11 @@ public class SlaveTxFinishHook implements TxHook
             receiver.newMaster( e );
             throw e;
         }
+    }
+    
+    @Override
+    public boolean freeIdsDuringRollback()
+    {
+        return false;
     }
 }
