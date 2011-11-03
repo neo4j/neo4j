@@ -130,7 +130,6 @@ public class ZooClient extends AbstractZooKeeperManager
                     {
                         sequenceNr = setup();
                         msgLog.logMessage( "Did setup, seq=" + sequenceNr + " new sessionId=" + newSessionId );
-                        keeperState = KeeperState.SyncConnected;
                         Pair<Master, Machine> masterAfterIWrote = getMasterFromZooKeeper( false, false );
                         msgLog.logMessage( "Get master after write:" + masterAfterIWrote );
                         int masterId = masterAfterIWrote.other().getMachineId();
@@ -147,7 +146,9 @@ public class ZooClient extends AbstractZooKeeperManager
                     {
                         msgLog.logMessage( "Didn't do setup due to told not to write" );
                         keeperState = KeeperState.SyncConnected;
+                        subscribeToDataChangeWatcher( MASTER_NOTIFY_CHILD );
                     }
+                    keeperState = KeeperState.SyncConnected;
                 }
                 else
                 {
@@ -249,6 +250,25 @@ public class ZooClient extends AbstractZooKeeperManager
         }
     }
 
+    protected void subscribeToDataChangeWatcher( String child )
+    {
+        String root = getRoot();
+        String path = root + "/" + child;
+        try
+        {
+            zooKeeper.getData( path, true, null );
+        }
+        catch ( KeeperException e )
+        {
+            msgLog.logMessage( "Couldn't get master notify node", e );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.interrupted();
+            throw new ZooKeeperException( "Interrupted", e );
+        }
+    }
+    
     protected void setDataChangeWatcher( String child, int currentMasterId )
     {
         setDataChangeWatcher( child, currentMasterId, false );
