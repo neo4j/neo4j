@@ -258,7 +258,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             {
                 if ( record.isCreated() )
                 {
-                    /* disabled for testing by MP 2011-11-03 getRelationshipTypeStore().freeId( record.getId() );*/
+                    getRelationshipTypeStore().freeId( record.getId() );
                     for ( DynamicRecord dynamicRecord : record.getTypeRecords() )
                     {
                         if ( dynamicRecord.isCreated() )
@@ -272,25 +272,25 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             }
             for ( NodeRecord record : nodeRecords.values() )
             {
-                /* disabled for testing by MP 2011-11-03 if ( record.isCreated() )
+                if ( record.isCreated() )
                 {
                     getNodeStore().freeId( record.getId() );
-                }*/
+                }
                 removeNodeFromCache( record.getId() );
             }
             for ( RelationshipRecord record : relRecords.values() )
             {
-                /* disabled for testing by MP 2011-11-03 if ( record.isCreated() )
+                if ( record.isCreated() )
                 {
                     getRelationshipStore().freeId( record.getId() );
-                }*/
+                }
                 removeRelationshipFromCache( record.getId() );
             }
             for ( PropertyIndexRecord record : propIndexRecords.values() )
             {
                 if ( record.isCreated() )
                 {
-                    /* disabled for testing by MP 2011-11-03 getPropertyStore().getIndexStore().freeId( record.getId() );*/
+                    getPropertyStore().getIndexStore().freeId( record.getId() );
                     for ( DynamicRecord dynamicRecord : record.getKeyRecords() )
                     {
                         if ( dynamicRecord.isCreated() )
@@ -313,7 +313,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 }
                 if ( record.isCreated() )
                 {
-                    /* disabled for testing by MP 2011-11-03 getPropertyStore().freeId( record.getId() );*/
+                    getPropertyStore().freeId( record.getId() );
                     for ( PropertyBlock block : record.getPropertyBlocks() )
                     {
                         for ( DynamicRecord dynamicRecord : block.getValueRecords() )
