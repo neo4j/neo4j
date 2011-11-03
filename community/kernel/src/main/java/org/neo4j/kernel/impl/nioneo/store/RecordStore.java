@@ -142,13 +142,13 @@ public interface RecordStore<R extends AbstractBaseRecord>
             };
         }
 
-        public <R extends AbstractBaseRecord> void apply( RecordStore<R> store, Iterable<Long> ids )
+        public <R extends AbstractBaseRecord> void applyById( RecordStore<R> store, Iterable<Long> ids )
         {
             for ( R record : scanById( store, ids ) )
                 store.accept( this, record );
         }
 
-        public <R extends AbstractBaseRecord> void apply( RecordStore<R> store, Predicate<? super R>... filters )
+        public <R extends AbstractBaseRecord> void applyFiltered( RecordStore<R> store, Predicate<? super R>... filters )
         {
             apply( store, null, filters );
         }
