@@ -86,15 +86,15 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
     @SuppressWarnings( "unchecked" )
     public void run()
     {
-        apply( nodes, RecordStore.IN_USE );
-        apply( rels, RecordStore.IN_USE );
-        apply( props, RecordStore.IN_USE );
-        apply( strings, RecordStore.IN_USE );
-        apply( arrays, RecordStore.IN_USE );
-        apply( relTypes, RecordStore.IN_USE );
-        apply( propIndexes, RecordStore.IN_USE );
-        apply( propKeys, RecordStore.IN_USE );
-        apply( typeNames, RecordStore.IN_USE );
+        applyFiltered( nodes, RecordStore.IN_USE );
+        applyFiltered( rels, RecordStore.IN_USE );
+        applyFiltered( props, RecordStore.IN_USE );
+        applyFiltered( strings, RecordStore.IN_USE );
+        applyFiltered( arrays, RecordStore.IN_USE );
+        applyFiltered( relTypes, RecordStore.IN_USE );
+        applyFiltered( propIndexes, RecordStore.IN_USE );
+        applyFiltered( propKeys, RecordStore.IN_USE );
+        applyFiltered( typeNames, RecordStore.IN_USE );
         checkResult();
     }
 
