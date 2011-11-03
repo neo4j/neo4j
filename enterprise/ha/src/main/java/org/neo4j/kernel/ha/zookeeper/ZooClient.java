@@ -146,7 +146,7 @@ public class ZooClient extends AbstractZooKeeperManager
                     {
                         msgLog.logMessage( "Didn't do setup due to told not to write" );
                         keeperState = KeeperState.SyncConnected;
-                        subscribeToDataChangeWatcher( MASTER_NOTIFY_CHILD );
+                        subscribeToDataChangeWatcher( MASTER_REBOUND_CHILD );
                     }
                     keeperState = KeeperState.SyncConnected;
                 }
@@ -177,7 +177,8 @@ public class ZooClient extends AbstractZooKeeperManager
                 }
                 else if ( path.contains( MASTER_REBOUND_CHILD ) )
                 {
-                    setDataChangeWatcher( MASTER_REBOUND_CHILD, -1 );
+                    if ( writeLastCommittedTx ) setDataChangeWatcher( MASTER_REBOUND_CHILD, -1 );
+                    else subscribeToDataChangeWatcher( MASTER_REBOUND_CHILD );
                     
                     // This event is for all the others after the master got the
                     // MASTER_NOTIFY_CHILD which then shouts out to the others to
