@@ -58,6 +58,18 @@ include::cypher-peoplesimilarityfavorites-graph.txt[]
 
 include::find-people-based-on-similar-favorites.txt[]
 
+:leveloffset: 2
+
+== Multirelational social graph ==
+
+:leveloffset: 3
+
+include::cypher-multirelationalsocialnetwork-graph.txt[]
+
+include::who-follows-or-loves-me-back.txt[]
+
+
+
 //== People Similarity based on Favorites ==
 
 //include::cypher-collabfiltering-graph.txt[]
