@@ -130,25 +130,18 @@ public abstract class LogEntry
     public static abstract class Commit extends LogEntry
     {
         private final long txId;
-        private final int masterId;
         private final long timeWritten;
 
-        Commit( int identifier, long txId, int masterId, long timeWritten )
+        Commit( int identifier, long txId, long timeWritten )
         {
             super( identifier );
             this.txId = txId;
-            this.masterId = masterId;
             this.timeWritten = timeWritten;
         }
 
         public long getTxId()
         {
             return txId;
-        }
-
-        public int getMasterId()
-        {
-            return masterId;
         }
         
         public long getTimeWritten()
@@ -159,15 +152,15 @@ public abstract class LogEntry
 
     public static class OnePhaseCommit extends Commit
     {
-        OnePhaseCommit( int identifier, long txId, int masterId, long timeWritten )
+        OnePhaseCommit( int identifier, long txId, long timeWritten )
         {
-            super( identifier, txId, masterId, timeWritten );
+            super( identifier, txId, timeWritten );
         }
 
         @Override
         public String toString()
         {
-            return "1PC[" + getIdentifier() + ", txId=" + getTxId() + ", masterId=" + getMasterId() + ", " + timestamp( getTimeWritten() ) + "]";
+            return "1PC[" + getIdentifier() + ", txId=" + getTxId() + ", " + timestamp( getTimeWritten() ) + "]";
         }
     }
 
@@ -187,15 +180,15 @@ public abstract class LogEntry
 
     public static class TwoPhaseCommit extends Commit
     {
-        TwoPhaseCommit( int identifier, long txId, int masterId, long timeWritten )
+        TwoPhaseCommit( int identifier, long txId, long timeWritten )
         {
-            super( identifier, txId, masterId, timeWritten );
+            super( identifier, txId, timeWritten );
         }
 
         @Override
         public String toString()
         {
-            return "2PC[" + getIdentifier() + ", txId=" + getTxId() + ", masterId=" + getMasterId() + ", " + timestamp( getTimeWritten() ) + "]";
+            return "2PC[" + getIdentifier() + ", txId=" + getTxId() + ", " + timestamp( getTimeWritten() ) + "]";
         }
     }
 

@@ -136,7 +136,7 @@ public class LogIoUtils
             ReadableByteChannel channel ) throws IOException, ReadPastEndException
     {
         return new LogEntry.OnePhaseCommit( readNextInt( buf, channel ),
-                readNextLong( buf, channel ), readNextInt( buf, channel ), readNextLong( buf, channel ) );
+                readNextLong( buf, channel ), readNextLong( buf, channel ) );
     }
 
     private static LogEntry.Done readTxDoneEntry( ByteBuffer buf,
@@ -149,7 +149,7 @@ public class LogIoUtils
             ReadableByteChannel channel ) throws IOException, ReadPastEndException
     {
         return new LogEntry.TwoPhaseCommit( readNextInt( buf, channel ),
-                readNextLong( buf, channel ), readNextInt( buf, channel ), readNextLong( buf, channel ) );
+                readNextLong( buf, channel ), readNextLong( buf, channel ) );
     }
 
     private static LogEntry.Command readTxCommandEntry(
@@ -186,7 +186,7 @@ public class LogIoUtils
         {
             LogEntry.Commit commit = (LogEntry.Commit) entry;
             writeCommit( false, buffer, commit.getIdentifier(), commit.getTxId(),
-                    commit.getMasterId(), ((LogEntry.OnePhaseCommit) entry).getTimeWritten() );
+                    ((LogEntry.OnePhaseCommit) entry).getTimeWritten() );
         }
         else if ( entry instanceof LogEntry.Prepare )
         {
@@ -196,7 +196,7 @@ public class LogIoUtils
         {
             LogEntry.Commit commit = (LogEntry.Commit) entry;
             writeCommit( true, buffer, commit.getIdentifier(), commit.getTxId(),
-                    commit.getMasterId(), ((LogEntry.TwoPhaseCommit) entry).getTimeWritten() );
+                    ((LogEntry.TwoPhaseCommit) entry).getTimeWritten() );
         }
     }
 
@@ -206,10 +206,10 @@ public class LogIoUtils
     }
 
     public static void writeCommit( boolean twoPhase, LogBuffer buffer, int identifier, long txId,
-            int masterId, long timeWritten ) throws IOException
+            long timeWritten ) throws IOException
     {
         buffer.put( twoPhase ? LogEntry.TX_2P_COMMIT : LogEntry.TX_1P_COMMIT )
-              .putInt( identifier ).putLong( txId ).putInt( masterId ).putLong( timeWritten );
+              .putInt( identifier ).putLong( txId ).putLong( timeWritten );
     }
 
     public static void writeDone( LogBuffer buffer, int identifier ) throws IOException

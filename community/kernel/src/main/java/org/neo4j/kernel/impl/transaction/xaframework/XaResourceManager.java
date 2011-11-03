@@ -412,10 +412,9 @@ public class XaResourceManager
 
                     long txId = txIdGenerator.generate( dataSource,
                             xaTransaction.getIdentifier() );
-                    int masterId = txIdGenerator.getCurrentMasterId();
                     xaTransaction.setCommitTxId( txId );
                     log.commitOnePhase( xaTransaction.getIdentifier(),
-                            xaTransaction.getCommitTxId(), masterId );
+                            xaTransaction.getCommitTxId() );
                 }
             }
             txStatus.markAsPrepared();
@@ -433,10 +432,9 @@ public class XaResourceManager
                 {
                     long txId = txIdGenerator.generate( dataSource,
                             xaTransaction.getIdentifier() );
-                    int masterId = txIdGenerator.getCurrentMasterId();
                     xaTransaction.setCommitTxId( txId );
                     log.commitTwoPhase( xaTransaction.getIdentifier(),
-                            xaTransaction.getCommitTxId(), masterId );
+                            xaTransaction.getCommitTxId() );
                 }
             }
             txStatus.markCommitStarted();
@@ -462,7 +460,7 @@ public class XaResourceManager
         {
             int identifier = xaTransaction.getIdentifier();
             recoveredDoneRecords.add( new TransactionInfo( identifier, onePhase,
-                    xaTransaction.getCommitTxId(), log.getMasterIdForIdentifier( identifier ) ) );
+                    xaTransaction.getCommitTxId() ) );
         }
         xidMap.remove( xid );
         if ( xaTransaction.isRecovered() )
@@ -654,7 +652,7 @@ public class XaResourceManager
                 {
                     if ( !recoveredTx.isOnePhase() )
                     {
-                        log.commitTwoPhase( recoveredTx.getIdentifier(), recoveredTx.getTxId(), recoveredTx.getMasterId() );
+                        log.commitTwoPhase( recoveredTx.getIdentifier(), recoveredTx.getTxId() );
                     }
                     log.doneInternal( recoveredTx.getIdentifier() );
                 }

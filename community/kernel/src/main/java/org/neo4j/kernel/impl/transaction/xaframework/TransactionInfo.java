@@ -24,15 +24,13 @@ public class TransactionInfo
     private final int identifier;
     private final boolean trueForOnePhase;
     private final long txId;
-    private final int masterId;
     
-    public TransactionInfo( int identifier, boolean trueForOnePhase, long txId, int masterId )
+    public TransactionInfo( int identifier, boolean trueForOnePhase, long txId )
     {
         super();
         this.identifier = identifier;
         this.trueForOnePhase = trueForOnePhase;
         this.txId = txId;
-        this.masterId = masterId;
     }
     
     public int getIdentifier()
@@ -48,10 +46,5 @@ public class TransactionInfo
     public long getTxId()
     {
         return txId;
-    }
-    
-    public int getMasterId()
-    {
-        return masterId;
     }
 }

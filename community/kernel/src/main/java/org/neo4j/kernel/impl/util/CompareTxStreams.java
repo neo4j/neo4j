@@ -49,17 +49,17 @@ public class CompareTxStreams
                 lastTx = tx1;
                 if ( !branchingDetected )
                 {   // Try to detect branching
-                    if ( extractor1.getLastCommitEntry().getMasterId() != extractor2.getLastCommitEntry().getMasterId() ||
+                    if ( extractor1.getLastStartEntry().getMasterId() != extractor2.getLastStartEntry().getMasterId() ||
                             extractor1.getLastTxChecksum() != extractor2.getLastTxChecksum() )
                     {
                         branchingDetected = true;
-                        System.out.println( "Branch at " + tx1 + ": masters:" + extractor1.getLastCommitEntry().getMasterId() + "," + extractor2.getLastCommitEntry().getMasterId() +
+                        System.out.println( "Branch at " + tx1 + ": masters:" + extractor1.getLastStartEntry().getMasterId() + "," + extractor2.getLastStartEntry().getMasterId() +
                                 " checksums:" + extractor1.getLastTxChecksum() + "," + extractor2.getLastTxChecksum() );
                     }
                 }
                 else
                 {   // Try to detect merging of branch
-                    if ( extractor1.getLastCommitEntry().getMasterId() == extractor2.getLastCommitEntry().getMasterId() &&
+                    if ( extractor1.getLastStartEntry().getMasterId() == extractor2.getLastStartEntry().getMasterId() &&
                             extractor1.getLastTxChecksum() == extractor2.getLastTxChecksum() )
                     {
                         branchingDetected = false;
@@ -67,7 +67,7 @@ public class CompareTxStreams
                     }
                     else
                     {
-                        System.out.println( "Still branched at " + tx1 + ": masters:" + extractor1.getLastCommitEntry().getMasterId() + "," + extractor2.getLastCommitEntry().getMasterId() +
+                        System.out.println( "Still branched at " + tx1 + ": masters:" + extractor1.getLastStartEntry().getMasterId() + "," + extractor2.getLastStartEntry().getMasterId() +
                                 " checksums:" + extractor1.getLastTxChecksum() + "," + extractor2.getLastTxChecksum() );
                     }
                 }
