@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.neo4j.backup.check.ConsistencyCheck;
-import org.neo4j.backup.log.VerifyingLogDeserializerProvider;
 import org.neo4j.com.MasterUtil;
 import org.neo4j.com.MasterUtil.TxHandler;
 import org.neo4j.com.Response;
@@ -85,7 +84,8 @@ public class OnlineBackup
         try
         {
             Response<Void> response = client.fullBackup( new ToFileStoreWriter( targetDirectory ) );
-            GraphDatabaseService targetDb = startTemporaryDb( targetDirectory, false /* run full check instead */ );
+            GraphDatabaseService targetDb = startTemporaryDb( targetDirectory,
+                    VerificationLevel.NONE /* run full check instead */ );
             try
             {
                 unpackResponse( response, targetDb, MasterUtil.txHandlerForFullCopy() );
@@ -116,7 +116,7 @@ public class OnlineBackup
         return this;
     }
 
-    private boolean directoryContainsDb( String targetDirectory )
+    static boolean directoryContainsDb( String targetDirectory )
     {
         return new File( targetDirectory, NeoStore.DEFAULT_NAME ).exists();
     }
@@ -136,11 +136,11 @@ public class OnlineBackup
         return Collections.unmodifiableMap( lastCommittedTxs );
     }
 
-    private EmbeddedGraphDatabase startTemporaryDb( String targetDirectory, boolean verification )
+    static EmbeddedGraphDatabase startTemporaryDb( String targetDirectory, VerificationLevel verification )
     {
-        if ( verification )
+        if ( verification != VerificationLevel.NONE )
             return new EmbeddedGraphDatabase( targetDirectory, MapUtil.stringMap(
-                    Config.LOG_DESERIALIZER_IMPLEMENTATION, VerifyingLogDeserializerProvider.NAME ) );
+                    Config.LOG_DESERIALIZER_IMPLEMENTATION, verification.deserializerName ) );
         else
             return new EmbeddedGraphDatabase( targetDirectory );
     }
@@ -156,7 +156,7 @@ public class OnlineBackup
         {
             throw new RuntimeException( targetDirectory + " doesn't contain a database" );
         }
-        GraphDatabaseService targetDb = startTemporaryDb( targetDirectory, verification );
+        GraphDatabaseService targetDb = startTemporaryDb( targetDirectory, VerificationLevel.valueOf( verification ) );
 
         try
         {

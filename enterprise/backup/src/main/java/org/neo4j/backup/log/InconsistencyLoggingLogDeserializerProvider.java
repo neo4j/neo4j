@@ -31,11 +31,11 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 @Service.Implementation( LogDeserializerProvider.class )
-public class VerifyingLogDeserializerProvider extends LogDeserializerProvider
+public class InconsistencyLoggingLogDeserializerProvider extends LogDeserializerProvider
 {
-    public static final String NAME = "verifying";
+    public static final String NAME = "inconsistencylog";
 
-    public VerifyingLogDeserializerProvider()
+    public InconsistencyLoggingLogDeserializerProvider()
     {
         super( NAME );
     }
@@ -46,6 +46,6 @@ public class VerifyingLogDeserializerProvider extends LogDeserializerProvider
             XaDataSource ds )
     {
         return new VerifyingLogDeserializer( byteChannel, writeBuffer, applier,
-                cf, (NeoStoreXaDataSource) ds, true );
+                cf, (NeoStoreXaDataSource) ds, false );
     }
 }

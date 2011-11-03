@@ -30,6 +30,7 @@ import javax.transaction.xa.Xid;
 import org.neo4j.backup.check.ConsistencyCheck;
 import org.neo4j.backup.check.DiffStore;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
+import org.neo4j.kernel.impl.nioneo.store.DataInconsistencyError;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.LogApplier;
@@ -48,8 +49,9 @@ import org.neo4j.kernel.impl.util.StringLogger;
  * the integrity of the store for each applied transaction. It is assumed that
  * the stream contains a defragmented serialized transaction.
  */
-public class VerifyingLogDeserializer implements LogDeserializer
+class VerifyingLogDeserializer implements LogDeserializer
 {
+    private final boolean rejectInconsistentTransactions;
     private final ReadableByteChannel byteChannel;
     private final LogBuffer writeBuffer;
     private final LogApplier applier;
@@ -68,12 +70,13 @@ public class VerifyingLogDeserializer implements LogDeserializer
 
     VerifyingLogDeserializer( ReadableByteChannel byteChannel,
             LogBuffer writeBuffer, LogApplier applier, XaCommandFactory cf,
-            NeoStoreXaDataSource ds )
+            NeoStoreXaDataSource ds, boolean rejectInconsistentTransactions )
     {
         this.byteChannel = byteChannel;
         this.writeBuffer = writeBuffer;
         this.applier = applier;
         this.cf = cf;
+        this.rejectInconsistentTransactions = rejectInconsistentTransactions;
         this.logEntries = new LinkedList<LogEntry>();
         this.diffs = new DiffStore( ds.getNeoStore() );
         this.msgLog = ds.getMsgLog();
@@ -129,27 +132,25 @@ public class VerifyingLogDeserializer implements LogDeserializer
         return startEntry;
     }
 
-    private void verify() throws AssertionError
+    private void verify() throws DataInconsistencyError
     {
         /*
          *  Here goes the actual verification code. If it passes,
          *  just return - if not, throw Error so that the
          *  store remains safe.
          */
-        // msgLog.logMessage( "Verifying consistency of changes from " +
-        // startEntry );
         ConsistencyCheck consistency = diffs.applyToAll( new ConsistencyCheck( diffs )
         {
             @Override
             protected void report( AbstractBaseRecord record, AbstractBaseRecord referred, String message )
             {
-                logInconsistency( record + " " + referred + " // " + message );
+                logInconsistency( "\n\t" + record + "\n\t" + referred + "\n\t" + message );
             }
 
             @Override
             protected void report( AbstractBaseRecord record, String message )
             {
-                logInconsistency( record + " // " + message );
+                logInconsistency( "\n\t" + record + "\n\t" + message );
             }
         } );
         try
@@ -158,16 +159,25 @@ public class VerifyingLogDeserializer implements LogDeserializer
         }
         catch ( AssertionError e )
         {
-            msgLog.logMessage( "Cannot apply log " + startEntry + ", " + e.getMessage() );
-            throw e;
+            DataInconsistencyError error = new DataInconsistencyError( "Cannot apply transaction\n\t" + startEntry + "\n\t"
+                                                                       + commitEntry + "\n\t" + e.getMessage() );
+            msgLog.logMessage( error.getMessage() );
+            if ( rejectInconsistentTransactions )
+            {
+                startEntry = null;
+                commitEntry = null;
+                logEntries.clear();
+                throw error;
+            }
         }
     }
 
     private void logInconsistency( String inconsistencyMessage )
     {
         String logId = "";
-        if ( startEntry != null ) logId = Integer.toString( startEntry.getIdentifier() );
-        msgLog.logMessage( "Incosistency from log " + logId + ": " + inconsistencyMessage );
+        if ( commitEntry != null ) logId = " (txId=" + commitEntry.getTxId() + ")";
+        else if ( startEntry != null ) logId = " (log local id = " + startEntry.getIdentifier() + ")";
+        msgLog.logMessage( "Inconsistency from transaction" + logId + ": " + inconsistencyMessage );
     }
 
     private void applyAll() throws IOException
