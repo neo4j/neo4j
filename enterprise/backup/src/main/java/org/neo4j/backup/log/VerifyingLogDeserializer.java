@@ -138,7 +138,7 @@ public class VerifyingLogDeserializer implements LogDeserializer
          */
         // msgLog.logMessage( "Verifying consistency of changes from " +
         // startEntry );
-        ConsistencyCheck consistency = diffs.apply( new ConsistencyCheck( diffs )
+        ConsistencyCheck consistency = diffs.applyToAll( new ConsistencyCheck( diffs )
         {
             @Override
             protected void report( AbstractBaseRecord record, AbstractBaseRecord referred, String message )
