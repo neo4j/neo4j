@@ -125,6 +125,12 @@ public class CommonFactories
             {
                 // Do nothing from the ordinary here
             }
+            
+            @Override
+            public boolean freeIdsDuringRollback()
+            {
+                return true;
+            }
         };
     }
     

@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.persistence.IdGenerator;
 import org.neo4j.kernel.impl.persistence.IdGeneratorModule;
 import org.neo4j.kernel.impl.persistence.PersistenceModule;
 import org.neo4j.kernel.impl.transaction.LockManager;
+import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.transaction.TxModule;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 
@@ -257,6 +258,7 @@ public class Config
         params.put( TransactionManager.class, txModule.getTxManager() );
         params.put( LastCommittedTxIdSetter.class, lastCommittedTxIdSetter );
         params.put( GraphDbModule.class, graphDbModule );
+        params.put( TxHook.class, txModule.getTxHook() );
     }
 
     public static Map<Object, Object> getDefaultParams()

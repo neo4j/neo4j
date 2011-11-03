@@ -28,4 +28,6 @@ public interface TxHook
     boolean hasAnyLocks( Transaction tx );
     
     void finishTransaction( int eventIdentifier, boolean success );
+    
+    boolean freeIdsDuringRollback();
 }

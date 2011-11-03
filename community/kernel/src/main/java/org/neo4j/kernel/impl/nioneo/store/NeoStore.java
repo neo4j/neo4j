@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
+import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -66,6 +67,7 @@ public class NeoStore extends AbstractStore
     private RelationshipTypeStore relTypeStore;
     private final LastCommittedTxIdSetter lastCommittedTxIdSetter;
     private final IdGeneratorFactory idGeneratorFactory;
+    private final TxHook txHook;
     private boolean isStarted;
     private long lastCommittedTx = -1;
 
@@ -87,6 +89,7 @@ public class NeoStore extends AbstractStore
         lastCommittedTxIdSetter = (LastCommittedTxIdSetter)
                 config.get( LastCommittedTxIdSetter.class );
         idGeneratorFactory = (IdGeneratorFactory) config.get( IdGeneratorFactory.class );
+        txHook = (TxHook) config.get( TxHook.class );
     }
 
     @Override
@@ -227,6 +230,11 @@ public class NeoStore extends AbstractStore
     public int getRecordSize()
     {
         return RECORD_SIZE;
+    }
+    
+    public TxHook getTxHook()
+    {
+        return txHook;
     }
 
     /**
