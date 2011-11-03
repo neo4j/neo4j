@@ -35,6 +35,11 @@ public class InMemoryLogBuffer implements LogBuffer, ReadableByteChannel
     {
     }
     
+    public void reset()
+    {
+        writeIndex = readIndex = 0;
+    }
+    
     private void ensureArrayCapacityPlus( int plus )
     {
         while ( writeIndex+plus > bytes.length ) 
