@@ -57,44 +57,50 @@ public interface RecordStore<R extends AbstractBaseRecord>
 
     public static abstract class Processor
     {
-        protected void processNode( RecordStore<NodeRecord> store, NodeRecord node )
+        public void processNode( RecordStore<NodeRecord> store, NodeRecord node )
         {
-            throw new UnsupportedOperationException( this + " does not process Node records" );
+            processRecord( NodeRecord.class, store, node );
         }
 
-        protected void processRelationship( RecordStore<RelationshipRecord> store, RelationshipRecord rel )
+        public void processRelationship( RecordStore<RelationshipRecord> store, RelationshipRecord rel )
         {
-            throw new UnsupportedOperationException( this + " does not process Relationship records" );
+            processRecord( RelationshipRecord.class, store, rel );
         }
 
-        protected void processProperty( RecordStore<PropertyRecord> store, PropertyRecord property )
+        public void processProperty( RecordStore<PropertyRecord> store, PropertyRecord property )
         {
-            throw new UnsupportedOperationException( this + " does not process Property records" );
+            processRecord( PropertyRecord.class, store, property );
         }
 
-        protected void processString( RecordStore<DynamicRecord> store, DynamicRecord string )
+        public void processString( RecordStore<DynamicRecord> store, DynamicRecord string )
         {
             processDynamic( store, string );
         }
 
-        protected void processArray( RecordStore<DynamicRecord> store, DynamicRecord array )
+        public void processArray( RecordStore<DynamicRecord> store, DynamicRecord array )
         {
             processDynamic( store, array );
         }
 
         protected void processDynamic( RecordStore<DynamicRecord> store, DynamicRecord record )
         {
-            throw new UnsupportedOperationException( this + " does not process dynamic records" );
+            processRecord( DynamicRecord.class, store, record );
         }
 
-        protected void processRelationshipType( RecordStore<RelationshipTypeRecord> store, RelationshipTypeRecord record )
+        public void processRelationshipType( RecordStore<RelationshipTypeRecord> store, RelationshipTypeRecord record )
         {
-            throw new UnsupportedOperationException( this + " does not process RelationshipType records" );
+            processRecord( RelationshipTypeRecord.class, store, record );
         }
 
-        protected void processPropertyIndex( RecordStore<PropertyIndexRecord> store, PropertyIndexRecord record )
+        public void processPropertyIndex( RecordStore<PropertyIndexRecord> store, PropertyIndexRecord record )
         {
-            throw new UnsupportedOperationException( this + " does not process property key records" );
+            processRecord( PropertyIndexRecord.class, store, record );
+        }
+
+        protected <R extends AbstractBaseRecord> void processRecord( Class<R> type, RecordStore<R> store, R record )
+        {
+            throw new UnsupportedOperationException( this + " does not process "
+                                                     + type.getSimpleName().replace( "Record", "" ) + " records" );
         }
 
         public static <R extends AbstractBaseRecord> Iterable<R> scan( final RecordStore<R> store,

@@ -422,7 +422,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
                 throw new InvalidRecordException( "Next block set[" + nextBlock
                 + "] current block illegal size[" + nrOfBytes + "/" + dataSize + "]" );
         }
-        record.setInUse( true );
+        record.setInUse( inUse );
         record.setLength( nrOfBytes );
         record.setNextBlock( longNextBlock );
         if ( readData )
