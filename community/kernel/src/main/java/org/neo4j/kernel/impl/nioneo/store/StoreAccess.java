@@ -187,7 +187,7 @@ public class StoreAccess
     @SuppressWarnings( "unchecked" )
     protected void apply( RecordStore.Processor processor, RecordStore<?> store )
     {
-        processor.apply( store, RecordStore.IN_USE );
+        processor.applyFiltered( store, RecordStore.IN_USE );
     }
 
     private static Map<Object, Object> defaultParams()
