@@ -42,8 +42,8 @@ public class StoreAccess
     // Transitive stores
     private final RecordStore<DynamicRecord> stringStore, arrayStore;
     private final RecordStore<PropertyIndexRecord> propIndexStore;
-    private final RecordStore<DynamicRecord> typeNames;
-    private final RecordStore<DynamicRecord> propKeys;
+    private final RecordStore<DynamicRecord> typeNameStore;
+    private final RecordStore<DynamicRecord> propKeyStore;
     private boolean closable = false;
 
     public StoreAccess( String path )
@@ -60,12 +60,12 @@ public class StoreAccess
         this.relStore = wrapStore( relStore = new RelationshipStore( path + "/neostore.relationshipstore.db", params ) );
         this.relTypeStore = wrapStore( relTypeStore = new RelationshipTypeStore(
                 path + "/neostore.relationshiptypestore.db", params, IdType.RELATIONSHIP_TYPE ) );
-        this.typeNames = wrapStore( relTypeStore.getNameStore() );
+        this.typeNameStore = wrapStore( relTypeStore.getNameStore() );
         if ( new File( path + "/neostore.propertystore.db" ).exists() )
         {
             this.propStore = wrapStore( propStore = new PropertyStore( path + "/neostore.propertystore.db", params ) );
             this.propIndexStore = wrapStore( propStore.getIndexStore() );
-            this.propKeys = wrapStore( propStore.getIndexStore().getKeyStore() );
+            this.propKeyStore = wrapStore( propStore.getIndexStore().getKeyStore() );
             this.stringStore = wrapStore( propStore.getStringStore() );
             this.arrayStore = wrapStore( propStore.getArrayStore() );
         }
@@ -73,7 +73,7 @@ public class StoreAccess
         {
             this.propStore = null;
             this.propIndexStore = null;
-            this.propKeys = null;
+            this.propKeyStore = null;
             this.stringStore = null;
             this.arrayStore = null;
         }
@@ -100,8 +100,8 @@ public class StoreAccess
         this.arrayStore = wrapStore( propStore.getArrayStore() );
         this.relTypeStore = wrapStore( typeStore );
         this.propIndexStore = wrapStore( propStore.getIndexStore() );
-        this.typeNames = wrapStore( typeStore.getNameStore() );
-        this.propKeys = wrapStore( propStore.getIndexStore().getKeyStore() );
+        this.typeNameStore = wrapStore( typeStore.getNameStore() );
+        this.propKeyStore = wrapStore( propStore.getIndexStore().getKeyStore() );
     }
 
     public RecordStore<NodeRecord> getNodeStore()
@@ -141,12 +141,12 @@ public class StoreAccess
 
     public RecordStore<DynamicRecord> getTypeNameStore()
     {
-        return typeNames;
+        return typeNameStore;
     }
 
     public RecordStore<DynamicRecord> getPropertyKeyStore()
     {
-        return propKeys;
+        return propKeyStore;
     }
 
     public void close()
@@ -164,18 +164,20 @@ public class StoreAccess
         }
     }
 
-    public final <P extends RecordStore.Processor> P apply( P processor )
+    public final <P extends RecordStore.Processor> P applyToAll( P processor )
     {
-        for ( RecordStore<?> store : stores() )
+        for ( RecordStore<?> store : allStores() )
             apply( processor, store );
         return processor;
     }
 
-    protected RecordStore<?>[] stores()
+    protected RecordStore<?>[] allStores()
     {
+        if ( propStore == null ) return new RecordStore<?>[] { // no property stores
+                nodeStore, relStore, relTypeStore, typeNameStore };
         return new RecordStore<?>[] {
                 nodeStore, relStore, propStore, stringStore, arrayStore, // basic
-                relTypeStore, propIndexStore, typeNames, propKeys, // internal
+                relTypeStore, propIndexStore, typeNameStore, propKeyStore, // internal
                 };
     }
 
