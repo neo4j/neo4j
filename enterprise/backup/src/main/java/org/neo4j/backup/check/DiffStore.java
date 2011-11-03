@@ -33,7 +33,6 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
-import org.neo4j.kernel.impl.nioneo.store.RecordStore.Processor;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
@@ -65,7 +64,7 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
     }
 
     @Override
-    protected void apply( Processor processor, RecordStore<?> store )
+    protected void apply( RecordStore.Processor processor, RecordStore<?> store )
     {
         processor.applyById( store, (DiffRecordStore<?>) store );
     }

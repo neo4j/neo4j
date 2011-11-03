@@ -110,49 +110,49 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
     }
 
     @Override
-    protected void processNode( RecordStore<NodeRecord> store, NodeRecord node )
+    public void processNode( RecordStore<NodeRecord> store, NodeRecord node )
     {
         if ( !node.inUse() ) return;
         if ( checkNode( node ) ) brokenNodes++;
     }
 
     @Override
-    protected void processRelationship( RecordStore<RelationshipRecord> store, RelationshipRecord rel )
+    public void processRelationship( RecordStore<RelationshipRecord> store, RelationshipRecord rel )
     {
         if ( !rel.inUse() ) return;
         if ( checkRelationship( rel ) ) brokenRels++;
     }
 
     @Override
-    protected void processProperty( RecordStore<PropertyRecord> store, PropertyRecord property )
+    public void processProperty( RecordStore<PropertyRecord> store, PropertyRecord property )
     {
         if ( !property.inUse() ) return;
         if ( checkProperty( property ) ) brokenProps++;
     }
 
     @Override
-    protected void processString( RecordStore<DynamicRecord> store, DynamicRecord string )
+    public void processString( RecordStore<DynamicRecord> store, DynamicRecord string )
     {
         if ( !string.inUse() ) return;
         if ( checkDynamic( store, string ) ) brokenStrings++;
     }
 
     @Override
-    protected void processArray( RecordStore<DynamicRecord> store, DynamicRecord array )
+    public void processArray( RecordStore<DynamicRecord> store, DynamicRecord array )
     {
         if ( !array.inUse() ) return;
         if ( checkDynamic( store, array ) ) brokenArrays++;
     }
 
     @Override
-    protected void processRelationshipType( RecordStore<RelationshipTypeRecord> store, RelationshipTypeRecord type )
+    public void processRelationshipType( RecordStore<RelationshipTypeRecord> store, RelationshipTypeRecord type )
     {
         if ( !type.inUse() ) return;
         if ( checkType( type ) ) brokenTypes++;
     }
 
     @Override
-    protected void processPropertyIndex( RecordStore<PropertyIndexRecord> store, PropertyIndexRecord index )
+    public void processPropertyIndex( RecordStore<PropertyIndexRecord> store, PropertyIndexRecord index )
     {
         if ( !index.inUse() ) return;
         if ( checkKey( index ) ) brokenKeys++;

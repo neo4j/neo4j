@@ -24,8 +24,14 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 
 /**
  * Not thread safe, intended for single threaded use.
@@ -111,7 +117,7 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
     @Override
     public void accept( RecordStore.Processor processor, R record )
     {
-        actual.accept( processor, record );
+        actual.accept( new DispatchProcessor( this, processor ), record );
     }
 
     @Override
@@ -125,5 +131,60 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
     {
         diff.clear();
         actual.close();
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private static class DispatchProcessor extends RecordStore.Processor
+    {
+        private final DiffRecordStore<?> diffStore;
+        private final RecordStore.Processor processor;
+
+        DispatchProcessor( DiffRecordStore<?> diffStore, RecordStore.Processor processor )
+        {
+            this.diffStore = diffStore;
+            this.processor = processor;
+        }
+
+        @Override
+        public void processNode( RecordStore<NodeRecord> store, NodeRecord node )
+        {
+            processor.processNode( (RecordStore<NodeRecord>) diffStore, node );
+        }
+
+        @Override
+        public void processRelationship( RecordStore<RelationshipRecord> store, RelationshipRecord rel )
+        {
+            processor.processRelationship( (RecordStore<RelationshipRecord>) diffStore, rel );
+        }
+
+        @Override
+        public void processProperty( RecordStore<PropertyRecord> store, PropertyRecord property )
+        {
+            processor.processProperty( (RecordStore<PropertyRecord>) diffStore, property );
+        }
+
+        @Override
+        public void processString( RecordStore<DynamicRecord> store, DynamicRecord string )
+        {
+            processor.processString( (RecordStore<DynamicRecord>) diffStore, string );
+        }
+
+        @Override
+        public void processArray( RecordStore<DynamicRecord> store, DynamicRecord array )
+        {
+            processor.processArray( (RecordStore<DynamicRecord>) diffStore, array );
+        }
+
+        @Override
+        public void processRelationshipType( RecordStore<RelationshipTypeRecord> store, RelationshipTypeRecord record )
+        {
+            processor.processRelationshipType( (RecordStore<RelationshipTypeRecord>) diffStore, record );
+        }
+
+        @Override
+        public void processPropertyIndex( RecordStore<PropertyIndexRecord> store, PropertyIndexRecord record )
+        {
+            processor.processPropertyIndex( (RecordStore<PropertyIndexRecord>) diffStore, record );
+        }
     }
 }

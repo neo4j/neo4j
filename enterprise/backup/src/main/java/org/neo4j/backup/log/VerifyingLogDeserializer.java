@@ -146,7 +146,7 @@ class VerifyingLogDeserializer implements LogDeserializer
             @Override
             protected <R extends AbstractBaseRecord> void report( RecordStore<R> recordStore, R record, String message )
             {
-                StringBuilder log = messageHeader();
+                StringBuilder log = messageHeader( "Inconsistencies" );
                 logRecord( log, recordStore, record );
                 log.append( message );
                 msgLog.logMessage( log.toString() );
@@ -157,22 +157,16 @@ class VerifyingLogDeserializer implements LogDeserializer
                     RecordStore<R1> recordStore, R1 record, RecordStore<? extends R2> referredStore, R2 referred,
                     String message )
             {
-                StringBuilder log = messageHeader();
+                if ( recordStore == referredStore && record.getLongId() == referred.getLongId() )
+                { // inconsistency between versions, logRecord() handles that, treat as single record
+                    report( recordStore, record, message );
+                    return;
+                }
+                StringBuilder log = messageHeader( "Inconsistencies" );
                 logRecord( log, recordStore, record );
                 logRecord( log, referredStore, referred );
                 log.append( message );
                 msgLog.logMessage( log.toString() );
-            }
-
-            private <R extends AbstractBaseRecord> void logRecord( StringBuilder log, RecordStore<? extends R> store,
-                    R record )
-            {
-                DiffRecordStore<? extends R> diff = (DiffRecordStore<? extends R>) store;
-                if ( diff.isModified( record.getLongId() ) )
-                {
-                    log.append( "- " ).append( diff.forceGetRaw( record.getLongId() ) ).append( "\n\t+ " );
-                }
-                log.append( record ).append( "\n\t" );
             }
         } );
         try
@@ -191,12 +185,41 @@ class VerifyingLogDeserializer implements LogDeserializer
                 logEntries.clear();
                 throw error;
             }
+            else
+            {
+                final StringBuilder changes = messageHeader( "Changes" );
+                diffs.applyToAll( new RecordStore.Processor()
+                {
+                    @Override
+                    protected <R extends AbstractBaseRecord> void processRecord( Class<R> type, RecordStore<R> store,
+                            R record )
+                    {
+                        DiffRecordStore<R> diff = (DiffRecordStore<R>)store;
+                        if (diff.isModified( record.getLongId() )) 
+                        {
+                            logRecord( changes, store, record );
+                        }
+                    }
+                } );
+                msgLog.logMessage( changes.toString() );
+            }
         }
     }
-    
-    private StringBuilder messageHeader() 
+
+    private static <R extends AbstractBaseRecord> void logRecord( StringBuilder log, RecordStore<? extends R> store,
+            R record )
     {
-        StringBuilder log = new StringBuilder( "Inconsistency from transaction" );
+        DiffRecordStore<? extends R> diff = (DiffRecordStore<? extends R>) store;
+        if ( diff.isModified( record.getLongId() ) )
+        {
+            log.append( "- " ).append( diff.forceGetRaw( record.getLongId() ) ).append( "\n\t+ " );
+        }
+        log.append( record ).append( "\n\t" );
+    }
+    
+    private StringBuilder messageHeader( String type )
+    {
+        StringBuilder log = new StringBuilder( type ).append( " in transaction" );
         if ( commitEntry != null )
             log.append( " (txId=" ).append( commitEntry.getTxId() ).append( ")" );
         else if ( startEntry != null )
