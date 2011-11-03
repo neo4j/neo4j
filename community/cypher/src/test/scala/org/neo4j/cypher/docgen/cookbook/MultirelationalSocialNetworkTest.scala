@@ -45,7 +45,7 @@ class MultirelationalSocialNetworkTest extends DocumentingTestBase {
 
   @Test def followBack() {
     testQuery(
-      title = "Who FOLLOWS or FOLLOWS me back",
+      title = "Who FOLLOWS or LOVES me back",
       text = """This example shows a multi-relational
      * network between persons and things they like.
      * A multi-relational graph is a graph with more than

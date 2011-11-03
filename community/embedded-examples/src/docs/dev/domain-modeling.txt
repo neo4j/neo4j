@@ -13,7 +13,3 @@ include::examples/user-roles-in-graphs.txt[]
 :leveloffset: 2
 
 include::examples/acl-structures-in-graphs.txt[]
-
-:leveloffset: 2
-
-include::examples/multi-relational-social-network.txt[]
