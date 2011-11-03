@@ -166,9 +166,9 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
         {
             RelationshipRecord rel = rels.forceGetRecord( relId );
             if ( !rel.inUse() )
-                fail |= inconsistent( node, rel, "reference to relationship not in use" );
+                fail |= inconsistent( nodes, node, rels, rel, "reference to relationship not in use" );
             else if ( !( rel.getFirstNode() == node.getId() || rel.getSecondNode() == node.getId() ) )
-                fail |= inconsistent( node, rel, "reference to relationship that does not reference back" );
+                fail |= inconsistent( nodes, node, rels, rel, "reference to relationship that does not reference back" );
         }
         if ( props != null )
         {
@@ -177,9 +177,9 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
             {
                 PropertyRecord prop = props.forceGetRecord( propId );
                 if ( !prop.inUse() )
-                    fail |= inconsistent( node, prop, "reference to property not in use" );
+                    fail |= inconsistent( nodes, node, props, prop, "reference to property not in use" );
                 else if ( prop.getRelId() != -1 || ( prop.getNodeId() != -1 && prop.getNodeId() != node.getId() ) )
-                    fail |= inconsistent( node, prop, "reference to property for other entity" );
+                    fail |= inconsistent( nodes, node, props, prop, "reference to property for other entity" );
             }
         }
         return fail;
@@ -188,11 +188,11 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
     private boolean checkRelationship( RelationshipRecord rel )
     {
         boolean fail = false;
-        if ( rel.getType() < 0 ) fail |= inconsistent( rel, "invalid type id" );
+        if ( rel.getType() < 0 ) fail |= inconsistent( rels, rel, "invalid type id" );
         else
         {
             RelationshipTypeRecord type = relTypes.forceGetRecord( rel.getType() );
-            if ( !type.inUse() ) fail |= inconsistent( rel, type, "type not in use" );
+            if ( !type.inUse() ) fail |= inconsistent( rels, rel, relTypes, type, "type not in use" );
         }
         for ( RelationshipField field : relFields )
         {
@@ -204,7 +204,7 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
                 {
                     NodeRecord node = nodes.forceGetRecord( nodeId );
                     if ( !node.inUse() || node.getNextRel() != rel.getId() )
-                        fail |= inconsistent( rel, node, "invalid " + field.name()
+                        fail |= inconsistent( rels, rel, nodes, node, "invalid " + field.name()
                                               + " reference, node does not reference back" );
                 }
             }
@@ -212,9 +212,9 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
             {
                 RelationshipRecord other = rels.forceGetRecord( otherId );
                 if ( !other.inUse() )
-                    fail |= inconsistent( rel, other, field.name() + " reference to record not used" );
+                    fail |= inconsistent( rels, rel, other, field.name() + " reference to record not used" );
                 else if ( !field.invConsistent( rel, other ) )
-                    fail |= inconsistent( rel, other, "not part of the same chain, invalid "
+                    fail |= inconsistent( rels, rel, other, "not part of the same chain, invalid "
                                           + field.name() + " reference" );
             }
         }
@@ -222,12 +222,12 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
         {
             long nodeId = field.get( rel );
             if ( nodeId < 0 )
-                fail |= inconsistent( rel, "invalid " + field.name() + " node reference" );
+                fail |= inconsistent( rels, rel, "invalid " + field.name() + " node reference" );
             else
             {
                 NodeRecord node = nodes.forceGetRecord( nodeId );
                 if ( !node.inUse() )
-                    fail |= inconsistent( rel, node, "invalid " + field.name() + " node reference, not in use" );
+                    fail |= inconsistent( rels, rel, nodes, node, "invalid " + field.name() + " node reference, not in use" );
             }
         }
         if ( props != null )
@@ -237,9 +237,9 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
             {
                 PropertyRecord prop = props.forceGetRecord( propId );
                 if ( !prop.inUse() )
-                    fail |= inconsistent( rel, prop, "reference to property not in use" );
+                    fail |= inconsistent( rels, rel, props, prop, "reference to property not in use" );
                 else if ( prop.getNodeId() != -1 || ( prop.getRelId() != -1 && prop.getRelId() != rel.getId() ) )
-                    fail |= inconsistent( rel, prop, "reference to property for other entity" );
+                    fail |= inconsistent( rels, rel, props, prop, "reference to property for other entity" );
             }
         }
         return fail;
@@ -253,18 +253,18 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
         {
             PropertyRecord next = props.forceGetRecord( nextId );
             if ( !next.inUse() )
-                fail |= inconsistent( property, next, "invalid next reference, next record not in use" );
+                fail |= inconsistent( props, property, next, "invalid next reference, next record not in use" );
             if ( next.getPrevProp() != property.getId() )
-                fail |= inconsistent( property, next, "invalid next reference, next record does not reference back" );
+                fail |= inconsistent( props, property, next, "invalid next reference, next record does not reference back" );
         }
         long prevId = property.getPrevProp();
         if ( !Record.NO_PREVIOUS_PROPERTY.value( prevId ) )
         {
             PropertyRecord prev = props.forceGetRecord( prevId );
             if ( !prev.inUse() )
-                fail |= inconsistent( property, prev, "invalid prev reference, prev record not in use" );
+                fail |= inconsistent( props, property, prev, "invalid prev reference, prev record not in use" );
             if ( prev.getPrevProp() != property.getId() )
-                fail |= inconsistent( property, prev, "invalid prev reference, prev record does not reference back" );
+                fail |= inconsistent( props, property, prev, "invalid prev reference, prev record does not reference back" );
         }
         else // property is first in chain
         {
@@ -276,17 +276,17 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
         }
         for ( PropertyBlock block : property.getPropertyBlocks() )
         {
-            if ( block.getKeyIndexId() < 0 ) fail |= inconsistent( property, "invalid key id of " + block );
+            if ( block.getKeyIndexId() < 0 ) fail |= inconsistent( props, property, "invalid key id of " + block );
             else
             {
                 PropertyIndexRecord key = propIndexes.forceGetRecord( block.getKeyIndexId() );
-                if ( !key.inUse() ) fail |= inconsistent( property, key, "key not in use for " + block );
+                if ( !key.inUse() ) fail |= inconsistent( props, property, propIndexes, key, "key not in use for " + block );
             }
             RecordStore<DynamicRecord> dynStore = null;
             PropertyType type = block.forceGetType();
             if ( type == null )
             {
-                fail |= inconsistent( property, "illegal property type" );
+                fail |= inconsistent( props, property, "illegal property type" );
             }
             else switch ( block.getType() )
             {
@@ -301,23 +301,23 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
             {
                 DynamicRecord dynrec = dynStore.forceGetRecord( block.getSingleValueLong() );
                 if ( !dynrec.inUse() )
-                    fail |= inconsistent( property, dynrec, "first dynamic record not in use" );
+                    fail |= inconsistent( props, property, dynStore, dynrec, "first dynamic record not in use" );
             }
         }
         return fail;
     }
 
-    private boolean checkPropertyOwnerReference( PropertyRecord property, RecordStore<? extends PrimitiveRecord> store )
+    private boolean checkPropertyOwnerReference( PropertyRecord property, RecordStore<? extends PrimitiveRecord> entityStore )
     {
         boolean fail = false;
-        PrimitiveRecord entity = store.forceGetRecord( property.getNodeId() );
+        PrimitiveRecord entity = entityStore.forceGetRecord( property.getNodeId() );
         if ( !entity.inUse() )
-            fail |= inconsistent( property, entity, "owning record not in use" );
+            fail |= inconsistent( props, property, entityStore, entity, "owning record not in use" );
         else if ( entity.getNextProp() != property.getId() )
-            fail |= inconsistent( property, entity, "owning record does not reference back" );
-        if ( store instanceof DiffRecordStore<?> )
+            fail |= inconsistent( props, property, entityStore, entity, "owning record does not reference back" );
+        if ( entityStore instanceof DiffRecordStore<?> )
         {
-            DiffRecordStore<? extends PrimitiveRecord> diffs = (DiffRecordStore<? extends PrimitiveRecord>) store;
+            DiffRecordStore<? extends PrimitiveRecord> diffs = (DiffRecordStore<? extends PrimitiveRecord>) entityStore;
             PrimitiveRecord old = diffs.forceGetRaw( entity.getId() );
             // IF old is in use and references a property record
             if ( old.inUse() && !Record.NO_NEXT_PROPERTY.value( old.getNextProp() ) )
@@ -325,7 +325,7 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
                 if ( old.getNextProp() != property.getId() )
                     // THEN that property record must also have been updated!
                     if ( !( (DiffRecordStore<?>) props ).isModified( old.getNextProp() ) )
-                        fail |= inconsistent( property, entity, "overwriting used property record" );
+                        fail |= inconsistent( props, property, entityStore, entity, "overwriting used property record" );
         }
         return fail;
     }
@@ -339,10 +339,10 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
             // If next is set, then it must be in use
             DynamicRecord next = store.forceGetRecord( nextId );
             if ( !next.inUse() )
-                fail |= inconsistent( record, next, "next record not in use" );
+                fail |= inconsistent( store, record, next, "next record not in use" );
             // If next is set, then the size must be max
             if ( record.getLength() < store.getRecordSize() - store.getRecordHeaderSize() )
-                fail |= inconsistent( record, "next record set, but length less than maximum" );
+                fail |= inconsistent( store, record, "next record set, but length less than maximum" );
         }
         if ( record.getId() != 0
              && record.getLength() > store.getRecordSize()
@@ -353,13 +353,13 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
              *  except for the first dynamic record in a store, which
              *  does not conform to the usual format
              */
-            fail |= inconsistent( record, "length larger than maximum for store" );
+            fail |= inconsistent( store, record, "length larger than maximum for store" );
         }
         if ( store instanceof DiffRecordStore<?> )
         {
             DiffRecordStore<DynamicRecord> diffs = (DiffRecordStore<DynamicRecord>) store;
             DynamicRecord prev = diffs.forceGetRaw( record.getId() );
-            if ( prev.inUse() ) fail |= inconsistent( record, prev, "overwriting used dynamic record" );
+            if ( prev.inUse() ) fail |= inconsistent( store, record, prev, "overwriting used dynamic record" );
         }
         return fail;
     }
@@ -368,7 +368,7 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
     {
         if ( Record.NO_NEXT_BLOCK.value( type.getTypeBlock() ) ) return false; // accept this
         DynamicRecord record = typeNames.forceGetRecord( type.getTypeBlock() );
-        if ( !record.inUse() ) return inconsistent( type, record, "reference to unused type name" );
+        if ( !record.inUse() ) return inconsistent( relTypes, type, typeNames, record, "reference to unused type name" );
         return false;
     }
 
@@ -376,30 +376,39 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
     {
         if ( Record.NO_NEXT_BLOCK.value( key.getKeyBlockId() ) ) return false; // accept this
         DynamicRecord record = propKeys.forceGetRecord( key.getKeyBlockId() );
-        if ( !record.inUse() ) return inconsistent( key, record, "reference to unused key string" );
+        if ( !record.inUse() ) return inconsistent( propIndexes, key, propKeys, record, "reference to unused key string" );
         return false;
     }
 
     // Inconsistency between two records
-    private boolean inconsistent( AbstractBaseRecord record, AbstractBaseRecord referred, String message )
+    private <R1 extends AbstractBaseRecord, R2 extends AbstractBaseRecord> boolean inconsistent(
+            RecordStore<R1> recordStore, R1 record, RecordStore<? extends R2> referredStore, R2 referred, String message )
     {
-        report( record, referred, message );
+        report( recordStore, record, referredStore, referred, message );
+        return true;
+    }
+    
+    private <R extends AbstractBaseRecord> boolean inconsistent(
+            RecordStore<R> store, R record, R referred, String message )
+    {
+        report( store, record, store, referred, message );
         return true;
     }
 
     // Internal inconsistency in a single record
-    private boolean inconsistent( AbstractBaseRecord record, String message )
+    private <R extends AbstractBaseRecord> boolean inconsistent( RecordStore<R> store, R record, String message )
     {
-        report( record, message );
+        report( store, record, message );
         return true;
     }
 
-    protected void report( AbstractBaseRecord record, AbstractBaseRecord referred, String message )
+    protected <R1 extends AbstractBaseRecord, R2 extends AbstractBaseRecord> void report(
+            RecordStore<R1> recordStore, R1 record, RecordStore<? extends R2> referredStore, R2 referred, String message )
     {
         System.err.println( record + " " + referred + " //" + message );
     }
 
-    protected void report( AbstractBaseRecord record, String message )
+    protected <R extends AbstractBaseRecord> void report( RecordStore<R> recordStore, R record, String message )
     {
         System.err.println( record + " //" + message );
     }

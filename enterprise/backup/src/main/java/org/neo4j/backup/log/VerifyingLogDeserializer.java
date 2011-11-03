@@ -28,9 +28,11 @@ import java.util.List;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.backup.check.ConsistencyCheck;
+import org.neo4j.backup.check.DiffRecordStore;
 import org.neo4j.backup.check.DiffStore;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DataInconsistencyError;
+import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.LogApplier;
@@ -142,15 +144,35 @@ class VerifyingLogDeserializer implements LogDeserializer
         ConsistencyCheck consistency = diffs.applyToAll( new ConsistencyCheck( diffs )
         {
             @Override
-            protected void report( AbstractBaseRecord record, AbstractBaseRecord referred, String message )
+            protected <R extends AbstractBaseRecord> void report( RecordStore<R> recordStore, R record, String message )
             {
-                logInconsistency( "\n\t" + record + "\n\t" + referred + "\n\t" + message );
+                StringBuilder log = messageHeader();
+                logRecord( log, recordStore, record );
+                log.append( message );
+                msgLog.logMessage( log.toString() );
             }
 
             @Override
-            protected void report( AbstractBaseRecord record, String message )
+            protected <R1 extends AbstractBaseRecord, R2 extends AbstractBaseRecord> void report(
+                    RecordStore<R1> recordStore, R1 record, RecordStore<? extends R2> referredStore, R2 referred,
+                    String message )
             {
-                logInconsistency( "\n\t" + record + "\n\t" + message );
+                StringBuilder log = messageHeader();
+                logRecord( log, recordStore, record );
+                logRecord( log, referredStore, referred );
+                log.append( message );
+                msgLog.logMessage( log.toString() );
+            }
+
+            private <R extends AbstractBaseRecord> void logRecord( StringBuilder log, RecordStore<? extends R> store,
+                    R record )
+            {
+                DiffRecordStore<? extends R> diff = (DiffRecordStore<? extends R>) store;
+                if ( diff.isModified( record.getLongId() ) )
+                {
+                    log.append( "- " ).append( diff.forceGetRaw( record.getLongId() ) ).append( "\n\t+ " );
+                }
+                log.append( record ).append( "\n\t" );
             }
         } );
         try
@@ -171,13 +193,15 @@ class VerifyingLogDeserializer implements LogDeserializer
             }
         }
     }
-
-    private void logInconsistency( String inconsistencyMessage )
+    
+    private StringBuilder messageHeader() 
     {
-        String logId = "";
-        if ( commitEntry != null ) logId = " (txId=" + commitEntry.getTxId() + ")";
-        else if ( startEntry != null ) logId = " (log local id = " + startEntry.getIdentifier() + ")";
-        msgLog.logMessage( "Inconsistency from transaction" + logId + ": " + inconsistencyMessage );
+        StringBuilder log = new StringBuilder( "Inconsistency from transaction" );
+        if ( commitEntry != null )
+            log.append( " (txId=" ).append( commitEntry.getTxId() ).append( ")" );
+        else if ( startEntry != null )
+            log.append( " (log local id = " ).append( startEntry.getIdentifier() ).append( ")" );
+        return log.append( ":\n\t" );
     }
 
     private void applyAll() throws IOException
