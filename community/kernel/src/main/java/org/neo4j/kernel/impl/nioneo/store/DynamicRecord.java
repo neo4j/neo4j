@@ -104,20 +104,18 @@ public class DynamicRecord extends Abstract64BitRecord
     public String toString()
     {
         StringBuilder buf = new StringBuilder();
-        buf.append( "DynamicRecord[" ).append( getId() ).append( ",used=" ).append( inUse() );
-        if ( inUse() )
+        buf.append( "DynamicRecord[" ).append( getId() ).append( ",used=" ).append(
+                inUse() ).append( "," ).append( "light=" ).append( isLight ).append(
+                "(" ).append( length ).append( "),data=" );
+        if ( data != null )
         {
-            buf.append( "," );
-            if ( isLight )
-            {
-                buf.append( "light," );
-            }
-            if ( data != null )
-            {
-                buf.append( "byte[" + data.length + "]" );
-            }
+            buf.append( "byte[" + data.length + "]," );
         }
-        buf.append( "," ).append( nextBlock ).append( "]" );
+        else
+        {
+            buf.append( "null," );
+        }
+        buf.append( "next=" ).append( nextBlock ).append( "]" );
         return buf.toString();
     }
 }
