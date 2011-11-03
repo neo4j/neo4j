@@ -1084,7 +1084,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 @Override
                 public boolean accept( File file )
                 {
-                    return !file.equals( StringLogger.DEFAULT_NAME ) && !isBranchedDataDirectory( file );
+                    return !file.getName().equals( StringLogger.DEFAULT_NAME ) && !isBranchedDataDirectory( file );
                 }
             } );
         }
