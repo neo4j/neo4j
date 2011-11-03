@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha;
 
+import java.io.File;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -52,10 +53,11 @@ public class SlaveIdGenerator implements IdGenerator
             this.receiver = receiver;
         }
         
-        public IdGenerator open( String fileName, int grabSize, IdType idType, long highestIdInUse )
+        public IdGenerator open( String fileName, int grabSize, IdType idType, long highestIdInUse, boolean startup )
         {
+            if ( startup ) new File( fileName ).delete();
             IdGenerator localIdGenerator = localFactory.open( fileName, grabSize,
-                    idType, highestIdInUse );
+                    idType, highestIdInUse, startup );
             SlaveIdGenerator generator = new SlaveIdGenerator( idType, highestIdInUse, broker,
                     receiver, localIdGenerator );
             generators.put( idType, generator );
@@ -151,12 +153,12 @@ public class SlaveIdGenerator implements IdGenerator
         }
         catch ( ZooKeeperException e )
         {
-            receiver.newMaster( null, e );
+            receiver.newMaster( e );
             throw e;
         }
         catch ( ComException e )
         {
-            receiver.newMaster( null, e );
+            receiver.newMaster( e );
             throw e;
         }
     }

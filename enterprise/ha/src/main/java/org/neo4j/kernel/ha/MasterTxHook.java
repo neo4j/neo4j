@@ -19,14 +19,36 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.neo4j.com.Response;
-import org.neo4j.com.SlaveContext;
+import javax.transaction.Transaction;
 
-public interface ResponseReceiver
+import org.neo4j.kernel.CommonFactories;
+import org.neo4j.kernel.impl.transaction.TxHook;
+
+public class MasterTxHook implements TxHook
 {
-    SlaveContext getSlaveContext( int eventIdentifier );
+    private TxHook defaultHook = CommonFactories.defaultTxHook();
     
-    <T> T receive( Response<T> response );
-    
-    void newMaster( Exception cause );
+    @Override
+    public void initializeTransaction( int eventIdentifier )
+    {
+        defaultHook.initializeTransaction( eventIdentifier );
+    }
+
+    @Override
+    public boolean hasAnyLocks( Transaction tx )
+    {
+        return defaultHook.hasAnyLocks( tx );
+    }
+
+    @Override
+    public void finishTransaction( int eventIdentifier, boolean success )
+    {
+        defaultHook.finishTransaction( eventIdentifier, success );
+    }
+
+    @Override
+    public boolean freeIdsDuringRollback()
+    {
+        return false;
+    }
 }

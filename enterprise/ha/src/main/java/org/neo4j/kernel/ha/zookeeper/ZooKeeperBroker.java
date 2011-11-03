@@ -185,11 +185,11 @@ public class ZooKeeperBroker extends AbstractBroker
         return zooClient.getCachedMaster();
     }
 
-    public Pair<Master, Machine> getMasterReally()
+    public Pair<Master, Machine> getMasterReally( boolean allowChange )
     {
-        return zooClient.getMasterFromZooKeeper( true );
+        return zooClient.getMasterFromZooKeeper( true, allowChange );
     }
-
+    
     @Override
     public Machine getMasterExceptMyself()
     {

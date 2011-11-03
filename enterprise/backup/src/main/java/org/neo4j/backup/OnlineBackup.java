@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.neo4j.backup.check.ConsistencyCheck;
 import org.neo4j.com.MasterUtil;
 import org.neo4j.com.MasterUtil.TxHandler;
 import org.neo4j.com.Response;
@@ -34,9 +35,12 @@ import org.neo4j.com.SlaveContext;
 import org.neo4j.com.ToFileStoreWriter;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -65,6 +69,11 @@ public class OnlineBackup
 
     public OnlineBackup full( String targetDirectory )
     {
+        return full( targetDirectory, true );
+    }
+
+    public OnlineBackup full( String targetDirectory, boolean verification )
+    {
         if ( directoryContainsDb( targetDirectory ) )
         {
             throw new RuntimeException( targetDirectory + " already contains a database" );
@@ -75,7 +84,8 @@ public class OnlineBackup
         try
         {
             Response<Void> response = client.fullBackup( new ToFileStoreWriter( targetDirectory ) );
-            GraphDatabaseService targetDb = startTemporaryDb( targetDirectory );
+            GraphDatabaseService targetDb = startTemporaryDb( targetDirectory,
+                    VerificationLevel.NONE /* run full check instead */ );
             try
             {
                 unpackResponse( response, targetDb, MasterUtil.txHandlerForFullCopy() );
@@ -83,6 +93,18 @@ public class OnlineBackup
             finally
             {
                 targetDb.shutdown();
+            }
+            if ( verification )
+            {
+                StoreAccess newStore = new StoreAccess( targetDirectory );
+                try
+                {
+                    new ConsistencyCheck( newStore ).run();
+                }
+                finally
+                {
+                    newStore.close();
+                }
             }
         }
         finally
@@ -94,7 +116,7 @@ public class OnlineBackup
         return this;
     }
 
-    private boolean directoryContainsDb( String targetDirectory )
+    static boolean directoryContainsDb( String targetDirectory )
     {
         return new File( targetDirectory, NeoStore.DEFAULT_NAME ).exists();
     }
@@ -114,18 +136,27 @@ public class OnlineBackup
         return Collections.unmodifiableMap( lastCommittedTxs );
     }
 
-    private EmbeddedGraphDatabase startTemporaryDb( String targetDirectory )
+    static EmbeddedGraphDatabase startTemporaryDb( String targetDirectory, VerificationLevel verification )
     {
-        return new EmbeddedGraphDatabase( targetDirectory );
+        if ( verification != VerificationLevel.NONE )
+            return new EmbeddedGraphDatabase( targetDirectory, MapUtil.stringMap(
+                    Config.LOG_DESERIALIZER_IMPLEMENTATION, verification.deserializerName ) );
+        else
+            return new EmbeddedGraphDatabase( targetDirectory );
     }
 
     public OnlineBackup incremental( String targetDirectory )
+    {
+        return incremental( targetDirectory, true );
+    }
+    
+    public OnlineBackup incremental( String targetDirectory, boolean verification )
     {
         if ( !directoryContainsDb( targetDirectory ) )
         {
             throw new RuntimeException( targetDirectory + " doesn't contain a database" );
         }
-        GraphDatabaseService targetDb = startTemporaryDb( targetDirectory );
+        GraphDatabaseService targetDb = startTemporaryDb( targetDirectory, VerificationLevel.valueOf( verification ) );
 
         try
         {

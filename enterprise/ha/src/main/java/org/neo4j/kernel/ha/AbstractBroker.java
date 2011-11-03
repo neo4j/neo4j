@@ -74,7 +74,7 @@ public abstract class AbstractBroker implements Broker
     {
         // Do nothing
     }
-
+    
     public static BrokerFactory wrapSingleBroker( final Broker broker )
     {
         return new BrokerFactory()

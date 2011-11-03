@@ -81,7 +81,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
                 return false;
             }
 
-            public Pair<Master, Machine> getMasterReally()
+            public Pair<Master, Machine> getMasterReally( boolean allowChange )
             {
                 return getMaster();
             }

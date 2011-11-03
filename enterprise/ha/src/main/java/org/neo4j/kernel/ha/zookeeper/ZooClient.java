@@ -121,7 +121,7 @@ public class ZooClient extends AbstractZooKeeperManager
             else if ( path == null && event.getState() == Watcher.Event.KeeperState.SyncConnected )
             {
                 long newSessionId = zooKeeper.getSessionId();
-                Pair<Master, Machine> masterBeforeIWrite = getMasterFromZooKeeper( false );
+                Pair<Master, Machine> masterBeforeIWrite = getMasterFromZooKeeper( false, false );
                 msgLog.logMessage( "Get master before write:" + masterBeforeIWrite );
                 boolean masterBeforeIWriteDiffers = masterBeforeIWrite.other().getMachineId() != getCachedMaster().other().getMachineId();
                 if ( newSessionId != sessionId || masterBeforeIWriteDiffers )
@@ -131,7 +131,7 @@ public class ZooClient extends AbstractZooKeeperManager
                         sequenceNr = setup();
                         msgLog.logMessage( "Did setup, seq=" + sequenceNr + " new sessionId=" + newSessionId );
                         keeperState = KeeperState.SyncConnected;
-                        Pair<Master, Machine> masterAfterIWrote = getMasterFromZooKeeper( false );
+                        Pair<Master, Machine> masterAfterIWrote = getMasterFromZooKeeper( false, false );
                         msgLog.logMessage( "Get master after write:" + masterAfterIWrote );
                         int masterId = masterAfterIWrote.other().getMachineId();
                         msgLog.logMessage( "Setting '" + MASTER_NOTIFY_CHILD + "' to " + masterId );
@@ -139,7 +139,7 @@ public class ZooClient extends AbstractZooKeeperManager
                         msgLog.logMessage( "Did set '" + MASTER_NOTIFY_CHILD + "' to " + masterId );
                         if ( sessionId != -1 )
                         {
-                            receiver.newMaster( masterAfterIWrote, new Exception() );
+                            receiver.newMaster( new Exception() );
                         }
                         sessionId = newSessionId;
                     }
@@ -161,7 +161,7 @@ public class ZooClient extends AbstractZooKeeperManager
             }
             else if ( event.getType() == Watcher.Event.EventType.NodeDataChanged )
             {
-                Pair<Master, Machine> currentMaster = getMasterFromZooKeeper( true );
+                Pair<Master, Machine> currentMaster = getCachedMaster();
                 if ( path.contains( MASTER_NOTIFY_CHILD ) )
                 {
                     setDataChangeWatcher( MASTER_NOTIFY_CHILD, -1 );
@@ -171,7 +171,7 @@ public class ZooClient extends AbstractZooKeeperManager
                     // it really is master.
                     if ( currentMaster.other().getMachineId() == machineId )
                     {
-                        receiver.newMaster( currentMaster, new Exception() );
+                        receiver.newMaster( new Exception() );
                     }
                 }
                 else if ( path.contains( MASTER_REBOUND_CHILD ) )
@@ -183,7 +183,7 @@ public class ZooClient extends AbstractZooKeeperManager
                     // become slaves if they don't already are.
                     if ( currentMaster.other().getMachineId() != machineId )
                     {
-                        receiver.newMaster( currentMaster, new Exception() );
+                        receiver.newMaster( new Exception() );
                     }
                 }
                 else

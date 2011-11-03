@@ -58,4 +58,10 @@ public class MasterTxIdGenerator implements TxIdGenerator
     {
         return broker.getMyMachineId();
     }
+
+    @Override
+    public int getMyId()
+    {
+        return broker.getMyMachineId();
+    }
 }

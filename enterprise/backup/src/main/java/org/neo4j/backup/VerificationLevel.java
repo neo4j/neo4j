@@ -17,16 +17,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha;
+package org.neo4j.backup;
 
-import org.neo4j.com.Response;
-import org.neo4j.com.SlaveContext;
+import org.neo4j.backup.log.InconsistencyLoggingLogDeserializerProvider;
+import org.neo4j.backup.log.VerifyingLogDeserializerProvider;
 
-public interface ResponseReceiver
+enum VerificationLevel
 {
-    SlaveContext getSlaveContext( int eventIdentifier );
-    
-    <T> T receive( Response<T> response );
-    
-    void newMaster( Exception cause );
+    NONE( null ),
+    VERIFYING( VerifyingLogDeserializerProvider.NAME ),
+    LOGGING( InconsistencyLoggingLogDeserializerProvider.NAME );
+    final String deserializerName;
+
+    private VerificationLevel( String name )
+    {
+        this.deserializerName = name;
+    }
+
+    static VerificationLevel valueOf( boolean verification )
+    {
+        return verification ? VERIFYING : NONE;
+    }
 }

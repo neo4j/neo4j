@@ -30,7 +30,7 @@ public interface Broker
 {
     Pair<Master, Machine> getMaster();
 
-    Pair<Master, Machine> getMasterReally();
+    Pair<Master, Machine> getMasterReally( boolean allowChange );
 
     Machine getMasterExceptMyself();
 
@@ -48,7 +48,7 @@ public interface Broker
     void notifyMasterChange( Machine newMaster );
 
     void shutdown();
-
+    
     void setConnectionInformation( KernelData kernel );
 
     ConnectionInformation getConnectionInformation( int machineId );

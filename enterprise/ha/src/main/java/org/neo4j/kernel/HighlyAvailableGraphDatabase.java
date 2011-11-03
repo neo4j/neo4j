@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -69,12 +70,13 @@ import org.neo4j.kernel.ha.BrokerFactory;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterIdGeneratorFactory;
 import org.neo4j.kernel.ha.MasterServer;
+import org.neo4j.kernel.ha.MasterTxHook;
 import org.neo4j.kernel.ha.MasterTxIdGenerator.MasterTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.ResponseReceiver;
 import org.neo4j.kernel.ha.SlaveIdGenerator.SlaveIdGeneratorFactory;
 import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
 import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
-import org.neo4j.kernel.ha.SlaveTxFinishHook;
+import org.neo4j.kernel.ha.SlaveTxHook;
 import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.TimeUtil;
 import org.neo4j.kernel.ha.ZooKeeperLastCommittedTxIdSetter;
@@ -199,9 +201,9 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         } );
     }
 
-    private void getFreshDatabaseFromMaster( Pair<Master, Machine> master )
+    private void getFreshDatabaseFromMaster( )
     {
-        master = master != null ? master : broker.getMasterReally();
+        Pair<Master, Machine> master = broker.getMasterReally( true );
         // Assume it's shut down at this point
 
         internalShutdown( false );
@@ -221,7 +223,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 msgLog.logMessage( "Problems copying store from master", e );
                 sleepWithoutInterruption( 1000, "" );
                 exception = e;
-                master = broker.getMasterReally();
+                master = broker.getMasterReally( true );
             }
         }
         throw new RuntimeException( "Gave up trying to copy store from master", exception );
@@ -249,7 +251,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             while ( System.currentTimeMillis() < endTime )
             {
                 // Check if the cluster is up
-                Pair<Master, Machine> master = broker.getMasterReally();
+                Pair<Master, Machine> master = broker.getMasterReally( true );
                 if ( master != null && master.first() != null )
                 { // Join the existing cluster
                     try
@@ -262,7 +264,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                     catch ( Exception e )
                     {
                         exception = e;
-                        master = broker.getMasterReally();
+                        master = broker.getMasterReally( true );
                         msgLog.logMessage( "Problems copying store from master", e );
                     }
                 }
@@ -286,7 +288,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 throw new RuntimeException( "Tried to join the cluster, but was unable to", exception );
             }
         }
-        newMaster( null, storeId, new Exception( "Starting up for the first time" ) );
+        newMaster( storeId, new Exception( "Starting up for the first time" ) );
         localGraph();
     }
 
@@ -309,7 +311,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 new ToFileStoreWriter( storeDir ) );
         long highestLogVersion = highestLogVersion();
         if ( highestLogVersion > -1 ) NeoStore.setVersion( storeDir, highestLogVersion + 1 );
-        EmbeddedGraphDatabase copiedDb = new EmbeddedGraphDatabase( storeDir, stringMap( KEEP_LOGICAL_LOGS, "true" ) );
+        EmbeddedGraphDatabase copiedDb = new EmbeddedGraphDatabase( storeDir, stringMap( new HashMap<String, String>( config ), KEEP_LOGICAL_LOGS, "true" ) );
         try
         {
             MasterUtil.applyReceivedTransactions( response, copiedDb, MasterUtil.txHandlerForFullCopy() );
@@ -539,9 +541,9 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         return getClass().getSimpleName() + "[" + CONFIG_KEY_SERVER_ID + ":" + machineId + "]";
     }
 
-    protected synchronized void reevaluateMyself( Pair<Master, Machine> master, StoreId storeId )
+    protected synchronized void reevaluateMyself( StoreId storeId )
     {
-        if ( master == null ) master = broker.getMasterReally();
+        Pair<Master, Machine> master = broker.getMasterReally( true );
         boolean iAmCurrentlyMaster = masterServer != null;
         msgLog.logMessage( "ReevaluateMyself: machineId=" + machineId + " with master[" + master +
                 "] (I am master=" + iAmCurrentlyMaster + ", " + localGraph + ")" );
@@ -631,7 +633,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 new SlaveIdGeneratorFactory( broker, this ),
                 new SlaveRelationshipTypeCreator( broker, this ),
                 new SlaveTxIdGeneratorFactory( broker, this ),
-                new SlaveTxFinishHook( broker, this ),
+                new SlaveTxHook( broker, this ),
                 slaveUpdateMode.createUpdater( broker ),
                 CommonFactories.defaultFileSystemAbstraction() );
         instantiateAutoUpdatePullerIfConfigSaysSo();
@@ -647,7 +649,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 new MasterIdGeneratorFactory(),
                 CommonFactories.defaultRelationshipTypeCreator(),
                 new MasterTxIdGeneratorFactory( broker ),
-                CommonFactories.defaultTxHook(),
+                new MasterTxHook(),
                 new ZooKeeperLastCommittedTxIdSetter( broker ),
                 CommonFactories.defaultFileSystemAbstraction() );
         this.masterServer = (MasterServer) broker.instantiateMasterServer( this );
@@ -912,41 +914,41 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     }
 
     @Override
-    public void newMaster( Pair<Master, Machine> master, Exception e )
+    public void newMaster( Exception e )
     {
-        newMaster( master, null, e );
+        newMaster( null, e );
     }
 
-    private synchronized void newMaster( Pair<Master, Machine> master, StoreId storeId, Exception e )
+    private synchronized void newMaster( StoreId storeId, Exception e )
     {
         try
         {
-            doNewMaster( master, storeId, e );
+            doNewMaster( storeId, e );
         }
         catch ( BranchedDataException bde )
         {
             msgLog.logMessage( "Branched data occured, retrying" );
-            getFreshDatabaseFromMaster( master );
-            doNewMaster( master, storeId, bde );
+            getFreshDatabaseFromMaster();
+            doNewMaster( storeId, bde );
         }
     }
 
-    private void doNewMaster( Pair<Master, Machine> master, StoreId storeId, Exception e )
+    private void doNewMaster( StoreId storeId, Exception e )
     {
         try
         {
-            msgLog.logMessage( "newMaster(" + master + ") called", true );
-            reevaluateMyself( master, storeId );
+            msgLog.logMessage( "newMaster called", true );
+            reevaluateMyself( storeId );
         }
         catch ( ZooKeeperException ee )
         {
             msgLog.logMessage( "ZooKeeper exception in newMaster", ee );
-            broker.getMasterReally();
+            throw Exceptions.launderedException( ee );
         }
         catch ( ComException ee )
         {
             msgLog.logMessage( "Communication exception in newMaster", ee );
-            broker.getMasterReally();
+            throw Exceptions.launderedException( ee );
         }
         catch ( BranchedDataException ee )
         {
@@ -958,7 +960,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         {
             msgLog.logMessage( "Reevaluation ended in unknown exception " + t
                     + " so shutting down", t, true );
-            broker.getMasterReally();
             shutdown( t, false );
             throw Exceptions.launderedException( t );
         }
@@ -1084,7 +1085,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 @Override
                 public boolean accept( File file )
                 {
-                    return !file.equals( StringLogger.DEFAULT_NAME ) && !isBranchedDataDirectory( file );
+                    return !file.getName().equals( StringLogger.DEFAULT_NAME ) && !isBranchedDataDirectory( file );
                 }
             } );
         }

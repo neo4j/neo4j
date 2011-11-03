@@ -132,7 +132,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
         bootstrap.setPipelineFactory( this );
         String storeDir = ((AbstractGraphDatabase) graphDb).getStoreDir();
         msgLog = StringLogger.getLogger( storeDir );
-        msgLog.logMessage( "Client connected to " + hostNameOrIp + ":" + port, true );
+        msgLog.logMessage( getClass().getSimpleName() + " communication started and bound to " + hostNameOrIp + ":" + port, true );
     }
 
     /**
@@ -282,9 +282,9 @@ public abstract class Client<M> implements ChannelPipelineFactory
 
     public void shutdown()
     {
-        msgLog.logMessage( getClass().getSimpleName() + " shutdown", true );
         channelPool.close( true );
         executor.shutdownNow();
+        msgLog.logMessage( getClass().getSimpleName() + " shutdown", true );
     }
 
     protected static TransactionStream readTransactionStreams( final ChannelBuffer buffer )
