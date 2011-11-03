@@ -67,7 +67,7 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
     @Override
     protected void apply( Processor processor, RecordStore<?> store )
     {
-        processor.apply( store, (DiffRecordStore<?>) store );
+        processor.applyById( store, (DiffRecordStore<?>) store );
     }
 
     @Override
