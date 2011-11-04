@@ -15,7 +15,7 @@ Documentation
 
 Documentation can be found in the Neo4j Manual: 
 
-http://docs.neo4j.org/chunked/${neo-version}/python-embedded.html
+http://docs.neo4j.org/chunked/${neo4j.version}/python-embedded.html
   
 
 Versions

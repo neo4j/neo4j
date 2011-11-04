@@ -23,6 +23,7 @@
 
 
 from sys import exc_info
+import traceback
 
 try:
     from functools import update_wrapper
@@ -72,6 +73,13 @@ def rethrow_current_exception_as(ErrorClass):
     # they behave slightly differently,
     # we use this boilerplate,.
     t, e, trace = exc_info()
-    msg = e.message() if hasattr(e.message, '__call__') else e.message
-    raise ErrorClass(msg)
+    
+    if isinstance(e,tuple) and len(e) > 1 and isinstance(e[1],Exception):
+        e = e[1]
+    
+    if hasattr(e, "message"):
+        msg = e.message() if hasattr(e.message, '__call__') else e.message
+    else:
+        msg = str(e)
+    raise ErrorClass(msg), None, trace
         

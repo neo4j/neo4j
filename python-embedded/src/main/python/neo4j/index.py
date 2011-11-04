@@ -123,6 +123,10 @@ class IndexHits(extends(IndexHits)):
         if isinstance(item, slice):
             # Memory-hogging slicing impl
             return list(self).__getitem__(item)
+        elif isinstance(item, int) and item >= 0:
+            for i in range(item):
+                self.next()
+            return self.next()
 
 
 class Index(extends(Index)):

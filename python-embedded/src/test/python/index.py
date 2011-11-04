@@ -153,6 +153,18 @@ class IndexTest(unit_tests.GraphDatabaseTest):
         hits.close()
         # END SNIPPET: directLookup
             
+    def test_get_first_result(self):
+        with self.graphdb.transaction:
+        
+            idx = self.graphdb.node.indexes.create('test')
+            for x in range(50):
+                idx['akey']['avalue'] = self.graphdb.node()
+            
+        it = idx['akey']['avalue']
+        
+        self.assertTrue(it[0] is not None)
+        it.close()
+            
     def test_remove_node_from_index(self):
         with self.graphdb.transaction:
             n = self.graphdb.node()

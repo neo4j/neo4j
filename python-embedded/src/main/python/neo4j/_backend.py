@@ -20,7 +20,24 @@
 
 """Neo4j backend selection for Python."""
 
-import sys, neo4j
+import sys, neo4j, inspect
+
+NEO4J_JAVA_CLASSES = (
+    ('org.neo4j.kernel.impl.core',      ('NodeProxy', 'RelationshipProxy',)),
+    ('org.neo4j.kernel',                ('Uniqueness', 'Traversal', 'EmbeddedGraphDatabase',)),
+    ('org.neo4j.kernel.impl.traversal', ('TraversalDescriptionImpl', 'TraverserImpl', 'TraversalPath',)),
+    ('org.neo4j.graphdb',               ('Direction', 'DynamicRelationshipType', 'PropertyContainer',\
+                                         'Transaction', 'GraphDatabaseService', 'Node', 'Relationship',\
+                                         'Path', 'NotFoundException',)),
+    ('org.neo4j.graphdb.traversal',     ('Evaluation', 'Evaluator',)),
+    ('org.neo4j.graphdb.index',         ('Index', 'IndexHits',)),
+    ('org.neo4j.helpers.collection',    ('IterableWrapper',)),
+    ('java.util',                       ('HashMap',)),
+    #('com.tinkerpop.blueprints.pgm.impls.neo4j', ('Neo4jGraph', 'Neo4jEdge', 'Neo4jVertex')),
+    #('com.tinkerpop.gremlin', ('Gremlin')),
+)	
+
+module = sys.modules[__name__]
 
 def extends(CLASS):
     ## This lets us extend java classes "in place",
@@ -115,53 +132,54 @@ except: # this isn't jython (and doesn't have the java module)
       jpype.startJVM(get_jvm_path(), *get_jvm_args())
     except Exception, e:
       raise Exception("Unable to start JVM, even though I found the JVM path. If you are using windows, this may be due to missing system DLL files, please see the windows installation instructions in the neo4j documentation.",e)
+      
     
-    graphdb = jpype.JPackage('org.neo4j.graphdb')
-    GraphDatabaseService = graphdb.GraphDatabaseService
-    Direction = graphdb.Direction
-    PropertyContainer = graphdb.PropertyContainer
-    Transaction = graphdb.Transaction
-    Node = graphdb.Node
-    Relationship = graphdb.Relationship
-    Evaluation = graphdb.traversal.Evaluation
-    Evaluator = graphdb.traversal.Evaluator
-    NotFoundException = graphdb.NotFoundException
-    Index = graphdb.index.Index
-    IndexHits = graphdb.index.IndexHits
+    isStatic = jpype.JPackage("java.lang.reflect").Modifier.isStatic
+      
     
-    rel_type = graphdb.DynamicRelationshipType.withName
-    
-    kernel  = jpype.JPackage('org.neo4j.kernel')
-    EmbeddedGraphDatabase = kernel.EmbeddedGraphDatabase
-    EmbeddedGraphDbImpl = kernel.EmbeddedGraphDbImpl
-    Traversal = kernel.Traversal
-    TraversalDescriptionImpl = kernel.impl.traversal.TraversalDescriptionImpl
-    TraverserImpl = kernel.impl.traversal.TraverserImpl
-    Uniqueness = kernel.Uniqueness
-    NodeProxy = kernel.impl.core.NodeProxy
-    RelationshipProxy = kernel.impl.core.RelationshipProxy
-    TraversalPath = kernel.impl.traversal.TraversalPath
-    
-    helpers = jpype.JPackage('org.neo4j.helpers')
-    IterableWrapper = helpers.collection.IterableWrapper
-    PrefetchingIterator = helpers.collection.PrefetchingIterator
-    
-    tinkerpop = jpype.JPackage('com.tinkerpop')
-    
-    Neo4jGraph = tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph
-    Neo4jEdge = tinkerpop.blueprints.pgm.impls.neo4j.Neo4jEdge
-    Neo4jVertex = tinkerpop.blueprints.pgm.impls.neo4j.Neo4jVertex
-    Gremlin = tinkerpop.gremlin.Gremlin
+    def _add_jvm_connection_boilerplate_to_class(CLASS):
+        ''' In order for JPype to work in a threaded
+        environment, each time we're in a new thread, 
+        the method jpype.attachThreadToJVM() needs to 
+        be called.
         
-    HashMap = jpype.JPackage('java.util').HashMap
+        This wraps all methods in a java class with
+        boilerplate to check if the current thread
+        is connected, and to connect it if that is
+        not the case.
+        '''
+        def add_jvm_connection_boilerplate(fn):
+            def decorator(*args,**kwargs):
+                if not jpype.isThreadAttachedToJVM():
+                    jpype.attachThreadToJVM()
+                return fn(*args, **kwargs)
+            return decorator
+        
+        statics = []
+        for m in CLASS.__javaclass__.getMethods():
+            if isStatic(m.getModifiers()):
+                statics.append(m.getName())
+        
+        for key, val in inspect.getmembers(CLASS):
+            if not key.startswith("__") and hasattr(val,'__call__'):
+                wrapped = add_jvm_connection_boilerplate(val)
+                if key in statics:
+                    wrapped = staticmethod(wrapped)
+                setattr(CLASS, key, wrapped)
+    
+    # Import java classes
+    for pkg_name, class_names in NEO4J_JAVA_CLASSES:
+        package = jpype.JPackage(pkg_name)
+        for class_name in class_names:
+            cls = getattr(package,class_name)
+            _add_jvm_connection_boilerplate_to_class(cls)
+            globals()[class_name] = cls
     
     # If JPype cannot find a class, it returns
     # package instances. Make sure we were able to load
     # classes.
     if isinstance(GraphDatabaseService, jpype.JPackage):
         raise ImportError("Cannot find Neo4j java classes, used classpath: %s" % classpath)
-    
-    del graphdb, kernel, helpers # to get a consistent namespace
 
     def java_type(obj):
         java = jpype.java.lang
@@ -187,6 +205,7 @@ except: # this isn't jython (and doesn't have the java module)
                 return value.longValue()
             return value
         return from_java(value)
+        
     def to_java(value):
         if isinstance(value, dict):
             pyDict = value
@@ -215,25 +234,20 @@ except: # this isn't jython (and doesn't have the java module)
         return EmbeddedGraphDatabase(*args)
       
 else:
-    from org.neo4j.kernel.impl.core import NodeProxy, RelationshipProxy
-    from org.neo4j.kernel import Uniqueness, Traversal, EmbeddedGraphDatabase
-    from org.neo4j.kernel.impl.traversal import TraversalDescriptionImpl, TraverserImpl, TraversalPath
-    from org.neo4j.graphdb import Direction, DynamicRelationshipType,\
-        PropertyContainer, Transaction, GraphDatabaseService, Node, Relationship, Path, NotFoundException
-    from org.neo4j.graphdb.traversal import Evaluation, Evaluator
-    from org.neo4j.graphdb.index import Index, IndexHits
-    from org.neo4j.helpers.collection import IterableWrapper
-    from java.util import HashMap
+    # Import java classes
+    for pkg_name, class_names in NEO4J_JAVA_CLASSES:
+        imports = __import__(pkg_name, globals(), locals(), class_names,-1)
+        for class_name in class_names:
+            globals()[class_name] = getattr(imports,class_name)
     
-    from com.tinkerpop.blueprints.pgm.impls.neo4j import Neo4jGraph, Neo4jEdge, Neo4jVertex
-    from com.tinkerpop.gremlin import Gremlin
-    rel_type = DynamicRelationshipType.withName
-
     def from_java(value):
         return value
+    
     def to_java(value):
         return value
         
     def implements(interface):
         return interface
-    
+        
+
+rel_type = DynamicRelationshipType.withName
