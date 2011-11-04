@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import org.neo4j.kernel.impl.util.Bits;
-
 /**
  * Defines valid property types.
  */
@@ -350,11 +348,6 @@ public enum PropertyType
         }
     }
     
-    public static void main( String[] args )
-    {
-        System.out.println( Bits.bits( 8 ).put( (long)-78 ) );
-    }
-
     // TODO In wait of a better place
     public static int getPayloadSize()
     {

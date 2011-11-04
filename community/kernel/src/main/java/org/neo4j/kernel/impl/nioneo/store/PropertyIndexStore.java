@@ -388,12 +388,6 @@ public class PropertyIndexStore extends AbstractStore implements Store, RecordSt
     }
 
     @Override
-    public String toString()
-    {
-        return "PropertyIndexStore";
-    }
-
-    @Override
     public List<WindowPoolStats> getAllWindowPoolStats()
     {
         List<WindowPoolStats> list = new ArrayList<WindowPoolStats>();

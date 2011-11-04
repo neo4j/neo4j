@@ -604,7 +604,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         else if ( value instanceof Short ) setSingleBlockValue( block, keyId, PropertyType.SHORT, ((Short)value).longValue() );
         else if ( value.getClass().isArray() )
         {   // Try short array first, i.e. inlined in the property block
-            if ( ShortArray.encode( keyId, value, block, DEFAULT_PAYLOAD_SIZE ) ) return;
+            if ( ShortArray.encode( keyId, value, block, PropertyType.getPayloadSize() ) ) return;
 
             // Fall back to dynamic array store
             long arrayBlockId = nextArrayBlockId();
@@ -756,5 +756,11 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         propertyIndexStore.logIdUsage( logger );
         stringPropertyStore.logIdUsage( logger );
         arrayPropertyStore.logIdUsage( logger );
+    }
+    
+    @Override
+    public String toString()
+    {
+        return super.toString() + "[blocksPerRecord:" + PropertyType.getPayloadSizeLongs() + "]";
     }
 }

@@ -813,5 +813,9 @@ public abstract class CommonAbstractStore
         }
     }
 
-
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName();
+    }
 }

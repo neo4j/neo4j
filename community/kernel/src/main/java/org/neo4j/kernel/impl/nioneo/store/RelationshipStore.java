@@ -334,12 +334,6 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
 //        return record;
 //    }
 
-    @Override
-    public String toString()
-    {
-        return "RelStore";
-    }
-
     public RelationshipRecord getChainRecord( long relId )
     {
         PersistenceWindow window = null;

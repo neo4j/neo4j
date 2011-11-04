@@ -646,4 +646,10 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     {
         NeoStore.logIdUsage( logger, this );
     }
+    
+    @Override
+    public String toString()
+    {
+        return super.toString() + "[blockSize:" + (getRecordSize()-getRecordHeaderSize()) + "]"; 
+    }
 }

@@ -261,12 +261,6 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
     }
 
     @Override
-    public String toString()
-    {
-        return "NodeStore";
-    }
-
-    @Override
     public List<WindowPoolStats> getAllWindowPoolStats()
     {
         List<WindowPoolStats> list = new ArrayList<WindowPoolStats>();
