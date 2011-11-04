@@ -187,6 +187,7 @@ class VerifyingLogDeserializer implements LogDeserializer
             }
             else
             {
+                // FIXME: there is a memory hazard here, this StringBuilder could grow quite large...
                 final StringBuilder changes = messageHeader( "Changes" );
                 diffs.applyToAll( new RecordStore.Processor()
                 {
@@ -194,13 +195,19 @@ class VerifyingLogDeserializer implements LogDeserializer
                     protected <R extends AbstractBaseRecord> void processRecord( Class<R> type, RecordStore<R> store,
                             R record )
                     {
-                        DiffRecordStore<R> diff = (DiffRecordStore<R>)store;
-                        if (diff.isModified( record.getLongId() )) 
+                        DiffRecordStore<R> diff = (DiffRecordStore<R>) store;
+                        if ( diff.isModified( record.getLongId() ) )
                         {
                             logRecord( changes, store, record );
                         }
                     }
                 } );
+                for ( RecordStore<?> store : diffs.allStores() )
+                {
+                    changes.append( store ).append( ": highId(before) = " );
+                    changes.append( ( (DiffRecordStore<?>) store ).getRawHighId() );
+                    changes.append( ", highId(after) = " ).append( store.getHighId() ).append( "\n\t" );
+                }
                 msgLog.logMessage( changes.toString() );
             }
         }

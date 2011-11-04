@@ -47,6 +47,12 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
         this.actual = actual;
         this.diff = new HashMap<Long, R>();
     }
+    
+    @Override
+    public String toString()
+    {
+        return "Diff/" + actual;
+    }
 
     public void markDirty( long id )
     {
@@ -79,6 +85,11 @@ public class DiffRecordStore<R extends AbstractBaseRecord> implements RecordStor
     public long getHighId()
     {
         return Math.max( highId, actual.getHighId() );
+    }
+
+    public long getRawHighId()
+    {
+        return actual.getHighId();
     }
 
     @Override
