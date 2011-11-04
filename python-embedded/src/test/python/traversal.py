@@ -101,7 +101,6 @@ class TraversalTest(unit_tests.GraphDatabaseTest):
         res = list(t.nodes)
         self.assertEqual(len(res), 2)
         
-        
     def test_dynamic_evaluator(self):
         self.create_data()
         db = self.graphdb

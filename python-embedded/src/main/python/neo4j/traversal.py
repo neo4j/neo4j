@@ -66,6 +66,7 @@ class TraversalPath(extends(TraversalPath)):
 class TraversalDescriptionImpl(extends(TraversalDescriptionImpl)):
     
     def relationships(self, reltype, direction=Direction.ANY):
+    
         if type(reltype) in strings:
             reltype = rel_type(reltype)
         elif isinstance(reltype, DirectionalType):

@@ -34,8 +34,7 @@ def __new__(GraphDatabase, resourceUri, **settings):
     return EmbeddedGraphDatabase(resourceUri, config)
 
 
-_javaDirection = Direction
-class Direction(extends(Direction)):
+class _Direction(extends(Direction)):
     
     def __repr__(self):
         return self.name().lower()
@@ -45,11 +44,9 @@ class Direction(extends(Direction)):
 
 # Give the user references to the 
 # actual direction instances.
-BOTH = Direction.BOTH = _javaDirection.BOTH
-ANY = Direction.ANY = _javaDirection.BOTH
-INCOMING = Direction.INCOMING = _javaDirection.INCOMING
-OUTGOING = Direction.OUTGOING = _javaDirection.OUTGOING
-del _javaDirection
+BOTH = ANY = Direction.ANY = Direction.BOTH
+INCOMING = Direction.INCOMING
+OUTGOING = Direction.OUTGOING
 
 class DirectionalType(object):
     def __init__(self, reltype, direction):
