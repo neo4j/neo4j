@@ -201,5 +201,12 @@ the relevant Commercial Agreement.
     </repository>
   </repositories>
 
+  <distributionManagement>
+    <site>
+      <id>neo4j-site</id>
+      <url>scpexe://components.neo4j.org/home/neo/components/${project.artifactId}/${project.version}</url>
+    </site>
+  </distributionManagement>
+
 </project>
 
