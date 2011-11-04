@@ -36,7 +36,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -311,7 +310,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 new ToFileStoreWriter( storeDir ) );
         long highestLogVersion = highestLogVersion();
         if ( highestLogVersion > -1 ) NeoStore.setVersion( storeDir, highestLogVersion + 1 );
-        EmbeddedGraphDatabase copiedDb = new EmbeddedGraphDatabase( storeDir, stringMap( new HashMap<String, String>( config ), KEEP_LOGICAL_LOGS, "true" ) );
+        EmbeddedGraphDatabase copiedDb = new EmbeddedGraphDatabase( storeDir, stringMap( KEEP_LOGICAL_LOGS, "true" ) );
         try
         {
             MasterUtil.applyReceivedTransactions( response, copiedDb, MasterUtil.txHandlerForFullCopy() );

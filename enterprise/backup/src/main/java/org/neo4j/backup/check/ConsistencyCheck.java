@@ -263,7 +263,7 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
             PropertyRecord prev = props.forceGetRecord( prevId );
             if ( !prev.inUse() )
                 fail |= inconsistent( props, property, prev, "invalid prev reference, prev record not in use" );
-            if ( prev.getPrevProp() != property.getId() )
+            if ( prev.getNextProp() != property.getId() )
                 fail |= inconsistent( props, property, prev, "invalid prev reference, prev record does not reference back" );
         }
         else // property is first in chain

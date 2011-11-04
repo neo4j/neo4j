@@ -63,6 +63,16 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
         return new DiffRecordStore<R>( store );
     }
 
+    /**
+     * Overridden to increase visibility to public, it's used from
+     * {@link org.neo4j.backup.log.InconsistencyLoggingLogDeserializerProvider}.
+     */
+    @Override
+    public RecordStore<?>[] allStores()
+    {
+        return super.allStores();
+    }
+
     @Override
     protected void apply( RecordStore.Processor processor, RecordStore<?> store )
     {
