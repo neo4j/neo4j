@@ -130,12 +130,14 @@ public class Config
     /** Relative path for where the Neo4j storage information file is located */
     @Documented
     public static final String NEO_STORE = "neo_store";
+
     /**
      * The type of cache to use for nodes and relationships, one of [weak, soft,
      * none]
      */
     @Documented
     public static final String CACHE_TYPE = "cache_type";
+
     /**
      * The name of the Transaction Manager service to use as defined in the TM
      * service provider constructor, defaults to native.
@@ -144,11 +146,20 @@ public class Config
     public static final String TXMANAGER_IMPLEMENTATION = "tx_manager_impl";
 
     /**
-     * The name of the log deserializer implementation to use for externally
-     * supplied transactions. Defaults to native.
+     * Determines whether any TransactionInterceptors loaded will intercept
+     * prepared transactions before they reach the logical log. Defaults to
+     * false.
      */
     @Documented
-    public static final String LOG_DESERIALIZER_IMPLEMENTATION = "log_deserializer_impl";
+    public static final String INTERCEPT_COMMITTING_TRANSACTIONS = "intercept_committing_transactions";
+
+    /**
+     * Determines whether any TransactionInterceptors loaded will intercept
+     * externally received transactions (e.g. in HA) before they reach the
+     * logical log and are applied to the store. Defaults to false.
+     */
+    @Documented
+    public static final String INTERCEPT_DESERIALIZED_TRANSACTIONS = "intercept_deserialized_transactions";
 
     /**
      * Boolean (one of true,false) defining whether to allow a store upgrade

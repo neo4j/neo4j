@@ -20,7 +20,10 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
+
+import org.neo4j.helpers.Pair;
 
 /**
  * This is a wrapper class containing the logical log, command factory,
@@ -55,7 +58,7 @@ public class XaContainer
      */
     public static XaContainer create( XaDataSource dataSource,
             String logicalLog, XaCommandFactory cf, XaTransactionFactory tf,
-            LogDeserializerProvider deserializerProvider,
+            List<Pair<TransactionInterceptorProvider, Object>> providers,
             Map<Object, Object> config )
     {
         if ( logicalLog == null || cf == null || tf == null )
@@ -64,13 +67,13 @@ public class XaContainer
                 + "LogicalLog[" + logicalLog + "] CommandFactory[" + cf
                 + "TransactionFactory[" + tf + "]" );
         }
-        return new XaContainer( dataSource, logicalLog, cf, tf,
-                deserializerProvider, config );
+        return new XaContainer( dataSource, logicalLog, cf, tf, providers,
+                config );
     }
 
     private XaContainer( XaDataSource dataSource, String logicalLog,
             XaCommandFactory cf, XaTransactionFactory tf,
-            LogDeserializerProvider deserializerProvider,
+            List<Pair<TransactionInterceptorProvider, Object>> providers,
             Map<Object, Object> config )
     {
         this.cf = cf;
@@ -83,8 +86,10 @@ public class XaContainer
         txIdFactory = txIdFactory != null ? txIdFactory : TxIdGenerator.DEFAULT;
 
         rm = new XaResourceManager( dataSource, tf, txIdFactory, logicalLog );
-        log = new XaLogicalLog( logicalLog, rm, cf, tf, deserializerProvider,
-                config );
+        log = providers == null || providers.isEmpty() ? new XaLogicalLog(
+                logicalLog, rm, cf, tf, config )
+                : new InterceptingXaLogicalLog( logicalLog, rm, cf,
+                tf, config, providers );
         rm.setLogicalLog( log );
         tf.setLogicalLog( log );
     }

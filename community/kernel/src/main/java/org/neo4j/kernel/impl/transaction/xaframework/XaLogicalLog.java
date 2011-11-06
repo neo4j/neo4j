@@ -39,6 +39,7 @@ import javax.transaction.xa.Xid;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.cache.LruCache;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.BufferedFileChannel;
@@ -97,7 +98,6 @@ public class XaLogicalLog
 
     private final String storeDir;
     private final LogBufferFactory logBufferFactory;
-    private final LogDeserializerProvider logApplierFactory;
     private boolean doingRecovery;
     private long lastRecoveredTx = -1;
     private long recoveredTxCount;
@@ -110,22 +110,13 @@ public class XaLogicalLog
             new LruCache<Long, Long>( "Log header cache", 1000, null );
 
     XaLogicalLog( String fileName, XaResourceManager xaRm, XaCommandFactory cf,
-            XaTransactionFactory xaTf, LogDeserializerProvider logDeserializer,
-            Map<Object, Object> config )
+            XaTransactionFactory xaTf, Map<Object, Object> config )
     {
         this.fileName = fileName;
         this.xaRm = xaRm;
         this.cf = cf;
         this.xaTf = xaTf;
         this.logBufferFactory = (LogBufferFactory) config.get( LogBufferFactory.class );
-        if ( logDeserializer != null )
-        {
-            logApplierFactory = logDeserializer;
-        }
-        else
-        {
-            logApplierFactory = new DefaultLogDeserializerProvider();
-        }
 
         log = Logger.getLogger( this.getClass().getName() + File.separator + fileName );
         sharedBuffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
@@ -1318,71 +1309,70 @@ public class XaLogicalLog
         return file.exists() ? FileUtils.deleteFile( file ) : false;
     }
 
-    private class DefaultLogDeserializerProvider extends
-            LogDeserializerProvider
+    protected LogDeserializer getLogDeserializer(ReadableByteChannel byteChannel)
     {
-        public DefaultLogDeserializerProvider()
-        {
-            super( "native" );
-        }
-
-        @Override
-        public LogDeserializer getLogDeserializer(
-                ReadableByteChannel byteChannel,
-                LogBuffer buffer, LogApplier applier, XaCommandFactory cf,
-                XaDataSource ds )
-        {
-            return new LogDeserializerImpl( byteChannel, applier );
-        }
+        return new LogDeserializer( byteChannel );
     }
 
-    private class LogDeserializerImpl implements LogDeserializer
+    protected class LogDeserializer
     {
         private final ReadableByteChannel byteChannel;
-        private final LogApplier applier;
+        LogEntry.Start startEntry;
+        LogEntry.Commit commitEntry;
 
-        private LogEntry.Start startEntry;
-        private LogEntry.Commit commitEntry;
+        private final List<LogEntry> logEntries;
 
-        protected LogDeserializerImpl( ReadableByteChannel byteChannel,
-                LogApplier applier )
+        protected LogDeserializer( ReadableByteChannel byteChannel )
         {
             this.byteChannel = byteChannel;
-            this.applier = applier;
+            this.logEntries = new LinkedList<LogEntry>();
         }
 
-        @Override
         public boolean readAndWriteAndApplyEntry( int newXidIdentifier )
                 throws IOException
         {
-            LogEntry entry = LogIoUtils.readEntry( sharedBuffer, byteChannel, cf );
-            if ( entry != null )
+            LogEntry entry = LogIoUtils.readEntry( sharedBuffer, byteChannel,
+                    cf );
+            if ( entry == null )
             {
-                entry.setIdentifier( newXidIdentifier );
-                if ( entry instanceof LogEntry.Commit )
-                {
-                    commitEntry = (LogEntry.Commit) entry;
-//                    msgLog.logMessage( "Applying external tx: " + ((LogEntry.Commit) entry).getTxId(), true );
-                }
-                else if ( entry instanceof LogEntry.Start )
-                {
-                    startEntry = (LogEntry.Start) entry;
-                }
-                LogIoUtils.writeLogEntry( entry, writeBuffer );
-                applier.apply( entry );
-                return true;
+                intercept( logEntries );
+                apply();
+                return false;
             }
-            return false;
+            entry.setIdentifier( newXidIdentifier );
+            logEntries.add( entry );
+            if ( entry instanceof LogEntry.Commit )
+            {
+                assert startEntry != null;
+                commitEntry = (LogEntry.Commit) entry;
+            }
+            else if ( entry instanceof LogEntry.Start )
+            {
+                startEntry = (LogEntry.Start) entry;
+            }
+            return true;
         }
 
-        @Override
-        public LogEntry.Start getStartEntry()
+        protected void intercept( List<LogEntry> logEntries )
+        {
+            // default do nothing
+        }
+
+        private void apply() throws IOException
+        {
+            for ( LogEntry entry : logEntries )
+            {
+                LogIoUtils.writeLogEntry( entry, writeBuffer );
+                applyEntry( entry );
+            }
+        }
+
+        protected Start getStartEntry()
         {
             return startEntry;
         }
 
-        @Override
-        public LogEntry.Commit getCommitEntry()
+        protected Commit getCommitEntry()
         {
             return commitEntry;
         }
@@ -1416,15 +1406,7 @@ public class XaLogicalLog
 
         long logEntriesFound = 0;
         scanIsComplete = false;
-        LogDeserializer logApplier = logApplierFactory.getLogDeserializer(
-                byteChannel, writeBuffer, new LogApplier()
-                {
-                    @Override
-                    public void apply( LogEntry entry ) throws IOException
-                    {
-                        applyEntry( entry );
-                    }
-                }, cf, xaRm.getDataSource() );
+        LogDeserializer logApplier = getLogDeserializer( byteChannel );
         int xidIdent = getNextIdentifier();
         long startEntryPosition = writeBuffer.getFileChannelPosition();
         while ( logApplier.readAndWriteAndApplyEntry( xidIdent ) )
@@ -1478,15 +1460,7 @@ public class XaLogicalLog
 //        System.out.println( "applyFullTx#start @ pos: " + writeBuffer.getFileChannelPosition() );
         long logEntriesFound = 0;
         scanIsComplete = false;
-        LogDeserializer logApplier = logApplierFactory.getLogDeserializer(
-                byteChannel, writeBuffer, new LogApplier()
-                {
-                    @Override
-                    public void apply( LogEntry entry ) throws IOException
-                    {
-                        applyEntry( entry );
-                    }
-                }, cf, xaRm.getDataSource() );
+        LogDeserializer logApplier = getLogDeserializer( byteChannel );
         int xidIdent = getNextIdentifier();
         long startEntryPosition = writeBuffer.getFileChannelPosition();
         boolean successfullyApplied = false;

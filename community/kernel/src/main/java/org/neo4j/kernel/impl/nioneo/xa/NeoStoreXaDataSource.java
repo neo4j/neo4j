@@ -36,6 +36,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.ClosableIterable;
@@ -51,7 +52,8 @@ import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
 import org.neo4j.kernel.impl.persistence.IdGenerationFailedException;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBackedXaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.LogDeserializerProvider;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptor;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
@@ -88,6 +90,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     private final LockReleaser lockReleaser;
     private final String storeDir;
     private final boolean readOnly;
+
+    private final List<Pair<TransactionInterceptorProvider, Object>> providers;
 
     private boolean logApplied = false;
 
@@ -136,29 +140,15 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
             NeoStore.createStore( store, config );
         }
 
-        String deserializerProviderName = (String) config.get( Config.LOG_DESERIALIZER_IMPLEMENTATION );
-        LogDeserializerProvider deserializerProvider;
-        if ( deserializerProviderName == null
-             || deserializerProviderName.equals( "native" ) )
+        providers = new ArrayList<Pair<TransactionInterceptorProvider, Object>>(
+                2 );
+        for ( TransactionInterceptorProvider provider : Service.load( TransactionInterceptorProvider.class ) )
         {
-            deserializerProvider = null;
-        }
-        else
-        {
-            deserializerProvider = Service.load( LogDeserializerProvider.class,
-                    deserializerProviderName );
-            if ( deserializerProvider == null )
+            Object conf = config.get( TransactionInterceptorProvider.class.getSimpleName()
+                                      + "." + provider.name() );
+            if ( conf != null )
             {
-                throw new IllegalStateException(
-                        "Unknown log deserializer provide name "
-                                + deserializerProviderName );
-            }
-            else
-            {
-                msgLog.logMessage( "Using "
-                                   + deserializerProvider.getClass()
-                                   + " as the log deserializer implementation, trigger by config option "
-                                   + deserializerProviderName );
+                providers.add( Pair.of( provider, conf ) );
             }
         }
 
@@ -166,8 +156,10 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         config.put( NeoStore.class, neoStore );
         xaContainer = XaContainer.create( this,
                 (String) config.get( "logical_log" ), new CommandFactory(
-                        neoStore ), new TransactionFactory(),
-                deserializerProvider, config );
+                        neoStore ),
+                providers.isEmpty() ? new TransactionFactory()
+                        : new InterceptingTransactionFactory(), providers,
+                config );
         try
         {
             if ( !readOnly )
@@ -337,6 +329,19 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                 command.setRecovered();
             }
             return command;
+        }
+    }
+
+    private class InterceptingTransactionFactory extends TransactionFactory
+    {
+        @Override
+        public XaTransaction create( int identifier )
+        {
+
+            TransactionInterceptor first = TransactionInterceptorProvider.resolveChain(
+                    providers, NeoStoreXaDataSource.this );
+            return new InterceptingWriteTransaction( identifier,
+                    getLogicalLog(), neoStore, lockReleaser, lockManager, first );
         }
     }
 

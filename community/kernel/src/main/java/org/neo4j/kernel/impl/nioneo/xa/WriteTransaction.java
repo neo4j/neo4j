@@ -109,7 +109,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     private XaConnection xaConnection;
 
     WriteTransaction( int identifier, XaLogicalLog log, NeoStore neoStore,
-        LockReleaser lockReleaser, LockManager lockManager )
+            LockReleaser lockReleaser, LockManager lockManager )
     {
         super( identifier, log );
         this.neoStore = neoStore;
@@ -148,6 +148,10 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     @Override
     protected void doPrepare() throws XAException
     {
+        int noOfCommands = relTypeRecords.size() + nodeRecords.size()
+                           + relRecords.size() + propIndexRecords.size()
+                           + propertyRecords.size();
+        List<Command> commands = new ArrayList<Command>( noOfCommands );
         if ( committed )
         {
             throw new XAException( "Cannot prepare committed transaction["
@@ -166,7 +170,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 new Command.RelationshipTypeCommand(
                     neoStore.getRelationshipTypeStore(), record );
             relTypeCommands.add( command );
-            addCommand( command );
+            commands.add( command );
+            // addCommand( command );
         }
         for ( NodeRecord record : nodeRecords.values() )
         {
@@ -183,7 +188,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             {
                 removeNodeFromCache( record.getId() );
             }
-            addCommand( command );
+            commands.add( command );
+            // addCommand( command );
         }
         for ( RelationshipRecord record : relRecords.values() )
         {
@@ -195,7 +201,8 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             {
                 removeRelationshipFromCache( record.getId() );
             }
-            addCommand( command );
+            commands.add( command );
+            // addCommand( command );
         }
         for ( PropertyIndexRecord record : propIndexRecords.values() )
         {
@@ -203,15 +210,31 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 new Command.PropertyIndexCommand(
                     neoStore.getPropertyStore().getIndexStore(), record );
             propIndexCommands.add( command );
-            addCommand( command );
+            commands.add( command );
+            // addCommand( command );
         }
         for ( PropertyRecord record : propertyRecords.values() )
         {
             Command.PropertyCommand command = new Command.PropertyCommand(
                     neoStore.getPropertyStore(), record );
             propCommands.add( command );
-            addCommand( command );
+            commands.add( command );
+            // addCommand( command );
         }
+        assert commands.size() == noOfCommands : "Expected " + noOfCommands
+                                                 + " final commands, got "
+                                                 + commands.size() + " instead";
+        intercept( commands );
+
+        for ( Command command : commands )
+        {
+            addCommand(command);
+        }
+    }
+
+    protected void intercept( List<Command> commands )
+    {
+        // default no op
     }
 
     @Override

@@ -19,14 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import java.io.IOException;
+import org.neo4j.kernel.impl.nioneo.xa.CommandRecordVisitor;
 
-public interface LogDeserializer
+public interface TransactionInterceptor extends CommandRecordVisitor
 {
-    boolean readAndWriteAndApplyEntry( int newXidIdentifier )
-            throws IOException;
-
-    LogEntry.Start getStartEntry();
-
-    LogEntry.Commit getCommitEntry();
+    public void complete();
 }
