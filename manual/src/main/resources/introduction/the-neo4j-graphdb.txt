@@ -188,12 +188,12 @@ A path of length one:
 
 NOTE: This section is work in progress, stay tuned for the real content!
 
-The main components of a traversal are as follows:
+The http://api.neo4j.org/{neo4j-version}/org/neo4j/graphdb/traversal/TraversalDescription[Neo4j Traversal API] is a callback based, lazily executed way of specifying desired movements through a graph in Java. The main components of a traversal are as follows:
 
 * _Expanders_ -- define what to traverse, typically in terms of relationships direction and type.
 * _Order_ -- for example depth-first or breadth-first.
 * _Uniqueness_ -- visit nodes (relationships, paths) only once.
-* _Evaluator_ -- decide what to return and whether to stop or continue traversal beoynd the current position. 
+* _Evaluator_ -- decide what to return and whether to stop or continue traversal beyond the current position. 
 * A _starting node_ where the traversal will begin.
 
 ["dot", "graphdb-traversal-description.svg", "meta", scaledwidth="100%"]
@@ -211,6 +211,7 @@ Evaluator -> "Traversal Description" [label="return and prune policy"]
 "Unique Nodes" [TEXTNODE]
 "Unique Relationships" [TEXTNODE]
 "Unique Paths" [TEXTNODE]
+"None" [TEXTNODE]
 "Include/Exclude" [TEXTNODE]
 "Prune/Continue" [TEXTNODE]
 
@@ -223,6 +224,7 @@ Expander -> "Relationship Type"
 "Unique Nodes" -> Uniqueness [dir="back"]
 "Unique Relationships" -> Uniqueness [dir="back"]
 "Unique Paths" -> Uniqueness [dir="back"]
+"None" -> Uniqueness [dir="back"]
 
 "Include/Exclude" -> Evaluator [dir="back"]
 Evaluator -> "Prune/Continue"
@@ -237,6 +239,8 @@ Traverser -> Relationships [label="result as"]
 
 { rank="same"; Traverser; "A Node" }
 ----
+
+For some examples of traversals in Neo4j, see <<tutorials-java-embedded-traversal>>. Other options to traverse or query graphs in Neo4j are <<cypher-query-lang>> and <<gremlin-plugin>>.
 
 
 
