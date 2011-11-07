@@ -58,11 +58,19 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
     public void setStartEntry( LogEntry.Start startEntry )
     {
         this.startEntry = startEntry;
+        if ( next != null )
+        {
+            next.setStartEntry( startEntry );
+        }
     }
 
     public void setCommitEntry( LogEntry.Commit commitEntry )
     {
         this.commitEntry = commitEntry;
+        if (next != null)
+        {
+            next.setCommitEntry( commitEntry );
+        }
     }
 
     public void setNext( TransactionInterceptor next )
