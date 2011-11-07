@@ -144,7 +144,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                 2 );
         for ( TransactionInterceptorProvider provider : Service.load( TransactionInterceptorProvider.class ) )
         {
-            Object conf = config.get( TransactionInterceptorProvider.class.getSimpleName()
+            Object conf = config.get( provider.getClass().getSimpleName()
                                       + "." + provider.name() );
             if ( conf != null )
             {
@@ -152,13 +152,21 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
             }
         }
 
+        TransactionFactory tf = null;
+        if ( "true".equalsIgnoreCase( (String) config.get( Config.INTERCEPT_COMMITTING_TRANSACTIONS ) )
+             && !providers.isEmpty() )
+        {
+            tf = new InterceptingTransactionFactory();
+        }
+        else
+        {
+            tf = new TransactionFactory();
+        }
         neoStore = new NeoStore( config );
         config.put( NeoStore.class, neoStore );
         xaContainer = XaContainer.create( this,
                 (String) config.get( "logical_log" ), new CommandFactory(
-                        neoStore ),
-                providers.isEmpty() ? new TransactionFactory()
-                        : new InterceptingTransactionFactory(), providers,
+                        neoStore ), tf, providers.isEmpty() ? null : providers,
                 config );
         try
         {

@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.Config;
 
 /**
  * This is a wrapper class containing the logical log, command factory,
@@ -86,10 +87,17 @@ public class XaContainer
         txIdFactory = txIdFactory != null ? txIdFactory : TxIdGenerator.DEFAULT;
 
         rm = new XaResourceManager( dataSource, tf, txIdFactory, logicalLog );
-        log = providers == null || providers.isEmpty() ? new XaLogicalLog(
-                logicalLog, rm, cf, tf, config )
-                : new InterceptingXaLogicalLog( logicalLog, rm, cf,
-                tf, config, providers );
+
+        if ( "true".equalsIgnoreCase( (String) config.get( Config.INTERCEPT_DESERIALIZED_TRANSACTIONS ) )
+             && providers != null )
+        {
+            log = new InterceptingXaLogicalLog( logicalLog, rm, cf, tf, config,
+                    providers );
+        }
+        else
+        {
+            log = new XaLogicalLog( logicalLog, rm, cf, tf, config );
+        }
         rm.setLogicalLog( log );
         tf.setLogicalLog( log );
     }
