@@ -308,7 +308,7 @@ public class TestBatchInsert
                 assertTrue( inserter.relationshipHasProperty( relationship, key ) );
             }
         }
-
+        inserter.shutdown();
     }
 
     @Test
