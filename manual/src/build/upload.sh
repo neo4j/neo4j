@@ -46,12 +46,12 @@ scp $DIR/target/pdf/neo4j-manual.pdf docs-server:$ROOTPATHDOCS/pdf/neo4j-manual-
 #ssh docs-server "cd $ROOTPATHDOCS/chunked/ && (rm $SYMLINKVERSION || true); ln -s $VERSION $SYMLINKVERSION"
 #ssh docs-server "cd $ROOTPATHDOCS/pdf/ && (rm neo4j-manual-$SYMLINKVERSION.pdf || true); ln -s neo4j-manual-$VERSION.pdf neo4j-manual-$SYMLINKVERSION.pdf"
 
-if [[ $SYMLINKVERSION == stable ]]
-then
+#if [[ $SYMLINKVERSION == stable ]]
+#then
   #ssh docs-server "cd $ROOTPATHDOCS/text/ && (rm milestone || true); ln -s $VERSION milestone"
   #ssh docs-server "cd $ROOTPATHDOCS/chunked/ && (rm milestone || true); ln -s $VERSION milestone"
   #ssh docs-server "cd $ROOTPATHDOCS/pdf/ && (rm neo4j-manual-milestone.pdf || true); ln -s neo4j-manual-$VERSION.pdf neo4j-manual-milestone.pdf"
-fi
+#fi
 
 
 echo Apparently, successfully published to docs-server.
