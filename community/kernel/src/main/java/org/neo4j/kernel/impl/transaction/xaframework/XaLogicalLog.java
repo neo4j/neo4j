@@ -1335,9 +1335,18 @@ public class XaLogicalLog
                     cf );
             if ( entry == null )
             {
-                intercept( logEntries );
-                apply();
-                return false;
+                try
+                {
+                    intercept( logEntries );
+                    apply();
+                    return false;
+                }
+                catch ( Error e )
+                {
+                    startEntry = null;
+                    commitEntry = null;
+                    throw e;
+                }
             }
             entry.setIdentifier( newXidIdentifier );
             logEntries.add( entry );
