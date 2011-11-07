@@ -188,10 +188,4 @@ public class RelationshipTypeHolder
         }
         return relTypeList;
     }
-
-    void clear()
-    {
-        relTypes = new ArrayMap<String,Integer>();
-        relTranslation = new ConcurrentHashMap<Integer, RelationshipTypeImpl>();
-    }
 }

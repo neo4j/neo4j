@@ -250,7 +250,6 @@ public class NodeManager
             cacheManager.unregisterCache( nodeCache );
             cacheManager.unregisterCache( relCache );
         }
-        relTypeHolder.clear();
     }
 
     public Node createNode()
