@@ -19,6 +19,16 @@
  */
 package org.neo4j.server.plugin.cypher;
 
+import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.matchers.JUnitMatchers.containsString;
+
+import java.io.UnsupportedEncodingException;
+
+import javax.ws.rs.core.Response.Status;
+
 import org.junit.Test;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -30,14 +40,6 @@ import org.neo4j.test.GraphDescription.NODE;
 import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphDescription.REL;
 import org.neo4j.test.TestData.Title;
-import org.neo4j.visualization.asciidoc.AsciidocHelper;
-
-import javax.ws.rs.core.Response.Status;
-import java.io.UnsupportedEncodingException;
-
-import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.*;
-import static org.junit.matchers.JUnitMatchers.containsString;
 
 public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase {
     private static final String ENDPOINT = "http://localhost:7474/db/data/ext/CypherPlugin/graphdb/execute_query";
@@ -138,40 +140,18 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase {
     }
 
 
-
-    private String doRestCall( String script, Status status, Pair<String, String>... params ) {
-
-        String parameterString = createParameterString( params );
-
-
-        String queryString = "{\"query\": \"" + createScript( script ) + "\"," + parameterString+"},"  ;
-
-        gen.get().expectedStatus( status.getStatusCode() ).payload(
-                queryString ).description(
-                AsciidocHelper.createCypherSnippet( script ) );
-        return gen.get().post( ENDPOINT ).entity();
+    private String doRestCall( String script, Status status,
+            Pair<String, String> ...params )
+    {
+        // TODO Auto-generated method stub
+        return super.doRestCall( ENDPOINT, script, status, params );
     }
 
-    private String createParameterString( Pair<String, String>[] params ) {
-        String paramString = "\"params\": {";
-        for( Pair<String, String> param : params ) {
-            String delimiter = paramString.endsWith( "{" ) ? "" : ",";
 
-            paramString += delimiter + "\"" + param.first() + "\":\"" + param.other() + "\"";
-        }
-        paramString += "}";
 
-        return paramString;
-    }
+    
 
-    private String createScript( String template ) {
-        for( String key : data.get().keySet() ) {
-            template = template.replace( "%" + key + "%", idFor( key ).toString() );
-        }
-        return template;
-    }
+   
 
-    private Long idFor( String name ) {
-        return data.get().get( name ).getId();
-    }
+    
 }
