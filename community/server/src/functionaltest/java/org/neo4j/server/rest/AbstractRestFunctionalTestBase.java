@@ -25,6 +25,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 
+import javax.ws.rs.core.Response.Status;
+
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -32,6 +34,7 @@ import org.junit.Rule;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.helpers.Pair;
 import org.neo4j.server.WrappingNeoServerBootstrapper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
@@ -64,6 +67,41 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
 
     }
 
+    protected String doRestCall( String endpoint, String script, Status status, Pair<String, String>... params ) {
+
+        String parameterString = createParameterString( params );
+
+
+        String queryString = "{\"query\": \"" + createScript( script ) + "\"," + parameterString+"},"  ;
+
+        gen.get().expectedStatus( status.getStatusCode() ).payload(
+                queryString ).description(
+                AsciidocHelper.createCypherSnippet( script ) );
+        return gen.get().post( endpoint ).entity();
+    }
+    
+    private Long idFor( String name ) {
+        return data.get().get( name ).getId();
+    }
+    
+    private String createParameterString( Pair<String, String>[] params ) {
+        String paramString = "\"params\": {";
+        for( Pair<String, String> param : params ) {
+            String delimiter = paramString.endsWith( "{" ) ? "" : ",";
+
+            paramString += delimiter + "\"" + param.first() + "\":\"" + param.other() + "\"";
+        }
+        paramString += "}";
+
+        return paramString;
+    }
+
+    protected String createScript( String template ) {
+        for( String key : data.get().keySet() ) {
+            template = template.replace( "%" + key + "%", idFor( key ).toString() );
+        }
+        return template;
+    }
     
     protected String startGraph( String name )
     {

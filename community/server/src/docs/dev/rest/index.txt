@@ -27,12 +27,17 @@ include::nodes-with-relationships-can-not-be-deleted.txt[]
 [[rest-api-relationships]]
 == Relationships ==
 
-The general pattern to get relationships is:
+Relationships are a first class citizen in the Neo4j REST API. They can be accessed either
+stand-alone or through the nodes they are attached to.
+
+The general pattern to get relationships from a node is:
 [source]
 GET http://localhost:7474/db/data/node/123/relationships/{dir}/{-list|&|types}
 
 Where +dir+ is one of +all+, +in+, +out+ and +types+ is an ampersand-separated list of types.
 See the examples below for more information.
+
+include::get-relationship-by-id.txt[]
 
 include::create-relationship.txt[]
 
