@@ -23,19 +23,26 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 
-import org.junit.rules.MethodRule;
-import org.junit.runners.model.FrameworkMethod;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 public class TargetDirectory
 {
-    public class TestDirectory implements MethodRule
+    public class TestDirectory implements TestRule
     {
         private File subdir = null;
-
-        public final Statement apply( final Statement base, FrameworkMethod method, Object target )
+        
+        public File directory()
         {
-            subdir = directory( method.getName() );
+            if ( subdir == null ) throw new IllegalStateException( "Not initialized" );
+            return subdir;
+        }
+
+        @Override
+        public Statement apply( final Statement base, Description description )
+        {
+            subdir = TargetDirectory.this.directory( description.getMethodName() );
             return new Statement()
             {
                 @Override
@@ -160,6 +167,11 @@ public class TargetDirectory
         }
         return new TargetDirectory(
                 new File( new File( target, "test-data" ), owningTest.getName() ) );
+    }
+
+    public static TestDirectory testDirForTest( Class<?> owningTest )
+    {
+        return forTest( owningTest ).testDirectory();
     }
 
     public File graphDbDir( boolean clean )

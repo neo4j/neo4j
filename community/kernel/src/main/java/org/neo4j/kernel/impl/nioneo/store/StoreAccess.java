@@ -23,10 +23,13 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 /**
  * Not thread safe (since DiffRecordStore is not thread safe), intended for
@@ -82,6 +85,22 @@ public class StoreAccess
         relStore.makeStoreOk();
         if ( propStore != null ) propStore.makeStoreOk();
         relTypeStore.makeStoreOk();
+    }
+
+    public StoreAccess( AbstractGraphDatabase graphdb )
+    {
+        this( getNeoStoreFrom( graphdb ) );
+    }
+
+    private static NeoStore getNeoStoreFrom( AbstractGraphDatabase graphdb )
+    {
+        XaDataSource nioneo = graphdb.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource(
+                Config.DEFAULT_DATA_SOURCE_NAME );
+        if ( nioneo instanceof NeoStoreXaDataSource )
+        {
+            return ( (NeoStoreXaDataSource) nioneo ).getNeoStore();
+        }
+        throw new IllegalArgumentException( "Could not access NeoStore from " + graphdb );
     }
 
     public StoreAccess( NeoStore store )
