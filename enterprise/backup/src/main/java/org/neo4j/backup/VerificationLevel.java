@@ -19,19 +19,20 @@
  */
 package org.neo4j.backup;
 
-import org.neo4j.backup.log.InconsistencyLoggingLogDeserializerProvider;
-import org.neo4j.backup.log.VerifyingLogDeserializerProvider;
+import org.neo4j.backup.log.InconsistencyLoggingTransactionInterceptorProvider;
+import org.neo4j.backup.log.VerifyingTransactionInterceptorProvider;
 
 enum VerificationLevel
 {
     NONE( null ),
-    VERIFYING( VerifyingLogDeserializerProvider.NAME ),
-    LOGGING( InconsistencyLoggingLogDeserializerProvider.NAME );
-    final String deserializerName;
+    VERIFYING( VerifyingTransactionInterceptorProvider.NAME ),
+    LOGGING( InconsistencyLoggingTransactionInterceptorProvider.NAME );
+
+    final String interceptorName;
 
     private VerificationLevel( String name )
     {
-        this.deserializerName = name;
+        this.interceptorName = name;
     }
 
     static VerificationLevel valueOf( boolean verification )

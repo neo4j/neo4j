@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.neo4j.backup.check.ConsistencyCheck;
+import org.neo4j.backup.log.VerifyingTransactionInterceptorProvider;
 import org.neo4j.com.MasterUtil;
 import org.neo4j.com.MasterUtil.TxHandler;
 import org.neo4j.com.Response;
@@ -140,7 +141,12 @@ public class OnlineBackup
     {
         if ( verification != VerificationLevel.NONE )
             return new EmbeddedGraphDatabase( targetDirectory, MapUtil.stringMap(
-                    Config.LOG_DESERIALIZER_IMPLEMENTATION, verification.deserializerName ) );
+                            Config.INTERCEPT_DESERIALIZED_TRANSACTIONS,
+                            "true",
+                            VerifyingTransactionInterceptorProvider.class.getSimpleName()
+                                    + "."
+                                    + VerifyingTransactionInterceptorProvider.NAME,
+                            "true" ) );
         else
             return new EmbeddedGraphDatabase( targetDirectory );
     }
@@ -149,7 +155,7 @@ public class OnlineBackup
     {
         return incremental( targetDirectory, true );
     }
-    
+
     public OnlineBackup incremental( String targetDirectory, boolean verification )
     {
         if ( !directoryContainsDb( targetDirectory ) )

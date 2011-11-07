@@ -19,122 +19,58 @@
  */
 package org.neo4j.backup.log;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
-import java.util.LinkedList;
-import java.util.List;
-
-import javax.transaction.xa.Xid;
-
 import org.neo4j.backup.check.ConsistencyCheck;
 import org.neo4j.backup.check.DiffRecordStore;
 import org.neo4j.backup.check.DiffStore;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DataInconsistencyError;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
-import org.neo4j.kernel.impl.nioneo.xa.Command;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.LogApplier;
-import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
-import org.neo4j.kernel.impl.transaction.xaframework.LogDeserializer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
-import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptor;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-/**
- * This class implements a transaction stream deserializer which verifies
- * the integrity of the store for each applied transaction. It is assumed that
- * the stream contains a defragmented serialized transaction.
- */
-class VerifyingLogDeserializer implements LogDeserializer
+class VerifyingTransactionInterceptor implements TransactionInterceptor
 {
     private final boolean rejectInconsistentTransactions;
-    private final ReadableByteChannel byteChannel;
-    private final LogBuffer writeBuffer;
-    private final LogApplier applier;
-    private final XaCommandFactory cf;
-    private final ByteBuffer scratchBuffer = ByteBuffer.allocateDirect( 9
-                                                                       + Xid.MAXGTRIDSIZE
-                                                                       + Xid.MAXBQUALSIZE
-                                                                       * 10 );
 
-    private final List<LogEntry> logEntries;
     private final DiffStore diffs;
     private final StringLogger msgLog;
 
     private LogEntry.Commit commitEntry;
     private LogEntry.Start startEntry;
 
-    VerifyingLogDeserializer( ReadableByteChannel byteChannel,
-            LogBuffer writeBuffer, LogApplier applier, XaCommandFactory cf,
+    private TransactionInterceptor next;
+
+    VerifyingTransactionInterceptor(
             NeoStoreXaDataSource ds, boolean rejectInconsistentTransactions )
     {
-        this.byteChannel = byteChannel;
-        this.writeBuffer = writeBuffer;
-        this.applier = applier;
-        this.cf = cf;
         this.rejectInconsistentTransactions = rejectInconsistentTransactions;
-        this.logEntries = new LinkedList<LogEntry>();
         this.diffs = new DiffStore( ds.getNeoStore() );
         this.msgLog = ds.getMsgLog();
     }
 
-    @Override
-    public boolean readAndWriteAndApplyEntry( int newXidIdentifier )
-            throws IOException
+    public void setStartEntry( LogEntry.Start startEntry )
     {
-        LogEntry entry = LogIoUtils.readEntry( scratchBuffer, byteChannel, cf );
-        if ( entry == null )
-        {
-            /*
-             * The following two cannot run on commit entry found - it is not
-             * always present. Even if the stream is incomplete though,
-             * XaLogicalLog does take that into account, so we can go ahead and apply.
-             */
-            verify();
-            applyAll();
-            return false;
-        }
-        entry.setIdentifier( newXidIdentifier );
-        logEntries.add( entry );
-        if ( entry instanceof LogEntry.Commit )
-        {
-            assert startEntry != null;
-            commitEntry = (LogEntry.Commit) entry;
-        }
-        else if ( entry instanceof LogEntry.Start )
-        {
-            startEntry = (LogEntry.Start) entry;
-        }
-        else if ( entry instanceof LogEntry.Command )
-        {
-            XaCommand command = ( (LogEntry.Command) entry ).getXaCommand();
-            if ( command instanceof Command )
-            {
-                ( (Command) command ).accept( diffs );
-            }
-        }
-        return true;
+        this.startEntry = startEntry;
     }
 
-    @Override
-    public Commit getCommitEntry()
+    public void setCommitEntry( LogEntry.Commit commitEntry )
     {
-        return commitEntry;
+        this.commitEntry = commitEntry;
     }
 
-    @Override
-    public Start getStartEntry()
+    public void setNext( TransactionInterceptor next )
     {
-        return startEntry;
+        this.next = next;
     }
 
-    private void verify() throws DataInconsistencyError
+    public void complete() throws DataInconsistencyError
     {
         /*
          *  Here goes the actual verification code. If it passes,
@@ -182,7 +118,6 @@ class VerifyingLogDeserializer implements LogDeserializer
             {
                 startEntry = null;
                 commitEntry = null;
-                logEntries.clear();
                 throw error;
             }
             else
@@ -211,6 +146,11 @@ class VerifyingLogDeserializer implements LogDeserializer
                 msgLog.logMessage( changes.toString() );
             }
         }
+        // Chain of Responsibility continues
+        if ( next != null )
+        {
+            next.complete();
+        }
     }
 
     private static <R extends AbstractBaseRecord> void logRecord( StringBuilder log, RecordStore<? extends R> store,
@@ -223,7 +163,7 @@ class VerifyingLogDeserializer implements LogDeserializer
         }
         log.append( record ).append( "\n\t" );
     }
-    
+
     private StringBuilder messageHeader( String type )
     {
         StringBuilder log = new StringBuilder( type ).append( " in transaction" );
@@ -234,12 +174,33 @@ class VerifyingLogDeserializer implements LogDeserializer
         return log.append( ":\n\t" );
     }
 
-    private void applyAll() throws IOException
+    @Override
+    public void visitNode( NodeRecord record )
     {
-        for ( LogEntry entry : logEntries )
-        {
-            LogIoUtils.writeLogEntry( entry, writeBuffer );
-            applier.apply( entry );
-        }
+        diffs.visitNode( record );
+    }
+
+    @Override
+    public void visitRelationship( RelationshipRecord record )
+    {
+        diffs.visitRelationship( record );
+    }
+
+    @Override
+    public void visitProperty( PropertyRecord record )
+    {
+        diffs.visitProperty( record );
+    }
+
+    @Override
+    public void visitRelationshipType( RelationshipTypeRecord record )
+    {
+        diffs.visitRelationshipType( record );
+    }
+
+    @Override
+    public void visitPropertyIndex( PropertyIndexRecord record )
+    {
+        diffs.visitPropertyIndex( record );
     }
 }
