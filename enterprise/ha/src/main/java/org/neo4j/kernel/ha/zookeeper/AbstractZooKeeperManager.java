@@ -31,7 +31,6 @@ import java.util.Map;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
-import org.neo4j.com.ComException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
@@ -137,11 +136,8 @@ public abstract class AbstractZooKeeperManager implements Watcher
         MasterClient masterClient = null;
         if ( cachedMaster.other().getMachineId() != master.getMachineId() )
         {
-            if ( cachedMaster.other().getMachineId() != Machine.NO_MACHINE.getMachineId() && !allowChange )
-            {
-                throw new ComException( "Needs invalidation of master" );
-            }
             invalidateMaster();
+            if ( !allowChange ) return Pair.<Master, Machine>of( null, master );
             if ( master != Machine.NO_MACHINE && master.getMachineId() != getMyMachineId() )
             {
                 masterClient = new MasterClient( master.getServer().first(), master.getServer().other(), graphDb,
