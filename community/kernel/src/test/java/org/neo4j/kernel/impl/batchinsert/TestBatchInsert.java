@@ -27,6 +27,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -192,16 +193,122 @@ public class TestBatchInsert
     }
 
     @Test
+    public void testSetAndKeepRelationshipProperty()
+    {
+        BatchInserter inserter = newBatchInserter();
+
+        long from = inserter.createNode( Collections.EMPTY_MAP );
+        long to = inserter.createNode( Collections.EMPTY_MAP );
+        long theRel = inserter.createRelationship( from, to,
+                DynamicRelationshipType.withName( "TestingPropsHere" ),
+                MapUtil.map( "foo", "bar" ) );
+        inserter.setRelationshipProperty( theRel, "foo2", "bar2" );
+        Map<String, Object> props = inserter.getRelationshipProperties( theRel );
+        assertEquals( 2, props.size() );
+        assertEquals( "bar", props.get( "foo" ) );
+        assertEquals( "bar2", props.get( "foo2" ) );
+
+        inserter.shutdown();
+
+        inserter = newBatchInserter( false /*delete old dir*/);
+
+        props = inserter.getRelationshipProperties( theRel );
+        assertEquals( 2, props.size() );
+        assertEquals( "bar", props.get( "foo" ) );
+        assertEquals( "bar2", props.get( "foo2" ) );
+
+        inserter.setRelationshipProperty( theRel, "foo", "bar3" );
+
+        props = inserter.getRelationshipProperties( theRel );
+        assertEquals( "bar3", props.get( "foo" ) );
+        assertEquals( 2, props.size() );
+        assertEquals( "bar3", props.get( "foo" ) );
+        assertEquals( "bar2", props.get( "foo2" ) );
+
+        inserter.shutdown();
+        inserter = newBatchInserter( false /*delete old dir*/);
+
+        props = inserter.getRelationshipProperties( theRel );
+        assertEquals( "bar3", props.get( "foo" ) );
+        assertEquals( 2, props.size() );
+        assertEquals( "bar3", props.get( "foo" ) );
+        assertEquals( "bar2", props.get( "foo2" ) );
+    }
+
+    @Test
     public void testNodeHasProperty()
     {
         BatchInserter inserter = newBatchInserter();
 
-        long tehNode = inserter.createNode( properties );
+        long theNode = inserter.createNode( properties );
+        long anotherNode = inserter.createNode( Collections.EMPTY_MAP );
+        long relationship = inserter.createRelationship( theNode, anotherNode,
+                DynamicRelationshipType.withName( "foo" ), properties );
         for ( String key : properties.keySet() )
         {
-            assertTrue( inserter.nodeHasProperty( tehNode, key ) );
-            assertFalse( inserter.nodeHasProperty( tehNode, key + "-" ) );
+            assertTrue( inserter.nodeHasProperty( theNode, key ) );
+            assertFalse( inserter.nodeHasProperty( theNode, key + "-" ) );
+            assertTrue( inserter.relationshipHasProperty( relationship, key ) );
+            assertFalse( inserter.relationshipHasProperty( relationship, key
+                                                                         + "-" ) );
         }
+    }
+
+    @Test
+    public void testRemoveProperties()
+    {
+        BatchInserter inserter = newBatchInserter();
+
+        long theNode = inserter.createNode( properties );
+        long anotherNode = inserter.createNode( Collections.EMPTY_MAP );
+        long relationship = inserter.createRelationship( theNode, anotherNode,
+                DynamicRelationshipType.withName( "foo" ), properties );
+
+        inserter.removeNodeProperty( theNode, "key0" );
+        inserter.removeRelationshipProperty( relationship, "key1" );
+
+        for ( String key : properties.keySet() )
+        {
+            if ( key.equals( "key0" ) )
+            {
+                assertFalse( inserter.nodeHasProperty( theNode, key ) );
+                assertTrue( inserter.relationshipHasProperty( relationship, key ) );
+            }
+            else if ( key.equals( "key1" ) )
+            {
+                assertTrue( inserter.nodeHasProperty( theNode, key ) );
+                assertFalse( inserter.relationshipHasProperty( relationship,
+                        key ) );
+            }
+            else
+            {
+                assertTrue( inserter.nodeHasProperty( theNode, key ) );
+                assertTrue( inserter.relationshipHasProperty( relationship, key ) );
+            }
+        }
+        inserter.shutdown();
+        inserter = newBatchInserter( false /*delete old dir*/);
+
+        for ( String key : properties.keySet() )
+        {
+            if ( key.equals( "key0" ) )
+            {
+                assertFalse( inserter.nodeHasProperty( theNode, key ) );
+                assertTrue( inserter.relationshipHasProperty( relationship, key ) );
+            }
+            else if ( key.equals( "key1" ) )
+            {
+                assertTrue( inserter.nodeHasProperty( theNode, key ) );
+                assertFalse( inserter.relationshipHasProperty( relationship,
+                        key ) );
+            }
+            else
+            {
+                assertTrue( inserter.nodeHasProperty( theNode, key ) );
+                assertTrue( inserter.relationshipHasProperty( relationship, key ) );
+            }
+        }
+
     }
 
     @Test

@@ -137,6 +137,14 @@ public class BatchInserterImpl implements BatchInserter
     }
 
     @Override
+    public boolean relationshipHasProperty( long relationship,
+            String propertyName )
+    {
+        return primitiveHasProperty( getRelationshipRecord( relationship ),
+                propertyName );
+    }
+
+    @Override
     public void setNodeProperty( long node, String propertyName,
             Object propertyValue )
     {
@@ -147,7 +155,39 @@ public class BatchInserterImpl implements BatchInserter
         }
     }
 
-    private boolean primitiveRemoveProperty( PrimitiveRecord primitive,
+    @Override
+    public void setRelationshipProperty( long relationship,
+            String propertyName, Object propertyValue )
+    {
+        RelationshipRecord relRec = getRelationshipRecord( relationship );
+        if ( setPrimitiveProperty( relRec, propertyName, propertyValue ) )
+        {
+            getRelationshipStore().updateRecord( relRec );
+        }
+    }
+
+    @Override
+    public void removeNodeProperty( long node, String propertyName )
+    {
+        NodeRecord nodeRec = getNodeRecord( node );
+        if ( removePrimitiveProperty( nodeRec, propertyName ) )
+        {
+            getNodeStore().updateRecord( nodeRec );
+        }
+    }
+
+    @Override
+    public void removeRelationshipProperty( long relationship,
+            String propertyName )
+    {
+        RelationshipRecord relationshipRec = getRelationshipRecord( relationship );
+        if ( removePrimitiveProperty( relationshipRec, propertyName ) )
+        {
+            getRelationshipStore().updateRecord( relationshipRec );
+        }
+    }
+
+    private boolean removePrimitiveProperty( PrimitiveRecord primitive,
             String property )
     {
         PropertyRecord current = null;
@@ -172,18 +212,19 @@ public class BatchInserterImpl implements BatchInserter
                 {
                     current.addDeletedRecord( dynRec );
                 }
+                break;
             }
-            if ( current.size() > 0 )
-            {
-                getPropertyStore().updateRecord( current );
-                return false;
-            }
-            else
-            {
-                unlinkPropertyRecord( current, primitive );
-            }
+            nextProp = current.getNextProp();
         }
-        return false;
+        if ( current.size() > 0 )
+        {
+            getPropertyStore().updateRecord( current );
+            return false;
+        }
+        else
+        {
+            return unlinkPropertyRecord( current, primitive );
+        }
     }
 
     private boolean unlinkPropertyRecord( PropertyRecord propRecord,
@@ -208,7 +249,7 @@ public class BatchInserterImpl implements BatchInserter
             assert prevPropRecord.inUse() : prevPropRecord + "->" + propRecord
                                             + " for " + primitive;
             prevPropRecord.setNextProp( nextProp );
-            prevPropRecord.setChanged();
+            getPropertyStore().updateRecord( prevPropRecord );
         }
         if ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
@@ -217,7 +258,7 @@ public class BatchInserterImpl implements BatchInserter
             assert nextPropRecord.inUse() : propRecord + "->" + nextPropRecord
                                             + " for " + primitive;
             nextPropRecord.setPrevProp( prevProp );
-            nextPropRecord.setChanged();
+            getPropertyStore().updateRecord( nextPropRecord );
         }
         propRecord.setInUse( false );
         /*
@@ -227,6 +268,7 @@ public class BatchInserterImpl implements BatchInserter
          */
         propRecord.setPrevProp( Record.NO_PREVIOUS_PROPERTY.intValue() );
         propRecord.setNextProp( Record.NO_NEXT_PROPERTY.intValue() );
+        getPropertyStore().updateRecord( propRecord );
         return primitiveChanged;
     }
 

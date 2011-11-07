@@ -84,6 +84,18 @@ public interface BatchInserter
     public boolean nodeHasProperty( long node, String propertyName );
 
     /**
+     * Returns true iff the relationship with id {@value relationship} has a
+     * property with name {@value propertyName}.
+     *
+     * @param relationship The relationship id of the relationship to check.
+     * @param propertyName The property name to check for
+     * @return True if the relationship has the named property - false
+     *         otherwise.
+     */
+    public boolean relationshipHasProperty( long relationship,
+            String propertyName );
+
+    /**
      * Sets the property with name {@value propertyName} of node with id
      * {@value node} to the value {@propertyValue}. If the property exists it is
      * updated, otherwise created.
@@ -94,6 +106,20 @@ public interface BatchInserter
      */
     public void setNodeProperty( long node, String propertyName,
             Object propertyValue );
+
+    /**
+     * Sets the property with name {@value propertyName} of relationship with id
+     * {@value relationship} to the value {@value propertyValue}. If the
+     * property
+     * exists it is updated, otherwise created.
+     *
+     * @param relationship The node id of the relationship whose property is to
+     *            be set
+     * @param propertyName The name of the property to set
+     * @param propertyValue The value of the property to set
+     */
+    public void setRelationshipProperty( long relationship,
+            String propertyName, Object propertyValue );
     /**
      * Returns a map containing all the properties of this node.
      *
@@ -176,6 +202,25 @@ public interface BatchInserter
      * @return map containing the relationship's properties.
      */
     public Map<String,Object> getRelationshipProperties( long relId );
+
+    /**
+     * Removes the property named {@value property} from the node with id
+     * {@value id}, if present.
+     *
+     * @param node The id of the node from which to remove the property
+     * @param property The name of the property
+     */
+    public void removeNodeProperty( long node, String property );
+
+    /**
+     * Removes the property named {@value property} from the relationship with
+     * id {@value id}, if present.
+     *
+     * @param relationship The id of the relationship from which to remove the
+     *            property
+     * @param property The name of the property
+     */
+    public void removeRelationshipProperty( long relationship, String property );
 
     /**
      * Shuts down this batch inserter syncing all changes that are still only
