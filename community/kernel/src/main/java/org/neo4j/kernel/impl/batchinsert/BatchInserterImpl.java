@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
+import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
@@ -127,6 +128,262 @@ public class BatchInserterImpl implements BatchInserter
         typeHolder = new RelationshipTypeHolder( types );
         graphDbService = new BatchGraphDatabaseImpl( this );
         indexStore = new IndexStore( storeDir );
+    }
+
+    @Override
+    public boolean nodeHasProperty( long node, String propertyName )
+    {
+        return primitiveHasProperty( getNodeRecord( node ), propertyName );
+    }
+
+    @Override
+    public boolean relationshipHasProperty( long relationship,
+            String propertyName )
+    {
+        return primitiveHasProperty( getRelationshipRecord( relationship ),
+                propertyName );
+    }
+
+    @Override
+    public void setNodeProperty( long node, String propertyName,
+            Object propertyValue )
+    {
+        NodeRecord nodeRec = getNodeRecord( node );
+        if ( setPrimitiveProperty( nodeRec, propertyName, propertyValue ) )
+        {
+            getNodeStore().updateRecord( nodeRec );
+        }
+    }
+
+    @Override
+    public void setRelationshipProperty( long relationship,
+            String propertyName, Object propertyValue )
+    {
+        RelationshipRecord relRec = getRelationshipRecord( relationship );
+        if ( setPrimitiveProperty( relRec, propertyName, propertyValue ) )
+        {
+            getRelationshipStore().updateRecord( relRec );
+        }
+    }
+
+    @Override
+    public void removeNodeProperty( long node, String propertyName )
+    {
+        NodeRecord nodeRec = getNodeRecord( node );
+        if ( removePrimitiveProperty( nodeRec, propertyName ) )
+        {
+            getNodeStore().updateRecord( nodeRec );
+        }
+    }
+
+    @Override
+    public void removeRelationshipProperty( long relationship,
+            String propertyName )
+    {
+        RelationshipRecord relationshipRec = getRelationshipRecord( relationship );
+        if ( removePrimitiveProperty( relationshipRec, propertyName ) )
+        {
+            getRelationshipStore().updateRecord( relationshipRec );
+        }
+    }
+
+    private boolean removePrimitiveProperty( PrimitiveRecord primitive,
+            String property )
+    {
+        PropertyRecord current = null;
+        PropertyBlock target = null;
+        long nextProp = primitive.getNextProp();
+        int propIndex = indexHolder.getKeyId( property );
+        if ( nextProp == Record.NO_NEXT_PROPERTY.intValue() || propIndex == -1 )
+        {
+            // No properties or no one has that property, nothing changed
+            return false;
+        }
+        while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
+        {
+            current = getPropertyStore().getRecord( nextProp );
+            if ( ( target = current.removePropertyBlock( propIndex ) ) != null )
+            {
+                if ( target.isLight() )
+                {
+                    getPropertyStore().makeHeavy( target );
+                }
+                for ( DynamicRecord dynRec : target.getValueRecords() )
+                {
+                    current.addDeletedRecord( dynRec );
+                }
+                break;
+            }
+            nextProp = current.getNextProp();
+        }
+        if ( current.size() > 0 )
+        {
+            getPropertyStore().updateRecord( current );
+            return false;
+        }
+        else
+        {
+            return unlinkPropertyRecord( current, primitive );
+        }
+    }
+
+    private boolean unlinkPropertyRecord( PropertyRecord propRecord,
+            PrimitiveRecord primitive )
+    {
+        assert propRecord.size() == 0;
+        boolean primitiveChanged = false;
+        long prevProp = propRecord.getPrevProp();
+        long nextProp = propRecord.getNextProp();
+        if ( primitive.getNextProp() == propRecord.getId() )
+        {
+            assert propRecord.getPrevProp() == Record.NO_PREVIOUS_PROPERTY.intValue() : propRecord
+                                                                                        + " for "
+                                                                                        + primitive;
+            primitive.setNextProp( nextProp );
+            primitiveChanged = true;
+        }
+        if ( prevProp != Record.NO_PREVIOUS_PROPERTY.intValue() )
+        {
+            PropertyRecord prevPropRecord = getPropertyStore().getRecord(
+                    prevProp );
+            assert prevPropRecord.inUse() : prevPropRecord + "->" + propRecord
+                                            + " for " + primitive;
+            prevPropRecord.setNextProp( nextProp );
+            getPropertyStore().updateRecord( prevPropRecord );
+        }
+        if ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
+        {
+            PropertyRecord nextPropRecord = getPropertyStore().getRecord(
+                    nextProp );
+            assert nextPropRecord.inUse() : propRecord + "->" + nextPropRecord
+                                            + " for " + primitive;
+            nextPropRecord.setPrevProp( prevProp );
+            getPropertyStore().updateRecord( nextPropRecord );
+        }
+        propRecord.setInUse( false );
+        /*
+         *  The following two are not needed - the above line does all the work (PropertyStore
+         *  does not write out the prev/next for !inUse records). It is nice to set this
+         *  however to check for consistency when assertPropertyChain().
+         */
+        propRecord.setPrevProp( Record.NO_PREVIOUS_PROPERTY.intValue() );
+        propRecord.setNextProp( Record.NO_NEXT_PROPERTY.intValue() );
+        getPropertyStore().updateRecord( propRecord );
+        return primitiveChanged;
+    }
+
+    /**
+     * @return true if the passed primitive needs updating in the store.
+     */
+    private boolean setPrimitiveProperty( PrimitiveRecord primitive,
+            String name,
+            Object value )
+    {
+        boolean result = false;
+        long nextProp = primitive.getNextProp();
+        int index = indexHolder.getKeyId( name );
+
+        if ( index == -1 )
+        {
+            index = createNewPropertyIndex( name );
+        }
+        PropertyBlock block = new PropertyBlock();
+        getPropertyStore().encodeValue( block, index, value );
+        int size = block.getSize();
+
+        /*
+         * current is the current record traversed
+         * thatFits is the earliest record that can host the block
+         * thatHas is the record that already has a block for this index
+         */
+        PropertyRecord current = null, thatFits = null, thatHas = null;
+        /*
+         * We keep going while there are records or until we both found the
+         * property if it exists and the place to put it, if exists.
+         */
+        while ( !( nextProp == Record.NO_NEXT_PROPERTY.intValue() || ( thatHas != null && thatFits != null ) ) )
+        {
+            current = getPropertyStore().getRecord( nextProp );
+            /*
+             * current.getPropertyBlock() is cheap but not free. If we already
+             * have found thatHas, then we can skip this lookup.
+             */
+            if ( thatHas == null && current.getPropertyBlock( index ) != null )
+            {
+                thatHas = current;
+                PropertyBlock removed = thatHas.removePropertyBlock( index );
+                if ( removed.isLight() )
+                {
+                    getPropertyStore().makeHeavy( removed );
+                    for ( DynamicRecord dynRec : removed.getValueRecords() )
+                    {
+                        thatHas.addDeletedRecord( dynRec );
+                    }
+                }
+                getPropertyStore().updateRecord( thatHas );
+            }
+            /*
+             * We check the size after we remove - potentially we can put in the same record.
+             *
+             * current.size() is cheap but not free. If we already found somewhere
+             * where it fits, no need to look again.
+             */
+            if ( thatFits == null
+                 && ( PropertyType.getPayloadSize() - current.size() >= size ) )
+            {
+                thatFits = current;
+            }
+            nextProp = current.getNextProp();
+        }
+        /*
+         * thatHas is of no importance here. We know that the block is definitely not there.
+         * However, we can be sure that if the property existed, thatHas is not null and does
+         * not contain the block.
+         *
+         * thatFits is interesting. If null, we need to create a new record and link, otherwise
+         * just add the block there.
+         */
+        if ( thatFits == null )
+        {
+            thatFits = new PropertyRecord( getPropertyStore().nextId() );
+
+            if ( primitive.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
+            {
+                PropertyRecord first = getPropertyStore().getRecord(
+                        primitive.getNextProp() );
+                thatFits.setNextProp( first.getId() );
+                first.setPrevProp( thatFits.getId() );
+                getPropertyStore().updateRecord( first );
+                result = true;
+            }
+            primitive.setNextProp( thatFits.getId() );
+        }
+        thatFits.addPropertyBlock( block );
+        getPropertyStore().updateRecord( thatFits );
+        return result;
+    }
+
+    private boolean primitiveHasProperty( PrimitiveRecord record,
+            String propertyName )
+    {
+        long nextProp = record.getNextProp();
+        int propertyIndex = indexHolder.getKeyId( propertyName );
+        if (nextProp == Record.NO_NEXT_PROPERTY.intValue() || propertyIndex == -1)
+        {
+            return false;
+        }
+
+        PropertyRecord current = null;
+        while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
+        {
+            current = getPropertyStore().getRecord( nextProp );
+            if ( current.getPropertyBlock( propertyIndex ) != null )
+            {
+                return true;
+            }
+            nextProp = current.getNextProp();
+        }
+        return false;
     }
 
     private void rejectAutoUpgrade( Map<String, String> stringParams )
