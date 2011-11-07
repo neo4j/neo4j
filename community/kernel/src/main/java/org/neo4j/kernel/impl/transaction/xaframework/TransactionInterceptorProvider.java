@@ -24,6 +24,12 @@ import java.util.List;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Service;
 
+/**
+ * The basic service implementation for TransactionInterceptorProviders.
+ * Offers two ways to instantiate a TransactionInterceptor - one is
+ * standalone, the other is with an existing one as the next in the chain
+ * of responsibility.
+ */
 public abstract class TransactionInterceptorProvider extends Service
 {
     public TransactionInterceptorProvider( String name )
@@ -31,14 +37,55 @@ public abstract class TransactionInterceptorProvider extends Service
         super( name );
     }
 
+    /**
+     * Returns the name of this provider
+     *
+     * @return The name of this provider
+     */
     public abstract String name();
 
+    /**
+     * Creates a TransactionInterceptor with the given datasource and options.
+     * It is possible for this method to return null, signifying that the
+     * options passed did not allow for instantiation.
+     *
+     * @param ds The datasource the TransactionInterceptor will communicate with
+     * @param options An object that can be the options to instantiate the
+     *            interceptor with - e.g "false" to prevent instantiation
+     * @return An implementation of TransactionInterceptor or null if the
+     *         options say so.
+     */
     public abstract TransactionInterceptor create( XaDataSource ds,
             Object options );
 
+    /**
+     * Creates a TransactionInterceptor with the given datasource and options
+     * and the given TransactionInterceptor as the next in the chain.
+     * It is possible for this method to return null, signifying that the
+     * options passed did not allow for instantiation.
+     *
+     * @param ds The datasource the TransactionInterceptor will communicate with
+     * @param options An object that can be the options to instantiate the
+     *            interceptor with - e.g "false" to prevent instantiation
+     * @param next The next interceptor in the chain - can be null
+     * @return An implementation of TransactionInterceptor or null if the
+     *         options say so.
+     */
     public abstract TransactionInterceptor create( TransactionInterceptor next,
             XaDataSource ds, Object options );
 
+    /**
+     * A utility method that given some TransactionInterceptorProviders and
+     * their configuration objects returns a fully resolved chain of
+     * TransactionInterceptors - the return object is the first interceptor
+     * in the chain.
+     *
+     * @param providers A list of {@link Pair} of
+     *            TransactionInterceptorProviders with
+     *            the detected config objects
+     * @param ds The datasource to instantiate the TransactionInterceptors with
+     * @return The fist interceptor in the chain, possibly null
+     */
     public static TransactionInterceptor resolveChain(
             List<Pair<TransactionInterceptorProvider, Object>> providers,
             XaDataSource ds )
