@@ -19,3 +19,5 @@ include::config.txt[]
 include::operation.txt[]
 
 include::ha-setup-tutorial.txt[]
+
+include::haproxy.txt[]
