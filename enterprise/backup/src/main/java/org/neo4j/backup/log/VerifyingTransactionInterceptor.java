@@ -22,6 +22,7 @@ package org.neo4j.backup.log;
 import org.neo4j.backup.check.ConsistencyCheck;
 import org.neo4j.backup.check.DiffRecordStore;
 import org.neo4j.backup.check.DiffStore;
+import org.neo4j.backup.check.InconsistencyType;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DataInconsistencyError;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -88,28 +89,28 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
         ConsistencyCheck consistency = diffs.applyToAll( new ConsistencyCheck( diffs )
         {
             @Override
-            protected <R extends AbstractBaseRecord> void report( RecordStore<R> recordStore, R record, String message )
+            protected <R extends AbstractBaseRecord> void report( RecordStore<R> recordStore, R record, InconsistencyType inconsistency )
             {
                 StringBuilder log = messageHeader( "Inconsistencies" );
                 logRecord( log, recordStore, record );
-                log.append( message );
+                log.append( inconsistency.message() );
                 msgLog.logMessage( log.toString() );
             }
 
             @Override
             protected <R1 extends AbstractBaseRecord, R2 extends AbstractBaseRecord> void report(
                     RecordStore<R1> recordStore, R1 record, RecordStore<? extends R2> referredStore, R2 referred,
-                    String message )
+                    InconsistencyType inconsistency )
             {
                 if ( recordStore == referredStore && record.getLongId() == referred.getLongId() )
                 { // inconsistency between versions, logRecord() handles that, treat as single record
-                    report( recordStore, record, message );
+                    report( recordStore, record, inconsistency );
                     return;
                 }
                 StringBuilder log = messageHeader( "Inconsistencies" );
                 logRecord( log, recordStore, record );
                 logRecord( log, referredStore, referred );
-                log.append( message );
+                log.append( inconsistency.message() );
                 msgLog.logMessage( log.toString() );
             }
         } );

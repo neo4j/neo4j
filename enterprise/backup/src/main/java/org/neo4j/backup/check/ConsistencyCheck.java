@@ -421,33 +421,33 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
     private <R1 extends AbstractBaseRecord, R2 extends AbstractBaseRecord> boolean inconsistent(
             RecordStore<R1> recordStore, R1 record, RecordStore<? extends R2> referredStore, R2 referred, InconsistencyType type )
     {
-        report( recordStore, record, referredStore, referred, type.message() );
+        report( recordStore, record, referredStore, referred, type );
         return true;
     }
     
     private <R extends AbstractBaseRecord> boolean inconsistent(
             RecordStore<R> store, R record, R referred, InconsistencyType type )
     {
-        report( store, record, store, referred, type.message() );
+        report( store, record, store, referred, type );
         return true;
     }
 
     // Internal inconsistency in a single record
     private <R extends AbstractBaseRecord> boolean inconsistent( RecordStore<R> store, R record, InconsistencyType type )
     {
-        report( store, record, type.message() );
+        report( store, record, type );
         return true;
     }
 
     protected <R1 extends AbstractBaseRecord, R2 extends AbstractBaseRecord> void report(
-            RecordStore<R1> recordStore, R1 record, RecordStore<? extends R2> referredStore, R2 referred, String message )
+            RecordStore<R1> recordStore, R1 record, RecordStore<? extends R2> referredStore, R2 referred, InconsistencyType inconsistency )
     {
-        System.err.println( record + " " + referred + " //" + message );
+        System.err.println( record + " " + referred + " //" + inconsistency.message() );
     }
 
-    protected <R extends AbstractBaseRecord> void report( RecordStore<R> recordStore, R record, String message )
+    protected <R extends AbstractBaseRecord> void report( RecordStore<R> recordStore, R record, InconsistencyType inconsistency )
     {
-        System.err.println( record + " //" + message );
+        System.err.println( record + " //" + inconsistency.message() );
     }
 
     private static NodeField[] nodeFields = NodeField.values();

@@ -106,7 +106,7 @@ public class TestConsistencyCheck
         return new ConsistencyCheck( stores )
         {
             @Override
-            protected <R extends AbstractBaseRecord> void report( RecordStore<R> recordStore, R record, String message )
+            protected <R extends AbstractBaseRecord> void report( RecordStore<R> recordStore, R record, InconsistencyType inconsistency )
             {
                 report.add( new Inconsistency( record, null ) );
             }
@@ -114,7 +114,7 @@ public class TestConsistencyCheck
             @Override
             protected <R1 extends AbstractBaseRecord, R2 extends AbstractBaseRecord> void report(
                     RecordStore<R1> recordStore, R1 record, RecordStore<? extends R2> referredStore, R2 referred,
-                    String message )
+                    InconsistencyType inconsistency )
             {
                 report.add( new Inconsistency( record, referred ) );
             }
