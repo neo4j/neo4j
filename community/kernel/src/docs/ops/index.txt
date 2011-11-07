@@ -23,6 +23,8 @@ include::filesystem.txt[]
 
 include::short-strings.txt[]
 
+include::short-arrays.txt[]
+
 include::io-examples.txt[]
 
 include::linux-performance.txt[]

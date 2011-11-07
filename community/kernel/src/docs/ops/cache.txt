@@ -35,15 +35,15 @@ Each Neo4j storage file contains uniform fixed size records of a particular type
 | Store file         | Record size | Contents
 | nodestore          |         9 B | Nodes
 | relstore           |        33 B | Relationships
-| propstore          |        25 B | Properties for nodes and relationships
-| stringstore        |       133 B | Values of string properties
-| arraystore         |       133 B | Values of array properties
+| propstore          |        41 B | Properties for nodes and relationships
+| stringstore        |       128 B | Values of string properties
+| arraystore         |       128 B | Values of array properties
 |============================================
 
-For strings and arrays, where data can be of variable length, data is stored in one or more 120B chunks, with 13B record overhead.
+For strings and arrays, where data can be of variable length, data is stored in one or more 120B chunks, with 8B record overhead.
 The sizes of these blocks can actually be configured when the store is created using the `string_block_size` and `array_block_size` parameters.
 The size of each record type can also be used to calculate the storage requirements of a Neo4j graph or the appropriate cache size for each file buffer cache.
-Note that some strings can be stored without using the string store, see <<short-strings>>.
+Note that some strings and arrays can be stored without using the string store or the array store respectively, see <<short-strings>> and <<short-arrays>>.
 
 Neo4j uses multiple file buffer caches, one for each different storage file.
 Each file buffer cache divides its storage file into a number of equally sized windows.
@@ -85,12 +85,12 @@ Configuration
   Specifies the block size for storing strings.
   This parameter is only honored when the store is created, otherwise it is ignored.
   Note that each character in a string occupies two bytes, meaning that a block size of 120 (the default size) will hold a 60 character long string before overflowing into a second block.
-  Also note that each block carries an overhead of 13 bytes.
-  This means that if the block size is 120, the size of the stored records will be 133 bytes.
+  Also note that each block carries an overhead of 8 bytes.
+  This means that if the block size is 120, the size of the stored records will be 128 bytes.
 | array_block_size        |
   Specifies the block size for storing arrays.
   This parameter is only honored when the store is created, otherwise it is ignored.
-  The default block size is 120 bytes, and the overhead of each block is the same as for string blocks, i.e., 13 bytes.
+  The default block size is 120 bytes, and the overhead of each block is the same as for string blocks, i.e., 8 bytes.
 | dump_configuration | `true` or `false` | If set to `true` the current configuration settings will be written to the default system output, mostly the console or the logfiles.
 |========================================================
 

@@ -2,15 +2,35 @@
 Compressed storage of short strings
 ===================================
 
-Neo4j will classify your strings and store them accordingly.
-If a string is classified as a short string it will be stored without indirection in the property store.
-This means that there will be no string records created for storing that string.
-Additionally, when no string record is needed to store the property, it can be read and written in a single lookup.
-This leads to improvements in performance and lower storage overhead.
+Neo4j will try to classify your strings in a short string class and if it manages that it will treat it accordingly.
+In that case, it will be stored without indirection in the property store, inlining it instead in the property record,
+meaning that the dynamic string store will not be involved in storing that value, leading to reduced disk footprint. 
+Additionally, when no string record is needed to store the property, it can be read and written in a single lookup, 
+leading to performance improvements.
 
-For a string to be classified as a short string, one of the following must hold:
+The various classes for short strings are:
 
-* It is encodable in UTF-8 or Latin-1, 7 bytes or less.
-* It is alphanumerical, and 10 characters or less (9 if using accented european characters).
-* It consists of only upper case, or only lower case characters, including the punctuation characters space, underscore, period, dash, colon, or slash. Then it is allowed to be up to 12 characters.
-* It consists of only numerical characters, inlcuding the punctuation characters plus, comma, single quote, space, period, or dash. Then it is allowed to be up to 15 characters.
+* Numerical, consisting of digits 0..9 and the punctuation space, period, dash,, plus, comma and apostrophe.
+* Date, consisting of digits 0..9 and the punctuation space dash, colon, slash, plus and comma.
+* Uppercase, consisting of uppercase letters A..Z, and the punctuation space, underscore, period, dash, colon and slash.
+* Lowercase, like upper but with lowercase letters a..z instead of uppercase
+* E-mail, consisting of lowercase letters a..z and the punctuation comma, underscore, period, dash, plus and the at sign (@)
+* URI, consisting of lowercase letters a..z, digits 0..9 and most punctuation available.
+* Alphanumerical, consisting of both upper and lowercase letters a..zA..z, digits 0..9 and punctuation space and underscore.
+* Alphasymbolical, consisting of both upper and lowercase letters a..zA..Z and the punctuation space, underscore, period, dash, colon, slash, plus, comma, apostrophe, at sign, pipe and semicolon.
+* European, consisting of most accented european characters and digits plus punctuation space, dash, underscore and period - like latin1 but with less punctuation
+* Latin 1
+* UTF-8
+
+In addition to the string's contents, the number of characters also determines if the string can be inlined or not. Each class has its own character count limits, which are
+
+* For Numerical and Date, 54
+* For Uppercase, Lowercase and E-mail, 43
+* For URI, Alphanumerical and Alphasymbolical, 36
+* For European, 31
+* For Latin1, 27
+* For UTF-8, 14
+
+That means that the largest inline-able string is 54 characters long and must be of the Numerical class and also that all Strings of size 14 or less will always be inlined.
+
+Also note that the above limits are for the default 41 byte PropertyRecord layout - if that parameter is changed the above have to be recalculated.
