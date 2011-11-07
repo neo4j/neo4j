@@ -190,6 +190,8 @@ public class TestBatchInsert
         assertEquals( 2, props.size() );
         assertEquals( "bar3", props.get( "foo" ) );
         assertEquals( "bar2", props.get( "foo2" ) );
+
+        inserter.shutdown();
     }
 
     @Test
@@ -233,6 +235,8 @@ public class TestBatchInsert
         assertEquals( 2, props.size() );
         assertEquals( "bar3", props.get( "foo" ) );
         assertEquals( "bar2", props.get( "foo2" ) );
+
+        inserter.shutdown();
     }
 
     @Test
@@ -252,6 +256,8 @@ public class TestBatchInsert
             assertFalse( inserter.relationshipHasProperty( relationship, key
                                                                          + "-" ) );
         }
+
+        inserter.shutdown();
     }
 
     @Test
