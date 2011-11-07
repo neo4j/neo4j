@@ -62,6 +62,14 @@ public class InterceptingXaLogicalLog extends XaLogicalLog
                             ( (Command) commandEntry.getXaCommand() ).accept( first );
                         }
                     }
+                    else if ( entry instanceof LogEntry.Start )
+                    {
+                        first.setStartEntry( (LogEntry.Start) entry );
+                    }
+                    else if ( entry instanceof LogEntry.Commit )
+                    {
+                        first.setCommitEntry( (LogEntry.Commit) entry );
+                    }
                 }
                 first.complete();
             }

@@ -24,4 +24,8 @@ import org.neo4j.kernel.impl.nioneo.xa.CommandRecordVisitor;
 public interface TransactionInterceptor extends CommandRecordVisitor
 {
     public void complete();
+
+    public void setStartEntry( LogEntry.Start entry );
+
+    public void setCommitEntry( LogEntry.Commit entry );
 }
