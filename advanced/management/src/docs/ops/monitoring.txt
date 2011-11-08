@@ -12,9 +12,13 @@ In order to be able to continuously get an overview of the health of a Neo4j dat
 
 === Adjusting remote JMX access to the Neo4j Server ===
 
-Per default, the Advanved and Enterprise Neo4j Server editions are set up to allow remote JMX connections with certain roles, refer to the +conf/jmx.password+, +conf/jmx.access+ and +conf/wrapper.conf+ for details.
+Per default, the Advanced and Enterprise Neo4j Server editions do not allow remove JMX connections, since the relevant options in the +conf/neo4j-wrapper.conf+ configuration file are commented out. To enable this feature, you have to remove the +#+ characters from the various +com.sun.management.jmxremote+ options there.
 
-With the default setup, you should be able to connect to JMX monitoring of the Neo4j server using +<IP-OF-SERVER>:3637+, with the username +monitor+ and the password +Neo4j+.
+When commented in, the default values are set up to allow remote JMX connections with certain roles, refer to the +conf/jmx.password+, +conf/jmx.access+ and +conf/wrapper.conf+ for details.
+
+With this setup, you should be able to connect to JMX monitoring of the Neo4j server using +<IP-OF-SERVER>:3637+, with the username +monitor+ and the password +Neo4j+.
+
+Note that it is possible that you have to update the permissions and/or ownership of the +conf/jmx.password+ and +conf/jmx.access+ files - refer to the relevant section in +conf/wrapper.conf+ for details
 
 [WARNING]
 For maximum security, please adjust at least the password settings in +conf/jmx.password+ for a production installation.
