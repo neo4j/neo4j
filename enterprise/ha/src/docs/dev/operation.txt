@@ -14,7 +14,9 @@ If the master commit is successful the transaction will be committed on the slav
 To ensure consistency, a slave has to be up to date with the master before performing a write operation.
 This is built into the communication protocol between the slave and master, so that updates will happen automatically if needed.
 
-You can make a slave read-only and unable to accept writes by including the +ha.slave_coordinator_update_mode=none+ configuration parameter in its configuration. 
+You can make a database instance permanently slave-only by including the +ha.slave_coordinator_update_mode=none+ configuration parameter in its configuration.
+Such instances will never become a master during fail-over elections though otherwise they behave identically to any other slaves, including the ability to
+write-through permanent slaves to the master.
 
 When performing a write on the master it will execute in the same way as running in normal embedded mode.
 Currently the master will not push updates to the slave. 
