@@ -184,7 +184,7 @@ A path of length one:
 
 :leveloffset: 2
 
-include::traversal.txt[]
+//include::traversal.txt[]
 
 
 
