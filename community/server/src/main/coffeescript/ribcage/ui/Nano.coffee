@@ -16,7 +16,7 @@ define [], () ->
         keys = pipes.shift().split(".")
         value = data[keys.shift()]
         for key in keys
-          if value.hasOwnProperty(key) then value = value[key] 
+          if value? and value.hasOwnProperty(key) then value = value[key] 
           else value = str
         
         # Pipe the value through whatever functions was asked for

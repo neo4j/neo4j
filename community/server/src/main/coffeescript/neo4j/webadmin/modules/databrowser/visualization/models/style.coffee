@@ -29,13 +29,13 @@ define(
     
     LABEL_PATTERN_TOOLTIP = """You can use placeholders in the label.<br/>
 {id} for node id<br/>
-{prop.PROPERTYNAME} for properties.<br/><br/>
+{PROPERTYNAME} for properties.<br/><br/>
 <b>Truncate values</b><br/>
-{prop.bigproperty|truncate:10}<br/><br/>
+{bigproperty|truncate:10}<br/><br/>
 <b>Multiline labels</b><br/>
 Use ";" to create multiline labels.<br/><br/>
 <b>Example</b><br/>
-{id};{prop.description|truncate:20}..
+{id};{description|truncate:20}..
 """
     
     class BoxOrCircleStyleForm extends forms.ModelForm
@@ -160,10 +160,16 @@ Use ";" to create multiline labels.<br/><br/>
           visualNode.style.labelText = ""
         
       getLabelCtx : (visualNode) ->
-        return {
-          id : if visualNode.neoNode then visualNode.neoNode.getId() else 'N/A'
-          prop : if visualNode.neoNode then visualNode.neoNode.getProperties() else {}
+        ctx = {
+          id : "N/A"
         }
+        if visualNode.neoNode
+          ctx['id'] = visualNode.neoNode.getId()
+          for k,v of visualNode.neoNode.getProperties()
+            ctx[k] = JSON.stringify(v)
+        if not ctx['prop']?
+          ctx['prop'] = ctx
+        ctx
 
 
     exports.GroupStyle = class GroupStyle extends NodeStyle
