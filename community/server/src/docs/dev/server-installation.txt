@@ -7,7 +7,7 @@ Neo4j can be installed as a server, running either as a headless application or 
 1. Download the latest release from http://neo4j.org/download
    * select the appropriate version for your platform
 2. Extract the contents of the archive
-   * refer to the top-level extracted directory as +NEO4J-HOME+
+   * refer to the top-level extracted directory as +NEO4J_HOME+
 3. Use the scripts in the +bin+ directory
    * for Linux/MacOS, run `$NEO4J_HOME/bin/neo4j start`
    * for Windows, double-click on `%NEO4J_HOME%\bin\Neo4j.bat`
