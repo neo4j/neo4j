@@ -39,6 +39,7 @@ define(
       initialize : (opts) =>
         
         @profiles = opts.dataBrowserSettings.getVisualizationProfiles()
+        @settings = opts.dataBrowserSettings
         @styleViews = []
         
       save : () =>
@@ -57,6 +58,7 @@ define(
         @_updateRuleOrderFromUI()
         if @isInCreateMode
           @profiles.add @profile
+          @settings.setCurrentVisualizationProfile(@profile.id)
         @profile.save()
         
         window.location = '#/data/'
