@@ -347,7 +347,8 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     /**
      * In order to return only certain sections of a Gremlin result,
      * you can use +drop()+ and +take()+ to skip and chunk the
-     * result set.
+     * result set. Also, note the use of the +filter{}+ closure to filter
+     * nodes.
      */
     @Test
     @Graph( value = { "George knows Sara", "George knows Ian" }, autoIndexNodes = true )
