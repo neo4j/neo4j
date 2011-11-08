@@ -173,6 +173,44 @@ org.neo4j.server.webserver.port=7476
 org.neo4j.server.database.mode=HA
 ----
 
+To avoid JMX port clashes adjust the assigned ports for all instances under 'conf/neo4j-wrapper.properties':
+
+[source]
+----
+#$NEO4J_HOME1/conf/neo4j-wrapper.properties
+...
+# Remote JMX monitoring, adjust the following lines if needed.
+# Also make sure to update the jmx.access and jmx.password files with appropriate permission roles and passwords,
+# the shipped configuration contains only a read only role called 'monitor' with password 'Neo4j'.
+# For more details, see: http://download.oracle.com/javase/6/docs/technotes/guides/management/agent.html
+wrapper.java.additional.4=-Dcom.sun.management.jmxremote.port=3637
+...
+----
+
+[source]
+----
+#$NEO4J_HOME2/conf/neo4j-wrapper.properties
+...
+# Remote JMX monitoring, adjust the following lines if needed.
+# Also make sure to update the jmx.access and jmx.password files with appropriate permission roles and passwords,
+# the shipped configuration contains only a read only role called 'monitor' with password 'Neo4j'.
+# For more details, see: http://download.oracle.com/javase/6/docs/technotes/guides/management/agent.html
+wrapper.java.additional.4=-Dcom.sun.management.jmxremote.port=3638
+...
+----
+
+[source]
+----
+#$NEO4J_HOME3/conf/neo4j-server.properties
+...
+# Remote JMX monitoring, adjust the following lines if needed.
+# Also make sure to update the jmx.access and jmx.password files with appropriate permission roles and passwords,
+# the shipped configuration contains only a read only role called 'monitor' with password 'Neo4j'.
+# For more details, see: http://download.oracle.com/javase/6/docs/technotes/guides/management/agent.html
+wrapper.java.additional.4=-Dcom.sun.management.jmxremote.port=3639
+...
+----
+
 Now, start all three server instances.
 
 [source,shell]
