@@ -188,7 +188,7 @@ A path of length one:
 
 NOTE: This section is work in progress, stay tuned for the real content!
 
-The http://api.neo4j.org/{neo4j-version}/org/neo4j/graphdb/traversal/TraversalDescription[Neo4j Traversal API] is a callback based, lazily executed way of specifying desired movements through a graph in Java. The main components of a traversal are as follows:
+The http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/BatchInserterIndex.html[Neo4j Traversal API] is a callback based, lazily executed way of specifying desired movements through a graph in Java. The main components of a traversal are as follows:
 
 * _Expanders_ -- define what to traverse, typically in terms of relationships direction and type.
 * _Order_ -- for example depth-first or breadth-first.
