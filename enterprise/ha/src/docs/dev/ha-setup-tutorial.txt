@@ -82,7 +82,7 @@ neo4j_home3$ ./bin/neo4j-coordinator start
 
 === Start the Neo4j Servers in HA mode ===
 
-In your 'conf/neo4j.properties' file, enable HA by setting the necessary parameters for all 3 installations, adjusting the +ha.machine_id+ for all instances:
+In your 'conf/neo4j.properties' file, enable HA by setting the necessary parameters for all 3 installations, adjusting the +ha.server_id+ for all instances:
 
 [source]
 ----
@@ -173,6 +173,44 @@ org.neo4j.server.webserver.port=7476
 org.neo4j.server.database.mode=HA
 ----
 
+To avoid JMX port clashes adjust the assigned ports for all instances under 'conf/neo4j-wrapper.properties':
+
+[source]
+----
+#$NEO4J_HOME1/conf/neo4j-wrapper.properties
+...
+# Remote JMX monitoring, adjust the following lines if needed.
+# Also make sure to update the jmx.access and jmx.password files with appropriate permission roles and passwords,
+# the shipped configuration contains only a read only role called 'monitor' with password 'Neo4j'.
+# For more details, see: http://download.oracle.com/javase/6/docs/technotes/guides/management/agent.html
+wrapper.java.additional.4=-Dcom.sun.management.jmxremote.port=3637
+...
+----
+
+[source]
+----
+#$NEO4J_HOME2/conf/neo4j-wrapper.properties
+...
+# Remote JMX monitoring, adjust the following lines if needed.
+# Also make sure to update the jmx.access and jmx.password files with appropriate permission roles and passwords,
+# the shipped configuration contains only a read only role called 'monitor' with password 'Neo4j'.
+# For more details, see: http://download.oracle.com/javase/6/docs/technotes/guides/management/agent.html
+wrapper.java.additional.4=-Dcom.sun.management.jmxremote.port=3638
+...
+----
+
+[source]
+----
+#$NEO4J_HOME3/conf/neo4j-server.properties
+...
+# Remote JMX monitoring, adjust the following lines if needed.
+# Also make sure to update the jmx.access and jmx.password files with appropriate permission roles and passwords,
+# the shipped configuration contains only a read only role called 'monitor' with password 'Neo4j'.
+# For more details, see: http://download.oracle.com/javase/6/docs/technotes/guides/management/agent.html
+wrapper.java.additional.4=-Dcom.sun.management.jmxremote.port=3639
+...
+----
+
 Now, start all three server instances.
 
 [source,shell]
@@ -258,7 +296,7 @@ in 'neo4j.properties' but will also have to contain:
 #HA instance1
 #unique machine id for this graph database
 #can not be negative id and must be unique
-ha.machine_id = 1
+ha.server_id = 1
 
 #ip and port for this instance to bind to
 ha.server = localhost:6001
@@ -300,7 +338,7 @@ Since it is the first instance to join the cluster it is elected master. Startin
 #HA instance2
 #unique machine id for this graph database
 #can not be negative id and must be unique
-ha.machine_id = 2
+ha.server_id = 2
 
 #ip and port for this instance to bind to
 ha.server = localhost:6001
