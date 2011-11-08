@@ -39,3 +39,5 @@ include::group-count.txt[]
 include::collect-multiple-traversal-results.txt[]
 
 include::collaborative-filtering.txt[]
+
+include::chunking-and-offsetting-in-gremlin.txt[]

@@ -30,6 +30,7 @@ import javax.ws.rs.core.Response.Status;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.JSONPrettifier;
@@ -93,16 +94,15 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     public void testGremlinPostWithVariablesAsJson()
             throws UnsupportedEncodingException
     {
-        final String script = "g.v(me).out";
-        final String params = "{ \"me\" : " + data.get().get( "I" ).getId()
-                              + " }";
-        final String payload = String.format(
-                "{ \"script\" : \"%s\", \"params\" : %s }", script, params );
-        gen().description( formatGroovy( script ) );
-        String response = gen().expectedStatus( Status.OK.getStatusCode() ).payload(
-                JSONPrettifier.parse( payload ) ).payloadType(
-                MediaType.APPLICATION_JSON_TYPE ).post( ENDPOINT ).entity();
+        String response = doRestCall( "g.v(me).out", Status.OK, Pair.of("me", data.get().get( "I" ).getId()+"") );
         assertTrue( response.contains( "you" ) );
+    }
+    
+    private String doRestCall( String script, Status status,
+            Pair<String, String> ...params )
+    {
+        // TODO Auto-generated method stub
+        return super.doGremlinRestCall( ENDPOINT, script, status, params );
     }
 
     /**
@@ -118,11 +118,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     {
         String script = "g.loadGraphML('https://raw.github.com/neo4j/gremlin-plugin/master/src/data/graphml1.xml');"
                         + "g.V;";
-        String payload = "{\"script\":\"" + script + "\"}";
-        description( formatGroovy( script ) );
-        String response = gen().expectedStatus( Status.OK.getStatusCode() ).payload(
-                JSONPrettifier.parse( payload ) ).payloadType(
-                MediaType.APPLICATION_JSON_TYPE ).post( ENDPOINT ).entity();
+        String response = doRestCall( script, Status.OK);
         assertTrue( response.contains( "you" ) );
         assertTrue( response.contains( "him" ) );
     }
@@ -136,17 +132,11 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     @Graph( value = { "I know you", "I know him" } )
     public void emitGraph() throws UnsupportedEncodingException
     {
-        data.get();
         String script = "writer = new GraphMLWriter(g);"
                         + "out = new java.io.ByteArrayOutputStream();"
                         + "writer.outputGraph(out);"
                         + "result = out.toString();";
-        String payload = "{\"script\":\"" + script + "\"}";
-        description( formatGroovy( script ) );
-        String response = gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
-                JSONPrettifier.parse( payload ) ).payloadType(
-                MediaType.APPLICATION_JSON_TYPE ).post( ENDPOINT ).entity();
-        System.out.println( response );
+        String response = doRestCall( script, Status.OK );
         assertTrue( response.contains( "graphml" ) );
         assertTrue( response.contains( "you" ) );
     }
@@ -184,11 +174,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     {
         data.get();
         String script = "g.idx('node_auto_index').get('name','I').toList()._().out().sort{it.name}.toList()";
-        String payload = "{\"script\":\"" + script + "\"}";
-        description( formatGroovy( script ) );
-        String response = gen().expectedStatus( Status.OK.getStatusCode() ).payload(
-                JSONPrettifier.parse( payload ) ).payloadType(
-                MediaType.APPLICATION_JSON_TYPE ).post( ENDPOINT ).entity();
+        String response = doRestCall( script, Status.OK );
         assertTrue( response.contains( "you" ) );
         assertTrue( response.contains( "him" ) );
         assertTrue( response.indexOf( "you" ) > response.indexOf( "him" ) );
@@ -204,13 +190,8 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     @Graph( value = { "I know you", "I know him" } )
     public void testScriptWithPaths()
     {
-        String script = "g.v(" + data.get().get( "I" ).getId()
-                        + ").out.name.paths";
-        String payload = "{\"script\":\"" + script + "\"}";
-        description( formatGroovy( script ) );
-        String response = gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
-                JSONPrettifier.parse( payload ) ).payloadType(
-                MediaType.APPLICATION_JSON_TYPE ).post( ENDPOINT ).entity();
+        String script = "g.v(%I%).out.name.paths";
+        String response = doRestCall( script, Status.OK );
         System.out.println( response );
         assertTrue( response.contains( ", you]" ) );
     }
@@ -220,10 +201,8 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     {
         // be aware that the string is parsed in Java before hitting the wire,
         // so escape the backslash once in order to get \n on the wire.
-        String payload = "{\"script\":\"1\\n2\"}";
-        String response = gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
-                JSONPrettifier.parse( payload ) ).payloadType(
-                MediaType.APPLICATION_JSON_TYPE ).post( ENDPOINT ).entity();
+        String script = "1\\n2";
+        String response = doRestCall( script, Status.OK );
         assertTrue( response.contains( "2" ) );
     }
 
@@ -242,19 +221,10 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
             "Joe like dogs" } )
     public void testGremlinPostJSONWithTableResult()
     {
-        String script = "i = g.v("
-                        + data.get().get( "I" ).getId()
-                        + ");"
+        String script = "i = g.v(%I%);"
                         + "t= new Table();"
                         + "i.as('I').out('know').as('friend').out('like').as('likes').table(t,['friend','likes']){it.name}{it.name} >> -1;t;";
-        String payload = "{\"script\":\"" + script + "\"}";
-        description( formatGroovy( script ) );
-        String response = gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
-                JSONPrettifier.parse( payload ) ).payloadType(
-                MediaType.APPLICATION_JSON_TYPE ).post( ENDPOINT )
-
-        .entity();
-        description( formatGroovy( script ) );
+        String response = doRestCall( script, Status.OK );
         assertTrue( response.contains( "cats" ) );
     }
 
@@ -292,12 +262,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
                         + "tx.finish();"
                         + "query = new QueryContext( 'name:*' ).sort( new Sort(new SortField( 'name',SortField.STRING, true ) ) );"
                         + "results = personIndex.query( query );";
-        String payload = "{\"script\":\"" + script + "\"}";
-        description( formatGroovy( script ) );
-        String response = gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
-                JSONPrettifier.parse( payload ) ).payloadType(
-                MediaType.APPLICATION_JSON_TYPE ).post( ENDPOINT ).entity();
-        description( formatGroovy( script ) );
+        String response = doRestCall( script, Status.OK );
         assertTrue( response.contains( "me" ) );
 
     }
@@ -327,16 +292,11 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
             "U1G1R2 hasRole Role2", "U1G1R2 hasGroup Group1" } )
     public void findGroups()
     {
-        String script = "" + "g.v(" + data.get().get( "User1" ).getId() + ")"
+        String script = "" + "g.v(%User1%)"
                         + ".out('hasRoleInGroup').as('hyperedge')."
                         + "out('hasGroup').filter{it.name=='Group2'}."
                         + "back('hyperedge').out('hasRole').name";
-        String payload = "{\"script\":\"" + script + "\"}";
-        description( formatGroovy( script ) );
-        data.get();
-        String response = gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
-                JSONPrettifier.parse( payload ) ).payloadType(
-                MediaType.APPLICATION_JSON_TYPE ).post( ENDPOINT ).entity();
+        String response = doRestCall( script, Status.OK );
         assertTrue( response.contains( "Role1" ) );
         assertFalse( response.contains( "Role2" ) );
 
@@ -352,13 +312,8 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     @Graph( { "Peter knows Ian", "Ian knows Peter", "Peter likes Bikes" } )
     public void group_count() throws UnsupportedEncodingException, Exception
     {
-        String script = "m = [:];" + "g.v(" + data.get().get( "Peter" ).getId()
-                        + ").bothE().label.groupCount(m) >> -1;m";
-        String payload = "{\"script\":\"" + script + "\"}";
-        description( formatGroovy( script ) );
-        gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
-                JSONPrettifier.parse( payload ) );
-        String response = gen.get().post( ENDPOINT ).entity();
+        String script = "m = [:];" + "g.v(%Peter%).bothE().label.groupCount(m) >> -1;m";
+        String response = doRestCall( script, Status.OK );
         assertTrue( response.contains( "knows=2" ) );
     }
 
@@ -372,13 +327,8 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     public void collect_multiple_traversal_results()
             throws UnsupportedEncodingException, Exception
     {
-        data.get();
         String script = "g.idx('node_auto_index')[['name':'Peter']].copySplit(_().out('knows'), _().in('likes')).fairMerge.name";
-        String payload = "{\"script\":\"" + script + "\"}";
-        description( formatGroovy( script ) );
-        gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
-                JSONPrettifier.parse( payload ) );
-        String response = gen.get().post( ENDPOINT ).entity();
+        String response = doRestCall( script, Status.OK );
         assertTrue( response.contains( "Marie" ) );
         assertTrue( response.contains( "Ian" ) );
     }
@@ -392,30 +342,21 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
 
     }
 
-    private String formatGroovy( String script )
-    {
-        script = script.replace( ";", "\n" );
-        if ( !script.endsWith( "\n" ) )
-        {
-            script += "\n";
-        }
-        return "_Raw script source_\n\n" + "[source, groovy]\n" + "----\n"
-               + script + "----\n";
-    }
+    
 
+    /**
+     * In order to return only certain sections of a Gremlin result,
+     * you can use +drop()+ and +take()+ to skip and chunk the
+     * result set.
+     */
     @Test
-    @Ignore
-    @Graph( value = { "A FOLLOW B", "B FOLLOW A", "B FOLLOW C" }, autoIndexNodes = true )
-    public void followers() throws UnsupportedEncodingException
+    @Graph( value = { "George knows Sara", "George knows Ian" }, autoIndexNodes = true )
+    public void chunking_and_offsetting_in_Gremlin() throws UnsupportedEncodingException
     {
-        String script = "i = g.v(" + data.get().get( "B" ).getId()
-                        + ").out('FOLLOW')";
-        gen().expectedStatus( Status.OK.getStatusCode() ).description(
-                formatGroovy( script ) );
-        String response = gen().payload(
-                "script=" + URLEncoder.encode( script, "UTF-8" ) ).payloadType(
-                MediaType.APPLICATION_FORM_URLENCODED_TYPE ).post( ENDPOINT ).entity();
-        assertTrue( response.contains( "you" ) );
+        String script = " g.v(%George%).outE[[label:'knows']].inV.filter{ it.name == 'Sara'}.drop(0).take(100)._()";
+        String response = doRestCall( script, Status.OK );
+        assertTrue( response.contains( "Sara" ) );
+        assertFalse( response.contains( "Ian" ) );
     }
     
     /**
@@ -433,13 +374,8 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     public void collaborative_filtering() throws UnsupportedEncodingException
     {
         String script = "x=[];fof=[:];" +
-        		"g.v(" + data.get().get( "Joe" ).getId()
-                        + ").out('knows').aggregate(x).out('knows').except(x).groupCount(fof)>>-1;fof.sort{a,b -> b.value <=> a.value}";
-        String payload = "{\"script\":\"" + script + "\"}";
-        gen().expectedStatus( Status.OK.getStatusCode() ).description(
-                formatGroovy( script ) );
-        String response = gen().payload(
-                JSONPrettifier.parse( payload ) ).post( ENDPOINT ).entity();
+        		"g.v(%Joe%).out('knows').aggregate(x).out('knows').except(x).groupCount(fof)>>-1;fof.sort{a,b -> b.value <=> a.value}";
+        String response = doRestCall( script, Status.OK );
         assertFalse( response.contains( "v["+ data.get().get( "Bill").getId() ) );
         assertFalse( response.contains( "v["+ data.get().get( "Sara").getId() ) );
         assertTrue( response.contains( "v["+ data.get().get( "Ian").getId() ) );
