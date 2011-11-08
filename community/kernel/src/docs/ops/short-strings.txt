@@ -10,7 +10,7 @@ leading to performance improvements.
 
 The various classes for short strings are:
 
-* Numerical, consisting of digits 0..9 and the punctuation space, period, dash,, plus, comma and apostrophe.
+* Numerical, consisting of digits 0..9 and the punctuation space, period, dash, plus, comma and apostrophe.
 * Date, consisting of digits 0..9 and the punctuation space dash, colon, slash, plus and comma.
 * Uppercase, consisting of uppercase letters A..Z, and the punctuation space, underscore, period, dash, colon and slash.
 * Lowercase, like upper but with lowercase letters a..z instead of uppercase
@@ -33,4 +33,4 @@ In addition to the string's contents, the number of characters also determines i
 
 That means that the largest inline-able string is 54 characters long and must be of the Numerical class and also that all Strings of size 14 or less will always be inlined.
 
-Also note that the above limits are for the default 41 byte PropertyRecord layout - if that parameter is changed the above have to be recalculated.
+Also note that the above limits are for the default 41 byte PropertyRecord layout - if that parameter is changed via editing the source and recompiling, the above have to be recalculated.
