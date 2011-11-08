@@ -11,4 +11,3 @@ In addition to topical documents, subdirectories include:
 * [manual](manual/pdf/neo4j-manual.pdf) - Neo4j Manual in PDF format
 * [manual](manual/html/index.html) - Neo4j Manual in navigable HTML format
 * [manual](${neo4j-manual.url}) - Neo4j Manual in navigable HTML format (Online w comments)
-* [REST API](rest/rest.html) - full documentation
