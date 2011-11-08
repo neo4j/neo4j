@@ -82,7 +82,7 @@ neo4j_home3$ ./bin/neo4j-coordinator start
 
 === Start the Neo4j Servers in HA mode ===
 
-In your 'conf/neo4j.properties' file, enable HA by setting the necessary parameters for all 3 installations, adjusting the +ha.machine_id+ for all instances:
+In your 'conf/neo4j.properties' file, enable HA by setting the necessary parameters for all 3 installations, adjusting the +ha.server_id+ for all instances:
 
 [source]
 ----
@@ -258,7 +258,7 @@ in 'neo4j.properties' but will also have to contain:
 #HA instance1
 #unique machine id for this graph database
 #can not be negative id and must be unique
-ha.machine_id = 1
+ha.server_id = 1
 
 #ip and port for this instance to bind to
 ha.server = localhost:6001
@@ -300,7 +300,7 @@ Since it is the first instance to join the cluster it is elected master. Startin
 #HA instance2
 #unique machine id for this graph database
 #can not be negative id and must be unique
-ha.machine_id = 2
+ha.server_id = 2
 
 #ip and port for this instance to bind to
 ha.server = localhost:6001
