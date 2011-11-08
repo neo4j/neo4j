@@ -41,3 +41,5 @@ include::collect-multiple-traversal-results.txt[]
 include::collaborative-filtering.txt[]
 
 include::chunking-and-offsetting-in-gremlin.txt[]
+
+include::modify-the-graph-while-traversing.txt[]
