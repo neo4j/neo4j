@@ -32,6 +32,8 @@ define(
 {PROPERTYNAME} for properties.<br/><br/>
 <b>Truncate values</b><br/>
 {bigproperty|truncate:10}<br/><br/>
+<b>Use first matching property</b><br/>
+{name,title,id}<br/><br/>
 <b>Multiline labels</b><br/>
 Use ";" to create multiline labels.<br/><br/>
 <b>Example</b><br/>
