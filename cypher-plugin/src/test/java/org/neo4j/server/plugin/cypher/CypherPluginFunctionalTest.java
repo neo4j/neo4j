@@ -144,7 +144,7 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase {
             Pair<String, String> ...params )
     {
         // TODO Auto-generated method stub
-        return super.doRestCall( ENDPOINT, script, status, params );
+        return super.doCypherRestCall( ENDPOINT, script, status, params );
     }
 
 
