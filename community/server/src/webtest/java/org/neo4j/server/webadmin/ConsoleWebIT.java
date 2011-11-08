@@ -85,6 +85,7 @@ public class ConsoleWebIT extends AbstractWebadminTest {
     public void hasGremlinConsoleTest() {
         wl.goToWebadminStartPage();
         wl.clickOnTab("Console");
+        wl.clickOnLink("Gremlin");
         wl.waitForElementToAppear(By
                 .xpath("//li[contains(.,'gremlin')]"));
     }
