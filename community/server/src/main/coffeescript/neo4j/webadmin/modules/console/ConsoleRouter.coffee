@@ -34,7 +34,7 @@ define(
         "/console/" : "console"
         "/console/:type" : "console"
 
-      consoleType : "gremlin"
+      consoleType : "cypher"
 
       init : (appState) =>
         @appState = appState
@@ -61,6 +61,7 @@ define(
         if type is false then type = @consoleType
         @consoleType = type
         @appState.set( mainView : @getConsoleView(type) )
+        @getConsoleView(type).focusOnInputField()
 
       getConsoleView : (type) =>
         @views[type]
