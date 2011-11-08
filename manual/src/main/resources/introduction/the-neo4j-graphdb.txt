@@ -182,65 +182,9 @@ A path of length one:
 "Node 1" -> "Node 2" [label="Relationship 1"]
 ----
 
+:leveloffset: 2
 
-[[graphdb-neo4j-traversal]]
-== Traversal ==
-
-NOTE: This section is work in progress, stay tuned for the real content!
-
-The http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/BatchInserterIndex.html[Neo4j Traversal API] is a callback based, lazily executed way of specifying desired movements through a graph in Java. The main components of a traversal are as follows:
-
-* _Expanders_ -- define what to traverse, typically in terms of relationships direction and type.
-* _Order_ -- for example depth-first or breadth-first.
-* _Uniqueness_ -- visit nodes (relationships, paths) only once.
-* _Evaluator_ -- decide what to return and whether to stop or continue traversal beyond the current position. 
-* A _starting node_ where the traversal will begin.
-
-["dot", "graphdb-traversal-description.svg", "meta", scaledwidth="100%"]
-----
-"Traversal Description" [fillcolor="NODEHIGHLIGHT"]
-Expander -> "Traversal Description" [label="what to traverse"]
-Order -> "Traversal Description" [label="where to go next"]
-Uniqueness -> "Traversal Description" [label="avoid duplicates"]
-Evaluator -> "Traversal Description" [label="return and prune policy"]
-
-"Depth First" [TEXTNODE]
-"Breadth First" [TEXTNODE]
-"Relationship Type" [TEXTNODE]
-"Direction" [TEXTNODE]
-"Unique Nodes" [TEXTNODE]
-"Unique Relationships" [TEXTNODE]
-"Unique Paths" [TEXTNODE]
-"None" [TEXTNODE]
-"Include/Exclude" [TEXTNODE]
-"Prune/Continue" [TEXTNODE]
-
-"Depth First" -> Order [dir="back"]
-"Breadth First" -> Order [dir="back"]
-
-Expander -> "Relationship Type"
-"Direction" -> Expander [dir="back"]
-
-"Unique Nodes" -> Uniqueness [dir="back"]
-"Unique Relationships" -> Uniqueness [dir="back"]
-"Unique Paths" -> Uniqueness [dir="back"]
-"None" -> Uniqueness [dir="back"]
-
-"Include/Exclude" -> Evaluator [dir="back"]
-Evaluator -> "Prune/Continue"
-
-Traverser [fillcolor="NODE2HIGHLIGHT"]
-"A Node" [fillcolor="NODEHIGHLIGHT"]
-"Traversal Description" -> Traverser [dir="back" label="applies" weight=3.0]
-"A Node" -> Traverser [label="starting point of"]
-Traverser -> Paths [label="result as"]
-Traverser -> Nodes [label="result as"]
-Traverser -> Relationships [label="result as"]
-
-{ rank="same"; Traverser; "A Node" }
-----
-
-For some examples of traversals in Neo4j, see <<tutorials-java-embedded-traversal>>. Other options to traverse or query graphs in Neo4j are <<cypher-query-lang>> and <<gremlin-plugin>>.
+include::traversal.txt[]
 
 
 
