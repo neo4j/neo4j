@@ -67,8 +67,8 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
 
     }
 
-    protected String doRestCall( String endpoint, String script, Status status, Pair<String, String>... params ) {
-
+    protected String doCypherRestCall( String endpoint, String script, Status status, Pair<String, String>... params ) {
+        data.get();
         String parameterString = createParameterString( params );
 
 
@@ -78,6 +78,29 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
                 queryString ).description(
                 AsciidocHelper.createCypherSnippet( script ) );
         return gen.get().post( endpoint ).entity();
+    }
+    
+    protected String doGremlinRestCall( String endpoint, String script, Status status, Pair<String, String>... params ) {
+        data.get();
+        String parameterString = createParameterString( params );
+
+
+        String queryString = "{\"script\": \"" + createScript( script ) + "\"," + parameterString+"},"  ;
+
+        gen.get().expectedStatus( status.getStatusCode() ).payload(
+                queryString ).description(formatGroovy( script ) );
+        return gen.get().post( endpoint ).entity();
+    }
+    
+    protected String formatGroovy( String script )
+    {
+        script = script.replace( ";", "\n" );
+        if ( !script.endsWith( "\n" ) )
+        {
+            script += "\n";
+        }
+        return "_Raw script source_\n\n" + "[source, groovy]\n" + "----\n"
+               + script + "----\n";
     }
     
     private Long idFor( String name ) {
