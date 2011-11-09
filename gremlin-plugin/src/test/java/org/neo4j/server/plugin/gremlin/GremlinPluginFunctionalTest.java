@@ -36,6 +36,7 @@ import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.JSONPrettifier;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.TestData.Title;
+import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
 {
@@ -317,17 +318,20 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
         assertTrue( response.contains( "knows=2" ) );
     }
     
-//    g.v(0).bothE().sideEffect{g.removeEdge(it);
     /**
      * This example is showing a group count in Germlin, for instance the
      * counting of the different relationship types connected to some the start
      * node. The result is collected into a variable that then is returned.
+     * 
+     * @@graph1
      */
     @Test
     @Documented
     @Graph( { "Peter knows Ian", "Ian knows Peter", "Peter likes Bikes" } )
     public void modify_the_graph_while_traversing() throws UnsupportedEncodingException, Exception
     {
+        data.get();
+        gen().addSnippet( "graph1", AsciidocHelper.createGraphViz( "Starting Graph", graphdb(), "starting_graph"+gen.get().getTitle() ) );
         assertTrue( getNode( "Peter" ).hasRelationship() );
         String script = "g.v(%Peter%).bothE()each{g.removeEdge(it);};";
         String response = doRestCall( script, Status.OK );
