@@ -5,11 +5,6 @@ PROJECTNAME      = neo4j-manual
 BUILDDIR         = $(CURDIR)/target
 SRCDIR           = $(BUILDDIR)/classes
 SRCFILE          = $(SRCDIR)/$(PROJECTNAME).txt
-METAFROMDIR      = $(CURDIR)/src/docs
-METAFROMCSSDIR   = $(CURDIR)/src/main/resources/css
-METAFROMIMGDIR   = $(CURDIR)/src/main/resources/images
-METASRCDIR       = $(BUILDDIR)/metadocssrc
-METASRCFILE      = $(METASRCDIR)/index.txt
 IMGDIR           = $(SRCDIR)/images
 CSSDIR           = $(SRCDIR)/css
 JSDIR            = $(SRCDIR)/js
@@ -32,7 +27,6 @@ CHUNKEDHTMLDIR   = $(BUILDDIR)/chunked
 CHUNKEDOFFLINEHTMLDIR = $(BUILDDIR)/chunked-offline
 CHUNKEDTARGET     = $(BUILDDIR)/$(PROJECTNAME).chunked
 CHUNKEDSHORTINFOTARGET = $(BUILDDIR)/$(PROJECTNAME)-html.chunked
-METAHTMLDIR      = $(BUILDDIR)/metadocs
 MANPAGES         = $(BUILDDIR)/manpages
 UPGRADE          = $(BUILDDIR)/upgrade
 FILTERSRC        = $(CURDIR)/src/bin/resources
@@ -139,7 +133,7 @@ copyimages:
 	# Copying images from source projects.
 	#
 	#
-	./copy-images $(SRCDIR)
+	"$(SCRIPTDIR)/copy-images.sh" "$(IMPORTDIR)" "$(IMGDIR)"
 
 html-check: offline-html
 	#
