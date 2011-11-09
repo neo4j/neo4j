@@ -38,10 +38,10 @@ public class TraversalTest extends AbstractJavaDocTestbase
 {
     /**
      * In contrary to
-     * http://components.neo4j.org/neo4j-kernel/{neo4j-version}/apidocs/org/neo4j/graphdb/Node.html#traverse[Node#traverse] a
-     * http://components.neo4j.org/neo4j-kernel/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html[traversal description] is built (using a
+     * http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Node.html#traverse[Node#traverse] a
+     * http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html[traversal description] is built (using a
      * fluent interface) and such a description can spawn
-     * http://components.neo4j.org/neo4j-kernel/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/Traverser.html[traversers].
+     * http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/Traverser.html[traversers].
      * 
      * @@graph
      * 
@@ -53,16 +53,16 @@ public class TraversalTest extends AbstractJavaDocTestbase
      * 
      * @@source1
      * 
-     * Since http://components.neo4j.org/neo4j-kernel/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html[+TraversalDescription+]s 
+     * Since http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html[+TraversalDescription+]s 
      * are immutable it is also useful to create template descriptions which holds common 
      * settings shared by different traversals, for example:
      * 
      * @@source2
      * 
-     * If you're not interested in the http://components.neo4j.org/neo4j-kernel/{neo4j-version}/apidocs/org/neo4j/graphdb/Path.html[+Path+]s, 
-     * but f.ex. the http://components.neo4j.org/neo4j-kernel/{neo4j-version}/apidocs/org/neo4j/graphdb/Node.html[+Node+]s 
-     * you can transform the traverser into an iterable of http://components.neo4j.org/neo4j-kernel/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/Traverser.html#nodes()[nodes] 
-     * or http://components.neo4j.org/neo4j-kernel/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/Traverser.html#relationships()[relationships]:
+     * If you're not interested in the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Path.html[+Path+]s, 
+     * but f.ex. the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Node.html[+Node+]s 
+     * you can transform the traverser into an iterable of http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/Traverser.html#nodes()[nodes] 
+     * or http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/Traverser.html#relationships()[relationships]:
      * 
      * @@source3
      * 
