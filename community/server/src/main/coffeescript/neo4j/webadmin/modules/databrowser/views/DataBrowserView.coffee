@@ -92,7 +92,7 @@ define(
           $("#data-create-relationship").removeClass("selected")
 
       consoleKeyPressed : (ev) =>
-        if ev.which is 13 and ev.ctrlKey # ctrl + enter
+        if ev.which is 13# and ev.ctrlKey # ctrl + enter
           ev.stopPropagation()
           @search()
 
