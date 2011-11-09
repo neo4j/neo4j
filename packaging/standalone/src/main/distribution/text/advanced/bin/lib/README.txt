@@ -6,6 +6,3 @@ as a service.
 
 References
 ----------
-
-* [Java Service Wrapper](${wrapper-home.url})
-
