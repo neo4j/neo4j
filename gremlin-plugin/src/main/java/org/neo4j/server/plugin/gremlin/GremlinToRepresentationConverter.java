@@ -20,10 +20,13 @@
 package org.neo4j.server.plugin.gremlin;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.server.rest.repr.DatabaseRepresentation;
 import org.neo4j.server.rest.repr.GremlinTableRepresentation;
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.NodeRepresentation;
@@ -48,9 +51,24 @@ public class GremlinToRepresentationConverter {
         if (data instanceof Iterable) {
             return getListRepresentation((Iterable) data);
         }
+        if (data instanceof Iterator) {
+            Iterator iterator = (Iterator) data;
+            return getIteratorRepresentation(iterator);
+        }
         return getSingleRepresentation(data);
     }
-
+    Representation getIteratorRepresentation(Iterator data) {
+        final List<Representation> results = new ArrayList<Representation>();
+        while (data.hasNext()) {
+            Object value = data.next();
+            if(value instanceof Iterable) {
+                convertValuesToRepresentations( (Iterable) value );
+            }
+            final Representation representation = getSingleRepresentation(value);
+            results.add(representation);
+        }
+        return new ListRepresentation(getType(results), results);
+    }
     Representation getListRepresentation(Iterable data) {
         final List<Representation> results = convertValuesToRepresentations(data);
         return new ListRepresentation(getType(results), results);
@@ -79,6 +97,8 @@ public class GremlinToRepresentationConverter {
             return new NodeRepresentation(((Neo4jVertex) result).getRawVertex());
         } else if (result instanceof Neo4jEdge) {
             return new RelationshipRepresentation(((Neo4jEdge) result).getRawEdge());
+        } else if (result instanceof GraphDatabaseService) {
+            return new DatabaseRepresentation(((GraphDatabaseService) result));
         } else if (result instanceof Node) {
             return new NodeRepresentation((Node) result);
         } else if (result instanceof Relationship) {

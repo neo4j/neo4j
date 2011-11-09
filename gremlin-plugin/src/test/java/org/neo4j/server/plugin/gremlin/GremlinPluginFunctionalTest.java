@@ -376,10 +376,24 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     @Graph( value = { "George knows Sara", "George knows Ian" }, autoIndexNodes = true )
     public void chunking_and_offsetting_in_Gremlin() throws UnsupportedEncodingException
     {
-        String script = " g.v(%George%).outE[[label:'knows']].inV.filter{ it.name == 'Sara'}.drop(0).take(100)._()";
+        String script = "g.v(%George%).out('knows').filter{it.getProperty('name') == 'Sara'}.drop(0).take(100)";
         String response = doRestCall( script, Status.OK );
         assertTrue( response.contains( "Sara" ) );
         assertFalse( response.contains( "Ian" ) );
+    }
+    
+    /**
+     * Of course,
+     * Neo4j primitives liek +Nodes+, +Relationships+ and +GraphDatabaseService+
+     * are returned as Neo4j REST entities
+     */
+    @Test
+    @Graph( value = { "George knows Sara", "George knows Ian" }, autoIndexNodes = true )
+    public void returning_Neo4j_primitives() throws UnsupportedEncodingException
+    {
+        String script = "g.getRawGraph()";
+        String response = doRestCall( script, Status.OK );
+        assertTrue( response.contains( "neo4j_version" ) );
     }
     
     /**
