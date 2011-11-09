@@ -16,6 +16,10 @@ Per default, the Advanced and Enterprise Neo4j Server editions do not allow remo
 
 When commented in, the default values are set up to allow remote JMX connections with certain roles, refer to the +conf/jmx.password+, +conf/jmx.access+ and +conf/wrapper.conf+ for details.
 
+Make sure that +conf/jmx.password+ has the correct file permissions. The owner of the file has to be the user that will run the service, and the permissions should be read only for that user. On Unix systems, this is 0600. 
+
+On Windows, follow this tutorial to set the correct permissions. If you are running the service under the Local System Account, the user that owns the file and has access to it should be SYSTEM.
+
 With this setup, you should be able to connect to JMX monitoring of the Neo4j server using +<IP-OF-SERVER>:3637+, with the username +monitor+ and the password +Neo4j+.
 
 Note that it is possible that you have to update the permissions and/or ownership of the +conf/jmx.password+ and +conf/jmx.access+ files - refer to the relevant section in +conf/wrapper.conf+ for details
