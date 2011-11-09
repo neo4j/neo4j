@@ -139,8 +139,7 @@ copyimages:
 	# Copying images from source projects.
 	#
 	#
-	cp -fr "$(IMPORTDIR)/"*/*/images/* "$(SRCDIR)/images/"
-
+	./copy-images $(SRCDIR)
 html-check: offline-html
 	#
 	#
