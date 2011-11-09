@@ -1,0 +1,4 @@
+#!/bin/sh
+for i in `find . -path './target/docs/*images' -type d`; do
+  cp -fr $i/* $1/images/
+done
