@@ -54,6 +54,10 @@ Using the Neo4j REST API
 
 include::{importdir}/neo4j-server-examples-docs-jar/dev/server-java-rest-client.txt[]
 
+:leveloffset: 1
+
+include::introduction/traversal-framework.txt[]
+
 :leveloffset: 0
 
 include::reference/index.txt[]

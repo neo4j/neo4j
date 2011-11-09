@@ -1,11 +1,13 @@
-[[graphdb-neo4j-traversal]]
-Traversal
-=========
+[[tutorial-traversal]]
+The Traversal Framework
+=======================
 
-The http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/BatchInserterIndex.html[Neo4j Traversal API] is a callback based, lazily executed way of specifying desired movements through a graph in Java. Some traversal examples for both the new and the old traversal framework are collected under <<tutorials-java-embedded-traversal>>. 
 
-Other options to traverse or query graphs in Neo4j are <<cypher-query-lang>> and <<gremlin-plugin>>.
+The http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/package-summary.html[Neo4j Traversal API] is a callback based, lazily executed way of specifying desired movements through a graph in Java. Some traversal examples for both the new and the old traversal framework are collected under <<tutorials-java-embedded-traversal>>. 
 
+Other options to traverse or query graphs in Neo4j are <<cypher-query-lang,Cypher>> and <<gremlin-plugin,Gremlin>>.
+
+[[tutorial-traversal-concepts]]
 == The main concepts ==
 
 Here follows a short explanation of all different methods that can modify or add to a traversal description.
@@ -80,7 +82,7 @@ Adds a +PruneEvaluator+ to the list of evaluators to ask about pruning for each 
 
 A more generic version of depthFirst/breadthFirst methods in that it allows an arbitrary http://components.neo4j.org/neo4j-kernel/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/BranchOrderingPolicy.html[BranchOrderingPolicy] to be injected into the description.
 
-==== depthFirst/breadthFirst ====
+==== +depthFirst+/+breadthFirst+ ====
 
 These are convenience methods for setting preorder http://en.wikipedia.org/wiki/Depth-first_search[depth-first]/ http://en.wikipedia.org/wiki/Breadth-first_search[breadth-first] BranchSelector|ordering policies. The same result can be achieved by calling the http://components.neo4j.org/neo4j-kernel/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html#order[order] method with ordering policies from the http://components.neo4j.org/neo4j-kernel/{neo4j-version}/apidocs/org/neo4j/kernel/Traversal.html#preorderDepthFirst[Traversal] http://components.neo4j.org/neo4j-kernel/{neo4j-version}/apidocs/org/neo4j/kernel/Traversal.html#preorderBreadthFirst[factory], or to write your own BranchSelector/BranchOrderingPolicy and pass in.
 
@@ -98,6 +100,7 @@ Adds a relationship type to the list of relationship types to traverse. By +defa
 Starts a traversal with behavior described in the http://components.neo4j.org/neo4j-kernel/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html[TraversalDescription]. Each returned result is iterated lazily for each call to +hasNext()/next()+ of the iterator created by the +Traverser+.
 
 
+[[tutorial-traversal-participants]]
 == Participants of a Neo4j Traversal ==
 
 The traversal framework consists of a few main interfaces in addition to Node and Relationship: TraversalDescription, Evaluator, PruneEvaluator, Traverser and Uniqueness are the main ones. The Path interface also has a special purpose in traversals, since it is used to represent a position in the graph when evaluating that position. Furthermore the RelationshipExpander and Expander interfaces are central to traversals, but users of the API rarely need to implement them. There are also a set of interfaces for advanced use, when explicit control over the traversal order is required: BranchSelector, BranchOrderingPolicy and TraversalBranch.
@@ -142,7 +145,7 @@ A BranchSelector is used for selecting which branch of the traversal to attempt 
 * +Traversal.preorderBreadthFirst()+ - Traversing breadth first, visiting each node before visiting its child nodes.
 * +Traversal.postorderBreadthFirst()+ - Traversing breadth first, visiting each node after visiting its child nodes.
 
-NOTE:Please note that BreadthFirst traversals have a higher memory overhead than depth first traversals.
+NOTE: Please note that breadth first traversals have a higher memory overhead than depth first traversals.
 
 BranchSelectors carries state and hence needs to be uniquely instantiated for each traversal. Therefore it is supplied to the TraversalDescription through a BranchOrderingPolicy interface, which is a factory of BranchSelector instances.
 
@@ -178,3 +181,4 @@ All the RelationshipExpanders provided by the Neo4j traversal framework also imp
 :leveloffset: 3
 
 include::{importdir}/neo4j-examples-docs-jar/dev/examples/how-to-use-the-traversal-framework.txt[]
+
