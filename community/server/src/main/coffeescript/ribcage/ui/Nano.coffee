@@ -14,8 +14,8 @@ define [], () ->
       template.replace /\{([\w\-\,\.\|:]*)}/g, (str, key) ->
         pipes = key.split('|')
         keySets = for path in pipes.shift().split(",")
-          path.split(".") 
-        console.log keySets[0]
+          path.split(".")
+        
         for keys in keySets
           value = data[keys.shift()]
           for key in keys
