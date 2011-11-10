@@ -23,25 +23,30 @@ import aggregation.AggregationFunction
 import org.neo4j.cypher.SymbolTable
 import org.neo4j.cypher.commands.{AggregationItem, ReturnItem}
 
+// Eager aggregation means that this pipe will eagerly load the whole resulting subgraphs before starting
+// to emit aggregated results.
+// Cypher is lazy until it has to - this pipe makes stops the lazyness
 class EagerAggregationPipe(source: Pipe, returnItems: Seq[ReturnItem], aggregations: Seq[AggregationItem]) extends Pipe {
-  val symbols: SymbolTable = source.symbols.add(aggregations.map(_.identifier))
+  val symbols: SymbolTable = new SymbolTable(returnItems.map(_.identifier)).add(aggregations.map(_.concreteReturnItem.identifier))
+  source.symbols.add(aggregations.map(_.identifier))
 
   aggregations.foreach(_.assertDependencies(source))
 
   def foreach[U](f: Map[String, Any] => U) {
+    // This is the temporary storage used while the aggregation is going on
     val result = collection.mutable.Map[Seq[Any], Seq[AggregationFunction]]()
-    val valueNames = returnItems.map(_.columnName)
+    val keyNames = returnItems.map(_.columnName)
     val aggregationNames = aggregations.map(_.identifier.name)
 
     source.foreach(m => {
-      val groupValues = valueNames.map(m(_))
+      val groupValues = keyNames.map(m(_))
       val functions = result.getOrElseUpdate(groupValues, aggregations.map(_.createAggregationFunction))
       functions.foreach(func => func(m))
     })
 
     result.foreach {
       case (key, value: Seq[AggregationFunction]) => {
-        val elems = valueNames.zip(key) ++ aggregationNames.zip(value.map(_.result))
+        val elems = keyNames.zip(key) ++ aggregationNames.zip(value.map(_.result))
         f(elems.toMap)
       }
     }

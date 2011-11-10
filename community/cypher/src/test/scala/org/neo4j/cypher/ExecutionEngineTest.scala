@@ -1127,6 +1127,21 @@ order by a.name
     assert(List(a,b,c) === result.columnAs[Node]("a") .toList)
   }
 
+
+  @Test(expected = classOf[SyntaxException]) def shouldNotSupportSortingOnThingsAfterDistinctHasRemovedIt() {
+    val a = createNode("name"->"A", "age"->13)
+    val b = createNode("name"->"B", "age"->12)
+    val c = createNode("name"->"C", "age"->11)
+
+    val result = parseAndExecute("""
+start a  = node(1,2,3,1)
+return distinct a.name
+order by a.age
+""")
+
+    assert(List(a,b,c) === result.columnAs[Node]("a") .toList)
+  }
+
   @Test def shouldThrowNiceErrorMessageWhenPropertyIsMissing() {
     val query = new CypherParser().parse("start n=node(0) return n.A_PROPERTY_THAT_IS_MISSING")
     try {
