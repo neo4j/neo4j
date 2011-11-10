@@ -10,7 +10,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.app</groupId>
   <artifactId>neo4j-server-enterprise</artifactId>
-  <version>1.5-SNAPSHOT</version>
+  <version>1.6-SNAPSHOT</version>
   <name>Neo4j Enterprise Server</name>
   <description>Standalone Neo4j server application.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -34,7 +34,7 @@
     <webdriver.version>2.0b1</webdriver.version>
     <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
 
-    <neo4j.version>1.5-SNAPSHOT</neo4j.version>
+    <neo4j.version>1.6-SNAPSHOT</neo4j.version>
   </properties>
 
   <packaging>jar</packaging>
@@ -72,7 +72,7 @@ terms of the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-enterprise</artifactId>
-      <version>1.5-SNAPSHOT</version>
+      <version>1.6-SNAPSHOT</version>
     </dependency>
 
     <!-- Test dependencies -->
@@ -86,7 +86,7 @@ terms of the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ha</artifactId>
-      <version>1.5-SNAPSHOT</version>
+      <version>1.6-SNAPSHOT</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
