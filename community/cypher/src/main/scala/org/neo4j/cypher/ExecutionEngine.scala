@@ -56,19 +56,6 @@ class ExecutionEngine(graph: GraphDatabaseService) {
   @throws(classOf[SyntaxException])
   def execute(query: Query, map: JavaMap[String, Any]): ExecutionResult = execute(query, map.asScala.toMap)
 
-  def createSortPipe(sort: Option[Sort], allReturnItems: Seq[ReturnItem], context: CurrentContext) {
-    sort match {
-      case None =>
-      case Some(s) => {
-
-        val sortItems = s.sortItems.map(_.returnItem.concreteReturnItem).filterNot(allReturnItems.contains)
-        if (sortItems.nonEmpty) {
-          context.pipe = new TransformPipe(context.pipe, sortItems)
-        }
-        context.pipe = new SortPipe(context.pipe, s.sortItems.toList)
-      }
-    }
-  }
 
   @throws(classOf[SyntaxException])
   def execute(query: Query, params: Map[String, Any]): ExecutionResult = query match {
@@ -224,6 +211,20 @@ class ExecutionEngine(graph: GraphDatabaseService) {
         val p = new FilterPipe(context.pipe, filterClause)
 
         new CurrentContext(p, context.clauses.filterNot(matchingClauses contains))
+      }
+    }
+  }
+
+  private def createSortPipe(sort: Option[Sort], allReturnItems: Seq[ReturnItem], context: CurrentContext) {
+    sort match {
+      case None =>
+      case Some(s) => {
+
+        val sortItems = s.sortItems.map(_.returnItem.concreteReturnItem).filterNot(allReturnItems.contains)
+        if (sortItems.nonEmpty) {
+          context.pipe = new TransformPipe(context.pipe, sortItems)
+        }
+        context.pipe = new SortPipe(context.pipe, s.sortItems.toList)
       }
     }
   }
