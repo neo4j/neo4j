@@ -13,7 +13,7 @@
 
   <name>Neo4j - Server Assembler</name>
 
-  <version>1.5-SNAPSHOT</version>
+  <version>1.6-SNAPSHOT</version>
   <description>This project assembles the Neo4j stand-alone distribution,
     pulling together all the deliverable artifacts and packaging them 
       into a downloadable installer.</description>
@@ -30,7 +30,7 @@
 
     <!-- other filter properties -->
     <wrapper.conf>conf/neo4j-wrapper.conf</wrapper.conf>
-    <neo4j.version>1.5-SNAPSHOT</neo4j.version>
+    <neo4j.version>1.6-SNAPSHOT</neo4j.version>
     <neo4j.manual.version>@MANUALVERSION@</neo4j.manual.version>
     <neo4j.3rdparty.version>@3RDPARTYVERSION@</neo4j.3rdparty.version>
     

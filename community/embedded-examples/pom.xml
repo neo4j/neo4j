@@ -9,7 +9,7 @@
   <groupId>org.neo4j.examples</groupId>
   <artifactId>neo4j-examples</artifactId>
   <name>Neo4j Examples</name>
-  <version>1.5-SNAPSHOT</version>
+  <version>1.6-SNAPSHOT</version>
   <description>Neo4j Embedded Examples</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}/</url>
 
@@ -29,7 +29,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
-      <version>1.5-SNAPSHOT</version>
+      <version>1.6-SNAPSHOT</version>
       <!-- In this context, keep this artifact as type pom -->
       <type>pom</type>
       <exclusions>
@@ -42,25 +42,25 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-shell</artifactId>
-      <version>1.5-SNAPSHOT</version>
+      <version>1.6-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.5-SNAPSHOT</version>
+      <version>1.6-SNAPSHOT</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-graphviz</artifactId>
-      <version>1.5-SNAPSHOT</version>
+      <version>1.6-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-udc</artifactId>
-      <version>1.5-SNAPSHOT</version>
+      <version>1.6-SNAPSHOT</version>
       <classifier>neo4j</classifier>
     </dependency>
     <dependency>
