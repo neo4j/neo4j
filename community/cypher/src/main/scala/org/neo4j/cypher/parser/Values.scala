@@ -40,7 +40,7 @@ trait Values extends JavaTokenParsers with Tokens {
 
   def stringValue: Parser[Value] = string ^^ (x => Literal(x))
 
-  def decimal: Parser[Value] = decimalNumber ^^ (x => Literal(x.toDouble))
+  def decimal: Parser[Value] = number ^^ (x => Literal(x.toDouble))
 
   def boolean: Parser[Value] = (trueX | falseX)
 
