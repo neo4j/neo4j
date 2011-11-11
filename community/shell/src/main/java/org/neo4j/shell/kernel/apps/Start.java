@@ -56,11 +56,7 @@ public class Start extends GraphDatabaseApp
     protected String exec( AppCommandParser parser, Session session, Output out )
         throws ShellException, RemoteException
     {
-        String query = "start";
-        for ( String argument : parser.arguments() )
-        {
-            query += " " + argument;
-        }
+        String query = parser.getLine();
         CypherParser qparser = new CypherParser();
         ExecutionEngine engine = new ExecutionEngine( getServer().getDb() );
         try

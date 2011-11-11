@@ -29,6 +29,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import org.neo4j.helpers.Pair;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.repr.BadInputException;
@@ -105,9 +106,14 @@ public class ConsoleService implements AdvertisableService
         ScriptSession scriptSession = getSession( args );
         log.trace( scriptSession.toString() );
 
-        String result = scriptSession.evaluate( (String) args.get( "command" ) );
+        Pair<String, String> result = scriptSession.evaluate( (String) args.get( "command" ) );
 
-        return output.ok( ValueRepresentation.string( result ) );
+//        return output.ok( ValueRepresentation.string( result ) );
+        return output.ok( ValueRepresentation.string( result.first() ) );
+        
+//        List<Representation> list = new ArrayList<Representation>( asList( ValueRepresentation.string( result.first() ) ) );
+//        if ( result.other() != null ) list.add( ValueRepresentation.string( result.other() ) );
+//        return output.ok( new ListRepresentation( RepresentationType.STRING, list ) );
     }
 
     private ScriptSession getSession( Map<String, Object> args )

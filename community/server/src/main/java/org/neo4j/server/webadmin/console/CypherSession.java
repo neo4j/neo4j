@@ -44,6 +44,7 @@ import org.neo4j.cypher.javacompat.CypherParser;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.helpers.Pair;
 import org.neo4j.server.logging.Logger;
 
 public class CypherSession implements ScriptSession
@@ -57,30 +58,30 @@ public class CypherSession implements ScriptSession
     }
 
     @Override
-    public String evaluate( String script )
+    public Pair<String, String> evaluate( String script )
     {
-        if ( script.trim()
-                .equals( "" ) )
+        if ( script.trim().equals( "" ) )
         {
-            return "";
+            return Pair.of( "", null );
         }
 
+        String resultString = null;
         try
         {
             Query query = CypherParser.parseConsole( script );
             ExecutionResult result = engine.execute( query );
-
-            return result.toString();
+            resultString = result.toString();
         }
         catch ( SyntaxException error )
         {
-            return error.getMessage();
+            resultString = error.getMessage();
         }
         catch ( Exception exception )
         {
             log.error( exception );
-            return "Error: " + exception.getClass()
+            resultString = "Error: " + exception.getClass()
                     .getSimpleName() + " - " + exception.getMessage();
         }
+        return Pair.of( resultString, null );
     }
 }

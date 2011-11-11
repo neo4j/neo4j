@@ -139,7 +139,7 @@ public class ShellException extends Exception
         return cause == null ? true : isCompletelyRecognizedException( cause );
     }
     
-    private static String stackTraceAsString( Throwable cause )
+    public static String stackTraceAsString( Throwable cause )
     {
         StringWriter writer = new StringWriter();
         PrintWriter printWriter = new PrintWriter( writer, false );

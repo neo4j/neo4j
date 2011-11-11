@@ -160,6 +160,12 @@ public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
     {
         return true;
     }
+    
+    @Override
+    public KernelData getKernelData()
+    {
+        return graphDbImpl.getKernelData();
+    }
 
     @Override
     public String toString()

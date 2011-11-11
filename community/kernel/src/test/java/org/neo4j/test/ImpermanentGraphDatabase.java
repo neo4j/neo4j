@@ -38,6 +38,7 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.KernelData;
 
 /**
  * A database meant to be used in unit tests. It will always be empty on start.
@@ -256,5 +257,11 @@ public class ImpermanentGraphDatabase extends AbstractGraphDatabase
     public void cleanContent()
     {
         cleanContent( false );
+    }
+    
+    @Override
+    public KernelData getKernelData()
+    {
+        return inner.getKernelData();
     }
 }

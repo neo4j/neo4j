@@ -27,12 +27,6 @@ import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
-import java.rmi.RemoteException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 import java.util.regex.Pattern;
 
 import org.junit.After;
@@ -48,7 +42,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.shell.impl.RemoteOutput;
+import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
@@ -133,7 +127,7 @@ public abstract class AbstractShellTest
     public void executeCommand( ShellServer server, ShellClient client, String command,
             String... theseLinesMustExistRegEx ) throws Exception
     {
-        OutputCollector output = new OutputCollector();
+        CollectingOutput output = new CollectingOutput();
         server.interpretLine( command, client.session(), output );
         
         for ( String lineThatMustExist : theseLinesMustExistRegEx )
@@ -157,7 +151,7 @@ public abstract class AbstractShellTest
 
     public void executeCommandExpectingException( String command, String errorMessageShouldContain ) throws Exception
     {
-        OutputCollector output = new OutputCollector();
+        CollectingOutput output = new CollectingOutput();
         try
         {
             shellServer.interpretLine( command, shellClient.session(), output );
@@ -282,60 +276,5 @@ public abstract class AbstractShellTest
         node.setProperty( key, value );
         tx.success();
         tx.finish();
-    }
-
-    public class OutputCollector implements Output, Serializable, Iterable<String>
-    {
-        private static final long serialVersionUID = 1L;
-        private final List<String> lines = new ArrayList<String>();
-        private String ongoingLine = "";
-
-        @Override
-        public Appendable append( CharSequence csq, int start, int end )
-                throws IOException
-        {
-            this.print( RemoteOutput.asString( csq ).substring( start, end ) );
-            return this;
-        }
-
-        @Override
-        public Appendable append( char c ) throws IOException
-        {
-            this.print( c );
-            return this;
-        }
-
-        @Override
-        public Appendable append( CharSequence csq ) throws IOException
-        {
-            this.print( RemoteOutput.asString( csq ) );
-            return this;
-        }
-
-        @Override
-        public void println( Serializable object ) throws RemoteException
-        {
-            print( object );
-            println();
-        }
-
-        @Override
-        public void println() throws RemoteException
-        {
-            lines.add( ongoingLine );
-            ongoingLine = "";
-        }
-
-        @Override
-        public void print( Serializable object ) throws RemoteException
-        {
-            ongoingLine += object.toString();
-        }
-
-        @Override
-        public Iterator<String> iterator()
-        {
-            return lines.iterator();
-        }
     }
 }

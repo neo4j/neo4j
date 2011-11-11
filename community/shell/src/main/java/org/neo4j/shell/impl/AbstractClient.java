@@ -69,30 +69,16 @@ public abstract class AbstractClient implements ShellClient
     private long timeConnection;
     private final Set<String> grabbedKeysFromServer = new HashSet<String>();
     private final SessionImpl session = new SessionImpl();
+    private volatile boolean end;
     
     public void grabPrompt()
     {
         init();
-        while ( true )
+        while ( !end )
         {
             try
             {
-                String line = this.readLine( tryGetProperPromptString() );
-                if ( EXIT_COMMANDS.contains( line ) )
-                {
-                    break;
-                }
-                
-                line = expandLine( line );
-                String result = this.getServer().interpretLine( line, session(), getOutput() );
-                if ( result == null || result.trim().length() == 0 )
-                {
-                    continue;
-                }
-                if ( result.contains( "e" ) )
-                {
-                    break;
-                }
+                evaluate( readLine( tryGetProperPromptString() ) );
             }
             catch ( Exception e )
             {
@@ -109,6 +95,34 @@ public abstract class AbstractClient implements ShellClient
         this.shutdown();
     }
 
+    @Override
+    public void evaluate( String line ) throws ShellException
+    {
+        if ( EXIT_COMMANDS.contains( line ) )
+        {
+            end(); 
+            return;
+        }
+        
+        try
+        {
+            line = expandLine( line );
+            String result = getServer().interpretLine( line, session(), getOutput() );
+            if ( result == null || result.trim().length() == 0 ) return;
+            if ( result.contains( "e" ) ) end();
+        }
+        catch ( RemoteException e )
+        {
+            throw ShellException.wrapCause( e );
+        }
+    }
+    
+    @Override
+    public void end()
+    {
+        end = true;
+    }
+    
     private String expandLine( String line ) throws RemoteException
     {
         // Look for environment variables and expand to the real values
@@ -137,7 +151,7 @@ public abstract class AbstractClient implements ShellClient
     private boolean shouldPrintStackTraces()
     {
         Object value = this.session().get( STACKTRACES_KEY );
-        return this.getSafeBooleanValue( value, false );
+        return this.getSafeBooleanValue( value, true );
     }
 
     private boolean getSafeBooleanValue( Object value, boolean def )

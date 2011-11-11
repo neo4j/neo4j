@@ -19,7 +19,12 @@
  */
 package org.neo4j.server.webadmin.console;
 
+import org.neo4j.helpers.Pair;
+
 public interface ScriptSession
 {
-    String evaluate( String script );
+    /**
+     * @return {@link Pair} of (result,next prompt).
+     */
+    Pair<String, String> evaluate( String script );
 }
