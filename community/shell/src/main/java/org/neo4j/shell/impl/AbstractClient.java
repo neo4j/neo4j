@@ -78,7 +78,7 @@ public abstract class AbstractClient implements ShellClient
         {
             try
             {
-                evaluate( readLine( tryGetProperPromptString() ) );
+                evaluate( readLine( getPrompt() ) );
             }
             catch ( Exception e )
             {
@@ -134,7 +134,7 @@ public abstract class AbstractClient implements ShellClient
         return e.getMessage();
     }
 
-    protected String tryGetProperPromptString() throws ShellException
+    public String getPrompt()
     {
         String result = null;
         try
@@ -143,7 +143,14 @@ public abstract class AbstractClient implements ShellClient
         }
         catch ( Exception e )
         {
-            result = ( String ) getSessionVariable( PROMPT_KEY, null, false );
+            try
+            {
+                result = ( String ) getSessionVariable( PROMPT_KEY, null, false );
+            }
+            catch ( ShellException e1 )
+            {
+                throw new RuntimeException( e1 );
+            }
         }
         return result;
     }

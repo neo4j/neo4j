@@ -68,6 +68,11 @@ public interface ShellClient
 	Output getOutput();
 	
 	/**
+	 * @return the current prompt.
+	 */
+	String getPrompt();
+	
+	/**
 	 * @return the time (millis) when the most recent connection was made
 	 * to the master.
 	 */

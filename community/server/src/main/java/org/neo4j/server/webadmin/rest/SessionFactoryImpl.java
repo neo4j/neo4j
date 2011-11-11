@@ -38,7 +38,7 @@ public class SessionFactoryImpl implements SessionFactory
     @Override
     public ScriptSession createSession( String engineName, Database database )
     {
-        if ( engineName.equals( "cypher" ) )
+        if ( engineName.equals( "shell" ) )
         {
 //            return new CypherSession( database.graph );
             return getOrInstantiateSession( database, "shellSession", SessionCreator.SHELL );

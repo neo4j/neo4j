@@ -73,16 +73,16 @@ public class ShellSession implements ScriptSession
     @Override
     public Pair<String, String> evaluate( String script )
     {
-        if ( script.trim().equals( "" ) ) return Pair.of( "", null );
+        if ( script.trim().equals( "" ) || script.equals( "init()" ) ) return Pair.of( "", client.getPrompt() );
+        if ( script.equals( "exit" ) || script.equals( "quit" ) ) return Pair.of( "No you don't", client.getPrompt() );
         try
         {
             client.evaluate( removeFirstEnter( script ) );
-            String result = output.asString();
-            return Pair.of( result, null );
+            return Pair.of( output.asString(), client.getPrompt() );
         }
         catch ( ShellException e )
         {
-            return Pair.of( ShellException.stackTraceAsString( e ), null );
+            return Pair.of( ShellException.stackTraceAsString( e ), client.getPrompt() );
         }
     }
 

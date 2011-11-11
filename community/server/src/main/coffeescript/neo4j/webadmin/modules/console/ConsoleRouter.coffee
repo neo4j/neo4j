@@ -20,26 +20,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 define(
   ['./models/Console'
-   './models/CypherConsole'
    './models/HttpConsole'
-   './views/CypherConsoleView'
+   './views/ShellConsoleView'
    './views/GremlinConsoleView'
    './views/HttpConsoleView'
    'ribcage/Router'
    'lib/backbone'], 
-  (Console, CypherConsole, HttpConsole, CypherConsoleView, GremlinConsoleView, HttpConsoleView, Router) ->
+  (Console, HttpConsole, ShellConsoleView, GremlinConsoleView, HttpConsoleView, Router) ->
   
     class ConsoleRouter extends Router
       routes : 
         "/console/" : "console"
         "/console/:type" : "console"
 
-      consoleType : "cypher"
+      defaultConsole : "shell"
 
       init : (appState) =>
         @appState = appState
         @gremlinState = new Console(server:@appState.get("server"), lang:"gremlin")
-        @cypherState = new CypherConsole(server:@appState.get("server"), lang:"cypher")
+        @shellState = new Console(server:@appState.get("server"), lang:"shell")
         @httpState = new HttpConsole(server:@appState.get("server"), lang:"http")
       
         @views = 
@@ -47,10 +46,10 @@ define(
             appState : @appState
             consoleState : @gremlinState
             lang: "gremlin"
-          cypher : new CypherConsoleView
+          shell : new ShellConsoleView
             appState : @appState
-            consoleState : @cypherState
-            lang: "cypher"
+            consoleState : @shellState
+            lang: "shell"
           http : new HttpConsoleView
             appState : @appState
             consoleState : @httpState
@@ -58,7 +57,7 @@ define(
           
       console : (type=false) =>
         @saveLocation()
-        if type is false then type = @consoleType
+        if type is false then type = @defaultConsole
         @consoleType = type
         @appState.set( mainView : @getConsoleView(type) )
         @getConsoleView(type).focusOnInputField()
