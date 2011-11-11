@@ -45,18 +45,19 @@ public class TestLuceneDataSource
     private IndexStore indexStore;
     private File datasourceDirectory;
     private LuceneDataSource dataSource;
+    String dbPath = getDbPath();
 
     private String getDbPath()
     {
-        return "target/var/datasource";
+        return "target/var/datasource"+System.currentTimeMillis();
     }
 
     @Before
     public void setup()
     {
-        datasourceDirectory = new File( getDbPath() );
+        datasourceDirectory = new File( dbPath );
         datasourceDirectory.mkdirs();
-        indexStore = new IndexStore( getDbPath() );
+        indexStore = new IndexStore( dbPath );
         addIndex( "foo" );
     }
 
