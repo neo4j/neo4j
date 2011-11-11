@@ -48,6 +48,7 @@ import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
@@ -1336,5 +1337,33 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         index.remove( node );
         assertNull( index.query( "key", "v*" ).getSingle() );
         assertNull( index.query( "key", "*" ).getSingle() );
+    }
+
+    @Ignore( "TODO Exposes a bug" )
+    @Test
+    public void updateIndex() throws Exception {
+        String TEXT = "text";
+        String NUMERIC = "numeric";
+        String TEXT_1 = "text_1";
+        
+        Index<Node> index = nodeIndex( "update-index", LuceneIndexImplementation.EXACT_CONFIG );
+        Node n = graphDb.createNode();
+        index.add(n, NUMERIC, new ValueContext(5).indexNumeric());
+        index.add(n, TEXT, "text");
+        index.add(n, TEXT_1, "text");
+        commitTx();
+        assertNotNull( index.query(QueryContext.numericRange(NUMERIC, 5, 5, true, true)).getSingle() );
+        assertNotNull( index.get(TEXT_1, "text").getSingle() );
+
+        beginTx();
+        // Following line may be commented, it's addition of node that causes the problem
+        index.remove(n, TEXT, "text");
+        index.add(n, TEXT, "text 1");
+        commitTx();
+
+        assertNotNull( index.get(TEXT_1, "text").getSingle() );
+
+        // Test fails here
+        assertNotNull( index.query(QueryContext.numericRange(NUMERIC, 5, 5, true, true)).getSingle() );
     }
 }
