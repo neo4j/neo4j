@@ -31,6 +31,7 @@ import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
+import org.neo4j.kernel.KernelData;
 
 public class PlaceHolderGraphDatabaseService extends AbstractGraphDatabase
 {
@@ -154,5 +155,11 @@ public class PlaceHolderGraphDatabaseService extends AbstractGraphDatabase
     public boolean isReadOnly()
     {
         return ((AbstractGraphDatabase) db).isReadOnly();
+    }
+    
+    @Override
+    public KernelData getKernelData()
+    {
+        return ((AbstractGraphDatabase)db).getKernelData();
     }
 }

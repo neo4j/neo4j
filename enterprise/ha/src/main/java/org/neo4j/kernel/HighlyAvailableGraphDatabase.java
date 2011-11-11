@@ -996,6 +996,12 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         this.broker.shutdown();
     }
+    
+    @Override
+    public KernelData getKernelData()
+    {
+        return localGraph().getKernelData();
+    }
 
     enum BranchedDataPolicy
     {

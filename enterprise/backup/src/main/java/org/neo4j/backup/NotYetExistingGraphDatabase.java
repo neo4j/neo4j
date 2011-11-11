@@ -30,6 +30,7 @@ import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
+import org.neo4j.kernel.KernelData;
 
 class NotYetExistingGraphDatabase extends AbstractGraphDatabase
 {
@@ -127,6 +128,12 @@ class NotYetExistingGraphDatabase extends AbstractGraphDatabase
 
     @Override
     public boolean isReadOnly()
+    {
+        throw new UnsupportedOperationException();
+    }
+    
+    @Override
+    public KernelData getKernelData()
     {
         throw new UnsupportedOperationException();
     }
