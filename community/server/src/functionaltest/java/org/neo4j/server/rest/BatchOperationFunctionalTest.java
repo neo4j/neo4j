@@ -338,34 +338,6 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
     }
     
     @Test
-    @Graph("Car has wheels")
-    public void shouldHandleUnicodePostCorrectly() throws JsonParseException, ClientHandlerException,
-            UniformInterfaceException, JSONException {
-        String asian = "\u4f8b\u5b50";
-        String german = "öäüÖÄÜß";
-        Node car = getNode( "Car" );
-        String jsonString = new PrettyJSON()
-        .array()
-            .object()
-                .key("method") .value("PUT")
-                .key("to")     .value("/node/"+car.getId()+"/properties")
-                .key("body")   
-                    .object()
-                        .key("asian").value(asian)
-                        .key("german").value(german)
-                    .endObject()
-            .endObject()
-        .endArray()
-        .toString();
-        String entity = gen.get()
-                .expectedStatus( 200 )
-                .payload( jsonString )
-                .post( batchUri() )
-                .entity();
-        assertEquals( car.getProperty( "german" ), german );
-        assertEquals( car.getProperty( "asian" ), asian );
-    }
-    @Test
     @Graph("\u4f8b\u5b50 has öäüÖÄÜß")
     public void shouldHandleUnicodeGetCorrectly() throws JsonParseException, ClientHandlerException,
             UniformInterfaceException, JSONException {
@@ -373,8 +345,6 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
         String german = "öäüÖÄÜß";
         Node gnode = getNode( german );
         Node anode = getNode( asian );
-        assertEquals( anode.getProperty( "name" ), asian );
-        assertEquals( gnode.getProperty( "name" ), german );
         assertTrue( gen.get()
                 .expectedStatus( 200 )
                 .get( getNodeUri( anode ) )
