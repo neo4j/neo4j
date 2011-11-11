@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.rest.web;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -41,17 +41,26 @@ public class InternalJettyServletResponse extends Response
     private class Output extends ServletOutputStream
     {
 
-        private StringWriter writer = new StringWriter();
+        private ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         @Override
-        public void write( int arg0 ) throws IOException
+        public void write( int c ) throws IOException
         {
-            writer.append( (char) arg0 );
+            baos.write( c );
         }
 
         public String toString()
         {
-            return writer.toString();
+            try
+            {
+                baos.flush();
+                String result = baos.toString("UTF-8");
+                return result;
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e);
+            }
         }
     }
 
@@ -68,6 +77,7 @@ public class InternalJettyServletResponse extends Response
     public void setup()
     {
         output = new Output();
+        
         status = -1;
         message = "";
         headers = new HashMap<String, Object>();
@@ -219,6 +229,7 @@ public class InternalJettyServletResponse extends Response
 
     public void setCharacterEncoding( String encoding )
     {
+        System.out.println("calling");
     }
 
     public void setContentLength( int len )

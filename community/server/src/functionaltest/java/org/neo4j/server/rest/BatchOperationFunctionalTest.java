@@ -25,7 +25,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Ignore;
+import org.json.JSONException;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -338,20 +338,82 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
     }
     
     @Test
-    @Ignore
-    public void shouldHandleUnicodeCorrectly() throws JsonParseException, ClientHandlerException,
-            UniformInterfaceException {
-
-        String jsonString = "[" + "{ " + "\"method\":\"POST\"," + "\"to\":\"/node\", " + "\"body\":{ \"name\":\"\u4f8b\u5b50\" }"
-                + "}" + "]";
-
+    @Graph("Car has wheels")
+    public void shouldHandleUnicodePostCorrectly() throws JsonParseException, ClientHandlerException,
+            UniformInterfaceException, JSONException {
+        String asian = "\u4f8b\u5b50";
+        String german = "öäüÖÄÜß";
+        Node car = getNode( "Car" );
+        String jsonString = new PrettyJSON()
+        .array()
+            .object()
+                .key("method") .value("PUT")
+                .key("to")     .value("/node/"+car.getId()+"/properties")
+                .key("body")   
+                    .object()
+                        .key("asian").value(asian)
+                        .key("german").value(german)
+                    .endObject()
+            .endObject()
+        .endArray()
+        .toString();
         String entity = gen.get()
                 .expectedStatus( 200 )
                 .payload( jsonString )
                 .post( batchUri() )
                 .entity();
-        assertTrue(entity.contains( "\u4f8b\u5b50" ));
+        assertEquals( car.getProperty( "german" ), german );
+        assertEquals( car.getProperty( "asian" ), asian );
+    }
+    @Test
+    @Graph("\u4f8b\u5b50 has öäüÖÄÜß")
+    public void shouldHandleUnicodeGetCorrectly() throws JsonParseException, ClientHandlerException,
+            UniformInterfaceException, JSONException {
+        String asian = "\u4f8b\u5b50";
+        String german = "öäüÖÄÜß";
+        Node gnode = getNode( german );
+        Node anode = getNode( asian );
+        assertEquals( anode.getProperty( "name" ), asian );
+        assertEquals( gnode.getProperty( "name" ), german );
+        assertTrue( gen.get()
+                .expectedStatus( 200 )
+                .get( getNodeUri( anode ) )
+                .entity().contains(asian) );
+        assertTrue( gen.get()
+                .expectedStatus( 200 )
+                .get( getNodeUri( gnode ) )
+                .entity().contains(german) );
+        testBatch(anode, asian);
+        testBatch(gnode, german);
+    }
 
+    private void testBatch( Node anode, String asian )
+    {
+        String jsonString;
+        try
+        {
+            jsonString = new PrettyJSON()
+            .array()
+                .object()
+                    .key("method") .value("GET")
+                    .key("to")     .value("/node/"+anode.getId()+"/properties")
+                .endObject()
+            .endArray()
+            .toString();
+        String entity = gen.get()
+                .expectedStatus( 200 )
+                .payload( jsonString )
+                .post( batchUri() )
+                .entity();
+        assertTrue( entity.contains( asian) );
+
+        }
+        catch ( JSONException e )
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        
     }
 
     @Test
