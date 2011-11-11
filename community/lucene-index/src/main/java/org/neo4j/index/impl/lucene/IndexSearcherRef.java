@@ -109,4 +109,9 @@ class IndexSearcherRef
             throw new RuntimeException( e );
         }
     }
+
+    boolean isClosed()
+    {
+        return isClosed;
+    }
 }
