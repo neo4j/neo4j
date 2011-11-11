@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.javacompat;
 
+import java.io.PrintWriter;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -56,4 +57,10 @@ public class ExecutionResult implements Iterable<Map<String,Object>>
     {
         return inner.dumpToString();
     }
+
+    public void toString( PrintWriter writer )
+    {
+        inner.dumpToString( writer );
+    }
+
 }
