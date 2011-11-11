@@ -267,7 +267,6 @@ the relevant Commercial Agreement.
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-shell</artifactId>
       <version>1.6-SNAPSHOT</version>
-      <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
