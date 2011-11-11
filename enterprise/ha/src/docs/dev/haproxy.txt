@@ -34,6 +34,16 @@ make
 cp haproxy /usr/sbin/haproxy
 ----
 
+Or specify a target for make (TARGET=linux26 for linux kernel 2.6 or above or linux24 for 2.4 kernel)
+
+[source,shell]
+----
+tar -zvxf haproxy-1.4.18.tar.gz
+cd haproxy-1.4.18
+make TARGET=linux26
+cp haproxy /usr/sbin/haproxy
+----
+
 == Configuring HAProxy ==
 
 HAProxy can be configured in many ways. The full documentation is available at their website.
