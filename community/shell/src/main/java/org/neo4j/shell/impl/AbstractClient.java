@@ -24,7 +24,9 @@ import java.rmi.NoSuchObjectException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -70,6 +72,7 @@ public abstract class AbstractClient implements ShellClient
     private final Set<String> grabbedKeysFromServer = new HashSet<String>();
     private final SessionImpl session = new SessionImpl();
     private volatile boolean end;
+    private final Collection<String> multiLine = new ArrayList<String>();
     
     public void grabPrompt()
     {
@@ -104,19 +107,48 @@ public abstract class AbstractClient implements ShellClient
             return;
         }
         
+        boolean success = false;
         try
         {
-            line = expandLine( line );
-            String result = getServer().interpretLine( line, session(), getOutput() );
-            if ( result == null || result.trim().length() == 0 ) return;
-            if ( result.contains( "e" ) ) end();
+            String expandedLine = expandLine( fullLine( line ) );
+            String result = getServer().interpretLine( expandedLine, session(), getOutput() );
+            if ( result == null || result.trim().length() == 0 )
+            {   // One-liner, or end of multi-line
+                endMultiLine();
+            }
+            else if ( result.contains( "c" ) )
+            {
+                multiLine.add( line );
+            }
+            else if ( result.contains( "e" ) )
+            {
+                end();
+            }
+            success = true;
         }
         catch ( RemoteException e )
         {
             throw ShellException.wrapCause( e );
         }
+        finally
+        {
+            if ( !success ) endMultiLine();
+        }
+    }
+
+    private void endMultiLine()
+    {
+        multiLine.clear();
     }
     
+    private String fullLine( String line )
+    {
+        if ( multiLine.isEmpty() ) return line;
+        StringBuilder result = new StringBuilder();
+        for ( String oneLine : multiLine ) result.append( result.length() > 0 ? "\n" : "" ).append( oneLine );
+        return result.append( "\n" + line ).toString();
+    }
+
     @Override
     public void end()
     {
@@ -136,6 +168,7 @@ public abstract class AbstractClient implements ShellClient
 
     public String getPrompt()
     {
+        if ( !multiLine.isEmpty() ) return "> ";
         String result = null;
         try
         {
@@ -155,19 +188,15 @@ public abstract class AbstractClient implements ShellClient
         return result;
     }
 
-    private boolean shouldPrintStackTraces()
+    public boolean shouldPrintStackTraces()
     {
         Object value = this.session().get( STACKTRACES_KEY );
-        return this.getSafeBooleanValue( value, true );
+        return this.getSafeBooleanValue( value, false );
     }
 
     private boolean getSafeBooleanValue( Object value, boolean def )
     {
-        if ( value == null )
-        {
-            return def;
-        }
-        return Boolean.parseBoolean( value.toString() );
+        return value == null ? def : Boolean.parseBoolean( value.toString() );
     }
 
     protected void init()
@@ -204,14 +233,8 @@ public abstract class AbstractClient implements ShellClient
             {
                 grabbedKeysFromServer.add( key );
                 Serializable value = this.getServer().getProperty( key );
-                if ( value == null )
-                {
-                    value = defaultValue;
-                }
-                if ( value != null )
-                {
-                    this.session().set( key, value );
-                }
+                if ( value == null ) value = defaultValue;
+                if ( value != null ) session().set( key, value );
             }
         }
         catch ( RemoteException e )
@@ -241,8 +264,7 @@ public abstract class AbstractClient implements ShellClient
             }
             if ( interpret && result != null )
             {
-                result = this.getServer().interpretVariable( key, result,
-                    session() );
+                result = this.getServer().interpretVariable( key, result, session() );
             }
             return result;
         }
@@ -254,23 +276,7 @@ public abstract class AbstractClient implements ShellClient
 
     public String readLine( String prompt )
     {
-        String line = this.console.readLine( prompt );
-        if ( line != null && line.equals( "eval" ) )
-        {
-            String resultingLine = line + " ";
-            while ( true )
-            {
-                line = this.console.readLine( "' " );
-                if ( line == null || line.length() == 0 )
-                {
-                    break;
-                }
-                resultingLine += line;
-            }
-            System.out.println( "= " + resultingLine.replaceAll( "\n", " " ) );
-            return resultingLine;
-        }
-        return line;
+        return console.readLine( prompt );
     }
 
     static String[] getExitCommands()

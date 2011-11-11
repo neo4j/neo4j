@@ -45,16 +45,17 @@ public class Eval extends GraphDatabaseApp
             "  eval db.getReferenceNode().getProperty(\"name\")\n" +
             "  \n" +
             "  eval\n" +
-            "  ' nodes = db.getAllNodes().iterator();\n" +
-            "  ' while ( nodes.hasNext() )\n" +
-            "  '   out.println( \"\" + nodes.next() );\n" +
-            "  '\n" +
+            "  > nodes = db.getAllNodes().iterator();\n" +
+            "  > while ( nodes.hasNext() )\n" +
+            "  >   out.println( \"\" + nodes.next() );\n" +
+            "  >\n" +
             "So either a one-liner or type 'eval' to enter multi-line mode, where an empty line denotes the end";
     }
 
     @Override
     protected String exec( AppCommandParser parser, Session session, Output out ) throws Exception
     {
+        if ( !parser.getLine().endsWith( "\n" ) ) return "c";
         scripting = scripting != null ? scripting : new ScriptEngineViaReflection( getServer() );
         String javascriptCode = parser.getLineWithoutApp();
         javascriptCode = decorateWithImports( javascriptCode, STANDARD_EVAL_IMPORTS );

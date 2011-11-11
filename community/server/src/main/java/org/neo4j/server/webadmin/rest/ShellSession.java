@@ -29,6 +29,7 @@ import org.neo4j.server.webadmin.console.ScriptSession;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;
+import org.neo4j.shell.impl.AbstractClient;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.impl.ShellServerExtension;
@@ -48,6 +49,7 @@ public class ShellSession implements ScriptSession
         {
             output = new CollectingOutput();
             client = new SameJvmClient( server, output );
+            output.asString();
         }
         catch ( RemoteException e )
         {
@@ -73,7 +75,7 @@ public class ShellSession implements ScriptSession
     @Override
     public Pair<String, String> evaluate( String script )
     {
-        if ( script.trim().equals( "" ) || script.equals( "init()" ) ) return Pair.of( "", client.getPrompt() );
+        if ( script.equals( "init()" ) ) return Pair.of( "", client.getPrompt() );
         if ( script.equals( "exit" ) || script.equals( "quit" ) ) return Pair.of( "No you don't", client.getPrompt() );
         try
         {
@@ -82,7 +84,9 @@ public class ShellSession implements ScriptSession
         }
         catch ( ShellException e )
         {
-            return Pair.of( ShellException.stackTraceAsString( e ), client.getPrompt() );
+            String message = ((AbstractClient)client).shouldPrintStackTraces() ?
+                    ShellException.stackTraceAsString( e ) : ShellException.getFirstMessage( e );
+            return Pair.of( message, client.getPrompt() );
         }
     }
 

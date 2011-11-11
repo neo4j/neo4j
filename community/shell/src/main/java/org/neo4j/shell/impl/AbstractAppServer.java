@@ -118,7 +118,7 @@ public abstract class AbstractAppServer extends AbstractServer
             String result = null;
             for ( String command : line.split( Pattern.quote( "&&" ) ) )
             {
-                command = command.trim();
+                command = TextUtil.removeSpaces( command );
                 command = replaceAlias( command, session );
                 AppCommandParser parser = new AppCommandParser( this, command );
                 String commandResult = parser.app().execute( parser, session, out );

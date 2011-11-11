@@ -60,9 +60,13 @@ public class ShellException extends Exception
         {
             s.print( stackTraceAsString );
         }
-        else
+        else if ( getCause() != null )
         {
             getCause().printStackTrace( s );
+        }
+        else
+        {
+            super.printStackTrace( s );
         }
     }
 
@@ -79,7 +83,7 @@ public class ShellException extends Exception
         }
         else
         {
-            s.println( toString() );
+            super.printStackTrace( s );
         }
     }
     
@@ -106,14 +110,14 @@ public class ShellException extends Exception
 	{
 	    String stackTraceAsString = stackTraceAsString( cause );
 	    String message = getFirstMessage( cause );
-	    if ( !( cause instanceof ShellException ) )
-	    {
-	        message = cause.getClass().getName() + ": " + message;
-	    }
+//	    if ( !( cause instanceof ShellException ) )
+//	    {
+//	        message = cause.getClass().getName() + ": " + message;
+//	    }
         return new ShellException( message, stackTraceAsString );
 	}
 
-    private static String getFirstMessage( Throwable cause )
+    public static String getFirstMessage( Throwable cause )
     {
         while ( cause != null )
         {

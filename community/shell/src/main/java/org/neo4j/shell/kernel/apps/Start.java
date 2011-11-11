@@ -48,8 +48,7 @@ public class Start extends GraphDatabaseApp
     @Override
     public String getDescription()
     {
-        return "Executes a Cypher query. " +
-        	"Usage: start <rest of query>";
+        return "Executes a Cypher query. Usage: start <rest of query>";
     }
 
     @Override
@@ -57,18 +56,37 @@ public class Start extends GraphDatabaseApp
         throws ShellException, RemoteException
     {
         String query = parser.getLine();
-        CypherParser qparser = new CypherParser();
-        ExecutionEngine engine = new ExecutionEngine( getServer().getDb() );
-        try
+        if ( endsWithNewLine( query ) || looksToBeComplete( query ) )
         {
-            Query cquery = qparser.parse( query );
-            ExecutionResult result = engine.execute( cquery );
-            out.println( result.toString() );
+            CypherParser qparser = new CypherParser();
+            ExecutionEngine engine = new ExecutionEngine( getServer().getDb() );
+            try
+            {
+                Query cquery = qparser.parse( query );
+                ExecutionResult result = engine.execute( cquery );
+                out.println( result.toString() );
+            }
+            catch ( SyntaxException e )
+            {
+                throw ShellException.wrapCause( e );
+            }
+            return null;
         }
-        catch ( SyntaxException e )
+        else
         {
-            throw ShellException.wrapCause( e );
+            return "c";
         }
-        return null;
+    }
+
+    private boolean looksToBeComplete( String query )
+    {
+        // TODO do for real
+//        return query.toLowerCase().contains( "return" );
+        return false;
+    }
+
+    private boolean endsWithNewLine( String query )
+    {
+        return query.length() > 0 && query.endsWith( "\n" );
     }
 }
