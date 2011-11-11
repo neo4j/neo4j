@@ -37,7 +37,7 @@ public class GremlinSessionTest
     @Test
     public void retrievesTheReferenceNode()
     {
-        String result = session.evaluate( "g" );
+        String result = session.evaluate( "g" ).first();
 
         assertEquals( String.format( "neo4jgraph[%s]" + NEWLINE, database.graph.toString() ), result );
     }
@@ -45,10 +45,10 @@ public class GremlinSessionTest
     @Test
     public void multiLineTest()
     {
-        String result = session.evaluate( "for (i in 0..2) {" );
-        result = session.evaluate( "println 'hi'" );
-        result = session.evaluate( "}" );
-        result = session.evaluate( "i = 2" );
+        String result = session.evaluate( "for (i in 0..2) {" ).first();
+        result = session.evaluate( "println 'hi'" ).first();
+        result = session.evaluate( "}" ).first();
+        result = session.evaluate( "i = 2" ).first();
 
         assertEquals( "2" + NEWLINE, result );
     }
@@ -56,15 +56,15 @@ public class GremlinSessionTest
     @Test
     public void canCreateNodesAndEdgesInGremlinLand()
     {
-        String result = session.evaluate( "g.addVertex(null)" );
+        String result = session.evaluate( "g.addVertex(null)" ).first();
         assertEquals( "v[1]" + NEWLINE, result );
-        result = session.evaluate( "g.V >> 2" );
+        result = session.evaluate( "g.V >> 2" ).first();
         assertEquals( "v[0]" + NEWLINE + "v[1]" + NEWLINE, result );
-        result = session.evaluate( "g.addVertex(null)" );
+        result = session.evaluate( "g.addVertex(null)" ).first();
         assertEquals( "v[2]" + NEWLINE, result );
-        result = session.evaluate( "g.addEdge(g.v(1), g.v(2), 'knows')" );
+        result = session.evaluate( "g.addEdge(g.v(1), g.v(2), 'knows')" ).first();
         assertEquals( "e[0][1-knows->2]" + NEWLINE, result );
-        result = session.evaluate( "g.v(1).out" );
+        result = session.evaluate( "g.v(1).out" ).first();
         assertEquals( "v[2]" + NEWLINE, result );
     }
 
