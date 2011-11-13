@@ -81,8 +81,8 @@ public class Start extends GraphDatabaseApp
     private boolean looksToBeComplete( String query )
     {
         // TODO do for real
-//        return query.toLowerCase().contains( "return" );
-        return false;
+        return query.toLowerCase().contains( "return" );
+//        return false;
     }
 
     private boolean endsWithNewLine( String query )
