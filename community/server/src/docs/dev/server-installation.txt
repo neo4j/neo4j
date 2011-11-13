@@ -108,7 +108,7 @@ org.neo4j.server.webserver.port=7475
 
 In many cases during application development, it is desirable to have one development database set up, and another against which to run unit tests. For the following example, we are assuming that both databases will run on the same host.
 
- First, create a directory to hold both database instances, and unpack the development instance:
+First, create a directory to hold both database instances, and unpack the development instance:
  
 1. `cd $INSTANCE_ROOT`
 2. `mkdir -p neo4j`
