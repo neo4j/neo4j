@@ -34,39 +34,40 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.JavaTestDocsGenerator;
 import org.neo4j.test.TestData;
 
-public class AbstractJavaDocTestbase implements GraphHolder {
-
-public @Rule
-TestData<JavaTestDocsGenerator> gen = TestData.producedThrough( JavaTestDocsGenerator.PRODUCER );
-public @Rule
-TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
-        this, true ) );
-protected static ImpermanentGraphDatabase db;
-protected CypherParser parser;
-protected ExecutionEngine engine;
-
-
-@BeforeClass
-public static void init()
+public class AbstractJavaDocTestbase implements GraphHolder
 {
-    db = new ImpermanentGraphDatabase("target/"+ System.currentTimeMillis());
-}
+    public @Rule
+    TestData<JavaTestDocsGenerator> gen = TestData.producedThrough( JavaTestDocsGenerator.PRODUCER );
+    public @Rule
+    TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
+    protected static ImpermanentGraphDatabase db;
+    protected CypherParser parser;
+    protected ExecutionEngine engine;
 
-@Before
-public void setUp() {
-    db.cleanContent();
-    gen.get().setGraph( db );
-    parser = new CypherParser();
-    engine = new ExecutionEngine(db);
-}
-@After
-public void doc() {
-    gen.get().document("target/docs","examples");
-}
-@Override
-public GraphDatabaseService graphdb()
-{
-    return db;
-}
+    @BeforeClass
+    public static void init()
+    {
+        db = new ImpermanentGraphDatabase();
+    }
 
+    @Before
+    public void setUp()
+    {
+        db.cleanContent();
+        gen.get().setGraph( db );
+        parser = new CypherParser();
+        engine = new ExecutionEngine( db );
+    }
+
+    @After
+    public void doc()
+    {
+        gen.get().document( "target/docs", "examples" );
+    }
+
+    @Override
+    public GraphDatabaseService graphdb()
+    {
+        return db;
+    }
 }

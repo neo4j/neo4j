@@ -89,9 +89,10 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
      * @throws IOException
      *             If unable to create relationship store or name null
      */
-    public static void createStore( String fileName, IdGeneratorFactory idGeneratorFactory )
+    public static void createStore( String fileName, IdGeneratorFactory idGeneratorFactory,
+            FileSystemAbstraction fileSystem )
     {
-        createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), idGeneratorFactory );
+        createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), idGeneratorFactory, fileSystem  );
     }
 
     public RelationshipRecord getRecord( long id )

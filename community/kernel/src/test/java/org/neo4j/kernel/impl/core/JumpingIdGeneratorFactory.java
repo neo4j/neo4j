@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.EphemeralIdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
@@ -33,7 +34,7 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 public class JumpingIdGeneratorFactory implements IdGeneratorFactory
 {
     private final Map<IdType, IdGenerator> generators = new EnumMap<IdType, IdGenerator>( IdType.class );
-    private IdGenerator forTheRest = new InMemoryIdGenerator();
+    private IdGenerator forTheRest = new EphemeralIdGenerator( null );
 
     private final int sizePerJump;
     
@@ -70,62 +71,6 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
     
     public void updateIdGenerators( NeoStore neoStore )
     {
-    }
-    
-    private class InMemoryIdGenerator implements IdGenerator
-    {
-        private final AtomicLong nextId = new AtomicLong();
-
-        @Override
-        public long nextId()
-        {
-            return nextId.incrementAndGet();
-        }
-
-        @Override
-        public IdRange nextIdBatch( int size )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void setHighId( long id )
-        {
-            nextId.set( id );
-        }
-
-        @Override
-        public long getHighId()
-        {
-            return nextId.get();
-        }
-
-        @Override
-        public void freeId( long id )
-        {
-        }
-
-        @Override
-        public void close( boolean shutdown )
-        {
-        }
-
-        @Override
-        public long getNumberOfIdsInUse()
-        {
-            return nextId.get();
-        }
-
-        @Override
-        public long getDefragCount()
-        {
-            return 0;
-        }
-        
-        @Override
-        public void delete()
-        {
-        }
     }
     
     private class JumpingIdGenerator implements IdGenerator

@@ -169,8 +169,10 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     {
         IdGeneratorFactory idGeneratorFactory = (IdGeneratorFactory) config.get(
                 IdGeneratorFactory.class );
+        FileSystemAbstraction fileSystem = (FileSystemAbstraction) config.get( FileSystemAbstraction.class );
 
-        createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), idGeneratorFactory );
+        createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), idGeneratorFactory,
+                fileSystem );
         int stringStoreBlockSize = DEFAULT_DATA_BLOCK_SIZE;
         int arrayStoreBlockSize = DEFAULT_DATA_BLOCK_SIZE;
         try
@@ -200,10 +202,10 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         }
 
         DynamicStringStore.createStore( fileName + ".strings",
-            stringStoreBlockSize, idGeneratorFactory, IdType.STRING_BLOCK );
-        PropertyIndexStore.createStore( fileName + ".index", idGeneratorFactory );
+            stringStoreBlockSize, idGeneratorFactory, fileSystem, IdType.STRING_BLOCK );
+        PropertyIndexStore.createStore( fileName + ".index", idGeneratorFactory, fileSystem );
         DynamicArrayStore.createStore( fileName + ".arrays",
-                arrayStoreBlockSize, idGeneratorFactory );
+                arrayStoreBlockSize, idGeneratorFactory, fileSystem );
     }
 
     private long nextStringBlockId()

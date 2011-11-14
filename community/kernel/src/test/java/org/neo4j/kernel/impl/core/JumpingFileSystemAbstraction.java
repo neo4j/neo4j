@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -33,6 +34,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
+import org.neo4j.kernel.impl.util.FileUtils;
 
 public class JumpingFileSystemAbstraction implements FileSystemAbstraction
 {
@@ -56,6 +58,36 @@ public class JumpingFileSystemAbstraction implements FileSystemAbstraction
                     recordSizeFor( fileName ) );
         }
         return new RandomAccessFile( fileName, mode ).getChannel();
+    }
+    
+    @Override
+    public FileChannel create( String fileName ) throws IOException
+    {
+        return open( fileName, "rw" );
+    }
+    
+    @Override
+    public boolean fileExists( String fileName )
+    {
+        return new File( fileName ).exists();
+    }
+    
+    @Override
+    public long getFileSize( String fileName )
+    {
+        return new File( fileName ).length();
+    }
+    
+    @Override
+    public boolean deleteFile( String fileName )
+    {
+        return FileUtils.deleteFile( new File( fileName ) );
+    }
+    
+    @Override
+    public boolean renameFile( String from, String to ) throws IOException
+    {
+        return FileUtils.renameFile( new File( from ), new File( to ) );
     }
     
     @Override

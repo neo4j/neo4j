@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -151,7 +150,7 @@ public abstract class CommonAbstractStore
                 backupSlave = true;
             }
         }
-        if ( !new File( storageFileName ).exists() )
+        if ( !getFileSystem().fileExists( storageFileName ) )
         {
             throw new IllegalStateException( "No such store[" + storageFileName
                 + "]" );
@@ -256,8 +255,7 @@ public abstract class CommonAbstractStore
             {
                 if ( getConfig() != null )
                 {
-                    String storeDir = (String) getConfig().get( "store_dir" );
-                    StringLogger msgLog = StringLogger.getLogger( storeDir );
+                    StringLogger msgLog = (StringLogger)getConfig().get( StringLogger.class );
                     msgLog.logMessage( getStorageFileName() + " non clean shutdown detected", true );
                 }
             }

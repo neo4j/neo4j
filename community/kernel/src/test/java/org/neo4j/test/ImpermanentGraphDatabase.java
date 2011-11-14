@@ -21,199 +21,74 @@ package org.neo4j.test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.event.KernelEventHandler;
-import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.Config;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.KernelData;
+import org.neo4j.kernel.HighlyConfigurableGraphDatabase;
+import org.neo4j.kernel.impl.EphemeralFileSystemAbstraction;
+import org.neo4j.kernel.impl.EphemeralIdGenerator;
+import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * A database meant to be used in unit tests. It will always be empty on start.
  */
-public class ImpermanentGraphDatabase extends AbstractGraphDatabase
+public class ImpermanentGraphDatabase extends HighlyConfigurableGraphDatabase
 {
-    private final EmbeddedGraphDatabase inner;
-    private final String storeDir;
-
-    public ImpermanentGraphDatabase( String storeDir, Map<String, String> params )
-    {
-        this.storeDir = storeDir;
-        deleteRecursively( new File( storeDir ) );
-        inner = new EmbeddedGraphDatabase( storeDir, params );
-    }
+    private static final File PATH = new File( "target/test-data/impermanent-db" );
 
     public ImpermanentGraphDatabase( Map<String, String> params )
-                                                                 throws IOException
     {
-        this( createTempDir(), params );
+        super( path(), params, new EphemeralIdGenerator.Factory(),
+                new EphemeralFileSystemAbstraction() );
     }
-
-    public ImpermanentGraphDatabase() throws IOException
-    {
-        this( createTempDir(), new HashMap<String, String>() );
-    }
-
-    public ImpermanentGraphDatabase( String storeDir )
-    {
-        this( storeDir, new HashMap<String, String>() );
-    }
-
-    private static String createTempDir() throws IOException
-    {
-
-        File d = File.createTempFile( "neo4j-test", "dir" );
-        if ( !d.delete() )
-        {
-            throw new RuntimeException(
-                    "temp config directory pre-delete failed" );
-        }
-        if ( !d.mkdirs() )
-        {
-            throw new RuntimeException( "temp config directory not created" );
-        }
-        d.deleteOnExit();
-        return d.getAbsolutePath();
-    }
-
-    private static void deleteRecursively( File file )
-    {
-        if ( !file.exists() )
-        {
-            return;
-        }
-
-        if ( file.isDirectory() )
-        {
-            for ( File child : file.listFiles() )
-            {
-                deleteRecursively( child );
-            }
-        }
-        if ( !file.delete() )
-        {
-            throw new RuntimeException(
-                    "Couldn't empty database. Offending file:" + file );
-        }
-    }
-
-    public Node createNode()
-    {
-        return inner.createNode();
-    }
-
-    public Node getNodeById( long id )
-    {
-        return inner.getNodeById( id );
-    }
-
-    public Relationship getRelationshipById( long id )
-    {
-        return inner.getRelationshipById( id );
-    }
-
-    public Node getReferenceNode()
-    {
-        return inner.getReferenceNode();
-    }
-
-    public Iterable<Node> getAllNodes()
-    {
-        return inner.getAllNodes();
-    }
-
-    public Iterable<RelationshipType> getRelationshipTypes()
-    {
-        return inner.getRelationshipTypes();
-    }
-
-    public void shutdown()
-    {
-        inner.shutdown();
-        deleteRecursively( new File( storeDir ) );
-    }
-
-    public Transaction beginTx()
-    {
-        return inner.beginTx();
-    }
-
-    public <T> TransactionEventHandler<T> registerTransactionEventHandler(
-            TransactionEventHandler<T> handler )
-    {
-        return inner.registerTransactionEventHandler( handler );
-    }
-
-    public <T> TransactionEventHandler<T> unregisterTransactionEventHandler(
-            TransactionEventHandler<T> handler )
-    {
-        return inner.unregisterTransactionEventHandler( handler );
-    }
-
-    public KernelEventHandler registerKernelEventHandler(
-            KernelEventHandler handler )
-    {
-        return inner.registerKernelEventHandler( handler );
-    }
-
-    public KernelEventHandler unregisterKernelEventHandler(
-            KernelEventHandler handler )
-    {
-        return inner.unregisterKernelEventHandler( handler );
-    }
-
-    public IndexManager index()
-    {
-        return inner.index();
-    }
-
-    public GraphDatabaseService getInner()
-    {
-        return inner;
-    }
-
+    
     @Override
-    public String getStoreDir()
+    protected StringLogger createStringLogger()
     {
-        return inner.getStoreDir();
+        return StringLogger.DEV_NULL;
     }
 
-    @Override
-    public Config getConfig()
+    public ImpermanentGraphDatabase()
     {
-        return inner.getConfig();
+        this( new HashMap<String, String>() );
+    }
+    
+    private static String path()
+    {
+        clearDirectory();
+        return PATH.getAbsolutePath();
     }
 
-    @Override
-    public <T> Collection<T> getManagementBeans( Class<T> type )
+    private static void clearDirectory()
     {
-        return inner.getManagementBeans( type );
+        try
+        {
+            FileUtils.deleteRecursively( PATH );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
-    @Override
-    public boolean isReadOnly()
+    protected void close()
     {
-        return inner.isReadOnly();
+        super.close();
+//        clearDirectory();
     }
 
     public void cleanContent( boolean retainReferenceNode )
     {
-        Transaction tx = inner.beginTx();
+        Transaction tx = beginTx();
         try
         {
-            for ( Node node : inner.getAllNodes() )
+            for ( Node node : getAllNodes() )
             {
                 for ( Relationship rel : node.getRelationships( Direction.OUTGOING ) )
                 {
@@ -225,7 +100,7 @@ public class ImpermanentGraphDatabase extends AbstractGraphDatabase
                     {
                         try
                         {
-                            Node referenceNode = inner.getReferenceNode();
+                            Node referenceNode = getReferenceNode();
                             if ( !node.equals( referenceNode ) )
                             {
                                 node.delete();
@@ -257,11 +132,5 @@ public class ImpermanentGraphDatabase extends AbstractGraphDatabase
     public void cleanContent()
     {
         cleanContent( false );
-    }
-    
-    @Override
-    public KernelData getKernelData()
-    {
-        return inner.getKernelData();
     }
 }

@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.transaction;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 
 /**
@@ -40,5 +42,5 @@ public abstract class TransactionManagerProvider extends Service
     }
 
     protected abstract AbstractTransactionManager loadTransactionManager( String txLogDir,
-            KernelPanicEventGenerator kpe, TxHook rollbackHook );
+            KernelPanicEventGenerator kpe, TxHook rollbackHook, StringLogger msgLog, FileSystemAbstraction fileSystem );
 }

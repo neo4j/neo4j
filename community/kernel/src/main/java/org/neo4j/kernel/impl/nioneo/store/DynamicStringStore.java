@@ -51,9 +51,9 @@ public class DynamicStringStore extends AbstractDynamicStore
     }
 
     public static void createStore( String fileName, int blockSize,
-            IdGeneratorFactory idGeneratorFactory, IdType idType )
+            IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystem, IdType idType )
     {
-        createEmptyStore( fileName, blockSize, VERSION, idGeneratorFactory, idType );
+        createEmptyStore( fileName, blockSize, VERSION, idGeneratorFactory, fileSystem, idType );
     }
 
     @Override

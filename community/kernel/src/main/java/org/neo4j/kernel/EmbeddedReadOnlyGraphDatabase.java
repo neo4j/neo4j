@@ -75,8 +75,9 @@ public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
     public EmbeddedReadOnlyGraphDatabase( String storeDir,
             Map<String, String> params )
     {
+        super( storeDir );
         params.put( Config.READ_ONLY, "true" );
-        this.graphDbImpl = new EmbeddedGraphDbImpl( storeDir, null, params, this,
+        this.graphDbImpl = new EmbeddedGraphDbImpl( getStoreDir(), null, params, this,
                 CommonFactories.defaultLockManagerFactory(),
                 CommonFactories.defaultIdGeneratorFactory(),
                 CommonFactories.defaultRelationshipTypeCreator(),
@@ -119,7 +120,7 @@ public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
         return graphDbImpl.getReferenceNode();
     }
 
-    public void shutdown()
+    @Override protected void close()
     {
         graphDbImpl.shutdown();
     }
@@ -171,12 +172,6 @@ public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
     public String toString()
     {
         return super.toString() + " [" + graphDbImpl.getStoreDir() + "]";
-    }
-
-    @Override
-    public String getStoreDir()
-    {
-        return graphDbImpl.getStoreDir();
     }
 
     public Iterable<Node> getAllNodes()

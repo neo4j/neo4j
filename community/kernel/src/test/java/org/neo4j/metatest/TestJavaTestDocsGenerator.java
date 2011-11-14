@@ -25,7 +25,6 @@ import static org.junit.Assert.assertTrue;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.Map;
 
 import org.junit.Before;
@@ -135,15 +134,6 @@ public class TestJavaTestDocsGenerator implements GraphHolder
     @Before
     public void setUp()
     {
-        try
-        {
-            graphdb = new ImpermanentGraphDatabase();
-        }
-        catch ( IOException e )
-        {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
+        graphdb = new ImpermanentGraphDatabase();
     }
-
 }

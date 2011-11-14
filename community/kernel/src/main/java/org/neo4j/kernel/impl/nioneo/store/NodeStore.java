@@ -80,7 +80,8 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
     {
         IdGeneratorFactory idGeneratorFactory = (IdGeneratorFactory) config.get(
                 IdGeneratorFactory.class );
-        createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), idGeneratorFactory );
+        FileSystemAbstraction fileSystem = (FileSystemAbstraction) config.get( FileSystemAbstraction.class );
+        createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), idGeneratorFactory, fileSystem );
         NodeStore store = new NodeStore( fileName, config );
         NodeRecord nodeRecord = new NodeRecord( store.nextId() );
         nodeRecord.setInUse( true );

@@ -37,6 +37,8 @@ public class TestStore
 {
     public static IdGeneratorFactory ID_GENERATOR_FACTORY =
             CommonFactories.defaultIdGeneratorFactory();
+    public static FileSystemAbstraction FILE_SYSTEM =
+            CommonFactories.defaultFileSystemAbstraction();
     
     private String path()
     {
@@ -167,7 +169,8 @@ public class TestStore
 
         public static Store createStore( String fileName ) throws IOException
         {
-            createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), ID_GENERATOR_FACTORY );
+            createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), ID_GENERATOR_FACTORY,
+                    FILE_SYSTEM );
             return new Store( fileName );
         }
 

@@ -57,9 +57,9 @@ public class DynamicArrayStore extends AbstractDynamicStore
     }
 
     public static void createStore( String fileName, int blockSize,
-            IdGeneratorFactory idGeneratorFactory )
+            IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystem )
     {
-        createEmptyStore( fileName, blockSize, VERSION, idGeneratorFactory, IdType.ARRAY_BLOCK );
+        createEmptyStore( fileName, blockSize, VERSION, idGeneratorFactory, fileSystem, IdType.ARRAY_BLOCK );
     }
 
     private Collection<DynamicRecord> allocateFromNumbers( long startBlock, Object array )

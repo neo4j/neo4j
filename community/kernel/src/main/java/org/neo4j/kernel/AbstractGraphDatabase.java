@@ -24,15 +24,48 @@ import java.util.Iterator;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Exposes the methods {@link #getConfig()}() and {@link #getManagementBeans(Class)}() a.s.o.
  */
 public abstract class AbstractGraphDatabase implements GraphDatabaseService
 {
-    public abstract String getStoreDir();
+    private final String storeDir;
+    private final StringLogger msgLog;
+
+    protected AbstractGraphDatabase( String storeDir )
+    {
+        this.storeDir = FileUtils.canonicalize( storeDir );
+        this.msgLog = createStringLogger();
+    }
+
+    protected StringLogger createStringLogger()
+    {
+        return StringLogger.createTheFuckingLogger( this.storeDir );
+    }
+    
+    @Override
+    public final void shutdown()
+    {
+        close();
+        msgLog.closeTheFuckingLogger();
+    }
+
+    protected abstract void close();
+
+    public final String getStoreDir()
+    {
+        return storeDir;
+    }
 
     public abstract Config getConfig();
+
+    public final StringLogger getMessageLog()
+    {
+        return msgLog;
+    }
 
     /**
      * Get a single management bean. Delegates to {@link #getSingleManagementBean(Class)}.

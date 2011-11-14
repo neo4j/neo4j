@@ -27,4 +27,14 @@ public interface FileSystemAbstraction
     FileChannel open( String fileName, String mode ) throws IOException;
     
     FileLock tryLock( String fileName, FileChannel channel ) throws IOException;
+    
+    FileChannel create( String fileName ) throws IOException;
+    
+    boolean fileExists( String fileName );
+    
+    long getFileSize( String fileName );
+
+    boolean deleteFile( String fileName );
+    
+    boolean renameFile( String from, String to ) throws IOException;
 }

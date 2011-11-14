@@ -141,11 +141,13 @@ public class PropertyIndexStore extends AbstractStore implements Store, RecordSt
         super.flushAll();
     }
 
-    public static void createStore( String fileName, IdGeneratorFactory idGeneratorFactory )
+    public static void createStore( String fileName, IdGeneratorFactory idGeneratorFactory,
+            FileSystemAbstraction fileSystem )
     {
-        createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), idGeneratorFactory );
+        createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), idGeneratorFactory,
+                fileSystem );
         DynamicStringStore.createStore( fileName + ".keys",
-                KEY_STORE_BLOCK_SIZE, idGeneratorFactory, IdType.PROPERTY_INDEX_BLOCK );
+                KEY_STORE_BLOCK_SIZE, idGeneratorFactory, fileSystem, IdType.PROPERTY_INDEX_BLOCK );
     }
 
     public PropertyIndexData[] getPropertyIndexes( int count )

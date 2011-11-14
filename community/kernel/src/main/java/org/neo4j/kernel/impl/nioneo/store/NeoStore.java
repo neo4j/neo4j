@@ -249,12 +249,13 @@ public class NeoStore extends AbstractStore
     {
         IdGeneratorFactory idGeneratorFactory = (IdGeneratorFactory) config.get(
                 IdGeneratorFactory.class );
+        FileSystemAbstraction fileSystem = (FileSystemAbstraction) config.get( FileSystemAbstraction.class );
         StoreId storeId = (StoreId) config.get( StoreId.class );
         if ( storeId == null ) storeId = new StoreId();
 
-        createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), idGeneratorFactory );
+        createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), idGeneratorFactory, fileSystem );
         NodeStore.createStore( fileName + ".nodestore.db", config );
-        RelationshipStore.createStore( fileName + ".relationshipstore.db", idGeneratorFactory );
+        RelationshipStore.createStore( fileName + ".relationshipstore.db", idGeneratorFactory, fileSystem );
         PropertyStore.createStore( fileName + ".propertystore.db", config );
         RelationshipTypeStore.createStore( fileName
             + ".relationshiptypestore.db", config );

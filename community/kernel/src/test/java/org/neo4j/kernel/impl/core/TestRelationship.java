@@ -873,7 +873,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     {
         int grabSize = 10;
         GraphDatabaseService db = new ImpermanentGraphDatabase(
-                "target/test-data/test-db", stringMap( "relationship_grab_size", "" + grabSize ) );
+                stringMap( "relationship_grab_size", "" + grabSize ) );
         Transaction tx = db.beginTx();
         Node node1 = db.createNode();
         Node node2 = db.createNode();
@@ -929,8 +929,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     {
         int grabSize = 10;
         GraphDatabaseService db = new ImpermanentGraphDatabase(
-                "target/test-data/test-db2", stringMap(
-                        "relationship_grab_size", "" + grabSize ) );
+                stringMap( "relationship_grab_size", "" + grabSize ) );
         Transaction tx = db.beginTx();
         Node node1 = db.createNode();
         Node node2 = db.createNode();
@@ -995,8 +994,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     {
         int grabSize = 2;
         GraphDatabaseService db = new ImpermanentGraphDatabase(
-                "target/test-data/test-db4", stringMap(
-                        "relationship_grab_size", "" + grabSize ) );
+                stringMap( "relationship_grab_size", "" + grabSize ) );
         Transaction tx = db.beginTx();
         Node node1 = db.createNode();
         Node node2 = db.createNode();

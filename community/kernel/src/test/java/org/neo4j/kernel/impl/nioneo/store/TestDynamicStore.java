@@ -48,6 +48,8 @@ public class TestDynamicStore
 {
     public static IdGeneratorFactory ID_GENERATOR_FACTORY =
             CommonFactories.defaultIdGeneratorFactory();
+    public static FileSystemAbstraction FILE_SYSTEM =
+            CommonFactories.defaultFileSystemAbstraction();
 
     private String path()
     {
@@ -111,7 +113,7 @@ public class TestDynamicStore
     private void createEmptyStore( String fileName, int blockSize )
     {
         DynamicArrayStore.createEmptyStore( fileName, blockSize,
-                DynamicArrayStore.VERSION, ID_GENERATOR_FACTORY,
+                DynamicArrayStore.VERSION, ID_GENERATOR_FACTORY, FILE_SYSTEM,
                 IdType.ARRAY_BLOCK );
     }
 

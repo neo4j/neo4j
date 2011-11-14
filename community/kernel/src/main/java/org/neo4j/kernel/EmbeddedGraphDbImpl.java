@@ -102,16 +102,16 @@ class EmbeddedGraphDbImpl
      * @param config configuration parameters
      */
     public EmbeddedGraphDbImpl( String storeDir, StoreId storeId, Map<String, String> inputParams,
-            GraphDatabaseService graphDbService, LockManagerFactory lockManagerFactory,
+            AbstractGraphDatabase graphDbService, LockManagerFactory lockManagerFactory,
             IdGeneratorFactory idGeneratorFactory, RelationshipTypeCreator relTypeCreator,
             TxIdGeneratorFactory txIdFactory, TxHook txHook,
             LastCommittedTxIdSetter lastCommittedTxIdSetter, FileSystemAbstraction fileSystem )
     {
         this.storeDir = storeDir;
-        TxModule txModule = newTxModule( inputParams, txHook );
+        TxModule txModule = newTxModule( inputParams, txHook, graphDbService.getMessageLog(), fileSystem );
         LockManager lockManager = lockManagerFactory.create( txModule );
         LockReleaser lockReleaser = new LockReleaser( lockManager, txModule.getTxManager() );
-        final Config config = new Config( graphDbService, storeDir, storeId, inputParams,
+        final Config config = new Config( graphDbService, storeId, inputParams,
                 kernelPanicEventGenerator, txModule, lockManager, lockReleaser, idGeneratorFactory,
                 new SyncHookFactory(), relTypeCreator, txIdFactory.create( txModule.getTxManager() ),
                 lastCommittedTxIdSetter, fileSystem );
@@ -122,7 +122,7 @@ class EmbeddedGraphDbImpl
         config.getParams().put( LogBufferFactory.class,
                 CommonFactories.defaultLogBufferFactory() );
         graphDbInstance = new GraphDbInstance( storeDir, true, config );
-        this.msgLog = StringLogger.getLogger( storeDir );
+        this.msgLog = graphDbService.getMessageLog();
         this.graphDbService = graphDbService;
         IndexStore indexStore = graphDbInstance.getConfig().getIndexStore();
         this.indexManager = new IndexManagerImpl( this, indexStore );
@@ -207,6 +207,7 @@ class EmbeddedGraphDbImpl
         }
         catch ( RuntimeException cause )
         {
+            cause.printStackTrace();
             msgLog.logMessage( "Startup failed", cause );
             throw cause;
         }
@@ -217,11 +218,11 @@ class EmbeddedGraphDbImpl
         }
     }
 
-    private TxModule newTxModule( Map<String, String> inputParams, TxHook rollbackHook )
+    private TxModule newTxModule( Map<String, String> inputParams, TxHook rollbackHook, StringLogger msgLog, FileSystemAbstraction fileSystem )
     {
         return Boolean.parseBoolean( inputParams.get( Config.READ_ONLY ) ) ? new TxModule( true,
                 kernelPanicEventGenerator ) : new TxModule( this.storeDir,
-                kernelPanicEventGenerator, rollbackHook, inputParams.get(Config.TXMANAGER_IMPLEMENTATION) );
+                kernelPanicEventGenerator, rollbackHook, msgLog, fileSystem, inputParams.get( Config.TXMANAGER_IMPLEMENTATION ) );
     }
 
     <T> Collection<T> getManagementBeans( Class<T> beanClass )
@@ -431,6 +432,8 @@ class EmbeddedGraphDbImpl
 
     public Iterable<Node> getAllNodes()
     {
+        System.out.println( this + " getAllNodes" );
+        
         return new Iterable<Node>()
         {
             @Override

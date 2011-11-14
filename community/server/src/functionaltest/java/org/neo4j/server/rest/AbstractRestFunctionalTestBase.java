@@ -61,7 +61,7 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
     @BeforeClass
     public static void startDatabase()
     {
-        graphdb = new ImpermanentGraphDatabase( "target/db" );
+        graphdb = new ImpermanentGraphDatabase();
         server = new WrappingNeoServerBootstrapper( graphdb );
         server.start();
 

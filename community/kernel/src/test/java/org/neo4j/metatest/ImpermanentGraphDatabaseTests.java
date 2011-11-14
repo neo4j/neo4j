@@ -34,7 +34,7 @@ public class ImpermanentGraphDatabaseTests
 
     @Before
 	public void Given() {
-		db = new ImpermanentGraphDatabase( "target/var/ineodb" );
+		db = new ImpermanentGraphDatabase();
 	}
     
     @After
@@ -68,7 +68,7 @@ public class ImpermanentGraphDatabaseTests
         createNode();
         db.shutdown();
 
-        db = new ImpermanentGraphDatabase( "neodb");
+        db = new ImpermanentGraphDatabase();
         
         assertEquals( "Should not see anything but the default reference node.", 1, nodeCount() );
     }

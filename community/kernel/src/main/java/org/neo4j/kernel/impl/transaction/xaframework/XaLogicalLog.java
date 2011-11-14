@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
@@ -39,6 +38,7 @@ import javax.transaction.xa.Xid;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.cache.LruCache;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -108,6 +108,7 @@ public class XaLogicalLog
             new LruCache<Long, TxPosition>( "Tx start position cache", 10000, null );
     private final LruCache<Long /*log version*/, Long /*last committed tx*/> logHeaderCache =
             new LruCache<Long, Long>( "Log header cache", 1000, null );
+    private final FileSystemAbstraction fileSystem;
 
     XaLogicalLog( String fileName, XaResourceManager xaRm, XaCommandFactory cf,
             XaTransactionFactory xaTf, Map<Object, Object> config )
@@ -117,12 +118,13 @@ public class XaLogicalLog
         this.cf = cf;
         this.xaTf = xaTf;
         this.logBufferFactory = (LogBufferFactory) config.get( LogBufferFactory.class );
+        this.fileSystem = (FileSystemAbstraction) config.get( FileSystemAbstraction.class );
 
         log = Logger.getLogger( this.getClass().getName() + File.separator + fileName );
         sharedBuffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
             + Xid.MAXBQUALSIZE * 10 );
         storeDir = (String) config.get( "store_dir" );
-        msgLog = StringLogger.getLogger( storeDir);
+        msgLog = (StringLogger) config.get( StringLogger.class );
 
         // We should turn keep-logs on if there are previous logs around,
         // this so that e.g. temporary shell sessions or operations don't create
@@ -133,9 +135,9 @@ public class XaLogicalLog
     synchronized void open() throws IOException
     {
         String activeFileName = fileName + ".active";
-        if ( !new File( activeFileName ).exists() )
+        if ( !fileSystem.fileExists( activeFileName ) )
         {
-            if ( new File( fileName ).exists() )
+            if ( fileSystem.fileExists( fileName ) )
             {
                 // old < b8 xaframework with no log rotation and we need to
                 // do recovery on it
@@ -149,8 +151,7 @@ public class XaLogicalLog
         }
         else
         {
-            FileChannel fc = new RandomAccessFile( activeFileName ,
-                "rw" ).getChannel();
+            FileChannel fc = fileSystem.open( activeFileName, "rw" );
             byte bytes[] = new byte[256];
             ByteBuffer buf = ByteBuffer.wrap( bytes );
             int read = fc.read( buf );
@@ -166,29 +167,20 @@ public class XaLogicalLog
             {
                 // clean
                 String newLog = getLog1FileName();
-                File file = new File( newLog );
-                if ( file.exists() )
-                {
-                    renameLogFileToRightVersion( getLog1FileName(), file.length() );
-                }
-                file = new File( getLog2FileName() );
-                if ( file.exists() )
-                {
-                    renameLogFileToRightVersion( getLog2FileName(), file.length() );
-                }
+                renameIfExists( newLog );
+                renameIfExists( getLog2FileName() );
                 open( newLog );
                 setActiveLog( LOG1 );
             }
             else if ( c == LOG1 )
             {
                 String newLog = getLog1FileName();
-                if ( !new File( newLog ).exists() )
+                if ( !fileSystem.fileExists( newLog ) )
                 {
                     throw new IllegalStateException(
                         "Active marked as 1 but no " + newLog + " exist" );
                 }
-                File otherLog = new File( getLog2FileName() );
-                if ( otherLog.exists() )
+                if ( fileSystem.fileExists( getLog2FileName() ) )
                 {
                     fixDualLogFiles( getLog1FileName(), getLog2FileName() );
                 }
@@ -198,13 +190,12 @@ public class XaLogicalLog
             else if ( c == LOG2 )
             {
                 String newLog = getLog2FileName();
-                if ( !new File( newLog ).exists() )
+                if ( !fileSystem.fileExists( newLog ) )
                 {
                     throw new IllegalStateException(
                         "Active marked as 2 but no " + newLog + " exist" );
                 }
-                File otherLog = new File( getLog1FileName() );
-                if ( otherLog.exists() )
+                if ( fileSystem.fileExists( getLog1FileName() ) )
                 {
                     fixDualLogFiles( getLog2FileName(), getLog1FileName() );
                 }
@@ -219,6 +210,14 @@ public class XaLogicalLog
 
         instantiateCorrectWriteBuffer();
     }
+    
+    private void renameIfExists( String fileName ) throws IOException
+    {
+        if ( fileSystem.fileExists( fileName ) )
+        {
+            renameLogFileToRightVersion( fileName, fileSystem.getFileSize( fileName ) );
+        }
+    }
 
     private void instantiateCorrectWriteBuffer() throws IOException
     {
@@ -232,7 +231,7 @@ public class XaLogicalLog
 
     private void open( String fileToOpen ) throws IOException
     {
-        fileChannel = new RandomAccessFile( fileToOpen, "rw" ).getChannel();
+        fileChannel = fileSystem.open( fileToOpen, "rw" );
         if ( fileChannel.size() != 0 )
         {
             nonCleanShutdown = true;
@@ -599,17 +598,17 @@ public class XaLogicalLog
 
     private void fixDualLogFiles( String activeLog, String oldLog ) throws IOException
     {
-        FileChannel activeLogChannel = new RandomAccessFile( activeLog, "r" ).getChannel();
+        FileChannel activeLogChannel = fileSystem.open( activeLog, "r" );
         long[] activeLogHeader = LogIoUtils.readLogHeader( ByteBuffer.allocate( 16 ), activeLogChannel, false );
         activeLogChannel.close();
 
-        FileChannel oldLogChannel = new RandomAccessFile( oldLog, "r" ).getChannel();
+        FileChannel oldLogChannel = fileSystem.open( oldLog, "r" );
         long[] oldLogHeader = LogIoUtils.readLogHeader( ByteBuffer.allocate( 16 ), oldLogChannel, false );
         oldLogChannel.close();
 
         if ( oldLogHeader == null )
         {
-            if ( !FileUtils.deleteFile( new File( oldLog ) ) )
+            if ( !fileSystem.deleteFile( oldLog ) )
             {
                 throw new IOException( "Unable to delete " + oldLog );
             }
@@ -619,7 +618,7 @@ public class XaLogicalLog
             // we crashed in rotate after setActive but did not move the old log to the right name
             // (and we do not know if keepLogs is true or not so play it safe by keeping it)
             String newName = getFileName( oldLogHeader[0] );
-            if ( !FileUtils.renameFile( new File( oldLog ), new File( newName ) ) )
+            if ( !fileSystem.renameFile( oldLog, newName ) )
             {
                 throw new IOException( "Unable to rename " + oldLog + " to " + newName );
             }
@@ -628,7 +627,7 @@ public class XaLogicalLog
         {
             assert activeLogHeader[0] < oldLogHeader[0];
             // we crashed in rotate before setActive, do the rotate work again and delete old
-            if ( !FileUtils.deleteFile( new File( oldLog ) ) )
+            if ( !fileSystem.deleteFile( oldLog ) )
             {
                 throw new IOException( "Unable to delete " + oldLog );
             }
@@ -637,14 +636,12 @@ public class XaLogicalLog
 
     private void renameLogFileToRightVersion( String logFileName, long endPosition ) throws IOException
     {
-        File file = new File( logFileName );
-        if ( !file.exists() )
+        if ( !fileSystem.fileExists( logFileName ) )
         {
-            throw new IOException( "Logical log[" + logFileName +
-                "] not found" );
+            throw new IOException( "Logical log[" + logFileName + "] not found" );
         }
 
-        FileChannel channel = new RandomAccessFile( logFileName, "rw" ).getChannel();
+        FileChannel channel = fileSystem.open( logFileName, "rw" );
         long[] header = LogIoUtils.readLogHeader( ByteBuffer.allocate( 16 ), channel, false );
         try
         {
@@ -652,8 +649,7 @@ public class XaLogicalLog
         }
         catch ( IOException e )
         {
-            log.log( Level.WARNING,
-                "Failed to truncate log at correct size", e );
+            log.log( Level.WARNING, "Failed to truncate log at correct size", e );
         }
         channel.close();
         String newName;
@@ -666,9 +662,7 @@ public class XaLogicalLog
         {
             newName = getFileName( header[0] );
         }
-        File newFile = new File( newName );
-        boolean renamed = FileUtils.renameFile( file, newFile );
-        if ( !renamed )
+        if ( !fileSystem.renameFile( logFileName, newName ) )
         {
             throw new IOException( "Failed to rename log to: " + newName );
         }
@@ -676,17 +670,14 @@ public class XaLogicalLog
 
     private void deleteLogFile( String logFileName ) throws IOException
     {
-        File file = new File( logFileName );
-        if ( !file.exists() )
+        if ( !fileSystem.fileExists( logFileName ) )
         {
             throw new IOException( "Logical log[" + logFileName +
                 "] not found" );
         }
-        boolean deleted = FileUtils.deleteFile( file );
-        if ( !deleted )
+        if ( !fileSystem.deleteFile( logFileName ) )
         {
-            log.warning( "Unable to delete clean logical log[" + logFileName +
-                "]" );
+            log.warning( "Unable to delete clean logical log[" + logFileName + "]" );
         }
     }
 
@@ -777,13 +768,11 @@ public class XaLogicalLog
                 + "no records in logical log." );
             msgLog.logMessage( "No log version found for " + logFileName, true );
             fileChannel.close();
-            boolean success = FileUtils.renameFile( new File( logFileName ),
-                new File( logFileName + "_unknown_timestamp_" +
-                    System.currentTimeMillis() + ".log" ) );
+            boolean success = fileSystem.renameFile( logFileName,
+                    logFileName + "_unknown_timestamp_" + System.currentTimeMillis() + ".log" );
             assert success;
             fileChannel.close();
-            fileChannel = new RandomAccessFile( logFileName,
-                "rw" ).getChannel();
+            fileChannel = fileSystem.open( logFileName, "rw" );
             return;
         }
         logVersion = header[0];
@@ -914,11 +903,11 @@ public class XaLogicalLog
     public ReadableByteChannel getLogicalLog( long version, long position ) throws IOException
     {
         String name = getFileName( version );
-        if ( !new File( name ).exists() )
+        if ( !fileSystem.fileExists( name ) )
         {
             throw new IOException( "No such log version:" + version );
         }
-        FileChannel channel = new RandomAccessFile( name, "r" ).getChannel();
+        FileChannel channel = fileSystem.open( name, "r" );
         channel.position( position );
         return new BufferedFileChannel( channel );
     }
@@ -1203,7 +1192,7 @@ public class XaLogicalLog
             if ( version == logVersion )
             {
                 String currentLogName = getCurrentLogFileName();
-                FileChannel channel = new RandomAccessFile( currentLogName, "r" ).getChannel();
+                FileChannel channel = fileSystem.open( currentLogName, "r" );
                 channel.position( position );
                 return new BufferedFileChannel( channel );
             }
@@ -1229,7 +1218,7 @@ public class XaLogicalLog
         else if ( version == logVersion )
         {
             String currentLogName = getCurrentLogFileName();
-            FileChannel channel = new RandomAccessFile( currentLogName, "r" ).getChannel();
+            FileChannel channel = fileSystem.open( currentLogName, "r" );
             channel = new BufferedFileChannel( channel );
 
             // Combined with the writeBuffer in cases where a DirectMappedLogBuffer
@@ -1294,19 +1283,18 @@ public class XaLogicalLog
 
     public long getLogicalLogLength( long version )
     {
-        File file = new File( getFileName( version ) );
-        return file.exists() ? file.length() : -1;
+        return fileSystem.getFileSize( getFileName( version ) );
     }
 
     public boolean hasLogicalLog( long version )
     {
-        return new File( getFileName( version ) ).exists();
+        return fileSystem.fileExists( getFileName( version ) );
     }
 
     public boolean deleteLogicalLog( long version )
     {
-        File file = new File(getFileName( version ) );
-        return file.exists() ? FileUtils.deleteFile( file ) : false;
+        String file = getFileName( version );
+        return fileSystem.fileExists( file ) ? fileSystem.deleteFile( file ) : false;
     }
 
     protected LogDeserializer getLogDeserializer(ReadableByteChannel byteChannel)
@@ -1553,8 +1541,7 @@ public class XaLogicalLog
                 writeBuffer.getFileChannelPosition(), true );
         long endPosition = writeBuffer.getFileChannelPosition();
         writeBuffer.force();
-        FileChannel newLog = new RandomAccessFile(
-            newLogFile, "rw" ).getChannel();
+        FileChannel newLog = fileSystem.open( newLogFile, "rw" );
         long lastTx = xaTf.getLastCommittedTx();
         LogIoUtils.writeLogHeader( sharedBuffer, (currentVersion + 1), lastTx );
         previousLogLastCommittedTx = lastTx;
@@ -1636,7 +1623,7 @@ public class XaLogicalLog
 
     private void assertFileDoesntExist( String file, String description ) throws IOException
     {
-        if ( new File( file ).exists() )
+        if ( fileSystem.fileExists( file ) )
         {
             throw new IOException( description + ": " + file + " already exist" );
         }
@@ -1670,8 +1657,7 @@ public class XaLogicalLog
         }
         ByteBuffer bb = ByteBuffer.wrap( new byte[4] );
         bb.asCharBuffer().put( c ).flip();
-        FileChannel fc = new RandomAccessFile( fileName + ".active" ,
-            "rw" ).getChannel();
+        FileChannel fc = fileSystem.open( fileName + ".active" , "rw" );
         int wrote = fc.write( bb );
         if ( wrote != 4 )
         {

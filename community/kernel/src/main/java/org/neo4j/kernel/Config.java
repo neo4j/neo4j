@@ -26,7 +26,6 @@ import java.util.Map;
 
 import javax.transaction.TransactionManager;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
@@ -47,6 +46,7 @@ import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.transaction.TxModule;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * A non-standard configuration object.
@@ -243,7 +243,7 @@ public class Config
     private final IdGeneratorFactory idGeneratorFactory;
     private final TxIdGenerator txIdGenerator;
 
-    Config( GraphDatabaseService graphDb, String storeDir, StoreId storeId,
+    Config( AbstractGraphDatabase graphDb, StoreId storeId,
             Map<String, String> inputParams, KernelPanicEventGenerator kpe,
             TxModule txModule, LockManager lockManager,
             LockReleaser lockReleaser, IdGeneratorFactory idGeneratorFactory,
@@ -252,7 +252,7 @@ public class Config
             LastCommittedTxIdSetter lastCommittedTxIdSetter,
             FileSystemAbstraction fileSystem )
     {
-        this.storeDir = storeDir;
+        this.storeDir = graphDb.getStoreDir();
         this.inputParams = inputParams;
         // Get the default params and override with the user supplied values
         this.params = getDefaultParams();
@@ -284,6 +284,7 @@ public class Config
         params.put( LastCommittedTxIdSetter.class, lastCommittedTxIdSetter );
         params.put( GraphDbModule.class, graphDbModule );
         params.put( TxHook.class, txModule.getTxHook() );
+        params.put( StringLogger.class, graphDb.getMessageLog() );
     }
 
     public static Map<Object, Object> getDefaultParams()
