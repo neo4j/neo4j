@@ -88,7 +88,7 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
         String queryString = "{\"script\": \"" + createScript( script ) + "\"," + parameterString+"},"  ;
 
         gen.get().expectedStatus( status.getStatusCode() ).payload(
-                queryString ).description(formatGroovy( script ) );
+                queryString ).description(formatGroovy( createScript( script ) ) );
         return gen.get().post( endpoint ).entity();
     }
     
