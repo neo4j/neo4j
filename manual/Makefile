@@ -306,3 +306,13 @@ upgrade:
 	"$(A2X)" -k -f text -D "$(UPGRADE)" "$(IMPORTDIR)/neo4j-docs-jar/ops/upgrades.txt"
 	mv "$(UPGRADE)/upgrades.text" "$(UPGRADE)/UPGRADE.txt"
 
+slidestest:
+	#
+	#
+	# Building slides.
+	#
+	#
+	"$(ASCIIDOC)" $(ASCIIDOC_FLAGS) --backend docbook --doctype article --conf-file="$(CONFDIR)/asciidoc.conf" --conf-file="$(CONFDIR)/docbook45.conf" --conf-file="$(CONFDIR)/docbook45-slides.conf" --out-file ./target/slidestest/article-slides.xml ./target/docs/neo4j-examples-docs-jar/dev/examples/hello-world.txt
+	xsltproc --xinclude --output ./target/slidestest/slides /usr/share/xml/docbook/stylesheet/docbook-xsl/slides/xhtml/default.xsl ./target/slidestest/article-slides.xml
+	xmllint --nonet --noout --xinclude --postvalid ./target/slidestest/article-slides.xml
+
