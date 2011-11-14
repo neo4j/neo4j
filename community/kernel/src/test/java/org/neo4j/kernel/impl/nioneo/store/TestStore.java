@@ -32,6 +32,7 @@ import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public class TestStore
 {
@@ -149,6 +150,7 @@ public class TestStore
         {
             super( fileName, MapUtil.genericMap(
                     IdGeneratorFactory.class, ID_GENERATOR_FACTORY,
+                    StringLogger.class, StringLogger.DEV_NULL,
                     FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction(),
                     "store_dir", "target/var/teststore" ), IdType.NODE );
         }

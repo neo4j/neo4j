@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl;
 
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -67,10 +69,12 @@ public class EphemeralIdGenerator implements IdGenerator
     
     private final AtomicLong nextId = new AtomicLong();
     private final IdType idType;
+    private final Queue<Long> freeList;
 
     public EphemeralIdGenerator( IdType idType )
     {
         this.idType = idType;
+        this.freeList = idType.allowAggressiveReuse() ? new ConcurrentLinkedQueue<Long>() : null;
     }
     
     @Override
@@ -82,6 +86,11 @@ public class EphemeralIdGenerator implements IdGenerator
     @Override
     public long nextId()
     {
+        if ( freeList != null )
+        {
+            Long id = freeList.poll();
+            if ( id != null ) return id.longValue();
+        }
         return nextId.getAndIncrement();
     }
 
@@ -106,6 +115,7 @@ public class EphemeralIdGenerator implements IdGenerator
     @Override
     public void freeId( long id )
     {
+        if (freeList != null) freeList.add( id );
     }
 
     @Override
@@ -116,7 +126,7 @@ public class EphemeralIdGenerator implements IdGenerator
     @Override
     public long getNumberOfIdsInUse()
     {
-        return nextId.get();
+        return freeList == null ? nextId.get() : nextId.get() - freeList.size();
     }
 
     @Override

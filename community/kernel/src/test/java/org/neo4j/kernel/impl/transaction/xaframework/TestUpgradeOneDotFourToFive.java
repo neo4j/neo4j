@@ -31,6 +31,7 @@ import java.util.Map;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.kernel.CommonFactories;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public class TestUpgradeOneDotFourToFive
 {
@@ -50,6 +51,7 @@ public class TestUpgradeOneDotFourToFive
         {
             Map<Object, Object> config = new HashMap<Object, Object>();
             config.put( "store_dir", PATH.getAbsolutePath() );
+            config.put( StringLogger.class, StringLogger.DEV_NULL );
             config.put( LogBufferFactory.class,
                     CommonFactories.defaultLogBufferFactory() );
             XaLogicalLog log = new XaLogicalLog( resourceFile(), null, null,

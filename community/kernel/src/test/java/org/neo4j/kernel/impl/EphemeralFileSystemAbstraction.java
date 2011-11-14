@@ -30,13 +30,21 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 {
+    private static final Queue<ByteBuffer> memoryPool = new ConcurrentLinkedQueue<ByteBuffer>();
     private final Map<String, EphemeralFileChannel> files = new HashMap<String, EphemeralFileChannel>();
+    
+    public void dispose()
+    {
+        for ( EphemeralFileChannel file : files.values() ) free( file );
+    }
     
     @Override
     public synchronized FileChannel open( String fileName, String mode ) throws IOException
@@ -55,10 +63,15 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     public synchronized FileChannel create( String fileName ) throws IOException
     {
         EphemeralFileChannel file = new EphemeralFileChannel();
-        files.put( fileName, file );
+        free( files.put( fileName, file ) );
         return file;
     }
     
+    private void free( EphemeralFileChannel fileChannel )
+    {
+        if ( fileChannel != null ) freeBuffer( fileChannel.fileAsBuffer );
+    }
+
     @Override
     public long getFileSize( String fileName )
     {
@@ -88,11 +101,24 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         files.put( to, file );
         return true;
     }
+
+    private static ByteBuffer allocateBuffer()
+    {
+        ByteBuffer buffer = memoryPool.poll();
+        if ( buffer != null ) return buffer;
+        // TODO dynamic size
+        return ByteBuffer.allocateDirect( 50 * 1024 * 1024 );
+    }
+
+    private static void freeBuffer( ByteBuffer buffer )
+    {
+        buffer.clear();
+        memoryPool.add( buffer );
+    }
     
     private static class EphemeralFileChannel extends FileChannel
     {
-        // TODO dynamic size
-        private ByteBuffer fileAsBuffer = ByteBuffer.allocateDirect( 50*1024*1024 );
+        private final ByteBuffer fileAsBuffer = allocateBuffer();
         private final byte[] scratchPad = new byte[1024];
         private int size;
         private int locked;

@@ -61,6 +61,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 public class TestNeoStore extends AbstractNeo4jTestCase
@@ -159,6 +160,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
                     FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction(),
                     LogBufferFactory.class, CommonFactories.defaultLogBufferFactory(),
                     TxIdGenerator.class, TxIdGenerator.DEFAULT,
+                    StringLogger.class, StringLogger.DEV_NULL,
                     "store_dir", path(),
                     "neo_store", file( "neo" ),
                     "logical_log", file( "nioneo_logical.log" ) ) );
