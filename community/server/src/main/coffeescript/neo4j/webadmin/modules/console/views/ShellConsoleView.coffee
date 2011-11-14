@@ -18,12 +18,18 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define ['./MultiLineInputConsole'], (MultiLineInputConsole) ->
-  
-  class CypherConsole extends MultiLineInputConsole
-
-    initialize : (opts) =>
-      @server = opts.server
-      @lang = opts.lang
-      @set {"showPrompt":true},{silent:true}
-
+define(
+  ['./shell',
+   './console',
+   'ribcage/View',
+   './ConsoleView',
+   'lib/backbone'], 
+  (baseTemplate, consoleTemplate, View, ConsoleView) ->
+ 
+    class ShellConsoleView extends ConsoleView
+      
+      render : =>
+        $(@el).html(baseTemplate(current:'shell'))
+        @renderConsole()
+        return this  
+)

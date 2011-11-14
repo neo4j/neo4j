@@ -155,4 +155,10 @@ public class HighlyConfigurableGraphDatabase extends AbstractGraphDatabase
     {
         return false;
     }
+    
+    @Override
+    public KernelData getKernelData()
+    {
+        return impl.getKernelData();
+    }
 }

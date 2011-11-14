@@ -29,14 +29,14 @@ import org.scalatest.junit.JUnitSuite
 
 class EagerAggregationPipeTest extends JUnitSuite {
   @Test def shouldReturnColumnsFromReturnItems() {
-    val source = new FakePipe(List(), new SymbolTable(NodeIdentifier("extractReturnItems")))
+    val source = new FakePipe(List(), new SymbolTable(NodeIdentifier("name")))
 
     val returnItems = List(ValueReturnItem(EntityValue("name")))
     val grouping = List(CountStar())
     val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)
 
     assertEquals(
-      Set(NodeIdentifier("extractReturnItems"),AggregationIdentifier("count(*)")),
+      Set(NodeIdentifier("name"), AggregationIdentifier("count(*)")),
       aggregationPipe.symbols.identifiers)
   }
 
@@ -53,7 +53,7 @@ class EagerAggregationPipeTest extends JUnitSuite {
       Map("name" -> "Andres", "age" -> 36),
       Map("name" -> "Peter", "age" -> 38),
       Map("name" -> "Michael", "age" -> 36),
-      Map("name" -> "Michael", "age" -> 31)), new SymbolTable(NodeIdentifier("extractReturnItems")))
+      Map("name" -> "Michael", "age" -> 31)), new SymbolTable(NodeIdentifier("name")))
 
     val returnItems = List(ValueReturnItem(EntityValue("name")))
     val grouping = List(CountStar())

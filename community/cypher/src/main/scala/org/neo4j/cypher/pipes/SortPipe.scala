@@ -19,20 +19,22 @@
  */
 package org.neo4j.cypher.pipes
 
-import org.neo4j.cypher.{Comparer, SymbolTable}
 import scala.math.signum
 import org.neo4j.cypher.commands.SortItem
+import org.neo4j.cypher.{SyntaxException, Comparer, SymbolTable}
 
-class SortPipe(source: Pipe,sortDescription: List[SortItem]) extends Pipe with Comparer {
+class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends Pipe with Comparer {
   val symbols: SymbolTable = source.symbols
 
+  assertDependenciesAreMet()
+
   def foreach[U](f: (Map[String, Any]) => U) {
-    val sorted = source.toList.sortWith((a, b) => compareBy (a,b,sortDescription))
+    val sorted = source.toList.sortWith((a, b) => compareBy(a, b, sortDescription))
 
     sorted.foreach(f)
   }
 
-  def compareBy(a:Map[String, Any], b:Map[String, Any], order:Seq[SortItem]):Boolean = order match {
+  def compareBy(a: Map[String, Any], b: Map[String, Any], order: Seq[SortItem]): Boolean = order match {
     case Nil => false
     case head :: tail => {
       val key = head.returnItem.identifier.name
@@ -41,8 +43,12 @@ class SortPipe(source: Pipe,sortDescription: List[SortItem]) extends Pipe with C
       signum(compare(aVal, bVal)) match {
         case 1 => !head.ascending
         case -1 => head.ascending
-        case 0 => compareBy(a,b,tail)
+        case 0 => compareBy(a, b, tail)
       }
     }
+  }
+
+  private def assertDependenciesAreMet() {
+    sortDescription.map(_.returnItem.identifier).foreach( source.symbols.assertHas )
   }
 }

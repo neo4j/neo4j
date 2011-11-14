@@ -37,7 +37,7 @@ public interface ShellServer extends Remote
 	
 	/**
 	 * Receives a command line (probably from a {@link ShellClient}) and reacts
-	 * to it.
+	 * to it. Output is written to the {@link Output} object.
 	 * @param line the command line to react to.
 	 * @param session the client session (environment).
 	 * @param out where output should go (like System.out).

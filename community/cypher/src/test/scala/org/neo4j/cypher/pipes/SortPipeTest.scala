@@ -23,7 +23,7 @@ import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.SymbolTable
 import org.scalatest.junit.JUnitSuite
-import org.neo4j.cypher.commands.{EntityValue, ValueReturnItem, SortItem}
+import org.neo4j.cypher.commands.{Identifier, EntityValue, ValueReturnItem, SortItem}
 
 class SortPipeTest extends JUnitSuite{
   @Test def emptyInIsEmptyOut() {
@@ -89,9 +89,13 @@ class SortPipeTest extends JUnitSuite{
 }
 
 class FakePipe(data: Seq[Map[String, Any]], val symbols: SymbolTable) extends Pipe {
-  def this(data: Seq[Map[String, Any]]) = this (data, new SymbolTable())
+  def this(data: Seq[Map[String, Any]]) = this (data, new FakeSymbolTable())
 
   def foreach[U](f: (Map[String, Any]) => U) {
     data.foreach(f(_))
   }
+}
+
+class FakeSymbolTable extends SymbolTable() {
+  override def assertHas(expected: Identifier) {}
 }

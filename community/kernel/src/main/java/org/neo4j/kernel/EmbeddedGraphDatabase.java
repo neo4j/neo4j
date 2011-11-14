@@ -163,6 +163,11 @@ public final class EmbeddedGraphDatabase extends AbstractGraphDatabase
         return false;
     }
 
+    @Override
+    public KernelData getKernelData()
+    {
+        return graphDbImpl.getKernelData();
+    }
 
     @Override
     public String getStoreDir()

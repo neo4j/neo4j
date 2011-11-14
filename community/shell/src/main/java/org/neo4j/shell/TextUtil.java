@@ -139,4 +139,18 @@ public class TextUtil
         }
         return result.toArray( new String[result.size()] );
     }
+
+    public static String multiplyString( String string, int times )
+    {
+        StringBuilder result = new StringBuilder();
+        for ( int i = 0; i < times; i++ ) result.append( string );
+        return result.toString();
+    }
+
+    public static String removeSpaces( String command )
+    {
+        while ( command.length() > 0 && command.charAt( 0 ) == ' ' ) command = command.substring( 1 );
+        while ( command.length() > 0 && command.charAt( command.length()-1 ) == ' ' ) command = command.substring( 0, command.length()-1 );
+        return command;
+    }
 }

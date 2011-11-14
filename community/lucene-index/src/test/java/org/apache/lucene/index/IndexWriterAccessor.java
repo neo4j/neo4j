@@ -17,14 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.webadmin.console;
+package org.apache.lucene.index;
 
-import org.neo4j.helpers.Pair;
-
-public interface ScriptSession
+/**
+ * IndexWriter.isClosed is package local.
+ */
+public class IndexWriterAccessor
 {
-    /**
-     * @return {@link Pair} of (result,next prompt).
-     */
-    Pair<String, String> evaluate( String script );
+    public static boolean isClosed(IndexWriter writer)
+    {
+        return writer.isClosed();
+    }
 }

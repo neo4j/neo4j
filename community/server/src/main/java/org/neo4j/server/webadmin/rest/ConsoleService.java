@@ -19,6 +19,10 @@
  */
 package org.neo4j.server.webadmin.rest;
 
+import static java.util.Arrays.asList;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
@@ -29,11 +33,15 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import org.neo4j.helpers.Pair;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.InputFormat;
+import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.OutputFormat;
+import org.neo4j.server.rest.repr.Representation;
+import org.neo4j.server.rest.repr.RepresentationType;
 import org.neo4j.server.rest.repr.ValueRepresentation;
 import org.neo4j.server.webadmin.console.ScriptSession;
 import org.neo4j.server.webadmin.rest.representations.ServiceDefinitionRepresentation;
@@ -105,9 +113,10 @@ public class ConsoleService implements AdvertisableService
         ScriptSession scriptSession = getSession( args );
         log.trace( scriptSession.toString() );
 
-        String result = scriptSession.evaluate( (String) args.get( "command" ) );
-
-        return output.ok( ValueRepresentation.string( result ) );
+        Pair<String, String> result = scriptSession.evaluate( (String) args.get( "command" ) );
+        List<Representation> list = new ArrayList<Representation>(
+                asList( ValueRepresentation.string( result.first() ), ValueRepresentation.string( result.other() ) ) );
+        return output.ok( new ListRepresentation( RepresentationType.STRING, list ) );
     }
 
     private ScriptSession getSession( Map<String, Object> args )

@@ -69,7 +69,7 @@ define(
           showPrompt : @consoleState.get "showPrompt"
           showMultilineHelp : @consoleState.get "showMultilineHelp" or false
           current : @lang
-          promptPrefix : @lang)
+          promptPrefix : @consoleState.get "promptPrefix")
         
         @delegateEvents()
         @scrollToBottomOfConsole()

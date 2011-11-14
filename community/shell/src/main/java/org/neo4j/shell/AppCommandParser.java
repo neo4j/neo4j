@@ -39,8 +39,8 @@ import java.util.StringTokenizer;
  */
 public class AppCommandParser
 {
-	private AppShellServer server;
-	private String line;
+	private final AppShellServer server;
+	private final String line;
 	private String appName;
 	private App app;
 	private Map<String, String> options = new HashMap<String, String>();
@@ -55,23 +55,20 @@ public class AppCommandParser
 		throws Exception
 	{
 		this.server = server;
-		if ( line != null )
-		{
-			line = line.trim();
-		}
 		this.line = line;
-		this.parse();
+		String trimmedLine = line != null ? line.trim() : line;
+		this.parse( trimmedLine );
 	}
 	
-	private void parse() throws Exception
+	private void parse( String line ) throws Exception
 	{
-		if ( this.line == null || this.line.trim().length() == 0 )
+		if ( line == null || line.trim().length() == 0 )
 		{
 			return;
 		}
 		
-		this.parseApp();
-		this.parseParameters();
+		this.parseApp( line );
+		this.parseParameters( line );
 	}
 	
 	/**
@@ -85,22 +82,21 @@ public class AppCommandParser
         return index == -1 ? line : line.substring( 0, index );
 	}
 	
-	private void parseApp() throws Exception
+	private void parseApp( String line ) throws Exception
 	{
-		int index = findNextWhiteSpace( this.line, 0 );
-		this.appName = index == -1 ?
-			this.line : this.line.substring( 0, index );
-		this.app = this.server.findApp( this.appName );
-		if ( this.app == null )
+		int index = findNextWhiteSpace( line, 0 );
+		appName = index == -1 ? line : line.substring( 0, index );
+		appName = appName.toLowerCase();
+		app = server.findApp( appName );
+		if ( app == null )
 		{
-			throw new ShellException(
-				"Unknown command '" + this.appName + "'" );
+			throw new ShellException( "Unknown command '" + appName + "'" );
 		}
 	}
 	
-	private void parseParameters() throws ShellException
+	private void parseParameters( String line ) throws ShellException
 	{
-		String rest = this.line.substring( this.appName.length() ).trim();
+		String rest = line.substring( appName.length() ).trim();
 		String[] parsed = tokenizeStringWithQuotes( rest, false );
 		for ( int i = 0; i < parsed.length; i++ )
 		{

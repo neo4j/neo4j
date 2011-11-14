@@ -28,16 +28,21 @@ define ['lib/backbone'], () ->
       historyIndex : 0
       showPrompt : false
       prompt : ""
+      promptPrefix : ""
 
     initialize : (opts) =>
       @server = opts.server
       @lang = opts.lang
+      @setPromptPrefix "#{@lang}> "
       @setStatement "init()"
       @eval false, false
       
     # Set the current statement (== current prompt input)
     setStatement : (str, opts={}) =>
       @set {prompt :  str}, opts
+      
+    getPromptPrefix : -> @get "promptPrefix" 
+    setPromptPrefix : (p) -> @set "promptPrefix" : p
 
     # Evaluate the current statement line 
     # (the current prompt input)
@@ -45,7 +50,7 @@ define ['lib/backbone'], () ->
       statement = @get 'prompt'
       @set {"showPrompt":false, prompt:""}, {silent:true}
       if showStatement
-        @pushLines [statement], prepend + "> "
+        @pushLines [statement], @getPromptPrefix()
       
       if includeInHistory and statement isnt ''
         @pushHistory statement
@@ -76,13 +81,17 @@ define ['lib/backbone'], () ->
       else
         @set {prompt:""}
 
-    parseEvalResult : (result) =>
+    parseEvalResult : (response) =>
+      [result,promptPrefix] = response
       if _(result).isString() && result.length > 0
         if result.substr(-1) is "\n"
           result = result.substr(0, result.length - 1)
         result = result.split "\n"
       else
         result = []
+        
+      if promptPrefix isnt null
+        @set "promptPrefix":promptPrefix
 
       @set {"showPrompt":true},{silent:true}
       @pushLines result

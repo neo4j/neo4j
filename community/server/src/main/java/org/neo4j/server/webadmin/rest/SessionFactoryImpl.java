@@ -38,19 +38,55 @@ public class SessionFactoryImpl implements SessionFactory
     @Override
     public ScriptSession createSession( String engineName, Database database )
     {
-        if ( engineName.equals( "cypher" ) )
+        if ( engineName.equals( "shell" ) )
         {
-            return new CypherSession( database.graph );
+//            return new CypherSession( database.graph );
+            return getOrInstantiateSession( database, "shellSession", SessionCreator.SHELL );
         }
         else
         {
-            Object session = httpSession.getAttribute( "consoleSession" );
-            if ( session == null )
-            {
-                session = new GremlinSession( database );
-                httpSession.setAttribute( "consoleSession", session );
-            }
-            return (ScriptSession) session;
+            return getOrInstantiateSession( database, "consoleSession", SessionCreator.GREMLIN );
         }
+    }
+
+    private ScriptSession getOrInstantiateSession( Database database, String key, SessionCreator creator )
+    {
+        Object session = httpSession.getAttribute( key );
+        if ( session == null )
+        {
+            session = creator.newSession( database );
+            httpSession.setAttribute( key, session );
+        }
+        return (ScriptSession) session;
+    }
+    
+    private static enum SessionCreator
+    {
+        GREMLIN
+        {
+            @Override
+            ScriptSession newSession( Database database )
+            {
+                return new GremlinSession( database );
+            }
+        },
+        CYPHER
+        {
+            @Override
+            ScriptSession newSession( Database database )
+            {
+                return new CypherSession( database.graph );
+            }
+        },
+        SHELL
+        {
+            @Override
+            ScriptSession newSession( Database database )
+            {
+                return new ShellSession( database.graph );
+            }
+        };
+        
+        abstract ScriptSession newSession( Database database );
     }
 }

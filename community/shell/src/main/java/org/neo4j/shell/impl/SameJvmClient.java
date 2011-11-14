@@ -29,14 +29,20 @@ import org.neo4j.shell.ShellServer;
  */
 public class SameJvmClient extends AbstractClient
 {
-	private Output out = new SystemOutput();
+	private Output out;
 	private ShellServer server;
+	
+	public SameJvmClient( ShellServer server )
+	{
+	    this( server, new SystemOutput() );
+	}
 	
 	/**
 	 * @param server the server to communicate with.
 	 */
-	public SameJvmClient( ShellServer server )
+	public SameJvmClient( ShellServer server, Output out )
 	{
+	    this.out = out;
 		this.server = server;
 		init();
 	    updateTimeForMostRecentConnection();

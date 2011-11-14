@@ -26,6 +26,7 @@ import java.util.Map;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.KernelExtension;
+import org.neo4j.shell.ShellServer;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 @Service.Implementation( KernelExtension.class )
@@ -99,5 +100,10 @@ public final class ShellServerExtension extends KernelExtension<GraphDatabaseShe
         {
             throw new RuntimeException( "Could not load remote shell", cause );
         }
+    }
+    
+    public ShellServer getShellServer( KernelData kernel )
+    {
+        return getState( kernel );
     }
 }

@@ -49,6 +49,15 @@ class GraphDatabaseTestBase extends JUnitSuite {
 
   def createNode(): Node = createNode(Map[String, Any]())
   def createNode(name:String): Node = createNode(Map[String, Any]("name"->name))
+  def createNode(props: Map[String, Any]): Node = {
+    inTx(() => {
+      val node = graph.createNode()
+
+      props.foreach((kv) => node.setProperty(kv._1, kv._2))
+      node
+    }).asInstanceOf[Node]
+  }
+  def createNode(values:(String,Any)*):Node = createNode(values.toMap)
 
   def inTx[T](f: () => T): T = {
     val tx = graph.beginTx
@@ -96,12 +105,5 @@ class GraphDatabaseTestBase extends JUnitSuite {
   }
 
 
-  def createNode(props: Map[String, Any]): Node = {
-    inTx(() => {
-      val node = graph.createNode()
 
-      props.foreach((kv) => node.setProperty(kv._1, kv._2))
-      node
-    }).asInstanceOf[Node]
-  }
 }

@@ -28,38 +28,35 @@ import org.openqa.selenium.Keys;
 public class ConsoleWebIT extends AbstractWebadminTest {
 
     //
-    // CYPHER
+    // SHELL
     //
 
-    /**
-     * In order to access the Cypher console,
+    /**t
+     * In order to access the Shell console,
      * click on the "Console" tab in the webadmin
-     * and check the "Cypher" link.
+     * and check the "Shell" link.
      * 
-     * @@screenshot_CypherConsole
+     * @@screenshot_ShellConsole
      */
     @Test
     @Documented
-    public void accessing_the_Cypher_console() {
+    public void accessing_the_Shell_console() {
         wl.goToWebadminStartPage();
         wl.clickOnTab("Console");
-        wl.clickOnLink("Cypher");
+        wl.clickOnLink("Shell");
         wl.waitForElementToAppear(By
-                .xpath("//ul/li[contains(.,'cypher')]"));
-        captureScreenshot("screenshot_CypherConsole");
+                .xpath("//ul/li[contains(.,'shell')]"));
+        captureScreenshot("screenshot_ShellConsole");
     }
 
-   
-
     @Test
-    public void remembersCypherStateWhenSwitchingTabsTest() {
+    public void remembersShellStateWhenSwitchingTabsTest() {
         wl.goToWebadminStartPage();
         wl.clickOnTab("Console");
-        wl.clickOnLink("Cypher");
+        wl.clickOnLink("Shell");
         wl.clickOnTab("Data browser");
         wl.clickOnTab("Console");
-        wl.waitForElementToAppear(By
-                .xpath("//p[contains(.,'Cypher query language')]"));
+        wl.waitForElementToAppear(By.xpath("//p[contains(.,'shell')]"));
     }
 
     @Test
@@ -68,7 +65,7 @@ public class ConsoleWebIT extends AbstractWebadminTest {
         
         // Broken due to http://code.google.com/p/selenium/issues/detail?id=1723
         
-        accessing_the_Cypher_console();
+        accessing_the_Shell_console();
         
         wl.writeTo(By.id("console-input"), "start a=node(1)", Keys.RETURN);
         wl.writeTo(By.id("console-input"), "return a", Keys.RETURN);

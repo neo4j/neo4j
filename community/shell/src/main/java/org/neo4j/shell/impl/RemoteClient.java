@@ -36,15 +36,20 @@ public class RemoteClient extends AbstractClient
 	private RmiLocation serverLocation;
 	private Output out;
 
+    public RemoteClient( RmiLocation serverLocation ) throws ShellException
+    {
+        this( serverLocation, RemoteOutput.newOutput() );
+    }
+    
 	/**
 	 * @param serverLocation the RMI location of the server to connect to.
 	 * @throws ShellException if no server was found at the RMI location.
 	 */
-	public RemoteClient( RmiLocation serverLocation ) throws ShellException
+	public RemoteClient( RmiLocation serverLocation, Output out ) throws ShellException
 	{
 		this.serverLocation = serverLocation;
 		this.server = findRemoteServer();
-		this.out = RemoteOutput.newOutput();
+		this.out = out;
 	}
 
 	private ShellServer findRemoteServer() throws ShellException

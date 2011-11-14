@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.codehaus.groovy.tools.shell.IO;
+import org.neo4j.helpers.Pair;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
 
@@ -39,7 +40,6 @@ import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
 
 public class GremlinSession implements ScriptSession
 {
-
     private static final String INIT_FUNCTION = "init()";
 
     protected GremlinWebConsole scriptEngine;
@@ -88,26 +88,27 @@ public class GremlinSession implements ScriptSession
      *         message.
      */
     @Override
-    public String evaluate( String script )
+    public Pair<String, String> evaluate( String script )
     {
+        String result = null;
         try
         {
-
             if ( script.equals( INIT_FUNCTION ) )
             {
-                return init();
+                result = init();
             }
-
-            scriptEngine.execute( script );
-            String result = baos.toString();
-            resetIO();
-            return result;
+            else
+            {
+                scriptEngine.execute( script );
+                result = baos.toString();
+                resetIO();
+            }
         }
         catch ( GroovyRuntimeException ex )
         {
-            return ex.getMessage();
+            result = ex.getMessage();
         }
-
+        return Pair.of( result, null );
     }
 
     private String init()

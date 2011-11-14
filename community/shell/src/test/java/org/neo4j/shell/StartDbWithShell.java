@@ -17,14 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.webadmin.console;
+package org.neo4j.shell;
 
-import org.neo4j.helpers.Pair;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.Config;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 
-public interface ScriptSession
+public class StartDbWithShell
 {
-    /**
-     * @return {@link Pair} of (result,next prompt).
-     */
-    Pair<String, String> evaluate( String script );
+    public static void main( String[] args ) throws Exception
+    {
+        GraphDatabaseService db = new EmbeddedGraphDatabase( "target/test-data/shell-db", MapUtil.stringMap(
+                Config.ENABLE_REMOTE_SHELL, "true" ) );
+        System.out.println( "ENTER to quit" );
+        System.in.read();
+        db.shutdown();
+    }
 }
