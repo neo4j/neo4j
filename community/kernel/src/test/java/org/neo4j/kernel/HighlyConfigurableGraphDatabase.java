@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 public class HighlyConfigurableGraphDatabase extends AbstractGraphDatabase
 {
     private final EmbeddedGraphDbImpl impl;
+    protected final FileSystemAbstraction fileSystem;
 
     public HighlyConfigurableGraphDatabase( String storeDir, Map<String, String> config,
             IdGeneratorFactory idGenerators, FileSystemAbstraction fileSystem )
@@ -51,6 +52,7 @@ public class HighlyConfigurableGraphDatabase extends AbstractGraphDatabase
                 CommonFactories.defaultTxIdGeneratorFactory(),
                 CommonFactories.defaultTxHook(),
                 CommonFactories.defaultLastCommittedTxIdSetter(), fileSystem );
+        this.fileSystem = fileSystem;
     }
 
     @Override

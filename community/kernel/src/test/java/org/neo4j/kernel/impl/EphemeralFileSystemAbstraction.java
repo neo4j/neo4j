@@ -41,9 +41,22 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     private static final Queue<ByteBuffer> memoryPool = new ConcurrentLinkedQueue<ByteBuffer>();
     private final Map<String, EphemeralFileChannel> files = new HashMap<String, EphemeralFileChannel>();
     
-    public void dispose()
+    public synchronized void dispose()
     {
         for ( EphemeralFileChannel file : files.values() ) free( file );
+        files.clear();
+    }
+    
+    @Override
+    protected void finalize() throws Throwable
+    {
+        dispose();
+        super.finalize();
+    }
+    
+    private void free( EphemeralFileChannel fileChannel )
+    {
+        if ( fileChannel != null ) freeBuffer( fileChannel.fileAsBuffer );
     }
     
     @Override
@@ -65,11 +78,6 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         EphemeralFileChannel file = new EphemeralFileChannel();
         free( files.put( fileName, file ) );
         return file;
-    }
-    
-    private void free( EphemeralFileChannel fileChannel )
-    {
-        if ( fileChannel != null ) freeBuffer( fileChannel.fileAsBuffer );
     }
 
     @Override

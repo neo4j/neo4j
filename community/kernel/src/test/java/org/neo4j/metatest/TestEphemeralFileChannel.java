@@ -28,7 +28,7 @@ import java.nio.channels.FileChannel;
 import org.junit.Test;
 import org.neo4j.kernel.impl.EphemeralFileSystemAbstraction;
 
-public class TestVolatileFileChannel
+public class TestEphemeralFileChannel
 {
     @Test
     public void smoke() throws Exception

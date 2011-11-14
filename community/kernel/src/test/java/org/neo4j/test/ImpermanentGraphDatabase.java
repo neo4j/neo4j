@@ -80,6 +80,7 @@ public class ImpermanentGraphDatabase extends HighlyConfigurableGraphDatabase
     protected void close()
     {
         super.close();
+        ((EphemeralFileSystemAbstraction) fileSystem).dispose();
 //        clearDirectory();
     }
 
