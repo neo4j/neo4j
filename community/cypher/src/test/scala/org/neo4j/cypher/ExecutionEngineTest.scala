@@ -1127,6 +1127,22 @@ order by a.name
     assert(List(a,b,c) === result.columnAs[Node]("a") .toList)
   }
 
+  @Test def shouldHandleAggregationOnFunctions() {
+    val a = createNode("A")
+    val b = createNode("B")
+    val c = createNode("C")
+    relate(a,b,"X")
+    relate(a,c,"X")
+
+    val result = parseAndExecute("""
+start a  = node(1)
+match p = a -[*]-> b
+return b, avg(length(p))
+""")
+
+    assert(List(b,c) === result.columnAs[Node]("b") .toList)
+  }
+
 
   @Test(expected = classOf[SyntaxException]) def shouldNotSupportSortingOnThingsAfterDistinctHasRemovedIt() {
     val a = createNode("name"->"A", "age"->13)
