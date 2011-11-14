@@ -24,8 +24,18 @@ Asciidoc documents have the +.txt+ file extension.
 The documents can use code snippets which will extract code from the project.
 The corresponding code must be deployed to the 'sources.jar' or 'test-sources.jar' file.
 
+By setting up a unit test accordingly, documentation can be written directly in the JavaDoc comment.
+
 The above files are all consumed by the build of the manual (by adding them as dependencies).
 To get content included in the manual, it has to be explicitly included by a document in the manual as well.
+
+Note that different ways to add documentation works best for different cases:
+
+* For detail level documentation, it works well to write the documentation as part of unit tests (in the JavaDoc comment).
+  In this case, you typically do not want to link to the source code in the documentation.
+* For tutorial level documentation, the result will be best by writing a +.txt+ file containing the text.
+  Source snippets and output examples can then be included from there.
+  In this case you typically want to link to the source code, and users should be able to run it without any special setup.
 
 == File Structure in 'docs.jar' ==
 
