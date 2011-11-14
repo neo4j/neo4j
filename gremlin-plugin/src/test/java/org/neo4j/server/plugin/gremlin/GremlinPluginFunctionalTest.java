@@ -368,15 +368,18 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
 
     /**
      * In order to return only certain sections of a Gremlin result,
-     * you can use +drop()+ and +take()+ to skip and chunk the
-     * result set. Also, note the use of the +filter{}+ closure to filter
+     * you can use native Groovy  contstructs like +drop()+ and +take()+ to skip and chunk the
+     * result set. However, these are not lazy and will build up memory.
+     * It is better to use the Gremlin +[start..end]+ pipe instead, providing a lazy way for doing this.
+     * 
+     * Also, note the use of the +filter{}+ closure to filter
      * nodes.
      */
     @Test
     @Graph( value = { "George knows Sara", "George knows Ian" }, autoIndexNodes = true )
     public void chunking_and_offsetting_in_Gremlin() throws UnsupportedEncodingException
     {
-        String script = "g.v(%George%).out('knows').filter{it.getProperty('name') == 'Sara'}.drop(0).take(100)";
+        String script = "g.v(%George%).out('knows').filter{it.getProperty('name') == 'Sara'}[0..100]";
         String response = doRestCall( script, Status.OK );
         assertTrue( response.contains( "Sara" ) );
         assertFalse( response.contains( "Ian" ) );
