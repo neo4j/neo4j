@@ -32,6 +32,7 @@ import org.neo4j.com.RequestType;
 import org.neo4j.com.Server;
 import org.neo4j.com.SlaveContext;
 import org.neo4j.kernel.ha.MasterClient.HaRequestType;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Sits on the master side, receiving serialized requests from slaves (via
@@ -43,9 +44,9 @@ public class MasterServer extends Server<Master, Void>
     
     static final int FRAME_LENGTH = Protocol.DEFAULT_FRAME_LENGTH;
     
-    public MasterServer( Master realMaster, final int port, String storeDir )
+    public MasterServer( Master realMaster, final int port, StringLogger logger )
     {
-        super( realMaster, port, storeDir, FRAME_LENGTH, PROTOCOL_VERSION );
+        super( realMaster, port, logger, FRAME_LENGTH, PROTOCOL_VERSION );
     }
     
     @Override

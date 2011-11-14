@@ -99,18 +99,18 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
 
     private final byte applicationProtocolVersion;
     
-    public Server( M realMaster, final int port, String storeDir, int frameLength, byte applicationProtocolVersion )
+    public Server( M realMaster, final int port, StringLogger logger, int frameLength, byte applicationProtocolVersion )
     {
-        this( realMaster, port, storeDir, frameLength, applicationProtocolVersion, DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS );
+        this( realMaster, port, logger, frameLength, applicationProtocolVersion, DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS );
     }
     
-    public Server( M realMaster, final int port, String storeDir, int frameLength, byte applicationProtocolVersion,
+    public Server( M realMaster, final int port, StringLogger logger, int frameLength, byte applicationProtocolVersion,
             int maxNumberOfConcurrentTransactions )
     {
         this.realMaster = realMaster;
         this.frameLength = frameLength;
         this.applicationProtocolVersion = applicationProtocolVersion;
-        this.msgLog = StringLogger.getLogger( storeDir );
+        this.msgLog = logger;
         executor = Executors.newCachedThreadPool();
         masterCallExecutor = Executors.newCachedThreadPool();
         unfinishedTransactionExecutor = Executors.newScheduledThreadPool( 2 );

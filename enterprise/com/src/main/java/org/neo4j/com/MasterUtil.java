@@ -48,7 +48,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.LogExtractor;
-import org.neo4j.kernel.impl.util.StringLogger;
 
 public class MasterUtil
 {
@@ -97,7 +96,7 @@ public class MasterUtil
             catch ( IOException e )
             {
                 // TODO: what about error message?
-                StringLogger.getLogger( ((AbstractGraphDatabase)graphDb).getStoreDir() ).logMessage(
+                ((AbstractGraphDatabase)graphDb).getMessageLog().logMessage(
                         "Unable to rotate log for " + ds, e );
                 throw new MasterFailureException( e );
             }

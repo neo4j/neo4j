@@ -36,11 +36,10 @@ import org.neo4j.kernel.KernelData;
 public class PlaceHolderGraphDatabaseService extends AbstractGraphDatabase
 {
     private volatile GraphDatabaseService db;
-    private final String storeDir;
 
     public PlaceHolderGraphDatabaseService( String storeDir )
     {
-        this.storeDir = storeDir;
+        super( storeDir );
     }
 
     public void setDb( GraphDatabaseService db )
@@ -90,7 +89,7 @@ public class PlaceHolderGraphDatabaseService extends AbstractGraphDatabase
     }
 
     @Override
-    public void shutdown()
+    protected void close()
     {
         db.shutdown();
     }
@@ -131,12 +130,6 @@ public class PlaceHolderGraphDatabaseService extends AbstractGraphDatabase
     public IndexManager index()
     {
         return db.index();
-    }
-
-    @Override
-    public String getStoreDir()
-    {
-        return storeDir;
     }
 
     @Override

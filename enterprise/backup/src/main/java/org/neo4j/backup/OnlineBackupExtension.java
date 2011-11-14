@@ -28,6 +28,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.KernelExtension;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 @Service.Implementation( KernelExtension.class )
 public class OnlineBackupExtension extends KernelExtension<BackupServer>
@@ -57,7 +58,7 @@ public class OnlineBackupExtension extends KernelExtension<BackupServer>
         {
             TheBackupInterface backup = new BackupImpl( kernel.graphDatabase() );
             BackupServer server = new BackupServer( backup, port.intValue(),
-                    (String) kernel.getConfig().getParams().get( "store_dir" ) );
+                    (StringLogger) kernel.getConfig().getParams().get( StringLogger.class ) );
             return server;
         }
         return null;

@@ -22,6 +22,7 @@ package org.neo4j.kernel.ha;
 import org.neo4j.com.Protocol;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 
@@ -59,8 +60,8 @@ public class FakeMasterBroker extends AbstractBroker
         return getMyMachineId() == 0;
     }
 
-    public Object instantiateMasterServer( GraphDatabaseService graphDb )
+    public Object instantiateMasterServer( AbstractGraphDatabase graphDb )
     {
-        return new MasterServer( new MasterImpl( graphDb ), Protocol.PORT, getStoreDir() );
+        return new MasterServer( new MasterImpl( graphDb ), Protocol.PORT, graphDb.getMessageLog() );
     }
 }

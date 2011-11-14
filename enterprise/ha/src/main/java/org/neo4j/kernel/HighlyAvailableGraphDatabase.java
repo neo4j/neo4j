@@ -113,7 +113,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     private static final String CONFIG_DEFAULT_HA_CLUSTER_NAME = "neo4j.ha";
     private static final int CONFIG_DEFAULT_PORT = 6361;
 
-    private final String storeDir;
     private final Map<String, String> config;
     private final BrokerFactory brokerFactory;
     private final Broker broker;
@@ -132,8 +131,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     private final Collection<TransactionEventHandler<?>> transactionEventHandlers =
             new CopyOnWriteArraySet<TransactionEventHandler<?>>();
 
-    private final StringLogger msgLog;
-
     /**
      * Will instantiate its own ZooKeeper broker
      */
@@ -148,13 +145,13 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config,
             BrokerFactory brokerFactory )
     {
+        super( storeDir );
         if ( config == null )
         {
             throw new IllegalArgumentException( "null config, proper configuration required" );
         }
         initializeTxManagerKernelPanicEventHandler();
         this.startupTime = System.currentTimeMillis();
-        this.storeDir = storeDir;
         this.config = config;
         config.put( Config.KEEP_LOGICAL_LOGS, "true" );
         this.slaveUpdateMode = getSlaveUpdateModeFromConfig( config );
@@ -162,7 +159,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 this, config );
         this.machineId = getMachineIdFromConfig( config );
         this.broker = this.brokerFactory.create( this, config );
-        this.msgLog = StringLogger.getLogger( storeDir );
         this.branchedDataPolicy = getBranchedDataPolicyFromConfig( config );
 
         boolean allowInitFromConfig = getAllowInitFromConfig( config );
@@ -180,7 +176,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             {
                 if ( error == ErrorState.TX_MANAGER_NOT_OK )
                 {
-                    msgLog.logMessage( "TxManager not ok, doing internal restart" );
+                    getMessageLog().logMessage( "TxManager not ok, doing internal restart" );
                     internalShutdown( true );
                     newMaster( null, new Exception( "Tx manager not ok" ) );
                 }
@@ -219,7 +215,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             // TODO Maybe catch IOException and treat it more seriously?
             catch ( Exception e )
             {
-                msgLog.logMessage( "Problems copying store from master", e );
+                getMessageLog().logMessage( "Problems copying store from master", e );
                 sleepWithoutInterruption( 1000, "" );
                 exception = e;
                 master = broker.getMasterReally( true );
@@ -230,7 +226,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
     void makeWayForNewDb()
     {
-        this.msgLog.logMessage( "Cleaning database " + storeDir + " (" + branchedDataPolicy.name() +
+        this.getMessageLog().logMessage( "Cleaning database " + getStoreDir() + " (" + branchedDataPolicy.name() +
                 ") to make way for new db from master" );
         branchedDataPolicy.handle( this );
     }
@@ -243,7 +239,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     private synchronized void startUp( boolean allowInit )
     {
         StoreId storeId = null;
-        if ( !new File( storeDir, NeoStore.DEFAULT_NAME ).exists() )
+        if ( !new File( getStoreDir(), NeoStore.DEFAULT_NAME ).exists() )
         {   // Try for
             long endTime = System.currentTimeMillis()+60000;
             Exception exception = null;
@@ -256,7 +252,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                     try
                     {
                         copyStoreFromMaster( master );
-                        msgLog.logMessage( "copied store from master" );
+                        getMessageLog().logMessage( "copied store from master" );
                         exception = null;
                         break;
                     }
@@ -264,7 +260,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                     {
                         exception = e;
                         master = broker.getMasterReally( true );
-                        msgLog.logMessage( "Problems copying store from master", e );
+                        getMessageLog().logMessage( "Problems copying store from master", e );
                     }
                 }
                 else if ( allowInit )
@@ -305,12 +301,12 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
     private void copyStoreFromMaster( Pair<Master, Machine> master ) throws Exception
     {
-        msgLog.logMessage( "Copying store from master" );
+        getMessageLog().logMessage( "Copying store from master" );
         Response<Void> response = master.first().copyStore( new SlaveContext( 0, machineId, 0, new Pair[0] ),
-                new ToFileStoreWriter( storeDir ) );
+                new ToFileStoreWriter( getStoreDir() ) );
         long highestLogVersion = highestLogVersion();
-        if ( highestLogVersion > -1 ) NeoStore.setVersion( storeDir, highestLogVersion + 1 );
-        EmbeddedGraphDatabase copiedDb = new EmbeddedGraphDatabase( storeDir, stringMap( KEEP_LOGICAL_LOGS, "true" ) );
+        if ( highestLogVersion > -1 ) NeoStore.setVersion( getStoreDir(), highestLogVersion + 1 );
+        EmbeddedGraphDatabase copiedDb = new EmbeddedGraphDatabase( getStoreDir(), stringMap( KEEP_LOGICAL_LOGS, "true" ) );
         try
         {
             MasterUtil.applyReceivedTransactions( response, copiedDb, MasterUtil.txHandlerForFullCopy() );
@@ -319,14 +315,14 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         {
             copiedDb.shutdown();
         }
-        msgLog.logMessage( "Done copying store from master" );
+        getMessageLog().logMessage( "Done copying store from master" );
     }
 
     private long highestLogVersion()
     {
         Pattern logFilePattern = getHistoryFileNamePattern( LOGICAL_LOG_DEFAULT_NAME );
         long highest = -1;
-        for ( File file : new File( storeDir ).listFiles() )
+        for ( File file : new File( getStoreDir() ).listFiles() )
         {
             if ( logFilePattern.matcher( file.getName() ).matches() )
             {
@@ -359,7 +355,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         return new BrokerFactory()
         {
             @Override
-            public Broker create( GraphDatabaseService graphDb, Map<String, String> config )
+            public Broker create( AbstractGraphDatabase graphDb, Map<String, String> config )
             {
                 return new ZooKeeperBroker( graphDb,
                         getClusterNameFromConfig( config ),
@@ -523,12 +519,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     }
 
     @Override
-    public String getStoreDir()
-    {
-        return this.storeDir;
-    }
-
-    @Override
     public <T> Collection<T> getManagementBeans( Class<T> type )
     {
         return localGraph().getManagementBeans( type );
@@ -544,7 +534,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         Pair<Master, Machine> master = broker.getMasterReally( true );
         boolean iAmCurrentlyMaster = masterServer != null;
-        msgLog.logMessage( "ReevaluateMyself: machineId=" + machineId + " with master[" + master +
+        getMessageLog().logMessage( "ReevaluateMyself: machineId=" + machineId + " with master[" + master +
                 "] (I am master=" + iAmCurrentlyMaster + ", " + localGraph + ")" );
         EmbeddedGraphDbImpl newDb = null;
         try
@@ -574,7 +564,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 }
 
                 ensureDataConsistencyWithMaster( newDb != null ? newDb : localGraph, master );
-                msgLog.logMessage( "Data consistent with master" );
+                getMessageLog().logMessage( "Data consistent with master" );
             }
             if ( newDb != null )
             {
@@ -599,7 +589,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         }
         catch ( Exception e )
         {
-            msgLog.logMessage( "Couldn't shut down newly started db", e );
+            getMessageLog().logMessage( "Couldn't shut down newly started db", e );
         }
     }
 
@@ -618,16 +608,16 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
     private void logHaInfo( String started )
     {
-        msgLog.logMessage( started, true );
-        msgLog.logMessage( "--- HIGH AVAILABILITY CONFIGURATION START ---" );
-        broker.logStatus( msgLog );
-        msgLog.logMessage( "--- HIGH AVAILABILITY CONFIGURATION END ---", true );
+        getMessageLog().logMessage( started, true );
+        getMessageLog().logMessage( "--- HIGH AVAILABILITY CONFIGURATION START ---" );
+        broker.logStatus( getMessageLog() );
+        getMessageLog().logMessage( "--- HIGH AVAILABILITY CONFIGURATION END ---", true );
     }
     
     private EmbeddedGraphDbImpl startAsSlave( StoreId storeId )
     {
-        msgLog.logMessage( "Starting[" + machineId + "] as slave", true );
-        EmbeddedGraphDbImpl result = new EmbeddedGraphDbImpl( storeDir, storeId, config, this,
+        getMessageLog().logMessage( "Starting[" + machineId + "] as slave", true );
+        EmbeddedGraphDbImpl result = new EmbeddedGraphDbImpl( getStoreDir(), storeId, config, this,
                 new SlaveLockManagerFactory( broker, this ),
                 new SlaveIdGeneratorFactory( broker, this ),
                 new SlaveRelationshipTypeCreator( broker, this ),
@@ -642,8 +632,8 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
     private EmbeddedGraphDbImpl startAsMaster( StoreId storeId )
     {
-        msgLog.logMessage( "Starting[" + machineId + "] as master", true );
-        EmbeddedGraphDbImpl result = new EmbeddedGraphDbImpl( storeDir, storeId, config, this,
+        getMessageLog().logMessage( "Starting[" + machineId + "] as master", true );
+        EmbeddedGraphDbImpl result = new EmbeddedGraphDbImpl( getStoreDir(), storeId, config, this,
                 CommonFactories.defaultLockManagerFactory(),
                 new MasterIdGeneratorFactory(),
                 CommonFactories.defaultRelationshipTypeCreator(),
@@ -660,7 +650,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         if ( master.other().getMachineId() == machineId )
         {
-            msgLog.logMessage( "I am master so cannot consistency check data with master" );
+            getMessageLog().logMessage( "I am master so cannot consistency check data with master" );
             return;
         }
         else if ( master.first() == null )
@@ -684,7 +674,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             // This is quite dangerous to just catch here... but the special case is
             // where this db was just now copied from the master where there's data,
             // but no logical logs were transfered and hence no masterId info is here
-            msgLog.logMessage( "Couldn't get master ID for txId " + myLastCommittedTx +
+            getMessageLog().logMessage( "Couldn't get master ID for txId " + myLastCommittedTx +
                     ". It may be that a log file is missing due to the db being copied from master?", e );
 //            throw new RuntimeException( e );
             masterForMyHighestCommonTxId = Pair.of( -1, 0L );
@@ -702,7 +692,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         if ( masterForMyHighestCommonTxId.first() == XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER
                 || masterForMyHighestCommonTxId.equals( masterForMastersHighestCommonTxId ) )
         {
-            msgLog.logMessage( "Master id for last committed tx ok with highestCommonTxId=" +
+            getMessageLog().logMessage( "Master id for last committed tx ok with highestCommonTxId=" +
                     myLastCommittedTx + " with masterId=" + masterForMyHighestCommonTxId, true );
             return;
         }
@@ -711,7 +701,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             String msg = "Branched data, I (machineId:" + machineId + ") think machineId for txId (" +
                     myLastCommittedTx + ") is " + masterForMyHighestCommonTxId + ", but master (machineId:" +
                     master.other().getMachineId() + ") says that it's " + masterForMastersHighestCommonTxId;
-            msgLog.logMessage( msg, true );
+            getMessageLog().logMessage( msg, true );
             RuntimeException exception = new BranchedDataException( msg );
             safelyShutdownDb( newDb );
             shutdown( exception, false );
@@ -744,7 +734,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                     }
                     catch ( Exception e )
                     {
-                        msgLog.logMessage( "Pull updates failed", e  );
+                        getMessageLog().logMessage( "Pull updates failed", e  );
                     }
                 }
             }, timeMillis, timeMillis, TimeUnit.MILLISECONDS );
@@ -810,19 +800,19 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
 
     public synchronized void internalShutdown( boolean rotateLogs )
     {
-        msgLog.logMessage( "Internal shutdown of HA db[" + machineId + "] reference=" + this + ", masterServer=" + masterServer, new Exception( "Internal shutdown" ), true );
+        getMessageLog().logMessage( "Internal shutdown of HA db[" + machineId + "] reference=" + this + ", masterServer=" + masterServer, new Exception( "Internal shutdown" ), true );
         if ( this.updatePuller != null )
         {
-            msgLog.logMessage( "Internal shutdown updatePuller", true );
+            getMessageLog().logMessage( "Internal shutdown updatePuller", true );
             this.updatePuller.shutdown();
-            msgLog.logMessage( "Internal shutdown updatePuller DONE", true );
+            getMessageLog().logMessage( "Internal shutdown updatePuller DONE", true );
             this.updatePuller = null;
         }
         if ( this.masterServer != null )
         {
-            msgLog.logMessage( "Internal shutdown masterServer", true );
+            getMessageLog().logMessage( "Internal shutdown masterServer", true );
             this.masterServer.shutdown();
-            msgLog.logMessage( "Internal shutdown masterServer DONE", true );
+            getMessageLog().logMessage( "Internal shutdown masterServer DONE", true );
             this.masterServer = null;
         }
         if ( this.localGraph != null )
@@ -837,23 +827,22 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                     }
                     catch ( IOException e )
                     {
-                        msgLog.logMessage( "Couldn't rotate logical log for " + dataSource.getName(), e );
+                        getMessageLog().logMessage( "Couldn't rotate logical log for " + dataSource.getName(), e );
                     }
                 }
             }
-            msgLog.logMessage( "Internal shutdown localGraph", true );
+            getMessageLog().logMessage( "Internal shutdown localGraph", true );
             this.localGraph.shutdown();
-            msgLog.logMessage( "Internal shutdown localGraph DONE", true );
+            getMessageLog().logMessage( "Internal shutdown localGraph DONE", true );
             this.localGraph = null;
         }
-        msgLog.flush();
-        StringLogger.close( storeDir );
+        getMessageLog().flush();
     }
 
     private synchronized void shutdown( Throwable cause, boolean shutdownBroker )
     {
         causeOfShutdown = cause;
-        msgLog.logMessage( "Shutdown[" + machineId + "], " + this, true );
+        getMessageLog().logMessage( "Shutdown[" + machineId + "], " + this, true );
         if ( shutdownBroker && this.broker != null )
         {
             this.broker.shutdown();
@@ -862,7 +851,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     }
 
     @Override
-    public synchronized void shutdown()
+    protected synchronized void close()
     {
         shutdown( new IllegalStateException( "shutdown called" ), true );
     }
@@ -926,7 +915,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         }
         catch ( BranchedDataException bde )
         {
-            msgLog.logMessage( "Branched data occured, retrying" );
+            getMessageLog().logMessage( "Branched data occured, retrying" );
             getFreshDatabaseFromMaster();
             doNewMaster( storeId, bde );
         }
@@ -936,17 +925,17 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         try
         {
-            msgLog.logMessage( "newMaster called", true );
+            getMessageLog().logMessage( "newMaster called", true );
             reevaluateMyself( storeId );
         }
         catch ( ZooKeeperException ee )
         {
-            msgLog.logMessage( "ZooKeeper exception in newMaster", ee );
+            getMessageLog().logMessage( "ZooKeeper exception in newMaster", ee );
             throw Exceptions.launderedException( ee );
         }
         catch ( ComException ee )
         {
-            msgLog.logMessage( "Communication exception in newMaster", ee );
+            getMessageLog().logMessage( "Communication exception in newMaster", ee );
             throw Exceptions.launderedException( ee );
         }
         catch ( BranchedDataException ee )
@@ -957,7 +946,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         // sees to that.
         catch ( Throwable t )
         {
-            msgLog.logMessage( "Reevaluation ended in unknown exception " + t
+            getMessageLog().logMessage( "Reevaluation ended in unknown exception " + t
                     + " so shutting down", t, true );
             shutdown( t, false );
             throw Exceptions.launderedException( t );
@@ -1020,7 +1009,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             {
                 File branchedDataDir = branchedDataDir( db );
                 moveAwayDb( db, branchedDataDir );
-                for ( File file : new File( db.storeDir ).listFiles() )
+                for ( File file : new File( db.getStoreDir() ).listFiles() )
                 {
                     if ( isBranchedDataDirectory( file ) && !file.equals( branchedDataDir ) )
                     {
@@ -1030,7 +1019,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                         }
                         catch ( IOException e )
                         {
-                            db.msgLog.logMessage( "Couldn't delete old branched data directory " + file, e );
+                            db.getMessageLog().logMessage( "Couldn't delete old branched data directory " + file, e );
                         }
                     }
                 }
@@ -1049,7 +1038,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                     }
                     catch ( IOException e )
                     {
-                        db.msgLog.logMessage( "Couldn't delete file " + file, e );
+                        db.getMessageLog().logMessage( "Couldn't delete file " + file, e );
                     }
                 }
             }
@@ -1072,20 +1061,20 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             for ( File file : relevantDbFiles( db ) )
             {
                 File dest = new File( branchedDataDir, file.getName() );
-                if ( !file.renameTo( dest ) ) db.msgLog.logMessage( "Couldn't move " + file.getPath() );
+                if ( !file.renameTo( dest ) ) db.getMessageLog().logMessage( "Couldn't move " + file.getPath() );
             }
         }
 
         File branchedDataDir( HighlyAvailableGraphDatabase db )
         {
-            File result = new File( db.storeDir, BRANCH_PREFIX + System.currentTimeMillis() );
+            File result = new File( db.getStoreDir(), BRANCH_PREFIX + System.currentTimeMillis() );
             result.mkdirs();
             return result;
         }
 
         File[] relevantDbFiles( HighlyAvailableGraphDatabase db )
         {
-            return new File( db.storeDir ).listFiles( new FileFilter()
+            return new File( db.getStoreDir() ).listFiles( new FileFilter()
             {
                 @Override
                 public boolean accept( File file )

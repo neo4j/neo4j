@@ -30,6 +30,7 @@ import org.junit.After;
 import org.junit.Ignore;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
@@ -113,7 +114,7 @@ public class SingleJvmTest extends AbstractHaTest
         return new FakeMasterBroker( masterId, graphDb );
     }
 
-    protected Broker makeSlaveBroker( MasterImpl master, int masterId, int id, GraphDatabaseService graphDb )
+    protected Broker makeSlaveBroker( MasterImpl master, int masterId, int id, AbstractGraphDatabase graphDb )
     {
         return new FakeSlaveBroker( master, masterId, id, graphDb );
     }

@@ -31,6 +31,7 @@ import org.neo4j.backup.check.ConsistencyCheck;
 import org.neo4j.backup.log.VerifyingTransactionInterceptorProvider;
 import org.neo4j.com.MasterUtil;
 import org.neo4j.com.MasterUtil.TxHandler;
+import org.neo4j.com.Client;
 import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
 import org.neo4j.com.ToFileStoreWriter;
@@ -80,8 +81,7 @@ public class OnlineBackup
             throw new RuntimeException( targetDirectory + " already contains a database" );
         }
 
-        //                                                     TODO OMG this is ugly
-        BackupClient client = new BackupClient( hostNameOrIp, port, new NotYetExistingGraphDatabase( targetDirectory ) );
+        BackupClient client = new BackupClient( hostNameOrIp, port, StringLogger.DEV_NULL, Client.NO_STORE_ID_GETTER );
         try
         {
             Response<Void> response = client.fullBackup( new ToFileStoreWriter( targetDirectory ) );
@@ -111,8 +111,6 @@ public class OnlineBackup
         finally
         {
             client.shutdown();
-            // TODO This is also ugly
-            StringLogger.close( targetDirectory );
         }
         return this;
     }
@@ -176,7 +174,8 @@ public class OnlineBackup
 
     public OnlineBackup incremental( GraphDatabaseService targetDb )
     {
-        BackupClient client = new BackupClient( hostNameOrIp, port, targetDb );
+        BackupClient client = new BackupClient( hostNameOrIp, port, ((AbstractGraphDatabase)targetDb).getMessageLog(),
+                Client.storeIdGetterForDb( targetDb ) );
         try
         {
             unpackResponse( client.incrementalBackup( slaveContextOf( targetDb ) ), targetDb, MasterUtil.NO_ACTION );

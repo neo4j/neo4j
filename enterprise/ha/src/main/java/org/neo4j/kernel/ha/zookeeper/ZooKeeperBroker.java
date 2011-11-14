@@ -27,7 +27,6 @@ import java.util.Map;
 
 import javax.management.remote.JMXServiceURL;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.KernelData;
@@ -48,7 +47,7 @@ public class ZooKeeperBroker extends AbstractBroker
     private final int machineId;
     private final String clusterName;
 
-    public ZooKeeperBroker( GraphDatabaseService graphDb, String clusterName, int machineId,
+    public ZooKeeperBroker( AbstractGraphDatabase graphDb, String clusterName, int machineId,
             String zooKeeperServers, String haServer, int backupPort, int clientReadTimeout,
             int maxConcurrentChannelsPerClient, boolean writeLastCommittedTx, ResponseReceiver receiver )
     {
@@ -56,8 +55,7 @@ public class ZooKeeperBroker extends AbstractBroker
         this.clusterName = clusterName;
         this.machineId = machineId;
         this.haServer = haServer;
-        String storeDir = ((AbstractGraphDatabase) graphDb).getStoreDir();
-        this.zooClient = new ZooClient( zooKeeperServers, machineId, getRootPathGetter( storeDir ),
+        this.zooClient = new ZooClient( zooKeeperServers, machineId, getRootPathGetter( graphDb.getStoreDir() ),
                 receiver, haServer, backupPort, clientReadTimeout, maxConcurrentChannelsPerClient, writeLastCommittedTx, graphDb );
     }
 
@@ -198,10 +196,10 @@ public class ZooKeeperBroker extends AbstractBroker
         return zooClient.getMasterBasedOn( machines.values() );
     }
 
-    public Object instantiateMasterServer( GraphDatabaseService graphDb )
+    public Object instantiateMasterServer( AbstractGraphDatabase graphDb )
     {
         MasterServer server = new MasterServer( new MasterImpl( graphDb ),
-                Machine.splitIpAndPort( haServer ).other(), getStoreDir() );
+                Machine.splitIpAndPort( haServer ).other(), graphDb.getMessageLog() );
         return server;
     }
 

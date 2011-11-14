@@ -47,8 +47,8 @@ import org.neo4j.com.SlaveContext;
 import org.neo4j.com.StoreWriter;
 import org.neo4j.com.ToNetworkStoreWriter;
 import org.neo4j.com.TxExtractor;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
@@ -82,10 +82,11 @@ public class MasterClient extends Client<Master> implements Master
         }
     };
 
-    public MasterClient( String hostNameOrIp, int port, GraphDatabaseService graphDb,
+    public MasterClient( String hostNameOrIp, int port, AbstractGraphDatabase graphDb,
             int readTimeoutSeconds, int maxConcurrentChannels )
     {
-        super( hostNameOrIp, port, graphDb, MasterServer.FRAME_LENGTH, MasterServer.PROTOCOL_VERSION, readTimeoutSeconds,
+        super( hostNameOrIp, port, graphDb.getMessageLog(), Client.storeIdGetterForDb( graphDb ),
+                MasterServer.FRAME_LENGTH, MasterServer.PROTOCOL_VERSION, readTimeoutSeconds,
                 maxConcurrentChannels, Math.min( maxConcurrentChannels, DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ) );
     }
 

@@ -68,7 +68,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
     }
 
     @Override
-    protected Broker makeSlaveBroker( MasterImpl master, int masterId, int id, GraphDatabaseService graphDb )
+    protected Broker makeSlaveBroker( MasterImpl master, int masterId, int id, AbstractGraphDatabase graphDb )
     {
         final Machine masterMachine = new Machine( masterId, -1, 1, -1,
                 "localhost:" + Protocol.PORT );
@@ -91,7 +91,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
                 return Pair.of( client, masterMachine );
             }
 
-            public Object instantiateMasterServer( GraphDatabaseService graphDb )
+            public Object instantiateMasterServer( AbstractGraphDatabase graphDb )
             {
                 throw new UnsupportedOperationException(
                         "cannot instantiate master server on slave" );

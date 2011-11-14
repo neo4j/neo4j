@@ -25,6 +25,7 @@ import org.neo4j.com.Protocol;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Server;
 import org.neo4j.com.SlaveContext;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 class BackupServer extends Server<TheBackupInterface, Object>
 {
@@ -33,9 +34,9 @@ class BackupServer extends Server<TheBackupInterface, Object>
     static int DEFAULT_PORT = DEFAULT_BACKUP_PORT;
     static final int FRAME_LENGTH = Protocol.MEGA*4;
     
-    public BackupServer( TheBackupInterface realMaster, int port, String storeDir )
+    public BackupServer( TheBackupInterface realMaster, int port, StringLogger logger )
     {
-        super( realMaster, port, storeDir, FRAME_LENGTH, PROTOCOL_VERSION );
+        super( realMaster, port, logger, FRAME_LENGTH, PROTOCOL_VERSION );
     }
 
     @Override

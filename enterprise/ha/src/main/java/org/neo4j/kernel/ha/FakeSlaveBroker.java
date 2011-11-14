@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 
 public class FakeSlaveBroker extends AbstractBroker
@@ -50,7 +51,7 @@ public class FakeSlaveBroker extends AbstractBroker
         return false;
     }
 
-    public Object instantiateMasterServer( GraphDatabaseService graphDb )
+    public Object instantiateMasterServer( AbstractGraphDatabase graphDb )
     {
         throw new UnsupportedOperationException();
     }

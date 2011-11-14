@@ -73,16 +73,18 @@ public abstract class Client<M> implements ChannelPipelineFactory
     private final StringLogger msgLog;
     private final ExecutorService executor;
     private final ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>> channelPool;
-    private final GraphDatabaseService graphDb;
     private StoreId myStoreId;
     private final int frameLength;
     private final int readTimeout;
     private final byte applicationProtocolVersion;
+    private final StoreIdGetter storeIdGetter;
 
-    public Client( String hostNameOrIp, int port, GraphDatabaseService graphDb, int frameLength, byte applicationProtocolVersion,
-            int readTimeout, int maxConcurrentChannels, int maxUnusedPoolSize )
+    public Client( String hostNameOrIp, int port, StringLogger logger, StoreIdGetter storeIdGetter,
+            int frameLength, byte applicationProtocolVersion, int readTimeout, int maxConcurrentChannels,
+            int maxUnusedPoolSize )
     {
-        this.graphDb = graphDb;
+        this.msgLog = logger;
+        this.storeIdGetter = storeIdGetter;
         this.frameLength = frameLength;
         this.applicationProtocolVersion = applicationProtocolVersion;
         this.readTimeout = readTimeout;
@@ -130,8 +132,6 @@ public abstract class Client<M> implements ChannelPipelineFactory
         executor = Executors.newCachedThreadPool();
         bootstrap = new ClientBootstrap( new NioClientSocketChannelFactory( executor, executor ) );
         bootstrap.setPipelineFactory( this );
-        String storeDir = ((AbstractGraphDatabase) graphDb).getStoreDir();
-        msgLog = StringLogger.getLogger( storeDir );
         msgLog.logMessage( getClass().getSimpleName() + " communication started and bound to " + hostNameOrIp + ":" + port, true );
     }
 
@@ -214,12 +214,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
     
     protected StoreId getMyStoreId()
     {
-        if ( myStoreId == null )
-        {
-            XaDataSource ds = ((AbstractGraphDatabase) graphDb).getConfig().getTxModule()
-                    .getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
-            myStoreId = ((NeoStoreXaDataSource) ds).getStoreId();
-        }
+        if ( myStoreId == null ) myStoreId = storeIdGetter.get();
         return myStoreId;
     }
 
@@ -349,4 +344,27 @@ public abstract class Client<M> implements ChannelPipelineFactory
             buffer.resetReaderIndex();
         }
     }
+    
+    public static StoreIdGetter storeIdGetterForDb( final GraphDatabaseService db )
+    {
+        return new StoreIdGetter()
+        {
+            @Override
+            public StoreId get()
+            {
+                XaDataSource ds = ((AbstractGraphDatabase) db).getConfig().getTxModule()
+                        .getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
+                return ((NeoStoreXaDataSource) ds).getStoreId();
+            }
+        };
+    }
+
+    public static final StoreIdGetter NO_STORE_ID_GETTER = new StoreIdGetter()
+    {
+        @Override
+        public StoreId get()
+        {
+            throw new UnsupportedOperationException();
+        }
+    };
 }

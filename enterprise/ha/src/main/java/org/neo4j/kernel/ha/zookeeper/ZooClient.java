@@ -35,7 +35,6 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.ha.ConnectionInformation;
@@ -74,7 +73,7 @@ public class ZooClient extends AbstractZooKeeperManager
 
     public ZooClient( String servers, int machineId, RootPathGetter rootPathGetter,
             ResponseReceiver receiver, String haServer, int backupPort, int clientReadTimeout,
-            int maxConcurrentChannelsPerClient, boolean writeLastCommittedTx, GraphDatabaseService graphDb )
+            int maxConcurrentChannelsPerClient, boolean writeLastCommittedTx, AbstractGraphDatabase graphDb )
     {
         super( servers, graphDb, clientReadTimeout, maxConcurrentChannelsPerClient );
         this.receiver = receiver;
@@ -84,8 +83,7 @@ public class ZooClient extends AbstractZooKeeperManager
         this.backupPort = backupPort;
         this.writeLastCommittedTx = writeLastCommittedTx;
         this.sequenceNr = "not initialized yet";
-        String storeDir = ((AbstractGraphDatabase) graphDb).getStoreDir();
-        this.msgLog = StringLogger.getLogger( storeDir );
+        this.msgLog = graphDb.getMessageLog();
         this.zooKeeper = instantiateZooKeeper();
     }
 

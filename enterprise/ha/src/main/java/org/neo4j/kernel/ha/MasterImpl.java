@@ -79,7 +79,7 @@ public class MasterImpl implements Master
     public MasterImpl( GraphDatabaseService db )
     {
         this.graphDb = db;
-        this.msgLog = StringLogger.getLogger( ((AbstractGraphDatabase) db ).getStoreDir() );
+        this.msgLog = ((AbstractGraphDatabase) db ).getMessageLog();
         this.unfinishedTransactionsExecutor = Executors.newSingleThreadScheduledExecutor();
         this.unfinishedTransactionsExecutor.scheduleWithFixedDelay( new Runnable()
         {
