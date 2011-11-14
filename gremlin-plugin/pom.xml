@@ -64,7 +64,7 @@ the relevant Commercial Agreement.
       <artifactId>neo4j-server</artifactId>
       <version>${neo4j.version}</version>
       <type>test-jar</type>
-      <scope>provided</scope>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.neo4j.app</groupId>
