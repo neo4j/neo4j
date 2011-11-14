@@ -62,7 +62,9 @@ public class GremlinToRepresentationConverter {
         while (data.hasNext()) {
             Object value = data.next();
             if(value instanceof Iterable) {
-                convertValuesToRepresentations( (Iterable) value );
+                List<Representation> nested = new ArrayList<Representation>();
+                nested.addAll(convertValuesToRepresentations( (Iterable) value ));
+                results.add( new ListRepresentation(getType(nested), nested) );
             }
             final Representation representation = getSingleRepresentation(value);
             results.add(representation);
@@ -78,10 +80,12 @@ public class GremlinToRepresentationConverter {
         final List<Representation> results = new ArrayList<Representation>();
         for (final Object value : data) {
             if(value instanceof Iterable) {
-                convertValuesToRepresentations( (Iterable) value );
+                List<Representation> nested = new ArrayList<Representation>();
+                nested.addAll(convertValuesToRepresentations( (Iterable) value ));
+                results.add( new ListRepresentation(getType(nested), nested) );
+            } else {
+             results.add( getSingleRepresentation(value));
             }
-            final Representation representation = getSingleRepresentation(value);
-            results.add(representation);
         }
         return results;
     }

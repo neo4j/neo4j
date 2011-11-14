@@ -182,8 +182,9 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * The following script returns a sorted list of all nodes connected via
-     * outgoing relationships to node 1, sorted by their `name`-property.
+     * The following script returns paths. Paths in Gremlin consist of the
+     * pipes that make up the path from the starting pipes. The server
+     * is returning JSON representations of their content as a nested list.
      */
     @Test
     @Title( "Return paths from a Gremlin script" )
@@ -194,7 +195,8 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
         String script = "g.v(%I%).out.name.paths";
         String response = doRestCall( script, Status.OK );
         System.out.println( response );
-        assertTrue( response.contains( ", you]" ) );
+        assertTrue( response.contains( "you" ) );
+        assertTrue( response.contains( "him" ) );
     }
 
     @Test
@@ -397,6 +399,19 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
         String script = "g.getRawGraph()";
         String response = doRestCall( script, Status.OK );
         assertTrue( response.contains( "neo4j_version" ) );
+    }
+    
+    /**
+     * 
+     */
+    @Test
+    @Graph( value = { "George knows Sara", "George knows Ian" }, autoIndexNodes = true )
+    public void returning_paths() throws UnsupportedEncodingException
+    {
+        String script = "g.v(%George%).out().paths()";
+        String response = doRestCall( script, Status.OK );
+        assertTrue( response.contains( "Ian" ) );
+        assertTrue( response.contains( "Sara" ) );
     }
     
     /**
