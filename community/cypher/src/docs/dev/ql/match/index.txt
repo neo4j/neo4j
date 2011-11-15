@@ -20,8 +20,9 @@ The optional relationship is a way to describe parts of the pattern that can eva
 matched to the real graph. It's the equivalent of SQL outer join - if Cypher finds one or more matches, they will be
 returned. If no matches are found, Cypher will return a null.
 
-Optionality travels - if a part of the pattern can only be reached from a bound point, that part is also optional. Also,
-names paths that contain optional parts are also optional - if any part of the path is null, the whole path is null.
+Optionality travels - if a part of the pattern can only be reached from a bound point through an optional relationship,
+that part is also optional. Also, named paths that contain optional parts are also optional - if any part of the path is
+null, the whole path is null.
 
 In these example, b and p are all optional and can contain null:
 
