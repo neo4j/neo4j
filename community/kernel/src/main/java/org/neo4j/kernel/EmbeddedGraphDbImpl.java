@@ -432,8 +432,6 @@ class EmbeddedGraphDbImpl
 
     public Iterable<Node> getAllNodes()
     {
-        System.out.println( this + " getAllNodes" );
-        
         return new Iterable<Node>()
         {
             @Override

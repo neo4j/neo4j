@@ -96,7 +96,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public boolean deleteFile( String fileName )
     {
-        files.remove( fileName );
+        free( files.remove( fileName ) );
         return true;
     }
     
@@ -115,7 +115,8 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         ByteBuffer buffer = memoryPool.poll();
         if ( buffer != null ) return buffer;
         // TODO dynamic size
-        return ByteBuffer.allocateDirect( 50 * 1024 * 1024 );
+        buffer = ByteBuffer.allocateDirect( 5 * 1024 * 1024 );
+        return buffer;
     }
 
     private static void freeBuffer( ByteBuffer buffer )
@@ -128,57 +129,72 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     {
         private final ByteBuffer fileAsBuffer = allocateBuffer();
         private final byte[] scratchPad = new byte[1024];
+        private final byte[] zeroBuffer = new byte[1024];
         private int size;
         private int locked;
         
         @Override
-        public int read( ByteBuffer dst ) throws IOException
+        public int read( ByteBuffer dst )
         {
-            return transfer( fileAsBuffer, dst );
-        }
-        
-        private int transfer( ByteBuffer from, ByteBuffer to )
-        {
-            int howMuchToRead = min( to.limit(), from.remaining() );
-            int leftToRead = howMuchToRead;
-            while ( leftToRead > 0 )
+            int wanted = dst.limit();
+            int available = min( wanted, (int)(size-position()) );
+            int pending = available;
+            // Read up until our internal size
+            while ( pending > 0 )
             {
-                int howMuchToReadThisTime = min( leftToRead, scratchPad.length );
-                from.get( scratchPad, 0, howMuchToReadThisTime );
-                to.put( scratchPad, 0, howMuchToReadThisTime );
-                leftToRead -= howMuchToReadThisTime;
+                int howMuchToReadThisTime = min( pending, scratchPad.length );
+                fileAsBuffer.get( scratchPad, 0, howMuchToReadThisTime );
+                dst.put( scratchPad, 0, howMuchToReadThisTime );
+                pending -= howMuchToReadThisTime;
             }
-            return howMuchToRead;
+            // Fill the rest with zeros
+            pending = available-wanted;
+            while ( pending > 0 )
+            {
+                int howMuchToReadThisTime = min( pending, scratchPad.length );
+                dst.put( zeroBuffer, 0, howMuchToReadThisTime );
+                pending -= howMuchToReadThisTime;
+            }
+            return wanted;
         }
 
         @Override
-        public long read( ByteBuffer[] dsts, int offset, int length ) throws IOException
+        public long read( ByteBuffer[] dsts, int offset, int length )
         {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public int write( ByteBuffer src ) throws IOException
+        public int write( ByteBuffer src )
         {
-            int result = transfer( src, fileAsBuffer );
+            // TODO grow fileAsBuffer dynamically here
+            int wanted = src.limit();
+            int pending = wanted;
+            while ( pending > 0 )
+            {
+                int howMuchToWriteThisTime = min( pending, scratchPad.length );
+                src.get( scratchPad, 0, howMuchToWriteThisTime );
+                fileAsBuffer.put( scratchPad, 0, howMuchToWriteThisTime );
+                pending -= howMuchToWriteThisTime;
+            }
             size = max( size, (int) position() );
-            return result;
+            return wanted;
         }
 
         @Override
-        public long write( ByteBuffer[] srcs, int offset, int length ) throws IOException
+        public long write( ByteBuffer[] srcs, int offset, int length )
         {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public long position() throws IOException
+        public long position()
         {
             return fileAsBuffer.position();
         }
 
         @Override
-        public FileChannel position( long newPosition ) throws IOException
+        public FileChannel position( long newPosition )
         {
             fileAsBuffer.position( (int) newPosition );
             return this;
@@ -191,31 +207,31 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         }
 
         @Override
-        public FileChannel truncate( long size ) throws IOException
+        public FileChannel truncate( long size )
         {
             this.size = (int) size;
             return this;
         }
 
         @Override
-        public void force( boolean metaData ) throws IOException
+        public void force( boolean metaData )
         {
         }
 
         @Override
-        public long transferTo( long position, long count, WritableByteChannel target ) throws IOException
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public long transferFrom( ReadableByteChannel src, long position, long count ) throws IOException
+        public long transferTo( long position, long count, WritableByteChannel target )
         {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public int read( ByteBuffer dst, long position ) throws IOException
+        public long transferFrom( ReadableByteChannel src, long position, long count )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int read( ByteBuffer dst, long position )
         {
             long previous = position();
             position( position );
@@ -230,7 +246,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         }
 
         @Override
-        public int write( ByteBuffer src, long position ) throws IOException
+        public int write( ByteBuffer src, long position )
         {
             long previous = position();
             position( position );
