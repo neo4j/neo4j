@@ -53,7 +53,7 @@ public class ServerTestUtils
         public AbstractGraphDatabase createDatabase( String databaseStoreDirectory,
                 Map<String, String> databaseProperties )
         {
-            return new ImpermanentGraphDatabase();
+            return new ImpermanentGraphDatabase( databaseProperties );
         }
     };
     

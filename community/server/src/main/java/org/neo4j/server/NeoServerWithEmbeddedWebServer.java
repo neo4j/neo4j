@@ -46,7 +46,6 @@ import org.neo4j.server.web.WebServer;
 
 public class NeoServerWithEmbeddedWebServer implements NeoServer
 {
-
     public static final Logger log = Logger.getLogger( NeoServerWithEmbeddedWebServer.class );
 
     private Database database;

@@ -101,11 +101,15 @@ public class ServerHelper
 
     public static NeoServerWithEmbeddedWebServer createServer() throws IOException
     {
-        NeoServerWithEmbeddedWebServer server = ServerBuilder.server()
-                .build();
-
+        return createServer( false );
+    }
+    
+    public static NeoServerWithEmbeddedWebServer createServer( boolean persistent ) throws IOException
+    {
+        ServerBuilder builder = ServerBuilder.server();
+        if ( persistent ) builder = builder.persistent();
+        NeoServerWithEmbeddedWebServer server = builder.build();
         server.start();
-
         return server;
     }
 }

@@ -38,6 +38,8 @@ import java.util.List;
 import java.util.Properties;
 
 import org.neo4j.server.AddressResolver;
+import org.neo4j.server.Bootstrapper;
+import org.neo4j.server.EphemeralNeoServerBootstrapper;
 import org.neo4j.server.NeoServerBootstrapper;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.configuration.Configurator;
@@ -83,12 +85,13 @@ public class ServerBuilder
     private String[] autoIndexedRelationshipKeys = null;
     private String host = null;
     private String[] securityRuleClassNames;
+    private boolean persistent;
 
     public static ServerBuilder server()
     {
         return new ServerBuilder();
     }
-
+    
     @SuppressWarnings( "unchecked" )
     public NeoServerWithEmbeddedWebServer build() throws IOException
     {
@@ -115,9 +118,14 @@ public class ServerBuilder
             LeaseManagerProvider.setClock( clock );
         }
 
-        return new NeoServerWithEmbeddedWebServer( new NeoServerBootstrapper(), addressResolver, startupHealthCheck,
+        return new NeoServerWithEmbeddedWebServer( createBootstrapper(), addressResolver, startupHealthCheck,
                 new PropertyFileConfigurator( new Validator( new DatabaseLocationMustBeSpecifiedRule() ), configFile ),
                 new Jetty6WebServer(), serverModules );
+    }
+
+    private Bootstrapper createBootstrapper()
+    {
+        return persistent ? new NeoServerBootstrapper() : new EphemeralNeoServerBootstrapper();
     }
 
     public File createPropertiesFiles() throws IOException
@@ -221,6 +229,12 @@ public class ServerBuilder
     {
     }
 
+    public ServerBuilder persistent()
+    {
+        this.persistent = true;
+        return this;
+    }
+    
     public ServerBuilder onPort( int portNo )
     {
         this.portNo = String.valueOf( portNo );

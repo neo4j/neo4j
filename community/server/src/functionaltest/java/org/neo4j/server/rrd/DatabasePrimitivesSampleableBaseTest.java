@@ -20,26 +20,24 @@
 package org.neo4j.server.rrd;
 
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.server.ServerTestUtils.createTempDir;
 
 import java.io.IOException;
 
 import javax.management.MalformedObjectNameException;
 
 import org.junit.Test;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rrd.sampler.DatabasePrimitivesSampleableBase;
 import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class DatabasePrimitivesSampleableBaseTest
 {
-
     @Test
     public void sampleTest() throws MalformedObjectNameException, IOException
     {
-
-        EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( createTempDir().getAbsolutePath() );
+        AbstractGraphDatabase db = new ImpermanentGraphDatabase();
         Database database = new Database( db );
         DatabasePrimitivesSampleableBase sampleable = new NodeIdsInUseSampleable( db );
 
@@ -64,7 +62,5 @@ public class DatabasePrimitivesSampleableBaseTest
 
         assertTrue( "There should be a single node in use.", sampleable.getValue() == 1 );
         */
-
     }
-
 }
