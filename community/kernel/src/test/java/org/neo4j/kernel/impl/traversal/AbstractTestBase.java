@@ -23,7 +23,9 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -273,12 +275,14 @@ public abstract class AbstractTestBase
             Representation<T> representation, Set<String> expected )
     {
         Transaction tx = beginTx();
+        Collection<String> encounteredItems = new ArrayList<String>();
         try
         {
             for ( T item : items )
             {
                 String repr = representation.represent( item );
                 assertTrue( repr + " not expected ", expected.remove( repr ) );
+                encounteredItems.add( repr );
             }
             tx.success();
         }
@@ -289,7 +293,7 @@ public abstract class AbstractTestBase
 
         if ( !expected.isEmpty() )
         {
-            fail( "The exepected elements " + expected + " were not returned." );
+            fail( "The exepected elements " + expected + " were not returned. These were: " + encounteredItems );
         }
     }
 

@@ -39,7 +39,8 @@ class StartNodeTraversalBranch extends TraversalBranchImpl
         {
             if ( traverser.okToProceedFirst( this ) )
             {
-                expandRelationshipsWithoutChecks();
+//                expandRelationshipsWithoutChecks();
+                expandRelationships();
                 return this;
             }
             else

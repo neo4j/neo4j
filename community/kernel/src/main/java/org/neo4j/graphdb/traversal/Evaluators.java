@@ -83,10 +83,6 @@ public abstract class Evaluators
         {
             public Evaluation evaluate( Path path )
             {
-                if(depth == 0 )
-                {
-                    return path.length() == depth? Evaluation.INCLUDE_AND_PRUNE:Evaluation.EXCLUDE_AND_PRUNE;
-                }
                 return path.length() < depth ? Evaluation.INCLUDE_AND_CONTINUE : Evaluation.INCLUDE_AND_PRUNE;
             }
         };
@@ -106,11 +102,7 @@ public abstract class Evaluators
         {
             public Evaluation evaluate( Path path )
             {
-                if(depth == 0 )
-                {
-                    return Evaluation.INCLUDE_AND_CONTINUE;
-                }
-                return path.length() < depth ? Evaluation.EXCLUDE_AND_CONTINUE : Evaluation.INCLUDE_AND_CONTINUE;
+                return path.length() >= depth ? Evaluation.INCLUDE_AND_CONTINUE : Evaluation.EXCLUDE_AND_CONTINUE;
             }
         };
     }
@@ -129,13 +121,7 @@ public abstract class Evaluators
         {
             public Evaluation evaluate( Path path )
             {
-                if(depth == 0 )
-                {
-                    return path.length() == depth ? Evaluation.INCLUDE_AND_PRUNE: Evaluation.EXCLUDE_AND_PRUNE ;
-                } else 
-                {
-                    return path.length() < depth ? Evaluation.EXCLUDE_AND_CONTINUE : Evaluation.INCLUDE_AND_PRUNE;
-                }
+                return path.length() == depth ? Evaluation.INCLUDE_AND_PRUNE: Evaluation.EXCLUDE_AND_CONTINUE;
             }
         };
     }
