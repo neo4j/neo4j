@@ -63,7 +63,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     public synchronized FileChannel open( String fileName, String mode ) throws IOException
     {
         EphemeralFileChannel file = files.get( fileName );
-        return file != null ? file : create( fileName );
+        return file != null ? file.reset() : create( fileName );
     }
 
     @Override
@@ -159,6 +159,12 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
                 pending -= howMuchToReadThisTime;
             }
             return wanted;
+        }
+
+        public EphemeralFileChannel reset()
+        {
+            fileAsBuffer.position( 0 );
+            return this;
         }
 
         @Override
