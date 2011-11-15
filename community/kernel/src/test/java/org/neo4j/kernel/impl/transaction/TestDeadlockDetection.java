@@ -20,113 +20,169 @@
 package org.neo4j.kernel.impl.transaction;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 import org.neo4j.kernel.DeadlockDetectedException;
 
 public class TestDeadlockDetection
 {
-    private static LockManager lm = new LockManager( new PlaceboTm() );
-
-    private static class HelperThread extends Thread
+    private static final Error DONE = new Error()
     {
-        private static final int DO_NOTHING_TASK = 0;
-        private static final int GET_WRITELOCK_TASK = 1;
-        private static final int GET_READLOCK_TASK = 2;
-        private static final int RELEASE_WRITELOCK_TASK = 3;
-        private static final int RELEASE_READLOCK_TASK = 4;
-        private static final int QUIT_TASK = 5;
-
-        private String name = null;
-        private int nextTask = 0;
-        private boolean taskCompleted = true;
-        private Object resource = null;
-        private boolean deadlockOnLastWait = false;
-
-        HelperThread( String name )
+        public synchronized Throwable fillInStackTrace()
         {
-            super();
-            this.name = name;
+            return this;
+        }
+    };
+
+    private static enum Task
+    {
+        GET_WRITE_LOCK
+        {
+            @Override
+            void execute( LockManager lm, Object resource )
+            {
+                lm.getWriteLock( resource );
+            }
+        },
+        GET_READ_LOCK
+        {
+            @Override
+            void execute( LockManager lm, Object resource )
+            {
+                lm.getReadLock( resource );
+            }
+        },
+        RELEASE_WRITE_LOCK
+        {
+            @Override
+            void execute( LockManager lm, Object resource )
+            {
+                lm.releaseWriteLock( resource, null );
+            }
+        },
+        RELEASE_READ_LOCK
+        {
+            @Override
+            void execute( LockManager lm, Object resource )
+            {
+                lm.releaseReadLock( resource, null );
+            }
+        },
+        QUIT
+        {
+            @Override
+            void execute( LockManager lm, Object resource )
+            {
+                throw DONE;
+            }
+        };
+
+        abstract void execute( LockManager lm, Object resource );
+    }
+    
+    private static class ResourceTask
+    {
+        public static final ResourceTask IDLE = new ResourceTask( null, null )
+        {
+            @Override
+            void execute( HelperThread thread )
+            {
+                thread.current.set( this );
+                HelperThread.sleep();
+            }
+
+            public String toString()
+            {
+                return "IDLE";
+            }
+        };
+        public static final ResourceTask BUSY  = new ResourceTask( null, null );
+        public static final ResourceTask QUIT  = new ResourceTask( null, Task.QUIT );
+        private final Object resource;
+        private final Task task;
+
+        ResourceTask( Object resource, Task task )
+        {
+            this.resource = resource;
+            this.task = task;
         }
 
-        public synchronized void run()
+        void execute( HelperThread thread )
         {
             try
             {
-                while ( nextTask != QUIT_TASK )
+                task.execute( thread.lm, resource );
+                thread.deadlockOnLastWait = false;
+            }
+            catch ( DeadlockDetectedException dde )
+            {
+                thread.deadlockOnLastWait = true;
+            }
+        }
+
+        public String toString()
+        {
+            return task == null ? "BUSY" : task.toString();
+        }
+    }
+
+    private static class HelperThread extends Thread
+    {
+        private final AtomicReference<ResourceTask> current = new AtomicReference<ResourceTask>( ResourceTask.IDLE );
+        private volatile boolean deadlockOnLastWait = false;
+        private final LockManager lm;
+
+        HelperThread( String name, LockManager lm )
+        {
+            super( name );
+            this.lm = lm;
+        }
+        
+        private void assign( Task task, Object resource )
+        {
+            while ( !current.compareAndSet( ResourceTask.IDLE, new ResourceTask( resource, task ) ) )
+            {
+                if ( current.get().resource == null ) continue;
+                throw new RuntimeException( "Previous task not completed" );
+            }
+        }
+
+        public void run()
+        {
+            try
+            {
+                for ( ;; )
                 {
-                    switch ( nextTask )
-                    {
-                        case DO_NOTHING_TASK:
-                            wait( 10 );
-                            break;
-                        case GET_WRITELOCK_TASK:
-                            try
-                            {
-                                lm.getWriteLock( this.resource );
-                                deadlockOnLastWait = false;
-                            }
-                            catch ( DeadlockDetectedException e )
-                            {
-                                deadlockOnLastWait = true;
-                            }
-                            taskCompleted = true;
-                            nextTask = DO_NOTHING_TASK;
-                            break;
-                        case GET_READLOCK_TASK:
-                            try
-                            {
-                                lm.getReadLock( this.resource );
-                                deadlockOnLastWait = false;
-                            }
-                            catch ( DeadlockDetectedException e )
-                            {
-                                deadlockOnLastWait = true;
-                            }
-                            taskCompleted = true;
-                            nextTask = DO_NOTHING_TASK;
-                            break;
-                        case RELEASE_WRITELOCK_TASK:
-                            lm.releaseWriteLock( this.resource, null );
-                            taskCompleted = true;
-                            nextTask = DO_NOTHING_TASK;
-                            break;
-                        case RELEASE_READLOCK_TASK:
-                            lm.releaseReadLock( this.resource, null );
-                            taskCompleted = true;
-                            nextTask = DO_NOTHING_TASK;
-                            break;
-                        case QUIT_TASK:
-                            break;
-                        default:
-                            throw new RuntimeException( "Unknown task "
-                                + nextTask );
-                    }
+                    current.getAndSet( ResourceTask.BUSY ).execute( this );
+                    current.compareAndSet( ResourceTask.BUSY, ResourceTask.IDLE );
                 }
             }
-            catch ( Exception e )
+            catch ( Error e )
             {
-                taskCompleted = true;
-                System.out
-                    .println( "" + this + " unable to execute task, " + e );
-                e.printStackTrace();
-                throw new RuntimeException( e );
+                if ( e != DONE ) throw e;
             }
         }
 
         synchronized void waitForCompletionOfTask()
         {
-            while ( !taskCompleted )
+            while ( current.get() != ResourceTask.IDLE )
             {
                 try
                 {
-                    wait( 20 );
+                    wait( 1 );
                 }
                 catch ( InterruptedException e )
                 {
                 }
             }
+        }
+        
+        void waitForWaitingState()
+        {
+            while ( getState() != State.WAITING || current.get().resource == ResourceTask.IDLE )
+                sleep();
         }
 
         boolean isLastGetLockDeadLock()
@@ -136,58 +192,43 @@ public class TestDeadlockDetection
 
         synchronized void getWriteLock( Object resource )
         {
-            if ( !taskCompleted )
-            {
-                throw new RuntimeException( "Previous task not completed" );
-            }
-            this.resource = resource;
-            taskCompleted = false;
-            nextTask = GET_WRITELOCK_TASK;
+            assign( Task.GET_WRITE_LOCK, resource );
         }
 
         synchronized void getReadLock( Object resource )
         {
-            if ( !taskCompleted )
-            {
-                throw new RuntimeException( "Previous task not completed" );
-            }
-            this.resource = resource;
-            taskCompleted = false;
-            nextTask = GET_READLOCK_TASK;
+            assign( Task.GET_READ_LOCK, resource );
         }
 
         synchronized void releaseWriteLock( Object resource )
         {
-            if ( !taskCompleted )
-            {
-                throw new RuntimeException( "Previous task not completed" );
-            }
-            this.resource = resource;
-            taskCompleted = false;
-            nextTask = RELEASE_WRITELOCK_TASK;
+            assign( Task.RELEASE_WRITE_LOCK, resource );
         }
 
         synchronized void releaseReadLock( Object resource )
         {
-            if ( !taskCompleted )
-            {
-                throw new RuntimeException( "Previous task not completed" );
-            }
-            this.resource = resource;
-            taskCompleted = false;
-            nextTask = RELEASE_READLOCK_TASK;
+            assign( Task.RELEASE_READ_LOCK, resource );
         }
 
         void quit()
         {
-            this.resource = null;
-            taskCompleted = false;
-            nextTask = QUIT_TASK;
+            while ( !current.compareAndSet( ResourceTask.IDLE, ResourceTask.QUIT ) ) sleep();
+        }
+
+        static void sleep()
+        {
+            try
+            {
+                sleep( 1 );
+            }
+            catch ( InterruptedException e )
+            {
+            }
         }
 
         public String toString()
         {
-            return name;
+            return getName();
         }
     }
 
@@ -213,11 +254,13 @@ public class TestDeadlockDetection
         Object r2 = new ResourceObject( "R2" );
         Object r3 = new ResourceObject( "R3" );
         Object r4 = new ResourceObject( "R4" );
+        
+        LockManager lm = new LockManager( new PlaceboTm() );
 
-        HelperThread t1 = new HelperThread( "T1" );
-        HelperThread t2 = new HelperThread( "T2" );
-        HelperThread t3 = new HelperThread( "T3" );
-        HelperThread t4 = new HelperThread( "T4" );
+        HelperThread t1 = new HelperThread( "T1", lm );
+        HelperThread t2 = new HelperThread( "T2", lm );
+        HelperThread t3 = new HelperThread( "T3", lm );
+        HelperThread t4 = new HelperThread( "T4", lm );
 
         try
         {
@@ -237,9 +280,9 @@ public class TestDeadlockDetection
             t3.getReadLock( r3 );
             t3.waitForCompletionOfTask();
             t3.getWriteLock( r1 );
-            // t3-r1-t1
+            t3.waitForWaitingState();// t3-r1-t1
             t2.getWriteLock( r4 );
-            sleepSome();
+            t2.waitForWaitingState();
             // t2-r4-t1
             t1.getWriteLock( r2 );
             t1.waitForCompletionOfTask();
@@ -253,7 +296,7 @@ public class TestDeadlockDetection
             t1.waitForCompletionOfTask(); // will give r2 to t1
             t1.getWriteLock( r4 ); // t1-r4-t2
             // dead lock
-            sleepSome();
+            t1.waitForWaitingState();
             t2.getWriteLock( r2 );
             t2.waitForCompletionOfTask();
             assertTrue( t2.isLastGetLockDeadLock() );
@@ -322,7 +365,7 @@ public class TestDeadlockDetection
             t2.getReadLock( r1 );
             t2.waitForCompletionOfTask();
             t1.getWriteLock( r1 ); // t1->r1-t1&t2
-            sleepSome();
+            t1.waitForWaitingState();
             t2.getWriteLock( r1 );
             t2.waitForCompletionOfTask();
             assertTrue( t2.isLastGetLockDeadLock() );
@@ -334,13 +377,6 @@ public class TestDeadlockDetection
             t1.releaseWriteLock( r1 );
             t1.waitForCompletionOfTask();
         }
-        catch ( Exception e )
-        {
-            // RagManager.getManager().dumpStack();
-            // LockManager.getManager().dumpRagStack();
-            e.printStackTrace();
-            fail( "Deadlock detection failed" + e );
-        }
         finally
         {
             t1.quit();
@@ -350,15 +386,9 @@ public class TestDeadlockDetection
         }
     }
 
-    private void sleepSome()
+    private void waitForWaitingThreadState( HelperThread... threads )
     {
-        try
-        {
-            Thread.sleep( 1000 );
-        }
-        catch ( InterruptedException e )
-        {
-        }
+        for ( HelperThread thread : threads ) thread.waitForWaitingState();
     }
 
     public static class StressThread extends Thread
@@ -375,15 +405,17 @@ public class TestDeadlockDetection
         private int numberOfIterations;
         private int depthCount;
         private float readWriteRatio;
+        private final LockManager lm;
 
         StressThread( String name, int numberOfIterations, int depthCount,
-            float readWriteRatio )
+            float readWriteRatio, LockManager lm )
         {
             super();
             this.name = name;
             this.numberOfIterations = numberOfIterations;
             this.depthCount = depthCount;
             this.readWriteRatio = readWriteRatio;
+            this.lm = lm;
         }
 
         public void run()
@@ -392,13 +424,7 @@ public class TestDeadlockDetection
             {
                 while ( !go )
                 {
-                    try
-                    {
-                        sleep( 100 );
-                    }
-                    catch ( InterruptedException e )
-                    {
-                    }
+                    HelperThread.sleep();
                 }
                 java.util.Stack<Object> lockStack = new java.util.Stack<Object>();
                 java.util.Stack<ResourceObject> resourceStack = new java.util.Stack<ResourceObject>();
@@ -482,9 +508,10 @@ public class TestDeadlockDetection
         }
         Thread stressThreads[] = new Thread[50];
         StressThread.go = false;
+        LockManager lm = new LockManager( new PlaceboTm() );
         for ( int i = 0; i < stressThreads.length; i++ )
         {
-            stressThreads[i] = new StressThread( "T" + i, 100, 10, 0.80f );
+            stressThreads[i] = new StressThread( "T" + i, 100, 10, 0.80f, lm );
         }
         for ( int i = 0; i < stressThreads.length; i++ )
         {
