@@ -43,7 +43,7 @@ public class ConsoleWebIT extends AbstractWebadminTest {
     public void accessing_the_Shell_console() {
         wl.goToWebadminStartPage();
         wl.clickOnTab("Console");
-        wl.clickOnLink("Shell");
+        wl.clickOnLink("Neo4j Shell");
         wl.waitForElementToAppear(By.xpath("//ul/li[contains(.,'neo4j-sh')]"));
         captureScreenshot("screenshot_ShellConsole");
     }
@@ -52,10 +52,11 @@ public class ConsoleWebIT extends AbstractWebadminTest {
     public void remembersShellStateWhenSwitchingTabsTest() {
         wl.goToWebadminStartPage();
         wl.clickOnTab("Console");
-        wl.clickOnLink("Shell");
+        wl.clickOnLink("Gremlin");
         wl.clickOnTab("Data browser");
         wl.clickOnTab("Console");
-        wl.waitForElementToAppear(By.xpath("//ul/li[contains(.,'neo4j-sh')]"));
+        wl.waitForElementToAppear(By
+                .xpath("//li[contains(.,'gremlin')]"));
     }
 
     @Test
