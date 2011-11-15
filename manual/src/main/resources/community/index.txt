@@ -7,9 +7,9 @@ include::help.txt[]
 
 include::contributing.txt[]
 
-:leveloffset: 2
+:leveloffset: 1
 
-include::docs.txt[]
+include::contributors.txt[]
 
 
 

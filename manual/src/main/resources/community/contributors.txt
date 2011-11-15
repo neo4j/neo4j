@@ -1,0 +1,16 @@
+[[contributors]]
+Contributors
+============
+
+As an Open Source Project, the Neo4j User community extends its warmest thanks to all the contributors who have signed the <<cla>> to date and contributed to this collective effort.
+
+[options="header"]
+|=======
+|name | GIThub ID | since
+|Johan Svensson | https://github.com/johan-neo[johan-neo] | 2007
+|Emil Eifrem | https://github.com/emileifrem[emileifrem] | 2007
+|Peter Neubauer | https://github.com/peterneubauer[peterneubauer] | 2007
+|Mattias Persson | https://github.com/tinwelint[tinwelint] | 2007
+|Tobias Ivarsson | https://github.com/thobe[thobe] | 2007
+|Anders Nawroth | https://github.com/nawroth[nawroth] | 2008
+|=======
