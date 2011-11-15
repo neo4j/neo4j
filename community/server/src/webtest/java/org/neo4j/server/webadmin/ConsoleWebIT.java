@@ -43,7 +43,7 @@ public class ConsoleWebIT extends AbstractWebadminTest {
     public void accessing_the_Shell_console() {
         wl.goToWebadminStartPage();
         wl.clickOnTab("Console");
-        wl.clickOnLink("Cypher/Shell");
+        wl.clickOnLink("Shell");
         wl.waitForElementToAppear(By
                 .xpath("//ul/li[contains(.,'shell')]"));
         captureScreenshot("screenshot_ShellConsole");
@@ -53,7 +53,7 @@ public class ConsoleWebIT extends AbstractWebadminTest {
     public void remembersShellStateWhenSwitchingTabsTest() {
         wl.goToWebadminStartPage();
         wl.clickOnTab("Console");
-        wl.clickOnLink("Cypher/Shell");
+        wl.clickOnLink("Shell");
         wl.clickOnTab("Data browser");
         wl.clickOnTab("Console");
         wl.waitForElementToAppear(By.xpath("//p[contains(.,'shell')]"));
