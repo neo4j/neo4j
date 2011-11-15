@@ -31,13 +31,18 @@ public abstract class StringLogger
     public static final String DEFAULT_NAME = "messages.log";
     public static final StringLogger SYSTEM =
         new ActualStringLogger( new PrintWriter( System.out ) );
-    private static final int DEFAULT_THRESHOLD_FOR_ROTATION_MB = 100;
+    private static final int DEFAULT_THRESHOLD_FOR_ROTATION = 100 * 1024 * 1024;
     private static final int NUMBER_OF_OLD_LOGS_TO_KEEP = 2;
     
-    public static StringLogger createTheFuckingLogger( String storeDir )
+    public static StringLogger logger( String storeDir )
+    {
+        return logger( storeDir, DEFAULT_THRESHOLD_FOR_ROTATION );
+    }
+
+    public static StringLogger logger( String storeDir, int rotationThreshold )
     {
         return new ActualStringLogger( new File( storeDir, DEFAULT_NAME ).getAbsolutePath(),
-                DEFAULT_THRESHOLD_FOR_ROTATION_MB );
+                rotationThreshold );
     }
     
     public abstract void logMessage( String msg );
@@ -50,7 +55,7 @@ public abstract class StringLogger
 
     public abstract void flush();
 
-    public abstract void closeTheFuckingLogger();
+    public abstract void close();
     
     public static final StringLogger DEV_NULL = new StringLogger()
     {
@@ -70,7 +75,7 @@ public abstract class StringLogger
         public void flush() {}
 
         @Override
-        public void closeTheFuckingLogger() {}
+        public void close() {}
     };
     
     private static class ActualStringLogger extends StringLogger
@@ -79,9 +84,9 @@ public abstract class StringLogger
         private final Integer rotationThreshold;
         private final File file;
         
-        private ActualStringLogger( String filename, int rotationThresholdMb )
+        private ActualStringLogger( String filename, int rotationThreshold )
         {
-            this.rotationThreshold = rotationThresholdMb*1024*1024;
+            this.rotationThreshold = rotationThreshold;
             try
             {
                 file = new File( filename );
@@ -224,7 +229,7 @@ public abstract class StringLogger
             out.flush();
         }
     
-        public void closeTheFuckingLogger()
+        public void close()
         {
             out.close();
         }

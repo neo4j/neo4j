@@ -39,7 +39,7 @@ public class TestStringLogger
         File logFile = new File( path, StringLogger.DEFAULT_NAME );
         File oldFile = new File( path, StringLogger.DEFAULT_NAME + ".1" );
         File oldestFile = new File( path, StringLogger.DEFAULT_NAME + ".2" );
-        StringLogger logger = StringLogger.createTheFuckingLogger( path );
+        StringLogger logger = StringLogger.logger( path, 200*1024 );
         assertFalse( oldFile.exists() );
         int counter = 0;
         String prefix = "Bogus message ";

@@ -43,14 +43,14 @@ public abstract class AbstractGraphDatabase implements GraphDatabaseService
 
     protected StringLogger createStringLogger()
     {
-        return StringLogger.createTheFuckingLogger( this.storeDir );
+        return StringLogger.logger( this.storeDir );
     }
     
     @Override
     public final void shutdown()
     {
         close();
-        msgLog.closeTheFuckingLogger();
+        msgLog.close();
     }
 
     protected abstract void close();
