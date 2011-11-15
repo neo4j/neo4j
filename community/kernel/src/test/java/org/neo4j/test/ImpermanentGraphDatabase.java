@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.graphdb.Direction;
@@ -30,6 +31,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.HighlyConfigurableGraphDatabase;
 import org.neo4j.kernel.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.impl.EphemeralIdGenerator;
@@ -43,6 +45,18 @@ public class ImpermanentGraphDatabase extends HighlyConfigurableGraphDatabase
 {
     public static final AtomicLong instances = new AtomicLong();
     private static final File PATH = new File( "target/test-data/impermanent-db" );
+    private static final AtomicInteger ID = new AtomicInteger();
+    static
+    {
+        try
+        {
+            FileUtils.deleteRecursively( PATH );
+        }
+        catch ( IOException e )
+        {
+            throw new Error( "Couldn't clear directory" );
+        }
+    }
 
     public ImpermanentGraphDatabase( Map<String, String> params )
     {
@@ -51,32 +65,43 @@ public class ImpermanentGraphDatabase extends HighlyConfigurableGraphDatabase
         instances.incrementAndGet();
     }
     
+    public ImpermanentGraphDatabase()
+    {
+        this( new HashMap<String, String>() );
+    }
+    
     @Override
     protected StringLogger createStringLogger()
     {
         return StringLogger.DEV_NULL;
     }
 
-    public ImpermanentGraphDatabase()
-    {
-        this( new HashMap<String, String>() );
-    }
-    
     private static String path()
     {
-        clearDirectory();
-        return PATH.getAbsolutePath();
+        File path = new File( PATH, String.valueOf( ID.get() ) );
+        if ( path.exists() ) throw new RuntimeException( "Should not exist" );
+        return path.getAbsolutePath();
     }
 
-    private static void clearDirectory()
+    private static void clearDirectory( File path )
     {
         try
         {
-            FileUtils.deleteRecursively( PATH );
+            FileUtils.deleteRecursively( path );
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            if ( Config.osIsWindows() )
+            {
+                System.err.println( "Couldn't clear directory, and that's ok because this is Windows. Next " +
+                        ImpermanentGraphDatabase.class.getSimpleName() + " will get a new directory" );
+                e.printStackTrace();
+                ID.incrementAndGet();
+            }
+            else
+            {
+                throw new RuntimeException( "Couldn't not clear directory" );
+            }
         }
     }
 
@@ -85,7 +110,7 @@ public class ImpermanentGraphDatabase extends HighlyConfigurableGraphDatabase
         super.close();
         ((EphemeralFileSystemAbstraction) fileSystem).dispose();
         instances.decrementAndGet();
-//        clearDirectory();
+        clearDirectory( new File( getStoreDir() ) );
     }
 
     public void cleanContent( boolean retainReferenceNode )

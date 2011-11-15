@@ -28,6 +28,7 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -51,6 +52,12 @@ public class TestTimeline
     public void before() throws Exception
     {
         db = new ImpermanentGraphDatabase();
+    }
+    
+    @After
+    public void after()
+    {
+        db.shutdown();
     }
     
     private void beginTx()

@@ -39,7 +39,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 /**
  * Base class for test cases working on a NeoService. It sets up a NeoService
@@ -60,9 +60,7 @@ public abstract class Neo4jAlgoTestCase
     @BeforeClass
     public static void setUpGraphDb() throws Exception
     {
-        String storeDir = "target/var/algotest";
-        deleteFileOrDirectory( new File( storeDir ) );
-        graphDb = new EmbeddedGraphDatabase( storeDir );
+        graphDb = new ImpermanentGraphDatabase();
         graph = new SimpleGraphBuilder( graphDb, MyRelTypes.R1 );
     }
 

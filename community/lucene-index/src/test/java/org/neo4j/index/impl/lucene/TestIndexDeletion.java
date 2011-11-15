@@ -41,10 +41,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class TestIndexDeletion
 {
@@ -60,9 +58,7 @@ public class TestIndexDeletion
     @BeforeClass
     public static void setUpStuff()
     {
-        String storeDir = "target/var/freshindex";
-        Neo4jTestCase.deleteFileOrDirectory( new File( storeDir ) );
-        graphDb = new EmbeddedGraphDatabase( storeDir, MapUtil.stringMap( "index", "lucene" ) );
+        graphDb = new ImpermanentGraphDatabase();
     }
 
     @AfterClass

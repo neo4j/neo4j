@@ -22,7 +22,6 @@ package org.neo4j.jmx;
 import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 import static org.junit.Assert.assertEquals;
 
-import java.io.File;
 import java.util.Hashtable;
 
 import javax.management.MBeanAttributeInfo;
@@ -33,7 +32,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class DescriptionTest
 {
@@ -42,8 +41,7 @@ public class DescriptionTest
     @BeforeClass
     public static void startDb()
     {
-        graphdb = new EmbeddedGraphDatabase( "target" + File.separator + "var" + File.separator
-                                             + DescriptionTest.class.getSimpleName() );
+        graphdb = new ImpermanentGraphDatabase();
     }
 
     @AfterClass

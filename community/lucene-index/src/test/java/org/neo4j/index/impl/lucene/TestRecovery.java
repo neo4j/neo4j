@@ -40,7 +40,9 @@ import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Don't extend Neo4jTestCase since these tests restarts the db in the tests. 
@@ -209,6 +211,8 @@ public class TestRecovery
         Map<Object, Object> params = MapUtil.genericMap(
                 "store_dir", getDbPath(),
                 IndexStore.class, new IndexStore( getDbPath() ),
+                FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction(),
+                StringLogger.class, StringLogger.DEV_NULL,
                 LogBufferFactory.class, CommonFactories.defaultLogBufferFactory() );
         LuceneDataSource ds = new LuceneDataSource( params );
         ds.close();

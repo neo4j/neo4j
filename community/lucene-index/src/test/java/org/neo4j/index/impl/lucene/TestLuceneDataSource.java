@@ -36,8 +36,10 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public class TestLuceneDataSource
 {
@@ -190,6 +192,8 @@ public class TestLuceneDataSource
         return MapUtil.genericMap(
                 "store_dir", getDbPath(),
                 IndexStore.class, indexStore,
-                LogBufferFactory.class, CommonFactories.defaultLogBufferFactory());
+                LogBufferFactory.class, CommonFactories.defaultLogBufferFactory(),
+                FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction(),
+                StringLogger.class, StringLogger.DEV_NULL );
     }
 }
