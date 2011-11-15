@@ -31,7 +31,7 @@ public class ConsoleWebIT extends AbstractWebadminTest {
     // SHELL
     //
 
-    /**t
+    /**
      * In order to access the Shell console,
      * click on the "Console" tab in the webadmin
      * and check the "Shell" link.
@@ -43,9 +43,8 @@ public class ConsoleWebIT extends AbstractWebadminTest {
     public void accessing_the_Shell_console() {
         wl.goToWebadminStartPage();
         wl.clickOnTab("Console");
-        wl.clickOnLink("Shell");
-        wl.waitForElementToAppear(By
-                .xpath("//ul/li[contains(.,'shell')]"));
+        wl.clickOnLink("Neo4j Shell");
+        wl.waitForElementToAppear(By.xpath("//ul/li[contains(.,'neo4j-sh')]"));
         captureScreenshot("screenshot_ShellConsole");
     }
 
@@ -53,10 +52,11 @@ public class ConsoleWebIT extends AbstractWebadminTest {
     public void remembersShellStateWhenSwitchingTabsTest() {
         wl.goToWebadminStartPage();
         wl.clickOnTab("Console");
-        wl.clickOnLink("Shell");
+        wl.clickOnLink("Gremlin");
         wl.clickOnTab("Data browser");
         wl.clickOnTab("Console");
-        wl.waitForElementToAppear(By.xpath("//p[contains(.,'shell')]"));
+        wl.waitForElementToAppear(By
+                .xpath("//li[contains(.,'gremlin')]"));
     }
 
     @Test

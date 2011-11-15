@@ -95,7 +95,7 @@ class TraversalBranchImpl implements TraversalBranch//, Path
         this.evaluation = traverser.description.evaluator.evaluate( position() );
     }
 
-    private void expandRelationships()
+    protected void expandRelationships()
     {
         if ( evaluation.continues() )
         {

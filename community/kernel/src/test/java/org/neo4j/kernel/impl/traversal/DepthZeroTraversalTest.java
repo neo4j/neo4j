@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.traversal;
 
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
@@ -36,7 +35,6 @@ public class DepthZeroTraversalTest extends AbstractTestBase
     }
 
     @Test
-    @Ignore
     public void shouldGetStartNodeOnDepthZero()
     {
         TraversalDescription description = Traversal.description().evaluator(
@@ -52,7 +50,6 @@ public class DepthZeroTraversalTest extends AbstractTestBase
         expectNodes( description.traverse( getNodeWithName( "6" ) ), "5" );
     }
     @Test
-    @Ignore
     public void shouldGetCorrectNodesAtDepthZero()
     {
         TraversalDescription description = Traversal.description().evaluator(

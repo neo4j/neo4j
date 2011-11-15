@@ -62,7 +62,7 @@ public class AbstractJavaDocTestbase implements GraphHolder
     @After
     public void doc()
     {
-        gen.get().document( "target/docs", "examples" );
+        gen.get().document( "target/docs/dev", "examples" );
     }
 
     @Override
