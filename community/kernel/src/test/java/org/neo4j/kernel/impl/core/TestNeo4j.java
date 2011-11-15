@@ -23,7 +23,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -36,6 +35,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
@@ -59,25 +59,16 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         {
             // ok no one set, oldReferenceNode is null then
         }
-        try
-        {
-            GraphDbModule graphDbModule = ((EmbeddedGraphDatabase) getGraphDb()).getConfig()
-                .getGraphDbModule();
+        GraphDbModule graphDbModule = ( (AbstractGraphDatabase) getGraphDb() ).getConfig().getGraphDbModule();
 
-            Node newReferenceNode = getGraphDb().createNode();
-            graphDbModule.setReferenceNodeId( newReferenceNode.getId() );
-            assertEquals( newReferenceNode, getGraphDb().getReferenceNode() );
-            newReferenceNode.delete();
-            if ( oldReferenceNode != null )
-            {
-                graphDbModule.setReferenceNodeId( oldReferenceNode.getId() );
-                assertEquals( oldReferenceNode, getGraphDb().getReferenceNode() );
-            }
-        }
-        catch ( Exception e )
+        Node newReferenceNode = getGraphDb().createNode();
+        graphDbModule.setReferenceNodeId( newReferenceNode.getId() );
+        assertEquals( newReferenceNode, getGraphDb().getReferenceNode() );
+        newReferenceNode.delete();
+        if ( oldReferenceNode != null )
         {
-            e.printStackTrace();
-            fail( "" + e );
+            graphDbModule.setReferenceNodeId( oldReferenceNode.getId() );
+            assertEquals( oldReferenceNode, getGraphDb().getReferenceNode() );
         }
     }
 
@@ -167,7 +158,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
     @Test
     public void testIdUsageInfo()
     {
-        GraphDbModule graphDbModule = ((EmbeddedGraphDatabase) getGraphDb()).getConfig()
+        GraphDbModule graphDbModule = ((AbstractGraphDatabase) getGraphDb()).getConfig()
             .getGraphDbModule();
         NodeManager nm = graphDbModule.getNodeManager();
         long nodeCount = nm.getNumberOfIdsInUse( Node.class );
@@ -194,15 +185,8 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         n1.delete();
         n2.delete();
         // must commit for ids to be reused
-        try
-        {
-            getTransaction().success();
-            getTransaction().finish();
-        }
-        catch ( Exception e )
-        {
-            fail( "" + e );
-        }
+        getTransaction().success();
+        getTransaction().finish();
         // assertEquals( nodeCount, nm.getNumberOfIdsInUse( Node.class ) );
         // assertEquals( relCount, nm.getNumberOfIdsInUse( Relationship.class )
         // );

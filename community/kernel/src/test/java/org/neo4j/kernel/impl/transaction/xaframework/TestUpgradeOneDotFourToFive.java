@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
 import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
@@ -31,6 +30,7 @@ import java.util.Map;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.kernel.CommonFactories;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public class TestUpgradeOneDotFourToFive
@@ -43,26 +43,18 @@ public class TestUpgradeOneDotFourToFive
         deleteRecursively( PATH );
     }
 
-    @Test
+    @Test( expected=IllegalLogFormatException.class )
     public void cannotRecoverNoncleanShutdownDbWithOlderLogFormat() throws Exception
     {
         copyRecursively( new File( TestUpgradeOneDotFourToFive.class.getResource( "non-clean-1.4.2-db/neostore" ).getFile() ).getParentFile(), PATH );
-        try
-        {
-            Map<Object, Object> config = new HashMap<Object, Object>();
-            config.put( "store_dir", PATH.getAbsolutePath() );
-            config.put( StringLogger.class, StringLogger.DEV_NULL );
-            config.put( LogBufferFactory.class,
-                    CommonFactories.defaultLogBufferFactory() );
-            XaLogicalLog log = new XaLogicalLog( resourceFile(), null, null,
-                    null, config );
-            log.open();
-            fail( "Shouldn't be able to start" );
-        }
-        catch ( Exception e )
-        {
-            assertTrue( IllegalLogFormatException.class.isAssignableFrom( e.getClass() ) );
-        }
+        Map<Object, Object> config = new HashMap<Object, Object>();
+        config.put( "store_dir", PATH.getAbsolutePath() );
+        config.put( StringLogger.class, StringLogger.DEV_NULL );
+        config.put( FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
+        config.put( LogBufferFactory.class, CommonFactories.defaultLogBufferFactory() );
+        XaLogicalLog log = new XaLogicalLog( resourceFile(), null, null, null, config );
+        log.open();
+        fail( "Shouldn't be able to start" );
     }
 
     protected String resourceFile()

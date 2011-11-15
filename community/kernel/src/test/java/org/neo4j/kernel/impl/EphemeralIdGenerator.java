@@ -23,6 +23,7 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -70,12 +71,12 @@ public class EphemeralIdGenerator implements IdGenerator
     private final AtomicLong nextId = new AtomicLong();
     private final IdType idType;
     private final Queue<Long> freeList;
-    private int freedButNotReturnableIdCount;
+    private final AtomicInteger freedButNotReturnableIdCount = new AtomicInteger();
 
     public EphemeralIdGenerator( IdType idType )
     {
         this.idType = idType;
-        this.freeList = idType.allowAggressiveReuse() ? new ConcurrentLinkedQueue<Long>() : null;
+        this.freeList = idType != null && idType.allowAggressiveReuse() ? new ConcurrentLinkedQueue<Long>() : null;
     }
     
     @Override
@@ -117,7 +118,7 @@ public class EphemeralIdGenerator implements IdGenerator
     public void freeId( long id )
     {
         if (freeList != null) freeList.add( id );
-        else freedButNotReturnableIdCount++;
+        else freedButNotReturnableIdCount.getAndIncrement();
     }
 
     @Override
@@ -129,7 +130,7 @@ public class EphemeralIdGenerator implements IdGenerator
     public long getNumberOfIdsInUse()
     {
         long result = freeList == null ? nextId.get() : nextId.get() - freeList.size();
-        return result-freedButNotReturnableIdCount;
+        return result-freedButNotReturnableIdCount.get();
     }
 
     @Override

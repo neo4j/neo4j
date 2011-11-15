@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -39,6 +40,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 {
     private static final Queue<ByteBuffer> memoryPool = new ConcurrentLinkedQueue<ByteBuffer>();
+    private static final AtomicLong allocCount = new AtomicLong();
     private final Map<String, EphemeralFileChannel> files = new HashMap<String, EphemeralFileChannel>();
     
     public synchronized void dispose()
@@ -113,15 +115,19 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     private static ByteBuffer allocateBuffer()
     {
         ByteBuffer buffer = memoryPool.poll();
-        if ( buffer != null ) return buffer;
+        if ( buffer != null )
+        {
+            buffer.clear();
+            return buffer;
+        }
         // TODO dynamic size
+        allocCount.incrementAndGet();
         buffer = ByteBuffer.allocateDirect( 5 * 1024 * 1024 );
         return buffer;
     }
 
     private static void freeBuffer( ByteBuffer buffer )
     {
-        buffer.clear();
         memoryPool.add( buffer );
     }
     

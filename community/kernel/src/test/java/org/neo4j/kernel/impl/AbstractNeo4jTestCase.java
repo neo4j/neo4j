@@ -30,7 +30,7 @@ import java.lang.reflect.Field;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -58,11 +58,12 @@ public abstract class AbstractNeo4jTestCase
     
     protected static final File NEO4J_BASE_DIR = new File( "target", "var" );
     
-    public static final @Rule TestRule START_GRAPHDB = new TestRule()
+    public static final @ClassRule TestRule START_GRAPHDB = new TestRule()
     {
         @Override
         public Statement apply( Statement base, Description description )
         {
+            tearDownDb();
             setupGraphDatabase(description.getTestClass().getAnnotation( RequiresPersistentGraphDatabase.class ).value());
             return base;
         }
@@ -124,17 +125,20 @@ public abstract class AbstractNeo4jTestCase
 
         if ( restartGraphDbBetweenTests() )
         {
-            graphDb.shutdown();
-            graphDb = null;
+            tearDownDb();
         }
     }
 
     @AfterClass
     public static void tearDownDb()
     {
-        if ( graphDb != null )
+        try
         {
-            graphDb.shutdown();
+            if ( graphDb != null ) graphDb.shutdown();
+        }
+        finally
+        {
+            graphDb = null;
         }
     }
 

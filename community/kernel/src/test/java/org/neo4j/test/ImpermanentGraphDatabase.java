@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
@@ -40,12 +41,14 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public class ImpermanentGraphDatabase extends HighlyConfigurableGraphDatabase
 {
+    public static final AtomicLong instances = new AtomicLong();
     private static final File PATH = new File( "target/test-data/impermanent-db" );
 
     public ImpermanentGraphDatabase( Map<String, String> params )
     {
         super( path(), params, new EphemeralIdGenerator.Factory(),
                 new EphemeralFileSystemAbstraction() );
+        instances.incrementAndGet();
     }
     
     @Override
@@ -81,6 +84,7 @@ public class ImpermanentGraphDatabase extends HighlyConfigurableGraphDatabase
     {
         super.close();
         ((EphemeralFileSystemAbstraction) fileSystem).dispose();
+        instances.decrementAndGet();
 //        clearDirectory();
     }
 
