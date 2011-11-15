@@ -23,6 +23,7 @@ import org.neo4j.cypher.{PathImpl, SymbolTable}
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import scala.collection.JavaConverters._
 import org.neo4j.cypher.commands._
+import collection.Seq
 
 class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
   def getFirstNode[U]: String = {
@@ -41,18 +42,30 @@ class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
 
       val firstNode: String = getFirstNode
 
-      val p = path.pathPattern.foldLeft(Seq(get(firstNode)))((soFar, p) => p match {
+      val p: Seq[PropertyContainer] = path.pathPattern.foldLeft(Seq(get(firstNode)))((soFar, p) => p match {
         case RelatedTo(left, right, relName, x, xx, optional) => soFar ++ Seq(get(relName), get(right))
         case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, direction, iterableRel, optional) => getPath(m, pathName, soFar)
         case ShortestPath(pathName, _, _, _, _, _, _) => getPath(m, pathName, soFar)
       })
 
-      f(m + (path.pathName -> new PathImpl(p: _*)))
+      f(m + (path.pathName -> buildPath(p)))
     })
   }
 
+  private def buildPath(pieces: Seq[PropertyContainer]): Path =
+    if (pieces.contains(null))
+      null
+    else
+      new PathImpl(pieces: _*)
+
+  //WARNING: This method can return NULL
   def getPath(m: Map[String, Any], key: String, soFar: Seq[PropertyContainer]): Seq[PropertyContainer] = {
-    val path = m(key).asInstanceOf[Path].iterator().asScala.toSeq
+    val m1 = m(key)
+
+    if(m1 == null)
+      return Seq(null)
+
+    val path = m1.asInstanceOf[Path].iterator().asScala.toSeq
     val pathTail = if (path.head == soFar.last) {
       path.tail
     } else {

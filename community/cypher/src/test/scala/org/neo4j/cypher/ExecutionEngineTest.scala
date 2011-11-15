@@ -1143,6 +1143,76 @@ return b, avg(length(p))
     assert(List(b,c) === result.columnAs[Node]("b") .toList)
   }
 
+  @Test def shouldHandleOptionalPaths() {
+    val a = createNode("A")
+    val b = createNode("B")
+    val c = createNode("C")
+    val r = relate(a, b, "X")
+
+    val result = parseAndExecute("""
+start a  = node(1), x = node(2,3)
+match p = a -[?]-> x
+return x, p
+""")
+
+    assert(List(
+      Map("x"->b, "p"->PathImpl(a,r,b)),
+      Map("x"->c, "p"->null)
+    ) === result.toList)
+  }
+
+  @Test def shouldHandleOptionalPathsFromGraphAlgo() {
+    val a = createNode("A")
+    val b = createNode("B")
+    val c = createNode("C")
+    val r = relate(a, b, "X")
+
+    val result = parseAndExecute("""
+start a  = node(1), x = node(2,3)
+match p = shortestPath(a -[?*]-> x)
+return x, p
+""")
+
+    assert(List(
+      Map("x"->b, "p"->PathImpl(a,r,b)),
+      Map("x"->c, "p"->null)
+    ) === result.toList)
+  }
+
+  @Test def shouldHandleOptionalPathsFromACombo() {
+    val a = createNode("A")
+    val b = createNode("B")
+    val r = relate(a, b, "X")
+
+    val result = parseAndExecute("""
+start a  = node(1)
+match p = a-->b-[?*]->c
+return p
+""")
+
+    assert(List(
+      Map("p"->null)
+    ) === result.toList)
+  }
+
+  @Test def shouldHandleOptionalPathsFromVarLengthPath() {
+    val a = createNode("A")
+    val b = createNode("B")
+    val c = createNode("C")
+    val r = relate(a, b, "X")
+
+    val result = parseAndExecute("""
+start a  = node(1), x = node(2,3)
+match p = a -[?*]-> x
+return x, p
+""")
+
+    assert(List(
+      Map("x"->b, "p"->PathImpl(a,r,b)),
+      Map("x"->c, "p"->null)
+    ) === result.toList)
+  }
+
 
   @Test(expected = classOf[SyntaxException]) def shouldNotSupportSortingOnThingsAfterDistinctHasRemovedIt() {
     val a = createNode("name"->"A", "age"->13)
