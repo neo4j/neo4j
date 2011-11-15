@@ -25,9 +25,11 @@ import static org.neo4j.graphdb.traversal.Evaluation.INCLUDE_AND_PRUNE;
 import static org.neo4j.graphdb.traversal.Evaluators.lastRelationshipTypeIs;
 import static org.neo4j.kernel.Traversal.description;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.traversal.Evaluators;
 
 public class TestEvaluators extends AbstractTestBase
 {
@@ -36,8 +38,8 @@ public class TestEvaluators extends AbstractTestBase
         A,B,C;
     }
     
-    @Test
-    public void lastRelationshipTypeEvaluator() throws Exception
+    @BeforeClass
+    public static void createGraph()
     {
         /*
          * (a)--[A]->(b)--[B]-->(c)--[B]-->(d)--[C]-->(e)--[A]-->(j)
@@ -50,7 +52,11 @@ public class TestEvaluators extends AbstractTestBase
         
         createGraph( "a A b", "b B c", "c B d", "d C e", "e A j", "b C h", "h B i", "i C k",
                 "a B f", "f C g" );
-        
+    }
+    
+    @Test
+    public void lastRelationshipTypeEvaluator() throws Exception
+    {
         Node a = getNodeWithName( "a" );
         expectPaths( description().evaluator( lastRelationshipTypeIs(
                 INCLUDE_AND_PRUNE, EXCLUDE_AND_CONTINUE, Types.C ) ).traverse( a ),
@@ -59,5 +65,16 @@ public class TestEvaluators extends AbstractTestBase
         expectPaths( description().evaluator( lastRelationshipTypeIs(
                 INCLUDE_AND_CONTINUE, EXCLUDE_AND_CONTINUE, Types.C ) ).traverse( a ),
                 "a,b,c,d,e", "a,f,g", "a,b,h", "a,b,h,i,k" );
+    }
+    
+    @Test
+    public void depths() throws Exception
+    {
+        Node a = getNodeWithName( "a" );
+        expectPaths( description().evaluator( Evaluators.atDepth( 1 ) ).traverse( a ), "a,b", "a,f" );
+        expectPaths( description().evaluator( Evaluators.fromDepth( 2 ) ).traverse( a ), "a,f,g",
+                "a,b,h", "a,b,h,i", "a,b,h,i,k", "a,b,c", "a,b,c,d", "a,b,c,d,e", "a,b,c,d,e,j" );
+        expectPaths( description().evaluator( Evaluators.toDepth( 2 ) ).traverse( a ), "a", "a,b", "a,b,c",
+                "a,b,h", "a,f", "a,f,g" );
     }
 }
