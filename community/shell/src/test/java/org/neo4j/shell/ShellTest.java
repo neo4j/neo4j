@@ -22,31 +22,31 @@ package org.neo4j.shell;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.MapUtil.loadStrictly;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.Config.ENABLE_REMOTE_SHELL;
 
+import java.io.File;
+
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.Config;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.impl.ShellBootstrap;
 import org.neo4j.shell.impl.ShellServerExtension;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class ShellTest
 {
     private AppCommandParser parse( final String line ) throws Exception
     {
-        return new AppCommandParser( new GraphDatabaseShellServer( null ),
-                line );
+        return new AppCommandParser( new GraphDatabaseShellServer( null ), line );
     }
 
     @Test
     public void testParserEasy() throws Exception
     {
-        AppCommandParser parser = this.parse( "ls -la" );
+        AppCommandParser parser = parse( "ls -la" );
         assertEquals( "ls", parser.getAppName() );
         assertEquals( 2, parser.options().size() );
         assertTrue( parser.options().containsKey( "l" ) );
@@ -57,15 +57,13 @@ public class ShellTest
     @Test
     public void testParserArguments() throws Exception
     {
-        AppCommandParser parser = this
-        .parse( "set -t java.lang.Integer key value" );
+        AppCommandParser parser = parse( "set -t java.lang.Integer key value" );
         assertEquals( "set", parser.getAppName() );
         assertTrue( parser.options().containsKey( "t" ) );
         assertEquals( "java.lang.Integer", parser.options().get( "t" ) );
         assertEquals( 2, parser.arguments().size() );
         assertEquals( "key", parser.arguments().get( 0 ) );
         assertEquals( "value", parser.arguments().get( 1 ) );
-
         assertException( "set -tsd" );
     }
 
@@ -73,8 +71,7 @@ public class ShellTest
     public void testEnableRemoteShell() throws Exception
     {
         int port = 8085;
-        GraphDatabaseService graphDb = new EmbeddedGraphDatabase(
-                "target/shell-neo", stringMap( ENABLE_REMOTE_SHELL, "port=" + port ) );
+        GraphDatabaseService graphDb = new ImpermanentGraphDatabase( stringMap( ENABLE_REMOTE_SHELL, "port=" + port ) );
         ShellLobby.newClient( port );
         graphDb.shutdown();
     }
@@ -82,7 +79,7 @@ public class ShellTest
     @Test
     public void testEnableServerOnDefaultPort() throws Exception
     {
-        GraphDatabaseService graphDb = new EmbeddedGraphDatabase( "target/shell-neo", MapUtil.stringMap( Config.ENABLE_REMOTE_SHELL, "true" ) );
+        GraphDatabaseService graphDb = new ImpermanentGraphDatabase( stringMap( ENABLE_REMOTE_SHELL, "true" ) );
         try
         {
             ShellLobby.newClient();
@@ -98,7 +95,7 @@ public class ShellTest
     {
         Integer port = Integer.valueOf( 1234 );
         String name = "test-shell";
-        GraphDatabaseService graphDb = new EmbeddedGraphDatabase( "target/shell-neo" );
+        GraphDatabaseService graphDb = new ImpermanentGraphDatabase();
         try
         {
             new ShellServerExtension().loadAgent( new ShellBootstrap( port.toString(), name ).serialize() );
@@ -113,7 +110,8 @@ public class ShellTest
     @Test
     public void testRemoveReferenceNode() throws Exception
     {
-        final GraphDatabaseShellServer server = new GraphDatabaseShellServer( "target/shell-neo", false, null );
+        GraphDatabaseService db = new ImpermanentGraphDatabase();
+        final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db, false );
         ShellClient client = new SameJvmClient( server );
 
         Documenter doc = new Documenter("sample session", client);
@@ -134,12 +132,14 @@ public class ShellTest
         //        client.getServer().interpretLine( "cd", client.session(), client.getOutput() );
         //        client.getServer().interpretLine( "pwd", client.session(), client.getOutput() );
         server.shutdown();
+        db.shutdown();
     }
 
     @Test
     public void testMatrix() throws Exception
     {
-        final GraphDatabaseShellServer server = new GraphDatabaseShellServer( "target/shell-matrix", false, "src/test/resources/autoindex.properties" );
+        GraphDatabaseService db = new ImpermanentGraphDatabase( loadStrictly( new File( "src/test/resources/autoindex.properties" ) ) );
+        final GraphDatabaseShellServer server = new GraphDatabaseShellServer( db, false );
         ShellClient client = new SameJvmClient( server );
 
         Documenter doc = new Documenter("a matrix example", client);
@@ -189,6 +189,7 @@ public class ShellTest
                 "Morpheus' friends, looking up Morpheus by name in the Neo4j autoindex" );
         doc.run();
         server.shutdown();
+        db.shutdown();
     }
 
     private void assertException( final String command )

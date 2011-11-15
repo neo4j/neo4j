@@ -24,9 +24,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
-import java.io.File;
 import java.util.regex.Pattern;
 
 import org.junit.After;
@@ -34,23 +32,20 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
-import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 @Ignore
 public abstract class AbstractShellTest
 {
-    private static final String DB_PATH = "target/var/shelldb";
-    protected static GraphDatabaseService db;
+    protected static ImpermanentGraphDatabase db;
     private static ShellServer shellServer;
     private ShellClient shellClient;
     protected static final RelationshipType RELATIONSHIP_TYPE = withName( "TYPE" );
@@ -58,36 +53,17 @@ public abstract class AbstractShellTest
     @BeforeClass
     public static void startUp() throws Exception
     {
-        deleteRecursively( new File( DB_PATH ) );
-        db = new EmbeddedGraphDatabase( DB_PATH );
+        db = new ImpermanentGraphDatabase();
         shellServer = new GraphDatabaseShellServer( db );
     }
     
     @Before
     public void doBefore()
     {
-        clearDb();
+        db.cleanContent( true );
         shellClient = new SameJvmClient( shellServer );
     }
     
-    private void clearDb()
-    {
-        Transaction tx = db.beginTx();
-        for ( Node node : db.getAllNodes() )
-        {
-            for ( Relationship rel : node.getRelationships( Direction.OUTGOING ) )
-            {
-                rel.delete();
-            }
-            if ( !node.equals( db.getReferenceNode() ) )
-            {
-                node.delete();
-            }
-        }
-        tx.success();
-        tx.finish();
-    }
-
     @After
     public void doAfter()
     {
