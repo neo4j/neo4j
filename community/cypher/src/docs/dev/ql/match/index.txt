@@ -7,11 +7,11 @@ pattern is made up of one or more paths, separated by commas.
 
 Node identifiers can be used with or without surrounding parenthesis. These two match clauses are semantically identical:
 
-+MATCH (a)-->(b)+
++`MATCH (a)-->(b)`+
 
 and 
 
-+MATCH a-->b+
++`MATCH a-->b`+
 
 All parts of the pattern must be directly or indirectly bound to a start point.
 
@@ -25,17 +25,17 @@ names paths that contain optional parts are also optional - if any part of the p
 
 In these example, b and p are all optional and can contain null:
 
-+START a=node(1)+
-+MATCH p = a-[?]->b+
++`START a=node(1)`+
++`MATCH p = a-[?]->b`+
 
-+START a=node(1)+
-+MATCH p = a-[*?]->b+
++`START a=node(1)`+
++`MATCH p = a-[*?]->b`+
 
-+START a=node(1)+
-+MATCH p = a-[?]->x-->b+
++`START a=node(1)`+
++`MATCH p = a-[?]->x-->b`+
 
-+START a=node(1), x=node(100)+
-+MATCH p = shortestPath( a-[?]->x )+
++`START a=node(1), x=node(100)`+
++`MATCH p = shortestPath( a-[*?]->x )`+
 
 
 
