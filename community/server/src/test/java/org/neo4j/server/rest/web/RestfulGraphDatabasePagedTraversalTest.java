@@ -66,7 +66,7 @@ public class RestfulGraphDatabasePagedTraversalTest
     {
         databasePath = ServerTestUtils.createTempDir()
                 .getAbsolutePath();
-        database = new Database( ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY, databasePath );
+        database = new Database( ServerTestUtils.EPHEMERAL_GRAPH_DATABASE_FACTORY, databasePath );
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
         leaseManager = new LeaseManager( new FakeClock() );

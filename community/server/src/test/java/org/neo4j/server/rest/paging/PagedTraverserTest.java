@@ -53,7 +53,7 @@ public class PagedTraverserTest
     {
         databasePath = ServerTestUtils.createTempDir()
                 .getAbsolutePath();
-        database = new Database( ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY, databasePath );
+        database = new Database( ServerTestUtils.EPHEMERAL_GRAPH_DATABASE_FACTORY, databasePath );
         createLinkedList( LIST_LENGTH, database );
     }
 

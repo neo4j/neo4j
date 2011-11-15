@@ -80,7 +80,7 @@ public class DatabaseActionsTest
     {
         databasePath = ServerTestUtils.createTempDir()
                 .getAbsolutePath();
-        database = new Database( ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY, databasePath );
+        database = new Database( ServerTestUtils.EPHEMERAL_GRAPH_DATABASE_FACTORY, databasePath );
 
         graphdbHelper = new GraphDbHelper( database );
         leaseManager = new LeaseManager( new FakeClock() );

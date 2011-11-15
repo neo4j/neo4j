@@ -20,12 +20,13 @@
 package org.neo4j.server.configuration;
 
 import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
-import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Map;
 
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.ServerTestUtils;
 
 public class PropertyFileBuilder
@@ -62,28 +63,17 @@ public class PropertyFileBuilder
     {
         File temporaryConfigFile = createTempPropertyFile();
 
-        String dbDir = ServerTestUtils.createTempDir()
-                .getAbsolutePath();
-        String rrdbDir = ServerTestUtils.createTempDir()
-                .getAbsolutePath();
-        writePropertyToFile( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir, temporaryConfigFile );
-        if ( portNo != null )
-        {
-            writePropertyToFile( Configurator.WEBSERVER_PORT_PROPERTY_KEY, portNo, temporaryConfigFile );
-        }
-        writePropertyToFile( Configurator.RRDB_LOCATION_PROPERTY_KEY, rrdbDir, temporaryConfigFile );
-        writePropertyToFile( Configurator.MANAGEMENT_PATH_PROPERTY_KEY, webAdminUri, temporaryConfigFile );
-        writePropertyToFile( Configurator.REST_API_PATH_PROPERTY_KEY, webAdminDataUri, temporaryConfigFile );
-        if ( dbTuningPropertyFile != null )
-        {
-            writePropertyToFile( Configurator.DB_TUNING_PROPERTY_FILE_KEY, dbTuningPropertyFile, temporaryConfigFile );
-        }
-
-        for ( Tuple t : nameValuePairs )
-        {
-            writePropertyToFile( t.name, t.value, temporaryConfigFile );
-        }
-
+        String dbDir = ServerTestUtils.createTempDir().getAbsolutePath();
+        String rrdbDir = ServerTestUtils.createTempDir().getAbsolutePath();
+        Map<String, String> properties = MapUtil.stringMap(
+                Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir,
+                Configurator.RRDB_LOCATION_PROPERTY_KEY, rrdbDir,
+                Configurator.MANAGEMENT_PATH_PROPERTY_KEY, webAdminUri,
+                Configurator.REST_API_PATH_PROPERTY_KEY, webAdminDataUri );
+        if ( portNo != null ) properties.put( Configurator.WEBSERVER_PORT_PROPERTY_KEY, portNo );
+        if ( dbTuningPropertyFile != null ) properties.put( Configurator.DB_TUNING_PROPERTY_FILE_KEY, dbTuningPropertyFile );
+        for ( Tuple t : nameValuePairs ) properties.put( t.name, t.value );
+        ServerTestUtils.writePropertiesToFile( properties, temporaryConfigFile );
         return temporaryConfigFile;
     }
 

@@ -70,6 +70,7 @@ public class EphemeralIdGenerator implements IdGenerator
     private final AtomicLong nextId = new AtomicLong();
     private final IdType idType;
     private final Queue<Long> freeList;
+    private int freedButNotReturnableIdCount;
 
     public EphemeralIdGenerator( IdType idType )
     {
@@ -116,6 +117,7 @@ public class EphemeralIdGenerator implements IdGenerator
     public void freeId( long id )
     {
         if (freeList != null) freeList.add( id );
+        else freedButNotReturnableIdCount++;
     }
 
     @Override
@@ -126,7 +128,8 @@ public class EphemeralIdGenerator implements IdGenerator
     @Override
     public long getNumberOfIdsInUse()
     {
-        return freeList == null ? nextId.get() : nextId.get() - freeList.size();
+        long result = freeList == null ? nextId.get() : nextId.get() - freeList.size();
+        return result-freedButNotReturnableIdCount;
     }
 
     @Override
