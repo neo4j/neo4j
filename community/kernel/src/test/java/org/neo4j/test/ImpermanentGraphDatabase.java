@@ -78,8 +78,13 @@ public class ImpermanentGraphDatabase extends HighlyConfigurableGraphDatabase
 
     private static String path()
     {
-        File path = new File( PATH, String.valueOf( ID.get() ) );
-        if ( path.exists() ) throw new RuntimeException( "Should not exist" );
+        File path = null;
+        do
+        {
+            path = new File( PATH, String.valueOf( ID.get() ) );
+            if ( path.exists() ) ID.incrementAndGet();
+        }
+        while ( path.exists() );
         return path.getAbsolutePath();
     }
 
