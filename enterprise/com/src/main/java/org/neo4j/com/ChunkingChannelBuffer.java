@@ -37,6 +37,25 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 
+/**
+ * A decorator around a {@link ChannelBuffer} which adds the ability to transfer
+ * chunks of it over a {@link Channel} when capacity is reached.
+ * <p>
+ * Instances of this class are created with an underlying buffer for holding
+ * content, a capacity and a channel over which to stream the buffer contents
+ * when that capacity is reached. When content addition would make the size of
+ * the buffer exceed its capacity, a 2-byte continuation header is added in the
+ * stream that contains flow information and protocol versions and it is
+ * streamed over the channel. It is expected that a
+ * {@link DechunkingChannelBuffer} sits on the other end waiting to deserialize
+ * this stream. A final serialization round happens when <code>done()</code> is
+ * called, if content has been added.
+ * <p>
+ * Each chunk written is marked as pending and no more than
+ * MAX_WRITE_AHEAD_CHUNKS are left pending - in such a case the write process
+ * sleeps until some acknowledgment comes back from the other side that chunks
+ * have been read.
+ */
 public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListener
 {
     static final byte CONTINUATION_LAST = 0;
@@ -44,7 +63,7 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
     static final byte OUTCOME_SUCCESS = 0;
     static final byte OUTCOME_FAILURE = 1;
     private static final int MAX_WRITE_AHEAD_CHUNKS = 5;
-    
+
     private ChannelBuffer buffer;
     private final Channel channel;
     private final int capacity;
@@ -71,7 +90,7 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
         // byte 1: [aaaa,aaaa] a: application protocol version
         buffer.writeBytes( header( CONTINUATION_LAST ) );
     }
-    
+
     private byte[] header( byte continuation )
     {
         byte[] header = new byte[2];
@@ -79,7 +98,7 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
         header[1] = applicationProtocolVersion;
         return header;
     }
-    
+
     private void setContinuation( byte continuation )
     {
         buffer.setBytes( continuationPosition, header( continuation ) );
@@ -156,7 +175,7 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
         this.failure = failure;
         addRoomForContinuationHeader();
     }
-    
+
     public void clear()
     {
         clear( false );
@@ -506,7 +525,7 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
     {
         return buffer.skipBytes( indexFinder );
     }
-    
+
     private void sendChunkIfNeeded( int bytesPlus )
     {
         if ( writerIndex()+bytesPlus >= capacity )
@@ -526,7 +545,7 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
         future.addListener( this );
         writeAheadCounter.incrementAndGet();
     }
-    
+
     private void waitForClientToCatchUpOnReadingChunks()
     {
         // Wait until channel gets disconnected or client catches up.
@@ -545,13 +564,13 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
                 Thread.interrupted();
             }
         }
-        
+
         if ( waited && (!channel.isConnected() || !channel.isOpen()) )
         {
             throw new ComException( "Channel has been closed" );
         }
     }
-    
+
     @Override
     public void operationComplete( ChannelFuture future ) throws Exception
     {
@@ -559,7 +578,7 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
         {
             throw new ComException( "This should not be possible because we waited for the future to be done" );
         }
-        
+
         if ( !future.isSuccess() || future.isCancelled() )
         {
             future.getChannel().close();
