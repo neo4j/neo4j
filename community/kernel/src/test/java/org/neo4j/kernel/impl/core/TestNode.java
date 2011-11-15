@@ -407,14 +407,23 @@ public class TestNode extends AbstractNeo4jTestCase
         };
         thread.start();
         long endTime = System.currentTimeMillis() + 5000;
-        while ( thread.getState() != State.TERMINATED )
+        WAIT: while ( thread.getState() != State.TERMINATED )
         {
-            Thread.sleep( 100 );
-            if ( System.currentTimeMillis() > endTime )
+            if ( thread.getState() == Thread.State.WAITING )
             {
-                break;
+                for ( StackTraceElement el : thread.getStackTrace() )
+                {
+                    // if we are in WAITING state in acquireWriteLock we know that we are waiting for the lock
+                    if ( el.getClassName().equals( "org.neo4j.kernel.impl.transaction.RWLock" ) )
+                        if ( el.getMethodName().equals( "acquireWriteLock" ) ) break WAIT;
+                }
             }
+            Thread.sleep( 1 );
+            if ( System.currentTimeMillis() > endTime ) break;
         }
-        assertFalse( gotTheLock.get() );
+        boolean gotLock = gotTheLock.get();
+        newTransaction();
+        assertFalse( gotLock );
+        thread.join();
     }
 }

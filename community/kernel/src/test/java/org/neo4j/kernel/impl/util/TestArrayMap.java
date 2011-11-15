@@ -24,8 +24,10 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Field;
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 import org.junit.Test;
 
@@ -127,7 +129,6 @@ public class TestArrayMap
     private void assertDataRepresentationSwitchesWhenAboveThreshold( ArrayMap<String, Integer> map,
             boolean shrinkable ) throws Exception
     {
-
         // Perhaps not the pretties solution... quite brittle...
         Field mapThresholdField = ArrayMap.class.getDeclaredField( "toMapThreshold" );
         mapThresholdField.setAccessible( true );
@@ -187,7 +188,7 @@ public class TestArrayMap
     }
     
     @Test
-    public void testThreadSafeSize()
+    public void testThreadSafeSize() throws InterruptedException
     {
         ArrayMap<Integer,Object> map = new ArrayMap<Integer,Object>(5, true, true );
         map.put( 1, new Object() );
@@ -195,29 +196,19 @@ public class TestArrayMap
         map.put( 3, new Object() );
         map.put( 4, new Object() );
         map.put( 5, new Object() );
-        LinkedList<WorkerThread> runningThreads = new LinkedList<WorkerThread>();
-        for ( int i = 0; i < 100; i++ )
+        final int NUM_THREADS = 100;
+        CountDownLatch done = new CountDownLatch( NUM_THREADS );
+        List<WorkerThread> threads = new ArrayList<WorkerThread>( NUM_THREADS );
+        for ( int i = 0; i < NUM_THREADS; i++ )
         {
-            WorkerThread thread = new WorkerThread( map );
+            WorkerThread thread = new WorkerThread( map, done );
+            threads.add( thread );
             thread.start();
-            runningThreads.add( thread );
         }
-        while ( !runningThreads.isEmpty() )
+        done.await();
+        for ( WorkerThread thread : threads )
         {
-            try
-            {
-                Thread.sleep( 100 );
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.interrupted();
-            }
-            WorkerThread thread = runningThreads.getFirst();
-            if ( !thread.stillRunning() )
-            {
-                assertTrue( "Synchronized ArrayMap concurrent size invoke failed: " + thread.getCause(), thread.wasSuccessful() );
-                runningThreads.removeFirst();
-            }
+            assertTrue( "Synchronized ArrayMap concurrent size invoke failed: " + thread.getCause(), thread.wasSuccessful() );
         }
     }
     
@@ -225,13 +216,15 @@ public class TestArrayMap
     {
         private final ArrayMap<Integer,Object> map;
         
-        private volatile boolean done = false;
         private volatile boolean success = false;
         private volatile Throwable t = null;
+
+        private final CountDownLatch done;
         
-        WorkerThread( ArrayMap<Integer,Object> map )
+        WorkerThread( ArrayMap<Integer,Object> map, CountDownLatch done )
         {
             this.map = map;
+            this.done = done;
         }
         
         @Override
@@ -266,13 +259,8 @@ public class TestArrayMap
             }
             finally
             {
-                done = true;
+                done.countDown();
             }
-        }
-        
-        boolean stillRunning()
-        {
-            return done == false;
         }
         
         boolean wasSuccessful()
