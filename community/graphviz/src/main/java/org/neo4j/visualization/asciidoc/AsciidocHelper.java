@@ -19,14 +19,15 @@
  */
 package org.neo4j.visualization.asciidoc;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.visualization.graphviz.AsciiDocStyle;
-import org.neo4j.visualization.graphviz.GraphvizWriter;
-import org.neo4j.walk.Walker;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.visualization.graphviz.AsciiDocStyle;
+import org.neo4j.visualization.graphviz.GraphvizWriter;
+import org.neo4j.walk.Walker;
 
 public class AsciidocHelper
 {
@@ -54,6 +55,22 @@ public class AsciidocHelper
                 "----\n" +
                 out.toString() +
                 "----\n";
+    }
+
+    public static String createGraphVizDeletingReferenceNode( String title,
+            GraphDatabaseService graph, String identifier )
+    {
+        Transaction tx = graph.beginTx();
+        try
+        {
+            graph.getReferenceNode().delete();
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+        return AsciidocHelper.createGraphViz( title, graph, identifier );
     }
 
     public static String createOutputSnippet( final String output )
