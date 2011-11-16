@@ -88,7 +88,6 @@ class ExecutionEngine(graph: GraphDatabaseService) {
 
       val allReturnItems = extractReturnItems(returns, aggregation)
 
-      if(  )
       context.pipe = new ExtractPipe(context.pipe, allReturnItems)
 
       aggregation match {
