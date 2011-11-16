@@ -58,10 +58,16 @@ public class ImpermanentGraphDatabase extends HighlyConfigurableGraphDatabase
 
     public ImpermanentGraphDatabase( Map<String, String> params )
     {
-        super( path(), params, new EphemeralIdGenerator.Factory(),
+        super( path(), withoutMemmap( params ), new EphemeralIdGenerator.Factory(),
                 new EphemeralFileSystemAbstraction() );
     }
     
+    private static Map<String, String> withoutMemmap( Map<String, String> params )
+    {   // Because EphemeralFileChannel doesn't support memorymapping
+        params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
+        return params;
+    }
+
     public ImpermanentGraphDatabase()
     {
         this( new HashMap<String, String>() );

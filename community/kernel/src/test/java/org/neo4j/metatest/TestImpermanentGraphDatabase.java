@@ -28,7 +28,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
-public class ImpermanentGraphDatabaseTests
+public class TestImpermanentGraphDatabase
 {
     private ImpermanentGraphDatabase db;
 
