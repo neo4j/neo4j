@@ -180,6 +180,7 @@ the relevant Commercial Agreement.
               <descriptors>
                 <descriptor>src/main/assembly/assembly.xml</descriptor>
               </descriptors>
+              <skipAssembly>${javadoc.skip}</skipAssembly>
             </configuration>
           </execution>
         </executions>
