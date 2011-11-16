@@ -64,8 +64,9 @@ public class ImpermanentGraphDatabase extends HighlyConfigurableGraphDatabase
     
     private static Map<String, String> withoutMemmap( Map<String, String> params )
     {   // Because EphemeralFileChannel doesn't support memorymapping
-        params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
-        return params;
+        Map<String, String> result = new HashMap<String, String>( params );
+        result.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
+        return result;
     }
 
     public ImpermanentGraphDatabase()
