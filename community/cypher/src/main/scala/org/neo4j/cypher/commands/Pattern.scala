@@ -20,9 +20,16 @@
 package org.neo4j.cypher.commands
 
 import org.neo4j.graphdb.Direction
+import java.lang.String
 
 abstract class Pattern {
   val optional: Boolean
+
+  def node(name: String) = if (name.startsWith("  UNNAMED")) "()" else name
+
+  def left(dir: Direction) = if (dir == Direction.INCOMING) "<-" else "-"
+
+  def right(dir: Direction) = if (dir == Direction.OUTGOING) "->" else "-"
 }
 
 object RelatedTo {
@@ -35,17 +42,54 @@ object VarLengthRelatedTo {
     new VarLengthRelatedTo(pathName, start, end, minHops, maxHops, Some(relType), direction, None, optional)
 }
 
-case class RelatedTo(left: String, right: String, relName: String, relType: Option[String], direction: Direction, optional:Boolean) extends Pattern
 
-case class VarLengthRelatedTo(
-                               pathName: String,
-                               start: String,
-                               end: String,
-                               minHops: Option[Int],
-                               maxHops: Option[Int],
-                               relType: Option[String],
-                               direction: Direction,
-                               relIterator: Option[String],
-                               optional: Boolean) extends Pattern
+case class RelatedTo(left: String, right: String, relName: String, relType: Option[String], direction: Direction, optional: Boolean) extends Pattern {
+  override def toString = node(left) + left(direction) + relInfo + right(direction) + node(right)
 
-case class ShortestPath(pipeName: String, startName: String, endName: String, relType:Option[String], dir:Direction, maxDepth:Option[Int], optional: Boolean) extends Pattern
+  private def relInfo: String = {
+    var info = if (relName.startsWith("  UNNAMED")) "" else relName
+    if (optional) info = info + "?"
+    if (relType.nonEmpty) info = info + ":" + relType.get
+    if (info == "") "" else "[" + info + "]"
+  }
+}
+
+case class VarLengthRelatedTo(pathName: String,
+                              start: String,
+                              end: String,
+                              minHops: Option[Int],
+                              maxHops: Option[Int],
+                              relType: Option[String],
+                              direction: Direction,
+                              relIterator: Option[String],
+                              optional: Boolean) extends Pattern {
+
+  override def toString: String = pathName + "=" + node(start) + left(direction) + relInfo + right(direction) + node(end)
+
+  private def relInfo: String = {
+    var info = if (optional) "?" else ""
+    if (relType.nonEmpty) info = info + ":" + relType.get
+    val hops = (minHops, maxHops) match {
+      case (None, None) => "*"
+      case (Some(min), None) => "*" + min + ".."
+      case (None, Some(max)) => "*" + ".." + max
+      case (Some(min), Some(max)) => "*" + min + ".." + max
+    }
+
+    info = info + hops
+
+    if (info == "") "" else "[" + info + "]"
+  }
+}
+
+case class ShortestPath(pipeName: String, startName: String, endName: String, relType: Option[String], dir: Direction, maxDepth: Option[Int], optional: Boolean) extends Pattern {
+  override def toString: String = pipeName + "=shortestPath(" + startName + left(dir) + relInfo + right(dir) + endName + ")"
+  private def relInfo: String = {
+    var info = "["
+    if(optional) info = info + "?"
+    if(relType.nonEmpty) info = info + ":" + relType.get
+    info = info + "*"
+    if(maxDepth.nonEmpty) info = info + ".." + maxDepth.get
+    info
+  }
+}

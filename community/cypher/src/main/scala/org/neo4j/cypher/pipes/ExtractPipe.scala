@@ -25,7 +25,9 @@ import org.neo4j.cypher.commands._
 import collection.Seq
 import collection.immutable.Map
 
-class TransformPipe(source: Pipe, returnItems: Seq[ReturnItem]) extends Pipe {
+//This class will extract properties and other stuff to make the maps
+//easy to work with for other pipes
+class ExtractPipe(source: Pipe, returnItems: Seq[ReturnItem]) extends Pipe {
   type MapTransformer = Map[String, Any] => Map[String, Any]
 
   def getSymbolType(item: ReturnItem): Identifier = item.identifier
@@ -40,5 +42,7 @@ class TransformPipe(source: Pipe, returnItems: Seq[ReturnItem]) extends Pipe {
       f.apply(projection ++ row)
     })
   }
+
+  override def executionPlan(): String = source.executionPlan() + "\r\nExtract([" + source.symbols.columns + "] => [" + returnItems.map(_.columnName).mkString(", ") + "])"
 }
 

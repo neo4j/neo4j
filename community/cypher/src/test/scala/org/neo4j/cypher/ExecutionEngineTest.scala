@@ -52,19 +52,15 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
   }
 
   @Test def shouldFilterOnGreaterThan() {
-    val query = Query.
-      start(NodeById("node", 0)).
-      where(LessThan(Literal(0), Literal(1))).
-      returns(ValueReturnItem(EntityValue("node")))
+    val result = parseAndExecute("start node=node(0) where 0<1 return node")
 
-
-    val result = execute(query)
     assertEquals(List(refNode), result.columnAs[Node]("node").toList)
   }
 
   @Test def shouldFilterOnRegexp() {
     val n1 = createNode(Map("name" -> "Andres"))
     val n2 = createNode(Map("name" -> "Jim"))
+
     val query = Query.
       start(NodeById("node", n1.getId, n2.getId)).
       where(RegularExpression(PropertyValue("node", "name"), Literal("And.*"))).

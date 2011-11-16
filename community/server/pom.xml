@@ -26,7 +26,9 @@
     <neo-server.home>target/generated-resources/appassembler/jsw</neo-server.home>
     <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
     
-    <neo4j.codename>Boden Bord</neo4j.codename>
+    <!-- This code name is injected into Webadmin, please update it
+         when updating the project version. -->
+    <neo4j.codename></neo4j.codename>
     
     <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
     <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
@@ -493,7 +495,7 @@ the relevant Commercial Agreement.
       <plugin>
         <groupId>com.voltvoodoo</groupId>
         <artifactId>brew</artifactId>
-        <version>0.2.8</version>
+        <version>0.2.9</version>
         <executions>
           <execution>
             <id>compile-webadmin</id>
@@ -521,18 +523,15 @@ the relevant Commercial Agreement.
                 <exclude>lib/arbor.js</exclude>
               </exclude>
             </module>
-            <module>
-              <name>visualization</name>
-              <exclude>
-                <exclude>lib/arbor.js</exclude>
-              </exclude>
-            </module>
           </modules>
           <coffeeOutputDir>${project.build.outputDirectory}/webadmin-html/js</coffeeOutputDir>
           <hamlOutputDir>${project.build.outputDirectory}/webadmin-html/js</hamlOutputDir>
           
           <optimizeSourceDir>${project.build.outputDirectory}/webadmin-html/js</optimizeSourceDir>
           <optimizeOutputDir>${project.build.outputDirectory}/webadmin-html/js</optimizeOutputDir>
+          
+          <optimizedFileNameSuffix>false</optimizedFileNameSuffix>
+          <minifyOnlyAggregatedFiles>true</minifyOnlyAggregatedFiles>
         </configuration>
       </plugin>
       

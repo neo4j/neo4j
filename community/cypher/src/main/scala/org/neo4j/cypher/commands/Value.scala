@@ -22,6 +22,7 @@ package org.neo4j.cypher.commands
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
 import org.neo4j.cypher.{ParameterNotFoundException, SyntaxException, SymbolTable}
+import java.lang.String
 
 abstract class Value extends (Map[String, Any] => Any) {
   def identifier: Identifier
@@ -39,6 +40,8 @@ case class Literal(v: Any) extends Value {
   def checkAvailable(symbols: SymbolTable) {}
 
   def dependsOn: Set[String] = Set()
+
+  override def toString() = if (v.isInstanceOf[String]) "\"" + v + "\"" else v.toString
 }
 
 abstract case class FunctionValue(functionName: String, arguments: Value*) extends Value {
@@ -51,8 +54,6 @@ abstract case class FunctionValue(functionName: String, arguments: Value*) exten
 
   def dependsOn: Set[String] = arguments.flatMap(_.dependsOn).toSet
 }
-
-
 
 
 case class NullablePropertyValue(subEntity: String, subProperty: String) extends PropertyValue(subEntity, subProperty) {
@@ -80,6 +81,8 @@ case class PropertyValue(entity: String, property: String) extends Value {
   }
 
   def dependsOn: Set[String] = Set(entity)
+
+  override def toString(): String = entity + "." + property
 }
 
 case class RelationshipTypeValue(relationship: Value) extends FunctionValue("TYPE", relationship) {
@@ -88,6 +91,8 @@ case class RelationshipTypeValue(relationship: Value) extends FunctionValue("TYP
   override def checkAvailable(symbols: SymbolTable) {
     symbols.assertHas(RelationshipIdentifier(relationship.identifier.name))
   }
+
+  override def toString() = "type(" + relationship + ")"
 }
 
 case class ArrayLengthValue(inner: Value) extends FunctionValue("LENGTH", inner) {
@@ -130,6 +135,8 @@ case class EntityValue(entityName: String) extends Value {
   }
 
   def dependsOn: Set[String] = Set(entityName)
+
+  override def toString(): String = entityName
 }
 
 case class ParameterValue(parameterName: String) extends Value {
@@ -137,8 +144,8 @@ case class ParameterValue(parameterName: String) extends Value {
 
   def identifier: Identifier = Identifier(parameterName)
 
-  def checkAvailable(symbols: SymbolTable) {
-  }
+  def checkAvailable(symbols: SymbolTable) {}
 
   def dependsOn: Set[String] = Set(parameterName)
+  override def toString(): String = "{" + parameterName + "}"
 }
