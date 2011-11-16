@@ -27,7 +27,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.util.Map;
 
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -130,9 +132,22 @@ public class TestJavaTestDocsGenerator implements GraphHolder
         return graphdb;
     }
 
-    @Before
-    public void setUp()
+    @BeforeClass
+    public static void setUp()
     {
         graphdb = new ImpermanentGraphDatabase();
+    }
+    
+    @AfterClass
+    public static void shutdown()
+    {
+        try
+        {
+            if ( graphdb != null ) graphdb.shutdown();
+        }
+        finally
+        {
+            graphdb = null;
+        }
     }
 }

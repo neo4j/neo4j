@@ -153,5 +153,7 @@ public class TestReadOnlyNeo4j
                 DynamicRelationshipType.withName( "TEST" ), Direction.OUTGOING );
         assertEquals( rel, loadedRel );
         assertEquals( "value1", loadedRel.getProperty( "key1" ) );
+        
+        db.shutdown();
     }
 }

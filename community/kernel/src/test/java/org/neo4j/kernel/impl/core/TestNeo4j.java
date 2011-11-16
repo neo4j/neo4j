@@ -380,5 +380,6 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         xaDsMgr = db.getConfig().getTxModule().getXaDataSourceManager();
         xaDs = xaDsMgr.getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
         assertTrue( xaDs.isLogicalLogKept() );
+        db.shutdown();
     }
 }
