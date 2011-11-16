@@ -149,7 +149,22 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
     @AfterClass
     public static void shutdownServer()
     {
-        server.stop();
+        try
+        {
+            if ( server != null ) server.stop();
+        }
+        finally
+        {
+            try
+            {
+                if ( graphdb != null ) graphdb.shutdown();
+            }
+            finally
+            {
+                graphdb = null;
+                server = null;
+            }
+        }
     }
 
     protected String getDataUri()
