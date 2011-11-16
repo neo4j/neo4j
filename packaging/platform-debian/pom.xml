@@ -8,12 +8,12 @@
 	</parent>
 
 	<groupId>org.neo4j</groupId>
-	<artifactId>platform-distributions</artifactId>
+	<artifactId>platform-debian</artifactId>
 	<version>1.5-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
-	<name>Platform specific distributions</name>
-	<description>Platform specific distributions of the Neo4j Server</description>
+	<name>Neo4j Debian Distribution</name>
+	<description>Debian specific distributions of the Neo4j Server</description>
 
 	<url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
@@ -24,7 +24,7 @@
   </scm>
 
 	<properties>
-    <short-name>packaging-build</short-name>
+    <short-name>platform-debian</short-name>
 		<neo4j.version>1.5-SNAPSHOT</neo4j.version>
 		
 		<neo4j.debian.maintainer>Anders Nawroth &lt;anders@neotechnology.com&gt;</neo4j.debian.maintainer>
@@ -75,7 +75,10 @@
         </executions>
         <configuration>
           <script>
+            // Convert the current neo4j version to something debian can eat
+            
           	var version = project("project.version")
+          	
           	if(version.matches("\\d\\.\\d(\\.\\d)?")) {
           	  project.update("neo4j.debian.stability", "stable")
           	} else {
