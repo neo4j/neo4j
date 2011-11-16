@@ -21,6 +21,7 @@ package org.neo4j.cypher.pipes
 
 import org.neo4j.cypher.SymbolTable
 import org.neo4j.cypher.commands.Value
+import java.lang.String
 
 class SlicePipe(source:Pipe, skip:Option[Value], limit:Option[Value]) extends Pipe {
   val symbols: SymbolTable = source.symbols
@@ -42,5 +43,15 @@ class SlicePipe(source:Pipe, skip:Option[Value], limit:Option[Value]) extends Pi
     }
 
     slicedResult.foreach(f)
+  }
+
+  override def executionPlan(): String = {
+
+    val info = (skip, limit) match {
+      case (None, Some(l)) => "Limit: " + l.toString()
+      case (Some(s), None) => "Skip: " + s.toString()
+      case (Some(s), Some(l)) => "Skip: " + s.toString() + ", " + "Limit: " + l.toString()
+    }
+    source.executionPlan() + "\r\n" + "Slice(" + info + ")"
   }
 }

@@ -31,4 +31,6 @@ class FilterPipe(source: Pipe, where: Clause) extends Pipe {
       where.isMatch(row)
     }).foreach(f)
   }
+
+  override def executionPlan(): String = source.executionPlan() + "\r\n" + "Filter(" + where.toString + ")"
 }

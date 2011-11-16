@@ -21,8 +21,9 @@ package org.neo4j.cypher.pipes
 
 import aggregation.AggregationFunction
 import collection.Seq
-import org.neo4j.cypher.commands.{Identifier, AggregationItem, ReturnItem}
+import org.neo4j.cypher.commands.{AggregationItem, ReturnItem}
 import org.neo4j.cypher.{SyntaxException, SymbolTable}
+import java.lang.String
 
 // Eager aggregation means that this pipe will eagerly load the whole resulting subgraphs before starting
 // to emit aggregated results.
@@ -57,4 +58,6 @@ class EagerAggregationPipe(source: Pipe, returnItems: Seq[ReturnItem], aggregati
       }
     }
   }
+
+  override def executionPlan(): String = source.executionPlan() + "\r\n" + "EagerAggregation( keys: [" + returnItems.map(_.columnName).mkString(", ") + "], aggregates: [" + aggregations.mkString(", ") + "])"
 }

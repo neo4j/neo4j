@@ -55,6 +55,7 @@ abstract sealed class AggregationItem(name: String) extends ReturnItem(Aggregati
   def apply(m: Map[String, Any]): Map[String, Any] = m
 
   def createAggregationFunction: AggregationFunction
+  override def toString() = name
 }
 
 

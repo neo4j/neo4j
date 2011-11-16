@@ -21,7 +21,8 @@ package org.neo4j.cypher.pipes
 
 import scala.math.signum
 import org.neo4j.cypher.commands.SortItem
-import org.neo4j.cypher.{SyntaxException, Comparer, SymbolTable}
+import org.neo4j.cypher.{Comparer, SymbolTable}
+import java.lang.String
 
 class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends Pipe with Comparer {
   val symbols: SymbolTable = source.symbols
@@ -47,6 +48,9 @@ class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends Pipe with 
       }
     }
   }
+
+
+  override def executionPlan(): String = source.executionPlan() + "\r\nSort(" + sortDescription.mkString(",") + ")"
 
   private def assertDependenciesAreMet() {
     sortDescription.map(_.returnItem.identifier).foreach( source.symbols.assertHas )

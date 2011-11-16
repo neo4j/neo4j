@@ -24,6 +24,7 @@ import org.neo4j.graphdb.{Path, PropertyContainer}
 import scala.collection.JavaConverters._
 import org.neo4j.cypher.commands._
 import collection.Seq
+import java.lang.String
 
 class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
   def getFirstNode[U]: String = {
@@ -76,4 +77,6 @@ class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
   }
 
   val symbols: SymbolTable = source.symbols.add(Seq(PathIdentifier(path.pathName)))
+
+  override def executionPlan(): String = source.executionPlan() + "\r\nExtractPath(" + path.pathName + " = " + path.pathPattern.mkString(", ") + ")"
 }

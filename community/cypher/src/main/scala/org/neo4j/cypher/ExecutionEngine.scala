@@ -88,7 +88,8 @@ class ExecutionEngine(graph: GraphDatabaseService) {
 
       val allReturnItems = extractReturnItems(returns, aggregation)
 
-      context.pipe = new TransformPipe(context.pipe, allReturnItems)
+      if(  )
+      context.pipe = new ExtractPipe(context.pipe, allReturnItems)
 
       aggregation match {
         case None =>
@@ -222,7 +223,7 @@ class ExecutionEngine(graph: GraphDatabaseService) {
 
         val sortItems = s.sortItems.map(_.returnItem.concreteReturnItem).filterNot(allReturnItems.contains)
         if (sortItems.nonEmpty) {
-          context.pipe = new TransformPipe(context.pipe, sortItems)
+          context.pipe = new ExtractPipe(context.pipe, sortItems)
         }
         context.pipe = new SortPipe(context.pipe, s.sortItems.toList)
       }
