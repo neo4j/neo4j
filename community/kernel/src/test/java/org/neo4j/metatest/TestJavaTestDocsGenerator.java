@@ -28,7 +28,6 @@ import java.io.FileInputStream;
 import java.util.Map;
 
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
