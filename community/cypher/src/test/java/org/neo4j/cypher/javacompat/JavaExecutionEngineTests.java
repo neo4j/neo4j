@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.javacompat;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.cypher.commands.Query;
@@ -66,6 +67,12 @@ public class JavaExecutionEngineTests {
 
         tx.success();
         tx.finish();
+    }
+    
+    @After
+    public void shutdownDb() {
+        if ( db != null ) db.shutdown();
+        db = null;
     }
 
     private void index( Node n ) {

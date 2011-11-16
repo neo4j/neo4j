@@ -40,7 +40,7 @@ class GraphDatabaseTestBase extends JUnitSuite {
 
   @After
   def cleanUp() {
-    graph.shutdown()
+    if (graph != null) graph.shutdown()
   }
 
   def indexNode(n: Node, idxName: String, key: String, value: String) {

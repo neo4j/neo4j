@@ -15,6 +15,7 @@ target
 .shell_history
 cypher/project
 cypher/lib_managed
+cypher/.cache
 server/neo4j-home/data/
 server/neo4j-home/rrd
 server/rrd

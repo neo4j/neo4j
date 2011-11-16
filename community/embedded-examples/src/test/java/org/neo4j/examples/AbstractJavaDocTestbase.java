@@ -21,6 +21,7 @@ package org.neo4j.examples;
 import java.util.Map;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -48,6 +49,19 @@ public class AbstractJavaDocTestbase implements GraphHolder
     public static void init()
     {
         db = new ImpermanentGraphDatabase();
+    }
+    
+    @AfterClass
+    public static void shutdownDb()
+    {
+        try
+        {
+            if ( db != null ) db.shutdown();
+        }
+        finally
+        {
+            db = null;
+        }
     }
 
     @Before

@@ -26,6 +26,7 @@ import java.util.Date;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.jmx.Kernel;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class JmxTest
@@ -33,12 +34,18 @@ public class JmxTest
     @Test
     public void readJmxProperties()
     {
-        GraphDatabaseService graphDbService = new EmbeddedGraphDatabase(
-                "target/jmx-db" );
-        Date startTime = getStartTimeFromManagementBean( graphDbService );
-        Date now = new Date();
-        System.out.println( startTime + " " + now );
-        assertTrue( startTime.before( now ) || startTime.equals( now ) );
+        GraphDatabaseService graphDbService = new EmbeddedGraphDatabase( "target/jmx-db" );
+        try
+        {
+            Date startTime = getStartTimeFromManagementBean( graphDbService );
+            Date now = new Date();
+            System.out.println( startTime + " " + now );
+            assertTrue( startTime.before( now ) || startTime.equals( now ) );
+        }
+        finally
+        {
+            graphDbService.shutdown();
+        }
     }
 
     // START SNIPPET: getStartTime
@@ -46,8 +53,8 @@ public class JmxTest
             GraphDatabaseService graphDbService )
     {
         // use EmbeddedGraphDatabase to access management beans
-        EmbeddedGraphDatabase graphDb = (EmbeddedGraphDatabase) graphDbService;
-        Kernel kernel = graphDb.getManagementBean( Kernel.class );
+        AbstractGraphDatabase graphDb = (AbstractGraphDatabase) graphDbService;
+        Kernel kernel = graphDb.getSingleManagementBean( Kernel.class );
         Date startTime = kernel.getKernelStartTime();
         return startTime;
     }
