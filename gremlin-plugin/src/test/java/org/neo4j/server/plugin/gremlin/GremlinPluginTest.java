@@ -19,10 +19,16 @@
  */
 package org.neo4j.server.plugin.gremlin;
 
-import com.tinkerpop.blueprints.pgm.Graph;
-import com.tinkerpop.blueprints.pgm.Vertex;
-import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
+import static org.junit.Assert.assertTrue;
+
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
 import junit.framework.Assert;
+
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -36,17 +42,12 @@ import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-
-import static org.junit.Assert.assertTrue;
+import com.tinkerpop.blueprints.pgm.Graph;
+import com.tinkerpop.blueprints.pgm.Vertex;
+import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
 
 public class GremlinPluginTest
 {
-
     private static ImpermanentGraphDatabase neo4j = null;
     private static GremlinPlugin plugin = null;
     private static OutputFormat json = null;
@@ -57,7 +58,7 @@ public class GremlinPluginTest
     {
         json = new OutputFormat( new JsonFormat(),
                 new URI( "http://localhost/" ), null );
-        neo4j = new ImpermanentGraphDatabase( "target/db" );
+        neo4j = new ImpermanentGraphDatabase();
         plugin = new GremlinPlugin();
         Graph graph = new Neo4jGraph( neo4j );
         graph.removeVertex( graph.getVertex( 0 ) );
@@ -191,7 +192,7 @@ public class GremlinPluginTest
     public void testExecuteScriptGraph() throws Exception
     {
         String ret = (String) parser.parse( json.format( GremlinPluginTest.executeTestScript( "g", null) ) );
-        Assert.assertEquals( ret, "ImpermanentGraphDatabase [target/db]" );
+        Assert.assertEquals( ret, "ImpermanentGraphDatabase [" + neo4j.getStoreDir() + "]" );
     }
 
     @Test
@@ -287,5 +288,4 @@ public class GremlinPluginTest
         String self = (String) ( (JSONObject) object ).get( "self" );
         Assert.assertEquals( self.substring( self.lastIndexOf( "/" ) + 1 ), "1" );
     }
-
 }
