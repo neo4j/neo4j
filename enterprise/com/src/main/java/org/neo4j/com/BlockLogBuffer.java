@@ -27,13 +27,25 @@ import java.nio.channels.ReadableByteChannel;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 
+/**
+ * Implementation of a LogBuffer over a ChannelBuffer. Maintains a byte buffer
+ * of content which is flushed to the underlying channel when a maximum size is
+ * reached. It is supposed to be used with {@link BlockLogReader}.
+ * <p>
+ * Every chunk is exactly 256 bytes in length, except for the last one which can
+ * be anything greater than one and up to 256. This is signaled via the first
+ * byte which is 0 for every non-last chunk and the actual number of bytes for
+ * the last one (always > 0).
+ */
 public class BlockLogBuffer implements LogBuffer
 {
+    // First byte of every chunk that is not the last one
     static final byte FULL_BLOCK_AND_MORE = 0;
-    static final int MAX_SIZE = 256/*incl. header*/;
+    static final int MAX_SIZE = 256; /* soft limit, incl. header */
     static final int DATA_SIZE = MAX_SIZE-1;
 
     private final ChannelBuffer target;
+    // MAX_SIZE can be overcome by one primitive put(), the largest is 8 bytes
     private final byte[] byteArray = new byte[MAX_SIZE + 8/*largest atom*/];
     private final ByteBuffer byteBuffer = ByteBuffer.wrap( byteArray );
 
@@ -50,6 +62,14 @@ public class BlockLogBuffer implements LogBuffer
         byteBuffer.put( FULL_BLOCK_AND_MORE );
     }
 
+    /**
+     * If the position of the byteBuffer is larger than MAX_SIZE then
+     * MAX_SIZE bytes are flushed to the underlying channel. The remaining
+     * bytes (1 up to and including 8 - see the byteArray field initializer)
+     * are moved over at the beginning of the cleared buffer.
+     *
+     * @return the buffer
+     */
     private LogBuffer checkFlush()
     {
         if ( byteBuffer.position() > MAX_SIZE )
@@ -125,7 +145,7 @@ public class BlockLogBuffer implements LogBuffer
         }
         return this;
     }
-    
+
     @Override
     public void writeOut() throws IOException
     {
@@ -147,6 +167,11 @@ public class BlockLogBuffer implements LogBuffer
         throw new UnsupportedOperationException( "BlockLogBuffer does not have a FileChannel" );
     }
 
+    /**
+     * Signals the end of use for this buffer over this channel - first byte of
+     * the chunk is set to the position of the buffer ( != 0, instead of
+     * FULL_BLOCK_AND_MORE) and it is written to the channel.
+     */
     public void done()
     {
         assert byteBuffer.position() > 1 : "buffer should contain more than the header";
