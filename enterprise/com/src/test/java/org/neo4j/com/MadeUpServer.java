@@ -21,6 +21,7 @@ package org.neo4j.com;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
 {
@@ -29,7 +30,7 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
 
     public MadeUpServer( MadeUpCommunicationInterface realMaster, int port, byte internalProtocolVersion, byte applicationProtocolVersion )
     {
-        super( realMaster, port, null, Protocol.DEFAULT_FRAME_LENGTH, applicationProtocolVersion );
+        super( realMaster, port, StringLogger.DEV_NULL, Protocol.DEFAULT_FRAME_LENGTH, applicationProtocolVersion );
         this.internalProtocolVersion = internalProtocolVersion;
     }
 

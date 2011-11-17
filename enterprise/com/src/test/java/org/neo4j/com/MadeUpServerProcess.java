@@ -43,9 +43,14 @@ public class MadeUpServerProcess extends SubProcess<ServerInterface, StartupData
     {
         try
         {
-            while ( server == null )
+            long endTime = System.currentTimeMillis()+20*1000;
+            while ( server == null && System.currentTimeMillis() < endTime )
             {
                 Thread.sleep( 10 );
+            }
+            if ( server == null )
+            {
+                throw new RuntimeException( "Couldn't start server, wait timeout" );
             }
         }
         catch ( InterruptedException e )
