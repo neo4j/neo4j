@@ -19,7 +19,9 @@
  */
 package org.neo4j.server.rest;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
 
@@ -39,7 +41,7 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.server.NeoServerWithEmbeddedWebServer;
+import org.neo4j.server.NeoServer;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.helpers.ServerHelper;
@@ -52,7 +54,7 @@ import org.neo4j.test.TestData;
 
 public class IndexRelationshipFunctionalTest
 {
-    private static NeoServerWithEmbeddedWebServer server;
+    private static NeoServer server;
     private static FunctionalTestHelper functionalTestHelper;
     private static GraphDbHelper helper;
     private static RestRequest request;
@@ -96,9 +98,12 @@ public class IndexRelationshipFunctionalTest
      * POST ${org.neo4j.server.rest.web}/index/relationship {
      * "name":"index-name" "config":{ // optional map of index configuration
      * params "key1":"value1", "key2":"value2" } }
+     * 
+     * POST ${org.neo4j.server.rest.web}/index/relationship/{indexName}/{key}/{
+     * value} "http://uri.for.node.to.index"
      */
     @Test
-    public void shouldCreateANamedRelationshipIndex() throws JsonParseException
+    public void shouldCreateANamedRelationshipIndexAndAddToIt() throws JsonParseException
     {
         String indexName = "favorites";
         int expectedIndexes = helper.getRelationshipIndexes().length + 1;
@@ -111,35 +116,32 @@ public class IndexRelationshipFunctionalTest
                 .get( 0 ) );
         assertEquals( expectedIndexes, helper.getRelationshipIndexes().length );
         assertNotNull( helper.getRelationshipIndex( indexName ) );
+
+        // Add a relationship to the index
+        String key = "key";
+        String value = "value";
+        String relationshipType = "related-to";
+        long relationshipId = helper.createRelationship( relationshipType );
+        response = httpPostIndexRelationshipNameKeyValue( indexName, relationshipId, key, value );
+        assertEquals( Status.CREATED.getStatusCode(), response.getStatus() );
+        String indexUri = response.getHeaders().get( "Location" ).get( 0 );
+        assertNotNull( indexUri );
+        assertEquals( Arrays.asList( (Long) relationshipId ), helper.getIndexedRelationships( indexName, key, value ) );
+        
+        // Get the relationship from the indexed URI (Location in header)
+        response = httpGet( indexUri );
+        assertEquals( 200, response.getStatus() );
+
+        String discovredEntity = response.getEntity();
+
+        Map<String, Object> map = JsonHelper.jsonToMap( discovredEntity );
+        assertNotNull( map.get( "self" ) );
     }
 
     private JaxRsResponse httpPostIndexRelationshipRoot( String jsonIndexSpecification )
     {
         return RestRequest.req()
                 .post( functionalTestHelper.relationshipIndexUri(), jsonIndexSpecification );
-    }
-
-    /**
-     * POST ${org.neo4j.server.rest.web}/index/relationship/{indexName}/{key}/{
-     * value} "http://uri.for.node.to.index"
-     */
-    @Test
-    public void shouldRespondWith201CreatedWhenIndexingRelationship() throws DatabaseBlockedException,
-            JsonParseException
-    {
-        final String key = "key";
-        final String value = "value";
-        final String indexName = "testy";
-        helper.createRelationshipIndex( indexName );
-        final String relationshipType = "related-to";
-        final long relationshipId = helper.createRelationship( relationshipType );
-
-        JaxRsResponse response = httpPostIndexRelationshipNameKeyValue( indexName, relationshipId, key, value );
-        assertEquals( 201, response.getStatus() );
-        assertNotNull( response.getHeaders()
-                .get( "Location" )
-                .get( 0 ) );
-        assertEquals( Arrays.asList( (Long) relationshipId ), helper.getIndexedRelationships( indexName, key, value ) );
     }
 
     private JaxRsResponse httpGetIndexRelationshipNameKeyValue( String indexName, String key, String value )
@@ -160,33 +162,6 @@ public class IndexRelationshipFunctionalTest
     {
         return "{\"key\": \"" + key + "\", \"value\": \"" + value + "\", \"uri\": \""
                + functionalTestHelper.relationshipUri( relationshipId ) + "\"}";
-    }
-
-    @Test
-    public void shouldGetRelationshipRepresentationFromIndexUri() throws DatabaseBlockedException, JsonParseException
-    {
-        final String key = "key2";
-        final String value = "value";
-
-        final String indexName = "mindex";
-        helper.createRelationshipIndex( indexName );
-        final String relationshipType = "related-to";
-        final long relationshipId = helper.createRelationship( relationshipType );
-
-        JaxRsResponse response = httpPostIndexRelationshipNameKeyValue( indexName, relationshipId, key, value );
-
-        assertEquals( Status.CREATED.getStatusCode(), response.getStatus() );
-        String indexUri = response.getHeaders()
-                .get( "Location" )
-                .get( 0 );
-
-        response = httpGet( indexUri );
-        assertEquals( 200, response.getStatus() );
-
-        String discovredEntity = response.getEntity();
-
-        Map<String, Object> map = JsonHelper.jsonToMap( discovredEntity );
-        assertNotNull( map.get( "self" ) );
     }
 
     private JaxRsResponse httpGet( String indexUri )
@@ -320,60 +295,36 @@ public class IndexRelationshipFunctionalTest
         helper.addRelationshipToIndex( indexName, key1, value2, relationship );
         helper.addRelationshipToIndex( indexName, key2, value1, relationship );
         helper.addRelationshipToIndex( indexName, key2, value2, relationship );
-        assertEquals( 1, helper.getIndexedRelationships( indexName, key1, value1 )
-                .size() );
-        assertEquals( 1, helper.getIndexedRelationships( indexName, key1, value2 )
-                .size() );
-        assertEquals( 1, helper.getIndexedRelationships( indexName, key2, value1 )
-                .size() );
-        assertEquals( 1, helper.getIndexedRelationships( indexName, key2, value2 )
-                .size() );
-        RestRequest.req()
-                .delete(
-                        functionalTestHelper.relationshipIndexUri() + indexName + "/" + key1 + "/" + value1 + "/"
-                                + relationship );
-        assertEquals( 0, helper.getIndexedRelationships( indexName, key1, value1 )
-                .size() );
-        assertEquals( 1, helper.getIndexedRelationships( indexName, key1, value2 )
-                .size() );
-        assertEquals( 1, helper.getIndexedRelationships( indexName, key2, value1 )
-                .size() );
-        assertEquals( 1, helper.getIndexedRelationships( indexName, key2, value2 )
-                .size() );
-        RestRequest.req()
-                .delete( functionalTestHelper.relationshipIndexUri() + indexName + "/" + key2 + "/" + relationship );
-        assertEquals( 0, helper.getIndexedRelationships( indexName, key1, value1 )
-                .size() );
-        assertEquals( 1, helper.getIndexedRelationships( indexName, key1, value2 )
-                .size() );
-        assertEquals( 0, helper.getIndexedRelationships( indexName, key2, value1 )
-                .size() );
-        assertEquals( 0, helper.getIndexedRelationships( indexName, key2, value2 )
-                .size() );
-        RestRequest.req()
-                .delete( functionalTestHelper.relationshipIndexUri() + indexName + "/" + relationship );
-        assertEquals( 0, helper.getIndexedRelationships( indexName, key1, value1 )
-                .size() );
-        assertEquals( 0, helper.getIndexedRelationships( indexName, key1, value2 )
-                .size() );
-        assertEquals( 0, helper.getIndexedRelationships( indexName, key2, value1 )
-                .size() );
-        assertEquals( 0, helper.getIndexedRelationships( indexName, key2, value2 )
-                .size() );
-    }
-
-    @Test
-    public void shouldReturn204WhenRemovingRelationshipIndexes() throws DatabaseBlockedException, JsonParseException
-    {
-
-        String indexName = "blah";
-        helper.createRelationshipIndex( indexName );
-
-        // Remove the index
-        JaxRsResponse response = RestRequest.req()
-                .delete( functionalTestHelper.indexRelationshipUri( indexName ) );
-
+        assertEquals( 1, helper.getIndexedRelationships( indexName, key1, value1 ).size() );
+        assertEquals( 1, helper.getIndexedRelationships( indexName, key1, value2 ).size() );
+        assertEquals( 1, helper.getIndexedRelationships( indexName, key2, value1 ).size() );
+        assertEquals( 1, helper.getIndexedRelationships( indexName, key2, value2 ).size() );
+        JaxRsResponse response = RestRequest.req().delete(
+                functionalTestHelper.relationshipIndexUri() + indexName + "/" + key1 + "/" + value1 + "/" + relationship );
         assertEquals( 204, response.getStatus() );
+        assertEquals( 0, helper.getIndexedRelationships( indexName, key1, value1 ).size() );
+        assertEquals( 1, helper.getIndexedRelationships( indexName, key1, value2 ).size() );
+        assertEquals( 1, helper.getIndexedRelationships( indexName, key2, value1 ).size() );
+        assertEquals( 1, helper.getIndexedRelationships( indexName, key2, value2 ).size() );
+        response = RestRequest.req().delete(
+                functionalTestHelper.relationshipIndexUri() + indexName + "/" + key2 + "/" + relationship );
+        assertEquals( 204, response.getStatus() );
+        assertEquals( 0, helper.getIndexedRelationships( indexName, key1, value1 ).size() );
+        assertEquals( 1, helper.getIndexedRelationships( indexName, key1, value2 ).size() );
+        assertEquals( 0, helper.getIndexedRelationships( indexName, key2, value1 ).size() );
+        assertEquals( 0, helper.getIndexedRelationships( indexName, key2, value2 ).size() );
+        response = RestRequest.req().delete(
+                functionalTestHelper.relationshipIndexUri() + indexName + "/" + relationship );
+        assertEquals( 204, response.getStatus() );
+        assertEquals( 0, helper.getIndexedRelationships( indexName, key1, value1 ).size() );
+        assertEquals( 0, helper.getIndexedRelationships( indexName, key1, value2 ).size() );
+        assertEquals( 0, helper.getIndexedRelationships( indexName, key2, value1 ).size() );
+        assertEquals( 0, helper.getIndexedRelationships( indexName, key2, value2 ).size() );
+        
+        // Delete the index
+        response = RestRequest.req().delete( functionalTestHelper.indexRelationshipUri( indexName ) );
+        assertEquals( 204, response.getStatus() );
+        assertFalse( asList( helper.getRelationshipIndexes() ).contains( indexName ) );
     }
 
     @Test

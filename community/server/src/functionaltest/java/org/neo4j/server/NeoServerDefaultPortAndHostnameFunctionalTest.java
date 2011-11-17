@@ -24,8 +24,8 @@ import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.helpers.ServerHelper;
@@ -33,28 +33,18 @@ import org.neo4j.server.rest.JaxRsResponse;
 
 public class NeoServerDefaultPortAndHostnameFunctionalTest
 {
+    private static NeoServer server;
 
-    private NeoServerWithEmbeddedWebServer server;
-
-    @Before
-    public void setupServer() throws IOException
+    @BeforeClass
+    public static void setupServer() throws IOException
     {
         server = ServerHelper.createServer();
     }
 
-    @Before
-    public void cleanTheDatabase()
+    @AfterClass
+    public static void stopServer()
     {
-        ServerHelper.cleanTheDatabase( server );
-    }
-
-    @After
-    public void stopServer()
-    {
-        if ( server != null )
-        {
-            server.stop();
-        }
+        server.stop();
     }
 
     @Test

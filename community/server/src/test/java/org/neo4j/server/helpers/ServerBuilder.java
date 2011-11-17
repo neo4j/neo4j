@@ -65,7 +65,6 @@ import org.neo4j.server.web.Jetty6WebServer;
 
 public class ServerBuilder
 {
-
     private String portNo = "7474";
     private String maxThreads = null;
     private String dbDir = null;

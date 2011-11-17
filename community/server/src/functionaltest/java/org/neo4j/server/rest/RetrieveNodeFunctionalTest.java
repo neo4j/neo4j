@@ -35,7 +35,7 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.NeoServerWithEmbeddedWebServer;
+import org.neo4j.server.NeoServer;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
@@ -47,7 +47,7 @@ import org.neo4j.test.TestData;
 public class RetrieveNodeFunctionalTest
 {
     private URI nodeUri;
-    private static NeoServerWithEmbeddedWebServer server;
+    private static NeoServer server;
     private static FunctionalTestHelper functionalTestHelper;
 
     @BeforeClass

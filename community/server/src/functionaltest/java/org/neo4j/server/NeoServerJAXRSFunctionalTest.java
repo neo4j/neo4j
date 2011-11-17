@@ -42,7 +42,7 @@ import org.neo4j.server.rest.RestRequest;
 public class NeoServerJAXRSFunctionalTest
 {
     private static final int ROOT_NODE = 1;
-    private NeoServerWithEmbeddedWebServer server;
+    private NeoServer server;
 
     @Before
     public void cleanTheDatabase()
@@ -83,26 +83,16 @@ public class NeoServerJAXRSFunctionalTest
         String response = CLIENT.resource( thirdPartyServiceUri.toString() )
                 .get( String.class );
         assertEquals( "hello", response );
-    }
 
-    @Test
-    public void shouldLoadExtensionInitializers() throws Exception
-    {
-        server = ServerBuilder.server()
-                .withThirdPartyJaxRsPackage( "org.dummy.web.service",
-                        DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT )
-                .build();
-        server.start();
-
+        // Assert that extensions gets initialized
         int nodesCreated = createSimpleDatabase( server.getDatabase().graph );
-
-        URI thirdPartyServiceUri = new URI( server.baseUri()
+        thirdPartyServiceUri = new URI( server.baseUri()
                 .toString() + DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT + "/inject-test" ).normalize();
-        String response = CLIENT.resource( thirdPartyServiceUri.toString() )
+        response = CLIENT.resource( thirdPartyServiceUri.toString() )
                 .get( String.class );
         assertEquals( String.valueOf( nodesCreated + ROOT_NODE ), response );
     }
-
+    
     private int createSimpleDatabase( final AbstractGraphDatabase graph )
     {
         final int numberOfNodes = 10;

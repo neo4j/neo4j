@@ -40,8 +40,7 @@ import org.neo4j.server.rest.RestRequest;
 
 public class NeoServerFunctionalTest
 {
-
-    private static NeoServerWithEmbeddedWebServer server;
+    private static NeoServer server;
     private static FunctionalTestHelper functionalTestHelper;
 
     @BeforeClass

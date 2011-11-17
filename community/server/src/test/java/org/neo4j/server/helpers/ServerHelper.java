@@ -23,11 +23,25 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.server.NeoServerWithEmbeddedWebServer;
+import org.neo4j.server.NeoServer;
 
 public class ServerHelper
 {
-    public static void cleanTheDatabase( final NeoServerWithEmbeddedWebServer server )
+//    private static final NeoServer SERVER;
+//    static
+//    {
+//        try
+//        {
+//            SERVER = unstoppable( ServerBuilder.server().onPort( 7474 ).build() );
+//            SERVER.start();
+//        }
+//        catch ( IOException e )
+//        {
+//            throw new Error( "Couldn't start default server", e );
+//        }
+//    }
+    
+    public static void cleanTheDatabase( final NeoServer server )
     {
         if ( server == null )
         {
@@ -45,7 +59,7 @@ public class ServerHelper
                 deleteAllIndexes( server );
             }
 
-            private void deleteAllNodesAndRelationships( final NeoServerWithEmbeddedWebServer server )
+            private void deleteAllNodesAndRelationships( final NeoServer server )
             {
                 Iterable<Node> allNodes = server.getDatabase().graph.getAllNodes();
                 for ( Node n : allNodes )
@@ -70,7 +84,7 @@ public class ServerHelper
                 }
             }
 
-            private void deleteAllIndexes( final NeoServerWithEmbeddedWebServer server )
+            private void deleteAllIndexes( final NeoServer server )
             {
                 for ( String indexName : server.getDatabase().graph.index()
                         .nodeIndexNames() )
@@ -98,17 +112,17 @@ public class ServerHelper
             }
         } ).execute();
     }
-
-    public static NeoServerWithEmbeddedWebServer createServer() throws IOException
+    
+    public static NeoServer createServer() throws IOException
     {
         return createServer( false );
     }
     
-    public static NeoServerWithEmbeddedWebServer createServer( boolean persistent ) throws IOException
+    public static NeoServer createServer( boolean persistent ) throws IOException
     {
         ServerBuilder builder = ServerBuilder.server();
         if ( persistent ) builder = builder.persistent();
-        NeoServerWithEmbeddedWebServer server = builder.build();
+        NeoServer server = builder.build();
         server.start();
         return server;
     }

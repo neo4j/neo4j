@@ -40,7 +40,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.server.NeoServerWithEmbeddedWebServer;
+import org.neo4j.server.NeoServer;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.JaxRsResponse;
@@ -53,11 +53,10 @@ import com.sun.jersey.api.client.UniformInterfaceException;
 
 public class CloneSubgraphPluginTest
 {
-
     private static final RelationshipType KNOWS = DynamicRelationshipType.withName( "knows" );
     private static final RelationshipType WORKED_FOR = DynamicRelationshipType.withName( "worked_for" );
 
-    private static NeoServerWithEmbeddedWebServer server;
+    private static NeoServer server;
     private static FunctionalTestHelper functionalTestHelper;
 
     @BeforeClass

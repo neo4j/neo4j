@@ -27,8 +27,8 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.jmx.Primitives;
@@ -50,17 +50,16 @@ public class WrappingNeoServerBootstrapperTest
     public @Rule
     TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
 
-    AbstractGraphDatabase myDb;
-    FunctionalTestHelper helper;
+    static AbstractGraphDatabase myDb;
 
-    @Before
-    public void setup() throws IOException
+    @BeforeClass
+    public static void setup() throws IOException
     {
         myDb = new ImpermanentGraphDatabase();
     }
 
-    @After
-    public void teardown()
+    @AfterClass
+    public static void teardown()
     {
         myDb.shutdown();
     }
@@ -138,37 +137,19 @@ public class WrappingNeoServerBootstrapperTest
     }
 
     @Test
-    public void serverShouldRespondProperly()
+    public void shouldResponseAndBeAbleToModifyDb()
     {
-
-        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(
-                myDb );
-
-        srv.start();
-        helper = new FunctionalTestHelper( srv.getServer() );
-
-        JaxRsResponse response = new RestRequest().get( helper.dataUri() );
-        assertEquals( 200, response.getStatus() );
-
-        srv.stop();
-    }
-
-    @Test
-    public void shouldModifyInjectedDatabase()
-    {
-
-        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(
-                myDb );
-
+        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper( myDb );
         srv.start();
 
         long originalNodeNumber = myDb.getManagementBean( Primitives.class ).getNumberOfNodeIdsInUse();
 
-        helper = new FunctionalTestHelper( srv.getServer() );
-        String nodeData = "{\"age\":12}";
+        FunctionalTestHelper helper = new FunctionalTestHelper( srv.getServer() );
+        JaxRsResponse response = new RestRequest().get( helper.dataUri() );
+        assertEquals( 200, response.getStatus() );
 
-        JaxRsResponse response = new RestRequest().post( helper.dataUri()
-                                                         + "node", nodeData );
+        String nodeData = "{\"age\":12}";
+        response = new RestRequest().post( helper.dataUri() + "node", nodeData );
         assertEquals( 201, response.getStatus() );
 
         long newNodeNumber = myDb.getManagementBean( Primitives.class ).getNumberOfNodeIdsInUse();
@@ -176,21 +157,8 @@ public class WrappingNeoServerBootstrapperTest
         assertEquals( originalNodeNumber + 1, newNodeNumber );
 
         srv.stop();
-    }
-
-    @Test
-    public void shouldNotStopDatabaseOnShutdown()
-    {
-
-        WrappingNeoServerBootstrapper srv = new WrappingNeoServerBootstrapper(
-                myDb );
-
-        srv.start();
-        helper = new FunctionalTestHelper( srv.getServer() );
-        srv.stop();
-
+        
         // Should be able to still talk to the db
         assertTrue( myDb.getReferenceNode() != null );
     }
-
 }

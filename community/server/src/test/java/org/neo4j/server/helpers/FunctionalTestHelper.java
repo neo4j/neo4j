@@ -26,7 +26,7 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.server.NeoServerWithEmbeddedWebServer;
+import org.neo4j.server.NeoServer;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.GraphDbHelper;
@@ -37,13 +37,13 @@ import com.sun.jersey.api.client.Client;
 
 public final class FunctionalTestHelper
 {
-    private final NeoServerWithEmbeddedWebServer server;
+    private final NeoServer server;
     private final GraphDbHelper helper;
 
     public static final Client CLIENT = Client.create();
     private RestRequest request;
 
-    public FunctionalTestHelper( NeoServerWithEmbeddedWebServer server )
+    public FunctionalTestHelper( NeoServer server )
     {
         if ( server.getDatabase() == null )
         {

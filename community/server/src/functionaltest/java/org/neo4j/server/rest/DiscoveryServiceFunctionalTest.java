@@ -32,7 +32,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.server.NeoServerWithEmbeddedWebServer;
+import org.neo4j.server.NeoServer;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 
@@ -40,8 +40,7 @@ import com.sun.jersey.api.client.Client;
 
 public class DiscoveryServiceFunctionalTest
 {
-
-    private static NeoServerWithEmbeddedWebServer server;
+    private static NeoServer server;
 
     @BeforeClass
     public static void setupServer() throws IOException

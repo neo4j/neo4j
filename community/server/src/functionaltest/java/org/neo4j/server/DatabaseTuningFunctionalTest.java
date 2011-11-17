@@ -33,7 +33,6 @@ import org.neo4j.server.logging.InMemoryAppender;
 
 public class DatabaseTuningFunctionalTest
 {
-
     @Test
     public void shouldLoadAKnownGoodPropertyFile() throws IOException
     {
@@ -55,34 +54,8 @@ public class DatabaseTuningFunctionalTest
 
     private boolean propertyAndValuePresentIn( String name, String value, Map<Object, Object> params )
     {
-        for ( Object o : params.keySet() )
-        {
-            if ( o.toString()
-                    .equals( name ) && params.get( o )
-                    .toString()
-                    .equals( value ) )
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    @Test
-    public void shouldLogWarningAndContinueIfNoTuningFilePropertyPresent() throws IOException
-    {
-        InMemoryAppender appender = new InMemoryAppender( PropertyFileConfigurator.log );
-
-        NeoServer server = ServerBuilder.server()
-                .withNonResolvableTuningFile()
-                .build();
-        server.start();
-
-        assertThat( appender.toString(),
-                containsString( "The specified file for database performance tuning properties" ) );
-
-        server.stop();
+        Object paramValue = params.get( name );
+        return paramValue != null && paramValue.toString().equals( value );
     }
 
     @Test
@@ -101,5 +74,4 @@ public class DatabaseTuningFunctionalTest
 
         server.stop();
     }
-
 }

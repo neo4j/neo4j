@@ -39,10 +39,9 @@ import com.sun.jersey.api.client.Client;
 
 public class NeoServerStartupLoggingFunctionalTest
 {
-
     private static InMemoryAppender appender = new InMemoryAppender( Jetty6WebServer.log );
 
-    private static NeoServerWithEmbeddedWebServer server;
+    private static NeoServer server;
 
     @BeforeClass
     public static void setupServer() throws IOException
