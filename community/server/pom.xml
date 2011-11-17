@@ -657,6 +657,30 @@ the relevant Commercial Agreement.
         </plugins>
       </build>
     </profile>
+    
+    
+    <profile>
+      <id>skip-brew</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.voltvoodoo</groupId>
+            <artifactId>brew</artifactId>
+            <executions>
+              <execution>
+                <id>compile-webadmin</id>
+                <phase>none</phase>
+              </execution>
+              <execution>
+                <id>minify-webadmin</id>
+                <phase>none</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    
     <profile>
       <id>plugin-test</id>
       <!-- Tests plugin registration functionality. Needs to be run separately in order not to package resource files and be picked up by the other functional tests -->
