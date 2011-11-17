@@ -30,7 +30,7 @@ public class DirectMappedLogBuffer implements LogBuffer
 
     private final FileChannel fileChannel;
 
-    private CloseableByteBuffer byteBuffer = null;
+    private final CloseableByteBuffer byteBuffer;
     private long bufferStartPosition;
 
     public DirectMappedLogBuffer( FileChannel fileChannel ) throws IOException
@@ -42,11 +42,14 @@ public class DirectMappedLogBuffer implements LogBuffer
 
     private void ensureCapacity( int plusSize ) throws IOException
     {
-        if ( byteBuffer == null
-                || ( BUFFER_SIZE - byteBuffer.position() ) < plusSize )
+        if (( BUFFER_SIZE - byteBuffer.position() ) < plusSize )
         {
             writeOut();
         }
+        assert BUFFER_SIZE - byteBuffer.position() >= plusSize : "after writing out buffer, position is "
+                                                                 + byteBuffer.position()
+                                                                 + " and requested size is "
+                                                                 + plusSize;
     }
 
     public LogBuffer put( byte b ) throws IOException
@@ -136,7 +139,7 @@ public class DirectMappedLogBuffer implements LogBuffer
             put( chars, offset );
         }
     }
-    
+
     @Override
     public void writeOut() throws IOException
     {
