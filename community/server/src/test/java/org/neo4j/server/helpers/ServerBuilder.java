@@ -21,6 +21,7 @@ package org.neo4j.server.helpers;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.server.ServerTestUtils.asOneLine;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
 import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
 import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
@@ -35,13 +36,16 @@ import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.AddressResolver;
 import org.neo4j.server.Bootstrapper;
 import org.neo4j.server.EphemeralNeoServerBootstrapper;
 import org.neo4j.server.NeoServerBootstrapper;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
+import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
@@ -140,47 +144,48 @@ public class ServerBuilder
 
     private void createPropertiesFile( File temporaryConfigFile )
     {
-        writePropertyToFile( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir, temporaryConfigFile );
+        Map<String, String> properties = MapUtil.stringMap(
+                Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbDir,
+                Configurator.MANAGEMENT_PATH_PROPERTY_KEY, webAdminUri,
+                Configurator.REST_API_PATH_PROPERTY_KEY, webAdminDataUri );
         if ( portNo != null )
         {
-            writePropertyToFile( Configurator.WEBSERVER_PORT_PROPERTY_KEY, portNo, temporaryConfigFile );
+            properties.put( Configurator.WEBSERVER_PORT_PROPERTY_KEY, portNo );
         }
         if ( host != null )
         {
-            writePropertyToFile( Configurator.WEBSERVER_ADDRESS_PROPERTY_KEY, host, temporaryConfigFile );
+            properties.put( Configurator.WEBSERVER_ADDRESS_PROPERTY_KEY, host );
         }
         if ( maxThreads != null )
         {
-            writePropertyToFile( Configurator.WEBSERVER_MAX_THREADS_PROPERTY_KEY, maxThreads, temporaryConfigFile );
+            properties.put( Configurator.WEBSERVER_MAX_THREADS_PROPERTY_KEY, maxThreads );
         }
-        writePropertyToFile( Configurator.MANAGEMENT_PATH_PROPERTY_KEY, webAdminUri, temporaryConfigFile );
-        writePropertyToFile( Configurator.REST_API_PATH_PROPERTY_KEY, webAdminDataUri, temporaryConfigFile );
 
         if ( thirdPartyPackages.keySet().size() > 0 )
         {
-            writePropertiesToFile( Configurator.THIRD_PARTY_PACKAGES_KEY, thirdPartyPackages, temporaryConfigFile );
+            properties.put( Configurator.THIRD_PARTY_PACKAGES_KEY, asOneLine( thirdPartyPackages ) );
         }
 
         if ( autoIndexedNodeKeys != null && autoIndexedNodeKeys.length > 0 )
         {
-            writePropertyToFile( "node_auto_indexing", "true", temporaryConfigFile );
+            properties.put( "node_auto_indexing", "true" );
             String propertyKeys = org.apache.commons.lang.StringUtils.join( autoIndexedNodeKeys, "," );
-            writePropertyToFile( "node_keys_indexable", propertyKeys, temporaryConfigFile );
+            properties.put( "node_keys_indexable", propertyKeys );
         }
 
         if ( autoIndexedRelationshipKeys != null && autoIndexedRelationshipKeys.length > 0 )
         {
-
-            writePropertyToFile( "relationship_auto_indexing", "true", temporaryConfigFile );
+            properties.put( "relationship_auto_indexing", "true" );
             String propertyKeys = org.apache.commons.lang.StringUtils.join( autoIndexedRelationshipKeys, "," );
-            writePropertyToFile( "relationship_keys_indexable", propertyKeys, temporaryConfigFile );
+            properties.put( "relationship_keys_indexable", propertyKeys );
         }
 
         if ( securityRuleClassNames != null && securityRuleClassNames.length > 0 )
         {
             String propertyKeys = org.apache.commons.lang.StringUtils.join( securityRuleClassNames, "," );
-            writePropertyToFile( Configurator.SECURITY_RULES_KEY, propertyKeys, temporaryConfigFile );
+            properties.put( Configurator.SECURITY_RULES_KEY, propertyKeys );
         }
+        ServerTestUtils.writePropertiesToFile( properties, temporaryConfigFile );
     }
 
     private void createTuningFile( File temporaryConfigFile ) throws IOException
@@ -188,11 +193,13 @@ public class ServerBuilder
         if ( action == WhatToDo.CREATE_GOOD_TUNING_FILE )
         {
             File databaseTuningPropertyFile = createTempPropertyFile();
-            writePropertyToFile( "neostore.nodestore.db.mapped_memory", "25M", databaseTuningPropertyFile );
-            writePropertyToFile( "neostore.relationshipstore.db.mapped_memory", "50M", databaseTuningPropertyFile );
-            writePropertyToFile( "neostore.propertystore.db.mapped_memory", "90M", databaseTuningPropertyFile );
-            writePropertyToFile( "neostore.propertystore.db.strings.mapped_memory", "130M", databaseTuningPropertyFile );
-            writePropertyToFile( "neostore.propertystore.db.arrays.mapped_memory", "130M", databaseTuningPropertyFile );
+            Map<String, String> properties = MapUtil.stringMap( 
+                    "neostore.nodestore.db.mapped_memory", "25M",
+                    "neostore.relationshipstore.db.mapped_memory", "50M",
+                    "neostore.propertystore.db.mapped_memory", "90M",
+                    "neostore.propertystore.db.strings.mapped_memory", "130M",
+                    "neostore.propertystore.db.arrays.mapped_memory", "130M" );
+            writePropertiesToFile( properties, databaseTuningPropertyFile );
             writePropertyToFile( Configurator.DB_TUNING_PROPERTY_FILE_KEY,
                     databaseTuningPropertyFile.getAbsolutePath(), temporaryConfigFile );
         }

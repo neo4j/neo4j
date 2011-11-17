@@ -20,10 +20,13 @@
 package org.neo4j.server.configuration;
 
 import static org.neo4j.server.ServerTestUtils.createTempDir;
-import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
+import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
+
+import org.neo4j.helpers.collection.MapUtil;
 
 public class DatabaseTuningPropertyFileBuilder
 {
@@ -47,20 +50,20 @@ public class DatabaseTuningPropertyFileBuilder
         }
 
         File temporaryConfigFile = new File( parentDirectory, "neo4j.properties" );
-
+        Map<String, String> properties = MapUtil.stringMap(
+                "neostore.relationshipstore.db.mapped_memory", "50M",
+                "neostore.propertystore.db.mapped_memory", "90M",
+                "neostore.propertystore.db.strings.mapped_memory", "130M",
+                "neostore.propertystore.db.arrays.mapped_memory", "150M" );
         if ( mappedMemory == null )
         {
-            writePropertyToFile( "neostore.nodestore.db.mapped_memory", "25M", temporaryConfigFile );
+            properties.put( "neostore.nodestore.db.mapped_memory", "25M" );
         }
         else
         {
-            writePropertyToFile( "neostore.nodestore.db.mapped_memory", mappedMemory, temporaryConfigFile );
+            properties.put( "neostore.nodestore.db.mapped_memory", mappedMemory );
         }
-        writePropertyToFile( "neostore.relationshipstore.db.mapped_memory", "50M", temporaryConfigFile );
-        writePropertyToFile( "neostore.propertystore.db.mapped_memory", "90M", temporaryConfigFile );
-        writePropertyToFile( "neostore.propertystore.db.strings.mapped_memory", "130M", temporaryConfigFile );
-        writePropertyToFile( "neostore.propertystore.db.arrays.mapped_memory", "150M", temporaryConfigFile );
-
+        writePropertiesToFile( properties, temporaryConfigFile );
         return temporaryConfigFile;
     }
 

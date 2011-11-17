@@ -92,7 +92,7 @@ public class ServerTestUtils
         storeProperties( propertyFile, props );
     }
 
-    private static String asOneLine( Map<String, String> properties )
+    public static String asOneLine( Map<String, String> properties )
     {
         StringBuilder builder = new StringBuilder();
         for ( Map.Entry<String, String> property : properties.entrySet() )
