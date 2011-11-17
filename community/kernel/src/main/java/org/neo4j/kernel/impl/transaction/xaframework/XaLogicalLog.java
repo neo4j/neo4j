@@ -210,7 +210,7 @@ public class XaLogicalLog
 
         instantiateCorrectWriteBuffer();
     }
-    
+
     private void renameIfExists( String fileName ) throws IOException
     {
         if ( fileSystem.fileExists( fileName ) )
@@ -1184,6 +1184,17 @@ public class XaLogicalLog
         }
     }
 
+    /**
+     * Return a file channel over the log file for {@code version} positioned
+     * at {@code position}. If the log version is the current one all
+     * committed transactions are guaranteed to be present but nothing that
+     * hasn't been flushed yet.
+     *
+     * @param version The version of the log to get a channel over
+     * @param position The position to which to set the channel
+     * @return The channel
+     * @throws IOException If an IO error occurs when reading the log file
+     */
     public ReadableByteChannel getLogicalLogOrMyselfCommitted( long version, long position )
             throws IOException
     {
@@ -1208,6 +1219,17 @@ public class XaLogicalLog
         }
     }
 
+    /**
+     * Return a file channel over the log file for {@code version} positioned
+     * at {@code position}. If the log version is the current one all
+     * content is guaranteed to be present, including content just in the write
+     * buffer.
+     *
+     * @param version The version of the log to get a channel over
+     * @param position The position to which to set the channel
+     * @return The channel
+     * @throws IOException If an IO error occurs when reading the log file
+     */
     private ReadableByteChannel getLogicalLogOrMyselfPrepared( long version, long position )
         throws IOException
     {
