@@ -25,10 +25,10 @@ import static org.junit.Assert.assertTrue;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.Map;
 
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -71,7 +71,6 @@ public class TestJavaTestDocsGenerator implements GraphHolder
         doc.addSnippet( "snippet_2-1", snippet2 );
         doc.document( directory, sectionName );
         String result = readFileAsString( doc.out );
-        System.out.println( result );
         assertTrue( result.contains( snippet1 ) );
         assertTrue( result.contains( snippet12 ) );
         assertTrue( result.contains( snippet2 ) );
@@ -132,18 +131,22 @@ public class TestJavaTestDocsGenerator implements GraphHolder
         return graphdb;
     }
 
-    @Before
-    public void setUp()
+    @BeforeClass
+    public static void setUp()
+    {
+        graphdb = new ImpermanentGraphDatabase();
+    }
+    
+    @AfterClass
+    public static void shutdown()
     {
         try
         {
-            graphdb = new ImpermanentGraphDatabase();
+            if ( graphdb != null ) graphdb.shutdown();
         }
-        catch ( IOException e )
+        finally
         {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            graphdb = null;
         }
     }
-
 }

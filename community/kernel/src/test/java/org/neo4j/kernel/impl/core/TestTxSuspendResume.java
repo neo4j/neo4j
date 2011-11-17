@@ -26,33 +26,31 @@ import javax.transaction.TransactionManager;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
-public class TestTxSuspendResume extends AbstractNeo4jTestCase
+public class TestTxSuspendResume
 {
     @Test
     public void testMultipleTxSameThread() throws Exception
     {
-        String storePath = getStorePath( "test-neo2" );
-        deleteFileOrDirectory( storePath );
-        EmbeddedGraphDatabase neo2 = new EmbeddedGraphDatabase( storePath );
-        TransactionManager tm = neo2.getConfig().getTxModule().getTxManager();
+        AbstractGraphDatabase graphdb = new ImpermanentGraphDatabase();
+        TransactionManager tm = graphdb.getConfig().getTxModule().getTxManager();
         tm.begin();
-        Node refNode = neo2.getReferenceNode();
+        Node refNode = graphdb.getReferenceNode();
         Transaction tx1 = tm.suspend();
         tm.begin();
         refNode.setProperty( "test2", "test" );
         Transaction tx2 = tm.suspend();
         tm.resume( tx1 );
-        CommitThread thread = new CommitThread( tm, tx2 );
+        CommitThread thread = new CommitThread( tm, tx2, Thread.currentThread() );
         thread.start();
         // would wait for ever since tx2 has write lock but now we have other
         // thread thread that will commit tx2
         refNode.removeProperty( "test2" );
         assertTrue( thread.success() );
         tm.commit();
-        neo2.shutdown();
+        graphdb.shutdown();
     }
 
     private static class CommitThread extends Thread
@@ -60,11 +58,13 @@ public class TestTxSuspendResume extends AbstractNeo4jTestCase
         private final TransactionManager tm;
         private final Transaction tx;
         private boolean success = false;
+        private final Thread main;
 
-        CommitThread( TransactionManager tm, Transaction tx )
+        CommitThread( TransactionManager tm, Transaction tx, Thread main )
         {
             this.tm = tm;
             this.tx = tx;
+            this.main = main;
         }
 
         @Override
@@ -72,7 +72,7 @@ public class TestTxSuspendResume extends AbstractNeo4jTestCase
         {
             try
             {
-                sleep( 1000 );
+                while ( main.getState() != Thread.State.WAITING ) Thread.sleep( 1 );
                 tm.resume( tx );
                 tm.commit();
                 success = true;

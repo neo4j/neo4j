@@ -185,6 +185,11 @@ public class TestBigStore implements RelationshipType
             System.out.println( testName + ": This test cannot be run on Windows because it can't handle files of this size in a timely manner" );
             return false;
         }
+        if ( Config.osIsMacOS() )
+        {
+            System.out.println( testName + ": This test cannot be run on Mac OS X because Mac OS X doesn't support sparse files" );
+            return false;
+        }
         
         long heapMb = Runtime.getRuntime().maxMemory() / (1000*1000); // Not 1024, matches better wanted result with -Xmx
         if ( heapMb < requiredHeapMb )

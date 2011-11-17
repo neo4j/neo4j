@@ -22,6 +22,7 @@ package org.neo4j.cypher.pipes
 import matching.MatchingContext
 import org.neo4j.cypher.SymbolTable
 import org.neo4j.cypher.commands._
+import java.lang.String
 
 class MatchPipe(source: Pipe, patterns: Seq[Pattern], predicates:Seq[Clause]) extends Pipe {
   val matchingContext = new MatchingContext(patterns, source.symbols, predicates)
@@ -37,4 +38,6 @@ class MatchPipe(source: Pipe, patterns: Seq[Pattern], predicates:Seq[Clause]) ex
       matchingContext.getMatches(sourcePipeRow).foreach(patternMatch => f(patternMatch ++ sourcePipeRow))
     })
   }
+
+  override def executionPlan(): String = source.executionPlan() + "\r\nPatternMatch(" + patterns.mkString(",") + ")"
 }

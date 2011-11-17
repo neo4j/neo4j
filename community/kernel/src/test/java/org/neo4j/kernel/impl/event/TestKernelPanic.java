@@ -89,7 +89,6 @@ public class TestKernelPanic
         assertTrue("exists "+logFile,logFile.exists() && logFile.isFile());
         final Scanner scanner = new Scanner(logFile).useDelimiter("\n");
         for (String line : IteratorUtil.asIterable(scanner)) {
-            System.err.println("line = " + line);
             if (line.contains(exceptionString)) return;
         }
         fail(logFile+" did not contain: "+exceptionString);

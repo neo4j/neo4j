@@ -28,8 +28,9 @@ import org.neo4j.cypher.SymbolTable
  * Pipes are combined to form an execution plan, and when iterated over,
  * the execute the query.
  */
-abstract class Pipe extends Traversable[Map[String, Any]] {
+trait Pipe extends Traversable[Map[String, Any]] {
 
   def ++(other: Pipe): Pipe = new JoinPipe(this, other)
   val symbols:SymbolTable
+  def executionPlan():String = "-:STILL NOT DONE:-"
 }

@@ -126,14 +126,6 @@ public class GetRelationshipPropertiesFunctionalTest
     }
 
     @Test
-    public void shouldGet200ForProperty() {
-        String propertyUri = getPropertyUri("foo");
-        JaxRsResponse response = RestRequest.req().get(propertyUri);
-        assertEquals(200, response.getStatus());
-        response.close();
-    }
-
-    @Test
     public void shouldGet404ForNonExistingRelationship() {
         String uri = functionalTestHelper.dataUri() + "relationship/999999/properties/foo";
         JaxRsResponse response = RestRequest.req().get(uri);

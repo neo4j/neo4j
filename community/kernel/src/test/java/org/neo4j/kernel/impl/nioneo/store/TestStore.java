@@ -32,11 +32,14 @@ import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public class TestStore
 {
     public static IdGeneratorFactory ID_GENERATOR_FACTORY =
             CommonFactories.defaultIdGeneratorFactory();
+    public static FileSystemAbstraction FILE_SYSTEM =
+            CommonFactories.defaultFileSystemAbstraction();
     
     private String path()
     {
@@ -147,6 +150,7 @@ public class TestStore
         {
             super( fileName, MapUtil.genericMap(
                     IdGeneratorFactory.class, ID_GENERATOR_FACTORY,
+                    StringLogger.class, StringLogger.DEV_NULL,
                     FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction(),
                     "store_dir", "target/var/teststore" ), IdType.NODE );
         }
@@ -167,7 +171,8 @@ public class TestStore
 
         public static Store createStore( String fileName ) throws IOException
         {
-            createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), ID_GENERATOR_FACTORY );
+            createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), ID_GENERATOR_FACTORY,
+                    FILE_SYSTEM );
             return new Store( fileName );
         }
 

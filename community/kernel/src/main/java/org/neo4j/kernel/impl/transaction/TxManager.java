@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
@@ -55,6 +54,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -94,11 +94,13 @@ public class TxManager extends AbstractTransactionManager
     private final StringLogger msgLog;
 
     final TxHook finishHook;
+    private final FileSystemAbstraction fileSystem;
 
-    TxManager( String txLogDir, KernelPanicEventGenerator kpe, TxHook finishHook )
+    TxManager( String txLogDir, KernelPanicEventGenerator kpe, TxHook finishHook, StringLogger msgLog, FileSystemAbstraction fileSystem )
     {
         this.txLogDir = txLogDir;
-        this.msgLog = StringLogger.getLogger( txLogDir );
+        this.fileSystem = fileSystem;
+        this.msgLog = msgLog;
         this.kpe = kpe;
         this.finishHook = finishHook;
     }
@@ -135,7 +137,6 @@ public class TxManager extends AbstractTransactionManager
             }
         }
         msgLog.logMessage( "TM shutting down", true );
-        StringLogger.close( txLogDir );
     }
 
     @Override
@@ -148,31 +149,29 @@ public class TxManager extends AbstractTransactionManager
         txLog2FileName = "tm_tx_log.2";
         try
         {
-            if ( new File( logSwitcherFileName ).exists() )
+            if ( fileSystem.fileExists( logSwitcherFileName ) )
             {
-                FileChannel fc = new RandomAccessFile( logSwitcherFileName,
-                    "rw" ).getChannel();
+                FileChannel fc = fileSystem.open( logSwitcherFileName, "rw" );
                 byte fileName[] = new byte[256];
                 ByteBuffer buf = ByteBuffer.wrap( fileName );
                 fc.read( buf );
                 fc.close();
                 String currentTxLog = txLogDir + separator
                     + UTF8.decode( fileName ).trim();
-                if ( !new File( currentTxLog ).exists() )
+                if ( !fileSystem.fileExists( currentTxLog ) )
                 {
                     throw logAndReturn("TM startup failure",
                             new TransactionFailureException(
                                     "Unable to start TM, " + "active tx log file[" +
                                             currentTxLog + "] not found."));
                 }
-                txLog = new TxLog( currentTxLog );
+                txLog = new TxLog( currentTxLog, fileSystem );
                 msgLog.logMessage( "TM opening log: " + currentTxLog, true );
             }
             else
             {
-                if ( new File( txLogDir + separator + txLog1FileName ).exists()
-                    || new File( txLogDir + separator + txLog2FileName )
-                        .exists() )
+                if ( fileSystem.fileExists( txLogDir + separator + txLog1FileName )
+                    || fileSystem.fileExists( txLogDir + separator + txLog2FileName ) )
                 {
                     throw logAndReturn("TM startup failure",
                             new TransactionFailureException(
@@ -184,10 +183,9 @@ public class TxManager extends AbstractTransactionManager
                 }
                 ByteBuffer buf = ByteBuffer.wrap( txLog1FileName
                     .getBytes( "UTF-8" ) );
-                FileChannel fc = new RandomAccessFile( logSwitcherFileName,
-                    "rw" ).getChannel();
+                FileChannel fc = fileSystem.open( logSwitcherFileName, "rw" );
                 fc.write( buf );
-                txLog = new TxLog( txLogDir + separator + txLog1FileName );
+                txLog = new TxLog( txLogDir + separator + txLog1FileName, fileSystem );
                 msgLog.logMessage( "TM new log: " + txLog1FileName, true );
                 fc.force( true );
                 fc.close();
@@ -250,8 +248,7 @@ public class TxManager extends AbstractTransactionManager
     private void changeActiveLog( String newFileName ) throws IOException
     {
         // change active log
-        FileChannel fc = new RandomAccessFile( logSwitcherFileName, "rw" )
-            .getChannel();
+        FileChannel fc = fileSystem.open( logSwitcherFileName, "rw" );
         ByteBuffer buf = ByteBuffer.wrap( UTF8.encode( newFileName ) );
         fc.truncate( 0 );
         fc.write( buf );

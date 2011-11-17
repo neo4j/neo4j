@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -77,7 +76,8 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
      *             If fileName is null or if file exists or illegal block size
      */
     protected static void createEmptyStore( String fileName, int baseBlockSize,
-        String typeAndVersionDescriptor, IdGeneratorFactory idGeneratorFactory, IdType idType )
+        String typeAndVersionDescriptor, IdGeneratorFactory idGeneratorFactory,
+        FileSystemAbstraction fileSystem, IdType idType )
     {
         int blockSize = baseBlockSize;
         // sanity checks
@@ -105,7 +105,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         // write the header
         try
         {
-            FileChannel channel = new FileOutputStream( fileName ).getChannel();
+            FileChannel channel = fileSystem.create( fileName );
             int endHeaderSize = blockSize
                 + UTF8.encode( typeAndVersionDescriptor ).length;
             ByteBuffer buffer = ByteBuffer.allocate( endHeaderSize );
@@ -601,8 +601,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
             + " (defragged=" + defraggedCount + ")" );
         if ( getConfig() != null )
         {
-            String storeDir = (String) getConfig().get( "store_dir" );
-            StringLogger msgLog = StringLogger.getLogger( storeDir );
+            StringLogger msgLog = (StringLogger) getConfig().get( StringLogger.class );
             msgLog.logMessage( getStorageFileName() + " rebuild id generator, highId=" + getHighId() +
                     " defragged count=" + defraggedCount, true );
         }

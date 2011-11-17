@@ -41,10 +41,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class TestIndexDeletion
 {
@@ -60,9 +58,7 @@ public class TestIndexDeletion
     @BeforeClass
     public static void setUpStuff()
     {
-        String storeDir = "target/var/freshindex";
-        Neo4jTestCase.deleteFileOrDirectory( new File( storeDir ) );
-        graphDb = new EmbeddedGraphDatabase( storeDir, MapUtil.stringMap( "index", "lucene" ) );
+        graphDb = new ImpermanentGraphDatabase();
     }
 
     @AfterClass
@@ -196,7 +192,7 @@ public class TestIndexDeletion
     {
         index.delete();
 
-        WorkThread firstTx = createWorker();
+        WorkThread firstTx = createWorker( "Single" );
         firstTx.createNodeAndIndexBy( key, "another value" );
         firstTx.commit();
     }
@@ -204,34 +200,23 @@ public class TestIndexDeletion
 	@Test
 	public void deleteAndCommitShouldBePublishedToOtherTransaction2()
 			throws InterruptedException {
-		WorkThread firstTx = createWorker();
-		WorkThread secondTx = createWorker();
+		WorkThread firstTx = createWorker( "First" );
+		WorkThread secondTx = createWorker( "Second" );
 
 		firstTx.beginTransaction();
-		firstTx.waitForCommandToComplete();
-
 		secondTx.beginTransaction();
-		secondTx.waitForCommandToComplete();
 
 		firstTx.createNodeAndIndexBy(key, "some value");
-		firstTx.waitForCommandToComplete();
-
 		secondTx.createNodeAndIndexBy(key, "some other value");
-		secondTx.waitForCommandToComplete();
 
 		firstTx.deleteIndex();
-		firstTx.waitForCommandToComplete();
-
 		firstTx.commit();
-		firstTx.waitForCommandToComplete();
 
 		secondTx.queryIndex(key, "some other value");
-		secondTx.waitForCommandToComplete();
 
 		assertThat(secondTx, hasThrownException());
 
 		secondTx.rollback();
-		secondTx.waitForCommandToComplete();
 
 		// Since $Before will start a tx, add a value and keep tx open and
 		// workers will delete the index so this test will fail in @After
@@ -244,16 +229,13 @@ public class TestIndexDeletion
     {
         commitTx();
 
-        WorkThread firstTx = createWorker();
-        WorkThread secondTx = createWorker();
+        WorkThread firstTx = createWorker( "First" );
+        WorkThread secondTx = createWorker( "Second" );
 
         firstTx.beginTransaction();
-        firstTx.waitForCommandToComplete();
         firstTx.removeFromIndex( key, value );
-        firstTx.waitForCommandToComplete();
 
         IndexHits<Node> indexHits = secondTx.queryIndex( key, value );
-        secondTx.waitForCommandToComplete();
         assertThat( indexHits, contains( node ) );
 
         firstTx.rollback();
@@ -316,12 +298,10 @@ public class TestIndexDeletion
         restartTx();
     }
 
-    private WorkThread createWorker()
+    private WorkThread createWorker( String name )
     {
         WorkThread workThread = new WorkThread( index, graphDb );
         workers.add( workThread );
-        workThread.start();
-        workThread.waitForWorkerToStart();
         return workThread;
     }
 }

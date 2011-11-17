@@ -40,16 +40,19 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 public class HighlyConfigurableGraphDatabase extends AbstractGraphDatabase
 {
     private final EmbeddedGraphDbImpl impl;
+    protected final FileSystemAbstraction fileSystem;
 
     public HighlyConfigurableGraphDatabase( String storeDir, Map<String, String> config,
             IdGeneratorFactory idGenerators, FileSystemAbstraction fileSystem )
     {
+        super( storeDir );
         config = config != null ? config : MapUtil.stringMap();
-        impl = new EmbeddedGraphDbImpl( storeDir, null, config, this, CommonFactories.defaultLockManagerFactory(),
+        impl = new EmbeddedGraphDbImpl( getStoreDir(), null, config, this, CommonFactories.defaultLockManagerFactory(),
                 idGenerators, CommonFactories.defaultRelationshipTypeCreator(),
                 CommonFactories.defaultTxIdGeneratorFactory(),
                 CommonFactories.defaultTxHook(),
                 CommonFactories.defaultLastCommittedTxIdSetter(), fileSystem );
+        this.fileSystem = fileSystem;
     }
 
     @Override
@@ -89,7 +92,7 @@ public class HighlyConfigurableGraphDatabase extends AbstractGraphDatabase
     }
 
     @Override
-    public void shutdown()
+    protected void close()
     {
         impl.shutdown();
     }
@@ -130,12 +133,6 @@ public class HighlyConfigurableGraphDatabase extends AbstractGraphDatabase
     public IndexManager index()
     {
         return impl.index();
-    }
-
-    @Override
-    public String getStoreDir()
-    {
-        return impl.getStoreDir();
     }
 
     @Override

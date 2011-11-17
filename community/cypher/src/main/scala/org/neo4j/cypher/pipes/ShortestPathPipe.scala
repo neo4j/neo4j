@@ -24,10 +24,17 @@ import org.neo4j.kernel.Traversal
 import org.neo4j.graphdb.{DynamicRelationshipType, Direction, Node}
 import org.neo4j.cypher.commands.{ShortestPath, PathIdentifier}
 import org.neo4j.cypher.{SyntaxException, SymbolTable}
+import java.lang.String
 
-class ShortestPathPipe(source: Pipe, pipeName: String, startName: String, endName: String, relType:Option[String], dir:Direction, maxDepth:Option[Int], optional: Boolean) extends Pipe {
-
-  def this(source:Pipe, ast:ShortestPath) = this(source, ast.pipeName, ast.startName, ast.endName, ast.relType, ast.dir, ast.maxDepth, ast.optional)
+class ShortestPathPipe(source:Pipe, ast:ShortestPath) extends Pipe {
+  def this(source: Pipe, pathName: String, startName: String, endName: String, relType:Option[String], dir:Direction, maxDepth:Option[Int], optional: Boolean) = this(source, ShortestPath(pathName, startName, endName, relType, dir, maxDepth, optional))
+  def startName = ast.startName
+  def endName = ast.endName
+  def relType = ast.relType
+  def dir = ast.dir
+  def maxDepth = ast.maxDepth
+  def optional = ast.optional
+  def pathName = ast.pipeName
 
   def foreach[U](f: (Map[String, Any]) => U) {
     source.foreach(m => {
@@ -47,14 +54,16 @@ class ShortestPathPipe(source: Pipe, pipeName: String, startName: String, endNam
       val findSinglePath = finder.findSinglePath(start, end)
 
       (findSinglePath, optional) match {
-        case (null, true) => f(m ++ Map(pipeName -> null))
+        case (null, true) => f(m ++ Map(pathName -> null))
         case (null, false) =>
-        case (path, _) => f(m ++ Map(pipeName -> path))
+        case (path, _) => f(m ++ Map(pathName -> path))
       }
     })
   }
 
-  val symbols: SymbolTable = source.symbols.add(PathIdentifier(pipeName))
+  val symbols: SymbolTable = source.symbols.add(PathIdentifier(pathName))
+
+  override def executionPlan(): String = source.executionPlan() + "\r\n" + "ShortestPath(" + ast + ")"
 }
 
 // My daughters wrote this when I left the laptop open 2011-09-22. Now it belongs here.

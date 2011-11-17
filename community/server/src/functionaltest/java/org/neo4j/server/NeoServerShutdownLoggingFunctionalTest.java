@@ -37,7 +37,7 @@ public class NeoServerShutdownLoggingFunctionalTest
     @Before
     public void setupServer() throws IOException
     {
-        server = ServerHelper.createServer();
+        server = ServerHelper.createServer( true );
         ServerHelper.cleanTheDatabase( server );
     }
 

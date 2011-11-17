@@ -30,7 +30,6 @@ import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -39,7 +38,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -72,16 +70,12 @@ public class DatabaseActionsTest
     private static DatabaseActions actions;
     private static GraphDbHelper graphdbHelper;
     private static Database database;
-    private static String databasePath;
     private static LeaseManager leaseManager;
 
     @BeforeClass
     public static void clearDb() throws IOException
     {
-        databasePath = ServerTestUtils.createTempDir()
-                .getAbsolutePath();
-        database = new Database( ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY, databasePath );
-
+        database = new Database( ServerTestUtils.EPHEMERAL_GRAPH_DATABASE_FACTORY, null );
         graphdbHelper = new GraphDbHelper( database );
         leaseManager = new LeaseManager( new FakeClock() );
         actions = new DatabaseActions( database, leaseManager );
@@ -91,7 +85,6 @@ public class DatabaseActionsTest
     public static void shutdownDatabase() throws IOException
     {
         database.shutdown();
-        FileUtils.forceDelete( new File( databasePath ) );
     }
 
     private long createNode( Map<String, Object> properties ) throws DatabaseBlockedException

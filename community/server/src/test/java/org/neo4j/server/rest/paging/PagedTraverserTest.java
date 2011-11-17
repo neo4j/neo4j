@@ -22,11 +22,9 @@ package org.neo4j.server.rest.paging;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -44,16 +42,13 @@ import org.neo4j.server.database.Database;
 public class PagedTraverserTest
 {
     private static final int LIST_LENGTH = 100;
-    private String databasePath;
     private Database database;
     private Node startNode;
 
     @Before
     public void clearDb() throws IOException
     {
-        databasePath = ServerTestUtils.createTempDir()
-                .getAbsolutePath();
-        database = new Database( ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY, databasePath );
+        database = new Database( ServerTestUtils.EPHEMERAL_GRAPH_DATABASE_FACTORY, null );
         createLinkedList( LIST_LENGTH, database );
     }
 
@@ -90,7 +85,6 @@ public class PagedTraverserTest
     public void shutdownDatabase() throws IOException
     {
         database.shutdown();
-        FileUtils.forceDelete( new File( databasePath ) );
     }
 
     @Test

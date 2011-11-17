@@ -27,7 +27,6 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -57,16 +56,13 @@ public class RestfulGraphDatabasePagedTraversalTest
     private RestfulGraphDatabase service;
     private Database database;
     private EntityOutputFormat output;
-    private String databasePath;
     private GraphDbHelper helper;
     private LeaseManager leaseManager;
 
     @Before
     public void startDatabase() throws IOException
     {
-        databasePath = ServerTestUtils.createTempDir()
-                .getAbsolutePath();
-        database = new Database( ServerTestUtils.EMBEDDED_GRAPH_DATABASE_FACTORY, databasePath );
+        database = new Database( ServerTestUtils.EPHEMERAL_GRAPH_DATABASE_FACTORY, null );
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
         leaseManager = new LeaseManager( new FakeClock() );
@@ -77,7 +73,6 @@ public class RestfulGraphDatabasePagedTraversalTest
     public void shutdownDatabase() throws IOException
     {
         this.database.shutdown();
-        org.apache.commons.io.FileUtils.forceDelete( new File( databasePath ) );
     }
 
     @Test

@@ -19,56 +19,111 @@
 
 package org.neo4j.examples;
 
+import java.io.File;
+import java.io.IOException;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.impl.util.FileUtils;
 
 public class EmbeddedNeo4j
 {
-    private static final String DB_PATH = "neo4j-store";
-    private static final String NAME_KEY = "name";
+    private static final String DB_PATH = "target/neo4j-hello-db";
+    String greeting;
+    // START SNIPPET: vars
+    GraphDatabaseService graphDb;
+    Node firstNode;
+    Node secondNode;
+    Relationship relationship;
+    // END SNIPPET: vars
 
     // START SNIPPET: createReltype
-    private static enum ExampleRelationshipTypes implements RelationshipType
+    private static enum RelTypes implements RelationshipType
     {
-        EXAMPLE
+        KNOWS
     }
     // END SNIPPET: createReltype
 
     public static void main( final String[] args )
     {
+        EmbeddedNeo4j hello = new EmbeddedNeo4j();
+        hello.createDb();
+        hello.removeData();
+        hello.shutDown();
+    }
+
+    void createDb()
+    {
+        clearDb();
         // START SNIPPET: startDb
-        GraphDatabaseService graphDb = new EmbeddedGraphDatabase( DB_PATH );
+        graphDb = new EmbeddedGraphDatabase( DB_PATH );
         registerShutdownHook( graphDb );
         // END SNIPPET: startDb
 
-        // START SNIPPET: operationsInATransaction
-        // Encapsulate operations in a transaction
+        // START SNIPPET: transaction
         Transaction tx = graphDb.beginTx();
         try
         {
-            Node firstNode = graphDb.createNode();
-            firstNode.setProperty( NAME_KEY, "Hello" );
-            Node secondNode = graphDb.createNode();
-            secondNode.setProperty( NAME_KEY, "World" );
+            // Mutating operations go here
+            // END SNIPPET: transaction
+            // START SNIPPET: addData
+            firstNode = graphDb.createNode();
+            firstNode.setProperty( "message", "Hello, " );
+            secondNode = graphDb.createNode();
+            secondNode.setProperty( "message", "World!" );
 
-            firstNode.createRelationshipTo( secondNode,
-                ExampleRelationshipTypes.EXAMPLE );
+            relationship = firstNode.createRelationshipTo( secondNode, RelTypes.KNOWS );
+            relationship.setProperty( "message", "brave Neo4j " );
+            // END SNIPPET: addData
 
-            String greeting = firstNode.getProperty( NAME_KEY ) + " "
-                + secondNode.getProperty( NAME_KEY );
-            System.out.println( greeting );
-            // END SNIPPET: operationsInATransaction
+            // START SNIPPET: readData
+            System.out.print( firstNode.getProperty( "message" ) );
+            System.out.print( relationship.getProperty( "message" ) );
+            System.out.print( secondNode.getProperty( "message" ) );
+            // END SNIPPET: readData
 
+            greeting = ( (String) firstNode.getProperty( "message" ) )
+                       + ( (String) relationship.getProperty( "message" ) )
+                       + ( (String) secondNode.getProperty( "message" ) );
+
+            // START SNIPPET: transaction
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+        // END SNIPPET: transaction
+    }
+
+    private void clearDb()
+    {
+        try
+        {
+            FileUtils.deleteRecursively( new File( DB_PATH ) );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    void removeData()
+    {
+        Transaction tx = graphDb.beginTx();
+        try
+        {
             // START SNIPPET: removingData
-            // let's remove the data before committing
-            firstNode.getSingleRelationship( ExampleRelationshipTypes.EXAMPLE,
-                    Direction.OUTGOING ).delete();
+            // let's remove the data
+            firstNode.getSingleRelationship( RelTypes.KNOWS, Direction.OUTGOING ).delete();
             firstNode.delete();
             secondNode.delete();
+            // END SNIPPET: removingData
 
             tx.success();
         }
@@ -76,8 +131,11 @@ public class EmbeddedNeo4j
         {
             tx.finish();
         }
-        // END SNIPPET: removingData
+    }
 
+    void shutDown()
+    {
+        System.out.println();
         System.out.println( "Shutting down database ..." );
         // START SNIPPET: shutdownServer
         graphDb.shutdown();

@@ -72,9 +72,8 @@ public class TestTxTimestamps
             Node node = db.createNode();
             node.setProperty( "name", "Mattias " + i );
             tx.success();
-            expectedCommitTimestamps[i] = System.currentTimeMillis();
             tx.finish();
-            Thread.sleep( 500 );
+            expectedCommitTimestamps[i] = System.currentTimeMillis();
         }
         db.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME ).rotateLogicalLog();
         
@@ -92,12 +91,14 @@ public class TestTxTimestamps
                 if ( entry instanceof LogEntry.Start )
                 {
                     long diff = ((LogEntry.Start) entry).getTimeWritten()-expectedStartTimestamps[foundTxCount];
-                    assertTrue( diff < 200 );
+                    long exp = expectedCommitTimestamps[foundTxCount] - expectedStartTimestamps[foundTxCount];
+                    assertTrue( diff + " <= " + exp, diff <= exp );
                 }
                 else if ( entry instanceof LogEntry.Commit )
                 {
-                    long diff = ((LogEntry.Commit) entry).getTimeWritten()-expectedStartTimestamps[foundTxCount];
-                    assertTrue( diff < 200 );
+                    long diff = ((LogEntry.Commit) entry).getTimeWritten()-expectedCommitTimestamps[foundTxCount];
+                    long exp = expectedCommitTimestamps[foundTxCount] - expectedStartTimestamps[foundTxCount];
+                    assertTrue( diff + " <= " + exp, diff <= exp );
                     foundTxCount++;
                 }
             }

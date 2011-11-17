@@ -28,47 +28,45 @@ import java.util.Iterator;
 import java.util.Random;
 
 import org.hamcrest.CoreMatchers;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class SocnetTest
 {
     private static final Random r = new Random( System.currentTimeMillis() );
-    private GraphDatabaseService graphDb;
-    private Index<Node> index;
-    private PersonRepository personRepository;
-    private int nrOfPersons;
+    private static GraphDatabaseService graphDb;
+    private static Index<Node> index;
+    private static PersonRepository personRepository;
+    private static int nrOfPersons;
 
-    @Before
-    public void setup() throws Exception
+    @BeforeClass
+    public static void setup() throws Exception
     {
-        graphDb = new EmbeddedGraphDatabase( "target/socnetdb" );
+        graphDb = new ImpermanentGraphDatabase();
         index = graphDb.index().forNodes( "nodes" );
         personRepository = new PersonRepository( graphDb, index );
+    }
+    
+    @Before
+    public void doBefore() throws Exception
+    {
         deleteSocialGraph();
-
         nrOfPersons = 20;
         createPersons();
         setupFriendsBetweenPeople( 10 );
     }
 
-    @After
-    public void teardown()
+    @AfterClass
+    public static void teardown()
     {
-        try
-        {
-            deleteSocialGraph();
-        }
-        finally
-        {
-            graphDb.shutdown();
-        }
+        graphDb.shutdown();
     }
 
     @Test
@@ -264,7 +262,7 @@ public class SocnetTest
         }
     }
 
-    private void setupFriendsBetweenPeople( int maxNrOfFriendsEach )
+    private static void setupFriendsBetweenPeople( int maxNrOfFriendsEach )
     {
         for ( Person person : personRepository.getAllPersons() )
         {
@@ -276,7 +274,7 @@ public class SocnetTest
         }
     }
 
-    private Person getRandomPerson()
+    private static Person getRandomPerson()
     {
         return personRepository.getPersonByName( "person#"
                 + r.nextInt( nrOfPersons ) );
@@ -308,7 +306,7 @@ public class SocnetTest
         return p;
     }
 
-    private void createPersons() throws Exception
+    private static void createPersons() throws Exception
     {
         for ( int i = 0; i < nrOfPersons; i++ )
         {

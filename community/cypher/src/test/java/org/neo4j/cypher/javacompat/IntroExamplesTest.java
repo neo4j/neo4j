@@ -26,7 +26,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Map;
 
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -46,9 +47,9 @@ public class IntroExamplesTest implements GraphHolder
     public @Rule
     TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
             this, true ) );
-    private ImpermanentGraphDatabase graphdb;
-    private ExecutionEngine engine;
-    private CypherParser parser;
+    private static ImpermanentGraphDatabase graphdb;
+    private static ExecutionEngine engine;
+    private static CypherParser parser;
 
     @Test
     @Graph( value = { "John friend Sara", "John friend Joe",
@@ -94,14 +95,27 @@ public class IntroExamplesTest implements GraphHolder
         fw.close();
     }
 
-    @Before
-    public void setup() throws IOException
+    @BeforeClass
+    public static void setup() throws IOException
     {
         graphdb = new ImpermanentGraphDatabase();
         graphdb.cleanContent( false );
 
         parser = new CypherParser();
         engine = new ExecutionEngine( graphdb );
+    }
+    
+    @AfterClass
+    public static void shutdown()
+    {
+        try 
+        {
+            if ( graphdb != null ) graphdb.shutdown();
+        }
+        finally
+        {
+            graphdb = null;
+        }
     }
 
     @Override

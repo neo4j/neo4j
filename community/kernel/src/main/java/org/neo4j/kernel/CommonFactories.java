@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
@@ -43,6 +44,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGeneratorFactory;
+import org.neo4j.kernel.impl.util.FileUtils;
 
 public class CommonFactories
 {
@@ -164,6 +166,36 @@ public class CommonFactories
             public FileLock tryLock( String fileName, FileChannel channel ) throws IOException
             {
                 return FileLock.getOsSpecificFileLock( fileName, channel );
+            }
+            
+            @Override
+            public FileChannel create( String fileName ) throws IOException
+            {
+                return open( fileName, "rw" );
+            }
+            
+            @Override
+            public boolean fileExists( String fileName )
+            {
+                return new File( fileName ).exists();
+            }
+            
+            @Override
+            public long getFileSize( String fileName )
+            {
+                return new File( fileName ).length();
+            }
+            
+            @Override
+            public boolean deleteFile( String fileName )
+            {
+                return FileUtils.deleteFile( new File( fileName ) );
+            }
+            
+            @Override
+            public boolean renameFile( String from, String to ) throws IOException
+            {
+                return FileUtils.renameFile( new File( from ), new File( to ) );
             }
         };
     }

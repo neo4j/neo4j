@@ -26,12 +26,11 @@ import java.util.Map;
 
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Version;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.GraphDescription.Graph;
-import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestData;
 
 public class GetOnRootFunctionalTest extends AbstractRestFunctionalTestBase
@@ -48,8 +47,7 @@ public class GetOnRootFunctionalTest extends AbstractRestFunctionalTestBase
     @TestData.Title( "Get service root" )
     public void assert200OkFromGet() throws Exception
     {
-        
-        EmbeddedGraphDatabase db = (EmbeddedGraphDatabase)((ImpermanentGraphDatabase)graphdb()).getInner();
+        AbstractGraphDatabase db = (AbstractGraphDatabase)graphdb();
         Transaction tx = db.beginTx();
         db.getConfig().getGraphDbModule().setReferenceNodeId( data.get().get("I").getId() );
         tx.success();

@@ -136,7 +136,7 @@ _Graph_
 
   @After
   def teardown() {
-    db.shutdown()
+    if (db != null) db.shutdown()
   }
 
   @Before

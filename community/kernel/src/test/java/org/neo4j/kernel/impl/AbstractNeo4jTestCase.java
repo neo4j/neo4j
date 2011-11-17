@@ -20,12 +20,20 @@
 package org.neo4j.kernel.impl;
 
 import java.io.File;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.AbstractGraphDatabase;
@@ -35,22 +43,51 @@ import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
+@AbstractNeo4jTestCase.RequiresPersistentGraphDatabase( false )
 public abstract class AbstractNeo4jTestCase
 {
+    @Retention( RetentionPolicy.RUNTIME )
+    @Target( ElementType.TYPE )
+    @Inherited
+    public @interface RequiresPersistentGraphDatabase
+    {
+        boolean value() default true;
+    }
+    
     protected static final File NEO4J_BASE_DIR = new File( "target", "var" );
+    
+    public static final @ClassRule TestRule START_GRAPHDB = new TestRule()
+    {
+        @Override
+        public Statement apply( Statement base, Description description )
+        {
+            tearDownDb();
+            setupGraphDatabase(description.getTestClass().getAnnotation( RequiresPersistentGraphDatabase.class ).value());
+            return base;
+        }
+    };
 
-    private static GraphDatabaseService graphDb;
+    private static AbstractGraphDatabase graphDb;
     private Transaction tx;
+
+    private static boolean requiresPersistentGraphDatabase = false;
 
     public GraphDatabaseService getGraphDb()
     {
         return graphDb;
     }
 
-    public EmbeddedGraphDatabase getEmbeddedGraphDb()
+    private static void setupGraphDatabase( boolean requiresPersistentGraphDatabase )
     {
-        return (EmbeddedGraphDatabase) graphDb;
+        AbstractNeo4jTestCase.requiresPersistentGraphDatabase  = requiresPersistentGraphDatabase;
+        graphDb = requiresPersistentGraphDatabase ? new EmbeddedGraphDatabase( getStorePath( "neo-test" ) ) : new ImpermanentGraphDatabase();
+    }
+
+    public AbstractGraphDatabase getEmbeddedGraphDb()
+    {
+        return (AbstractGraphDatabase) graphDb;
     }
 
     protected boolean restartGraphDbBetweenTests()
@@ -68,19 +105,12 @@ public abstract class AbstractNeo4jTestCase
         return new File( NEO4J_BASE_DIR, endPath ).getAbsolutePath();
     }
 
-    @BeforeClass
-    public static void setUpDb()
-    {
-        deleteFileOrDirectory( new File( getStorePath( "neo-test" ) ) );
-        graphDb = new EmbeddedGraphDatabase( getStorePath( "neo-test" ) );
-    }
-
     @Before
     public void setUpTest()
     {
         if ( restartGraphDbBetweenTests() && graphDb == null )
         {
-            setUpDb();
+            setupGraphDatabase(requiresPersistentGraphDatabase);
         }
         tx = graphDb.beginTx();
     }
@@ -95,17 +125,20 @@ public abstract class AbstractNeo4jTestCase
 
         if ( restartGraphDbBetweenTests() )
         {
-            graphDb.shutdown();
-            graphDb = null;
+            tearDownDb();
         }
     }
 
     @AfterClass
     public static void tearDownDb()
     {
-        if ( graphDb != null )
+        try
         {
-            graphDb.shutdown();
+            if ( graphDb != null ) graphDb.shutdown();
+        }
+        finally
+        {
+            graphDb = null;
         }
     }
 
@@ -146,7 +179,7 @@ public abstract class AbstractNeo4jTestCase
 
     public NodeManager getNodeManager()
     {
-        return ((EmbeddedGraphDatabase) graphDb).getConfig().getGraphDbModule().getNodeManager();
+        return ((AbstractGraphDatabase) graphDb).getConfig().getGraphDbModule().getNodeManager();
     }
 
     public static void deleteFileOrDirectory( String dir )
@@ -176,8 +209,7 @@ public abstract class AbstractNeo4jTestCase
 
     protected void clearCache()
     {
-        getEmbeddedGraphDb().getConfig().getGraphDbModule()
-            .getNodeManager().clearCache();
+        getEmbeddedGraphDb().getConfig().getGraphDbModule().getNodeManager().clearCache();
     }
 
     protected long propertyRecordsInUse()

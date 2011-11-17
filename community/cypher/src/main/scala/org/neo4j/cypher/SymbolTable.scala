@@ -85,4 +85,6 @@ class SymbolTable(val identifiers: Set[Identifier]) {
   def ++(other: SymbolTable): SymbolTable = {
     new SymbolTable(merge(other))
   }
+
+  def columns : String = identifiers.map(_.name).mkString(", ")
 }

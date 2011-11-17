@@ -17,28 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes
+package org.neo4j.test;
 
-import java.lang.String
-import org.neo4j.cypher.SymbolTable
-import org.neo4j.cypher.commands._
-import collection.Seq
-import collection.immutable.Map
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 
-class TransformPipe(source: Pipe, returnItems: Seq[ReturnItem]) extends Pipe {
-  type MapTransformer = Map[String, Any] => Map[String, Any]
 
-  def getSymbolType(item: ReturnItem): Identifier = item.identifier
-
-  val symbols: SymbolTable = source.symbols.add(returnItems.map(_.identifier))
-
-  returnItems.foreach(_.assertDependencies(source))
-
-  def foreach[U](f: (Map[String, Any]) => U) {
-    source.foreach(row => {
-      val projection: Map[String, Any] = returnItems.map( returnItem =>returnItem.columnName -> returnItem(row) ).toMap
-      f.apply(projection ++ row)
-    })
-  }
+public class JavaDocsGenerator extends AsciiDocGenerator
+{
+    public JavaDocsGenerator( String title, String section )
+    {
+        super( title, section );
+    }
+    
+    public void saveToFile( String directory, String identifier, String text )
+    {
+        FileWriter fw = getFW( directory + File.separator + this.section,
+                getTitle() + "-" + identifier );
+        try
+        {
+            line( fw, text );
+            fw.flush();
+            fw.close();
+        }
+        catch ( IOException e )
+        {
+            e.printStackTrace();
+        }
+    }
 }
-

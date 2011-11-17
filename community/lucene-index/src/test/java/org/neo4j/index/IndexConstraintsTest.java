@@ -21,7 +21,6 @@ package org.neo4j.index;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -36,30 +35,22 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class IndexConstraintsTest
 {
-
-    private File testNeoDir = new File( "target/dbIdxConstraints" );
     private GraphDatabaseService graphDb;
 
     @Before
     public void setup() throws IOException
     {
-        if ( testNeoDir.exists() )
-        {
-            FileUtils.deleteRecursively( testNeoDir );
-        }
-        this.graphDb = new EmbeddedGraphDatabase( testNeoDir.getAbsolutePath() );
+        this.graphDb = new ImpermanentGraphDatabase();
     }
 
     @After
     public void shutdown() throws IOException
     {
         this.graphDb.shutdown();
-        FileUtils.deleteRecursively( testNeoDir );
     }
 
     @Test

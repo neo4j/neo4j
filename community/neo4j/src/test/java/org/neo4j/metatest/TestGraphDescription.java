@@ -58,20 +58,21 @@ import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphDescription.NODE;
 import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphDescription.REL;
 import org.neo4j.test.GraphHolder;
+import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestData;
 
 public class TestGraphDescription implements GraphHolder
 {
     private static final TargetDirectory target = TargetDirectory.forTest( TestGraphDescription.class );
-    private static EmbeddedGraphDatabase graphdb;
+    private static AbstractGraphDatabase graphdb;
     public @Rule
     TestData<Map<String, Node>> data = TestData.producedThrough( GraphDescription.createGraphFor(
             this, true ) );
@@ -186,8 +187,7 @@ public class TestGraphDescription implements GraphHolder
     @BeforeClass
     public static void startDatabase()
     {
-        graphdb = new EmbeddedGraphDatabase(
-                target.graphDbDir( true ).getAbsolutePath() );
+        graphdb = new ImpermanentGraphDatabase();
     }
 
     @AfterClass

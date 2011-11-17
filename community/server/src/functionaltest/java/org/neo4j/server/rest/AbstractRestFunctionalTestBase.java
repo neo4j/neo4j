@@ -61,7 +61,7 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
     @BeforeClass
     public static void startDatabase()
     {
-        graphdb = new ImpermanentGraphDatabase( "target/db" );
+        graphdb = new ImpermanentGraphDatabase();
         server = new WrappingNeoServerBootstrapper( graphdb );
         server.start();
 
@@ -88,7 +88,7 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
         String queryString = "{\"script\": \"" + createScript( script ) + "\"," + parameterString+"},"  ;
 
         gen.get().expectedStatus( status.getStatusCode() ).payload(
-                queryString ).description(formatGroovy( script ) );
+                queryString ).description(formatGroovy( createScript( script ) ) );
         return gen.get().post( endpoint ).entity();
     }
     
@@ -149,7 +149,22 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
     @AfterClass
     public static void shutdownServer()
     {
-        server.stop();
+        try
+        {
+            if ( server != null ) server.stop();
+        }
+        finally
+        {
+            try
+            {
+                if ( graphdb != null ) graphdb.shutdown();
+            }
+            finally
+            {
+                graphdb = null;
+                server = null;
+            }
+        }
     }
 
     protected String getDataUri()

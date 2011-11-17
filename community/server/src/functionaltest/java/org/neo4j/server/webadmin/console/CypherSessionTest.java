@@ -51,8 +51,16 @@ public class CypherSessionTest
     @Test
     public void shouldReturnASingleNode() throws Exception
     {
-        CypherSession session = new CypherSession( new ImpermanentGraphDatabase() );
-        Pair<String, String> result = session.evaluate( "start a=node(0) return a" );
-        assertThat( result.first(), containsString( "Node[0]" ) );
+        ImpermanentGraphDatabase graphdb = new ImpermanentGraphDatabase();
+        try
+        {
+            CypherSession session = new CypherSession( graphdb );
+            Pair<String, String> result = session.evaluate( "start a=node(0) return a" );
+            assertThat( result.first(), containsString( "Node[0]" ) );
+        }
+        finally
+        {
+            graphdb.shutdown();
+        }
     }
 }

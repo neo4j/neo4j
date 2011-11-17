@@ -20,13 +20,15 @@
 
 package org.neo4j.cypher
 
+import pipes.Pipe
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb.{PropertyContainer, Relationship, NotFoundException, Node}
 import collection.Traversable
 import java.io.{StringWriter, PrintWriter}
+import java.lang.String
 
 
-trait ExecutionResult extends Traversable[Map[String, Any]] with StringExtras {
+trait ExecutionResult extends Traversable[Map[String, Any]] with StringExtras with Pipe {
   val symbols: SymbolTable
 
   val columns: List[String]

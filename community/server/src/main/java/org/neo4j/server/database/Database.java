@@ -171,6 +171,6 @@ public class Database
 
     public StringLogger getStringLogger()
     {
-        return StringLogger.getLogger( databaseStoreDirectory );
+        return graph.getMessageLog();
     }
 }

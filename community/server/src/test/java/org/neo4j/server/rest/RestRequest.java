@@ -51,9 +51,15 @@ public class RestRequest {
 
     public RestRequest( URI baseUri, String username, String password ) {
         this.baseUri = uriWithoutSlash( baseUri );
-        client = DEFAULT_CLIENT;
-        if ( username != null ) client.addFilter( new HTTPBasicAuthFilter( username, password ) );
-
+        if ( username != null )
+        {
+            client = Client.create();
+            client.addFilter( new HTTPBasicAuthFilter( username, password ) );
+        }
+        else
+        {
+            client = DEFAULT_CLIENT;
+        }
     }
 
     public RestRequest(URI uri, Client client) {

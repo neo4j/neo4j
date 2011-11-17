@@ -131,6 +131,18 @@ public class RESTDocsGenerator extends AsciiDocGenerator
         this.expectedResponseStatus = expectedResponseStatus;
         return this;
     }
+    
+    /**
+     * Set the expected status of the response. The test will fail if the
+     * response has a different status. Defaults to HTTP 200 OK.
+     * 
+     * @param expectedResponseStatus the expected response status
+     */
+    public RESTDocsGenerator expectedStatus( final ClientResponse.Status expectedStatus)
+    {
+        this.expectedResponseStatus = expectedStatus.getStatusCode();
+        return this;
+    }
 
     /**
      * Set the expected media type of the response. The test will fail if the

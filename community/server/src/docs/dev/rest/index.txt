@@ -45,6 +45,14 @@ include::create-a-relationship-with-properties.txt[]
 
 include::delete-relationship.txt[]
 
+include::get-all-properties-on-a-relationship.txt[]
+
+include::set-all-properties-on-a-relationship.txt[]
+
+include::get-single-property-on-a-relationship.txt[]
+
+include::set-single-property-on-a-relationship.txt[]
+
 include::get-all-relationships.txt[]
 
 include::get-incoming-relationships.txt[]

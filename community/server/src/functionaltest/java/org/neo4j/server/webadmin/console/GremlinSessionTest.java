@@ -29,7 +29,6 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class GremlinSessionTest
 {
-    private static final String TARGET_TEMPDB = "target/tempdb";
     private static final String NEWLINE = System.getProperty( "line.separator" );
     private ScriptSession session;
     private Database database;
@@ -71,7 +70,7 @@ public class GremlinSessionTest
     @Before
     public void setUp() throws Exception
     {
-        this.database = new Database( new ImpermanentGraphDatabase( TARGET_TEMPDB ) );
+        this.database = new Database( new ImpermanentGraphDatabase() );
         session = new GremlinSession( database );
     }
 

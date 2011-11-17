@@ -57,14 +57,6 @@ public class JavaTestDocsGenerator extends AsciiDocGenerator
         super( title, "docs" );
     }
 
-    @Override
-    protected void writeEntity( FileWriter fw, String entity )
-            throws IOException
-    {
-        // TODO Auto-generated method stub
-
-    }
-
     public void document( String directory, String sectionName )
     {
         this.setSection( sectionName );

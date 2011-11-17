@@ -36,7 +36,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public abstract class AbstractTestBase
 {
@@ -45,14 +45,12 @@ public abstract class AbstractTestBase
         GraphDatabaseService wrap( GraphDatabaseService graphdb );
     }
 
-    private static final String TARGET_NEODB = "target/neodb";
     private static GraphDatabaseService graphdb;
 
     @BeforeClass
     public static final void beforeSuite()
     {
-        deleteFileOrDirectory( new File( TARGET_NEODB ) );
-        graphdb = new EmbeddedGraphDatabase( TARGET_NEODB );
+        graphdb = new ImpermanentGraphDatabase();
     }
 
     @AfterClass

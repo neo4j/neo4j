@@ -19,9 +19,6 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static org.neo4j.index.Neo4jTestCase.deleteFileOrDirectory;
-
-import java.io.File;
 import java.util.Map;
 
 import org.junit.After;
@@ -38,7 +35,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public abstract class AbstractLuceneIndexTest
 {
@@ -48,9 +45,7 @@ public abstract class AbstractLuceneIndexTest
     @BeforeClass
     public static void setUpStuff()
     {
-        String storeDir = "target/var/freshindex";
-        deleteFileOrDirectory( new File( storeDir ) );
-        graphDb = new EmbeddedGraphDatabase( storeDir );
+        graphDb = new ImpermanentGraphDatabase();
     }
 
     @AfterClass

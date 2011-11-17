@@ -23,9 +23,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
-import java.lang.Thread.State;
 import java.util.Map;
-import java.util.Random;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -40,7 +38,9 @@ import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Don't extend Neo4jTestCase since these tests restarts the db in the tests. 
@@ -62,64 +62,24 @@ public class TestRecovery
     @Test
     public void testRecovery() throws Exception
     {
-        final GraphDatabaseService graphDb = newGraphDbService();
-        final Index<Node> nodeIndex = graphDb.index().forNodes( "node-index" );
-        final Index<Relationship> relIndex = graphDb.index().forRelationships( "rel-index" );
-        final RelationshipType relType = DynamicRelationshipType.withName( "recovery" );
+        GraphDatabaseService graphDb = newGraphDbService();
+        Index<Node> nodeIndex = graphDb.index().forNodes( "node-index" );
+        Index<Relationship> relIndex = graphDb.index().forRelationships( "rel-index" );
+        RelationshipType relType = DynamicRelationshipType.withName( "recovery" );
         
         graphDb.beginTx();
-        Random random = new Random();
-        Thread stopper = new Thread()
-        {
-            @Override public void run()
-            {
-                sleepNice( 1000 );
-                graphDb.shutdown();
-            }
-        };
-        final String[] keys = { "apoc", "zion", "neo" };
-        try
-        {
-            stopper.start();
-            for ( int i = 0; i < 50; i++ )
-            {
-                Node node = graphDb.createNode();
-                Node otherNode = graphDb.createNode();
-                Relationship rel = node.createRelationshipTo( otherNode, relType );
-                for ( int ii = 0; ii < 3; ii++ )
-                {
-                    nodeIndex.add( node, keys[random.nextInt( keys.length )], random.nextInt() );
-                    relIndex.add( rel, keys[random.nextInt( keys.length )], random.nextInt() );
-                }
-                sleepNice( 10 );
-            }
-        }
-        catch ( Exception e )
-        {
-            // Ok
-        }
-        
-        // Wait until the stopper has run, i.e. the graph db is shut down
-        while ( stopper.getState() != State.TERMINATED )
-        {
-            sleepNice( 100 );
-        }
+        Node node = graphDb.createNode();
+        Node otherNode = graphDb.createNode();
+        Relationship rel = node.createRelationshipTo( otherNode, relType );
+        nodeIndex.add( node, "key1", "string value" ); 
+        nodeIndex.add( node, "key2", 12345 ); 
+        relIndex.add( rel, "key1", "string value" ); 
+        relIndex.add( rel, "key2", 12345 ); 
+        graphDb.shutdown();
         
         // Start up and let it recover
         final GraphDatabaseService newGraphDb = new EmbeddedGraphDatabase( getDbPath() );
         newGraphDb.shutdown();
-    }
-    
-    private static void sleepNice( long time )
-    {
-        try
-        {
-            Thread.sleep( time );
-        }
-        catch ( InterruptedException e )
-        {
-            // Ok
-        }
     }
     
     @Ignore
@@ -209,6 +169,8 @@ public class TestRecovery
         Map<Object, Object> params = MapUtil.genericMap(
                 "store_dir", getDbPath(),
                 IndexStore.class, new IndexStore( getDbPath() ),
+                FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction(),
+                StringLogger.class, StringLogger.DEV_NULL,
                 LogBufferFactory.class, CommonFactories.defaultLogBufferFactory() );
         LuceneDataSource ds = new LuceneDataSource( params );
         ds.close();

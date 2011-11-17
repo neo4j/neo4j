@@ -60,6 +60,7 @@ import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class ImdbExampleTest
 {
@@ -69,8 +70,7 @@ public class ImdbExampleTest
     @BeforeClass
     public static void setUpDb()
     {
-        Neo4jTestCase.deleteFileOrDirectory( new File( "target/graphdb" ) );
-        graphDb = new EmbeddedGraphDatabase( "target/graphdb" );
+        graphDb = new ImpermanentGraphDatabase();
         Transaction transaction = graphDb.beginTx();
         try
         {
@@ -174,7 +174,7 @@ public class ImdbExampleTest
     @Test
     public void deleteIndex()
     {
-        GraphDatabaseService graphDb = new EmbeddedGraphDatabase( "target/graphdb-delete" );
+        GraphDatabaseService graphDb = new ImpermanentGraphDatabase();
         Transaction transaction = graphDb.beginTx();
         try
         {

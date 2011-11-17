@@ -17,20 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes
+package org.neo4j.server;
 
-import org.neo4j.cypher.SymbolTable
-import org.neo4j.cypher.commands.Clause
-import java.lang.String
+import org.apache.commons.configuration.Configuration;
+import org.neo4j.server.database.GraphDatabaseFactory;
 
-class FilterPipe(source: Pipe, where: Clause) extends Pipe {
-  val symbols: SymbolTable = source.symbols
-
-  def foreach[U](f: (Map[String, Any]) => U) {
-    source.filter((row) => {
-      where.isMatch(row)
-    }).foreach(f)
-  }
-
-  override def executionPlan(): String = source.executionPlan() + "\r\n" + "Filter(" + where.toString + ")"
+public class EphemeralNeoServerBootstrapper extends NeoServerBootstrapper
+{
+    @Override
+    protected GraphDatabaseFactory getGraphDatabaseFactory( Configuration configuration )
+    {
+        return ServerTestUtils.EPHEMERAL_GRAPH_DATABASE_FACTORY;
+    }
 }

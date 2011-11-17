@@ -17,7 +17,7 @@ Hello world
     
     Now it's time to interact with the database:
 
-%{source-code|snippet=operationsInATransaction|file=src/main/java/org/neo4j/examples/EmbeddedNeo4j.java}
+%{source-code|snippet=transaction|file=src/main/java/org/neo4j/examples/EmbeddedNeo4j.java}
 
     At this point this is how the database looks:
 

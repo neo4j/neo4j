@@ -34,7 +34,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public abstract class Neo4jTestCase
 {
@@ -46,8 +46,7 @@ public abstract class Neo4jTestCase
     @BeforeClass
     public static void setUpDb() throws Exception
     {
-        deleteFileOrDirectory( dbPath );
-        graphDb = new EmbeddedGraphDatabase( dbPath.getAbsolutePath() );
+        graphDb = new ImpermanentGraphDatabase();
     }
     
     @Before

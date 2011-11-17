@@ -19,8 +19,6 @@
  */
 package examples;
 
-import java.io.File;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -29,8 +27,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.index.Neo4jTestCase;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class LuceneIndexSiteExamples
 {
@@ -40,9 +37,7 @@ public class LuceneIndexSiteExamples
     @BeforeClass
     public static void setUpDb()
     {
-        String path = "target/var/examples";
-        Neo4jTestCase.deleteFileOrDirectory( new File( path ) );
-        graphDb = new EmbeddedGraphDatabase( path );
+        graphDb = new ImpermanentGraphDatabase();
     }
     
     @Before

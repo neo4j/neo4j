@@ -20,6 +20,7 @@
 package org.neo4j.cypher.commands
 
 import org.neo4j.graphdb.PropertyContainer
+import java.lang.String
 
 abstract class Clause {
   def ++(other: Clause): Clause = And(this, other)
@@ -45,6 +46,8 @@ case class And(a: Clause, b: Clause) extends Clause {
   def atoms: Seq[ Clause ] = a.atoms ++ b.atoms
 
   def dependsOn: Set[ String ] = a.dependsOn ++ b.dependsOn
+
+  override def toString: String = "(" + a + " AND " + b + ")"
 }
 
 case class Or(a: Clause, b: Clause) extends Clause {
@@ -53,6 +56,7 @@ case class Or(a: Clause, b: Clause) extends Clause {
   def atoms: Seq[ Clause ] = Seq(this)
 
   def dependsOn: Set[ String ] = a.dependsOn ++ b.dependsOn
+  override def toString: String = "(" + a + " OR " + b + ")"
 }
 
 case class Not(a: Clause) extends Clause {
@@ -61,6 +65,7 @@ case class Not(a: Clause) extends Clause {
   def atoms: Seq[ Clause ] = a.atoms.map(Not(_))
 
   def dependsOn: Set[ String ] = a.dependsOn
+  override def toString: String = "NOT(" + a + ")"
 }
 
 case class IsNull(value: Value) extends Clause {
@@ -72,6 +77,7 @@ case class IsNull(value: Value) extends Clause {
   }
 
   def atoms: Seq[ Clause ] = Seq(this)
+  override def toString: String = value + " IS NULL"
 }
 
 case class True() extends Clause {
@@ -80,6 +86,7 @@ case class True() extends Clause {
   def dependsOn: Set[ String ] = Set()
 
   def atoms: Seq[ Clause ] = Seq(this)
+  override def toString: String = "true"
 }
 
 case class Has(property: PropertyValue) extends Clause {
@@ -93,6 +100,7 @@ case class Has(property: PropertyValue) extends Clause {
   def dependsOn: Set[ String ] = Set(property.entity)
 
   def atoms: Seq[ Clause ] = Seq(this)
+  override def toString: String = "hasProp(" + property + ")"
 }
 
 case class RegularExpression(a: Value, regex: Value) extends Clause {
@@ -104,4 +112,6 @@ case class RegularExpression(a: Value, regex: Value) extends Clause {
   def dependsOn: Set[ String ] = a.dependsOn
 
   def atoms: Seq[ Clause ] = Seq(this)
+
+  override def toString: String = a.toString() + " ~= /" + regex.toString() + "/"
 }

@@ -266,4 +266,16 @@ public class FileUtils
             }
         }
     }
+
+    public static String canonicalize( String path )
+    {
+        try
+        {
+            return new File( path ).getCanonicalFile().getAbsolutePath();
+        }
+        catch ( IOException e )
+        {
+            return new File( path ).getAbsolutePath();
+        }
+    }
 }

@@ -19,110 +19,57 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
+import static java.util.concurrent.Executors.newSingleThreadExecutor;
+
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.Index;
 
-public class BaseWorker extends Thread
+public class BaseWorker
 {
-    private static final int WAITING = 1;
-    private static final int RUNNING = 2;
-    private static final int DONE = 3;
-    private static final int STARTING = 4;
-    
     protected final Index<Node> index;
     protected final GraphDatabaseService graphDb;
     private volatile Exception exception;
-    private volatile CountDownLatch latch = new CountDownLatch( 1 );
-    private final AtomicInteger threadState = new AtomicInteger( STARTING );
-    private final Queue<Command> commands = new ConcurrentLinkedQueue<Command>();
+    private final ExecutorService commandExecutor = newSingleThreadExecutor();
+    private final CommandState state;
 
     public BaseWorker( Index<Node> index, GraphDatabaseService graphDb )
     {
         this.index = index;
         this.graphDb = graphDb;
-        waitForWorkerToStart();
+        this.state = new CommandState( index, graphDb );
     }
 
-    @Override
-    public void run()
+    protected void queueCommand( final Command cmd )
     {
-        final CommandState state = new CommandState( index, graphDb );
-        threadState.set( STARTING );
-        while ( state.alive )
+        try
         {
-            try
+            commandExecutor.submit( new Runnable()
             {
-                latch = new CountDownLatch( 1 );
-                log( "WORKER: Waiting for latch" );
-                latch.await();
-                threadState.set( RUNNING );
-                Command command = commands.poll();
-                log( "WORKER: I have a command! " + command.getClass().getSimpleName() );
-                command.doWork( state );
-                threadState.set( DONE );
-
-            }
-            catch ( InterruptedException e )
-            {
-                throw new RuntimeException( e );
-            }
-            catch ( Exception exception )
-            {
-                this.exception = exception;
-                threadState.set( DONE );
-            }
-
+                @Override
+                public void run()
+                {
+                    try
+                    {
+                        cmd.doWork( state );
+                    }
+                    catch ( Exception e )
+                    {
+                        exception = e;
+                    }
+                }
+            } ).get();
         }
-    }
-
-    private void log( String s )
-    {
-
-    }
-
-    protected void queueCommand( Command cmd )
-    {
-        commands.add( cmd );
-        log( "MASTER: Queuing command, and starting worker - " + cmd.getClass().getSimpleName() );
-        latch.countDown();
-        waitForCommandToComplete();
-        threadState.set( WAITING );
-    }
-
-    public void waitForCommandToComplete()
-    {
-        waitFor( DONE, WAITING );
-    }
-
-    public void waitForWorkerToStart()
-    {
-        waitFor( STARTING, WAITING );
-    }
-
-    private void waitFor( int expectedState, int newState )
-    {
-        int retries = 0;
-        while ( !threadState.compareAndSet( expectedState, newState ) && retries++ < 100 )
+        catch ( InterruptedException e )
         {
-            try
-            {
-                Thread.sleep( 10 );
-            }
-            catch ( InterruptedException e )
-            {
-                throw new RuntimeException( e );
-            }
+            throw new RuntimeException( e );
         }
-
-        if (retries > 300)
+        catch ( ExecutionException e )
         {
-            throw new IllegalStateException( "Something didn't finish in a timely manner. Aborting..." );
+            throw new RuntimeException( e );
         }
     }
     

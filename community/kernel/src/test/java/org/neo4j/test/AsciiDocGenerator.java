@@ -36,22 +36,21 @@ import org.neo4j.graphdb.GraphDatabaseService;
  * 
  * The filename of the resulting ASCIIDOC test file is derived from the title.
  * 
- * The title is determined by either a JavaDoc perioed terminated first title
+ * The title is determined by either a JavaDoc period terminated first title
  * line, the @Title annotation or the method name, where "_" is replaced by " ".
  */
 public abstract class AsciiDocGenerator
 {
     private static final String DOCUMENTATION_END = "\n...\n";
     private Logger log = Logger.getLogger( AsciiDocGenerator.class.getName() );
-    protected String title = null;
+    protected final String title;
+    protected String section;
     protected String description = null;
     protected GraphDatabaseService graph;
     protected static final String SNIPPET_MARKER = "@@";
     protected Map<String, String> snippets = new HashMap<String, String>();
 
     public File out;
-
-    protected String section;
 
     public AsciiDocGenerator( final String title, final String section )
     {
@@ -110,10 +109,6 @@ public abstract class AsciiDocGenerator
         }
         return this;
     }
-
-
-    protected abstract void writeEntity( final FileWriter fw,
-            final String entity ) throws IOException;
 
     protected void line( final Writer fw, final String string )
             throws IOException

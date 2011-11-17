@@ -19,28 +19,30 @@
  */
 package org.neo4j.cypher.pipes
 
-import org.neo4j.cypher.commands.ReturnItem
-import org.neo4j.cypher.{ExecutionResult, SyntaxException, SymbolTable}
 import java.lang.String
+import org.neo4j.cypher.SymbolTable
+import org.neo4j.cypher.commands._
+import collection.Seq
+import collection.immutable.Map
 
-class ColumnFilterPipe(source: Pipe, returnItems: Seq[ReturnItem], val columns:List[String]) extends Pipe with ExecutionResult {
-  val returnItemNames = returnItems.map( _.columnName )
+//This class will extract properties and other stuff to make the maps
+//easy to work with for other pipes
+class ExtractPipe(source: Pipe, returnItems: Seq[ReturnItem]) extends Pipe {
+  type MapTransformer = Map[String, Any] => Map[String, Any]
 
-  val symbols: SymbolTable = {
-    val mergedSymbols: SymbolTable = source.symbols ++ new SymbolTable(returnItems.map(_.identifier))
-    new SymbolTable(returnItemNames.map( name => mergedSymbols.get(name).getOrElse(throw new SyntaxException("Unbound Symbol "+name))))
-  }
+  def getSymbolType(item: ReturnItem): Identifier = item.identifier
+
+  val symbols: SymbolTable = source.symbols.add(returnItems.map(_.identifier))
+
+  returnItems.foreach(_.assertDependencies(source))
 
   def foreach[U](f: (Map[String, Any]) => U) {
     source.foreach(row => {
-      val filtered = row.filter((kv) => kv match {
-        case (name, _) => returnItemNames.exists(_ == name)
-      })
-      f.apply(filtered)
+      val projection: Map[String, Any] = returnItems.map( returnItem =>returnItem.columnName -> returnItem(row) ).toMap
+      f.apply(projection ++ row)
     })
   }
 
-  override def executionPlan(): String = {
-    source.executionPlan() + "\r\n" + "ColumnFilter([" + source.symbols.columns + "] => [" + columns.mkString(",") + "])"
-  }
+  override def executionPlan(): String = source.executionPlan() + "\r\nExtract([" + source.symbols.columns + "] => [" + returnItems.map(_.columnName).mkString(", ") + "])"
 }
+

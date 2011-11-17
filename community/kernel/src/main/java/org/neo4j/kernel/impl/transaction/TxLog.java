@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction;
 
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
@@ -35,6 +34,7 @@ import java.util.Map;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.UTF8;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.DirectMappedLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 
@@ -58,6 +58,7 @@ public class TxLog
     public static final byte BRANCH_ADD = 2;
     public static final byte MARK_COMMIT = 3;
     public static final byte TX_DONE = 4;
+    private final FileSystemAbstraction fileSystem;
 
     /**
      * Initializes a transaction log using <CODE>filename</CODE>. If the file
@@ -69,13 +70,14 @@ public class TxLog
      * @throws IOException
      *             If unable to open file
      */
-    public TxLog( String fileName ) throws IOException
+    public TxLog( String fileName, FileSystemAbstraction fileSystem ) throws IOException
     {
         if ( fileName == null )
         {
             throw new IllegalArgumentException( "Null filename" );
         }
-        FileChannel fileChannel = new RandomAccessFile( fileName, "rw" ).getChannel();
+        this.fileSystem = fileSystem;
+        FileChannel fileChannel = fileSystem.open( fileName, "rw" );
         fileChannel.position( fileChannel.size() );
         logBuffer = new DirectMappedLogBuffer( fileChannel );
         this.name = fileName;
@@ -471,7 +473,7 @@ public class TxLog
             }
         } );
         Iterator<Record> recordItr = records.iterator();
-        FileChannel fileChannel = new RandomAccessFile( newFile, "rw" ).getChannel();
+        FileChannel fileChannel = fileSystem.open( newFile, "rw" );
         fileChannel.position( fileChannel.size() );
         logBuffer = new DirectMappedLogBuffer( fileChannel );
         name = newFile;

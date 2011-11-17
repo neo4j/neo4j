@@ -136,9 +136,11 @@ public class RelationshipTypeStore extends AbstractStore implements Store, Recor
     {
         IdGeneratorFactory idGeneratorFactory = (IdGeneratorFactory) config.get(
                 IdGeneratorFactory.class );
-        createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), idGeneratorFactory );
+        FileSystemAbstraction fileSystem = (FileSystemAbstraction) config.get( FileSystemAbstraction.class );
+        createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), idGeneratorFactory,
+                fileSystem );
         DynamicStringStore.createStore( fileName + ".names",
-            TYPE_STORE_BLOCK_SIZE, idGeneratorFactory, IdType.RELATIONSHIP_TYPE_BLOCK );
+            TYPE_STORE_BLOCK_SIZE, idGeneratorFactory, fileSystem, IdType.RELATIONSHIP_TYPE_BLOCK );
         RelationshipTypeStore store = new RelationshipTypeStore(
                 fileName, config, IdType.RELATIONSHIP_TYPE );
         store.close();

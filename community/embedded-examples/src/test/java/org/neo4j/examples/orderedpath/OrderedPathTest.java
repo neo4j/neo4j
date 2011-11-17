@@ -22,6 +22,7 @@ import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 import java.util.ArrayList;
 
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
@@ -62,6 +63,19 @@ public class OrderedPathTest
         D.setProperty( "name", "D" );
         tx.success();
         tx.finish();
+    }
+    
+    @AfterClass
+    public static void shutdownGraph()
+    {
+        try
+        {
+            if ( db != null ) db.shutdown();
+        }
+        finally
+        {
+            db = null;
+        }
     }
 
     @Test

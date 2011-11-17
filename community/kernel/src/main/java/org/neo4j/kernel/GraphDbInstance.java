@@ -26,7 +26,6 @@ import java.util.Map;
 
 import javax.transaction.TransactionManager;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.UTF8;
@@ -72,7 +71,7 @@ class GraphDbInstance
      * @param configuration parameters
      * @throws StartupFailedException if unable to start
      */
-    public synchronized Map<Object, Object> start( GraphDatabaseService graphDb,
+    public synchronized Map<Object, Object> start( AbstractGraphDatabase graphDb,
             KernelExtensionLoader kernelExtensionLoader )
     {
         if ( started )
@@ -85,7 +84,7 @@ class GraphDbInstance
         boolean dumpToConsole = Boolean.parseBoolean( (String) config.getInputParams().get(
                 Config.DUMP_CONFIGURATION ) );
         storeDir = FileUtils.fixSeparatorsInPath( storeDir );
-        StringLogger logger = StringLogger.getLogger( storeDir );
+        StringLogger logger = graphDb.getMessageLog();
         AutoConfigurator autoConfigurator = new AutoConfigurator( storeDir, useMemoryMapped, dumpToConsole );
         autoConfigurator.configure( subset( config.getInputParams(), Config.USE_MEMORY_MAPPED_BUFFERS ) );
         // params.putAll( config.getInputParams() );

@@ -36,7 +36,6 @@ import static org.neo4j.index.impl.lucene.IsEmpty.isEmpty;
 import static org.neo4j.index.lucene.QueryContext.numericRange;
 import static org.neo4j.index.lucene.ValueContext.numeric;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -61,10 +60,10 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.index.Neo4jTestCase;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class TestLuceneIndex extends AbstractLuceneIndexTest
 {
@@ -118,12 +117,10 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         assertTrue( index.isWriteable() );
     }
 
+    @Ignore
     @Test
     public void testStartupInExistingDirectory() {
-		File dir = new File("target" + File.separator + "temp" + File.separator);
-        Neo4jTestCase.deleteFileOrDirectory( dir );
-        dir.mkdir();
-        EmbeddedGraphDatabase graphDatabase = new EmbeddedGraphDatabase( dir.getAbsolutePath() );
+        AbstractGraphDatabase graphDatabase = new ImpermanentGraphDatabase();
         Index<Node> index = graphDatabase.index().forNodes("nodes");
         assertNotNull(index);
     }

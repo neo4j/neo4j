@@ -41,6 +41,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
@@ -54,6 +55,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaResourceHelpImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public class TestXaFramework extends AbstractNeo4jTestCase
 {
@@ -342,6 +344,8 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         Map<Object,Object> config = new HashMap<Object,Object>();
         config.put( "store_dir", "target/var" );
         config.put( LogBufferFactory.class, CommonFactories.defaultLogBufferFactory() );
+        config.put( StringLogger.class, StringLogger.DEV_NULL );
+        config.put( FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
         xaDsMgr.registerDataSource( "dummy_datasource", new DummyXaDataSource(
                 config ), UTF8.encode( "DDDDDD" ) );
         XaDataSource xaDs = xaDsMgr.getXaDataSource( "dummy_datasource" );
@@ -405,6 +409,8 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             Map<Object,Object> config = new HashMap<Object,Object>();
             config.put( "store_dir", "target/var" );
             config.put( LogBufferFactory.class, CommonFactories.defaultLogBufferFactory() );
+            config.put( FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
+            config.put( StringLogger.class, StringLogger.DEV_NULL );
             xaDsMgr.registerDataSource( "dummy_datasource1",
                     new DummyXaDataSource( config ), UTF8.encode( "DDDDDD" ) );
             xaDs1 = (DummyXaDataSource) xaDsMgr

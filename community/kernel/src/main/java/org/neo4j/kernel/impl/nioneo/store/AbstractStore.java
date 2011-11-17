@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -82,7 +81,7 @@ public abstract class AbstractStore extends CommonAbstractStore
      *             If fileName is null or if file exists
      */
     protected static void createEmptyStore( String fileName,
-        String typeAndVersionDescriptor, IdGeneratorFactory idGeneratorFactory )
+        String typeAndVersionDescriptor, IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystem )
     {
         // sanity checks
         if ( fileName == null )
@@ -99,7 +98,7 @@ public abstract class AbstractStore extends CommonAbstractStore
         // write the header
         try
         {
-            FileChannel channel = new FileOutputStream( fileName ).getChannel();
+            FileChannel channel = fileSystem.create( fileName );
             int endHeaderSize = UTF8.encode( typeAndVersionDescriptor ).length;
             ByteBuffer buffer = ByteBuffer.allocate( endHeaderSize );
             buffer.put( UTF8.encode( typeAndVersionDescriptor ) ).flip();
@@ -272,8 +271,7 @@ public abstract class AbstractStore extends CommonAbstractStore
         setHighId( highId + 1 );
         if ( getConfig() != null )
         {
-            String storeDir = (String) getConfig().get( "store_dir" );
-            StringLogger msgLog = StringLogger.getLogger( storeDir );
+            StringLogger msgLog = (StringLogger) getConfig().get( StringLogger.class );
             msgLog.logMessage( getStorageFileName() + " rebuild id generator, highId=" + getHighId() +
                     " defragged count=" + defraggedCount, true );
         }

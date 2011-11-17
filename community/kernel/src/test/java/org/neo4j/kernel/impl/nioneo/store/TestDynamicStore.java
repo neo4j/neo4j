@@ -43,11 +43,14 @@ import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public class TestDynamicStore
 {
     public static IdGeneratorFactory ID_GENERATOR_FACTORY =
             CommonFactories.defaultIdGeneratorFactory();
+    public static FileSystemAbstraction FILE_SYSTEM =
+            CommonFactories.defaultFileSystemAbstraction();
 
     private String path()
     {
@@ -111,7 +114,7 @@ public class TestDynamicStore
     private void createEmptyStore( String fileName, int blockSize )
     {
         DynamicArrayStore.createEmptyStore( fileName, blockSize,
-                DynamicArrayStore.VERSION, ID_GENERATOR_FACTORY,
+                DynamicArrayStore.VERSION, ID_GENERATOR_FACTORY, FILE_SYSTEM,
                 IdType.ARRAY_BLOCK );
     }
 
@@ -162,6 +165,7 @@ public class TestDynamicStore
         return map(
                 "neo_store", dynamicStoreFile(),
                 IdGeneratorFactory.class, ID_GENERATOR_FACTORY,
+                StringLogger.class, StringLogger.DEV_NULL,
                 "store_dir", path(),
                 FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
     }

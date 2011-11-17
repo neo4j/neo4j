@@ -19,4 +19,11 @@
  */
 package org.neo4j.cypher.commands
 
-case class SortItem(returnItem: ReturnItem, ascending: Boolean)
+import java.lang.String
+
+case class SortItem(returnItem: ReturnItem, ascending: Boolean) {
+  override def toString: String = {
+    val order = if(ascending) " ASC" else " DESC"
+    returnItem.columnName + order
+  }
+}

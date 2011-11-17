@@ -94,7 +94,7 @@ public class BatchInserterImpl implements BatchInserter
         Map<String,String> stringParams )
     {
         rejectAutoUpgrade( stringParams );
-        msgLog = StringLogger.getLogger( storeDir );
+        msgLog = StringLogger.logger( storeDir );
         Map<Object,Object> params = getDefaultParams();
         params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "false" );
         boolean dump = Boolean.parseBoolean( stringParams.get( Config.DUMP_CONFIGURATION ) );
@@ -633,7 +633,7 @@ public class BatchInserterImpl implements BatchInserter
         graphDbService.clearCaches();
         neoStore.close();
         msgLog.logMessage( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ")", true );
-        StringLogger.close( storeDir );
+        msgLog.close();
     }
 
     private Map<Object,Object> getDefaultParams()

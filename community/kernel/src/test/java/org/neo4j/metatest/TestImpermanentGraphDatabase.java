@@ -28,13 +28,13 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
-public class ImpermanentGraphDatabaseTests
+public class TestImpermanentGraphDatabase
 {
     private ImpermanentGraphDatabase db;
 
     @Before
 	public void Given() {
-		db = new ImpermanentGraphDatabase( "target/var/ineodb" );
+		db = new ImpermanentGraphDatabase();
 	}
     
     @After
@@ -68,7 +68,7 @@ public class ImpermanentGraphDatabaseTests
         createNode();
         db.shutdown();
 
-        db = new ImpermanentGraphDatabase( "neodb");
+        db = new ImpermanentGraphDatabase();
         
         assertEquals( "Should not see anything but the default reference node.", 1, nodeCount() );
     }

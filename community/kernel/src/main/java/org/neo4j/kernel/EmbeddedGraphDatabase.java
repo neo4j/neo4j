@@ -77,7 +77,8 @@ public final class EmbeddedGraphDatabase extends AbstractGraphDatabase
      */
     public EmbeddedGraphDatabase( String storeDir, Map<String,String> params )
     {
-        this.graphDbImpl = new EmbeddedGraphDbImpl( storeDir, null, params, this,
+        super( storeDir );
+        this.graphDbImpl = new EmbeddedGraphDbImpl( this.getStoreDir(), null, params, this,
                 CommonFactories.defaultLockManagerFactory(),
                 CommonFactories.defaultIdGeneratorFactory(),
                 CommonFactories.defaultRelationshipTypeCreator(),
@@ -121,7 +122,7 @@ public final class EmbeddedGraphDatabase extends AbstractGraphDatabase
         return graphDbImpl.getReferenceNode();
     }
 
-    public void shutdown()
+    @Override protected void close()
     {
         graphDbImpl.shutdown();
     }
@@ -167,12 +168,6 @@ public final class EmbeddedGraphDatabase extends AbstractGraphDatabase
     public KernelData getKernelData()
     {
         return graphDbImpl.getKernelData();
-    }
-
-    @Override
-    public String getStoreDir()
-    {
-        return graphDbImpl.getStoreDir();
     }
 
     public Iterable<Node> getAllNodes()

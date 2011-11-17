@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.util;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
-import static org.neo4j.kernel.impl.util.StringLogger.getLogger;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -40,7 +39,7 @@ public class TestStringLogger
         File logFile = new File( path, StringLogger.DEFAULT_NAME );
         File oldFile = new File( path, StringLogger.DEFAULT_NAME + ".1" );
         File oldestFile = new File( path, StringLogger.DEFAULT_NAME + ".2" );
-        StringLogger logger = getLogger( path, 1 );
+        StringLogger logger = StringLogger.logger( path, 200*1024 );
         assertFalse( oldFile.exists() );
         int counter = 0;
         String prefix = "Bogus message ";

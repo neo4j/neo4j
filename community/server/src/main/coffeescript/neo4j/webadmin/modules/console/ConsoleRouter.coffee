@@ -33,7 +33,7 @@ define(
         "/console/" : "console"
         "/console/:type" : "console"
 
-      defaultConsole : "shell"
+      consoleType : "shell"
 
       init : (appState) =>
         @appState = appState
@@ -57,7 +57,7 @@ define(
           
       console : (type=false) =>
         @saveLocation()
-        if type is false then type = @defaultConsole
+        if type is false then type = @consoleType
         @consoleType = type
         @appState.set( mainView : @getConsoleView(type) )
         @getConsoleView(type).focusOnInputField()

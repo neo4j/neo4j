@@ -40,7 +40,6 @@ import org.neo4j.shell.ShellLobby;
 
 public class DatabaseTest
 {
-
     private File databaseDirectory;
     private Database theDatabase;
     private boolean deletionFailureOk;

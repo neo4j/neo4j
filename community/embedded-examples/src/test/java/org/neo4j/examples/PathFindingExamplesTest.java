@@ -78,7 +78,14 @@ public class PathFindingExamplesTest
     @AfterClass
     public static void shutdownDb()
     {
-        graphDb.shutdown();
+        try
+        {
+            if ( graphDb != null ) graphDb.shutdown();
+        }
+        finally
+        {
+            graphDb = null;
+        }
     }
 
     @Test
