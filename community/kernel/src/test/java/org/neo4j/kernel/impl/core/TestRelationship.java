@@ -24,16 +24,11 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -44,13 +39,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.util.FileUtils;
-import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class TestRelationship extends AbstractNeo4jTestCase
 {
@@ -788,69 +778,52 @@ public class TestRelationship extends AbstractNeo4jTestCase
     @Test
     public void makeSureLazyLoadingRelationshipsWorksEvenIfOtherIteratorAlsoLoadsInTheSameIteration() throws IOException
     {
-        String path = "target/var/lazyloadrels";
-        FileUtils.deleteRecursively( new File( path ) );
-        GraphDatabaseService graphDB = new EmbeddedGraphDatabase( path );
         int num_edges = 100;
         Node hub;
 
         /* create 256 nodes */
-        Transaction tx = graphDB.beginTx();
+        GraphDatabaseService graphDB = getGraphDb();
         Node[] nodes = new Node[256];
         for ( int num_nodes = 0; num_nodes < nodes.length; num_nodes += 1 )
         {
             nodes[num_nodes] = graphDB.createNode();
         }
-        tx.success();
-        tx.finish();
+        newTransaction();
 
         /* create random outgoing relationships from node 5 */
         hub = nodes[4];
         int nextID = 7;
 
-        tx = graphDB.beginTx();
+        DynamicRelationshipType outtie = DynamicRelationshipType.withName( "outtie" );
+        DynamicRelationshipType innie = DynamicRelationshipType.withName( "innie" );
         for ( int k = 0; k < num_edges; k += 1 )
         {
-            Node neighbor = graphDB.getNodeById( nextID );
+            Node neighbor = nodes[nextID];
             nextID += 7;
             nextID &= 255;
-            if ( nextID == 0 )
-            {
-                nextID = 1;
-            }
-            hub.createRelationshipTo( neighbor, DynamicRelationshipType.withName( "outtie" ) );
+            if ( nextID == 0 ) nextID = 1;
+            hub.createRelationshipTo( neighbor, outtie );
         }
-        tx.success();
-        tx.finish();
+        newTransaction();
 
-        tx = graphDB.beginTx();
         /* create random incoming relationships to node 5 */
         for ( int k = 0; k < num_edges; k += 1 )
         {
-            Node neighbor = graphDB.getNodeById( nextID );
+            Node neighbor = nodes[nextID];
             nextID += 7;
             nextID &= 255;
-            if ( nextID == 0 )
-            {
-                nextID = 1;
-            }
-            neighbor.createRelationshipTo( hub, DynamicRelationshipType.withName( "innie" ) );
+            if ( nextID == 0 ) nextID = 1;
+            neighbor.createRelationshipTo( hub, innie );
         }
-        tx.success();
-        tx.finish();
-
-        graphDB.shutdown();
-        graphDB = new EmbeddedGraphDatabase( path );
+        commit();
+        clearCache();
+        
         hub = graphDB.getNodeById( hub.getId() );
         int count = 0;
         for ( @SuppressWarnings( "unused" )
         Relationship r1 : hub.getRelationships() )
         {
-            for ( @SuppressWarnings( "unused" )
-            Relationship r2 : hub.getRelationships() )
-            {
-                count += 1;
-            }
+            count += count( hub.getRelationships() );
         }
         assertEquals( 40000, count );
 
@@ -858,111 +831,9 @@ public class TestRelationship extends AbstractNeo4jTestCase
         for ( @SuppressWarnings( "unused" )
         Relationship r1 : hub.getRelationships() )
         {
-            for ( @SuppressWarnings( "unused" )
-            Relationship r2 : hub.getRelationships() )
-            {
-                count += 1;
-            }
+            count += count( hub.getRelationships() );
         }
         assertEquals( 40000, count );
-        graphDB.shutdown();
-    }
-
-    @Test
-    public void deleteRelationshipFromNotFullyLoadedNode() throws Exception
-    {
-        int grabSize = 10;
-        GraphDatabaseService db = new ImpermanentGraphDatabase(
-                stringMap( "relationship_grab_size", "" + grabSize ) );
-        Transaction tx = db.beginTx();
-        Node node1 = db.createNode();
-        Node node2 = db.createNode();
-        Node node3 = db.createNode();
-        RelationshipType type1 = DynamicRelationshipType.withName( "type1" );
-        RelationshipType type2 = DynamicRelationshipType.withName( "type2" );
-        // This will the last relationship in the chain
-        node1.createRelationshipTo( node3, type1 );
-        Collection<Relationship> type2Relationships = new HashSet<Relationship>();
-        // Create exactly grabSize relationships and store them in a set
-        for ( int i = 0; i < grabSize; i++ )
-        {
-            type2Relationships.add( node1.createRelationshipTo( node2, type2 ) );
-        }
-        tx.success();
-        tx.finish();
-
-        ((AbstractGraphDatabase)db).getConfig().getGraphDbModule().getNodeManager().clearCache();
-
-        /*
-         * Here node1 has grabSize+1 relationships. The first grabSize to be loaded will be
-         * the type2 ones to node2 and the one remaining will be the type1 to node3.
-         */
-
-        tx = db.beginTx();
-        node1 = db.getNodeById( node1.getId() );
-        node2 = db.getNodeById( node2.getId() );
-        node3 = db.getNodeById( node3.getId() );
-
-        // Will load <grabsize> relationships, not all, and not relationships of
-        // type1 since it's the last one (the 11'th) in the chain.
-        node1.getRelationships().iterator().next();
-
-        // Delete the non-grabbed (from node1 POV) relationship
-        node3.getRelationships().iterator().next().delete();
-        // Just making sure
-        assertFalse( node3.getRelationships().iterator().hasNext() );
-
-        /*
-         *  Now all Relationships left on node1 should be of type2
-         *  This also checks that deletes on relationships are visible in the same tx.
-         */
-        assertEquals( type2Relationships, addToCollection( node1.getRelationships(), new HashSet<Relationship>() ) );
-
-        tx.success();
-        tx.finish();
-        assertEquals( type2Relationships, addToCollection( node1.getRelationships(), new HashSet<Relationship>() ) );
-        db.shutdown();
-    }
-
-    @Test
-    public void commitToNotFullyLoadedNode() throws Exception
-    {
-        int grabSize = 10;
-        GraphDatabaseService db = new ImpermanentGraphDatabase(
-                stringMap( "relationship_grab_size", "" + grabSize ) );
-        Transaction tx = db.beginTx();
-        Node node1 = db.createNode();
-        Node node2 = db.createNode();
-        RelationshipType type = DynamicRelationshipType.withName( "type" );
-        for ( int i = 0; i < grabSize + 2; i++ )
-        {
-            node1.createRelationshipTo( node2, type );
-        }
-        tx.success();
-        tx.finish();
-
-        ( (AbstractGraphDatabase) db ).getConfig().getGraphDbModule().getNodeManager().clearCache();
-
-        tx = db.beginTx();
-
-        node1.getRelationships().iterator().next().delete();
-        node1.setProperty( "foo", "bar" );
-        int relCount = 0;
-        for ( Relationship rel : node2.getRelationships() )
-        {
-            relCount++;
-        }
-        assertEquals( relCount, grabSize + 1 );
-        relCount = 0;
-        for (Relationship rel : node1.getRelationships())
-        {
-            relCount++;
-        }
-        assertEquals( relCount, grabSize + 1 );
-        assertEquals( "bar", node1.getProperty( "foo" ) );
-        tx.success();
-        tx.finish();
-        db.shutdown();
     }
 
     @Test
@@ -987,58 +858,6 @@ public class TestRelationship extends AbstractNeo4jTestCase
         assertEquals( expectedCount, count( node1.getRelationships() ) );
         newTransaction();
         assertEquals( expectedCount, count( node1.getRelationships() ) );
-    }
-
-    @Test
-    public void grabSizeWithTwoTypesDeleteAndCount()
-    {
-        int grabSize = 2;
-        GraphDatabaseService db = new ImpermanentGraphDatabase(
-                stringMap( "relationship_grab_size", "" + grabSize ) );
-        Transaction tx = db.beginTx();
-        Node node1 = db.createNode();
-        Node node2 = db.createNode();
-
-        int count = 0;
-        RelationshipType type1 = DynamicRelationshipType.withName( "type" );
-        RelationshipType type2 = DynamicRelationshipType.withName( "bar" );
-        // Create more than one grab size
-        for ( int i = 0; i < 11; i++ )
-        {
-            node1.createRelationshipTo( node2, type1 );
-            count++;
-        }
-        for ( int i = 0; i < 10; i++ )
-        {
-            node1.createRelationshipTo( node2, type2 );
-            count++;
-        }
-        tx.success();
-        tx.finish();
-
-        clearCacheAndCreateDeleteCount( db, node1, node2, type1, type2, count );
-        clearCacheAndCreateDeleteCount( db, node1, node2, type2, type1, count );
-        clearCacheAndCreateDeleteCount( db, node1, node2, type1, type1, count );
-        clearCacheAndCreateDeleteCount( db, node1, node2, type2, type2, count );
-        db.shutdown();
-    }
-
-    private void clearCacheAndCreateDeleteCount( GraphDatabaseService db, Node node1, Node node2,
-            RelationshipType createType, RelationshipType deleteType, int expectedCount )
-    {
-        Transaction tx = db.beginTx();
-        ( (AbstractGraphDatabase) db ).getConfig().getGraphDbModule().getNodeManager().clearCache();
-
-        node1.createRelationshipTo( node2, createType );
-        Relationship rel1 = node1.getRelationships( deleteType ).iterator().next();
-        rel1.delete();
-
-        assertEquals( expectedCount, count( node1.getRelationships() ) );
-        assertEquals( expectedCount, count( node2.getRelationships() ) );
-        tx.success();
-        tx.finish();
-        assertEquals( expectedCount, count( node1.getRelationships() ) );
-        assertEquals( expectedCount, count( node2.getRelationships() ) );
     }
 
     @Ignore( "Triggers a bug, enable this test when fixed, https://github.com/neo4j/community/issues/52" )
