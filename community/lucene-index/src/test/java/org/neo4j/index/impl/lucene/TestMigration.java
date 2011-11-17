@@ -22,6 +22,7 @@ package org.neo4j.index.impl.lucene;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.CommonFactories.defaultFileSystemAbstraction;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -167,7 +168,7 @@ public class TestMigration
 
     private void removeProvidersFromIndexDbFile( File storeDir )
     {
-        IndexStore indexStore = new IndexStore( storeDir.getPath() );
+        IndexStore indexStore = new IndexStore( storeDir.getPath(), defaultFileSystemAbstraction() );
         for ( Class<? extends PropertyContainer> cls : new Class[] {Node.class, Relationship.class} )
         {
             for ( String name : indexStore.getNames( cls ) )

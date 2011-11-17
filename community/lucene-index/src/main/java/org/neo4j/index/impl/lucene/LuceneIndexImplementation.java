@@ -67,6 +67,7 @@ public class LuceneIndexImplementation extends IndexImplementation
         boolean isReadOnly = config.isReadOnly();
         Map<Object, Object> params = new HashMap<Object, Object>( config.getParams() );
         params.put( "read_only", isReadOnly );
+        params.put( "ephemeral", config.isEphemeral() );
         dataSource = (LuceneDataSource) txModule.registerDataSource( LuceneDataSource.DEFAULT_NAME,
                 LuceneDataSource.class.getName(), LuceneDataSource.DEFAULT_BRANCH_ID, params, true );
         broker = isReadOnly ? new ReadOnlyIndexConnectionBroker<LuceneXaConnection>( txModule.getTxManager() )

@@ -239,6 +239,7 @@ public class Config
     private final RelationshipTypeCreator relTypeCreator;
 
     private final boolean readOnly;
+    private final boolean ephemeral;
     private final boolean backupSlave;
     private final IdGeneratorFactory idGeneratorFactory;
     private final TxIdGenerator txIdGenerator;
@@ -254,6 +255,7 @@ public class Config
     {
         this.storeDir = graphDb.getStoreDir();
         this.inputParams = inputParams;
+        this.ephemeral = graphDb.isEphemeral();
         // Get the default params and override with the user supplied values
         this.params = getDefaultParams();
         this.params.putAll( inputParams );
@@ -274,7 +276,7 @@ public class Config
         graphDbModule = new GraphDbModule( graphDb, cacheManager, lockManager,
                 txModule.getTxManager(), idGeneratorModule.getIdGenerator(),
                 readOnly );
-        indexStore = new IndexStore( storeDir );
+        indexStore = new IndexStore( storeDir, fileSystem );
         params.put( IndexStore.class, indexStore );
 
         if ( storeId != null ) params.put( StoreId.class, storeId );
@@ -383,6 +385,11 @@ public class Config
     public boolean isReadOnly()
     {
         return readOnly;
+    }
+    
+    public boolean isEphemeral()
+    {
+        return ephemeral;
     }
 
     boolean isBackupSlave()

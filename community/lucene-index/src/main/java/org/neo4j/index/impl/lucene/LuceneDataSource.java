@@ -57,6 +57,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -69,6 +70,7 @@ import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.index.IndexProviderStore;
 import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBackedXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
@@ -140,6 +142,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
     EntityType relationshipEntityType;
     final Map<IndexIdentifier, LuceneIndex<? extends PropertyContainer>> indexes =
             new HashMap<IndexIdentifier, LuceneIndex<? extends PropertyContainer>>();
+    private final DirectoryGetter directoryGetter;
 
     /**
      * Constructs this data source.
@@ -161,21 +164,12 @@ public class LuceneDataSource extends LogBackedXaDataSource
         this.baseStorePath = getStoreDir( storeDir ).first();
         cleanWriteLocks( baseStorePath );
         this.indexStore = (IndexStore) params.get( IndexStore.class );
-        this.providerStore = newIndexStore( storeDir );
+        FileSystemAbstraction fileSystem = (FileSystemAbstraction) params.get( FileSystemAbstraction.class );
+        this.providerStore = newIndexStore( storeDir, fileSystem );
         this.typeCache = new IndexTypeCache( indexStore );
         boolean isReadOnly = false;
-        if ( params.containsKey( "read_only" ) )
-        {
-            Object readOnly = params.get( "read_only" );
-            if ( readOnly instanceof Boolean )
-            {
-                isReadOnly = (Boolean) readOnly;
-            }
-            else
-            {
-                isReadOnly = Boolean.parseBoolean( (String) readOnly );
-            }
-        }
+        this.directoryGetter = parseBoolean( params, "ephemeral", false ) ? DirectoryGetter.MEMORY : DirectoryGetter.FS;
+        isReadOnly = parseBoolean( params, "read_only", false );
 
         nodeEntityType = new EntityType()
         {
@@ -231,6 +225,14 @@ public class LuceneDataSource extends LogBackedXaDataSource
         }
     }
 
+    private boolean parseBoolean( Map<Object, Object> params, String key, boolean defaultValue )
+    {
+        Object value = params.get( key );
+        return value != null ?
+                (value instanceof Boolean ? ((Boolean)value).booleanValue() : Boolean.parseBoolean( value.toString() )) :
+                defaultValue;
+    }
+
     private int parseInt( Map<Object, Object> params, String param )
     {
         String searcherParam = (String) params.get( param );
@@ -284,10 +286,10 @@ public class LuceneDataSource extends LogBackedXaDataSource
         return Pair.of( dir.getAbsolutePath(), created );
     }
 
-    static IndexProviderStore newIndexStore( String dbStoreDir )
+    static IndexProviderStore newIndexStore( String dbStoreDir, FileSystemAbstraction fileSystem )
     {
         File file = new File( getStoreDir( dbStoreDir ).first() + File.separator + "lucene-store.db" );
-        return new IndexProviderStore( file );
+        return new IndexProviderStore( file, fileSystem );
     }
 
     @Override
@@ -587,7 +589,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
 
         try
         {
-            Directory dir = getDirectory( baseStorePath, identifier );
+            Directory dir = directoryGetter.getDirectory( baseStorePath, identifier ); //getDirectory( baseStorePath, identifier );
             directoryExists( dir );
             IndexType type = getType( identifier );
             IndexWriterConfig writerConfig = new IndexWriterConfig( LUCENE_VERSION, type.analyzer );
@@ -831,5 +833,27 @@ public class LuceneDataSource extends LogBackedXaDataSource
                 getIndexWriter( new IndexIdentifier( LuceneCommand.RELATIONSHIP, relationshipEntityType, name ) );
             }
         }
+    }
+    
+    private static enum DirectoryGetter
+    {
+        FS
+        {
+            @Override
+            Directory getDirectory( String baseStorePath, IndexIdentifier identifier ) throws IOException
+            {
+                return FSDirectory.open( getFileDirectory( baseStorePath, identifier) );
+            }
+        },
+        MEMORY
+        {
+            @Override
+            Directory getDirectory( String baseStorePath, IndexIdentifier identifier )
+            {
+                return new RAMDirectory();
+            }
+        };
+        
+        abstract Directory getDirectory( String baseStorePath, IndexIdentifier identifier ) throws IOException;
     }
 }

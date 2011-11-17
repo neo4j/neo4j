@@ -21,10 +21,11 @@ package org.neo4j.kernel.impl.index;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Random;
+
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 public class IndexProviderStore
 {
@@ -38,17 +39,19 @@ public class IndexProviderStore
     private final ByteBuffer buf = ByteBuffer.allocate( FILE_LENGTH );
     private long lastCommittedTx;
     private final File file;
+    private final FileSystemAbstraction fileSystem;
     
-    public IndexProviderStore( File file )
+    public IndexProviderStore( File file, FileSystemAbstraction fileSystem )
     {
         this.file = file;
+        this.fileSystem = fileSystem;
         if ( !file.exists() )
         {
-            create( file );
+            create( file, fileSystem );
         }
         try
         {
-            fileChannel = new RandomAccessFile( file, "rw" ).getChannel();
+            fileChannel = fileSystem.open( file.getAbsolutePath(), "rw" );
             int bytesRead = fileChannel.read( buf );
             if ( bytesRead != FILE_LENGTH && bytesRead != FILE_LENGTH-8 )
             {
@@ -67,7 +70,7 @@ public class IndexProviderStore
         }
     }
     
-    static void create( File file )
+    static void create( File file, FileSystemAbstraction fileSystem )
     {
         if ( file.exists() )
         {
@@ -75,7 +78,7 @@ public class IndexProviderStore
         }
         try
         {
-            FileChannel fileChannel = new RandomAccessFile( file, "rw" ).getChannel();
+            FileChannel fileChannel = fileSystem.open( file.getAbsolutePath(), "rw" );
             ByteBuffer buf = ByteBuffer.allocate( FILE_LENGTH );
             long time = System.currentTimeMillis();
             long identifier = new Random( time ).nextLong();

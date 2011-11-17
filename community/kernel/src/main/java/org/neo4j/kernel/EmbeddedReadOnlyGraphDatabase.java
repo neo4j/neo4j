@@ -155,12 +155,6 @@ public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
     {
         return graphDbImpl.getManagementBeans( type );
     }
-
-    @Override
-    public boolean isReadOnly()
-    {
-        return true;
-    }
     
     @Override
     public KernelData getKernelData()

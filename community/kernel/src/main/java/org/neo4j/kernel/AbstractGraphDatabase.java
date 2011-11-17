@@ -95,9 +95,12 @@ public abstract class AbstractGraphDatabase implements GraphDatabaseService
 
     public abstract <T> Collection<T> getManagementBeans( Class<T> type );
 
-    public abstract boolean isReadOnly();
-    
     public abstract KernelData getKernelData();
+    
+    protected boolean isEphemeral()
+    {
+        return false;
+    }
 
     @Override
     public String toString()

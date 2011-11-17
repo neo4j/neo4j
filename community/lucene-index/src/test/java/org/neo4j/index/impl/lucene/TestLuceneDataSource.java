@@ -20,6 +20,7 @@
 package org.neo4j.index.impl.lucene;
 
 import static org.junit.Assert.*;
+import static org.neo4j.kernel.CommonFactories.defaultFileSystemAbstraction;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,7 +44,6 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 public class TestLuceneDataSource
 {
-
     private IndexStore indexStore;
     private File datasourceDirectory;
     private LuceneDataSource dataSource;
@@ -59,7 +59,7 @@ public class TestLuceneDataSource
     {
         datasourceDirectory = new File( dbPath );
         datasourceDirectory.mkdirs();
-        indexStore = new IndexStore( dbPath );
+        indexStore = new IndexStore( dbPath, defaultFileSystemAbstraction() );
         addIndex( "foo" );
     }
 

@@ -24,6 +24,8 @@ import static org.junit.Assert.assertEquals;
 import java.io.File;
 
 import org.junit.Test;
+import org.neo4j.kernel.CommonFactories;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 public class TestIndexProviderStore
 {
@@ -31,13 +33,14 @@ public class TestIndexProviderStore
     public void lastCommitedTxGetsStoredBetweenSessions() throws Exception
     {
         File file = new File( "target/test-data/index-provider-store" );
+        FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
         file.mkdirs();
         file.delete();
-        IndexProviderStore store = new IndexProviderStore( file );
+        IndexProviderStore store = new IndexProviderStore( file, fileSystem );
         store.setVersion( 5 );
         store.setLastCommittedTx( 12 );
         store.close();
-        store = new IndexProviderStore( file );
+        store = new IndexProviderStore( file, fileSystem );
         assertEquals( 5, store.getVersion() );
         assertEquals( 12, store.getLastCommittedTx() );
         store.close();

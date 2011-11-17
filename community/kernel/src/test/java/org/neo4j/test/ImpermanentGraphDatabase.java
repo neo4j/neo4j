@@ -75,6 +75,12 @@ public class ImpermanentGraphDatabase extends HighlyConfigurableGraphDatabase
     }
     
     @Override
+    protected boolean isEphemeral()
+    {
+        return true;
+    }
+    
+    @Override
     protected StringLogger createStringLogger()
     {
         return StringLogger.DEV_NULL;

@@ -19,15 +19,12 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.index.Neo4jTestCase.assertContains;
 import static org.neo4j.index.impl.lucene.Contains.contains;
 import static org.neo4j.index.impl.lucene.HasThrownException.hasThrownException;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,7 +38,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
-import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class TestIndexDeletion
@@ -241,42 +237,6 @@ public class TestIndexDeletion
         firstTx.rollback();
     }
 
-    @Test
-    public void indexDeleteShouldDeleteDirectory()
-    {
-        String otherIndexName = "other-index";
-
-        StringBuffer tempPath = new StringBuffer(
-				((AbstractGraphDatabase) graphDb).getStoreDir())
-				.append(File.separator).append("index").append(File.separator)
-				.append("lucene").append(File.separator).append("node")
-				.append(File.separator);
-
-		File pathToLuceneIndex = new File(tempPath.toString() + INDEX_NAME);
-		File pathToOtherLuceneIndex = new File(tempPath.toString() + otherIndexName);
-
-		Index<Node> otherIndex = graphDb.index().forNodes(otherIndexName);
-        Node node = graphDb.createNode();
-        otherIndex.add( node, "someKey", "someValue" );
-        assertFalse( pathToLuceneIndex.exists() );
-        assertFalse( pathToOtherLuceneIndex.exists() );
-        restartTx();
-
-        // Here "index" and "other-index" indexes should exist
-
-        assertTrue( pathToLuceneIndex.exists() );
-        assertTrue( pathToOtherLuceneIndex.exists() );
-        index.delete();
-        assertTrue( pathToLuceneIndex.exists() );
-        assertTrue( pathToOtherLuceneIndex.exists() );
-        restartTx();
-
-        // Here only "other-index" should exist
-
-        assertFalse( pathToLuceneIndex.exists() );
-        assertTrue( pathToOtherLuceneIndex.exists() );
-    }
-    
     @Test
     public void canDeleteIndexEvenIfEntitiesAreFoundToBeAbandonedInTheSameTx()
     {

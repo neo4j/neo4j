@@ -166,10 +166,11 @@ public class TestRecovery
         // new EmbeddedGraphDatabase( getDbPath() ).shutdown();
         
         // Instead I have to do this
+        FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
         Map<Object, Object> params = MapUtil.genericMap(
                 "store_dir", getDbPath(),
-                IndexStore.class, new IndexStore( getDbPath() ),
-                FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction(),
+                IndexStore.class, new IndexStore( getDbPath(), fileSystem ),
+                FileSystemAbstraction.class, fileSystem,
                 StringLogger.class, StringLogger.DEV_NULL,
                 LogBufferFactory.class, CommonFactories.defaultLogBufferFactory() );
         LuceneDataSource ds = new LuceneDataSource( params );

@@ -106,7 +106,8 @@ public class BatchInserterImpl implements BatchInserter
         this.storeDir = storeDir;
         this.idGeneratorFactory = CommonFactories.defaultIdGeneratorFactory();
         params.put( IdGeneratorFactory.class, idGeneratorFactory );
-        params.put( FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
+        FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
+        params.put( FileSystemAbstraction.class, fileSystem );
         String store = fixPath( storeDir, params );
         params.put( "neo_store", store );
         if ( dump )
@@ -127,7 +128,7 @@ public class BatchInserterImpl implements BatchInserter
             getRelationshipTypeStore().getRelationshipTypes();
         typeHolder = new RelationshipTypeHolder( types );
         graphDbService = new BatchGraphDatabaseImpl( this );
-        indexStore = new IndexStore( storeDir );
+        indexStore = new IndexStore( storeDir, fileSystem );
     }
 
     @Override

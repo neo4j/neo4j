@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.index;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
@@ -34,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 
 public class IndexStore
@@ -47,9 +47,11 @@ public class IndexStore
     private final Map<String, Map<String, String>> nodeConfig = new ConcurrentHashMap<String, Map<String,String>>();
     private final Map<String, Map<String, String>> relConfig = new ConcurrentHashMap<String, Map<String,String>>();
     private ByteBuffer dontUseBuffer = ByteBuffer.allocate( 100 );
+    private final FileSystemAbstraction fileSystem;
     
-    public IndexStore( String graphDbStoreDir )
+    public IndexStore( String graphDbStoreDir, FileSystemAbstraction fileSystem )
     {
+        this.fileSystem = fileSystem;
         this.file = new File( new File( graphDbStoreDir ), INDEX_DB_FILE_NAME );
         this.oldFile = new File( file.getParentFile(), file.getName() + ".old" );
         read();
@@ -67,7 +69,7 @@ public class IndexStore
     private void read()
     {
         File fileToReadFrom = file.exists() ? file : oldFile;
-        if ( !fileToReadFrom.exists() )
+        if ( !fileSystem.fileExists( fileToReadFrom.getAbsolutePath() ) )
         {
             return;
         }
@@ -75,12 +77,12 @@ public class IndexStore
         FileChannel channel = null;
         try
         {
-            channel = new RandomAccessFile( fileToReadFrom, "r" ).getChannel();
+            channel = fileSystem.open( fileToReadFrom.getAbsolutePath(), "r" );
             Integer version = tryToReadVersion( channel );
             if ( version == null )
             {
                 close( channel );
-                channel = new RandomAccessFile( fileToReadFrom, "r" ).getChannel();
+                channel = fileSystem.open( fileToReadFrom.getAbsolutePath(), "r" );
                 // Legacy format, TODO
                 readMap( channel, nodeConfig, version );
                 relConfig.putAll( nodeConfig );
@@ -244,18 +246,32 @@ public class IndexStore
         write( tmpFile );
         
         // Make sure the .old file doesn't exist, then rename the current one to .old
-        this.oldFile.delete();
-        if ( this.file.exists() && !this.file.renameTo( this.oldFile ) )
+        fileSystem.deleteFile( oldFile.getAbsolutePath() );
+        try
+        {
+            if ( fileSystem.fileExists( file.getAbsolutePath() ) && !fileSystem.renameFile( file.getAbsolutePath(), oldFile.getAbsolutePath() ) )
+            {
+                throw new RuntimeException( "Couldn't rename " + file + " -> " + oldFile );
+            }
+        }
+        catch ( IOException e )
         {
             throw new RuntimeException( "Couldn't rename " + file + " -> " + oldFile );
         }
         
         // Rename the .tmp file to the current name
-        if ( !tmpFile.renameTo( this.file ) )
+        try
+        {
+            if ( !fileSystem.renameFile( tmpFile.getAbsolutePath(), this.file.getAbsolutePath() ) )
+            {
+                throw new RuntimeException( "Couldn't rename " + tmpFile + " -> " + file );
+            }
+        }
+        catch ( IOException e )
         {
             throw new RuntimeException( "Couldn't rename " + tmpFile + " -> " + file );
         }
-        this.oldFile.delete();
+        fileSystem.deleteFile( oldFile.getAbsolutePath() );
     }
     
     private void write( File file )
@@ -263,7 +279,7 @@ public class IndexStore
         FileChannel channel = null;
         try
         {
-            channel = new RandomAccessFile( file, "rw" ).getChannel();
+            channel = fileSystem.open( file.getAbsolutePath(), "rw" );
             channel.write( ByteBuffer.wrap( MAGICK ) );
             IoPrimitiveUtils.writeInt( channel, buffer( 4 ), VERSION );
             writeMap( channel, nodeConfig );

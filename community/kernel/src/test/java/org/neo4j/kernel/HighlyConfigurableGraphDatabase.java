@@ -146,12 +146,6 @@ public class HighlyConfigurableGraphDatabase extends AbstractGraphDatabase
     {
         return impl.getManagementBeans( type );
     }
-
-    @Override
-    public boolean isReadOnly()
-    {
-        return false;
-    }
     
     @Override
     public KernelData getKernelData()
