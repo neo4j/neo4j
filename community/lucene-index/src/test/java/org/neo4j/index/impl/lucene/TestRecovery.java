@@ -23,9 +23,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
-import java.lang.Thread.State;
 import java.util.Map;
-import java.util.Random;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -64,64 +62,24 @@ public class TestRecovery
     @Test
     public void testRecovery() throws Exception
     {
-        final GraphDatabaseService graphDb = newGraphDbService();
-        final Index<Node> nodeIndex = graphDb.index().forNodes( "node-index" );
-        final Index<Relationship> relIndex = graphDb.index().forRelationships( "rel-index" );
-        final RelationshipType relType = DynamicRelationshipType.withName( "recovery" );
+        GraphDatabaseService graphDb = newGraphDbService();
+        Index<Node> nodeIndex = graphDb.index().forNodes( "node-index" );
+        Index<Relationship> relIndex = graphDb.index().forRelationships( "rel-index" );
+        RelationshipType relType = DynamicRelationshipType.withName( "recovery" );
         
         graphDb.beginTx();
-        Random random = new Random();
-        Thread stopper = new Thread()
-        {
-            @Override public void run()
-            {
-                sleepNice( 1000 );
-                graphDb.shutdown();
-            }
-        };
-        final String[] keys = { "apoc", "zion", "neo" };
-        try
-        {
-            stopper.start();
-            for ( int i = 0; i < 50; i++ )
-            {
-                Node node = graphDb.createNode();
-                Node otherNode = graphDb.createNode();
-                Relationship rel = node.createRelationshipTo( otherNode, relType );
-                for ( int ii = 0; ii < 3; ii++ )
-                {
-                    nodeIndex.add( node, keys[random.nextInt( keys.length )], random.nextInt() );
-                    relIndex.add( rel, keys[random.nextInt( keys.length )], random.nextInt() );
-                }
-                sleepNice( 10 );
-            }
-        }
-        catch ( Exception e )
-        {
-            // Ok
-        }
-        
-        // Wait until the stopper has run, i.e. the graph db is shut down
-        while ( stopper.getState() != State.TERMINATED )
-        {
-            sleepNice( 100 );
-        }
+        Node node = graphDb.createNode();
+        Node otherNode = graphDb.createNode();
+        Relationship rel = node.createRelationshipTo( otherNode, relType );
+        nodeIndex.add( node, "key1", "string value" ); 
+        nodeIndex.add( node, "key2", 12345 ); 
+        relIndex.add( rel, "key1", "string value" ); 
+        relIndex.add( rel, "key2", 12345 ); 
+        graphDb.shutdown();
         
         // Start up and let it recover
         final GraphDatabaseService newGraphDb = new EmbeddedGraphDatabase( getDbPath() );
         newGraphDb.shutdown();
-    }
-    
-    private static void sleepNice( long time )
-    {
-        try
-        {
-            Thread.sleep( time );
-        }
-        catch ( InterruptedException e )
-        {
-            // Ok
-        }
     }
     
     @Ignore

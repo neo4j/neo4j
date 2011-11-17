@@ -23,6 +23,8 @@ import static java.lang.System.currentTimeMillis;
 import static org.apache.lucene.search.NumericRangeQuery.newIntRange;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
@@ -41,14 +43,12 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import junit.framework.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.BatchInserterIndex;
 import org.neo4j.graphdb.index.BatchInserterIndexProvider;
 import org.neo4j.graphdb.index.Index;
@@ -71,25 +71,6 @@ public class TestLuceneBatchInsert
     }
 
     @Test
-    public void testStartupAndShutdown() {
-        BatchInserter inserter = new BatchInserterImpl( PATH );
-        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider(
-                inserter );
-        BatchInserterIndex index = provider.nodeIndex( "users",
-                LuceneIndexImplementation.EXACT_CONFIG );
-        long id = inserter.createNode( null );
-        index.add( id, map( "name", "Joe", "other", "Schmoe" ) );
-        provider.shutdown();
-        provider = new LuceneBatchInserterIndexProvider(
-                inserter );
-        index = provider.nodeIndex( "users",
-                LuceneIndexImplementation.EXACT_CONFIG );
-        index.add( id, map( "name", "Joe", "other", "Schmoe" ) );
-        provider.shutdown();
-        inserter.shutdown();
-    }
-    
-    @Test
     public void testSome() throws Exception
     {
         // Different paths for each tests because there's a bug (on Windows)
@@ -98,16 +79,18 @@ public class TestLuceneBatchInsert
         BatchInserter inserter = new BatchInserterImpl( path );
         BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider(
                 inserter );
-        BatchInserterIndex index = provider.nodeIndex( "users", EXACT_CONFIG );
+        String indexName = "users";
+        BatchInserterIndex index = provider.nodeIndex( indexName, EXACT_CONFIG );
         Map<Integer, Long> ids = new HashMap<Integer, Long>();
-        for ( int i = 0; i < 100; i++ )
+        int count = 5;
+        for ( int i = 0; i < count; i++ )
         {
             long id = inserter.createNode( null );
             index.add( id, map( "name", "Joe" + i, "other", "Schmoe" ) );
             ids.put( i, id );
         }
 
-        for ( int i = 0; i < 100; i++ )
+        for ( int i = 0; i < count; i++ )
         {
             assertContains( index.get( "name", "Joe" + i ), ids.get( i ) );
         }
@@ -120,9 +103,12 @@ public class TestLuceneBatchInsert
         inserter.shutdown();
 
         GraphDatabaseService db = new EmbeddedGraphDatabase( path );
-        assertTrue( db.index().existsForNodes( "users" ) );
+        IndexManager indexManager = db.index();
+        assertFalse( indexManager.existsForRelationships( indexName ) );
+        assertTrue( indexManager.existsForNodes( indexName ) );
+        assertNotNull( indexManager.forNodes( indexName ) );
         Index<Node> dbIndex = db.index().forNodes( "users" );
-        for ( int i = 0; i < 100; i++ )
+        for ( int i = 0; i < count; i++ )
         {
             assertContains( dbIndex.get( "name", "Joe" + i ),
                     db.getNodeById( ids.get( i ) ) );
@@ -204,40 +190,6 @@ public class TestLuceneBatchInsert
             count( (Iterator<Long>) index.get( "key", "value" + i ) );
         }
         System.out.println( "get:" + ( currentTimeMillis() - t ) );
-    }
-
-    @Test
-    public void testFindCreatedIndex()
-    {
-        String indexName = "persons";
-        String path = new File( PATH, "4" ).getAbsolutePath();
-        BatchInserter inserter = new BatchInserterImpl( path );
-        LuceneBatchInserterIndexProvider indexProvider = new LuceneBatchInserterIndexProvider(
-                inserter );
-        BatchInserterIndex persons = indexProvider.nodeIndex( "persons",
-                stringMap( "type", "exact" ) );
-        Map<String, Object> properties = map( "name", "test" );
-        long node = inserter.createNode( properties );
-        persons.add( node, properties );
-        indexProvider.shutdown();
-        inserter.shutdown();
-        GraphDatabaseService graphDb = new EmbeddedGraphDatabase( path );
-        Transaction tx = graphDb.beginTx();
-        try
-        {
-            IndexManager indexManager = graphDb.index();
-            Assert.assertFalse( indexManager.existsForRelationships( indexName ) );
-            Assert.assertTrue( indexManager.existsForNodes( indexName ) );
-            Assert.assertNotNull( indexManager.forNodes( indexName ) );
-            Index<Node> nodes = graphDb.index().forNodes( indexName );
-            Assert.assertTrue( nodes.get( "name", "test" ).hasNext() );
-            tx.success();
-            tx.finish();
-        }
-        finally
-        {
-            graphDb.shutdown();
-        }
     }
 
     @Test
