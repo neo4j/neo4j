@@ -194,7 +194,6 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     {
         String script = "g.v(%I%).out.name.paths";
         String response = doRestCall( script, Status.OK );
-        System.out.println( response );
         assertTrue( response.contains( "you" ) );
         assertTrue( response.contains( "him" ) );
     }
@@ -381,7 +380,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     @Graph( value = { "George knows Sara", "George knows Ian" }, autoIndexNodes = true )
     public void chunking_and_offsetting_in_Gremlin() throws UnsupportedEncodingException
     {
-        String script = "g.v(%George%).out('knows').filter{it.getProperty('name') == 'Sara'}[0..100]";
+        String script = "g.v(%George%).out('knows').filter{it.name == 'Sara'}[0..100]";
         String response = doRestCall( script, Status.OK );
         assertTrue( response.contains( "Sara" ) );
         assertFalse( response.contains( "Ian" ) );
