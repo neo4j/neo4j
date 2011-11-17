@@ -33,12 +33,20 @@ public class TestEphemeralFileChannel
     @Test
     public void smoke() throws Exception
     {
-        FileChannel channel = new EphemeralFileSystemAbstraction().open( "yo", "rw" );
+        EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+        FileChannel channel = fs.open( "yo", "rw" );
+        
+        // Clear it because we depend on it to be zeros where we haven't written
+        ByteBuffer buffer = allocateDirect( 23 );
+        buffer.put( new byte[23] ); // zeros
+        buffer.flip();
+        channel.write( buffer );
+        channel = fs.open( "yo", "rw" );
         long longValue = 1234567890L;
         
         // [1].....[2]........[1234567890L]...
         
-        ByteBuffer buffer = allocateDirect( 8 );
+        buffer.clear();
         buffer.limit( 1 );
         buffer.put( (byte) 1 );
         buffer.flip();
