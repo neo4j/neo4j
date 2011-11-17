@@ -487,8 +487,26 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         {
             if ( masterServer == null )
             {
-                receive( broker.getMaster().first().pullUpdates( getSlaveContext( -1 ) ) );
+                if ( broker.getMaster() == null
+                     && broker instanceof ZooKeeperBroker )
+                {
+                    /*
+                     * Log a message - the ZooKeeperBroker should not return
+                     * null master
+                     */
+                    getMessageLog().logMessage(
+                            "ZooKeeper broker returned null master" );
+                    newMaster( new NullPointerException(
+                            "master returned from broker" ) );
+                }
+                else if ( broker.getMaster().first() == null )
+                {
+                    newMaster( new NullPointerException(
+                            "master returned from broker" ) );
+                }
             }
+            receive( broker.getMaster().first().pullUpdates(
+                        getSlaveContext( -1 ) ) );
         }
         catch ( ZooKeeperException e )
         {
@@ -523,7 +541,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         return localGraph().getManagementBeans( type );
     }
-    
+
     @Override
     public String toString()
     {
@@ -569,7 +587,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             if ( newDb != null )
             {
                 doAfterLocalGraphStarted( newDb );
-                
+
                 // Assign the db last
                 this.localGraph = newDb;
             }
@@ -580,7 +598,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             throw launderedException( t );
         }
     }
-    
+
     private void safelyShutdownDb( EmbeddedGraphDbImpl newDb )
     {
         try
@@ -613,7 +631,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         broker.logStatus( getMessageLog() );
         getMessageLog().logMessage( "--- HIGH AVAILABILITY CONFIGURATION END ---", true );
     }
-    
+
     private EmbeddedGraphDbImpl startAsSlave( StoreId storeId )
     {
         getMessageLog().logMessage( "Starting[" + machineId + "] as slave", true );
@@ -708,10 +726,10 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             throw exception;
         }
     }
-    
+
     private StoreId getStoreId( EmbeddedGraphDbImpl db )
     {
-        XaDataSource ds = db.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource( 
+        XaDataSource ds = db.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource(
                 Config.DEFAULT_DATA_SOURCE_NAME );
         return ((NeoStoreXaDataSource) ds).getStoreId();
     }
@@ -985,7 +1003,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         this.broker.shutdown();
     }
-    
+
     @Override
     public KernelData getKernelData()
     {
