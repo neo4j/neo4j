@@ -987,12 +987,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     }
 
     @Override
-    public boolean isReadOnly()
-    {
-        return false;
-    }
-
-    @Override
     public IndexManager index()
     {
         return localGraph().index();

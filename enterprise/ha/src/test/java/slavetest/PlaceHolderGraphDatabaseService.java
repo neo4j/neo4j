@@ -143,12 +143,6 @@ public class PlaceHolderGraphDatabaseService extends AbstractGraphDatabase
     {
         return ( (AbstractGraphDatabase) db ).getManagementBeans( type );
     }
-
-    @Override
-    public boolean isReadOnly()
-    {
-        return ((AbstractGraphDatabase) db).isReadOnly();
-    }
     
     @Override
     public KernelData getKernelData()
