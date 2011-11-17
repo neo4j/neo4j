@@ -28,6 +28,9 @@ class SlicePipe(source:Pipe, skip:Option[Value], limit:Option[Value]) extends Pi
 
   //TODO: Make this nicer. I'm sure it's expensive and silly.
   def foreach[U](f: (Map[String, Any]) => U) {
+    if(source.isEmpty)
+      return
+
     val first: Map[String, Any] = source.head
 
     def asInt(v:Value)=v(first).asInstanceOf[Int]

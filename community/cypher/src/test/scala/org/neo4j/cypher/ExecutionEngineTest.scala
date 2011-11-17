@@ -452,6 +452,12 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     assertEquals(List(Map("a" -> a, "b" -> b), Map("a" -> b, "b" -> a)), result.toList)
   }
 
+  @Test def shouldAcceptSkipZero() {
+    val result = parseAndExecute("start n=node(0) where 1 = 0 return n skip 0")
+
+    assertEquals(List(), result.columnAs[Node]("n").toList)
+  }
+
   @Test def shouldReturnTwoSubgraphsWithBoundUndirectedRelationshipAndOptionalRelationship() {
     val a = createNode("a")
     val b = createNode("b")
