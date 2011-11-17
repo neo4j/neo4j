@@ -25,19 +25,34 @@ import java.nio.channels.ReadableByteChannel;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
+/**
+ * The counterpart of {@link BlockLogBuffer}, sits on the receiving end and
+ * reads chunks of log. It is provided with a {@link ChannelBuffer} which feeds
+ * a series of chunks formatted as follows: <li>If the first byte is 0, then it
+ * is 256 bytes in total size (including the first byte) AND there are more
+ * coming.</li> <li>If the first byte is not 0, then its value cast as an
+ * integer is the total size of the chunk AND there are no more - the stream is
+ * complete</li>
+ *
+ */
 public class BlockLogReader implements ReadableByteChannel
 {
     private final ChannelBuffer source;
     private final byte[] byteArray = new byte[BlockLogBuffer.MAX_SIZE];
     private final ByteBuffer byteBuffer = ByteBuffer.wrap( byteArray );
     private boolean moreBlocks;
-    
+
     public BlockLogReader( ChannelBuffer source )
     {
         this.source = source;
         readNextBlock();
     }
-    
+
+    /**
+     * Read a block from the channel. Read the first byte, determine size and if
+     * more are coming, set state accordingly and store content. NOTE: After
+     * this op the buffer is flipped, ready to read.
+     */
     private void readNextBlock()
     {
         int blockSize = source.readUnsignedByte();
@@ -63,6 +78,12 @@ public class BlockLogReader implements ReadableByteChannel
 
     public int read( ByteBuffer dst ) throws IOException
     {
+        /*
+         * Fill up dst with what comes from the channel, until dst is full.
+         * readAsMuchAsPossible() is constantly called reading essentially
+         * one chunk at a time until either it runs out of stuff coming
+         * from the channel or the actual target buffer is filled.
+         */
         int bytesWanted = dst.limit();
         int bytesRead = 0;
         while ( bytesWanted > 0 )
@@ -78,19 +99,33 @@ public class BlockLogReader implements ReadableByteChannel
         return bytesRead == 0 && !moreBlocks ? -1 : bytesRead;
     }
 
+    /**
+     * Reads in at most {@code maxBytesWanted} in {@code dst} but never more
+     * than a chunk.
+     *
+     * @param dst The buffer to write the reads bytes to
+     * @param maxBytesWanted The maximum number of bytes to read.
+     * @return The number of bytes actually read
+     */
     private int readAsMuchAsPossible( ByteBuffer dst, int maxBytesWanted )
     {
+        assert maxBytesWanted <= BlockLogBuffer.MAX_SIZE : maxBytesWanted
+                                                           + " is larger than the chunk size";
         if ( byteBuffer.remaining() == 0 && moreBlocks )
         {
             readNextBlock();
         }
-        
+
         int bytesToRead = Math.min( maxBytesWanted, byteBuffer.remaining() );
         dst.put( byteArray, byteBuffer.position(), bytesToRead );
         byteBuffer.position( byteBuffer.position()+bytesToRead );
         return bytesToRead;
     }
-    
+
+    /**
+     * Reads everything that can be read from the channel. Stops when a chunk
+     * starting with a non zero byte is met.
+     */
     private void readToTheEnd()
     {
         while ( moreBlocks )
