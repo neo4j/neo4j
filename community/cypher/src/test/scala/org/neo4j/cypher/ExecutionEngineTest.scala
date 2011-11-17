@@ -1215,6 +1215,20 @@ return x, p
     ) === result.toList)
   }
 
+  @Ignore("This test exposes a bug")
+  @Test def shouldSupportMultipleRegexes() {
+    val a = createNode(Map("name"->"Andreas"))
+
+
+    val result = parseAndExecute("""
+start a  = node(1)
+where a.name =~ /And.*/ AND a.name =~ /And.*/
+return a
+""")
+
+    assert(List(a) === result.columnAs[Node]("a") .toList)
+  }
+
 
   @Test(expected = classOf[SyntaxException]) def shouldNotSupportSortingOnThingsAfterDistinctHasRemovedIt() {
     val a = createNode("name"->"A", "age"->13)
