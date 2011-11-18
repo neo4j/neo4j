@@ -64,15 +64,24 @@ def table_header(title, headings, info_line):
 data = sys.stdin.readlines()
 data.pop(0)
 first_line = split_line(data.pop(0))
+column_count = len(first_line)
 data.pop(0)
 query_title = False
 if len(sys.argv) > 1:
   query_title = sys.argv[1]
 body = []
 body.append('<tbody>')
-for line in data:
-  if line[0] == '|':
-    body.extend(out_entries(split_line(line), 1))
+if len(data) == 2:
+  body.append('<row><entry align="left" valign="top" namest="col1" nameend="col')
+  body.append(str(column_count))
+  body.append('">')
+  body.append('(empty result)')
+  body.append('</entry></row>')
+  line = data[1]
+else:
+  for line in data:
+    if line[0] == '|':
+      body.extend(out_entries(split_line(line), 1))
 body.append('</tbody>')
 
 sys.stdout.write(''.join(table_header(query_title, first_line, line)))
