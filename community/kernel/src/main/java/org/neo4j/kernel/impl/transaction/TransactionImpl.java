@@ -73,6 +73,11 @@ class TransactionImpl implements Transaction
         eventIdentifier = txManager.getNextEventIdentifier();
     }
 
+    /**
+     * @return The event identifier for this transaction, a unique per database
+     *         run identifier among all transactions initiated by the
+     *         transaction manager. Currently an increasing natural number.
+     */
     Integer getEventIdentifier()
     {
         return eventIdentifier;
@@ -612,7 +617,7 @@ class TransactionImpl implements Transaction
                 + statusString + "]";
         }
     }
-    
+
     boolean isActive()
     {
         return active;

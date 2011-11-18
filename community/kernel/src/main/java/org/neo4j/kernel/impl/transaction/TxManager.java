@@ -321,7 +321,7 @@ public class TxManager extends AbstractTransactionManager
             // invoke recover on all xa resources found
             Iterator<Resource> resourceItr = resourceMap.keySet().iterator();
             List<Xid> recoveredXidsList = new LinkedList<Xid>();
-            
+
             // check recovered transactions on all registered resources
             for ( XAResource xaRes : xaDsManager.getAllRegisteredXAResources() )
             {
@@ -342,7 +342,7 @@ public class TxManager extends AbstractTransactionManager
                         else
                         {
                             Resource resource = new Resource( xids[i].getBranchQualifier() );
-                            if ( !resourceMap.containsKey( resource ) ) 
+                            if ( !resourceMap.containsKey( resource ) )
                             {
                                 resourceMap.put( resource, xaRes );
                             }
@@ -1078,6 +1078,10 @@ public class TxManager extends AbstractTransactionManager
         }
     }
 
+    /**
+     * @return The current transaction's event identifier or -1 if no
+     *         transaction is currently running.
+     */
     public int getEventIdentifier()
     {
         TransactionImpl tx = (TransactionImpl) getTransaction();

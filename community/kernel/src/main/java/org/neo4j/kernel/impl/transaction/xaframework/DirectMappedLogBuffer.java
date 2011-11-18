@@ -23,6 +23,13 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
+/**
+ * Implementation of a LogBuffer that buffers content in a direct byte buffer
+ * and flushes in a file channel. Flushing is based on size cap and force()
+ * operations.
+ * <p>
+ * Currently this is the default LogBuffer implementation.
+ */
 public class DirectMappedLogBuffer implements LogBuffer
 {
     // 500k
