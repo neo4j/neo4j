@@ -109,7 +109,7 @@ case class RegularExpression(a: Value, regex: Value) extends Clause {
     regex(m).toString.r.pattern.matcher(value).matches()
   }
 
-  def dependsOn: Set[ String ] = a.dependsOn
+  def dependsOn: Set[ String ] = a.dependsOn ++ regex.dependsOn
 
   def atoms: Seq[ Clause ] = Seq(this)
 

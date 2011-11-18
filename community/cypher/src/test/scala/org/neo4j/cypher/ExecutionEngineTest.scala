@@ -70,6 +70,16 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     assertEquals(List(n1), result.columnAs[Node]("node").toList)
   }
 
+  @Test def shouldBeAbleToUseParamsInPatternMatchingPredicates() {
+    val n1 = createNode()
+    val n2 = createNode()
+    relate(n1, n2, "A", Map("foo" -> "bar"))
+
+    val result = parseAndExecute("start a=node(1) match a-[r]->b where r.foo =~ {param} return b", "param" -> "bar")
+
+    assertEquals(List(n2), result.columnAs[Node]("b").toList)
+  }
+
   @Test def shouldGetOtherNode() {
     val node: Node = createNode()
 
@@ -1126,15 +1136,15 @@ return distinct a
 order by a.name
 """)
 
-    assert(List(a,b,c) === result.columnAs[Node]("a") .toList)
+    assert(List(a, b, c) === result.columnAs[Node]("a").toList)
   }
 
   @Test def shouldHandleAggregationOnFunctions() {
     val a = createNode("A")
     val b = createNode("B")
     val c = createNode("C")
-    relate(a,b,"X")
-    relate(a,c,"X")
+    relate(a, b, "X")
+    relate(a, c, "X")
 
     val result = parseAndExecute("""
 start a  = node(1)
@@ -1142,7 +1152,7 @@ match p = a -[*]-> b
 return b, avg(length(p))
 """)
 
-    assert(List(b,c) === result.columnAs[Node]("b") .toList)
+    assert(List(b, c) === result.columnAs[Node]("b").toList)
   }
 
   @Test def shouldHandleOptionalPaths() {
@@ -1158,8 +1168,8 @@ return x, p
 """)
 
     assert(List(
-      Map("x"->b, "p"->PathImpl(a,r,b)),
-      Map("x"->c, "p"->null)
+      Map("x" -> b, "p" -> PathImpl(a, r, b)),
+      Map("x" -> c, "p" -> null)
     ) === result.toList)
   }
 
@@ -1176,8 +1186,8 @@ return x, p
 """)
 
     assert(List(
-      Map("x"->b, "p"->PathImpl(a,r,b)),
-      Map("x"->c, "p"->null)
+      Map("x" -> b, "p" -> PathImpl(a, r, b)),
+      Map("x" -> c, "p" -> null)
     ) === result.toList)
   }
 
@@ -1193,7 +1203,7 @@ return p
 """)
 
     assert(List(
-      Map("p"->null)
+      Map("p" -> null)
     ) === result.toList)
   }
 
@@ -1210,13 +1220,13 @@ return x, p
 """)
 
     assert(List(
-      Map("x"->b, "p"->PathImpl(a,r,b)),
-      Map("x"->c, "p"->null)
+      Map("x" -> b, "p" -> PathImpl(a, r, b)),
+      Map("x" -> c, "p" -> null)
     ) === result.toList)
   }
 
   @Test def shouldSupportMultipleRegexes() {
-    val a = createNode(Map("name"->"Andreas"))
+    val a = createNode(Map("name" -> "Andreas"))
 
 
     val result = parseAndExecute("""
@@ -1225,14 +1235,13 @@ where a.name =~ /And.*/ AND a.name =~ /And.*/
 return a
 """)
 
-    assert(List(a) === result.columnAs[Node]("a") .toList)
+    assert(List(a) === result.columnAs[Node]("a").toList)
   }
 
-
   @Test(expected = classOf[SyntaxException]) def shouldNotSupportSortingOnThingsAfterDistinctHasRemovedIt() {
-    val a = createNode("name"->"A", "age"->13)
-    val b = createNode("name"->"B", "age"->12)
-    val c = createNode("name"->"C", "age"->11)
+    val a = createNode("name" -> "A", "age" -> 13)
+    val b = createNode("name" -> "B", "age" -> 12)
+    val c = createNode("name" -> "C", "age" -> 11)
 
     val result = parseAndExecute("""
 start a  = node(1,2,3,1)
@@ -1240,7 +1249,7 @@ return distinct a.name
 order by a.age
 """)
 
-    assert(List(a,b,c) === result.columnAs[Node]("a") .toList)
+    assert(List(a, b, c) === result.columnAs[Node]("a").toList)
   }
 
   @Test def shouldThrowNiceErrorMessageWhenPropertyIsMissing() {
