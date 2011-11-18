@@ -9,7 +9,8 @@
 	FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details. 
 	You should have received a copy of the GNU General Public License along with 
 	this program. If not, see <http://www.gnu.org/licenses />. -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.neo4j.build</groupId>
@@ -20,7 +21,7 @@
 
 	<groupId>org.neo4j.drivers</groupId>
 	<artifactId>neo4j-python-embedded</artifactId>
-	
+
 	<version>1.6-SNAPSHOT</version>
 	<name>Embedded Neo4j Python bindings</name>
 	<packaging>jar</packaging>
@@ -28,11 +29,11 @@
     Python bindings for the embedded Neo4j graph database.
 	</description>
 
-  <scm>
-    <connection>scm:git:git://github.com/neo4j/python-embedded.git</connection>
-    <developerConnection>scm:git:git@github.com:neo4j/python-embedded.git</developerConnection>
-    <url>https://github.com/neo4j/python-embedded</url>
-  </scm>
+	<scm>
+		<connection>scm:git:git://github.com/neo4j/python-embedded.git</connection>
+		<developerConnection>scm:git:git@github.com:neo4j/python-embedded.git</developerConnection>
+		<url>https://github.com/neo4j/python-embedded</url>
+	</scm>
 
 	<properties>
 		<license-text.header>GPL-3-header.txt</license-text.header>
@@ -75,11 +76,11 @@ the relevant Commercial Agreement.
 			<version>${neo4j.version}</version>
 		</dependency>
 
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher</artifactId>
-      <version>${neo4j.version}</version>
-    </dependency>
+		<dependency>
+			<groupId>org.neo4j</groupId>
+			<artifactId>neo4j-cypher</artifactId>
+			<version>${neo4j.version}</version>
+		</dependency>
 
 	</dependencies>
 
@@ -92,8 +93,7 @@ the relevant Commercial Agreement.
 	</repositories>
 
 	<build>
-
-		<sourceDirectory>src/main/python</sourceDirectory>
+    	<sourceDirectory>src/main/python</sourceDirectory>
 		<testSourceDirectory>src/test/python</testSourceDirectory>
 
 		<plugins>
@@ -111,19 +111,20 @@ the relevant Commercial Agreement.
 							<goal>execute</goal>
 						</goals>
 						<configuration>
-							<source> 
-							def version = project.version
-							
-							// 1.5-SNAPSHOT -&gt; 1.5.dev1
-							version = version.replace("-SNAPSHOT", ".dev" + project.properties['build.number'])
-							
-							// 1.5.RC1 -&gt; 1.5.c1 
-						    version = version.replace("RC","c")
+							<source>
+								def version = project.version
 
-							// 1.5.M01 -&gt; 1.5.b1
-							version = version.replace("M0","b") 
-							version = version.replace("M","b")
-							project.properties['pythonic_version']	= version
+								// 1.5-SNAPSHOT -&gt; 1.5.dev1
+								version = version.replace("-SNAPSHOT", ".dev" +
+								project.properties['build.number'])
+
+								// 1.5.RC1 -&gt; 1.5.c1
+								version = version.replace("RC","c")
+
+								// 1.5.M01 -&gt; 1.5.b1
+								version = version.replace("M0","b")
+								version = version.replace("M","b")
+								project.properties['pythonic_version'] = version
 							</source>
 						</configuration>
 					</execution>
@@ -253,10 +254,13 @@ the relevant Commercial Agreement.
 								</goals>
 								<configuration>
 									<target>
-										<unzip src="${basedir}/target/${project.build.finalName}-python-dist.zip" dest="${basedir}/target/" overwrite="true" />
+										<unzip
+											src="${basedir}/target/${project.build.finalName}-python-dist.zip"
+											dest="${basedir}/target/" overwrite="true" />
 
 										<!-- Windows 32bit installer -->
-										<exec executable="python" failonerror="true" dir="${basedir}/target/neo4j-embedded">
+										<exec executable="python" failonerror="true"
+											dir="${basedir}/target/neo4j-embedded">
 											<arg value="setup.py" />
 											<arg value="build" />
 											<arg value="--plat-name=win-amd64" />
@@ -265,7 +269,8 @@ the relevant Commercial Agreement.
 										</exec>
 
 										<!-- Windows 64bit installer -->
-										<exec executable="python" failonerror="true" dir="${basedir}/target/neo4j-embedded">
+										<exec executable="python" failonerror="true"
+											dir="${basedir}/target/neo4j-embedded">
 											<arg value="setup.py" />
 											<arg value="build" />
 											<arg value="--plat-name=win32" />
@@ -274,7 +279,8 @@ the relevant Commercial Agreement.
 										</exec>
 
 										<!-- Source distribution -->
-										<exec executable="python" failonerror="true" dir="${basedir}/target/neo4j-embedded">
+										<exec executable="python" failonerror="true"
+											dir="${basedir}/target/neo4j-embedded">
 											<arg value="setup.py" />
 											<arg value="sdist" />
 											<arg value="--formats=gztar,zip" />
@@ -290,13 +296,13 @@ the relevant Commercial Agreement.
 		</profile>
 	</profiles>
 
-  
-  <distributionManagement>
-    <site>
-      <id>neo4j-site</id>
-      <url>scpexe://components.neo4j.org/home/neo/components/${project.artifactId}/${project.version}</url>
-    </site>
-  </distributionManagement>
+
+	<distributionManagement>
+		<site>
+			<id>neo4j-site</id>
+			<url>scpexe://components.neo4j.org/home/neo/components/${project.artifactId}/${project.version}</url>
+		</site>
+	</distributionManagement>
 
 </project>
 

@@ -30,6 +30,7 @@ from neo4j.core import GraphDatabase, Direction, NotFoundException, BOTH, ANY, I
 from neo4j.traversal import Traversal, Evaluation, Uniqueness
 from neo4j.index import NodeIndexManager, RelationshipIndexManager
 from neo4j.util import rethrow_current_exception_as
+from neo4j.cypher import CypherEngine
 
 class Nodes(object):
     
@@ -135,4 +136,8 @@ class GraphDatabase(GraphDatabase):
     def traversal(self):
         return Traversal.description()
         
+    def query(self, query):
+        if not hasattr(self, '__cypherEngine'):
+            self.__cypherEngine = CypherEngine(self)
+        return self.__cypherEngine.execute(query)
 

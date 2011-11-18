@@ -25,6 +25,7 @@ from util import rethrow_current_exception_as, PythonicIterator
 #
 
 GraphDatabase = extends(GraphDatabaseService)
+# Notice: Further pythinification of this class is located in __init__.py
 def __new__(GraphDatabase, resourceUri, **settings):
     config = HashMap()
     for key in settings:
@@ -32,7 +33,7 @@ def __new__(GraphDatabase, resourceUri, **settings):
         if isinstance(value, str):
             config.put(key, value)
     return EmbeddedGraphDatabase(resourceUri, config)
-
+    
 
 class _Direction(extends(Direction)):
     
