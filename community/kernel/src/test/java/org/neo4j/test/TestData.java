@@ -28,13 +28,13 @@ import java.util.List;
 
 import org.junit.Ignore;
 import org.junit.internal.runners.model.MultipleFailureException;
-import org.junit.rules.MethodRule;
-import org.junit.runners.model.FrameworkMethod;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.neo4j.kernel.impl.annotations.Documented;
 
 @Ignore( "this is not a test, it is a testing utility" )
-public class TestData<T> implements MethodRule
+public class TestData<T> implements TestRule
 {
     @Target( ElementType.METHOD )
     @Retention( RetentionPolicy.RUNTIME )
@@ -52,7 +52,7 @@ public class TestData<T> implements MethodRule
 
     public static <T> TestData<T> producedThrough( Producer<T> transformation )
     {
-        transformation.getClass();
+        transformation.getClass(); // null check
         return new TestData<T>( transformation );
     }
 
@@ -114,14 +114,14 @@ public class TestData<T> implements MethodRule
     {
         this.producer = producer;
     }
-
+    
     @Override
-    public Statement apply( final Statement base, final FrameworkMethod method, Object target )
+    public Statement apply( final Statement base, final Description description )
     {
-        final Title title = method.getAnnotation( Title.class );
-        final Documented doc = method.getAnnotation( Documented.class );
-        GraphDescription.Graph g = method.getAnnotation( GraphDescription.Graph.class );
-        if ( g == null ) g = method.getMethod().getDeclaringClass().getAnnotation( GraphDescription.Graph.class );
+        final Title title = description.getAnnotation( Title.class );
+        final Documented doc = description.getAnnotation( Documented.class );
+        GraphDescription.Graph g = description.getAnnotation( GraphDescription.Graph.class );
+        if ( g == null ) g = description.getTestClass().getAnnotation( GraphDescription.Graph.class );
         final GraphDescription graph = GraphDescription.create( g );
         return new Statement()
         {
@@ -129,7 +129,7 @@ public class TestData<T> implements MethodRule
             public void evaluate() throws Throwable
             {
                 product.set( create( graph, title == null ? null : title.value(), doc == null ? null : doc.value(),
-                        method.getName() ) );
+                        description.getMethodName() ) );
                 try
                 {
                     try

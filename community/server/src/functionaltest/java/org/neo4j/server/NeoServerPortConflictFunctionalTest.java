@@ -29,8 +29,9 @@ import java.net.ServerSocket;
 import org.junit.Test;
 import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.server.logging.InMemoryAppender;
+import org.neo4j.test.server.ExclusiveServerTestBase;
 
-public class NeoServerPortConflictFunctionalTest
+public class NeoServerPortConflictFunctionalTest extends ExclusiveServerTestBase
 {
 
     @Test

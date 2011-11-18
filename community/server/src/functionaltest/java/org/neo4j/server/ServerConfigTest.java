@@ -32,8 +32,9 @@ import org.junit.After;
 import org.junit.Test;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
+import org.neo4j.test.server.ExclusiveServerTestBase;
 
-public class ServerConfigTest
+public class ServerConfigTest extends ExclusiveServerTestBase
 {
 
     private NeoServerWithEmbeddedWebServer server;

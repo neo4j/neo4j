@@ -17,45 +17,45 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
+package org.neo4j.test.server;
 
 import java.io.IOException;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.neo4j.server.NeoServer;
 import org.neo4j.server.helpers.ServerHelper;
-import org.neo4j.server.logging.InMemoryAppender;
-import org.neo4j.test.server.ExclusiveServerTestBase;
 
-public class NeoServerShutdownLoggingFunctionalTest extends ExclusiveServerTestBase
+public class SharedServerTestBase
 {
-    private NeoServer server;
-
-    @Before
-    public void setupServer() throws IOException
+    protected static final NeoServer server()
     {
-        server = ServerHelper.createServer( true );
+        return server;
+    }
+
+    protected final void cleanDatabase()
+    {
         ServerHelper.cleanTheDatabase( server );
     }
 
-    @After
-    public void shutdownTheServer()
+    private static NeoServer server;
+
+    @BeforeClass
+    public static final void allocateServer() throws IOException
     {
-        if ( server != null )
-        {
-            server.stop();
-        }
+        server = ServerHolder.allocate();
     }
 
-    @Test
-    public void shouldLogShutdown() throws Exception
+    @AfterClass
+    public static final void releaseServer()
     {
-        InMemoryAppender appender = new InMemoryAppender( NeoServerWithEmbeddedWebServer.log );
-        server.stop();
-        assertThat( appender.toString(), containsString( "INFO: Successfully shutdown database [" ) );
+        try
+        {
+            ServerHolder.release( server );
+        }
+        finally
+        {
+            server = null;
+        }
     }
 }

@@ -23,47 +23,28 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.io.IOException;
-
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.server.NeoServer;
-import org.neo4j.server.helpers.ServerHelper;
+import org.neo4j.test.server.SharedServerTestBase;
 
-public class RedirectorTests
+public class RedirectorTests extends SharedServerTestBase
 {
-    private static NeoServer server;
-
-    @BeforeClass
-    public static void setupServer() throws IOException
-    {
-        server = ServerHelper.createServer();
-    }
-
     @Before
     public void cleanTheDatabase()
     {
-        ServerHelper.cleanTheDatabase( server );
-    }
-
-    @AfterClass
-    public static void stopServer()
-    {
-        server.stop();
+        cleanDatabase();
     }
 
     @Test
     public void shouldRedirectRootToWebadmin() throws Exception {
-        JaxRsResponse response = new RestRequest(server.baseUri()).get();
+        JaxRsResponse response = new RestRequest(server().baseUri()).get();
 
         assertThat(response.getStatus(), is(not(404)));
     }
 
     @Test
     public void shouldNotRedirectTheRestOfTheWorld() throws Exception {
-        JaxRsResponse response = new RestRequest(server.baseUri()).get("a/different/relative/webadmin/data/uri/");
+        JaxRsResponse response = new RestRequest(server().baseUri()).get("a/different/relative/webadmin/data/uri/");
 
         assertThat(response.getStatus(), is(404));
     }

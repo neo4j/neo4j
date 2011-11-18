@@ -23,41 +23,23 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import java.io.IOException;
 import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.server.NeoServer;
-import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.test.server.SharedServerTestBase;
 
 import com.sun.jersey.api.client.Client;
 
-public class DiscoveryServiceFunctionalTest
+public class DiscoveryServiceFunctionalTest extends SharedServerTestBase
 {
-    private static NeoServer server;
-
-    @BeforeClass
-    public static void setupServer() throws IOException
-    {
-        server = ServerHelper.createServer();
-    }
-
     @Before
     public void cleanTheDatabase()
     {
-        ServerHelper.cleanTheDatabase( server );
-    }
-
-    @AfterClass
-    public static void stopServer()
-    {
-        server.stop();
+        cleanDatabase();
     }
 
     @Test
@@ -108,14 +90,14 @@ public class DiscoveryServiceFunctionalTest
         Client nonRedirectingClient = Client.create();
         nonRedirectingClient.setFollowRedirects( false );
 
-        JaxRsResponse clientResponse = new RestRequest(null,nonRedirectingClient).get(server.baseUri().toString(),MediaType.TEXT_HTML_TYPE);
+        JaxRsResponse clientResponse = new RestRequest(null,nonRedirectingClient).get(server().baseUri().toString(),MediaType.TEXT_HTML_TYPE);
 
         assertEquals( 303, clientResponse.getStatus() );
     }
 
     private JaxRsResponse getDiscoveryDocument() throws Exception
     {
-        return new RestRequest(server.baseUri()).get();
+        return new RestRequest(server().baseUri()).get();
     }
 
 }

@@ -29,50 +29,40 @@ import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.server.NeoServer;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.helpers.FunctionalTestHelper;
-import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
+import org.neo4j.test.server.SharedServerTestBase;
 
-public class GetRelationshipPropertiesFunctionalTest
+public class GetRelationshipPropertiesFunctionalTest extends SharedServerTestBase
 {
     private static String baseRelationshipUri;
 
-    private static NeoServer server;
     private static FunctionalTestHelper functionalTestHelper;
     private static GraphDbHelper helper;
 
     @BeforeClass
     public static void setupServer() throws IOException
     {
-        server = ServerHelper.createServer();
-        functionalTestHelper = new FunctionalTestHelper( server );
+        functionalTestHelper = new FunctionalTestHelper( server() );
         helper = functionalTestHelper.getGraphDbHelper();
     }
 
     @Before
     public void setupTheDatabase()
     {
-        ServerHelper.cleanTheDatabase( server );
+        cleanDatabase();
 
         long relationship = helper.createRelationship( "LIKES" );
         Map<String, Object> map = new HashMap<String, Object>();
         map.put( "foo", "bar" );
         helper.setRelationshipProperties( relationship, map );
         baseRelationshipUri = functionalTestHelper.dataUri() + "relationship/" + relationship + "/properties/";
-    }
-
-    @AfterClass
-    public static void stopServer()
-    {
-        server.stop();
     }
 
     @Test

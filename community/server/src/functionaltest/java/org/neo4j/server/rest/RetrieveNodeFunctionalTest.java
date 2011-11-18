@@ -29,46 +29,36 @@ import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.NeoServer;
 import org.neo4j.server.helpers.FunctionalTestHelper;
-import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.formats.CompactJsonFormat;
 import org.neo4j.test.TestData;
+import org.neo4j.test.server.SharedServerTestBase;
 
-public class RetrieveNodeFunctionalTest
+public class RetrieveNodeFunctionalTest extends SharedServerTestBase
 {
     private URI nodeUri;
-    private static NeoServer server;
     private static FunctionalTestHelper functionalTestHelper;
 
     @BeforeClass
     public static void setupServer() throws IOException
     {
-        server = ServerHelper.createServer();
-        functionalTestHelper = new FunctionalTestHelper( server );
+        functionalTestHelper = new FunctionalTestHelper( server() );
     }
 
     @Before
     public void cleanTheDatabaseAndInitialiseTheNodeUri() throws Exception
     {
-        ServerHelper.cleanTheDatabase( server );
+        cleanDatabase();
         nodeUri = new URI( functionalTestHelper.nodeUri() + "/"
-                           + new GraphDbHelper( server.getDatabase() ).createNode() );
-    }
-
-    @AfterClass
-    public static void stopServer()
-    {
-        server.stop();
+                           + new GraphDbHelper( server().getDatabase() ).createNode() );
     }
 
     public @Rule

@@ -27,27 +27,22 @@ import java.util.Map;
 
 import javax.ws.rs.core.Response.Status;
 
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Pair;
-import org.neo4j.server.WrappingNeoServerBootstrapper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphHolder;
-import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestData;
+import org.neo4j.test.server.SharedServerTestBase;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
-public class AbstractRestFunctionalTestBase implements GraphHolder
+public class AbstractRestFunctionalTestBase extends SharedServerTestBase implements GraphHolder
 {
-
-    static ImpermanentGraphDatabase graphdb;
     protected static final String NODES = "http://localhost:7474/db/data/node/";
 
     public @Rule
@@ -56,16 +51,6 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
 
     public @Rule
     TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
-    protected static WrappingNeoServerBootstrapper server;
-
-    @BeforeClass
-    public static void startDatabase()
-    {
-        graphdb = new ImpermanentGraphDatabase();
-        server = new WrappingNeoServerBootstrapper( graphdb );
-        server.start();
-
-    }
 
     protected String doCypherRestCall( String endpoint, String script, Status status, Pair<String, String>... params ) {
         data.get();
@@ -131,40 +116,17 @@ public class AbstractRestFunctionalTestBase implements GraphHolder
         return AsciidocHelper.createGraphViz( "Starting Graph", graphdb(), name);
     }
 
-  
-
     @Override
     public GraphDatabaseService graphdb()
     {
-        return graphdb;
+        return server().getDatabase().graph;
     }
 
     @Before
     public void cleanContent()
     {
-        graphdb.cleanContent();
-        gen.get().setGraph( graphdb );
-    }
-
-    @AfterClass
-    public static void shutdownServer()
-    {
-        try
-        {
-            if ( server != null ) server.stop();
-        }
-        finally
-        {
-            try
-            {
-                if ( graphdb != null ) graphdb.shutdown();
-            }
-            finally
-            {
-                graphdb = null;
-                server = null;
-            }
-        }
+        cleanDatabase();
+        gen.get().setGraph( graphdb() );
     }
 
     protected String getDataUri()

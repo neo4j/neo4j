@@ -51,8 +51,9 @@ import org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.TestData;
+import org.neo4j.test.server.ExclusiveServerTestBase;
 
-public class PagedTraverserFunctionalTest
+public class PagedTraverserFunctionalTest extends ExclusiveServerTestBase
 {
     public @Rule
     TestData<RESTDocsGenerator> docGenerator = TestData.producedThrough( RESTDocsGenerator.PRODUCER );

@@ -25,36 +25,26 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.neo4j.server.NeoServer;
 import org.neo4j.server.helpers.FunctionalTestHelper;
-import org.neo4j.server.helpers.ServerHelper;
+import org.neo4j.test.server.SharedServerTestBase;
 
-public class JmxServiceTest
+public class JmxServiceTest extends SharedServerTestBase
 {
-    private static NeoServer server;
     private static FunctionalTestHelper functionalTestHelper;
 
     @BeforeClass
     public static void setupServer() throws IOException
     {
-        server = ServerHelper.createServer();
-        functionalTestHelper = new FunctionalTestHelper( server );
+        functionalTestHelper = new FunctionalTestHelper( server() );
     }
 
     @Before
     public void cleanTheDatabase()
     {
-        ServerHelper.cleanTheDatabase( server );
-    }
-
-    @AfterClass
-    public static void stopServer()
-    {
-        server.stop();
+        cleanDatabase();
     }
 
     @Test

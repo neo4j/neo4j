@@ -22,35 +22,17 @@ package org.neo4j.server;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
-import java.io.IOException;
-
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.server.helpers.FunctionalTestHelper;
-import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.JaxRsResponse;
+import org.neo4j.test.server.SharedServerTestBase;
 
-public class NeoServerDefaultPortAndHostnameFunctionalTest
+public class NeoServerDefaultPortAndHostnameFunctionalTest extends SharedServerTestBase
 {
-    private static NeoServer server;
-
-    @BeforeClass
-    public static void setupServer() throws IOException
-    {
-        server = ServerHelper.createServer();
-    }
-
-    @AfterClass
-    public static void stopServer()
-    {
-        server.stop();
-    }
-
     @Test
     public void shouldDefaultToSensiblePortIfNoneSpecifiedInConfig() throws Exception {
 
-        FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server);
+        FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper(server());
 
         JaxRsResponse response = functionalTestHelper.get(functionalTestHelper.getWebadminUri());
 
@@ -59,6 +41,6 @@ public class NeoServerDefaultPortAndHostnameFunctionalTest
 
     @Test
     public void shouldDefaultToLocalhostOfNoneSpecifiedInConfig() throws Exception {
-        assertThat(server.baseUri().getHost(), is("localhost"));
+        assertThat(server().baseUri().getHost(), is("localhost"));
     }
 }

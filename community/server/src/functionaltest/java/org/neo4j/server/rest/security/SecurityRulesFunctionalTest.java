@@ -33,8 +33,9 @@ import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RESTDocsGenerator;
 import org.neo4j.test.TestData;
 import org.neo4j.test.TestData.Title;
+import org.neo4j.test.server.ExclusiveServerTestBase;
 
-public class SecurityRulesFunctionalTest
+public class SecurityRulesFunctionalTest extends ExclusiveServerTestBase
 {
     private NeoServerWithEmbeddedWebServer server;
 

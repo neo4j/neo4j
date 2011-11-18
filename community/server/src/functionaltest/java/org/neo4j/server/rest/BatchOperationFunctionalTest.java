@@ -422,7 +422,7 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
     private int countNodes()
     {
         int count = 0;
-        for(Node node : graphdb.getAllNodes())
+        for(Node node : graphdb().getAllNodes())
         {
             count++;
         }

@@ -32,33 +32,27 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
-import org.neo4j.server.NeoServerWithEmbeddedWebServer;
-import org.neo4j.server.helpers.ServerBuilder;
-import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.webdriver.WebDriverFacade;
 import org.neo4j.server.webdriver.WebadminWebdriverLibrary;
 import org.neo4j.test.JavaTestDocsGenerator;
 import org.neo4j.test.TestData;
+import org.neo4j.test.server.SharedServerTestBase;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 
-public abstract class AbstractWebadminTest {
+public abstract class AbstractWebadminTest extends SharedServerTestBase {
     
     public @Rule
     TestData<JavaTestDocsGenerator> gen = TestData.producedThrough( JavaTestDocsGenerator.PRODUCER );
 
     protected static WebadminWebdriverLibrary wl;
     
-    private static NeoServerWithEmbeddedWebServer server;
     private static WebDriverFacade webdriverFacade;
 
     @BeforeClass
     public static void setup() throws Exception {
-        server = ServerBuilder.server().build();
-        server.start();
-        
         webdriverFacade = new WebDriverFacade();
-        wl = new WebadminWebdriverLibrary(webdriverFacade,server.baseUri().toString());
+        wl = new WebadminWebdriverLibrary( webdriverFacade, server().baseUri().toString() );
     }
     
     @After
@@ -90,14 +84,13 @@ public abstract class AbstractWebadminTest {
     }
     
     @Before
-    public void cleanDatabase() {
-        ServerHelper.cleanTheDatabase(server);
+    public void cleanTheDatabase() {
+        cleanDatabase();
     }
     
     @AfterClass
     public static void tearDown() throws Exception {
         webdriverFacade.closeBrowser();
-        server.stop();
     }
     
     private static void copyFile(File sourceFile, File destFile) throws IOException {

@@ -29,40 +29,36 @@ import java.util.Collections;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.server.NeoServer;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.helpers.FunctionalTestHelper;
-import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.RelationshipDirection;
+import org.neo4j.test.server.SharedServerTestBase;
 
-public class HtmlFunctionalTest
+public class HtmlFunctionalTest extends SharedServerTestBase
 {
     private long thomasAnderson;
     private long trinity;
     private long thomasAndersonLovesTrinity;
 
-    private static NeoServer server;
     private static FunctionalTestHelper functionalTestHelper;
     private static GraphDbHelper helper;
 
     @BeforeClass
     public static void setupServer() throws IOException
     {
-        server = ServerHelper.createServer();
-        functionalTestHelper = new FunctionalTestHelper( server );
+        functionalTestHelper = new FunctionalTestHelper( server() );
         helper = functionalTestHelper.getGraphDbHelper();
     }
 
     @Before
     public void setupTheDatabase()
     {
-        ServerHelper.cleanTheDatabase( server );
+        cleanDatabase();
         createTheMatrix();
     }
 
@@ -87,12 +83,6 @@ public class HtmlFunctionalTest
         // index a relationship
         helper.createRelationshipIndex( "relationships2" );
         helper.addRelationshipToIndex( "relationships2", "key2", "value2", knowsRelationshipId );
-    }
-
-    @AfterClass
-    public static void stopServer()
-    {
-        server.stop();
     }
 
     private long createAndIndexNode( String name ) throws DatabaseBlockedException

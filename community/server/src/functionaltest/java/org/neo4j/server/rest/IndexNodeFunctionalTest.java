@@ -34,27 +34,27 @@ import java.util.Map;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response.Status;
 
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.server.NeoServer;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.helpers.FunctionalTestHelper;
-import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.URIHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.TestData;
+import org.neo4j.test.server.SharedServerTestBase;
 
-public class IndexNodeFunctionalTest
+public class IndexNodeFunctionalTest extends SharedServerTestBase
 {
-    private static NeoServer server;
     private static FunctionalTestHelper functionalTestHelper;
     private static GraphDbHelper helper;
     public @Rule
@@ -63,23 +63,30 @@ public class IndexNodeFunctionalTest
     @BeforeClass
     public static void setupServer() throws IOException
     {
-        server = ServerHelper.createServer();
-        functionalTestHelper = new FunctionalTestHelper( server );
+        functionalTestHelper = new FunctionalTestHelper( server() );
         helper = functionalTestHelper.getGraphDbHelper();
     }
 
     @Before
     public void cleanTheDatabase()
     {
-        ServerHelper.cleanTheDatabase( server );
-        gen.get()
-                .setGraph( server.getDatabase().graph );
+        cleanDatabase();
+        gen.get().setGraph( server().getDatabase().graph );
     }
-
-    @AfterClass
-    public static void stopServer()
+    
+    long createNode()
     {
-        server.stop();
+        AbstractGraphDatabase graphdb = server().getDatabase().graph;
+        Transaction tx = graphdb.beginTx();
+        Node node;
+        try {
+            node = graphdb.createNode();
+            
+            tx.success();
+        } finally {
+            tx.finish();
+        }
+        return node.getId();
     }
 
     /**
@@ -197,7 +204,7 @@ public class IndexNodeFunctionalTest
         final String indexName = "favorites";
         final String key = "some-key";
         final String value = "some value";
-        int nodeId = 0;
+        long nodeId = createNode();
         // implicitly create the index
         gen.get()
                 .expectedStatus( 201 )
@@ -234,10 +241,11 @@ public class IndexNodeFunctionalTest
         String indexName = "favorites";
         String key = "key";
         String value = "the value";
+        long nodeId = createNode();
         value = URIHelper.encode( value );
         // implicitly create the index
         JaxRsResponse response = RestRequest.req()
-                .post( functionalTestHelper.indexNodeUri( indexName ), createJsonStringFor( 0, key, value ) );
+                .post( functionalTestHelper.indexNodeUri( indexName ), createJsonStringFor( nodeId, key, value ) );
         assertEquals( 201, response.getStatus() );
 
         // search it exact

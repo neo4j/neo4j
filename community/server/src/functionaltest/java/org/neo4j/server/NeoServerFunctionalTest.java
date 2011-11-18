@@ -25,58 +25,38 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
-import java.io.IOException;
-
 import javax.ws.rs.core.MediaType;
 
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.server.helpers.FunctionalTestHelper;
-import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
+import org.neo4j.test.server.SharedServerTestBase;
 
-public class NeoServerFunctionalTest
+public class NeoServerFunctionalTest extends SharedServerTestBase
 {
-    private static NeoServer server;
-    private static FunctionalTestHelper functionalTestHelper;
-
-    @BeforeClass
-    public static void setupServer() throws IOException
-    {
-        server = ServerHelper.createServer();
-        functionalTestHelper = new FunctionalTestHelper(server);
-    }
+    private FunctionalTestHelper functionalTestHelper;
 
     @Before
     public void cleanTheDatabase()
     {
-        ServerHelper.cleanTheDatabase( server );
-    }
-
-    @AfterClass
-    public static void stopServer()
-    {
-        if ( server != null )
-        {
-            server.stop();
-        }
+        cleanDatabase();
+        functionalTestHelper = new FunctionalTestHelper(server());
     }
 
     @Test
     public void whenServerIsStartedItshouldStartASingleDatabase() throws Exception
     {
-        assertNotNull( server.getDatabase() );
+        assertNotNull( server().getDatabase() );
     }
 
     @Test
     public void shouldRedirectRootToWebadmin() throws Exception {
-        assertFalse(server.baseUri()
+        assertFalse(server().baseUri()
                 .toString()
                 .contains("webadmin"));
-        JaxRsResponse response = RestRequest.req().get(server.baseUri().toString(), MediaType.TEXT_HTML_TYPE);
+        JaxRsResponse response = RestRequest.req().get(server().baseUri().toString(), MediaType.TEXT_HTML_TYPE);
         assertThat(response.getStatus(), is(200));
         assertThat(response.getEntity(), containsString("webadmin"));
     }

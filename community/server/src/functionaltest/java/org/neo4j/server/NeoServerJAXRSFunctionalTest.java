@@ -38,8 +38,9 @@ import org.neo4j.server.helpers.Transactor;
 import org.neo4j.server.helpers.UnitOfWork;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
+import org.neo4j.test.server.ExclusiveServerTestBase;
 
-public class NeoServerJAXRSFunctionalTest
+public class NeoServerJAXRSFunctionalTest extends ExclusiveServerTestBase
 {
     private static final int ROOT_NODE = 1;
     private NeoServer server;

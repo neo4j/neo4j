@@ -23,6 +23,7 @@ import static org.neo4j.test.GraphDescription.PropType.STRING;
 
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -42,6 +43,7 @@ import org.neo4j.tooling.GlobalGraphOperations;
 
 public class GraphDescription implements GraphDefinition
 {
+    @Inherited
     @Target( { ElementType.METHOD, ElementType.TYPE } )
     @Retention( RetentionPolicy.RUNTIME )
     public @interface Graph

@@ -17,26 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server;
+package org.neo4j.test.server;
 
-import java.io.IOException;
+import org.junit.BeforeClass;
 
-import org.junit.Test;
-import org.neo4j.server.helpers.ServerBuilder;
-import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
-import org.neo4j.test.server.ExclusiveServerTestBase;
-
-public class StartupHealthcheckFunctionalTest extends ExclusiveServerTestBase
+public class ExclusiveServerTestBase
 {
-
-    private NeoServer server;
-
-    @Test( expected = StartupHealthCheckFailedException.class )
-    public void shouldExitWhenFailedStartupHealthCheck() throws IOException
+    @BeforeClass
+    public static final void ensureServerNotRunning()
     {
-        server = ServerBuilder.server()
-                .withFailingStartupHealthcheck()
-                .build();
-        server.start();
+        ServerHolder.ensureNotRunning();
     }
 }

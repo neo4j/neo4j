@@ -44,7 +44,6 @@ import com.sun.jersey.api.client.ClientResponse;
 
 public class RelationshipFunctionalTest extends AbstractRestFunctionalTestBase
 {
-
     @Test
     @Graph( nodes = { @NODE( name = "Romeo", setNameProperty = true ),
             @NODE( name = "Juliet", setNameProperty = true ) }, relationships = { @REL( start = "Romeo", end = "Juliet", type = "LOVES", properties = { @PROP( key = "cost", value = "high", type = GraphDescription.PropType.STRING ) } ) } )
@@ -52,11 +51,9 @@ public class RelationshipFunctionalTest extends AbstractRestFunctionalTestBase
     public void shouldReturn204WhenPropertiesAreRemovedFromRelationship()
             throws DatabaseBlockedException
     {
-        data.get();
         Relationship loves = getNode( "Romeo" ).getRelationships().iterator().next();
         gen.get().expectedStatus( Status.NO_CONTENT.getStatusCode() ).delete(
                 getRelationshipUri( loves ) ).entity();
-
     }
 
     @Test
@@ -69,7 +66,6 @@ public class RelationshipFunctionalTest extends AbstractRestFunctionalTestBase
                         DynamicRelationshipType.withName( "know" ),
                         Direction.OUTGOING ) ) ).entity();
         assertTrue(JsonHelper.jsonToMap( response ).containsKey( "start" ));
-
     }
 
     @Test

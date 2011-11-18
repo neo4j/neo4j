@@ -30,8 +30,9 @@ import org.junit.Test;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.helpers.ServerBuilder;
 import org.neo4j.server.logging.InMemoryAppender;
+import org.neo4j.test.server.ExclusiveServerTestBase;
 
-public class DatabaseTuningFunctionalTest
+public class DatabaseTuningFunctionalTest extends ExclusiveServerTestBase
 {
     @Test
     public void shouldLoadAKnownGoodPropertyFile() throws IOException
