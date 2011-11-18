@@ -77,10 +77,23 @@ class CypherTest(unit_tests.GraphDatabaseTest):
         db = self.graphdb
         
         # START SNIPPET: parameterizedCypherQuery
-        result = db.query("START n=node({id}) RETURN n,count(n)",id=0)
+        result = db.query("START n=node({id}) RETURN n",id=0)
         
         node = result.single['n']
         # END SNIPPET: parameterizedCypherQuery
+        
+        self.assertEquals(0, node.id)
+        
+    def test_prepared_queries(self):
+        db = self.graphdb
+        
+        # START SNIPPET: preparedCypherQuery
+        get_node_by_id = db.prepare_query("START n=node({id}) RETURN n")
+        
+        result = db.query(get_node_by_id, id=0)
+        
+        node = result.single['n']
+        # END SNIPPET: preparedCypherQuery
         
         self.assertEquals(0, node.id)
         

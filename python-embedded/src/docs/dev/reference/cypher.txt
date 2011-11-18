@@ -65,3 +65,17 @@ source=cypher.py
 tag=parameterizedCypherQuery
 classifier=test-sources
 ----
+
+=== Prepared queries ===
+
+If you are executing similar queries over and over, you can pre-parse a parameterized version of the query.
+Then you can just execute that pre-parsed query with appropriate parameters.
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=cypher.py
+tag=preparedCypherQuery
+classifier=test-sources
+----
+

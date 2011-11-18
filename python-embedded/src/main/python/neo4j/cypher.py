@@ -20,16 +20,19 @@ from _backend import extends, ExecutionEngine, CypherParser, from_java,to_java, 
 from neo4j.util import rethrow_current_exception_as, PythonicIterator
 
 
-
 class CypherEngine(object):
 
     def __init__(self,db):
         self._engine = ExecutionEngine(db)
+        self._parser = CypherParser()
     
     def execute(self, query, **params):
         if len(params.keys()) > 0:
             return ExecutionResult(self._engine.execute(query,to_java(params)))
         return ExecutionResult(self._engine.execute(query))
+        
+    def prepare(self,query):
+        return self._parser.parse(query)
         
 class ExecutionResult(object):
     

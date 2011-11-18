@@ -126,7 +126,7 @@ class GraphDatabase(GraphDatabase):
             self.__relationships = Relationships(self)
         return self.__relationships
         
-    # Syntax sugare
+    # Syntax sugar
     relationships = relationship
         
     @property
@@ -137,7 +137,14 @@ class GraphDatabase(GraphDatabase):
         return Traversal.description()
         
     def query(self, query, **params):
-        if not hasattr(self, '__cypherEngine'):
-            self.__cypherEngine = CypherEngine(self)
-        return self.__cypherEngine.execute(query, **params)
+        return self._cypher_engine.execute(query, **params)
+        
+    def prepare_query(self, query):
+        return self._cypher_engine.prepare(query)
+        
+    @property
+    def _cypher_engine(self):
+        if not hasattr(self, '__cached_cypher_engine'):
+            self.__cached_cypher_engine = CypherEngine(self)
+        return self.__cached_cypher_engine
 
