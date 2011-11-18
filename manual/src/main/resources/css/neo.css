@@ -358,6 +358,11 @@ div.queryresult table tfoot th
   font-weight: normal;
 }
 
+div.queryresult table tbody td.emptyresult p code.literal
+{
+  color: #666666;
+}
+
 div.table table th, div.informaltable table th,
 div.table-contents td p span.strong strong
 {

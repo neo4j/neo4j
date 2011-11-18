@@ -72,11 +72,11 @@ if len(sys.argv) > 1:
 body = []
 body.append('<tbody>')
 if len(data) == 2:
-  body.append('<row><entry align="left" valign="top" namest="col1" nameend="col')
+  body.append('<row><entry role="emptyresult" align="left" valign="top" namest="col1" nameend="col')
   body.append(str(column_count))
-  body.append('">')
+  body.append('"><simpara><literal>')
   body.append('(empty result)')
-  body.append('</entry></row>')
+  body.append('</literal></simpara></entry></row>')
   line = data[1]
 else:
   for line in data:
