@@ -5,7 +5,9 @@ Cypher Queries
 You can use the Cypher query language from neo4j-embedded. 
 Read more about cypher syntax and cool stuff you can with it here: <<cypher-query-lang>>.
 
-=== Simple query ===
+== Querying and reading the result ==
+
+=== Basic query ===
 
 To execute a plain text cypher query, do this:
 
@@ -52,6 +54,8 @@ source=cypher.py
 tag=listCypherResultColumns
 classifier=test-sources
 ----
+
+== Parameterized and prepared queries ==
 
 === Parameterized queries ===
 
