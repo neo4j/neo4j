@@ -40,6 +40,9 @@ class ExecutionResult(object):
         except:
             rethrow_current_exception_as(KeyError)
             
+    def __iter__(self):
+        return PythonicIterator(self._inner.iterator())
+            
     def keys(self):
         return from_java(self._inner.columns())
             

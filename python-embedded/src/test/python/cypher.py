@@ -28,7 +28,9 @@ class CypherTest(unit_tests.GraphDatabaseTest):
     def test_simple_query(self):
         db = self.graphdb
         
+        # START SNIPPET: basicCypherQuery
         result = db.query("START n=node(0) RETURN n")
+        # END SNIPPET: basicCypherQuery
         
         # Fetch an iterator for the "n" column
         col = result['n']
@@ -36,18 +38,27 @@ class CypherTest(unit_tests.GraphDatabaseTest):
         # We know its a single result
         node = col.single
         
+        self.assertEquals(0, node.id)
+        
         # So we could have done this
         node = result['n'].single
         
         self.assertEquals(0, node.id)
         
+        # Iterate through all result rows
+        for row in result:
+            node = row['n']
+            self.assertEquals(0, node.id)
+        
     def test_list_columns(self):
         db = self.graphdb
         
+        # START SNIPPET: listCypherResultColumns
         result = db.query("START n=node(0) RETURN n,count(n)")
         
         # Get a list of the column names
         columns = result.keys()
+        # END SNIPPET: listCypherResultColumns
         
         self.assertEquals(columns[0], 'n')
         self.assertEquals(columns[1], 'count(n)')
