@@ -109,8 +109,10 @@ public class BlockLogReader implements ReadableByteChannel
      */
     private int readAsMuchAsPossible( ByteBuffer dst, int maxBytesWanted )
     {
+        /*
         assert maxBytesWanted <= BlockLogBuffer.MAX_SIZE : maxBytesWanted
                                                            + " is larger than the chunk size";
+                                                           */
         if ( byteBuffer.remaining() == 0 && moreBlocks )
         {
             readNextBlock();
