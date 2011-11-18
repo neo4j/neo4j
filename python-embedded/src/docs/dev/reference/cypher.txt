@@ -52,3 +52,16 @@ source=cypher.py
 tag=listCypherResultColumns
 classifier=test-sources
 ----
+
+=== Parameterized queries ===
+
+Cypher supports parameterized queries, see <<cypher-parameters>>. 
+This is how you use them in neo4j-embedded.
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=cypher.py
+tag=parameterizedCypherQuery
+classifier=test-sources
+----
