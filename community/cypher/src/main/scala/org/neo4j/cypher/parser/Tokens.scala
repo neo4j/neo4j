@@ -64,7 +64,7 @@ trait Tokens extends JavaTokenParsers {
 
   def apostropheString: Parser[ String ] = ( "\'" + """([^'\p{Cntrl}\\]|\\[\\/bfnrt]|\\u[a-fA-F0-9]{4})*""" + "\'" ).r
 
-  def regularLiteral = ( "/" + """([^"\p{Cntrl}\\]|\\[\\/bfnrt]|\\u[a-fA-F0-9]{4})*""" + "/" ).r ^^ ( x => Literal(stripQuotes(x)) )
+  def regularLiteral = ( "/" + """([^"\p{Cntrl}\\]|\\[\\/bfnrt]|\\u[a-fA-F0-9]{4})*?""" + "/" ).r ^^ ( x => Literal(stripQuotes(x)) )
 
   def parameter: Parser[ Value ] = curly(identity | wholeNumber) ^^ ( x => ParameterValue(x) )
 }

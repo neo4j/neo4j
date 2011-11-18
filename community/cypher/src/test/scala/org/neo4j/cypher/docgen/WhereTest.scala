@@ -61,6 +61,15 @@ class WhereTest extends DocumentingTestBase {
       (p) => assertEquals(List(node("Tobias")), p.columnAs[Node]("n").toList))
   }
 
+  @Test def regular_expressions_escaped() {
+    testQuery(
+      title = "Escaping in regular expressions",
+      text = "If you need a forward slash inside of your regular expression, escape it just like you expect to.",
+      queryText = """start n=node(%Andres%, %Tobias%) where n.name =~ /Some\/thing/ return n""",
+      returns = """No nodes match this regular expression.""",
+      (p) => assertEquals(List(), p.toList))
+  }
+
   @Test def has_property() {
     testQuery(
       title = "Property exists",

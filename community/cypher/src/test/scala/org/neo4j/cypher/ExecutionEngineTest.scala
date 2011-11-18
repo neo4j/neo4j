@@ -1215,7 +1215,6 @@ return x, p
     ) === result.toList)
   }
 
-  @Ignore("This test exposes a bug")
   @Test def shouldSupportMultipleRegexes() {
     val a = createNode(Map("name"->"Andreas"))
 

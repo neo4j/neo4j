@@ -192,6 +192,26 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
+  @Test def shouldHandleMultipleRegularComparison() {
+    testQuery(
+      """start a = node(1) where a.name =~ /And.*/ AND a.name =~ /And.*/ return a""",
+      Query.
+        start(NodeById("a", 1)).
+        where(And(RegularExpression(PropertyValue("a", "name"), Literal("And.*")), RegularExpression(PropertyValue("a", "name"), Literal("And.*")))).
+        returns(ValueReturnItem(EntityValue("a")))
+    )
+  }
+
+  @Test def shouldHandleEscapedRegexs() {
+    testQuery(
+      """start a = node(1) where a.name =~ /And\/.*/ return a""",
+      Query.
+        start(NodeById("a", 1)).
+        where(RegularExpression(PropertyValue("a", "name"), Literal("And\\/.*"))).
+        returns(ValueReturnItem(EntityValue("a")))
+    )
+  }
+
   @Test def shouldHandleGreaterThanOrEqual() {
     testQuery(
       "start a = node(1) where a.name >= \"andres\" return a",
