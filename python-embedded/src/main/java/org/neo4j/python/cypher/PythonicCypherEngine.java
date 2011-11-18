@@ -20,8 +20,8 @@
 package org.neo4j.python.cypher;
 
 import org.neo4j.cypher.ExecutionEngine;
+import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.cypher.SyntaxException;
 
 /**
  * There seems to be problems with extending cypher classes
@@ -40,8 +40,8 @@ public class PythonicCypherEngine {
         this.engine = new ExecutionEngine(db);
     }
     
-    public void execute(String query) {
-        this.engine.execute(query);
+    public ExecutionResult execute(String query) {
+        return new ExecutionResult(engine.execute(query));
     }
     
 }

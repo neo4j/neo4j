@@ -25,13 +25,33 @@ import tempfile, os
 
 class CypherTest(unit_tests.GraphDatabaseTest):
         
-    def test_create_node(self):
+    def test_simple_query(self):
         db = self.graphdb
         
-        with db.transaction:
-            n = db.node()
-        
         result = db.query("START n=node(0) RETURN n")
+        
+        # Fetch an iterator for the "n" column
+        col = result['n']
+        
+        # We know its a single result
+        node = col.single
+        
+        # So we could have done this
+        node = result['n'].single
+        
+        self.assertEquals(0, node.id)
+        
+    def test_list_columns(self):
+        db = self.graphdb
+        
+        result = db.query("START n=node(0) RETURN n,count(n)")
+        
+        # Get a list of the column names
+        columns = result.keys()
+        
+        self.assertEquals(columns[0], 'n')
+        self.assertEquals(columns[1], 'count(n)')
+        
         
 if __name__ == '__main__':
     unit_tests.unittest.main()

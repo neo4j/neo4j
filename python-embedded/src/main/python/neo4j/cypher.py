@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#from _backend import extends, PythonicCypherEngine
+from _backend import extends, PythonicCypherEngine, from_java, strings
 from neo4j.util import rethrow_current_exception_as, PythonicIterator
 
 
@@ -24,9 +24,22 @@ from neo4j.util import rethrow_current_exception_as, PythonicIterator
 class CypherEngine(object):
 
     def __init__(self,db):
-        #self._engine = PythonicCypherEngine(db)
-        pass
+        self._engine = PythonicCypherEngine(db)
     
     def execute(self, query):
-        #self._engine.execute(query)
-        pass
+        return ExecutionResult(self._engine.execute(query))
+        
+class ExecutionResult(object):
+    
+    def __init__(self, projection):
+        self._inner = projection
+        
+    def __getitem__(self, key):
+        try:
+            return PythonicIterator(self._inner.columnAs(key))
+        except:
+            rethrow_current_exception_as(KeyError)
+            
+    def keys(self):
+        return from_java(self._inner.columns())
+            
