@@ -7,7 +7,9 @@ The traversal API used here is essentially the same as the one used in the Java 
 
 Traversals start at a given node and uses a set of rules to move through the graph and to decide what parts of the graph to return.
 
-You may also want to look at <<python-embedded-reference-cypher>>, which is a high level query language for your graph.
+You may also want to look at <<cypher-query-lang>>, which is a high level query language for your graph.
+
+// use <<python-embedded-reference-cypher>> in the sentence above when it's back again!
 
 == Basic traversals ==
 
