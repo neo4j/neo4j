@@ -93,7 +93,7 @@ the relevant Commercial Agreement.
 	</repositories>
 
 	<build>
-    	<scriptSourceDirectory>src/main/python</scriptSourceDirectory>
+    	<sourceDirectory>src/main/python</sourceDirectory>
 		<testSourceDirectory>src/test/python</testSourceDirectory>
 
 		<plugins>

@@ -32,23 +32,33 @@ class CypherTest(unit_tests.GraphDatabaseTest):
         result = db.query("START n=node(0) RETURN n")
         # END SNIPPET: basicCypherQuery
         
+        # BEGIN SNIPPET: getCypherResultColumn
+        result = db.query("START n=node(0) RETURN n")
+        
         # Fetch an iterator for the "n" column
         col = result['n']
         
-        # We know its a single result
-        node = col.single
+        for value in col:
+            node = value
         
-        self.assertEquals(0, node.id)
-        
-        # So we could have done this
+        # We know it's a single result,
+        # so we could have done this as well
         node = result['n'].single
+        # END SNIPPET: getCypherResultColumn
         
         self.assertEquals(0, node.id)
+        
+        # BEGIN SNIPPET: iterateCypherResult
+        result = db.query("START n=node(0) RETURN n")
         
         # Iterate through all result rows
         for row in result:
             node = row['n']
-            self.assertEquals(0, node.id)
+            
+        # Or, we can use single here as well
+        node = result.single['n']
+        # END SNIPPET: iterateCypherResult
+        self.assertEquals(0, node.id)
         
     def test_list_columns(self):
         db = self.graphdb

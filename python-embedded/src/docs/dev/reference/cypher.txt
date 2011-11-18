@@ -1,0 +1,54 @@
+[[python-embedded-reference-cypher]]
+Cypher Queries
+==============
+
+You can use the Cypher query language from neo4j-embedded. 
+Read more about cypher syntax and cool stuff you can with it here: <<cypher-query-lang>>.
+
+=== Simple query ===
+
+To execute a plain text cypher query, do this:
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=cypher.py
+tag=basicCypherQuery
+classifier=test-sources
+----
+
+=== Retrieve query result ===
+
+Cypher returns a tabular result. 
+You can either loop through the table row-by-row, or you can loop through the values in a given column.
+Here is how to loop row-by-row:
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=cypher.py
+tag=iterateCypherResult
+classifier=test-sources
+----
+
+Here is how to loop through the values of a given column:
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=cypher.py
+tag=getCypherResultColumn
+classifier=test-sources
+----
+
+=== List the result columns ===
+
+You can get a list of the column names in the result like this:
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=cypher.py
+tag=listCypherResultColumns
+classifier=test-sources
+----
