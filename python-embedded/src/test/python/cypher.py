@@ -73,6 +73,17 @@ class CypherTest(unit_tests.GraphDatabaseTest):
         self.assertEquals(columns[0], 'n')
         self.assertEquals(columns[1], 'count(n)')
         
+    def test_parameterized_query(self):
+        db = self.graphdb
+        
+        # START SNIPPET: parameterizedCypherQuery
+        result = db.query("START n=node({id}) RETURN n,count(n)",id=0)
+        
+        node = result.single['n']
+        # END SNIPPET: parameterizedCypherQuery
+        
+        self.assertEquals(0, node.id)
+        
         
 if __name__ == '__main__':
     unit_tests.unittest.main()

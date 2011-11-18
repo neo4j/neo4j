@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from _backend import extends, ExecutionEngine, CypherParser, from_java, strings
+from _backend import extends, ExecutionEngine, CypherParser, from_java,to_java, strings
 from neo4j.util import rethrow_current_exception_as, PythonicIterator
 
 
@@ -26,7 +26,9 @@ class CypherEngine(object):
     def __init__(self,db):
         self._engine = ExecutionEngine(db)
     
-    def execute(self, query):
+    def execute(self, query, **params):
+        if len(params.keys()) > 0:
+            return ExecutionResult(self._engine.execute(query,to_java(params)))
         return ExecutionResult(self._engine.execute(query))
         
 class ExecutionResult(object):

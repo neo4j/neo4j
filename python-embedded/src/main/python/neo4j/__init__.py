@@ -136,8 +136,8 @@ class GraphDatabase(GraphDatabase):
     def traversal(self):
         return Traversal.description()
         
-    def query(self, query):
+    def query(self, query, **params):
         if not hasattr(self, '__cypherEngine'):
             self.__cypherEngine = CypherEngine(self)
-        return self.__cypherEngine.execute(query)
+        return self.__cypherEngine.execute(query, **params)
 
