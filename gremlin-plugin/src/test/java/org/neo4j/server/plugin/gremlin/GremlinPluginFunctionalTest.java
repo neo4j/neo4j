@@ -440,8 +440,11 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
         assertTrue( response.contains( "v["+ data.get().get( "Jill").getId() ) );
         assertTrue( response.contains( "v["+ data.get().get( "Derrick").getId() ) );
     }
+    
+    
     /**
-     * This is a basic stub for implementing http://en.wikipedia.org/wiki/Flow_network[Min/Max flow algorithms]
+     * This is a basic stub for implementing flow algorithms in 
+     * e.g. http://en.wikipedia.org/wiki/Flow_network[Flow Networks]
      * with a pipes-based approach and scripting, here between +source+ and
      * +sink+ using the +capacity+ property on relationships as the base for 
      * the flow function and modifying the graph during calculation.
@@ -459,7 +462,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
                     @REL(start="middle", end="sink", type = "CONNECTED", properties={@PROP(key="capacity", value="3", type=PropType.INTEGER)} ),
                     @REL(start="source", end="sink", type = "CONNECTED", properties={@PROP(key="capacity", value="1", type=PropType.INTEGER)} ),
                     @REL(start="source", end="sink", type = "CONNECTED", properties={@PROP(key="capacity", value="2", type=PropType.INTEGER)} )}, autoIndexNodes = true )
-    public void flow_algroithms_with_Gremlin() throws UnsupportedEncodingException
+    public void flow_algorithms_with_Gremlin() throws UnsupportedEncodingException
     {
         data.get();
         gen().addSnippet( "graph1", AsciidocHelper.createGraphViz( "Starting Graph", graphdb(), "starting_graph"+gen.get().getTitle() ) );
