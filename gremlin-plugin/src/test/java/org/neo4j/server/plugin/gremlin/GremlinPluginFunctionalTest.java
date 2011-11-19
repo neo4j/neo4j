@@ -441,7 +441,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
         assertTrue( response.contains( "v["+ data.get().get( "Derrick").getId() ) );
     }
     /**
-     * This is a basic stub for implementing min/max flow algorithms
+     * This is a basic stub for implementing http://en.wikipedia.org/wiki/Flow_network[Min/Max flow algorithms]
      * with a pipes-based approach and scripting, here between +source+ and
      * +sink+ using the +capacity+ property on relationships as the base for 
      * the flow function and modifying the graph during calculation.
