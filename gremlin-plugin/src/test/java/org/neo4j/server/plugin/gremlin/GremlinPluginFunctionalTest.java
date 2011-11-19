@@ -35,6 +35,10 @@ import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.JSONPrettifier;
 import org.neo4j.test.GraphDescription.Graph;
+import org.neo4j.test.GraphDescription.NODE;
+import org.neo4j.test.GraphDescription.PROP;
+import org.neo4j.test.GraphDescription.PropType;
+import org.neo4j.test.GraphDescription.REL;
 import org.neo4j.test.TestData.Title;
 import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
@@ -436,7 +440,39 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
         assertTrue( response.contains( "v["+ data.get().get( "Jill").getId() ) );
         assertTrue( response.contains( "v["+ data.get().get( "Derrick").getId() ) );
     }
+    /**
+     * This is a basic stub for implementing min/max flow algorithms
+     * with a pipes-based approach and scripting, here between +source+ and
+     * +sink+ using the +capacity+ property on relationships as the base for 
+     * the flow function and modifying the graph during calculation.
+     * 
+     * @@graph1
+     */
+    @Documented
+    @Test
+    @Graph( 
+            nodes = {@NODE( name="source" , setNameProperty= true), 
+                    @NODE( name="middle" , setNameProperty= true ), 
+                    @NODE( name="sink" , setNameProperty= true ) }
+    ,relationships={
+                    @REL(start="source", end="middle", type = "CONNECTED", properties={@PROP(key="capacity", value="1", type=PropType.INTEGER)} ),
+                    @REL(start="middle", end="sink", type = "CONNECTED", properties={@PROP(key="capacity", value="3", type=PropType.INTEGER)} ),
+                    @REL(start="source", end="sink", type = "CONNECTED", properties={@PROP(key="capacity", value="1", type=PropType.INTEGER)} ),
+                    @REL(start="source", end="sink", type = "CONNECTED", properties={@PROP(key="capacity", value="2", type=PropType.INTEGER)} )}, autoIndexNodes = true )
+    public void flow_algroithms_with_Gremlin() throws UnsupportedEncodingException
+    {
+        data.get();
+        gen().addSnippet( "graph1", AsciidocHelper.createGraphViz( "Starting Graph", graphdb(), "starting_graph"+gen.get().getTitle() ) );
+        String script = "source=g.v(%source%);sink=g.v(%sink%);maxFlow = 0;" +
+                "source.outE.inV.loop(2){!it.object.equals(sink)}.paths.each{" +
+                "flow = it.capacity.min(); " +
+                "maxFlow += flow;" +
+                "it.findAll{it.capacity}.each{it.capacity -= flow}};maxFlow";
+        String response = doRestCall( script, Status.OK );
+        assertTrue( response.contains( "4") );
+    }
 
+    
     @Test
     @Ignore
     @Graph( value = { "Peter knows Ian", "Ian knows Peter", "Marie likes Peter" }, autoIndexNodes = true, autoIndexRelationships=true )

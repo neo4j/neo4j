@@ -45,3 +45,5 @@ include::collaborative-filtering.txt[]
 include::chunking-and-offsetting-in-gremlin.txt[]
 
 include::modify-the-graph-while-traversing.txt[]
+
+include::flow-algroithms-with-gremlin.txt[]
