@@ -16,7 +16,7 @@ Just like the rest of the API, all write operations to the index must be perform
 
 === Creating an index ===
 
-If an index already exists with the name you choose, that index will be returned, and the optional arguments you passed will be ignored.
+Create a new index, with optional configuration.
 
 [snippet,python]
 ----
@@ -43,6 +43,16 @@ classifier=test-sources
 component=neo4j-python-embedded
 source=index.py
 tag=deleteIndex
+classifier=test-sources
+----
+
+=== Checking if an index exists ===
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=index.py
+tag=checkIfIndexExists
 classifier=test-sources
 ----
 

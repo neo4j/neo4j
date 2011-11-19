@@ -26,6 +26,24 @@ from neo4j import Direction, Evaluation, Uniqueness
 
 class IndexTest(unit_tests.GraphDatabaseTest):
 
+    def test_index_exists(self):
+        db = self.graphdb
+        
+        with db.transaction:
+            db.relationship.indexes.create('my_rels')
+            db.node.indexes.create('my_nodes')
+        
+        with db.transaction:
+            # Create a relationship index
+            self.assertTrue(db.relationship.indexes.exists('my_rels'))
+            self.assertFalse(db.relationship.indexes.exists('asd'))
+            
+            # START SNIPPET: checkIfIndexExists
+            exists = db.node.indexes.exists('my_nodes')
+            # END SNIPPET: checkIfIndexExists
+            self.assertTrue(exists)
+            self.assertFalse(db.node.indexes.exists('asd'))
+
     def test_create_fulltext_index(self):
         db = self.graphdb
         

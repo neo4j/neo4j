@@ -32,9 +32,12 @@ class NodeIndexManager(object):
         return self._index.forNodes(name, to_java(config))
         
     def get(self, name):
-        if self._index.existsForNodes(name):
+        if self.exists(name):
             return self._index.forNodes(name)
         raise ValueError("No node index named %s exists." % name)
+        
+    def exists(self, name):
+        return self._index.existsForNodes(name)
     
 class RelationshipIndexManager(object):
 
@@ -45,9 +48,12 @@ class RelationshipIndexManager(object):
         return self._index.forRelationships(name, to_java(config))
         
     def get(self, name):
-        if self._index.existsForRelationships(name):
+        if self.exists(name):
             return self._index.forRelationships(name)
-        raise ValueError("No relationship index named %s exists." % name)    
+        raise ValueError("No relationship index named %s exists." % name)
+        
+    def exists(self, name):
+        return self._index.existsForRelationships(name)
 
         
 class IndexColumn(object):
