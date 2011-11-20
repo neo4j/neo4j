@@ -14,6 +14,7 @@ include::installation.txt[]
 
 include::reference/core.txt[]
 
-include::reference/indexes.txt[]S
+include::reference/indexes.txt[]
 
 include::reference/traversal.txt[]
+
