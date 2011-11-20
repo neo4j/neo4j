@@ -27,6 +27,7 @@ import org.junit.Test;
 import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.Primitives;
 import org.neo4j.jmx.impl.ManagementSupport;
+import org.neo4j.management.BranchedStore;
 import org.neo4j.management.Cache;
 import org.neo4j.management.HighAvailability;
 import org.neo4j.management.LockManager;
@@ -77,6 +78,7 @@ public class CodeDuplicationValidationTest
         assertEqualBeanName( Primitives.class );
         assertEqualBeanName( Cache.class );
         assertEqualBeanName( HighAvailability.class );
+        assertEqualBeanName( BranchedStore.class );
         assertEqualBeanName( LockManager.class );
         assertEqualBeanName( MemoryMapping.class );
         assertEqualBeanName( StoreFile.class );

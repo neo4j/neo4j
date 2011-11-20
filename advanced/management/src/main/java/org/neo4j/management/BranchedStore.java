@@ -22,27 +22,12 @@ package org.neo4j.management;
 import org.neo4j.jmx.Description;
 import org.neo4j.jmx.ManagementInterface;
 
-@ManagementInterface( name = TransactionManager.NAME )
-@Description( "Information about the Neo4j transaction manager" )
-public interface TransactionManager
+@ManagementInterface( name = BranchedStore.NAME )
+@Description( "Information about the branched stores present in this HA cluster member" )
+public interface BranchedStore
 {
-    final String NAME = "Transactions";
+    final String NAME = "Branched Store";
 
-    @Description( "The number of currently open transactions" )
-    int getNumberOfOpenTransactions();
-
-    @Description( "The highest number of transactions ever opened concurrently" )
-    int getPeakNumberOfConcurrentTransactions();
-
-    @Description( "The total number started transactions" )
-    int getNumberOfOpenedTransactions();
-
-    @Description( "The total number of committed transactions" )
-    long getNumberOfCommittedTransactions();
-
-    @Description( "The total number of rolled back transactions" )
-    long getNumberOfRolledBackTransactions();
-
-    @Description( "The id of the latest committed transaction" )
-    long getLastCommittedTxId();
+    @Description( "A list of the branched stores" )
+    BranchedStoreInfo[] getBranchedStores();
 }

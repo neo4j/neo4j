@@ -270,6 +270,11 @@ public final class Neo4jManager extends KernelProxy implements Kernel
         return getBean( HighAvailability.class );
     }
 
+    public BranchedStore getBranchedStoreBean()
+    {
+        return getBean( BranchedStore.class );
+    }
+
     public Object getConfigurationParameter( String key )
     {
         try
