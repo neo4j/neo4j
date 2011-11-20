@@ -57,7 +57,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     public void testGremlinPostURLEncoded() throws UnsupportedEncodingException
     {
         data.get();
-        String script = "g.idx('node_auto_index')[[name:'I']]._().out()";
+        String script = "g.idx('node_auto_index')[[name:'I']].out";
         gen().expectedStatus( Status.OK.getStatusCode() ).description(
                 formatGroovy( script ) );
         String response = gen().payload(
@@ -178,7 +178,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     public void testSortResults() throws UnsupportedEncodingException
     {
         data.get();
-        String script = "g.idx('node_auto_index').get('name','I').toList()._().out().sort{it.name}.toList()";
+        String script = "g.idx('node_auto_index')[[name:'I']].out.sort{it.name}";
         String response = doRestCall( script, Status.OK );
         assertTrue( response.contains( "you" ) );
         assertTrue( response.contains( "him" ) );
@@ -218,7 +218,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
      * table listing my friends by their name, and the names of the things they
      * like in a table with two columns, ignoring the third named step variable
      * +I+. Remember that everything in Gremlin is an iterator - in order to
-     * populate the result table +t+, iterate through the pipes with +>> -1+.
+     * populate the result table +t+, iterate through the pipes with +iterate()+.
      */
     @Test
     @Title( "Send a Gremlin Script - JSON encoded with table results" )
@@ -227,9 +227,8 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
             "Joe like dogs" } )
     public void testGremlinPostJSONWithTableResult()
     {
-        String script = "i = g.v(%I%);"
-                        + "t= new Table();"
-                        + "i.as('I').out('know').as('friend').out('like').as('likes').table(t,['friend','likes']){it.name}{it.name} >> -1;t;";
+        String script = "t= new Table();"
+                        + "g.v(%I%).as('I').out('know').as('friend').out('like').as('likes').table(t,['friend','likes']){it.name}{it.name}.iterate();t;";
         String response = doRestCall( script, Status.OK );
         assertTrue( response.contains( "cats" ) );
     }
@@ -338,7 +337,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
         data.get();
         gen().addSnippet( "graph1", AsciidocHelper.createGraphViz( "Starting Graph", graphdb(), "starting_graph"+gen.get().getTitle() ) );
         assertTrue( getNode( "Peter" ).hasRelationship() );
-        String script = "g.v(%Peter%).bothE()each{g.removeEdge(it);};";
+        String script = "g.v(%Peter%).bothE.each{g.removeEdge(it)}";
         String response = doRestCall( script, Status.OK );
         assertFalse( getNode( "Peter" ).hasRelationship() );
     }
@@ -432,7 +431,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     public void collaborative_filtering() throws UnsupportedEncodingException
     {
         String script = "x=[];fof=[:];" +
-        		"g.v(%Joe%).out('knows').aggregate(x).out('knows').except(x).groupCount(fof)>>-1;fof.sort{a,b -> b.value <=> a.value}";
+        		"g.v(%Joe%).out('knows').aggregate(x).out('knows').except(x).groupCount(fof).iterate();fof.sort{a,b -> b.value <=> a.value}";
         String response = doRestCall( script, Status.OK );
         assertFalse( response.contains( "v["+ data.get().get( "Bill").getId() ) );
         assertFalse( response.contains( "v["+ data.get().get( "Sara").getId() ) );
@@ -496,8 +495,8 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
                         + "};"
                         + "Object.metaClass.makeNode = node;"
                         + "edge = { type, source_uri, target_uri, properties ->"
-                        + "  source = nodeIndex.get('uri', source_uri) >> 1;"
-                        + "  target = nodeIndex.get('uri', target_uri) >> 1;"
+                        + "  source = nodeIndex.get('uri', source_uri).iterate();"
+                        + "  target = nodeIndex.get('uri', target_uri).iterate();"
                         + "  nodeKey = source.id + '-' + target.id;"
                         + "  existing = edgeIndex.get('nodes', nodeKey);"
                         + "  if (existing) {" + "    return existing;" + "  };"
