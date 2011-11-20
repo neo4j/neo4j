@@ -890,6 +890,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     @Override
     public SlaveContext getSlaveContext( int eventIdentifier )
     {
+        // Constructs a slave context from scratch.
         XaDataSourceManager localDataSourceManager =
             getConfig().getTxModule().getXaDataSourceManager();
         Collection<XaDataSource> dataSources = localDataSourceManager.getAllRegisteredDataSources();

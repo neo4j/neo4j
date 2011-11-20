@@ -24,9 +24,16 @@ import org.neo4j.com.SlaveContext;
 
 public interface ResponseReceiver
 {
+    /**
+     * Returns a {@link SlaveContext} instance that has {@code eventIdentifier}
+     * as the event identifier.
+     *
+     * @param eventIdentifier The event identifier of the returned slave context
+     * @return The slave context
+     */
     SlaveContext getSlaveContext( int eventIdentifier );
-    
+
     <T> T receive( Response<T> response );
-    
+
     void newMaster( Exception cause );
 }

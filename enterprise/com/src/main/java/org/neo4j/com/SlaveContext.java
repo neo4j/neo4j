@@ -23,6 +23,12 @@ import java.util.Arrays;
 
 import org.neo4j.helpers.Pair;
 
+/**
+ * A representation of the context in which an HA slave operates. Contains <li>
+ * the machine id</li> <li>a list of the last applied transaction id for each
+ * datasource</li> <li>an event identifier, the txid of the most recent local
+ * top level tx</li> <li>a session id, the startup time of the database</li>
+ */
 public final class SlaveContext
 {
     private final int machineId;
@@ -38,13 +44,13 @@ public final class SlaveContext
         this.machineId = machineId;
         this.eventIdentifier = eventIdentifier;
         this.lastAppliedTransactions = lastAppliedTransactions;
-        
+
         long hash = sessionId;
         hash = (31 * hash) ^ eventIdentifier;
         hash = (31 * hash) ^ machineId;
         this.hashCode = (int) ((hash >>> 32) ^ hash);
     }
-    
+
     public int machineId()
     {
         return machineId;
@@ -54,12 +60,12 @@ public final class SlaveContext
     {
         return lastAppliedTransactions;
     }
-    
+
     public int getEventIdentifier()
     {
         return eventIdentifier;
     }
-    
+
     public long getSessionId()
     {
         return sessionId;
@@ -71,7 +77,7 @@ public final class SlaveContext
         return "SlaveContext[session: " + sessionId + ", ID:" + machineId + ", eventIdentifier:" +
                 eventIdentifier + ", " + Arrays.asList( lastAppliedTransactions ) + "]";
     }
-    
+
     @Override
     public boolean equals( Object obj )
     {
@@ -82,16 +88,16 @@ public final class SlaveContext
         SlaveContext o = (SlaveContext) obj;
         return o.eventIdentifier == eventIdentifier && o.machineId == machineId && o.sessionId == sessionId;
     }
-    
+
     @Override
     public int hashCode()
     {
         return this.hashCode;
     }
-    
+
     @SuppressWarnings( "unchecked" )
     public static SlaveContext EMPTY = new SlaveContext( -1, -1, -1, new Pair[0] );
-    
+
     public static SlaveContext anonymous( Pair<String, Long>[] lastAppliedTransactions )
     {
         return new SlaveContext( EMPTY.sessionId, EMPTY.machineId, EMPTY.eventIdentifier,
