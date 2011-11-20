@@ -27,14 +27,15 @@ import java.io.File;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Test;
 import org.junit.Ignore;
+import org.junit.Test;
 import org.neo4j.ha.CreateEmptyDb;
 import org.neo4j.ha.Neo4jHaCluster;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.jmx.Kernel;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
+import org.neo4j.management.BranchedStore;
 import org.neo4j.management.HighAvailability;
 import org.neo4j.management.InstanceInfo;
 import org.neo4j.management.Neo4jManager;
@@ -74,6 +75,17 @@ public class TestHaBean
         HighAvailability ha = neo4j.getHighAvailabilityBean();
         assertNotNull( "could not get ha bean", ha );
         assertTrue( "single instance should be master", ha.isMaster() );
+    }
+
+    @Test
+    public void canGetBranchedStoreBean() throws Exception
+    {
+        Neo4jManager neo4j = new Neo4jManager(
+                db.getSingleManagementBean( Kernel.class ) );
+        BranchedStore bs = neo4j.getBranchedStoreBean();
+        assertNotNull( "could not get ha bean", bs );
+        assertEquals( "no branched stores for new db", 0,
+                bs.getBranchedStores().length );
     }
 
     @Test
