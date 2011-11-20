@@ -231,7 +231,7 @@ public class NeoStore extends AbstractStore
     {
         return RECORD_SIZE;
     }
-    
+
     public TxHook getTxHook()
     {
         return txHook;
@@ -326,21 +326,31 @@ public class NeoStore extends AbstractStore
 
     public static long getStoreVersion( String storeDir )
     {
-        /*
-         * We have to check size, because the store version
-         * field was introduced with 1.5, so if there is a non-clean
-         * shutdown we may have a buffer underflow.
-         */
+        return getRecord( storeDir, 4 );
+    }
+
+    public static long getTxId( String storeDir )
+    {
+        return getRecord( storeDir, 3 );
+    }
+
+    private static long getRecord( String storeDir, long recordPosition )
+    {
         RandomAccessFile file = null;
         try
         {
             file = new RandomAccessFile( new File( storeDir ), "rw" );
             FileChannel channel = file.getChannel();
-            if ( channel.size() < RECORD_SIZE * 5 )
+            /*
+             * We have to check size, because the store version
+             * field was introduced with 1.5, so if there is a non-clean
+             * shutdown we may have a buffer underflow.
+             */
+            if ( recordPosition > 3 && channel.size() < RECORD_SIZE * 5 )
             {
                 return -1;
             }
-            channel.position( RECORD_SIZE * 4 + 1/*inUse*/);
+            channel.position( RECORD_SIZE * recordPosition + 1/*inUse*/);
             ByteBuffer buffer = ByteBuffer.allocate( 8 );
             channel.read( buffer );
             buffer.flip();
