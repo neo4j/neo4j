@@ -29,6 +29,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.index.Neo4jTestCase.assertContains;
 import static org.neo4j.index.Neo4jTestCase.assertContainsInOrder;
 import static org.neo4j.index.impl.lucene.Contains.contains;
@@ -1362,5 +1363,16 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
         // Test fails here
         assertNotNull( index.query(QueryContext.numericRange(NUMERIC, 5, 5, true, true)).getSingle() );
+    }
+    
+    @Test
+    public void exactIndexWithCaseInsensitive() throws Exception
+    {
+        Index<Node> index = nodeIndex( "exlc", stringMap( "analyzer", LowerCaseKeywordAnalyzer.class.getName() ) );
+        Node node = graphDb.createNode();
+        index.add( node, "name", "Mattias Persson" );
+        assertContains( index.query( "name", "\"maTTias perSson\"" ), node );
+        restartTx();
+        assertContains( index.query( "name", "\"maTTias perSson\"" ), node );
     }
 }
