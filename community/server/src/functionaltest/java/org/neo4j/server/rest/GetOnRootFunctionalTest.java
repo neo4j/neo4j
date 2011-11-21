@@ -20,6 +20,7 @@
 package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNotNull;
 
 import java.util.Map;
@@ -72,12 +73,12 @@ public class GetOnRootFunctionalTest extends AbstractRestFunctionalTestBase
             response.close();
         }
         response = RestRequest.req().get( (String) map.get( "node_index" ) );
-        assertEquals( 204, response.getStatus() );
+        assertTrue( response.getStatus() == 200 || response.getStatus() == 204 );
         response.close();
 
         response = RestRequest.req().get(
                 (String) map.get( "relationship_index" ) );
-        assertEquals( 204, response.getStatus() );
+        assertTrue( response.getStatus() == 200 || response.getStatus() == 204 );
         response.close();
 
         response = RestRequest.req().get( (String) map.get( "extensions_info" ) );

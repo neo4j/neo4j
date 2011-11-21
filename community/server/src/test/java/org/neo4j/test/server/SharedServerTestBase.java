@@ -33,6 +33,15 @@ public class SharedServerTestBase
         return server;
     }
 
+    /*
+    protected static final void restartServer() throws IOException
+    {
+        releaseServer();
+        ServerHolder.ensureNotRunning();
+        allocateServer();
+    }
+    */
+
     protected final void cleanDatabase()
     {
         ServerHelper.cleanTheDatabase( server );
