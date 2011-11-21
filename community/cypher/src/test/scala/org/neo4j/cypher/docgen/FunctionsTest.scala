@@ -120,7 +120,7 @@ class FunctionsTest extends DocumentingTestBase {
  you can use EXTRACT. It will go through all enitities in the iterable, and run an expression, and return the results
  in an iterable with these values. It works like the `map` method in functional languages such as Lisp and Scala.""",
       queryText = """start a=node(%A%), b=node(%B%), c=node(%D%) match p=a-->b-->c return extract(n in nodes(p) : n.age)""",
-      returns = """The name property of all nodes in the path.""",
+      returns = """The age property of all nodes in the path.""",
       (p) => assertEquals(List(Map("extract(n in NODES(p) : n.age)" -> List(38, 25, 54))), p.toList))
   }
 
