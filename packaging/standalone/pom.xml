@@ -5,7 +5,7 @@
     <artifactId>assembly-pom</artifactId>
     <groupId>org.neo4j.build</groupId>
     <version>25</version>
-    <relativePath/>
+    <relativePath />
   </parent>
 
   <groupId>org.neo4j.assembly</groupId>
@@ -14,7 +14,7 @@
 
   <name>Neo4j - Server Assembler</name>
 
-  <version>1.5-SNAPSHOT</version>
+  <version>1.6-SNAPSHOT</version>
   <description>This project assembles the Neo4j stand-alone distribution,
     pulling together all the deliverable artifacts and packaging them 
       into a downloadable installer.</description>
@@ -30,8 +30,8 @@
 
     <!-- other filter properties -->
     <wrapper.conf>conf/neo4j-wrapper.conf</wrapper.conf>
-    <neo4j.version>1.5-SNAPSHOT</neo4j.version>
-    <windows-wrapper.version>2-SNAPSHOT</windows-wrapper.version>
+    <neo4j.version>1.6-SNAPSHOT</neo4j.version>
+    <windows-wrapper.version>5-SNAPSHOT</windows-wrapper.version>
     <windows-wrapper.filename>windows-service-wrapper-${windows-wrapper.version}.jar</windows-wrapper.filename>
     
     <!-- conf/neo4j-server.properties filter properties -->
@@ -156,7 +156,7 @@ terms of the relevant Commercial Agreement.
               <appendAssemblyId>true</appendAssemblyId>
             </configuration>
           </execution>
- 		  <execution>
+          <execution>
             <id>advanced-windows-dist</id>
             <phase>package</phase>
             <goals>
@@ -287,6 +287,16 @@ terms of the relevant Commercial Agreement.
         </configuration>
       </plugin>
 
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>wagon-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>upload-to-dist-server</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
@@ -367,6 +377,30 @@ terms of the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>javadoc</classifier>
+      <exclusions>
+        <exclusion>
+          <artifactId>neo4j-udc</artifactId>
+          <groupId>org.neo4j</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-advanced</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>javadoc</classifier>
+      <exclusions>
+        <exclusion>
+          <artifactId>neo4j-udc</artifactId>
+          <groupId>org.neo4j</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-enterprise</artifactId>
       <version>${neo4j.version}</version>
       <classifier>javadoc</classifier>
       <exclusions>

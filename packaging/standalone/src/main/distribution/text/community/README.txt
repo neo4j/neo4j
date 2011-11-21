@@ -42,14 +42,14 @@ look at the web interface...
 Learn more
 ----------
 
-There is a humble user guide available in the `doc` directory, a collection of 
-short operational and informational articles. 
+There is a manual available in the `doc` directory, which includes a tutorial
+and 
 
 Out on the internets, you'll find:
 
 * [${neo4j-home.url.title}](${neo4j-home.url})
 * [${getting-started.url.title}](${getting-started.url})
-* [${neo4j-wiki.url.title}](${neo4j-wiki.url})
+* [${neo4j-manual.title}](${neo4j-manual.title})
 * [${neo4j-components.url.title}](${neo4j-components.url})
 
 For more links, a handy [guide post](doc/guide-post.html) in the `doc` 
@@ -60,7 +60,4 @@ License(s)
 Various licenses apply. Please refer to the LICENSE and NOTICE files for more
 detailed information. A full report regarding the licenses of all included
 dependencies is found in site/dependencies.html.
-
-
-
 

@@ -29,6 +29,8 @@ FRIENDLY_NAME="Neo4j Server"
 LAUNCHD_NAME="org.neo4j.server"
 
 function findBaseDirAndCdThere {
+# This seems to not be safe to run at any time. If that
+# is the case, it should be fixed to be so, if possible.
   SCRIPT=$0
 
   cd "`dirname "$SCRIPT"`"
@@ -60,17 +62,16 @@ function parseConfig {
 
 findBaseDirAndCdThere
 source bin/utils
-findBaseDirAndCdThere
 parseConfig
 
 NEO4J_OPTS="-Dlog4j.configuration=file:conf/log4j.properties -Dorg.neo4j.server.properties="${NEO4J_INSTANCE}"/conf/neo4j-server.properties -Djava.util.logging.config.file="${NEO4J_INSTANCE}/conf/logging.properties" -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}""
-JAVA_OPTS="-server ${wrapper_java_additional}"
 
-if [ ${org_neo4j_server_webserver_http_enabled} = "true" ]; then
-  NEO4J_SERVER_PORT=${org_neo4j_server_webserver_port:=7474}
-else
-  NEO4J_SERVER_PORT=${org_neo4j_server_webserver_https_port:=7473}
-fi
+JAVA_OPTS="-server -XX:+DisableExplicitGC ${wrapper_java_additional}"
+[ -z "${wrapper_java_initmemory}" ] || JAVA_OPTS="$JAVA_OPTS -Xms${wrapper_java_initmemory}m"
+[ -z "${wrapper_java_maxmemory}" ] || JAVA_OPTS="$JAVA_OPTS -Xmx${wrapper_java_maxmemory}m"
+
+#NEO4J_SERVER_PORT=`( egrep "^org.neo4j.server.webserver.port" $NEO4J_INSTANCE/conf/neo4j-server.properties || echo 7474 ) | sed -e 's/.*=//'`
+NEO4J_SERVER_PORT=${org_neo4j_server_webserver_port:=7474}
 
 LAUNCHD_NAME="${LAUNCHD_NAME}.${NEO4J_SERVER_PORT}"
 
@@ -125,6 +126,27 @@ buildclasspath() {
   CLASSPATH=${ALL_JARS}
 }
 
+checkupgrade() {
+    if [ $UID == 0 ] ; then
+      su $NEO4J_USER -c "$JAVACMD -cp '$CLASSPATH' $JAVA_OPTS -Dlog4j.configuration=file:conf/log4j.properties \
+        -Dorg.neo4j.server.properties=\"${NEO4J_INSTANCE}/conf/neo4j-server.properties\" \
+        -Djava.util.logging.config.file=\"${NEO4J_INSTANCE}/conf/logging.properties\" \
+        -Dneo4j.home=\"${NEO4J_HOME}\" -Dneo4j.instance=\"${NEO4J_INSTANCE}\" \
+        org.neo4j.server.storemigration.PreStartupStoreUpgrader"
+    else
+      checkwriteaccess
+      $JAVACMD -cp "${CLASSPATH}" $JAVA_OPTS -Dlog4j.configuration=file:conf/log4j.properties \
+        -Dorg.neo4j.server.properties="${NEO4J_INSTANCE}/conf/neo4j-server.properties" \
+        -Djava.util.logging.config.file="${NEO4J_INSTANCE}/conf/logging.properties" \
+        -Dneo4j.home="${NEO4J_HOME}" -Dneo4j.instance="${NEO4J_INSTANCE}" \
+        org.neo4j.server.storemigration.PreStartupStoreUpgrader
+    fi
+
+    if [ $? -ne 0 ] ; then
+      exit 1
+    fi
+}
+
 startit() {
 
   detectos
@@ -148,6 +170,8 @@ startit() {
     printf "Starting $FRIENDLY_NAME..."
 
     buildclasspath
+    checkupgrade
+    checkandrepairenv
 
     if [ $UID == 0 ] ; then
       su $NEO4J_USER -c "$JAVACMD -cp '$CLASSPATH' $JAVA_OPTS -Dlog4j.configuration=file:conf/log4j.properties \
@@ -218,6 +242,7 @@ console() {
     exitonnojava
     buildclasspath
     checkwriteaccess
+    checkandrepairenv
 
     $JAVACMD -cp "${CLASSPATH}" $JAVA_OPTS -Dlog4j.configuration=file:conf/log4j.properties \
         -Dorg.neo4j.server.properties="${NEO4J_INSTANCE}/conf/neo4j-server.properties" \

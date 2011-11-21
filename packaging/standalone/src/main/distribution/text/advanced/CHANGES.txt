@@ -1,3 +1,7 @@
+1.5 (2011-10-31)
+----------------
+o Added default remote JMX access configuration and security setup options
+
 1.4.M04 (2011-06-09)
 --------------------
 o First iteration of the Cypher Query Language included,

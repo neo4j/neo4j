@@ -18,7 +18,7 @@ rem You should have received a copy of the GNU General Public License
 rem along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 set serviceName="Neo4jCoordinator"
-set serviceDisplayName="Neo4j HA Coordinator"
+set serviceDisplayName="Neo4j-HA-Coordinator"
 set serviceStartType=auto
 set configFile="conf\coord-wrapper.conf"
 set classpath="-DserverClasspath=lib/zoo*.jar;system/coordinator/lib/*.jar"

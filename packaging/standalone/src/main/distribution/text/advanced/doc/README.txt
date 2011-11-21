@@ -1,21 +1,13 @@
 ${server.fullname} Included Documentation
 =========================================
 
-${server.fullname} included documentation, providing brief introductions
+${server.fullname} included documentation, providing a tutorial and
 and reference material.
-
-For up-to-date, comprehensive information, please visit 
-the [${neo4j-wiki.url.title}](${neo4j-wiki.url}).
 
 In addition to topical documents, subdirectories include:
 
 * [javadoc](java/api/index.html) - Javadocs for the Neo4j Libraries
-* [REST API](rest/rest.html) - full documentation
-
-References
-----------
-
-* [${neo4j-wiki.url.title}](${neo4j-wiki.url})
-
-
-
+* [manual](manual/text/neo4j-manual.txt) - Neo4j Manual in pure text format
+* [manual](manual/pdf/neo4j-manual.pdf) - Neo4j Manual in PDF format
+* [manual](manual/html/index.html) - Neo4j Manual in navigable HTML format
+* [manual](${neo4j-manual.url}) - Neo4j Manual in navigable HTML format (Online w comments)
