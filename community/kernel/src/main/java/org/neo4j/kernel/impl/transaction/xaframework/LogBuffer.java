@@ -27,28 +27,33 @@ public interface LogBuffer
     public LogBuffer put( byte b ) throws IOException;
 
     public LogBuffer putShort( short b ) throws IOException;
-    
+
     public LogBuffer putInt( int i ) throws IOException;
 
     public LogBuffer putLong( long l ) throws IOException;
 
     public LogBuffer putFloat( float f ) throws IOException;
-    
+
     public LogBuffer putDouble( double d ) throws IOException;
-    
+
     public LogBuffer put( byte[] bytes ) throws IOException;
 
     public LogBuffer put( char[] chars ) throws IOException;
-    
+
     /**
-     * Makes sure the data added to this buffer is written out to the underlying file.
+     * Makes sure the data added to this buffer is written out to the underlying
+     * file. Makes sure that readers of the channel will see the content of the
+     * buffer up until the time of this call.
+     *
      * @throws IOException if the data couldn't be written.
      */
     public void writeOut() throws IOException;
 
     /**
-     * Makes sure the data added to this buffer is written out to the underlying file
-     * and forced.
+     * Makes sure the data added to this buffer is written out to the underlying
+     * file and forced. Same guarantees as writeOut() plus actually being
+     * written to disk.
+     * 
      * @throws IOException if the data couldn't be written.
      */
     public void force() throws IOException;

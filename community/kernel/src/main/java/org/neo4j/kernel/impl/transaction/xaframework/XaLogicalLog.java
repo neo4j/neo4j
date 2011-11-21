@@ -96,7 +96,6 @@ public class XaLogicalLog
     private boolean autoRotate = true;
     private long rotateAtSize = 25*1024*1024; // 25MB
 
-    private final String storeDir;
     private final LogBufferFactory logBufferFactory;
     private boolean doingRecovery;
     private long lastRecoveredTx = -1;
@@ -123,7 +122,6 @@ public class XaLogicalLog
         log = Logger.getLogger( this.getClass().getName() + File.separator + fileName );
         sharedBuffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE
             + Xid.MAXBQUALSIZE * 10 );
-        storeDir = (String) config.get( "store_dir" );
         msgLog = (StringLogger) config.get( StringLogger.class );
 
         // We should turn keep-logs on if there are previous logs around,
@@ -301,6 +299,12 @@ public class XaLogicalLog
         try
         {
             LogIoUtils.writePrepare( writeBuffer, identifier, System.currentTimeMillis() );
+            /*
+             * Make content visible to all readers of the file channel, so that prepared transactions
+             * can be extracted. Not really necessary, since getLogicalLogOrMyselfCommitted() looks for
+             * force()d content (which is forced by commit{One,Two}Phase()) and getLogicalLogOrMyselfPrepared()
+             * always calls writeOut(). Leaving it here for now.
+             */
             writeBuffer.writeOut();
         }
         catch ( IOException e )
@@ -1242,11 +1246,17 @@ public class XaLogicalLog
             String currentLogName = getCurrentLogFileName();
             FileChannel channel = fileSystem.open( currentLogName, "r" );
             channel = new BufferedFileChannel( channel );
-
-            // Combined with the writeBuffer in cases where a DirectMappedLogBuffer
-            // is used, on Windows or when memory mapping is turned off.
-            // Otherwise the channel is returned directly.
-            channel = logBufferFactory.combine( channel, writeBuffer );
+            /*
+             * this method is called **during** commmit{One,Two}Phase - i.e. before the log buffer
+             * is forced and in the case of 1PC without the writeOut() done in prepare (as in 2PC).
+             * So, we need to writeOut(). The content of the buffer is written out to the file channel
+             * so that the new channel returned above will see the new content. This logical log can
+             * continue using the writeBuffer like nothing happened - the data is in the channel and
+             * will eventually be forced.
+             *
+             * See SlaveTxIdGenerator#generate().
+             */
+            writeBuffer.writeOut();
             channel.position( position );
             return channel;
         }

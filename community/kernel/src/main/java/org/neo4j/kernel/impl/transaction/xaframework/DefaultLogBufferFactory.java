@@ -29,21 +29,4 @@ public class DefaultLogBufferFactory implements LogBufferFactory
     {
         return new DirectMappedLogBuffer( fileChannel );
     }
-    
-    public FileChannel combine( FileChannel fileChannel, LogBuffer logBuffer ) throws IOException
-    {
-        // Opening up another FileChannel to an already opened
-        // file with such a buffer won't be able see the latest changes so
-        // it needs to be wrapped in a FileChannel temporarily combining those two
-        // (the opened FileChannel and the write buffer).
-        
-        // We don't need synchronization on the ByteBuffer here because
-        // this thread which will read from it won't have to see changes
-        // (appends) made to it and its underlying byte array is final anyway
-        // (HeapByteBuffer). Maybe a bad assumption? But nice to skip
-        // synchronization.
-        CloseableByteBuffer byteBuffer = ((DirectMappedLogBuffer)logBuffer).getBuffer();
-        byteBuffer.flip();
-        return new BufferedReadableByteChannel( fileChannel, byteBuffer );
-    }
 }

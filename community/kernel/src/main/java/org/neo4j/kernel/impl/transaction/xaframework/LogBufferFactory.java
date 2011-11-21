@@ -25,6 +25,4 @@ import java.nio.channels.FileChannel;
 public interface LogBufferFactory
 {
     LogBuffer create( FileChannel fileChannel ) throws IOException;
-    
-    FileChannel combine( FileChannel fileChannel, LogBuffer logBuffer ) throws IOException;
 }

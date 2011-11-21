@@ -36,24 +36,24 @@ import java.nio.channels.WritableByteChannel;
  * at 0. All reads after the position of the provided FileChannel at the moment
  * of creation are satisfied from the provided buffer - irrespective of any
  * changes in the size of the underlying file.
- * 
+ *
  * This class is meant as a fix for the inability of Windows to memory map,
  * forcing reads of newly created files to be visible only through force()
  * operations. Therefore, the only supported operations are read(ByteBuffer),
  * read(ByteBuffer, long), position(), position(long) and size() - the rest
  * throw UnsupportedOperationException.
- * 
+ *
  */
 class BufferedReadableByteChannel extends FileChannel
 {
     private final FileChannel fileChannel;
-    private CloseableByteBuffer byteBuffer;
+    private ByteBuffer byteBuffer;
     // The position after which reads are from the buffer and not the channel
     private final long bufferStartPosition;
     // The current position
     private long position;
 
-    BufferedReadableByteChannel( FileChannel fileChannel, CloseableByteBuffer buffer )
+    BufferedReadableByteChannel( FileChannel fileChannel, ByteBuffer buffer )
                                                                              throws IOException
     {
         this.fileChannel = fileChannel;
@@ -62,6 +62,7 @@ class BufferedReadableByteChannel extends FileChannel
         byteBuffer = buffer;
     }
 
+    @Override
     public int read( ByteBuffer dst ) throws IOException
     {
         if ( position == size() )
@@ -82,28 +83,33 @@ class BufferedReadableByteChannel extends FileChannel
         return result;
     }
 
+    @Override
     public long read( ByteBuffer[] dsts, int offset, int length )
             throws IOException
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public int write( ByteBuffer src ) throws IOException
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public long write( ByteBuffer[] srcs, int offset, int length )
             throws IOException
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public long position() throws IOException
     {
         return position;
     }
 
+    @Override
     public FileChannel position( long newPosition ) throws IOException
     {
         if ( newPosition < bufferStartPosition )
@@ -120,33 +126,39 @@ class BufferedReadableByteChannel extends FileChannel
         return this;
     }
 
+    @Override
     public long size() throws IOException
     {
         return fileChannel.size() + byteBuffer.limit();
     }
 
+    @Override
     public FileChannel truncate( long size ) throws IOException
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public void force( boolean metaData ) throws IOException
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public long transferTo( long position, long count,
             WritableByteChannel target ) throws IOException
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public long transferFrom( ReadableByteChannel src, long position, long count )
             throws IOException
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public int read( ByteBuffer dst, long position ) throws IOException
     {
         long startingPosition = this.position;
@@ -156,23 +168,27 @@ class BufferedReadableByteChannel extends FileChannel
         return result;
     }
 
+    @Override
     public int write( ByteBuffer src, long position ) throws IOException
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public MappedByteBuffer map( MapMode mode, long position, long size )
             throws IOException
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public FileLock lock( long position, long size, boolean shared )
             throws IOException
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public FileLock tryLock( long position, long size, boolean shared )
             throws IOException
     {
@@ -183,6 +199,5 @@ class BufferedReadableByteChannel extends FileChannel
     protected void implCloseChannel() throws IOException
     {
         fileChannel.close();
-        byteBuffer.close();
     }
 }
