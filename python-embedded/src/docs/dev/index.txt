@@ -16,8 +16,6 @@ include::reference/core.txt[]
 
 include::reference/indexes.txt[]
 
-
-
 include::reference/cypher.txt[]
 
 include::reference/traversal.txt[]
