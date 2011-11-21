@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.core;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.PropertyTracker;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
 import org.neo4j.kernel.impl.cache.Cache;
@@ -400,7 +402,7 @@ public class NodeManager
         return lock;
     }
 
-    public Node getNodeById( long nodeId ) throws NotFoundException
+    private Node getNodeByIdOrNull( long nodeId )
     {
         NodeImpl node = nodeCache.get( nodeId );
         if ( node != null )
@@ -416,7 +418,7 @@ public class NodeManager
             }
             if ( !persistenceManager.loadLightNode( nodeId ) )
             {
-                throw new NotFoundException( "Node[" + nodeId + "]" );
+                return null;
             }
             node = new NodeImpl( nodeId );
             nodeCache.put( nodeId, node );
@@ -426,6 +428,46 @@ public class NodeManager
         {
             loadLock.unlock();
         }
+    }
+    
+    public Node getNodeById( long nodeId ) throws NotFoundException
+    {
+        Node node = getNodeByIdOrNull( nodeId );
+        if ( node == null )
+        {
+            throw new NotFoundException( "Node[" + nodeId + "]" );
+        }
+        return node;
+    }
+    
+    public Iterator<Node> getAllNodes()
+    {
+        final long highId = getHighestPossibleIdInUse( Node.class );
+        return new PrefetchingIterator<Node>()
+        {
+            private long currentId;
+            
+            @Override
+            protected Node fetchNextOrNull()
+            {
+                while ( currentId <= highId )
+                {
+                    try
+                    {
+                        Node node = getNodeByIdOrNull( currentId );
+                        if ( node != null )
+                        {
+                            return node;
+                        }
+                    }
+                    finally
+                    {
+                        currentId++;
+                    }
+                }
+                return null;
+            }
+        };
     }
 
     NodeImpl getLightNode( long nodeId )
@@ -500,8 +542,7 @@ public class NodeManager
         this.referenceNodeId = nodeId;
     }
 
-    public Relationship getRelationshipById( long relId )
-        throws NotFoundException
+    private Relationship getRelationshipByIdOrNull( long relId )
     {
         RelationshipImpl relationship = relCache.get( relId );
         if ( relationship != null )
@@ -519,7 +560,7 @@ public class NodeManager
             RelationshipRecord data = persistenceManager.loadLightRelationship( relId );
             if ( data == null )
             {
-                throw new NotFoundException( "Relationship[" + relId + "]" );
+                return null;
             }
             int typeId = data.getType();
             RelationshipType type = getRelationshipTypeById( typeId );
@@ -540,7 +581,47 @@ public class NodeManager
             loadLock.unlock();
         }
     }
+    
+    public Relationship getRelationshipById( long id ) throws NotFoundException
+    {
+        Relationship relationship = getRelationshipByIdOrNull( id );
+        if ( relationship == null )
+        {
+            throw new NotFoundException( "Relationship[" + id + "]" );
+        }
+        return relationship;
+    }
 
+    public Iterator<Relationship> getAllRelationships()
+    {
+        final long highId = getHighestPossibleIdInUse( Relationship.class );
+        return new PrefetchingIterator<Relationship>()
+        {
+            private long currentId;
+            
+            @Override
+            protected Relationship fetchNextOrNull()
+            {
+                while ( currentId <= highId )
+                {
+                    try
+                    {
+                        Relationship relationship = getRelationshipByIdOrNull( currentId );
+                        if ( relationship != null )
+                        {
+                            return relationship;
+                        }
+                    }
+                    finally
+                    {
+                        currentId++;
+                    }
+                }
+                return null;
+            }
+        };
+    }
+    
     RelationshipType getRelationshipTypeById( int id )
     {
         return relTypeHolder.getRelationshipType( id );
@@ -836,7 +917,7 @@ public class NodeManager
         relTypeHolder.addRawRelationshipTypes( relTypes );
     }
 
-    Iterable<RelationshipType> getRelationshipTypes()
+    public Iterable<RelationshipType> getRelationshipTypes()
     {
         return relTypeHolder.getRelationshipTypes();
     }

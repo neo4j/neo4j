@@ -28,6 +28,7 @@ import javax.ws.rs.core.Response;
 
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.server.database.Database;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 @Path( "/relationship/types" )
 public class DatabaseMetadataService
@@ -44,7 +45,7 @@ public class DatabaseMetadataService
     @Produces( MediaType.APPLICATION_JSON )
     public Response getRelationshipTypes()
     {
-        Iterable<RelationshipType> relationshipTypes = database.graph.getRelationshipTypes();
+        Iterable<RelationshipType> relationshipTypes = GlobalGraphOperations.at( database.graph ).getAllRelationshipTypes();
         return Response.ok()
                 .type( MediaType.APPLICATION_JSON )
                 .entity( generateJsonRepresentation( relationshipTypes ) )

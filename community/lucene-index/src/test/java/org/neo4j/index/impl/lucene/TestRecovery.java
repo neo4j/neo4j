@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 /**
  * Don't extend Neo4jTestCase since these tests restarts the db in the tests. 
@@ -101,7 +102,7 @@ public class TestRecovery
     	GraphDatabaseService db = new EmbeddedGraphDatabase( path );
     	assertTrue( db.index().existsForNodes( "myIndex" ) );
     	Index<Node> index = db.index().forNodes( "myIndex" );
-    	for ( Node node : db.getAllNodes() )
+    	for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
     	{
     	    for ( String key : node.getPropertyKeys() )
     	    {

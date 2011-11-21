@@ -38,6 +38,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.AutoIndexer;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 public class GraphDescription implements GraphDefinition
 {
@@ -234,7 +235,7 @@ public class GraphDescription implements GraphDefinition
         Transaction tx = db.beginTx();
         try
         {
-            for ( Node node : db.getAllNodes() )
+            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
             {
                 for ( Relationship rel : node.getRelationships() )
                     rel.delete();

@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 public class StoreMigratorTest
 {
@@ -126,7 +127,7 @@ public class StoreMigratorTest
         private void verifyNodes()
         {
             int nodeCount = 0;
-            for ( Node node : database.getAllNodes() )
+            for ( Node node : GlobalGraphOperations.at( database ).getAllNodes() )
             {
                 nodeCount++;
                 if ( node.getId() > 0 )

@@ -26,7 +26,6 @@ import java.util.Map;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.KernelEventHandler;
@@ -125,11 +124,6 @@ public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
         graphDbImpl.shutdown();
     }
 
-    public Iterable<RelationshipType> getRelationshipTypes()
-    {
-        return graphDbImpl.getRelationshipTypes();
-    }
-
     /**
      * @throws TransactionFailureException if unable to start transaction
      */
@@ -166,11 +160,6 @@ public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
     public String toString()
     {
         return super.toString() + " [" + graphDbImpl.getStoreDir() + "]";
-    }
-
-    public Iterable<Node> getAllNodes()
-    {
-        return graphDbImpl.getAllNodes();
     }
 
     public KernelEventHandler registerKernelEventHandler(

@@ -32,6 +32,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.annotations.Documented;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 public class HelloWorldTest extends AbstractJavaDocTestbase
 {
@@ -203,7 +204,7 @@ public class HelloWorldTest extends AbstractJavaDocTestbase
         {
             // START SNIPPET: removingData
             // let's remove the data
-            for ( Node node : graphDb.getAllNodes() )
+            for ( Node node : GlobalGraphOperations.at( graphDb ).getAllNodes() )
             {
                 for ( Relationship rel : node.getRelationships() )
                 {

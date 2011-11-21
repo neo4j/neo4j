@@ -26,11 +26,9 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -43,7 +41,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.KernelEventHandler;
@@ -374,11 +371,6 @@ class EmbeddedGraphDbImpl
         }
     }
 
-    public Iterable<RelationshipType> getRelationshipTypes()
-    {
-        return graphDbInstance.getRelationshipTypes();
-    }
-
     /**
      * @throws TransactionFailureException if unable to start transaction
      */
@@ -428,69 +420,6 @@ class EmbeddedGraphDbImpl
     public String getStoreDir()
     {
         return storeDir;
-    }
-
-    public Iterable<Node> getAllNodes()
-    {
-        return new Iterable<Node>()
-        {
-            @Override
-            public Iterator<Node> iterator()
-            {
-                long highId = nodeManager.getHighestPossibleIdInUse( Node.class );
-                return new AllNodesIterator( highId );
-            }
-        };
-    }
-
-    // TODO: temporary all nodes getter, fix this with better implementation
-    // (no NotFoundException to control flow)
-    private class AllNodesIterator implements Iterator<Node>
-    {
-        private final long highId;
-        private long currentNodeId = 0;
-        private Node currentNode = null;
-
-        AllNodesIterator( long highId )
-        {
-            this.highId = highId;
-        }
-
-        @Override
-        public synchronized boolean hasNext()
-        {
-            while ( currentNode == null && currentNodeId <= highId )
-            {
-                try
-                {
-                    currentNode = getNodeById( currentNodeId++ );
-                }
-                catch ( NotFoundException e )
-                {
-                    // ok we try next
-                }
-            }
-            return currentNode != null;
-        }
-
-        @Override
-        public synchronized Node next()
-        {
-            if ( !hasNext() )
-            {
-                throw new NoSuchElementException();
-            }
-
-            Node nextNode = currentNode;
-            currentNode = null;
-            return nextNode;
-        }
-
-        @Override
-        public void remove()
-        {
-            throw new UnsupportedOperationException();
-        }
     }
 
     <T> TransactionEventHandler<T> registerTransactionEventHandler(

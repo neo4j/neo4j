@@ -34,6 +34,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 /**
  *
@@ -64,7 +65,7 @@ public class LoopRelTest
     private static ArrayList<Node> verifyOkDbAndSetup( GraphDatabaseService gdb )
     {
         ArrayList<Node> allNodes = new ArrayList<Node>();
-        for ( Node node : gdb.getAllNodes() )
+        for ( Node node : GlobalGraphOperations.at( gdb ).getAllNodes() )
         {
             allNodes.add( node );
             for ( Relationship rel : node.getRelationships( Direction.OUTGOING) )

@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.impl.EphemeralIdGenerator;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 /**
  * A database meant to be used in unit tests. It will always be empty on start.
@@ -132,7 +133,7 @@ public class ImpermanentGraphDatabase extends HighlyConfigurableGraphDatabase
         Transaction tx = beginTx();
         try
         {
-            for ( Node node : getAllNodes() )
+            for ( Node node : GlobalGraphOperations.at( this ).getAllNodes() )
             {
                 for ( Relationship rel : node.getRelationships( Direction.OUTGOING ) )
                 {

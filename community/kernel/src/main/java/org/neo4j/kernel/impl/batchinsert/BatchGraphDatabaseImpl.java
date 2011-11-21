@@ -108,6 +108,11 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         throw new UnsupportedOperationException( "Batch inserter mode" );
     }
 
+    public Iterable<Relationship> getAllRelationships()
+    {
+        throw new UnsupportedOperationException( "Batch inserter mode" );
+    }
+    
     public Node getNodeById( long id )
     {
         NodeBatchImpl node = nodes.get( id );

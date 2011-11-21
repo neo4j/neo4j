@@ -39,6 +39,7 @@ import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 /**
  * Mimics the POSIX application "rmdir", but neo4j has relationships instead of
@@ -124,7 +125,7 @@ public class Rmrel extends GraphDatabaseApp
 
     private Iterable<RelationshipType> getAllRelationshipTypes()
     {
-        return this.getServer().getDb().getRelationshipTypes();
+        return GlobalGraphOperations.at( this.getServer().getDb() ).getAllRelationshipTypes();
     }
 
     private boolean hasPathToRefNode( Node node )

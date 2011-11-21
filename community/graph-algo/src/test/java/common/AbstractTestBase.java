@@ -37,6 +37,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 public abstract class AbstractTestBase
 {
@@ -87,7 +88,7 @@ public abstract class AbstractTestBase
         {
             Node reference = removeReference ? null
                     : graphdb.getReferenceNode();
-            for ( Node node : graphdb.getAllNodes() )
+            for ( Node node : GlobalGraphOperations.at( graphdb ).getAllNodes() )
             {
                 for ( Relationship rel : node.getRelationships() )
                 {
@@ -128,7 +129,7 @@ public abstract class AbstractTestBase
 
     protected Node getNodeWithName( String name )
     {
-        for ( Node node : graphdb.getAllNodes() )
+        for ( Node node : GlobalGraphOperations.at( graphdb ).getAllNodes() )
         {
             String nodeName = (String) node.getProperty( "name", null );
             if ( nodeName != null && nodeName.equals( name ) )

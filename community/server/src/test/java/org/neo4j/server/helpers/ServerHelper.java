@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.server.NeoServer;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 public class ServerHelper
 {
@@ -61,7 +62,7 @@ public class ServerHelper
 
             private void deleteAllNodesAndRelationships( final NeoServer server )
             {
-                Iterable<Node> allNodes = server.getDatabase().graph.getAllNodes();
+                Iterable<Node> allNodes = GlobalGraphOperations.at( server.getDatabase().graph ).getAllNodes();
                 for ( Node n : allNodes )
                 {
                     Iterable<Relationship> relationships = n.getRelationships();

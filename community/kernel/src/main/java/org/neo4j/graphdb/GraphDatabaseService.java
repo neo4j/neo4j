@@ -23,6 +23,7 @@ import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 /**
  * The main access point to a running Neo4j instance. The most common
@@ -86,12 +87,13 @@ public interface GraphDatabaseService
     public Node getReferenceNode();
 
     /**
-     * Returns all nodes in the node space.
+     * Returns all nodes in the graph.
      * 
-     * @return all nodes in the node space
+     * @return all nodes in the graph.
+     * @deprecated this operation can be found in {@link GlobalGraphOperations} instead.
      */
     public Iterable<Node> getAllNodes();
-
+    
     /**
      * Returns all relationship types currently in the underlying store.
      * Relationship types are added to the underlying store the first time they
@@ -103,6 +105,7 @@ public interface GraphDatabaseService
      * space).
      * 
      * @return all relationship types in the underlying store
+     * @deprecated this operation can be found in {@link GlobalGraphOperations} instead.
      */
     public Iterable<RelationshipType> getRelationshipTypes();
 

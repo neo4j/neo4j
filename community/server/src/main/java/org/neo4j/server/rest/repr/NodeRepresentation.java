@@ -21,6 +21,7 @@ package org.neo4j.server.rest.repr;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 public final class NodeRepresentation extends ObjectRepresentation implements ExtensibleRepresentation,
         EntityRepresentation
@@ -134,8 +135,8 @@ public final class NodeRepresentation extends ObjectRepresentation implements Ex
         new PropertiesRepresentation( node ).serialize( properties );
         if ( writer.isInteractive() )
         {
-            serializer.putList( "relationship_types", ListRepresentation.relationshipTypes( node.getGraphDatabase()
-                    .getRelationshipTypes() ) );
+            serializer.putList( "relationship_types", ListRepresentation.relationshipTypes(
+                    GlobalGraphOperations.at( node.getGraphDatabase() ).getAllRelationshipTypes() ) );
         }
         properties.done();
     }

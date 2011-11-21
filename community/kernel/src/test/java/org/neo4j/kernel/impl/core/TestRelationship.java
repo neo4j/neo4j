@@ -24,11 +24,15 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
+import static org.neo4j.tooling.GlobalGraphOperations.at;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -887,5 +891,31 @@ public class TestRelationship extends AbstractNeo4jTestCase
         }
         assertEquals( 1, loopCount );
         assertEquals( count, delCount );
+    }
+    
+    @Test
+    public void getAllRelationships() throws Exception
+    {
+        Set<Relationship> existingRelationships = addToCollection( at( getGraphDb() ).getAllRelationships(), new HashSet<Relationship>() );
+        
+        Set<Relationship> createdRelationships = new HashSet<Relationship>();
+        Node node = getGraphDb().createNode();
+        for ( int i = 0; i < 100; i++ )
+        {
+            createdRelationships.add( node.createRelationshipTo( getGraphDb().createNode(), MyRelTypes.TEST ) );
+        }
+        newTransaction();
+        
+        Set<Relationship> allRelationships = new HashSet<Relationship>();
+        allRelationships.addAll( existingRelationships );
+        allRelationships.addAll( createdRelationships );
+        
+        int count = 0;
+        for ( Relationship rel : at( getGraphDb() ).getAllRelationships() )
+        {
+            assertTrue( allRelationships.contains( rel ) );
+            count++;
+        }
+        assertEquals( allRelationships.size(), count );
     }
 }

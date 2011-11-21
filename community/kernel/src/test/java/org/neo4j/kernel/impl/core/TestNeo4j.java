@@ -35,6 +35,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -42,6 +43,7 @@ import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 public class TestNeo4j extends AbstractNeo4jTestCase
 {
@@ -270,22 +272,18 @@ public class TestNeo4j extends AbstractNeo4jTestCase
     }
     
     @Test
-    public void testGetAllNode()
+    public void testGetAllNodes()
     {
         long highId = getNodeManager().getHighestPossibleIdInUse( Node.class );
         if ( highId >= 0 && highId < 10000 )
         {
-            int count = 0;
-            for ( Node node : getEmbeddedGraphDb().getAllNodes() )
-            {
-                count++;
-            }
+            int count = IteratorUtil.count( GlobalGraphOperations.at( getGraphDb() ).getAllNodes() );
             boolean found = false;
             Node newNode = getGraphDb().createNode();
             newTransaction();
             int oldCount = count;
             count = 0;
-            for ( Node node : getEmbeddedGraphDb().getAllNodes() )
+            for ( Node node : GlobalGraphOperations.at( getGraphDb() ).getAllNodes() )
             {
                 count++;
                 if ( node.equals( newNode ) )
@@ -297,15 +295,14 @@ public class TestNeo4j extends AbstractNeo4jTestCase
             assertEquals( count, oldCount + 1 );
             
             // Tests a bug in the "all nodes" iterator
-            Iterator<Node> allNodesIterator =
-                getEmbeddedGraphDb().getAllNodes().iterator();
+            Iterator<Node> allNodesIterator = GlobalGraphOperations.at( getGraphDb() ).getAllNodes().iterator();
             assertNotNull( allNodesIterator.next() );
             
             newNode.delete();
             newTransaction();
             found = false;
             count = 0;
-            for ( Node node : getEmbeddedGraphDb().getAllNodes() )
+            for ( Node node : GlobalGraphOperations.at( getGraphDb() ).getAllNodes() )
             {
                 count++;
                 if ( node.equals( newNode ) )

@@ -27,6 +27,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 public abstract class Walker
 {
@@ -39,7 +40,7 @@ public abstract class Walker
             @Override
             public <R, E extends Throwable> R accept( Visitor<R, E> visitor ) throws E
             {
-                for ( Node node : graphDb.getAllNodes() )
+                for ( Node node : GlobalGraphOperations.at( graphDb ).getAllNodes() )
                 {
                     visitor.visitNode( node );
                     for ( Relationship edge : node.getRelationships( Direction.OUTGOING ) )

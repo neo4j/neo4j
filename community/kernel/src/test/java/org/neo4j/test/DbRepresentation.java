@@ -35,6 +35,7 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 public class DbRepresentation implements Serializable
 {
@@ -45,7 +46,7 @@ public class DbRepresentation implements Serializable
     public static DbRepresentation of( GraphDatabaseService db )
     {
         DbRepresentation result = new DbRepresentation();
-        for ( Node node : db.getAllNodes() )
+        for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
         {
             NodeRep nodeRep = new NodeRep( db, node );
             result.nodes.put( node.getId(), nodeRep );

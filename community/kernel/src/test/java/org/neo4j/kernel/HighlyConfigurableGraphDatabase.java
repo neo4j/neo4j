@@ -24,7 +24,6 @@ import java.util.Map;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
@@ -77,18 +76,6 @@ public class HighlyConfigurableGraphDatabase extends AbstractGraphDatabase
     public Node getReferenceNode()
     {
         return impl.getReferenceNode();
-    }
-
-    @Override
-    public Iterable<Node> getAllNodes()
-    {
-        return impl.getAllNodes();
-    }
-
-    @Override
-    public Iterable<RelationshipType> getRelationshipTypes()
-    {
-        return impl.getRelationshipTypes();
     }
 
     @Override

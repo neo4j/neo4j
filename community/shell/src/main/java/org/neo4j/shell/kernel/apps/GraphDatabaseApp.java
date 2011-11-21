@@ -55,6 +55,7 @@ import org.neo4j.shell.TextUtil;
 import org.neo4j.shell.impl.AbstractApp;
 import org.neo4j.shell.impl.AbstractClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 /**
  * An implementation of {@link App} which has common methods and functionality
@@ -626,7 +627,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
             boolean looseFilters ) throws ShellException
     {
         Map<String, Direction> matches = new TreeMap<String, Direction>();
-        for ( RelationshipType type : db.getRelationshipTypes() )
+        for ( RelationshipType type : GlobalGraphOperations.at( db ).getAllRelationshipTypes() )
         {
             Direction direction = null;
             if ( filterMap == null || filterMap.isEmpty() )

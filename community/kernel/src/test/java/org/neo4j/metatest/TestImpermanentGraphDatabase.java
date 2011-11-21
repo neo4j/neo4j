@@ -27,6 +27,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 public class TestImpermanentGraphDatabase
 {
@@ -74,7 +75,7 @@ public class TestImpermanentGraphDatabase
     }
     
 	private int nodeCount() {
-		return IteratorUtil.count(db.getAllNodes());
+		return IteratorUtil.count( GlobalGraphOperations.at( db ).getAllNodes() );
 	}
 
 	private void createNode() {

@@ -50,6 +50,7 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 public class TestIdGenerator
 {
@@ -652,7 +653,7 @@ public class TestIdGenerator
 
         // Verify by loading everything from scratch
         ((AbstractGraphDatabase)db).getConfig().getGraphDbModule().getNodeManager().clearCache();
-        for ( Node node : db.getAllNodes() )
+        for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
         {
             lastOrNull( node.getRelationships() );
         }

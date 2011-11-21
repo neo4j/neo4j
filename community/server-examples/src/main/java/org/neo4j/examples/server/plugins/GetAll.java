@@ -18,18 +18,15 @@
  */
 package org.neo4j.examples.server.plugins;
 
-import java.util.Iterator;
-
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.helpers.collection.NestingIterable;
 import org.neo4j.server.plugins.Description;
 import org.neo4j.server.plugins.Name;
 import org.neo4j.server.plugins.PluginTarget;
 import org.neo4j.server.plugins.ServerPlugin;
 import org.neo4j.server.plugins.Source;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 // START SNIPPET: GetAll
 @Description( "An extension to the Neo4j Server for getting all nodes or relationships" )
@@ -40,21 +37,14 @@ public class GetAll extends ServerPlugin
     @PluginTarget( GraphDatabaseService.class )
     public Iterable<Node> getAllNodes( @Source GraphDatabaseService graphDb )
     {
-        return graphDb.getAllNodes();
+        return GlobalGraphOperations.at( graphDb ).getAllNodes();
     }
 
     @Description( "Get all relationships from the Neo4j graph database" )
     @PluginTarget( GraphDatabaseService.class )
     public Iterable<Relationship> getAllRelationships( @Source GraphDatabaseService graphDb )
     {
-        return new NestingIterable<Relationship, Node>( graphDb.getAllNodes() )
-        {
-            @Override
-            protected Iterator<Relationship> createNestedIterator( Node item )
-            {
-                return item.getRelationships( Direction.OUTGOING ).iterator();
-            }
-        };
+        return GlobalGraphOperations.at( graphDb ).getAllRelationships();
     }
 }
 //END SNIPPET: GetAll

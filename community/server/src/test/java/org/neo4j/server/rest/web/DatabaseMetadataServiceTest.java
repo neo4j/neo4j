@@ -20,37 +20,37 @@
 package org.neo4j.server.rest.web;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
 import javax.ws.rs.core.Response;
 
 import org.junit.Test;
-import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class DatabaseMetadataServiceTest
 {
     @Test
     public void shouldAdvertiseRelationshipTyoesThatCurrentlyExistInTheDatabase() throws JsonParseException
     {
-        HashSet<RelationshipType> fakeRelationshipTypes = new HashSet<RelationshipType>();
-        fakeRelationshipTypes.add( DynamicRelationshipType.withName( "a" ) );
-        fakeRelationshipTypes.add( DynamicRelationshipType.withName( "b" ) );
-        fakeRelationshipTypes.add( DynamicRelationshipType.withName( "c" ) );
-
-        Database database = mock( Database.class );
-        AbstractGraphDatabase graph = mock( AbstractGraphDatabase.class );
-        database.graph = graph;
-        when( database.graph.getRelationshipTypes() ).thenReturn( fakeRelationshipTypes );
+        AbstractGraphDatabase db = new ImpermanentGraphDatabase();
+        Transaction tx = db.beginTx();
+        Node node = db.createNode();
+        node.createRelationshipTo( db.createNode(), withName( "a" ) );
+        node.createRelationshipTo( db.createNode(), withName( "b" ) );
+        node.createRelationshipTo( db.createNode(), withName( "c" ) );
+        tx.success();
+        tx.finish();
+        
+        Database database = new Database( db );
         DatabaseMetadataService service = new DatabaseMetadataService( database );
 
         Response response = service.getRelationshipTypes();
@@ -59,5 +59,6 @@ public class DatabaseMetadataServiceTest
         List<Map<String, Object>> jsonList = JsonHelper.jsonToList( response.getEntity()
                 .toString() );
         assertEquals( 3, jsonList.size() );
+        database.shutdown();
     }
 }
