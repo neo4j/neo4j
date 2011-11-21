@@ -56,3 +56,15 @@ tag=relationshipAttributes
 classifier=test-sources
 ----
 
+=== Getting and/or counting all relationships ===
+
+Use this with care, it will become extremely slow in large datasets.
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=core.py
+tag=getAllRelationships
+classifier=test-sources
+----
+

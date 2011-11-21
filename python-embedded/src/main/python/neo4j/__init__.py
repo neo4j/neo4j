@@ -47,6 +47,13 @@ class Nodes(object):
     def __delitem__(self, item):
         return self[item].delete()
         
+    def __iter__(self):
+        for node in self.db.getAllNodes().iterator():
+            yield node
+            
+    def __len__(self):
+        return sum(1 for _ in self)
+        
     def create(self, **properties):
         node = self.db.createNode()
         for key, val in properties.items():
@@ -73,6 +80,14 @@ class Relationships(object):
             
     def __delitem__(self, item):
         return self[item].delete()
+        
+    def __iter__(self):
+        for node in self.db.nodes:
+            for rel in node.relationships.incoming:
+                yield rel
+            
+    def __len__(self):
+        return sum(1 for _ in self)
         
     def get(self, id):
         if not isinstance(id, (int, long)):

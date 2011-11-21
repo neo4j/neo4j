@@ -200,6 +200,43 @@ class GraphTest(unit_tests.GraphDatabaseTest):
         a_node = db.node[some_node_id]
         # END SNIPPET: getNodeById
         self.assertNotEqual(a_node, None)
+                
+    def test_get_all_nodes(self):
+        db = self.graphdb
+        with db.transaction:
+            node = db.node()
+        # START SNIPPET: getAllNodes
+        for node in db.nodes:
+            pass
+           
+        # Shorthand for iterating through
+        # and counting all nodes
+        number_of_nodes = len(db.nodes)
+        # END SNIPPET: getAllNodes
+        self.assertEqual(2, number_of_nodes)
+        
+        nodes = list(db.nodes)
+        self.assertEqual(2, len(nodes))
+                
+    def test_get_all_relationships(self):
+        db = self.graphdb
+        with db.transaction:
+            node = db.node()
+            db.reference_node.Knows(node)
+            node.Knows(db.reference_node)
+            node.Knows(node)
+        # START SNIPPET: getAllRelationships
+        for rel in db.relationships:
+            pass
+            
+        # Shorthand for iterating through
+        # and counting all relationships
+        number_of_rels = len(db.relationships)
+        # END SNIPPET: getAllRelationships
+        self.assertEqual(3, number_of_rels)
+        
+        rels = list(db.relationships)
+        self.assertEqual(3, len(rels))
         
     def test_get_reference_node(self):
         db = self.graphdb

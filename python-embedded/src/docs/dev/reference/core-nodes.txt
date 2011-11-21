@@ -68,3 +68,15 @@ tag=accessingRelationships
 classifier=test-sources
 ----
 
+=== Getting and/or counting all nodes ===
+
+Use this with care, it will become extremely slow in large datasets.
+
+[snippet,python]
+----
+component=neo4j-python-embedded
+source=core.py
+tag=getAllNodes
+classifier=test-sources
+----
+
