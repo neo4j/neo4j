@@ -109,8 +109,8 @@ Depending on what you are looking for, you will use the direction and type of re
 |What | How
 |get the full path of a file | incoming +file+ relationships
 |get all paths for a file | incoming +file+ and +symbolic link+ relationships
-|get all files in a directory | outgoing +file+ and +symbolic link+ relationships, stop at depth one
-|get all files in a directory, excluding symbolic links | outgoing +file+ relationships, stop at depth one
+|get all files in a directory | outgoing +file+ and +symbolic link+ relationships, depth one
+|get all files in a directory, excluding symbolic links | outgoing +file+ relationships, depth one
 |get all files in a directory, recursively | outgoing +file+ and +symbolic link+ relationships
 |========================================================
 
