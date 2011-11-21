@@ -56,6 +56,8 @@ public class Start extends GraphDatabaseApp
         throws ShellException, RemoteException
     {
         String query = parser.getLine();
+        query = expandParameters( session, query );
+        
         if ( endsWithNewLine( query ) || looksToBeComplete( query ) )
         {
             CypherParser qparser = new CypherParser();
@@ -76,6 +78,17 @@ public class Start extends GraphDatabaseApp
         {
             return "c";
         }
+    }
+
+    private String expandParameters( Session session, String query ) throws ShellException
+    {
+        if ( query.contains( "{self}" ) )
+        {
+            NodeOrRelationship entity = getCurrent( session );
+            if ( !entity.isNode() ) throw new ShellException( "Must stand on node" );
+            query = query.replaceAll( "\\{self\\}", String.valueOf( entity.getId() ) );
+        }
+        return query;
     }
 
     private boolean looksToBeComplete( String query )

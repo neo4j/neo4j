@@ -134,7 +134,7 @@ public class ShellTest
         server.shutdown();
         db.shutdown();
     }
-
+    
     @Test
     public void testMatrix() throws Exception
     {

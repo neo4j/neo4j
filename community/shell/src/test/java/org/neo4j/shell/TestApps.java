@@ -267,4 +267,21 @@ public class TestApps extends AbstractShellTest
         executeCommand( server, client, "ls", "Test" );
         newDb.shutdown();
     }
+    
+    @Test
+    public void cypherWithSelfParameter() throws Exception
+    {
+        Transaction tx = db.beginTx();
+        Node node = db.createNode();
+        node.setProperty( "name", "Node ONE" );
+        Node otherNode = db.createNode();
+        otherNode.setProperty( "name", "Node TWO" );
+        tx.success();
+        tx.finish();
+        
+        executeCommand( "cd -a " + node.getId() );
+        executeCommand( "START n = node({self}) RETURN n.name", "Node ONE" );
+        executeCommand( "cd -a " + otherNode.getId() );
+        executeCommand( "START n = node({self}) RETURN n.name", "Node TWO" );
+    }
 }

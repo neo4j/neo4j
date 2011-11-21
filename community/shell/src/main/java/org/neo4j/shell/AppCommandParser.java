@@ -56,11 +56,16 @@ public class AppCommandParser
 	{
 		this.server = server;
 		this.line = line;
-		String trimmedLine = line != null ? line.trim() : line;
+		String trimmedLine = line != null ? prepareLine( line ) : line;
 		this.parse( trimmedLine );
 	}
 	
-	private void parse( String line ) throws Exception
+	private String prepareLine( String line )
+    {
+	    return line.trim().replaceAll( "\n", " " );
+    }
+
+    private void parse( String line ) throws Exception
 	{
 		if ( line == null || line.trim().length() == 0 )
 		{
