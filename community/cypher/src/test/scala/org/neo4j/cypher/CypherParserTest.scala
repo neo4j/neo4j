@@ -765,6 +765,19 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns (ValueReturnItem(EntityValue("b"))))
   }
 
+  @Test def extractNameFromAllNodes() {
+    testQuery(
+      """start a = node(1) match p = a --> b --> c return extract(n in nodes(p) : n.name)""",
+      Query.
+        start(NodeById("a", 1)).
+        namedPaths(
+        NamedPath("p",
+          RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING, false),
+          RelatedTo("b", "c", "  UNNAMED2", None, Direction.OUTGOING, false))).
+        returns(ValueReturnItem(Extract(PathNodesValue(EntityValue("p")), "n", PropertyValue("n", "name")))))
+  }
+
+
   @Test def testAny() {
     testQuery(
       """start a = node(1) where ANY(x in NODES(p): x.name = "Andres") return b""",

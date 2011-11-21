@@ -74,7 +74,7 @@ class SematicErrorTest extends ExecutionEngineHelper {
       execute(query).toList
       fail("Did not get the expected syntax error, expected: " + message)
     } catch {
-      case x: SyntaxException => assertEquals(message, x.getMessage)
+      case x: CypherException => assertEquals(message, x.getMessage)
     }
   }
 }

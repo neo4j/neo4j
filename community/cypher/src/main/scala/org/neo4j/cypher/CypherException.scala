@@ -19,11 +19,6 @@
  */
 package org.neo4j.cypher
 
-class ParameterNotFoundException(message:String, cause:Throwable) extends CypherException(message, cause) {
-  def this(message:String)=this(message,null)
+abstract class CypherException(message: String, cause: Throwable) extends RuntimeException(message, cause) {
+  def this(message:String) = this(message, null)
 }
-
-class ParameterWrongTypeException(message:String, cause:Throwable) extends CypherException(message, cause) {
-  def this(message:String)=this(message,null)
-}
-

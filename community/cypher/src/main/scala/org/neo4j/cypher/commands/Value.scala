@@ -21,8 +21,8 @@ package org.neo4j.cypher.commands
 
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
-import org.neo4j.cypher.{ParameterNotFoundException, SyntaxException, SymbolTable}
 import java.lang.String
+import org.neo4j.cypher._
 
 abstract class Value extends (Map[String, Any] => Any) {
   def identifier: Identifier
@@ -98,7 +98,9 @@ case class RelationshipTypeValue(relationship: Value) extends FunctionValue("TYP
 case class ArrayLengthValue(inner: Value) extends FunctionValue("LENGTH", inner) {
   def apply(m: Map[String, Any]): Any = inner(m) match {
     case path: Path => path.length()
-    case x => throw new SyntaxException("Expected " + inner.identifier.name + " to be an iterable, but it is not.")
+    case iter:Traversable[_] => iter.toList.length
+    case s:String => s.length()
+    case x => throw new IterableRequiredException(inner)
   }
 }
 
@@ -116,6 +118,24 @@ case class PathNodesValue(path: Value) extends FunctionValue("NODES", path) {
     case p: Path => p.nodes().asScala.toSeq
     case x => throw new SyntaxException("Expected " + path.identifier.name + " to be a path.")
   }
+}
+
+case class Extract(iterable:Value, id:String, expression:Value) extends Value {
+  def apply(m: Map[String, Any]): Any = iterable(m) match {
+    case x:Iterable[Any] => x.map( iterValue => {
+      val innerMap = m + (id -> iterValue)
+      expression(innerMap)
+    })
+    case _ => throw new IterableRequiredException(iterable)
+  }
+
+  def identifier: Identifier = ArrayIdentifier("extract(" + id + " in " + iterable.identifier.name + " : " + expression.identifier.name + ")")
+
+  def checkAvailable(symbols: SymbolTable) {
+    iterable.checkAvailable(symbols)
+  }
+
+  def dependsOn: Set[String] = (iterable.dependsOn ++ expression.dependsOn) - id
 }
 
 case class PathRelationshipsValue(path: Value) extends FunctionValue("RELATIONSHIPS", path) {

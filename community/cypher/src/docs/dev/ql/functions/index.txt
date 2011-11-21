@@ -28,4 +28,4 @@ Iterable functions return an iterable of things - nodes in a path, and so on.
 
 include::nodes.txt[]
 include::relationships.txt[]
-
+include::extract.txt[]

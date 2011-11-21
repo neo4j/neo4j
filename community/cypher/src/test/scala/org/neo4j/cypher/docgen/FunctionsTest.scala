@@ -111,6 +111,19 @@ class FunctionsTest extends DocumentingTestBase {
       (p) => assertEquals(2, p.columnAs[Int]("LENGTH(p)").toList.head))
   }
 
+  @Test def extract() {
+    testThis(
+      title = "EXTRACT",
+      syntax = "EXTRACT( identifier in iterable : expression )",
+      arguments = List("iterable" -> "An iterable, value or function call"),
+      text = """To return a single property, or the value of a function from an iterable of nodes or relationships,
+ you can use EXTRACT. It will go through all enitities in the iterable, and run an expression, and return the results
+ in an iterable with these values. It works like the `map` method in functional languages such as Lisp and Scala.""",
+      queryText = """start a=node(%A%), b=node(%B%), c=node(%D%) match p=a-->b-->c return extract(n in nodes(p) : n.age)""",
+      returns = """The name property of all nodes in the path.""",
+      (p) => assertEquals(List(Map("extract(n in NODES(p) : n.age)" -> List(38, 25, 54))), p.toList))
+  }
+
   @Test def nodes_in_path() {
     testThis(
       title = "NODES",

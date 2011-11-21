@@ -26,9 +26,9 @@ import org.neo4j.cypher.SyntaxException
 
 trait Values extends JavaTokenParsers with Tokens {
 
-  def entityValue: Parser[EntityValue] = identity ^^ ( x => EntityValue(x) )
+  def entityValue: Parser[EntityValue] = identity ^^ (x => EntityValue(x))
 
-  def value: Parser[Value] = (boolean | function | nullableProperty | property | stringValue | decimal | parameter)
+  def value: Parser[Value] = (boolean | extract | function | nullableProperty | property | stringValue | decimal | parameter)
 
   def property: Parser[Value] = identity ~ "." ~ identity ^^ {
     case v ~ "." ~ p => PropertyValue(v, p)
@@ -48,7 +48,11 @@ trait Values extends JavaTokenParsers with Tokens {
 
   def falseX: Parser[Value] = ignoreCase("false") ^^ (x => Literal(false))
 
-  def function: Parser[Value] = ident ~ parens(value | entityValue) ^^{
+  def extract:Parser[Value] = ignoreCase("extract") ~> parens(identity ~ ignoreCase("in") ~ value ~ ":" ~ value) ^^ {
+    case (id ~ in ~ iter ~ ":" ~ expression) => Extract(iter, id, expression)
+  }
+
+  def function: Parser[Value] = ident ~ parens(value | entityValue) ^^ {
     case functionName ~ inner => functionName.toLowerCase match {
       case "type" => RelationshipTypeValue(inner)
       case "id" => IdValue(inner)

@@ -19,11 +19,9 @@
  */
 package org.neo4j.cypher
 
-class ParameterNotFoundException(message:String, cause:Throwable) extends CypherException(message, cause) {
-  def this(message:String)=this(message,null)
-}
+import commands.Value
 
-class ParameterWrongTypeException(message:String, cause:Throwable) extends CypherException(message, cause) {
-  def this(message:String)=this(message,null)
+class IterableRequiredException(message:String, cause:Throwable) extends CypherException(message, cause) {
+  def this(message:String) = this(message, null)
+  def this(value:Value) = this("Expected " + value.identifier.name + " to be an iterable, but it is not.", null)
 }
-
