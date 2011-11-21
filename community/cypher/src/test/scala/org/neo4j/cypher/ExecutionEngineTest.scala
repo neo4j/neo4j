@@ -27,6 +27,7 @@ import scala.collection.JavaConverters._
 import org.junit.matchers.JUnitMatchers._
 import org.neo4j.graphdb.{Path, Relationship, Direction, Node}
 import org.junit.{Ignore, Test}
+import org.neo4j.index.lucene.ValueContext
 
 class ExecutionEngineTest extends ExecutionEngineHelper {
 
@@ -1232,6 +1233,24 @@ return x, p
     val result = parseAndExecute("""
 start a  = node(1)
 where a.name =~ /And.*/ AND a.name =~ /And.*/
+return a
+""")
+
+    assert(List(a) === result.columnAs[Node]("a").toList)
+  }
+
+  @Ignore("Should be supported, but doesn't work")
+  @Test def shouldBeAbleToQueryNumericIndexes() {
+    val a = createNode("x" -> 5)
+
+    inTx(() => {
+      val idx = graph.index().forNodes("numericIndex")
+      idx.add(a, "number", ValueContext.numeric(13))
+    })
+
+
+    val result = parseAndExecute("""
+start a  = node:numericIndex(number = 13)
 return a
 """)
 
