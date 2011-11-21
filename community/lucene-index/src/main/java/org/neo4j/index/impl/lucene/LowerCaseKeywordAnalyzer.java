@@ -26,7 +26,7 @@ import org.apache.lucene.analysis.KeywordTokenizer;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.TokenStream;
 
-public class LowerCaseKeywordAnalyzer extends Analyzer
+public final class LowerCaseKeywordAnalyzer extends Analyzer
 {
     @Override
     public TokenStream tokenStream( String fieldName, Reader reader )
