@@ -317,7 +317,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     @Graph( { "Peter knows Ian", "Ian knows Peter", "Peter likes Bikes" } )
     public void group_count() throws UnsupportedEncodingException, Exception
     {
-        String script = "m = [:];" + "g.v(%Peter%).bothE().label.groupCount(m) >> -1;m";
+        String script = "m = [:];" + "g.v(%Peter%).bothE().label.groupCount(m).iterate();m";
         String response = doRestCall( script, Status.OK );
         assertTrue( response.contains( "knows=2" ) );
     }
