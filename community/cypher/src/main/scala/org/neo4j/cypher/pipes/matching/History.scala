@@ -21,11 +21,8 @@ package org.neo4j.cypher.pipes.matching
 
 import org.neo4j.graphdb.Node
 
-object History {
-  def apply(): History = new History(Set())
-}
 
-class History(seen: Set[MatchingPair]) {
+class History(source:Map[String,Any], seen: Set[MatchingPair]=Set()) {
   def filter(relationships: Set[PatternRelationship]): Set[PatternRelationship] = relationships.filterNot(r => seen.exists(_.matches(r)))
 
   def filter(relationships: Seq[GraphRelationship]): Seq[GraphRelationship] = relationships.filterNot(gr => gr match {
@@ -33,9 +30,9 @@ class History(seen: Set[MatchingPair]) {
     case VariableLengthGraphRelationship(p) => seen.exists(h => h.matches(p))
   }).toSeq
 
-  def add(pair: MatchingPair): History = new History(seen ++ Seq(pair))
+  def add(pair: MatchingPair): History = new History(source, seen ++ Seq(pair))
 
-  def toMap: Map[String, Any] = seen.flatMap(_ match {
+  def toMap: Map[String, Any] = source ++ seen.flatMap(_ match {
     case MatchingPair(p, e) => (p, e) match {
       case (pe: PatternNode, entity: Node) => Seq(pe.key -> entity)
       case (pe: PatternRelationship, entity: SingleGraphRelationship) => Seq(pe.key -> entity.rel)

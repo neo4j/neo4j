@@ -35,7 +35,7 @@ class MatchPipe(source: Pipe, patterns: Seq[Pattern], predicates:Seq[Clause]) ex
 
   def foreach[U](f: (Map[String, Any]) => U) {
     source.foreach(sourcePipeRow => {
-      matchingContext.getMatches(sourcePipeRow).foreach(patternMatch => f(patternMatch ++ sourcePipeRow))
+      matchingContext.getMatches(sourcePipeRow).foreach(f)
     })
   }
 

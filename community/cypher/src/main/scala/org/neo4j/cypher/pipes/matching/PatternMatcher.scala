@@ -22,14 +22,15 @@ package org.neo4j.cypher.pipes.matching
 import org.neo4j.cypher.commands.Clause
 import org.neo4j.graphdb.Node
 
-class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause], includeOptionals: Boolean) extends Traversable[Map[String, Any]] {
+class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause], includeOptionals: Boolean, source:Map[String,Any])
+  extends Traversable[Map[String, Any]] {
   val boundNodes = bindings.filter(_._2.patternElement.isInstanceOf[PatternNode])
   val boundRels = bindings.filter(_._2.patternElement.isInstanceOf[PatternRelationship])
 
   def foreach[U](f: (Map[String, Any]) => U) {
     debug("startPatternMatching")
 
-    traverseNode(boundNodes.values.toSet, History(), f)
+    traverseNode(boundNodes.values.toSet, new History(source), f)
   }
 
   private def traverseNode[U](remaining: Set[MatchingPair],
@@ -156,7 +157,8 @@ class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause], 
   private def yieldThis[U](yielder: Map[String, Any] => U, history: History): Boolean = {
     debug(history, history.toMap)
 
-    yielder(history.toMap)
+    val toMap = history.toMap
+    yielder(toMap)
     true
   }
 

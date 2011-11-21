@@ -41,15 +41,15 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, cla
       filter(_.dir == Direction.BOTH)
 
     val mandatoryPattern: Traversable[Map[String, Any]] = if (undirectedBoundRelationships.isEmpty) {
-      createPatternMatcher(boundPairs, false)
+      createPatternMatcher(boundPairs, false, sourceRow)
     } else {
       val boundRels: Seq[Map[String, MatchingPair]] = createListOfBoundRelationshipsWithHangingNodes(undirectedBoundRelationships, bindings)
 
-      boundRels.map(relMap => createPatternMatcher(relMap ++ boundPairs, false)).reduceLeft(_ ++ _)
+      boundRels.map(relMap => createPatternMatcher(relMap ++ boundPairs, false, sourceRow)).reduceLeft(_ ++ _)
     }
 
     if (optionalElements.nonEmpty)
-      mandatoryPattern.flatMap(innerMatch => createPatternMatcher(extractBoundMatchingPairs(innerMatch), true))
+      mandatoryPattern.flatMap(innerMatch => createPatternMatcher(extractBoundMatchingPairs(innerMatch), true, sourceRow))
     else
       mandatoryPattern
   }
@@ -76,9 +76,9 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, cla
     cartesian(toList).map(_.reduceLeft(_ ++ _))
   }
 
-  private def createPatternMatcher(boundPairs: Map[String, MatchingPair], includeOptionals: Boolean): scala.Traversable[Map[String, Any]] = {
+  private def createPatternMatcher(boundPairs: Map[String, MatchingPair], includeOptionals: Boolean, source:Map[String,Any]): Traversable[Map[String, Any]] = {
 
-    val patternMatcher = new PatternMatcher(boundPairs, clauses, includeOptionals)
+    val patternMatcher = new PatternMatcher(boundPairs, clauses, includeOptionals, source)
 
     if (includeOptionals)
       patternMatcher.map(matchedGraph => matchedGraph ++ createNullValuesForOptionalElements(matchedGraph))
