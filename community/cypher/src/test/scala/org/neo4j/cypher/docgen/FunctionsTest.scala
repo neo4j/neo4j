@@ -115,7 +115,11 @@ class FunctionsTest extends DocumentingTestBase {
     testThis(
       title = "EXTRACT",
       syntax = "EXTRACT( identifier in iterable : expression )",
-      arguments = List("iterable" -> "An iterable, value or function call"),
+      arguments = List(
+        "iterable" -> "An array property, or an iterable symbol, or an iterable function.",
+        "symbol" -> "The closure will have a symbol introduced in it's context. Here you decide which symbol to use. If you leave the symbol out, the default symbol +_+ (underscore) will be used.",
+        "expression" -> "This expression will run once per value in the iterable, and produces the result iterable."
+      ),
       text = """To return a single property, or the value of a function from an iterable of nodes or relationships,
  you can use EXTRACT. It will go through all enitities in the iterable, and run an expression, and return the results
  in an iterable with these values. It works like the `map` method in functional languages such as Lisp and Scala.""",
