@@ -175,7 +175,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     @Test
     public void intRange() throws Exception
     {
-        int step = 10001;
+        int step = 30001;
         Node node = getGraphDb().createNode();
         for ( int i = Integer.MIN_VALUE; i < Integer.MAX_VALUE-step; i += step )
         {
@@ -186,7 +186,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     @Test
     public void longRange() throws Exception
     {
-        long step = 10000000000001L;
+        long step = 120000000000001L;
         Node node = getGraphDb().createNode();
         for ( long i = Long.MIN_VALUE; i < Long.MAX_VALUE-step; i += step )
         {
@@ -210,7 +210,7 @@ public class TestProperties extends AbstractNeo4jTestCase
     {
         double step = 12.345;
         Node node = getGraphDb().createNode();
-        for ( double i = Double.MIN_VALUE; i < Double.MAX_VALUE; i += step, step *= 1.002D )
+        for ( double i = Double.MIN_VALUE; i < Double.MAX_VALUE; i += step, step *= 1.004D )
         {
             setPropertyAndAssertIt( node, i );
         }
