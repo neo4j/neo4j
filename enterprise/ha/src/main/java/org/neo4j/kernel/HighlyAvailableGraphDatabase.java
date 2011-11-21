@@ -54,7 +54,6 @@ import org.neo4j.com.ToFileStoreWriter;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
@@ -772,12 +771,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     }
 
     @Override
-    public Iterable<Node> getAllNodes()
-    {
-        return localGraph().getAllNodes();
-    }
-
-    @Override
     public Node getNodeById( long id )
     {
         return localGraph().getNodeById( id );
@@ -793,12 +786,6 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     public Relationship getRelationshipById( long id )
     {
         return localGraph().getRelationshipById( id );
-    }
-
-    @Override
-    public Iterable<RelationshipType> getRelationshipTypes()
-    {
-        return localGraph().getRelationshipTypes();
     }
 
     @Override

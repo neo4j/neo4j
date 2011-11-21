@@ -64,6 +64,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.LogExtractor;
 import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 public abstract class AbstractHaTest
 {
@@ -190,9 +191,9 @@ public abstract class AbstractHaTest
             int vNodeIndexServicePropCount = 0;
             int vNodeIndexProviderPropCount = 0;
 
-            Set<Node> otherNodes = IteratorUtil.addToCollection( otherDb.getAllNodes().iterator(),
+            Set<Node> otherNodes = IteratorUtil.addToCollection( GlobalGraphOperations.at( otherDb ).getAllNodes().iterator(),
                     new HashSet<Node>() );
-            for ( Node node : refDb.getAllNodes() )
+            for ( Node node : GlobalGraphOperations.at( refDb ).getAllNodes() )
             {
                 Node otherNode = otherDb.getNodeById( node.getId() );
                 int[] counts = verifyNode( node, otherNode, refDb, otherDb );

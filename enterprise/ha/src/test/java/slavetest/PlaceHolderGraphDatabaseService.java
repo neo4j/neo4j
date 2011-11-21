@@ -24,7 +24,6 @@ import java.util.Collection;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
@@ -74,18 +73,6 @@ public class PlaceHolderGraphDatabaseService extends AbstractGraphDatabase
     public Node getReferenceNode()
     {
         return db.getReferenceNode();
-    }
-
-    @Override
-    public Iterable<Node> getAllNodes()
-    {
-        return db.getAllNodes();
-    }
-
-    @Override
-    public Iterable<RelationshipType> getRelationshipTypes()
-    {
-        return db.getRelationshipTypes();
     }
 
     @Override
