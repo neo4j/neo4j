@@ -19,6 +19,11 @@
  */
 package org.neo4j.server.plugin.cypher;
 
+import static org.junit.Assert.assertTrue;
+
+import java.net.URI;
+import java.util.Map;
+
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -35,11 +40,6 @@ import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphHolder;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestData;
-
-import java.net.URI;
-import java.util.Map;
-
-import static org.junit.Assert.assertTrue;
 
 public class CypherPluginTest implements GraphHolder
 {
@@ -103,9 +103,6 @@ public class CypherPluginTest implements GraphHolder
     @BeforeClass
     public static void startDatabase()
     {
-        db = new ImpermanentGraphDatabase( "target/db"
-                                           + System.currentTimeMillis() );
-
+        db = new ImpermanentGraphDatabase();
     }
-
 }
