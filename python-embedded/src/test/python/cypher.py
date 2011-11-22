@@ -32,7 +32,7 @@ class CypherTest(unit_tests.GraphDatabaseTest):
         result = db.query("START n=node(0) RETURN n")
         # END SNIPPET: basicCypherQuery
         
-        # BEGIN SNIPPET: getCypherResultColumn
+        # START SNIPPET: getCypherResultColumn
         result = db.query("START n=node(0) RETURN n")
         
         # Fetch an iterator for the "n" column
@@ -48,7 +48,7 @@ class CypherTest(unit_tests.GraphDatabaseTest):
         
         self.assertEquals(0, node.id)
         
-        # BEGIN SNIPPET: iterateCypherResult
+        # START SNIPPET: iterateCypherResult
         result = db.query("START n=node(0) RETURN n")
         
         # Iterate through all result rows
