@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.helpers;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.neo4j.server.ServerTestUtils.asOneLine;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
 import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
@@ -112,8 +110,13 @@ public class ServerBuilder
 
         if ( startupHealthCheck == null )
         {
-            startupHealthCheck = mock( StartupHealthCheck.class );
-            when( startupHealthCheck.run() ).thenReturn( true );
+            startupHealthCheck = new StartupHealthCheck()
+            {
+                public boolean run()
+                {
+                    return true;
+                }
+            };
         }
 
         if ( clock != null )
@@ -315,21 +318,28 @@ public class ServerBuilder
 
     public ServerBuilder withFailingStartupHealthcheck()
     {
-        startupHealthCheck = mock( StartupHealthCheck.class );
-        when( startupHealthCheck.run() ).thenReturn( false );
-        when( startupHealthCheck.failedRule() ).thenReturn( new StartupHealthCheckRule()
+        startupHealthCheck = new StartupHealthCheck()
         {
-
-            public String getFailureMessage()
-            {
-                return "mockFailure";
-            }
-
-            public boolean execute( Properties properties )
+            public boolean run()
             {
                 return false;
             }
-        } );
+            public StartupHealthCheckRule failedRule() {
+                return new StartupHealthCheckRule()
+                {
+
+                    public String getFailureMessage()
+                    {
+                        return "mockFailure";
+                    }
+
+                    public boolean execute( Properties properties )
+                    {
+                        return false;
+                    }
+                };           
+            }
+        };
         return this;
     }
 

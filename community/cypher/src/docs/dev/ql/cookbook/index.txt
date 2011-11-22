@@ -68,7 +68,15 @@ include::cypher-multirelationalsocialnetwork-graph.txt[]
 
 include::who-follows-or-loves-me-back.txt[]
 
+:leveloffset: 2
 
+== Activity Streams ==
+
+:leveloffset: 3
+
+include::cypher-graphity-graph.txt[]
+
+include::find-activity-streams-in-a-network-without-scaling-penalty.txt[]
 
 //== People Similarity based on Favorites ==
 
