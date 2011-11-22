@@ -153,31 +153,33 @@
 								</move>
 								
 								<!-- Create duplicate AdvancedInstaller project for each distribution -->
-								<copy 
-								  file="${project.build.outputDirectory}/installer.aip"
-								  toFile="${project.build.outputDirectory}/community/installer.aip" />
-								<copy 
-								  file="${project.build.outputDirectory}/installer.aip"
-								  toFile="${project.build.outputDirectory}/advanced/installer.aip" />
-								<copy 
-								  file="${project.build.outputDirectory}/installer.aip"
-								  toFile="${project.build.outputDirectory}/enterprise/installer.aip" />
+								<copy toDir="${project.build.outputDirectory}/community">
+									<fileset dir="${project.build.outputDirectory}/installer" includes="**" />
+								</copy>
+
+								<copy toDir="${project.build.outputDirectory}/advanced">
+									<fileset dir="${project.build.outputDirectory}/installer" includes="**" />
+								</copy>
+								
+								<copy toDir="${project.build.outputDirectory}/enterprise">
+									<fileset dir="${project.build.outputDirectory}/installer" includes="**" />
+								</copy>
 								
 								<!-- Run installer projects -->
 								<exec executable="${ai.executable}" dir="${project.build.outputDirectory}/community">
 									<arg line="/execute" />
 									<arg line="installer.aip" />
-									<arg line="${project.build.outputDirectory}/installer.commands" />
+									<arg line="installer.commands" />
 								</exec>
 								<exec executable="${ai.executable}" dir="${project.build.outputDirectory}/advanced">
 									<arg line="/execute" />
 									<arg line="installer.aip" />
-									<arg line="${project.build.outputDirectory}/installer.commands" />
+									<arg line="installer.commands" />
 								</exec>
 								<exec executable="${ai.executable}" dir="${project.build.outputDirectory}/enterprise">
 									<arg line="/execute" />
 									<arg line="installer.aip" />
-									<arg line="${project.build.outputDirectory}/installer.commands" />
+									<arg line="installer.commands" />
 								</exec>
 								
 								<!-- Copy resulting installers into /target, and give them appropriate names -->
