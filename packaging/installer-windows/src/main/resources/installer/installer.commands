@@ -1,5 +1,5 @@
 ;aic
-SetVersion ${windowsificated_version}
+SetVersion ${neo4j.version.windows_compliant}
 AddFolder APPDIR .\bin
 AddFolder APPDIR .\conf
 AddFolder APPDIR .\data
