@@ -40,8 +40,6 @@
 			<groupId>org.neo4j.assembly</groupId>
 			<artifactId>neo4j-standalone</artifactId>
 			<version>${neo4j.version}</version>
-			<classifier>windows</classifier>
-			<type>zip</type>
 		</dependency>
 	</dependencies>
 
