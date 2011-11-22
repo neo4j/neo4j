@@ -182,14 +182,14 @@
 								
 								<!-- Copy resulting installers into /target, and give them appropriate names -->
 								<copy 
-								  file="${project.build.outputDirectory}/community/installer-SetupFiles/Setup.exe"
-								  toFile="target/neo4j-community-setup-${neo4j.version}.exe" />
+								  file="${project.build.outputDirectory}/community/BuildSetupFiles/installer.msi"
+								  toFile="target/neo4j-community-setup-${neo4j.version}.msi" />
 								<copy 
-								  file="${project.build.outputDirectory}/advanced/installer-SetupFiles/Setup.exe"
-								  toFile="target/neo4j-advanced-setup-${neo4j.version}.exe" />
+								  file="${project.build.outputDirectory}/advanced/BuildSetupFiles/installer.msi"
+								  toFile="target/neo4j-advanced-setup-${neo4j.version}.msi" />
 								<copy 
-								  file="${project.build.outputDirectory}/enterprise/installer-SetupFiles/Setup.exe"
-								  toFile="target/neo4j-enterprise-setup-${neo4j.version}.exe" />
+								  file="${project.build.outputDirectory}/enterprise/BuildSetupFiles/installer.msi"
+								  toFile="target/neo4j-enterprise-setup-${neo4j.version}.msi" />
 								
 							</target>
 						</configuration>
