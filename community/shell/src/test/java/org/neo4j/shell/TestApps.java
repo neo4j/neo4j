@@ -271,17 +271,26 @@ public class TestApps extends AbstractShellTest
     @Test
     public void cypherWithSelfParameter() throws Exception
     {
+        String nodeOneName = "Node ONE";
+        String name = "name";
+        String nodeTwoName = "Node TWO";
+        String relationshipName = "The relationship";
+        
         Transaction tx = db.beginTx();
         Node node = db.createNode();
-        node.setProperty( "name", "Node ONE" );
+        node.setProperty( name, nodeOneName );
         Node otherNode = db.createNode();
-        otherNode.setProperty( "name", "Node TWO" );
+        otherNode.setProperty( name, nodeTwoName );
+        Relationship relationship = node.createRelationshipTo( otherNode, RELATIONSHIP_TYPE );
+        relationship.setProperty( name, relationshipName );
         tx.success();
         tx.finish();
         
         executeCommand( "cd -a " + node.getId() );
-        executeCommand( "START n = node({self}) RETURN n.name", "Node ONE" );
-        executeCommand( "cd -a " + otherNode.getId() );
-        executeCommand( "START n = node({self}) RETURN n.name", "Node TWO" );
+        executeCommand( "START n = node({self}) RETURN n.name", nodeOneName );
+        executeCommand( "cd -r " + relationship.getId() );
+        executeCommand( "START r = relationship({self}) RETURN r.name", relationshipName );
+        executeCommand( "cd " + otherNode.getId() );
+        executeCommand( "START n = node({self}) RETURN n.name", nodeTwoName );
     }
 }

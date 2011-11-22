@@ -20,6 +20,7 @@
 package org.neo4j.shell.kernel.apps;
 
 import java.rmi.RemoteException;
+import java.util.Map;
 
 import org.neo4j.cypher.SyntaxException;
 import org.neo4j.cypher.commands.Query;
@@ -27,6 +28,7 @@ import org.neo4j.cypher.javacompat.CypherParser;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Output;
@@ -48,7 +50,9 @@ public class Start extends GraphDatabaseApp
     @Override
     public String getDescription()
     {
-        return "Executes a Cypher query. Usage: start <rest of query>";
+        return "Executes a Cypher query. Usage: start <rest of query>\n" +
+                "Example: START me = node({self}) MATCH me-[:KNOWS]->you RETURN you.name\n" +
+                "where {self} will be replaced with the current location in the graph";
     }
 
     @Override
@@ -56,7 +60,6 @@ public class Start extends GraphDatabaseApp
         throws ShellException, RemoteException
     {
         String query = parser.getLine();
-        query = expandParameters( session, query );
         
         if ( endsWithNewLine( query ) || looksToBeComplete( query ) )
         {
@@ -65,7 +68,7 @@ public class Start extends GraphDatabaseApp
             try
             {
                 Query cquery = qparser.parse( query );
-                ExecutionResult result = engine.execute( cquery );
+                ExecutionResult result = engine.execute( cquery, getParameters( session ) );
                 out.println( result.toString() );
             }
             catch ( SyntaxException e )
@@ -80,15 +83,10 @@ public class Start extends GraphDatabaseApp
         }
     }
 
-    private String expandParameters( Session session, String query ) throws ShellException
+    private Map<String, Object> getParameters( Session session ) throws ShellException
     {
-        if ( query.contains( "{self}" ) )
-        {
-            NodeOrRelationship entity = getCurrent( session );
-            if ( !entity.isNode() ) throw new ShellException( "Must stand on node" );
-            query = query.replaceAll( "\\{self\\}", String.valueOf( entity.getId() ) );
-        }
-        return query;
+        NodeOrRelationship self = getCurrent( session );
+        return MapUtil.map( "self", self.isNode() ? self.asNode() :self.asRelationship() );
     }
 
     private boolean looksToBeComplete( String query )

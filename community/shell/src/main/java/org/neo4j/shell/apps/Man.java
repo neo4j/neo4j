@@ -161,7 +161,7 @@ public class Man extends AbstractApp
 
     private App getApp( AppCommandParser parser ) throws Exception
     {
-        String appName = parser.arguments().get( 0 );
+        String appName = parser.arguments().get( 0 ).toLowerCase();
         App app = this.getServer().findApp( appName );
         if ( app == null )
         {
