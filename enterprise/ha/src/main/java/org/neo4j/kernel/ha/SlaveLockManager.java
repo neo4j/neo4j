@@ -24,11 +24,14 @@ import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.com.ComException;
+import org.neo4j.com.Response;
+import org.neo4j.com.SlaveContext;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.LockManagerFactory;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
+import org.neo4j.kernel.impl.core.GraphProperties;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxHook;
@@ -77,34 +80,26 @@ public class SlaveLockManager extends LockManager
     public void getReadLock( Object resource ) throws DeadlockDetectedException,
             IllegalResourceException
     {
+        LockGrabber grabber = null;
+        if ( resource instanceof Node ) grabber = LockGrabber.NODE_READ;
+        else if ( resource instanceof Relationship ) grabber = LockGrabber.RELATIONSHIP_READ;
+        else if ( resource instanceof GraphProperties ) grabber = LockGrabber.GRAPH_READ;
+
         try
         {
-            Node node = resource instanceof Node ? (Node) resource : null;
-            Relationship relationship = resource instanceof Relationship ?
-                    (Relationship) resource : null;
-            if ( node == null && relationship == null )
+            if ( grabber == null )
             {
-                // This is a "fake" resource, only grab the lock locally
                 super.getReadLock( resource );
                 return;
             }
-            
-//            if ( hasAlreadyGotLock() )
-//            {
-//                return;
-//            }
             
             initializeTxIfFirst();
             LockResult result = null;
             do
             {
                 int eventIdentifier = getLocalTxId();
-                result = node != null ?
-                        receiver.receive( broker.getMaster().first().acquireNodeReadLock(
-                                receiver.getSlaveContext( eventIdentifier ), node.getId() ) ) :
-                        receiver.receive( broker.getMaster().first().acquireRelationshipReadLock(
-                                receiver.getSlaveContext( eventIdentifier ), relationship.getId() ) );
-                            
+                result = receiver.receive( grabber.acquireLock( broker.getMaster().first(),
+                        receiver.getSlaveContext( eventIdentifier ), resource ) );
                 switch ( result.getStatus() )
                 {
                 case OK_LOCKED:
@@ -148,34 +143,26 @@ public class SlaveLockManager extends LockManager
             IllegalResourceException
     {
         // Code copied from getReadLock. Fix!
+        LockGrabber grabber = null;
+        if ( resource instanceof Node ) grabber = LockGrabber.NODE_WRITE;
+        else if ( resource instanceof Relationship ) grabber = LockGrabber.RELATIONSHIP_WRITE;
+        else if ( resource instanceof GraphProperties ) grabber = LockGrabber.GRAPH_WRITE;
+
         try
         {
-            Node node = resource instanceof Node ? (Node) resource : null;
-            Relationship relationship = resource instanceof Relationship ?
-                    (Relationship) resource : null;
-            if ( node == null && relationship == null )
+            if ( grabber == null )
             {
-                // This is a "fake" resource, only grab the lock locally
                 super.getWriteLock( resource );
                 return;
             }
-            
-//          if ( hasAlreadyGotLock() )
-//          {
-//              return;
-//          }
             
             initializeTxIfFirst();
             LockResult result = null;
             do
             {
                 int eventIdentifier = getLocalTxId();
-                result = node != null ?
-                        receiver.receive( broker.getMaster().first().acquireNodeWriteLock(
-                                receiver.getSlaveContext( eventIdentifier ), node.getId() ) ) :
-                        receiver.receive( broker.getMaster().first().acquireRelationshipWriteLock(
-                                receiver.getSlaveContext( eventIdentifier ), relationship.getId() ) );
-                        
+                result = receiver.receive( grabber.acquireLock( broker.getMaster().first(),
+                        receiver.getSlaveContext( eventIdentifier ), resource ) );
                 switch ( result.getStatus() )
                 {
                 case OK_LOCKED:
@@ -202,4 +189,58 @@ public class SlaveLockManager extends LockManager
     // Release lock is as usual, since when the master committs it will release
     // the locks there and then when this slave committs it will release its
     // locks as usual here.
+    
+    private static enum LockGrabber
+    {
+        NODE_READ
+        {
+            @Override
+            Response<LockResult> acquireLock( Master master, SlaveContext context, Object resource )
+            {
+                return master.acquireNodeReadLock( context, ((Node)resource).getId() );
+            }
+        },
+        NODE_WRITE
+        {
+            @Override
+            Response<LockResult> acquireLock( Master master, SlaveContext context, Object resource )
+            {
+                return master.acquireNodeWriteLock( context, ((Node)resource).getId() );
+            }
+        },
+        RELATIONSHIP_READ
+        {
+            @Override
+            Response<LockResult> acquireLock( Master master, SlaveContext context, Object resource )
+            {
+                return master.acquireRelationshipReadLock( context, ((Relationship)resource).getId() );
+            }
+        },
+        RELATIONSHIP_WRITE
+        {
+            @Override
+            Response<LockResult> acquireLock( Master master, SlaveContext context, Object resource )
+            {
+                return master.acquireRelationshipWriteLock( context, ((Relationship)resource).getId() );
+            }
+        },
+        GRAPH_READ
+        {
+            @Override
+            Response<LockResult> acquireLock( Master master, SlaveContext context, Object resource )
+            {
+                return master.acquireGraphReadLock( context );
+            }
+        },
+        GRAPH_WRITE
+        {
+            @Override
+            Response<LockResult> acquireLock( Master master, SlaveContext context, Object resource )
+            {
+                return master.acquireGraphWriteLock( context );
+            }
+        };
+        
+        abstract Response<LockResult> acquireLock( Master master, SlaveContext context, Object resource );
+    }
 }

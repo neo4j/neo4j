@@ -380,7 +380,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         assertEquals( Pair.of( masterTxsBefore.first(), masterTxsBefore.other()+1 ), getTransactionCounts( master ) );
         assertEquals( Pair.of( slaveTxsBefore.first(), slaveTxsBefore.other()+1 ), getTransactionCounts( slave ) );
     }
-
+    
     private Pair<Integer, Integer> getTransactionCounts( GraphDatabaseService master )
     {
         return Pair.of( 

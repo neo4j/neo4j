@@ -25,6 +25,7 @@ import org.neo4j.backup.check.DiffStore;
 import org.neo4j.backup.check.InconsistencyType;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DataInconsistencyError;
+import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
@@ -211,5 +212,11 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
     public void visitPropertyIndex( PropertyIndexRecord record )
     {
         diffs.visitPropertyIndex( record );
+    }
+
+    @Override
+    public void visitNeoStore( NeoStoreRecord record )
+    {
+        diffs.visitNeoStore( record );
     }
 }

@@ -30,14 +30,17 @@ import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.LockableNode;
+import org.neo4j.kernel.impl.core.GraphProperties;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.transaction.LockManager;
@@ -513,6 +516,123 @@ public abstract class CommonJobs
         }
     }
 
+    public static class SetGraphProperty1 extends TransactionalJob<Boolean[]>
+    {
+        private final Fetcher<DoubleLatch> fetcher;
+        private final long node;
+
+        public SetGraphProperty1( long node, Fetcher<DoubleLatch> fetcher )
+        {
+            this.node = node;
+            this.fetcher = fetcher;
+        }
+
+        @Override
+        protected Boolean[] executeInTransaction( GraphDatabaseService db, Transaction tx )
+        {
+            boolean success = false;
+            boolean deadlock = false;
+            try
+            {
+                PropertyContainer properties = ((AbstractGraphDatabase)db).getConfig().getGraphDbModule().getNodeManager().getGraphProperties();
+                DoubleLatch latch = fetcher.fetch();
+                db.getNodeById( node ).setProperty( "1", "T1 1" );
+                latch.countDownSecond();
+                latch.awaitFirst();
+                properties.removeProperty( "2" );
+                properties.removeProperty( "1" );
+                tx.success();
+                success = true;
+            }
+            catch ( DeadlockDetectedException e )
+            {
+                deadlock = true;
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
+            return new Boolean[] { success, deadlock };
+        }
+    }
+
+    public static class SetGraphPropertyJob extends TransactionalJob<Void>
+    {
+        private final String key;
+        private final Object value;
+        
+        public SetGraphPropertyJob( String key, Object value )
+        {
+            this.key = key;
+            this.value = value;
+        }
+        
+        @Override
+        protected Void executeInTransaction( GraphDatabaseService db, Transaction tx )
+        {
+            ((AbstractGraphDatabase)db).getConfig().getGraphDbModule().getNodeManager().getGraphProperties().setProperty( key, value );
+            tx.success();
+            return null;
+        }
+    }
+    
+    public static class GetGraphProperty extends AbstractJob<Object>
+    {
+        private final String key;
+
+        public GetGraphProperty( String key )
+        {
+            this.key = key;
+        }
+        
+        @Override
+        public Object execute( GraphDatabaseService db ) throws RemoteException
+        {
+            GraphProperties properties = ((AbstractGraphDatabase)db).getConfig().getGraphDbModule().getNodeManager().getGraphProperties();
+            System.out.println( "Getting " + properties + ", " + ((AbstractGraphDatabase)db).getConfig().getGraphDbModule().getNodeManager() );
+            return properties.getProperty( key );
+        }
+    }
+    
+    public static class SetGraphProperty2 extends TransactionalJob<Boolean[]>
+    {
+        private final Fetcher<DoubleLatch> fetcher;
+        private final long node;
+
+        public SetGraphProperty2( long node, Fetcher<DoubleLatch> fetcher )
+        {
+            this.node = node;
+            this.fetcher = fetcher;
+        }
+
+        @Override
+        protected Boolean[] executeInTransaction( GraphDatabaseService db, Transaction tx )
+        {
+            boolean success = false;
+            boolean deadlock = false;
+            try
+            {
+                PropertyContainer properties = ((AbstractGraphDatabase)db).getConfig().getGraphDbModule().getNodeManager().getGraphProperties();
+                DoubleLatch latch = fetcher.fetch();
+                properties.setProperty( "2", "T2 2" );
+                latch.countDownFirst();
+                latch.awaitSecond();
+                db.getNodeById( node ).setProperty( "1", "T2 2" );
+                tx.success();
+                success = true;
+            }
+            catch ( DeadlockDetectedException e )
+            {
+                deadlock = true;
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
+            return new Boolean[] { success, deadlock };
+        }
+    }
+    
     public static class PerformanceAcquireWriteLocksJob extends TransactionalJob<Void>
     {
         private final int amount;

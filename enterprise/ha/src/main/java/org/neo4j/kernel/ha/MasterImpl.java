@@ -334,6 +334,21 @@ public class MasterImpl implements Master
         return acquireLock( context, WRITE_LOCK_GRABBER, relationshipsById( relationships ) );
     }
 
+    public Response<LockResult> acquireGraphReadLock( SlaveContext context )
+    {
+        return acquireLock( context, READ_LOCK_GRABBER, graphProperties() );
+    }
+
+    public Response<LockResult> acquireGraphWriteLock( SlaveContext context )
+    {
+        return acquireLock( context, WRITE_LOCK_GRABBER, graphProperties() );
+    }
+    
+    private PropertyContainer graphProperties()
+    {
+        return getGraphDbConfig().getGraphDbModule().getNodeManager().getGraphProperties();
+    }
+    
     private Node[] nodesById( long[] ids )
     {
         Node[] result = new Node[ids.length];

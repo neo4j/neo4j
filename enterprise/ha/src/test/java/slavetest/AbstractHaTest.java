@@ -547,7 +547,36 @@ public abstract class AbstractHaTest
         assertTrue( case1 || case2  );
         pullUpdates();
     }
-
+    
+    @Test
+    public void deadlockDetectionOnGraphPropertiesIsEnforced() throws Exception
+    {
+        initializeDbs( 2 );
+        
+        Long[] nodes = executeJobOnMaster( new CommonJobs.CreateNodesJob( 1 ) );
+        pullUpdates();
+        
+        String key = "test.config";
+        String value = "test value";
+        executeJob( new CommonJobs.SetGraphPropertyJob( key, value ), 0 );
+        assertEquals( value, executeJobOnMaster( new CommonJobs.GetGraphProperty( key ) ) );
+        pullUpdates( 1 );
+        assertEquals( value, executeJob( new CommonJobs.GetGraphProperty( key ), 1 ) );
+        
+        Fetcher<DoubleLatch> fetcher = getDoubleLatch();
+        Worker w1 = new Worker( 0, new CommonJobs.SetGraphProperty1( nodes[0], fetcher ) );
+        Worker w2 = new Worker( 1, new CommonJobs.SetGraphProperty2( nodes[0], fetcher ) );
+        w1.start();
+        w2.start();
+        w1.join();
+        w2.join();
+        boolean case1 = w2.successfull && !w2.deadlocked && !w1.successfull && w1.deadlocked;
+        boolean case2 = !w2.successfull && w2.deadlocked && w1.successfull && !w1.deadlocked;
+        assertTrue( case1 != case2 );
+        assertTrue( case1 || case2  );
+        pullUpdates();
+    }
+    
     @Test
     public void createNodeAndIndex() throws Exception
     {

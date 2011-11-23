@@ -163,6 +163,18 @@ public class MasterClient extends Client<Master> implements Master
                 new AcquireLockSerializer( relationships ), LOCK_RESULT_DESERIALIZER );
     }
 
+    public Response<LockResult> acquireGraphWriteLock( SlaveContext context )
+    {
+        return sendRequest( HaRequestType.ACQUIRE_GRAPH_WRITE_LOCK, context,
+                EMPTY_SERIALIZER, LOCK_RESULT_DESERIALIZER );
+    }
+
+    public Response<LockResult> acquireGraphReadLock( SlaveContext context )
+    {
+        return sendRequest( HaRequestType.ACQUIRE_GRAPH_READ_LOCK, context,
+                EMPTY_SERIALIZER, LOCK_RESULT_DESERIALIZER );
+    }
+    
     public Response<Long> commitSingleResourceTransaction( SlaveContext context,
             final String resource, final TxExtractor txGetter )
     {
@@ -359,7 +371,25 @@ public class MasterClient extends Client<Master> implements Master
             {
                 return master.initializeTx( context );
             }
-        }, VOID_SERIALIZER, true );
+        }, VOID_SERIALIZER, true ),
+        ACQUIRE_GRAPH_WRITE_LOCK( new MasterCaller<Master, LockResult>()
+        {
+            @Override
+            public Response<LockResult> callMaster( Master master, SlaveContext context, ChannelBuffer input,
+                    ChannelBuffer target )
+            {
+                return master.acquireGraphWriteLock( context );
+            }
+        }, LOCK_SERIALIZER, true ),
+        ACQUIRE_GRAPH_READ_LOCK( new MasterCaller<Master, LockResult>()
+        {
+            @Override
+            public Response<LockResult> callMaster( Master master, SlaveContext context, ChannelBuffer input,
+                    ChannelBuffer target )
+            {
+                return master.acquireGraphReadLock( context );
+            }
+        }, LOCK_SERIALIZER, true );
 
         @SuppressWarnings( "rawtypes" )
         final MasterCaller caller;

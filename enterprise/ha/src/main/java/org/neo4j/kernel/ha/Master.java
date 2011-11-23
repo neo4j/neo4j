@@ -45,7 +45,11 @@ public interface Master
     Response<LockResult> acquireNodeWriteLock( SlaveContext context, long... nodes );
 
     Response<LockResult> acquireNodeReadLock( SlaveContext context, long... nodes );
+    
+    Response<LockResult> acquireGraphWriteLock( SlaveContext context );
 
+    Response<LockResult> acquireGraphReadLock( SlaveContext context );
+    
     Response<LockResult> acquireRelationshipWriteLock( SlaveContext context, long... relationships );
 
     Response<LockResult> acquireRelationshipReadLock( SlaveContext context, long... relationships );
