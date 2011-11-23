@@ -54,9 +54,9 @@ public class RolesTest extends AbstractJavaDocTestbase
      * directed acyclic graphs] (DAGs) 
      * in SQL based DBs. DAGs are almost trees, but with a twist: it may be possible to reach 
      * the same node through different paths. Trees are restricted from this possibility, which 
-     * makes them much easier to handle. In our case it is "Ali" and "Engin" that brake 
-     * the tree pattern, as they are both admins and users. Reality often looks this way and 
-     * can't be captured by tree structures.
+     * makes them much easier to handle. In our case it is "Ali" and "Engin", 
+     * as they are both admins and users and thus reachable through these group nodes.
+     * Reality often looks this way and can't be captured by tree structures.
      * 
      * In the article an SQL + Stored Procedure solution is provided. The main idea, 
      * that also have some support from scientists, is to pre-calculate all possible (transitive) paths. 
@@ -67,8 +67,8 @@ public class RolesTest extends AbstractJavaDocTestbase
      * * wastes _lots_ of space
      * * relies on stored procedures
      * 
-     * In Neo4j storing the roles is trivial. In this case we use +PART_OF+ (blue edges) relationships 
-     * to model the group hierarchy and +MEMBER_OF+ (green edges) to model membership in groups. 
+     * In Neo4j storing the roles is trivial. In this case we use +PART_OF+ (green edges) relationships 
+     * to model the group hierarchy and +MEMBER_OF+ (blue edges) to model membership in groups. 
      * We also connect the top level groups to the reference node by +ROOT+ relationships. 
      * This gives us a useful partitioning of the graph. Neo4j has no predefined relationship 
      * types, you are free to create any relationship types and give them any semantics you want.
