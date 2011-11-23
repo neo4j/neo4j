@@ -17,29 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index.impl.lucene;
+package org.neo4j.kernel.impl.nioneo.store;
 
-import org.hamcrest.Description;
-import org.hamcrest.Factory;
-import org.hamcrest.Matcher;
-import org.junit.internal.matchers.TypeSafeMatcher;
-
-public class HasThrownException extends TypeSafeMatcher<WorkThread>
+public class NeoStoreRecord extends PrimitiveRecord
 {
+    public NeoStoreRecord()
+    {
+        super( -1 );
+        setInUse( true );
+    }
+    
     @Override
-    public boolean matchesSafely( WorkThread workThread )
+    public String toString()
     {
-       return workThread.hasException();
-    }
-
-    public void describeTo( Description description )
-    {
-        description.appendText( "A worker that has thrown an exception, but didn't get one." );
-    }
-
-    @Factory
-    public static Matcher<WorkThread> hasThrownException()
-    {
-        return new HasThrownException();
+        return getClass().getSimpleName() + "[" +
+                "used=" + inUse() +
+                ",nextProp=" + getNextProp() +
+                "]";
     }
 }

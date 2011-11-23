@@ -19,12 +19,15 @@
  */
 package org.neo4j.index.impl.lucene;
 
-public class CommitCommand extends Command
+import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
+
+public class CommitCommand implements WorkerCommand<CommandState, Void>
 {
     @Override
-    public void doWork( CommandState state )
+    public Void doWork( CommandState state )
     {
         state.tx.success();
         state.tx.finish();
+        return null;
     }
 }

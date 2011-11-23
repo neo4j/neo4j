@@ -31,9 +31,7 @@ abstract class Primitive
 {
     // Used for marking that properties have been loaded but there just wasn't any.
     // Saves an extra trip down to the store layer.
-    private static final PropertyData[] NO_PROPERTIES = new PropertyData[0];
-
-    private volatile PropertyData[] properties;
+    protected static final PropertyData[] NO_PROPERTIES = new PropertyData[0];
 
     protected abstract PropertyData changeProperty( NodeManager nodeManager, PropertyData property, Object value );
 
@@ -47,14 +45,23 @@ abstract class Primitive
 
     Primitive( boolean newPrimitive )
     {
-        if ( newPrimitive )
-        {
-            properties = NO_PROPERTIES;
-        }
+        if ( newPrimitive ) setEmptyProperties();
     }
 
     public abstract long getId();
+    
+    protected abstract void setEmptyProperties();
+    
+    protected abstract PropertyData[] allProperties();
 
+    protected abstract PropertyData getPropertyForIndex( int keyId );
+    
+    protected abstract void setProperties( ArrayMap<Integer, PropertyData> properties );
+    
+    protected abstract void commitPropertyMaps(
+            ArrayMap<Integer,PropertyData> cowPropertyAddMap,
+            ArrayMap<Integer,PropertyData> cowPropertyRemoveMap );
+    
     @Override
     public int hashCode()
     {
@@ -72,7 +79,7 @@ abstract class Primitive
         ensureFullProperties( nodeManager );
         List<Object> values = new ArrayList<Object>();
 
-        for ( PropertyData property : properties )
+        for ( PropertyData property : allProperties() )
         {
             Integer index = property.getIndex();
             if ( skipMap != null && skipMap.get( index ) != null )
@@ -105,7 +112,7 @@ abstract class Primitive
         ensureFullProperties( nodeManager );
         List<String> keys = new ArrayList<String>();
 
-        for ( PropertyData property : properties )
+        for ( PropertyData property : allProperties() )
         {
             Integer index = property.getIndex();
             if ( skipMap != null && skipMap.get( index ) != null )
@@ -176,7 +183,7 @@ abstract class Primitive
 
     private PropertyData getSlowProperty( NodeManager nodeManager,
             ArrayMap<Integer, PropertyData> addMap,
-        ArrayMap<Integer,PropertyData> skipMap, String key )
+            ArrayMap<Integer,PropertyData> skipMap, String key )
     {
         if ( nodeManager.hasAllPropertyIndexes() )
         {
@@ -206,7 +213,7 @@ abstract class Primitive
                 }
             }
         }
-        for ( PropertyData property : properties )
+        for ( PropertyData property : allProperties() )
         {
             int keyId = property.getIndex();
             if ( !nodeManager.hasIndexFor( keyId ) )
@@ -375,7 +382,7 @@ abstract class Primitive
                 }
                 if ( property == null )
                 {
-                    for ( PropertyData aProperty : properties )
+                    for ( PropertyData aProperty : allProperties() )
                     {
                         int keyId = aProperty.getIndex();
                         if ( !nodeManager.hasIndexFor( keyId ) )
@@ -411,6 +418,8 @@ abstract class Primitive
             {
                 property = addProperty( nodeManager, index, value );
             }
+            if ( addMap == null ) System.out.println( "addMap null" );
+            if ( index == null ) System.out.println( "index null" );
             addMap.put( index.getKeyId(), property );
             success = true;
         }
@@ -493,7 +502,7 @@ abstract class Primitive
                     }
                     if ( property == null )
                     {
-                        for ( PropertyData aProperty : properties )
+                        for ( PropertyData aProperty : allProperties() )
                         {
                             int keyId = aProperty.getIndex();
                             if ( !nodeManager.hasIndexFor( keyId ) )
@@ -550,133 +559,21 @@ abstract class Primitive
         return value;
     }
 
-    protected void commitPropertyMaps(
-        ArrayMap<Integer,PropertyData> cowPropertyAddMap,
-        ArrayMap<Integer,PropertyData> cowPropertyRemoveMap )
-    {
-        if ( properties == null )
-        {
-            // we will load full in some other tx
-            return;
-        }
-
-        PropertyData[] newArray = properties;
-
-        /*
-         * add map will definitely be added in the properties array - all properties
-         * added and later removed in the same tx are removed from there as well.
-         * The remove map will not necessarily be removed, since it may hold a prop that was
-         * added in this tx. So the difference in size is all the keys that are common
-         * between properties and remove map subtracted by the add map size.
-         */
-        int extraLength = 0;
-        if (cowPropertyAddMap != null)
-        {
-            extraLength += cowPropertyAddMap.size();
-        }
-
-        if ( extraLength > 0 )
-        {
-            newArray = new PropertyData[properties.length + extraLength];
-            System.arraycopy( properties, 0, newArray, 0, properties.length );
-        }
-
-        int newArraySize = properties.length;
-        if ( cowPropertyRemoveMap != null )
-        {
-            for ( Integer keyIndex : cowPropertyRemoveMap.keySet() )
-            {
-                for ( int i = 0; i < newArraySize; i++ )
-                {
-                    PropertyData existingProperty = newArray[i];
-                    if ( existingProperty.getIndex() == keyIndex )
-                    {
-                        int swapWith = --newArraySize;
-                        newArray[i] = newArray[swapWith];
-                        newArray[swapWith] = null;
-                        break;
-                    }
-                }
-            }
-        }
-
-        if ( cowPropertyAddMap != null )
-        {
-            for ( PropertyData addedProperty : cowPropertyAddMap.values() )
-            {
-                for ( int i = 0; i < newArray.length; i++ )
-                {
-                    PropertyData existingProperty = newArray[i];
-                    if ( existingProperty == null || addedProperty.getIndex() == existingProperty.getIndex() )
-                    {
-                        newArray[i] = addedProperty;
-                        if ( existingProperty == null )
-                        {
-                            newArraySize++;
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-
-        if ( newArraySize < newArray.length )
-        {
-            PropertyData[] compactedNewArray = new PropertyData[newArraySize];
-            System.arraycopy( newArray, 0, compactedNewArray, 0, newArraySize );
-            properties = compactedNewArray;
-        }
-        else
-        {
-            properties = newArray;
-        }
-    }
-
-    private PropertyData getPropertyForIndex( int keyId )
-    {
-        for ( PropertyData property : properties )
-        {
-            if ( property.getIndex() == keyId )
-            {
-                return property;
-            }
-        }
-        return null;
-    }
-
     private boolean ensureFullProperties( NodeManager nodeManager )
     {
-        if ( properties == null )
+        if ( allProperties() == null )
         {
-            this.properties = toPropertyArray( loadProperties( nodeManager,
-                    false ) );
+            setProperties( loadProperties( nodeManager, false ) );
             return true;
         }
         return false;
     }
 
-    private PropertyData[] toPropertyArray( ArrayMap<Integer, PropertyData> loadedProperties )
-    {
-        if ( loadedProperties == null || loadedProperties.size() == 0 )
-        {
-            return NO_PROPERTIES;
-        }
-
-        PropertyData[] result = new PropertyData[loadedProperties.size()];
-        int i = 0;
-        for ( PropertyData property : loadedProperties.values() )
-        {
-            result[i++] = property;
-        }
-        return result;
-    }
-
     private boolean ensureFullLightProperties( NodeManager nodeManager )
     {
-        if ( properties == null )
+        if ( allProperties() == null )
         {
-            this.properties = toPropertyArray( loadProperties( nodeManager,
-                    true ) );
+            setProperties( loadProperties( nodeManager, true ) );
             return true;
         }
         return false;
@@ -685,10 +582,11 @@ abstract class Primitive
     protected List<PropertyEventData> getAllCommittedProperties( NodeManager nodeManager )
     {
         ensureFullLightProperties( nodeManager );
-        if ( properties == null )
+        if ( allProperties() == null )
         {
             return new ArrayList<PropertyEventData>();
         }
+        PropertyData[] properties = allProperties();
         List<PropertyEventData> props =
             new ArrayList<PropertyEventData>( properties.length );
         for ( PropertyData property : properties )

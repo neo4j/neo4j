@@ -32,9 +32,10 @@ public class CommandState
     public volatile boolean alive = true;
     public volatile Node node;
 
-    public CommandState( Index<Node> index, GraphDatabaseService graphDb )
+    public CommandState( Index<Node> index, GraphDatabaseService graphDb, Node node )
     {
         this.index = index;
         this.graphDb = graphDb;
+        this.node = node;
     }
 }

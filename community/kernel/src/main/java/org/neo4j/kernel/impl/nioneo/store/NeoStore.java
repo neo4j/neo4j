@@ -54,9 +54,9 @@ public class NeoStore extends AbstractStore
     public static final String TYPE_DESCRIPTOR = "NeoStore";
 
     /*
-     *  5 longs in header (long + in use), time | random | version | txid | store version
+     *  6 longs in header (long + in use), time | random | version | txid | store version | graph next prop
      */
-    private static final int RECORD_SIZE = 9;
+    public static final int RECORD_SIZE = 9;
     private static final int DEFAULT_REL_GRAB_SIZE = 100;
 
     public static final String DEFAULT_NAME = "neostore";
@@ -143,26 +143,39 @@ public class NeoStore extends AbstractStore
                     + getStorageFileName(), e );
         }
     }
+    
+    @Override
+    protected void verifyFileSizeAndTruncate() throws IOException
+    {
+        super.verifyFileSizeAndTruncate();
+        
+        /* MP: 2011-11-23
+         * A little silent upgrade for the "next prop" record. It adds one record last to the neostore file.
+         * It's backwards compatible, that's why it can be a silent and automatic upgrade.
+         */
+        if ( getFileChannel().size() == RECORD_SIZE*5 )
+        {
+            insertRecord( 5, -1 );
+            registerIdFromUpdateRecord( 5 );
+        }
+    }
 
     @Override
     protected void initStorage()
     {
         instantiateChildStores();
     }
-
+    
     /**
      * Initializes the node,relationship,property and relationship type stores.
      */
     private void instantiateChildStores()
     {
-        relTypeStore = new RelationshipTypeStore( getStorageFileName()
-        + ".relationshiptypestore.db", getConfig(), IdType.RELATIONSHIP_TYPE );
-        propStore = new PropertyStore( getStorageFileName()
-        + ".propertystore.db", getConfig() );
-        relStore = new RelationshipStore( getStorageFileName()
-        + ".relationshipstore.db", getConfig() );
-        nodeStore = new NodeStore( getStorageFileName() + ".nodestore.db",
-        getConfig() );
+        relTypeStore = new RelationshipTypeStore( getStorageFileName() +
+                ".relationshiptypestore.db", getConfig(), IdType.RELATIONSHIP_TYPE );
+        propStore = new PropertyStore( getStorageFileName() + ".propertystore.db", getConfig() );
+        relStore = new RelationshipStore( getStorageFileName() + ".relationshipstore.db", getConfig() );
+        nodeStore = new NodeStore( getStorageFileName() + ".nodestore.db", getConfig() );
     }
 
     private void tryToUpgradeStores()
@@ -170,6 +183,39 @@ public class NeoStore extends AbstractStore
         new StoreUpgrader( getConfig(), new ConfigMapUpgradeConfiguration(getConfig()),
                 new UpgradableDatabase(), new StoreMigrator( new VisibleMigrationProgressMonitor( System.out ) ),
                 new DatabaseFiles() ).attemptUpgrade( getStorageFileName() );
+    }
+
+    private void insertRecord( int recordPosition, long value ) throws IOException
+    {
+        try
+        {
+            FileChannel channel = getFileChannel();
+            long previousPosition = channel.position();
+            channel.position( RECORD_SIZE*recordPosition );
+            int trail = (int) (channel.size()-channel.position());
+            ByteBuffer trailBuffer = null;
+            if ( trail > 0 )
+            {
+                trailBuffer = ByteBuffer.allocate( trail );
+                channel.read( trailBuffer );
+                trailBuffer.flip();
+            }
+            ByteBuffer buffer = ByteBuffer.allocate( RECORD_SIZE );
+            buffer.put( Record.IN_USE.byteValue() );
+            buffer.putLong( value );
+            buffer.flip();
+            channel.position( RECORD_SIZE*recordPosition );
+            channel.write( buffer );
+            if ( trail > 0 )
+            {
+                channel.write( trailBuffer );
+            }
+            channel.position( previousPosition );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     /**
@@ -268,18 +314,15 @@ public class NeoStore extends AbstractStore
         }
         NeoStore neoStore = new NeoStore( config );
         /*
-         *  created time | random long | backup version | tx id | store version
+         *  created time | random long | backup version | tx id | store version | next prop
          */
-        neoStore.nextId();
-        neoStore.nextId();
-        neoStore.nextId();
-        neoStore.nextId();
-        neoStore.nextId();
+        for ( int i = 0; i < 6; i++ ) neoStore.nextId();
         neoStore.setCreationTime( storeId.getCreationTime() );
         neoStore.setRandomNumber( storeId.getRandomId() );
         neoStore.setVersion( 0 );
         neoStore.setLastCommittedTx( 1 );
         neoStore.setStoreVersion( storeId.getStoreVersion() );
+        neoStore.setGraphNextProp( -1 );
         neoStore.close();
     }
 
@@ -488,13 +531,14 @@ public class NeoStore extends AbstractStore
         {
             Buffer buffer = window.getOffsettedBuffer( id );
             buffer.put( Record.IN_USE.byteValue() ).putLong( value );
+            registerIdFromUpdateRecord( id );
         }
         finally
         {
             releaseWindow( window );
         }
     }
-
+    
     public long getStoreVersion()
     {
         return getRecord( 4 );
@@ -504,7 +548,17 @@ public class NeoStore extends AbstractStore
     {
         setRecord( 4, version );
     }
-
+    
+    public long getGraphNextProp()
+    {
+        return getRecord( 5 );
+    }
+    
+    public void setGraphNextProp( long propId )
+    {
+        setRecord( 5, propId );
+    }
+    
     /**
      * Returns the node store.
      *
@@ -613,6 +667,13 @@ public class NeoStore extends AbstractStore
         relStore.logIdUsage( msgLog );
         relTypeStore.logIdUsage( msgLog );
         propStore.logIdUsage( msgLog );
+    }
+    
+    public NeoStoreRecord asRecord()
+    {
+        NeoStoreRecord result = new NeoStoreRecord();
+        result.setNextProp( getRecord( 5 ) );
+        return result;
     }
 
     public static void logIdUsage( StringLogger logger, Store store )

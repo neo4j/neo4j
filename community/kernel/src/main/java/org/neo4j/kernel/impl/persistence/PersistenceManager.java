@@ -120,7 +120,7 @@ public class PersistenceManager
     {
         return getReadOnlyResourceIfPossible().relLoadProperties( relId, light );
     }
-
+    
     public RelationshipRecord loadLightRelationship( long id )
     {
         return getReadOnlyResourceIfPossible().relLoadLight( id );
@@ -184,6 +184,26 @@ public class PersistenceManager
         getResource( true ).relRemoveProperty( relId, data );
     }
 
+    public PropertyData graphAddProperty( PropertyIndex index, Object value )
+    {
+        return getResource( true ).graphAddProperty( index, value );
+    }
+
+    public PropertyData graphChangeProperty( PropertyData data, Object value )
+    {
+        return getResource( true ).graphChangeProperty( data, value );
+    }
+
+    public void graphRemoveProperty( PropertyData data )
+    {
+        getResource( true ).graphRemoveProperty( data );
+    }
+    
+    public ArrayMap<Integer, PropertyData> graphLoadProperties( boolean light )
+    {
+        return getReadOnlyResourceIfPossible().graphLoadProperties( light );
+    }
+    
     public void createPropertyIndex( String key, int id )
     {
         getResource( true ).createPropertyIndex( key, id );

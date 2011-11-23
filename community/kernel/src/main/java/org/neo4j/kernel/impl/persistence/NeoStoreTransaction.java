@@ -179,6 +179,44 @@ public interface NeoStoreTransaction
     public Object loadPropertyValue( PropertyData property );
 
     /**
+     * Adds a property to the graph, with the given index and value.
+     *
+     * @param index The index of the key of the property to add.
+     * @param value The value of the property.
+     * @return The added property, as a PropertyData object.
+     */
+    public PropertyData graphAddProperty( PropertyIndex index, Object value );
+
+    /**
+     * Changes an existing property of the graph, with the given index to
+     * the passed value
+     *
+     * @param index The index of the key of the property to change.
+     * @param value The new value of the property.
+     * @return The changed property, as a PropertyData object.
+     */
+    public PropertyData graphChangeProperty( PropertyData index, Object value );
+
+    /**
+     * Removes the given property identified by indexKeyId of the graph with the
+     * given id.
+     *
+     * @param nodeId The id of the node that is to have the property removed.
+     * @param index The index key of the property.
+     */
+    public void graphRemoveProperty( PropertyData index );
+    
+    /**
+     * Loads the complete property chain for the graph and returns it as a
+     * map from property index id to property data.
+     *
+     * @param light If the properties should be loaded light or not.
+     * @return The properties loaded, as a map from property index id to
+     *         property data.
+     */
+    public ArrayMap<Integer,PropertyData> graphLoadProperties( boolean light );
+    
+    /**
      * Loads the value object for the given property index record id if the
      * record is light.
      *

@@ -17,9 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index.impl.lucene;
+package org.neo4j.kernel.impl.nioneo.store;
 
-public abstract class Command
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
+
+public class ProduceUncleanStore
 {
-    public abstract void doWork( CommandState state );
+    public static void main( String[] args )
+    {
+        String storeDir = args[0];
+        boolean setGraphProperty = args.length > 1 ? Boolean.parseBoolean( args[1] ) : false;
+        EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( storeDir );
+        Transaction tx = db.beginTx();
+        Node node = db.createNode();
+        node.setProperty( "name", "Something" );
+        if ( setGraphProperty ) db.getConfig().getGraphDbModule().getNodeManager().getGraphProperties().setProperty( "prop", "Some value" );
+        tx.success();
+        tx.finish();
+        System.exit( 0 );
+    }
 }

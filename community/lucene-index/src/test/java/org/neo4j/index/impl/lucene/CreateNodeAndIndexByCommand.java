@@ -19,7 +19,9 @@
  */
 package org.neo4j.index.impl.lucene;
 
-public class CreateNodeAndIndexByCommand extends Command
+import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
+
+public class CreateNodeAndIndexByCommand implements WorkerCommand<CommandState, Void>
 {
     private String key;
     private String value;
@@ -31,9 +33,10 @@ public class CreateNodeAndIndexByCommand extends Command
     }
 
     @Override
-    public void doWork( CommandState state )
+    public Void doWork( CommandState state )
     {
         state.node = state.graphDb.createNode();
         state.index.add( state.node, key, value );
+        return null;
     }
 }

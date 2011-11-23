@@ -24,6 +24,8 @@ import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -271,5 +273,15 @@ public abstract class IoPrimitiveUtils
         {
             return new Object[] { propertyValue };
         }
+    }
+    
+    public static Collection<Object> arrayAsCollection( Object arrayValue )
+    {
+        assert arrayValue.getClass().isArray();
+        
+        Collection<Object> result = new ArrayList<Object>();
+        int length = Array.getLength( arrayValue );
+        for ( int i = 0; i < length; i++ ) result.add( Array.get( arrayValue, i ) );
+        return result;
     }
 }

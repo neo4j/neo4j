@@ -26,6 +26,7 @@ import java.util.LinkedList;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -222,5 +223,10 @@ public abstract class KernelData
     public final Object getParam( String key )
     {
         return getConfigParams().get( key );
+    }
+    
+    public PropertyContainer properties()
+    {
+        return getConfig().getGraphDbModule().getNodeManager().getGraphProperties();
     }
 }

@@ -67,23 +67,15 @@ public class LockReleaser
 
     private static class PrimitiveElement
     {
-        PrimitiveElement()
-        {
-        }
-
         final ArrayMap<Long,CowNodeElement> nodes =
             new ArrayMap<Long,CowNodeElement>();
         final ArrayMap<Long,CowRelElement> relationships =
             new ArrayMap<Long,CowRelElement>();
+        CowGraphElement graph;
     }
 
     private static class CowNodeElement
     {
-        CowNodeElement()
-        {
-
-        }
-
         boolean deleted = false;
 
         ArrayMap<String,RelIdArray> relationshipAddMap = null;
@@ -94,17 +86,18 @@ public class LockReleaser
 
     private static class CowRelElement
     {
-        CowRelElement()
-        {
-
-        }
-
         boolean deleted = false;
 
         ArrayMap<Integer,PropertyData> propertyAddMap = null;
         ArrayMap<Integer,PropertyData> propertyRemoveMap = null;
     }
 
+    private static class CowGraphElement
+    {
+        ArrayMap<Integer,PropertyData> propertyAddMap = null;
+        ArrayMap<Integer,PropertyData> propertyRemoveMap = null;
+    }
+    
     public LockReleaser( LockManager lockManager,
         TransactionManager transactionManager )
     {
@@ -410,6 +403,10 @@ public class LockReleaser
                 }
             }
         }
+        if ( element.graph != null && param == Status.STATUS_COMMITTED )
+        {
+            nodeManager.getGraphProperties().commitPropertyMaps( element.graph.propertyAddMap, element.graph.propertyRemoveMap );
+        }
         cowMap.remove( cowTxId );
     }
 
@@ -438,7 +435,8 @@ public class LockReleaser
         Primitive primitive )
     {
         PrimitiveElement primitiveElement = cowMap.get( getTransaction() );
-        if ( primitiveElement != null && primitive instanceof NodeImpl )
+        if ( primitiveElement == null ) return null;
+        if ( primitive instanceof NodeImpl )
         {
             ArrayMap<Long,CowNodeElement> cowElements =
                 primitiveElement.nodes;
@@ -453,8 +451,7 @@ public class LockReleaser
                 return element.propertyRemoveMap;
             }
         }
-        else if ( primitiveElement != null &&
-            primitive instanceof RelationshipImpl )
+        else if ( primitive instanceof RelationshipImpl )
         {
             ArrayMap<Long,CowRelElement> cowElements =
                 primitiveElement.relationships;
@@ -468,6 +465,17 @@ public class LockReleaser
                 }
                 return element.propertyRemoveMap;
             }
+        }
+        else if ( primitive instanceof GraphProperties )
+        {
+            if ( primitiveElement.graph != null )
+            {
+                return primitiveElement.graph.propertyRemoveMap;
+            }
+        }
+        else
+        {
+            throw new IllegalArgumentException( primitive + " not recognized" );
         }
         return null;
     }
@@ -476,7 +484,8 @@ public class LockReleaser
         Primitive primitive )
     {
         PrimitiveElement primitiveElement = cowMap.get( getTransaction() );
-        if ( primitiveElement != null && primitive instanceof NodeImpl )
+        if ( primitiveElement == null ) return null;
+        if ( primitive instanceof NodeImpl )
         {
             ArrayMap<Long,CowNodeElement> cowElements =
                 primitiveElement.nodes;
@@ -491,8 +500,7 @@ public class LockReleaser
                 return element.propertyAddMap;
             }
         }
-        else if ( primitiveElement != null &&
-            primitive instanceof RelationshipImpl )
+        else if ( primitive instanceof RelationshipImpl )
         {
             ArrayMap<Long,CowRelElement> cowElements =
                 primitiveElement.relationships;
@@ -506,6 +514,15 @@ public class LockReleaser
                 }
                 return element.propertyAddMap;
             }
+        }
+        else if ( primitive instanceof GraphProperties )
+        {
+            CowGraphElement element = primitiveElement.graph;
+            if ( element != null ) return element.propertyAddMap;
+        }
+        else
+        {
+            throw new IllegalArgumentException( primitive + " not recognized" );
         }
         return null;
     }
@@ -576,7 +593,22 @@ public class LockReleaser
             }
             return element.propertyAddMap;
         }
-        return null;
+        else if ( primitive instanceof GraphProperties )
+        {
+            if ( primitiveElement.graph == null )
+            {
+                primitiveElement.graph = new CowGraphElement();
+            }
+            if ( primitiveElement.graph.propertyAddMap == null )
+            {
+                primitiveElement.graph.propertyAddMap = new ArrayMap<Integer, PropertyData>();
+            }
+            return primitiveElement.graph.propertyAddMap;
+        }
+        else
+        {
+            throw new IllegalArgumentException( primitive + " not recognized" );
+        }
     }
 
     public ArrayMap<Integer,PropertyData> getCowPropertyRemoveMap(
@@ -629,7 +661,22 @@ public class LockReleaser
             }
             return element.propertyRemoveMap;
         }
-        return null;
+        else if ( primitive instanceof GraphProperties )
+        {
+            if ( primitiveElement.graph == null )
+            {
+                primitiveElement.graph = new CowGraphElement();
+            }
+            if ( primitiveElement.graph.propertyRemoveMap == null )
+            {
+                primitiveElement.graph.propertyRemoveMap = new ArrayMap<Integer, PropertyData>();
+            }
+            return primitiveElement.graph.propertyRemoveMap;
+        }
+        else
+        {
+            throw new IllegalArgumentException( primitive + " not recognized" );
+        }
     }
 
     public void deletePrimitive( Primitive primitive )
@@ -711,6 +758,14 @@ public class LockReleaser
         }
     }
 
+    public void removeGraphPropertiesFromCache()
+    {
+        if ( nodeManager != null )
+        {
+            nodeManager.removeGraphPropertiesFromCache();
+        }
+    }
+    
     private class ReadOnlyTxReleaser implements Synchronization
     {
         private final Transaction tx;

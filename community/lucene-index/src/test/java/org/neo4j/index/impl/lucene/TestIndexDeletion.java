@@ -21,9 +21,9 @@ package org.neo4j.index.impl.lucene;
 
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.neo4j.index.Neo4jTestCase.assertContains;
 import static org.neo4j.index.impl.lucene.Contains.contains;
-import static org.neo4j.index.impl.lucene.HasThrownException.hasThrownException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -64,7 +64,7 @@ public class TestIndexDeletion
     }
 
     @After
-    public void commitTx()
+    public void commitTx() throws Exception
     {
         finishTx( true );
         for ( WorkThread worker : workers )
@@ -184,18 +184,19 @@ public class TestIndexDeletion
     }
 
     @Test
-    public void deleteInOneTxShouldNotAffectTheOther() throws InterruptedException
+    public void deleteInOneTxShouldNotAffectTheOther() throws Exception
     {
         index.delete();
 
         WorkThread firstTx = createWorker( "Single" );
+        firstTx.beginTransaction();
         firstTx.createNodeAndIndexBy( key, "another value" );
         firstTx.commit();
     }
 
 	@Test
-	public void deleteAndCommitShouldBePublishedToOtherTransaction2()
-			throws InterruptedException {
+	public void deleteAndCommitShouldBePublishedToOtherTransaction2() throws Exception
+	{
 		WorkThread firstTx = createWorker( "First" );
 		WorkThread secondTx = createWorker( "Second" );
 
@@ -208,9 +209,12 @@ public class TestIndexDeletion
 		firstTx.deleteIndex();
 		firstTx.commit();
 
-		secondTx.queryIndex(key, "some other value");
-
-		assertThat(secondTx, hasThrownException());
+		try
+        {
+            secondTx.queryIndex(key, "some other value");
+            fail( "Should throw exception" );
+        }
+        catch ( Exception e ) { /* Good */ }
 
 		secondTx.rollback();
 
@@ -221,7 +225,7 @@ public class TestIndexDeletion
 	}
 
     @Test
-    public void indexDeletesShouldNotByVisibleUntilCommit()
+    public void indexDeletesShouldNotByVisibleUntilCommit() throws Exception
     {
         commitTx();
 
@@ -238,7 +242,7 @@ public class TestIndexDeletion
     }
 
     @Test
-    public void canDeleteIndexEvenIfEntitiesAreFoundToBeAbandonedInTheSameTx()
+    public void canDeleteIndexEvenIfEntitiesAreFoundToBeAbandonedInTheSameTx() throws Exception
     {
         // create and index a node
         Index<Node> nodeIndex = graphDb.index().forNodes( "index" );
@@ -260,7 +264,7 @@ public class TestIndexDeletion
 
     private WorkThread createWorker( String name )
     {
-        WorkThread workThread = new WorkThread( index, graphDb );
+        WorkThread workThread = new WorkThread( index, graphDb, node );
         workers.add( workThread );
         return workThread;
     }

@@ -237,6 +237,12 @@ class ReadTransaction implements NeoStoreTransaction
     {
         return loadProperties( getPropertyStore(), getNodeStore().getRecord( nodeId ).getNextProp() );
     }
+    
+    @Override
+    public ArrayMap<Integer, PropertyData> graphLoadProperties( boolean light )
+    {
+        return loadProperties( getPropertyStore(), neoStore.getGraphNextProp() );
+    }
 
     // Duplicated code
     public Object propertyGetValueOrNull( PropertyBlock propertyBlock )
@@ -429,5 +435,23 @@ class ReadTransaction implements NeoStoreTransaction
     public int getKeyIdForProperty( PropertyData property )
     {
         return getKeyIdForProperty( property, getPropertyStore() );
+    }
+
+    @Override
+    public PropertyData graphAddProperty( PropertyIndex index, Object value )
+    {
+        throw readOnlyException();
+    }
+
+    @Override
+    public PropertyData graphChangeProperty( PropertyData index, Object value )
+    {
+        throw readOnlyException();
+    }
+
+    @Override
+    public void graphRemoveProperty( PropertyData index )
+    {
+        throw readOnlyException();
     }
 }

@@ -551,9 +551,9 @@ public abstract class CommonAbstractStore
     {
         if ( !isInRecoveryMode() && ( position > getHighId() || !storeOk) )
         {
-            throw new InvalidRecordException( "Position[" + position
-                + "] requested for operation is high id["
-                + getHighId() + "], store is ok[" + storeOk + "]", causeOfStoreNotOk );
+            throw new InvalidRecordException( "Position[" + position + "]"
+                + " requested for high id[" + getHighId() + "], store is ok[" + storeOk + "]"
+                + " recovery[" + isInRecoveryMode() + "]", causeOfStoreNotOk );
         }
         return windowPool.acquire( position, type );
     }
@@ -608,6 +608,13 @@ public abstract class CommonAbstractStore
     protected void openIdGenerator( boolean firstTime )
     {
         idGenerator = openIdGenerator( storageFileName + ".id", idType.getGrabSize(), firstTime );
+        
+        /* MP: 2011-11-23
+         * There may have been some migration done in the startup process, so if there have been some
+         * high id registered during, then update id generators. updateHighId does nothing if
+         * not registerIdFromUpdateRecord have been called.
+         */
+        updateHighId();
     }
 
     protected IdGenerator openIdGenerator( String fileName, int grabSize, boolean firstTime )
