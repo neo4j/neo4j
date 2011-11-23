@@ -10,7 +10,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.app</groupId>
   <artifactId>neo4j-server</artifactId>
-  <version>1.6.M01</version>
+  <version>1.6-SNAPSHOT</version>
   <name>Neo4j Server</name>
   <description>Standalone Neo4j server application.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -73,7 +73,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j</artifactId>
-      <version>1.6.M01</version>
+      <version>1.6-SNAPSHOT</version>
       <type>pom</type>
       <exclusions>
         <exclusion>
@@ -86,7 +86,7 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
-      <version>1.6.M01</version>
+      <version>1.6-SNAPSHOT</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
@@ -94,13 +94,13 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>server-api</artifactId>
-      <version>1.6.M01</version>
+      <version>1.6-SNAPSHOT</version>
     </dependency>
 
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher</artifactId>
-      <version>1.6.M01</version>
+      <version>1.6-SNAPSHOT</version>
     </dependency>
 
     <dependency>
@@ -261,14 +261,14 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-graphviz</artifactId>
-      <version>1.6.M01</version>
+      <version>1.6-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-shell</artifactId>
-      <version>1.6.M01</version>
+      <version>1.6-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
