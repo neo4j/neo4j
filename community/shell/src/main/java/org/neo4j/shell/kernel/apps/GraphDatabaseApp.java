@@ -398,7 +398,7 @@ public abstract class GraphDatabaseApp extends AbstractApp
         }
 
         StringBuilder result = new StringBuilder( "[" );
-        result.append( relationship.getType().name() );
+        result.append( ":" + relationship.getType().name() );
         result.append( verbose ? "," + relationship.getId() : "" );
         result.append( "]" );
         return result.toString();
@@ -408,11 +408,11 @@ public abstract class GraphDatabaseApp extends AbstractApp
     {
         if ( relationship.getStartNode().equals( leftNode ) )
         {
-            return " -" + displayName + "-> ";
+            return "-" + displayName + "->";
         }
         else if ( relationship.getEndNode().equals( leftNode ) )
         {
-            return " <-" + displayName + "- ";
+            return "<-" + displayName + "-";
         }
         throw new IllegalArgumentException( leftNode + " is neither start nor end node to " + relationship );
     }
