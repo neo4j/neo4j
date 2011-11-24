@@ -56,7 +56,7 @@ include::{importdir}/neo4j-server-examples-docs-jar/dev/server-java-rest-client.
 
 :leveloffset: 1
 
-include::introduction/traversal-framework.txt[]
+include::{importdir}/neo4j-examples-docs-jar/dev/traversal-framework.txt[]
 
 :leveloffset: 0
 
