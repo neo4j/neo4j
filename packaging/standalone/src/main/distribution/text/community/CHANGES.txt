@@ -1,3 +1,27 @@
+1.6.M01 (2011-11-24)
+--------------------
+o ImpermantentGraphDatabase now uses purely in-memory structures for speed during tests. It's done on a FileChannel level
+  so that every other aspect of the database is intact, just that the bytes end up in ByteBuffers instead of files.
+o Fixed an issue with evaluators not executing correctly for the start node of a traversal.
+o Fixed an issue with BufferOverflowException thrown sometimes during extraction of prepared transactions.
+o Added graph properties, i.e. properties that belongs to the graph itself as opposed to a specific node or relationship.
+  Useful for extensions which would like to store configuration and what not.
+o Better multi-line support in shell, as well as case insensitive app names.
+o GraphDatabaseService#getAllNodes and #getRelationshipTypes @Deprecated and moved to GlobalGraphOperations class,
+  where also #getAllRelationships is implemented.
+o Added LRU cache for open indexes so that a limit can be set. Thanks vivekprahlad (github id) for the patch.
+o When using ImpermanentGraphDatabase RAMDirectory is used instead of FSDirectory. Useful for speed during testing.
+o Added a LowerCaseKeywordAnalyzer to use for having an exact case-insensitive index.
+o Cypher console in webadmin is now a Neo4j Shell console with the exact same Cypher support included.
+o More documentation and examples.
+o Made zero length (a single node) as well as optional paths in Cypher possible
+o Cypher Skip, limit and regular expressions can now be parameterized
+o Column order in Cypher output is now preserved
+o Cypher Distinct and order by can now be used at the same time
+o Cypher Execution plans can now be pretty printed
+o Solved a bug when using multiple regular expressions in the same query
+o Added the extract function in Cypher
+
 1.5 (2011-10-18)
 ----------------
 o More useful logging to messages.log to help investigating problems.

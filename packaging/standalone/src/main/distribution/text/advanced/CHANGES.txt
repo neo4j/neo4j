@@ -1,3 +1,8 @@
+1.6.M01 (2011-11-24)
+--------------------
+io Added support for a branched data bean (implemented in HA)
+o Added info on latest committed txId in TransactionManager bean
+
 1.5 (2011-10-31)
 ----------------
 o Added default remote JMX access configuration and security setup options
