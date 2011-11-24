@@ -1,3 +1,14 @@
+1.6.M01 (2011-11-24)
+--------------------
+o Made zero length (a single node) paths possible
+o Skip, limit and regular expressions can now be parameterized
+o Column order is now preserved
+o Distinct and order by can now be used at the same time
+o Paths can now be optional
+o Execution plans can now be pretty printed
+o Solved a bug when using multiple regular expressions in the same query
+o Added the extract function
+
 1.5 (2011-10-18)
 ----------------
 o Added DISTINCT for all aggregate functions

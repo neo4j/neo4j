@@ -1,3 +1,9 @@
+1.6.M01 (2011-11-24)
+--------------------
+o Added LRU cache for open indexes so that a limit can be set. Thanks vivekprahlad (github id) for the patch.
+o When using ImpermanentGraphDatabase RAMDirectory is used instead of FSDirectory. Useful for speed during testing.
+o Added a LowerCaseKeywordAnalyzer to use for having an exact case-insensitive index.
+
 1.5.M02 (2011-10-10)
 --------------------
 o Fixed an issue where null would be returned for consecutive calls after it got an initial

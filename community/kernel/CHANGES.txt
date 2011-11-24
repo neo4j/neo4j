@@ -1,3 +1,15 @@
+1.6.M01 (2011-11-24)
+--------------------
+o ImpermantentGraphDatabase now uses purely in-memory structures for speed during tests. It's done on a FileChannel level
+  so that every other aspect of the database is intact, just that the bytes end up in ByteBuffers instead of files.
+o Fixed an issue with evaluators not executing correctly for the start node of a traversal.
+o Fixed an issue with BufferOverflowException thrown sometimes during extraction of prepared transactions.
+o Added graph properties, i.e. properties that belongs to the graph itself as opposed to a specific node or relationship.
+  Useful for extensions which would like to store configuration and what not.
+o Better multi-line support in shell, as well as case insensitive app names.
+o GraphDatabaseService#getAllNodes and #getRelationshipTypes @Deprecated and moved to GlobalGraphOperations class,
+  where also #getAllRelationships is implemented.
+
 1.5 (2011-10-18)
 ----------------
 o Bug fixes for batch inserter and migration regarding new store format.
