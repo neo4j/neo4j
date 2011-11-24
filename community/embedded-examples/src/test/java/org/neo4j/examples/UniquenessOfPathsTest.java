@@ -71,9 +71,6 @@ public class UniquenessOfPathsTest extends AbstractJavaDocTestbase
      * Now only one path is returned:
      * 
      * @@outNodeGlobal
-     * 
-     * Full source code:
-     * @@github
      */
     @Graph({"Pet0 descendant Pet1",
         "Pet0 descendant Pet2",
@@ -87,7 +84,6 @@ public class UniquenessOfPathsTest extends AbstractJavaDocTestbase
     {
         Node start = data.get().get( "Pet0" );
         gen.get().addSnippet( "graph", createGraphViz("Descendants Example Graph", graphdb(), gen.get().getTitle()) );
-        gen.get().addGithubLink( "github", this.getClass(), "neo4j/community", "embedded-examples" );
         gen.get();
         gen.get()
                 .addSourceSnippets( this.getClass(), "traverser", "traverseNodeGlobal" );
