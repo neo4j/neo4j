@@ -50,6 +50,8 @@ public abstract class AbstractShellTest
     private ShellClient shellClient;
     protected static final RelationshipType RELATIONSHIP_TYPE = withName( "TYPE" );
     
+    private Transaction tx;
+    
     @BeforeClass
     public static void startUp() throws Exception
     {
@@ -67,9 +69,28 @@ public abstract class AbstractShellTest
     @After
     public void doAfter()
     {
+        if ( tx != null ) finishTx();
         shellClient.shutdown();
     }
     
+    protected void beginTx()
+    {
+        assert tx == null;
+        tx = db.beginTx();
+    }
+    
+    protected void finishTx()
+    {
+        finishTx( true );
+    }
+
+    protected void finishTx( boolean success )
+    {
+        assert tx != null;
+        if ( success ) tx.success();
+        tx.finish();
+    }
+
     @AfterClass
     public static void shutDown() throws Exception
     {
