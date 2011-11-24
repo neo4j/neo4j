@@ -66,7 +66,14 @@ should reveal the launchd "org.neo4j.server.7474" job for running the Neo4j Serv
 4. `./bin/neo4j status`
 +
 should indicate that the server is running
+
+5. `launchctl stop org.neo4j.server.7474`
++
+should stop the server.
    
+6. `launchctl start org.neo4j.server.7474`
++
+should start the server again.
    
 == Multiple Server instances on one machine ==
 
