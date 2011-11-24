@@ -1,3 +1,9 @@
+1.6.M01 (2011-11-24)
+--------------------
+o Added entry about HAProxy in manual.
+o Fixed an issue where pulling updates would fail if no master had been elected. Now it tries to find a new master instead.
+o Exposes information about branched (and stashed) stores through JMX.
+
 1.5.M02 (2011-10-10)
 --------------------
 o Uses new (faster, non-synchronized) way of extracting transactions when streaming transactions from master to slave.
