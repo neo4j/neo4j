@@ -1,1 +1,8 @@
+1.6.M01 (2011-11-24)
+--------------------
+o Added support for a branched data bean (implemented in HA)
+o Added info on latest committed txId in TransactionManager bean
+
+older
+-----
 o Split up the management component in two, one ("jmx") with basic support and one ("management" - this component) with advanced support.
