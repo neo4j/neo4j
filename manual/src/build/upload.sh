@@ -33,11 +33,12 @@ echo "VERSION = $VERSION"
 echo "SYMLINKVERSION = $SYMLINKVERSION"
 
 # Create initial directories
-ssh docs-server mkdir -p $ROOTPATHDOCS/{text,chunked,annotated}/$VERSION
+ssh docs-server mkdir -p $ROOTPATHDOCS/{text,chunked}/$VERSION
+#ssh docs-server mkdir -p $ROOTPATHDOCS/{text,chunked,annotated}/$VERSION
 
 # Copy artifacts
 rsync -r $DIR/target/text/ docs-server:$ROOTPATHDOCS/text/$VERSION/
-rsync -r --delete $DIR/target/annotated/ docs-server:$ROOTPATHDOCS/annotated/
+#rsync -r --delete $DIR/target/annotated/ docs-server:$ROOTPATHDOCS/annotated/
 rsync -r --delete $DIR/target/chunked/ docs-server:$ROOTPATHDOCS/chunked/$VERSION/
 scp $DIR/target/pdf/neo4j-manual.pdf docs-server:$ROOTPATHDOCS/pdf/neo4j-manual-$VERSION.pdf
 

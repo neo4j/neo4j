@@ -11,7 +11,9 @@ In short: make sure to sign the CLA and send in the mail, or the Neo4j project w
 Note that you can contribute to Neo4j also by contributing documentation or giving feedback on the current documentation.
 Basically, at all the places where you can get help, there's also room for contributions.
 
-To document your efforts, we highly recommend to read the following section on documentation
+If you want to contribute, there are some good areas to start with, especially for getting in contact with the community, <<community-support>>.
+
+To document your efforts, we highly recommend to read <<community-docs>>.
 
 :leveloffset: 2
 
@@ -21,9 +23,10 @@ include::cla.txt[]
 
 include::docs.txt[]
 
+:leveloffset: 2
+
+include::contributors.txt[]
+
 :leveloffset: 1
 
-[[areas-of-contribution]]
-== Areas of contribution ==
 
-If you want to contribute, there are some good areas to start with, especially for getting in contact with the community, <<community-support>>.

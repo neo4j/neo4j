@@ -7,9 +7,5 @@ include::help.txt[]
 
 include::contributing.txt[]
 
-:leveloffset: 1
-
-include::contributors.txt[]
-
 
 

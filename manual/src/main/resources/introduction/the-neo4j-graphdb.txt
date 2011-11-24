@@ -12,6 +12,13 @@ In Neo4j, both nodes and relationships can contain <<graphdb-neo4j-properties,pr
 
 Nodes are often used to represent _entities,_ but depending on the domain relationships may be used for that purpose as well.
 
+["dot", "graphdb-nodes-overview.svg", "meta"]
+----
+"A Node" [fillcolor="NODEHIGHLIGHT"]
+"A Node" -> "Relationships" [label="can have"]
+"A Node" -> "Properties" [label="can have"]
+----
+
 Let's start out with a really simple graph, containing only a single node with one property:
 
 ["dot", "graphdb-nodes.svg"]
@@ -25,6 +32,7 @@ Let's start out with a really simple graph, containing only a single node with o
 
 Relationships between nodes are a key part of a graph database.
 They allow for finding related data.
+Just like nodes, relationships can have <<graphdb-neo4j-properties,properties>>.
 
 ["dot", "graphdb-rels-overview.svg", "meta"]
 ----
@@ -32,6 +40,7 @@ They allow for finding related data.
 "A Relationship" -> "Start node" [label="has a"]
 "A Relationship" -> "End node" [label="has a"]
 "A Relationship" -> "Relationship type" [label="has a"]
+"A Relationship" -> "Properties" [label="can have"]
 "Relationship type" -> Name [label="uniquely identified by"]
 ----
 
@@ -117,6 +126,8 @@ Depending on what you are looking for, you will use the direction and type of re
 
 [[graphdb-neo4j-properties]]
 == Properties ==
+
+Both nodes and relationships can have properties.
 
 Properties are key-value pairs where the key is a string.
 Property values can be either a primitive or an array of one primitive type.
