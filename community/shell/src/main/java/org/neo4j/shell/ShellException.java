@@ -110,10 +110,10 @@ public class ShellException extends Exception
 	{
 	    String stackTraceAsString = stackTraceAsString( cause );
 	    String message = getFirstMessage( cause );
-//	    if ( !( cause instanceof ShellException ) )
-//	    {
-//	        message = cause.getClass().getName() + ": " + message;
-//	    }
+	    if ( !( cause instanceof ShellException ) )
+	    {
+	        message = cause.getClass().getSimpleName() + ": " + message;
+	    }
         return new ShellException( message, stackTraceAsString );
 	}
 
