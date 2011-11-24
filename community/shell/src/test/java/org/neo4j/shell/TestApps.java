@@ -36,6 +36,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.shell.impl.SameJvmClient;
@@ -249,12 +250,13 @@ public class TestApps extends AbstractShellTest
         String storeDir = "target/test-data/db";
         FileUtils.deleteRecursively( new File( storeDir ) );
         GraphDatabaseService newDb = new EmbeddedGraphDatabase( storeDir );
-        newDb.beginTx();
+        Transaction tx = newDb.beginTx();
         newDb.getReferenceNode().delete();
         Node node = newDb.createNode();
         String name = "Test";
         node.setProperty( "name", name );
-        finishTx();
+        tx.success();
+        tx.finish();
 
         GraphDatabaseShellServer server = new GraphDatabaseShellServer( newDb );
         ShellClient client = new SameJvmClient( server );
