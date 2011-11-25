@@ -259,7 +259,8 @@ text: docbook-shortinfo
 	cd "$(TEXTDIR)"
 	xsltproc --xinclude --stringparam callout.graphics 0 --stringparam navig.graphics 0 --stringparam admon.textlabel 1 --stringparam admon.graphics 0  --output "$(TEXTHTMLFILE)" "$(CONFDIR)/text.xsl" "$(DOCBOOKSHORTINFOFILE)"
 	cd "$(SRCDIR)"
-	w3m -cols "$(TEXTWIDTH)" -dump -T text/html -no-graph "$(TEXTHTMLFILE)" > "$(TEXTFILE)"
+	cp -f "$(SCRIPTDIR)/bom" "$(TEXTFILE)"
+	w3m -cols "$(TEXTWIDTH)" -dump -T text/html -no-graph "$(TEXTHTMLFILE)" >> "$(TEXTFILE)"
 ifndef KEEP
 	rm -f "$(TEXTHTMLFILE)"
 	rm -f "$(TEXTDIR)/"*.html
@@ -289,7 +290,9 @@ upgrade:
 	#
 	mkdir -p "$(UPGRADE)"
 	"$(A2X)" -k -f text -D "$(UPGRADE)" "$(IMPORTDIR)/neo4j-docs-jar/ops/upgrades.txt"
-	mv "$(UPGRADE)/upgrades.text" "$(UPGRADE)/UPGRADE.txt"
+	cp -f "$(SCRIPTDIR)/bom" "$(UPGRADE)/UPGRADE.txt"
+	cat "$(UPGRADE)/upgrades.text" >> "$(UPGRADE)/UPGRADE.txt"
+	rm "$(UPGRADE)/upgrades.text"
 
 slidestest:
 	#
