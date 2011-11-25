@@ -28,7 +28,7 @@
     
     <!-- This code name is injected into Webadmin, please update it
          when updating the project version. -->
-    <neo4j.codename></neo4j.codename>
+    <neo4j.codename />
     
     <felix-fileinstall.version>3.0.2</felix-fileinstall.version>
     <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
@@ -495,7 +495,7 @@ the relevant Commercial Agreement.
       <plugin>
         <groupId>com.voltvoodoo</groupId>
         <artifactId>brew</artifactId>
-        <version>0.2.9</version>
+        <version>0.2.10</version>
         <executions>
           <execution>
             <id>compile-webadmin</id>

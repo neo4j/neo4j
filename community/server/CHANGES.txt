@@ -1,3 +1,8 @@
+1.6.M01 (2011-11-24)
+--------------------
+o Cypher console in webadmin is now a Neo4j Shell console with the exact same Cypher support included.
+o More documentation and examples.
+
 1.5 (2011-10-18)
 ----------------
 o Added useful server logging to data/graph.db/messages.log at startup.

@@ -40,7 +40,9 @@
       var len = arguments.length
       var args = []
       for (var i=0; i<len; i++) args.push(arguments[i])
-      console.log.apply(this, args)
+      try {
+        console.log.apply(this, args)
+      } catch(e){}
     }  
   
     var dirname = function(path){

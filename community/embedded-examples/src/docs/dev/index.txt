@@ -20,6 +20,10 @@ include::traversal.txt[]
 
 :leveloffset: 3
 
+include::examples/uniqueness-of-paths-in-traversals.txt[]
+
+:leveloffset: 3
+
 include::social.txt[]
 
 :leveloffset: 2
@@ -30,9 +34,6 @@ include::entities.txt[]
 
 include::graph-algo.txt[]
 
-:leveloffset: 2
-
-include::examples/uniqueness-of-paths-in-traversals.txt[]
 
 :leveloffset: 2
 
