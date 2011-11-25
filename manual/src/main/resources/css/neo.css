@@ -90,7 +90,7 @@ tr.answer td
   padding-left: 1em;
 }
 
-.titlepage {
+body h2:first-child {
     padding-bottom: 40px;
 }
 
