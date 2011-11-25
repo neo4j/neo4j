@@ -1,5 +1,7 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
 
+  <xsl:import href="breadcrumbs.xsl"/>
+  
 <xsl:template name="user.head.content">
 <xsl:text disable-output-escaping="yes">
 <![CDATA[
@@ -58,6 +60,9 @@
 
 ]]>
 </xsl:text>
+
+  <xsl:call-template name="breadcrumbs"/>
+
 </xsl:template>
 
 </xsl:stylesheet>

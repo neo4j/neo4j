@@ -90,6 +90,10 @@ tr.answer td
   padding-left: 1em;
 }
 
+body h2:first-child {
+    padding-bottom: 40px;
+}
+
 div.navheader
 {
   position: absolute;
@@ -393,5 +397,17 @@ div.slide h1
 div.slide p, div.slide li
 {
   font-size: 1.25em;
+}
+
+/* Breadcrumbs */
+
+.breadcrumbs {
+    border-bottom: 1px solid #DDDDDD;
+    color: #333333;
+    font-size: 15px;
+    padding: 5px 0;
+    position: absolute;
+    top: 114px;
+    width:100%;
 }
 
