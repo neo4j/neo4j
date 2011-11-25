@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/bin/bash
+
 srcdir=$1
 imgdir=$2
 

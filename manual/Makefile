@@ -163,23 +163,23 @@ docbook-shortinfo:  manpages copyimages
 	#
 	#
 	# Building docbook output with short info.
-	# Checking for missing include files.
 	# Checking DocBook validity.
 	#
 	#
 	mkdir -p "$(BUILDDIR)"
-	"$(ASCIIDOC)" $(ASCIIDOC_FLAGS) --backend docbook --attribute docinfo1 --doctype book --conf-file="$(CONFDIR)/asciidoc.conf" --conf-file="$(CONFDIR)/docbook45.conf" --out-file "$(DOCBOOKSHORTINFOFILE)" "$(SRCFILE)" 2>&1 | "$(SCRIPTDIR)/outputcheck-includefiles.sh"
+	"$(ASCIIDOC)" $(ASCIIDOC_FLAGS) --backend docbook --attribute docinfo1 --doctype book --conf-file="$(CONFDIR)/asciidoc.conf" --conf-file="$(CONFDIR)/docbook45.conf" --out-file "$(DOCBOOKSHORTINFOFILE)" "$(SRCFILE)"
 	xmllint --nonet --noout --xinclude --postvalid "$(DOCBOOKSHORTINFOFILE)"
 
 docbook-html:  manpages copyimages
 	#
 	#
 	# Building docbook output with short info for html outputs.
+	# Checking for missing include files.
 	# Checking DocBook validity.
 	#
 	#
 	mkdir -p "$(BUILDDIR)"
-	"$(ASCIIDOC)" $(ASCIIDOC_FLAGS) --backend docbook --attribute docinfo1 --doctype book --conf-file="$(CONFDIR)/asciidoc.conf" --conf-file="$(CONFDIR)/docbook45.conf" --conf-file="$(CONFDIR)/linkedimages.conf" --out-file "$(DOCBOOKFILEHTML)" "$(SRCFILE)"
+	"$(ASCIIDOC)" $(ASCIIDOC_FLAGS) --backend docbook --attribute docinfo1 --doctype book --conf-file="$(CONFDIR)/asciidoc.conf" --conf-file="$(CONFDIR)/docbook45.conf" --conf-file="$(CONFDIR)/linkedimages.conf" --out-file "$(DOCBOOKFILEHTML)" "$(SRCFILE)" 2>&1 | "$(SCRIPTDIR)/outputcheck-includefiles.sh"
 	xmllint --nonet --noout --xinclude --postvalid "$(DOCBOOKFILEHTML)"
 
 pdf: docbook-shortinfo copyimages
@@ -273,22 +273,7 @@ manpages:
 	#
 	#
 	mkdir -p "$(MANPAGES)"
-	# shell
-	"$(A2X)" -k $(V) -f manpage -d  manpage -D "$(MANPAGES)" "$(IMPORTDIR)/neo4j-shell-docs-jar/man/neo4j-shell.1.txt"
-	"$(A2X)" -k -f text -d  manpage -D "$(MANPAGES)" "$(IMPORTDIR)/neo4j-shell-docs-jar/man/neo4j-shell.1.txt"
-	mv "$(MANPAGES)/neo4j-shell.1.text" "$(MANPAGES)/neo4j-shell.txt"
-	# neo4j
-	"$(A2X)" -k $(V) -f manpage -d  manpage -D "$(MANPAGES)" "$(IMPORTDIR)/neo4j-server-docs-jar/man/neo4j.1.txt"
-	"$(A2X)" -k -f text -d  manpage -D "$(MANPAGES)" "$(IMPORTDIR)/neo4j-server-docs-jar/man/neo4j.1.txt"
-	mv "$(MANPAGES)/neo4j.1.text" "$(MANPAGES)/neo4j.txt"
-	# neo4j-coordinator
-	"$(A2X)" -k $(V) -f manpage -d  manpage -D "$(MANPAGES)" "$(IMPORTDIR)/neo4j-server-docs-jar/man/neo4j-coordinator.1.txt"
-	"$(A2X)" -k -f text -d  manpage -D "$(MANPAGES)" "$(IMPORTDIR)/neo4j-server-docs-jar/man/neo4j-coordinator.1.txt"
-	mv "$(MANPAGES)/neo4j-coordinator.1.text" "$(MANPAGES)/neo4j-coordinator.txt"
-	# neo4j-coordinator-shell
-	"$(A2X)" -k $(V) -f manpage -d  manpage -D "$(MANPAGES)" "$(IMPORTDIR)/neo4j-server-docs-jar/man/neo4j-coordinator-shell.1.txt"
-	"$(A2X)" -k -f text -d  manpage -D "$(MANPAGES)" "$(IMPORTDIR)/neo4j-server-docs-jar/man/neo4j-coordinator-shell.1.txt"
-	mv "$(MANPAGES)/neo4j-coordinator-shell.1.text" "$(MANPAGES)/neo4j-coordinator-shell.txt"
+	"$(SCRIPTDIR)/manpage.sh" "$(V)" "$(MANPAGES)" "$(IMPORTDIR)" "$(A2X)" "$(SCRIPTDIR)" "neo4j server" "neo4j-shell shell" "neo4j-coordinator server" "neo4j-coordinator-shell server"
 	# clean up
 	mkdir -p "$(ANNOTATEDDIR)"
 	cp "$(MANPAGES)/"*.xml "$(ANNOTATEDDIR)"
