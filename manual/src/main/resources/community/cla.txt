@@ -28,7 +28,7 @@ At the end of the day, you still retain all rights to your contribution and we c
 
 === Can we discuss some items in the CLA? ===
 
-Absolutely! Please give us feedback! But let's keep the legalese off the mailing lists. Please mail your feedback directly to admins [@t] thisdomain.org and we'll get back to you.
+Absolutely! Please give us feedback! But let's keep the legalese off the mailing lists. Please mail your feedback directly to cla (@t) neotechnology dot cöm and we'll get back to you.
 
 === I still don't like this CLA. ===
 
@@ -46,5 +46,7 @@ When you've read through the CLA, please send a mail to cla (@t) neotechnology d
 For example:
 
 ----
-Hi. My name is John Doe (john@doe.com). I agree to the terms in the attached Neo4j Contributor License Agreement.
+Hi. My name is John Doe (john@doe.com).
+I agree to the terms in the attached Neo4j Contributor License Agreement.
 ----
+
