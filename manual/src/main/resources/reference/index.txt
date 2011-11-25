@@ -1,9 +1,11 @@
 [[reference-documentation]]
 Reference
 =========
-////
 [partintro]
-////
+--
+The reference part is the authoritative source for details on Neo4j configuration and usage.
+It covers details on installation, capabilities, queries and high availability among other topics. 
+--
 
 :leveloffset: 1
 

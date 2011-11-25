@@ -28,6 +28,12 @@ include::introduction/index.txt[]
 Tutorials
 =========
 
+[partintro]
+--
+The tutorial part describes how to set up your environment, and write programs using Neo4j.
+It takes you from Hello World to advanced usage of graphs.
+--
+
 :leveloffset: 1
 
 include::{importdir}/neo4j-examples-docs-jar/dev/index.txt[]
@@ -84,9 +90,10 @@ include::operations/index.txt[]
 Tools
 =====
 
-////
 [partintro]
-////
+--
+The Tools part describes available Neo4j tools and how to use them.
+--
 
 :leveloffset: 1
 

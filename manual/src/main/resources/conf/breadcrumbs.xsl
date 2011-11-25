@@ -6,7 +6,11 @@
     
     <xsl:if test="name(.) != 'book'">
       <div class="breadcrumbs">
-        <xsl:for-each select="$this.node/ancestor::*">
+          <span class="breadcrumb-link">
+            <a href="index.html">The Neo4j Manual</a>
+          </span>
+          <xsl:text> &gt; </xsl:text>
+        <xsl:for-each select="$this.node/ancestor::*[parent::*]">
           <span class="breadcrumb-link">
             <a>
               <xsl:attribute name="href">

@@ -402,12 +402,16 @@ div.slide p, div.slide li
 /* Breadcrumbs */
 
 .breadcrumbs {
-    border-bottom: 1px solid #DDDDDD;
-    color: #333333;
-    font-size: 15px;
-    padding: 5px 0;
-    position: absolute;
-    top: 114px;
-    width:100%;
+  border-bottom: 1px solid #DDDDDD;
+  color: #333333;
+  font-size: 15px;
+  padding: 5px 0;
+  position: absolute;
+  top: 114px;
+  width:100%;
+}
+
+.partintro, .refsynopsisdiv {
+  padding-top: 1.5em;
 }
 
