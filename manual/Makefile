@@ -207,9 +207,8 @@ html: manpages copyimages docbook-html
 	"$(A2X)" $(V) -L -f chunked -D "$(BUILDDIR)" --xsl-file="$(CONFDIR)/chunked.xsl" -r "$(IMGDIR)" -r "$(CSSDIR)" --xsltproc-opts "--stringparam admon.graphics 1" --xsltproc-opts "--xinclude" --xsltproc-opts "--stringparam chunk.section.depth 1" --xsltproc-opts "--stringparam toc.section.depth 1" "$(DOCBOOKFILEHTML)" 2>&1 | "$(SCRIPTDIR)/outputcheck-images.sh"
 	rm -rf "$(CHUNKEDHTMLDIR)"
 	mv "$(CHUNKEDSHORTINFOTARGET)" "$(CHUNKEDHTMLDIR)"
-	mkdir -p "$(CHUNKEDHTMLDIR)/css"
 	cp -fr "$(JSDIR)" "$(CHUNKEDHTMLDIR)/js"
-	cp -fr "$(CSSDIR)/"* "$(CHUNKEDHTMLDIR)/css/"
+	cp -fr "$(CSSDIR)/"* "$(CHUNKEDHTMLDIR)/css"
 	cp -fr "$(SRCDIR)/images/"*.png "$(CHUNKEDHTMLDIR)/images"
 
 offline-html:  manpages copyimages docbook-html
@@ -221,7 +220,6 @@ offline-html:  manpages copyimages docbook-html
 	"$(A2X)" $(V) -L -f chunked -D "$(BUILDDIR)" --xsl-file="$(CONFDIR)/chunked-offline.xsl" -r "$(IMGDIR)" -r "$(CSSDIR)" --xsltproc-opts "--stringparam admon.graphics 1" --xsltproc-opts "--xinclude" --xsltproc-opts "--stringparam chunk.section.depth 1" --xsltproc-opts "--stringparam toc.section.depth 1" "$(DOCBOOKFILEHTML)"
 	rm -rf "$(CHUNKEDOFFLINEHTMLDIR)"
 	mv "$(CHUNKEDSHORTINFOTARGET)" "$(CHUNKEDOFFLINEHTMLDIR)"
-	mkdir -p "$(CHUNKEDHTMLDIR)/css"
 	cp -fr "$(JSDIR)" "$(CHUNKEDOFFLINEHTMLDIR)/js"
 	cp -fr "$(CSSDIR)/"* "$(CHUNKEDOFFLINEHTMLDIR)/css/"
 	cp -fr "$(SRCDIR)/images/"*.png "$(CHUNKEDOFFLINEHTMLDIR)/images"
