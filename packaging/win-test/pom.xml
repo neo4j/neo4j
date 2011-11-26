@@ -1,0 +1,94 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.neo4j.build</groupId>
+        <artifactId>parent-central</artifactId>
+        <version>25</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>org.neo4j</groupId>
+    <artifactId>neo4j-win-test</artifactId>
+    <name>Neo4j Windows Install Tests</name>
+    <version>1.6-SNAPSHOT</version>
+    <description>Tests the windows installer</description>
+    <url>http://components.neo4j.org/${project.artifactId}/${project.version}/</url>
+    <scm>
+        <url>https://github.com/neo4j/packaging/tree/master/windows-test</url>
+    </scm>
+
+    <properties>
+        <short-name>neo4j-win-test</short-name>
+        <bundle.namespace>org.neo4j.examples</bundle.namespace>
+        <license-text.header>ApacheLicense-2.0-header.txt</license-text.header>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit-dep</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-all</artifactId>
+        </dependency>
+        <dependency>
+			<groupId>org.neo4j.app</groupId>
+			<artifactId>neo4j-server</artifactId>
+			<version>1.6-SNAPSHOT</version>
+			<type>test-jar</type>
+			<scope>test</scope>
+        </dependency>
+		<dependency>
+		  <groupId>com.sun.jersey</groupId>
+		  <artifactId>jersey-client</artifactId>
+		  <version>1.9</version>
+		</dependency>
+		
+    </dependencies>
+
+    <licenses>
+        <license>
+            <name>Apache License Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <comments>
+                Note that this license is for the project itself,
+                and not for its dependencies. See the included NOTICE.txt
+                file for further details.
+            </comments>
+        </license>
+    </licenses>
+
+    <build>
+        <plugins>
+        </plugins>
+    </build>
+
+    <repositories>
+        <repository>
+            <id>neo4j-release-repository</id>
+            <name>Neo4j Maven 2 release repository</name>
+            <url>http://m2.neo4j.org/releases</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>neo4j-snapshot-repository</id>
+            <name>Neo4j Maven 2 snapshot repository</name>
+            <url>http://m2.neo4j.org/snapshots</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+        </repository>
+    </repositories>
+
+</project>
+
