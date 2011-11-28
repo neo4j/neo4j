@@ -23,9 +23,9 @@
 
 	function Brush()
 	{
-        var funcs   =   'avg max min sum count not all any none single length type id nodes relationships collect';
+        var funcs   =   'avg max min sum count not all any none single length type id nodes relationships collect extract shortestPath';
 
-        var keywords =  'node: relationship: start match where return skip limit order by descending desc ascending asc distinct true false';
+        var keywords =  'node relationship rel start match where return skip limit order by descending desc ascending asc distinct true false in is null';
 
         var operators = 'TYPE LENGTH or and';
 
