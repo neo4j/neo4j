@@ -33,7 +33,6 @@ public interface Configurator
     String DEFAULT_CONFIG_DIR = File.separator + "etc" + File.separator + "neo";
     String DATABASE_LOCATION_PROPERTY_KEY = "org.neo4j.server.database.location";
     String NEO_SERVER_CONFIG_FILE_KEY = "org.neo4j.server.properties";
-    String DB_MODE_KEY = "org.neo4j.server.database.mode";
 
     int DEFAULT_WEBSERVER_PORT = 7474;
     String WEBSERVER_PORT_PROPERTY_KEY = "org.neo4j.server.webserver.port";
@@ -45,10 +44,6 @@ public interface Configurator
     String REST_API_PACKAGE = "org.neo4j.server.rest.web";
     String DEFAULT_DATA_API_PATH = "/db/data";
 
-    String ENABLE_OSGI_SERVER_PROPERTY_KEY = "org.neo4j.server.osgi.enable";
-    String OSGI_BUNDLE_DIR_PROPERTY_KEY = "org.neo4j.server.osgi.bundledir";
-    String OSGI_CACHE_DIR_PROPERTY_KEY = "org.neo4j.server.osgi.cachedir";
-
     String DISCOVERY_API_PACKAGE = "org.neo4j.server.rest.discovery";
 
     String MANAGEMENT_API_PACKAGE = "org.neo4j.server.webadmin.rest";
@@ -56,7 +51,6 @@ public interface Configurator
     String DEFAULT_MANAGEMENT_API_PATH = "/db/manage";
 
     String DEFAULT_WEB_ADMIN_PATH = "/webadmin";
-    String DEFAULT_WEB_ADMIN_STATIC_WEB_CONTENT_LOCATION = "webadmin-html";
 
     String RRDB_LOCATION_PROPERTY_KEY = "org.neo4j.server.webadmin.rrdb.location";
 
