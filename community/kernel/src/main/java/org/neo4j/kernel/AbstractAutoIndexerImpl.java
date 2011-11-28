@@ -80,7 +80,7 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
     public void propertyRemoved( T primitive, String propertyName,
             Object propertyValue )
     {
-        getIndexInternal().remove( primitive, propertyName, propertyValue );
+        getIndexInternal().remove( primitive, propertyName );
     }
 
     @Override

@@ -663,4 +663,29 @@ public class TestAutoIndexing
         { // good
         }
     }
+
+    @Test
+    public void testRemoveUnloadedHeavyProperty()
+    {
+        /*
+         * Checks a bug where removing non-cached heavy properties
+         * would cause NPE in auto indexer.
+         */
+        graphDb.index().getNodeAutoIndexer().setEnabled( true );
+        graphDb.index().getNodeAutoIndexer().startAutoIndexingProperty(
+                "nodeProp" );
+
+        newTransaction();
+
+        Node node1 = graphDb.createNode();
+        // Large array, needed for making sure this is a heavy property
+        node1.setProperty( "nodeProp", new int[] { -1, 2, 3, 4, 5, 6, 1, 1, 1,
+                1 } );
+
+        newTransaction();
+        ( (ImpermanentGraphDatabase) graphDb ).getConfig().getGraphDbModule().getNodeManager().clearCache();
+        node1.removeProperty( "nodeProp" );
+        newTransaction();
+        assertFalse( node1.hasProperty( "nodeProp" ) );
+    }
 }
