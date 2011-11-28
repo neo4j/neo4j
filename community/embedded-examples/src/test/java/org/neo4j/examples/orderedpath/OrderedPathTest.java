@@ -18,7 +18,9 @@
  */
 package org.neo4j.examples.orderedpath;
 
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 import java.util.ArrayList;
 
@@ -33,19 +35,20 @@ import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Traversal;
+import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class OrderedPathTest
 {
-    private static EmbeddedGraphDatabase db;
+    private static AbstractGraphDatabase db;
     private static RelationshipType REL1 = withName( "REL1" ),
     REL2 = withName( "REL2" ), REL3 = withName( "REL3" );
 
     @BeforeClass
     public static void createTheGraph()
     {
-        db = new EmbeddedGraphDatabase( "target/db" );
+        db = new ImpermanentGraphDatabase();
         Transaction tx = db.beginTx();
         // START SNIPPET: createGraph
         Node A = db.createNode();
@@ -96,31 +99,11 @@ public class OrderedPathTest
                         {
                             return Evaluation.EXCLUDE_AND_CONTINUE;
                         }
-                        String currentName = path.lastRelationship().getType().name();
-                        String relationshipType = orderedPathContext.get(
-                                path.length() - 1 ).name();
-                        if ( path.length() == orderedPathContext.size() )
-                        {
-                            if ( currentName.equals( relationshipType ) )
-                            {
-                                return Evaluation.INCLUDE_AND_PRUNE;
-                            }
-                            else
-                            {
-                                return Evaluation.EXCLUDE_AND_PRUNE;
-                            }
-                        }
-                        else
-                        {
-                            if ( currentName.equals( relationshipType ) )
-                            {
-                                return Evaluation.EXCLUDE_AND_CONTINUE;
-                            }
-                            else
-                            {
-                                return Evaluation.EXCLUDE_AND_PRUNE;
-                            }
-                        }
+                        RelationshipType expectedType = orderedPathContext.get( path.length() - 1 );
+                        boolean isExpectedType = path.lastRelationship().isType( expectedType );
+                        boolean included = path.length() == orderedPathContext.size() && isExpectedType;
+                        boolean continued = path.length() < orderedPathContext.size() && isExpectedType;
+                        return Evaluation.of( included, continued );
                     }
                 } );
         Traverser t = td.traverse( db.getNodeById( 1 ) );
@@ -129,5 +112,7 @@ public class OrderedPathTest
             System.out.println( path );
         }
         // END SNIPPET: walkOrderedPath
+        
+        assertEquals( 1, count( td.traverse( db.getNodeById( 1 ) ) ) );
     }
 }
