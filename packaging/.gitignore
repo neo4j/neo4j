@@ -17,3 +17,4 @@ server/neo4j-home/rrd
 /bin
 .gradle
 server/rrd
+/installer-windows/src/main/resources/installer/installer-cache/
