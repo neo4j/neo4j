@@ -25,21 +25,30 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import org.neo4j.server.rest.RestRequest;
+import org.neo4j.server.rest.JaxRsResponse;
+import com.sun.jersey.api.client.ClientHandlerException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.equalTo;
 
 public class TheTest {
     @Test
     public void Test() throws Throwable {
-		RestRequest r = new RestRequest();
         Result install = run("msiexec /i target\\neo4j-community-setup-1.6-SNAPSHOT.msi /quiet");
         install.checkResults();
+		JaxRsResponse r = RestRequest.req().get("http://localhost:7474/db/data/");
+		assertThat(r.getStatus(), equalTo(200));
 		
-		
-
         Result uninstall = run("msiexec /x target\\neo4j-community-setup-1.6-SNAPSHOT.msi /quiet");
         uninstall.checkResults();
-    }
+		try {
+			r = RestRequest.req().get("http://localhost:7474/db/data/");
+			int status = r.getStatus();
+			fail("Server is still listening to port 7474 even after uninstall");
+		} catch (ClientHandlerException e) {
+		}
+	}
 
     private Result run(String cmd) throws IOException, InterruptedException {
         System.out.println(cmd);
