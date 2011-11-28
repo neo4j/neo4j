@@ -2,15 +2,34 @@
 Contributors
 ============
 
-As an Open Source Project, the Neo4j User community extends its warmest thanks to all the contributors who have signed the <<cla>> to date and contributed to this collective effort.
+As an Open Source Project, the Neo4j User community extends its warmest thanks to all the contributors who have signed the <<cla>> to date and are contributing to this collective effort.
 
 [options="header"]
 |=======
-|name | GIThub ID | since
-|Johan Svensson | https://github.com/johan-neo[johan-neo] | 2007
-|Emil Eifrem | https://github.com/emileifrem[emileifrem] | 2007
-|Peter Neubauer | https://github.com/peterneubauer[peterneubauer] | 2007
-|Mattias Persson | https://github.com/tinwelint[tinwelint] | 2007
-|Tobias Ivarsson | https://github.com/thobe[thobe] | 2007
-|Anders Nawroth | https://github.com/nawroth[nawroth] | 2008
+|name | GIThub ID
+|Johan Svensson | https://github.com/johan-neo[johan-neo]
+|Emil Eifrem | https://github.com/emileifrem[emileifrem]
+|Peter Neubauer | https://github.com/peterneubauer[peterneubauer]
+|Mattias Persson | https://github.com/tinwelint[tinwelint]
+|Tobias Ivarsson | https://github.com/thobe[thobe]
+|Anders Nawroth | https://github.com/nawroth[nawroth]
+|Andres Taylor |https://api.github.com/users/systay[systay]
+|Jacob Hansson |https://api.github.com/users/jakewins[jakewins]
+|Jim Webber |https://api.github.com/users/jimwebber[jimwebber]
+|Andreas Kollegger |https://api.github.com/users/akollegger[akollegger]
+|Chris Gioran |https://api.github.com/users/digitalstain[digitalstain]
+|Thomas Baum |https://api.github.com/users/tbaum[tbaum]
+|Alistair Jones |https://api.github.com/users/apcj[apcj]
+|Michael Hunger |https://api.github.com/users/jexp[jexp]
+|Jesper Nilsson |https://api.github.com/users/jespernilsson[jespernilsson]
+|Tom Sulston |https://api.github.com/users/tomsulston[tomsulston]
+|David Montag |https://api.github.com/users/dmontag[dmontag]
+|Marlon Richtert |https://api.github.com/users/marlonrichert[marlonrichert]
+|Hugo Josefson |https://api.github.com/users/hugojosefson[hugojosefson]
+|Vivek Prahlad |https://api.github.com/users/vivekprahlad[vivekprahlad]
+|Andriano Almeida |https://api.github.com/users/adrianoalmeida7[adrianoalmeida7]
+|Kevin Moore |https://api.github.com/users/kevmoo[kevmoo]
+|BGehrels |https://api.github.com/users/BGehrels[BGehrels]
+|Christopher Schmidt |https://api.github.com/users/FaKod[FaKod]
+|Pascal Rehfeldt |https://api.github.com/users/prehfeldt[prehfeldt]
 |=======
