@@ -24,6 +24,8 @@ include::sort-a-result-using-raw-groovy-operations.txt[]
 
 include::send-a-gremlin-script---json-encoded-with-table-results.txt[]
 
+include::returning-nested-pipes.txt[]
+
 include::set-script-variables.txt[]
 
 include::send-a-gremlin-script-with-variables-in-a-json-map.txt[]

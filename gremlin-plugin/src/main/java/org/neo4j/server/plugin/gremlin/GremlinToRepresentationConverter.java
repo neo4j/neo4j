@@ -40,83 +40,132 @@ import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jGraph;
 import com.tinkerpop.blueprints.pgm.impls.neo4j.Neo4jVertex;
 import com.tinkerpop.pipes.util.Table;
 
-public class GremlinToRepresentationConverter {
-    public GremlinToRepresentationConverter() {
+public class GremlinToRepresentationConverter
+{
+    public GremlinToRepresentationConverter()
+    {
     }
 
-    public Representation convert(final Object data) {
-        if (data instanceof Table) {
-            return new GremlinTableRepresentation((Table) data);
+    public Representation convert( final Object data )
+    {
+        if ( data instanceof Table )
+        {
+            return new GremlinTableRepresentation( (Table) data );
         }
-        if (data instanceof Iterable) {
-            return getListRepresentation((Iterable) data);
+        if ( data instanceof Iterable )
+        {
+            return getListRepresentation( (Iterable) data );
         }
-        if (data instanceof Iterator) {
+        if ( data instanceof Iterator )
+        {
             Iterator iterator = (Iterator) data;
-            return getIteratorRepresentation(iterator);
+            return getIteratorRepresentation( iterator );
         }
-        return getSingleRepresentation(data);
-    }
-    Representation getIteratorRepresentation(Iterator data) {
-        final List<Representation> results = new ArrayList<Representation>();
-        while (data.hasNext()) {
-            Object value = data.next();
-            if(value instanceof Iterable) {
-                List<Representation> nested = new ArrayList<Representation>();
-                nested.addAll(convertValuesToRepresentations( (Iterable) value ));
-                results.add( new ListRepresentation(getType(nested), nested) );
-            }
-            final Representation representation = getSingleRepresentation(value);
-            results.add(representation);
-        }
-        return new ListRepresentation(getType(results), results);
-    }
-    Representation getListRepresentation(Iterable data) {
-        final List<Representation> results = convertValuesToRepresentations(data);
-        return new ListRepresentation(getType(results), results);
+        return getSingleRepresentation( data );
     }
 
-    List<Representation> convertValuesToRepresentations(Iterable data) {
+    Representation getIteratorRepresentation( Iterator data )
+    {
         final List<Representation> results = new ArrayList<Representation>();
-        for (final Object value : data) {
-            if(value instanceof Iterable) {
+        while ( data.hasNext() )
+        {
+            Object value = data.next();
+            if ( value instanceof Iterable )
+            {
                 List<Representation> nested = new ArrayList<Representation>();
-                nested.addAll(convertValuesToRepresentations( (Iterable) value ));
-                results.add( new ListRepresentation(getType(nested), nested) );
-            } else {
-             results.add( getSingleRepresentation(value));
+                nested.addAll( convertValuesToRepresentations( (Iterable) value ) );
+                results.add( new ListRepresentation( getType( nested ), nested ) );
+            }
+            final Representation representation = getSingleRepresentation( value );
+            results.add( representation );
+        }
+        return new ListRepresentation( getType( results ), results );
+    }
+
+    Representation getListRepresentation( Iterable data )
+    {
+        final List<Representation> results = convertValuesToRepresentations( data );
+        return new ListRepresentation( getType( results ), results );
+    }
+
+    List<Representation> convertValuesToRepresentations( Iterable data )
+    {
+        final List<Representation> results = new ArrayList<Representation>();
+        if ( data instanceof Table )
+        {
+            results.add( new GremlinTableRepresentation( (Table) data ) );
+        }
+        else
+        {
+            for ( final Object value : data )
+            {
+                if ( value instanceof Iterable )
+                {
+                    List<Representation> nested = new ArrayList<Representation>();
+                    nested.addAll( convertValuesToRepresentations( (Iterable) value ) );
+                    results.add( new ListRepresentation( getType( nested ),
+                            nested ) );
+                }
+                else
+                {
+                    results.add( getSingleRepresentation( value ) );
+                }
             }
         }
         return results;
     }
 
-    RepresentationType getType(List<Representation> representations) {
-        if (representations == null || representations.isEmpty()) return RepresentationType.STRING;
-        return representations.get(0).getRepresentationType();
+    RepresentationType getType( List<Representation> representations )
+    {
+        if ( representations == null || representations.isEmpty() )
+            return RepresentationType.STRING;
+        return representations.get( 0 ).getRepresentationType();
     }
 
-    Representation getSingleRepresentation(Object result) {
-        if (result == null) return ValueRepresentation.string("null");
-        if (result instanceof Neo4jVertex) {
-            return new NodeRepresentation(((Neo4jVertex) result).getRawVertex());
-        } else if (result instanceof Neo4jEdge) {
-            return new RelationshipRepresentation(((Neo4jEdge) result).getRawEdge());
-        } else if (result instanceof GraphDatabaseService) {
-            return new DatabaseRepresentation(((GraphDatabaseService) result));
-        } else if (result instanceof Node) {
-            return new NodeRepresentation((Node) result);
-        } else if (result instanceof Relationship) {
-            return new RelationshipRepresentation( (Relationship) result);
-        } else if (result instanceof Neo4jGraph) {
-            return ValueRepresentation.string(((Neo4jGraph) result).getRawGraph().toString());
-        } else if (result instanceof Double || result instanceof Float) {
-            return ValueRepresentation.number(((Number) result).doubleValue());
-        } else if (result instanceof Long) {
-            return ValueRepresentation.number(((Long) result).longValue());
-        } else if (result instanceof Integer) {
-            return ValueRepresentation.number(((Integer) result).intValue());
-        } else {
-            return ValueRepresentation.string(result.toString());
+    Representation getSingleRepresentation( Object result )
+    {
+        if ( result == null ) return ValueRepresentation.string( "null" );
+        if ( result instanceof Neo4jVertex )
+        {
+            return new NodeRepresentation(
+                    ( (Neo4jVertex) result ).getRawVertex() );
+        }
+        else if ( result instanceof Neo4jEdge )
+        {
+            return new RelationshipRepresentation(
+                    ( (Neo4jEdge) result ).getRawEdge() );
+        }
+        else if ( result instanceof GraphDatabaseService )
+        {
+            return new DatabaseRepresentation( ( (GraphDatabaseService) result ) );
+        }
+        else if ( result instanceof Node )
+        {
+            return new NodeRepresentation( (Node) result );
+        }
+        else if ( result instanceof Relationship )
+        {
+            return new RelationshipRepresentation( (Relationship) result );
+        }
+        else if ( result instanceof Neo4jGraph )
+        {
+            return ValueRepresentation.string( ( (Neo4jGraph) result ).getRawGraph().toString() );
+        }
+        else if ( result instanceof Double || result instanceof Float )
+        {
+            return ValueRepresentation.number( ( (Number) result ).doubleValue() );
+        }
+        else if ( result instanceof Long )
+        {
+            return ValueRepresentation.number( ( (Long) result ).longValue() );
+        }
+        else if ( result instanceof Integer )
+        {
+            return ValueRepresentation.number( ( (Integer) result ).intValue() );
+        }
+        else
+        {
+            return ValueRepresentation.string( result.toString() );
         }
     }
 }

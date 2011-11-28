@@ -99,12 +99,13 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     public void testGremlinPostWithVariablesAsJson()
             throws UnsupportedEncodingException
     {
-        String response = doRestCall( "g.v(me).out", Status.OK, Pair.of("me", data.get().get( "I" ).getId()+"") );
+        String response = doRestCall( "g.v(me).out", Status.OK,
+                Pair.of( "me", data.get().get( "I" ).getId() + "" ) );
         assertTrue( response.contains( "you" ) );
     }
-    
+
     private String doRestCall( String script, Status status,
-            Pair<String, String> ...params )
+            Pair<String, String>... params )
     {
         // TODO Auto-generated method stub
         return super.doGremlinRestCall( ENDPOINT, script, status, params );
@@ -123,7 +124,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     {
         String script = "g.loadGraphML('https://raw.github.com/neo4j/gremlin-plugin/master/src/data/graphml1.xml');"
                         + "g.V;";
-        String response = doRestCall( script, Status.OK);
+        String response = doRestCall( script, Status.OK );
         assertTrue( response.contains( "you" ) );
         assertTrue( response.contains( "him" ) );
     }
@@ -186,9 +187,9 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * The following script returns paths. Paths in Gremlin consist of the
-     * pipes that make up the path from the starting pipes. The server
-     * is returning JSON representations of their content as a nested list.
+     * The following script returns paths. Paths in Gremlin consist of the pipes
+     * that make up the path from the starting pipes. The server is returning
+     * JSON representations of their content as a nested list.
      */
     @Test
     @Title( "Return paths from a Gremlin script" )
@@ -218,7 +219,8 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
      * table listing my friends by their name, and the names of the things they
      * like in a table with two columns, ignoring the third named step variable
      * +I+. Remember that everything in Gremlin is an iterator - in order to
-     * populate the result table +t+, iterate through the pipes with +iterate()+.
+     * populate the result table +t+, iterate through the pipes with
+     * +iterate()+.
      */
     @Test
     @Title( "Send a Gremlin Script - JSON encoded with table results" )
@@ -229,6 +231,22 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     {
         String script = "t= new Table();"
                         + "g.v(%I%).as('I').out('know').as('friend').out('like').as('likes').table(t,['friend','likes']){it.name}{it.name}.iterate();t;";
+        String response = doRestCall( script, Status.OK );
+        assertTrue( response.contains( "cats" ) );
+    }
+
+    /**
+     * When returning an iterable nested result like a pipe,
+     * the data will be serialized according to the resolution of the
+     * pipe elements, as shown below.
+     */
+    @Test
+    @Graph( value = { "I know Joe", "I like cats", "Joe like cats",
+            "Joe like dogs" } )
+    public void table_result_with_cap_pipe()
+    {
+        String script = "t= new Table();"
+                        + "g.v(%I%).as('I').out('know').as('friend').out('like').as('likes').table(new Table()){it.name}{it.name}.cap;";
         String response = doRestCall( script, Status.OK );
         assertTrue( response.contains( "cats" ) );
     }
@@ -317,11 +335,12 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     @Graph( { "Peter knows Ian", "Ian knows Peter", "Peter likes Bikes" } )
     public void group_count() throws UnsupportedEncodingException, Exception
     {
-        String script = "m = [:];" + "g.v(%Peter%).bothE().label.groupCount(m).iterate();m";
+        String script = "m = [:];"
+                        + "g.v(%Peter%).bothE().label.groupCount(m).iterate();m";
         String response = doRestCall( script, Status.OK );
         assertTrue( response.contains( "knows=2" ) );
     }
-    
+
     /**
      * This example is showing a group count in Germlin, for instance the
      * counting of the different relationship types connected to some the start
@@ -332,17 +351,20 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     @Test
     @Documented
     @Graph( { "Peter knows Ian", "Ian knows Peter", "Peter likes Bikes" } )
-    public void modify_the_graph_while_traversing() throws UnsupportedEncodingException, Exception
+    public void modify_the_graph_while_traversing()
+            throws UnsupportedEncodingException, Exception
     {
         data.get();
-        gen().addSnippet( "graph1", AsciidocHelper.createGraphViz( "Starting Graph", graphdb(), "starting_graph"+gen.get().getTitle() ) );
+        gen().addSnippet(
+                "graph1",
+                AsciidocHelper.createGraphViz( "Starting Graph", graphdb(),
+                        "starting_graph" + gen.get().getTitle() ) );
         assertTrue( getNode( "Peter" ).hasRelationship() );
         String script = "g.v(%Peter%).bothE.each{g.removeEdge(it)}";
         String response = doRestCall( script, Status.OK );
         assertFalse( getNode( "Peter" ).hasRelationship() );
     }
 
-    
     /**
      * Multiple traversals can be combined into a single result, using splitting
      * and merging pipes in a lazy fashion.
@@ -368,41 +390,40 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
 
     }
 
-    
-
     /**
-     * In order to return only certain sections of a Gremlin result,
-     * you can use native Groovy  contstructs like +drop()+ and +take()+ to skip and chunk the
-     * result set. However, these are not lazy and will build up memory.
-     * It is better to use the Gremlin +[start..end]+ pipe instead, providing a lazy way for doing this.
+     * In order to return only certain sections of a Gremlin result, you can use
+     * native Groovy contstructs like +drop()+ and +take()+ to skip and chunk
+     * the result set. However, these are not lazy and will build up memory. It
+     * is better to use the Gremlin +[start..end]+ pipe instead, providing a
+     * lazy way for doing this.
      * 
-     * Also, note the use of the +filter{}+ closure to filter
-     * nodes.
+     * Also, note the use of the +filter{}+ closure to filter nodes.
      */
     @Test
     @Graph( value = { "George knows Sara", "George knows Ian" }, autoIndexNodes = true )
-    public void chunking_and_offsetting_in_Gremlin() throws UnsupportedEncodingException
+    public void chunking_and_offsetting_in_Gremlin()
+            throws UnsupportedEncodingException
     {
         String script = "g.v(%George%).out('knows').filter{it.name == 'Sara'}[0..100]";
         String response = doRestCall( script, Status.OK );
         assertTrue( response.contains( "Sara" ) );
         assertFalse( response.contains( "Ian" ) );
     }
-    
+
     /**
-     * Of course,
-     * Neo4j primitives liek +Nodes+, +Relationships+ and +GraphDatabaseService+
-     * are returned as Neo4j REST entities
+     * Of course, Neo4j primitives liek +Nodes+, +Relationships+ and
+     * +GraphDatabaseService+ are returned as Neo4j REST entities
      */
     @Test
     @Graph( value = { "George knows Sara", "George knows Ian" }, autoIndexNodes = true )
-    public void returning_Neo4j_primitives() throws UnsupportedEncodingException
+    public void returning_Neo4j_primitives()
+            throws UnsupportedEncodingException
     {
         String script = "g.getRawGraph()";
         String response = doRestCall( script, Status.OK );
         assertTrue( response.contains( "neo4j_version" ) );
     }
-    
+
     /**
      * 
      */
@@ -415,69 +436,72 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
         assertTrue( response.contains( "Ian" ) );
         assertTrue( response.contains( "Sara" ) );
     }
-    
+
     /**
-     * This example demonstrates basic
-     * collaborative filtering - ordering a traversal after occurence counts and
-     * substracting objects that are not interesting in the final result.
+     * This example demonstrates basic collaborative filtering - ordering a
+     * traversal after occurence counts and substracting objects that are not
+     * interesting in the final result.
      * 
-     * Here, we are finding Friends-of-Friends that are not Joes friends already.
-     * The same can be applied to graphs of users that +LIKE+ things and others.
+     * Here, we are finding Friends-of-Friends that are not Joes friends
+     * already. The same can be applied to graphs of users that +LIKE+ things
+     * and others.
      */
     @Documented
     @Test
-    @Graph( value = { "Joe knows Bill", "Joe knows Sara", "Sara knows Bill", "Sara knows Ian", "Bill knows Derrick",
-            "Bill knows Ian", "Sara knows Jill" }, autoIndexNodes = true )
+    @Graph( value = { "Joe knows Bill", "Joe knows Sara", "Sara knows Bill",
+            "Sara knows Ian", "Bill knows Derrick", "Bill knows Ian",
+            "Sara knows Jill" }, autoIndexNodes = true )
     public void collaborative_filtering() throws UnsupportedEncodingException
     {
-        String script = "x=[];fof=[:];" +
-        		"g.v(%Joe%).out('knows').aggregate(x).out('knows').except(x).groupCount(fof).iterate();fof.sort{a,b -> b.value <=> a.value}";
+        String script = "x=[];fof=[:];"
+                        + "g.v(%Joe%).out('knows').aggregate(x).out('knows').except(x).groupCount(fof).iterate();fof.sort{a,b -> b.value <=> a.value}";
         String response = doRestCall( script, Status.OK );
-        assertFalse( response.contains( "v["+ data.get().get( "Bill").getId() ) );
-        assertFalse( response.contains( "v["+ data.get().get( "Sara").getId() ) );
-        assertTrue( response.contains( "v["+ data.get().get( "Ian").getId() ) );
-        assertTrue( response.contains( "v["+ data.get().get( "Jill").getId() ) );
-        assertTrue( response.contains( "v["+ data.get().get( "Derrick").getId() ) );
+        assertFalse( response.contains( "v[" + data.get().get( "Bill" ).getId() ) );
+        assertFalse( response.contains( "v[" + data.get().get( "Sara" ).getId() ) );
+        assertTrue( response.contains( "v[" + data.get().get( "Ian" ).getId() ) );
+        assertTrue( response.contains( "v[" + data.get().get( "Jill" ).getId() ) );
+        assertTrue( response.contains( "v["
+                                       + data.get().get( "Derrick" ).getId() ) );
     }
-    
-    
+
     /**
-     * This is a basic stub for implementing flow algorithms in 
-     * e.g. http://en.wikipedia.org/wiki/Flow_network[Flow Networks]
-     * with a pipes-based approach and scripting, here between +source+ and
-     * +sink+ using the +capacity+ property on relationships as the base for 
-     * the flow function and modifying the graph during calculation.
+     * This is a basic stub for implementing flow algorithms in e.g.
+     * http://en.wikipedia.org/wiki/Flow_network[Flow Networks] with a
+     * pipes-based approach and scripting, here between +source+ and +sink+
+     * using the +capacity+ property on relationships as the base for the flow
+     * function and modifying the graph during calculation.
      * 
      * @@graph1
      */
     @Documented
     @Test
-    @Graph( 
-            nodes = {@NODE( name="source" , setNameProperty= true), 
-                    @NODE( name="middle" , setNameProperty= true ), 
-                    @NODE( name="sink" , setNameProperty= true ) }
-    ,relationships={
-                    @REL(start="source", end="middle", type = "CONNECTED", properties={@PROP(key="capacity", value="1", type=PropType.INTEGER)} ),
-                    @REL(start="middle", end="sink", type = "CONNECTED", properties={@PROP(key="capacity", value="3", type=PropType.INTEGER)} ),
-                    @REL(start="source", end="sink", type = "CONNECTED", properties={@PROP(key="capacity", value="1", type=PropType.INTEGER)} ),
-                    @REL(start="source", end="sink", type = "CONNECTED", properties={@PROP(key="capacity", value="2", type=PropType.INTEGER)} )}, autoIndexNodes = true )
-    public void flow_algorithms_with_Gremlin() throws UnsupportedEncodingException
+    @Graph( nodes = { @NODE( name = "source", setNameProperty = true ),
+            @NODE( name = "middle", setNameProperty = true ),
+            @NODE( name = "sink", setNameProperty = true ) }, relationships = {
+            @REL( start = "source", end = "middle", type = "CONNECTED", properties = { @PROP( key = "capacity", value = "1", type = PropType.INTEGER ) } ),
+            @REL( start = "middle", end = "sink", type = "CONNECTED", properties = { @PROP( key = "capacity", value = "3", type = PropType.INTEGER ) } ),
+            @REL( start = "source", end = "sink", type = "CONNECTED", properties = { @PROP( key = "capacity", value = "1", type = PropType.INTEGER ) } ),
+            @REL( start = "source", end = "sink", type = "CONNECTED", properties = { @PROP( key = "capacity", value = "2", type = PropType.INTEGER ) } ) }, autoIndexNodes = true )
+    public void flow_algorithms_with_Gremlin()
+            throws UnsupportedEncodingException
     {
         data.get();
-        gen().addSnippet( "graph1", AsciidocHelper.createGraphViz( "Starting Graph", graphdb(), "starting_graph"+gen.get().getTitle() ) );
-        String script = "source=g.v(%source%);sink=g.v(%sink%);maxFlow = 0;" +
-                "source.outE.inV.loop(2){!it.object.equals(sink)}.paths.each{" +
-                "flow = it.capacity.min(); " +
-                "maxFlow += flow;" +
-                "it.findAll{it.capacity}.each{it.capacity -= flow}};maxFlow";
+        gen().addSnippet(
+                "graph1",
+                AsciidocHelper.createGraphViz( "Starting Graph", graphdb(),
+                        "starting_graph" + gen.get().getTitle() ) );
+        String script = "source=g.v(%source%);sink=g.v(%sink%);maxFlow = 0;"
+                        + "source.outE.inV.loop(2){!it.object.equals(sink)}.paths.each{"
+                        + "flow = it.capacity.min(); "
+                        + "maxFlow += flow;"
+                        + "it.findAll{it.capacity}.each{it.capacity -= flow}};maxFlow";
         String response = doRestCall( script, Status.OK );
-        assertTrue( response.contains( "4") );
+        assertTrue( response.contains( "4" ) );
     }
 
-    
     @Test
     @Ignore
-    @Graph( value = { "Peter knows Ian", "Ian knows Peter", "Marie likes Peter" }, autoIndexNodes = true, autoIndexRelationships=true )
+    @Graph( value = { "Peter knows Ian", "Ian knows Peter", "Marie likes Peter" }, autoIndexNodes = true, autoIndexRelationships = true )
     public void test_Gremlin_load()
     {
         data.get();
@@ -508,17 +532,21 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
         gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
                 JSONPrettifier.parse( payload ) );
         String response = gen.get().post( ENDPOINT ).entity();
-        for (int i = 0; i<1000;i++) {
-            String uri = "uri"+i;
-            payload = "{\"script\":\"n = Object.metaClass.makeNode('"+uri+"',[:]\"}";
+        for ( int i = 0; i < 1000; i++ )
+        {
+            String uri = "uri" + i;
+            payload = "{\"script\":\"n = Object.metaClass.makeNode('" + uri
+                      + "',[:]\"}";
             gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
                     JSONPrettifier.parse( payload ) );
             response = gen.get().post( ENDPOINT ).entity();
             assertTrue( response.contains( uri ) );
         }
-        for (int i = 0; i<999;i++) {
+        for ( int i = 0; i < 999; i++ )
+        {
             String uri = "uri";
-            payload = "{\"script\":\"n = Object.metaClass.makeEdge('knows','"+uri+i+"','"+uri+(i+1)+"'[:]\"}";
+            payload = "{\"script\":\"n = Object.metaClass.makeEdge('knows','"
+                      + uri + i + "','" + uri + ( i + 1 ) + "'[:]\"}";
             gen.get().expectedStatus( Status.OK.getStatusCode() ).payload(
                     JSONPrettifier.parse( payload ) );
             response = gen.get().post( ENDPOINT ).entity();
