@@ -57,7 +57,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
     private PluginInitializer pluginInitializer;
     private final Bootstrapper bootstrapper;
 
-    public NeoServerWithEmbeddedWebServer( Bootstrapper bootstrapper, AddressResolver addressResolver,
+    public NeoServerWithEmbeddedWebServer( Bootstrapper bootstrapper,
             StartupHealthCheck startupHealthCheck, Configurator configurator, WebServer webServer,
             Iterable<Class<? extends ServerModule>> moduleClasses )
     {
@@ -110,8 +110,6 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
     /**
      * Initializes individual plugins using the mechanism provided via @{see PluginInitializer} and the java service
      * locator
-     *
-     * @param logger
      */
     protected void startExtensionInitialization()
     {
@@ -348,10 +346,10 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
 
         }
         sb.append( "://" );
-        // sb.append( addressResolver.getHostname() );
+
         sb.append( getWebServerAddress() );
 
-        if ( webServerPort != 80 )
+        if ( webServerPort != 80 && webServerPort != 443)
         {
             sb.append( ":" );
             sb.append( webServerPort );

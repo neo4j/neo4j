@@ -82,7 +82,7 @@ public abstract class Bootstrapper
         {
             StartupHealthCheck startupHealthCheck = new StartupHealthCheck( rules() );
             Jetty6WebServer webServer = new Jetty6WebServer();
-            server = new NeoServerWithEmbeddedWebServer( this, new AddressResolver(), startupHealthCheck,
+            server = new NeoServerWithEmbeddedWebServer( this, startupHealthCheck,
                     getConfigurator(), webServer, getServerModules() );
             server.start();
 
