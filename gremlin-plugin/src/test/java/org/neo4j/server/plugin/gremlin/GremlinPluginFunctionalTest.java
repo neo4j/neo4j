@@ -236,14 +236,14 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * When returning an iterable nested result like a pipe,
-     * the data will be serialized according to the resolution of the
-     * pipe elements, as shown below.
+     * When returning an iterable nested result like a pipe, the data will be
+     * serialized according to the recursive resolution of the pipe elements, as
+     * shown below.
      */
     @Test
     @Graph( value = { "I know Joe", "I like cats", "Joe like cats",
             "Joe like dogs" } )
-    public void table_result_with_cap_pipe()
+    public void returning_nested_pipes()
     {
         String script = "t= new Table();"
                         + "g.v(%I%).as('I').out('know').as('friend').out('like').as('likes').table(new Table()){it.name}{it.name}.cap;";
@@ -465,8 +465,8 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * This is a basic stub for implementing flow algorithms in e.g.
-     * http://en.wikipedia.org/wiki/Flow_network[Flow Networks] with a
+     * This is a basic stub example for implementing flow algorithms in for
+     * instance http://en.wikipedia.org/wiki/Flow_network[Flow Networks] with a
      * pipes-based approach and scripting, here between +source+ and +sink+
      * using the +capacity+ property on relationships as the base for the flow
      * function and modifying the graph during calculation.
