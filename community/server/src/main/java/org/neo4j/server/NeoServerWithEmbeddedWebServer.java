@@ -346,10 +346,10 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
 
         }
         sb.append( "://" );
-        // sb.append( addressResolver.getHostname() );
+
         sb.append( getWebServerAddress() );
 
-        if ( webServerPort != 80 )
+        if ( webServerPort != 80 && webServerPort != 443)
         {
             sb.append( ":" );
             sb.append( webServerPort );
