@@ -61,6 +61,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.batchinsert.BatchInserter;
 import org.neo4j.kernel.impl.batchinsert.BatchInserterImpl;
 import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.TargetDirectory;
 
 public class ImdbExampleTest
 {
@@ -174,7 +175,7 @@ public class ImdbExampleTest
     @Test
     public void deleteIndex()
     {
-        GraphDatabaseService graphDb = new ImpermanentGraphDatabase();
+        GraphDatabaseService graphDb = new EmbeddedGraphDatabase( TargetDirectory.forTest( getClass() ).directory( "delete", true ).getAbsolutePath() );
         Transaction transaction = graphDb.beginTx();
         try
         {
