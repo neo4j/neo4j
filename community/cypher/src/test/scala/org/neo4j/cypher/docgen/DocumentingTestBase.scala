@@ -75,7 +75,7 @@ abstract class DocumentingTestBase extends JUnitSuite {
   }
 
   def path: String = {
-    "target/docs/ql/"
+    "target/docs/dev/ql/"
   }
 
   private def emitGraphviz(fileName: String): String = {
