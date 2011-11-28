@@ -16,39 +16,40 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package org.neo4j.windows.test;
 
- package org.neo4j.windows.test;
- 
+import com.sun.jersey.api.client.ClientHandlerException;
 import org.junit.Test;
+import org.neo4j.server.rest.JaxRsResponse;
+import org.neo4j.server.rest.RestRequest;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import org.neo4j.server.rest.RestRequest;
-import org.neo4j.server.rest.JaxRsResponse;
-import com.sun.jersey.api.client.ClientHandlerException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.*;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.*;
 
 public class TheTest {
     @Test
     public void Test() throws Throwable {
-        Result install = run("msiexec /i target\\neo4j-community-setup-1.6-SNAPSHOT.msi /quiet");
+        Result install = run("msiexec /i target\\neo4j-community-setup-1.6-SNAPSHOT.msi /quiet INSTALL_DIR=\"C:\\det är dåligt. mycket mycket dåligt. gör inte såhär.\"");
         install.checkResults();
-		JaxRsResponse r = RestRequest.req().get("http://localhost:7474/db/data/");
-		assertThat(r.getStatus(), equalTo(200));
+		checkDataRest();
 		
         Result uninstall = run("msiexec /x target\\neo4j-community-setup-1.6-SNAPSHOT.msi /quiet");
         uninstall.checkResults();
 		try {
-			r = RestRequest.req().get("http://localhost:7474/db/data/");
-			int status = r.getStatus();
+			checkDataRest();
 			fail("Server is still listening to port 7474 even after uninstall");
 		} catch (ClientHandlerException e) {
 		}
 	}
+	
+	private void checkDataRest() throws Exception {
+		JaxRsResponse r = RestRequest.req().get("http://localhost:7474/db/data/");
+		assertThat(r.getStatus(), equalTo(200));
+    } 
 
     private Result run(String cmd) throws IOException, InterruptedException {
         System.out.println(cmd);
