@@ -118,7 +118,6 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         assertTrue( index.isWriteable() );
     }
 
-    @Ignore
     @Test
     public void testStartupInExistingDirectory() {
         AbstractGraphDatabase graphDatabase = new ImpermanentGraphDatabase();
@@ -1337,7 +1336,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         assertNull( index.query( "key", "*" ).getSingle() );
     }
 
-    @Ignore( "TODO Exposes a bug" )
+    @Ignore( "TODO Exposes a bug. Fixed in Lucene 3.4.0" )
     @Test
     public void updateIndex() throws Exception {
         String TEXT = "text";

@@ -20,12 +20,10 @@
 package org.neo4j.index.impl.lucene;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.util.Map;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -41,7 +39,6 @@ import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 /**
  * Don't extend Neo4jTestCase since these tests restarts the db in the tests. 
@@ -81,49 +78,6 @@ public class TestRecovery
         // Start up and let it recover
         final GraphDatabaseService newGraphDb = new EmbeddedGraphDatabase( getDbPath() );
         newGraphDb.shutdown();
-    }
-    
-    @Ignore
-    @Test
-    public void testHardCoreRecovery() throws Exception
-    {
-    	String path = "target/hcdb";
-        Neo4jTestCase.deleteFileOrDirectory( new File( path ) );
-    	Process process = Runtime.getRuntime().exec( new String[] {
-    			"java", "-cp", System.getProperty( "java.class.path" ),
-    			Inserter.class.getName(), path
-    	} );
-    	
-    	// Let it run for a while and then kill it, and wait for it to die
-    	Thread.sleep( 6000 );
-    	process.destroy();
-    	process.waitFor();
-    	
-    	GraphDatabaseService db = new EmbeddedGraphDatabase( path );
-    	assertTrue( db.index().existsForNodes( "myIndex" ) );
-    	Index<Node> index = db.index().forNodes( "myIndex" );
-    	for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
-    	{
-    	    for ( String key : node.getPropertyKeys() )
-    	    {
-    	        String value = (String) node.getProperty( key );
-    	        boolean found = false;
-    	        for ( Node indexedNode : index.get( key, value ) )
-                {
-    	            if ( indexedNode.equals( node ) )
-    	            {
-    	                found = true;
-    	                break;
-    	            }
-                }
-    	        if ( !found )
-    	        {
-    	            throw new IllegalStateException( node + " has property '" + key + "'='" +
-    	                    value + "', but not in index" );
-    	        }
-    	    }
-    	}
-    	db.shutdown();
     }
     
     @Test

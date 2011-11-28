@@ -19,7 +19,6 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static java.lang.System.currentTimeMillis;
 import static org.apache.lucene.search.NumericRangeQuery.newIntRange;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
@@ -27,7 +26,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.index.Neo4jTestCase.assertContains;
@@ -40,11 +38,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -164,32 +160,6 @@ public class TestLuceneBatchInsert
         Node node2 = db.getNodeById( id2 );
         assertContains( dbIndex.query( "name", "persson" ), node1, node2 );
         db.shutdown();
-    }
-
-    @Ignore
-    @Test
-    public void testInsertionSpeed()
-    {
-        BatchInserter inserter = new BatchInserterImpl( new File( PATH, "3" ).getAbsolutePath() );
-        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
-        BatchInserterIndex index = provider.nodeIndex( "yeah", EXACT_CONFIG );
-        index.setCacheCapacity( "key", 1000000 );
-        long t = currentTimeMillis();
-        for ( int i = 0; i < 1000000; i++ )
-        {
-            Map<String, Object> properties = map( "key", "value" + i );
-            long id = inserter.createNode( properties );
-            index.add( id, properties );
-        }
-        System.out.println( "insert:" + ( currentTimeMillis() - t ) );
-        index.flush();
-
-        t = currentTimeMillis();
-        for ( int i = 0; i < 1000000; i++ )
-        {
-            count( (Iterator<Long>) index.get( "key", "value" + i ) );
-        }
-        System.out.println( "get:" + ( currentTimeMillis() - t ) );
     }
 
     @Test

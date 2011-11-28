@@ -73,7 +73,7 @@ public class TestMigration
     }
 
     @Test
-    @Ignore
+    @Ignore( "These upgrade tests only work for one version difference" )
     public void canUpgradeFromPreviousVersion() throws Exception
     {
         GraphDatabaseService db = unpackDbFrom( "db-with-v3.0.1.zip" );
