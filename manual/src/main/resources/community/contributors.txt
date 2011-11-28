@@ -16,6 +16,7 @@ As an Open Source Project, the Neo4j User community extends its warmest thanks t
 |Andres Taylor |https://api.github.com/users/systay[systay]
 |Jacob Hansson |https://api.github.com/users/jakewins[jakewins]
 |Jim Webber |https://api.github.com/users/jimwebber[jimwebber]
+|Josh Adell |https://api.github.com/users/jadell[jadell]
 |Andreas Kollegger |https://api.github.com/users/akollegger[akollegger]
 |Chris Gioran |https://api.github.com/users/digitalstain[digitalstain]
 |Thomas Baum |https://api.github.com/users/tbaum[tbaum]
