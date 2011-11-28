@@ -19,8 +19,10 @@
  */
 package org.neo4j.server.rest;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -29,6 +31,12 @@ import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -58,15 +66,45 @@ public class RetrieveNodeFunctionalTest extends SharedServerTestBase
     {
         cleanDatabase();
         nodeUri = new URI( functionalTestHelper.nodeUri() + "/"
-                           + new GraphDbHelper( server().getDatabase() ).createNode() );
+                + new GraphDbHelper( server().getDatabase() ).createNode() );
     }
 
-    public @Rule
+    public
+    @Rule
     TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
+
+    @Test
+    public void shouldParameteriseUrisInNodeRepresentationWithHostHeaderValue() throws Exception
+    {
+        HttpClient httpclient = new DefaultHttpClient();
+        HttpGet httpget = new HttpGet( nodeUri );
+        httpget.setHeader( "Accept", "application/json" );
+        httpget.setHeader( "Host", "dummy.neo4j.org" );
+        HttpResponse response = httpclient.execute( httpget );
+        HttpEntity entity = response.getEntity();
+
+        String entityBody = IOUtils.toString( entity.getContent(), "UTF-8" );
+
+        assertThat( entityBody, containsString( "http://dummy.neo4j.org/db/data/node/1" ) );
+    }
+
+    @Test
+    public void shouldParameteriseUrisInNodeRepresentationWithoutHostHeaderUsingRequestUri() throws Exception
+    {
+        HttpClient httpclient = new DefaultHttpClient();
+        HttpGet httpget = new HttpGet( nodeUri );
+        httpget.setHeader( "Accept", "application/json" );
+        HttpResponse response = httpclient.execute( httpget );
+        HttpEntity entity = response.getEntity();
+
+        String entityBody = IOUtils.toString( entity.getContent(), "UTF-8" );
+
+        assertThat( entityBody, containsString( "http://localhost:7474/db/data/node/1" ) );
+    }
 
     /**
      * Get node.
-     * 
+     * <p/>
      * Note that the response contains URI/templates for the available
      * operations for getting properties and relationships.
      */
@@ -82,7 +120,7 @@ public class RetrieveNodeFunctionalTest extends SharedServerTestBase
 
     /**
      * Get node - compact.
-     * 
+     * <p/>
      * Specifying the subformat in the requests media type yields a more compact
      * JSON response without metadata and templates.
      */
@@ -102,7 +140,7 @@ public class RetrieveNodeFunctionalTest extends SharedServerTestBase
     @Test
     public void shouldGetContentLengthHeaderWhenRetrievingNode() throws Exception
     {
-        JaxRsResponse response = retrieveNodeFromService(nodeUri.toString());
+        JaxRsResponse response = retrieveNodeFromService( nodeUri.toString() );
         assertNotNull( response.getHeaders()
                 .get( "Content-Length" ) );
         response.close();
@@ -111,7 +149,7 @@ public class RetrieveNodeFunctionalTest extends SharedServerTestBase
     @Test
     public void shouldHaveJsonMediaTypeOnResponse()
     {
-        JaxRsResponse response = retrieveNodeFromService(nodeUri.toString());
+        JaxRsResponse response = retrieveNodeFromService( nodeUri.toString() );
         assertEquals( MediaType.APPLICATION_JSON_TYPE, response.getType() );
         response.close();
     }
@@ -119,7 +157,7 @@ public class RetrieveNodeFunctionalTest extends SharedServerTestBase
     @Test
     public void shouldHaveJsonDataInResponse() throws Exception
     {
-        JaxRsResponse response = retrieveNodeFromService(nodeUri.toString());
+        JaxRsResponse response = retrieveNodeFromService( nodeUri.toString() );
 
         Map<String, Object> map = JsonHelper.jsonToMap( response.getEntity( String.class ) );
         assertTrue( map.containsKey( "self" ) );
@@ -138,7 +176,7 @@ public class RetrieveNodeFunctionalTest extends SharedServerTestBase
                 .get( nodeUri + "00000" );
     }
 
-    private JaxRsResponse retrieveNodeFromService(final String uri)
+    private JaxRsResponse retrieveNodeFromService( final String uri )
     {
         return RestRequest.req().get( uri );
     }

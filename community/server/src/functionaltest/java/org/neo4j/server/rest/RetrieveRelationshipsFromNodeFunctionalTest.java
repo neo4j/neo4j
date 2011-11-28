@@ -19,8 +19,11 @@
  */
 package org.neo4j.server.rest;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.util.List;
@@ -28,6 +31,12 @@ import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -90,6 +99,38 @@ public class RetrieveRelationshipsFromNodeFunctionalTest extends SharedServerTes
         {
             RelationshipRepresentationTest.verifySerialisation( relrep );
         }
+    }
+
+    @Test
+    public void shouldParameteriseUrisInRelationshipRepresentationWithHostHeaderValue() throws Exception
+    {
+        HttpClient httpclient = new DefaultHttpClient();
+        HttpGet httpget = new HttpGet( "http://localhost:7474/db/data/relationship/1");
+        httpget.setHeader( "Accept", "application/json" );
+        httpget.setHeader( "Host", "dummy.neo4j.org" );
+        HttpResponse response = httpclient.execute( httpget );
+        HttpEntity entity = response.getEntity();
+
+        String entityBody = IOUtils.toString( entity.getContent(), "UTF-8" );
+
+        System.out.println( entityBody );
+
+        assertThat( entityBody, containsString( "http://dummy.neo4j.org/db/data/relationship/1" ) );
+        assertThat( entityBody,  not( containsString( "localhost:7474" ) ) );
+    }
+
+    @Test
+    public void shouldParameteriseUrisInRelationshipRepresentationWithoutHostHeaderUsingRequestUri() throws Exception
+    {
+        HttpClient httpclient = new DefaultHttpClient();
+        HttpGet httpget = new HttpGet( "http://localhost:7474/db/data/relationship/1");
+        httpget.setHeader( "Accept", "application/json" );
+        HttpResponse response = httpclient.execute( httpget );
+        HttpEntity entity = response.getEntity();
+
+        String entityBody = IOUtils.toString( entity.getContent(), "UTF-8" );
+
+        assertThat( entityBody, containsString( "http://localhost:7474/db/data/relationship/1" ) );
     }
 
     /**

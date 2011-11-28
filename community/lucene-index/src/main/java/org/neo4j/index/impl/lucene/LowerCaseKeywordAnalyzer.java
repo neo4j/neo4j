@@ -39,4 +39,4 @@ public final class LowerCaseKeywordAnalyzer extends Analyzer
     {
         return getClass().getSimpleName();
     }
-};
+}

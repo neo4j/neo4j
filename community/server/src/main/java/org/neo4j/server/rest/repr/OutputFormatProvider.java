@@ -23,9 +23,8 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import org.neo4j.server.database.AbstractInjectableProvider;
-
 import com.sun.jersey.api.core.HttpContext;
+import org.neo4j.server.database.AbstractInjectableProvider;
 
 public final class OutputFormatProvider extends AbstractInjectableProvider<OutputFormat>
 {
@@ -43,8 +42,7 @@ public final class OutputFormatProvider extends AbstractInjectableProvider<Outpu
         try
         {
             return repository.outputFormat( context.getRequest()
-                    .getAcceptableMediaTypes(), context.getRequest()
-                    .getBaseUri() );
+                    .getAcceptableMediaTypes(), context.getRequest().getBaseUri() );
         }
         catch ( MediaTypeNotSupportedException e )
         {
