@@ -41,7 +41,6 @@ import org.neo4j.test.server.EntityOutputFormat;
 
 public class DiscoveryServiceTest
 {
-
     @Test
     public void shouldReturnValidJSONWithDataAndManagementUris() throws Exception
     {
@@ -71,7 +70,7 @@ public class DiscoveryServiceTest
 
     }
 
-    @Ignore
+    @Ignore( "Absolute URIs not supported in this config" )
     @Test
     public void shouldReturnConfiguredUrlIfConfigIsAbsolute() throws Exception
     {

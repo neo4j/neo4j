@@ -60,11 +60,9 @@ public class ConsoleWebIT extends AbstractWebadminTest {
     }
 
     @Test
-    @Ignore
-    public void cypherHasMultilineInput() {
-        
-        // Broken due to http://code.google.com/p/selenium/issues/detail?id=1723
-        
+    @Ignore( "Broken due to http://code.google.com/p/selenium/issues/detail?id=1723" )
+    public void cypherHasMultilineInput()
+    {
         accessing_the_Shell_console();
         
         wl.writeTo(By.id("console-input"), "start a=node(1)", Keys.RETURN);
@@ -88,10 +86,8 @@ public class ConsoleWebIT extends AbstractWebadminTest {
     }
 
     @Test
-    @Ignore
+    @Ignore( "Broken due to http://code.google.com/p/selenium/issues/detail?id=1723" )
     public void canAccessDatabaseViaGremlinConsoleTest() {
-        
-        // Broken due to http://code.google.com/p/selenium/issues/detail?id=1723
         
         wl.goToWebadminStartPage();
         wl.clickOnTab("Console");

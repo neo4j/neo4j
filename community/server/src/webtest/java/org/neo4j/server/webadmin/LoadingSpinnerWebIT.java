@@ -27,10 +27,8 @@ import org.openqa.selenium.Keys;
 public class LoadingSpinnerWebIT extends AbstractWebadminTest {
 
     @Test
-    @Ignore
+    @Ignore( "Broken due to http://code.google.com/p/selenium/issues/detail?id=1723" )
     public void showsLoadingSpinnerTest() {
-        
-        // Broken due to http://code.google.com/p/selenium/issues/detail?id=1723
         
         wl.goToWebadminStartPage();
         wl.clickOnTab("Console");
