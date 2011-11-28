@@ -279,6 +279,7 @@ Common attributes you can use in documents:
 
 * \{neo4j-version} - rendered as "{neo4j-version}"
 * \{neo4j-git-tag} - rendered as "{neo4j-git-tag}"
+* \{lucene-version} - rendered as "{lucene-version}"
 
 These can substitute part of URLs that point to for example APIdocs or source code.
 Note that neo4j-git-tag also handles the case of snapshot/master.

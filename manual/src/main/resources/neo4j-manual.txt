@@ -5,6 +5,8 @@ The Neo4j Manual v{revnumber}
 :neo4j-buildnumber: {revnumber}
 :neo4j-git-tag: {gitversion}
 
+:lucene-version: 3_1_0
+
 include::preface/preface.txt[]
 
 :leveloffset: 0
