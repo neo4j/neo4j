@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <DOCUMENT Type="Advanced Installer" CreateVersion="8.6" version="8.6" Modules="enterprise" RootPath="." Language="en" Id="{7742175A-59E9-4A4C-9A51-E6EA0AFFFB81}">
   <COMPONENT cid="caphyon.advinst.msicomp.ProjectOptionsComponent">
-    <ROW Name="HiddenItems" Value="ChainedPackageComponent;MsiDriverPackagesComponent;AutorunComponent;GameUxComponent;MsiClassComponent;WebApplicationsComponent;MsiOdbcDataSrcComponent;SqlConnectionComponent;SharePointSlnComponent;MsiDirectEditorComponent"/>
+    <ROW Name="HiddenItems" Value="ChainedPackageComponent;MsiDriverPackagesComponent;AutorunComponent;MsiInstallUISequenceComponent;BackgroundImagesComponent;DictionaryComponent;GameUxComponent;MsiClassComponent;WebApplicationsComponent;MsiOdbcDataSrcComponent;SqlConnectionComponent;SharePointSlnComponent;MsiDirectEditorComponent"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiPropsComponent">
     <ROW Property="ADMIN_URL" Value="http://localhost:7474/"/>
@@ -122,14 +122,14 @@
     <ROW Action="AI_STORE_LOCATION" Condition="(Not Installed) OR REINSTALL" Sequence="1501"/>
     <ROW Action="AI_PREPARE_UPGRADE" Condition="AI_UPGRADE=&quot;No&quot; AND (Not Installed)" Sequence="1399"/>
     <ROW Action="AI_ResolveKnownFolders" Sequence="51"/>
-    <ROW Action="SetInstallDir" Sequence="101"/>
-    <ROW Action="AppSearch" Condition="INSTALL_DIR=&quot;NOT_SET&quot;" Sequence="100" SeqType="0" MsiKey="AppSearch"/>
+    <ROW Action="SetInstallDir" Condition="INSTALL_DIR=&quot;NOT_SET&quot;" Sequence="101"/>
+    <ROW Action="AppSearch" Sequence="100" SeqType="0" MsiKey="AppSearch"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiInstallUISequenceComponent">
     <ROW Action="AI_RESTORE_LOCATION" Condition="APPDIR=&quot;&quot;" Sequence="749"/>
     <ROW Action="AI_ResolveKnownFolders" Sequence="51"/>
-    <ROW Action="AppSearch" Condition="INSTALL_DIR=&quot;NOT_SET&quot;" Sequence="100" SeqType="0" MsiKey="AppSearch"/>
-    <ROW Action="SetInstallDir" Sequence="101"/>
+    <ROW Action="AppSearch" Sequence="100" SeqType="0" MsiKey="AppSearch"/>
+    <ROW Action="SetInstallDir" Condition="INSTALL_DIR=&quot;NOT_SET&quot;" Sequence="101"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiJavaComponent">
     <ROW Name="Neo4j.exe" Launcher="Neo4j.exe" MainClass="Main_Class" ClassPath="Class_Path" VMParams="Virtual_Machine_Parameters" JREMin="Minimum_Version" JREMax="Maximum_Version" AppType="Application_Type" JVMType="JVM_Type" PlusList="APPDIR;" MinusList="#Neo4j.exe;" MacDescription="[|CurrentJavaProductName] [|ProductVersion] © [|Manufacturer], Inc, 2011" MacBundleId="com.[|Manufacturer].[|ProductName].[|CurrentJavaProductName]" JVMSourcePreference="JVM_Source" UACExecutionLevel="0" CommandLineArguments="Cmd"/>
