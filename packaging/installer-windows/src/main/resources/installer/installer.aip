@@ -7,11 +7,10 @@
     <ROW Property="ADMIN_URL" Value="http://localhost:7474/"/>
     <ROW Property="AI_UPGRADE" Value="No"/>
     <ROW Property="ALLUSERS" Value="2"/>
-    <ROW Property="APIDOC_INDEX" Value="doc\java\api\index.html"/>
     <ROW Property="ARPCOMMENTS" Value="This is the installer for Neo4j Server, Community Edition." ValueLocId="*"/>
     <ROW Property="ARPPRODUCTICON" Value="icon.exe" Type="8"/>
     <ROW Property="ARPURLINFOABOUT" Value="http://neo4j.org"/>
-    <ROW Property="DOCUMENTATION_INDEX" Value="doc\manual\html\index.html"/>
+    <ROW Property="INSTALL_DIR" Value="NOT_SET"/>
     <ROW Property="Manufacturer" Value="Neo Technology" ValueLocId="*"/>
     <ROW Property="ProductCode" Value="1033:{1F1A3D98-501E-4DD1-AE7D-7F4CE2173CB0} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
@@ -93,9 +92,10 @@
     <ROW Action="AI_ResolveKnownFolders" Type="1" Source="aicustact.dll" Target="AI_ResolveKnownFolders"/>
     <ROW Action="AI_SHOW_LOG" Type="65" Source="aicustact.dll" Target="LaunchLogFile" WithoutSeq="true"/>
     <ROW Action="AI_STORE_LOCATION" Type="51" Source="ARPINSTALLLOCATION" Target="[APPDIR]"/>
-    <ROW Action="SET_APPDIR" Type="307" Source="APPDIR" Target="[ProgramFilesFolder][Manufacturer]\[ProductName]" MultiBuildTarget="Build:[ProgramFilesFolder][ProductName]"/>
+    <ROW Action="SET_APPDIR" Type="307" Source="APPDIR" Target="[ProgramFilesFolder][Manufacturer]\[ProductName]" MultiBuildTarget="Build:[INSTALL_DIR]"/>
     <ROW Action="SET_SHORTCUTDIR" Type="307" Source="SHORTCUTDIR" Target="[ProgramMenuFolder][ProductName]"/>
     <ROW Action="SET_TARGETDIR_TO_APPDIR" Type="51" Source="TARGETDIR" Target="[APPDIR]"/>
+    <ROW Action="SetInstallDir" Type="51" Source="INSTALL_DIR" Target="[ProgramFilesFolder][ProductName]"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiIconsComponent">
     <ROW Name="icon.exe" SourcePath="icon.ico" Index="0"/>
@@ -109,7 +109,7 @@
     <ROW IniFile="Main_Class" FileName="Neo4jC~2.ini|Neo4j Community Server.ini" DirProperty="APPDIR" Section="Java Runtime Environment" Key="Main Class" Value="org.neo4j.wrapper.NeoServiceWrapper" Action="0" Component_="Neo4j.exe"/>
     <ROW IniFile="Maximum_Version" FileName="Neo4jC~2.ini|Neo4j Community Server.ini" DirProperty="APPDIR" Section="Java Runtime Environment" Key="Maximum Version" Value="any" Action="0" Component_="Neo4j.exe"/>
     <ROW IniFile="Minimum_Version" FileName="Neo4jC~2.ini|Neo4j Community Server.ini" DirProperty="APPDIR" Section="Java Runtime Environment" Key="Minimum Version" Value="1.4" Action="0" Component_="Neo4j.exe"/>
-    <ROW IniFile="URL" FileName="Docume~1.url|Documentation.url" DirProperty="Neo4j_Server_Dir" Section="InternetShortcut" Key="URL" Value="file://[APPDIR]manual\html\index.html" Action="0" Component_="Neo4j.exe"/>
+    <ROW IniFile="URL" FileName="Docume~1.url|Documentation.url" DirProperty="Neo4j_Server_Dir" Section="InternetShortcut" Key="URL" Value="file://[APPDIR]doc\manual\html\index.html" Action="0" Component_="Neo4j.exe"/>
     <ROW IniFile="URL_1" FileName="JavaAP~1.url|Java API documentation.url" DirProperty="Neo4j_Server_Dir" Section="InternetShortcut" Key="URL" Value="file://[APPDIR]doc\java\api\index.html" Action="0" Component_="Neo4j.exe"/>
     <ROW IniFile="URL_2" FileName="Admini~1.url|Administration.url" DirProperty="Neo4j_Server_Dir" Section="InternetShortcut" Key="URL" Value="[ADMIN_URL]" Action="0" Component_="Neo4j_Server"/>
     <ROW IniFile="Virtual_Machine_Parameters" FileName="Neo4jC~2.ini|Neo4j Community Server.ini" DirProperty="APPDIR" Section="Java Runtime Environment" Key="Virtual Machine Parameters" Value="-Djava.util.logging.config.file=conf/windows-wrapper-logging.properties -DworkingDir=&quot;[APPDIR]&quot; -DconfigFile=conf\neo4j-wrapper.conf -DserverMainClass=org.neo4j.server.Bootstrapper -DserverClasspath=lib/*.jar;system/lib/*.jar;plugins/*.jar;system/coordinator/lib/*.jar " Action="0" Component_="Neo4j.exe"/>
@@ -122,10 +122,14 @@
     <ROW Action="AI_STORE_LOCATION" Condition="(Not Installed) OR REINSTALL" Sequence="1501"/>
     <ROW Action="AI_PREPARE_UPGRADE" Condition="AI_UPGRADE=&quot;No&quot; AND (Not Installed)" Sequence="1399"/>
     <ROW Action="AI_ResolveKnownFolders" Sequence="51"/>
+    <ROW Action="SetInstallDir" Sequence="101"/>
+    <ROW Action="AppSearch" Condition="INSTALL_DIR=&quot;NOT_SET&quot;" Sequence="100" SeqType="0" MsiKey="AppSearch"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiInstallUISequenceComponent">
     <ROW Action="AI_RESTORE_LOCATION" Condition="APPDIR=&quot;&quot;" Sequence="749"/>
     <ROW Action="AI_ResolveKnownFolders" Sequence="51"/>
+    <ROW Action="AppSearch" Condition="INSTALL_DIR=&quot;NOT_SET&quot;" Sequence="100" SeqType="0" MsiKey="AppSearch"/>
+    <ROW Action="SetInstallDir" Sequence="101"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiJavaComponent">
     <ROW Name="Neo4j.exe" Launcher="Neo4j.exe" MainClass="Main_Class" ClassPath="Class_Path" VMParams="Virtual_Machine_Parameters" JREMin="Minimum_Version" JREMax="Maximum_Version" AppType="Application_Type" JVMType="JVM_Type" PlusList="APPDIR;" MinusList="#Neo4j.exe;" MacDescription="[|CurrentJavaProductName] [|ProductVersion] © [|Manufacturer], Inc, 2011" MacBundleId="com.[|Manufacturer].[|ProductName].[|CurrentJavaProductName]" JVMSourcePreference="JVM_Source" UACExecutionLevel="0" CommandLineArguments="Cmd"/>
