@@ -754,7 +754,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
   @Test def testOnAllNodesInAPath() {
     testQuery(
-      """start a = node(1) match p = a --> b --> c where ALL(n in NODES(p) : n.name = "Andres") return b""",
+      """start a = node(1) match p = a --> b --> c where ALL(n in NODES(p) where n.name = "Andres") return b""",
       Query.
         start(NodeById("a", 1)).
         namedPaths(
@@ -780,7 +780,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
   @Test def testAny() {
     testQuery(
-      """start a = node(1) where ANY(x in NODES(p): x.name = "Andres") return b""",
+      """start a = node(1) where ANY(x in NODES(p) where x.name = "Andres") return b""",
       Query.
         start(NodeById("a", 1)).
         where(AnyInSeq(PathNodesValue(EntityValue("p")), "x", Equals(PropertyValue("x", "name"), Literal("Andres"))))
@@ -789,7 +789,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
   @Test def testNone() {
     testQuery(
-      """start a = node(1) where none(x in nodes(p) : x.name = "Andres") return b""",
+      """start a = node(1) where none(x in nodes(p) where x.name = "Andres") return b""",
       Query.
         start(NodeById("a", 1)).
         where(NoneInSeq(PathNodesValue(EntityValue("p")), "x", Equals(PropertyValue("x", "name"), Literal("Andres"))))
@@ -798,7 +798,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
   @Test def testSingle() {
     testQuery(
-      """start a = node(1) where single(x in NODES(p): x.name = "Andres") return b""",
+      """start a = node(1) where single(x in NODES(p) WHERE x.name = "Andres") return b""",
       Query.
         start(NodeById("a", 1)).
         where(SingleInSeq(PathNodesValue(EntityValue("p")), "x", Equals(PropertyValue("x", "name"),

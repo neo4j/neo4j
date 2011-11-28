@@ -39,8 +39,8 @@ trait Clauses extends JavaTokenParsers with Tokens with Values {
 
   def sequenceClause: Parser[Clause] = (allInSeq | anyInSeq | noneInSeq | singleInSeq)
 
-  def symbolIterableClause : Parser[(Value, String, Clause)] = identity ~ ignoreCase("in") ~ value ~ ":" ~ clause ^^{
-    case symbol ~ in ~ iterable ~ ":" ~ klas => (iterable, symbol, klas)
+  def symbolIterableClause : Parser[(Value, String, Clause)] = identity ~ ignoreCase("in") ~ value ~ ignoreCase("where") ~ clause ^^{
+    case symbol ~ in ~ iterable ~ where ~ klas => (iterable, symbol, klas)
   }
 
   def allInSeq: Parser[Clause] = ignoreCase("all") ~> parens(symbolIterableClause) ^^ ( x=> AllInSeq(x._1, x._2, x._3))

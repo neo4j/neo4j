@@ -48,10 +48,10 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def all() {
     testThis(
       title = "ALL",
-      syntax = "ALL(identifier in iterable : predicate)",
+      syntax = "ALL(identifier in iterable WHERE predicate)",
       arguments = common_arguments,
       text = """Tests whether a predicate holds for all element of this iterable collection.""",
-      queryText = """start a=node(%A%), b=node(%D%) match p=a-[*1..3]->b where all(x in nodes(p) : x.age > 30) return p""",
+      queryText = """start a=node(%A%), b=node(%D%) match p=a-[*1..3]->b where all(x in nodes(p) WHERE x.age > 30) return p""",
       returns = """All nodes in the path.""",
       (p) => assertEquals(1, p.toSeq.length))
   }
@@ -59,10 +59,10 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def any() {
     testThis(
       title = "ANY",
-      syntax = "ANY(identifier in iterable : predicate)",
+      syntax = "ANY(identifier in iterable WHERE predicate)",
       arguments = common_arguments,
       text = """Tests whether a predicate holds for at least one element of this iterable collection.""",
-      queryText = """start a=node(%A%) match p=a-[*1..3]->b where any(x in nodes(p) : x.eyes = "blue") return p""",
+      queryText = """start a=node(%A%) match p=a-[*1..3]->b where any(x in nodes(p) WHERE x.eyes = "blue") return p""",
       returns = """All nodes in the path.""",
       (p) => assertEquals(3, p.toSeq.length))
   }
@@ -70,10 +70,10 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def none() {
     testThis(
       title = "NONE",
-      syntax = "NONE(identifier in iterable : predicate)",
+      syntax = "NONE(identifier in iterable WHERE predicate)",
       arguments = common_arguments,
       text = """Returns true if the predicate holds for no element in the iterable.""",
-      queryText = """start n=node(%A%) match p=n-[*1..3]->b where NONE(x in nodes(p) : x.age = 25) return p""",
+      queryText = """start n=node(%A%) match p=n-[*1..3]->b where NONE(x in nodes(p) WHERE x.age = 25) return p""",
       returns = """All nodes in the path.""",
       (p) => assertEquals(2, p.toSeq.length))
   }
@@ -81,10 +81,10 @@ class FunctionsTest extends DocumentingTestBase {
   @Test def single() {
     testThis(
       title = "SINGLE",
-      syntax = "SINGLE(identifier in iterable : predicate)",
+      syntax = "SINGLE(identifier in iterable WHERE predicate)",
       arguments = common_arguments,
       text = """Returns true if the predicate holds for exactly one of the elements in the iterable.""",
-      queryText = """start n=node(%A%) match p=n-->b where SINGLE(var in nodes(p) : var.eyes = "blue") return p""",
+      queryText = """start n=node(%A%) match p=n-->b where SINGLE(var in nodes(p) WHERE var.eyes = "blue") return p""",
       returns = """All nodes in the path.""",
       (p) => assertEquals(1, p.toSeq.length))
   }
