@@ -1,16 +1,9 @@
 Neo4j Server Examples
 =====================
  
-This example shows different ways to use the server.
-Please refer to the webpages found in the site/ directory 
-for more information.
-
-Source code for the examples is found in the examples/ directory.
-
-The org.neo4j.examples.server.CreateSimpleGraph example can be executed
-from the script found in the bin/ folder. Make sure to have the server up
-and running before you execute the script!
-
+Please head over here for the examples:
+http://docs.neo4j.org/chunked/milestone/server-extending.html
+http://docs.neo4j.org/chunked/milestone/server-java-rest-client-example.html
 
 License(s)
 ----------

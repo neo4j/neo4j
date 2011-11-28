@@ -153,8 +153,6 @@ public class AclExampleTest extends AbstractJavaDocTestbase
      * The results listed above contain +null+ values for optional path segments, which can be mitigated by either asking several
      * queries or returning just the really needed values. 
      * 
-     * Full source code:
-     * @@github
      */
     @Documented
     @Graph(autoIndexNodes=true, value = {
@@ -182,9 +180,6 @@ public class AclExampleTest extends AbstractJavaDocTestbase
     {
         data.get();
         gen.get().addSnippet( "graph1", createGraphViz("The Domain Structure", graphdb(), gen.get().getTitle()) );
-        gen.get()
-                .addGithubLink( "github", this.getClass(), "neo4j/community",
-                        "embedded-examples" );
         
         //Files
         //TODO: can we do open ended?

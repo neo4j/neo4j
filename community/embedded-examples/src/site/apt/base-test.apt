@@ -18,4 +18,4 @@ Unit testing a graph application
 
 %{source-code|snippet=unitTest|file=src/test/java/org/neo4j/examples/Neo4jBasicTest.java}
 
-    Full source code: {{{./xref-test/org/neo4j/examples/Neo4jBasicTest.html}Neo4jBasicTest}}
+    Full source code: {{{https://github.com/neo4j/community/blob/master/embedded-examples/src/test/java/org/neo4j/examples/Neo4jBasicTest.java}Neo4jBasicTest}}
