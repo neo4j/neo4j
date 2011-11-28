@@ -25,7 +25,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Array;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class TestShortArray
@@ -53,20 +52,17 @@ public class TestShortArray
     }
 
     @Test
-    @Ignore
     public void testCannotEncodeMarginal() throws Exception
     {
-        assertCanNotEncode( new long[] { 1l << 13, 1, 1, 1, 1, 1, 1, 1, 1,
+        assertCanNotEncode( new long[] { 1l << 15, 1, 1, 1, 1, 1, 1, 1, 1,
                 1, 1, 1, 1, 1 } );
     }
 
     @Test
-    @Ignore
     public void canEncodeBiggerArraysWithBiggerPayloadSize() throws Exception
     {
         int[] intArray = intArray( 10, 2600 );
-        assertCanNotEncode( intArray );
-//        assertCanEncodeAndDecodeToSameValue( intArray, 24 );
+        assertCanEncodeAndDecodeToSameValue( intArray, 32 );
     }
 
     private void assertCanNotEncode( Object intArray )

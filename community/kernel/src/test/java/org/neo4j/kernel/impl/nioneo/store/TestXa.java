@@ -42,7 +42,6 @@ import javax.transaction.xa.Xid;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -643,7 +642,6 @@ public class TestXa extends AbstractNeo4jTestCase
     }
 
     @Test
-    @Ignore
     public void testDynamicRecordsInLog() throws Exception
     {
         Xid xid = new XidImpl( new byte[2], new byte[2] );

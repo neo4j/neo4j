@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore
+@Ignore( "Not used anymore" )
 public class TestShortString
 {
 

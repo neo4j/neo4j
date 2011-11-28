@@ -92,7 +92,6 @@ public class TestArrayMap
     }
 
     @Test
-//    @Ignore("Ignored until the return true statement is removed from the test code")
     public void arraymapIsClearedWhenExpandingToHashMapIfNonShrinkable() throws Exception
     {
         assertDataRepresentationSwitchesWhenAboveThreshold( new ArrayMap<String, Integer>( 3, false,
@@ -100,7 +99,6 @@ public class TestArrayMap
     }
 
     @Test
-//    @Ignore("Ignored until the return true statement is removed from the test code")
     public void arraymapIsClearedWhenExpandingToHashMapIfShrinkable() throws Exception
     {
         assertDataRepresentationSwitchesWhenAboveThreshold( new ArrayMap<String, Integer>( 3, false,
@@ -108,7 +106,6 @@ public class TestArrayMap
     }
 
     @Test
-//    @Ignore("Ignored until the return true statement is removed from the test code")
     public void arraymapIsClearedWhenExpandingToHashMapIfNonShrinkableAndSynchronized()
             throws Exception
     {
@@ -117,7 +114,6 @@ public class TestArrayMap
     }
 
     @Test
-//    @Ignore("Ignored until the return true statement is removed from the test code")
     public void arraymapIsClearedWhenExpandingToHashMapIfShrinkableAndSynchronized()
             throws Exception
     {

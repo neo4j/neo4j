@@ -535,10 +535,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     }
 
     @Test
-    @Ignore
-    /*
-     * Assumes space to put a block is searched along the whole chain - that is not the case currently.
-     */
+    @Ignore( "Assumes space to put a block is searched along the whole chain - that is not the case currently" )
     public void testAdditionsHappenAtTheFirstRecordWhenFits()
     {
         Node node = getGraphDb().createNode();
@@ -628,10 +625,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     }
 
     @Test
-    @Ignore
-    /*
-     * Assumes space to put a block is searched along the whole chain - that is not the case currently.
-     */
+    @Ignore( "Assumes space to put a block is searched along the whole chain - that is not the case currently" )
     public void testPackingAndOverflowingValueChangeInMiddleRecord()
     {
         Node node = getGraphDb().createNode();
