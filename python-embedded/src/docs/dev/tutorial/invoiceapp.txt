@@ -28,11 +28,11 @@ tag=invoiceapp-domainlogic-create
 classifier=test-sources
 ----
 
-In the customer case, we create a new node to represent the customer and connect it to the "customers" node. This helps us find customers later on, as well as determine if a given node is a customer.
+In the customer case, we create a new node to represent the customer and connect it to the _customers node_. This helps us find customers later on, as well as determine if a given node is a customer.
 
-We also index the name of the customer, to allow quickly finding customers by name.
+We also index the name of the customer, to allow for quickly finding customers by name.
 
-In the invoice case, we do the same, except no indexing. We also connect each new invoice to the customer it was sent to, using a relationship of type "SENT_TO".
+In the invoice case, we do the same, except no indexing. We also connect each new invoice to the customer it was sent to, using a relationship of type +SENT_TO+.
 
 Next, we want to be able to retrieve customers and invoices that we have added. Because we are indexing customer names, finding them is quite simple.
 
@@ -65,3 +65,4 @@ source=examples.py
 tag=invoiceapp-create-and-search
 classifier=test-sources
 ----
+

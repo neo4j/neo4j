@@ -87,7 +87,7 @@ You can retrieve indexed items in two ways.
 Either you do a direct lookup, or you perform a query.
 The direct lookup is the same across different index providers while the query syntax depends on what index provider you use.
 As mentioned previously, Lucene is the default and by far most common index provider.
-For querying Lucene you will want to use http://lucene.apache.org/java/3_1_0/queryparsersyntax.html[the lucene query language].
+For querying Lucene you will want to use the http://lucene.apache.org/java/{lucene-version}/queryparsersyntax.html[Lucene query language].
 
 There is a python library for programatically generating Lucene queries, available at https://github.com/scholrly/lucene-querybuilder[GitHub].
 
