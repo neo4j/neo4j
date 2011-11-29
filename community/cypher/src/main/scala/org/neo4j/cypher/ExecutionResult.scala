@@ -26,10 +26,11 @@ import org.neo4j.graphdb.{PropertyContainer, Relationship, NotFoundException, No
 import collection.Traversable
 import java.io.{StringWriter, PrintWriter}
 import java.lang.String
+import symbols.SymbolTable
 
 
 trait ExecutionResult extends Traversable[Map[String, Any]] with StringExtras with Pipe {
-  val symbols: OldSymbolTable
+  val symbols: SymbolTable
 
   val columns: List[String]
 

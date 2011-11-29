@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.pipes.matching
 
-import org.neo4j.cypher.{SyntaxException, OldSymbolTable}
+import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.commands._
 import collection.immutable.Map
 import org.neo4j.graphdb.{PropertyContainer, Direction, Relationship, Node}
 import collection.{Traversable, Seq, Iterable}
+import org.neo4j.cypher.symbols.{NodeType, SymbolTable}
 
-class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: OldSymbolTable, clauses: Seq[Clause] = Seq()) {
+class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, clauses: Seq[Clause] = Seq()) {
   type PatternGraph = Map[String, PatternElement]
 
   val (patternGraph, optionalElements) = buildPatternGraph()
@@ -76,7 +77,7 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: OldSymbolTable, 
     cartesian(toList).map(_.reduceLeft(_ ++ _))
   }
 
-  private def createPatternMatcher(boundPairs: Map[String, MatchingPair], includeOptionals: Boolean, source:Map[String,Any]): Traversable[Map[String, Any]] = {
+  private def createPatternMatcher(boundPairs: Map[String, MatchingPair], includeOptionals: Boolean, source: Map[String, Any]): Traversable[Map[String, Any]] = {
 
     val patternMatcher = new PatternMatcher(boundPairs, clauses, includeOptionals, source)
 
@@ -102,10 +103,9 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: OldSymbolTable, 
     val patternNodeMap: scala.collection.mutable.Map[String, PatternNode] = scala.collection.mutable.Map()
     val patternRelMap: scala.collection.mutable.Map[String, PatternRelationship] = scala.collection.mutable.Map()
 
-    boundIdentifiers.identifiers.foreach(_ match {
-      case NodeIdentifier(nodeName) => patternNodeMap(nodeName) = new PatternNode(nodeName)
-      case _ =>
-    })
+    boundIdentifiers.identifiers.
+      filter(_.typ == NodeType()).                                      //Find all bound nodes...
+      foreach(id => patternNodeMap(id.name) = new PatternNode(id.name)) //...and create patternNodes for them
 
     patterns.foreach(_ match {
       case RelatedTo(left, right, rel, relType, dir, optional) => {
@@ -177,9 +177,10 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: OldSymbolTable, 
       })
   }
 
+  //TODO: This method is very badly named. It's called validatePatter, but returns a bunch of stuff? Makes no sense
   private def validatePattern(patternNodes: Map[String, PatternNode],
                               patternRels: Map[String, PatternRelationship],
-                              bindings: OldSymbolTable): (Map[String, PatternElement], Set[String]) = {
+                              bindings: SymbolTable): (Map[String, PatternElement], Set[String]) = {
     val overlaps = patternNodes.keys.filter(patternRels.keys.toSeq contains)
     if (overlaps.nonEmpty) {
       throw new SyntaxException("Some identifiers are used as both relationships and nodes: " + overlaps.mkString(", "))
@@ -203,7 +204,6 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: OldSymbolTable, 
         }
       }
     }
-
 
     var visited = scala.collection.mutable.Seq[PatternElement]()
 

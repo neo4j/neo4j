@@ -19,18 +19,17 @@
  */
 package org.neo4j.cypher.pipes
 
-import org.neo4j.cypher.OldSymbolTable
-import org.neo4j.cypher.commands.{OldIdentifier, LiteralIdentifier}
 import java.lang.String
+import org.neo4j.cypher.symbols.{AnyType, SymbolTable, Identifier}
 
 class ParameterPipe(params: Map[String, Any]) extends Pipe {
   def foreach[U](f: (Map[String, Any]) => U) {
     f(params)
   }
 
-  val identifiers: Seq[OldIdentifier] = params.keys.map(k => LiteralIdentifier(k)).toSeq
+  val identifiers: Seq[Identifier] = params.keys.map(k => Identifier(k, AnyType())).toSeq
 
-  val symbols: OldSymbolTable = new OldSymbolTable(identifiers)
+  val symbols: SymbolTable = new SymbolTable(identifiers:_*)
 
   override def executionPlan(): String = "Parameters(" + params.keys.mkString(",") + ")"
 }

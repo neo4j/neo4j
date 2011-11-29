@@ -19,25 +19,26 @@
  */
 package org.neo4j.cypher.symbols
 
-object AnyType
-{
+import java.lang.String
+
+object AnyType {
   lazy val instance = new AnyType()
 
   def apply() = instance
 }
 
-class AnyType
-{
+class AnyType {
   override def equals(other: Any) = if (other == null)
     false
   else
-    other match
-    {
+    other match {
       case x: AnyRef => x.getClass == this.getClass
       case _ => false
     }
 
-  def isAssignableFrom(other:AnyType):Boolean = this.getClass.isAssignableFrom(other.getClass)
+  def isAssignableFrom(other: AnyType): Boolean = this.getClass.isAssignableFrom(other.getClass)
+
+  override def toString: String = this.getClass.getSimpleName
 }
 
 

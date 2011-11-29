@@ -21,14 +21,12 @@ package org.neo4j.cypher.commands
  */
 
 import org.neo4j.cypher.pipes.aggregation._
-import org.neo4j.cypher.OldSymbolTable
+import org.neo4j.cypher.symbols._
 
 abstract class AggregationValue(val functionName: String, inner: Value) extends Value {
   def apply(m: Map[String, Any]) = m(identifier.name)
 
-  def identifier: OldIdentifier = AggregationIdentifier(functionName + "(" + inner.identifier.name + ")")
-
-  def checkAvailable(symbols: OldSymbolTable) {
+  def checkAvailable(symbols: SymbolTable) {
     inner.checkAvailable(symbols)
   }
 
@@ -38,33 +36,44 @@ abstract class AggregationValue(val functionName: String, inner: Value) extends 
 }
 
 case class Distinct(innerAggregator: AggregationValue, innerValue: Value) extends AggregationValue("distinct", innerValue) {
-  override def identifier: OldIdentifier =
-    AggregationIdentifier("%s(distinct %s)".format(innerAggregator.functionName, innerValue.identifier.name))
+  override def identifier: Identifier = Identifier("%s(distinct %s)".format(innerAggregator.functionName, innerValue.identifier.name), innerAggregator.identifier.typ)
 
   def createAggregationFunction: AggregationFunction = new DistinctFunction(innerValue, innerAggregator.createAggregationFunction)
 }
 
 case class Count(anInner: Value) extends AggregationValue("count", anInner) {
+  def identifier = Identifier("count(" + anInner.identifier.name + ")", IntegerType())
+
   def createAggregationFunction = new CountFunction(anInner)
 }
 
 case class Sum(anInner: Value) extends AggregationValue("sum", anInner) {
+  def identifier = Identifier("sum(" + anInner.identifier.name + ")", NumberType())
+
   def createAggregationFunction = new SumFunction(anInner)
 }
 
 case class Min(anInner: Value) extends AggregationValue("min", anInner) {
+  def identifier = Identifier("min(" + anInner.identifier.name + ")", NumberType())
+
   def createAggregationFunction = new MinFunction(anInner)
 }
 
 case class Max(anInner: Value) extends AggregationValue("max", anInner) {
+  def identifier = Identifier("max(" + anInner.identifier.name + ")", NumberType())
+
   def createAggregationFunction = new MaxFunction(anInner)
 }
 
 case class Avg(anInner: Value) extends AggregationValue("avg", anInner) {
+  def identifier = Identifier("avg(" + anInner.identifier.name + ")", NumberType())
+
   def createAggregationFunction = new AvgFunction(anInner)
 }
 
 case class Collect(anInner: Value) extends AggregationValue("collect", anInner) {
+  def identifier = Identifier("collect(" + anInner.identifier.name + ")", new IterableType(anInner.identifier.typ))
+
   def createAggregationFunction = new CollectFunction(anInner)
 }
 

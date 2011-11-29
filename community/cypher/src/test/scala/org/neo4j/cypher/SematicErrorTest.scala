@@ -47,12 +47,12 @@ class SematicErrorTest extends ExecutionEngineHelper {
 
   @Test def cantUseTYPEOnNodes() {
     expectedError("start r=node(0) return type(r)",
-      "Expected `r` to be a RelationshipIdentifier but it was NodeIdentifier")
+      "Expected `r` to be a RelationshipType but it was NodeType")
   }
 
   @Test def cantUseLENGTHOnNodes() {
     expectedError("start n=node(0) return length(n)",
-      "Expected n to be an iterable, but it is not.")
+      "Expected `n` to be a IterableType<AnyType> but it was NodeType")
   }
 
   @Test def cantReUseRelationshipIdentifier() {

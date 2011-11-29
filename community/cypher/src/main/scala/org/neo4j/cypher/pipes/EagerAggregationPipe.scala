@@ -22,19 +22,20 @@ package org.neo4j.cypher.pipes
 import aggregation.AggregationFunction
 import collection.Seq
 import org.neo4j.cypher.commands.{AggregationItem, ReturnItem}
-import org.neo4j.cypher.{SyntaxException, OldSymbolTable}
 import java.lang.String
+import org.neo4j.cypher.symbols.SymbolTable
 
 // Eager aggregation means that this pipe will eagerly load the whole resulting subgraphs before starting
 // to emit aggregated results.
 // Cypher is lazy until it has to - this pipe makes stops the lazyness
 class EagerAggregationPipe(source: Pipe, returnItems: Seq[ReturnItem], aggregations: Seq[AggregationItem]) extends Pipe {
-  val symbols: OldSymbolTable = createSymbols()
+  val symbols: SymbolTable = createSymbols()
 
   def createSymbols() = {
-    val keyColumns = returnItems.map(x => source.symbols.getOrElse(x.columnName, ()=>throw new SyntaxException("This should not happen - did not find column `" + x.columnName + "`")))
+    val keySymbols = source.symbols.filter(returnItems.map(_.columnName):_*)
     val aggregatedColumns = aggregations.map(_.concreteReturnItem.identifier)
-    new OldSymbolTable(keyColumns).add(aggregatedColumns)
+
+    keySymbols.add(aggregatedColumns:_*)
   }
 
   aggregations.foreach(_.assertDependencies(source))

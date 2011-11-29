@@ -19,9 +19,13 @@
  */
 package org.neo4j.cypher.symbols
 
+import java.lang.String
 
 
 class IterableType(val iteratedType: AnyType) extends AnyType {
+
+  override def toString: String = "IterableType<" + iteratedType + ">"
+
   override def isAssignableFrom(other:AnyType):Boolean = super.isAssignableFrom(other) && iteratedType.isAssignableFrom(other.asInstanceOf[IterableType].iteratedType)
 }
 

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.pipes
 
 import java.lang.String
-import org.neo4j.cypher.OldSymbolTable
+import org.neo4j.cypher.symbols.SymbolTable
 
 /**
  * Pipe is a central part of Cypher. Most pipes are decorators - they
@@ -30,7 +30,6 @@ import org.neo4j.cypher.OldSymbolTable
  */
 trait Pipe extends Traversable[Map[String, Any]] {
 
-  def ++(other: Pipe): Pipe = new JoinPipe(this, other)
-  val symbols:OldSymbolTable
+  val symbols:SymbolTable
   def executionPlan():String = "-:STILL NOT DONE:-"
 }

@@ -57,7 +57,6 @@ class SymbolTableTest extends JUnitSuite {
     newSymbol.assertHas( Identifier("y", NumberType()) )
   }
 
-
   @Test(expected = classOf[SyntaxException]) def shouldNotBeAbleToCreateASymbolTableWithClashingNames()  {
     new SymbolTable(Identifier("x", StringType()), Identifier("x", RelationshipType()))
   }

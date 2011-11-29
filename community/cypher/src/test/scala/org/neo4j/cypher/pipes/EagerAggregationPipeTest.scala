@@ -24,24 +24,25 @@ import org.junit.Assert._
 import org.junit.matchers.JUnitMatchers._
 import scala.collection.JavaConverters._
 import org.neo4j.cypher.commands._
-import org.neo4j.cypher.{SyntaxException, OldSymbolTable}
 import org.scalatest.junit.JUnitSuite
+import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.symbols.{IntegerType, SymbolTable, Identifier, NodeType}
 
 class EagerAggregationPipeTest extends JUnitSuite {
   @Test def shouldReturnColumnsFromReturnItems() {
-    val source = new FakePipe(List(), new OldSymbolTable(NodeIdentifier("name")))
+    val source = new FakePipe(List(), createSymbolTableFor("name"))
 
     val returnItems = List(ValueReturnItem(EntityValue("name")))
     val grouping = List(CountStar())
     val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)
 
     assertEquals(
-      Set(NodeIdentifier("name"), AggregationIdentifier("count(*)")),
+      Seq(Identifier("name", NodeType()), Identifier("count(*)", IntegerType())),
       aggregationPipe.symbols.identifiers)
   }
 
   @Test(expected = classOf[SyntaxException]) def shouldThrowSemanticException() {
-    val source = new FakePipe(List(), new OldSymbolTable(NodeIdentifier("extractReturnItems")))
+    val source = new FakePipe(List(), createSymbolTableFor("extractReturnItems"))
 
     val returnItems = List(ValueReturnItem(EntityValue("name")))
     val grouping = List(ValueAggregationItem(Count(EntityValue("none-existing-identifier"))))
@@ -53,7 +54,7 @@ class EagerAggregationPipeTest extends JUnitSuite {
       Map("name" -> "Andres", "age" -> 36),
       Map("name" -> "Peter", "age" -> 38),
       Map("name" -> "Michael", "age" -> 36),
-      Map("name" -> "Michael", "age" -> 31)), new OldSymbolTable(NodeIdentifier("name")))
+      Map("name" -> "Michael", "age" -> 31)), createSymbolTableFor("name"))
 
     val returnItems = List(ValueReturnItem(EntityValue("name")))
     val grouping = List(CountStar())
@@ -70,7 +71,7 @@ class EagerAggregationPipeTest extends JUnitSuite {
       Map("name" -> "Andres", "age" -> 36),
       Map("name" -> null, "age" -> 38),
       Map("name" -> "Michael", "age" -> 36),
-      Map("name" -> "Michael", "age" -> 31)), new OldSymbolTable(NodeIdentifier("name")))
+      Map("name" -> "Michael", "age" -> 31)), createSymbolTableFor("name"))
 
     val returnItems = List()
     val grouping = List(ValueAggregationItem(Count((EntityValue("name")))))
@@ -78,5 +79,7 @@ class EagerAggregationPipeTest extends JUnitSuite {
 
     assertEquals(List(Map("count(name)" -> 3)), aggregationPipe.toList)
   }
+
+  private def createSymbolTableFor(name:String) = new SymbolTable(Identifier(name, NodeType()))
 
 }

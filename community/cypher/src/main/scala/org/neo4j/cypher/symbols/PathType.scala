@@ -17,19 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes
+package org.neo4j.cypher.symbols
 
-import java.lang.String
-import org.neo4j.cypher.OldSymbolTable
+/**
+ * TODO
+ */
 
-class JoinPipe(a: Pipe, b: Pipe) extends Pipe {
-  val symbols: OldSymbolTable = a.symbols ++ b.symbols
-
-  def foreach[U](f: (Map[String, Any]) => U) {
-    a.foreach((aMap) => {
-      b.foreach((bMap) => {
-        f.apply(aMap ++ bMap)
-      })
-    })
-  }
+object PathType {
+  lazy val instance = new IterableType(MapType())
+  def apply() = instance
 }

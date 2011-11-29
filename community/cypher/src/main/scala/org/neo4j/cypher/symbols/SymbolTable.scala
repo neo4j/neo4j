@@ -1,27 +1,86 @@
+/**
+ * Copyright (c) 2002-2011 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.cypher.symbols
 
 import org.neo4j.cypher.SyntaxException
 
-class SymbolTable(identifiers:Identifier*) {
+class SymbolTable(val identifiers: Identifier*) {
+  assertNoDuplicatesExist()
 
-  assertNoClashesExist()
+  def assertHas(name: String, typ: AnyType) {
+    assertHas(Identifier(name, typ))
+  }
 
-  def assertHas(expected:Identifier) {
+  def assertHas(expected: Identifier) {
     identifiers.find(_.name == expected.name) match {
-      case None => throw new SyntaxException("No identifier named " + expected.name + " found.")
+      case None => throwMissingKey(expected.name)
       case Some(existing) => if (!expected.typ.isAssignableFrom(existing.typ)) {
         throw new SyntaxException("Expected `" + expected.name + "` to be a " + expected.typ + " but it was " + existing.typ)
       }
     }
   }
 
-  def add(newIdentifiers:Identifier*):SymbolTable = new SymbolTable(  (identifiers ++ newIdentifiers):_* )
+  def keys = identifiers.map(_.name)
 
-  private def assertNoClashesExist() {
+  def throwMissingKey(key: String) {
+    throw new SyntaxException("Unknown identifier \"" + key + "\".")
+  }
+
+  def filter(keys: String*): SymbolTable = {
+
+    keys.foreach(key => if (!identifiers.exists(_.name == key))
+      throwMissingKey(key)
+    )
+
+    new SymbolTable(identifiers.filter(id => keys.contains(id.name)): _*)
+  }
+
+  private def get(key: String): Option[Identifier] = identifiers.find(_.name == key)
+
+  def add(newIdentifiers: Identifier*): SymbolTable = {
+    val matchedIdentifiers = newIdentifiers.map(newIdentifier => get(newIdentifier.name) match {
+      case None => newIdentifier
+      case Some(existingIdentifier) => handleMatched(newIdentifier, existingIdentifier)
+    })
+
+
+    val a = identifiers ++ matchedIdentifiers
+    val b = a.toSet
+    new SymbolTable(b.toSeq: _*)
+  }
+
+  private def handleMatched(newIdentifier: Identifier, existingIdentifier: Identifier): Identifier = {
+    newIdentifier match {
+      case _ => if (newIdentifier.typ.isAssignableFrom(existingIdentifier.typ)) {
+        existingIdentifier
+      } else {
+        throw new SyntaxException("Identifier " + existingIdentifier + " already defined with different type " + newIdentifier)
+      }
+    }
+  }
+
+  private def assertNoDuplicatesExist() {
     val names: Set[String] = identifiers.map(_.name).toSet
 
-    if(names.size != identifiers.size) {
-      names.foreach( n=> if(identifiers.filter(_.name == n).size > 1) throw new SyntaxException("Identifier " + n + " defined multiple times"))
+    if (names.size != identifiers.size) {
+      names.foreach(n => if (identifiers.filter(_.name == n).size > 1) throw new SyntaxException("Identifier " + n + " defined multiple times"))
     }
   }
 }

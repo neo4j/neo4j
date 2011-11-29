@@ -21,21 +21,18 @@ package org.neo4j.cypher.commands
 
 import org.neo4j.cypher.pipes.Pipe
 import org.neo4j.cypher.pipes.aggregation._
+import org.neo4j.cypher.symbols.{IntegerType, Identifier}
 
-abstract sealed class ReturnItem(val identifier: OldIdentifier) extends (Map[String, Any] => Any) {
+abstract sealed class ReturnItem(val identifier: Identifier) extends (Map[String, Any] => Any) {
   def assertDependencies(source: Pipe)
 
-  def columnName = identifier match {
-    case UnboundIdentifier(name, None) => name;
-    case UnboundIdentifier(name, id) => id.get.name;
-    case identifier: OldIdentifier => identifier.name;
-  }
+  def columnName = identifier.name
 
   def concreteReturnItem = this
 }
 
 case class ValueReturnItem(value: Value) extends ReturnItem(value.identifier) {
-  def apply(m: Map[String, Any]): Any = value(m) // Map(columnName -> value(m))
+  def apply(m: Map[String, Any]): Any = value(m)
 
   def assertDependencies(source: Pipe) {
     value.checkAvailable(source.symbols)
@@ -43,7 +40,7 @@ case class ValueReturnItem(value: Value) extends ReturnItem(value.identifier) {
 }
 
 
-case class ValueAggregationItem(value: AggregationValue) extends AggregationItem(value.identifier.name) {
+case class ValueAggregationItem(value: AggregationValue) extends AggregationItem(value.identifier) {
 
   def assertDependencies(source: Pipe) {
     value.checkAvailable(source.symbols)
@@ -51,15 +48,15 @@ case class ValueAggregationItem(value: AggregationValue) extends AggregationItem
    def createAggregationFunction: AggregationFunction = value.createAggregationFunction
 }
 
-abstract sealed class AggregationItem(name: String) extends ReturnItem(AggregationIdentifier(name)) {
+abstract sealed class AggregationItem(identifier:Identifier) extends ReturnItem(identifier) {
   def apply(m: Map[String, Any]): Map[String, Any] = m
 
   def createAggregationFunction: AggregationFunction
-  override def toString() = name
+  override def toString() = identifier.name
 }
 
 
-case class CountStar() extends AggregationItem("count(*)") {
+case class CountStar() extends AggregationItem(Identifier("count(*)", IntegerType())) {
   def createAggregationFunction: AggregationFunction = new CountStarFunction
 
   def assertDependencies(source: Pipe) {}

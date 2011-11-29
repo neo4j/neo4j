@@ -20,19 +20,19 @@
 package org.neo4j.cypher.pipes
 
 import java.lang.String
-import org.neo4j.cypher.OldSymbolTable
 import org.neo4j.cypher.commands._
 import collection.Seq
 import collection.immutable.Map
+import org.neo4j.cypher.symbols.{SymbolTable, Identifier}
 
 //This class will extract properties and other stuff to make the maps
 //easy to work with for other pipes
 class ExtractPipe(source: Pipe, returnItems: Seq[ReturnItem]) extends Pipe {
   type MapTransformer = Map[String, Any] => Map[String, Any]
 
-  def getSymbolType(item: ReturnItem): OldIdentifier = item.identifier
+  def getSymbolType(item: ReturnItem): Identifier = item.identifier
 
-  val symbols: OldSymbolTable = source.symbols.add(returnItems.map(_.identifier))
+  val symbols: SymbolTable = source.symbols.add(returnItems.map(_.identifier):_*)
 
   returnItems.foreach(_.assertDependencies(source))
 
@@ -43,6 +43,6 @@ class ExtractPipe(source: Pipe, returnItems: Seq[ReturnItem]) extends Pipe {
     })
   }
 
-  override def executionPlan(): String = source.executionPlan() + "\r\nExtract([" + source.symbols.columns + "] => [" + returnItems.map(_.columnName).mkString(", ") + "])"
+  override def executionPlan(): String = source.executionPlan() + "\r\nExtract([" + source.symbols.keys.mkString(",") + "] => [" + returnItems.map(_.columnName).mkString(", ") + "])"
 }
 

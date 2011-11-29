@@ -20,18 +20,18 @@
 package org.neo4j.cypher.pipes
 
 import matching.MatchingContext
-import org.neo4j.cypher.OldSymbolTable
 import org.neo4j.cypher.commands._
 import java.lang.String
+import org.neo4j.cypher.symbols.{RelationshipType, NodeType, Identifier}
 
 class MatchPipe(source: Pipe, patterns: Seq[Pattern], predicates:Seq[Clause]) extends Pipe {
   val matchingContext = new MatchingContext(patterns, source.symbols, predicates)
-
-  val symbols = source.symbols ++ new OldSymbolTable(patterns.flatMap(_ match {
-    case RelatedTo(left, right, rel, relType, dir, optional) => Seq(NodeIdentifier(left), NodeIdentifier(right), RelationshipIdentifier(rel))
-    case VarLengthRelatedTo(pathName, left, right, minHops, maxHops, relType, dir, iterableRel, optional) => Seq(NodeIdentifier(left), NodeIdentifier(right))
+  val identifiers = patterns.flatMap(_ match {
+    case RelatedTo(left, right, rel, relType, dir, optional) => Seq(Identifier(left, NodeType()), Identifier(right, NodeType()), Identifier(rel, RelationshipType()))
+    case VarLengthRelatedTo(pathName, left, right, minHops, maxHops, relType, dir, iterableRel, optional) => Seq(Identifier(left, NodeType()), Identifier(right, NodeType()))
     case _ => Seq()
-  }))
+  })
+  val symbols = source.symbols.add(identifiers:_*)
 
   def foreach[U](f: (Map[String, Any]) => U) {
     source.foreach(sourcePipeRow => {

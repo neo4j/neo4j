@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.pipes
 
-import org.neo4j.cypher.{PathImpl, OldSymbolTable}
+import org.neo4j.cypher.PathImpl
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import scala.collection.JavaConverters._
 import org.neo4j.cypher.commands._
 import collection.Seq
 import java.lang.String
+import org.neo4j.cypher.symbols.{PathType, Identifier}
 
 class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
   def getFirstNode[U]: String = {
@@ -76,7 +77,7 @@ class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
     soFar ++ pathTail
   }
 
-  val symbols: OldSymbolTable = source.symbols.add(Seq(PathIdentifier(path.pathName)))
+  val symbols = source.symbols.add(Identifier(path.pathName, PathType()))
 
   override def executionPlan(): String = source.executionPlan() + "\r\nExtractPath(" + path.pathName + " = " + path.pathPattern.mkString(", ") + ")"
 }

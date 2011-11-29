@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.pipes
 
-import org.neo4j.cypher.OldSymbolTable
 import org.neo4j.cypher.commands.Clause
 import java.lang.String
 
 class FilterPipe(source: Pipe, where: Clause) extends Pipe {
-  val symbols: OldSymbolTable = source.symbols
+  val symbols = source.symbols
 
   def foreach[U](f: (Map[String, Any]) => U) {
     source.filter((row) => {
