@@ -88,7 +88,7 @@ public class RetrieveNodeFunctionalTest extends SharedServerTestBase
 
             String entityBody = IOUtils.toString( entity.getContent(), "UTF-8" );
 
-            assertThat( entityBody, containsString( "http://dummy.neo4j.org/db/data/node/1" ) );
+            assertThat( entityBody, containsString( "http://dummy.neo4j.org/db/data/node/" ) );
 
         } finally
         {
@@ -110,7 +110,7 @@ public class RetrieveNodeFunctionalTest extends SharedServerTestBase
 
             String entityBody = IOUtils.toString( entity.getContent(), "UTF-8" );
 
-            assertThat( entityBody, containsString( "http://localhost:7474/db/data/node/1" ) );
+            assertThat( entityBody, containsString( nodeUri.toString() ) );
         } finally
         {
             httpclient.getConnectionManager().shutdown();
