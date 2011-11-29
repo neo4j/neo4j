@@ -31,6 +31,7 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.helpers.Args;
 import org.neo4j.shell.impl.AbstractServer;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.impl.ShellBootstrap;

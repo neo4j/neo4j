@@ -51,12 +51,14 @@ public class Args
     private final String[] args;
     private final Map<String, String> map = new HashMap<String, String>();
     private final List<String> orphans = new ArrayList<String>();
+//    private final Set<String> touchedParameters = new HashSet<String>();
+//    private final BitSet touchedOrphans = new BitSet();
     
     /**
      * Suitable for main( String[] args )
      * @param args the arguments to parse.
      */
-    public Args( String[] args )
+    public Args( String... args )
     {
         this.args = args;
         parseArgs( args );
@@ -179,4 +181,41 @@ public class Args
             }
         }
     }
+
+/*    public void printUntouched( PrintStream out )
+    {
+        boolean first = true;
+        for ( Map.Entry<String, String> parameter : map.entrySet() )
+        {
+            if ( touchedParameters.contains( parameter ) ) continue;
+            if ( first )
+            {
+                first = false;
+                out.println( "Untouched parameters:" );
+            }
+            out.println( "  " + parameter.getKey() + ":" + parameter.getValue() );
+        }
+        
+        first = true;
+        for ( int i = 0; i < orphans.size(); i++ )
+        {
+            if ( touchedOrphans.get( i ) ) continue;
+            if ( first )
+            {
+                first = false;
+                out.println( "Untouched orphans:" );
+            }
+            out.println( "(" + i + "):" + orphans.get( i ) );
+        }
+    }
+
+    public Map<String, String> getUntouchedParameters()
+    {
+        return null;
+    }
+
+    public Iterable<String> getUntouchedOrphans()
+    {
+        return null;
+    }*/
 }
