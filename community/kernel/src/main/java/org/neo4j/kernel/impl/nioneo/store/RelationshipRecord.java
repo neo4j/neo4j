@@ -98,7 +98,7 @@ public class RelationshipRecord extends PrimitiveRecord
         return new StringBuilder( "Relationship[" ).append( getId() ).append( ",used=" ).append( inUse() ).append(
                 ",source=" ).append( firstNode ).append( ",target=" ).append( secondNode ).append( ",type=" ).append(
                 type ).append( ",sPrev=" ).append( firstPrevRel ).append( ",sNext=" ).append( firstNextRel ).append(
-                ",tPrev" ).append( secondPrevRel ).append( ",tNext=" ).append( secondNextRel ).append( ",prop=" ).append(
+                ",tPrev=" ).append( secondPrevRel ).append( ",tNext=" ).append( secondNextRel ).append( ",prop=" ).append(
                 getNextProp() ).append( "]" ).toString();
     }
 }
