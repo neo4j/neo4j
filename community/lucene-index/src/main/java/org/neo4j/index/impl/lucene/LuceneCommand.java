@@ -232,6 +232,13 @@ abstract class LuceneCommand extends XaCommand
         {
             return true;
         }
+
+        @Override
+        public String toString()
+        {
+            RelationshipId relId = (RelationshipId)entityId;
+            return "AddRel[" + indexId + "," + relId.id + "," + key + "," + value + "," + relId.startNode + "," + relId.endNode + "]";
+        }
     }
     
     static class RemoveCommand extends LuceneCommand
