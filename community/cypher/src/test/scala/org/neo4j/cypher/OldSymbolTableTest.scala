@@ -24,10 +24,10 @@ import org.junit.Test
 import org.junit.Assert._
 import org.scalatest.junit.JUnitSuite
 
-class SymbolTableTest extends JUnitSuite {
+class OldSymbolTableTest extends JUnitSuite {
   @Test def testConcatenating() {
-    val table1 = new SymbolTable(NodeIdentifier("node"))
-    val table2 = new SymbolTable(RelationshipIdentifier("rel"))
+    val table1 = new OldSymbolTable(NodeIdentifier("node"))
+    val table2 = new OldSymbolTable(RelationshipIdentifier("rel"))
 
     val result = table1 ++ table2
 
@@ -36,15 +36,15 @@ class SymbolTableTest extends JUnitSuite {
 
 
   @Test(expected = classOf[SyntaxException]) def shouldNotOverwriteSymbolsWithNewType() {
-    val table1 = new SymbolTable(NodeIdentifier("x"))
-    val table2 = new SymbolTable(RelationshipIdentifier("x"))
+    val table1 = new OldSymbolTable(NodeIdentifier("x"))
+    val table2 = new OldSymbolTable(RelationshipIdentifier("x"))
 
     table1 ++ table2
   }
 
   @Test def registreringTwiceIsOk() {
-    val table1 = new SymbolTable(NodeIdentifier("x"))
-    val table2 = new SymbolTable(NodeIdentifier("x"))
+    val table1 = new OldSymbolTable(NodeIdentifier("x"))
+    val table2 = new OldSymbolTable(NodeIdentifier("x"))
 
     val result = table1 ++ table2
 
@@ -52,8 +52,8 @@ class SymbolTableTest extends JUnitSuite {
   }
 
   @Test def shouldResolveUnboundIdentifiers() {
-    val table1 = new SymbolTable(NodeIdentifier("x"))
-    val table2 = new SymbolTable(UnboundIdentifier("x", None))
+    val table1 = new OldSymbolTable(NodeIdentifier("x"))
+    val table2 = new OldSymbolTable(UnboundIdentifier("x", None))
 
     val result = table1 ++ table2
 
@@ -61,8 +61,8 @@ class SymbolTableTest extends JUnitSuite {
   }
 
   @Test def shouldResolveUnboundConcreteIdentifiers() {
-    val table1 = new SymbolTable(NodeIdentifier("x"))
-    val table2 = new SymbolTable(UnboundIdentifier("x", Some(PropertyIdentifier("x", "name"))))
+    val table1 = new OldSymbolTable(NodeIdentifier("x"))
+    val table2 = new OldSymbolTable(UnboundIdentifier("x", Some(PropertyIdentifier("x", "name"))))
 
     val result = table1 ++ table2
 
@@ -70,32 +70,32 @@ class SymbolTableTest extends JUnitSuite {
   }
 
   @Test(expected = classOf[SyntaxException]) def shouldFailForUnboundConcreteIdentifiers() {
-    val table1 = new SymbolTable()
-    val table2 = new SymbolTable(UnboundIdentifier("x", Some(PropertyIdentifier("x", "name"))))
+    val table1 = new OldSymbolTable()
+    val table2 = new OldSymbolTable(UnboundIdentifier("x", Some(PropertyIdentifier("x", "name"))))
 
     table1 ++ table2
   }
 
   @Test(expected = classOf[SyntaxException]) def shouldFailForUnbound() {
-    val table1 = new SymbolTable()
-    val table2 = new SymbolTable(UnboundIdentifier("x", None))
+    val table1 = new OldSymbolTable()
+    val table2 = new OldSymbolTable(UnboundIdentifier("x", None))
 
     table1 ++ table2
   }
 
 
   @Test(expected = classOf[SyntaxException]) def shouldFailWhenExpectingAPropertyContainer() {
-    val table = new SymbolTable(LiteralIdentifier("x"))
+    val table = new OldSymbolTable(LiteralIdentifier("x"))
     table.assertHas(PropertyContainerIdentifier("x"))
   }
 
   @Test def shouldFindAMatchingIdentifier() {
-    val table = new SymbolTable(NodeIdentifier("x"))
+    val table = new OldSymbolTable(NodeIdentifier("x"))
     table.assertHas(PropertyContainerIdentifier("x"))
   }
 
   @Test def shouldFindTheConcreteIdentifier() {
-    val table = new SymbolTable(LiteralIdentifier("x"))
+    val table = new OldSymbolTable(LiteralIdentifier("x"))
     table.assertHas(LiteralIdentifier("x"))
   }
 }

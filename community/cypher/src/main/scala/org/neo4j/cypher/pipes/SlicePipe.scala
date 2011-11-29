@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.pipes
 
-import org.neo4j.cypher.SymbolTable
+import org.neo4j.cypher.OldSymbolTable
 import org.neo4j.cypher.commands.Value
 import java.lang.String
 
 class SlicePipe(source:Pipe, skip:Option[Value], limit:Option[Value]) extends Pipe {
-  val symbols: SymbolTable = source.symbols
+  val symbols: OldSymbolTable = source.symbols
 
   //TODO: Make this nicer. I'm sure it's expensive and silly.
   def foreach[U](f: (Map[String, Any]) => U) {

@@ -23,7 +23,7 @@ import org.neo4j.graphalgo.GraphAlgoFactory
 import org.neo4j.kernel.Traversal
 import org.neo4j.graphdb.{DynamicRelationshipType, Direction, Node}
 import org.neo4j.cypher.commands.{ShortestPath, PathIdentifier}
-import org.neo4j.cypher.{SyntaxException, SymbolTable}
+import org.neo4j.cypher.{SyntaxException, OldSymbolTable}
 import java.lang.String
 
 class ShortestPathPipe(source:Pipe, ast:ShortestPath) extends Pipe {
@@ -61,7 +61,7 @@ class ShortestPathPipe(source:Pipe, ast:ShortestPath) extends Pipe {
     })
   }
 
-  val symbols: SymbolTable = source.symbols.add(PathIdentifier(pathName))
+  val symbols: OldSymbolTable = source.symbols.add(PathIdentifier(pathName))
 
   override def executionPlan(): String = source.executionPlan() + "\r\n" + "ShortestPath(" + ast + ")"
 }

@@ -22,13 +22,13 @@ package org.neo4j.cypher.commands
 import org.neo4j.cypher.pipes.Pipe
 import org.neo4j.cypher.pipes.aggregation._
 
-abstract sealed class ReturnItem(val identifier: Identifier) extends (Map[String, Any] => Any) {
+abstract sealed class ReturnItem(val identifier: OldIdentifier) extends (Map[String, Any] => Any) {
   def assertDependencies(source: Pipe)
 
   def columnName = identifier match {
     case UnboundIdentifier(name, None) => name;
     case UnboundIdentifier(name, id) => id.get.name;
-    case identifier: Identifier => identifier.name;
+    case identifier: OldIdentifier => identifier.name;
   }
 
   def concreteReturnItem = this

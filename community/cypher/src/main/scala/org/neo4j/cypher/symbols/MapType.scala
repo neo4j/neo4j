@@ -17,20 +17,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes
+package org.neo4j.cypher.symbols
 
-import org.neo4j.cypher.OldSymbolTable
-import org.neo4j.cypher.commands.Clause
-import java.lang.String
+object MapType {
+  lazy val instance = new MapType()
 
-class FilterPipe(source: Pipe, where: Clause) extends Pipe {
-  val symbols: OldSymbolTable = source.symbols
-
-  def foreach[U](f: (Map[String, Any]) => U) {
-    source.filter((row) => {
-      where.isMatch(row)
-    }).foreach(f)
-  }
-
-  override def executionPlan(): String = source.executionPlan() + "\r\n" + "Filter(" + where.toString + ")"
+  def apply() = instance
 }
+
+
+class MapType extends AnyType
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

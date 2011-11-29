@@ -20,10 +20,10 @@
 package org.neo4j.cypher.pipes
 
 import java.lang.String
-import org.neo4j.cypher.SymbolTable
+import org.neo4j.cypher.OldSymbolTable
 
 class JoinPipe(a: Pipe, b: Pipe) extends Pipe {
-  val symbols: SymbolTable = a.symbols ++ b.symbols
+  val symbols: OldSymbolTable = a.symbols ++ b.symbols
 
   def foreach[U](f: (Map[String, Any]) => U) {
     a.foreach((aMap) => {

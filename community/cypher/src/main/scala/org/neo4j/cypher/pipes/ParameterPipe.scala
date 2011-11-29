@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.pipes
 
-import org.neo4j.cypher.SymbolTable
-import org.neo4j.cypher.commands.{Identifier, LiteralIdentifier}
+import org.neo4j.cypher.OldSymbolTable
+import org.neo4j.cypher.commands.{OldIdentifier, LiteralIdentifier}
 import java.lang.String
 
 class ParameterPipe(params: Map[String, Any]) extends Pipe {
@@ -28,9 +28,9 @@ class ParameterPipe(params: Map[String, Any]) extends Pipe {
     f(params)
   }
 
-  val identifiers: Seq[Identifier] = params.keys.map(k => LiteralIdentifier(k)).toSeq
+  val identifiers: Seq[OldIdentifier] = params.keys.map(k => LiteralIdentifier(k)).toSeq
 
-  val symbols: SymbolTable = new SymbolTable(identifiers)
+  val symbols: OldSymbolTable = new OldSymbolTable(identifiers)
 
   override def executionPlan(): String = "Parameters(" + params.keys.mkString(",") + ")"
 }

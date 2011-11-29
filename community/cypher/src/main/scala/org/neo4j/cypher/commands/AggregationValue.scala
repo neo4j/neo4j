@@ -21,14 +21,14 @@ package org.neo4j.cypher.commands
  */
 
 import org.neo4j.cypher.pipes.aggregation._
-import org.neo4j.cypher.SymbolTable
+import org.neo4j.cypher.OldSymbolTable
 
 abstract class AggregationValue(val functionName: String, inner: Value) extends Value {
   def apply(m: Map[String, Any]) = m(identifier.name)
 
-  def identifier: Identifier = AggregationIdentifier(functionName + "(" + inner.identifier.name + ")")
+  def identifier: OldIdentifier = AggregationIdentifier(functionName + "(" + inner.identifier.name + ")")
 
-  def checkAvailable(symbols: SymbolTable) {
+  def checkAvailable(symbols: OldSymbolTable) {
     inner.checkAvailable(symbols)
   }
 
@@ -38,7 +38,7 @@ abstract class AggregationValue(val functionName: String, inner: Value) extends 
 }
 
 case class Distinct(innerAggregator: AggregationValue, innerValue: Value) extends AggregationValue("distinct", innerValue) {
-  override def identifier: Identifier =
+  override def identifier: OldIdentifier =
     AggregationIdentifier("%s(distinct %s)".format(innerAggregator.functionName, innerValue.identifier.name))
 
   def createAggregationFunction: AggregationFunction = new DistinctFunction(innerValue, innerAggregator.createAggregationFunction)

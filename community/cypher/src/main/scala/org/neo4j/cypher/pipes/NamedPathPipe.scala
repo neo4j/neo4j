@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.pipes
 
-import org.neo4j.cypher.{PathImpl, SymbolTable}
+import org.neo4j.cypher.{PathImpl, OldSymbolTable}
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import scala.collection.JavaConverters._
 import org.neo4j.cypher.commands._
@@ -76,7 +76,7 @@ class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
     soFar ++ pathTail
   }
 
-  val symbols: SymbolTable = source.symbols.add(Seq(PathIdentifier(path.pathName)))
+  val symbols: OldSymbolTable = source.symbols.add(Seq(PathIdentifier(path.pathName)))
 
   override def executionPlan(): String = source.executionPlan() + "\r\nExtractPath(" + path.pathName + " = " + path.pathPattern.mkString(", ") + ")"
 }

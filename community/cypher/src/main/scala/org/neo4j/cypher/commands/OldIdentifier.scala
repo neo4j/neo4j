@@ -21,7 +21,7 @@ package org.neo4j.cypher.commands
 
 import org.neo4j.cypher.SyntaxException
 
-case class Identifier(name: String) {
+case class OldIdentifier(name: String) {
 
   def assertIs( clazz:Class[_] ) {
     if(!clazz.isAssignableFrom( this.getClass ))
@@ -29,16 +29,16 @@ case class Identifier(name: String) {
   }
 }
 
-case class PropertyContainerIdentifier(propContainerName:String) extends Identifier(propContainerName)
-case class UnboundIdentifier(subName: String, wrapped:Option[Identifier]) extends Identifier(subName)
-case class LiteralIdentifier(subName: String) extends Identifier(subName)
-case class PropertyIdentifier(entity: String, property: String) extends Identifier(entity + "." + property)
-case class AggregationIdentifier(subName: String) extends Identifier(subName)
+case class PropertyContainerIdentifier(propContainerName:String) extends OldIdentifier(propContainerName)
+case class UnboundIdentifier(subName: String, wrapped:Option[OldIdentifier]) extends OldIdentifier(subName)
+case class LiteralIdentifier(subName: String) extends OldIdentifier(subName)
+case class PropertyIdentifier(entity: String, property: String) extends OldIdentifier(entity + "." + property)
+case class AggregationIdentifier(subName: String) extends OldIdentifier(subName)
 
 case class PathIdentifier(path:String) extends ArrayIdentifier(path)
 case class NodeIdentifier(subName: String) extends PropertyContainerIdentifier(subName)
 case class RelationshipIdentifier(subName: String) extends PropertyContainerIdentifier(subName)
 
-case class ValueIdentifier(subName: String) extends Identifier(subName)
+case class ValueIdentifier(subName: String) extends OldIdentifier(subName)
 
-case class ArrayIdentifier(array: String) extends Identifier(array)
+case class ArrayIdentifier(array: String) extends OldIdentifier(array)

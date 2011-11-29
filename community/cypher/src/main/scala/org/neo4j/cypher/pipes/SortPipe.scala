@@ -21,11 +21,11 @@ package org.neo4j.cypher.pipes
 
 import scala.math.signum
 import org.neo4j.cypher.commands.SortItem
-import org.neo4j.cypher.{Comparer, SymbolTable}
+import org.neo4j.cypher.{Comparer, OldSymbolTable}
 import java.lang.String
 
 class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends Pipe with Comparer {
-  val symbols: SymbolTable = source.symbols
+  val symbols: OldSymbolTable = source.symbols
 
   assertDependenciesAreMet()
 

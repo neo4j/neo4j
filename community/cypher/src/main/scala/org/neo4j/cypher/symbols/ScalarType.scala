@@ -1,3 +1,5 @@
+package org.neo4j.cypher.symbols
+
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -17,20 +19,41 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes
+/**
+ * TODO
+ */
+object ScalarType
+{
+  lazy val instance = new ScalarType()
 
-import org.neo4j.cypher.OldSymbolTable
-import org.neo4j.cypher.commands.Clause
-import java.lang.String
-
-class FilterPipe(source: Pipe, where: Clause) extends Pipe {
-  val symbols: OldSymbolTable = source.symbols
-
-  def foreach[U](f: (Map[String, Any]) => U) {
-    source.filter((row) => {
-      where.isMatch(row)
-    }).foreach(f)
-  }
-
-  override def executionPlan(): String = source.executionPlan() + "\r\n" + "Filter(" + where.toString + ")"
+  def apply() = instance
 }
+
+class ScalarType extends AnyType
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

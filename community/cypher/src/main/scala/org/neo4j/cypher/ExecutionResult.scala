@@ -29,7 +29,7 @@ import java.lang.String
 
 
 trait ExecutionResult extends Traversable[Map[String, Any]] with StringExtras with Pipe {
-  val symbols: SymbolTable
+  val symbols: OldSymbolTable
 
   val columns: List[String]
 

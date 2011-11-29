@@ -19,19 +19,18 @@
  */
 package org.neo4j.cypher
 
-import commands.{UnboundIdentifier, Identifier}
-import scala.Some
+import commands.{UnboundIdentifier, OldIdentifier}
 
-class SymbolTable(val identifiers: Set[Identifier]) {
-  def this(identifier: Identifier) = this (Set(identifier))
+class OldSymbolTable(val identifiers: Set[OldIdentifier]) {
+  def this(identifier: OldIdentifier) = this (Set(identifier))
 
-  def this(data: Seq[Identifier]) = this (data.toSet)
+  def this(data: Seq[OldIdentifier]) = this (data.toSet)
 
-  def this() = this (Set[Identifier]())
+  def this() = this (Set[OldIdentifier]())
 
-  def this(other: SymbolTable) = this (other.identifiers)
+  def this(other: OldSymbolTable) = this (other.identifiers)
 
-  def assertHas(expected: Identifier) {
+  def assertHas(expected: OldIdentifier) {
     val name = expected.name
 
     val actual = getOrElse(name, () => throw new SyntaxException("Unknown identifier \"" + name + "\"."))
@@ -40,12 +39,12 @@ class SymbolTable(val identifiers: Set[Identifier]) {
     }
   }
 
-  def add(idents: Seq[Identifier]): SymbolTable = this ++ new SymbolTable(idents)
-  def add(ident:Identifier): SymbolTable = add(Seq(ident))
+  def add(idents: Seq[OldIdentifier]): OldSymbolTable = this ++ new OldSymbolTable(idents)
+  def add(ident:OldIdentifier): OldSymbolTable = add(Seq(ident))
 
-  def get(name: String): Option[Identifier] = identifiers.find(_.name == name)
+  def get(name: String): Option[OldIdentifier] = identifiers.find(_.name == name)
 
-  def getOrElse(name: String, f: () => Identifier): Identifier = {
+  def getOrElse(name: String, f: () => OldIdentifier): OldIdentifier = {
     val option = get(name)
     option match {
       case Some(id) => id
@@ -53,7 +52,7 @@ class SymbolTable(val identifiers: Set[Identifier]) {
     }
   }
 
-  def merge(other: SymbolTable): Set[Identifier] = {
+  def merge(other: OldSymbolTable): Set[OldIdentifier] = {
     val matchedIdentifiers = other.identifiers.map(newIdentifier => get(newIdentifier.name) match {
       case None => handleUnmatched(newIdentifier)
       case Some(existingIdentifier) => handleMatched(newIdentifier, existingIdentifier)
@@ -62,7 +61,7 @@ class SymbolTable(val identifiers: Set[Identifier]) {
     identifiers ++ matchedIdentifiers
   }
 
-  private def handleMatched(newIdentifier: Identifier, existingIdentifier: Identifier): Identifier = {
+  private def handleMatched(newIdentifier: OldIdentifier, existingIdentifier: OldIdentifier): OldIdentifier = {
     newIdentifier match {
       case UnboundIdentifier(name, None) => existingIdentifier
       case UnboundIdentifier(name, Some(wrapped)) => wrapped
@@ -75,15 +74,15 @@ class SymbolTable(val identifiers: Set[Identifier]) {
   }
 
 
-  private def handleUnmatched(newIdentifier: Identifier): Identifier = {
+  private def handleUnmatched(newIdentifier: OldIdentifier): OldIdentifier = {
     newIdentifier match {
       case UnboundIdentifier(_, _) => throw new SyntaxException("Unbound Identifier " + newIdentifier + " not resolved!")
       case _ => newIdentifier
     }
   }
 
-  def ++(other: SymbolTable): SymbolTable = {
-    new SymbolTable(merge(other))
+  def ++(other: OldSymbolTable): OldSymbolTable = {
+    new OldSymbolTable(merge(other))
   }
 
   def columns : String = identifiers.map(_.name).mkString(", ")

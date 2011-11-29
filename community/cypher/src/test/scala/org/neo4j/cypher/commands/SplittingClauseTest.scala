@@ -20,7 +20,7 @@
 package org.neo4j.cypher.commands
 
 import org.scalatest.Assertions
-import org.neo4j.cypher.SymbolTable
+import org.neo4j.cypher.OldSymbolTable
 import org.junit.Test
 
 class SplittingClauseTest extends Assertions {
@@ -53,10 +53,10 @@ class SplittingClauseTest extends Assertions {
   }
 }
 
-class FakeValue(id: Identifier = null, depends: Set[String] = Set()) extends Value {
-  def identifier: Identifier = id
+class FakeValue(id: OldIdentifier = null, depends: Set[String] = Set()) extends Value {
+  def identifier: OldIdentifier = id
 
-  def checkAvailable(symbols: SymbolTable) {}
+  def checkAvailable(symbols: OldSymbolTable) {}
 
   def dependsOn: Set[String] = depends
 

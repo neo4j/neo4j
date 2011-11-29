@@ -21,7 +21,7 @@
 package org.neo4j.cypher.pipes.matching
 
 import org.scalatest.Assertions
-import org.neo4j.cypher.{SymbolTable, GraphDatabaseTestBase}
+import org.neo4j.cypher.{OldSymbolTable, GraphDatabaseTestBase}
 import org.neo4j.graphdb.{Node, Direction}
 import org.neo4j.cypher.commands._
 import org.junit.{Before, Test}
@@ -88,7 +88,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
       RelatedTo("b", "c", "r2", "rel", Direction.BOTH, false)
     )
 
-    val symbols = new SymbolTable(Set[Identifier](RelationshipIdentifier("r1"), RelationshipIdentifier("r2")))
+    val symbols = new OldSymbolTable(Set[OldIdentifier](RelationshipIdentifier("r1"), RelationshipIdentifier("r2")))
 
     val matchingContext = new MatchingContext(patterns, symbols)
 
@@ -125,7 +125,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
 
     val patterns: Seq[Pattern] = Seq(RelatedTo("pA", "pB", "pR", "rel", Direction.OUTGOING, false))
 
-    val symbols = new SymbolTable(Set[Identifier](NodeIdentifier("pA"), RelationshipIdentifier("pR")))
+    val symbols = new OldSymbolTable(Set[OldIdentifier](NodeIdentifier("pA"), RelationshipIdentifier("pR")))
     val matchingContext = new MatchingContext(patterns, symbols)
 
 
@@ -415,9 +415,9 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
   }
 
 
-  def bind(boundSymbols: String*): SymbolTable = {
+  def bind(boundSymbols: String*): OldSymbolTable = {
     val toSet = boundSymbols.map(x => NodeIdentifier(x))
-    new SymbolTable(toSet)
+    new OldSymbolTable(toSet)
   }
 
   def assertMatches(matches: Traversable[Map[String, Any]], expectedSize: Int, expected: Map[String, Any]*) {

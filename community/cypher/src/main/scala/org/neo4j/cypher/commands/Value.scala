@@ -25,9 +25,9 @@ import java.lang.String
 import org.neo4j.cypher._
 
 abstract class Value extends (Map[String, Any] => Any) {
-  def identifier: Identifier
+  def identifier: OldIdentifier
 
-  def checkAvailable(symbols: SymbolTable)
+  def checkAvailable(symbols: OldSymbolTable)
 
   def dependsOn: Set[String]
 }
@@ -35,9 +35,9 @@ abstract class Value extends (Map[String, Any] => Any) {
 case class Literal(v: Any) extends Value {
   def apply(m: Map[String, Any]) = v
 
-  def identifier: Identifier = LiteralIdentifier(v.toString)
+  def identifier: OldIdentifier = LiteralIdentifier(v.toString)
 
-  def checkAvailable(symbols: SymbolTable) {}
+  def checkAvailable(symbols: OldSymbolTable) {}
 
   def dependsOn: Set[String] = Set()
 
@@ -46,9 +46,9 @@ case class Literal(v: Any) extends Value {
 
 abstract case class FunctionValue(functionName: String, arguments: Value*) extends Value {
 
-  def identifier: Identifier = ValueIdentifier(functionName + "(" + arguments.map(_.identifier.name).mkString(",") + ")");
+  def identifier: OldIdentifier = ValueIdentifier(functionName + "(" + arguments.map(_.identifier.name).mkString(",") + ")");
 
-  def checkAvailable(symbols: SymbolTable) {
+  def checkAvailable(symbols: OldSymbolTable) {
     arguments.foreach(_.checkAvailable(symbols))
   }
 
@@ -74,9 +74,9 @@ case class PropertyValue(entity: String, property: String) extends Value {
     }
   }
 
-  def identifier: Identifier = PropertyIdentifier(entity, property)
+  def identifier: OldIdentifier = PropertyIdentifier(entity, property)
 
-  def checkAvailable(symbols: SymbolTable) {
+  def checkAvailable(symbols: OldSymbolTable) {
     symbols.assertHas(PropertyContainerIdentifier(entity))
   }
 
@@ -88,7 +88,7 @@ case class PropertyValue(entity: String, property: String) extends Value {
 case class RelationshipTypeValue(relationship: Value) extends FunctionValue("TYPE", relationship) {
   def apply(m: Map[String, Any]): Any = relationship(m).asInstanceOf[Relationship].getType.name()
 
-  override def checkAvailable(symbols: SymbolTable) {
+  override def checkAvailable(symbols: OldSymbolTable) {
     symbols.assertHas(RelationshipIdentifier(relationship.identifier.name))
   }
 
@@ -129,9 +129,9 @@ case class Extract(iterable:Value, id:String, expression:Value) extends Value {
     case _ => throw new IterableRequiredException(iterable)
   }
 
-  def identifier: Identifier = ArrayIdentifier("extract(" + id + " in " + iterable.identifier.name + " : " + expression.identifier.name + ")")
+  def identifier: OldIdentifier = ArrayIdentifier("extract(" + id + " in " + iterable.identifier.name + " : " + expression.identifier.name + ")")
 
-  def checkAvailable(symbols: SymbolTable) {
+  def checkAvailable(symbols: OldSymbolTable) {
     iterable.checkAvailable(symbols)
   }
 
@@ -148,10 +148,10 @@ case class PathRelationshipsValue(path: Value) extends FunctionValue("RELATIONSH
 case class EntityValue(entityName: String) extends Value {
   def apply(m: Map[String, Any]): Any = m.getOrElse(entityName, throw new NotFoundException)
 
-  def identifier: Identifier = Identifier(entityName)
+  def identifier: OldIdentifier = OldIdentifier(entityName)
 
-  def checkAvailable(symbols: SymbolTable) {
-    symbols.assertHas(Identifier(entityName))
+  def checkAvailable(symbols: OldSymbolTable) {
+    symbols.assertHas(OldIdentifier(entityName))
   }
 
   def dependsOn: Set[String] = Set(entityName)
@@ -162,9 +162,9 @@ case class EntityValue(entityName: String) extends Value {
 case class ParameterValue(parameterName: String) extends Value {
   def apply(m: Map[String, Any]): Any = m.getOrElse(parameterName, throw new ParameterNotFoundException("Expected a parameter named " + parameterName))
 
-  def identifier: Identifier = Identifier(parameterName)
+  def identifier: OldIdentifier = OldIdentifier(parameterName)
 
-  def checkAvailable(symbols: SymbolTable) {}
+  def checkAvailable(symbols: OldSymbolTable) {}
 
   def dependsOn: Set[String] = Set(parameterName)
   override def toString(): String = "{" + parameterName + "}"

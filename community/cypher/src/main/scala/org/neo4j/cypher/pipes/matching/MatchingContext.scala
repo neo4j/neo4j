@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.pipes.matching
 
-import org.neo4j.cypher.{SyntaxException, SymbolTable}
+import org.neo4j.cypher.{SyntaxException, OldSymbolTable}
 import org.neo4j.cypher.commands._
 import collection.immutable.Map
 import org.neo4j.graphdb.{PropertyContainer, Direction, Relationship, Node}
 import collection.{Traversable, Seq, Iterable}
 
-class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, clauses: Seq[Clause] = Seq()) {
+class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: OldSymbolTable, clauses: Seq[Clause] = Seq()) {
   type PatternGraph = Map[String, PatternElement]
 
   val (patternGraph, optionalElements) = buildPatternGraph()
@@ -179,7 +179,7 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, cla
 
   private def validatePattern(patternNodes: Map[String, PatternNode],
                               patternRels: Map[String, PatternRelationship],
-                              bindings: SymbolTable): (Map[String, PatternElement], Set[String]) = {
+                              bindings: OldSymbolTable): (Map[String, PatternElement], Set[String]) = {
     val overlaps = patternNodes.keys.filter(patternRels.keys.toSeq contains)
     if (overlaps.nonEmpty) {
       throw new SyntaxException("Some identifiers are used as both relationships and nodes: " + overlaps.mkString(", "))
