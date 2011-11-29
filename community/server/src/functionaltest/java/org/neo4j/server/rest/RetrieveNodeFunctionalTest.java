@@ -77,29 +77,44 @@ public class RetrieveNodeFunctionalTest extends SharedServerTestBase
     public void shouldParameteriseUrisInNodeRepresentationWithHostHeaderValue() throws Exception
     {
         HttpClient httpclient = new DefaultHttpClient();
-        HttpGet httpget = new HttpGet( nodeUri );
-        httpget.setHeader( "Accept", "application/json" );
-        httpget.setHeader( "Host", "dummy.neo4j.org" );
-        HttpResponse response = httpclient.execute( httpget );
-        HttpEntity entity = response.getEntity();
+        try
+        {
+            HttpGet httpget = new HttpGet( nodeUri );
 
-        String entityBody = IOUtils.toString( entity.getContent(), "UTF-8" );
+            httpget.setHeader( "Accept", "application/json" );
+            httpget.setHeader( "Host", "dummy.neo4j.org" );
+            HttpResponse response = httpclient.execute( httpget );
+            HttpEntity entity = response.getEntity();
 
-        assertThat( entityBody, containsString( "http://dummy.neo4j.org/db/data/node/1" ) );
+            String entityBody = IOUtils.toString( entity.getContent(), "UTF-8" );
+
+            assertThat( entityBody, containsString( "http://dummy.neo4j.org/db/data/node/1" ) );
+
+        } finally
+        {
+            httpclient.getConnectionManager().shutdown();
+        }
     }
 
     @Test
     public void shouldParameteriseUrisInNodeRepresentationWithoutHostHeaderUsingRequestUri() throws Exception
     {
         HttpClient httpclient = new DefaultHttpClient();
-        HttpGet httpget = new HttpGet( nodeUri );
-        httpget.setHeader( "Accept", "application/json" );
-        HttpResponse response = httpclient.execute( httpget );
-        HttpEntity entity = response.getEntity();
+        try
+        {
+            HttpGet httpget = new HttpGet( nodeUri );
 
-        String entityBody = IOUtils.toString( entity.getContent(), "UTF-8" );
+            httpget.setHeader( "Accept", "application/json" );
+            HttpResponse response = httpclient.execute( httpget );
+            HttpEntity entity = response.getEntity();
 
-        assertThat( entityBody, containsString( "http://localhost:7474/db/data/node/1" ) );
+            String entityBody = IOUtils.toString( entity.getContent(), "UTF-8" );
+
+            assertThat( entityBody, containsString( "http://localhost:7474/db/data/node/1" ) );
+        } finally
+        {
+            httpclient.getConnectionManager().shutdown();
+        }
     }
 
     /**

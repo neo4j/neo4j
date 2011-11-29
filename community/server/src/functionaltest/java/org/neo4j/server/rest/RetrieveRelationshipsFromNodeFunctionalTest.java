@@ -59,6 +59,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest extends SharedServerTes
 
     private static FunctionalTestHelper functionalTestHelper;
     private static GraphDbHelper helper;
+    private long likes;
 
     @BeforeClass
     public static void setupServer() throws IOException
@@ -77,18 +78,20 @@ public class RetrieveRelationshipsFromNodeFunctionalTest extends SharedServerTes
     private void createSimpleGraph()
     {
         nodeWithRelationships = helper.createNode();
-        helper.createRelationship( "LIKES", nodeWithRelationships, helper.createNode() );
+        likes = helper.createRelationship( "LIKES", nodeWithRelationships, helper.createNode() );
         helper.createRelationship( "LIKES", helper.createNode(), nodeWithRelationships );
         helper.createRelationship( "HATES", nodeWithRelationships, helper.createNode() );
         nodeWithoutRelationships = helper.createNode();
         nonExistingNode = nodeWithoutRelationships * 100;
     }
 
-    public @Rule
+    public
+    @Rule
     TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
 
-    private JaxRsResponse sendRetrieveRequestToServer(long nodeId, String path) {
-        return RestRequest.req().get(functionalTestHelper.nodeUri() + "/" + nodeId + "/relationships" + path);
+    private JaxRsResponse sendRetrieveRequestToServer( long nodeId, String path )
+    {
+        return RestRequest.req().get( functionalTestHelper.nodeUri() + "/" + nodeId + "/relationships" + path );
     }
 
     private void verifyRelReps( int expectedSize, String json ) throws JsonParseException
@@ -105,32 +108,47 @@ public class RetrieveRelationshipsFromNodeFunctionalTest extends SharedServerTes
     public void shouldParameteriseUrisInRelationshipRepresentationWithHostHeaderValue() throws Exception
     {
         HttpClient httpclient = new DefaultHttpClient();
-        HttpGet httpget = new HttpGet( "http://localhost:7474/db/data/relationship/1");
-        httpget.setHeader( "Accept", "application/json" );
-        httpget.setHeader( "Host", "dummy.neo4j.org" );
-        HttpResponse response = httpclient.execute( httpget );
-        HttpEntity entity = response.getEntity();
+        try
+        {
+            HttpGet httpget = new HttpGet( "http://localhost:7474/db/data/relationship/" + likes );
+            httpget.setHeader( "Accept", "application/json" );
+            httpget.setHeader( "Host", "dummy.neo4j.org" );
+            HttpResponse response = httpclient.execute( httpget );
+            HttpEntity entity = response.getEntity();
 
-        String entityBody = IOUtils.toString( entity.getContent(), "UTF-8" );
+            String entityBody = IOUtils.toString( entity.getContent(), "UTF-8" );
 
-        System.out.println( entityBody );
+            System.out.println( entityBody );
 
-        assertThat( entityBody, containsString( "http://dummy.neo4j.org/db/data/relationship/1" ) );
-        assertThat( entityBody,  not( containsString( "localhost:7474" ) ) );
+            assertThat( entityBody, containsString( "http://dummy.neo4j.org/db/data/relationship/" + likes ) );
+            assertThat( entityBody, not( containsString( "localhost:7474" ) ) );
+        }
+        finally
+        {
+            httpclient.getConnectionManager().shutdown();
+        }
     }
 
     @Test
     public void shouldParameteriseUrisInRelationshipRepresentationWithoutHostHeaderUsingRequestUri() throws Exception
     {
         HttpClient httpclient = new DefaultHttpClient();
-        HttpGet httpget = new HttpGet( "http://localhost:7474/db/data/relationship/1");
-        httpget.setHeader( "Accept", "application/json" );
-        HttpResponse response = httpclient.execute( httpget );
-        HttpEntity entity = response.getEntity();
+        try
+        {
+            HttpGet httpget = new HttpGet( "http://localhost:7474/db/data/relationship/" + likes );
 
-        String entityBody = IOUtils.toString( entity.getContent(), "UTF-8" );
+            httpget.setHeader( "Accept", "application/json" );
+            HttpResponse response = httpclient.execute( httpget );
+            HttpEntity entity = response.getEntity();
 
-        assertThat( entityBody, containsString( "http://localhost:7474/db/data/relationship/1" ) );
+            String entityBody = IOUtils.toString( entity.getContent(), "UTF-8" );
+
+            assertThat( entityBody, containsString( "http://localhost:7474/db/data/relationship/" + likes ) );
+        }
+        finally
+        {
+            httpclient.getConnectionManager().shutdown();
+        }
     }
 
     /**
@@ -180,7 +198,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest extends SharedServerTes
 
     /**
      * Get typed relationships.
-     * 
+     * <p/>
      * Note that the "+&+" needs to be escaped for example when using
      * http://curl.haxx.se/[cURL] from the terminal.
      */
@@ -192,7 +210,7 @@ public class RetrieveRelationshipsFromNodeFunctionalTest extends SharedServerTes
         String entity = gen.get()
                 .expectedStatus( 200 )
                 .get( functionalTestHelper.nodeUri() + "/" + nodeWithRelationships + "/relationships"
-                      + "/all/LIKES&HATES" )
+                        + "/all/LIKES&HATES" )
                 .entity();
         verifyRelReps( 3, entity );
     }
@@ -281,24 +299,26 @@ public class RetrieveRelationshipsFromNodeFunctionalTest extends SharedServerTes
     }
 
     @Test
-    public void shouldGet200WhenRetrievingValidRelationship() throws DatabaseBlockedException {
-        long relationshipId = helper.createRelationship("LIKES");
+    public void shouldGet200WhenRetrievingValidRelationship() throws DatabaseBlockedException
+    {
+        long relationshipId = helper.createRelationship( "LIKES" );
 
-        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.relationshipUri(relationshipId));
+        JaxRsResponse response = RestRequest.req().get( functionalTestHelper.relationshipUri( relationshipId ) );
 
-        assertEquals(200, response.getStatus());
+        assertEquals( 200, response.getStatus() );
         response.close();
     }
 
     @Test
-    public void shouldGetARelationshipRepresentationInJsonWhenRetrievingValidRelationship() throws Exception {
-        long relationshipId = helper.createRelationship("LIKES");
+    public void shouldGetARelationshipRepresentationInJsonWhenRetrievingValidRelationship() throws Exception
+    {
+        long relationshipId = helper.createRelationship( "LIKES" );
 
-        JaxRsResponse response = RestRequest.req().get(functionalTestHelper.relationshipUri(relationshipId));
+        JaxRsResponse response = RestRequest.req().get( functionalTestHelper.relationshipUri( relationshipId ) );
 
-        String entity = response.getEntity(String.class);
-        assertNotNull(entity);
-        isLegalJson(entity);
+        String entity = response.getEntity( String.class );
+        assertNotNull( entity );
+        isLegalJson( entity );
         response.close();
     }
 
