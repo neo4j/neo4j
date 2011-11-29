@@ -29,6 +29,10 @@ To query the status of the service, run `bin\Neo4j.bat query`
 
 To start/stop the service from the command prompt, run `bin\Neo4j.bat +action+`
 
+NOTE: Some users have reported problems on Windows when using the ZoneAlarm firewall.
+If you are having problems getting large responses from the server, or if Webadmin does not work, try disabling ZoneAlarm.
+Contact ZoneAlarm support to get information on how to resolve this.
+
 == Linux Service ==
 
 Neo4j can participate in the normal system startup and shutdown process.
