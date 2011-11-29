@@ -245,8 +245,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
             "Joe like dogs" } )
     public void returning_nested_pipes()
     {
-        String script = "t= new Table();"
-                        + "g.v(%I%).as('I').out('know').as('friend').out('like').as('likes').table(new Table()){it.name}{it.name}.cap;";
+        String script = "g.v(%I%).as('I').out('know').as('friend').out('like').as('likes').table(new Table()){it.name}{it.name}.cap;";
         String response = doRestCall( script, Status.OK );
         assertTrue( response.contains( "cats" ) );
     }
