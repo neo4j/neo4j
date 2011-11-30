@@ -933,7 +933,7 @@ public class XaLogicalLog
         String name = getFileName( version );
         if ( !new File( name ).exists() )
         {
-            throw new IOException( "No such log version:" + version );
+            throw new NoSuchLogVersionException( version );
         }
         FileChannel channel = new RandomAccessFile( name, "r" ).getChannel();
         channel.position( position );
