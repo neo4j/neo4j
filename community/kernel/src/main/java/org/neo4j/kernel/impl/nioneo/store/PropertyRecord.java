@@ -157,7 +157,9 @@ public class PropertyRecord extends Abstract64BitRecord
     {
         StringBuilder buf = new StringBuilder();
         buf.append( "Property[" ).append( getId() ).append( ",used=" ).append( inUse() ).append( ",prev=" ).append(
-                prevProp ).append( ",next=" ).append( nextProp ).append( ", Value[" );
+                prevProp ).append( ",next=" ).append( nextProp );
+        if ( entityId != -1 ) buf.append( nodeIdSet ? ",node=" : ",rel=" ).append( entityId );
+        buf.append( ", Value[" );
         Iterator<PropertyBlock> itr = blockRecords.iterator();
         while ( itr.hasNext() )
         {

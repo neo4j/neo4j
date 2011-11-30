@@ -144,8 +144,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                 2 );
         for ( TransactionInterceptorProvider provider : Service.load( TransactionInterceptorProvider.class ) )
         {
-            Object conf = config.get( provider.getClass().getSimpleName()
-                                      + "." + provider.name() );
+            Object conf = config.get( TransactionInterceptorProvider.class.getSimpleName() + "." + provider.name() );
             if ( conf != null )
             {
                 providers.add( Pair.of( provider, conf ) );

@@ -218,4 +218,24 @@ public class Args
     {
         return null;
     }*/
+
+    public static String jarUsage( Class<?> main, String... params )
+    {
+        StringBuilder usage = new StringBuilder( "USAGE: java [-cp ...] " );
+        try
+        {
+            String jar = main.getProtectionDomain().getCodeSource().getLocation().getPath();
+            usage.append( "-jar " ).append( jar );
+        }
+        catch ( Exception ex )
+        {
+            // ignore
+        }
+        usage.append( main.getCanonicalName() );
+        for ( String param : params )
+        {
+            usage.append( ' ' ).append( param );
+        }
+        return usage.toString();
+    }
 }
