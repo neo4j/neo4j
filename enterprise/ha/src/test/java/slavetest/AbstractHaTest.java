@@ -692,11 +692,16 @@ public abstract class AbstractHaTest
     public void makeSurePullIntervalWorks() throws Exception
     {
         startUpMaster( stringMap() );
-        int waitTime = 2;
-        addDb( stringMap( CONFIG_KEY_PULL_INTERVAL, String.valueOf( waitTime ) ), true );
+        addDb( stringMap( CONFIG_KEY_PULL_INTERVAL, "10ms" ), true );
         Long nodeId = executeJobOnMaster( new CommonJobs.CreateSubRefNodeJob( "PULL", "key", "value" ) );
-        sleeep( waitTime*1000*2 );
-        assertTrue( executeJob( new CommonJobs.GetNodeByIdJob( nodeId ), 0 ) );
+        long endTime = System.currentTimeMillis()+1000;
+        boolean found = false;
+        while ( System.currentTimeMillis() < endTime )
+        {
+            found = executeJob( new CommonJobs.GetNodeByIdJob( nodeId ), 0 );
+            if ( found ) break;
+        }
+        assertTrue( found );
     }
     
     @Test

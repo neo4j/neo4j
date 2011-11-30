@@ -73,7 +73,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         final Machine masterMachine = new Machine( masterId, -1, 1, -1,
                 "localhost:" + Protocol.PORT );
         final Master client = new MasterClient( masterMachine.getServer().first(), masterMachine.getServer().other(), graphDb,
-                Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS, Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT);
+                TEST_READ_TIMEOUT, Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT);
         return new AbstractBroker( id, graphDb )
         {
             public boolean iAmMaster()
