@@ -22,13 +22,13 @@ package org.neo4j.cypher.pipes
 import matching.MatchingContext
 import org.neo4j.cypher.commands._
 import java.lang.String
-import org.neo4j.cypher.symbols.{RelationshipType, NodeType, Identifier}
+import org.neo4j.cypher.symbols.{IterableType, RelationshipType, NodeType, Identifier}
 
 class MatchPipe(source: Pipe, patterns: Seq[Pattern], predicates:Seq[Clause]) extends Pipe {
   val matchingContext = new MatchingContext(patterns, source.symbols, predicates)
   val identifiers = patterns.flatMap(_ match {
     case RelatedTo(left, right, rel, relType, dir, optional) => Seq(Identifier(left, NodeType()), Identifier(right, NodeType()), Identifier(rel, RelationshipType()))
-    case VarLengthRelatedTo(pathName, left, right, minHops, maxHops, relType, dir, iterableRel, optional) => Seq(Identifier(left, NodeType()), Identifier(right, NodeType()))
+    case VarLengthRelatedTo(pathName, left, right, minHops, maxHops, relType, dir, iterableRel, optional) => Seq(Identifier(left, NodeType()), Identifier(right, NodeType())) ++ iterableOfRelationships(iterableRel)
     case _ => Seq()
   })
   val symbols = source.symbols.add(identifiers:_*)
@@ -37,6 +37,11 @@ class MatchPipe(source: Pipe, patterns: Seq[Pattern], predicates:Seq[Clause]) ex
     source.foreach(sourcePipeRow => {
       matchingContext.getMatches(sourcePipeRow).foreach(f)
     })
+  }
+
+  private def iterableOfRelationships(iterableRel:Option[String]): Option[Identifier] = iterableRel match {
+    case None => None
+    case Some(r) => Some(Identifier(r, new IterableType(RelationshipType())))
   }
 
   override def executionPlan(): String = source.executionPlan() + "\r\nPatternMatch(" + patterns.mkString(",") + ")"

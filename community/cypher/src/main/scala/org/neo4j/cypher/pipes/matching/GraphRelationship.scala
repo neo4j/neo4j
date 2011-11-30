@@ -65,5 +65,7 @@ case class VariableLengthGraphRelationship(path: Path) extends GraphRelationship
     case x => obj == this || (obj == path && path.length() > 0)
   }
 
+  def relationships: List[Relationship] = path.relationships().asScala.toList
+
   override def toString = path.toString
 }

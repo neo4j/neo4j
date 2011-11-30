@@ -35,8 +35,15 @@ class PatternNode(key: String) extends PatternElement(key)  {
     rel
   }
 
-  def relateViaVariableLengthPathTo(pathName: String, end: PatternNode, minHops: Option[Int], maxHops: Option[Int], relType: Option[String], dir: Direction, optional:Boolean): PatternRelationship = {
-    val rel = new VariableLengthPatternRelationship(pathName, this, end, minHops, maxHops, relType, dir, optional)
+  def relateViaVariableLengthPathTo(pathName: String,
+                                    end: PatternNode,
+                                    minHops: Option[Int],
+                                    maxHops: Option[Int],
+                                    relType: Option[String],
+                                    dir: Direction,
+                                    iterableRel:Option[String],
+                                    optional:Boolean): PatternRelationship = {
+    val rel = new VariableLengthPatternRelationship(pathName, this, end, iterableRel, minHops, maxHops, relType, dir, optional)
     relationships.add(rel)
     end.relationships.add(rel)
     rel

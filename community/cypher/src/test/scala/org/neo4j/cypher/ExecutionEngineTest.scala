@@ -1322,6 +1322,22 @@ return coalesce(a.title?, a.name?)
     assert(List(Map("COALESCE(a.title,a.name)" -> "A")) === result.toList)
   }
 
+  @Test def shouldReturnAnInterableWithAllRelationshipsFromAVarLength() {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+    val r1 = relate(a, b)
+    val r2 = relate(b, c)
+
+    val result = parseAndExecute("""
+start a  = node(1)
+match a-[r*2]->c
+return r
+""")
+
+    assert(List(Map("r" -> List(r1, r2))) === result.toList)
+  }
+
   @Test def shouldThrowNiceErrorMessageWhenPropertyIsMissing() {
     val query = new CypherParser().parse("start n=node(0) return n.A_PROPERTY_THAT_IS_MISSING")
     try {

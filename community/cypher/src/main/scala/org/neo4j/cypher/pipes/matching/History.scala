@@ -21,7 +21,12 @@ package org.neo4j.cypher.pipes.matching
 
 import org.neo4j.graphdb.Node
 
-
+/**
+ * This class is responsible for keeping track of the already visited parts of the pattern, and the matched
+ * entities corresponding to the pattern items.
+ *
+ * It's also used to emit the subgraph when the whole pattern has been matched (that's the toMap method)
+ */
 class History(source:Map[String,Any], seen: Set[MatchingPair]=Set()) {
   def filter(relationships: Set[PatternRelationship]): Set[PatternRelationship] = relationships.filterNot(r => seen.exists(_.matches(r)))
 
@@ -32,12 +37,17 @@ class History(source:Map[String,Any], seen: Set[MatchingPair]=Set()) {
 
   def add(pair: MatchingPair): History = new History(source, seen ++ Seq(pair))
 
-  def toMap: Map[String, Any] = source ++ seen.map(_ match {
-      case MatchingPair(pe: PatternNode, entity: Node) => pe.key -> entity
-      case MatchingPair(pe: PatternRelationship, entity: SingleGraphRelationship) => pe.key -> entity.rel
-      case MatchingPair(pe: PatternRelationship, null) => pe.key -> null
-      case MatchingPair(pe: VariableLengthPatternRelationship, entity: VariableLengthGraphRelationship) => pe.key -> entity.path
+  def toMap: Map[String, Any] = source ++ seen.flatMap(_ match {
+      case MatchingPair(pe: PatternNode, entity: Node) => Seq(pe.key -> entity)
+      case MatchingPair(pe: PatternRelationship, entity: SingleGraphRelationship) => Seq(pe.key -> entity.rel)
+      case MatchingPair(pe: PatternRelationship, null) => Seq(pe.key -> null)
+      case MatchingPair(pe: VariableLengthPatternRelationship, entity: VariableLengthGraphRelationship) => Seq(pe.key -> entity.path) ++ relationshipIterable(pe, entity)
   }).toMap
+
+  private def relationshipIterable(pe: VariableLengthPatternRelationship, entity: VariableLengthGraphRelationship):Option[(String, Any)] = pe.relIterable match {
+    case None => None
+    case Some(relIterable) => Some(relIterable -> entity.relationships)
+  }
 
   override def toString: String = "History(%s)".format(seen.mkString("[", "], [", "]"))
 }
