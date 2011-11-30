@@ -1293,6 +1293,24 @@ order by a.age
     assert(List(a, b, c) === result.columnAs[Node]("a").toList)
   }
 
+  @Test def shouldSupportOrderingByAPropertyAfterBeingDistinctified() {
+    val a = createNode("name" -> "A")
+    val b = createNode("name" -> "B")
+    val c = createNode("name" -> "C")
+
+    relate(a,b)
+    relate(a,c)
+
+    val result = parseAndExecute("""
+start a  = node(1)
+match a-->b
+return distinct b
+order by b.name
+""")
+
+    assert(List(b,c) === result.columnAs[Node]("b").toList)
+  }
+
   @Test def shouldThrowNiceErrorMessageWhenPropertyIsMissing() {
     val query = new CypherParser().parse("start n=node(0) return n.A_PROPERTY_THAT_IS_MISSING")
     try {
