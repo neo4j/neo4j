@@ -19,6 +19,19 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.impl.cache.LruCache;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
+import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.BufferedFileChannel;
+import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.kernel.impl.util.StringLogger;
+
+import javax.transaction.xa.XAException;
+import javax.transaction.xa.Xid;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -31,20 +44,6 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
-
-import javax.transaction.xa.XAException;
-import javax.transaction.xa.Xid;
-
-import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.cache.LruCache;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
-import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.BufferedFileChannel;
-import org.neo4j.kernel.impl.util.FileUtils;
-import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * <CODE>XaLogicalLog</CODE> is a transaction and logical log combined. In
@@ -909,7 +908,7 @@ public class XaLogicalLog
         String name = getFileName( version );
         if ( !fileSystem.fileExists( name ) )
         {
-            throw new IOException( "No such log version:" + version );
+            throw new NoSuchLogVersionException( version );
         }
         FileChannel channel = fileSystem.open( name, "r" );
         channel.position( position );
