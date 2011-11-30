@@ -1298,8 +1298,8 @@ order by a.age
     val b = createNode("name" -> "B")
     val c = createNode("name" -> "C")
 
-    relate(a,b)
-    relate(a,c)
+    relate(a, b)
+    relate(a, c)
 
     val result = parseAndExecute("""
 start a  = node(1)
@@ -1308,7 +1308,18 @@ return distinct b
 order by b.name
 """)
 
-    assert(List(b,c) === result.columnAs[Node]("b").toList)
+    assert(List(b, c) === result.columnAs[Node]("b").toList)
+  }
+
+  @Test def shouldBeAbleToRunCoalesce() {
+    createNode("name" -> "A")
+
+    val result = parseAndExecute("""
+start a  = node(1)
+return coalesce(a.title?, a.name?)
+""")
+
+    assert(List(Map("COALESCE(a.title,a.name)" -> "A")) === result.toList)
   }
 
   @Test def shouldThrowNiceErrorMessageWhenPropertyIsMissing() {

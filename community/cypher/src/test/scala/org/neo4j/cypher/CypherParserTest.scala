@@ -581,6 +581,17 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ValueReturnItem(RelationshipTypeValue(EntityValue("r")))))
   }
 
+
+  @Test def shouldBeAbleToParseCoalesce() {
+    testQuery(
+      "start n=NODE(1) match n-[r]->(x) return coalesce(r.name, x.name)",
+
+      Query.
+        start(NodeById("n", 1)).
+        matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING, false)).
+        returns(ValueReturnItem(CoalesceValue(PropertyValue("r", "name"), PropertyValue("x", "name")))))
+  }
+
   @Test def relationshipsFromPathOutput() {
     testQuery(
       "start n=NODE(1) match p=n-->x return relationships(p)",

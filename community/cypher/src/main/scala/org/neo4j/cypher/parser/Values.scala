@@ -28,7 +28,7 @@ trait Values extends JavaTokenParsers with Tokens {
 
   def entityValue: Parser[EntityValue] = identity ^^ (x => EntityValue(x))
 
-  def value: Parser[Value] = (boolean | extract | function | nullableProperty | property | stringValue | decimal | parameter)
+  def value: Parser[Value] = (boolean | extract | function | coalesceFunc | nullableProperty | property | stringValue | decimal | parameter)
 
   def property: Parser[Value] = identity ~ "." ~ identity ^^ {
     case v ~ "." ~ p => PropertyValue(v, p)
@@ -48,8 +48,12 @@ trait Values extends JavaTokenParsers with Tokens {
 
   def falseX: Parser[Value] = ignoreCase("false") ^^ (x => Literal(false))
 
-  def extract:Parser[Value] = ignoreCase("extract") ~> parens(identity ~ ignoreCase("in") ~ value ~ ":" ~ value) ^^ {
+  def extract: Parser[Value] = ignoreCase("extract") ~> parens(identity ~ ignoreCase("in") ~ value ~ ":" ~ value) ^^ {
     case (id ~ in ~ iter ~ ":" ~ expression) => Extract(iter, id, expression)
+  }
+
+  def coalesceFunc: Parser[Value] = ignoreCase("coalesce") ~> parens(rep1sep(value, ",")) ^^ {
+    case values => CoalesceValue(values:_*)
   }
 
   def function: Parser[Value] = ident ~ parens(value | entityValue) ^^ {

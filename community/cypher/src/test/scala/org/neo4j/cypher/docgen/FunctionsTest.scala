@@ -164,6 +164,18 @@ class FunctionsTest extends DocumentingTestBase {
     )
   }
 
+  @Test def coalesce() {
+    testThis(
+      title = "COALESCE",
+      syntax = "COALESCE( expression [, expression]* )",
+      arguments = List("expression" -> "The expression that might return null"),
+      text = """Returns the first non-null value in the list of expressions passed to it.""",
+      queryText = """start a=node(%A%) return coalesce(a.hairColour?, a.eyes?)""",
+      returns = """""",
+      (p) => assert(Seq("brown") === p.columnAs[String]("COALESCE(a.hairColour,a.eyes)").toSeq)
+    )
+  }
+
   private def testThis(title: String, syntax: String, arguments: List[(String, String)], text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
     val argsText = arguments.map(x => "* _" + x._1 + ":_ " + x._2).mkString("\r\n\r\n")
     val fullText = String.format("""%s

@@ -95,6 +95,20 @@ case class RelationshipTypeValue(relationship: Value) extends FunctionValue("TYP
   override def toString() = "type(" + relationship + ")"
 }
 
+case class CoalesceValue(values: Value*) extends FunctionValue("COALESCE", values: _*) {
+  def apply(m: Map[String, Any]): Any = values.map(valueObject => valueObject(m)).find(value => value != null) match {
+    case None => null
+    case Some(x) => x
+  }
+
+  def argumentsString: String = values.map(_.identifier.name).mkString(",")
+
+  //TODO: Find out the closest matching return type
+  def identifier = Identifier("COALESCE(" + argumentsString + ")", AnyType())
+
+  override def toString() = "coalesce(" + argumentsString + ")"
+}
+
 case class ArrayLengthValue(inner: Value) extends FunctionValue("LENGTH", inner) {
   def apply(m: Map[String, Any]): Any = inner(m) match {
     case path: Path => path.length()
@@ -129,7 +143,7 @@ case class PathNodesValue(path: Value) extends FunctionValue("NODES", path) {
     case x => throw new SyntaxException("Expected " + path.identifier.name + " to be a path.")
   }
 
-  def identifier = Identifier("NODES(" + path.identifier.name +")", new IterableType(NodeType()))
+  def identifier = Identifier("NODES(" + path.identifier.name + ")", new IterableType(NodeType()))
 
   override def checkAvailable(symbols: SymbolTable) {
     symbols.assertHas(path.identifier.name, new IterableType(MapType()))
@@ -160,7 +174,7 @@ case class PathRelationshipsValue(path: Value) extends FunctionValue("RELATIONSH
     case x => throw new SyntaxException("Expected " + path.identifier.name + " to be a path.")
   }
 
-  def identifier = Identifier("RELATIONSHIPS(" + path.identifier.name +")", new IterableType(RelationshipType()))
+  def identifier = Identifier("RELATIONSHIPS(" + path.identifier.name + ")", new IterableType(RelationshipType()))
 
 
   override def checkAvailable(symbols: SymbolTable) {
