@@ -133,7 +133,7 @@ public class JavaExecutionEngineTests {
     public void exampleConsole() throws Exception {
         Query query = CypherParser.parseConsole(
 //START SNIPPET: Identifier
-                "start n=node(0) return n.NOT_EXISTING"
+                "start n=node(0) return n.NOT_EXISTING, n.`property with spaces in it`"
 //END SNIPPET: Identifier
         );
 

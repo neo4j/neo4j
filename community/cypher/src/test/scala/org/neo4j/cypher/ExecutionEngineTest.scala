@@ -1239,6 +1239,28 @@ return a
     assert(List(a) === result.columnAs[Node]("a").toList)
   }
 
+  @Test def shouldSupportColumnRenaming() {
+    val a = createNode(Map("name" -> "Andreas"))
+
+    val result = parseAndExecute("""
+start a  = node(1)
+return a as OneLove
+""")
+
+    assert(List(a) === result.columnAs[Node]("OneLove").toList)
+  }
+
+  @Test def shouldSupportColumnRenamingForAggregatesAsWell() {
+    val a = createNode(Map("name" -> "Andreas"))
+
+    val result = parseAndExecute("""
+start a  = node(1)
+return count(*) as OneLove
+""")
+
+    assert(List(1) === result.columnAs[Node]("OneLove").toList)
+  }
+
   @Ignore("Should be supported, but doesn't work")
   @Test def shouldBeAbleToQueryNumericIndexes() {
     val a = createNode("x" -> 5)

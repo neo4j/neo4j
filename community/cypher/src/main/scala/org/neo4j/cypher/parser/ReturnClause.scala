@@ -19,28 +19,41 @@ package org.neo4j.cypher.parser
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
+
 trait ReturnClause extends JavaTokenParsers with Tokens with ReturnItems {
 
+  def column = (aggregate | returnItem) ~ opt(ignoreCase("AS") ~> identity) ^^ {
+    case returnItem ~ alias => alias match {
+      case None => returnItem
+      case Some(newColumnName) => returnItem match {
+        case x: AggregationItem => AliasAggregationItem(x, newColumnName)
+        case x => AliasReturnItem(x, newColumnName)
+      }
+    }
+  }
 
-  def returns: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> opt("distinct") ~ rep1sep((aggregate | returnItem), ",") ^^
-    { case distinct ~ items => {
-      val list = items.filter(_.isInstanceOf[AggregationItem]).map(_.asInstanceOf[AggregationItem])
+  def returns: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> opt("distinct") ~ rep1sep(column, ",") ^^ {
+    case distinct ~ items => {
+      val aggregationItems = items.filter(_.isInstanceOf[AggregationItem]).map(_.asInstanceOf[AggregationItem])
 
       val none: Option[Aggregation] = distinct match {
         case Some(x) => Some(Aggregation())
         case None => None
       }
 
-      (
-        Return(items.map(_.columnName).toList, items.filter(!_.isInstanceOf[AggregationItem]): _*),
-        list match {
-          case List() => none
-          case _ => Some(Aggregation(list : _*))
-        }
-      )
-    }}
+      val aggregation = aggregationItems match {
+        case List() => none
+        case _ => Some(Aggregation(aggregationItems: _*))
+      }
+
+      val returnItems = Return(items.map(_.columnName).toList, items.filter(!_.isInstanceOf[AggregationItem]): _*)
+
+      (returnItems, aggregation)
+    }
+  }
 
 
 }

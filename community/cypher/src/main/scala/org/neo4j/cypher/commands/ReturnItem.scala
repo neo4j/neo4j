@@ -29,6 +29,8 @@ abstract sealed class ReturnItem(val identifier: Identifier) extends (Map[String
   def columnName = identifier.name
 
   def concreteReturnItem = this
+
+  override def toString() = identifier.name
 }
 
 case class ValueReturnItem(value: Value) extends ReturnItem(value.identifier) {
@@ -39,20 +41,40 @@ case class ValueReturnItem(value: Value) extends ReturnItem(value.identifier) {
   }
 }
 
+case class AliasReturnItem(inner: ReturnItem, newName:String) extends ReturnItem(Identifier(newName, inner.identifier.typ)) {
+  def apply(m: Map[String, Any]): Any = inner.apply(m)
+
+  def assertDependencies(source: Pipe) {
+    inner.assertDependencies(source)
+  }
+
+  override def toString() = inner.toString() + " AS " + newName
+}
+
 
 case class ValueAggregationItem(value: AggregationValue) extends AggregationItem(value.identifier) {
 
   def assertDependencies(source: Pipe) {
     value.checkAvailable(source.symbols)
   }
-   def createAggregationFunction: AggregationFunction = value.createAggregationFunction
+
+  def createAggregationFunction: AggregationFunction = value.createAggregationFunction
 }
 
-abstract sealed class AggregationItem(identifier:Identifier) extends ReturnItem(identifier) {
+abstract sealed class AggregationItem(identifier: Identifier) extends ReturnItem(identifier) {
   def apply(m: Map[String, Any]): Map[String, Any] = m
 
   def createAggregationFunction: AggregationFunction
+
   override def toString() = identifier.name
+}
+
+case class AliasAggregationItem(inner:AggregationItem, newName:String) extends AggregationItem(Identifier(newName, inner.identifier.typ)) {
+  def assertDependencies(source: Pipe) {
+    inner.assertDependencies(source)
+  }
+
+  def createAggregationFunction: AggregationFunction = inner.createAggregationFunction
 }
 
 

@@ -30,10 +30,17 @@ import org.scalatest.Assertions
 
 class CypherParserTest extends JUnitSuite with Assertions {
   @Test def shouldParseEasiestPossibleQuery() {
-    val q = Query.
+    testQuery("start s = NODE(1) return s",
+      Query.
       start(NodeById("s", 1)).
-      returns(ValueReturnItem(EntityValue("s")))
-    testQuery("start s = NODE(1) return s", q)
+      returns(ValueReturnItem(EntityValue("s"))))
+  }
+
+  @Test def shouldHandleAliasingOfColumnNames() {
+    testQuery("start s = NODE(1) return s as somethingElse",
+      Query.
+      start(NodeById("s", 1)).
+      returns(AliasReturnItem(ValueReturnItem(EntityValue("s")), "somethingElse")))
   }
 
   @Test def sourceIsAnIndex() {

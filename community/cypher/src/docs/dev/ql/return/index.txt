@@ -11,6 +11,7 @@ include::return-nodes.txt[]
 include::return-relationships.txt[]
 include::return-property.txt[]
 include::identifier-with-uncommon-characters.txt[]
+include::column-alias.txt[]
 include::optional-properties.txt[]
 include::unique-results.txt[]
 

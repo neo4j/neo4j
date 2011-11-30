@@ -87,4 +87,13 @@ like this:""",
       returns = """The node named B, but only once.""",
       (p) => assertEquals(List(node("B")), p.columnAs[Node]("b").toList))
   }
+
+  @Test def column_aliasing() {
+    testQuery(
+      title = "Column alias",
+      text = """If the name of the column should be different from the expression used, you can rename it by using AS <new name>.""",
+      queryText = """start a=node(%A%) return a.age AS SomethingTotallyDifferent""",
+      returns = """Returns the age property of a node, but renames the column.""",
+      (p) => assertEquals(List(55), p.columnAs[Node]("SomethingTotallyDifferent").toList))
+  }
 }
