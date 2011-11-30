@@ -449,6 +449,12 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
             releaseWindow( window );
         }
     }
+    
+    @Override
+    public PropertyRecord forceGetRaw( long id )
+    {
+        return forceGetRecord( id );
+    }
 
     private PropertyRecord getRecordFromBuffer( long id, Buffer buffer )
     {

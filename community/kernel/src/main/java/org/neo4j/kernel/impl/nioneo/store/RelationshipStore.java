@@ -130,6 +130,12 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
         }
     }
 
+    @Override
+    public RelationshipRecord forceGetRaw( long id )
+    {
+        return forceGetRecord( id );
+    }
+
     public RelationshipRecord getLightRel( long id )
     {
         PersistenceWindow window = null;

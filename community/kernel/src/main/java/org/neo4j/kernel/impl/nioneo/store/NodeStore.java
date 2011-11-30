@@ -123,6 +123,12 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
             releaseWindow( window );
         }
     }
+    
+    @Override
+    public NodeRecord forceGetRaw( long id )
+    {
+        return forceGetRecord( id );
+    }
 
     public void updateRecord( NodeRecord record, boolean recovered )
     {

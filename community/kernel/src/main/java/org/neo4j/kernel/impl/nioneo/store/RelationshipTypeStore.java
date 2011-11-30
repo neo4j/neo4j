@@ -264,6 +264,12 @@ public class RelationshipTypeStore extends AbstractStore implements Store, Recor
         }
     }
 
+    @Override
+    public RelationshipTypeRecord forceGetRaw( long id )
+    {
+        return forceGetRecord( id );
+    }
+
     public RelationshipTypeData getRelationshipType( int id, boolean recovered )
     {
         assert recovered;
