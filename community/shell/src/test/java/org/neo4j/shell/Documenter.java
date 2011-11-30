@@ -23,8 +23,9 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.rmi.RemoteException;
@@ -126,7 +127,8 @@ public class Documenter
         PrintWriter out = null;
         try
         {
-            out = new PrintWriter( new FileWriter( file ) );
+            out = new PrintWriter( new OutputStreamWriter(
+                    new FileOutputStream( file ), "UTF-8" ) );
         }
         catch ( IOException e1 )
         {

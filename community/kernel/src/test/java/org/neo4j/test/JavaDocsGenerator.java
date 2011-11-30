@@ -20,8 +20,8 @@
 package org.neo4j.test;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
 
 
 public class JavaDocsGenerator extends AsciiDocGenerator
@@ -33,7 +33,7 @@ public class JavaDocsGenerator extends AsciiDocGenerator
     
     public void saveToFile( String directory, String identifier, String text )
     {
-        FileWriter fw = getFW( directory + File.separator + this.section,
+        Writer fw = getFW( directory + File.separator + this.section,
                 getTitle() + "-" + identifier );
         try
         {

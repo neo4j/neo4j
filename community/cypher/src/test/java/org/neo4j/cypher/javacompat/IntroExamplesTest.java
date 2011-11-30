@@ -22,8 +22,8 @@ package org.neo4j.cypher.javacompat;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createCypherSnippet;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createQueryResultSnippet;
 
-import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
 import java.util.Map;
 
 import org.junit.AfterClass;
@@ -56,7 +56,7 @@ public class IntroExamplesTest implements GraphHolder
             "Sara friend Maria", "Joe friend Steve" }, autoIndexNodes = true )
     public void intro_examples() throws Exception
     {
-        FileWriter fw = gen.get().getFW( "target/docs/dev/", gen.get().getTitle() );
+        Writer fw = gen.get().getFW( "target/docs/dev/", gen.get().getTitle() );
         data.get();
         fw.append( "\nImagine an example graph like\n\n" );
         fw.append( AsciidocHelper.createGraphViz( "Example Graph", graphdb(),

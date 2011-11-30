@@ -20,8 +20,9 @@
 package org.neo4j.test;
 
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
@@ -117,7 +118,7 @@ public abstract class AsciiDocGenerator
         fw.append( "\n" );
     }
 
-    public FileWriter getFW(String dir, String title)
+    public Writer getFW(String dir, String title)
     {
         try 
         {
@@ -138,7 +139,8 @@ public abstract class AsciiDocGenerator
                 throw new RuntimeException( "File exists: " + out.getAbsolutePath() );
             }
 
-            return new FileWriter( out, false );
+            return new OutputStreamWriter( new FileOutputStream( out, false ),
+                    "UTF-8" );
         } catch (Exception e)
         {
             e.printStackTrace();

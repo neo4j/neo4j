@@ -20,8 +20,8 @@
 package org.neo4j.test;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
 
 import org.neo4j.test.TestData.Producer;
 
@@ -60,7 +60,7 @@ public class JavaTestDocsGenerator extends AsciiDocGenerator
     public void document( String directory, String sectionName )
     {
         this.setSection( sectionName );
-        FileWriter fw = getFW( directory + File.separator + section, title );
+        Writer fw = getFW( directory + File.separator + section, title );
         String name = title.replace( " ", "-" ).toLowerCase();
         description = replaceSnippets( description );
         try
