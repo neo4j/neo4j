@@ -19,32 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import static java.lang.Math.max;
-import static java.util.Arrays.asList;
-import static org.neo4j.backup.OnlineBackupExtension.parsePort;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
-import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryFileNamePattern;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryLogVersion;
-
-import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
-
 import org.neo4j.com.Client;
 import org.neo4j.com.ComException;
 import org.neo4j.com.MasterUtil;
@@ -86,10 +60,37 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
+
+import static java.lang.Math.max;
+import static java.util.Arrays.asList;
+import static org.neo4j.backup.OnlineBackupExtension.parsePort;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
+import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryFileNamePattern;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryLogVersion;
 
 public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         implements GraphDatabaseService, ResponseReceiver
@@ -681,20 +682,20 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         XaDataSource nioneoDataSource = newDb.getConfig().getTxModule()
                 .getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
         long myLastCommittedTx = nioneoDataSource.getLastCommittedTxId();
-        Pair<Integer,Long> masterForMyHighestCommonTxId;
+        Pair<Integer,Long> myMaster;
         try
         {
-            masterForMyHighestCommonTxId = nioneoDataSource.getMasterForCommittedTx( myLastCommittedTx );
+            myMaster = nioneoDataSource.getMasterForCommittedTx( myLastCommittedTx );
+        }
+        catch ( NoSuchLogVersionException e )
+        {
+            getMessageLog().logMessage( "Logical log file for txId " + myLastCommittedTx +
+                " not found, perhaps due to the db being copied from master. Ignoring." );
+            return;
         }
         catch ( IOException e )
         {
-            // This is quite dangerous to just catch here... but the special case is
-            // where this db was just now copied from the master where there's data,
-            // but no logical logs were transfered and hence no masterId info is here
-            getMessageLog().logMessage( "Couldn't get master ID for txId " + myLastCommittedTx +
-                    ". It may be that a log file is missing due to the db being copied from master?", e );
-//            throw new RuntimeException( e );
-            masterForMyHighestCommonTxId = Pair.of( -1, 0L );
+            getMessageLog().logMessage( "Failed to get master ID for txId " + myLastCommittedTx + ".", e );
             return;
         }
         catch ( Exception e )
@@ -702,28 +703,23 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
             throw new BranchedDataException( "Maybe not branched data, but it could solve it", e );
         }
 
-        Pair<Integer, Long> masterForMastersHighestCommonTxId = master.first().getMasterIdForCommittedTx(
+        Pair<Integer, Long> mastersMaster = master.first().getMasterIdForCommittedTx(
                 myLastCommittedTx, getStoreId( newDb ) ).response();
 
-        // Compare those two, if equal -> good
-        if ( masterForMyHighestCommonTxId.first() == XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER
-                || masterForMyHighestCommonTxId.equals( masterForMastersHighestCommonTxId ) )
-        {
-            getMessageLog().logMessage( "Master id for last committed tx ok with highestCommonTxId=" +
-                    myLastCommittedTx + " with masterId=" + masterForMyHighestCommonTxId, true );
-            return;
-        }
-        else
+        if ( myMaster.first() != XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER
+            && !myMaster.equals( mastersMaster ) )
         {
             String msg = "Branched data, I (machineId:" + machineId + ") think machineId for txId (" +
-                    myLastCommittedTx + ") is " + masterForMyHighestCommonTxId + ", but master (machineId:" +
-                    master.other().getMachineId() + ") says that it's " + masterForMastersHighestCommonTxId;
+                    myLastCommittedTx + ") is " + myMaster + ", but master (machineId:" +
+                    master.other().getMachineId() + ") says that it's " + mastersMaster;
             getMessageLog().logMessage( msg, true );
             RuntimeException exception = new BranchedDataException( msg );
             safelyShutdownDb( newDb );
             shutdown( exception, false );
             throw exception;
         }
+        getMessageLog().logMessage( "Master id for last committed tx ok with highestTxId=" +
+            myLastCommittedTx + " with masterId=" + myMaster, true );
     }
 
     private StoreId getStoreId( EmbeddedGraphDbImpl db )
