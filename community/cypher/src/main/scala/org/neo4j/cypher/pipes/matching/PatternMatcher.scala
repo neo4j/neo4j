@@ -155,9 +155,9 @@ class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause], 
   }
 
   private def yieldThis[U](yielder: Map[String, Any] => U, history: History): Boolean = {
-    debug(history, history.toMap)
-
     val toMap = history.toMap
+    debug(history, toMap)
+
     yielder(toMap)
     true
   }

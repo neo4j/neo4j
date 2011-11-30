@@ -32,13 +32,11 @@ class History(source:Map[String,Any], seen: Set[MatchingPair]=Set()) {
 
   def add(pair: MatchingPair): History = new History(source, seen ++ Seq(pair))
 
-  def toMap: Map[String, Any] = source ++ seen.flatMap(_ match {
-    case MatchingPair(p, e) => (p, e) match {
-      case (pe: PatternNode, entity: Node) => Seq(pe.key -> entity)
-      case (pe: PatternRelationship, entity: SingleGraphRelationship) => Seq(pe.key -> entity.rel)
-      case (pe: PatternRelationship, null) => Seq(pe.key -> null)
-      case (pe: VariableLengthPatternRelationship, entity: VariableLengthGraphRelationship) => Seq(pe.key -> entity.path)
-    }
+  def toMap: Map[String, Any] = source ++ seen.map(_ match {
+      case MatchingPair(pe: PatternNode, entity: Node) => pe.key -> entity
+      case MatchingPair(pe: PatternRelationship, entity: SingleGraphRelationship) => pe.key -> entity.rel
+      case MatchingPair(pe: PatternRelationship, null) => pe.key -> null
+      case MatchingPair(pe: VariableLengthPatternRelationship, entity: VariableLengthGraphRelationship) => pe.key -> entity.path
   }).toMap
 
   override def toString: String = "History(%s)".format(seen.mkString("[", "], [", "]"))
