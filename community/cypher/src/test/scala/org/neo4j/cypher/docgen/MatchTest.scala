@@ -133,9 +133,7 @@ class MatchTest extends DocumentingTestBase {
   @Test def variableLengthPathWithIterableRels() {
     testQuery(
       title = "Relationship identifier in variable length relationships",
-      text = """When the relationship between two nodes is of variable length, using
-an relationship identifier introduces an identifier that isn't a single relationship -
-it's an iterable of relationships. """,
+      text = """When the connection between two nodes is of variable length, a relationship identifier becomes an iterable of relationships.""",
       queryText = """start a=node(%A%), x=node(%E%, %B%) match a-[r:KNOWS*1..3]->x return r""",
       returns = "Returns the start and end point, if there is a path between 1 and 3 relationships away",
     (p) => assertEquals(2, p.toList.size)
