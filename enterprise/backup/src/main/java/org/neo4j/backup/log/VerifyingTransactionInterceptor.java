@@ -39,6 +39,42 @@ import org.neo4j.kernel.impl.util.StringLogger;
 
 class VerifyingTransactionInterceptor implements TransactionInterceptor
 {
+    enum CheckerMode
+    {
+        FULL( true )
+        {
+            @Override
+            ConsistencyCheck apply( DiffStore diffs, ConsistencyCheck checker )
+            {
+                try
+                {
+                    checker.run();
+                }
+                catch ( AssertionError e )
+                {
+                    System.err.println( e.getMessage() );
+                }
+                return checker;
+            }
+        },
+        DIFF( false )
+        {
+            @Override
+            ConsistencyCheck apply( DiffStore diffs, ConsistencyCheck checker )
+            {
+                return diffs.applyToAll( checker );
+            }
+        };
+        final boolean checkProp;
+
+        private CheckerMode( boolean checkProp )
+        {
+            this.checkProp = checkProp;
+        }
+
+        abstract ConsistencyCheck apply( DiffStore diffs, ConsistencyCheck checker );
+    }
+    
     private final boolean rejectInconsistentTransactions;
 
     private final DiffStore diffs;
@@ -49,12 +85,15 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
 
     private TransactionInterceptor next;
 
+    private final CheckerMode mode;
+
     VerifyingTransactionInterceptor(
-            NeoStoreXaDataSource ds, boolean rejectInconsistentTransactions )
+            NeoStoreXaDataSource ds, CheckerMode mode, boolean rejectInconsistentTransactions )
     {
         this.rejectInconsistentTransactions = rejectInconsistentTransactions;
         this.diffs = new DiffStore( ds.getNeoStore() );
         this.msgLog = ds.getMsgLog();
+        this.mode = mode;
     }
 
     public void setStartEntry( LogEntry.Start startEntry )
@@ -87,11 +126,12 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
          *  just return - if not, throw Error so that the
          *  store remains safe.
          */
-        ConsistencyCheck consistency = diffs.applyToAll( new ConsistencyCheck( diffs )
+        ConsistencyCheck consistency = mode.apply( diffs, new ConsistencyCheck( diffs, mode.checkProp )
         {
             @Override
             protected <R extends AbstractBaseRecord> void report( RecordStore<R> recordStore, R record, InconsistencyType inconsistency )
             {
+                if ( inconsistency.isWarning() ) return;
                 StringBuilder log = messageHeader( "Inconsistencies" );
                 logRecord( log, recordStore, record );
                 log.append( inconsistency.message() );
@@ -103,6 +143,7 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
                     RecordStore<R1> recordStore, R1 record, RecordStore<? extends R2> referredStore, R2 referred,
                     InconsistencyType inconsistency )
             {
+                if ( inconsistency.isWarning() ) return;
                 if ( recordStore == referredStore && record.getLongId() == referred.getLongId() )
                 { // inconsistency between versions, logRecord() handles that, treat as single record
                     report( recordStore, record, inconsistency );
@@ -126,11 +167,9 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
             msgLog.logMessage( error.getMessage() );
             if ( rejectInconsistentTransactions )
             {
-                startEntry = null;
-                commitEntry = null;
                 throw error;
             }
-            else
+            else // we log it
             {
                 // FIXME: there is a memory hazard here, this StringBuilder could grow quite large...
                 final StringBuilder changes = messageHeader( "Changes" );
@@ -170,6 +209,7 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
         if ( diff.isModified( record.getLongId() ) )
         {
             log.append( "- " ).append( diff.forceGetRaw( record.getLongId() ) ).append( "\n\t+ " );
+            record = store.forceGetRecord( record.getLongId() );
         }
         log.append( record ).append( "\n\t" );
     }

@@ -24,15 +24,18 @@ import org.neo4j.backup.log.VerifyingTransactionInterceptorProvider;
 
 enum VerificationLevel
 {
-    NONE( null ),
-    VERIFYING( VerifyingTransactionInterceptorProvider.NAME ),
-    LOGGING( InconsistencyLoggingTransactionInterceptorProvider.NAME );
+    NONE( null, null ),
+    VERIFYING( VerifyingTransactionInterceptorProvider.NAME, "true" ),
+    LOGGING( InconsistencyLoggingTransactionInterceptorProvider.NAME, "diff" ),
+    FULL_WITH_LOGGING( InconsistencyLoggingTransactionInterceptorProvider.NAME, "full" );
 
     final String interceptorName;
+    final String configValue;
 
-    private VerificationLevel( String name )
+    private VerificationLevel( String name, String value )
     {
         this.interceptorName = name;
+        this.configValue = value;
     }
 
     static VerificationLevel valueOf( boolean verification )

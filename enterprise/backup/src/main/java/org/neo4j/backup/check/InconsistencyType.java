@@ -19,11 +19,16 @@
  */
 package org.neo4j.backup.check;
 
+import java.util.Collection;
+
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
+import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 
 public interface InconsistencyType
 {
     String message();
+    
+    boolean isWarning();
 
     enum ReferenceInconsistency implements InconsistencyType
     {
@@ -59,11 +64,26 @@ public interface InconsistencyType
         TARGET_NEXT_NOT_IN_USE( "prev(target) reference to record not used" ),
         TARGET_NEXT_DIFFERENT_CHAIN( "not part of the same chain, invalid prev(target) reference" ),
         SOURCE_NEXT_NOT_IN_USE( "prev(target) reference to record not used" ),
-        SOURCE_NEXT_DIFFERENT_CHAIN( "not part of the same chain, invalid prev(target) reference" ), ;
+        SOURCE_NEXT_DIFFERENT_CHAIN( "not part of the same chain, invalid prev(target) reference" ),
+        PROPERTY_CHANGED_WITHOUT_OWNER( true, "the property record was changed but did not have an owning node or relationship" ),
+        RELATIONSHIP_NOT_REMOVED_FOR_DELETED_NODE( "node was deleted but relationship was not removed" ),
+        PROPERTY_NOT_REMOVED_FOR_DELETED_NODE( "node was deleted but property was not removed" ),
+        PROPERTY_NOT_REMOVED_FOR_DELETED_RELATIONSHIP( "relationship was deleted but property was not removed" ),
+        REMOVED_RELATIONSHIP_STILL_REFERENCED( "removed relationship record still referenced" ),
+        REMOVED_PROPERTY_STILL_REFERENCED( "removed property record still referenced" ),
+        NEXT_DYNAMIC_NOT_REMOVED( "dynamic record removed, but next referenced in chain still in use" );
         private final String message;
+        private final boolean warning;
 
         private ReferenceInconsistency( String message )
         {
+            this.warning = false;
+            this.message = message;
+        }
+
+        private ReferenceInconsistency( boolean warning, String message )
+        {
+            this.warning = warning;
             this.message = message;
         }
 
@@ -71,6 +91,63 @@ public interface InconsistencyType
         public String message()
         {
             return message;
+        }
+
+        @Override
+        public boolean isWarning()
+        {
+            return warning;
+        }
+    }
+    
+    class PropertyOwnerInconsistency implements InconsistencyType
+    {
+        public enum OwnerInconsistencyType
+        {
+            MULTIPLE_OWNERS( "multiple owners for " ),
+            PROPERTY_CHANGED_FOR_WRONG_OWNER( "property changed claimed an owner that did not contain the property record in its chain:\n\t" );
+            private final String message;
+
+            private OwnerInconsistencyType( String message )
+            {
+                this.message = message;
+            }
+
+            public InconsistencyType forProperties( Collection<PropertyRecord> properties )
+            {
+                return new PropertyOwnerInconsistency( this, properties.toArray( new PropertyRecord[properties.size()] ) );
+            }
+
+            public InconsistencyType forProperty( PropertyRecord property )
+            {
+                return new PropertyOwnerInconsistency( this, property );
+            }
+        }
+        private final OwnerInconsistencyType type;
+        private final PropertyRecord[] properties;
+        
+        private PropertyOwnerInconsistency( OwnerInconsistencyType type, PropertyRecord... properties )
+        {
+            this.type = type;
+            this.properties = properties;
+        }
+        
+        @Override
+        public String message()
+        {
+            StringBuilder message = new StringBuilder( type.message );
+            for ( int i = 0; i < properties.length; i++ )
+            {
+                if ( i > 0 ) message.append( "\n\t" );
+                message.append( properties[i] );
+            }
+            return message.toString();
+        }
+
+        @Override
+        public boolean isWarning()
+        {
+            return false;
         }
     }
 
@@ -108,6 +185,12 @@ public interface InconsistencyType
         public String message()
         {
             return type.message + block;
+        }
+
+        @Override
+        public boolean isWarning()
+        {
+            return false;
         }
     }
 }

@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.neo4j.backup.check.ConsistencyCheck;
-import org.neo4j.backup.log.VerifyingTransactionInterceptorProvider;
 import org.neo4j.com.MasterUtil;
 import org.neo4j.com.MasterUtil.TxHandler;
 import org.neo4j.com.Client;
@@ -44,6 +43,7 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -137,14 +137,12 @@ public class OnlineBackup
 
     static EmbeddedGraphDatabase startTemporaryDb( String targetDirectory, VerificationLevel verification )
     {
-        if ( verification != VerificationLevel.NONE )
+        if ( verification != VerificationLevel.NONE ) {
             return new EmbeddedGraphDatabase( targetDirectory, MapUtil.stringMap(
-                            Config.INTERCEPT_DESERIALIZED_TRANSACTIONS,
-                            "true",
-                            VerifyingTransactionInterceptorProvider.class.getSimpleName()
-                                    + "."
-                                    + VerifyingTransactionInterceptorProvider.NAME,
-                            "true" ) );
+                            Config.INTERCEPT_DESERIALIZED_TRANSACTIONS, "true",
+                            TransactionInterceptorProvider.class.getSimpleName()
+                            +"."+verification.interceptorName, verification.configValue ) );
+        }
         else
             return new EmbeddedGraphDatabase( targetDirectory );
     }

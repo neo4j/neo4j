@@ -50,13 +50,16 @@ public class InconsistencyLoggingTransactionInterceptorProvider extends
         {
             return null;
         }
-        String config = (String) options;
-        if ( !"true".equalsIgnoreCase( config ) )
+        VerifyingTransactionInterceptor.CheckerMode mode;
+        try
+        {
+            mode = VerifyingTransactionInterceptor.CheckerMode.valueOf( ( (String) options ).toUpperCase() );
+        }
+        catch ( Exception ex )
         {
             return null;
         }
-        return new VerifyingTransactionInterceptor( (NeoStoreXaDataSource) ds,
-                false );
+        return new VerifyingTransactionInterceptor( (NeoStoreXaDataSource) ds, mode, false );
     }
 
     @Override
