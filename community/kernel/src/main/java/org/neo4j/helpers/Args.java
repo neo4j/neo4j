@@ -179,4 +179,61 @@ public class Args
             }
         }
     }
+
+/*    public void printUntouched( PrintStream out )
+    {
+        boolean first = true;
+        for ( Map.Entry<String, String> parameter : map.entrySet() )
+        {
+            if ( touchedParameters.contains( parameter ) ) continue;
+            if ( first )
+            {
+                first = false;
+                out.println( "Untouched parameters:" );
+            }
+            out.println( "  " + parameter.getKey() + ":" + parameter.getValue() );
+        }
+        
+        first = true;
+        for ( int i = 0; i < orphans.size(); i++ )
+        {
+            if ( touchedOrphans.get( i ) ) continue;
+            if ( first )
+            {
+                first = false;
+                out.println( "Untouched orphans:" );
+            }
+            out.println( "(" + i + "):" + orphans.get( i ) );
+        }
+    }
+
+    public Map<String, String> getUntouchedParameters()
+    {
+        return null;
+    }
+
+    public Iterable<String> getUntouchedOrphans()
+    {
+        return null;
+    }*/
+
+    public static String jarUsage( Class<?> main, String... params )
+    {
+        StringBuilder usage = new StringBuilder( "USAGE: java [-cp ...] " );
+        try
+        {
+            String jar = main.getProtectionDomain().getCodeSource().getLocation().getPath();
+            usage.append( "-jar " ).append( jar );
+        }
+        catch ( Exception ex )
+        {
+            // ignore
+        }
+        usage.append( main.getCanonicalName() );
+        for ( String param : params )
+        {
+            usage.append( ' ' ).append( param );
+        }
+        return usage.toString();
+    }
 }
