@@ -246,6 +246,12 @@ public class PropertyIndexStore extends AbstractStore implements Store, RecordSt
             releaseWindow( window );
         }
     }
+    
+    @Override
+    public PropertyIndexRecord forceGetRaw( long id )
+    {
+        return forceGetRecord( id );
+    }
 
     public Collection<DynamicRecord> allocateKeyRecords( int keyBlockId, byte[] chars )
     {

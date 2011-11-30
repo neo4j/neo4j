@@ -36,6 +36,8 @@ public interface RecordStore<R extends AbstractBaseRecord>
 
     public R forceGetRecord( long id );
 
+    public R forceGetRaw( long id );
+
     public void forceUpdateRecord( R record );
 
     public void accept( Processor processor, R record );

@@ -471,6 +471,12 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
             releaseWindow( window );
         }
     }
+    
+    @Override
+    public DynamicRecord forceGetRaw( long id )
+    {
+        return forceGetRecord( id );
+    }
 
     public Collection<DynamicRecord> getRecords( long startBlockId )
     {
