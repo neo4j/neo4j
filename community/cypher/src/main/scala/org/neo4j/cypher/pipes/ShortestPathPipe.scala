@@ -20,18 +20,19 @@
 package org.neo4j.cypher.pipes
 
 import org.neo4j.kernel.Traversal
-import org.neo4j.cypher.commands.ShortestPath
 import org.neo4j.cypher.SyntaxException
 import java.lang.String
-import org.neo4j.cypher.symbols.{Identifier, PathType}
 import org.neo4j.graphdb.{Expander, DynamicRelationshipType, Node}
+import collection.Seq
+import org.neo4j.cypher.symbols.{NodeType, Identifier, PathType}
+import org.neo4j.cypher.commands.{ReturnItem, ShortestPath}
 
 /**
  * Shortest pipe inserts a single shortest path between two already found nodes
  *
  * It's also the base class for all shortest paths
  */
-abstract class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends Pipe {
+abstract class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWithSource(source) {
   def startName = ast.startName
   def endName = ast.endName
   def relType = ast.relType
@@ -39,6 +40,9 @@ abstract class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends Pipe {
   def maxDepth = ast.maxDepth
   def optional = ast.optional
   def pathName = ast.pipeName
+
+  def returnItems: Seq[ReturnItem] = Seq()
+
 
   def foreach[U](f: (Map[String, Any]) => U) {
     source.foreach(m => {
@@ -65,6 +69,8 @@ abstract class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends Pipe {
     }
     expander
   }
+
+  def dependencies: Seq[Identifier] = Seq(Identifier(startName, NodeType()), Identifier(endName, NodeType()))
 
   protected def findResult[U](expander: Expander, start: Node, end: Node, f: (Map[String, Any]) => U, depth: Int, m: Map[String, Any])
 

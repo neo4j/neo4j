@@ -19,22 +19,16 @@
  */
 package org.neo4j.cypher.pipes
 
-import org.neo4j.graphalgo.GraphAlgoFactory
-import java.lang.String
-import org.neo4j.graphdb.{Expander, Node}
-import org.neo4j.cypher.commands.ShortestPath
+import org.neo4j.cypher.symbols.Identifier
+import collection.Seq
+import org.neo4j.cypher.commands.ReturnItem
 
-class SingleShortestPathPipe(source: Pipe, ast: ShortestPath) extends ShortestPathPipe(source,ast) {
-  override protected def findResult[U](expander: Expander, start: Node, end: Node, f: (Map[String, Any]) => U, depth: Int, m: Map[String, Any]) {
-    val finder = GraphAlgoFactory.shortestPath(expander, depth)
-    val findSinglePath = finder.findSinglePath(start, end)
 
-    (findSinglePath, optional) match {
-      case (null, true) => f(m ++ Map(pathName -> null))
-      case (null, false) =>
-      case (path, _) => f(m ++ Map(pathName -> path))
-    }
-  }
+abstract class PipeWithSource(source: Pipe) extends Pipe {
 
-  override def executionPlan(): String = source.executionPlan() + "\r\n" + "SingleShortestPath(" + ast + ")"
+  dependencies.foreach(source.symbols.assertHas(_))
+  returnItems.foreach(_.assertDependencies(source))
+
+  def returnItems: Seq[ReturnItem]
+  def dependencies: Seq[Identifier]
 }

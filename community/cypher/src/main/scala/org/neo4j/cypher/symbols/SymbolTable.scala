@@ -28,6 +28,8 @@ class SymbolTable(val identifiers: Identifier*) {
     assertHas(Identifier(name, typ))
   }
 
+  def contains(identifier:Identifier) = identifiers.contains(identifier)
+
   def assertHas(expected: Identifier) {
     identifiers.find(_.name == expected.name) match {
       case None => throwMissingKey(expected.name)
