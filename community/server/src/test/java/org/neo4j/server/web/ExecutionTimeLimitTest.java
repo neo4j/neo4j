@@ -44,8 +44,8 @@ public class ExecutionTimeLimitTest
     @Test(expected = UniformInterfaceException.class)
     public void expectLimitation()
     {
-        wait = 1000;
-        Client.create().resource( "http://localhost:7474/db/data/node/0" )
+        wait = 2000;
+        Client.create().resource( "http://localhost:7476/db/data/node/0" )
                 .header( "accept", "application/json" )
                 .get( String.class );
     }
@@ -89,8 +89,8 @@ public class ExecutionTimeLimitTest
         };
 
         EmbeddedServerConfigurator config = new EmbeddedServerConfigurator( db );
-        config.configuration().setProperty( Configurator
-                .WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, 500 );
+        config.configuration().setProperty( Configurator.WEBSERVER_PORT_PROPERTY_KEY, 7476 );
+        config.configuration().setProperty( Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, 1000 );
         testBootstrapper = new WrappingNeoServerBootstrapper( db, config );
         testBootstrapper.start();
     }
