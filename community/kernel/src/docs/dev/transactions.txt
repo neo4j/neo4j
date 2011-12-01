@@ -109,7 +109,10 @@ The delete semantics can be summarized in the following bullets:
 
 [[transactions-get-or-create]]
 == Creating unique nodes ==
-Creating unique nodes.
+In many use cases, a certain level of uniqueness is desired among entities. You could for instance imagine that only
+one user with a certain e-mail address may exist in a system. If multiple concurrent threads naively try to create the
+user, duplicates will be created. There are three main strategies for ensuring uniqueness, and they all work across HA
+and single-instance deployments.
 
 === Single thread ===
 By using a single thread, no two threads will even try to create a particular entity simultaneously. On HA,
