@@ -34,6 +34,7 @@ import org.neo4j.shell.Console;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
+import org.neo4j.shell.ShellServer;
 import org.neo4j.shell.TextUtil;
 
 /**
@@ -203,20 +204,21 @@ public abstract class AbstractClient implements ShellClient
     {
         try
         {
-            possiblyGrabDefaultVariableFromServer( PROMPT_KEY, "$ " );
-            possiblyGrabDefaultVariableFromServer( TITLE_KEYS_KEY, null );
-            possiblyGrabDefaultVariableFromServer( TITLE_MAX_LENGTH, null );
-            this.getOutput().println( this.getServer().welcome() );
+            ShellServer server = getServer();
+            possiblyGrabDefaultVariableFromServer( server, PROMPT_KEY, "$ " );
+            possiblyGrabDefaultVariableFromServer( server, TITLE_KEYS_KEY, null );
+            possiblyGrabDefaultVariableFromServer( server, TITLE_MAX_LENGTH, null );
+            getOutput().println( server.welcome() );
 
             // Grab a jline console if available, else a standard one.
-            this.console = JLineConsole.newConsoleOrNullIfNotFound( this );
-            if ( this.console == null )
+            console = JLineConsole.newConsoleOrNullIfNotFound( this );
+            if ( console == null )
             {
                 System.out.println( "Want bash-like features? throw in " +
                         "jLine (http://jline.sourceforge.net) on the classpath" );
-                this.console = new StandardConsole();
+                console = new StandardConsole();
             }
-            this.getOutput().println();
+            getOutput().println();
         }
         catch ( RemoteException e )
         {
@@ -224,7 +226,7 @@ public abstract class AbstractClient implements ShellClient
         }
     }
 
-    protected void possiblyGrabDefaultVariableFromServer( String key,
+    protected void possiblyGrabDefaultVariableFromServer( ShellServer server, String key,
         Serializable defaultValue )
     {
         try
@@ -232,7 +234,7 @@ public abstract class AbstractClient implements ShellClient
             if ( this.session().get( key ) == null )
             {
                 grabbedKeysFromServer.add( key );
-                Serializable value = this.getServer().getProperty( key );
+                Serializable value = server.getProperty( key );
                 if ( value == null ) value = defaultValue;
                 if ( value != null ) session().set( key, value );
             }
@@ -243,12 +245,12 @@ public abstract class AbstractClient implements ShellClient
         }
     }
     
-    protected void regrabVariablesFromServer()
+    protected void regrabVariablesFromServer( ShellServer server )
     {
         for ( String key : grabbedKeysFromServer )
         {
             Serializable value = this.session().remove( key );
-            possiblyGrabDefaultVariableFromServer( key, value );
+            possiblyGrabDefaultVariableFromServer( server, key, value );
         }
     }
 

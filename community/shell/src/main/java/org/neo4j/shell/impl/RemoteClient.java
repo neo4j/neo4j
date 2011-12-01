@@ -97,7 +97,7 @@ public class RemoteClient extends AbstractClient
 			{
 				this.server = findRemoteServer();
 				getOutput().println( "[Reconnected to server]" );
-				regrabVariablesFromServer();
+				regrabVariablesFromServer( this.server );
 			}
 			catch ( ShellException ee )
 			{
