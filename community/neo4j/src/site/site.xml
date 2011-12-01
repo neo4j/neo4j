@@ -31,9 +31,9 @@
     <links>
       <item name="Neo4j home" href="http://neo4j.org/" />
       <item name="documentation" href="http://docs.neo4j.org/" />
-      <item name="issues" href="https://help.neo4j.org/" />
-      <item name="components" href=".." />
       <item name="apidocs" href="http://api.neo4j.org/" />
+      <item name="blog" href="http://blog.neo4j.org/" />
+      <item name="components" href=".." />
     </links>
     <menu name="Neo4j Community">
       <item name="Introduction" href="index.html" />
