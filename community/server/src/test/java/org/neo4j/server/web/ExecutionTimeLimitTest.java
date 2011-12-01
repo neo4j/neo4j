@@ -54,7 +54,7 @@ public class ExecutionTimeLimitTest
     public void expectLimitationByHeader()
     {
         wait = 200;
-        Client.create().resource( "http://localhost:7474/db/data/node/0" )
+        Client.create().resource( "http://localhost:7476/db/data/node/0" )
                 .header( "accept", "application/json" )
                 .header( "max-execution-time", "100" )
                 .get( String.class );
@@ -64,7 +64,7 @@ public class ExecutionTimeLimitTest
     public void expectNoLimitation()
     {
         wait = 200;
-        Client.create().resource( "http://localhost:7474/db/data/node/0" )
+        Client.create().resource( "http://localhost:7476/db/data/node/0" )
                 .header( "accept", "application/json" )
                 .get( String.class );
     }
