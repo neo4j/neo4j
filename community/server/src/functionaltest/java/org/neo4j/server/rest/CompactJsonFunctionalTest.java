@@ -37,9 +37,8 @@ import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.formats.CompactJsonFormat;
-import org.neo4j.test.server.SharedServerTestBase;
 
-public class CompactJsonFunctionalTest extends SharedServerTestBase
+public class CompactJsonFunctionalTest extends AbstractRestFunctionalTestBase
 {
     private long thomasAnderson;
     private long trinity;

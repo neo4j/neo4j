@@ -24,10 +24,10 @@ import static org.junit.Assert.assertThat;
 
 import org.junit.Test;
 import org.neo4j.server.helpers.FunctionalTestHelper;
+import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.JaxRsResponse;
-import org.neo4j.test.server.SharedServerTestBase;
 
-public class NeoServerDefaultPortAndHostnameFunctionalTest extends SharedServerTestBase
+public class NeoServerDefaultPortAndHostnameFunctionalTest extends AbstractRestFunctionalTestBase
 {
     @Test
     public void shouldDefaultToSensiblePortIfNoneSpecifiedInConfig() throws Exception {

@@ -52,6 +52,11 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     public @Rule
     TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
 
+    @Before
+    public void setUp()
+    {
+        gen().setSection( "dev/rest-api" );
+    }
     protected String doCypherRestCall( String endpoint, String script, Status status, Pair<String, String>... params ) {
         data.get();
         String parameterString = createParameterString( params );

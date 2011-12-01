@@ -30,11 +30,10 @@ import javax.ws.rs.core.MediaType;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.test.server.SharedServerTestBase;
 
 import com.sun.jersey.api.client.Client;
 
-public class DiscoveryServiceFunctionalTest extends SharedServerTestBase
+public class DiscoveryServiceFunctionalTest extends AbstractRestFunctionalTestBase
 {
     @Before
     public void cleanTheDatabase()

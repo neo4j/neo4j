@@ -36,9 +36,8 @@ import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.RelationshipDirection;
-import org.neo4j.test.server.SharedServerTestBase;
 
-public class HtmlFunctionalTest extends SharedServerTestBase
+public class HtmlFunctionalTest extends AbstractRestFunctionalTestBase
 {
     private long thomasAnderson;
     private long trinity;

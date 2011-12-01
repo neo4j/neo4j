@@ -153,13 +153,11 @@ public class Documenter
             }
             catch ( RemoteException e )
             {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                throw new RuntimeException( e );
             }
             catch ( ShellException e )
             {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                throw new RuntimeException( e );
             }
         }
         out.println( "-----" );

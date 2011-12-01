@@ -86,7 +86,6 @@ public class AutoIndexFunctionalTest extends AbstractRestFunctionalTestBase
     @Graph( nodes = { @NODE( name = "I", setNameProperty = true ) }, autoIndexNodes = true )
     public void AutoIndex_is_not_removable() throws DatabaseBlockedException, JsonParseException
     {
-        // data.get();
         gen.get()
                 .expectedStatus( 405 )
                 .delete( nodeAutoIndexUri() )
