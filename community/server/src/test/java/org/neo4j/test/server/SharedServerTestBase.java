@@ -50,10 +50,12 @@ public class SharedServerTestBase
     private static NeoServer server;
 
     @BeforeClass
-    public static final void allocateServer() throws IOException
+    public static void allocateServer() throws IOException
     {
         server = ServerHolder.allocate();
     }
+    
+    
 
     @AfterClass
     public static final void releaseServer()

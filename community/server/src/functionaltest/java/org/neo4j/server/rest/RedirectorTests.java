@@ -25,9 +25,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.test.server.SharedServerTestBase;
 
-public class RedirectorTests extends SharedServerTestBase
+public class RedirectorTests extends AbstractRestFunctionalTestBase
 {
     @Before
     public void cleanTheDatabase()

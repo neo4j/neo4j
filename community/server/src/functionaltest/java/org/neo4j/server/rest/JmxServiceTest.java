@@ -29,9 +29,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.server.helpers.FunctionalTestHelper;
-import org.neo4j.test.server.SharedServerTestBase;
 
-public class JmxServiceTest extends SharedServerTestBase
+public class JmxServiceTest extends AbstractRestFunctionalTestBase
 {
     private static FunctionalTestHelper functionalTestHelper;
 

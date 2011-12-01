@@ -28,17 +28,15 @@ import java.util.Map;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.test.TestData;
-import org.neo4j.test.server.SharedServerTestBase;
+import org.neo4j.test.GraphDescription.Graph;
 
-public class SetRelationshipPropertiesFunctionalTest extends SharedServerTestBase
+public class SetRelationshipPropertiesFunctionalTest extends AbstractRestFunctionalTestBase
 {
     private URI propertiesUri;
     private URI badUri;
@@ -60,16 +58,15 @@ public class SetRelationshipPropertiesFunctionalTest extends SharedServerTestBas
         badUri = new URI( functionalTestHelper.relationshipPropertiesUri( relationshipId + 1 * 99999 ) );
     }
 
-    public @Rule
-    TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
-
     /**
      * Update relationship properties.
      */
     @Documented
     @Test
+    @Graph
     public void shouldReturn204WhenPropertiesAreUpdated() throws JsonParseException
     {
+        data.get();
         Map<String, Object> map = new HashMap<String, Object>();
         map.put( "jim", "tobias" );
         gen.get()

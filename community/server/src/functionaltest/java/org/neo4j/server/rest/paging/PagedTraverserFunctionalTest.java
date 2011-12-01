@@ -55,8 +55,6 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 
 public class PagedTraverserFunctionalTest extends ExclusiveServerTestBase
 {
-    public @Rule
-    TestData<RESTDocsGenerator> docGenerator = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
 
     private static NeoServerWithEmbeddedWebServer server;
     private static FunctionalTestHelper functionalTestHelper;
@@ -66,6 +64,14 @@ public class PagedTraverserFunctionalTest extends ExclusiveServerTestBase
     private static final int SHORT_LIST_LENGTH = 33;
     private static final int LONG_LIST_LENGTH = 444;
 
+    public @Rule
+    TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
+
+    @Before
+    public void setUp()
+    {
+        gen.get().setSection( "dev/rest-api" );
+    }
     @BeforeClass
     public static void setupServer() throws IOException
     {
@@ -115,7 +121,7 @@ public class PagedTraverserFunctionalTest extends ExclusiveServerTestBase
     {
         theStartNode = createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
 
-        ResponseEntity entity = docGenerator.get()
+        ResponseEntity entity = gen.get()
         .expectedType( MediaType.APPLICATION_JSON_TYPE )
         .expectedHeader( "Location" )
         .expectedStatus( 201 )
@@ -161,7 +167,7 @@ public class PagedTraverserFunctionalTest extends ExclusiveServerTestBase
         for ( int i = 0; i < enoughPagesToExpireTheTraverser; i++ )
         {
 
-            docGenerator.get()
+            gen.get()
             .expectedType( MediaType.APPLICATION_JSON_TYPE )
             .expectedStatus( 200 )
             .payload( traverserDescription() )
@@ -305,7 +311,7 @@ public class PagedTraverserFunctionalTest extends ExclusiveServerTestBase
 
     private JaxRsResponse createPagedTraverserWithTimeoutInMinutes(final int leaseTime)
     {
-        ResponseEntity responseEntity = docGenerator.get()
+        ResponseEntity responseEntity = gen.get()
         .expectedType( MediaType.APPLICATION_JSON_TYPE )
         .expectedStatus( 201 )
         .payload( traverserDescription() )
@@ -317,7 +323,7 @@ public class PagedTraverserFunctionalTest extends ExclusiveServerTestBase
 
     private JaxRsResponse createPagedTraverserWithPageSize(final int pageSize)
     {
-        ResponseEntity responseEntity = docGenerator.get()
+        ResponseEntity responseEntity = gen.get()
         .expectedType( MediaType.APPLICATION_JSON_TYPE )
         .expectedStatus( 201 )
         .payload( traverserDescription() )

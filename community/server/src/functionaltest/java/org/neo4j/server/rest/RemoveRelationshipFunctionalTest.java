@@ -29,9 +29,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
-import org.neo4j.test.server.SharedServerTestBase;
 
-public class RemoveRelationshipFunctionalTest extends SharedServerTestBase
+public class RemoveRelationshipFunctionalTest extends AbstractRestFunctionalTestBase
 {
     private static FunctionalTestHelper functionalTestHelper;
     private static GraphDbHelper helper;

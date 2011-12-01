@@ -39,7 +39,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.database.DatabaseBlockedException;
@@ -48,10 +47,8 @@ import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
-import org.neo4j.test.TestData;
-import org.neo4j.test.server.SharedServerTestBase;
 
-public class RetrieveRelationshipsFromNodeFunctionalTest extends SharedServerTestBase
+public class RetrieveRelationshipsFromNodeFunctionalTest extends AbstractRestFunctionalTestBase
 {
     private long nodeWithRelationships;
     private long nodeWithoutRelationships;
@@ -84,10 +81,6 @@ public class RetrieveRelationshipsFromNodeFunctionalTest extends SharedServerTes
         nodeWithoutRelationships = helper.createNode();
         nonExistingNode = nodeWithoutRelationships * 100;
     }
-
-    public
-    @Rule
-    TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
 
     private JaxRsResponse sendRetrieveRequestToServer( long nodeId, String path )
     {

@@ -45,8 +45,13 @@ public class AutoIndexWithNonDefaultConfigurationThroughRESTAPIFunctionalTest ex
     public @Rule
     TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
 
+    @Before
+    public void setUp()
+    {
+        gen.get().setSection( "dev/rest-api" );
+    }
     @BeforeClass
-    public static void setupServer() throws IOException
+    public static void allocateServer() throws IOException
     {
         server = ServerBuilder.server()
                 .withAutoIndexingEnabledForNodes( "foo", "bar" )

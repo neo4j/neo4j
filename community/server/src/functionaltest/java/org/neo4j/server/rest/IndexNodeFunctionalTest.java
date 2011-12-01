@@ -36,7 +36,6 @@ import javax.ws.rs.core.Response.Status;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -50,15 +49,11 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.URIHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
-import org.neo4j.test.TestData;
-import org.neo4j.test.server.SharedServerTestBase;
 
-public class IndexNodeFunctionalTest extends SharedServerTestBase
+public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
 {
     private static FunctionalTestHelper functionalTestHelper;
     private static GraphDbHelper helper;
-    public @Rule
-    TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
 
     @BeforeClass
     public static void setupServer() throws IOException

@@ -30,11 +30,11 @@ import javax.ws.rs.core.MediaType;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.server.helpers.FunctionalTestHelper;
+import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
-import org.neo4j.test.server.SharedServerTestBase;
 
-public class NeoServerFunctionalTest extends SharedServerTestBase
+public class NeoServerFunctionalTest extends AbstractRestFunctionalTestBase
 {
     private FunctionalTestHelper functionalTestHelper;
 

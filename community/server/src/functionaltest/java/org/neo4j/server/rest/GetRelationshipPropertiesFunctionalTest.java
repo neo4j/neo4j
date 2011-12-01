@@ -37,9 +37,8 @@ import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
-import org.neo4j.test.server.SharedServerTestBase;
 
-public class GetRelationshipPropertiesFunctionalTest extends SharedServerTestBase
+public class GetRelationshipPropertiesFunctionalTest extends AbstractRestFunctionalTestBase
 {
     private static String baseRelationshipUri;
 

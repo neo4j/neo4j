@@ -20,8 +20,8 @@
 package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Map;
 
@@ -32,7 +32,7 @@ import org.neo4j.kernel.Version;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.GraphDescription.Graph;
-import org.neo4j.test.TestData;
+import org.neo4j.test.TestData.Title;
 
 public class GetOnRootFunctionalTest extends AbstractRestFunctionalTestBase
 {
@@ -45,7 +45,7 @@ public class GetOnRootFunctionalTest extends AbstractRestFunctionalTestBase
     @Documented
     @Test
     @Graph("I know you")
-    @TestData.Title( "Get service root" )
+    @Title( "Get service root" )
     public void assert200OkFromGet() throws Exception
     {
         AbstractGraphDatabase db = (AbstractGraphDatabase)graphdb();

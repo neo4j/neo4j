@@ -489,7 +489,12 @@ public class RESTDocsGenerator extends AsciiDocGenerator
             fw = getFW("target" + File.separator + "docs"+ File.separator + section , data.title);
             String name = title.replace( " ", "-" )
                     .toLowerCase();
-            line( fw, "[["+section.replaceAll( "\\(|\\)", "" )+"-" + name.replaceAll( "\\(|\\)", "" ) + "]]" );
+            String longSection = section.replaceAll( "\\(|\\)", "" )+"-" + name.replaceAll( "\\(|\\)", "" );
+            if(longSection.indexOf( "/" )>0)
+            {
+                longSection = longSection.substring( longSection.indexOf( "/" )+1 );
+            }
+            line( fw, "[[" + longSection + "]]" );
             //make first Character uppercase
             String firstChar = data.title.substring(  0, 1 ).toUpperCase();
             line( fw, "=== " + firstChar + data.title.substring( 1 ) + " ===" );

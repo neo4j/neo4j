@@ -39,7 +39,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.helpers.FunctionalTestHelper;
@@ -47,10 +46,8 @@ import org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.formats.CompactJsonFormat;
-import org.neo4j.test.TestData;
-import org.neo4j.test.server.SharedServerTestBase;
 
-public class RetrieveNodeFunctionalTest extends SharedServerTestBase
+public class RetrieveNodeFunctionalTest extends AbstractRestFunctionalTestBase
 {
     private URI nodeUri;
     private static FunctionalTestHelper functionalTestHelper;
@@ -68,10 +65,6 @@ public class RetrieveNodeFunctionalTest extends SharedServerTestBase
         nodeUri = new URI( functionalTestHelper.nodeUri() + "/"
                 + new GraphDbHelper( server().getDatabase() ).createNode() );
     }
-
-    public
-    @Rule
-    TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
 
     @Test
     public void shouldParameteriseUrisInNodeRepresentationWithHostHeaderValue() throws Exception

@@ -36,16 +36,13 @@ import javax.ws.rs.core.MediaType;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.test.TestData;
-import org.neo4j.test.server.SharedServerTestBase;
 
-public class ManageNodeFunctionalTest extends SharedServerTestBase
+public class ManageNodeFunctionalTest extends AbstractRestFunctionalTestBase
 {
     private static final long NON_EXISTENT_NODE_ID = 999999;
     private static String NODE_URI_PATTERN = "^.*/node/[0-9]+$";
@@ -66,8 +63,6 @@ public class ManageNodeFunctionalTest extends SharedServerTestBase
         cleanDatabase();
     }
 
-    public @Rule
-    TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
 
     @Test
     public void create_Node() throws Exception
