@@ -19,8 +19,6 @@ include::cache.txt[]
 
 include::jvm.txt[]
 
-include::filesystem.txt[]
-
 include::short-strings.txt[]
 
 include::short-arrays.txt[]
@@ -28,3 +26,7 @@ include::short-arrays.txt[]
 include::io-examples.txt[]
 
 include::linux-performance.txt[]
+
+include::linux-notes.txt[]
+
+
