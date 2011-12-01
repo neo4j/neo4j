@@ -107,3 +107,43 @@ The delete semantics can be summarized in the following bullets:
 * Any write operation on a node or relationship after it has been deleted (but not yet committed) will throw an exception
 * After commit trying to acquire a new or work with an old reference to a deleted node or relationship will throw an exception.
 
+[[transactions-get-or-create]]
+== Creating unique nodes ==
+Creating unique nodes.
+
+=== Single thread ===
+By using a single thread, no two threads will even try to create a particular entity simultaneously. On HA,
+an external single-threaded client can perform the operations on the cluster.
+
+=== Pessimistic locking ===
+By using explicit, pessimistic locking, unique creation of entities can be achieved. It is most commonly done by
+locking on a single or a set of common nodes. The easiest way to acquire a write lock on a node is by removing a
+non-existent property.
+
+One might be tempted to use Java synchronization for this, but it is dangerous. By mixing locks in the Neo4j kernel
+and in the Java runtime, it is easy to produce deadlocks that are not detectable by Neo4j. As long as all locking is
+done by Neo4j, all deadlocks will be detected and avoided.
+
+Example code:
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/GetOrCreateTest.java
+classifier=test-sources
+tag=pessimisticLocking
+----
+
+=== Optimistically create ===
+By leveraging the fact that the first indexed node will always be returned first in an index search, we can implement
+unique creation without locking. The idea is that we query the index and just select the first node returned, ignoring
+any duplicates. We can even clean up any duplicates we find. If the node is not yet indexed, we index it and repeat
+the procedure.
+
+Example code:
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/GetOrCreateTest.java
+classifier=test-sources
+tag=optimisticCreation
+----
