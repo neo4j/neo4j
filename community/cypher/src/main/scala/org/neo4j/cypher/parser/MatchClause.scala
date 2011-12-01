@@ -39,30 +39,39 @@ trait MatchClause extends JavaTokenParsers with Tokens {
 
   def path: Parser[Any] = pathSegment | parenPath
 
-  def parenPath: Parser[NamedPath] = identity ~ "=" ~ optParens( pathSegment ) ^^ {
+  def parenPath: Parser[NamedPath] = identity ~ "=" ~ optParens(pathSegment) ^^ {
     case p ~ "=" ~ pathSegment => NamedPath(p, pathSegment: _*)
   }
 
   def pathSegment: Parser[List[Pattern]] = relatedTos | shortestPath
 
-  def singlePathSegment : Parser[Pattern] = relatedTos ^^ {
-    case p => if(p.length>1)
+  def singlePathSegment: Parser[Pattern] = relatedTos ^^ {
+    case p => if (p.length > 1)
       throw new SyntaxException("Shortest path does not support having multiple path segments.")
     else
       p.head
   }
 
-  def shortestPath: Parser[List[Pattern]] = ignoreCase("shortestPath") ~> parens(singlePathSegment) ^^
-    { _ match {
-        case RelatedTo(left , right , relName , relType, direction , optional) => List(ShortestPath(namer.name(None), left, right, relType, direction, Some(1), optional))
-        case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, direction, relIterable, optional)  => {
-          if(minHops.nonEmpty) {
+  def shortestPath: Parser[List[Pattern]] = (ignoreCase("shortestPath")|ignoreCase("allShortestPaths")) ~ parens(singlePathSegment) ^^ {
+    case algo ~ relInfo => {
+
+      val single = algo match {
+        case "shortestpath" => true
+        case "allshortestpaths" => false
+      }
+
+      relInfo match {
+        case RelatedTo(left, right, relName, relType, direction, optional) => List(ShortestPath(namer.name(None), left, right, relType, direction, Some(1), optional, single))
+        case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, direction, relIterable, optional) => {
+          if (minHops.nonEmpty) {
             throw new SyntaxException("Shortest path does not support a minimal length")
           }
-          List(ShortestPath(namer.name(None), start, end, relType, direction, maxHops, optional))
+          List(ShortestPath(namer.name(None), start, end, relType, direction, maxHops, optional, single))
         }
       }
+
     }
+  }
 
   def relatedTos: Parser[List[Pattern]] = node ~ rep1(relatedTail) ^^ {
     case head ~ tails => {
@@ -70,7 +79,7 @@ trait MatchClause extends JavaTokenParsers with Tokens {
       val list = tails.map(_ match {
         case (back, rel, relType, forward, end, varLength, optional) => {
           val toNode = namer.name(end)
-            val dir = getDirection(back, forward)
+          val dir = getDirection(back, forward)
 
           val result: Pattern = varLength match {
             case None => RelatedTo(fromNode, toNode, namer.name(rel), relType, dir, optional)
@@ -122,20 +131,20 @@ trait MatchClause extends JavaTokenParsers with Tokens {
     }
   }
 
-  private def intOrNone(s:Option[String]):Option[Int] = s match {
+  private def intOrNone(s: Option[String]): Option[Int] = s match {
     case None => None
     case Some(x) => Some(x.toInt)
   }
 
   def relationshipInfo: Parser[(Option[String], Option[String], Option[(Option[Int], Option[Int])], Boolean)] =
     opt(identity) ~ opt("?") ~ opt(":" ~> identity) ~ opt("*" ~ opt(wholeNumber) ~ opt("..") ~ opt(wholeNumber)) ^^ {
-    case relName ~ optional ~ relType ~ varLength => {
-      val hops = varLength match {
-        case Some("*" ~ x ~ None ~ None ) => Some((intOrNone(x), intOrNone(x)))
-        case Some("*" ~ minHops ~ punktpunkt ~ maxHops) => Some((intOrNone(minHops), intOrNone(maxHops)))
-        case None => None
+      case relName ~ optional ~ relType ~ varLength => {
+        val hops = varLength match {
+          case Some("*" ~ x ~ None ~ None) => Some((intOrNone(x), intOrNone(x)))
+          case Some("*" ~ minHops ~ punktpunkt ~ maxHops) => Some((intOrNone(minHops), intOrNone(maxHops)))
+          case None => None
+        }
+        (relName, relType, hops, optional.isDefined)
       }
-      (relName, relType, hops, optional.isDefined)
     }
-  }
 }

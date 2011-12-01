@@ -82,7 +82,7 @@ case class VarLengthRelatedTo(pathName: String,
   }
 }
 
-case class ShortestPath(pipeName: String, startName: String, endName: String, relType: Option[String], dir: Direction, maxDepth: Option[Int], optional: Boolean) extends Pattern {
+case class ShortestPath(pipeName: String, startName: String, endName: String, relType: Option[String], dir: Direction, maxDepth: Option[Int], optional: Boolean, single:Boolean) extends Pattern {
   override def toString: String = pipeName + "=shortestPath(" + startName + left(dir) + relInfo + right(dir) + endName + ")"
   private def relInfo: String = {
     var info = "["

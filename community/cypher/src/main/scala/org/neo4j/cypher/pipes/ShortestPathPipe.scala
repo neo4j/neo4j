@@ -19,16 +19,19 @@
  */
 package org.neo4j.cypher.pipes
 
-import org.neo4j.graphalgo.GraphAlgoFactory
 import org.neo4j.kernel.Traversal
-import org.neo4j.graphdb.{DynamicRelationshipType, Direction, Node}
 import org.neo4j.cypher.commands.ShortestPath
 import org.neo4j.cypher.SyntaxException
 import java.lang.String
 import org.neo4j.cypher.symbols.{Identifier, PathType}
+import org.neo4j.graphdb.{Expander, DynamicRelationshipType, Node}
 
-class ShortestPathPipe(source:Pipe, ast:ShortestPath) extends Pipe {
-  def this(source: Pipe, pathName: String, startName: String, endName: String, relType:Option[String], dir:Direction, maxDepth:Option[Int], optional: Boolean) = this(source, ShortestPath(pathName, startName, endName, relType, dir, maxDepth, optional))
+/**
+ * Shortest pipe inserts a single shortest path between two already found nodes
+ *
+ * It's also the base class for all shortest paths
+ */
+abstract class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends Pipe {
   def startName = ast.startName
   def endName = ast.endName
   def relType = ast.relType
@@ -39,28 +42,31 @@ class ShortestPathPipe(source:Pipe, ast:ShortestPath) extends Pipe {
 
   def foreach[U](f: (Map[String, Any]) => U) {
     source.foreach(m => {
-      val err = (n:String) => throw new SyntaxException("Shortest path needs both ends of the path to be provided. Couldn't find " + n)
+      val (start: Node, end) = getStartAndEnd(m)
+      val expander: Expander = createExpander
+      val depth: Int = maxDepth.getOrElse(15)
 
-      val start = m.getOrElse(startName, err(startName)).asInstanceOf[Node]
-      val end = m.getOrElse(endName, err(endName)).asInstanceOf[Node]
-
-      val expander = relType match {
-        case None => Traversal.expanderForAllTypes(dir)
-        case Some(typeName) => Traversal.expanderForTypes(DynamicRelationshipType.withName(typeName), dir)
-      }
-
-      val depth = maxDepth.getOrElse(15)
-
-      val finder = GraphAlgoFactory.shortestPath(expander, depth)
-      val findSinglePath = finder.findSinglePath(start, end)
-
-      (findSinglePath, optional) match {
-        case (null, true) => f(m ++ Map(pathName -> null))
-        case (null, false) =>
-        case (path, _) => f(m ++ Map(pathName -> path))
-      }
+      findResult(expander, start, end, f, depth, m)
     })
   }
+
+  private def getStartAndEnd[U](m: Map[String, Any]): (Node, Node) = {
+    val err = (n: String) => throw new SyntaxException("To find a shortest path, both ends of the path need to be provided. Couldn't find `" + n + "`")
+
+    val start = m.getOrElse(startName, err(startName)).asInstanceOf[Node]
+    val end = m.getOrElse(endName, err(endName)).asInstanceOf[Node]
+    (start, end)
+  }
+
+  private def createExpander[U]: Expander = {
+    val expander = relType match {
+      case None => Traversal.expanderForAllTypes(dir)
+      case Some(typeName) => Traversal.expanderForTypes(DynamicRelationshipType.withName(typeName), dir)
+    }
+    expander
+  }
+
+  protected def findResult[U](expander: Expander, start: Node, end: Node, f: (Map[String, Any]) => U, depth: Int, m: Map[String, Any])
 
   val symbols = source.symbols.add(Identifier(pathName, PathType()))
 

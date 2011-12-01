@@ -48,7 +48,9 @@ class GraphDatabaseTestBase extends JUnitSuite {
   }
 
   def createNode(): Node = createNode(Map[String, Any]())
-  def createNode(name:String): Node = createNode(Map[String, Any]("name"->name))
+
+  def createNode(name: String): Node = createNode(Map[String, Any]("name" -> name))
+
   def createNode(props: Map[String, Any]): Node = {
     inTx(() => {
       val node = graph.createNode()
@@ -57,7 +59,8 @@ class GraphDatabaseTestBase extends JUnitSuite {
       node
     }).asInstanceOf[Node]
   }
-  def createNode(values:(String,Any)*):Node = createNode(values.toMap)
+
+  def createNode(values: (String, Any)*): Node = createNode(values.toMap)
 
   def inTx[T](f: () => T): T = {
     val tx = graph.beginTx
@@ -72,9 +75,9 @@ class GraphDatabaseTestBase extends JUnitSuite {
 
   def nodeIds = nodes.map(_.getId).toArray
 
-  def relate(a:Node,b:Node): Relationship = relate(a,b,"REL")
+  def relate(a: Node, b: Node): Relationship = relate(a, b, "REL")
 
-  def relate(n1:Node, n2:Node, relType:String, name:String): Relationship = relate(n1,n2,relType, Map("name"->name))
+  def relate(n1: Node, n2: Node, relType: String, name: String): Relationship = relate(n1, n2, relType, Map("name" -> name))
 
   def relate(n1: Node, n2: Node, relType: String, props: Map[String, Any] = Map()): Relationship = {
     inTx(() => {
@@ -104,6 +107,25 @@ class GraphDatabaseTestBase extends JUnitSuite {
     nodes
   }
 
+  def createDiamond(): (Node, Node, Node, Node) = {
+    //    Graph:
+    //             (a)
+    //             / \
+    //            v   v
+    //          (b)  (c)
+    //           \   /
+    //            v v
+    //            (d)
 
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
+    val d = createNode("d")
 
+    relate(a, b)
+    relate(b, d)
+    relate(a, c)
+    relate(c, d)
+    (a, b, c, d)
+  }
 }

@@ -32,15 +32,15 @@ class CypherParserTest extends JUnitSuite with Assertions {
   @Test def shouldParseEasiestPossibleQuery() {
     testQuery("start s = NODE(1) return s",
       Query.
-      start(NodeById("s", 1)).
-      returns(ValueReturnItem(EntityValue("s"))))
+        start(NodeById("s", 1)).
+        returns(ValueReturnItem(EntityValue("s"))))
   }
 
   @Test def shouldHandleAliasingOfColumnNames() {
     testQuery("start s = NODE(1) return s as somethingElse",
       Query.
-      start(NodeById("s", 1)).
-      returns(AliasReturnItem(ValueReturnItem(EntityValue("s")), "somethingElse")))
+        start(NodeById("s", 1)).
+        returns(AliasReturnItem(ValueReturnItem(EntityValue("s")), "somethingElse")))
   }
 
   @Test def sourceIsAnIndex() {
@@ -924,7 +924,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       """start a=node(0), b=node(1) match p = shortestPath( a-->b ) return p""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
-        namedPaths(NamedPath("p", ShortestPath("  UNNAMED2", "a", "b", None, Direction.OUTGOING, Some(1), false))).
+        namedPaths(NamedPath("p", ShortestPath("  UNNAMED2", "a", "b", None, Direction.OUTGOING, Some(1), false, true))).
         returns(ValueReturnItem(EntityValue("p"))))
   }
 
@@ -933,7 +933,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       """start a=node(0), b=node(1) match p = shortestPath( a-[*..6]->b ) return p""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
-        namedPaths(NamedPath("p", ShortestPath("  UNNAMED2", "a", "b", None, Direction.OUTGOING, Some(6), false))).
+        namedPaths(NamedPath("p", ShortestPath("  UNNAMED2", "a", "b", None, Direction.OUTGOING, Some(6), false, true))).
         returns(ValueReturnItem(EntityValue("p"))))
   }
 
@@ -942,8 +942,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       """start a=node(0), b=node(1) match p = shortestPath( a-[:KNOWS*..6]->b ) return p""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
-        namedPaths(NamedPath("p", ShortestPath("  UNNAMED2", "a", "b", Some("KNOWS"), Direction.OUTGOING, Some(6),
-        false))).
+        namedPaths(NamedPath("p", ShortestPath("  UNNAMED2", "a", "b", Some("KNOWS"), Direction.OUTGOING, Some(6), false, true))).
         returns(ValueReturnItem(EntityValue("p"))))
   }
 
@@ -952,7 +951,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       """start a=node(0), b=node(1) match p = shortestPath( a-[*..6]-b ) return p""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
-        namedPaths(NamedPath("p", ShortestPath("  UNNAMED2", "a", "b", None, Direction.BOTH, Some(6), false))).
+        namedPaths(NamedPath("p", ShortestPath("  UNNAMED2", "a", "b", None, Direction.BOTH, Some(6), false, true))).
         returns(ValueReturnItem(EntityValue("p"))))
   }
 
@@ -961,7 +960,16 @@ class CypherParserTest extends JUnitSuite with Assertions {
       """start a=node(0), b=node(1) match p = shortestPath( a-[?*..6]-b ) return p""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
-        namedPaths(NamedPath("p", ShortestPath("  UNNAMED2", "a", "b", None, Direction.BOTH, Some(6), true))).
+        namedPaths(NamedPath("p", ShortestPath("  UNNAMED2", "a", "b", None, Direction.BOTH, Some(6), true, true))).
+        returns(ValueReturnItem(EntityValue("p"))))
+  }
+
+  @Test def testAllShortestPath() {
+    testQuery(
+      """start a=node(0), b=node(1) match p = allShortestPaths( a-[*]->b ) return p""",
+      Query.
+        start(NodeById("a", 0), NodeById("b", 1)).
+        namedPaths(NamedPath("p", ShortestPath("  UNNAMED2", "a", "b", None, Direction.OUTGOING, None, false, false))).
         returns(ValueReturnItem(EntityValue("p"))))
   }
 

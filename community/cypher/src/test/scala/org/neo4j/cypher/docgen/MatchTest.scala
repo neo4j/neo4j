@@ -203,12 +203,22 @@ class MatchTest extends DocumentingTestBase {
   @Test def shortestPathBetweenTwoNodes() {
     testQuery(
       title = "Shortest path",
-      text = "Finding the shortest path between two nodes is as easy as using the shortestPath-function, like this.",
+      text = "Finding a single shortest path between two nodes is as easy as using the shortestPath-function, like this.",
       queryText = """start d=node(%D%), e=node(%E%) match p = shortestPath( d-[*..15]->e ) return p""",
-      returns = """This means: find the shortest path between two nodes, as long as the path is max 15 relationships long. Inside of the parenthesis
+      returns = """This means: find a single shortest path between two nodes, as long as the path is max 15 relationships long. Inside of the parenthesis
  you write a single link of a path - the starting node, the connecting relationship and the end node. Characteristics describing the relationship
- like relationship type, max hops and direction are all used when finding the shortest path.""",
+ like relationship type, max hops and direction are all used when finding the shortest path. You can also mark the path as optional.""",
       (p) => assertEquals(3, p.toList.head("p").asInstanceOf[Path].length())
+    )
+  }
+
+  @Test def allShortestPathsBetweenTwoNodes() {
+    testQuery(
+      title = "All shortest paths",
+      text = "Finds all the shortest paths between two nodes.",
+      queryText = """start d=node(%D%), e=node(%E%) match p = allShortestPaths( d-[*..15]->e ) return p""",
+      returns = """This will find the two directed paths between David and Emil.""",
+      (p) => assertEquals(2, p.toList.size)
     )
   }
 

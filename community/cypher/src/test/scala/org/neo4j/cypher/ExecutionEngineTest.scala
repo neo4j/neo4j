@@ -901,7 +901,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("a", 1), NodeById("b", 2)).
-      namedPaths(NamedPath("p", ShortestPath("  UNNAMED1", "a", "b", None, Direction.BOTH, Some(15), false))).
+      namedPaths(NamedPath("p", ShortestPath("  UNNAMED1", "a", "b", None, Direction.BOTH, Some(15), false, true))).
       returns(ValueReturnItem(EntityValue("p")))
 
     val result = execute(query).toList.head("p").asInstanceOf[Path]
@@ -919,7 +919,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("a", 1), NodeById("b", 2)).
-      namedPaths(NamedPath("p", ShortestPath("  UNNAMED1", "a", "b", None, Direction.BOTH, None, false))).
+      namedPaths(NamedPath("p", ShortestPath("  UNNAMED1", "a", "b", None, Direction.BOTH, None, false, true))).
       returns(ValueReturnItem(EntityValue("p")))
 
     //Checking that we don't get an exception
@@ -1336,6 +1336,18 @@ return r
 """)
 
     assert(List(Map("r" -> List(r1, r2))) === result.toList)
+  }
+
+  @Test def shouldHandleAllShortestPaths() {
+    createDiamond()
+
+    val result = parseAndExecute("""
+start a  = node(1), d = node(4)
+match p = allShortestPaths( a-[*]->d )
+return p
+""")
+
+    assert(2 === result.toList.size)
   }
 
   @Test def shouldThrowNiceErrorMessageWhenPropertyIsMissing() {
