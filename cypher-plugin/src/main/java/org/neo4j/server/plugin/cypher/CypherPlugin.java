@@ -22,7 +22,6 @@ package org.neo4j.server.plugin.cypher;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.cypher.SyntaxException;
 import org.neo4j.cypher.commands.Query;
 import org.neo4j.cypher.javacompat.CypherParser;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
@@ -34,6 +33,7 @@ import org.neo4j.server.plugins.Parameter;
 import org.neo4j.server.plugins.PluginTarget;
 import org.neo4j.server.plugins.ServerPlugin;
 import org.neo4j.server.plugins.Source;
+import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.CypherResultRepresentation;
 import org.neo4j.server.rest.repr.JSONTableRepresentation;
 import org.neo4j.server.rest.repr.Representation;
@@ -55,6 +55,7 @@ public class CypherPlugin extends ServerPlugin
 {
 
     public final String DATA_TABLE = "json-data-table";
+
     @Name( "execute_query" )
     @Description( "execute a query" )
     @PluginTarget( GraphDatabaseService.class )
@@ -62,19 +63,28 @@ public class CypherPlugin extends ServerPlugin
             @Source final GraphDatabaseService neo4j,
             @Description( "The query string" ) @Parameter( name = "query", optional = false ) final String query,
             @Description( "The query parameters" ) @Parameter( name = "params", optional = true ) Map parameters,
-            @Description( "The return format. Default is Neo4j REST. Allowed: 'json-data-table' " +
-            		"to return Google Data Table JSON." ) @Parameter( name = "format", optional = true ) final String format)
-            throws SyntaxException
+            @Description( "The return format. Default is Neo4j REST. Allowed: 'json-data-table' "
+                          + "to return Google Data Table JSON." ) @Parameter( name = "format", optional = true ) final String format )
+            throws BadInputException
     {
-        if(parameters == null) {
+        if ( parameters == null )
+        {
             parameters = new HashMap<String, Object>();
         }
         CypherParser parser = new CypherParser();
         ExecutionResult result;
-        Query compiledQuery = parser.parse( query );
-        ExecutionEngine engine = new ExecutionEngine( neo4j );
-        result = engine.execute( compiledQuery, parameters );
-        if(format!=null && format.equals(DATA_TABLE)) {
+        try
+        {
+            Query compiledQuery = parser.parse( query );
+            ExecutionEngine engine = new ExecutionEngine( neo4j );
+            result = engine.execute( compiledQuery, parameters );
+        }
+        catch ( Exception e )
+        {
+            throw new BadInputException( e );
+        }
+        if ( format != null && format.equals( DATA_TABLE ) )
+        {
             return new JSONTableRepresentation( result );
         }
         return new CypherResultRepresentation( result );

@@ -29,6 +29,7 @@ import java.io.UnsupportedEncodingException;
 
 import javax.ws.rs.core.Response.Status;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -138,7 +139,35 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase {
         assertTrue( response.contains( "know" ) );
         assertTrue( response.contains( "data" ) );
     }
+    
+    @Test
+    @Documented
+    @Graph( value = { "I know you" }, autoIndexNodes = true )
+    public void send_queries_with_syntax_errors() throws Exception {
+        data.get();
+        String script = "start x  = node:node_auto_index(name={startName}) matc path = (x-[r]-friend) where friend" +
+                ".name = {name} return TYPE(r)";
+        String response = doRestCall( script, Status.BAD_REQUEST, Pair.of( "startName", "I" ), Pair.of( "name", "you" ) );
 
+
+        assertEquals( 3, ( JsonHelper.jsonToMap( response ) ).size() );
+        assertTrue( response.contains( "message" ) );
+    }
+
+    @Test
+    @Documented
+    @Ignore
+    @Graph( value = { "I know you" }, autoIndexNodes = true )
+    public void send_queries_with_errors() throws Exception {
+        data.get();
+        String script = "start x  = node:node_auto_index(name={startName}) match path = (x-[r]-friend) where frien" +
+                ".name = {name} return TYPE(r)";
+        String response = doRestCall( script, Status.BAD_REQUEST, Pair.of( "startName", "I" ), Pair.of( "name", "you" ) );
+
+
+        assertEquals( 3, ( JsonHelper.jsonToMap( response ) ).size() );
+        assertTrue( response.contains( "message" ) );
+    }
 
     private String doRestCall( String script, Status status,
             Pair<String, String> ...params )
