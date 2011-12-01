@@ -60,7 +60,7 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase {
                     @REL( start = "I", end = "him", type = "know", properties = { } ),
                     @REL( start = "I", end = "you", type = "know", properties = { } ) } )
     public void testPropertyColumn() throws UnsupportedEncodingException {
-        String script = createScript( "start x  = node(%I%) match (x) -[r]-> (n) return type(r), n.name?, n.age?" );
+        String script = createScript( "start x  = node(%I%) match x -[r]-> n return type(r), n.name?, n.age?" );
 
         String response = doRestCall( script, Status.OK );
 
