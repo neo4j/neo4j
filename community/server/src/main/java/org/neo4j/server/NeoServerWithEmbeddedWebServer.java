@@ -246,6 +246,9 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
             }
             webServer.addSecurityRules( securityRules );
 
+            int limit = configurator.configuration().getInt( Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, -1 );
+            webServer.addExecutionLimitFilter( limit );
+
             webServer.start();
             if ( logger != null ) logger.logMessage( "Server started on: " + baseUri() );
             log.info( "Server started on [%s]", baseUri() );

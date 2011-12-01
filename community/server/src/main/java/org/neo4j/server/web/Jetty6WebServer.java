@@ -37,7 +37,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.mortbay.component.LifeCycle;
-import org.mortbay.component.LifeCycle.Listener;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
@@ -340,24 +339,8 @@ public class Jetty6WebServer implements WebServer
     @Override
     public void addSecurityRules( final SecurityRule... rules )
     {
-        jetty.addLifeCycleListener( new Listener()
+        jetty.addLifeCycleListener( new JettyLifeCylcleListenerAdapter()
         {
-
-            @Override
-            public void lifeCycleStopping( LifeCycle arg0 )
-            {
-            }
-
-            @Override
-            public void lifeCycleStopped( LifeCycle arg0 )
-            {
-            }
-
-            @Override
-            public void lifeCycleStarting( LifeCycle arg0 )
-            {
-            }
-
             @Override
             public void lifeCycleStarted( LifeCycle arg0 )
             {
@@ -379,11 +362,29 @@ public class Jetty6WebServer implements WebServer
                     }
                 }
             }
+        } );
+    }
 
+    @Override
+    public void addExecutionLimitFilter( final int limit )
+    {
+        jetty.addLifeCycleListener( new JettyLifeCylcleListenerAdapter()
+        {
             @Override
-            public void lifeCycleFailure( LifeCycle arg0, Throwable arg1 )
+            public void lifeCycleStarted( LifeCycle arg0 )
             {
+                for ( Handler handler : jetty.getHandlers() )
+                {
+                    if ( handler instanceof Context )
+                    {
+                        final Context context = (Context) handler;
+                        final Filter jettyFilter = new LimitRequestTimeFilter( limit );
+                        final FilterHolder holder = new FilterHolder( jettyFilter );
+                        context.addFilter( holder, "/*", Handler.ALL );
+                    }
+                }
             }
         } );
     }
+
 }

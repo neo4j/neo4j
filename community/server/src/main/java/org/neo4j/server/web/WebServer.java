@@ -55,6 +55,8 @@ public interface WebServer
     
     void addSecurityRules(SecurityRule ... rules);
 
+    void addExecutionLimitFilter(int max);
+
     @Deprecated
     Server getJetty();
 }
