@@ -45,7 +45,7 @@ import org.neo4j.visualization.asciidoc.AsciidocHelper;
 public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
 {
     private static final String ENDPOINT = "http://localhost:7474/db/data/ext/GremlinPlugin/graphdb/execute_script";
-
+    
     /**
      * Scripts can be sent as URL-encoded In this example, the graph has been
      * autoindexed by Neo4j, so we can look up the name property on nodes.

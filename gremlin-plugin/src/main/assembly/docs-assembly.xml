@@ -27,8 +27,8 @@
   </formats>
   <fileSets>
     <fileSet>
-      <directory>target/docs/rest-api</directory>
-      <outputDirectory>/dev/plugins/gremlin</outputDirectory>
+      <directory>target/docs/</directory>
+      <outputDirectory>/</outputDirectory>
     </fileSet>
     <fileSet>
       <directory>src/docs</directory>
