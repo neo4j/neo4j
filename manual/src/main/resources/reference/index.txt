@@ -41,15 +41,15 @@ include::{importdir}/neo4j-server-docs-jar/dev/index.txt[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-server-docs-jar/dev/rest/index.txt[]
+include::{importdir}/neo4j-server-docs-jar/dev/rest-api/index.txt[]
 
 :leveloffset: 2
 
-include::{importdir}/neo4j-cypher-plugin-docs-jar/dev/plugins/cypher/index.txt[]
+include::{importdir}/neo4j-cypher-plugin-docs-jar/dev/rest-api/index.txt[]
 
 :leveloffset: 2
 
-include::{importdir}/neo4j-gremlin-plugin-docs-jar/dev/plugins/gremlin/index.txt[]
+include::{importdir}/neo4j-gremlin-plugin-docs-jar/dev/rest-api/index.txt[]
 
 :leveloffset: 1
 
