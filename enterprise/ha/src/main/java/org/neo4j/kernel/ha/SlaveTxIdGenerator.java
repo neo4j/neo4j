@@ -72,10 +72,15 @@ public class SlaveTxIdGenerator implements TxIdGenerator
         try
         {
             final int eventIdentifier = txManager.getEventIdentifier();
+            if ( broker.getMaster().first() == null )
+            {
+                broker.getMasterReally( true );
+            }
             Response<Long> response = broker.getMaster().first().commitSingleResourceTransaction(
                     onlyForThisDataSource( receiver.getSlaveContext( eventIdentifier ), dataSource ),
                     dataSource.getName(), new TxExtractor()
                     {
+                        @Override
                         public void extract( LogBuffer buffer )
                         {
                             try
@@ -88,6 +93,7 @@ public class SlaveTxIdGenerator implements TxIdGenerator
                             }
                         }
 
+                        @Override
                         public ReadableByteChannel extract()
                         {
                             try
@@ -139,7 +145,7 @@ public class SlaveTxIdGenerator implements TxIdGenerator
     {
         return this.broker.getMaster().other().getMachineId();
     }
-    
+
     @Override
     public int getMyId()
     {
