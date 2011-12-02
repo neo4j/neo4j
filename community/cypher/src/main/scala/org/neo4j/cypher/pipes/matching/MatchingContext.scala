@@ -25,21 +25,22 @@ import collection.immutable.Map
 import collection.{Traversable, Seq}
 import org.neo4j.cypher.symbols.{NodeType, SymbolTable}
 
+/**
+ * This class is responsible for deciding how to get the parts of the pattern that are not already bound
+ *
+ * The deciding factor is whether or not the pattern has loops in it. If it does, we have to use the much more
+ * expensive pattern matching. If it doesn't, we get away with much simpler methods
+ */
 class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, clauses: Seq[Clause] = Seq()) {
   val patternGraph = buildPatternGraph()
+  val containsHardPatterns = patterns.find(!_.isInstanceOf[RelatedTo]).nonEmpty
 
   def getMatches(sourceRow: Map[String, Any]): Traversable[Map[String, Any]] = {
-
-
     val builder = new PatterMatchingBuilder(patternGraph, clauses)
     builder.build(sourceRow)
   }
 
 
-  /*
-  This method is mutable, but it is only called from the constructor of this class. The created pattern graph
-   is immutable and thread safe.
-   */
   private def buildPatternGraph(): PatternGraph = {
     val patternNodeMap: scala.collection.mutable.Map[String, PatternNode] = scala.collection.mutable.Map()
     val patternRelMap: scala.collection.mutable.Map[String, PatternRelationship] = scala.collection.mutable.Map()

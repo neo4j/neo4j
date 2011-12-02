@@ -26,17 +26,25 @@ class PatternGraph(patternNodes: Map[String, PatternNode],
                    patternRels: Map[String, PatternRelationship],
                    bindings: SymbolTable) {
 
-  val (patternGraph, optionalElements) = validatePattern(patternNodes, patternRels, bindings)
+  val (patternGraph, optionalElements, hasLoops) = validatePattern(patternNodes, patternRels, bindings)
 
   def apply(key: String) = patternGraph(key)
+
   def get(key: String) = patternGraph.get(key)
+
   def contains(key: String) = patternGraph.contains(key)
+
   def keySet = patternGraph.keySet
+
   def containsOptionalElements = optionalElements.nonEmpty
 
+  /*
+  This method is mutable, but it is only called from the constructor of this class. The created pattern graph
+   is immutable and thread safe.
+  */
   private def validatePattern(patternNodes: Map[String, PatternNode],
                               patternRels: Map[String, PatternRelationship],
-                              bindings: SymbolTable): (Map[String, PatternElement], Set[String]) = {
+                              bindings: SymbolTable): (Map[String, PatternElement], Set[String], Boolean) = {
     val overlaps = patternNodes.keys.filter(patternRels.keys.toSeq contains)
     if (overlaps.nonEmpty) {
       throw new SyntaxException("Some identifiers are used as both relationships and nodes: " + overlaps.mkString(", "))
@@ -62,17 +70,23 @@ class PatternGraph(patternNodes: Map[String, PatternNode],
     }
 
     var visited = scala.collection.mutable.Seq[PatternElement]()
+    var hasLoops = false
 
     def visit(x: PatternElement) {
       if (!visited.contains(x)) {
         visited = visited ++ Seq(x)
         x match {
-          case nod: PatternNode => nod.relationships.foreach(visit)
+          case nod: PatternNode => nod.relationships.filterNot(visited.contains).foreach(rel => {
+            visited = visited ++ Seq(rel)
+            visit(rel.getOtherNode(nod))
+          })
           case rel: PatternRelationship => {
             visit(rel.startNode)
             visit(rel.endNode)
           }
         }
+      } else {
+        hasLoops = true
       }
     }
 
@@ -81,7 +95,7 @@ class PatternGraph(patternNodes: Map[String, PatternNode],
       el match {
         case None =>
         case Some(x) => {
-          visit(x)
+          if (!visited.contains(x)) visit(x)
           markMandatoryElements(x)
         }
       }
@@ -93,6 +107,6 @@ class PatternGraph(patternNodes: Map[String, PatternNode],
       throw new SyntaxException("All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These identifiers were found to be disconnected: " + notVisited.map(_.key).mkString("", ", ", ""))
     }
 
-    (elementsMap, optionalElements.toSet)
+    (elementsMap, optionalElements.toSet, hasLoops)
   }
 }
