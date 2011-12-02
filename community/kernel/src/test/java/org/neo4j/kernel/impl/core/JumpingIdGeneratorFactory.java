@@ -25,11 +25,11 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.impl.EphemeralIdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.test.impl.EphemeralIdGenerator;
 
 public class JumpingIdGeneratorFactory implements IdGeneratorFactory
 {

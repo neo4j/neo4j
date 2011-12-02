@@ -26,7 +26,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 import org.junit.Test;
-import org.neo4j.kernel.impl.EphemeralFileSystemAbstraction;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestEphemeralFileChannel
 {

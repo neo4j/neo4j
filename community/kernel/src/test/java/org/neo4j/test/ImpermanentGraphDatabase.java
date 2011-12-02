@@ -31,17 +31,17 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.Config;
-import org.neo4j.kernel.HighlyConfigurableGraphDatabase;
-import org.neo4j.kernel.impl.EphemeralFileSystemAbstraction;
-import org.neo4j.kernel.impl.EphemeralIdGenerator;
+import org.neo4j.kernel.GraphDatabaseTestAccess;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+import org.neo4j.test.impl.EphemeralIdGenerator;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 /**
  * A database meant to be used in unit tests. It will always be empty on start.
  */
-public class ImpermanentGraphDatabase extends HighlyConfigurableGraphDatabase
+public class ImpermanentGraphDatabase extends GraphDatabaseTestAccess
 {
     private static final File PATH = new File( "target/test-data/impermanent-db" );
     private static final AtomicInteger ID = new AtomicInteger();
