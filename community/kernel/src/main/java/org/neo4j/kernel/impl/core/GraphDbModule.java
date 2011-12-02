@@ -38,8 +38,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
 import org.neo4j.kernel.impl.core.NodeManager.CacheType;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
+import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
@@ -115,12 +114,11 @@ public class GraphDbModule
                     transactionManager, persistenceManager, idGenerator, cacheType );
         }
         // load and verify from PS
-        RelationshipTypeData relTypes[] = null;
-        PropertyIndexData propertyIndexes[] = null;
+        NameData[] relTypes = null;
+        NameData[] propertyIndexes = null;
         // beginTx();
         relTypes = persistenceManager.loadAllRelationshipTypes();
-        propertyIndexes = persistenceManager.loadPropertyIndexes( 
-            INDEX_COUNT );
+        propertyIndexes = persistenceManager.loadPropertyIndexes( INDEX_COUNT );
         // commitTx();
         nodeManager.addRawRelationshipTypes( relTypes );
         nodeManager.addPropertyIndexes( propertyIndexes );

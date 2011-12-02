@@ -62,7 +62,7 @@ public class LegacyPropertyIndexStoreReader
                 PropertyIndexRecord record = new PropertyIndexRecord( id );
                 record.setInUse( inUse );
                 record.setPropertyCount( buffer.getInt() );
-                record.setKeyBlockId( buffer.getInt() );
+                record.setNameId( buffer.getInt() );
                 records.add( record );
             }
         }

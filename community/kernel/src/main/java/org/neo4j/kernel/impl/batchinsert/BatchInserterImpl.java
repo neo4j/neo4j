@@ -46,13 +46,13 @@ import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
+import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
@@ -61,7 +61,6 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
@@ -121,11 +120,9 @@ public class BatchInserterImpl implements BatchInserter
             throw new IllegalStateException( storeDir + " store is not cleanly shutdown." );
         }
         neoStore.makeStoreOk();
-        PropertyIndexData[] indexes =
-            getPropertyIndexStore().getPropertyIndexes( 10000 );
+        NameData[] indexes = getPropertyIndexStore().getNames( 10000 );
         indexHolder = new PropertyIndexHolder( indexes );
-        RelationshipTypeData[] types =
-            getRelationshipTypeStore().getRelationshipTypes();
+        NameData[] types = getRelationshipTypeStore().getNames( Integer.MAX_VALUE );
         typeHolder = new RelationshipTypeHolder( types );
         graphDbService = new BatchGraphDatabaseImpl( this );
         indexStore = new IndexStore( storeDir, fileSystem );
@@ -785,13 +782,13 @@ public class BatchInserterImpl implements BatchInserter
         PropertyIndexRecord record = new PropertyIndexRecord( keyId );
         record.setInUse( true );
         record.setCreated();
-        int keyBlockId = idxStore.nextKeyBlockId();
-        record.setKeyBlockId( keyBlockId );
+        int nameId = idxStore.nextNameId();
+        record.setNameId( nameId );
         Collection<DynamicRecord> keyRecords =
-            idxStore.allocateKeyRecords( keyBlockId, encodeString( stringKey ) );
+            idxStore.allocateNameRecords( nameId, encodeString( stringKey ) );
         for ( DynamicRecord keyRecord : keyRecords )
         {
-            record.addKeyRecord( keyRecord );
+            record.addNameRecord( keyRecord );
         }
         idxStore.updateRecord( record );
         indexHolder.addPropertyIndex( stringKey, keyId );
@@ -805,13 +802,12 @@ public class BatchInserterImpl implements BatchInserter
         RelationshipTypeRecord record = new RelationshipTypeRecord( id );
         record.setInUse( true );
         record.setCreated();
-        int typeBlockId = (int) typeStore.nextBlockId();
-        record.setTypeBlock( typeBlockId );
-        Collection<DynamicRecord> typeRecords =
-            typeStore.allocateTypeNameRecords( typeBlockId, encodeString( name ) );
-        for ( DynamicRecord typeRecord : typeRecords )
+        int nameId = (int) typeStore.nextNameId();
+        record.setNameId( nameId );
+        Collection<DynamicRecord> nameRecords = typeStore.allocateNameRecords( nameId, encodeString( name ) );
+        for ( DynamicRecord typeRecord : nameRecords )
         {
-            record.addTypeRecord( typeRecord );
+            record.addNameRecord( typeRecord );
         }
         typeStore.updateRecord( record );
         typeHolder.addRelationshipType( name, id );

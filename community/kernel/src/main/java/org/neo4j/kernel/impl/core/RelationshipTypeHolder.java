@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
+import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -53,7 +53,7 @@ public class RelationshipTypeHolder
         this.relTypeCreator = relTypeCreator;
     }
 
-    void addRawRelationshipTypes( RelationshipTypeData[] types )
+    void addRawRelationshipTypes( NameData[] types )
     {
         for ( int i = 0; i < types.length; i++ )
         {
@@ -61,7 +61,7 @@ public class RelationshipTypeHolder
         }
     }
     
-    void addRawRelationshipType( RelationshipTypeData type )
+    void addRawRelationshipType( NameData type )
     {
         RelationshipTypeImpl relType = new RelationshipTypeImpl( type.getName() );
         relTypes.put( type.getName(), type.getId() );

@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.batchinsert;
 
 import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
+import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
 public class RelationshipTypeHolder
@@ -30,9 +30,9 @@ public class RelationshipTypeHolder
     private final ArrayMap<Integer,String> idToName = 
         new ArrayMap<Integer,String>( 5, false, false);
     
-    RelationshipTypeHolder( RelationshipTypeData[] types )
+    RelationshipTypeHolder( NameData[] types )
     {
-        for ( RelationshipTypeData type : types )
+        for ( NameData type : types )
         {
            relTypes.put( type.getName(), type.getId() );
            idToName.put( type.getId(), type.getName() );

@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
+import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -50,7 +51,6 @@ import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyIndexStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
@@ -59,7 +59,6 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeStore;
 import org.neo4j.kernel.impl.nioneo.xa.Command.PropertyCommand;
@@ -294,7 +293,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 if ( record.isCreated() )
                 {
                     if ( freeIds ) getRelationshipTypeStore().freeId( record.getId() );
-                    for ( DynamicRecord dynamicRecord : record.getTypeRecords() )
+                    for ( DynamicRecord dynamicRecord : record.getNameRecords() )
                     {
                         if ( dynamicRecord.isCreated() )
                         {
@@ -330,7 +329,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 if ( record.isCreated() )
                 {
                     if ( freeIds ) getPropertyStore().getIndexStore().freeId( record.getId() );
-                    for ( DynamicRecord dynamicRecord : record.getKeyRecords() )
+                    for ( DynamicRecord dynamicRecord : record.getNameRecords() )
                     {
                         if ( dynamicRecord.isCreated() )
                         {
@@ -419,35 +418,17 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     private void addRelationshipType( int id )
     {
         setRecovered();
-        RelationshipTypeData type;
-        if ( isRecovered() )
-        {
-            type = neoStore.getRelationshipTypeStore().getRelationshipType(
-                id, true );
-        }
-        else
-        {
-            type = neoStore.getRelationshipTypeStore().getRelationshipType(
-                id );
-        }
+        NameData type = isRecovered() ?
+                neoStore.getRelationshipTypeStore().getName( id, true ) :
+                neoStore.getRelationshipTypeStore().getName( id );
         lockReleaser.addRelationshipType( type );
     }
 
     private void addPropertyIndexCommand( int id )
     {
-        PropertyIndexData index;
-        if ( isRecovered() )
-        {
-            index =
-                neoStore.getPropertyStore().getIndexStore().getPropertyIndex(
-                    id, true );
-        }
-        else
-        {
-            index =
-                neoStore.getPropertyStore().getIndexStore().getPropertyIndex(
-                    id );
-        }
+        NameData index = isRecovered() ?
+                neoStore.getPropertyStore().getIndexStore().getName( id, true ) :
+                neoStore.getPropertyStore().getIndexStore().getName( id );
         lockReleaser.addPropertyIndex( index );
     }
 
@@ -1474,10 +1455,10 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     }
 
     @Override
-    public PropertyIndexData[] loadPropertyIndexes( int count )
+    public NameData[] loadPropertyIndexes( int count )
     {
         PropertyIndexStore indexStore = getPropertyStore().getIndexStore();
-        return indexStore.getPropertyIndexes( count );
+        return indexStore.getNames( count );
     }
 
     @Override
@@ -1487,13 +1468,13 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         record.setInUse( true );
         record.setCreated();
         PropertyIndexStore propIndexStore = getPropertyStore().getIndexStore();
-        int keyBlockId = propIndexStore.nextKeyBlockId();
-        record.setKeyBlockId( keyBlockId );
-        Collection<DynamicRecord> keyRecords =
-            propIndexStore.allocateKeyRecords( keyBlockId, encodeString( key ) );
-        for ( DynamicRecord keyRecord : keyRecords )
+        int nameId = propIndexStore.nextNameId();
+        record.setNameId( nameId );
+        Collection<DynamicRecord> nameRecords =
+            propIndexStore.allocateNameRecords( nameId, encodeString( key ) );
+        for ( DynamicRecord keyRecord : nameRecords )
         {
-            record.addKeyRecord( keyRecord );
+            record.addNameRecord( keyRecord );
         }
         addPropertyIndexRecord( record );
     }
@@ -1504,16 +1485,16 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         RelationshipTypeRecord record = new RelationshipTypeRecord( id );
         record.setInUse( true );
         record.setCreated();
-        int blockId = (int) getRelationshipTypeStore().nextBlockId();
-        record.setTypeBlock( blockId );
+        int nameId = (int) getRelationshipTypeStore().nextNameId();
+        record.setNameId( nameId );
 //        int length = name.length();
 //        char[] chars = new char[length];
 //        name.getChars( 0, length, chars, 0 );
         Collection<DynamicRecord> typeNameRecords =
-            getRelationshipTypeStore().allocateTypeNameRecords( blockId, encodeString( name ) );
+            getRelationshipTypeStore().allocateNameRecords( nameId, encodeString( name ) );
         for ( DynamicRecord typeRecord : typeNameRecords )
         {
-            record.addTypeRecord( typeRecord );
+            record.addNameRecord( typeRecord );
         }
         addRelationshipTypeRecord( record );
     }
@@ -1809,14 +1790,13 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     }
 
     @Override
-    public RelationshipTypeData[] loadRelationshipTypes()
+    public NameData[] loadRelationshipTypes()
     {
-        RelationshipTypeData relTypeData[] = neoStore.getRelationshipTypeStore().getRelationshipTypes();;
-        RelationshipTypeData rawRelTypeData[] = new RelationshipTypeData[relTypeData.length];
+        NameData relTypeData[] = neoStore.getRelationshipTypeStore().getNames( Integer.MAX_VALUE );
+        NameData rawRelTypeData[] = new NameData[relTypeData.length];
         for ( int i = 0; i < relTypeData.length; i++ )
         {
-            rawRelTypeData[i] = new RelationshipTypeData(
-                relTypeData[i].getId(), relTypeData[i].getName() );
+            rawRelTypeData[i] = new NameData( relTypeData[i].getId(), relTypeData[i].getName() );
         }
         return rawRelTypeData;
     }

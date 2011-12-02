@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-public class RelationshipTypeData
+public class NameData
 {
-    private final String name;
     private final int id;
+    private final String name;
 
-    public RelationshipTypeData( int id, String name )
+    public NameData( int id, String name )
     {
         this.id = id;
         this.name = name;

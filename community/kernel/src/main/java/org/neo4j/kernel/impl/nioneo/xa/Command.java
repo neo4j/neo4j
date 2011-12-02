@@ -673,15 +673,14 @@ public abstract class Command extends XaCommand
             buffer.put( PROP_INDEX_COMMAND );
             buffer.putInt( record.getId() );
             buffer.put( inUse );
-            buffer.putInt( record.getPropertyCount() ).putInt(
-                record.getKeyBlockId() );
+            buffer.putInt( record.getPropertyCount() ).putInt( record.getNameId() );
             if ( record.isLight() )
             {
                 buffer.putInt( 0 );
             }
             else
             {
-                Collection<DynamicRecord> keyRecords = record.getKeyRecords();
+                Collection<DynamicRecord> keyRecords = record.getNameRecords();
                 buffer.putInt( keyRecords.size() );
                 for ( DynamicRecord keyRecord : keyRecords )
                 {
@@ -716,7 +715,7 @@ public abstract class Command extends XaCommand
             PropertyIndexRecord record = new PropertyIndexRecord( id );
             record.setInUse( inUse );
             record.setPropertyCount( buffer.getInt() );
-            record.setKeyBlockId( buffer.getInt() );
+            record.setNameId( buffer.getInt() );
             int nrKeyRecords = buffer.getInt();
             for ( int i = 0; i < nrKeyRecords; i++ )
             {
@@ -725,7 +724,7 @@ public abstract class Command extends XaCommand
                 {
                     return null;
                 }
-                record.addKeyRecord( dr );
+                record.addNameRecord( dr );
             }
             return new PropertyIndexCommand( neoStore == null ? null : neoStore.getPropertyStore()
                 .getIndexStore(), record );
@@ -1010,10 +1009,9 @@ public abstract class Command extends XaCommand
             byte inUse = record.inUse() ? Record.IN_USE.byteValue()
                 : Record.NOT_IN_USE.byteValue();
             buffer.put( REL_TYPE_COMMAND );
-            buffer.putInt( record.getId() ).put( inUse ).putInt(
-                record.getTypeBlock() );
+            buffer.putInt( record.getId() ).put( inUse ).putInt( record.getNameId() );
 
-            Collection<DynamicRecord> typeRecords = record.getTypeRecords();
+            Collection<DynamicRecord> typeRecords = record.getNameRecords();
             buffer.putInt( typeRecords.size() );
             for ( DynamicRecord typeRecord : typeRecords )
             {
@@ -1047,7 +1045,7 @@ public abstract class Command extends XaCommand
             }
             RelationshipTypeRecord record = new RelationshipTypeRecord( id );
             record.setInUse( inUse );
-            record.setTypeBlock( buffer.getInt() );
+            record.setNameId( buffer.getInt() );
             int nrTypeRecords = buffer.getInt();
             for ( int i = 0; i < nrTypeRecords; i++ )
             {
@@ -1056,7 +1054,7 @@ public abstract class Command extends XaCommand
                 {
                     return null;
                 }
-                record.addTypeRecord( dr );
+                record.addNameRecord( dr );
             }
             return new RelationshipTypeCommand(
                     neoStore == null ? null : neoStore.getRelationshipTypeStore(), record );

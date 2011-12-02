@@ -23,7 +23,7 @@ import javax.transaction.TransactionManager;
 
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
+import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
@@ -52,7 +52,7 @@ public class DefaultRelationshipTypeCreator implements RelationshipTypeCreator
         if ( createrThread.succeded() )
         {
             int id = createrThread.getRelTypeId();
-            relTypeHolder.addRawRelationshipType( new RelationshipTypeData( id, name ) );
+            relTypeHolder.addRawRelationshipType( new NameData( id, name ) );
             return id;
         }
         throw new TransactionFailureException(

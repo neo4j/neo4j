@@ -61,7 +61,7 @@ public class LegacyRelationshipTypeStoreReader
             if (inUse) {
                 RelationshipTypeRecord record = new RelationshipTypeRecord( id );
                 record.setInUse( inUse );
-                record.setTypeBlock( buffer.getInt() );
+                record.setNameId( buffer.getInt() );
                 records.add( record );
             }
         }

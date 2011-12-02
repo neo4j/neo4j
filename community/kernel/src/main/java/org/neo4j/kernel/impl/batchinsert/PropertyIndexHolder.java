@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.batchinsert;
 
 import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
+import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
 public class PropertyIndexHolder
@@ -30,12 +30,12 @@ public class PropertyIndexHolder
     private final ArrayMap<Integer,String> idToIndex = 
         new ArrayMap<Integer,String>( 5, false, false);
     
-    PropertyIndexHolder( PropertyIndexData[] indexes )
+    PropertyIndexHolder( NameData[] indexes )
     {
-        for ( PropertyIndexData index : indexes )
+        for ( NameData index : indexes )
         {
-            propertyIndexes.put( index.getValue(), index.getKeyId() );
-            idToIndex.put( index.getKeyId(), index.getValue() );
+            propertyIndexes.put( index.getName(), index.getId() );
+            idToIndex.put( index.getId(), index.getName() );
         }
     }
     
@@ -60,8 +60,7 @@ public class PropertyIndexHolder
         String stringKey = idToIndex.get( keyId );
         if ( stringKey == null )
         {
-            throw new NotFoundException( "No such property index[" + keyId + 
-                "]" );
+            throw new NotFoundException( "No such property index[" + keyId + "]" );
         }
         return stringKey;
     }

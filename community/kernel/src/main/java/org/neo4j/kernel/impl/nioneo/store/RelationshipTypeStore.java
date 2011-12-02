@@ -23,103 +23,29 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Implementation of the relationship type store. Uses a dynamic store to store
  * relationship type names.
  */
-public class RelationshipTypeStore extends AbstractStore implements Store, RecordStore<RelationshipTypeRecord>
+public class RelationshipTypeStore extends AbstractNameStore<RelationshipTypeRecord>
 {
     public static final String TYPE_DESCRIPTOR = "RelationshipTypeStore";
+    private static final int RECORD_SIZE = 1/*inUse*/ + 5/*nameId*/;
 
-    // record header size
-    // in_use(byte)+type_blockId(int)
-    private static final int RECORD_SIZE = 5;
-
-    private static final int TYPE_STORE_BLOCK_SIZE = 30;
-
-    private DynamicStringStore typeNameStore;
-
-    public RelationshipTypeStore( String fileName, Map<?,?> config, IdType idType )
+    public RelationshipTypeStore( String fileName, Map<?,?> config )
     {
-        super( fileName, config, idType );
+        super( fileName, config, IdType.RELATIONSHIP_TYPE );
     }
 
     @Override
     public void accept( RecordStore.Processor processor, RelationshipTypeRecord record )
     {
         processor.processRelationshipType( this, record );
-    }
-
-    DynamicStringStore getNameStore()
-    {
-        return typeNameStore;
-    }
-
-    @Override
-    protected void setRecovered()
-    {
-        super.setRecovered();
-        typeNameStore.setRecovered();
-    }
-
-    @Override
-    protected void unsetRecovered()
-    {
-        super.unsetRecovered();
-        typeNameStore.unsetRecovered();
-    }
-
-    @Override
-    protected void initStorage()
-    {
-        typeNameStore = new DynamicStringStore(
-            getStorageFileName() + ".names", getConfig(), IdType.RELATIONSHIP_TYPE_BLOCK );
-    }
-
-    @Override
-    protected void closeStorage()
-    {
-        if ( typeNameStore != null )
-        {
-            typeNameStore.close();
-            typeNameStore = null;
-        }
-    }
-
-    @Override
-    public void flushAll()
-    {
-        typeNameStore.flushAll();
-        super.flushAll();
-    }
-
-    @Override
-    public String getTypeDescriptor()
-    {
-        return TYPE_DESCRIPTOR;
-    }
-
-    @Override
-    public int getRecordSize()
-    {
-        return RECORD_SIZE;
-    }
-
-    @Override
-    public int getRecordHeaderSize()
-    {
-        return getRecordSize();
     }
 
     /**
@@ -140,9 +66,8 @@ public class RelationshipTypeStore extends AbstractStore implements Store, Recor
         createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), idGeneratorFactory,
                 fileSystem );
         DynamicStringStore.createStore( fileName + ".names",
-            TYPE_STORE_BLOCK_SIZE, idGeneratorFactory, fileSystem, IdType.RELATIONSHIP_TYPE_BLOCK );
-        RelationshipTypeStore store = new RelationshipTypeStore(
-                fileName, config, IdType.RELATIONSHIP_TYPE );
+            NAME_STORE_BLOCK_SIZE, idGeneratorFactory, fileSystem, IdType.RELATIONSHIP_TYPE_BLOCK );
+        RelationshipTypeStore store = new RelationshipTypeStore( fileName, config );
         store.close();
     }
 
@@ -159,220 +84,11 @@ public class RelationshipTypeStore extends AbstractStore implements Store, Recor
         }
     }
 
-    public Collection<DynamicRecord> allocateTypeNameRecords( int startBlock,
-        byte src[] )
-    {
-        return typeNameStore.allocateRecords( startBlock, src );
-    }
-
-    public void updateRecord( RelationshipTypeRecord record, boolean recovered )
-    {
-        assert recovered;
-        setRecovered();
-        try
-        {
-            updateRecord( record );
-            registerIdFromUpdateRecord( record.getId() );
-        }
-        finally
-        {
-            unsetRecovered();
-        }
-    }
-
-    public void updateRecord( RelationshipTypeRecord record )
-    {
-        PersistenceWindow window = acquireWindow( record.getId(),
-            OperationType.WRITE );
-        try
-        {
-            updateRecord( record, window );
-        }
-        finally
-        {
-            releaseWindow( window );
-        }
-        for ( DynamicRecord typeRecord : record.getTypeRecords() )
-        {
-            typeNameStore.updateRecord( typeRecord );
-        }
-    }
-
-    @Override
-    public void forceUpdateRecord( RelationshipTypeRecord record )
-    {
-        PersistenceWindow window = acquireWindow( record.getId(),
-                OperationType.WRITE );
-        try
-        {
-            updateRecord( record, window );
-        }
-        finally
-        {
-            releaseWindow( window );
-        }
-    }
-
-    public RelationshipTypeRecord getRecord( int id )
-    {
-        RelationshipTypeRecord record;
-        PersistenceWindow window = acquireWindow( id, OperationType.READ );
-        try
-        {
-            record = getRecord( id, window, false );
-        }
-        finally
-        {
-            releaseWindow( window );
-        }
-        if ( record != null )
-        {
-            Collection<DynamicRecord> nameRecords = typeNameStore.getRecords(
-                record.getTypeBlock() );
-            for ( DynamicRecord nameRecord : nameRecords )
-            {
-                record.addTypeRecord( nameRecord );
-            }
-        }
-        return record;
-    }
-
-    @Override
-    public RelationshipTypeRecord getRecord( long id )
-    {
-        return getRecord( (int) id );
-    }
-
-    @Override
-    public RelationshipTypeRecord forceGetRecord( long id )
-    {
-        PersistenceWindow window = null;
-        try
-        {
-            window = acquireWindow( id, OperationType.READ );
-        }
-        catch ( InvalidRecordException e )
-        {
-            return new RelationshipTypeRecord( (int)id );
-        }
-        
-        try
-        {
-            return getRecord( (int) id, window, true );
-        }
-        finally
-        {
-            releaseWindow( window );
-        }
-    }
-
-    @Override
-    public RelationshipTypeRecord forceGetRaw( long id )
-    {
-        return forceGetRecord( id );
-    }
-
-    public RelationshipTypeData getRelationshipType( int id, boolean recovered )
-    {
-        assert recovered;
-        try
-        {
-            setRecovered();
-            RelationshipTypeRecord record = getRecord( id );
-            String name = getStringFor( record );
-            return new RelationshipTypeData( id, name );
-        }
-        finally
-        {
-            unsetRecovered();
-        }
-    }
-
-    public RelationshipTypeData getRelationshipType( int id )
-    {
-        RelationshipTypeRecord record = getRecord( id );
-        String name = getStringFor( record );
-        return new RelationshipTypeData( id, name );
-    }
-
-    public RelationshipTypeData[] getRelationshipTypes()
-    {
-        LinkedList<RelationshipTypeData> typeDataList =
-            new LinkedList<RelationshipTypeData>();
-        for ( int i = 0;; i++ )
-        {
-            RelationshipTypeRecord record;
-            try
-            {
-                record = getRecord( i );
-            }
-            catch ( InvalidRecordException e )
-            {
-                break;
-            }
-            if ( record != null &&
-                record.getTypeBlock() != Record.RESERVED.intValue() )
-            {
-                String name = getStringFor( record );
-                typeDataList.add( new RelationshipTypeData( i, name ) );
-            }
-        }
-        return typeDataList.toArray(
-            new RelationshipTypeData[typeDataList.size()] );
-    }
-
-    public long nextBlockId()
-    {
-        return typeNameStore.nextBlockId();
-    }
-
-    public void freeBlockId( int id )
-    {
-        typeNameStore.freeBlockId( id );
-    }
-
     private void markAsReserved( int id, PersistenceWindow window )
     {
         Buffer buffer = window.getOffsettedBuffer( id );
         buffer.put( Record.IN_USE.byteValue() ).putInt(
             Record.RESERVED.intValue() );
-    }
-
-    private RelationshipTypeRecord getRecord( int id, PersistenceWindow window, boolean force )
-    {
-        Buffer buffer = window.getOffsettedBuffer( id );
-        byte inUse = buffer.get();
-        if ( !force )
-        {
-            if ( inUse == Record.NOT_IN_USE.byteValue() )
-            {
-                return null;
-            }
-            if ( inUse != Record.IN_USE.byteValue() )
-            {
-                throw new InvalidRecordException( "Record[" + id + "] unknown in use flag[" + inUse + "]" );
-            }
-        }
-        RelationshipTypeRecord record = new RelationshipTypeRecord( id );
-        record.setInUse( inUse == Record.IN_USE.byteValue() );
-        record.setTypeBlock( buffer.getInt() );
-        return record;
-    }
-
-    private void updateRecord( RelationshipTypeRecord record,
-        PersistenceWindow window )
-    {
-        int id = record.getId();
-        Buffer buffer = window.getOffsettedBuffer( id );
-        if ( record.inUse() )
-        {
-            buffer.put( Record.IN_USE.byteValue() ).putInt(
-                record.getTypeBlock() );
-        }
-        else
-        {
-            buffer.put( Record.NOT_IN_USE.byteValue() ).putInt( 0 );
-        }
     }
 
     @Override
@@ -432,58 +148,33 @@ public class RelationshipTypeStore extends AbstractStore implements Store, Recor
         openIdGenerator( false );
     }
 
-    public String getStringFor( RelationshipTypeRecord relTypeRecord )
+    @Override
+    protected RelationshipTypeRecord newRecord( int id )
     {
-        long recordToFind = relTypeRecord.getTypeBlock();
-        Iterator<DynamicRecord> records = relTypeRecord.getTypeRecords().iterator();
-        Collection<DynamicRecord> relevantRecords = new ArrayList<DynamicRecord>();
-        while ( recordToFind != Record.NO_NEXT_BLOCK.intValue() && records.hasNext() )
-        {
-            DynamicRecord record = records.next();
-            if ( record.inUse() && record.getId() == recordToFind )
-            {
-                recordToFind = record.getNextBlock();
-                // TODO: optimize here, high chance next is right one
-                relevantRecords.add( record );
-                records = relTypeRecord.getTypeRecords().iterator();
-            }
-        }
-        return (String) PropertyStore.getStringFor( PropertyStore.readFullByteArray(
-                relTypeRecord.getTypeBlock(), relevantRecords, typeNameStore ) );
+        return new RelationshipTypeRecord( id );
     }
 
     @Override
-    public void makeStoreOk()
+    protected IdType getNameIdType()
     {
-        typeNameStore.makeStoreOk();
-        super.makeStoreOk();
+        return IdType.RELATIONSHIP_TYPE_BLOCK;
     }
 
     @Override
-    public void rebuildIdGenerators()
+    protected String getNameStorePostfix()
     {
-        typeNameStore.rebuildIdGenerators();
-        super.rebuildIdGenerators();
-    }
-
-    public void updateIdGenerators()
-    {
-        typeNameStore.updateHighId();
-        this.updateHighId();
+        return ".names";
     }
 
     @Override
-    public List<WindowPoolStats> getAllWindowPoolStats()
+    public int getRecordSize()
     {
-        List<WindowPoolStats> list = new ArrayList<WindowPoolStats>();
-        list.add( typeNameStore.getWindowPoolStats() );
-        list.add( getWindowPoolStats() );
-        return list;
+        return RECORD_SIZE;
     }
 
     @Override
-    public void logIdUsage( StringLogger logger )
+    public String getTypeDescriptor()
     {
-        NeoStore.logIdUsage( logger, this );
+        return TYPE_DESCRIPTOR;
     }
 }

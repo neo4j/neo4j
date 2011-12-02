@@ -177,8 +177,7 @@ abstract class Primitive
 
     private NotFoundException newPropertyNotFoundException( String key )
     {
-        return new NotFoundException( key +
-            " property not found for " + this + "." );
+        return new NotFoundException( "'" + key + "' property not found for " + this + "." );
     }
 
     private PropertyData getSlowProperty( NodeManager nodeManager,

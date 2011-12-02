@@ -83,8 +83,20 @@ public interface GraphDatabaseService
      * 
      * @return the reference node
      * @throws NotFoundException if unable to get the reference node
+     * @deprecated in favor of named nodes
      */
     public Node getReferenceNode();
+    
+    /**
+     * Gets a reference node with {@code name}. If that named node doesn't exist it will
+     * be created. Reference nodes are used as points of reference into the graph and
+     * are just like any other {@link Node} in the graph. Typically the number of
+     * reference nodes is small (< 100) and aren't suitable as an index.
+     * 
+     * @param name the name of the node.
+     * @return the named {@link Node} with the given {@code name}.
+     */
+//    public Node getReferenceNode( String name );
 
     /**
      * Returns all nodes in the graph.

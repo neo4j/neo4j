@@ -27,7 +27,6 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
@@ -62,13 +61,13 @@ public class StoreAccess
         this.nodeStore = wrapStore( nodeStore = new NodeStore( path + "/neostore.nodestore.db", params ) );
         this.relStore = wrapStore( relStore = new RelationshipStore( path + "/neostore.relationshipstore.db", params ) );
         this.relTypeStore = wrapStore( relTypeStore = new RelationshipTypeStore(
-                path + "/neostore.relationshiptypestore.db", params, IdType.RELATIONSHIP_TYPE ) );
+                path + "/neostore.relationshiptypestore.db", params ) );
         this.typeNameStore = wrapStore( relTypeStore.getNameStore() );
         if ( new File( path + "/neostore.propertystore.db" ).exists() )
         {
             this.propStore = wrapStore( propStore = new PropertyStore( path + "/neostore.propertystore.db", params ) );
             this.propIndexStore = wrapStore( propStore.getIndexStore() );
-            this.propKeyStore = wrapStore( propStore.getIndexStore().getKeyStore() );
+            this.propKeyStore = wrapStore( propStore.getIndexStore().getNameStore() );
             this.stringStore = wrapStore( propStore.getStringStore() );
             this.arrayStore = wrapStore( propStore.getArrayStore() );
         }
@@ -120,7 +119,7 @@ public class StoreAccess
         this.relTypeStore = wrapStore( typeStore );
         this.propIndexStore = wrapStore( propStore.getIndexStore() );
         this.typeNameStore = wrapStore( typeStore.getNameStore() );
-        this.propKeyStore = wrapStore( propStore.getIndexStore().getKeyStore() );
+        this.propKeyStore = wrapStore( propStore.getIndexStore().getNameStore() );
     }
 
     public RecordStore<NodeRecord> getNodeStore()

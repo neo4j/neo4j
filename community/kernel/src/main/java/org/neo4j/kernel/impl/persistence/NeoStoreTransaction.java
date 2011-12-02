@@ -25,10 +25,9 @@ import javax.transaction.xa.XAResource;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.core.PropertyIndex;
+import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
@@ -233,7 +232,7 @@ public interface NeoStoreTransaction
      * @return An array of the PropertyIndexData that were loaded - can be less
      *         than the number requested.
      */
-    public PropertyIndexData[] loadPropertyIndexes( int maxCount );
+    public NameData[] loadPropertyIndexes( int maxCount );
 
     /**
      * Loads the complete property chain for the given node and returns it as a
@@ -273,7 +272,7 @@ public interface NeoStoreTransaction
      *
      * @return All the stored RelationshipTypes, as a RelationshipTypeData array
      */
-    public RelationshipTypeData[] loadRelationshipTypes();
+    public NameData[] loadRelationshipTypes();
 
     /**
      * Creates a property index entry out of the given id and string.

@@ -193,8 +193,8 @@ public class StoreMigrator
 
             for ( RelationshipTypeRecord relationshipTypeRecord : relationshipTypeStoreReader.readRelationshipTypes() )
             {
-                List<LegacyDynamicRecord> dynamicRecords = relationshipTypeNameStoreReader.getPropertyChain( relationshipTypeRecord.getTypeBlock() );
-                String name = LegacyDynamicRecordFetcher.joinRecordsIntoString( relationshipTypeRecord.getTypeBlock(), dynamicRecords );
+                List<LegacyDynamicRecord> dynamicRecords = relationshipTypeNameStoreReader.getPropertyChain( relationshipTypeRecord.getNameId() );
+                String name = LegacyDynamicRecordFetcher.joinRecordsIntoString( relationshipTypeRecord.getNameId(), dynamicRecords );
                 createRelationshipType( relationshipTypeStore, name, relationshipTypeRecord.getId() );
             }
             relationshipTypeNameStoreReader.close();
@@ -212,13 +212,13 @@ public class StoreMigrator
 
             record.setInUse( true );
             record.setCreated();
-            int keyBlockId = (int) relationshipTypeStore.nextBlockId();
-            record.setTypeBlock( keyBlockId );
-            Collection<DynamicRecord> keyRecords = relationshipTypeStore.allocateTypeNameRecords(
+            int keyBlockId = (int) relationshipTypeStore.nextNameId();
+            record.setNameId( keyBlockId );
+            Collection<DynamicRecord> keyRecords = relationshipTypeStore.allocateNameRecords(
                     keyBlockId, encodeString( name ) );
             for ( DynamicRecord keyRecord : keyRecords )
             {
-                record.addTypeRecord( keyRecord );
+                record.addNameRecord( keyRecord );
             }
             relationshipTypeStore.updateRecord( record );
         }
@@ -230,8 +230,8 @@ public class StoreMigrator
 
             for ( PropertyIndexRecord propertyIndexRecord : indexStoreReader.readPropertyIndexStore() )
             {
-                List<LegacyDynamicRecord> dynamicRecords = propertyIndexKeyStoreReader.getPropertyChain( propertyIndexRecord.getKeyBlockId() );
-                String key = LegacyDynamicRecordFetcher.joinRecordsIntoString( propertyIndexRecord.getKeyBlockId(), dynamicRecords );
+                List<LegacyDynamicRecord> dynamicRecords = propertyIndexKeyStoreReader.getPropertyChain( propertyIndexRecord.getNameId() );
+                String key = LegacyDynamicRecordFetcher.joinRecordsIntoString( propertyIndexRecord.getNameId(), dynamicRecords );
                 createPropertyIndex( propIndexStore, key, propertyIndexRecord.getId() );
             }
             propertyIndexKeyStoreReader.close();
@@ -249,13 +249,13 @@ public class StoreMigrator
 
             record.setInUse( true );
             record.setCreated();
-            int keyBlockId = propIndexStore.nextKeyBlockId();
-            record.setKeyBlockId( keyBlockId );
-            Collection<DynamicRecord> keyRecords = propIndexStore.allocateKeyRecords(
+            int keyBlockId = propIndexStore.nextNameId();
+            record.setNameId( keyBlockId );
+            Collection<DynamicRecord> keyRecords = propIndexStore.allocateNameRecords(
                     keyBlockId, encodeString( key ) );
             for ( DynamicRecord keyRecord : keyRecords )
             {
-                record.addKeyRecord( keyRecord );
+                record.addNameRecord( keyRecord );
             }
             propIndexStore.updateRecord( record );
         }

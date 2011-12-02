@@ -50,10 +50,9 @@ import org.neo4j.kernel.impl.cache.NoCache;
 import org.neo4j.kernel.impl.cache.SoftLruCache;
 import org.neo4j.kernel.impl.cache.StrongReferenceCache;
 import org.neo4j.kernel.impl.cache.WeakLruCache;
+import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
-import org.neo4j.kernel.impl.nioneo.store.PropertyIndexData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeData;
 import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.LockException;
@@ -883,7 +882,7 @@ public class NodeManager
         relTypeHolder.removeRelType( id );
     }
 
-    void addPropertyIndexes( PropertyIndexData[] propertyIndexes )
+    void addPropertyIndexes( NameData[] propertyIndexes )
     {
         propertyIndexManager.addPropertyIndexes( propertyIndexes );
     }
@@ -928,7 +927,7 @@ public class NodeManager
         return relTypeHolder.getIdFor( type );
     }
 
-    void addRawRelationshipTypes( RelationshipTypeData[] relTypes )
+    void addRawRelationshipTypes( NameData[] relTypes )
     {
         relTypeHolder.addRawRelationshipTypes( relTypes );
     }
@@ -1135,12 +1134,12 @@ public class NodeManager
         return this.lockManager;
     }
 
-    void addRelationshipType( RelationshipTypeData type )
+    void addRelationshipType( NameData type )
     {
         relTypeHolder.addRawRelationshipType( type );
     }
 
-    void addPropertyIndex( PropertyIndexData index )
+    void addPropertyIndex( NameData index )
     {
         propertyIndexManager.addPropertyIndex( index );
     }
