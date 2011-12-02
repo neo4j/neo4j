@@ -152,6 +152,7 @@ startit() {
   detectos
   exitonnojava
   checkstatus
+  checklimits
 
   if [ $DIST_OS = "macosx" ] ; then
     getlaunchdpid
@@ -235,6 +236,7 @@ startit() {
 console() {
 
   checkstatus
+  checklimits
 
   if [ -z $NEO4J_PID ] ; then
     echo "Starting $FRIENDLY_NAME console-mode..."
