@@ -19,19 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.cache.LruCache;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
-import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.BufferedFileChannel;
-import org.neo4j.kernel.impl.util.FileUtils;
-import org.neo4j.kernel.impl.util.StringLogger;
-
-import javax.transaction.xa.XAException;
-import javax.transaction.xa.Xid;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -44,6 +31,20 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+
+import javax.transaction.xa.XAException;
+import javax.transaction.xa.Xid;
+
+import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.impl.cache.LruCache;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
+import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.BufferedFileChannel;
+import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * <CODE>XaLogicalLog</CODE> is a transaction and logical log combined. In
@@ -1540,6 +1541,35 @@ public class XaLogicalLog
     }
 
     /**
+     * Rotates this logical log. The pending transactions are moved over to a
+     * new log buffer and the internal structures updated to reflect the new
+     * file offsets. The old log is either renamed or thrown away, depending on
+     * the value of the last call to {@link #setKeepLogs(boolean)}. Additional
+     * side effects include a force() of the store and increment of the log
+     * version.
+     *
+     * Outline of how rotation happens:
+     * 
+     * <li>The store is flushed - can't have pending changes if there is no log
+     * that contains the commands</li>
+     *
+     * <li>Switch current filename with old and check that new doesn't exist and
+     * the versioned backup isn't there also</li>
+     *
+     * <li>Force the current log buffer</li>
+     *
+     * <li>Create new log file, write header</li>
+     *
+     * <li>Find the position for the first pending transaction. From there start
+     * scanning, transferring the entries of the pending transactions from the
+     * old log to the new, updating the start positions in the in-memory tables</li>
+     * 
+     * <li>Keep or delete old log</li>
+     *
+     * <li>Update the log version stored</li>
+     * 
+     * <li>Instantiate the new log buffer</li>
+     *
      * @return the last tx in the produced log
      * @throws IOException I/O error.
      */
@@ -1660,6 +1690,14 @@ public class XaLogicalLog
         }
     }
 
+    /**
+     * Gets the file position of the first of the start entries searching
+     * from {@code endPosition} and to smallest positions.
+     *
+     * @param endPosition The largest possible position for the Start entries
+     * @return The smallest possible position for the Start entries, at most
+     *         {@code endPosition}
+     */
     private long getFirstStartEntry( long endPosition )
     {
         long firstEntryPosition = endPosition;
