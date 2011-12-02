@@ -23,7 +23,7 @@ import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.commands._
 import collection.immutable.Map
 import collection.{Traversable, Seq}
-import org.neo4j.cypher.symbols.{NodeType, SymbolTable}
+import org.neo4j.cypher.symbols.{RelationshipType, NodeType, SymbolTable}
 
 /**
  * This class is responsible for deciding how to get the parts of the pattern that are not already bound
@@ -34,12 +34,19 @@ import org.neo4j.cypher.symbols.{NodeType, SymbolTable}
 class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, clauses: Seq[Clause] = Seq()) {
   val patternGraph = buildPatternGraph()
   val containsHardPatterns = patterns.find(!_.isInstanceOf[RelatedTo]).nonEmpty
+  val builder: MatcherBuilder = decideWhichMatcherToUse()
 
   def getMatches(sourceRow: Map[String, Any]): Traversable[Map[String, Any]] = {
-    val builder = new PatterMatchingBuilder(patternGraph, clauses)
-    builder.build(sourceRow)
+    builder.getMatches(sourceRow)
   }
 
+  private def decideWhichMatcherToUse() = {
+    if (JoinerBuilder.canHandlePatter(patternGraph)) {
+      new JoinerBuilder(patternGraph, clauses)
+    } else {
+      new PatterMatchingBuilder(patternGraph, clauses)
+    }
+  }
 
   private def buildPatternGraph(): PatternGraph = {
     val patternNodeMap: scala.collection.mutable.Map[String, PatternNode] = scala.collection.mutable.Map()
@@ -72,3 +79,6 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, cla
   }
 }
 
+trait MatcherBuilder {
+  def getMatches(sourceRow: Map[String, Any]): Traversable[Map[String, Any]]
+}

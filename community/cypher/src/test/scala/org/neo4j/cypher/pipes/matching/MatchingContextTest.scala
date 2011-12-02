@@ -55,7 +55,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     val r = relate(a, b, "rel", "r")
 
     val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.OUTGOING, false))
-    val matchingContext = new MatchingContext(patterns, bind("a"))
+    val matchingContext = new MatchingContext(patterns, new SymbolTable(Identifier("r", RelationshipType())))
 
     assertMatches(matchingContext.getMatches(Map("r" -> r)), 1, Map("a" -> a, "b" -> b, "r" -> r))
   }
@@ -64,7 +64,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     val r = relate(a, b, "rel", "r")
 
     val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.INCOMING, false))
-    val matchingContext = new MatchingContext(patterns, bind("a"))
+    val matchingContext = new MatchingContext(patterns, new SymbolTable(Identifier("r", RelationshipType())))
 
     assertMatches(matchingContext.getMatches(Map("r" -> r)), 1, Map("a" -> b, "b" -> a, "r" -> r))
   }
@@ -73,7 +73,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     val r = relate(a, b, "rel")
 
     val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.BOTH, false))
-    val matchingContext = new MatchingContext(patterns, bind("a"))
+    val matchingContext = new MatchingContext(patterns, new SymbolTable(Identifier("r", RelationshipType())))
 
     assertMatches(matchingContext.getMatches(Map("r" -> r)), 2,
       Map("a" -> a, "b" -> b, "r" -> r),
@@ -144,7 +144,8 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     )
     val matchingContext = new MatchingContext(patterns, bind("a"))
 
-    assertMatches(matchingContext.getMatches(Map("a" -> a)), 2,
+    val traversable = matchingContext.getMatches(Map("a" -> a))
+    assertMatches(traversable, 2,
       Map("a" -> a, "b" -> c, "c" -> b, "r1" -> r2, "r2" -> r1),
       Map("a" -> a, "b" -> b, "c" -> c, "r1" -> r1, "r2" -> r2))
   }
@@ -202,10 +203,12 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     val r2 = relate(c, a, "rel")
 
     val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.OUTGOING))
-    val matchingContext = new MatchingContext(patterns, bind("a"))
 
+    val matchingContext = new MatchingContext(patterns, bind("a"))
     assertMatches(matchingContext.getMatches(Map("a" -> a)), 1, Map("a" -> a, "b" -> b, "r" -> r1))
-    assertMatches(matchingContext.getMatches(Map("b" -> a)), 1, Map("b" -> a, "a" -> c, "r" -> r2))
+
+    val matchingContext2 = new MatchingContext(patterns, bind("b"))
+    assertMatches(matchingContext2.getMatches(Map("b" -> a)), 1, Map("b" -> a, "a" -> c, "r" -> r2))
   }
 
   @Test def typeConstraintFiltersMatches() {

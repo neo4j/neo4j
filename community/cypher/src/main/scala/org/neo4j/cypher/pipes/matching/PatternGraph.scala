@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.pipes.matching
 
-import org.neo4j.cypher.symbols.SymbolTable
 import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.symbols.{MapType, SymbolTable}
 
-class PatternGraph(patternNodes: Map[String, PatternNode],
-                   patternRels: Map[String, PatternRelationship],
-                   bindings: SymbolTable) {
+class PatternGraph(val patternNodes: Map[String, PatternNode],
+                   val patternRels: Map[String, PatternRelationship],
+                   val bindings: SymbolTable) {
 
-  val (patternGraph, optionalElements, hasLoops) = validatePattern(patternNodes, patternRels, bindings)
+  val (patternGraph, optionalElements, containsLoops) = validatePattern(patternNodes, patternRels, bindings)
 
   def apply(key: String) = patternGraph(key)
 
@@ -37,6 +37,8 @@ class PatternGraph(patternNodes: Map[String, PatternNode],
   def keySet = patternGraph.keySet
 
   def containsOptionalElements = optionalElements.nonEmpty
+
+  def boundElements = bindings.identifiers.filter(id => MapType().isAssignableFrom(id.typ)).map(_.name)
 
   /*
   This method is mutable, but it is only called from the constructor of this class. The created pattern graph
@@ -95,7 +97,11 @@ class PatternGraph(patternNodes: Map[String, PatternNode],
       el match {
         case None =>
         case Some(x) => {
-          if (!visited.contains(x)) visit(x)
+          if (visited.contains(x)) {
+            hasLoops = true
+          } else {
+            visit(x)
+          }
           markMandatoryElements(x)
         }
       }

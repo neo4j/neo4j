@@ -23,13 +23,13 @@ import org.neo4j.graphdb.{Relationship, Node, Direction, PropertyContainer}
 import org.neo4j.cypher.commands.Clause
 
 
-class PatterMatchingBuilder(patternGraph: PatternGraph, clauses: Seq[Clause]) {
-  def build(sourceRow: Map[String, Any]): Traversable[Map[String, Any]] = {
+class PatterMatchingBuilder(patternGraph: PatternGraph, clauses: Seq[Clause]) extends MatcherBuilder {
+  def getMatches(sourceRow: Map[String, Any]): Traversable[Map[String, Any]] = {
     val bindings: Map[String, Any] = sourceRow.filter(_._2.isInstanceOf[PropertyContainer])
     val boundPairs: Map[String, MatchingPair] = extractBoundMatchingPairs(bindings)
 
     val undirectedBoundRelationships: Iterable[PatternRelationship] = bindings.keys.
-      filter( z =>  patternGraph.contains(z)).
+      filter(z => patternGraph.contains(z)).
       filter(patternGraph(_).isInstanceOf[PatternRelationship]).
       map(patternGraph(_).asInstanceOf[PatternRelationship]).
       filter(_.dir == Direction.BOTH)
@@ -47,7 +47,6 @@ class PatterMatchingBuilder(patternGraph: PatternGraph, clauses: Seq[Clause]) {
     else
       mandatoryPattern
   }
-
 
   private def createListOfBoundRelationshipsWithHangingNodes(undirectedBoundRelationships: Iterable[PatternRelationship], bindings: Map[String, Any]) = {
     val toList = undirectedBoundRelationships.map(patternRel => {

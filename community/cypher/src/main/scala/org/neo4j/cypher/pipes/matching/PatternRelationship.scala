@@ -27,7 +27,7 @@ import org.neo4j.kernel.{Uniqueness, Traversal}
 class PatternRelationship(key: String,
                           val startNode: PatternNode,
                           val endNode: PatternNode,
-                          relType: Option[String],
+                          val relType: Option[String],
                           val dir: Direction,
                           val optional: Boolean)
   extends PatternElement(key) {

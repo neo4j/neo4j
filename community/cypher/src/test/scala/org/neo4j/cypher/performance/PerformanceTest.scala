@@ -19,17 +19,15 @@
  */
 package org.neo4j.cypher.performance
 
-import org.scalatest.Assertions
-import org.neo4j.kernel.EmbeddedGraphDatabase
-import org.neo4j.cypher.ExecutionEngine
-import scala.io.Source.fromFile
 import scala.util.Random
+import org.neo4j.cypher.ExecutionEngine
+import org.neo4j.kernel.EmbeddedGraphDatabase
+import org.scalatest.Assertions
+import org.neo4j.graphdb.{DynamicRelationshipType, Node}
 import org.junit.{Ignore, After, Before, Test}
-
 
 @Ignore
 class PerformanceTest extends Assertions {
-  val movies: List[String] = getExistingMovies
   val r = new Random()
 
   var db: EmbeddedGraphDatabase = null
@@ -37,7 +35,7 @@ class PerformanceTest extends Assertions {
 
   @Before
   def init() {
-    db = new EmbeddedGraphDatabase("target/perf-graph.db")
+    db = new EmbeddedGraphDatabase("target/db")
     engine = new ExecutionEngine(db)
   }
 
@@ -47,14 +45,41 @@ class PerformanceTest extends Assertions {
   }
 
   @Test
-  def testGetFiveSimilarMovies() {
-    val query = "START a=node:movieIds(id={id}) MATCH a<-[r1:rating]-person-[r2:rating]->b WHERE r1.stars>4 AND r2.stars>4 RETURN a.title, b.title, count(*) ORDER BY count(*) DESC LIMIT 5"
+  def createDatabase() {
 
-    (0 to 100).foreach( (x)=>println(engine.execute(query, Map("id"->getRandomMovie)).toList ))
+    val startPoints = (0 to 10).map(x => {
+      val tx = db.beginTx()
+
+      val a = createNode()
+      (0 to 10).foreach(y => {
+        val b = createNode()
+        relate(a, b)
+        (0 to 50).foreach(z => {
+          val c = createNode()
+          val d = createNode()
+          relate(b, c)
+          relate(b, d)
+        })
+      })
+      tx.success()
+      tx.finish()
+      a
+    })
+
+    val engine = new ExecutionEngine(db)
+
+    val t0 = System.nanoTime : Double
+    engine.execute("start a=node({root}) match a-->b-->c, b-->d return a,count(*)", Map("root"->startPoints)).toList
+    val t1 = System.nanoTime : Double
+    println("Elapsed time " + (t1 - t0) / 1000000.0 + " msecs")
+
   }
 
-  def getRandomMovie: String = movies(r.nextInt(movies.length))
+  def createNode() = {
+    db.createNode()
+  }
 
-  private def getExistingMovies = fromFile("/Users/ata/Downloads/apa/ml-10M100K/movies.dat").getLines().map(line => line.split("::")(0)).toList
-
+  def relate(a: Node, b: Node) {
+    a.createRelationshipTo(b, DynamicRelationshipType.withName("r"))
+  }
 }
