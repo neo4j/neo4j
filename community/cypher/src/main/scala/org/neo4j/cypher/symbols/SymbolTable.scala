@@ -42,7 +42,7 @@ class SymbolTable(val identifiers: Identifier*) {
   def keys = identifiers.map(_.name)
 
   def throwMissingKey(key: String) {
-    throw new SyntaxException("Unknown identifier \"" + key + "\".")
+    throw new SyntaxException("Unknown identifier `" + key + "`.")
   }
 
   def filter(keys: String*): SymbolTable = {

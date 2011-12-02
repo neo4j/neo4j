@@ -27,7 +27,7 @@ import parser.CypherParser
 class SematicErrorTest extends ExecutionEngineHelper {
   @Test def returnNodeThatsNotThere() {
     expectedError("start x=node(0) return bar",
-      """Unknown identifier "bar".""")
+      """Unknown identifier `bar`.""")
   }
 
   @Test def throwOnDisconnectedPattern() {
@@ -62,7 +62,7 @@ class SematicErrorTest extends ExecutionEngineHelper {
 
   @Test def shortestPathNeedsBothEndNodes() {
     expectedError("start n=node(0) match p=shortestPath(n-->b) return p",
-      "To find a shortest path, both ends of the path need to be provided. Couldn't find `b`")
+      "Unknown identifier `b`.")
   }
 
   def parse(txt:String):Query = new CypherParser().parse(txt)

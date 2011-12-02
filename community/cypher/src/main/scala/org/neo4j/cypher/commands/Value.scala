@@ -22,10 +22,12 @@ package org.neo4j.cypher.commands
 import scala.collection.JavaConverters._
 import java.lang.String
 import org.neo4j.cypher._
+import pipes.Dependant
 import symbols._
 import org.neo4j.graphdb.{Path, Relationship, NotFoundException, PropertyContainer, Node}
+import collection.Seq
 
-abstract class Value extends (Map[String, Any] => Any) {
+abstract class Value extends (Map[String, Any] => Any) with Dependant {
   def identifier: Identifier
 
   def checkAvailable(symbols: SymbolTable)
@@ -43,6 +45,8 @@ case class Literal(v: Any) extends Value {
   def dependsOn: Set[String] = Set()
 
   override def toString() = if (v.isInstanceOf[String]) "\"" + v + "\"" else v.toString
+
+  def dependencies = Seq()
 }
 
 abstract case class FunctionValue(functionName: String, arguments: Value*) extends Value {
@@ -51,6 +55,8 @@ abstract case class FunctionValue(functionName: String, arguments: Value*) exten
   }
 
   def dependsOn: Set[String] = arguments.flatMap(_.dependsOn).toSet
+
+  def dependencies: Seq[Identifier] = arguments.flatMap(_.dependencies)
 }
 
 
@@ -81,6 +87,8 @@ case class PropertyValue(entity: String, property: String) extends Value {
   def dependsOn: Set[String] = Set(entity)
 
   override def toString(): String = entity + "." + property
+
+  def dependencies: Seq[Identifier] = Seq(Identifier(entity, MapType()))
 }
 
 case class RelationshipTypeValue(relationship: Value) extends FunctionValue("TYPE", relationship) {
@@ -166,6 +174,10 @@ case class Extract(iterable: Value, id: String, expression: Value) extends Value
   }
 
   def dependsOn: Set[String] = (iterable.dependsOn ++ expression.dependsOn) - id
+
+  // Extract depends on everything that the iterable and the expression depends on, except
+  // the new identifier inserted into the expression context, named with id
+  def dependencies: Seq[Identifier] = (iterable.dependencies ++ expression.dependencies).filterNot(_.name == id)
 }
 
 case class PathRelationshipsValue(path: Value) extends FunctionValue("RELATIONSHIPS", path) {
@@ -194,6 +206,8 @@ case class EntityValue(entityName: String) extends Value {
   def dependsOn: Set[String] = Set(entityName)
 
   override def toString(): String = entityName
+
+  def dependencies: Seq[Identifier] = Seq(Identifier(entityName, AnyType()))
 }
 
 case class ParameterValue(parameterName: String) extends Value {
@@ -206,4 +220,6 @@ case class ParameterValue(parameterName: String) extends Value {
   def dependsOn: Set[String] = Set(parameterName)
 
   override def toString(): String = "{" + parameterName + "}"
+
+  def dependencies: Seq[Identifier] = Seq()
 }

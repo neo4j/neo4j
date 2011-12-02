@@ -24,11 +24,15 @@ import collection.Seq
 import org.neo4j.cypher.commands.ReturnItem
 
 
-abstract class PipeWithSource(source: Pipe) extends Pipe {
+abstract class PipeWithSource(source: Pipe) extends Pipe with Dependant {
 
   dependencies.foreach(source.symbols.assertHas(_))
   returnItems.foreach(_.assertDependencies(source))
 
   def returnItems: Seq[ReturnItem]
+  def dependencies: Seq[Identifier]
+}
+
+trait Dependant {
   def dependencies: Seq[Identifier]
 }

@@ -1,3 +1,11 @@
+<NOT YET RELEASED>
+------------------
+o Added allShortestPaths
+o Added COALESCE
+o Added column aliasing with AS
+o Variable length relationships can now introduce a rel-iterable
+o BREAKING CHANGE: Changed the syntax for iterable predicated ALL/NONE/ANY/SINGLE to use WHERE instead of a colon
+
 1.6.M01 (2011-11-24)
 --------------------
 o Made zero length (a single node) paths possible

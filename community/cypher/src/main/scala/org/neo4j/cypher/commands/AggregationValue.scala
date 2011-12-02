@@ -22,6 +22,7 @@ package org.neo4j.cypher.commands
 
 import org.neo4j.cypher.pipes.aggregation._
 import org.neo4j.cypher.symbols._
+import collection.Seq
 
 abstract class AggregationValue(val functionName: String, inner: Value) extends Value {
   def apply(m: Map[String, Any]) = m(identifier.name)
@@ -33,12 +34,16 @@ abstract class AggregationValue(val functionName: String, inner: Value) extends 
   def createAggregationFunction: AggregationFunction
 
   def dependsOn: Set[String] = inner.dependsOn
+
+  def dependencies: Seq[Identifier] = inner.dependencies
 }
 
 case class Distinct(innerAggregator: AggregationValue, innerValue: Value) extends AggregationValue("distinct", innerValue) {
   override def identifier: Identifier = Identifier("%s(distinct %s)".format(innerAggregator.functionName, innerValue.identifier.name), innerAggregator.identifier.typ)
 
   def createAggregationFunction: AggregationFunction = new DistinctFunction(innerValue, innerAggregator.createAggregationFunction)
+
+  override def dependencies: Seq[Identifier] = innerAggregator.dependencies ++ innerValue.dependencies
 }
 
 case class Count(anInner: Value) extends AggregationValue("count", anInner) {
