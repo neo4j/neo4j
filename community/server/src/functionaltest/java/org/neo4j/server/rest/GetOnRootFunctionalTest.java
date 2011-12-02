@@ -61,6 +61,7 @@ public class GetOnRootFunctionalTest extends AbstractRestFunctionalTestBase
         assertNotNull( map.get( "relationship_index" ) );
         assertNotNull( map.get( "extensions_info" ) );
         assertNotNull( map.get( "batch" ) );
+        assertNotNull( map.get( "cypher" ) );
         assertEquals( Version.getKernelRevision(), map.get( "neo4j_version" ) );
 
         // Make sure advertised urls work
@@ -86,6 +87,10 @@ public class GetOnRootFunctionalTest extends AbstractRestFunctionalTestBase
         response.close();
 
         response = RestRequest.req().post( (String) map.get( "batch" ), "[]" );
+        assertEquals( 200, response.getStatus() );
+        response.close();
+
+        response = RestRequest.req().post( (String) map.get( "cypher" ), "{\"query\":\"START n=node(0) RETURN n\"}" );
         assertEquals( 200, response.getStatus() );
         response.close();
     }
