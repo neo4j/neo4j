@@ -45,7 +45,7 @@ include::{importdir}/neo4j-server-docs-jar/dev/rest-api/index.txt[]
 
 :leveloffset: 2
 
-include::{importdir}/neo4j-cypher-plugin-docs-jar/dev/rest-api/index.txt[]
+include::{importdir}/neo4j-cypher-plugin-docs-jar/dev/cypher-plugin-api/index.txt[]
 
 :leveloffset: 2
 
