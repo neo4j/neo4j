@@ -28,26 +28,12 @@
         <href>http://neo4j.org/</href>
     </bannerLeft>
     <body>
-        <links>
-          <item name="Neo4j home" href="http://neo4j.org/" />
-          <item name="documentation" href="http://docs.neo4j.org/" />
-          <item name="apidocs" href="http://api.neo4j.org/" />
-          <item name="blog" href="http://blog.neo4j.org/" />
-          <item name="components" href=".." />
-        </links>
-        <menu name="Neo4j ${project.artifactId}">
+        <menu name="${project.name}">
             <item name="Introduction" href="index.html" />
             <item name="Documentation" href="${docs.url}" />
-            <item name="JavaDocs"
-                href="apidocs/index.html" />
-            <item name="Source Repository"
-                href="${scm.url}" />
+            <item name="JavaDocs" href="apidocs/index.html" />
+            <item name="Source Repository" href="${scm.url}" />
         </menu>
         <menu ref="reports" />
     </body>
-    <skin>
-        <groupId>${skinGroupId}</groupId>
-        <artifactId>${skinArtifactId}</artifactId>
-        <version>${skinVersion}</version>
-    </skin>
 </project>
