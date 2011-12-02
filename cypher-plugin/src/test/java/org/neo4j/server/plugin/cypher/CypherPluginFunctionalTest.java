@@ -168,6 +168,11 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase {
         assertEquals( 3, ( JsonHelper.jsonToMap( response ) ).size() );
         assertTrue( response.contains( "message" ) );
     }
+    
+    @Override
+    protected String getDocumentationSectionName() {
+        return "dev/cypher-plugin-api";
+    }
 
     private String doRestCall( String script, Status status,
             Pair<String, String> ...params )
