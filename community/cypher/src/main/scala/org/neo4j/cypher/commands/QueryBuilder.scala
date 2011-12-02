@@ -21,7 +21,7 @@ package org.neo4j.cypher.commands
 
 class QueryBuilder(startItems: Seq[ StartItem ]) {
   var matching: Option[ Match ] = None
-  var where: Option[ Clause ] = None
+  var where: Option[ Predicate ] = None
   var aggregation: Option[ Aggregation ] = None
   var orderBy: Option[ Sort ] = None
   var skip: Option[ Value ] = None
@@ -31,7 +31,7 @@ class QueryBuilder(startItems: Seq[ StartItem ]) {
 
   def matches(patterns: Pattern*): QueryBuilder = store(() => matching = Some(Match(patterns: _*)))
 
-  def where(clause: Clause): QueryBuilder = store(() => where = Some(clause))
+  def where(predicate: Predicate): QueryBuilder = store(() => where = Some(predicate))
 
   def aggregation(aggregationItems: AggregationItem*): QueryBuilder =
     store(() => aggregation = Some(Aggregation(aggregationItems: _*)))

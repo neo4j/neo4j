@@ -22,7 +22,7 @@ package org.neo4j.cypher.commands
 import org.neo4j.cypher.Comparer
 
 
-abstract sealed class ComparableClause(a: Value, b: Value) extends Clause with Comparer {
+abstract sealed class ComparablePredicate(a: Value, b: Value) extends Predicate with Comparer {
   def compare(comparisonResult: Int): Boolean
 
   def isMatch(m: Map[String, Any]): Boolean = {
@@ -40,32 +40,32 @@ abstract sealed class ComparableClause(a: Value, b: Value) extends Clause with C
 
   def dependsOn: Set[String] = a.dependsOn ++ b.dependsOn
   def sign:String
-  def atoms: Seq[Clause] = Seq(this)
+  def atoms: Seq[Predicate] = Seq(this)
   override def toString() = a.toString() + " " + sign + " " + b.toString()
 
 }
 
-case class Equals(a: Value, b: Value) extends ComparableClause(a, b) {
+case class Equals(a: Value, b: Value) extends ComparablePredicate(a, b) {
   def compare(comparisonResult: Int) = comparisonResult == 0
   def sign: String = "=="
 }
 
-case class LessThan(a: Value, b: Value) extends ComparableClause(a, b) {
+case class LessThan(a: Value, b: Value) extends ComparablePredicate(a, b) {
   def compare(comparisonResult: Int) = comparisonResult < 0
   def sign: String = "<"
 }
 
-case class GreaterThan(a: Value, b: Value) extends ComparableClause(a, b) {
+case class GreaterThan(a: Value, b: Value) extends ComparablePredicate(a, b) {
   def compare(comparisonResult: Int) = comparisonResult > 0
   def sign: String = ">"
 }
 
-case class LessThanOrEqual(a: Value, b: Value) extends ComparableClause(a, b) {
+case class LessThanOrEqual(a: Value, b: Value) extends ComparablePredicate(a, b) {
   def compare(comparisonResult: Int) = comparisonResult <= 0
   def sign: String = "<="
 }
 
-case class GreaterThanOrEqual(a: Value, b: Value) extends ComparableClause(a, b) {
+case class GreaterThanOrEqual(a: Value, b: Value) extends ComparablePredicate(a, b) {
   def compare(comparisonResult: Int) = comparisonResult >= 0
   def sign: String = ">="
 }

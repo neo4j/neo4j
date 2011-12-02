@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.pipes.matching
 
-import org.neo4j.cypher.commands.Clause
+import org.neo4j.cypher.commands.Predicate
 import org.neo4j.graphdb.Node
 
-class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause], includeOptionals: Boolean, source:Map[String,Any])
+class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predicate], includeOptionals: Boolean, source:Map[String,Any])
   extends Traversable[Map[String, Any]] {
   val boundNodes = bindings.filter(_._2.patternElement.isInstanceOf[PatternNode])
   val boundRels = bindings.filter(_._2.patternElement.isInstanceOf[PatternRelationship])
@@ -49,7 +49,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause], 
 
     val newHistory = history.add(current)
     if (!isMatchSoFar(newHistory)) {
-      debug("failed subgraph because of clause")
+      debug("failed subgraph because of predicate")
       return false
     }
 
@@ -93,7 +93,7 @@ class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause], 
 
       }
       else {
-        debug("failed because of a clause")
+        debug("failed because of a predicate")
         false
       }
     }
@@ -140,8 +140,8 @@ class PatternMatcher(bindings: Map[String, MatchingPair], clauses: Seq[Clause], 
 
   private def isMatchSoFar(history: History): Boolean = {
     val m = history.toMap
-    val validClause = clauses.filter(_.dependsOn.forall(m.contains))
-    validClause.forall(_.isMatch(m))
+    val predicate = predicates.filter(_.dependsOn.forall(m.contains))
+    predicate.forall(_.isMatch(m))
   }
 
   private def traverseNextNodeOrYield[U](remaining: Set[MatchingPair], history: History, yielder: Map[String, Any] => U): Boolean = {

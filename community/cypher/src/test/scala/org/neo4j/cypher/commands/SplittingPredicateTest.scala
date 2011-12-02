@@ -19,15 +19,35 @@
  */
 package org.neo4j.cypher.commands
 
-import org.junit.Test
 import org.scalatest.Assertions
+import org.junit.Test
 
-class SeqClauseTests extends Assertions {
-  @Test def allStringsBeginWithA() {
-    val strings = Seq("Andres", "Andres")
-    val inner = Equals(Literal("Andres"), EntityValue("x"))
-    val all = new AllInSeq(EntityValue("strings"), "x", inner)
+class SplittingPredicateTest extends Assertions {
 
-    assert(all.isMatch(Map("strings" -> strings)))
+  @Test def cantDivideMore() {
+    val x = Equals(Literal("a"), Literal("a"))
+    assert(x.atoms === Seq(x))
+  }
+
+  @Test def andCanBeSplitInTwo() {
+    val x = And(True(), True())
+    assert(x.atoms === Seq(True(), True()))
+  }
+
+  @Test def or_cannot_be_split() {
+    val x = Or(True(), True())
+    assert(x.atoms === Seq(x))
+  }
+
+  @Test def more_complex_splitting() {
+    val x = And(
+      Equals(
+        Literal(1), Literal(2)),
+      Or(
+        True(), Not(True())
+      )
+    )
+
+    assert(x.atoms === Seq(Equals(Literal(1), Literal(2)), Or(True(), Not(True()))))
   }
 }

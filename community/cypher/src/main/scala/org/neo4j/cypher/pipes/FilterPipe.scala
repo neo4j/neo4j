@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.pipes
 
-import org.neo4j.cypher.commands.Clause
+import org.neo4j.cypher.commands.Predicate
 import java.lang.String
 
-class FilterPipe(source: Pipe, where: Clause) extends Pipe {
+class FilterPipe(source: Pipe, where: Predicate) extends Pipe {
   val symbols = source.symbols
 
   def foreach[U](f: (Map[String, Any]) => U) {

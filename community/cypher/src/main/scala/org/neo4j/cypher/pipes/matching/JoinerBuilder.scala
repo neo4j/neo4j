@@ -21,7 +21,7 @@ package org.neo4j.cypher.pipes.matching
 
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.symbols.RelationshipType
-import org.neo4j.cypher.commands.{True, And, Clause}
+import org.neo4j.cypher.commands.{True, And, Predicate}
 
 object JoinerBuilder {
   def canHandlePatter(patternGraph: PatternGraph): Boolean = false &&
@@ -32,7 +32,7 @@ object JoinerBuilder {
       )
 }
 
-class JoinerBuilder(patternGraph: PatternGraph, clauses: Seq[Clause]) extends MatcherBuilder {
+class JoinerBuilder(patternGraph: PatternGraph, predicates: Seq[Predicate]) extends MatcherBuilder {
   val joiner = createAndLinkJoiners(patternGraph.boundElements.map(patternGraph.patternNodes(_)))
 
   def getMatches(sourceRow: Map[String, Any]): Traversable[Map[String, Any]] = {
@@ -42,7 +42,7 @@ class JoinerBuilder(patternGraph: PatternGraph, clauses: Seq[Clause]) extends Ma
   def createAndLinkJoiners(alreadyCovered: Seq[PatternNode]): Linkable = {
     var joiner: Linkable = new Start(alreadyCovered.map(_.key))
     var done = alreadyCovered
-    val clauseHolder = new ClauseHolder(clauses)
+    val predicateHolder = new PredicateHolder(predicates)
 
     while (done.size < patternGraph.patternNodes.size) {
 
@@ -61,7 +61,7 @@ class JoinerBuilder(patternGraph: PatternGraph, clauses: Seq[Clause]) extends Ma
 
         val doneKeys = joiner.providesKeys() ++ Seq(rel.key, end)
 
-        val clause = clauseHolder.getMatchingClauses(doneKeys)
+        val clause = predicateHolder.getMatchingClauses(doneKeys)
 
         joiner = new Joiner(joiner, start, dir, end, rel.relType, rel.key, clause)
       })
@@ -78,17 +78,17 @@ class JoinerBuilder(patternGraph: PatternGraph, clauses: Seq[Clause]) extends Ma
   }
 }
 
-class ClauseHolder(var clauses: Seq[Clause]) {
+class PredicateHolder(var predicates: Seq[Predicate]) {
   def getMatchingClauses(keys: Seq[String]) = {
 
-    val (newClauses, matchingClauses) = clauses.partition(x => x.dependsOn.filterNot(keys.contains).isEmpty)
-    clauses = newClauses
+    val (predicatesLeft, matchingPredicates) = predicates.partition(x => x.dependsOn.filterNot(keys.contains).isEmpty)
+    predicates = predicatesLeft
 
-    val clause = if (matchingClauses.isEmpty)
+    val result = if (matchingPredicates.isEmpty)
       True()
     else
-      matchingClauses.reduceLeft(And(_, _))
+      matchingPredicates.reduceLeft(And(_, _))
 
-    clause
+    result
   }
 }
