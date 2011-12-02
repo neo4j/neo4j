@@ -23,10 +23,11 @@ define(
    './RelationshipView',
    './RelationshipListView',
    './NodeListView',
+   './CypherResultView',
    'ribcage/View',
    './notfound',
    'lib/backbone'], 
-  (NodeView, RelationshipView, RelationshipListView, NodeListView, View, notFoundTemplate) ->
+  (NodeView, RelationshipView, RelationshipListView, NodeListView, CypherResultView, View, notFoundTemplate) ->
   
     class SimpleView extends View
 
@@ -36,6 +37,7 @@ define(
         @relationshipView = new RelationshipView
         @relationshipListView = new RelationshipListView
         @nodeListView = new NodeListView
+        @cypherResultView = new CypherResultView
 
         @dataModel = options.dataModel
         @dataModel.bind("change:data", @render)
@@ -51,6 +53,8 @@ define(
             view = @relationshipView
           when "relationshipList"
             view = @relationshipListView
+          when "cypher"
+            view = @cypherResultView
           else
             $(@el).html(notFoundTemplate())
             return this

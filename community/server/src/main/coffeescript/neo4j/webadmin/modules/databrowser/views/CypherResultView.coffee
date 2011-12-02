@@ -18,24 +18,23 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###
 
-define ["neo4j/webadmin/utils/ItemUrlResolver","lib/backbone"], (ItemUrlResolver) ->
+define(
+  ['./cypherResult',
+   'ribcage/View',
+   'lib/backbone'], 
+  (template, View) ->
+  
+    class CypherResultView extends View
 
-  class CypherSearcher
-
-    constructor : (server) ->
-      @server = server
-      @urlResolver = new ItemUrlResolver(server)
-      @pattern = /// ^ 
-                    start # Start with "start"
-                    (.+)  # followed by anything
-                    return # Return statement is required
-                    (.+)  # followed by anything
-                    $
-                 ///i
-
-    match : (statement) =>
-      @pattern.test(statement)
+      render : =>
+        $(@el).html(template(
+          result : @dataModel.getData(),
+          id : (entity) ->
+            entity.self.substr(entity.self.lastIndexOf("/")+1)
+        ))
+        return this
       
-    exec : (statement) =>
-      @server.query(statement)
- 
+      setDataModel : (dataModel) =>
+        @dataModel = dataModel
+
+)
