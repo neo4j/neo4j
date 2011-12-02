@@ -20,6 +20,7 @@
     <short-name>neo4j-community</short-name>
     <bundle.namespace>org.neo4j</bundle.namespace>
     <license-text.header>GPL-3-header.txt</license-text.header>
+    <docs.url>http://docs.neo4j.org/chunked/${project.version}/</docs.url>
   </properties>
 
   <scm>
@@ -148,6 +149,46 @@ the relevant Commercial Agreement.
             <configuration>
               <outputDirectory>${project.build.directory}/site/apidocs</outputDirectory>
               <sourcepath>${project.build.directory}/javadoc-sources</sourcepath>
+              <header>${project.name}</header>
+              <doctitle>${project.name} API</doctitle>
+              <skip>${javadoc.skip}</skip>
+              <windowtitle>${project.name} API</windowtitle>
+               <excludePackageNames>*.impl.*:org.neo4j.ext.udc:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*</excludePackageNames>
+              <groups>
+                <group>
+                  <title>Graph database</title>
+                  <packages>org.neo4j.kernel:org.neo4j.graphdb:org.neo4j.kernel.*:org.neo4j.graphdb.*
+                  </packages>
+                </group>
+                <group>
+                  <title>Index</title>
+                  <packages>org.neo4j.index:org.neo4j.index.*</packages>
+                </group>
+                <group>
+                  <title>Graph algorithms</title>
+                  <packages>org.neo4j.graphalgo:org.neo4j.graphalgo.*</packages>
+                </group>
+                <group>
+                  <title>Management</title>
+                  <packages>org.neo4j.management:org.neo4j.management.*:org.neo4j.jmx:org.neo4j.jmx.*</packages>
+                </group>
+                <group>
+                  <title>Query language</title>
+                  <packages>org.neo4j.cypher.javacompat:org.neo4j.cypher.javacompat.*</packages>
+                </group>
+                <group>
+                  <title>Graph matching</title>
+                  <packages>org.neo4j.graphmatching:org.neo4j.graphmatching.*</packages>
+                </group>
+                <group>
+                  <title>Helpers</title>
+                  <packages>org.neo4j.helpers:org.neo4j.helpers.*</packages>
+                </group>
+                <group>
+                  <title>Tooling</title>
+                  <packages>org.neo4j.tooling:org.neo4j.tooling.*</packages>
+                </group>
+              </groups>
             </configuration>
           </execution>
         </executions>
@@ -175,6 +216,71 @@ the relevant Commercial Agreement.
         <executions>
           <execution>
             <id>attach-test-jar</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-site-plugin</artifactId>
+        <configuration>
+          <reportPlugins combine.children="append">
+            <plugin>
+              <artifactId>maven-javadoc-plugin</artifactId>
+              <configuration>
+                <detectJavaApiLink>true</detectJavaApiLink>
+                <detectLinks>true</detectLinks>
+                <quiet>true</quiet>
+                <excludePackageNames>*.impl.*</excludePackageNames>
+                <header>${project.name}</header>
+                <doctitle>${project.name} API</doctitle>
+                <skip>${javadoc.skip}</skip>
+                <windowtitle>${project.name} API</windowtitle>
+                 <excludePackageNames>*.impl.*:org.neo4j.ext.udc:org.neo4j.kernel.ha:org.neo4j.kernel.ha.*:org.neo4j.com:org.neo4j.com.*</excludePackageNames>
+                <groups>
+                  <group>
+                    <title>Graph database</title>
+                    <packages>org.neo4j.kernel:org.neo4j.graphdb:org.neo4j.kernel.*:org.neo4j.graphdb.*
+                    </packages>
+                  </group>
+                  <group>
+                    <title>Index</title>
+                    <packages>org.neo4j.index:org.neo4j.index.*</packages>
+                  </group>
+                  <group>
+                    <title>Graph algorithms</title>
+                    <packages>org.neo4j.graphalgo:org.neo4j.graphalgo.*</packages>
+                  </group>
+                  <group>
+                    <title>Management</title>
+                    <packages>org.neo4j.management:org.neo4j.management.*:org.neo4j.jmx:org.neo4j.jmx.*</packages>
+                  </group>
+                  <group>
+                    <title>Query language</title>
+                    <packages>org.neo4j.cypher.javacompat:org.neo4j.cypher.javacompat.*</packages>
+                  </group>
+                  <group>
+                    <title>Graph matching</title>
+                    <packages>org.neo4j.graphmatching:org.neo4j.graphmatching.*</packages>
+                  </group>
+                  <group>
+                    <title>Helpers</title>
+                    <packages>org.neo4j.helpers:org.neo4j.helpers.*</packages>
+                  </group>
+                  <group>
+                    <title>Tooling</title>
+                    <packages>org.neo4j.tooling:org.neo4j.tooling.*</packages>
+                  </group>
+                </groups>
+              </configuration>
+              <reports>
+                <report>javadoc</report>
+              </reports>
+            </plugin>
+          </reportPlugins>
+        </configuration>
+        <executions>
+          <execution>
+            <id>attach-descriptor</id>
             <phase>none</phase>
           </execution>
         </executions>
@@ -222,15 +328,12 @@ the relevant Commercial Agreement.
               <title>Helpers</title>
               <packages>org.neo4j.helpers:org.neo4j.helpers.*</packages>
             </group>
+            <group>
+              <title>Tooling</title>
+              <packages>org.neo4j.tooling:org.neo4j.tooling.*</packages>
+            </group>
           </groups>
         </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>clirr-maven-plugin</artifactId>
-        <reportSets>
-          <reportSet />
-        </reportSets>
       </plugin>
     </plugins>
   </reporting>

@@ -19,11 +19,7 @@
     <bundle.namespace>org.neo4j.jmx</bundle.namespace>
     <short-name>jmx</short-name>
     <license-text.header>GPL-3-header.txt</license-text.header>
-<<<<<<< HEAD
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/operations-jmx.html</docs.url>
-=======
-    <docs.url>http://docs.neo4j.org/chunked/milestone/operations-jmx.html</docs.url>
->>>>>>> 6617d1196f0b31b38728afd885aee8a2f0feb43e
   </properties>
 
   <packaging>jar</packaging>
