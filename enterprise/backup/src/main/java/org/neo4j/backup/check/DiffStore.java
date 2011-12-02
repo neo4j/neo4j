@@ -22,6 +22,7 @@ package org.neo4j.backup.check;
 import java.util.Collection;
 
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
+import org.neo4j.kernel.impl.nioneo.store.AbstractNameRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
@@ -155,17 +156,20 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
     @Override
     public void visitPropertyIndex( PropertyIndexRecord record )
     {
-        getPropertyIndexStore().forceUpdateRecord( record );
-        for ( DynamicRecord key : record.getKeyRecords() )
-            getPropertyKeyStore().forceUpdateRecord( key );
+        visitNameStore( getPropertyIndexStore(), record );
     }
 
     @Override
     public void visitRelationshipType( RelationshipTypeRecord record )
     {
-        getRelationshipTypeStore().forceUpdateRecord( record );
-        for ( DynamicRecord key : record.getTypeRecords() )
-            getTypeNameStore().forceUpdateRecord( key );
+        visitNameStore( getRelationshipTypeStore(), record );
+    }
+    
+    private <R extends AbstractNameRecord> void visitNameStore( RecordStore<R> store, R record )
+    {
+        store.forceUpdateRecord( record );
+        for ( DynamicRecord key : record.getNameRecords() )
+            getPropertyKeyStore().forceUpdateRecord( key );
     }
     
     @Override

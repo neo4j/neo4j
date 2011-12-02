@@ -727,8 +727,8 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
     private boolean checkType( RelationshipTypeRecord type )
     {
         if ( !type.inUse() ) return false; // no check for unused records
-        if ( Record.NO_NEXT_BLOCK.value( type.getTypeBlock() ) ) return false; // accept this
-        DynamicRecord record = typeNames.forceGetRecord( type.getTypeBlock() );
+        if ( Record.NO_NEXT_BLOCK.value( type.getNameId() ) ) return false; // accept this
+        DynamicRecord record = typeNames.forceGetRecord( type.getNameId() );
         if ( !record.inUse() ) return inconsistent( relTypes, type, typeNames, record, UNUSED_TYPE_NAME );
         return false;
     }
@@ -736,8 +736,8 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
     private boolean checkKey( PropertyIndexRecord key )
     {
         if ( !key.inUse() ) return false; // no check for unused records
-        if ( Record.NO_NEXT_BLOCK.value( key.getKeyBlockId() ) ) return false; // accept this
-        DynamicRecord record = propKeys.forceGetRecord( key.getKeyBlockId() );
+        if ( Record.NO_NEXT_BLOCK.value( key.getNameId() ) ) return false; // accept this
+        DynamicRecord record = propKeys.forceGetRecord( key.getNameId() );
         if ( !record.inUse() ) return inconsistent( propIndexes, key, propKeys, record, UNUSED_KEY_NAME );
         return false;
     }
