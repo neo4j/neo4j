@@ -24,7 +24,7 @@ import org.neo4j.cypher.symbols.RelationshipType
 import org.neo4j.cypher.commands.{True, And, Predicate}
 
 object JoinerBuilder {
-  def canHandlePatter(patternGraph: PatternGraph): Boolean = false &&
+  def canHandlePatter(patternGraph: PatternGraph): Boolean =
     !(patternGraph.containsOptionalElements ||
       patternGraph.containsLoops ||
       patternGraph.bindings.identifiers.exists(_.typ == RelationshipType()) ||

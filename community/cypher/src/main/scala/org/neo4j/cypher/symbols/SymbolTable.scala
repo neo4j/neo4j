@@ -70,10 +70,14 @@ class SymbolTable(val identifiers: Identifier*) {
 
   private def handleMatched(newIdentifier: Identifier, existingIdentifier: Identifier): Identifier = {
     newIdentifier match {
-      case _ => if (newIdentifier.typ.isAssignableFrom(existingIdentifier.typ)) {
-        existingIdentifier
-      } else {
-        throw new SyntaxException("Identifier " + existingIdentifier + " already defined with different type " + newIdentifier)
+      case _ => {
+        val a = existingIdentifier.typ
+        val b = newIdentifier.typ
+        if (b.isAssignableFrom(a)) {
+          existingIdentifier
+        } else {
+          throw new SyntaxException("Identifier " + existingIdentifier + " already defined with different type " + newIdentifier)
+        }
       }
     }
   }
