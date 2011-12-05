@@ -19,8 +19,13 @@
  */
 package org.neo4j.server.helpers;
 
+import static org.neo4j.server.rest.web.RestfulGraphDatabase.PATH_AUTO_NODE_INDEX;
+import static org.neo4j.server.rest.web.RestfulGraphDatabase.PATH_AUTO_RELATIONSHIP_INDEX;
+
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -99,7 +104,7 @@ public final class FunctionalTestHelper
     {
         JsonHelper.jsonToMap( entity );
     }
-
+    
     public String dataUri()
     {
         return server.baseUri().toString() + "db/data/";
@@ -272,5 +277,18 @@ public final class FunctionalTestHelper
     public long getRelationshipIdFromUri( String relationshipUri )
     {
         return getNodeIdFromUri( relationshipUri );
+    }
+    
+    public Map<String, Object> removeAnyAutoIndex( Map<String, Object> map )
+    {
+        Map<String, Object> result = new HashMap<String, Object>();
+        for ( Map.Entry<String, Object> entry : map.entrySet() )
+        {
+            Map<?, ?> innerMap = (Map<?,?>) entry.getValue();
+            String template = innerMap.get( "template" ).toString();
+            if ( !template.contains( PATH_AUTO_NODE_INDEX ) && !template.contains( PATH_AUTO_RELATIONSHIP_INDEX ) )
+                result.put( entry.getKey(), entry.getValue() );
+        }
+        return result;
     }
 }
