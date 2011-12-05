@@ -156,20 +156,20 @@ public class DiffStore extends StoreAccess implements CommandRecordVisitor
     @Override
     public void visitPropertyIndex( PropertyIndexRecord record )
     {
-        visitNameStore( getPropertyIndexStore(), record );
+        visitNameStore( getPropertyIndexStore(), getPropertyKeyStore(), record );
     }
 
     @Override
     public void visitRelationshipType( RelationshipTypeRecord record )
     {
-        visitNameStore( getRelationshipTypeStore(), record );
+        visitNameStore( getRelationshipTypeStore(), getTypeNameStore(), record );
     }
     
-    private <R extends AbstractNameRecord> void visitNameStore( RecordStore<R> store, R record )
+    private <R extends AbstractNameRecord> void visitNameStore( RecordStore<R> store, RecordStore<DynamicRecord> nameStore, R record )
     {
         store.forceUpdateRecord( record );
         for ( DynamicRecord key : record.getNameRecords() )
-            getPropertyKeyStore().forceUpdateRecord( key );
+            nameStore.forceUpdateRecord( key );
     }
     
     @Override
