@@ -46,7 +46,7 @@ import org.neo4j.graphdb.TransactionFailureException;
  * same transaction data as well as the object returned from
  * {@link #beforeCommit(TransactionData)}. This assumes that all other handlers
  * (if more were registered) also executed
- * {@link #beforeCommit(TransactionData)} successfully).
+ * {@link #beforeCommit(TransactionData)} successfully.
  * <p>
  * If {@link #beforeCommit(TransactionData)} isn't executed successfully, but
  * instead throws an exception the transaction won't be committed and a

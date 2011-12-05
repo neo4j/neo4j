@@ -150,3 +150,15 @@ source=org/neo4j/examples/GetOrCreateTest.java
 classifier=test-sources
 tag=optimisticCreation
 ----
+
+[[transactions-events]]
+== Transaction events ==
+
+Transaction event handlers can be registered to receive Neo4j Transaction events.
+Once it has been registered at a +GraphDatabaseService+ instance it will receive events about what has happened in each transaction which is about to be committed.
+Handlers won't get notified about transactions which haven't performed any write operation or won't be committed (either if +Transaction#success()+ hasn't been called or the transaction has been marked as failed +Transaction#failure()+.
+Right before a transaction is about to be committed the +beforeCommit+ method is called with the entire diff of modifications made in the transaction.
+At this point the transaction is still running so changes can still be made. However there's no guarantee that other handlers will see such changes since the order in which handlers are executed is undefined.
+This method can also throw an exception and will, in such a case, prevent the transaction from being committed (where a call to +afterRollback+ will follow).
+If +beforeCommit+ is successfully executed the transaction will be committed and the +afterCommit+ method will be called with the same transaction data as well as the object returned from +beforeCommit+.
+This assumes that all other handlers (if more were registered) also executed +beforeCommit+ successfully.
