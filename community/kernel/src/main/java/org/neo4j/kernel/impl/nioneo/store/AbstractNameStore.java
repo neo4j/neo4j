@@ -305,7 +305,7 @@ public abstract class AbstractNameStore<T extends AbstractNameRecord> extends Ab
         {
             throw new InvalidRecordException( "Record[" + id + "] not in use" );
         }
-        if ( inUseByte != Record.IN_USE.byteValue() )
+        if ( inUseByte != Record.IN_USE.byteValue() && inUseByte != Record.NOT_IN_USE.byteValue() )
         {
             throw new InvalidRecordException( "Record[" + id + "] unknown in use flag[" + inUse + "]" );
         }
