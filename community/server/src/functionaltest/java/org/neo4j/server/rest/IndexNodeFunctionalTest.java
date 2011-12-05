@@ -115,7 +115,7 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
         Map<String, Object> map = JsonHelper.jsonToMap( entity );
         assertNotNull( map.get( indexName ) );
 
-        assertEquals( 1, functionalTestHelper.removeAnyAutoIndex( map ).size() );
+        assertEquals( "Was: " + map + ", no-auto-index:" + functionalTestHelper.removeAnyAutoIndex( map ), 1, functionalTestHelper.removeAnyAutoIndex( map ).size() );
     }
 
     /**
