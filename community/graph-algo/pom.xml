@@ -92,6 +92,7 @@ the relevant Commercial Agreement.
             <phase>none</phase>
           </execution>
         </executions>
+      </plugin>
     </plugins>
   </build>
 
