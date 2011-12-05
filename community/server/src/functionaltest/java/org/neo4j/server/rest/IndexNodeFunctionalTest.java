@@ -36,6 +36,7 @@ import javax.ws.rs.core.Response.Status;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -90,6 +91,7 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
      */
     @Documented
     @Test
+    @Ignore( "Unreliable since the server is shared and if an auto-index is used before this point it will fail" )
     public void shouldGetEmptyListOfNodeIndexesWhenNoneExist() throws PropertyValueException
     {
         gen.get()
@@ -113,7 +115,7 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
         Map<String, Object> map = JsonHelper.jsonToMap( entity );
         assertNotNull( map.get( indexName ) );
 
-        assertEquals( 1, map.size() );
+        assertEquals( "Was: " + map + ", no-auto-index:" + functionalTestHelper.removeAnyAutoIndex( map ), 1, functionalTestHelper.removeAnyAutoIndex( map ).size() );
     }
 
     /**
@@ -170,13 +172,14 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
     @Test
     public void shouldCreateANamedNodeIndexWithConfiguration() throws Exception
     {
+        int expectedIndexes = helper.getNodeIndexes().length+1;
         gen.get()
                 .payload( "{\"name\":\"fulltext\", \"config\":{\"type\":\"fulltext\",\"provider\":\"lucene\"}}" )
                 .expectedStatus( 201 )
                 .expectedHeader( "Location" )
                 .post( functionalTestHelper.nodeIndexUri() );
 
-        assertEquals( 1, helper.getNodeIndexes().length );
+        assertEquals( expectedIndexes, helper.getNodeIndexes().length );
         assertThat( helper.getNodeIndexes(), FunctionalTestHelper.arrayContains( "fulltext" ) );
     }
 

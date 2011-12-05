@@ -20,6 +20,8 @@
 package org.neo4j.server.rest;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 
 import java.io.IOException;
 
@@ -27,6 +29,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.server.helpers.FunctionalTestHelper;
+import org.neo4j.server.rest.domain.JsonParseException;
 
 public class GetIndexRootFunctionalTest extends AbstractRestFunctionalTestBase
 {
@@ -64,8 +67,18 @@ public class GetIndexRootFunctionalTest extends AbstractRestFunctionalTestBase
     @Test
     public void shouldRespondWithNodeIndexes() throws Exception {
         JaxRsResponse response = RestRequest.req().get(functionalTestHelper.nodeIndexUri());
-        assertEquals(204, response.getStatus());
+        assertResponseContainsNoIndexesOtherThanAutoIndexes(response);
         response.close();
+    }
+
+    private void assertResponseContainsNoIndexesOtherThanAutoIndexes( JaxRsResponse response ) throws JsonParseException
+    {
+        switch ( response.getStatus() )
+        {
+        case 204: return; // OK no auto indices
+        case 200: assertEquals( 0, functionalTestHelper.removeAnyAutoIndex( jsonToMap( response.getEntity() ) ).size() ); break;
+        default: fail( "Invalid response code " + response.getStatus() );
+        }
     }
 
     /**
@@ -76,7 +89,7 @@ public class GetIndexRootFunctionalTest extends AbstractRestFunctionalTestBase
     @Test
     public void shouldRespondWithRelationshipIndexes() throws Exception {
         JaxRsResponse response = RestRequest.req().get(functionalTestHelper.relationshipIndexUri());
-        assertEquals(204, response.getStatus());
+        assertResponseContainsNoIndexesOtherThanAutoIndexes(response);
         response.close();
     }
 

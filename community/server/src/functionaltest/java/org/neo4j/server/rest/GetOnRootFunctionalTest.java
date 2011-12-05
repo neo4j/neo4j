@@ -50,7 +50,8 @@ public class GetOnRootFunctionalTest extends AbstractRestFunctionalTestBase
     {
         AbstractGraphDatabase db = (AbstractGraphDatabase)graphdb();
         Transaction tx = db.beginTx();
-        db.getConfig().getGraphDbModule().setReferenceNodeId( data.get().get("I").getId() );
+        long referenceNodeId = data.get().get("I").getId();
+        db.getConfig().getGraphDbModule().setReferenceNodeId( referenceNodeId );
         tx.success();
         tx.finish();
         String body = gen.get().expectedStatus( 200 ).get( getDataUri() ).entity();
@@ -90,7 +91,7 @@ public class GetOnRootFunctionalTest extends AbstractRestFunctionalTestBase
         assertEquals( 200, response.getStatus() );
         response.close();
 
-        response = RestRequest.req().post( (String) map.get( "cypher" ), "{\"query\":\"START n=node(0) RETURN n\"}" );
+        response = RestRequest.req().post( (String) map.get( "cypher" ), "{\"query\":\"START n=node(" + referenceNodeId + ") RETURN n\"}" );
         assertEquals( 200, response.getStatus() );
         response.close();
     }
