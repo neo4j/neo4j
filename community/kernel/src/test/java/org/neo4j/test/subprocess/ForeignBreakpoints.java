@@ -19,17 +19,27 @@
  */
 package org.neo4j.test.subprocess;
 
-public interface DebuggerDeadlockCallback
-{
-    DebuggerDeadlockCallback RESUME_THREAD = new DebuggerDeadlockCallback()
-    {
-        @Override
-        public void deadlock( DebuggedThread thread )
-        {
-            thread.resume();
-        }
-    };
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-    /** Will be called with the suspended thread that causes the deadlock */
-    void deadlock( DebuggedThread thread );
+import static org.neo4j.test.subprocess.BreakPoint.Event.ENTRY;
+
+@Target( ElementType.TYPE )
+@Retention( RetentionPolicy.RUNTIME )
+public @interface ForeignBreakpoints
+{
+    BreakpointDef[] value();
+
+    @interface BreakpointDef
+    {
+        String name() default "";
+
+        String type();
+
+        String method();
+        
+        BreakPoint.Event on() default ENTRY;
+    }
 }

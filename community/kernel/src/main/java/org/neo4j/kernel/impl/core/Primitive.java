@@ -550,9 +550,14 @@ abstract class Primitive
         return value;
     }
 
+    public void setProperties( ArrayMap<Integer, PropertyData> properties )
+    {
+        this.properties = toPropertyArray( properties );
+    }
+
     protected void commitPropertyMaps(
-        ArrayMap<Integer,PropertyData> cowPropertyAddMap,
-        ArrayMap<Integer,PropertyData> cowPropertyRemoveMap )
+            ArrayMap<Integer, PropertyData> cowPropertyAddMap,
+            ArrayMap<Integer, PropertyData> cowPropertyRemoveMap )
     {
         if ( properties == null )
         {
@@ -560,75 +565,80 @@ abstract class Primitive
             return;
         }
 
-        PropertyData[] newArray = properties;
-
-        /*
-         * add map will definitely be added in the properties array - all properties
-         * added and later removed in the same tx are removed from there as well.
-         * The remove map will not necessarily be removed, since it may hold a prop that was
-         * added in this tx. So the difference in size is all the keys that are common
-         * between properties and remove map subtracted by the add map size.
-         */
-        int extraLength = 0;
-        if (cowPropertyAddMap != null)
+        synchronized ( this )
         {
-            extraLength += cowPropertyAddMap.size();
-        }
+            PropertyData[] newArray = properties;
 
-        if ( extraLength > 0 )
-        {
-            newArray = new PropertyData[properties.length + extraLength];
-            System.arraycopy( properties, 0, newArray, 0, properties.length );
-        }
-
-        int newArraySize = properties.length;
-        if ( cowPropertyRemoveMap != null )
-        {
-            for ( Integer keyIndex : cowPropertyRemoveMap.keySet() )
+            /*
+             * add map will definitely be added in the properties array - all properties
+             * added and later removed in the same tx are removed from there as well.
+             * The remove map will not necessarily be removed, since it may hold a prop that was
+             * added in this tx. So the difference in size is all the keys that are common
+             * between properties and remove map subtracted by the add map size.
+             */
+            int extraLength = 0;
+            if ( cowPropertyAddMap != null )
             {
-                for ( int i = 0; i < newArraySize; i++ )
-                {
-                    PropertyData existingProperty = newArray[i];
-                    if ( existingProperty.getIndex() == keyIndex )
-                    {
-                        int swapWith = --newArraySize;
-                        newArray[i] = newArray[swapWith];
-                        newArray[swapWith] = null;
-                        break;
-                    }
-                }
+                extraLength += cowPropertyAddMap.size();
             }
-        }
 
-        if ( cowPropertyAddMap != null )
-        {
-            for ( PropertyData addedProperty : cowPropertyAddMap.values() )
+            if ( extraLength > 0 )
             {
-                for ( int i = 0; i < newArray.length; i++ )
+                newArray = new PropertyData[properties.length + extraLength];
+                System.arraycopy( properties, 0, newArray, 0, properties.length );
+            }
+
+            int newArraySize = properties.length;
+            if ( cowPropertyRemoveMap != null )
+            {
+                for ( Integer keyIndex : cowPropertyRemoveMap.keySet() )
                 {
-                    PropertyData existingProperty = newArray[i];
-                    if ( existingProperty == null || addedProperty.getIndex() == existingProperty.getIndex() )
+                    for ( int i = 0; i < newArraySize; i++ )
                     {
-                        newArray[i] = addedProperty;
-                        if ( existingProperty == null )
+                        PropertyData existingProperty = newArray[i];
+                        if ( existingProperty.getIndex() == keyIndex )
                         {
-                            newArraySize++;
+                            int swapWith = --newArraySize;
+                            newArray[i] = newArray[swapWith];
+                            newArray[swapWith] = null;
+                            break;
                         }
-                        break;
                     }
                 }
             }
-        }
 
-        if ( newArraySize < newArray.length )
-        {
-            PropertyData[] compactedNewArray = new PropertyData[newArraySize];
-            System.arraycopy( newArray, 0, compactedNewArray, 0, newArraySize );
-            properties = compactedNewArray;
-        }
-        else
-        {
-            properties = newArray;
+            if ( cowPropertyAddMap != null )
+            {
+                for ( PropertyData addedProperty : cowPropertyAddMap.values() )
+                {
+                    for ( int i = 0; i < newArray.length; i++ )
+                    {
+                        PropertyData existingProperty = newArray[i];
+                        if ( existingProperty == null
+                             || addedProperty.getIndex() == existingProperty.getIndex() )
+                        {
+                            newArray[i] = addedProperty;
+                            if ( existingProperty == null )
+                            {
+                                newArraySize++;
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if ( newArraySize < newArray.length )
+            {
+                PropertyData[] compactedNewArray = new PropertyData[newArraySize];
+                System.arraycopy( newArray, 0, compactedNewArray, 0,
+                        newArraySize );
+                properties = compactedNewArray;
+            }
+            else
+            {
+                properties = newArray;
+            }
         }
     }
 
@@ -644,15 +654,20 @@ abstract class Primitive
         return null;
     }
 
-    private boolean ensureFullProperties( NodeManager nodeManager )
+    protected PropertyData[] allProperties()
     {
-        if ( properties == null )
+        return properties;
+    }
+
+    private void ensureFullProperties( NodeManager nodeManager )
+    {
+        // double checked locking
+        if ( allProperties() == null )
+            synchronized ( this )
         {
-            this.properties = toPropertyArray( loadProperties( nodeManager,
-                    false ) );
-            return true;
+                if ( allProperties() == null )
+                    setProperties( loadProperties( nodeManager, false ) );
         }
-        return false;
     }
 
     private PropertyData[] toPropertyArray( ArrayMap<Integer, PropertyData> loadedProperties )
@@ -671,15 +686,15 @@ abstract class Primitive
         return result;
     }
 
-    private boolean ensureFullLightProperties( NodeManager nodeManager )
+    private void ensureFullLightProperties( NodeManager nodeManager )
     {
-        if ( properties == null )
+        // double checked locking
+        if ( allProperties() == null )
+            synchronized ( this )
         {
-            this.properties = toPropertyArray( loadProperties( nodeManager,
-                    true ) );
-            return true;
+                if ( allProperties() == null )
+                    setProperties( loadProperties( nodeManager, true ) );
         }
-        return false;
     }
 
     protected List<PropertyEventData> getAllCommittedProperties( NodeManager nodeManager )

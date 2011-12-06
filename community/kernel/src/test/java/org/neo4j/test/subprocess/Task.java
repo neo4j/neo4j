@@ -19,17 +19,15 @@
  */
 package org.neo4j.test.subprocess;
 
-public interface DebuggerDeadlockCallback
-{
-    DebuggerDeadlockCallback RESUME_THREAD = new DebuggerDeadlockCallback()
-    {
-        @Override
-        public void deadlock( DebuggedThread thread )
-        {
-            thread.resume();
-        }
-    };
+import java.io.Serializable;
 
-    /** Will be called with the suspended thread that causes the deadlock */
-    void deadlock( DebuggedThread thread );
+public interface Task<T> extends Serializable
+{
+    void run( T parameter );
+
+    interface Executor
+    {
+        /** submits a task for asynchronous execution */
+        void submit( Task<?> task );
+    }
 }
