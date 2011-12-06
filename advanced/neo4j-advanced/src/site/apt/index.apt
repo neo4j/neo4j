@@ -5,7 +5,7 @@ Neo4j Advanced
     dependency in your projects. Using this package, you're also sure that you use
     component versions that fit together.
     
-    The Neo4j Advanced Edition adds advanced monitoring on top of the Neo4j Community Edition.
+    The Neo4j Advanced Edition adds advanced monitoring on top of Neo4j Community Edition.
 
     To see what's included, have a look at the {{{./dependencies.html}dependencies}}.
     
