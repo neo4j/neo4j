@@ -59,7 +59,21 @@ After installation you may have to do some platform specific configuration and p
 +
 Finally, note that if you chose to create a new user account, on uninstall you will be prompted to remove it from the system.
 
-== Mac OSX Service ==
+== Mac OSX ==
+
+=== via Homebrew ===
+
+Using http://mxcl.github.com/homebrew/[Homebrew], to install the latest stabel version of Neo4j Server, do
+
+[source,shell]
+----
+brew install neo4j && neo4j start
+----
+
+To get a Neo4j instance running on http://localhost:7474 . The installation files will reside in +ls /usr/local/Cellar/neo4j/community-{NEO4J_VERSION}/libexec/+ to tweak settings
+and symlink the database directory if desired.
+
+=== as a Service ===
 
 Neo4j can be installed as a Mac launchd job:
 
