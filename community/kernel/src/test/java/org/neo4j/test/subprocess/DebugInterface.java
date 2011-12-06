@@ -61,9 +61,6 @@ public class DebugInterface
 
     public void printStackTrace( PrintStream out )
     {
-        for ( StackTraceElement trace : thread().getStackTrace() )
-        {
-            out.println( "\tat " + trace );
-        }
+        thread().printStackTrace(out);
     }
 }

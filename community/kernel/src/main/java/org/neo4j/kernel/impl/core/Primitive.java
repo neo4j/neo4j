@@ -558,24 +558,22 @@ abstract class Primitive
         return value;
     }
 
-    private boolean ensureFullProperties( NodeManager nodeManager )
+    private void ensureFullProperties( NodeManager nodeManager )
     {
-        if ( allProperties() == null )
+        // double checked locking
+        if ( allProperties() == null ) synchronized ( this )
         {
-            setProperties( loadProperties( nodeManager, false ) );
-            return true;
+            if ( allProperties() == null ) setProperties( loadProperties( nodeManager, false ) );
         }
-        return false;
     }
 
-    private boolean ensureFullLightProperties( NodeManager nodeManager )
+    private void ensureFullLightProperties( NodeManager nodeManager )
     {
-        if ( allProperties() == null )
+        // double checked locking
+        if ( allProperties() == null ) synchronized ( this )
         {
-            setProperties( loadProperties( nodeManager, true ) );
-            return true;
+            if ( allProperties() == null ) setProperties( loadProperties( nodeManager, true ) );
         }
-        return false;
     }
 
     protected List<PropertyEventData> getAllCommittedProperties( NodeManager nodeManager )

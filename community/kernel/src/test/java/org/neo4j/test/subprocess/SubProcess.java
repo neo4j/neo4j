@@ -152,7 +152,7 @@ public abstract class SubProcess<T, P> implements Serializable
         }
         Dispatcher dispatcher = callback.get( process );
         if ( dispatcher == null ) throw new IllegalStateException( "failed to start sub process" );
-        Handler handler = new Handler( t, dispatcher, process, "<" + toString() + ":" + pid + ">" );
+        Handler handler = new Handler( t, dispatcher, process, "<" + toString() + ":" + pid + ">", debugDispatch );
         if ( debugDispatch != null ) debugDispatch.handler = handler;
         return t.cast( Proxy.newProxyInstance( t.getClassLoader(), new Class[] { t }, live( handler ) ) );
     }
@@ -269,11 +269,24 @@ public abstract class SubProcess<T, P> implements Serializable
     @SuppressWarnings( "restriction" )
     static class DebugDispatch implements Runnable
     {
+        static DebugDispatch get( Object o )
+        {
+            if ( Proxy.isProxyClass( o.getClass() ) )
+            {
+                InvocationHandler handler = Proxy.getInvocationHandler( o );
+                if ( handler instanceof Handler )
+                {
+                    return ( (Handler) handler ).debugDispatch;
+                }
+            }
+            throw new IllegalArgumentException( "Not a sub process: " + o );
+        }
+        
         volatile Handler handler;
         private final com.sun.jdi.event.EventQueue queue;
         private final Map<String, List<BreakPoint>> breakpoints;
         private final Map<com.sun.jdi.ThreadReference, DebuggerDeadlockCallback> suspended = new HashMap<com.sun.jdi.ThreadReference, DebuggerDeadlockCallback>();
-        private final DebuggerDeadlockCallback defaultCallback = new DebuggerDeadlockCallback()
+        static final DebuggerDeadlockCallback defaultCallback = new DebuggerDeadlockCallback()
         {
             @Override
             public void deadlock( DebuggedThread thread )
@@ -400,6 +413,17 @@ public abstract class SubProcess<T, P> implements Serializable
         void resume( com.sun.jdi.ThreadReference thread )
         {
             suspended.remove( thread );
+        }
+
+        DebuggedThread[] suspendedThreads()
+        {
+            if ( suspended.isEmpty() ) return new DebuggedThread[0];
+            List<DebuggedThread> threads = new ArrayList<DebuggedThread>();
+            for ( com.sun.jdi.ThreadReference thread : suspended.keySet() )
+            {
+                threads.add( new DebuggedThread( this, thread ) );
+            }
+            return threads.toArray( new DebuggedThread[threads.size()] );
         }
     }
 
@@ -803,13 +827,15 @@ public abstract class SubProcess<T, P> implements Serializable
         private final Process process;
         private final Class<?> type;
         private final String repr;
+        private final DebugDispatch debugDispatch;
 
-        Handler( Class<?> type, Dispatcher dispatcher, Process process, String repr )
+        Handler( Class<?> type, Dispatcher dispatcher, Process process, String repr, DebugDispatch debugDispatch )
         {
             this.type = type;
             this.dispatcher = dispatcher;
             this.process = process;
             this.repr = repr;
+            this.debugDispatch = debugDispatch;
         }
 
         @Override
