@@ -39,10 +39,10 @@ abstract class Value extends (Map[String, Any] => Any) {
 }
 
 //TODO: This should not be a castable value
-case class Literal(v: Any) extends CastableValue {
+case class Literal(v: Any) extends Value {
   def apply(m: Map[String, Any]) = v
 
-  def identifier = Identifier(v.toString, ScalarType())
+  def identifier = Identifier(v.toString, AnyType.fromJava(v))
 
   override def toString() = if (v.isInstanceOf[String]) "\"" + v + "\"" else v.toString
 

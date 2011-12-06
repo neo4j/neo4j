@@ -60,6 +60,11 @@ class SematicErrorTest extends ExecutionEngineHelper {
       "Can't re-use pattern relationship 'r' with different start/end nodes.")
   }
 
+  @Test def shouldKnowNotToCompareStringsAndNumbers() {
+    expectedError("start a=node(0) where a.age =~ 13 return a",
+      "13.0 expected to be of type StringType but it is of type NumberType")
+  }
+
   @Test def shortestPathNeedsBothEndNodes() {
     expectedError("start n=node(0) match p=shortestPath(n-->b) return p",
       "Unknown identifier `b`.")

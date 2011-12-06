@@ -22,6 +22,17 @@ package org.neo4j.cypher.symbols
 import java.lang.String
 
 object AnyType {
+
+  def fromJava(obj:Any):AnyType = {
+    if(obj.isInstanceOf[String] || obj.isInstanceOf[Char])
+      return StringType()
+
+    if(obj.isInstanceOf[Number])
+      return NumberType()
+
+    AnyType()
+  }
+
   lazy val instance = new AnyType()
 
   def apply() = instance
