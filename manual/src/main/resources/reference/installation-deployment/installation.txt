@@ -58,13 +58,4 @@ _Where +$\{neo4j-version}+ is the intended version and the +artifactId+ is one o
 
 == Server Installation ==
 
-=== OS X ===
-
-Via http://mxcl.github.com/homebrew/[homebrew], you can simply do
-
-[source, bash]
-----
-brew update
-brew install neo4j
-neo4j start
-----
+please refer to <<server>> and <<server-installation>>.
