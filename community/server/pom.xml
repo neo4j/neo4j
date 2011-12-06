@@ -517,14 +517,14 @@
                         <goals>
                             <goal>compile</goal>
                         </goals>
-                        <phase>prepare-package</phase>
+                        <phase>compile</phase>
                     </execution>
                     <execution>
                         <id>minify-webadmin</id>
                         <goals>
                             <goal>optimize</goal>
                         </goals>
-                        <phase>prepare-package</phase>
+                        <phase>process-classes</phase>
                     </execution>
                 </executions>
                 <configuration>
