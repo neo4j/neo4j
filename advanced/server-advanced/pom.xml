@@ -35,6 +35,7 @@
     <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
 
     <neo4j.version>1.6-SNAPSHOT</neo4j.version>
+    <docs.url>http://docs.neo4j.org/chunked/${project.version}/server.html</docs.url>
   </properties>
 
   <packaging>jar</packaging>
@@ -253,7 +254,31 @@ terms of the relevant Commercial Agreement.
           </execution>
         </executions>
       </plugin>
-
+      <plugin>
+        <artifactId>maven-site-plugin</artifactId>
+        <configuration>
+          <reportPlugins combine.children="append">
+            <plugin>
+              <artifactId>maven-javadoc-plugin</artifactId>
+              <configuration>
+                <detectJavaApiLink>true</detectJavaApiLink>
+                <detectLinks>true</detectLinks>
+                <quiet>true</quiet>
+                <excludePackageNames>*.impl.*</excludePackageNames>
+              </configuration>
+              <reports>
+                <report>javadoc</report>
+              </reports>
+            </plugin>
+          </reportPlugins>
+        </configuration>
+        <executions>
+          <execution>
+            <id>attach-descriptor</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
@@ -401,22 +426,6 @@ terms of the relevant Commercial Agreement.
     <plugins>
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
-        <configuration>
-          <groups>
-            <group>
-              <title>Server</title>
-              <packages>org.neo4j.server:org.neo4j.server.*</packages>
-            </group>
-            <group>
-              <title>Server REST Interface</title>
-              <packages>org.neo4j.server.rest:org.neo4j.server.rest.*</packages>
-            </group>
-            <group>
-              <title>Server Admin Interface</title>
-              <packages>org.neo4j.server.webadmin:org.neo4j.server.webadmin.*</packages>
-            </group>
-          </groups>
-        </configuration>
       </plugin>
     </plugins>
   </reporting>
