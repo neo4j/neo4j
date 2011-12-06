@@ -21,97 +21,107 @@ package org.neo4j.cypher.commands
 
 import org.neo4j.graphdb.PropertyContainer
 import java.lang.String
+import org.neo4j.cypher.pipes.Dependant
+import collection.Seq
+import org.neo4j.cypher.symbols.{StringType, MapType, Identifier, AnyType}
 
-abstract class Predicate {
+abstract class Predicate extends Dependant {
   def ++(other: Predicate): Predicate = And(this, other)
 
-
-  def isMatch(m: Map[ String, Any ]): Boolean
-
-
-  // We need this information to place the filtering as close to the
-  // source pipes as possible. The earlier we can filter stuff out,
-  // the faster we can be
-  def dependsOn: Set[ String ]
-
+  def isMatch(m: Map[String, Any]): Boolean
 
   // This is the un-dividable list of predicates. They can all be ANDed
   // together
-  def atoms: Seq[ Predicate ]
+  def atoms: Seq[Predicate]
+
+  def containsIsNull:Boolean
 }
 
 case class And(a: Predicate, b: Predicate) extends Predicate {
-  def isMatch(m: Map[ String, Any ]): Boolean = a.isMatch(m) && b.isMatch(m)
+  def isMatch(m: Map[String, Any]): Boolean = a.isMatch(m) && b.isMatch(m)
 
-  def atoms: Seq[ Predicate ] = a.atoms ++ b.atoms
+  def atoms: Seq[Predicate] = a.atoms ++ b.atoms
 
-  def dependsOn: Set[ String ] = a.dependsOn ++ b.dependsOn
+  def dependencies: Seq[Identifier] = a.dependencies ++ b.dependencies
 
   override def toString: String = "(" + a + " AND " + b + ")"
+
+  def containsIsNull: Boolean = a.containsIsNull || b.containsIsNull
 }
 
 case class Or(a: Predicate, b: Predicate) extends Predicate {
-  def isMatch(m: Map[ String, Any ]): Boolean = a.isMatch(m) || b.isMatch(m)
+  def isMatch(m: Map[String, Any]): Boolean = a.isMatch(m) || b.isMatch(m)
 
-  def atoms: Seq[ Predicate ] = Seq(this)
+  def atoms: Seq[Predicate] = Seq(this)
 
-  def dependsOn: Set[ String ] = a.dependsOn ++ b.dependsOn
+  def dependencies: Seq[Identifier] = a.dependencies ++ b.dependencies
+
   override def toString: String = "(" + a + " OR " + b + ")"
+  def containsIsNull: Boolean = a.containsIsNull || b.containsIsNull
 }
 
 case class Not(a: Predicate) extends Predicate {
-  def isMatch(m: Map[ String, Any ]): Boolean = !a.isMatch(m)
+  def isMatch(m: Map[String, Any]): Boolean = !a.isMatch(m)
 
-  def atoms: Seq[ Predicate ] = a.atoms.map(Not(_))
+  def atoms: Seq[Predicate] = a.atoms.map(Not(_))
 
-  def dependsOn: Set[ String ] = a.dependsOn
+  def dependencies: Seq[Identifier] = a.dependencies
+
   override def toString: String = "NOT(" + a + ")"
+
+  def containsIsNull: Boolean = a.containsIsNull
 }
 
 case class IsNull(value: Value) extends Predicate {
-  def isMatch(m: Map[ String, Any ]): Boolean = value(m) == null
+  def isMatch(m: Map[String, Any]): Boolean = value(m) == null
 
-  def dependsOn: Set[ String ] = value match {
-    case x: EntityValue => Set("I depened on something that should never exist as an identifier!")
-    case x              => x.dependsOn
-  }
+  def dependencies: Seq[Identifier] = value.dependencies(AnyType())
 
-  def atoms: Seq[ Predicate ] = Seq(this)
+  def atoms: Seq[Predicate] = Seq(this)
+
   override def toString: String = value + " IS NULL"
+
+  def containsIsNull: Boolean = true
 }
 
 case class True() extends Predicate {
-  def isMatch(m: Map[ String, Any ]): Boolean = true
+  def isMatch(m: Map[String, Any]): Boolean = true
 
-  def dependsOn: Set[ String ] = Set()
+  def dependencies: Seq[Identifier] = Seq()
 
-  def atoms: Seq[ Predicate ] = Seq(this)
+  def atoms: Seq[Predicate] = Seq(this)
+
   override def toString: String = "true"
+
+  def containsIsNull: Boolean = false
 }
 
 case class Has(property: PropertyValue) extends Predicate {
-  def isMatch(m: Map[ String, Any ]): Boolean = property match {
+  def isMatch(m: Map[String, Any]): Boolean = property match {
     case PropertyValue(identifier, propertyName) => {
-      val propContainer = m(identifier).asInstanceOf[ PropertyContainer ]
+      val propContainer = m(identifier).asInstanceOf[PropertyContainer]
       propContainer.hasProperty(propertyName)
     }
   }
 
-  def dependsOn: Set[ String ] = Set(property.entity)
+  def dependencies: Seq[Identifier] = property.dependencies(MapType())
 
-  def atoms: Seq[ Predicate ] = Seq(this)
+  def atoms: Seq[Predicate] = Seq(this)
+
   override def toString: String = "hasProp(" + property + ")"
+  def containsIsNull: Boolean = false
 }
 
 case class RegularExpression(a: Value, regex: Value) extends Predicate {
-  def isMatch(m: Map[ String, Any ]): Boolean = {
-    val value = a.apply(m).asInstanceOf[ String ]
+  def isMatch(m: Map[String, Any]): Boolean = {
+    val value = a.apply(m).asInstanceOf[String]
     regex(m).toString.r.pattern.matcher(value).matches()
   }
 
-  def dependsOn: Set[ String ] = a.dependsOn ++ regex.dependsOn
+  def dependencies: Seq[Identifier] = a.dependencies(StringType()) ++ regex.dependencies(StringType())
 
-  def atoms: Seq[ Predicate ] = Seq(this)
+  def atoms: Seq[Predicate] = Seq(this)
 
   override def toString: String = a.toString() + " ~= /" + regex.toString() + "/"
+  def containsIsNull: Boolean = false
 }

@@ -788,7 +788,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
         NamedPath("p",
           RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING, false),
           RelatedTo("b", "c", "  UNNAMED2", None, Direction.OUTGOING, false))).
-        where(AllInSeq(PathNodesValue(EntityValue("p")), "n", Equals(PropertyValue("n", "name"), Literal("Andres"))))
+        where(AllInIterable(PathNodesValue(EntityValue("p")), "n", Equals(PropertyValue("n", "name"), Literal("Andres"))))
         returns (ValueReturnItem(EntityValue("b"))))
   }
 
@@ -810,7 +810,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       """start a = node(1) where ANY(x in NODES(p) where x.name = "Andres") return b""",
       Query.
         start(NodeById("a", 1)).
-        where(AnyInSeq(PathNodesValue(EntityValue("p")), "x", Equals(PropertyValue("x", "name"), Literal("Andres"))))
+        where(AnyInIterable(PathNodesValue(EntityValue("p")), "x", Equals(PropertyValue("x", "name"), Literal("Andres"))))
         returns (ValueReturnItem(EntityValue("b"))))
   }
 
@@ -819,7 +819,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       """start a = node(1) where none(x in nodes(p) where x.name = "Andres") return b""",
       Query.
         start(NodeById("a", 1)).
-        where(NoneInSeq(PathNodesValue(EntityValue("p")), "x", Equals(PropertyValue("x", "name"), Literal("Andres"))))
+        where(NoneInIterable(PathNodesValue(EntityValue("p")), "x", Equals(PropertyValue("x", "name"), Literal("Andres"))))
         returns (ValueReturnItem(EntityValue("b"))))
   }
 
@@ -828,7 +828,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       """start a = node(1) where single(x in NODES(p) WHERE x.name = "Andres") return b""",
       Query.
         start(NodeById("a", 1)).
-        where(SingleInSeq(PathNodesValue(EntityValue("p")), "x", Equals(PropertyValue("x", "name"),
+        where(SingleInIterable(PathNodesValue(EntityValue("p")), "x", Equals(PropertyValue("x", "name"),
         Literal("Andres"))))
         returns (ValueReturnItem(EntityValue("b"))))
   }

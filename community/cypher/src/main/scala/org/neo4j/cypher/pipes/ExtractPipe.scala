@@ -28,17 +28,13 @@ import org.neo4j.cypher.symbols.{SymbolTable, Identifier}
 //This class will extract properties and other stuff to make the maps
 //easy to work with for other pipes
 class ExtractPipe(source: Pipe, val returnItems: Seq[ReturnItem]) extends PipeWithSource(source) {
-
-
-  def dependencies = Seq()
+  def dependencies = returnItems.flatMap(_.dependencies)
 
   type MapTransformer = Map[String, Any] => Map[String, Any]
 
   def getSymbolType(item: ReturnItem): Identifier = item.identifier
 
   val symbols: SymbolTable = source.symbols.add(returnItems.map(_.identifier):_*)
-
-  returnItems.foreach(_.assertDependencies(source))
 
   def foreach[U](f: (Map[String, Any]) => U) {
     source.foreach(row => {

@@ -43,10 +43,10 @@ trait Predicates extends JavaTokenParsers with Tokens with Values {
     case symbol ~ in ~ iterable ~ where ~ klas => (iterable, symbol, klas)
   }
 
-  def allInSeq: Parser[Predicate] = ignoreCase("all") ~> parens(symbolIterablePredicate) ^^ ( x=> AllInSeq(x._1, x._2, x._3))
-  def anyInSeq: Parser[Predicate] = ignoreCase("any") ~> parens(symbolIterablePredicate) ^^ ( x=> AnyInSeq(x._1, x._2, x._3))
-  def noneInSeq: Parser[Predicate] = ignoreCase("none") ~> parens(symbolIterablePredicate) ^^ ( x=> NoneInSeq(x._1, x._2, x._3))
-  def singleInSeq: Parser[Predicate] = ignoreCase("single") ~> parens(symbolIterablePredicate) ^^ ( x=> SingleInSeq(x._1, x._2, x._3))
+  def allInSeq: Parser[Predicate] = ignoreCase("all") ~> parens(symbolIterablePredicate) ^^ ( x=> AllInIterable(x._1, x._2, x._3))
+  def anyInSeq: Parser[Predicate] = ignoreCase("any") ~> parens(symbolIterablePredicate) ^^ ( x=> AnyInIterable(x._1, x._2, x._3))
+  def noneInSeq: Parser[Predicate] = ignoreCase("none") ~> parens(symbolIterablePredicate) ^^ ( x=> NoneInIterable(x._1, x._2, x._3))
+  def singleInSeq: Parser[Predicate] = ignoreCase("single") ~> parens(symbolIterablePredicate) ^^ ( x=> SingleInIterable(x._1, x._2, x._3))
 
   def equals: Parser[Predicate] = value ~ "=" ~ value ^^ {
     case l ~ "=" ~ r => Equals(l, r)

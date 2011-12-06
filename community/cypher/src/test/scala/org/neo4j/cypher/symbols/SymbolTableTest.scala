@@ -19,45 +19,56 @@ package org.neo4j.cypher.symbols
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 import org.scalatest.junit.JUnitSuite
 import org.junit.Test
 import org.neo4j.cypher.SyntaxException
 
 class SymbolTableTest extends JUnitSuite {
-  @Test def givenSymbolTableWithIdentifierWhenAskForExistingThenReturnIdentifier()  {
+  @Test def givenSymbolTableWithIdentifierWhenAskForExistingThenReturnIdentifier() {
     val symbols = new SymbolTable(Identifier("x", AnyType()))
-    symbols.assertHas( Identifier("x", AnyType()) )
+    symbols.assertHas(Identifier("x", AnyType()))
   }
 
-  @Test(expected = classOf[SyntaxException]) def givenEmptySymbolTableWhenAskForNonExistingThenThrows()  {
+  @Test(expected = classOf[SyntaxException]) def givenEmptySymbolTableWhenAskForNonExistingThenThrows() {
     val symbols = new SymbolTable()
-    symbols.assertHas( Identifier("x", AnyType()) )
+    symbols.assertHas(Identifier("x", AnyType()))
   }
 
-  @Test(expected = classOf[SyntaxException]) def givenSymbolTableWithStringIdentifierWhenAskForIterableThenThrows()  {
+  @Test(expected = classOf[SyntaxException]) def givenSymbolTableWithStringIdentifierWhenAskForIterableThenThrows() {
     val symbols = new SymbolTable(Identifier("x", StringType()))
-    symbols.assertHas( Identifier("x", NumberType()) )
+    symbols.assertHas(Identifier("x", NumberType()))
   }
 
-  @Test def givenSymbolTableWithIntegerIdentifierWhenAskForNumberThenReturn()  {
+  @Test def givenSymbolTableWithIntegerIdentifierWhenAskForNumberThenReturn() {
     val symbols = new SymbolTable(Identifier("x", IntegerType()))
-    symbols.assertHas( Identifier("x", NumberType()) )
+    symbols.assertHas(Identifier("x", NumberType()))
   }
 
-  @Test def givenSymbolTableWithIterableOfStringWhenAskForIterableOfAnyThenReturn()  {
+  @Test def givenSymbolTableWithIterableOfStringWhenAskForIterableOfAnyThenReturn() {
     val symbols = new SymbolTable(Identifier("x", new IterableType(StringType())))
-    symbols.assertHas( Identifier("x", new IterableType(AnyType())) )
+    symbols.assertHas(Identifier("x", new IterableType(AnyType())))
   }
 
-  @Test def givenSymbolTableWithStringIdentifierWhenMergedWithNumberIdentifierThenContainsBoth()  {
+  @Test def givenSymbolTableWithStringIdentifierWhenMergedWithNumberIdentifierThenContainsBoth() {
     val symbols = new SymbolTable(Identifier("x", StringType()))
     val newSymbol = symbols.add(Identifier("y", NumberType()))
 
-    newSymbol.assertHas( Identifier("x", StringType()) )
-    newSymbol.assertHas( Identifier("y", NumberType()) )
+    newSymbol.assertHas(Identifier("x", StringType()))
+    newSymbol.assertHas(Identifier("y", NumberType()))
   }
 
-  @Test(expected = classOf[SyntaxException]) def shouldNotBeAbleToCreateASymbolTableWithClashingNames()  {
+  @Test(expected = classOf[SyntaxException]) def shouldNotBeAbleToCreateASymbolTableWithClashingNames() {
     new SymbolTable(Identifier("x", StringType()), Identifier("x", RelationshipType()))
   }
+
+
+  @Test def filteringThroughShouldWork() {
+    assert(getPercolatedIdentifier(NodeType(), AnyType()) === NodeType())
+    assert(getPercolatedIdentifier(AnyIterableType(), AnyType()) === AnyIterableType())
+    assert(getPercolatedIdentifier(NodeType(), NodeType()) === NodeType())
+  }
+
+  private def getPercolatedIdentifier(scopeType: AnyType, symbolType: AnyType): AnyType = new SymbolTable(Identifier("x", scopeType)).actualIdentifier(Identifier("x", symbolType)).typ
+
 }

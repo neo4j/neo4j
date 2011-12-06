@@ -26,9 +26,15 @@ class FilterPipe(source: Pipe, where: Predicate) extends Pipe {
   val symbols = source.symbols
 
   def foreach[U](f: (Map[String, Any]) => U) {
-    source.filter((row) => {
-      where.isMatch(row)
-    }).foreach(f)
+
+    val input = source.toList
+
+    val result = input.filter((row) => {
+      val b = where.isMatch(row)
+      b
+    }).toList
+
+    result.foreach(f)
   }
 
   override def executionPlan(): String = source.executionPlan() + "\r\n" + "Filter(" + where.toString + ")"

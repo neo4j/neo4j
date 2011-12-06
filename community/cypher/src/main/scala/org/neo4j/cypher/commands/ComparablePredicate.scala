@@ -20,8 +20,12 @@
 package org.neo4j.cypher.commands
 
 import org.neo4j.cypher.Comparer
+import collection.Seq
+import org.neo4j.cypher.symbols.{ScalarType, Identifier}
 
-
+// TODO: Allow comparison of nodes and rels
+// This should be split into two - one for relative comparisons < > and so on, and one for equality comparisons = !=
+// You should be able to compare two node-identifiers for equality, but not for gt lt
 abstract sealed class ComparablePredicate(a: Value, b: Value) extends Predicate with Comparer {
   def compare(comparisonResult: Int): Boolean
 
@@ -38,11 +42,12 @@ abstract sealed class ComparablePredicate(a: Value, b: Value) extends Predicate 
     compare(comparisonResult)
   }
 
-  def dependsOn: Set[String] = a.dependsOn ++ b.dependsOn
+  def dependencies: Seq[Identifier] = a.dependencies(ScalarType()) ++ b.dependencies(ScalarType())
+
   def sign:String
   def atoms: Seq[Predicate] = Seq(this)
-  override def toString() = a.toString() + " " + sign + " " + b.toString()
-
+  override def toString = a.toString() + " " + sign + " " + b.toString()
+  def containsIsNull: Boolean = false
 }
 
 case class Equals(a: Value, b: Value) extends ComparablePredicate(a, b) {

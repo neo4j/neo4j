@@ -39,6 +39,8 @@ class SymbolTable(val identifiers: Identifier*) {
     }
   }
 
+  def assertThat(id:Identifier):AnyType = actualIdentifier(id).typ
+
   def keys = identifiers.map(_.name)
 
   def throwMissingKey(key: String) {
@@ -66,6 +68,11 @@ class SymbolTable(val identifiers: Identifier*) {
     val a = identifiers ++ matchedIdentifiers
     val b = a.toSet
     new SymbolTable(b.toSeq: _*)
+  }
+
+  def actualIdentifier(newIdentifier:Identifier):Identifier = get(newIdentifier.name) match {
+    case None => newIdentifier
+    case Some(existing) => handleMatched(newIdentifier, existing)
   }
 
   private def handleMatched(newIdentifier: Identifier, existingIdentifier: Identifier): Identifier = {

@@ -1,5 +1,8 @@
 package org.neo4j.cypher.commands
 
+import collection.Seq
+import org.neo4j.cypher.symbols.{AnyIterableType, Identifier}
+
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -19,34 +22,36 @@ package org.neo4j.cypher.commands
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-abstract class InSeq(seqValue: Value, symbolName: String, inner: Predicate) extends Predicate {
+abstract class InIterable(iterable: Value, symbolName: String, inner: Predicate) extends Predicate {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean
 
   def isMatch(m: Map[String, Any]): Boolean = {
-    val seq = seqValue(m).asInstanceOf[Seq[_]]
+    val seq = iterable(m).asInstanceOf[Seq[_]]
     seqMethod(seq)(item => {
       val innerMap = m ++ Map(symbolName -> item)
       inner.isMatch(innerMap)
     })
   }
 
-  def dependsOn: Set[String] = (seqValue.dependsOn ++ inner.dependsOn).filterNot( _ == symbolName )
+  def dependencies: Seq[Identifier] = iterable.dependencies(AnyIterableType()) ++ inner.dependencies.filterNot(_.name == symbolName)
 
   def atoms: Seq[Predicate] = Seq(this)
+
+  def containsIsNull: Boolean = false
 }
 
-case class AllInSeq(seqValue: Value, symbolName: String, inner: Predicate) extends InSeq(seqValue, symbolName, inner) {
+case class AllInIterable(seqValue: Value, symbolName: String, inner: Predicate) extends InIterable(seqValue, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = f.forall _
 }
 
-case class AnyInSeq(seqValue: Value, symbolName: String, inner: Predicate) extends InSeq(seqValue, symbolName, inner) {
+case class AnyInIterable(seqValue: Value, symbolName: String, inner: Predicate) extends InIterable(seqValue, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = f.exists _
 }
 
-case class NoneInSeq(seqValue: Value, symbolName: String, inner: Predicate) extends InSeq(seqValue, symbolName, inner) {
+case class NoneInIterable(seqValue: Value, symbolName: String, inner: Predicate) extends InIterable(seqValue, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = x => !f.exists(x)
 }
 
-case class SingleInSeq(seqValue: Value, symbolName: String, inner: Predicate) extends InSeq(seqValue, symbolName, inner) {
+case class SingleInIterable(seqValue: Value, symbolName: String, inner: Predicate) extends InIterable(seqValue, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = x => f.filter(x).length == 1
 }

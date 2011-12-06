@@ -203,11 +203,12 @@ class ExecutionEngine(graph: GraphDatabaseService) {
       context
     }
     else {
-      val keys = context.pipe.symbols.identifiers.map(_.name)
       val matchingPredicates = context.predicates.filter(x => {
-        val unsatisfiedDependencies = x.dependsOn.filterNot(keys contains)
+
+        val unsatisfiedDependencies = x.dependencies.filterNot(context.pipe.symbols contains)
         unsatisfiedDependencies.isEmpty
       })
+
       if (matchingPredicates.isEmpty) {
         context
       }
@@ -225,7 +226,7 @@ class ExecutionEngine(graph: GraphDatabaseService) {
       case None =>
       case Some(s) => {
 
-        val sortItems = s.sortItems.map(_.returnItem.concreteReturnItem).filterNot(allReturnItems.contains)
+        val sortItems = s.sortItems.map(_.returnItem.concreteReturnItem).filterNot(allReturnItems contains)
         if (sortItems.nonEmpty) {
           context.pipe = new ExtractPipe(context.pipe, sortItems)
         }
