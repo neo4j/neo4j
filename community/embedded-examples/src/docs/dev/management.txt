@@ -2,8 +2,6 @@
 Reading a management attribute
 ==============================
 
-Reading a management attribute
-
 The http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/EmbeddedGraphDatabase.html[EmbeddedGraphDatabase]
 class includes a 
 http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/EmbeddedGraphDatabase.html#getManagementBean%28java.lang.Class%29[convenience method]
