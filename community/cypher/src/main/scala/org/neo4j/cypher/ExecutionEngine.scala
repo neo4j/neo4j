@@ -59,7 +59,7 @@ class ExecutionEngine(graph: GraphDatabaseService) {
 
   @throws(classOf[SyntaxException])
   def execute(query: Query, params: Map[String, Any]): ExecutionResult = query match {
-    case Query(returns, start, matching, where, aggregation, sort, slice, namedPaths) => {
+    case Query(returns, start, matching, where, aggregation, sort, slice, namedPaths, queryText) => {
 
       val predicates = where match {
         case None => Seq()
