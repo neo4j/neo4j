@@ -24,7 +24,7 @@ import org.neo4j.cypher.symbols.RelationshipType
 import org.neo4j.cypher.commands.{True, And, Predicate}
 
 object JoinerBuilder {
-  def canHandlePatter(patternGraph: PatternGraph): Boolean = false &&
+  def canHandlePatter(patternGraph: PatternGraph): Boolean =
     !(patternGraph.containsOptionalElements ||
       patternGraph.containsLoops ||
       patternGraph.bindings.identifiers.exists(_.typ == RelationshipType()) ||
@@ -62,7 +62,6 @@ class JoinerBuilder(patternGraph: PatternGraph, predicates: Seq[Predicate]) exte
         val doneKeys = joiner.providesKeys() ++ Seq(rel.key, end)
 
         val clause = predicateHolder.getMatchingClauses(doneKeys)
-
         joiner = new Joiner(joiner, start, dir, end, rel.relType, rel.key, clause)
       })
 
@@ -81,7 +80,9 @@ class JoinerBuilder(patternGraph: PatternGraph, predicates: Seq[Predicate]) exte
 class PredicateHolder(var predicates: Seq[Predicate]) {
   def getMatchingClauses(keys: Seq[String]) = {
 
-    val (predicatesLeft, matchingPredicates) = predicates.partition(x => x.dependencies.map(_.name).filterNot(keys.contains).isEmpty)
+    val (matchingPredicates, predicatesLeft) = predicates.partition(x => {
+      !x.containsIsNull && x.dependencies.map(_.name).filterNot(keys.contains).isEmpty
+    })
     predicates = predicatesLeft
 
     val result = if (matchingPredicates.isEmpty)

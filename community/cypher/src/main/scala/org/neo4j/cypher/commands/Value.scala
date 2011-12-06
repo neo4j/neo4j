@@ -116,7 +116,10 @@ case class ArrayLengthValue(inner: Value) extends Value {
 
   def identifier = Identifier("LENGTH(" + inner.identifier.name + ")", IntegerType())
 
-  def declareDependencies(extectedType: AnyType): Seq[Identifier] = inner.dependencies(AnyIterableType())
+  def declareDependencies(extectedType: AnyType): Seq[Identifier] = {
+    val seq = inner.dependencies(AnyIterableType()).toList
+    seq
+  }
 }
 
 case class IdValue(inner: Value) extends Value {

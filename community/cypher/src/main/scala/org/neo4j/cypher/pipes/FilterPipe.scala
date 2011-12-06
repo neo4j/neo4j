@@ -22,20 +22,15 @@ package org.neo4j.cypher.pipes
 import org.neo4j.cypher.commands.Predicate
 import java.lang.String
 
-class FilterPipe(source: Pipe, where: Predicate) extends Pipe {
+class FilterPipe(source: Pipe, predicate: Predicate) extends Pipe {
   val symbols = source.symbols
 
   def foreach[U](f: (Map[String, Any]) => U) {
 
-    val input = source.toList
-
-    val result = input.filter((row) => {
-      val b = where.isMatch(row)
-      b
-    }).toList
+    val result = source.filter(predicate isMatch)
 
     result.foreach(f)
   }
 
-  override def executionPlan(): String = source.executionPlan() + "\r\n" + "Filter(" + where.toString + ")"
+  override def executionPlan(): String = source.executionPlan() + "\r\n" + "Filter(" + predicate.toString + ")"
 }
