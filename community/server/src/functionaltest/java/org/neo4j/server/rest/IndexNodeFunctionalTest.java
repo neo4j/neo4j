@@ -86,20 +86,6 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * List node indexes (empty result). This is an example covering the case
-     * where no node index exists.
-     */
-    @Documented
-    @Test
-    @Ignore( "Unreliable since the server is shared and if an auto-index is used before this point it will fail" )
-    public void shouldGetEmptyListOfNodeIndexesWhenNoneExist() throws PropertyValueException
-    {
-        gen.get()
-                .expectedStatus( 204 )
-                .get( functionalTestHelper.nodeIndexUri() );
-    }
-
-    /**
      * List node indexes.
      */
     @Documented
