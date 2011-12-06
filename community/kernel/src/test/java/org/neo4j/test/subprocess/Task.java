@@ -17,17 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes
+package org.neo4j.test.subprocess;
 
-import org.neo4j.cypher.symbols.Identifier
-import collection.Seq
+import java.io.Serializable;
 
+public interface Task<T> extends Serializable
+{
+    void run( T parameter );
 
-abstract class PipeWithSource(source: Pipe) extends Pipe with Dependant {
-  dependencies.foreach(source.symbols.assertHas(_))
-  def dependencies: Seq[Identifier]
-}
-
-trait Dependant {
-  def dependencies: Seq[Identifier]
+    interface Executor
+    {
+        /** submits a task for asynchronous execution */
+        void submit( Task<?> task );
+    }
 }

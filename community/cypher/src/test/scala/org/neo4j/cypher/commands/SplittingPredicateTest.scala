@@ -17,17 +17,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes
+package org.neo4j.cypher.commands
 
-import org.neo4j.cypher.symbols.Identifier
-import collection.Seq
+import org.scalatest.Assertions
+import org.junit.Test
 
+class SplittingPredicateTest extends Assertions {
 
-abstract class PipeWithSource(source: Pipe) extends Pipe with Dependant {
-  dependencies.foreach(source.symbols.assertHas(_))
-  def dependencies: Seq[Identifier]
-}
+  @Test def cantDivideMore() {
+    val x = Equals(Literal("a"), Literal("a"))
+    assert(x.atoms === Seq(x))
+  }
 
-trait Dependant {
-  def dependencies: Seq[Identifier]
+  @Test def andCanBeSplitInTwo() {
+    val x = And(True(), True())
+    assert(x.atoms === Seq(True(), True()))
+  }
+
+  @Test def or_cannot_be_split() {
+    val x = Or(True(), True())
+    assert(x.atoms === Seq(x))
+  }
+
+  @Test def more_complex_splitting() {
+    val x = And(
+      Equals(
+        Literal(1), Literal(2)),
+      Or(
+        True(), Not(True())
+      )
+    )
+
+    assert(x.atoms === Seq(Equals(Literal(1), Literal(2)), Or(True(), Not(True()))))
+  }
 }

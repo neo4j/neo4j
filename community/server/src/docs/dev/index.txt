@@ -14,4 +14,4 @@ include::server-embedded.txt[]
 
 include::server-performance.txt[]
 
-
+include::server-cloud.txt[]

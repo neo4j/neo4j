@@ -31,7 +31,7 @@ import org.neo4j.cypher.symbols.{RelationshipType, NodeType, SymbolTable}
  * The deciding factor is whether or not the pattern has loops in it. If it does, we have to use the much more
  * expensive pattern matching. If it doesn't, we get away with much simpler methods
  */
-class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, clauses: Seq[Clause] = Seq()) {
+class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, predicates: Seq[Predicate] = Seq()) {
   val patternGraph = buildPatternGraph()
   val containsHardPatterns = patterns.find(!_.isInstanceOf[RelatedTo]).nonEmpty
   val builder: MatcherBuilder = decideWhichMatcherToUse()
@@ -42,9 +42,9 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, cla
 
   private def decideWhichMatcherToUse() = {
     if (JoinerBuilder.canHandlePatter(patternGraph)) {
-      new JoinerBuilder(patternGraph, clauses)
+      new JoinerBuilder(patternGraph, predicates)
     } else {
-      new PatterMatchingBuilder(patternGraph, clauses)
+      new PatterMatchingBuilder(patternGraph, predicates)
     }
   }
 

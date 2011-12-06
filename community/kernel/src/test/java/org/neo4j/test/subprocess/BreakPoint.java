@@ -26,8 +26,20 @@ import java.util.concurrent.CountDownLatch;
 
 public abstract class BreakPoint implements DebuggerDeadlockCallback
 {
+    public enum Event
+    {
+        ENTRY,
+        EXIT
+    }
+    
     public BreakPoint( Class<?> type, String method, Class<?>... args )
     {
+        this(Event.ENTRY,type,method,args);
+    }
+
+    public BreakPoint( Event event, Class<?> type, String method, Class<?>... args )
+    {
+        this.event = event;
         this.type = type.getName();
         this.method = method;
         this.args = new String[args.length];
@@ -36,15 +48,29 @@ public abstract class BreakPoint implements DebuggerDeadlockCallback
             this.args[i] = args[i].getName();
         }
     }
+    
+    @Override
+    public String toString()
+    {
+        StringBuilder result = new StringBuilder( "BreakPoint[" );
+        result.append( type ).append( '#' ).append( method ).append( '(' );
+        for ( int i = 0; i < args.length; i++ )
+        {
+            if ( i > 0 ) result.append( ',' );
+            result.append( args[i] );
+        }
+        return result.append( ")]" ).toString();
+    }
 
     protected abstract void callback( DebugInterface debug ) throws KillSubProcess;
 
     @Override
     public void deadlock( DebuggedThread thread )
     {
-        throw new SubProcess.DeadlockDetectedError();
+        SubProcess.DebugDispatch.defaultCallback.deadlock( thread );
     }
 
+    final Event event;
     final String type;
     private final String method;
     private final String[] args;
@@ -83,7 +109,16 @@ public abstract class BreakPoint implements DebuggerDeadlockCallback
         {
             if ( matches( method.name(), method.argumentTypeNames() ) )
             {
-                setRequest( erm.createBreakpointRequest( method.location() ) );
+                switch (event)
+                {
+                case ENTRY:
+                    setRequest( erm.createBreakpointRequest( method.location() ) );
+                    return;
+                case EXIT:
+                    com.sun.jdi.request.MethodExitRequest request = erm.createMethodExitRequest();
+                    request.addClassFilter( type );
+                    setRequest( request );
+                }
                 return;
             }
         }

@@ -23,7 +23,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
 /**
- * A {@link Primitive} which uses a {@link PropertyData[]} for caching properties.
+ * A {@link Primitive} which uses a {@link PropertyData}[] for caching properties.
  * It's optimized for a small number of properties and takes less memory than, say
  * a Map based.
  * @author Mattias Persson
@@ -95,75 +95,78 @@ abstract class ArrayBasedPrimitive extends Primitive
             return;
         }
 
-        PropertyData[] newArray = properties;
-
-        /*
-         * add map will definitely be added in the properties array - all properties
-         * added and later removed in the same tx are removed from there as well.
-         * The remove map will not necessarily be removed, since it may hold a prop that was
-         * added in this tx. So the difference in size is all the keys that are common
-         * between properties and remove map subtracted by the add map size.
-         */
-        int extraLength = 0;
-        if (cowPropertyAddMap != null)
+        synchronized ( this )
         {
-            extraLength += cowPropertyAddMap.size();
-        }
-
-        if ( extraLength > 0 )
-        {
-            newArray = new PropertyData[properties.length + extraLength];
-            System.arraycopy( properties, 0, newArray, 0, properties.length );
-        }
-
-        int newArraySize = properties.length;
-        if ( cowPropertyRemoveMap != null )
-        {
-            for ( Integer keyIndex : cowPropertyRemoveMap.keySet() )
+            PropertyData[] newArray = properties;
+    
+            /*
+             * add map will definitely be added in the properties array - all properties
+             * added and later removed in the same tx are removed from there as well.
+             * The remove map will not necessarily be removed, since it may hold a prop that was
+             * added in this tx. So the difference in size is all the keys that are common
+             * between properties and remove map subtracted by the add map size.
+             */
+            int extraLength = 0;
+            if (cowPropertyAddMap != null)
             {
-                for ( int i = 0; i < newArraySize; i++ )
-                {
-                    PropertyData existingProperty = newArray[i];
-                    if ( existingProperty.getIndex() == keyIndex )
-                    {
-                        int swapWith = --newArraySize;
-                        newArray[i] = newArray[swapWith];
-                        newArray[swapWith] = null;
-                        break;
-                    }
-                }
+                extraLength += cowPropertyAddMap.size();
             }
-        }
-
-        if ( cowPropertyAddMap != null )
-        {
-            for ( PropertyData addedProperty : cowPropertyAddMap.values() )
+    
+            if ( extraLength > 0 )
             {
-                for ( int i = 0; i < newArray.length; i++ )
+                newArray = new PropertyData[properties.length + extraLength];
+                System.arraycopy( properties, 0, newArray, 0, properties.length );
+            }
+    
+            int newArraySize = properties.length;
+            if ( cowPropertyRemoveMap != null )
+            {
+                for ( Integer keyIndex : cowPropertyRemoveMap.keySet() )
                 {
-                    PropertyData existingProperty = newArray[i];
-                    if ( existingProperty == null || addedProperty.getIndex() == existingProperty.getIndex() )
+                    for ( int i = 0; i < newArraySize; i++ )
                     {
-                        newArray[i] = addedProperty;
-                        if ( existingProperty == null )
+                        PropertyData existingProperty = newArray[i];
+                        if ( existingProperty.getIndex() == keyIndex )
                         {
-                            newArraySize++;
+                            int swapWith = --newArraySize;
+                            newArray[i] = newArray[swapWith];
+                            newArray[swapWith] = null;
+                            break;
                         }
-                        break;
                     }
                 }
             }
-        }
-
-        if ( newArraySize < newArray.length )
-        {
-            PropertyData[] compactedNewArray = new PropertyData[newArraySize];
-            System.arraycopy( newArray, 0, compactedNewArray, 0, newArraySize );
-            properties = compactedNewArray;
-        }
-        else
-        {
-            properties = newArray;
+    
+            if ( cowPropertyAddMap != null )
+            {
+                for ( PropertyData addedProperty : cowPropertyAddMap.values() )
+                {
+                    for ( int i = 0; i < newArray.length; i++ )
+                    {
+                        PropertyData existingProperty = newArray[i];
+                        if ( existingProperty == null || addedProperty.getIndex() == existingProperty.getIndex() )
+                        {
+                            newArray[i] = addedProperty;
+                            if ( existingProperty == null )
+                            {
+                                newArraySize++;
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+    
+            if ( newArraySize < newArray.length )
+            {
+                PropertyData[] compactedNewArray = new PropertyData[newArraySize];
+                System.arraycopy( newArray, 0, compactedNewArray, 0, newArraySize );
+                properties = compactedNewArray;
+            }
+            else
+            {
+                properties = newArray;
+            }
         }
     }
 }

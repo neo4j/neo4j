@@ -31,7 +31,7 @@ import org.neo4j.cypher.symbols.{Identifier, SymbolTable}
 class EagerAggregationPipe(source: Pipe, val returnItems: Seq[ReturnItem], aggregations: Seq[AggregationItem]) extends PipeWithSource(source) {
   val symbols: SymbolTable = createSymbols()
 
-  def dependencies: Seq[Identifier] = Seq()
+  def dependencies: Seq[Identifier] = returnItems.flatMap(_.dependencies) ++ aggregations.flatMap(_.dependencies)
 
   def createSymbols() = {
     val keySymbols = source.symbols.filter(returnItems.map(_.columnName):_*)
@@ -39,8 +39,6 @@ class EagerAggregationPipe(source: Pipe, val returnItems: Seq[ReturnItem], aggre
 
     keySymbols.add(aggregatedColumns:_*)
   }
-
-  aggregations.foreach(_.assertDependencies(source))
 
   def foreach[U](f: Map[String, Any] => U) {
     // This is the temporary storage used while the aggregation is going on

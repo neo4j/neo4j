@@ -23,7 +23,7 @@ import scala.collection.JavaConverters._
 import org.neo4j.graphdb.{DynamicRelationshipType, Direction, Node}
 import collection.{Iterable, Traversable}
 import collection.immutable.Map
-import org.neo4j.cypher.commands.Clause
+import org.neo4j.cypher.commands.Predicate
 
 /*
 This class performs simpler join operations
@@ -34,7 +34,7 @@ class Joiner(source: Linkable,
              end: String,
              relType: Option[String],
              relName: String,
-             clause: Clause)
+             predicate: Predicate)
   extends Linkable {
 
   def getResult(m: Map[String, Any]): Traversable[Map[String, Any]] = {
@@ -68,7 +68,7 @@ class Joiner(source: Linkable,
       }
     })
 
-    between.filter( clause.isMatch )
+    between.filter( predicate.isMatch )
   }
 
   def providesKeys(): Seq[String] = source.providesKeys() ++ Seq(relName, end)

@@ -61,7 +61,7 @@ class ExecutionEngine(graph: GraphDatabaseService) {
   def execute(query: Query, params: Map[String, Any]): ExecutionResult = query match {
     case Query(returns, start, matching, where, aggregation, sort, slice, namedPaths) => {
 
-      val clauses = where match {
+      val predicates = where match {
         case None => Seq()
         case Some(w) => w.atoms
       }
@@ -69,7 +69,7 @@ class ExecutionEngine(graph: GraphDatabaseService) {
       val paramPipe = new ParameterPipe(params)
       val pipe = createSourcePumps(paramPipe, start.startItems.toList)
 
-      var context = new CurrentContext(pipe, clauses)
+      var context = new CurrentContext(pipe, predicates)
       context = addFilters(context)
 
       context = createMatchPipe(matching, namedPaths, context)
@@ -82,8 +82,8 @@ class ExecutionEngine(graph: GraphDatabaseService) {
         case Some(x) => x.paths.foreach(p => context.pipe = new NamedPathPipe(context.pipe, p))
       }
 
-      if (context.clauses.nonEmpty) {
-        context.pipe = new FilterPipe(context.pipe, context.clauses.reduceLeft(_ ++ _))
+      if (context.predicates.nonEmpty) {
+        context.pipe = new FilterPipe(context.pipe, context.predicates.reduceLeft(_ ++ _))
       }
 
       val allReturnItems = extractReturnItems(returns, aggregation)
@@ -149,7 +149,7 @@ class ExecutionEngine(graph: GraphDatabaseService) {
 
     (unnamedPattern ++ namedPattern) match {
       case Seq() =>
-      case x => context.pipe = new MatchPipe(context.pipe, x, context.clauses)
+      case x => context.pipe = new MatchPipe(context.pipe, x, context.predicates)
     }
 
     context
@@ -199,23 +199,24 @@ class ExecutionEngine(graph: GraphDatabaseService) {
   }
 
   private def addFilters(context: CurrentContext): CurrentContext = {
-    if (context.clauses.isEmpty) {
+    if (context.predicates.isEmpty) {
       context
     }
     else {
-      val keys = context.pipe.symbols.identifiers.map(_.name)
-      val matchingClauses = context.clauses.filter(x => {
-        val unsatisfiedDependencies = x.dependsOn.filterNot(keys contains)
+      val matchingPredicates = context.predicates.filter(x => {
+
+        val unsatisfiedDependencies = x.dependencies.filterNot(context.pipe.symbols contains)
         unsatisfiedDependencies.isEmpty
       })
-      if (matchingClauses.isEmpty) {
+
+      if (matchingPredicates.isEmpty) {
         context
       }
       else {
-        val filterClause = matchingClauses.reduceLeft(_ ++ _)
-        val p = new FilterPipe(context.pipe, filterClause)
+        val filterPredicate = matchingPredicates.reduceLeft(_ ++ _)
+        val p = new FilterPipe(context.pipe, filterPredicate)
 
-        new CurrentContext(p, context.clauses.filterNot(matchingClauses contains))
+        new CurrentContext(p, context.predicates.filterNot(matchingPredicates contains))
       }
     }
   }
@@ -225,7 +226,7 @@ class ExecutionEngine(graph: GraphDatabaseService) {
       case None =>
       case Some(s) => {
 
-        val sortItems = s.sortItems.map(_.returnItem.concreteReturnItem).filterNot(allReturnItems.contains)
+        val sortItems = s.sortItems.map(_.returnItem.concreteReturnItem).filterNot(allReturnItems contains)
         if (sortItems.nonEmpty) {
           context.pipe = new ExtractPipe(context.pipe, sortItems)
         }
@@ -260,4 +261,4 @@ class ExecutionEngine(graph: GraphDatabaseService) {
   }
 }
 
-private class CurrentContext(var pipe: Pipe, var clauses: Seq[Clause])
+private class CurrentContext(var pipe: Pipe, var predicates: Seq[Predicate])

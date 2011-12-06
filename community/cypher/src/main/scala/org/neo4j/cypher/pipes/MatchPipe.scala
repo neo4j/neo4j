@@ -24,7 +24,7 @@ import org.neo4j.cypher.commands._
 import java.lang.String
 import org.neo4j.cypher.symbols.{IterableType, RelationshipType, NodeType, Identifier}
 
-class MatchPipe(source: Pipe, patterns: Seq[Pattern], predicates:Seq[Clause]) extends Pipe {
+class MatchPipe(source: Pipe, patterns: Seq[Pattern], predicates:Seq[Predicate]) extends Pipe {
   val matchingContext = new MatchingContext(patterns, source.symbols, predicates)
   val identifiers = patterns.flatMap(_ match {
     case RelatedTo(left, right, rel, relType, dir, optional) => Seq(Identifier(left, NodeType()), Identifier(right, NodeType()), Identifier(rel, RelationshipType()))

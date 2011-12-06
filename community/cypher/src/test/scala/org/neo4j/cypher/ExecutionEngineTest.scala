@@ -33,16 +33,16 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
   @Test def shouldGetReferenceNode() {
     val query = Query.
-      start(NodeById("node", Literal(0))).
-      returns(ValueReturnItem(EntityValue("node")))
+      start(NodeById("n", Literal(0))).
+      returns(ValueReturnItem(EntityValue("n")))
 
     val result = execute(query)
-    assertEquals(List(refNode), result.columnAs[Node]("node").toList)
+    assertEquals(List(refNode), result.columnAs[Node]("n").toList)
   }
 
   @Test def shouldGetRelationshipById() {
     val n = createNode()
-    val r = relate(n, refNode, "rel")
+    val r = relate(n, refNode, "KNOWS")
 
     val query = Query.
       start(RelationshipById("r", Literal(0))).
@@ -67,7 +67,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
       where(RegularExpression(PropertyValue("node", "name"), Literal("And.*"))).
       returns(ValueReturnItem(EntityValue("node")))
 
-    val result = execute(query)
+      val result = execute(query)
     assertEquals(List(n1), result.columnAs[Node]("node").toList)
   }
 
@@ -775,7 +775,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.start(NodeById("pA", a.getId), NodeById("pB", d.getId)).
       namedPaths(NamedPath("p", VarLengthRelatedTo("x", "pA", "pB", Some(1), Some(5), "rel", Direction.OUTGOING))).
-      where(AllInSeq(PathNodesValue(EntityValue("p")), "i", Equals(PropertyValue("i", "foo"), Literal("bar")))).
+      where(AllInIterable(PathNodesValue(EntityValue("p")), "i", Equals(PropertyValue("i", "foo"), Literal("bar")))).
       returns(ValueReturnItem(EntityValue("pB")))
 
     val result = execute(query)
@@ -1099,7 +1099,9 @@ where foafR is null
 return foaf, count(*)
 order by count(*)""")
 
-    assert(List(Map("foaf" -> d, "count(*)" -> 1), Map("foaf" -> e, "count(*)" -> 2)) === result.toList)
+    println(result.executionPlan())
+
+    assert(Set(Map("foaf" -> d, "count(*)" -> 1), Map("foaf" -> e, "count(*)" -> 2)) === result.toSet)
   }
 
   @Test def shouldSplitOptionalMandatoryCleverly() {

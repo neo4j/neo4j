@@ -398,7 +398,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
       Map("pA" -> a, "pR1" -> r1, "pB" -> b, "pC" -> c, "pR2" -> r2))
   }
 
-  @Test def clauseConcerningRelationship() {
+  @Test def predicateConcerningRelationship() {
     val r = relate(a, b, "rel", Map("age" -> 15))
     val r2 = relate(a, b, "rel", Map("age" -> 5))
 
@@ -408,7 +408,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     assertMatches(matchingContext.getMatches(Map("a" -> a)), 1, Map("a" -> a, "b" -> b, "r" -> r2))
   }
 
-  @Test def clauseConcerningNode() {
+  @Test def predicateConcerningNode() {
     val a = createNode(Map("prop" -> "value"))
     relate(a, b, "rel")
 

@@ -21,5 +21,15 @@ package org.neo4j.test.subprocess;
 
 public interface DebuggerDeadlockCallback
 {
+    DebuggerDeadlockCallback RESUME_THREAD = new DebuggerDeadlockCallback()
+    {
+        @Override
+        public void deadlock( DebuggedThread thread )
+        {
+            thread.resume();
+        }
+    };
+
+    /** Will be called with the suspended thread that causes the deadlock */
     void deadlock( DebuggedThread thread );
 }

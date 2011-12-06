@@ -19,6 +19,7 @@
  */
 package org.neo4j.test.subprocess;
 
+import java.io.PrintStream;
 import java.util.Iterator;
 import java.util.List;
 
@@ -32,6 +33,12 @@ public class DebuggedThread
     {
         this.debug = debug;
         this.thread = thread;
+    }
+    
+    @Override
+    public String toString()
+    {
+        return "DebuggedThread[" + debug.handler + " " + thread.name() + "]";
     }
 
     public DebuggedThread suspend( DebuggerDeadlockCallback callback )
@@ -90,6 +97,20 @@ public class DebuggedThread
         catch ( com.sun.jdi.IncompatibleThreadStateException e )
         {
             return new StackTraceElement[0];
+        }
+    }
+
+    public String name()
+    {
+        return thread.name();
+    }
+
+    public void printStackTrace( PrintStream out )
+    {
+        out.println( name() );
+        for ( StackTraceElement trace : getStackTrace() )
+        {
+            out.println( "\tat " + trace );
         }
     }
 }

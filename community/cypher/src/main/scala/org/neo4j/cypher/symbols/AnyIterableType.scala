@@ -1,3 +1,5 @@
+package org.neo4j.cypher.symbols
+
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -17,17 +19,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes
+/**
+ * TODO
+ */
 
-import org.neo4j.cypher.symbols.Identifier
-import collection.Seq
-
-
-abstract class PipeWithSource(source: Pipe) extends Pipe with Dependant {
-  dependencies.foreach(source.symbols.assertHas(_))
-  def dependencies: Seq[Identifier]
-}
-
-trait Dependant {
-  def dependencies: Seq[Identifier]
+object AnyIterableType {
+  lazy val instance = new IterableType(AnyType())
+  def apply() = instance
 }

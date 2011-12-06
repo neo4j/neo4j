@@ -17,17 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.commands
+package org.neo4j.test.subprocess;
 
-import org.junit.Test
-import org.scalatest.Assertions
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-class SeqClauseTests extends Assertions {
-  @Test def allStringsBeginWithA() {
-    val strings = Seq("Andres", "Andres")
-    val inner = Equals(Literal("Andres"), EntityValue("x"))
-    val all = new AllInSeq(EntityValue("strings"), "x", inner)
+import static org.neo4j.test.subprocess.BreakPoint.Event.ENTRY;;
 
-    assert(all.isMatch(Map("strings" -> strings)))
-  }
+@Target( ElementType.METHOD )
+@Retention( RetentionPolicy.RUNTIME )
+public @interface BreakpointTrigger
+{
+    /** the name of the break point */
+    String value() default "";
+
+    BreakPoint.Event on() default ENTRY;
 }
