@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
-    <version>25</version>
+    <version>26-SNAPSHOT</version>
     <relativePath />
   </parent>
 
@@ -19,6 +19,7 @@
     <bundle.namespace>org.neo4j.management</bundle.namespace>
     <short-name>management</short-name>
     <neo4j.version>1.6-SNAPSHOT</neo4j.version>
+    <docs.url>http://docs.neo4j.org/chunked/${project.version}/operations-monitoring.html</docs.url>
   </properties>
 
   <packaging>jar</packaging>
@@ -138,6 +139,31 @@ terms of the relevant Commercial Agreement.
             </manifest>
           </archive>
         </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-site-plugin</artifactId>
+        <configuration>
+          <reportPlugins combine.children="append">
+            <plugin>
+              <artifactId>maven-javadoc-plugin</artifactId>
+              <configuration>
+                <detectJavaApiLink>true</detectJavaApiLink>
+                <detectLinks>true</detectLinks>
+                <quiet>true</quiet>
+                <excludePackageNames>*.impl.*</excludePackageNames>
+              </configuration>
+              <reports>
+                <report>javadoc</report>
+              </reports>
+            </plugin>
+          </reportPlugins>
+        </configuration>
+        <executions>
+          <execution>
+            <id>attach-descriptor</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

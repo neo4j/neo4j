@@ -11,8 +11,8 @@
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j</artifactId>
-      <version>${project.version}</version> <!-- for example 1.2.M03 -->
+      <artifactId>neo4j-advanced</artifactId>
+      <version>${project.version}</version> <!-- for example 1.5 -->
       <type>pom</type>
     </dependency>
   </dependencies>
