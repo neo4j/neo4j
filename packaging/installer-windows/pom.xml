@@ -2,10 +2,11 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
-		<artifactId>parent-pom</artifactId>
-		<groupId>org.neo4j</groupId>
-		<version>18</version>
-	</parent>
+        <groupId>org.neo4j.build</groupId>
+        <artifactId>parent-pom</artifactId>
+        <version>25</version>
+        <relativePath/>
+    </parent>
 
 	<groupId>org.neo4j</groupId>
 	<artifactId>installer-windows</artifactId>
@@ -26,14 +27,14 @@
 	<properties>
 		<short-name>installer-windows</short-name>
 		<neo4j.version>1.6-SNAPSHOT</neo4j.version>
+        <license-text.header>GPL-3-header.txt</license-text.header>
 
 		<buildnumber>0</buildnumber>
 
 		<windows-wrapper.version>2-SNAPSHOT</windows-wrapper.version>
 		<windows-wrapper.path>${project.build.outputDirectory}\windows-service-wrapper-${windows-wrapper.version}.jar</windows-wrapper.path>
 
-		<ai.executable>C:\Program Files\Caphyon\Advanced Installer
-			8.6\bin\x86\AdvancedInstaller.com</ai.executable>
+		<ai.executable>C:\Program Files\Caphyon\Advanced Installer 8.6\bin\x86\AdvancedInstaller.com</ai.executable>
 	</properties>
 
 	<dependencies>
@@ -278,6 +279,42 @@
 					</execution>
 				</executions>
 			</plugin>
+			
+			
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<version>1.5</version>
+				<executions>
+				  <execution>
+					<id>attach-artifacts</id>
+					<phase>package</phase>
+					<goals>
+					  <goal>attach-artifact</goal>
+					</goals>
+					<configuration>
+					  <artifacts>
+						<artifact>
+						  <file>target/neo4j-community-setup-${neo4j.version}.msi</file>
+						  <type>zip</type>
+						  <classifier>windows-community</classifier>
+						</artifact>
+						<artifact>
+						  <file>target/neo4j-advanced-setup-${neo4j.version}.msi</file>
+						  <type>zip</type>
+						  <classifier>windows-advanced</classifier>
+						</artifact>
+						<artifact>
+						  <file>target/neo4j-enterprise-setup-${neo4j.version}.msi</file>
+						  <type>zip</type>
+						  <classifier>windows-enterprise</classifier>
+						</artifact>
+					  </artifacts>
+					</configuration>
+				  </execution>
+				</executions>
+			  </plugin>
+			
 		</plugins>
 	</build>
 
