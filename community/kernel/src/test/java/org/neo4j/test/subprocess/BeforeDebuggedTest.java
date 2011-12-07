@@ -17,38 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.commands
+package org.neo4j.test.subprocess;
 
-import org.scalatest.Assertions
-import org.junit.Test
-import org.neo4j.cypher.symbols.{SymbolTable, Identifier}
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-class SplittingClauseTest extends Assertions {
-
-  @Test def cantDivideMore() {
-    val x = Equals(Literal("a"), Literal("a"))
-    assert(x.atoms === Seq(x))
-  }
-
-  @Test def andCanBeSplitInTwo() {
-    val x = And(True(), True())
-    assert(x.atoms === Seq(True(), True()))
-  }
-
-  @Test def or_cannot_be_split() {
-    val x = Or(True(), True())
-    assert(x.atoms === Seq(x))
-  }
-
-  @Test def more_complex_splitting() {
-    val x = And(
-      Equals(
-        Literal(1), Literal(2)),
-      Or(
-        True(), Not(True())
-      )
-    )
-
-    assert(x.atoms === Seq(Equals(Literal(1), Literal(2)), Or(True(), Not(True()))))
-  }
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface BeforeDebuggedTest
+{
 }

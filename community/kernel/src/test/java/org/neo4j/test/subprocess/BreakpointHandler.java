@@ -17,17 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes
+package org.neo4j.test.subprocess;
 
-import org.neo4j.cypher.symbols.Identifier
-import collection.Seq
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-
-abstract class PipeWithSource(source: Pipe) extends Pipe with Dependant {
-  dependencies.foreach(source.symbols.assertHas(_))
-  def dependencies: Seq[Identifier]
-}
-
-trait Dependant {
-  def dependencies: Seq[Identifier]
+@Target( { ElementType.METHOD, ElementType.PARAMETER } )
+@Retention( RetentionPolicy.RUNTIME )
+public @interface BreakpointHandler
+{
+    /** the name(s) of the breakpoint(s) to handle */
+    String[] value();
 }

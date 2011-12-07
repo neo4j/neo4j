@@ -76,7 +76,7 @@ public class GetIndexRootFunctionalTest extends AbstractRestFunctionalTestBase
         switch ( response.getStatus() )
         {
         case 204: return; // OK no auto indices
-        case 200: assertEquals( 0, functionalTestHelper.removeAnyAutoIndex( jsonToMap( response.getEntity() ) ) ); break;
+        case 200: assertEquals( 0, functionalTestHelper.removeAnyAutoIndex( jsonToMap( response.getEntity() ) ).size() ); break;
         default: fail( "Invalid response code " + response.getStatus() );
         }
     }

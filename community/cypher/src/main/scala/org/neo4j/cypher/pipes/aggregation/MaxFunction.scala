@@ -33,14 +33,10 @@ trait MinMax extends AggregationFunction with Comparer {
   def result: Any = biggestSeen
 
   def apply(data: Map[String, Any]) {
-    try {
-      value(data) match {
-        case null =>
-        case x: Comparable[_] => checkIfLargest(x)
-        case _ => throw new SyntaxException("MIN/MAX can only handle values of Comparable type, or null.")
-      }
-    } catch {
-      case error => throw new SyntaxException("Identifier: %s - %s".format(value.identifier, error.getMessage))
+    value(data) match {
+      case null =>
+      case x: Comparable[_] => checkIfLargest(x)
+      case _ => throw new SyntaxException("MIN/MAX can only handle values of Comparable type, or null. This was a :" + value.identifier)
     }
   }
 

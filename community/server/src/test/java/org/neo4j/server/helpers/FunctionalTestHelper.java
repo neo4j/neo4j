@@ -286,7 +286,7 @@ public final class FunctionalTestHelper
         {
             Map<?, ?> innerMap = (Map<?,?>) entry.getValue();
             String template = innerMap.get( "template" ).toString();
-            if ( !template.contains( PATH_AUTO_NODE_INDEX ) && !template.contains( PATH_AUTO_RELATIONSHIP_INDEX ) )
+            if ( !template.contains( PATH_AUTO_NODE_INDEX ) && !template.contains( PATH_AUTO_RELATIONSHIP_INDEX ) && !template.contains( "_auto_" ) )
                 result.put( entry.getKey(), entry.getValue() );
         }
         return result;

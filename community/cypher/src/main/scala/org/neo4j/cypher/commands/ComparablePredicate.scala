@@ -20,9 +20,13 @@
 package org.neo4j.cypher.commands
 
 import org.neo4j.cypher.Comparer
+import collection.Seq
+import org.neo4j.cypher.symbols.{ScalarType, Identifier}
 
-
-abstract sealed class ComparableClause(a: Value, b: Value) extends Clause with Comparer {
+// TODO: Allow comparison of nodes and rels
+// This should be split into two - one for relative comparisons < > and so on, and one for equality comparisons = !=
+// You should be able to compare two node-identifiers for equality, but not for gt lt
+abstract sealed class ComparablePredicate(a: Value, b: Value) extends Predicate with Comparer {
   def compare(comparisonResult: Int): Boolean
 
   def isMatch(m: Map[String, Any]): Boolean = {
@@ -38,34 +42,35 @@ abstract sealed class ComparableClause(a: Value, b: Value) extends Clause with C
     compare(comparisonResult)
   }
 
-  def dependsOn: Set[String] = a.dependsOn ++ b.dependsOn
-  def sign:String
-  def atoms: Seq[Clause] = Seq(this)
-  override def toString() = a.toString() + " " + sign + " " + b.toString()
+  def dependencies: Seq[Identifier] = a.dependencies(ScalarType()) ++ b.dependencies(ScalarType())
 
+  def sign:String
+  def atoms: Seq[Predicate] = Seq(this)
+  override def toString = a.toString() + " " + sign + " " + b.toString()
+  def containsIsNull: Boolean = false
 }
 
-case class Equals(a: Value, b: Value) extends ComparableClause(a, b) {
+case class Equals(a: Value, b: Value) extends ComparablePredicate(a, b) {
   def compare(comparisonResult: Int) = comparisonResult == 0
   def sign: String = "=="
 }
 
-case class LessThan(a: Value, b: Value) extends ComparableClause(a, b) {
+case class LessThan(a: Value, b: Value) extends ComparablePredicate(a, b) {
   def compare(comparisonResult: Int) = comparisonResult < 0
   def sign: String = "<"
 }
 
-case class GreaterThan(a: Value, b: Value) extends ComparableClause(a, b) {
+case class GreaterThan(a: Value, b: Value) extends ComparablePredicate(a, b) {
   def compare(comparisonResult: Int) = comparisonResult > 0
   def sign: String = ">"
 }
 
-case class LessThanOrEqual(a: Value, b: Value) extends ComparableClause(a, b) {
+case class LessThanOrEqual(a: Value, b: Value) extends ComparablePredicate(a, b) {
   def compare(comparisonResult: Int) = comparisonResult <= 0
   def sign: String = "<="
 }
 
-case class GreaterThanOrEqual(a: Value, b: Value) extends ComparableClause(a, b) {
+case class GreaterThanOrEqual(a: Value, b: Value) extends ComparablePredicate(a, b) {
   def compare(comparisonResult: Int) = comparisonResult >= 0
   def sign: String = ">="
 }

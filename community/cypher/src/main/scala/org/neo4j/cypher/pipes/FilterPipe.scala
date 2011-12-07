@@ -19,17 +19,18 @@
  */
 package org.neo4j.cypher.pipes
 
-import org.neo4j.cypher.commands.Clause
+import org.neo4j.cypher.commands.Predicate
 import java.lang.String
 
-class FilterPipe(source: Pipe, where: Clause) extends Pipe {
+class FilterPipe(source: Pipe, predicate: Predicate) extends Pipe {
   val symbols = source.symbols
 
   def foreach[U](f: (Map[String, Any]) => U) {
-    source.filter((row) => {
-      where.isMatch(row)
-    }).foreach(f)
+
+    val result = source.filter(predicate isMatch)
+
+    result.foreach(f)
   }
 
-  override def executionPlan(): String = source.executionPlan() + "\r\n" + "Filter(" + where.toString + ")"
+  override def executionPlan(): String = source.executionPlan() + "\r\n" + "Filter(" + predicate.toString + ")"
 }

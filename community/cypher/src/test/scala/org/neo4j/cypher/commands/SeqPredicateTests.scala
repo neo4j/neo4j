@@ -17,17 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes
+package org.neo4j.cypher.commands
 
-import org.neo4j.cypher.symbols.Identifier
-import collection.Seq
+import org.junit.Test
+import org.scalatest.Assertions
 
+class SeqPredicateTests extends Assertions {
+  @Test def allStringsBeginWithA() {
+    val strings = Seq("Andres", "Andres")
+    val inner = Equals(Literal("Andres"), EntityValue("x"))
+    val all = new AllInIterable(EntityValue("strings"), "x", inner)
 
-abstract class PipeWithSource(source: Pipe) extends Pipe with Dependant {
-  dependencies.foreach(source.symbols.assertHas(_))
-  def dependencies: Seq[Identifier]
-}
-
-trait Dependant {
-  def dependencies: Seq[Identifier]
+    assert(all.isMatch(Map("strings" -> strings)))
+  }
 }

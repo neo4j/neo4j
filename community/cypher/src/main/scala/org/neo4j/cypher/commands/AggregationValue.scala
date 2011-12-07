@@ -27,92 +27,71 @@ import collection.Seq
 abstract class AggregationValue(val functionName: String, inner: Value) extends Value {
   def apply(m: Map[String, Any]) = m(identifier.name)
 
-  def checkAvailable(symbols: SymbolTable) {
-    inner.checkAvailable(symbols)
-  }
-
   def createAggregationFunction: AggregationFunction
 
-  def dependsOn: Set[String] = inner.dependsOn
+  def expectedInnerType: AnyType
 
-  def dependencies: Seq[Identifier] = inner.dependencies
+  def declareDependencies(extectedType: AnyType): Seq[Identifier] = inner.dependencies(expectedInnerType)
 }
 
 case class Distinct(innerAggregator: AggregationValue, innerValue: Value) extends AggregationValue("distinct", innerValue) {
-  override def identifier: Identifier = Identifier("%s(distinct %s)".format(innerAggregator.functionName, innerValue.identifier.name), innerAggregator.identifier.typ)
+  def name: String = "%s(distinct %s)".format(innerAggregator.functionName, innerValue.identifier.name)
+
+  override def identifier: Identifier = Identifier(name, innerAggregator.identifier.typ)
+
+  def expectedInnerType: AnyType = innerAggregator.expectedInnerType
 
   def createAggregationFunction: AggregationFunction = new DistinctFunction(innerValue, innerAggregator.createAggregationFunction)
 
-  override def dependencies: Seq[Identifier] = innerAggregator.dependencies ++ innerValue.dependencies
+  override def declareDependencies(extectedType: AnyType): Seq[Identifier] = {
+    innerValue.dependencies(innerAggregator.expectedInnerType) ++ innerAggregator.dependencies(extectedType)
+  }
 }
 
 case class Count(anInner: Value) extends AggregationValue("count", anInner) {
   def identifier = Identifier("count(" + anInner.identifier.name + ")", IntegerType())
 
   def createAggregationFunction = new CountFunction(anInner)
+
+  def expectedInnerType: AnyType = AnyType()
 }
 
 case class Sum(anInner: Value) extends AggregationValue("sum", anInner) {
   def identifier = Identifier("sum(" + anInner.identifier.name + ")", NumberType())
 
   def createAggregationFunction = new SumFunction(anInner)
+
+  def expectedInnerType: AnyType = NumberType()
 }
 
 case class Min(anInner: Value) extends AggregationValue("min", anInner) {
   def identifier = Identifier("min(" + anInner.identifier.name + ")", NumberType())
 
   def createAggregationFunction = new MinFunction(anInner)
+
+  def expectedInnerType: AnyType = NumberType()
 }
 
 case class Max(anInner: Value) extends AggregationValue("max", anInner) {
   def identifier = Identifier("max(" + anInner.identifier.name + ")", NumberType())
 
   def createAggregationFunction = new MaxFunction(anInner)
+
+  def expectedInnerType: AnyType = NumberType()
 }
 
 case class Avg(anInner: Value) extends AggregationValue("avg", anInner) {
   def identifier = Identifier("avg(" + anInner.identifier.name + ")", NumberType())
 
   def createAggregationFunction = new AvgFunction(anInner)
+
+  def expectedInnerType: AnyType = NumberType()
 }
 
 case class Collect(anInner: Value) extends AggregationValue("collect", anInner) {
   def identifier = Identifier("collect(" + anInner.identifier.name + ")", new IterableType(anInner.identifier.typ))
 
   def createAggregationFunction = new CollectFunction(anInner)
+
+  def expectedInnerType: AnyType = AnyType()
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

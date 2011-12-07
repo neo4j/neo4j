@@ -20,10 +20,10 @@
 package org.neo4j.cypher.pipes.matching
 
 import org.neo4j.graphdb.{Relationship, Node, Direction, PropertyContainer}
-import org.neo4j.cypher.commands.Clause
+import org.neo4j.cypher.commands.Predicate
 
 
-class PatterMatchingBuilder(patternGraph: PatternGraph, clauses: Seq[Clause]) extends MatcherBuilder {
+class PatterMatchingBuilder(patternGraph: PatternGraph, predicates: Seq[Predicate]) extends MatcherBuilder {
   def getMatches(sourceRow: Map[String, Any]): Traversable[Map[String, Any]] = {
     val bindings: Map[String, Any] = sourceRow.filter(_._2.isInstanceOf[PropertyContainer])
     val boundPairs: Map[String, MatchingPair] = extractBoundMatchingPairs(bindings)
@@ -80,7 +80,7 @@ class PatterMatchingBuilder(patternGraph: PatternGraph, clauses: Seq[Clause]) ex
 
   private def createPatternMatcher(boundPairs: Map[String, MatchingPair], includeOptionals: Boolean, source: Map[String, Any]): Traversable[Map[String, Any]] = {
 
-    val patternMatcher = new PatternMatcher(boundPairs, clauses, includeOptionals, source)
+    val patternMatcher = new PatternMatcher(boundPairs, predicates, includeOptionals, source)
 
     if (includeOptionals)
       patternMatcher.map(matchedGraph => matchedGraph ++ createNullValuesForOptionalElements(matchedGraph))
