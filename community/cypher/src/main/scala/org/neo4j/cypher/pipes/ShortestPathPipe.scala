@@ -46,8 +46,8 @@ abstract class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWit
 
   def foreach[U](f: (Map[String, Any]) => U) {
     source.foreach(m => {
-      val (start: Node, end) = getStartAndEnd(m)
-      val expander: Expander = createExpander
+      val (start, end) = getStartAndEnd(m)
+      val expander: Expander = createExpander()
       val depth: Int = maxDepth.getOrElse(15)
 
       findResult(expander, start, end, f, depth, m)
@@ -62,7 +62,7 @@ abstract class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWit
     (start, end)
   }
 
-  private def createExpander[U]: Expander = {
+  private def createExpander[U](): Expander = {
     val expander = relType match {
       case None => Traversal.expanderForAllTypes(dir)
       case Some(typeName) => Traversal.expanderForTypes(DynamicRelationshipType.withName(typeName), dir)
