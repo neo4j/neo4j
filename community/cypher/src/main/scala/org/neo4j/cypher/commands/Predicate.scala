@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.commands
 
-import org.neo4j.graphdb.PropertyContainer
 import java.lang.String
 import org.neo4j.cypher.pipes.Dependant
 import collection.Seq
-import org.neo4j.cypher.symbols.{StringType, MapType, Identifier, AnyType}
+import org.neo4j.cypher.symbols._
+import scala.collection.JavaConverters._
+import org.neo4j.graphdb.{DynamicRelationshipType, Node, Direction, PropertyContainer}
 
 abstract class Predicate extends Dependant {
   def ++(other: Predicate): Predicate = And(this, other)
@@ -34,7 +35,7 @@ abstract class Predicate extends Dependant {
   // together
   def atoms: Seq[Predicate]
 
-  def containsIsNull:Boolean
+  def containsIsNull: Boolean
 }
 
 case class And(a: Predicate, b: Predicate) extends Predicate {
@@ -57,6 +58,7 @@ case class Or(a: Predicate, b: Predicate) extends Predicate {
   def dependencies: Seq[Identifier] = a.dependencies ++ b.dependencies
 
   override def toString: String = "(" + a + " OR " + b + ")"
+
   def containsIsNull: Boolean = a.containsIsNull || b.containsIsNull
 }
 
@@ -70,6 +72,23 @@ case class Not(a: Predicate) extends Predicate {
   override def toString: String = "NOT(" + a + ")"
 
   def containsIsNull: Boolean = a.containsIsNull
+}
+
+case class HasRelationship(from: Value, to: Value, dir: Direction, relType: Option[String]) extends Predicate {
+  def isMatch(m: Map[String, Any]): Boolean = {
+    val fromNode = from(m).asInstanceOf[Node]
+    val toNode = to(m).asInstanceOf[Node]
+    relType match {
+      case None => fromNode.getRelationships(dir).iterator().asScala.exists(rel => rel.getOtherNode(fromNode) == toNode)
+      case Some(typ) => fromNode.getRelationships(DynamicRelationshipType.withName(typ)).iterator().asScala.exists(rel => rel.getOtherNode(fromNode) == toNode)
+    }
+  }
+
+  def atoms: Seq[Predicate] = Seq(this)
+
+  def containsIsNull: Boolean = false
+
+  def dependencies: Seq[Identifier] = from.dependencies(NodeType()) ++ to.dependencies(NodeType())
 }
 
 case class IsNull(value: Value) extends Predicate {
@@ -109,6 +128,7 @@ case class Has(property: PropertyValue) extends Predicate {
   def atoms: Seq[Predicate] = Seq(this)
 
   override def toString: String = "hasProp(" + property + ")"
+
   def containsIsNull: Boolean = false
 }
 
@@ -123,5 +143,6 @@ case class RegularExpression(a: Value, regex: Value) extends Predicate {
   def atoms: Seq[Predicate] = Seq(this)
 
   override def toString: String = a.toString() + " ~= /" + regex.toString() + "/"
+
   def containsIsNull: Boolean = false
 }

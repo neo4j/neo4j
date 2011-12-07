@@ -1352,6 +1352,21 @@ return p
     assert(2 === result.toList.size)
   }
 
+  @Test def shouldExcludeConnectedNodes() {
+      val a = createNode()
+      val b = createNode()
+      val c = createNode()
+      relate(a, b)
+
+      val result = parseAndExecute("""
+start a  = node(1), other = node(2,3)
+where not(a-->other)
+return other
+""")
+
+      assert(List(Map("other" -> c)) === result.toList)
+    }
+
   @Test def shouldThrowNiceErrorMessageWhenPropertyIsMissing() {
     val query = new CypherParser().parse("start n=node(0) return n.A_PROPERTY_THAT_IS_MISSING")
     try {
