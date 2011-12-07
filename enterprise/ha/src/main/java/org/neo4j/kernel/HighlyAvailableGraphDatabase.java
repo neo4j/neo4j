@@ -406,10 +406,10 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                 SlaveUpdateMode.async;
     }
 
-    private int getClientReadTimeoutFromConfig( Map<String, String> config2 )
+    private int getClientReadTimeoutFromConfig( Map<String, String> config )
     {
         String value = config.get( CONFIG_KEY_READ_TIMEOUT );
-        return value != null ? Integer.parseInt( value ) : Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT;
+        return value != null ? Integer.parseInt( value ) : Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS;
     }
 
     private int getMaxConcurrentChannelsPerSlaveFromConfig( Map<String, String> config )
