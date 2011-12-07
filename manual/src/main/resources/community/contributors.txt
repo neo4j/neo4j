@@ -33,4 +33,5 @@ As an Open Source Project, the Neo4j User community extends its warmest thanks t
 |BGehrels |https://api.github.com/users/BGehrels[BGehrels]
 |Christopher Schmidt |https://api.github.com/users/FaKod[FaKod]
 |Pascal Rehfeldt |https://api.github.com/users/prehfeldt[prehfeldt]
+|Björn Söderqvist |https://api.github.com/users/cybear[cybear]
 |=======
