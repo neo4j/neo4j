@@ -169,16 +169,8 @@ public class XaLogicalLog implements LogLoader
             {
                 // clean
                 String newLog = getLog1FileName();
-                File file = new File( newLog );
-                if ( file.exists() )
-                {
-                    renameLogFileToRightVersion( getLog1FileName(), file.length() );
-                }
-                file = new File( getLog2FileName() );
-                if ( file.exists() )
-                {
-                    renameLogFileToRightVersion( getLog2FileName(), file.length() );
-                }
+                renameIfExists( newLog );
+                renameIfExists( getLog2FileName() );
                 open( newLog );
                 setActiveLog( LOG1 );
             }
@@ -221,6 +213,16 @@ public class XaLogicalLog implements LogLoader
         }
 
         instantiateCorrectWriteBuffer();
+    }
+
+    private void renameIfExists( String fileName ) throws IOException
+    {
+        File file = new File( fileName );
+        if ( file.exists() )
+        {
+            renameLogFileToRightVersion( fileName, file.length() );
+            xaTf.getAndSetNewVersion();
+        }
     }
 
     private void instantiateCorrectWriteBuffer() throws IOException
