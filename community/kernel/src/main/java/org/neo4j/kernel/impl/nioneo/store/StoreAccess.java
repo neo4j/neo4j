@@ -30,6 +30,7 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Not thread safe (since DiffRecordStore is not thread safe), intended for
@@ -57,6 +58,7 @@ public class StoreAccess
     public StoreAccess( String path, Map<Object, Object> params )
     {
         params.put( FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
+        params.put( StringLogger.class, StringLogger.SYSTEM );
         // these need to be made ok
         NodeStore nodeStore; RelationshipStore relStore; RelationshipTypeStore relTypeStore; PropertyStore propStore = null;
         this.nodeStore = wrapStore( nodeStore = new NodeStore( path + "/neostore.nodestore.db", params ) );
