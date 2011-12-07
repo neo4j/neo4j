@@ -33,22 +33,22 @@ with SkipLimitClause
 with OrderByClause
 with StringExtras {
 
-  def query: Parser[Query] = start ~ opt(matching) ~ opt(where) ~ returns ~ opt(order) ~ opt(skip) ~ opt(limit) ^^ {
+  def query: Parser[String => Query] = start ~ opt(matching) ~ opt(where) ~ returns ~ opt(order) ~ opt(skip) ~ opt(limit) ^^ {
 
     case start ~ matching ~ where ~ returns ~ order ~ skip ~ limit => {
-      val slice = (skip,limit) match {
-        case (None,None) => None
-        case (s,l) => Some(Slice(s,l))
+      val slice = (skip, limit) match {
+        case (None, None) => None
+        case (s, l) => Some(Slice(s, l))
       }
 
-      val (pattern:Option[Match], namedPaths:Option[NamedPaths]) = matching match {
-        case Some((p,NamedPaths())) => (Some(p),None)
-        case Some((Match(),nP)) => (None,Some(nP))
-        case Some((p,nP)) => (Some(p),Some(nP))
-        case None => (None,None)
+      val (pattern: Option[Match], namedPaths: Option[NamedPaths]) = matching match {
+        case Some((p, NamedPaths())) => (Some(p), None)
+        case Some((Match(), nP)) => (None, Some(nP))
+        case Some((p, nP)) => (Some(p), Some(nP))
+        case None => (None, None)
       }
 
-      Query(returns._1, start, pattern, where, returns._2, order, slice, namedPaths)
+      (queryText:String)=>Query(returns._1, start, pattern, where, returns._2, order, slice, namedPaths, queryText)
     }
   }
 
@@ -79,7 +79,7 @@ with StringExtras {
     val StringExpected = """string matching regex `'\(\[\^'\\p\{Cntrl\}\\\\\]\|\\\\\[\\\\\/bfnrt\]\|\\\\u\[a-fA-F0-9\]\{4\}\)\*'' .*""".r
 
     parseAll(query, queryText) match {
-      case Success(r, q) => r
+      case Success(r, q) => r(queryText)
       case NoSuccess(message, input) => message match {
         case MissingQuoteError() => fail(input, "Probably missing quotes around a string")
         case MissingStartError() => fail(input, "Missing START clause")

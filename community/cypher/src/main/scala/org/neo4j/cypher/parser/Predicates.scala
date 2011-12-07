@@ -29,7 +29,7 @@ trait Predicates extends JavaTokenParsers with Tokens with Values {
     ignoreCase("or") ^^^  { (a: Predicate, b: Predicate) => Or(a, b) }
     )
 
-  def regexp: Parser[Predicate] = value ~ "=~" ~ (regularLiteral|parameter) ^^ {
+  def regexp: Parser[Predicate] = value ~ "=~" ~ (regularLiteral|value) ^^ {
     case a ~ "=~" ~ b => RegularExpression(a, b)
   }
 
