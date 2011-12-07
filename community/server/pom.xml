@@ -77,12 +77,6 @@
             <artifactId>neo4j</artifactId>
             <version>1.6-SNAPSHOT</version>
             <type>pom</type>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.neo4j</groupId>
-                    <artifactId>neo4j-index</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
@@ -502,7 +496,11 @@
                 <artifactId>maven-source-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>attach-source</id>
+                        <id>attach-java-sources</id>
+                        <phase>none</phase>
+                    </execution>
+                    <execution>
+                        <id>attach-test-sources</id>
                         <phase>none</phase>
                     </execution>
                 </executions>
