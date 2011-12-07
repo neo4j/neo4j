@@ -213,6 +213,7 @@ public class XaLogicalLog
         if ( fileSystem.fileExists( fileName ) )
         {
             renameLogFileToRightVersion( fileName, fileSystem.getFileSize( fileName ) );
+            xaTf.getAndSetNewVersion();
         }
     }
 
