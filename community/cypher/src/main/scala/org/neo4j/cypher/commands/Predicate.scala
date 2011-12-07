@@ -80,7 +80,7 @@ case class HasRelationship(from: Value, to: Value, dir: Direction, relType: Opti
     val toNode = to(m).asInstanceOf[Node]
     relType match {
       case None => fromNode.getRelationships(dir).iterator().asScala.exists(rel => rel.getOtherNode(fromNode) == toNode)
-      case Some(typ) => fromNode.getRelationships(DynamicRelationshipType.withName(typ)).iterator().asScala.exists(rel => rel.getOtherNode(fromNode) == toNode)
+      case Some(typ) => fromNode.getRelationships(dir, DynamicRelationshipType.withName(typ)).iterator().asScala.exists(rel => rel.getOtherNode(fromNode) == toNode)
     }
   }
 
