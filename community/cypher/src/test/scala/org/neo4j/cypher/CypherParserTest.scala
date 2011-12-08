@@ -1013,6 +1013,34 @@ class CypherParserTest extends JUnitSuite with Assertions {
       executionTree)
   }
 
+  @Test def supportsHasRelationshipInTheWhereClause() {
+    testQuery(
+      """start a=node(0), b=node(1) where a-->b return a""",
+      Query.
+        start(NodeById("a", 0),NodeById("b", 1)).
+        where(HasRelationship(EntityValue("a"), EntityValue("b"), Direction.OUTGOING, None))
+        returns (ValueReturnItem(EntityValue("a"))))
+  }
+
+
+  @Test def supportsHasRelationshipWithoutDirectionInTheWhereClause() {
+    testQuery(
+      """start a=node(0), b=node(1) where a-[:KNOWS]-b return a""",
+      Query.
+        start(NodeById("a", 0),NodeById("b", 1)).
+        where(HasRelationship(EntityValue("a"), EntityValue("b"), Direction.BOTH, Some("KNOWS")))
+        returns (ValueReturnItem(EntityValue("a"))))
+  }
+
+  @Test def supportsHasRelationshipWithoutDirectionInTheWhereClause2() {
+    testQuery(
+      """start a=node(0), b=node(1) where a--b return a""",
+      Query.
+        start(NodeById("a", 0),NodeById("b", 1)).
+        where(HasRelationship(EntityValue("a"), EntityValue("b"), Direction.BOTH, None))
+        returns (ValueReturnItem(EntityValue("a"))))
+  }
+
   def testQuery(query: String, expectedQuery: Query) {
     val parser = new CypherParser()
 

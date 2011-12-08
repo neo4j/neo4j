@@ -22,14 +22,20 @@ package org.neo4j.cypher.parser
 
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
+import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.SyntaxException
 
 trait Predicates extends JavaTokenParsers with Tokens with Values {
-  def predicate: Parser[Predicate] = (isNull | isNotNull | orderedComparison | not | notEquals | equals | regexp | hasProperty | parens(predicate) | sequencePredicate) * (
-    ignoreCase("and") ^^^ { (a: Predicate, b: Predicate) => And(a, b)  } |
-    ignoreCase("or") ^^^  { (a: Predicate, b: Predicate) => Or(a, b) }
+  def predicate: Parser[Predicate] = (isNull | isNotNull | orderedComparison | not | notEquals | equals | regexp | hasProperty | parens(predicate) | sequencePredicate | hasRelationship) * (
+    ignoreCase("and") ^^^ {
+      (a: Predicate, b: Predicate) => And(a, b)
+    } |
+      ignoreCase("or") ^^^ {
+        (a: Predicate, b: Predicate) => Or(a, b)
+      }
     )
 
-  def regexp: Parser[Predicate] = value ~ "=~" ~ (regularLiteral|value) ^^ {
+  def regexp: Parser[Predicate] = value ~ "=~" ~ (regularLiteral | value) ^^ {
     case a ~ "=~" ~ b => RegularExpression(a, b)
   }
 
@@ -39,14 +45,17 @@ trait Predicates extends JavaTokenParsers with Tokens with Values {
 
   def sequencePredicate: Parser[Predicate] = (allInSeq | anyInSeq | noneInSeq | singleInSeq)
 
-  def symbolIterablePredicate : Parser[(Value, String, Predicate)] = identity ~ ignoreCase("in") ~ value ~ ignoreCase("where") ~ predicate ^^{
+  def symbolIterablePredicate: Parser[(Value, String, Predicate)] = identity ~ ignoreCase("in") ~ value ~ ignoreCase("where") ~ predicate ^^ {
     case symbol ~ in ~ iterable ~ where ~ klas => (iterable, symbol, klas)
   }
 
-  def allInSeq: Parser[Predicate] = ignoreCase("all") ~> parens(symbolIterablePredicate) ^^ ( x=> AllInIterable(x._1, x._2, x._3))
-  def anyInSeq: Parser[Predicate] = ignoreCase("any") ~> parens(symbolIterablePredicate) ^^ ( x=> AnyInIterable(x._1, x._2, x._3))
-  def noneInSeq: Parser[Predicate] = ignoreCase("none") ~> parens(symbolIterablePredicate) ^^ ( x=> NoneInIterable(x._1, x._2, x._3))
-  def singleInSeq: Parser[Predicate] = ignoreCase("single") ~> parens(symbolIterablePredicate) ^^ ( x=> SingleInIterable(x._1, x._2, x._3))
+  def allInSeq: Parser[Predicate] = ignoreCase("all") ~> parens(symbolIterablePredicate) ^^ (x => AllInIterable(x._1, x._2, x._3))
+
+  def anyInSeq: Parser[Predicate] = ignoreCase("any") ~> parens(symbolIterablePredicate) ^^ (x => AnyInIterable(x._1, x._2, x._3))
+
+  def noneInSeq: Parser[Predicate] = ignoreCase("none") ~> parens(symbolIterablePredicate) ^^ (x => NoneInIterable(x._1, x._2, x._3))
+
+  def singleInSeq: Parser[Predicate] = ignoreCase("single") ~> parens(symbolIterablePredicate) ^^ (x => SingleInIterable(x._1, x._2, x._3))
 
   def equals: Parser[Predicate] = value ~ "=" ~ value ^^ {
     case l ~ "=" ~ r => Equals(l, r)
@@ -78,9 +87,29 @@ trait Predicates extends JavaTokenParsers with Tokens with Values {
     case not ~ "(" ~ inner ~ ")" => Not(inner)
   }
 
-  def isNull: Parser[Predicate] = (value|entityValue) <~ ignoreCase("is null") ^^ ( x => IsNull(x) )
-  def isNotNull: Parser[Predicate] = (value|entityValue) <~ ignoreCase("is not null") ^^ ( x => Not(IsNull(x)) )
+  def valueOrEntity = (value | entityValue)
 
+  def isNull: Parser[Predicate] = valueOrEntity <~ ignoreCase("is null") ^^ (x => IsNull(x))
+
+  def isNotNull: Parser[Predicate] = valueOrEntity <~ ignoreCase("is not null") ^^ (x => Not(IsNull(x)))
+
+  def hasRelationship: Parser[Predicate] = valueOrEntity ~ relInfo ~ valueOrEntity ^^ {
+    case a ~ rel ~ b => HasRelationship(a, b, rel._1, rel._2)
+  }
+
+  def relInfo: Parser[(Direction, Option[String])] = opt("<") ~ "-" ~ opt("[:" ~> identity <~ "]") ~ "-" ~ opt(">") ^^ {
+    case Some("<") ~ "-" ~ relType ~ "-" ~ Some(">") => throw new SyntaxException("Can't be connected both ways.")
+    case Some("<") ~ "-" ~ relType ~ "-" ~ None => (Direction.INCOMING, relType)
+    case None ~ "-" ~ relType ~ "-" ~ Some(">") => (Direction.OUTGOING, relType)
+    case None ~ "-" ~ relType ~ "-" ~ None => (Direction.BOTH, relType)
+  }
+
+  //  {
+  //    case Some("<") ~ "-" ~ relType ~ "-" ~ Some(">") => throw new SyntaxException("Can't be connected both ways.")
+  //    case Some("<") ~ "-" ~ relType ~ "-" ~ None => (Direction.INCOMING, relType)
+  //    case None ~ "-" ~ relType ~ "-" ~ Some(">") => (Direction.OUTGOING, relType)
+  //    case None ~ "-" ~ relType ~ "-" ~ None => (Direction.BOTH, relType)
+  //  }
 }
 
 

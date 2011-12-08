@@ -164,6 +164,15 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
             }
         }
     }
+    
+    static class Shutdown implements Task
+    {
+        @Override
+        public void run( AbstractGraphDatabase graphdb )
+        {
+            graphdb.shutdown();
+        }
+    }
 
     private void crashDuringRotateAndVerify( long highestLogVersion, long highestTxId ) throws Exception
     {
@@ -200,7 +209,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     }
 
     @Test
-    public void logsShouldContainAllTransactionsEvenIfCrashJustBeforeNeostoreSetVersionTwLogs() throws Exception
+    public void logsShouldContainAllTransactionsEvenIfCrashJustBeforeNeostoreSetVersionTwoLogs() throws Exception
     {
         breakpoints[3].enable();
         run( new DoSimpleTransaction() );
@@ -210,7 +219,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     }
 
     @Test
-    public void logsShouldContainAllTransactionsEvenIfCrashJustBeforeReleaseCurrentLogFileTwLogs() throws Exception
+    public void logsShouldContainAllTransactionsEvenIfCrashJustBeforeReleaseCurrentLogFileTwoLogs() throws Exception
     {
         breakpoints[4].enable();
         run( new DoSimpleTransaction() );
@@ -220,12 +229,22 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     }
 
     @Test
-    public void logsShouldContainAllTransactionsEvenIfCrashJustAfterSetActiveVersionTwLogs() throws Exception
+    public void logsShouldContainAllTransactionsEvenIfCrashJustAfterSetActiveVersionTwoLogs() throws Exception
     {
         breakpoints[5].enable();
         run( new DoSimpleTransaction() );
         run( new RotateLogs() );
         run( new DoSimpleTransaction() );
         crashDuringRotateAndVerify( 2, 4 );
+    }
+
+    @Test
+    public void nextLogVersionAfterCrashBetweenActiveSetToCleanAndRename() throws Exception
+    {
+        breakpoints[2].enable();
+        runInThread( new Shutdown() );
+        breakpointNotification.await();
+        startSubprocesses();
+        run( new Shutdown() );
     }
 }

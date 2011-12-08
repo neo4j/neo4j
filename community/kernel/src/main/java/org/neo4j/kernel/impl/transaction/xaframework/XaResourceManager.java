@@ -499,6 +499,10 @@ public class XaResourceManager
     synchronized XaTransaction forget( Xid xid ) throws XAException
     {
         XidStatus status = xidMap.get( xid );
+        if ( status == null )
+            // START record has not been applied,
+            // so we don't have a transaction
+            return null;
         TransactionStatus txStatus = status.getTransactionStatus();
         XaTransaction xaTransaction = txStatus.getTransaction();
         log.done( xaTransaction.getIdentifier() );
