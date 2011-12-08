@@ -37,7 +37,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
     public MadeUpClient( int port, StoreId storeIdToExpect, byte internalProtocolVersion, byte applicationProtocolVersion )
     {
         super( "localhost", port, StringLogger.DEV_NULL, Client.NO_STORE_ID_GETTER,
-                Protocol.DEFAULT_FRAME_LENGTH, applicationProtocolVersion,
+                MadeUpServer.FRAME_LENGTH, applicationProtocolVersion,
                 Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT );
