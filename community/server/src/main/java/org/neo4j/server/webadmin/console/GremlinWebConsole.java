@@ -24,9 +24,9 @@ import groovy.lang.Binding;
 import org.codehaus.groovy.tools.shell.Groovysh;
 import org.codehaus.groovy.tools.shell.IO;
 
-import com.tinkerpop.gremlin.Gremlin;
 import com.tinkerpop.gremlin.Imports;
-import com.tinkerpop.gremlin.console.NullResultHookClosure;
+import com.tinkerpop.gremlin.groovy.Gremlin;
+import com.tinkerpop.gremlin.groovy.console.NullResultHookClosure;
 
 public class GremlinWebConsole
 {

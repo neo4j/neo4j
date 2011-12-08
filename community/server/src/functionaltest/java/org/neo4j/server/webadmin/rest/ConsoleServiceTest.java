@@ -48,11 +48,11 @@ public class ConsoleServiceTest implements SessionFactory
     @Test
     public void retrievesTheReferenceNode() throws UnsupportedEncodingException
     {
-        Response evaluatedGremlinResponse = consoleService.exec( new JsonFormat(), "{ \"command\" : \"g.v(0)\" }" );
+        Response evaluatedGremlinResponse = consoleService.exec( new JsonFormat(), "{ \"command\" : \"g.addVertex(null);g.v(1)\" }" );
 
         assertEquals( 200, evaluatedGremlinResponse.getStatus() );
         String response = decode( evaluatedGremlinResponse );
-        assertThat( response, containsString( "v[0]" ) );
+        assertThat( response, containsString( "v[1]" ) );
     }
 
     private String decode( final Response evaluatedGremlinResponse ) throws UnsupportedEncodingException
