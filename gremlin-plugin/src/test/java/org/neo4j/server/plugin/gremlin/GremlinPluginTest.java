@@ -61,7 +61,6 @@ public class GremlinPluginTest
         neo4j = new ImpermanentGraphDatabase();
         plugin = new GremlinPlugin();
         Graph graph = new Neo4jGraph( neo4j );
-        graph.removeVertex( graph.getVertex( 0 ) );
         Vertex marko = graph.addVertex( "1" );
         marko.setProperty( "name", "marko" );
         marko.setProperty( "age", 29 );
@@ -120,7 +119,7 @@ public class GremlinPluginTest
     {
         assertTrue(json.format( GremlinPluginTest.executeTestScript( ""+
         		"t = new Table();" +
-        		"g.v(1).out('knows').as('friends').table(t)>> -1;t;", null) ).contains("josh"));
+        		"g.v(1).out('knows').as('friends').table(t).iterate();t;", null) ).contains("josh"));
     }
 
     @Test
@@ -280,7 +279,7 @@ public class GremlinPluginTest
     @Test
     public void testExecuteScriptGetVerticesBySpecifiedName() throws Exception
     {
-        JSONObject object = (JSONObject) parser.parse( json.format( GremlinPluginTest.executeTestScript( "g.V[[name:'marko']] >> 1", null) ) );
+        JSONObject object = (JSONObject) parser.parse( json.format( GremlinPluginTest.executeTestScript( "g.V.filter(){it.name=='marko'}.next()", null) ) );
         Assert.assertEquals(
                 ( (JSONObject) object.get( "data" ) ).get( "name" ), "marko" );
         Assert.assertEquals(

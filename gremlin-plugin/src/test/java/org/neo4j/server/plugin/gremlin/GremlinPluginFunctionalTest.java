@@ -374,7 +374,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     public void collect_multiple_traversal_results()
             throws UnsupportedEncodingException, Exception
     {
-        String script = "g.idx('node_auto_index')[['name':'Peter']].copySplit(_().out('knows'), _().in('likes')).fairMerge.name";
+        String script = "g.idx('node_auto_index')[[name:'Peter']].copySplit(_().out('knows'), _().in('likes')).fairMerge.name";
         String response = doRestCall( script, Status.OK );
         assertTrue( response.contains( "Marie" ) );
         assertTrue( response.contains( "Ian" ) );

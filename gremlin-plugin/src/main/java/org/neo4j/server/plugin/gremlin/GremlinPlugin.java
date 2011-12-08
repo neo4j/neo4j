@@ -63,7 +63,7 @@ public class GremlinPlugin extends ServerPlugin
 
     private ScriptEngine createQueryEngine()
     {
-        return new ScriptEngineManager().getEngineByName( "gremlin" );
+        return new ScriptEngineManager().getEngineByName( "gremlin-groovy" );
     }
 
     @Name( "execute_script" )
@@ -103,7 +103,7 @@ public class GremlinPlugin extends ServerPlugin
     private Bindings createInitialBinding( GraphDatabaseService neo4j )
     {
         final Bindings bindings = new SimpleBindings();
-        final Neo4jGraph graph = new Neo4jGraph( neo4j );
+        final Neo4jGraph graph = new Neo4jGraph( neo4j, false );
         bindings.put( g, graph );
         return bindings;
     }
