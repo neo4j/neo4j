@@ -434,7 +434,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         };
     }
     
-    private void writeFailureResponse( Throwable exception, ChunkingChannelBuffer buffer )
+    protected void writeFailureResponse( Throwable exception, ChunkingChannelBuffer buffer )
     {
         try
         {
