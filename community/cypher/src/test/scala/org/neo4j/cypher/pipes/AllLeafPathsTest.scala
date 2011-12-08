@@ -22,9 +22,9 @@ package org.neo4j.cypher.pipes
 import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.cypher.symbols.{Identifier, NodeType, SymbolTable}
-import org.neo4j.cypher.commands.EntityValue
 import org.neo4j.graphdb.{Relationship, Direction, Node}
 import org.neo4j.cypher.{PathImpl, GraphDatabaseTestBase}
+import org.neo4j.cypher.commands.{AllLeafs, EntityValue}
 
 
 class AllLeafPathsTest extends GraphDatabaseTestBase with Assertions {
@@ -60,12 +60,12 @@ class AllLeafPathsTest extends GraphDatabaseTestBase with Assertions {
   }
 
   @Test def shouldReturnAllLeafs() {
-    val pipe = new AllLeafPathsPipe(source, EntityValue("root"), "leaf", "path", Direction.OUTGOING, None, None)
+    val pipe = new AllLeafPathsPipe(source, AllLeafs("root", "leaf", "path", Direction.OUTGOING, None, None, false))
     assert(pipe.map(m => m("leaf")).toSet === Set(d, e, c))
   }
 
   @Test def shouldReturnAllLeafPaths() {
-    val pipe = new AllLeafPathsPipe(source, EntityValue("root"), "leaf", "path", Direction.OUTGOING, None, None)
+    val pipe = new AllLeafPathsPipe(source, AllLeafs("root", "leaf", "path", Direction.OUTGOING, None, None, false))
     assert(pipe.map(m => m("path")).toSet === Set(PathImpl(a, rab, b, rbd, d), PathImpl(a, rab, b, rbe, e), PathImpl(a, rac, c)))
   }
 }

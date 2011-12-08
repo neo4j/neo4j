@@ -103,13 +103,6 @@ trait Predicates extends JavaTokenParsers with Tokens with Values {
     case None ~ "-" ~ relType ~ "-" ~ Some(">") => (Direction.OUTGOING, relType)
     case None ~ "-" ~ relType ~ "-" ~ None => (Direction.BOTH, relType)
   }
-
-  //  {
-  //    case Some("<") ~ "-" ~ relType ~ "-" ~ Some(">") => throw new SyntaxException("Can't be connected both ways.")
-  //    case Some("<") ~ "-" ~ relType ~ "-" ~ None => (Direction.INCOMING, relType)
-  //    case None ~ "-" ~ relType ~ "-" ~ Some(">") => (Direction.OUTGOING, relType)
-  //    case None ~ "-" ~ relType ~ "-" ~ None => (Direction.BOTH, relType)
-  //  }
 }
 
 

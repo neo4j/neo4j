@@ -82,14 +82,30 @@ case class VarLengthRelatedTo(pathName: String,
   }
 }
 
-case class ShortestPath(pipeName: String, startName: String, endName: String, relType: Option[String], dir: Direction, maxDepth: Option[Int], optional: Boolean, single:Boolean) extends Pattern {
+case class AllLeafs(startNode: String,
+                    endName: String,
+                    pathName: String,
+                    dir: Direction,
+                    relType: Option[String],
+                    maxLength: Option[Int],
+                    optional: Boolean) extends Pattern {
+  override def toString: String = pathName + "=allLeafs(" + startNode + left(dir) + relInfo + right(dir) + endName + ")"
+
+  private def relInfo = relType match {
+    case None => ""
+    case Some(typ) => "[:`" + typ + "`]"
+  }
+}
+
+case class ShortestPath(pipeName: String, startName: String, endName: String, relType: Option[String], dir: Direction, maxDepth: Option[Int], optional: Boolean, single: Boolean) extends Pattern {
   override def toString: String = pipeName + "=shortestPath(" + startName + left(dir) + relInfo + right(dir) + endName + ")"
+
   private def relInfo: String = {
     var info = "["
-    if(optional) info = info + "?"
-    if(relType.nonEmpty) info = info + ":" + relType.get
+    if (optional) info = info + "?"
+    if (relType.nonEmpty) info = info + ":" + relType.get
     info = info + "*"
-    if(maxDepth.nonEmpty) info = info + ".." + maxDepth.get
+    if (maxDepth.nonEmpty) info = info + ".." + maxDepth.get
     info
   }
 }

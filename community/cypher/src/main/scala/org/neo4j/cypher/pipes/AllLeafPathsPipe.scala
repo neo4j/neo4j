@@ -19,27 +19,25 @@
  */
 package org.neo4j.cypher.pipes
 
-import org.neo4j.cypher.commands.Value
 import collection.Seq
 import java.lang.String
 import org.neo4j.cypher.symbols.{PathType, NodeType, Identifier, SymbolTable}
 import org.neo4j.graphdb._
-import scala.collection.JavaConverters._
 import org.neo4j.cypher.PathImpl
+import org.neo4j.cypher.commands.AllLeafs
+import scala.collection.JavaConverters._
 
-
-class AllLeafPathsPipe(source: Pipe,
-                       start: Value,
-                       endName: String,
-                       pathName: String,
-                       dir: Direction,
-                       relType: Option[String],
-                       maxLength: Option[Int])
-  extends PipeWithSource(source) {
+class AllLeafPathsPipe(source: Pipe, leafInfo: AllLeafs) extends PipeWithSource(source) {
+  def startName = leafInfo.startNode
+  def relType = leafInfo.relType
+  def dir = leafInfo.dir
+  def endName = leafInfo.endName
+  def pathName = leafInfo.pathName
 
   def foreach[U](f: (Map[String, Any]) => U) {
     source.foreach(m => {
-      val startNode = start(m).asInstanceOf[Node]
+      val startNode = m(startName).asInstanceOf[Node]
+
       follow(Seq(startNode), f, m)
     })
   }
@@ -61,7 +59,7 @@ class AllLeafPathsPipe(source: Pipe,
     }
   }
 
-  def dependencies: Seq[Identifier] = start.dependencies(NodeType())
+  def dependencies: Seq[Identifier] = Seq(Identifier(startName, NodeType()))
 
   val symbols: SymbolTable = source.symbols.add(Identifier(endName, NodeType()), Identifier(pathName, PathType()))
 }

@@ -43,7 +43,6 @@ abstract class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWit
 
   def returnItems: Seq[ReturnItem] = Seq()
 
-
   def foreach[U](f: (Map[String, Any]) => U) {
     source.foreach(m => {
       val (start, end) = getStartAndEnd(m)

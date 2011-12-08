@@ -22,8 +22,8 @@ package org.neo4j.cypher.parser
 
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
-import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.SyntaxException
+import org.neo4j.graphdb.Direction
 
 trait MatchClause extends JavaTokenParsers with Tokens {
   val namer = new NodeNamer
@@ -43,7 +43,7 @@ trait MatchClause extends JavaTokenParsers with Tokens {
     case p ~ "=" ~ pathSegment => NamedPath(p, pathSegment: _*)
   }
 
-  def pathSegment: Parser[List[Pattern]] = relatedTos | shortestPath
+  def pathSegment: Parser[List[Pattern]] = relatedTos | shortestPath | allLeafs
 
   def singlePathSegment: Parser[Pattern] = relatedTos ^^ {
     case p => if (p.length > 1)
@@ -52,7 +52,12 @@ trait MatchClause extends JavaTokenParsers with Tokens {
       p.head
   }
 
-  def shortestPath: Parser[List[Pattern]] = (ignoreCase("shortestPath")|ignoreCase("allShortestPaths")) ~ parens(singlePathSegment) ^^ {
+  def allLeafs: Parser[List[Pattern]] = ignoreCase("allleafpaths") ~> parens(singlePathSegment) ^^ {
+    case RelatedTo(left, right, relName, relType, direction, optional) => List(AllLeafs(left, right, namer.name(None), direction, relType, None, false))
+    case _ => throw new SyntaxException("allLeafPaths only support simple relationships between nodes.")
+  }
+
+  def shortestPath: Parser[List[Pattern]] = (ignoreCase("shortestPath") | ignoreCase("allShortestPaths")) ~ parens(singlePathSegment) ^^ {
     case algo ~ relInfo => {
 
       val single = algo match {
