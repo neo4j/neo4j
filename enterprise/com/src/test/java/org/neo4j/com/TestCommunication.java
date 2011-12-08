@@ -21,6 +21,7 @@ package org.neo4j.com;
 
 import static java.lang.System.currentTimeMillis;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -138,7 +139,7 @@ public class TestCommunication
         MadeUpServer server = new MadeUpServer( serverImplementation, PORT, INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION );
         MadeUpClient client = new MadeUpClient( PORT, storeIdToUse, INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION );
 
-        client.streamSomeData( new ToAssertionWriter(), 1024*1024*50 /*50 Mb*/ );
+        client.streamSomeData( new ToAssertionWriter(), Protocol.DEFAULT_FRAME_LENGTH*3 );
 
         client.shutdown();
         server.shutdown();
@@ -162,7 +163,7 @@ public class TestCommunication
 
         try
         {
-            client.streamSomeData( new ToAssertionWriter(), 1024*1024*20 /*20 Mb, the important thing here is that it must be bigger than one chunk*/ );
+            client.streamSomeData( new ToAssertionWriter(), Protocol.DEFAULT_FRAME_LENGTH*2 );
             fail( "Should have thrown " + MadeUpException.class.getSimpleName() );
         }
         catch ( ComException e )
@@ -185,7 +186,7 @@ public class TestCommunication
         MadeUpClient client = new MadeUpClient( MadeUpServerProcess.PORT, storeIdToUse, INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION );
 
         assertEquals( (Integer)(9*5), client.multiply( 9, 5 ).response() );
-        client.streamSomeData( new ToAssertionWriter(), 1024*1024*10 );
+        client.streamSomeData( new ToAssertionWriter(), 1024*1024*3 );
 
         client.shutdown();
         server.shutdown();
@@ -292,6 +293,33 @@ public class TestCommunication
         server.shutdown();
     }
 
+    @Test
+    public void serverStopsStreamingToDeadClient() throws Exception
+    {
+        MadeUpImplementation serverImplementation = new MadeUpImplementation( storeIdToUse );
+        MadeUpServer server = new MadeUpServer( serverImplementation, PORT, INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION );
+        MadeUpClient client = new MadeUpClient( PORT, storeIdToUse, INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION );
+
+        int failAtSize = Protocol.DEFAULT_FRAME_LENGTH*2;
+        ClientCrashingWriter writer = new ClientCrashingWriter( client, failAtSize );
+        try
+        {
+            client.streamSomeData( writer, Protocol.DEFAULT_FRAME_LENGTH*5 );
+            fail( "Should fail in the middle" );
+        }
+        catch ( Exception e )
+        {   // Expected
+        }
+        assertTrue( writer.getSizeRead() >= failAtSize );
+        
+        long maxWaitUntil = System.currentTimeMillis()+2*1000;
+        while ( !server.responseFailureEncountered() && System.currentTimeMillis() < maxWaitUntil ) Thread.currentThread().yield();
+        assertTrue( "Failure writing the response should have been encountered", server.responseFailureEncountered() );
+        assertFalse( "Response shouldn't have been successful", server.responseHasBeenWritten() );
+
+        server.shutdown();
+    }
+    
     private <E extends Exception> void assertCause( ComException comException,
             Class<E> expectedCause, String expectedCauseMessagee )
     {

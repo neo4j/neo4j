@@ -540,6 +540,9 @@ public class ChunkingChannelBuffer implements ChannelBuffer, ChannelFutureListen
 
     private void writeCurrentChunk()
     {
+        if ( !channel.isOpen() || !channel.isConnected() || !channel.isBound() )
+            throw new ComException( "Channel has been closed, so no need to try to write to it anymore. Client closed it?" );
+        
         waitForClientToCatchUpOnReadingChunks();
         ChannelFuture future = channel.write( buffer );
         future.addListener( this );

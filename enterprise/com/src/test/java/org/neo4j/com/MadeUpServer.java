@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
 {
     private volatile boolean responseWritten;
+    private volatile boolean responseFailureEncountered;
     private final byte internalProtocolVersion;
 
     public MadeUpServer( MadeUpCommunicationInterface realMaster, int port, byte internalProtocolVersion, byte applicationProtocolVersion )
@@ -39,6 +40,13 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
             SlaveContext context )
     {
         responseWritten = true;
+    }
+    
+    @Override
+    protected void writeFailureResponse( Throwable exception, ChunkingChannelBuffer buffer )
+    {
+        responseFailureEncountered = true;
+        super.writeFailureResponse( exception, buffer );
     }
 
     @Override
@@ -61,6 +69,11 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
     public boolean responseHasBeenWritten()
     {
         return responseWritten;
+    }
+    
+    public boolean responseFailureEncountered()
+    {
+        return responseFailureEncountered;
     }
 
     static enum MadeUpRequestType implements RequestType<MadeUpCommunicationInterface>
