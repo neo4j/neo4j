@@ -67,7 +67,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
       where(RegularExpression(PropertyValue("node", "name"), Literal("And.*"))).
       returns(ValueReturnItem(EntityValue("node")))
 
-      val result = execute(query)
+    val result = execute(query)
     assertEquals(List(n1), result.columnAs[Node]("node").toList)
   }
 
@@ -583,8 +583,10 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val result = execute(query)
 
-    assertEquals(List("Sweden", "England", "Germany"), result.columnAs[String]("n.division").toList)
-    assertEquals(List(2, 1, 1), result.columnAs[Int]("count(*)").toList)
+    assertEquals(List(
+      Map("n.division" -> "Sweden", "count(*)" -> 2),
+      Map("n.division" -> "England", "count(*)" -> 1),
+      Map("n.division" -> "Germany", "count(*)" -> 1)), result.toList)
   }
 
   @Test def magicRelTypeWorksAsExpected() {
@@ -1099,8 +1101,6 @@ where foafR is null
 return foaf, count(*)
 order by count(*)""")
 
-    println(result.executionPlan())
-
     assert(Set(Map("foaf" -> d, "count(*)" -> 1), Map("foaf" -> e, "count(*)" -> 2)) === result.toSet)
   }
 
@@ -1231,7 +1231,6 @@ return x, p
   @Test def shouldSupportMultipleRegexes() {
     val a = createNode(Map("name" -> "Andreas"))
 
-
     val result = parseAndExecute("""
 start a  = node(1)
 where a.name =~ /And.*/ AND a.name =~ /And.*/
@@ -1244,7 +1243,7 @@ return a
   @Test def shouldSupportColumnRenaming() {
     val a = createNode(Map("name" -> "Andreas"))
 
-    val result = parseAndExecute("""
+    val result: ExecutionResult = parseAndExecute("""
 start a  = node(1)
 return a as OneLove
 """)
@@ -1353,19 +1352,19 @@ return p
   }
 
   @Test def shouldExcludeConnectedNodes() {
-      val a = createNode()
-      val b = createNode()
-      val c = createNode()
-      relate(a, b)
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+    relate(a, b)
 
-      val result = parseAndExecute("""
+    val result = parseAndExecute("""
 start a  = node(1), other = node(2,3)
 where not(a-->other)
 return other
 """)
 
-      assert(List(Map("other" -> c)) === result.toList)
-    }
+    assert(List(Map("other" -> c)) === result.toList)
+  }
 
   @Test def shouldThrowNiceErrorMessageWhenPropertyIsMissing() {
     val query = new CypherParser().parse("start n=node(0) return n.A_PROPERTY_THAT_IS_MISSING")

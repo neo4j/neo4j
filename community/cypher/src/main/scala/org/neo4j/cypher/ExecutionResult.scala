@@ -20,7 +20,6 @@
 
 package org.neo4j.cypher
 
-import pipes.Pipe
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb.{PropertyContainer, Relationship, NotFoundException, Node}
 import collection.Traversable
@@ -29,10 +28,9 @@ import java.lang.String
 import symbols.SymbolTable
 
 
-trait ExecutionResult extends Traversable[Map[String, Any]] with StringExtras with Pipe {
-  val symbols: SymbolTable
-
-  val columns: List[String]
+class ExecutionResult(result: Traversable[Map[String, Any]], val symbols: SymbolTable, val columns: List[String])
+  extends Iterator[Map[String, Any]]
+  with StringExtras {
 
   def javaColumns: java.util.List[String] = columns.asJava
 
@@ -45,7 +43,7 @@ trait ExecutionResult extends Traversable[Map[String, Any]] with StringExtras wi
     }).toIterator
   }
 
-  def makeValueJavaCompatible(value: Any): Any = value match {
+  private def makeValueJavaCompatible(value: Any): Any = value match {
     case iter: Seq[_] => iter.asJava
     case x => x
   }
@@ -54,7 +52,7 @@ trait ExecutionResult extends Traversable[Map[String, Any]] with StringExtras wi
     m.map(kv => kv._1 -> makeValueJavaCompatible(kv._2)).asJava
   }).toIterator.asJava
 
-  def calculateColumnSizes(result: Seq[Map[String, Any]]): Map[String, Int] = {
+  private def calculateColumnSizes(result: Seq[Map[String, Any]]): Map[String, Int] = {
     val columnSizes = new scala.collection.mutable.HashMap[String, Int] ++ columns.map(name => name -> name.size)
 
     result.foreach((m) => {
@@ -70,22 +68,22 @@ trait ExecutionResult extends Traversable[Map[String, Any]] with StringExtras wi
 
   def dumpToString(writer: PrintWriter) {
     val start = System.currentTimeMillis()
-    val result = this.toList
+    val eagerResult = result.toList
     val timeTaken = System.currentTimeMillis() - start
 
-    val columnSizes = calculateColumnSizes(result)
+    val columnSizes = calculateColumnSizes(eagerResult)
 
     val headers = columns.map((c) => Map[String, Any](c -> c)).reduceLeft(_ ++ _)
     val headerLine: String = createString(columns, columnSizes, headers)
     val lineWidth: Int = headerLine.length - 2
     val --- = "+" + repeat("-", lineWidth) + "+"
-    val footer = "%d rows, %d ms".format(result.size, timeTaken)
+    val footer = "%d rows, %d ms".format(eagerResult.size, timeTaken)
 
     writer.println(---)
     writer.println(headerLine)
     writer.println(---)
 
-    result.foreach(resultLine => writer.println(createString(columns, columnSizes, resultLine)))
+    eagerResult.foreach(resultLine => writer.println(createString(columns, columnSizes, resultLine)))
 
     writer.println(---)
     writer.println(footer)
@@ -99,21 +97,21 @@ trait ExecutionResult extends Traversable[Map[String, Any]] with StringExtras wi
     stringWriter.getBuffer.toString;
   }
 
-  def props(x: PropertyContainer): String = x.getPropertyKeys.asScala.map(key => key + "->" + quoteString(x.getProperty(key))).mkString("{", ",", "}")
+  private def props(x: PropertyContainer): String = x.getPropertyKeys.asScala.map(key => key + "->" + quoteString(x.getProperty(key))).mkString("{", ",", "}")
 
-  def text(obj: Any): String = obj match {
+  private def text(obj: Any): String = obj match {
     case x: Node => x.toString + props(x)
     case x: Relationship => ":" + x.getType.toString + "[" + x.getId + "] " + props(x)
     case null => "<null>"
     case x => x.toString
   }
 
-  def quoteString(in: Any): String = in match {
+  private def quoteString(in: Any): String = in match {
     case x: String => "\"" + x + "\""
     case x => x.toString
   }
 
-  def createString(columns: List[String], columnSizes: Map[String, Int], m: Map[String, Any]): String = {
+  private def createString(columns: List[String], columnSizes: Map[String, Int], m: Map[String, Any]): String = {
     columns.map(c => {
       val length = columnSizes.get(c).get
       val txt = text(m.get(c).get)
@@ -121,4 +119,10 @@ trait ExecutionResult extends Traversable[Map[String, Any]] with StringExtras wi
       value
     }).mkString("| ", " | ", " |")
   }
+
+  val iterator = result.toIterator
+
+  def hasNext: Boolean = iterator.hasNext
+
+  def next(): Map[String, Any] = iterator.next()
 }

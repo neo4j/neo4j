@@ -94,6 +94,8 @@ class FakePipe(data: Seq[Map[String, Any]], val symbols: SymbolTable) extends Pi
   def foreach[U](f: (Map[String, Any]) => U) {
     data.foreach(f(_))
   }
+
+  def executionPlan(): String = "FAKE"
 }
 
 class FakeSymbolTable extends SymbolTable() {

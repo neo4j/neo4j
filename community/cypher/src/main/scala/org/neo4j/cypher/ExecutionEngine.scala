@@ -50,11 +50,13 @@ class ExecutionEngine(graph: GraphDatabaseService) {
   }
 
   @throws(classOf[SyntaxException])
-  def execute(query: Query): ExecutionResult = execute(query, Map[String, Any]())
+  def execute(query: Query):ExecutionResult = execute(query, Map[String, Any]())
 
   // This is here to support Java people
   @throws(classOf[SyntaxException])
   def execute(query: Query, map: JavaMap[String, Any]): ExecutionResult = execute(query, map.asScala.toMap)
+
+
 
 
   @throws(classOf[SyntaxException])
@@ -108,7 +110,7 @@ class ExecutionEngine(graph: GraphDatabaseService) {
 
       val result = new ColumnFilterPipe(context.pipe, returnItems, returns.columns)
 
-      result
+      new ExecutionResult(result.toList, result.symbols, result.columns)
     }
   }
 
@@ -262,3 +264,9 @@ class ExecutionEngine(graph: GraphDatabaseService) {
 }
 
 private class CurrentContext(var pipe: Pipe, var predicates: Seq[Predicate])
+
+class ExecutionPlanImpl(query:Query) extends ExecutionPlan{
+  def execute(params: (String, Any)*): ExecutionResult = null
+
+  def dumpToString(): String = null
+}

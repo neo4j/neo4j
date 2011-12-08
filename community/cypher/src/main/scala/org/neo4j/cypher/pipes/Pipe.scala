@@ -31,5 +31,5 @@ import org.neo4j.cypher.symbols.SymbolTable
 trait Pipe extends Traversable[Map[String, Any]] {
 
   val symbols:SymbolTable
-  def executionPlan():String = "-:STILL NOT DONE:-"
+  def executionPlan():String
 }
