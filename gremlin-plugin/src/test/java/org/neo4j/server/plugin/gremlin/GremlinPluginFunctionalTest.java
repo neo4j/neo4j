@@ -462,6 +462,32 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
         assertTrue( response.contains( "v["
                                        + data.get().get( "Derrick" ).getId() ) );
     }
+    
+    /**
+     */
+    @Documented
+    @Test
+    @Ignore //preparation to track down a Gremlin issue
+    @Graph( value = { 
+            "Root AllFriends John", 
+            "Root AllFriends Jack", 
+            "Root AllFriends Jill", 
+            "John HasPet ScoobieDoo",
+            "Jack HasPet Garfield",
+            "ScoobieDoo HasCareTaker Bob",
+            "Garfield HasCareTaker Harry" }
+    , autoIndexNodes = true )
+    public void table_projections() throws UnsupportedEncodingException
+    {
+        data.get();
+        String script = "g.v(%Root%).out('AllFriends').as('Friend').ifThenElse" +
+        		"{it.out('HasPet').hasNext()}" +
+        		"{it.out('HasPet')}" +
+        		"{it}" +
+        		".as('Pet').out('HasCareTaker').as('CareTaker').table(new Table()){it['name']}{it['name']}{it['name']}.cap";
+        String response = doRestCall( script, Status.OK );
+        System.out.println(response);
+    }
 
     /**
      * This is a basic stub example for implementing flow algorithms in for
