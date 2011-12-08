@@ -1281,9 +1281,9 @@ return a
   }
 
   @Test(expected = classOf[SyntaxException]) def shouldNotSupportSortingOnThingsAfterDistinctHasRemovedIt() {
-    val a = createNode("name" -> "A", "age" -> 13)
-    val b = createNode("name" -> "B", "age" -> 12)
-    val c = createNode("name" -> "C", "age" -> 11)
+    createNode("name" -> "A", "age" -> 13)
+    createNode("name" -> "B", "age" -> 12)
+    createNode("name" -> "C", "age" -> 11)
 
     val result = parseAndExecute("""
 start a  = node(1,2,3,1)
@@ -1291,7 +1291,7 @@ return distinct a.name
 order by a.age
 """)
 
-    assert(List(a, b, c) === result.columnAs[Node]("a").toList)
+    result.toList
   }
 
   @Test def shouldSupportOrderingByAPropertyAfterBeingDistinctified() {
@@ -1349,6 +1349,49 @@ return p
 """)
 
     assert(2 === result.toList.size)
+  }
+
+  @Test def shouldCollectLeafs() {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+    val d = createNode()
+    val rab = relate(a, b)
+    val rac = relate(a, c)
+    val rcd = relate(c, d)
+
+    val result = parseAndExecute("""
+start root  = node(1)
+match p = allLeafPaths( root-->leaf )
+return p, leaf
+""")
+
+    assert(List(
+      Map("leaf" -> b, "p" -> PathImpl(a, rab, b)),
+      Map("leaf" -> d, "p" -> PathImpl(a, rac, c, rcd, d))
+    ) === result.toList)
+  }
+
+  @Ignore
+  @Test def shouldCollectLeafsAndDoOtherMatchingAsWell() {
+    val root = createNode()
+    val leaf = createNode()
+    val stuff1 = createNode()
+    val stuff2 = createNode()
+    relate(root,leaf)
+    relate(leaf,stuff1)
+    relate(leaf,stuff2)
+
+    val result = parseAndExecute("""
+start root = node(1)
+match allLeafPaths( root-->leaf ), leaf <-- stuff
+return leaf, stuff
+""")
+
+    assert(List(
+      Map("leaf" -> leaf, "stuff" -> stuff1),
+      Map("leaf" -> leaf, "stuff" -> stuff2)
+    ) === result.toList)
   }
 
   @Test def shouldExcludeConnectedNodes() {

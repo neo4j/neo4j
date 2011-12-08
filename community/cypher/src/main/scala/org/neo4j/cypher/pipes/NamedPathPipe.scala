@@ -33,6 +33,7 @@ class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
       case RelatedTo(left, right, relName, x, xx, optional) => left
       case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, direction, iterableRel, optional) => start
       case ShortestPath(_, start, _, _, _, _, _, _) => start
+      case AllLeafs(start, _, _, _, _, _, _) => start
     }
     firstNode
   }
@@ -48,6 +49,7 @@ class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
         case RelatedTo(left, right, relName, x, xx, optional) => soFar ++ Seq(get(relName), get(right))
         case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, direction, iterableRel, optional) => getPath(m, pathName, soFar)
         case ShortestPath(pathName, _, _, _, _, _, _, _) => getPath(m, pathName, soFar)
+        case AllLeafs(_, _, pathName, _, _, _, _) => getPath(m, pathName, soFar)
       })
 
       f(m + (path.pathName -> buildPath(p)))

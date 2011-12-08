@@ -22,10 +22,8 @@ package org.neo4j.cypher
 import commands._
 import internal.ExecutionPlanImpl
 import parser.CypherParser
-import pipes._
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
-import collection.Seq
 import java.lang.Error
 import java.util.{Map => JavaMap}
 
