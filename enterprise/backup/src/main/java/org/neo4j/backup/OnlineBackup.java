@@ -177,14 +177,8 @@ public class OnlineBackup
     public OnlineBackup incremental( GraphDatabaseService targetDb )
     {
         BackupClient client = new BackupClient( hostNameOrIp, port, targetDb );
-        try
-        {
-            unpackResponse( client.incrementalBackup( slaveContextOf( targetDb ) ), targetDb, MasterUtil.NO_ACTION );
-        }
-        finally
-        {
-            client.shutdown();
-        }
+        unpackResponse( client.incrementalBackup( slaveContextOf( targetDb ) ), targetDb, MasterUtil.NO_ACTION );
+        client.shutdown();
         return this;
     }
 
