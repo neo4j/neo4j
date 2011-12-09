@@ -23,8 +23,11 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import javax.transaction.TransactionManager;
+
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.Config;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
 /**
  * This is a wrapper class containing the logical log, command factory,
@@ -85,8 +88,9 @@ public class XaContainer
         TxIdGenerator txIdFactory = config != null ?
                 (TxIdGenerator) config.get( TxIdGenerator.class ) : TxIdGenerator.DEFAULT;
         txIdFactory = txIdFactory != null ? txIdFactory : TxIdGenerator.DEFAULT;
+        AbstractTransactionManager txManager = (AbstractTransactionManager) config.get( TransactionManager.class );
 
-        rm = new XaResourceManager( dataSource, tf, txIdFactory, logicalLog );
+        rm = new XaResourceManager( dataSource, tf, txIdFactory, txManager, logicalLog );
 
         if ( "true".equalsIgnoreCase( (String) config.get( Config.INTERCEPT_DESERIALIZED_TRANSACTIONS ) )
              && providers != null )

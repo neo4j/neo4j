@@ -21,11 +21,20 @@ package org.neo4j.kernel;
 
 import javax.transaction.TransactionManager;
 
+import org.neo4j.graphdb.Lock;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 
 public class PlaceboTransaction implements Transaction
 {
+    public final static Lock NO_LOCK = new Lock()
+    {
+        @Override
+        public void release()
+        {
+        }
+    };
     private final TransactionManager transactionManager;
 
     public PlaceboTransaction( TransactionManager transactionManager )
@@ -53,5 +62,17 @@ public class PlaceboTransaction implements Transaction
 
     public void finish()
     {
+    }
+    
+    @Override
+    public Lock acquireWriteLock( PropertyContainer entity )
+    {
+        return NO_LOCK;
+    }
+    
+    @Override
+    public Lock acquireReadLock( PropertyContainer entity )
+    {
+        return NO_LOCK;
     }
 }

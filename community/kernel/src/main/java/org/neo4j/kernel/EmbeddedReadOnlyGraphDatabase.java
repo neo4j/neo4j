@@ -26,8 +26,6 @@ import java.util.Map;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
@@ -123,13 +121,11 @@ public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
     {
         graphDbImpl.shutdown();
     }
-
-    /**
-     * @throws TransactionFailureException if unable to start transaction
-     */
-    public Transaction beginTx()
+    
+    @Override
+    public TransactionBuilder tx()
     {
-        return graphDbImpl.beginTx();
+        return graphDbImpl.tx();
     }
 
     /**

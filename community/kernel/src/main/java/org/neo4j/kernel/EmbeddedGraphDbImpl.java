@@ -35,8 +35,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.logging.Logger;
 
-import javax.transaction.TransactionManager;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -57,9 +55,11 @@ import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.transaction.TxModule;
+import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGeneratorFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -88,6 +88,9 @@ class EmbeddedGraphDbImpl
 
     private final IndexManagerImpl indexManager;
     private final StringLogger msgLog;
+    private final TransactionBuilder defaultTxBuilder = new TransactionBuilderImpl( this, ForceMode.forced );
+    private final LockManager lockManager;
+    private final LockReleaser lockReleaser;
 
     /**
      * A non-standard way of creating an embedded {@link GraphDatabaseService}
@@ -106,8 +109,8 @@ class EmbeddedGraphDbImpl
     {
         this.storeDir = storeDir;
         TxModule txModule = newTxModule( inputParams, txHook, graphDbService.getMessageLog(), fileSystem );
-        LockManager lockManager = lockManagerFactory.create( txModule );
-        LockReleaser lockReleaser = new LockReleaser( lockManager, txModule.getTxManager() );
+        lockManager = lockManagerFactory.create( txModule );
+        lockReleaser = new LockReleaser( lockManager, txModule.getTxManager() );
         final Config config = new Config( graphDbService, storeId, inputParams,
                 kernelPanicEventGenerator, txModule, lockManager, lockReleaser, idGeneratorFactory,
                 new SyncHookFactory(), relTypeCreator, txIdFactory.create( txModule.getTxManager() ),
@@ -371,10 +374,12 @@ class EmbeddedGraphDbImpl
         }
     }
 
-    /**
-     * @throws TransactionFailureException if unable to start transaction
-     */
-    public Transaction beginTx()
+    public TransactionBuilder tx()
+    {
+        return defaultTxBuilder;
+    }
+    
+    Transaction beginTx( ForceMode forceMode )
     {
         if ( graphDbInstance.transactionRunning() )
         {
@@ -385,12 +390,12 @@ class EmbeddedGraphDbImpl
             }
             return placeboTransaction;
         }
-        TransactionManager txManager = graphDbInstance.getTransactionManager();
+        AbstractTransactionManager txManager = (AbstractTransactionManager) graphDbInstance.getTransactionManager();
         Transaction result = null;
         try
         {
-            txManager.begin();
-            result = new TopLevelTransaction( txManager );
+            txManager.begin( forceMode );
+            result = new TopLevelTransaction( txManager, lockManager, lockReleaser );
         }
         catch ( Exception e )
         {
@@ -399,7 +404,7 @@ class EmbeddedGraphDbImpl
         }
         return result;
     }
-
+    
     /**
      * Returns a non-standard configuration object. Will most likely be removed
      * in future releases.

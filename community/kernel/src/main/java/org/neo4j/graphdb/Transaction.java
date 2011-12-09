@@ -87,4 +87,34 @@ public interface Transaction
      * {@link #success()} or {@link #failure()} has been previously invoked.
      */
     public void finish();
+    
+    /**
+     * Acquires a write lock for {@code entity} for this transaction.
+     * The lock (returned from this method) can be released manually, but
+     * if not it's released automatically when the transaction finishes.
+     * @param entity the entity to acquire a lock for. If another transaction
+     * currently holds a write lock to that entity this call will wait until
+     * it's released.
+     * 
+     * @return a {@link Lock} which optionally can be used to release this
+     * lock earlier than when the transaction finishes. If not released
+     * (with {@link Lock#release()} it's going to be released with the
+     * transaction finishes.
+     */
+    public Lock acquireWriteLock( PropertyContainer entity );
+    
+    /**
+     * Acquires a read lock for {@code entity} for this transaction.
+     * The lock (returned from this method) can be released manually, but
+     * if not it's released automatically when the transaction finishes.
+     * @param entity the entity to acquire a lock for. If another transaction
+     * currently hold a write lock to that entity this call will wait until
+     * it's released.
+     * 
+     * @return a {@link Lock} which optionally can be used to release this
+     * lock earlier than when the transaction finishes. If not released
+     * (with {@link Lock#release()} it's going to be released with the
+     * transaction finishes.
+     */
+    public Lock acquireReadLock( PropertyContainer entity );
 }

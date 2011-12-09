@@ -52,6 +52,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
@@ -76,6 +77,7 @@ public class RestfulGraphDatabaseTest
     private static GraphDbHelper helper;
     private static EntityOutputFormat output;
     private static LeaseManager leaseManager;
+    private static final ForceMode FORCE = ForceMode.forced;
 
     @BeforeClass
     public static void doBefore() throws IOException
@@ -92,11 +94,11 @@ public class RestfulGraphDatabaseTest
     {
         for ( String name : helper.getNodeIndexes() )
         {
-            service.deleteNodeIndex( name );
+            service.deleteNodeIndex( FORCE, name );
         }
         for ( String name : helper.getRelationshipIndexes() )
         {
-            service.deleteRelationshipIndex( name );
+            service.deleteRelationshipIndex( FORCE, name );
         }
     }
 
@@ -137,7 +139,7 @@ public class RestfulGraphDatabaseTest
     @Test
     public void shouldRespondWith201LocationHeaderAndNodeRepresentationInJSONWhenEmptyNodeCreated() throws Exception
     {
-        Response response = service.createNode( null );
+        Response response = service.createNode( FORCE, null );
 
         assertEquals( 201, response.getStatus() );
         assertNotNull( response.getMetadata()
@@ -158,7 +160,7 @@ public class RestfulGraphDatabaseTest
     public void shouldRespondWith201LocationHeaderAndNodeRepresentationInJSONWhenPopulatedNodeCreated()
             throws Exception
     {
-        Response response = service.createNode( "{\"foo\" : \"bar\"}" );
+        Response response = service.createNode( FORCE, "{\"foo\" : \"bar\"}" );
 
         assertEquals( 201, response.getStatus() );
         assertNotNull( response.getMetadata()
@@ -184,7 +186,7 @@ public class RestfulGraphDatabaseTest
     public void shouldRespondWith201LocationHeaderAndNodeRepresentationInJSONWhenPopulatedNodeCreatedWithArrays()
             throws Exception
     {
-        Response response = service.createNode( "{\"foo\" : [\"bar\", \"baz\"] }" );
+        Response response = service.createNode( FORCE, "{\"foo\" : [\"bar\", \"baz\"] }" );
 
         assertEquals( 201, response.getStatus() );
         assertNotNull( response.getMetadata()
@@ -206,7 +208,7 @@ public class RestfulGraphDatabaseTest
     @Test
     public void shouldRespondWith400WhenNodeCreatedWithUnsupportedPropertyData() throws DatabaseBlockedException
     {
-        Response response = service.createNode( "{\"foo\" : {\"bar\" : \"baz\"}}" );
+        Response response = service.createNode( FORCE, "{\"foo\" : {\"bar\" : \"baz\"}}" );
 
         assertEquals( 400, response.getStatus() );
     }
@@ -214,7 +216,7 @@ public class RestfulGraphDatabaseTest
     @Test
     public void shouldRespondWith400WhenNodeCreatedWithInvalidJSON() throws DatabaseBlockedException
     {
-        Response response = service.createNode( "this:::isNot::JSON}" );
+        Response response = service.createNode( FORCE, "this:::isNot::JSON}" );
 
         assertEquals( 400, response.getStatus() );
     }
@@ -240,7 +242,7 @@ public class RestfulGraphDatabaseTest
     @Test
     public void shouldRespondWith204AfterSettingPropertiesOnExistingNode() throws Exception
     {
-        Response response = service.setAllNodeProperties( helper.createNode(),
+        Response response = service.setAllNodeProperties( FORCE, helper.createNode(),
                 "{\"foo\" : \"bar\", \"a-boolean\": true, \"boolean-array\": [true, false, false]}" );
         assertEquals( 204, response.getStatus() );
     }
@@ -248,21 +250,21 @@ public class RestfulGraphDatabaseTest
     @Test
     public void shouldRespondWith404WhenSettingPropertiesOnNodeThatDoesNotExist() throws Exception
     {
-        Response response = service.setAllNodeProperties( 9000000000000L, "{\"foo\" : \"bar\"}" );
+        Response response = service.setAllNodeProperties( FORCE, 9000000000000L, "{\"foo\" : \"bar\"}" );
         assertEquals( 404, response.getStatus() );
     }
 
     @Test
     public void shouldRespondWith400WhenTransferringCorruptJsonPayload() throws Exception
     {
-        Response response = service.setAllNodeProperties( helper.createNode(), "{\"foo\" : bad-json-here \"bar\"}" );
+        Response response = service.setAllNodeProperties( FORCE, helper.createNode(), "{\"foo\" : bad-json-here \"bar\"}" );
         assertEquals( 400, response.getStatus() );
     }
 
     @Test
     public void shouldRespondWith400WhenTransferringIncompatibleJsonPayload() throws Exception
     {
-        Response response = service.setAllNodeProperties( helper.createNode(), "{\"foo\" : {\"bar\" : \"baz\"}}" );
+        Response response = service.setAllNodeProperties( FORCE, helper.createNode(), "{\"foo\" : {\"bar\" : \"baz\"}}" );
         assertEquals( 400, response.getStatus() );
     }
 
@@ -307,7 +309,7 @@ public class RestfulGraphDatabaseTest
     {
         long id = helper.createNode();
 
-        Response response = service.deleteNode( id );
+        Response response = service.deleteNode( FORCE, id );
 
         assertEquals( 204, response.getStatus() );
     }
@@ -318,7 +320,7 @@ public class RestfulGraphDatabaseTest
         long id = helper.createNode();
         helper.createRelationship( "LOVES", id, helper.createNode() );
 
-        Response response = service.deleteNode( id );
+        Response response = service.deleteNode( FORCE, id );
 
         assertEquals( 409, response.getStatus() );
     }
@@ -327,7 +329,7 @@ public class RestfulGraphDatabaseTest
     public void shouldRespondWith404IfNodeToBeDeletedDoesNotExist() throws DatabaseBlockedException
     {
         long nonExistentId = 999999;
-        Response response = service.deleteNode( nonExistentId );
+        Response response = service.deleteNode( FORCE, nonExistentId );
 
         assertEquals( 404, response.getStatus() );
     }
@@ -338,7 +340,7 @@ public class RestfulGraphDatabaseTest
         long nodeId = helper.createNode();
         String key = "foo";
         String json = "\"bar\"";
-        Response response = service.setNodeProperty( nodeId, key, json );
+        Response response = service.setNodeProperty( FORCE, nodeId, key, json );
         assertEquals( 204, response.getStatus() );
     }
 
@@ -349,7 +351,7 @@ public class RestfulGraphDatabaseTest
         String key = "foo";
         String value = "bar";
         String json = "\"" + value + "\"";
-        service.setNodeProperty( nodeId, key, json );
+        service.setNodeProperty( FORCE, nodeId, key, json );
         Map<String, Object> readProperties = helper.getNodeProperties( nodeId );
         assertEquals( Collections.singletonMap( key, value ), readProperties );
     }
@@ -359,7 +361,7 @@ public class RestfulGraphDatabaseTest
     {
         String key = "foo";
         String json = "\"bar\"";
-        Response response = service.setNodeProperty( 999999, key, json );
+        Response response = service.setNodeProperty( FORCE, 999999, key, json );
         assertEquals( 404, response.getStatus() );
     }
 
@@ -368,7 +370,7 @@ public class RestfulGraphDatabaseTest
     {
         String key = "foo";
         String json = "{invalid json";
-        Response response = service.setNodeProperty( 999999, key, json );
+        Response response = service.setNodeProperty( FORCE, 999999, key, json );
         assertEquals( 400, response.getStatus() );
     }
 
@@ -376,7 +378,7 @@ public class RestfulGraphDatabaseTest
     public void shouldRespondWith404ForGetNonExistentNodeProperty() throws DatabaseBlockedException
     {
         long nodeId = helper.createNode();
-        Response response = service.getNodeProperty( nodeId, "foo" );
+        Response response = service.getNodeProperty( FORCE, nodeId, "foo" );
         assertEquals( 404, response.getStatus() );
     }
 
@@ -384,7 +386,7 @@ public class RestfulGraphDatabaseTest
     public void shouldRespondWith404ForGetNodePropertyOnNonExistentNode() throws DatabaseBlockedException
     {
         long nodeId = 999999;
-        Response response = service.getNodeProperty( nodeId, "foo" );
+        Response response = service.getNodeProperty( FORCE, nodeId, "foo" );
         assertEquals( 404, response.getStatus() );
     }
 
@@ -395,7 +397,7 @@ public class RestfulGraphDatabaseTest
         String key = "foo";
         Object value = "bar";
         helper.setNodeProperties( nodeId, Collections.singletonMap( key, value ) );
-        Response response = service.getNodeProperty( nodeId, "foo" );
+        Response response = service.getNodeProperty( FORCE, nodeId, "foo" );
         assertEquals( 200, response.getStatus() );
         assertEquals( response.getMetadata()
                 .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
@@ -408,7 +410,7 @@ public class RestfulGraphDatabaseTest
         String key = "foo";
         Object value = "bar";
         helper.setNodeProperties( nodeId, Collections.singletonMap( key, value ) );
-        Response response = service.getNodeProperty( nodeId, "foo" );
+        Response response = service.getNodeProperty( FORCE, nodeId, "foo" );
         assertEquals( JsonHelper.createJsonFrom( value ), entityAsString( response ) );
     }
 
@@ -418,7 +420,7 @@ public class RestfulGraphDatabaseTest
     {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
-        Response response = service.createRelationship( startNode, "{\"to\" : \"" + BASE_URI + endNode
+        Response response = service.createRelationship( FORCE, startNode, "{\"to\" : \"" + BASE_URI + endNode
                                                                    + "\", \"type\" : \"LOVES\"}" );
         assertEquals( 201, response.getStatus() );
         assertNotNull( response.getMetadata()
@@ -432,7 +434,7 @@ public class RestfulGraphDatabaseTest
     {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
-        Response response = service.createRelationship( startNode,
+        Response response = service.createRelationship( FORCE, startNode,
                 "{\"to\" : \"" + BASE_URI + endNode + "\", \"type\" : \"LOVES\", \"properties\" : {\"foo\" : \"bar\"}}" );
         assertEquals( 201, response.getStatus() );
         assertNotNull( response.getMetadata()
@@ -445,7 +447,7 @@ public class RestfulGraphDatabaseTest
     {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
-        Response response = service.createRelationship( startNode,
+        Response response = service.createRelationship( FORCE, startNode,
                 "{\"to\" : \"" + BASE_URI + endNode + "\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : \"bar\"}}" );
         Map<String, Object> map = JsonHelper.jsonToMap( entityAsString( response ) );
         assertNotNull( map );
@@ -462,7 +464,7 @@ public class RestfulGraphDatabaseTest
     public void shouldRespondWith404WhenTryingToCreateRelationshipFromNonExistentNode() throws DatabaseBlockedException
     {
         long nodeId = helper.createNode();
-        Response response = service.createRelationship( nodeId * 1000, "{\"to\" : \"" + BASE_URI + nodeId
+        Response response = service.createRelationship( FORCE, nodeId * 1000, "{\"to\" : \"" + BASE_URI + nodeId
                                                                        + "\", \"type\" : \"LOVES\"}" );
         assertEquals( 404, response.getStatus() );
     }
@@ -471,7 +473,7 @@ public class RestfulGraphDatabaseTest
     public void shouldRespondWith400WhenTryingToCreateRelationshipToNonExistentNode() throws DatabaseBlockedException
     {
         long nodeId = helper.createNode();
-        Response response = service.createRelationship( nodeId, "{\"to\" : \"" + BASE_URI + ( nodeId * 1000 )
+        Response response = service.createRelationship( FORCE, nodeId, "{\"to\" : \"" + BASE_URI + ( nodeId * 1000 )
                                                                 + "\", \"type\" : \"LOVES\"}" );
         assertEquals( 400, response.getStatus() );
     }
@@ -480,7 +482,7 @@ public class RestfulGraphDatabaseTest
     public void shouldRespondWith201WhenTryingToCreateRelationshipBackToSelf() throws DatabaseBlockedException
     {
         long nodeId = helper.createNode();
-        Response response = service.createRelationship( nodeId, "{\"to\" : \"" + BASE_URI + nodeId
+        Response response = service.createRelationship( FORCE, nodeId, "{\"to\" : \"" + BASE_URI + nodeId
                                                                 + "\", \"type\" : \"LOVES\"}" );
         assertEquals( 201, response.getStatus() );
     }
@@ -490,7 +492,7 @@ public class RestfulGraphDatabaseTest
     {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
-        Response response = service.createRelationship( startNode, "{\"to\" : \"" + BASE_URI + endNode
+        Response response = service.createRelationship( FORCE, startNode, "{\"to\" : \"" + BASE_URI + endNode
                                                                    + "\", \"type\" ***and junk*** : \"LOVES\"}" );
         assertEquals( 400, response.getStatus() );
     }
@@ -501,7 +503,7 @@ public class RestfulGraphDatabaseTest
     {
         long startNode = helper.createNode();
         long endNode = helper.createNode();
-        Response response = service.createRelationship( startNode,
+        Response response = service.createRelationship( FORCE, startNode,
                 "{\"to\" : \"" + BASE_URI + endNode
                         + "\", \"type\" : \"LOVES\", \"data\" : {\"foo\" : {\"bar\" : \"baz\"}}}" );
         assertEquals( 400, response.getStatus() );
@@ -515,7 +517,7 @@ public class RestfulGraphDatabaseTest
         properties.put( "foo", "bar" );
         properties.put( "number", 15 );
         helper.setNodeProperties( nodeId, properties );
-        Response response = service.deleteAllNodeProperties( nodeId );
+        Response response = service.deleteAllNodeProperties( FORCE, nodeId );
         assertEquals( 204, response.getStatus() );
     }
 
@@ -527,7 +529,7 @@ public class RestfulGraphDatabaseTest
         properties.put( "foo", "bar" );
         properties.put( "number", 15 );
         helper.setNodeProperties( nodeId, properties );
-        service.deleteAllNodeProperties( nodeId );
+        service.deleteAllNodeProperties( FORCE, nodeId );
         assertEquals( true, helper.getNodeProperties( nodeId )
                 .isEmpty() );
     }
@@ -536,7 +538,7 @@ public class RestfulGraphDatabaseTest
     public void shouldRespondWith404ForRemoveNodePropertiesForNonExistingNode() throws DatabaseBlockedException
     {
         long nodeId = 999999;
-        Response response = service.deleteAllNodeProperties( nodeId );
+        Response response = service.deleteAllNodeProperties( FORCE, nodeId );
         assertEquals( 404, response.getStatus() );
     }
 
@@ -548,7 +550,7 @@ public class RestfulGraphDatabaseTest
         properties.put( "foo", "bar" );
         properties.put( "number", 15 );
         helper.setNodeProperties( nodeId, properties );
-        service.deleteNodeProperty( nodeId, "foo" );
+        service.deleteNodeProperty( FORCE, nodeId, "foo" );
         assertEquals( Collections.singletonMap( "number", (Object) new Integer( 15 ) ),
                 helper.getNodeProperties( nodeId ) );
     }
@@ -561,7 +563,7 @@ public class RestfulGraphDatabaseTest
         properties.put( "foo", "bar" );
         properties.put( "number", 15 );
         helper.setNodeProperties( nodeId, properties );
-        Response response = service.deleteNodeProperty( nodeId, "baz" );
+        Response response = service.deleteNodeProperty( FORCE, nodeId, "baz" );
         assertEquals( 404, response.getStatus() );
     }
 
@@ -569,7 +571,7 @@ public class RestfulGraphDatabaseTest
     public void shouldGet404WhenRemovingPropertyFromNonExistingNode() throws DatabaseBlockedException
     {
         long nodeId = 999999;
-        Response response = service.deleteNodeProperty( nodeId, "foo" );
+        Response response = service.deleteNodeProperty( FORCE, nodeId, "foo" );
         assertEquals( 404, response.getStatus() );
     }
 
@@ -644,7 +646,7 @@ public class RestfulGraphDatabaseTest
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
 
-        Response response = service.deleteRelationship( relationshipId );
+        Response response = service.deleteRelationship( FORCE, relationshipId );
         assertEquals( 204, response.getStatus() );
     }
 
@@ -653,7 +655,7 @@ public class RestfulGraphDatabaseTest
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
 
-        Response response = service.deleteRelationship( relationshipId + 1 * 1000 );
+        Response response = service.deleteRelationship( FORCE, relationshipId + 1 * 1000 );
         assertEquals( 404, response.getStatus() );
     }
 
@@ -745,7 +747,7 @@ public class RestfulGraphDatabaseTest
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
         String json = "{\"name\": \"Mattias\", \"age\": 30}";
-        Response response = service.setAllRelationshipProperties( relationshipId, json );
+        Response response = service.setAllRelationshipProperties( FORCE, relationshipId, json );
         assertEquals( 204, response.getStatus() );
         Map<String, Object> setProperties = new HashMap<String, Object>();
         setProperties.put( "name", "Mattias" );
@@ -758,7 +760,7 @@ public class RestfulGraphDatabaseTest
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
         String json = "{\"name: \"Mattias\", \"age\": 30}";
-        Response response = service.setAllRelationshipProperties( relationshipId, json );
+        Response response = service.setAllRelationshipProperties( FORCE, relationshipId, json );
         assertEquals( 400, response.getStatus() );
     }
 
@@ -768,7 +770,7 @@ public class RestfulGraphDatabaseTest
     {
         long relationshipId = 99999999;
         String json = "{\"name\": \"Mattias\", \"age\": 30}";
-        Response response = service.setAllRelationshipProperties( relationshipId, json );
+        Response response = service.setAllRelationshipProperties( FORCE, relationshipId, json );
         assertEquals( 404, response.getStatus() );
     }
 
@@ -779,7 +781,7 @@ public class RestfulGraphDatabaseTest
         String key = "name";
         Object value = "Mattias";
         String json = "\"" + value + "\"";
-        Response response = service.setRelationshipProperty( relationshipId, key, json );
+        Response response = service.setRelationshipProperty( FORCE, relationshipId, key, json );
         assertEquals( 204, response.getStatus() );
         assertEquals( value, helper.getRelationshipProperties( relationshipId )
                 .get( "name" ) );
@@ -790,7 +792,7 @@ public class RestfulGraphDatabaseTest
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
         String json = "}Mattias";
-        Response response = service.setRelationshipProperty( relationshipId, "name", json );
+        Response response = service.setRelationshipProperty( FORCE, relationshipId, "name", json );
         assertEquals( 400, response.getStatus() );
     }
 
@@ -800,7 +802,7 @@ public class RestfulGraphDatabaseTest
     {
         long relationshipId = 99999999;
         String json = "\"Mattias\"";
-        Response response = service.setRelationshipProperty( relationshipId, "name", json );
+        Response response = service.setRelationshipProperty( FORCE, relationshipId, "name", json );
         assertEquals( 404, response.getStatus() );
     }
 
@@ -810,7 +812,7 @@ public class RestfulGraphDatabaseTest
         long relationshipId = helper.createRelationship( "KNOWS" );
         helper.setRelationshipProperties( relationshipId, Collections.singletonMap( "foo", (Object) "bar" ) );
 
-        Response response = service.deleteAllRelationshipProperties( relationshipId );
+        Response response = service.deleteAllRelationshipProperties( FORCE, relationshipId );
         assertEquals( 204, response.getStatus() );
     }
 
@@ -820,7 +822,7 @@ public class RestfulGraphDatabaseTest
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
 
-        Response response = service.deleteAllRelationshipProperties( relationshipId );
+        Response response = service.deleteAllRelationshipProperties( FORCE, relationshipId );
         assertEquals( 204, response.getStatus() );
     }
 
@@ -829,7 +831,7 @@ public class RestfulGraphDatabaseTest
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
 
-        Response response = service.deleteAllRelationshipProperties( relationshipId + 1 * 1000 );
+        Response response = service.deleteAllRelationshipProperties( FORCE, relationshipId + 1 * 1000 );
         assertEquals( 404, response.getStatus() );
     }
 
@@ -839,7 +841,7 @@ public class RestfulGraphDatabaseTest
         long relationshipId = helper.createRelationship( "KNOWS" );
         helper.setRelationshipProperties( relationshipId, Collections.singletonMap( "foo", (Object) "bar" ) );
 
-        Response response = service.deleteRelationshipProperty( relationshipId, "foo" );
+        Response response = service.deleteRelationshipProperty( FORCE, relationshipId, "foo" );
 
         assertEquals( 204, response.getStatus() );
     }
@@ -848,7 +850,7 @@ public class RestfulGraphDatabaseTest
     public void shouldRespondWith404WhenRemovingRelationshipPropertyWhichDoesNotExist() throws DatabaseBlockedException
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
-        Response response = service.deleteRelationshipProperty( relationshipId, "foo" );
+        Response response = service.deleteRelationshipProperty( FORCE, relationshipId, "foo" );
         assertEquals( 404, response.getStatus() );
     }
 
@@ -857,7 +859,7 @@ public class RestfulGraphDatabaseTest
     {
         long relationshipId = helper.createRelationship( "KNOWS" );
 
-        Response response = service.deleteRelationshipProperty( relationshipId * 1000, "some-key" );
+        Response response = service.deleteRelationshipProperty( FORCE, relationshipId * 1000, "some-key" );
         assertEquals( 404, response.getStatus() );
     }
 
@@ -943,7 +945,7 @@ public class RestfulGraphDatabaseTest
     @Test
     public void shouldBeAbleToIndexNode() throws DatabaseBlockedException, JsonParseException
     {
-        Response response = service.createNode( null );
+        Response response = service.createNode( FORCE, null );
         URI nodeUri = (URI) response.getMetadata()
                 .getFirst( "Location" );
 
@@ -952,7 +954,7 @@ public class RestfulGraphDatabaseTest
         postBody.put( "value", "my/key" );
         postBody.put( "uri", nodeUri.toString() );
 
-        response = service.addToNodeIndex( "node", JsonHelper.createJsonFrom( postBody ) );
+        response = service.addToNodeIndex( FORCE, "node", JsonHelper.createJsonFrom( postBody ) );
 
         assertEquals( 201, response.getStatus() );
         assertNotNull( response.getMetadata()
@@ -970,7 +972,7 @@ public class RestfulGraphDatabaseTest
 
         assertEquals( 1, helper.getNodeIndexes().length );
 
-        Response response = service.deleteNodeIndex( indexName );
+        Response response = service.deleteNodeIndex( FORCE, indexName );
 
         assertEquals( 204, response.getStatus() );
         assertEquals( 0, helper.getNodeIndexes().length );
@@ -987,7 +989,7 @@ public class RestfulGraphDatabaseTest
 
         assertEquals( 1, helper.getRelationshipIndexes().length );
 
-        Response response = service.deleteRelationshipIndex( indexName );
+        Response response = service.deleteRelationshipIndex( FORCE, indexName );
 
         assertEquals( 204, response.getStatus() );
         assertEquals( 0, helper.getRelationshipIndexes().length );
@@ -1277,7 +1279,7 @@ public class RestfulGraphDatabaseTest
         helper.addNodeToIndex( "node", key, value, nodeId );
         assertEquals( 1, helper.getIndexedNodes( "node", key, value )
                 .size() );
-        Response response = service.deleteFromNodeIndex( "node", key, value, nodeId );
+        Response response = service.deleteFromNodeIndex( FORCE, "node", key, value, nodeId );
         assertEquals( Status.NO_CONTENT.getStatusCode(), response.getStatus() );
         assertEquals( 0, helper.getIndexedNodes( "node", key, value )
                 .size() );
@@ -1296,7 +1298,7 @@ public class RestfulGraphDatabaseTest
         helper.addRelationshipToIndex( indexName, key, value, relationshipId );
         assertEquals( 1, helper.getIndexedRelationships( indexName, key, value )
                 .size() );
-        Response response = service.deleteFromRelationshipIndex( indexName, key, value, relationshipId );
+        Response response = service.deleteFromRelationshipIndex( FORCE, indexName, key, value, relationshipId );
         assertEquals( Status.NO_CONTENT.getStatusCode(), response.getStatus() );
         assertEquals( 0, helper.getIndexedRelationships( indexName, key, value )
                 .size() );
@@ -1305,14 +1307,14 @@ public class RestfulGraphDatabaseTest
     @Test
     public void shouldGet404IfRemovingNonExistentNodeIndexing() throws DatabaseBlockedException
     {
-        Response response = service.deleteFromNodeIndex( "nodes", "bogus", "bogus", 999999 );
+        Response response = service.deleteFromNodeIndex( FORCE, "nodes", "bogus", "bogus", 999999 );
         assertEquals( Status.NOT_FOUND.getStatusCode(), response.getStatus() );
     }
 
     @Test
     public void shouldGet404IfRemovingNonExistentRelationshipIndexing() throws DatabaseBlockedException
     {
-        Response response = service.deleteFromRelationshipIndex( "relationships", "bogus", "bogus", 999999 );
+        Response response = service.deleteFromRelationshipIndex( FORCE, "relationships", "bogus", "bogus", 999999 );
         assertEquals( Status.NOT_FOUND.getStatusCode(), response.getStatus() );
     }
 
@@ -1461,7 +1463,7 @@ public class RestfulGraphDatabaseTest
     public void shouldBeAbleToParseJsonEvenWithUnicodeMarkerAtTheStart() throws DatabaseBlockedException,
             JsonParseException
     {
-        Response response = service.createNode( markWithUnicodeMarker( "{\"name\":\"Mattias\"}" ) );
+        Response response = service.createNode( FORCE, markWithUnicodeMarker( "{\"name\":\"Mattias\"}" ) );
         assertEquals( Status.CREATED.getStatusCode(), response.getStatus() );
         String nodeLocation = response.getMetadata()
                 .getFirst( HttpHeaders.LOCATION )
@@ -1469,37 +1471,37 @@ public class RestfulGraphDatabaseTest
 
         long node = helper.createNode();
         assertEquals( Status.NO_CONTENT.getStatusCode(),
-                service.setNodeProperty( node, "foo", markWithUnicodeMarker( "\"bar\"" ) )
+                service.setNodeProperty( FORCE, node, "foo", markWithUnicodeMarker( "\"bar\"" ) )
                         .getStatus() );
         assertEquals( Status.NO_CONTENT.getStatusCode(),
-                service.setNodeProperty( node, "foo", markWithUnicodeMarker( "" + 10 ) )
+                service.setNodeProperty( FORCE, node, "foo", markWithUnicodeMarker( "" + 10 ) )
                         .getStatus() );
         assertEquals( Status.NO_CONTENT.getStatusCode(),
-                service.setAllNodeProperties( node, markWithUnicodeMarker( "{\"name\":\"Something\",\"number\":10}" ) )
+                service.setAllNodeProperties( FORCE, node, markWithUnicodeMarker( "{\"name\":\"Something\",\"number\":10}" ) )
                         .getStatus() );
 
         assertEquals(
                 Status.CREATED.getStatusCode(),
-                service.createRelationship( node,
+                service.createRelationship( FORCE, node,
                         markWithUnicodeMarker( "{\"to\":\"" + nodeLocation + "\",\"type\":\"knows\"}" ) )
                         .getStatus() );
 
         long relationship = helper.createRelationship( "knows" );
         assertEquals( Status.NO_CONTENT.getStatusCode(),
-                service.setRelationshipProperty( relationship, "foo", markWithUnicodeMarker( "\"bar\"" ) )
+                service.setRelationshipProperty( FORCE, relationship, "foo", markWithUnicodeMarker( "\"bar\"" ) )
                         .getStatus() );
         assertEquals( Status.NO_CONTENT.getStatusCode(),
-                service.setRelationshipProperty( relationship, "foo", markWithUnicodeMarker( "" + 10 ) )
+                service.setRelationshipProperty( FORCE, relationship, "foo", markWithUnicodeMarker( "" + 10 ) )
                         .getStatus() );
         assertEquals(
                 Status.NO_CONTENT.getStatusCode(),
-                service.setAllRelationshipProperties( relationship,
+                service.setAllRelationshipProperties( FORCE, relationship,
                         markWithUnicodeMarker( "{\"name\":\"Something\",\"number\":10}" ) )
                         .getStatus() );
 
         assertEquals(
                 Status.CREATED.getStatusCode(),
-                service.addToNodeIndex(
+                service.addToNodeIndex(FORCE, 
                         "node",
                         markWithUnicodeMarker( "{\"key\":\"foo\", \"value\":\"bar\", \"uri\": \"" + nodeLocation
                                                + "\"}" ) )

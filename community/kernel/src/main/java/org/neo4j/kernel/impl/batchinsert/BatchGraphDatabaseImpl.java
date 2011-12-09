@@ -26,9 +26,11 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.NotInTransactionException;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ReturnableEvaluator;
@@ -39,6 +41,7 @@ import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.kernel.PlaceboTransaction;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 
@@ -89,7 +92,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
     {
         return new FakeTransaction();
     }
-
+    
     public Node createNode()
     {
         long id = batchInserter.createNode( null );
@@ -183,6 +186,18 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
 
         public void success()
         {
+        }
+        
+        @Override
+        public Lock acquireWriteLock( PropertyContainer entity )
+        {
+            return PlaceboTransaction.NO_LOCK;
+        }
+        
+        @Override
+        public Lock acquireReadLock( PropertyContainer entity )
+        {
+            return PlaceboTransaction.NO_LOCK;
         }
     }
 

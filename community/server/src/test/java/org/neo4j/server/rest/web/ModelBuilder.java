@@ -23,12 +23,16 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
+
 /**
  * Helps generate testable data models, using a RestfulGraphDatabase.
  * 
  */
 public class ModelBuilder
 {
+    private static final ForceMode FORCE = ForceMode.forced;
+    
     public static DomainModel generateMatrix( RestfulGraphDatabase rgd )
     {
         String key = "key_get";
@@ -38,14 +42,14 @@ public class ModelBuilder
 
         DomainEntity thomas = new DomainEntity();
         thomas.properties.put( "name", "Thomas Anderson" );
-        thomas.location = (URI) rgd.createNode( "{\"name\":\"" + "Thomas Anderson" + "\"}" )
+        thomas.location = (URI) rgd.createNode( FORCE, "{\"name\":\"" + "Thomas Anderson" + "\"}" )
                 .getMetadata()
                 .getFirst( "Location" );
         dm.add( thomas );
 
         DomainEntity agent = new DomainEntity();
         agent.properties.put( "name", "Agent Smith" );
-        agent.location = (URI) rgd.createNode( "{\"name\":\"" + "Agent Smith" + "\"}" )
+        agent.location = (URI) rgd.createNode( FORCE, "{\"name\":\"" + "Agent Smith" + "\"}" )
                 .getMetadata()
                 .getFirst( "Location" );
         dm.add( agent );
@@ -54,11 +58,11 @@ public class ModelBuilder
         dm.indexedNodeKeyValues.put( key, value );
 
         dm.indexedNodeUriToEntityMap.put(
-                (URI) rgd.addToNodeIndex( dm.nodeIndexName, "{\"key\": \"" + key + "\", \"value\":\"" + value + "\", \"uri\": \"" + thomas.location + "\"}" )
+                (URI) rgd.addToNodeIndex( FORCE, dm.nodeIndexName, "{\"key\": \"" + key + "\", \"value\":\"" + value + "\", \"uri\": \"" + thomas.location + "\"}" )
                         .getMetadata()
                         .getFirst( "Location" ), thomas );
         dm.indexedNodeUriToEntityMap.put(
-                (URI) rgd.addToNodeIndex( dm.nodeIndexName, "{\"key\": \"" + key + "\", \"value\":\"" + value + "\", \"uri\": \"" + agent.location + "\"}" )
+                (URI) rgd.addToNodeIndex( FORCE, dm.nodeIndexName, "{\"key\": \"" + key + "\", \"value\":\"" + value + "\", \"uri\": \"" + agent.location + "\"}" )
                         .getMetadata()
                         .getFirst( "Location" ), agent );
 
