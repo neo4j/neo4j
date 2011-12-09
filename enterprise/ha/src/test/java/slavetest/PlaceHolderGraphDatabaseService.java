@@ -31,6 +31,7 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.KernelData;
+import org.neo4j.kernel.TransactionBuilder;
 
 public class PlaceHolderGraphDatabaseService extends AbstractGraphDatabase
 {
@@ -85,6 +86,12 @@ public class PlaceHolderGraphDatabaseService extends AbstractGraphDatabase
     public Transaction beginTx()
     {
         return db.beginTx();
+    }
+    
+    @Override
+    public TransactionBuilder tx()
+    {
+        return ((AbstractGraphDatabase)db).tx();
     }
 
     @Override
