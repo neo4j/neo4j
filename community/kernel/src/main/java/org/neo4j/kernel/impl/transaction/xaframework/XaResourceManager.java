@@ -516,6 +516,11 @@ public class XaResourceManager
     synchronized XaTransaction forget( Xid xid ) throws XAException
     {
         XidStatus status = xidMap.get( xid );
+        if ( status == null )
+        {
+            msgLog.logMessage( "Cannot forget xid=" + xid + ", never knew about it in the first place." );
+            return null;
+        }
         TransactionStatus txStatus = status.getTransactionStatus();
         XaTransaction xaTransaction = txStatus.getTransaction();
         checkStartWritten( txStatus, xaTransaction );
