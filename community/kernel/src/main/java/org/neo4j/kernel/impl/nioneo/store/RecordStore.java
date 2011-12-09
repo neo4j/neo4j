@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import java.io.PrintStream;
 import java.util.Iterator;
 
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.ProgressIndicator;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 
@@ -161,35 +161,39 @@ public interface RecordStore<R extends AbstractBaseRecord>
             apply( store, null, filters );
         }
 
-        public <R extends AbstractBaseRecord> void applyWithTerminalProgress( RecordStore<R> store,
+        public <R extends AbstractBaseRecord> void applyFiltered( RecordStore<R> store, ProgressIndicator progress,
                 Predicate<? super R>... filters )
         {
-            apply( store, System.err, filters );
+            apply( store, progress, filters );
         }
 
-        private final <R extends AbstractBaseRecord> void apply( RecordStore<R> store, final PrintStream out,
+        private final <R extends AbstractBaseRecord> void apply( RecordStore<R> store, ProgressIndicator progress,
                 Predicate<? super R>... filters )
         {
             long highId = store.getHighId();
-            if ( out != null ) out.printf( "%s for %s records%n", this, Long.toString( highId ) );
-            int lastPermille = 0;
+            if ( progress == null ) progress = progressInit( store, highId );
             for ( R record : scan( store, filters ) )
             {
                 store.accept( this, record );
-                if ( out != null )
-                {
-                    int permille = (int) ( ( record.getLongId() * 1000L ) / highId );
-                    if ( permille != lastPermille ) progress( out, lastPermille = permille );
-                }
+                if ( progress != null ) progress.update( false, record.getLongId() );
             }
-            if ( out != null ) if ( lastPermille != 1000 ) progress( out, 1000 );
+            if ( progress != null ) progress.done( highId );
         }
 
-        private static void progress( PrintStream out, int permille )
+        /**
+         * Override to provide progress indication for the tool. Alternatively a
+         * pre-existing {@link ProgressIndicator} can be passed to the
+         * {@link #applyFiltered(RecordStore, ProgressIndicator, Predicate...)
+         * apply method}, in which case this method will not be invoked.
+         * 
+         * @param store the store progress will be reported on.
+         * @param highId the highest count the process will reach for this
+         *            store.
+         * @return a {@link ProgressIndicator} to report the progress to.
+         */
+        protected <R extends AbstractBaseRecord> ProgressIndicator progressInit( RecordStore<R> store, long highId )
         {
-            if ( permille % 100 == 0 )
-                out.printf( "%3s%%%n", Integer.toString( permille / 10 ) );
-            else if ( permille % 5 == 0 ) out.print( "." );
+            return null;
         }
     }
 }
