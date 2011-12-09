@@ -94,7 +94,7 @@ public class XaLogicalLog
     private char currentLog = CLEAN;
     private boolean keepLogs = false;
     private boolean autoRotate = true;
-    private long rotateAtSize = 25*1024*1024; // 25MB
+    private long rotateAtSize = 25 * 1024 * 1024; // 25MB
 
     private final String storeDir;
     private final LogBufferFactory logBufferFactory;
@@ -279,19 +279,36 @@ public class XaLogicalLog
     public synchronized int start( Xid xid, int masterId, int myId ) throws XAException
     {
         int xidIdent = getNextIdentifier();
+        long timeWritten = System.currentTimeMillis();
+        LogEntry.Start start = new LogEntry.Start( xid, xidIdent, masterId,
+                myId, -1, timeWritten );
+        /*
+         * We don't write the entry yet. We will store it and hope
+         * that when the commands/commit/prepare/done entry are going to be
+         * written, we will be asked to write the corresponding entry before.
+         */
+        xidIdentMap.put( xidIdent, start );
+        return xidIdent;
+    }
+
+    public synchronized void writeStartEntry( int identifier )
+            throws XAException
+    {
         try
         {
             long position = writeBuffer.getFileChannelPosition();
-            long timeWritten = System.currentTimeMillis();
-            LogEntry.Start start = new LogEntry.Start( xid, xidIdent, masterId, myId, position, timeWritten );
-            LogIoUtils.writeStart( writeBuffer, xidIdent, xid, masterId, myId, timeWritten );
-            xidIdentMap.put( xidIdent, start );
+            LogEntry.Start start = xidIdentMap.get( identifier );
+            start.setStartPosition( position );
+            LogIoUtils.writeStart( writeBuffer, identifier, start.getXid(),
+                    start.getMasterId(), start.getLocalId(),
+                    start.getTimeWritten() );
         }
         catch ( IOException e )
         {
-            throw Exceptions.withCause( new XAException( "Logical log couldn't start transaction: " + e ), e );
+            throw Exceptions.withCause( new XAException(
+                            "Logical log couldn't write transaction start entry: "
+                                    + e ), e );
         }
-        return xidIdent;
     }
 
     // [TX_PREPARE][identifier]
@@ -1521,6 +1538,35 @@ public class XaLogicalLog
     }
 
     /**
+     * Rotates this logical log. The pending transactions are moved over to a
+     * new log buffer and the internal structures updated to reflect the new
+     * file offsets. The old log is either renamed or thrown away, depending on
+     * the value of the last call to {@link #setKeepLogs(boolean)}. Additional
+     * side effects include a force() of the store and increment of the log
+     * version.
+     *
+     * Outline of how rotation happens:
+     *
+     * <li>The store is flushed - can't have pending changes if there is no log
+     * that contains the commands</li>
+     *
+     * <li>Switch current filename with old and check that new doesn't exist and
+     * the versioned backup isn't there also</li>
+     *
+     * <li>Force the current log buffer</li>
+     *
+     * <li>Create new log file, write header</li>
+     *
+     * <li>Find the position for the first pending transaction. From there start
+     * scanning, transferring the entries of the pending transactions from the
+     * old log to the new, updating the start positions in the in-memory tables</li>
+     *
+     * <li>Keep or delete old log</li>
+     *
+     * <li>Update the log version stored</li>
+     *
+     * <li>Instantiate the new log buffer</li>
+     *
      * @return the last tx in the produced log
      * @throws IOException I/O error.
      */
@@ -1647,9 +1693,10 @@ public class XaLogicalLog
         long firstEntryPosition = endPosition;
         for ( LogEntry.Start entry : xidIdentMap.values() )
         {
-            if ( entry.getStartPosition() < firstEntryPosition )
+            if ( entry.getStartPosition() > 0
+                 && entry.getStartPosition() < firstEntryPosition )
             {
-                assert entry.getStartPosition() > 0;
+                // assert entry.getStartPosition() > 0;
                 firstEntryPosition = entry.getStartPosition();
             }
         }

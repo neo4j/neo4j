@@ -273,6 +273,11 @@ public class XaResourceManager
             return commitStarted;
         }
 
+        boolean started()
+        {
+            return prepared || commitStarted || rollback;
+        }
+
         XaTransaction getTransaction()
         {
             return xaTransaction;
@@ -287,6 +292,15 @@ public class XaResourceManager
         }
     }
 
+    private void checkStartWritten( TransactionStatus status, XaTransaction tx )
+            throws XAException
+    {
+        if ( !status.started() && !tx.isRecovered() )
+        {
+            log.writeStartEntry( tx.getIdentifier() );
+        }
+    }
+
     synchronized int prepare( Xid xid ) throws XAException
     {
         XidStatus status = xidMap.get( xid );
@@ -296,6 +310,7 @@ public class XaResourceManager
         }
         TransactionStatus txStatus = status.getTransactionStatus();
         XaTransaction xaTransaction = txStatus.getTransaction();
+        checkStartWritten( txStatus, xaTransaction );
         if ( xaTransaction.isReadOnly() )
         {
             log.done( xaTransaction.getIdentifier() );
@@ -402,6 +417,7 @@ public class XaResourceManager
         }
         TransactionStatus txStatus = status.getTransactionStatus();
         XaTransaction xaTransaction = txStatus.getTransaction();
+        checkStartWritten( txStatus, xaTransaction );
         if ( onePhase )
         {
             if ( !xaTransaction.isReadOnly() )
@@ -480,6 +496,7 @@ public class XaResourceManager
         }
         TransactionStatus txStatus = status.getTransactionStatus();
         XaTransaction xaTransaction = txStatus.getTransaction();
+        checkStartWritten( txStatus, xaTransaction );
         if ( txStatus.commitStarted() )
         {
             throw new XAException( "Transaction already started commit" );
@@ -501,6 +518,7 @@ public class XaResourceManager
         XidStatus status = xidMap.get( xid );
         TransactionStatus txStatus = status.getTransactionStatus();
         XaTransaction xaTransaction = txStatus.getTransaction();
+        checkStartWritten( txStatus, xaTransaction );
         log.done( xaTransaction.getIdentifier() );
         xidMap.remove( xid );
         if ( xaTransaction.isRecovered() )
