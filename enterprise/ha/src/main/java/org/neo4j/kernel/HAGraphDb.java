@@ -339,19 +339,29 @@ public class HAGraphDb extends AbstractGraphDatabase
 
     private EmbeddedGraphDbImpl localGraph()
     {
-        if ( localGraph == null )
+        if ( localGraph != null ) return localGraph;
+        return waitForCondition( new LocalGraphAvailableCondition(), (getClientReadTimeoutFromConfig( config )-5)*1000 );
+}
+
+    private <T,E extends Exception> T waitForCondition( Condition<T,E> condition, int timeMillis ) throws E
+    {
+        long endTime = System.currentTimeMillis();
+        T result = condition.tryToFullfill();
+        while ( result == null && System.currentTimeMillis() < endTime )
         {
-            if ( causeOfShutdown != null )
+            try
             {
-                throw new RuntimeException( "Graph database not started", causeOfShutdown );
+                // TODO Naive implementation
+                Thread.sleep( 1 );
             }
-            else
+            catch ( InterruptedException e )
             {
-                throw new RuntimeException( "Graph database not assigned and no cause of shutdown, " +
-                		"maybe not started yet or in the middle of master/slave swap?" );
+                Thread.interrupted();
             }
+            result = condition.tryToFullfill();
+            if ( result != null ) return result;
         }
-        return localGraph;
+        throw condition.failure();
     }
 
     private BrokerFactory defaultBrokerFactory( final GraphDatabaseService graphDb,
@@ -1138,5 +1148,34 @@ public class HAGraphDb extends AbstractGraphDatabase
         }
 
         abstract LastCommittedTxIdSetter createUpdater( Broker broker );
+    }
+    
+    private interface Condition<T, E extends Exception>
+    {
+        T tryToFullfill();
+        
+        E failure();
+    }
+    
+    private class LocalGraphAvailableCondition implements Condition<EmbeddedGraphDbImpl, RuntimeException>
+    {
+        @Override
+        public EmbeddedGraphDbImpl tryToFullfill()
+        {
+            return localGraph;
+        }
+        
+        public RuntimeException failure()
+        {
+            if ( causeOfShutdown != null )
+            {
+                return new RuntimeException( "Graph database not started", causeOfShutdown );
+            }
+            else
+            {
+                return new RuntimeException( "Graph database not assigned and no cause of shutdown, " +
+                        "maybe not started yet or in the middle of master/slave swap?" );
+            }
+        }
     }
 }
