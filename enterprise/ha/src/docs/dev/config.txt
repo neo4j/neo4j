@@ -70,4 +70,8 @@ Note that while the +HighlyAvailableGraphDatabase+ supports the same API as the 
 Neo4j's HA setup depends on ZooKeeper a.k.a. Coordinator which makes certain assumptions about the state of the underlying operating system. In particular ZooKeeper expects 
 that the system time on each machine is set correctly, synchronized with respect to each other. If this is not true, then Neo4j HA will appear to misbehave, caused by seemingly random ZooKeeper hiccups.
 
-
+[CAUTION]
+Neo4j uses the Coordinator cluster to store information representative of the deployment's state, including key fields of the database itself. Since that information is permanently stored in the cluster,
+you cannot reuse it for multiple deployments of different databases. In particular, removing the Neo4j servers, replacing the database and restarting them using the same coordinator instances will
+result in errors mentioning the existing HA deployment. To reset the Coordinator cluster to a clean state, you have to shutdown all instances, remove the +data/coordinator/version-2/*+ data files and
+restart the Coordinators.
