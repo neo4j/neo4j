@@ -67,11 +67,14 @@ import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.RE
 import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.NEXT_DYNAMIC_NOT_REMOVED;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency;
 import org.neo4j.helpers.Args;
+import org.neo4j.helpers.ProgressIndicator;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -97,7 +100,7 @@ import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
  * are {@link DiffRecordStore diff stores}). Also, this checking is very
  * incomplete.
  */
-public class ConsistencyCheck extends RecordStore.Processor implements Runnable
+public abstract class ConsistencyCheck extends RecordStore.Processor implements Runnable, Iterable<RecordStore<?>>
 {
     /**
      * Run a full consistency check on the specified store.
@@ -124,7 +127,7 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
         StoreAccess stores = new StoreAccess( args[0] );
         try
         {
-            new ConsistencyCheck( stores, propowner ).run();
+            run( stores, propowner );
         }
         finally
         {
@@ -140,6 +143,44 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
         System.err.println( "         -propowner  --  to verify that properties are owned only once" );
     }
 
+    public static void run( StoreAccess stores, boolean propowner )
+    {
+        new ConsistencyCheck( stores, propowner )
+        {
+            @Override
+            ProgressIndicator.MultiProgress progressInit()
+            {
+                System.err.println( "Checking consistency on:" );
+                long total = 0;
+                for ( RecordStore<?> store : this )
+                {
+                    if ( store != null )
+                    {
+                        long highId = store.getHighId();
+                        System.err.println( "    " + highId + " records from " + store );
+                        total += highId;
+                    }
+                }
+                return ProgressIndicator.MultiProgress.textual( System.err, total );
+            }
+
+            @Override
+            protected <R1 extends AbstractBaseRecord, R2 extends AbstractBaseRecord> void report(
+                    RecordStore<R1> recordStore, R1 record, RecordStore<? extends R2> referredStore, R2 referred,
+                    InconsistencyType inconsistency )
+            {
+                System.out.println( record + " " + referred + " //" + inconsistency.message() );
+            }
+
+            @Override
+            protected <R extends AbstractBaseRecord> void report( RecordStore<R> recordStore, R record,
+                    InconsistencyType inconsistency )
+            {
+                System.out.println( record + " //" + inconsistency.message() );
+            }
+        }.run();
+    }
+
     private final RecordStore<NodeRecord> nodes;
     private final RecordStore<RelationshipRecord> rels;
     private final RecordStore<PropertyRecord> props;
@@ -148,6 +189,12 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
     private final RecordStore<RelationshipTypeRecord>  relTypes;
     private final RecordStore<DynamicRecord> propKeys;
     private final RecordStore<DynamicRecord> typeNames;
+    @Override
+    public Iterator<RecordStore<?>> iterator()
+    {
+        return Arrays.<RecordStore<?>>asList( nodes, rels, props, strings, arrays, propIndexes, relTypes, propKeys,
+                typeNames ).iterator();
+    }
     private final HashMap<Long/*property record id*/, PropertyOwner> propertyOwners;
     private long brokenNodes, brokenRels, brokenProps, brokenStrings, brokenArrays, brokenTypes, brokenKeys;
 
@@ -271,20 +318,29 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
     @SuppressWarnings( "unchecked" )
     public void run()
     {
-        applyFiltered( nodes, RecordStore.IN_USE );
-        applyFiltered( rels, RecordStore.IN_USE );
+        ProgressIndicator.MultiProgress progress = progressInit();
+
+        applyFiltered( nodes, progress, RecordStore.IN_USE );
+        applyFiltered( rels, progress, RecordStore.IN_USE );
         // free up some heap space that isn't needed anymore
         if ( propertyOwners != null ) propertyOwners.clear();
-        applyFiltered( props, RecordStore.IN_USE );
+        applyFiltered( props, progress, RecordStore.IN_USE );
         // free up some heap space that isn't needed anymore
         if ( propertyOwners != null ) propertyOwners.clear();
-        applyFiltered( strings, RecordStore.IN_USE );
-        applyFiltered( arrays, RecordStore.IN_USE );
-        applyFiltered( relTypes, RecordStore.IN_USE );
-        applyFiltered( propIndexes, RecordStore.IN_USE );
-        applyFiltered( propKeys, RecordStore.IN_USE );
-        applyFiltered( typeNames, RecordStore.IN_USE );
+        applyFiltered( strings, progress, RecordStore.IN_USE );
+        applyFiltered( arrays, progress, RecordStore.IN_USE );
+        applyFiltered( relTypes, progress, RecordStore.IN_USE );
+        applyFiltered( propIndexes, progress, RecordStore.IN_USE );
+        applyFiltered( propKeys, progress, RecordStore.IN_USE );
+        applyFiltered( typeNames, progress, RecordStore.IN_USE );
+        
+        if (progress != null) progress.done();
         checkResult();
+    }
+
+    ProgressIndicator.MultiProgress progressInit()
+    {
+        return null;
     }
 
     /**
@@ -773,11 +829,8 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
      * @param referred the record the inconsistent record references.
      * @param inconsistency a description of the inconsistency.
      */
-    protected <R1 extends AbstractBaseRecord, R2 extends AbstractBaseRecord> void report(
-            RecordStore<R1> recordStore, R1 record, RecordStore<? extends R2> referredStore, R2 referred, InconsistencyType inconsistency )
-    {
-        System.err.println( record + " " + referred + " //" + inconsistency.message() );
-    }
+    protected abstract <R1 extends AbstractBaseRecord, R2 extends AbstractBaseRecord> void report(
+            RecordStore<R1> recordStore, R1 record, RecordStore<? extends R2> referredStore, R2 referred, InconsistencyType inconsistency );
 
     /**
      * Report an internal inconsistency in a single record. 
@@ -786,10 +839,7 @@ public class ConsistencyCheck extends RecordStore.Processor implements Runnable
      * @param record the inconsistent record.
      * @param inconsistency a description of the inconsistency.
      */
-    protected <R extends AbstractBaseRecord> void report( RecordStore<R> recordStore, R record, InconsistencyType inconsistency )
-    {
-        System.err.println( record + " //" + inconsistency.message() );
-    }
+    protected abstract <R extends AbstractBaseRecord> void report( RecordStore<R> recordStore, R record, InconsistencyType inconsistency );
 
     private static NodeField[] nodeFields = NodeField.values();
     private static RelationshipField[] relFields = RelationshipField.values();
