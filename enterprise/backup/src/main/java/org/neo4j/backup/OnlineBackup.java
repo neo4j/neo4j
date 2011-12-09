@@ -100,7 +100,7 @@ public class OnlineBackup
                 StoreAccess newStore = new StoreAccess( targetDirectory );
                 try
                 {
-                    new ConsistencyCheck( newStore ).run();
+                    ConsistencyCheck.run( newStore, false );
                 }
                 finally
                 {
