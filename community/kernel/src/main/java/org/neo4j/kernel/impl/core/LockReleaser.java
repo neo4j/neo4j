@@ -438,8 +438,8 @@ public class LockReleaser
                 {
                     node.commitRelationshipMaps( nodeElement.relationshipAddMap,
                         nodeElement.relationshipRemoveMap, nodeElement.firstRel );
-                    node.commitPropertyMaps( nodeElement.getPropertyAddMap( false ),
-                        nodeElement.getPropertyRemoveMap( false ), nodeElement.firstProp );
+                    node.commitPropertyMaps( nodeElement.propertyAddMap,
+                        nodeElement.propertyRemoveMap, nodeElement.firstProp );
                 }
                 else if ( param != Status.STATUS_ROLLEDBACK )
                 {
