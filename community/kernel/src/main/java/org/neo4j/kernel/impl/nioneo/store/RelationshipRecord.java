@@ -31,7 +31,8 @@ public class RelationshipRecord extends PrimitiveRecord
 
     public RelationshipRecord( long id, long firstNode, long secondNode, int type )
     {
-        super( id );
+        // TODO take firstProp in here
+        super( id, Record.NO_NEXT_PROPERTY.intValue() );
         this.firstNode = firstNode;
         this.secondNode = secondNode;
         this.type = type;

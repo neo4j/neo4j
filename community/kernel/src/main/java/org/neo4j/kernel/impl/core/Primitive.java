@@ -23,6 +23,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.kernel.impl.core.LockReleaser.CowEntityElement;
+import org.neo4j.kernel.impl.core.LockReleaser.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -50,6 +53,8 @@ abstract class Primitive
 
     public abstract long getId();
     
+    protected abstract long getFirstProp();
+    
     protected abstract void setEmptyProperties();
     
     protected abstract PropertyData[] allProperties();
@@ -60,7 +65,7 @@ abstract class Primitive
     
     protected abstract void commitPropertyMaps(
             ArrayMap<Integer,PropertyData> cowPropertyAddMap,
-            ArrayMap<Integer,PropertyData> cowPropertyRemoveMap );
+            ArrayMap<Integer,PropertyData> cowPropertyRemoveMap, long firstProp );
     
     @Override
     public int hashCode()
@@ -316,20 +321,20 @@ abstract class Primitive
         return false;
     }
 
-    public void setProperty( NodeManager nodeManager, String key, Object value )
+    public void setProperty( NodeManager nodeManager, PropertyContainer proxy, String key, Object value )
     {
         if ( key == null || value == null )
         {
             throw new IllegalArgumentException( "Null parameter, " + "key=" +
                 key + ", " + "value=" + value );
         }
-        nodeManager.acquireLock( this, LockType.WRITE );
+        nodeManager.acquireLock( proxy, LockType.WRITE );
         boolean success = false;
         try
         {
             ensureFullProperties( nodeManager );
             ArrayMap<Integer,PropertyData> addMap =
-                nodeManager.getCowPropertyAddMap( this, true );
+                nodeManager.getOrCreateCowPropertyAddMap( this );
             ArrayMap<Integer,PropertyData> skipMap =
                 nodeManager.getCowPropertyRemoveMap( this );
             PropertyIndex index = null;
@@ -424,7 +429,7 @@ abstract class Primitive
         }
         finally
         {
-            nodeManager.releaseLock( this, LockType.WRITE );
+            nodeManager.releaseLock( proxy, LockType.WRITE );
             if ( !success )
             {
                 nodeManager.setRollbackOnly();
@@ -432,13 +437,13 @@ abstract class Primitive
         }
     }
 
-    public Object removeProperty( NodeManager nodeManager, String key )
+    public Object removeProperty( NodeManager nodeManager, PropertyContainer proxy, String key )
     {
         if ( key == null )
         {
             throw new IllegalArgumentException( "Null parameter." );
         }
-        nodeManager.acquireLock( this, LockType.WRITE );
+        nodeManager.acquireLock( proxy, LockType.WRITE );
         boolean success = false;
         try
         {
@@ -449,7 +454,7 @@ abstract class Primitive
 
             // Don't create the map if it doesn't exist here... but instead when (and if)
             // the property is found below.
-            ArrayMap<Integer,PropertyData> removeMap = nodeManager.getCowPropertyRemoveMap( this, false );
+            ArrayMap<Integer,PropertyData> removeMap = nodeManager.getCowPropertyRemoveMap( this );
             for ( PropertyIndex cachedIndex : nodeManager.index( key ) )
             {
                 if ( addMap != null )
@@ -457,7 +462,7 @@ abstract class Primitive
                     property = addMap.remove( cachedIndex.getKeyId() );
                     if ( property != null )
                     {
-                        removeMap = removeMap != null ? removeMap : nodeManager.getCowPropertyRemoveMap( this, true );
+                        removeMap = removeMap != null ? removeMap : nodeManager.getOrCreateCowPropertyRemoveMap( this );
                         removeMap.put( cachedIndex.getKeyId(), property );
                         break;
                     }
@@ -470,7 +475,7 @@ abstract class Primitive
                 property = getPropertyForIndex( cachedIndex.getKeyId() );
                 if ( property != null )
                 {
-                    removeMap = removeMap != null ? removeMap : nodeManager.getCowPropertyRemoveMap( this, true );
+                    removeMap = removeMap != null ? removeMap : nodeManager.getOrCreateCowPropertyRemoveMap( this );
                     removeMap.put( cachedIndex.getKeyId(), property );
                     break;
                 }
@@ -491,7 +496,7 @@ abstract class Primitive
                                     .getKeyId() );
                                 if ( property != null )
                                 {
-                                    removeMap = removeMap != null ? removeMap : nodeManager.getCowPropertyRemoveMap( this, true );
+                                    removeMap = removeMap != null ? removeMap : nodeManager.getOrCreateCowPropertyRemoveMap( this );
                                     removeMap.put( indexToCheck.getKeyId(),
                                         property );
                                     break;
@@ -513,7 +518,7 @@ abstract class Primitive
                                     property = getPropertyForIndex( indexToCheck.getKeyId() );
                                     if ( property != null )
                                     {
-                                        removeMap = removeMap != null ? removeMap : nodeManager.getCowPropertyRemoveMap( this, true );
+                                        removeMap = removeMap != null ? removeMap : nodeManager.getOrCreateCowPropertyRemoveMap( this );
                                         removeMap.put( indexToCheck.getKeyId(),
                                             property );
                                         break;
@@ -535,7 +540,7 @@ abstract class Primitive
         }
         finally
         {
-            nodeManager.releaseLock( this, LockType.WRITE );
+            nodeManager.releaseLock( proxy, LockType.WRITE );
             if ( !success )
             {
                 nodeManager.setRollbackOnly();
@@ -608,4 +613,8 @@ abstract class Primitive
         }
         return null;
     }
+    
+    public abstract CowEntityElement getEntityElement( PrimitiveElement element, boolean create );
+    
+    abstract PropertyContainer asProxy( NodeManager nm );
 }

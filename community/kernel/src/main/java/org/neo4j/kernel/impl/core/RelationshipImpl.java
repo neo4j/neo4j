@@ -21,7 +21,11 @@ package org.neo4j.kernel.impl.core;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.kernel.impl.core.LockReleaser.CowEntityElement;
+import org.neo4j.kernel.impl.core.LockReleaser.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.transaction.LockException;
 import org.neo4j.kernel.impl.transaction.LockType;
@@ -119,7 +123,7 @@ abstract class RelationshipImpl extends ArrayBasedPrimitive
             && otherType.name().equals( this.getType( nodeManager ).name() );
     }
 
-    public void delete( NodeManager nodeManager )
+    public void delete( NodeManager nodeManager, Relationship proxy )
     {
         NodeImpl startNode = null;
         NodeImpl endNode = null;
@@ -141,13 +145,13 @@ abstract class RelationshipImpl extends ArrayBasedPrimitive
                 nodeManager.acquireLock( endNode, LockType.WRITE );
                 endNodeLocked = true;
             }
-            nodeManager.acquireLock( this, LockType.WRITE );
+            nodeManager.acquireLock( proxy, LockType.WRITE );
             thisLocked = true;
             // no need to load full relationship, all properties will be
             // deleted when relationship is deleted
 
             ArrayMap<Integer,PropertyData> skipMap =
-                nodeManager.getCowPropertyRemoveMap( this, true );
+                nodeManager.getOrCreateCowPropertyRemoveMap( this );
             ArrayMap<Integer,PropertyData> removedProps =
                 nodeManager.deleteRelationship( this );
             if ( removedProps.size() > 0 )
@@ -177,7 +181,7 @@ abstract class RelationshipImpl extends ArrayBasedPrimitive
             {
                 if ( thisLocked )
                 {
-                    nodeManager.releaseLock( this, LockType.WRITE );
+                    nodeManager.releaseLock( proxy, LockType.WRITE );
                 }
             }
             catch ( Exception e )
@@ -227,5 +231,17 @@ abstract class RelationshipImpl extends ArrayBasedPrimitive
     {
         return "RelationshipImpl #" + this.getId() + " of type " + getType( null )
             + " between Node[" + getStartNodeId() + "] and Node[" + getEndNodeId() + "]";
+    }
+    
+    @Override
+    public CowEntityElement getEntityElement( PrimitiveElement element, boolean create )
+    {
+        return element.relationshipElement( getId(), create );
+    }
+    
+    @Override
+    PropertyContainer asProxy( NodeManager nm )
+    {
+        return new RelationshipProxy( getId(), nm );
     }
 }

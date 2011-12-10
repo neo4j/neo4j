@@ -26,6 +26,7 @@ import javax.transaction.xa.XAResource;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
@@ -166,7 +167,7 @@ public interface NeoStoreTransaction
      * @param id The id of the node to load.
      * @return True iff the node record can be found.
      */
-    public boolean nodeLoadLight( long id );
+    public NodeRecord nodeLoadLight( long id );
 
     /**
      * Attempts to load the value off the store forthe given PropertyData
@@ -243,7 +244,7 @@ public interface NeoStoreTransaction
      * @return The properties loaded, as a map from property index id to
      *         property data.
      */
-    public ArrayMap<Integer,PropertyData> nodeLoadProperties( long nodeId,
+    public ArrayMap<Integer,PropertyData> nodeLoadProperties( long nodeId, long firstProp,
             boolean light );
 
     /**

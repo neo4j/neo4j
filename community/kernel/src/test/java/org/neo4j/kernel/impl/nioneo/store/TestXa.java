@@ -377,7 +377,8 @@ public class TestXa extends AbstractNeo4jTestCase
         xaCon.getWriteTransaction().nodeCreate( node2 );
         PropertyData n1prop1 = xaCon.getWriteTransaction().nodeAddProperty(
                 node1, index( "prop1" ), "string1" );
-        xaCon.getWriteTransaction().nodeLoadProperties( node1, false );
+        xaCon.getWriteTransaction().nodeLoadProperties( node1,
+                xaCon.getWriteTransaction().nodeLoadLight( node1 ).getNextProp(), false );
         int relType1 = (int) ds.nextId( RelationshipType.class );
         xaCon.getWriteTransaction().createRelationshipType( relType1,
             "relationshiptype1" );
@@ -582,7 +583,7 @@ public class TestXa extends AbstractNeo4jTestCase
         assertTrue( Arrays.equals(
                 (long[]) toRead.getValue(),
                 (long[]) xaCon.getWriteTransaction().nodeLoadProperties( node1,
-                        false ).get( toRead.getIndex() ).getValue() ) );
+                        xaCon.getWriteTransaction().nodeLoadLight( node1 ).getNextProp(), false ).get( toRead.getIndex() ).getValue() ) );
 
         xaRes.end( xid, XAResource.TMSUCCESS );
         xaRes.prepare( xid );
@@ -810,7 +811,8 @@ public class TestXa extends AbstractNeo4jTestCase
         xaCon.getWriteTransaction().nodeCreate( node2 );
         PropertyData n1prop1 = xaCon.getWriteTransaction().nodeAddProperty(
                 node1, index( "prop1" ), "string1" );
-        xaCon.getWriteTransaction().nodeLoadProperties( node1, false );
+        xaCon.getWriteTransaction().nodeLoadProperties( node1,
+                xaCon.getWriteTransaction().nodeLoadLight( node1 ).getNextProp(), false );
         int relType1 = (int) ds.nextId( RelationshipType.class );
         xaCon.getWriteTransaction().createRelationshipType( relType1, "relationshiptype1" );
         long rel1 = ds.nextId( Relationship.class );
