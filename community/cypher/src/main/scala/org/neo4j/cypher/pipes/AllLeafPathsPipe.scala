@@ -34,6 +34,8 @@ class AllLeafPathsPipe(source: Pipe, leafInfo: AllLeafs) extends PipeWithSource(
   def endName = leafInfo.endName
   def pathName = leafInfo.pathName
 
+  override def executionPlan(): String = source.executionPlan() + "\r\n" + "AllLeafPaths(" + leafInfo + ")"
+
   def foreach[U](f: (Map[String, Any]) => U) {
     source.foreach(m => {
       val startNode = m(startName).asInstanceOf[Node]

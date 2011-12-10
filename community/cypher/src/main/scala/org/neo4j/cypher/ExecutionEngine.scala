@@ -57,7 +57,7 @@ class ExecutionEngine(graph: GraphDatabaseService) {
 
 
   @throws(classOf[SyntaxException])
-  def execute(query: Query, params: Map[String, Any]): ExecutionResult =new ExecutionPlanImpl(query, graph).execute(params)
+  def execute(query: Query, params: Map[String, Any]): ExecutionResult = new ExecutionPlanImpl(query, graph).execute(params)
 
 
   def checkScalaVersion() {

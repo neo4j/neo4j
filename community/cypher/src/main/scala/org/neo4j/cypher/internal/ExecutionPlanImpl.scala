@@ -50,6 +50,9 @@ class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends Execu
         context.pipe = createShortestPathPipe(context.pipe, matching, namedPaths)
         context = addFilters(context)
 
+        context.pipe = createAllLeafPathPipes(context.pipe, matching, namedPaths)
+        context = addFilters(context)
+
         namedPaths match {
           case None =>
           case Some(x) => x.paths.foreach(p => context.pipe = new NamedPathPipe(context.pipe, p))
@@ -173,6 +176,23 @@ class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends Execu
     })
     result
 
+  }
+  private def createAllLeafPathPipes(source: Pipe, matching: Option[Match], namedPaths: Option[NamedPaths]): Pipe = {
+    val unnamedShortestPaths = matching match {
+      case Some(m) => m.patterns.filter(_.isInstanceOf[AllLeafs]).map(_.asInstanceOf[AllLeafs])
+      case None => Seq()
+    }
+
+    val namedShortestPaths = namedPaths match {
+      case Some(m) => m.paths.flatMap(_.pathPattern).filter(_.isInstanceOf[AllLeafs]).map(_.asInstanceOf[AllLeafs])
+      case None => Seq()
+    }
+
+    val shortestPaths = unnamedShortestPaths ++ namedShortestPaths
+
+    var result = source
+    shortestPaths.foreach(p => result = new AllLeafPathsPipe(result, p))
+    result
   }
 
   private def createSourcePumps(pipe: Pipe, items: List[StartItem]): Pipe = {
