@@ -28,12 +28,9 @@ class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
   val returnItemNames = returnItems.map(_.columnName)
   val symbols = source.symbols.filter(returnItemNames: _*)
 
-  def foreach[U](f: (Map[String, Any]) => U) {
-    source.foreach(row => {
-      val filtered = row.filterKeys(returnItemNames.contains)
-      f.apply(filtered)
-    })
-  }
+
+  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] =
+    source.createResults(params).map(_.filterKeys(returnItemNames.contains))
 
   override def executionPlan(): String = {
     source.executionPlan() + "\r\n" + "ColumnFilter([" + source.symbols.keys + "] => [" + returnItemNames.mkString(",") + "])"

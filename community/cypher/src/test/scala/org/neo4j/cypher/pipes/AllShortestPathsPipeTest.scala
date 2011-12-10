@@ -32,11 +32,11 @@ class AllShortestPathsPipeTest extends GraphDatabaseTestBase with Assertions {
     val source = new FakePipe(List(Map("a" -> a, "b" -> b)))
 
     val pipe = new AllShortestPathsPipe(source, ShortestPath("p", "a", "b", None, Direction.BOTH, Some(15), true, false))
-    pipe.map(m => m("p").asInstanceOf[Path])
+    pipe.createResults(Map()).map(m => m("p").asInstanceOf[Path])
   }
 
   @Test def shouldReturnTheShortestPathBetweenTwoNodes() {
-    val (a,b,c,d) = createDiamond()
+    val (a, _, _, d) = createDiamond()
 
     val resultPaths = runThroughPipeAndGetPath(a, d)
 

@@ -23,33 +23,35 @@ import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import java.lang.String
 import org.neo4j.cypher.symbols.{AnyType, NodeType, RelationshipType, Identifier}
 
-abstract class StartPipe[T <: PropertyContainer](inner: Pipe, name: String, createSource: Map[String,Any] => Iterable[T]) extends Pipe {
-  def this(inner: Pipe, name: String, sourceIterable: Iterable[T]) = this(inner, name, m => sourceIterable)
+abstract class StartPipe[T <: PropertyContainer](inner: Pipe, name: String, createSource: Map[String, Any] => Iterable[T]) extends Pipe {
+  def this(inner: Pipe, name: String, sourceIterable: Iterable[T]) = this (inner, name, m => sourceIterable)
 
   def identifierType: AnyType
 
   val symbols = inner.symbols.add(Identifier(name, identifierType))
 
-  def foreach[U](f: (Map[String, Any]) => U) {
-    inner.foreach(innerMap => {
-      createSource(innerMap).foreach((x) => {
-        f(innerMap ++ Map(name -> x))
-      })
+
+  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = {
+    inner.createResults(params).flatMap(sourceMap => {
+      createSource(sourceMap).map(x=> sourceMap ++ Map(name -> x))
     })
   }
 
-  def visibleName:String
+  def visibleName: String
+
   override def executionPlan(): String = inner.executionPlan() + "\r\n" + visibleName + "(" + name + ")"
 }
 
-class NodeStartPipe(inner: Pipe, name: String, createSource: Map[String,Any] => Iterable[Node])
+class NodeStartPipe(inner: Pipe, name: String, createSource: Map[String, Any] => Iterable[Node])
   extends StartPipe[Node](inner, name, createSource) {
   def identifierType = NodeType()
+
   def visibleName: String = "Nodes"
 }
 
-class RelationshipStartPipe(inner: Pipe, name: String, createSource: Map[String,Any] => Iterable[Relationship])
+class RelationshipStartPipe(inner: Pipe, name: String, createSource: Map[String, Any] => Iterable[Relationship])
   extends StartPipe[Relationship](inner, name, createSource) {
   def identifierType = RelationshipType()
+
   def visibleName: String = "Rels"
 }

@@ -61,11 +61,11 @@ class AllLeafPathsTest extends GraphDatabaseTestBase with Assertions {
 
   @Test def shouldReturnAllLeafs() {
     val pipe = new AllLeafPathsPipe(source, AllLeafs("root", "leaf", "path", Direction.OUTGOING, None, None, false))
-    assert(pipe.map(m => m("leaf")).toSet === Set(d, e, c))
+    assert(pipe.createResults(Map()).map(m => m("leaf")).toSet === Set(d, e, c))
   }
 
   @Test def shouldReturnAllLeafPaths() {
     val pipe = new AllLeafPathsPipe(source, AllLeafs("root", "leaf", "path", Direction.OUTGOING, None, None, false))
-    assert(pipe.map(m => m("path")).toSet === Set(PathImpl(a, rab, b, rbd, d), PathImpl(a, rab, b, rbe, e), PathImpl(a, rac, c)))
+    assert(pipe.createResults(Map()).map(m => m("path")).toSet === Set(PathImpl(a, rab, b, rbd, d), PathImpl(a, rab, b, rbe, e), PathImpl(a, rac, c)))
   }
 }

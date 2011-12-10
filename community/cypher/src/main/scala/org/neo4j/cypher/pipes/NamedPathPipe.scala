@@ -38,23 +38,21 @@ class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
     firstNode
   }
 
-  def foreach[U](f: (Map[String, Any]) => U) {
+  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = source.createResults(params).map(m => {
+    def get(x: String): PropertyContainer = m(x).asInstanceOf[PropertyContainer]
 
-    source.foreach(m => {
-      def get(x: String): PropertyContainer = m(x).asInstanceOf[PropertyContainer]
+    val firstNode: String = getFirstNode
 
-      val firstNode: String = getFirstNode
-
-      val p: Seq[PropertyContainer] = path.pathPattern.foldLeft(Seq(get(firstNode)))((soFar, p) => p match {
-        case RelatedTo(left, right, relName, x, xx, optional) => soFar ++ Seq(get(relName), get(right))
-        case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, direction, iterableRel, optional) => getPath(m, pathName, soFar)
-        case ShortestPath(pathName, _, _, _, _, _, _, _) => getPath(m, pathName, soFar)
-        case AllLeafs(_, _, pathName, _, _, _, _) => getPath(m, pathName, soFar)
-      })
-
-      f(m + (path.pathName -> buildPath(p)))
+    val p: Seq[PropertyContainer] = path.pathPattern.foldLeft(Seq(get(firstNode)))((soFar, p) => p match {
+      case RelatedTo(left, right, relName, x, xx, optional) => soFar ++ Seq(get(relName), get(right))
+      case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, direction, iterableRel, optional) => getPath(m, pathName, soFar)
+      case ShortestPath(pathName, _, _, _, _, _, _, _) => getPath(m, pathName, soFar)
+      case AllLeafs(_, _, pathName, _, _, _, _) => getPath(m, pathName, soFar)
     })
-  }
+
+    m + (path.pathName -> buildPath(p))
+  })
+
 
   private def buildPath(pieces: Seq[PropertyContainer]): Path =
     if (pieces.contains(null))
@@ -66,7 +64,7 @@ class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
   def getPath(m: Map[String, Any], key: String, soFar: Seq[PropertyContainer]): Seq[PropertyContainer] = {
     val m1 = m(key)
 
-    if(m1 == null)
+    if (m1 == null)
       return Seq(null)
 
     val path = m1.asInstanceOf[Path].iterator().asScala.toSeq

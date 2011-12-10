@@ -24,20 +24,21 @@ import org.junit.Assert._
 import org.scalatest.junit.JUnitSuite
 import org.neo4j.cypher.commands.{EntityValue, ValueReturnItem, SortItem}
 import org.neo4j.cypher.symbols.{Identifier, SymbolTable}
+import java.lang.String
 
 class SortPipeTest extends JUnitSuite{
   @Test def emptyInIsEmptyOut() {
     val source = new FakePipe(List())
     val sortPipe = new SortPipe(source, List(SortItem(ValueReturnItem(EntityValue("x")), true)))
 
-    assertEquals(List(), sortPipe.toList)
+    assertEquals(List(), sortPipe.createResults(Map()).toList)
   }
 
   @Test def simpleSortingIsSupported() {
     val source = new FakePipe(List(Map("x" -> "B"), Map("x" -> "A")))
     val sortPipe = new SortPipe(source, List(SortItem(ValueReturnItem(EntityValue("x")), true)))
 
-    assertEquals(List(Map("x" -> "A"), Map("x" -> "B")), sortPipe.toList)
+    assertEquals(List(Map("x" -> "A"), Map("x" -> "B")), sortPipe.createResults(Map()).toList)
   }
 
   @Test def sortByTwoColumns() {
@@ -53,7 +54,7 @@ class SortPipeTest extends JUnitSuite{
     assertEquals(List(
       Map("x" -> "A", "y" -> 100),
       Map("x" -> "B", "y" -> 10),
-      Map("x" -> "B", "y" -> 20)), sortPipe.toList)
+      Map("x" -> "B", "y" -> 20)), sortPipe.createResults(Map()).toList)
   }
 
   @Test def sortByTwoColumnsWithOneDescending() {
@@ -69,7 +70,7 @@ class SortPipeTest extends JUnitSuite{
     assertEquals(List(
       Map("x" -> "A", "y" -> 100),
       Map("x" -> "B", "y" -> 20),
-      Map("x" -> "B", "y" -> 10)), sortPipe.toList)
+      Map("x" -> "B", "y" -> 10)), sortPipe.createResults(Map()).toList)
   }
 
   @Test def shouldHandleSortingWithNullValues() {
@@ -83,7 +84,7 @@ class SortPipeTest extends JUnitSuite{
     assertEquals(List(
       Map("y" -> 1),
       Map("y" -> 2),
-      Map("y" -> null)), sortPipe.toList)
+      Map("y" -> null)), sortPipe.createResults(Map()).toList)
   }
 
 }
@@ -91,9 +92,7 @@ class SortPipeTest extends JUnitSuite{
 class FakePipe(data: Seq[Map[String, Any]], val symbols: SymbolTable) extends Pipe {
   def this(data: Seq[Map[String, Any]]) = this (data, new FakeSymbolTable())
 
-  def foreach[U](f: (Map[String, Any]) => U) {
-    data.foreach(f(_))
-  }
+  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = data
 
   def executionPlan(): String = "FAKE"
 }

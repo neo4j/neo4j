@@ -26,14 +26,15 @@ import scala.collection.JavaConverters._
 import org.neo4j.cypher.commands.ShortestPath
 
 class AllShortestPathsPipe(source: Pipe, ast: ShortestPath) extends ShortestPathPipe(source, ast) {
-  protected def findResult[U](expander: Expander, start: Node, end: Node, f: (Map[String, Any]) => U, depth: Int, m: Map[String, Any]) {
+
+  protected def findResult[U](expander: Expander, start: Node, end: Node, depth: Int, m: Map[String, Any]): Traversable[Map[String, Any]] = {
     val finder = GraphAlgoFactory.shortestPath(expander, depth)
     val foundPaths = finder.findAllPaths(start, end).asScala.toList
 
     (foundPaths, optional) match {
-      case (List(), true) => f(m ++ Map(pathName -> null))
-      case (List(), false) =>
-      case (paths, _) => paths.foreach(path => f(m ++ Map(pathName -> path)))
+      case (List(), true) => Seq(m ++ Map(pathName -> null))
+      case (List(), false) => Seq()
+      case (paths, _) => paths.map(path => m ++ Map(pathName -> path))
     }
   }
 

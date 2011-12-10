@@ -36,10 +36,11 @@ class ExtractPipe(source: Pipe, val returnItems: Seq[ReturnItem]) extends PipeWi
 
   val symbols: SymbolTable = source.symbols.add(returnItems.map(_.identifier):_*)
 
-  def foreach[U](f: (Map[String, Any]) => U) {
-    source.foreach(row => {
+
+  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = {
+    source.createResults(params).map(row => {
       val projection: Map[String, Any] = returnItems.map( returnItem =>returnItem.columnName -> returnItem(row) ).toMap
-      f.apply(projection ++ row)
+      projection ++ row
     })
   }
 

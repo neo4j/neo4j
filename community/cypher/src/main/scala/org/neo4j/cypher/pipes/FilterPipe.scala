@@ -25,12 +25,8 @@ import java.lang.String
 class FilterPipe(source: Pipe, predicate: Predicate) extends Pipe {
   val symbols = source.symbols
 
-  def foreach[U](f: (Map[String, Any]) => U) {
-
-    val result = source.filter(predicate isMatch)
-
-    result.foreach(f)
-  }
+  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] =
+    source.createResults(params).filter(predicate isMatch)
 
   override def executionPlan(): String = source.executionPlan() + "\r\n" + "Filter(" + predicate.toString + ")"
 }

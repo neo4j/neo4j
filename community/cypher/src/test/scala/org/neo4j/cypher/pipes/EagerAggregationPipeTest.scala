@@ -60,7 +60,7 @@ class EagerAggregationPipeTest extends JUnitSuite {
     val grouping = List(CountStar())
     val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)
 
-    assertThat(aggregationPipe.toList.asJava, hasItems(
+    assertThat(aggregationPipe.createResults(Map()).toIterable.asJava, hasItems(
       Map("name" -> "Andres", "count(*)" -> 1),
       Map("name" -> "Peter", "count(*)" -> 1),
       Map("name" -> "Michael", "count(*)" -> 2)))
@@ -77,7 +77,7 @@ class EagerAggregationPipeTest extends JUnitSuite {
     val grouping = List(ValueAggregationItem(Count((EntityValue("name")))))
     val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)
 
-    assertEquals(List(Map("count(name)" -> 3)), aggregationPipe.toList)
+    assertEquals(List(Map("count(name)" -> 3)), aggregationPipe.createResults(Map()).toList)
   }
 
   private def createSymbolTableFor(name:String) = new SymbolTable(Identifier(name, NodeType()))

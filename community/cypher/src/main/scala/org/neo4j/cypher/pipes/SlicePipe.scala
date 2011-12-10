@@ -26,25 +26,25 @@ class SlicePipe(source:Pipe, skip:Option[Value], limit:Option[Value]) extends Pi
   val symbols = source.symbols
 
   //TODO: Make this nicer. I'm sure it's expensive and silly.
-  def foreach[U](f: (Map[String, Any]) => U) {
-    if(source.isEmpty)
-      return
+  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = {
+    val sourceTraversable = source.createResults(params)
 
-    val first: Map[String, Any] = source.head
+    if(sourceTraversable.isEmpty)
+      return Seq()
+
+    val first: Map[String, Any] = sourceTraversable.head
 
     def asInt(v:Value)=v(first).asInstanceOf[Int]
 
-    val slicedResult = (skip, limit) match {
-      case (None, None) => source
-      case (Some(x), None) => source.drop(asInt(x))
-      case (None, Some(x)) => source.take(asInt(x))
+    (skip, limit) match {
+      case (None, None) => sourceTraversable
+      case (Some(x), None) => sourceTraversable.drop(asInt(x))
+      case (None, Some(x)) => sourceTraversable.take(asInt(x))
       case (Some(startAt), Some(count)) => {
         val start = asInt(startAt)
-        source.slice(start, start + asInt(count))
+        sourceTraversable.slice(start, start + asInt(count))
       }
     }
-
-    slicedResult.foreach(f)
   }
 
   override def executionPlan(): String = {

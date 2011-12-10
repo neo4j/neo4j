@@ -22,14 +22,9 @@ package org.neo4j.cypher.pipes
 import java.lang.String
 import org.neo4j.cypher.symbols.{AnyType, SymbolTable, Identifier}
 
-class ParameterPipe(params: Map[String, Any]) extends Pipe {
-  def foreach[U](f: (Map[String, Any]) => U) {
-    f(params)
-  }
-
-  val identifiers: Seq[Identifier] = params.keys.map(k => Identifier(k, AnyType())).toSeq
-
+class ParameterPipe() extends Pipe {
+  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = Seq(params)
+  val identifiers: Seq[Identifier] = Seq()//  params.keys.map(k => Identifier(k, AnyType())).toSeq
   val symbols: SymbolTable = new SymbolTable(identifiers:_*)
-
-  override def executionPlan(): String = "Parameters(" + params.keys.mkString(",") + ")"
+  override def executionPlan(): String = "Parameters()"
 }

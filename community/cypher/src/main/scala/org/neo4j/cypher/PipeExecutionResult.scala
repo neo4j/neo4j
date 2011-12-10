@@ -20,7 +20,6 @@ package org.neo4j.cypher
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import pipes.Pipe
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb.{PropertyContainer, Relationship, NotFoundException, Node}
 import java.io.{StringWriter, PrintWriter}
@@ -28,11 +27,9 @@ import java.lang.String
 import symbols.SymbolTable
 
 
-class PipeExecutionResult(result: Pipe, val columns: List[String])
+class PipeExecutionResult(result: Traversable[Map[String, Any]], val symbols:SymbolTable, val columns: List[String])
   extends ExecutionResult
   with StringExtras {
-  def symbols: SymbolTable = result.symbols
-
   def javaColumns: java.util.List[String] = columns.asJava
 
   def javaColumnAs[T](column: String): java.util.Iterator[T] = columnAs[T](column).map(x => makeValueJavaCompatible(x).asInstanceOf[T]).asJava

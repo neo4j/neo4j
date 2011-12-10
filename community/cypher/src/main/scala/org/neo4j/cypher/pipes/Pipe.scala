@@ -28,8 +28,8 @@ import org.neo4j.cypher.symbols.SymbolTable
  * Pipes are combined to form an execution plan, and when iterated over,
  * the execute the query.
  */
-trait Pipe extends Traversable[Map[String, Any]] {
-
-  val symbols:SymbolTable
-  def executionPlan():String
+trait Pipe {
+  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]]
+  def symbols: SymbolTable
+  def executionPlan(): String
 }

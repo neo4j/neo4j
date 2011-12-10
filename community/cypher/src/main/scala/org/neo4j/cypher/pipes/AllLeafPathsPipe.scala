@@ -33,18 +33,15 @@ class AllLeafPathsPipe(source: Pipe, leafInfo: AllLeafs) extends PipeWithSource(
   def dir = leafInfo.dir
   def endName = leafInfo.endName
   def pathName = leafInfo.pathName
-
   override def executionPlan(): String = source.executionPlan() + "\r\n" + "AllLeafPaths(" + leafInfo + ")"
 
-  def foreach[U](f: (Map[String, Any]) => U) {
-    source.foreach(m => {
-      val startNode = m(startName).asInstanceOf[Node]
 
-      follow(Seq(startNode), f, m)
-    })
-  }
+  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = source.createResults(params).flatMap(m => {
+    val startNode = m(startName).asInstanceOf[Node]
+    follow(Seq(startNode), m)
+  })
 
-  private def follow[U](path: Seq[PropertyContainer], f: (Map[String, Any]) => U, m: Map[String, Any]) {
+  private def follow[U](path: Seq[PropertyContainer], m: Map[String, Any]): Traversable[Map[String, Any]] = {
     val endNode = path.last.asInstanceOf[Node]
     val rels = relType match {
       case None => endNode.getRelationships(dir).asScala
@@ -52,12 +49,12 @@ class AllLeafPathsPipe(source: Pipe, leafInfo: AllLeafs) extends PipeWithSource(
     }
 
     if (rels.isEmpty && path.size > 1) {
-      f(m ++ Map(endName -> endNode, pathName -> PathImpl(path: _*)))
+      Seq(m ++ Map(endName -> endNode, pathName -> PathImpl(path: _*)))
     } else {
-      for (val rel: Relationship <- rels) {
+      rels.flatMap(rel => {
         val next = rel.getOtherNode(endNode)
-        follow(path ++ Seq(rel, next), f, m)
-      }
+        follow(path ++ Seq(rel, next), m)
+      })
     }
   }
 

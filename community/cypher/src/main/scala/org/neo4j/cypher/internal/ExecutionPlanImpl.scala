@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
 import collection.Seq
@@ -28,9 +29,11 @@ import org.neo4j.cypher.commands._
 import org.neo4j.cypher._
 
 class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends ExecutionPlan {
-  def execute(params: Map[String, Any]): ExecutionResult = createPipes(params)
+  val executionPlan: (Map[String, Any]) => PipeExecutionResult = prepareExecutionPlan()
 
-  private def createPipes(params: Map[String, Any]) = {
+  def execute(params: Map[String, Any]): ExecutionResult = executionPlan(params)
+
+  private def prepareExecutionPlan(): (Map[String, Any]) => PipeExecutionResult = {
     query match {
       case Query(returns, start, matching, where, aggregation, sort, slice, namedPaths, queryText) => {
 
@@ -39,7 +42,7 @@ class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends Execu
           case Some(w) => w.atoms
         }
 
-        val paramPipe = new ParameterPipe(params)
+        val paramPipe = new ParameterPipe()
         val pipe = createSourcePumps(paramPipe, start.startItems.toList)
 
         var context = new CurrentContext(pipe, predicates)
@@ -84,10 +87,9 @@ class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends Execu
 
         val result = new ColumnFilterPipe(context.pipe, returnItems)
 
-        new PipeExecutionResult(result, returns.columns)
+        params: Map[String, Any] => new PipeExecutionResult(result.createResults(params), result.symbols, returns.columns)
       }
     }
-
   }
 
   private def createSortPipe(sort: Option[Sort], allReturnItems: Seq[ReturnItem], context: CurrentContext) {
@@ -177,6 +179,7 @@ class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends Execu
     result
 
   }
+
   private def createAllLeafPathPipes(source: Pipe, matching: Option[Match], namedPaths: Option[NamedPaths]): Pipe = {
     val unnamedShortestPaths = matching match {
       case Some(m) => m.patterns.filter(_.isInstanceOf[AllLeafs]).map(_.asInstanceOf[AllLeafs])

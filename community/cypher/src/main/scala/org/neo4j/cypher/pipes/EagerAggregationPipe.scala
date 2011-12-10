@@ -34,28 +34,28 @@ class EagerAggregationPipe(source: Pipe, val returnItems: Seq[ReturnItem], aggre
   def dependencies: Seq[Identifier] = returnItems.flatMap(_.dependencies) ++ aggregations.flatMap(_.dependencies)
 
   def createSymbols() = {
-    val keySymbols = source.symbols.filter(returnItems.map(_.columnName):_*)
+    val keySymbols = source.symbols.filter(returnItems.map(_.columnName): _*)
     val aggregatedColumns = aggregations.map(_.concreteReturnItem.identifier)
 
-    keySymbols.add(aggregatedColumns:_*)
+    keySymbols.add(aggregatedColumns: _*)
   }
 
-  def foreach[U](f: Map[String, Any] => U) {
+  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = {
     // This is the temporary storage used while the aggregation is going on
     val result = collection.mutable.Map[Seq[Any], Seq[AggregationFunction]]()
     val keyNames = returnItems.map(_.columnName)
     val aggregationNames = aggregations.map(_.identifier.name)
 
-    source.foreach(m => {
+    source.createResults(params).foreach(m => {
       val groupValues = keyNames.map(m(_))
       val functions = result.getOrElseUpdate(groupValues, aggregations.map(_.createAggregationFunction))
       functions.foreach(func => func(m))
     })
 
-    result.foreach {
+    result.map {
       case (key, value: Seq[AggregationFunction]) => {
         val elems = keyNames.zip(key) ++ aggregationNames.zip(value.map(_.result))
-        f(elems.toMap)
+        elems.toMap
       }
     }
   }

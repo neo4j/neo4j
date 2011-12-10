@@ -34,24 +34,29 @@ import org.neo4j.cypher.commands.{ReturnItem, ShortestPath}
  */
 abstract class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWithSource(source) {
   def startName = ast.startName
+
   def endName = ast.endName
+
   def relType = ast.relType
+
   def dir = ast.dir
+
   def maxDepth = ast.maxDepth
+
   def optional = ast.optional
+
   def pathName = ast.pipeName
 
   def returnItems: Seq[ReturnItem] = Seq()
 
-  def foreach[U](f: (Map[String, Any]) => U) {
-    source.foreach(m => {
-      val (start, end) = getStartAndEnd(m)
-      val expander: Expander = createExpander()
-      val depth: Int = maxDepth.getOrElse(15)
 
-      findResult(expander, start, end, f, depth, m)
-    })
-  }
+  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = source.createResults(params).flatMap(m => {
+    val (start, end) = getStartAndEnd(m)
+    val expander: Expander = createExpander()
+    val depth: Int = maxDepth.getOrElse(15)
+
+    findResult(expander, start, end,  depth, m)
+  })
 
   private def getStartAndEnd[U](m: Map[String, Any]): (Node, Node) = {
     val err = (n: String) => throw new SyntaxException("To find a shortest path, both ends of the path need to be provided. Couldn't find `" + n + "`")
@@ -71,7 +76,7 @@ abstract class ShortestPathPipe(source: Pipe, ast: ShortestPath) extends PipeWit
 
   def dependencies: Seq[Identifier] = Seq(Identifier(startName, NodeType()), Identifier(endName, NodeType()))
 
-  protected def findResult[U](expander: Expander, start: Node, end: Node, f: (Map[String, Any]) => U, depth: Int, m: Map[String, Any])
+  protected def findResult[U](expander: Expander, start: Node, end: Node, depth: Int, m: Map[String, Any]):Traversable[Map[String, Any]]
 
   val symbols = source.symbols.add(Identifier(pathName, PathType()))
 
