@@ -24,7 +24,7 @@ import org.junit.Test
 
 class PropertyValueTests extends Assertions {
   @Test def nullNodeShouldGiveNullProperty() {
-    val p = PropertyValue("identifier", "property")
+    val p = Property("identifier", "property")
 
     assert(p(Map("identifier" -> null)) === null)
   }

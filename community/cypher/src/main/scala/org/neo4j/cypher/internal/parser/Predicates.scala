@@ -1,5 +1,3 @@
-package org.neo4j.cypher.parser
-
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -19,13 +17,14 @@ package org.neo4j.cypher.parser
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.SyntaxException
 
-trait Predicates extends JavaTokenParsers with Tokens with Values {
+trait Predicates extends JavaTokenParsers with Tokens with Expressions {
   def predicate: Parser[Predicate] = (isNull | isNotNull | orderedComparison | not | notEquals | equals | regexp | hasProperty | parens(predicate) | sequencePredicate | hasRelationship) * (
     ignoreCase("and") ^^^ {
       (a: Predicate, b: Predicate) => And(a, b)
@@ -35,17 +34,17 @@ trait Predicates extends JavaTokenParsers with Tokens with Values {
       }
     )
 
-  def regexp: Parser[Predicate] = value ~ "=~" ~ (regularLiteral | value) ^^ {
+  def regexp: Parser[Predicate] = expression ~ "=~" ~ (regularLiteral | expression) ^^ {
     case a ~ "=~" ~ b => RegularExpression(a, b)
   }
 
   def hasProperty: Parser[Predicate] = property ^^ {
-    case prop => Has(prop.asInstanceOf[PropertyValue])
+    case prop => Has(prop.asInstanceOf[Property])
   }
 
   def sequencePredicate: Parser[Predicate] = (allInSeq | anyInSeq | noneInSeq | singleInSeq)
 
-  def symbolIterablePredicate: Parser[(Value, String, Predicate)] = identity ~ ignoreCase("in") ~ value ~ ignoreCase("where") ~ predicate ^^ {
+  def symbolIterablePredicate: Parser[(Expression, String, Predicate)] = identity ~ ignoreCase("in") ~ expression ~ ignoreCase("where") ~ predicate ^^ {
     case symbol ~ in ~ iterable ~ where ~ klas => (iterable, symbol, klas)
   }
 
@@ -57,29 +56,29 @@ trait Predicates extends JavaTokenParsers with Tokens with Values {
 
   def singleInSeq: Parser[Predicate] = ignoreCase("single") ~> parens(symbolIterablePredicate) ^^ (x => SingleInIterable(x._1, x._2, x._3))
 
-  def equals: Parser[Predicate] = value ~ "=" ~ value ^^ {
+  def equals: Parser[Predicate] = expression ~ "=" ~ expression ^^ {
     case l ~ "=" ~ r => Equals(l, r)
   }
 
-  def notEquals: Parser[Predicate] = value ~ ("!=" | "<>") ~ value ^^ {
+  def notEquals: Parser[Predicate] = expression ~ ("!=" | "<>") ~ expression ^^ {
     case l ~ wut ~ r => Not(Equals(l, r))
   }
 
   def orderedComparison: Parser[Predicate] = (lessThanOrEqual | greaterThanOrEqual | lessThan | greaterThan)
 
-  def lessThan: Parser[Predicate] = value ~ "<" ~ value ^^ {
+  def lessThan: Parser[Predicate] = expression ~ "<" ~ expression ^^ {
     case l ~ "<" ~ r => LessThan(l, r)
   }
 
-  def greaterThan: Parser[Predicate] = value ~ ">" ~ value ^^ {
+  def greaterThan: Parser[Predicate] = expression ~ ">" ~ expression ^^ {
     case l ~ ">" ~ r => GreaterThan(l, r)
   }
 
-  def lessThanOrEqual: Parser[Predicate] = value ~ "<=" ~ value ^^ {
+  def lessThanOrEqual: Parser[Predicate] = expression ~ "<=" ~ expression ^^ {
     case l ~ "<=" ~ r => LessThanOrEqual(l, r)
   }
 
-  def greaterThanOrEqual: Parser[Predicate] = value ~ ">=" ~ value ^^ {
+  def greaterThanOrEqual: Parser[Predicate] = expression ~ ">=" ~ expression ^^ {
     case l ~ ">=" ~ r => GreaterThanOrEqual(l, r)
   }
 
@@ -87,13 +86,13 @@ trait Predicates extends JavaTokenParsers with Tokens with Values {
     case not ~ "(" ~ inner ~ ")" => Not(inner)
   }
 
-  def valueOrEntity = (value | entityValue)
+  def expressionOrEntity = (expression | entity)
 
-  def isNull: Parser[Predicate] = valueOrEntity <~ ignoreCase("is null") ^^ (x => IsNull(x))
+  def isNull: Parser[Predicate] = expressionOrEntity <~ ignoreCase("is null") ^^ (x => IsNull(x))
 
-  def isNotNull: Parser[Predicate] = valueOrEntity <~ ignoreCase("is not null") ^^ (x => Not(IsNull(x)))
+  def isNotNull: Parser[Predicate] = expressionOrEntity <~ ignoreCase("is not null") ^^ (x => Not(IsNull(x)))
 
-  def hasRelationship: Parser[Predicate] = valueOrEntity ~ relInfo ~ valueOrEntity ^^ {
+  def hasRelationship: Parser[Predicate] = expressionOrEntity ~ relInfo ~ expressionOrEntity ^^ {
     case a ~ rel ~ b => HasRelationship(a, b, rel._1, rel._2)
   }
 

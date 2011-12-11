@@ -24,7 +24,7 @@ import org.junit.Assert._
 import org.junit.Test
 import org.neo4j.cypher.SyntaxException
 import org.scalatest.junit.JUnitSuite
-import org.neo4j.cypher.commands.EntityValue
+import org.neo4j.cypher.commands.Entity
 
 class MinFunctionTest extends JUnitSuite {
   @Test def singleValueReturnsThatNumber() {
@@ -63,7 +63,7 @@ class MinFunctionTest extends JUnitSuite {
   }
 
   def minOn(values: Any*): Any = {
-    val func = new MinFunction(EntityValue("x"))
+    val func = new MinFunction(Entity("x"))
 
     values.foreach(value => {
       func(Map("x" -> value))

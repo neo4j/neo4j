@@ -32,7 +32,7 @@ abstract sealed class ReturnItem(val identifier: Identifier) extends (Map[String
   override def toString() = identifier.name
 }
 
-case class ValueReturnItem(value: Value) extends ReturnItem(value.identifier) {
+case class ExpressionReturnItem(value: Expression) extends ReturnItem(value.identifier) {
   def apply(m: Map[String, Any]): Any = m.get(value.identifier.name) match {
     case None => value(m)
     case Some(x) => x
@@ -50,10 +50,10 @@ case class AliasReturnItem(inner: ReturnItem, newName: String) extends ReturnIte
 }
 
 
-case class ValueAggregationItem(value: AggregationValue) extends AggregationItem(value.identifier) {
+case class ValueAggregationItem(value: AggregationExpression) extends AggregationItem(value.identifier) {
   def dependencies: Seq[Identifier] = value.dependencies(AnyType())
 
-  def createAggregationFunction: AggregationFunction = value.createAggregationFunction
+  def createAggregationFunction = value.createAggregationFunction
 }
 
 abstract sealed class AggregationItem(identifier: Identifier) extends ReturnItem(identifier) {
@@ -65,14 +65,14 @@ abstract sealed class AggregationItem(identifier: Identifier) extends ReturnItem
 }
 
 case class AliasAggregationItem(inner: AggregationItem, newName: String) extends AggregationItem(Identifier(newName, inner.identifier.typ)) {
-  def createAggregationFunction: AggregationFunction = inner.createAggregationFunction
+  def createAggregationFunction = inner.createAggregationFunction
 
   def dependencies: Seq[Identifier] = inner.dependencies
 }
 
 
 case class CountStar() extends AggregationItem(Identifier("count(*)", IntegerType())) {
-  def createAggregationFunction: AggregationFunction = new CountStarFunction
+  def createAggregationFunction = new CountStarFunction
 
   def dependencies: Seq[Identifier] = Seq()
 }

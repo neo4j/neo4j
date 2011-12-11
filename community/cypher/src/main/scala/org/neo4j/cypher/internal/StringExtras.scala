@@ -1,3 +1,5 @@
+package org.neo4j.cypher.internal
+
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -17,20 +19,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes.aggregation
+trait StringExtras {
 
-import org.neo4j.cypher.commands.Value
-
-class DistinctFunction(value:Value, inner:AggregationFunction) extends AggregationFunction {
-  val seen = scala.collection.mutable.Set[Any]()
-
-  def apply(m: Map[String, Any]) {
-    val data = value(m)
-    if(!seen.contains(data)) {
-      seen += data
-      inner(m)
-    }
+  def makeSize(txt: String, wantedSize: Int): String = {
+    val actualSize = txt.length()
+    if (actualSize > wantedSize) {
+      txt.slice(0, wantedSize)
+    } else if (actualSize < wantedSize) {
+      txt + repeat(" ", wantedSize - actualSize)
+    } else txt
   }
 
-  def result: Any = inner.result
+  def repeat(x: String, size: Int): String = (1 to size).map((i) => x).mkString
+
 }

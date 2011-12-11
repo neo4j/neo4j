@@ -1,5 +1,3 @@
-package org.neo4j.cypher.parser
-
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -19,10 +17,11 @@ package org.neo4j.cypher.parser
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.cypher.internal.parser
 
 import scala.util.parsing.combinator._
 import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.commands.{Literal, ParameterValue, Value}
+import org.neo4j.cypher.commands.{Literal, Parameter, Expression}
 
 trait Tokens extends JavaTokenParsers {
   val keywords = List("start", "where", "return", "limit", "skip", "order", "by")
@@ -64,9 +63,9 @@ trait Tokens extends JavaTokenParsers {
 
   def apostropheString: Parser[ String ] = ( "\'" + """([^'\p{Cntrl}\\]|\\[\\/bfnrt]|\\u[a-fA-F0-9]{4})*""" + "\'" ).r
 
-  def regularLiteral = ( "/" + """([^"\p{Cntrl}\\]|\\[\\/bfnrt]|\\u[a-fA-F0-9]{4})*?""" + "/" ).r ^^ ( x => Literal(stripQuotes(x)) )
+  def regularLiteral = ( "/" + """([^"\p{Cntrl}\\]|\\[\\/bfnrt]|\\u[a-fA-F0-9]{4})*?""" + "/").r ^^ ( x => Literal(stripQuotes(x)) )
 
-  def parameter: Parser[ Value ] = curly(identity | wholeNumber) ^^ ( x => ParameterValue(x) )
+  def parameter: Parser[ Expression ] = curly(identity | wholeNumber) ^^ ( x => Parameter(x) )
 }
 
 

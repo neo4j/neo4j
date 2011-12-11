@@ -21,7 +21,7 @@ package org.neo4j.cypher.pipes.aggregation
 
 import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.cypher.commands.EntityValue
+import org.neo4j.cypher.commands.Entity
 
 class CollectFunctionTest {
   @Test def singleOne() {
@@ -29,7 +29,7 @@ class CollectFunctionTest {
   }
 
   def collectOn(values: Any*): Any = {
-    val func = new CollectFunction(EntityValue("x"))
+    val func = new CollectFunction(Entity("x"))
 
     values.foreach(value => {
       func(Map("x" -> value))

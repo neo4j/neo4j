@@ -21,10 +21,10 @@ package org.neo4j.cypher.pipes.aggregation
 
 import org.neo4j.cypher.{SyntaxException, Comparer}
 import java.lang.Boolean
-import org.neo4j.cypher.commands.Value
+import org.neo4j.cypher.commands.Expression
 
 trait MinMax extends AggregationFunction with Comparer {
-  val value: Value
+  val value: Expression
 
   def keep(comparisonResult: Int): Boolean
 
@@ -49,10 +49,10 @@ trait MinMax extends AggregationFunction with Comparer {
   }
 }
 
-class MaxFunction(val value: Value) extends AggregationFunction with MinMax {
+class MaxFunction(val value: Expression) extends AggregationFunction with MinMax {
   def keep(comparisonResult: Int) = comparisonResult < 0
 }
 
-class MinFunction(val value: Value) extends AggregationFunction with MinMax {
+class MinFunction(val value: Expression) extends AggregationFunction with MinMax {
   def keep(comparisonResult: Int) = comparisonResult > 0
 }

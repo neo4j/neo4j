@@ -17,19 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.internal.parser
 
-trait StringExtras {
+import org.neo4j.cypher.commands._
+import org.neo4j.cypher.CypherParser
 
-  def makeSize(txt: String, wantedSize: Int): String = {
-    val actualSize = txt.length()
-    if (actualSize > wantedSize) {
-      txt.slice(0, wantedSize)
-    } else if (actualSize < wantedSize) {
-      txt + repeat(" ", wantedSize - actualSize)
-    } else txt
+trait ConsoleMode extends ReturnItems {
+  override def returnExpressions: Parser[Expression] = (nullableProperty | expression | entity) ^^ {
+    case Property(v,p) => NullableProperty(v,p)
+    case x => x
   }
+}
 
-  def repeat(x: String, size: Int): String = (1 to size).map((i) => x).mkString
+class ConsoleCypherParser extends CypherParser with ConsoleMode {
 
 }

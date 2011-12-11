@@ -1,5 +1,3 @@
-package org.neo4j.cypher.parser
-
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -19,6 +17,7 @@ package org.neo4j.cypher.parser
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
@@ -36,37 +35,37 @@ trait StartClause extends JavaTokenParsers with Tokens {
 
   def lookup: Parser[(String) => StartItem] = (nodes | rels) ~ (parens(parameter) | ids | idxLookup | idxString) ^^ {
     case "node" ~ l => l match {
-      case l: Value => (id: String) => NodeById(id, l)
-      case x: (String, Value, Value) => (id: String) => NodeByIndex(id, x._1, x._2, x._3)
-      case x: (String, Value) => (id: String) => NodeByIndexQuery(id, x._1, x._2)
+      case l: Expression => (id: String) => NodeById(id, l)
+      case x: (String, Expression, Expression) => (id: String) => NodeByIndex(id, x._1, x._2, x._3)
+      case x: (String, Expression) => (id: String) => NodeByIndexQuery(id, x._1, x._2)
     }
 
     case "rel" ~ l => l match {
-      case l: Value => (id: String) => RelationshipById(id, l)
-      case x: (String, Value, Value) => (id: String) => RelationshipByIndex(id, x._1, x._2, x._3)
-      case x: (String, Value) => (id: String) => RelationshipByIndexQuery(id, x._1, x._2)
+      case l: Expression => (id: String) => RelationshipById(id, l)
+      case x: (String, Expression, Expression) => (id: String) => RelationshipByIndex(id, x._1, x._2, x._3)
+      case x: (String, Expression) => (id: String) => RelationshipByIndexQuery(id, x._1, x._2)
     }
   }
 
   def ids = parens(rep1sep(wholeNumber, ",")) ^^ (x => Literal(x.map(_.toLong)))
 
-  def idxString: Parser[(String, Value)] = ":" ~> identity ~ parens(parameter|stringLit) ^^ {
+  def idxString: Parser[(String, Expression)] = ":" ~> identity ~ parens(parameter|stringLit) ^^ {
     case id ~ valu => (id, valu)
   }
 
-  def idxLookup: Parser[(String, Value, Value)] = ":" ~> identity ~ parens(idxQueries) ^^ {
+  def idxLookup: Parser[(String, Expression, Expression)] = ":" ~> identity ~ parens(idxQueries) ^^ {
     case a ~ b => (a, b._1, b._2)
   }
 
-  def idxQueries: Parser[(Value, Value)] = idxQuery
+  def idxQueries: Parser[(Expression, Expression)] = idxQuery
 
-  def idxQuery: Parser[(Value, Value)] = (id | parameter) ~ "=" ~ (parameter | stringLit) ^^ {
+  def idxQuery: Parser[(Expression, Expression)] = (id | parameter) ~ "=" ~ (parameter | stringLit) ^^ {
     case k ~ "=" ~ v => (k, v)
   }
 
-  def id: Parser[Value] = identity ^^ (x => Literal(x))
+  def id: Parser[Expression] = identity ^^ (x => Literal(x))
 
-  def stringLit: Parser[Value] = string ^^ (x => Literal(x))
+  def stringLit: Parser[Expression] = string ^^ (x => Literal(x))
 
 
   def andQuery: Parser[String] = idxQuery ~ ignoreCase("and") ~ idxQueries ^^ {

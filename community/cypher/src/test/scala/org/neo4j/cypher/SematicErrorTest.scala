@@ -22,7 +22,6 @@ package org.neo4j.cypher
 import commands._
 import org.junit.Assert._
 import org.junit.Test
-import parser.CypherParser
 
 class SematicErrorTest extends ExecutionEngineHelper {
   @Test def returnNodeThatsNotThere() {

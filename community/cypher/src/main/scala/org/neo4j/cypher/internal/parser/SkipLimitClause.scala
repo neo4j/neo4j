@@ -17,25 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes.aggregation
+package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.commands.Value
+import scala.util.parsing.combinator._
+import org.neo4j.cypher.commands.{Parameter, Literal, Expression}
 
-class AvgFunction(value: Value) extends AggregationFunction with Plus {
-  private var count: Int = 0
-  private var sofar: Any = 0
+trait SkipLimitClause extends JavaTokenParsers with Tokens {
+  def skip: Parser[Expression] = ignoreCase("skip") ~> numberOrParam ^^ (x => x)
 
-  def result: Any = divide(sofar, count)
+  def limit: Parser[Expression] = ignoreCase("limit") ~> numberOrParam ^^ (x => x)
 
-  def apply(data: Map[String, Any]) {
-    value(data) match {
-      case null =>
-      case number: Number => {
-        count = count + 1
-        sofar = plus(sofar, number)
-      }
-      case _ => throw new SyntaxException("AVG can only handle values of Number type, or null.")
-    }
+  private def numberOrParam: Parser[Expression] = (parameter|positiveNumber) ^^ {
+    case x:Parameter => x
+    case x:String => Literal(x.toInt)
   }
 }
+
+
+
+
+

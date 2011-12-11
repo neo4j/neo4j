@@ -1,5 +1,3 @@
-package org.neo4j.cypher.parser
-
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -19,6 +17,7 @@ package org.neo4j.cypher.parser
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
@@ -26,11 +25,13 @@ import scala.util.parsing.combinator._
 trait ReturnClause extends JavaTokenParsers with Tokens with ReturnItems {
 
   def column = (aggregate | returnItem) ~ opt(ignoreCase("AS") ~> identity) ^^ {
-    case returnItem ~ alias => alias match {
-      case None => returnItem
-      case Some(newColumnName) => returnItem match {
-        case x: AggregationItem => AliasAggregationItem(x, newColumnName)
-        case x => AliasReturnItem(x, newColumnName)
+    case returnItem ~ alias => {
+      alias match {
+        case None => returnItem
+        case Some(newColumnName) => returnItem match {
+          case x: AggregationItem => AliasAggregationItem(x, newColumnName)
+          case x => AliasReturnItem(x, newColumnName)
+        }
       }
     }
   }

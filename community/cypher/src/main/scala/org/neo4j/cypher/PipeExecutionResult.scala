@@ -20,6 +20,7 @@ package org.neo4j.cypher
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import internal.StringExtras
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb.{PropertyContainer, Relationship, NotFoundException, Node}
 import java.io.{StringWriter, PrintWriter}

@@ -17,17 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.parser
+package org.neo4j.cypher.pipes.aggregation
 
-import org.neo4j.cypher.commands._
+import org.neo4j.cypher.commands.Expression
 
-trait ConsoleMode extends ReturnItems {
-  override def returnValues: Parser[Value] = (nullableProperty | value | entityValue) ^^ {
-    case PropertyValue(v,p) => NullablePropertyValue(v,p)
-    case x => x
+class CountFunction(value:Expression) extends AggregationFunction {
+  var count = 0
+
+  def apply(data: Map[String, Any]) {
+    value(data) match {
+      case null =>
+      case _ => count = count + 1
+    }
   }
-}
 
-class ConsoleCypherParser extends CypherParser with ConsoleMode {
-
+  def result: Int = count
 }

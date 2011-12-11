@@ -403,7 +403,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     val r2 = relate(a, b, "rel", Map("age" -> 5))
 
     val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.OUTGOING, false))
-    val matchingContext = new MatchingContext(patterns, bind("a"), Seq(Equals(PropertyValue("r", "age"), Literal(5))))
+    val matchingContext = new MatchingContext(patterns, bind("a"), Seq(Equals(Property("r", "age"), Literal(5))))
 
     assertMatches(matchingContext.getMatches(Map("a" -> a)), 1, Map("a" -> a, "b" -> b, "r" -> r2))
   }
@@ -413,7 +413,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     relate(a, b, "rel")
 
     val patterns: Seq[Pattern] = Seq(RelatedTo("a", "b", "r", "rel", Direction.OUTGOING, false))
-    val matchingContext = new MatchingContext(patterns, bind("a"), Seq(Equals(PropertyValue("a", "prop"), Literal("not value"))))
+    val matchingContext = new MatchingContext(patterns, bind("a"), Seq(Equals(Property("a", "prop"), Literal("not value"))))
 
     assert(matchingContext.getMatches(Map("a" -> a)).toSeq.length === 0)
   }

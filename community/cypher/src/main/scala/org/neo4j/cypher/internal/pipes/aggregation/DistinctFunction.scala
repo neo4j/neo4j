@@ -1,5 +1,3 @@
-package org.neo4j.cypher.parser
-
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -19,21 +17,20 @@ package org.neo4j.cypher.parser
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import scala.util.parsing.combinator._
-import org.neo4j.cypher.commands.{ParameterValue, Literal, Value}
+package org.neo4j.cypher.pipes.aggregation
 
-trait SkipLimitClause extends JavaTokenParsers with Tokens {
-  def skip: Parser[Value] = ignoreCase("skip") ~> numberOrParam ^^ (x => x)
+import org.neo4j.cypher.commands.Expression
 
-  def limit: Parser[Value] = ignoreCase("limit") ~> numberOrParam ^^ (x => x)
+class DistinctFunction(value:Expression, inner:AggregationFunction) extends AggregationFunction {
+  val seen = scala.collection.mutable.Set[Any]()
 
-  private def numberOrParam: Parser[Value] = (parameter|positiveNumber) ^^ {
-    case x:ParameterValue => x
-    case x:String => Literal(x.toInt)
+  def apply(m: Map[String, Any]) {
+    val data = value(m)
+    if(!seen.contains(data)) {
+      seen += data
+      inner(m)
+    }
   }
+
+  def result: Any = inner.result
 }
-
-
-
-
-

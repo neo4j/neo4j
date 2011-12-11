@@ -20,11 +20,11 @@ package org.neo4j.cypher.commands
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import org.neo4j.cypher.pipes.aggregation._
 import org.neo4j.cypher.symbols._
 import collection.Seq
+import org.neo4j.cypher.pipes.aggregation._
 
-abstract class AggregationValue(val functionName: String, inner: Value) extends Value {
+abstract class AggregationExpression(val functionName: String, inner: Expression) extends Expression {
   def apply(m: Map[String, Any]) = m(identifier.name)
 
   def createAggregationFunction: AggregationFunction
@@ -34,21 +34,21 @@ abstract class AggregationValue(val functionName: String, inner: Value) extends 
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = inner.dependencies(expectedInnerType)
 }
 
-case class Distinct(innerAggregator: AggregationValue, innerValue: Value) extends AggregationValue("distinct", innerValue) {
-  def name: String = "%s(distinct %s)".format(innerAggregator.functionName, innerValue.identifier.name)
+case class Distinct(innerAggregator: AggregationExpression, expression: Expression) extends AggregationExpression("distinct", expression) {
+  def name: String = "%s(distinct %s)".format(innerAggregator.functionName, expression.identifier.name)
 
   override def identifier: Identifier = Identifier(name, innerAggregator.identifier.typ)
 
   def expectedInnerType: AnyType = innerAggregator.expectedInnerType
 
-  def createAggregationFunction: AggregationFunction = new DistinctFunction(innerValue, innerAggregator.createAggregationFunction)
+  def createAggregationFunction = new DistinctFunction(expression, innerAggregator.createAggregationFunction)
 
   override def declareDependencies(extectedType: AnyType): Seq[Identifier] = {
-    innerValue.dependencies(innerAggregator.expectedInnerType) ++ innerAggregator.dependencies(extectedType)
+    expression.dependencies(innerAggregator.expectedInnerType) ++ innerAggregator.dependencies(extectedType)
   }
 }
 
-case class Count(anInner: Value) extends AggregationValue("count", anInner) {
+case class Count(anInner: Expression) extends AggregationExpression("count", anInner) {
   def identifier = Identifier("count(" + anInner.identifier.name + ")", IntegerType())
 
   def createAggregationFunction = new CountFunction(anInner)
@@ -56,7 +56,7 @@ case class Count(anInner: Value) extends AggregationValue("count", anInner) {
   def expectedInnerType: AnyType = AnyType()
 }
 
-case class Sum(anInner: Value) extends AggregationValue("sum", anInner) {
+case class Sum(anInner: Expression) extends AggregationExpression("sum", anInner) {
   def identifier = Identifier("sum(" + anInner.identifier.name + ")", NumberType())
 
   def createAggregationFunction = new SumFunction(anInner)
@@ -64,7 +64,7 @@ case class Sum(anInner: Value) extends AggregationValue("sum", anInner) {
   def expectedInnerType: AnyType = NumberType()
 }
 
-case class Min(anInner: Value) extends AggregationValue("min", anInner) {
+case class Min(anInner: Expression) extends AggregationExpression("min", anInner) {
   def identifier = Identifier("min(" + anInner.identifier.name + ")", NumberType())
 
   def createAggregationFunction = new MinFunction(anInner)
@@ -72,7 +72,7 @@ case class Min(anInner: Value) extends AggregationValue("min", anInner) {
   def expectedInnerType: AnyType = NumberType()
 }
 
-case class Max(anInner: Value) extends AggregationValue("max", anInner) {
+case class Max(anInner: Expression) extends AggregationExpression("max", anInner) {
   def identifier = Identifier("max(" + anInner.identifier.name + ")", NumberType())
 
   def createAggregationFunction = new MaxFunction(anInner)
@@ -80,7 +80,7 @@ case class Max(anInner: Value) extends AggregationValue("max", anInner) {
   def expectedInnerType: AnyType = NumberType()
 }
 
-case class Avg(anInner: Value) extends AggregationValue("avg", anInner) {
+case class Avg(anInner: Expression) extends AggregationExpression("avg", anInner) {
   def identifier = Identifier("avg(" + anInner.identifier.name + ")", NumberType())
 
   def createAggregationFunction = new AvgFunction(anInner)
@@ -88,7 +88,7 @@ case class Avg(anInner: Value) extends AggregationValue("avg", anInner) {
   def expectedInnerType: AnyType = NumberType()
 }
 
-case class Collect(anInner: Value) extends AggregationValue("collect", anInner) {
+case class Collect(anInner: Expression) extends AggregationExpression("collect", anInner) {
   def identifier = Identifier("collect(" + anInner.identifier.name + ")", new IterableType(anInner.identifier.typ))
 
   def createAggregationFunction = new CollectFunction(anInner)

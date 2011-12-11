@@ -67,4 +67,4 @@ case class Aggregation(aggregationItems: AggregationItem*)
 
 case class Sort(sortItems: SortItem*)
 
-case class Slice(from: Option[Value], limit: Option[Value])
+case class Slice(from: Option[Expression], limit: Option[Expression])

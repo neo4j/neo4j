@@ -1,5 +1,3 @@
-package org.neo4j.cypher.parser
-
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -19,19 +17,18 @@ package org.neo4j.cypher.parser
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import org.neo4j.cypher.commands._
-import scala.util.parsing.combinator._
-trait WhereClause extends JavaTokenParsers with Tokens with Predicates {
-  def where: Parser[Predicate] = ignoreCase("where") ~> predicate
+package org.neo4j.cypher.pipes.aggregation
+
+import org.neo4j.cypher.commands.Expression
+import collection.mutable.ListBuffer
+
+
+class CollectFunction(value:Expression) extends AggregationFunction {
+  val collection = new ListBuffer[Any]()
+
+  def apply(data: Map[String, Any]) {
+    collection += value(data)
+  }
+
+  def result: Any = collection.toSeq
 }
-
-
-
-
-
-
-
-
-
-
-

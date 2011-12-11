@@ -21,7 +21,6 @@ package org.neo4j.cypher
  */
 
 import org.scalatest.junit.JUnitSuite
-import parser.CypherParser
 import org.junit.Assert._
 import org.junit.{Ignore, Test}
 

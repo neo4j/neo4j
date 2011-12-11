@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.pipes
 
-import org.neo4j.cypher.commands.Value
+import org.neo4j.cypher.commands.Expression
 import java.lang.String
 
-class SlicePipe(source:Pipe, skip:Option[Value], limit:Option[Value]) extends Pipe {
+class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) extends Pipe {
   val symbols = source.symbols
 
   //TODO: Make this nicer. I'm sure it's expensive and silly.
@@ -34,7 +34,7 @@ class SlicePipe(source:Pipe, skip:Option[Value], limit:Option[Value]) extends Pi
 
     val first: Map[String, Any] = sourceTraversable.head
 
-    def asInt(v:Value)=v(first).asInstanceOf[Int]
+    def asInt(v:Expression)=v(first).asInstanceOf[Int]
 
     (skip, limit) match {
       case (None, None) => sourceTraversable

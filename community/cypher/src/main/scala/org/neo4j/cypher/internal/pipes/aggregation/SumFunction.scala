@@ -19,17 +19,24 @@
  */
 package org.neo4j.cypher.pipes.aggregation
 
-import org.neo4j.cypher.commands.Value
+import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.commands.Expression
 
-class CountFunction(value:Value) extends AggregationFunction {
-  var count = 0
+class SumFunction(value:Expression) extends AggregationFunction with Plus {
+  private var soFar: Any = null
 
-  def apply(data: Map[String, Any]) {
-    value(data) match {
-      case null =>
-      case _ => count = count + 1
-    }
+  def result: Any = soFar match {
+    case null => 0
+    case _ => soFar
   }
 
-  def result: Int = count
+  def apply(data: Map[String, Any]) {
+    val number = value(data)
+
+    if(number != null && !number.isInstanceOf[Number]) {
+      throw new SyntaxException("Sum can only handle values of Number type, or null.")
+    }
+
+    soFar = plus(soFar, number)
+  }
 }

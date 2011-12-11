@@ -1,4 +1,4 @@
-package org.neo4j.cypher.parser
+package org.neo4j.cypher
 
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
@@ -20,8 +20,9 @@ package org.neo4j.cypher.parser
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import org.neo4j.cypher._
+import internal.StringExtras
 import org.neo4j.cypher.commands._
+import internal.parser._
 import scala.util.parsing.combinator._
 
 class CypherParser extends JavaTokenParsers

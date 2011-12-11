@@ -43,7 +43,7 @@ import org.junit.Assert._
 import org.junit.Test
 import org.neo4j.cypher.SyntaxException
 import org.scalatest.junit.JUnitSuite
-import org.neo4j.cypher.commands.EntityValue
+import org.neo4j.cypher.commands.Entity
 
 class MaxFunctionTest extends JUnitSuite {
   @Test def singleValueReturnsThatNumber() {
@@ -79,7 +79,7 @@ class MaxFunctionTest extends JUnitSuite {
   }
 
   def maxOn(values: Any*): Any = {
-    val func = new MaxFunction(EntityValue("x"))
+    val func = new MaxFunction(Entity("x"))
 
     values.foreach(value => {
       func(Map("x" -> value))

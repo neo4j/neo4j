@@ -1,5 +1,3 @@
-package org.neo4j.cypher.parser
-
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -19,20 +17,21 @@ package org.neo4j.cypher.parser
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
 
-trait ReturnItems extends JavaTokenParsers with Tokens with Values {
-  def returnItem: Parser[ReturnItem] = returnValues ^^ {
-    case value => ValueReturnItem(value)
+trait ReturnItems extends JavaTokenParsers with Tokens with Expressions {
+  def returnItem: Parser[ReturnItem] = returnExpressions ^^ {
+    case expression => ExpressionReturnItem(expression)
   }
 
-  def returnValues: Parser[Value] = nullableProperty | value | entityValue
+  def returnExpressions: Parser[Expression] = nullableProperty | expression | entity
 
   def functionNames = ignoreCase("count") | ignoreCase("sum") | ignoreCase("min") | ignoreCase("max") | ignoreCase("avg") | ignoreCase("collect")
 
-  def aggregationFunction: Parser[AggregationItem] = functionNames ~ parens(opt(ignoreCase("distinct")) ~ returnValues) ^^ {
+  def aggregationFunction: Parser[AggregationItem] = functionNames ~ parens(opt(ignoreCase("distinct")) ~ returnExpressions) ^^ {
     case name ~ (distinct ~ inner) => {
       val aggregate = name match {
         case "count" => Count(inner)

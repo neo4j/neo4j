@@ -24,7 +24,7 @@ import org.junit.Test
 import org.neo4j.cypher.symbols.{Identifier, NodeType, SymbolTable}
 import org.neo4j.graphdb.{Relationship, Direction, Node}
 import org.neo4j.cypher.{PathImpl, GraphDatabaseTestBase}
-import org.neo4j.cypher.commands.{AllLeafs, EntityValue}
+import org.neo4j.cypher.commands.{AllLeafs, Entity}
 
 
 class AllLeafPathsTest extends GraphDatabaseTestBase with Assertions {

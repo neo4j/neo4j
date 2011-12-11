@@ -20,23 +20,22 @@
 package org.neo4j.cypher.pipes.aggregation
 
 import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.commands.Value
+import org.neo4j.cypher.commands.Expression
 
-class SumFunction(value:Value) extends AggregationFunction with Plus {
-  private var soFar: Any = null
+class AvgFunction(value: Expression) extends AggregationFunction with Plus {
+  private var count: Int = 0
+  private var sofar: Any = 0
 
-  def result: Any = soFar match {
-    case null => 0
-    case _ => soFar
-  }
+  def result: Any = divide(sofar, count)
 
   def apply(data: Map[String, Any]) {
-    val number = value(data)
-
-    if(number != null && !number.isInstanceOf[Number]) {
-      throw new SyntaxException("Sum can only handle values of Number type, or null.")
+    value(data) match {
+      case null =>
+      case number: Number => {
+        count = count + 1
+        sofar = plus(sofar, number)
+      }
+      case _ => throw new SyntaxException("AVG can only handle values of Number type, or null.")
     }
-
-    soFar = plus(soFar, number)
   }
 }

@@ -24,8 +24,8 @@ class QueryBuilder(startItems: Seq[ StartItem ]) {
   var where: Option[ Predicate ] = None
   var aggregation: Option[ Aggregation ] = None
   var orderBy: Option[ Sort ] = None
-  var skip: Option[ Value ] = None
-  var limit: Option[ Value ] = None
+  var skip: Option[ Expression ] = None
+  var limit: Option[ Expression ] = None
   var namedPaths: Option[ NamedPaths ] = None
   var columns: Seq[ ReturnItem ] => List[ String ] = (returnItems) => returnItems.map(_.identifier.name).toList
 
@@ -40,11 +40,11 @@ class QueryBuilder(startItems: Seq[ StartItem ]) {
 
   def skip(skipTo: Int): QueryBuilder = store(() => skip = Some(Literal(skipTo)))
 
-  def skip(skipTo: String): QueryBuilder = store(() => skip = Some(ParameterValue(skipTo)))
+  def skip(skipTo: String): QueryBuilder = store(() => skip = Some(Parameter(skipTo)))
 
   def limit(limitTo: Int): QueryBuilder = store(() => limit = Some(Literal(limitTo)))
 
-  def limit(limitTo: String): QueryBuilder = store(() => limit = Some(ParameterValue(limitTo)))
+  def limit(limitTo: String): QueryBuilder = store(() => limit = Some(Parameter(limitTo)))
 
   def namedPaths(paths: NamedPath*): QueryBuilder = store(() => namedPaths = Some(NamedPaths(paths: _*)))
 

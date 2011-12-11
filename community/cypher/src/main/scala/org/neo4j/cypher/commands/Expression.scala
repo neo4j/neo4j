@@ -26,7 +26,7 @@ import symbols._
 import org.neo4j.graphdb.{Path, Relationship, NotFoundException, PropertyContainer, Node}
 import collection.Seq
 
-abstract class Value extends (Map[String, Any] => Any) {
+abstract class Expression extends (Map[String, Any] => Any) {
   def identifier: Identifier
 
   def declareDependencies(extectedType: AnyType): Seq[Identifier]
@@ -38,8 +38,7 @@ abstract class Value extends (Map[String, Any] => Any) {
   }
 }
 
-//TODO: This should not be a castable value
-case class Literal(v: Any) extends Value {
+case class Literal(v: Any) extends Expression {
   def apply(m: Map[String, Any]) = v
 
   def identifier = Identifier(v.toString, AnyType.fromJava(v))
@@ -49,15 +48,15 @@ case class Literal(v: Any) extends Value {
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = Seq()
 }
 
-case class NullablePropertyValue(subEntity: String, subProperty: String) extends PropertyValue(subEntity, subProperty) {
+case class NullableProperty(subEntity: String, subProperty: String) extends Property(subEntity, subProperty) {
   protected override def handleNotFound(propertyContainer: PropertyContainer, x: NotFoundException): Any = null
 }
 
-abstract class CastableValue extends Value {
+abstract class CastableExpression extends Expression {
   override def dependencies(extectedType: AnyType): Seq[Identifier] = declareDependencies(extectedType)
 }
 
-case class PropertyValue(entity: String, property: String) extends CastableValue {
+case class Property(entity: String, property: String) extends CastableExpression {
   protected def handleNotFound(propertyContainer: PropertyContainer, x: NotFoundException): Any = throw new SyntaxException("%s.%s does not exist on %s".format(entity, property, propertyContainer), x)
 
   def apply(m: Map[String, Any]): Any = {
@@ -78,7 +77,7 @@ case class PropertyValue(entity: String, property: String) extends CastableValue
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = Seq(Identifier(entity, MapType()))
 }
 
-case class RelationshipTypeValue(relationship: Value) extends Value {
+case class RelationshipTypeFunction(relationship: Expression) extends Expression {
   def apply(m: Map[String, Any]): Any = relationship(m).asInstanceOf[Relationship].getType.name()
 
   def identifier = Identifier("TYPE(" + relationship.identifier.name + ")", StringType())
@@ -88,25 +87,25 @@ case class RelationshipTypeValue(relationship: Value) extends Value {
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = relationship.dependencies(RelationshipType())
 }
 
-case class CoalesceValue(values: Value*) extends Value {
-  def apply(m: Map[String, Any]): Any = values.map(valueObject => valueObject(m)).find(value => value != null) match {
+case class CoalesceFunction(expressions: Expression*) extends Expression {
+  def apply(m: Map[String, Any]): Any = expressions.map(expression => expression(m)).find(value => value != null) match {
     case None => null
     case Some(x) => x
   }
 
   def innerExpectedType: Option[AnyType] = null
 
-  def argumentsString: String = values.map(_.identifier.name).mkString(",")
+  def argumentsString: String = expressions.map(_.identifier.name).mkString(",")
 
   //TODO: Find out the closest matching return type
   def identifier = Identifier("COALESCE(" + argumentsString + ")", AnyType())
 
   override def toString() = "coalesce(" + argumentsString + ")"
 
-  def declareDependencies(extectedType: AnyType): Seq[Identifier] = values.flatMap(_.dependencies(AnyType()))
+  def declareDependencies(extectedType: AnyType): Seq[Identifier] = expressions.flatMap(_.dependencies(AnyType()))
 }
 
-case class ArrayLengthValue(inner: Value) extends Value {
+case class LengthFunction(inner: Expression) extends Expression {
   def apply(m: Map[String, Any]): Any = inner(m) match {
     case path: Path => path.length()
     case iter: Traversable[_] => iter.toList.length
@@ -122,7 +121,7 @@ case class ArrayLengthValue(inner: Value) extends Value {
   }
 }
 
-case class IdValue(inner: Value) extends Value {
+case class IdFunction(inner: Expression) extends Expression {
   def apply(m: Map[String, Any]): Any = inner(m) match {
     case node: Node => node.getId
     case rel: Relationship => rel.getId
@@ -134,7 +133,7 @@ case class IdValue(inner: Value) extends Value {
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = inner.dependencies(MapType())
 }
 
-case class PathNodesValue(path: Value) extends Value {
+case class NodesFunction(path: Expression) extends Expression {
   def apply(m: Map[String, Any]): Any = path(m) match {
     case p: Path => p.nodes().asScala.toSeq
     case x => throw new SyntaxException("Expected " + path.identifier.name + " to be a path.")
@@ -145,7 +144,7 @@ case class PathNodesValue(path: Value) extends Value {
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = path.dependencies(PathType())
 }
 
-case class Extract(iterable: Value, id: String, expression: Value) extends Value {
+case class ExtractFunction(iterable: Expression, id: String, expression: Expression) extends Expression {
   def apply(m: Map[String, Any]): Any = iterable(m) match {
     case x: Iterable[Any] => x.map(iterValue => {
       val innerMap = m + (id -> iterValue)
@@ -162,7 +161,7 @@ case class Extract(iterable: Value, id: String, expression: Value) extends Value
     iterable.dependencies(AnyIterableType()) ++ expression.dependencies(AnyType()).filterNot(_.name == id)
 }
 
-case class PathRelationshipsValue(path: Value) extends Value {
+case class RelationshipFunction(path: Expression) extends Expression {
   def apply(m: Map[String, Any]): Any = path(m) match {
     case p: Path => p.relationships().asScala.toSeq
     case x => throw new SyntaxException("Expected " + path.identifier.name + " to be a path.")
@@ -174,7 +173,7 @@ case class PathRelationshipsValue(path: Value) extends Value {
 
 }
 
-case class EntityValue(entityName: String) extends CastableValue {
+case class Entity(entityName: String) extends CastableExpression {
   def apply(m: Map[String, Any]): Any = m.getOrElse(entityName, throw new NotFoundException)
 
   def identifier: Identifier = Identifier(entityName, AnyType())
@@ -184,7 +183,7 @@ case class EntityValue(entityName: String) extends CastableValue {
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = Seq(Identifier(entityName, extectedType))
 }
 
-case class ParameterValue(parameterName: String) extends CastableValue {
+case class Parameter(parameterName: String) extends CastableExpression {
   def apply(m: Map[String, Any]): Any = m.getOrElse(parameterName, throw new ParameterNotFoundException("Expected a parameter named " + parameterName))
 
   def identifier: Identifier = Identifier(parameterName, AnyType())
