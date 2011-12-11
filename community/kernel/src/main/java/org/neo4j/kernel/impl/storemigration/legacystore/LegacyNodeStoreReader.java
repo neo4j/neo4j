@@ -91,6 +91,7 @@ public class LegacyNodeStoreReader
                                 long propModifier = (inUseByte & 0xF0L) << 28;
                                 nodeRecord = new NodeRecord( id, longFromIntAndMod( nextRel, relModifier ), longFromIntAndMod( nextProp, propModifier ) );
                             }
+                            else nodeRecord = new NodeRecord( id, Record.NO_NEXT_RELATIONSHIP.intValue(), Record.NO_NEXT_PROPERTY.intValue() );
                             nodeRecord.setInUse( inUse );
                             id++;
                         }
