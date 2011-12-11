@@ -142,8 +142,8 @@ public class LockReleaser
             super( id );
         }
         
-        private long firstProp;
-        private long firstRel;
+        private long firstRel = Record.NO_NEXT_RELATIONSHIP.intValue();
+        private long firstProp = Record.NO_NEXT_PROPERTY.intValue();
 
         private ArrayMap<String,RelIdArray> relationshipAddMap;
         private ArrayMap<String,Collection<Long>> relationshipRemoveMap;

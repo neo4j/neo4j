@@ -89,7 +89,7 @@ class NodeImpl extends ArrayBasedPrimitive
     @Override
     protected long getFirstProp()
     {
-        long prop = ((idAndMore & 0xFFFFFFF000000000L) >> 36) | ((relChainPositionAndMore & 0xFF000000000L) >> 8);
+        long prop = ((idAndMore & 0xFFFFFFF000000000L) >>> 36) | ((relChainPositionAndMore & 0xFF000000000L) >>> 8);
         return prop == TWO_POWER_36 ? Record.NO_NEXT_PROPERTY.intValue() : prop;
     }
     
