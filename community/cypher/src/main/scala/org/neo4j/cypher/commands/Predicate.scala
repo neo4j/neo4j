@@ -20,11 +20,11 @@
 package org.neo4j.cypher.commands
 
 import java.lang.String
-import org.neo4j.cypher.pipes.Dependant
 import collection.Seq
 import org.neo4j.cypher.symbols._
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb.{DynamicRelationshipType, Node, Direction, PropertyContainer}
+import org.neo4j.cypher.internal.pipes.Dependant
 
 abstract class Predicate extends Dependant {
   def ++(other: Predicate): Predicate = And(this, other)

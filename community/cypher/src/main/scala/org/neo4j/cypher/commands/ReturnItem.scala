@@ -20,7 +20,7 @@
 package org.neo4j.cypher.commands
 
 import org.neo4j.cypher.pipes.aggregation._
-import org.neo4j.cypher.pipes.{Dependant, Pipe}
+import org.neo4j.cypher.internal.pipes.Dependant
 import collection.Seq
 import org.neo4j.cypher.symbols.{AnyType, IntegerType, Identifier}
 

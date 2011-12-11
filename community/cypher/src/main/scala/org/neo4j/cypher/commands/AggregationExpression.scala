@@ -23,6 +23,7 @@ package org.neo4j.cypher.commands
 import org.neo4j.cypher.symbols._
 import collection.Seq
 import org.neo4j.cypher.pipes.aggregation._
+import org.neo4j.cypher.internal.pipes.aggregation.{MaxFunction, MinFunction}
 
 abstract class AggregationExpression(val functionName: String, inner: Expression) extends Expression {
   def apply(m: Map[String, Any]) = m(identifier.name)

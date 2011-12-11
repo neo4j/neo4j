@@ -17,34 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes.matching
+package org.neo4j.cypher.internal.pipes
 
-import org.neo4j.cypher.GraphDatabaseTestBase
-import org.scalatest.Assertions
+import org.junit.Assert
 import org.junit.Test
-import org.neo4j.graphdb.Direction
+import org.scalatest.junit.JUnitSuite
+import org.neo4j.cypher.commands.{Entity, ExpressionReturnItem}
 import org.neo4j.cypher.symbols.{Identifier, NodeType, SymbolTable}
-import org.neo4j.cypher.commands.True
 
+class ColumnFilterPipeTest extends JUnitSuite {
+  @Test def shouldReturnColumnsFromReturnItems() {
+    val col = "extractReturnItems"
+    val returnItems = List(ExpressionReturnItem(Entity(col)))
+    val colIdentifier = Identifier(col, NodeType())
+    val source = new FakePipe(List(Map("x" -> "x", col -> "bar")), new SymbolTable(colIdentifier))
 
-class JoinerBuilderTest extends GraphDatabaseTestBase with Assertions {
-  @Test def simplestCase() {
-    val pA = new PatternNode("a")
-    val pB = new PatternNode("b")
-    val pR = pA.relateTo("r", pB, None, Direction.BOTH, false)
-    val symbols = new SymbolTable(Identifier("a", NodeType()))
+    val columnPipe = new ColumnFilterPipe(source, returnItems)
 
-    val nodes = Map("a" -> pA, "b" -> pB)
-    val rels = Map("r" -> pR)
-
-    val patternGraph = new PatternGraph(nodes, rels, symbols)
-
-    val builder = new JoinerBuilder(patternGraph, Seq(True()))
-
-    val a = createNode()
-    val b = createNode()
-    val r = relate(a, b)
-
-    assert(builder.getMatches(Map("a" -> a)) === List(Map("a" -> a, "b" -> b, "r" -> r)))
+    Assert.assertEquals(Seq(colIdentifier), columnPipe.symbols.identifiers)
+    Assert.assertEquals(List(Map(col -> "bar")), columnPipe.createResults(Map()).toList)
   }
 }

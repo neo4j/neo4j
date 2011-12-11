@@ -1,3 +1,5 @@
+package org.neo4j.cypher.internal.pipes.matching
+
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -17,37 +19,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes.matching
 
+import org.scalatest.junit.JUnitSuite
 import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.GraphDatabaseTestBase
 
-class PatternNodeTest extends GraphDatabaseTestBase with Assertions {
-  @Test def returnsPatternRelationships() {
+class PatternRelationshipTest extends JUnitSuite with Assertions {
+  @Test def returnsTheOtherNode() {
     val a = new PatternNode("a")
     val b = new PatternNode("b")
 
     val r = a.relateTo("r", b, None, Direction.BOTH, false)
 
-    val rels = a.getPRels(Seq())
+    val result = r.getOtherNode(a)
 
-    assert(rels === Seq(r))
-  }
-
-  @Test def doesntReturnRelsAlreadyVisited() {
-    val a = createNode()
-    val b = createNode()
-    val rel = relate(a, b, "r")
-
-    val pA = new PatternNode("a")
-    val pB = new PatternNode("b")
-
-    val pRel = pA.relateTo("r", pB, None, Direction.BOTH, false)
-
-    val rels = pA.getPRels(Seq(MatchingPair(pRel, rel)))
-
-    assert(rels === Seq())
+    assert(result === b)
   }
 }

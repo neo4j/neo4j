@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes
+package org.neo4j.cypher.internal.pipes
 
 import scala.math.signum
 import org.neo4j.cypher.commands.SortItem
-import org.neo4j.cypher.Comparer
 import java.lang.String
+import org.neo4j.cypher.internal.Comparer
 
 class SortPipe(source: Pipe, sortDescription: List[SortItem]) extends Pipe with Comparer {
   val symbols = source.symbols

@@ -17,24 +17,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes
+package org.neo4j.cypher.internal.pipes.matching
 
-import org.junit.Assert
+import org.scalatest.Assertions
 import org.junit.Test
-import org.scalatest.junit.JUnitSuite
-import org.neo4j.cypher.commands.{Entity, ExpressionReturnItem}
-import org.neo4j.cypher.symbols.{Identifier, NodeType, SymbolTable}
+import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.GraphDatabaseTestBase
 
-class ColumnFilterPipeTest extends JUnitSuite {
-  @Test def shouldReturnColumnsFromReturnItems() {
-    val col = "extractReturnItems"
-    val returnItems = List(ExpressionReturnItem(Entity(col)))
-    val colIdentifier = Identifier(col, NodeType())
-    val source = new FakePipe(List(Map("x" -> "x", col -> "bar")), new SymbolTable(colIdentifier))
+class PatternNodeTest extends GraphDatabaseTestBase with Assertions {
+  @Test def returnsPatternRelationships() {
+    val a = new PatternNode("a")
+    val b = new PatternNode("b")
 
-    val columnPipe = new ColumnFilterPipe(source, returnItems)
+    val r = a.relateTo("r", b, None, Direction.BOTH, false)
 
-    Assert.assertEquals(Seq(colIdentifier), columnPipe.symbols.identifiers)
-    Assert.assertEquals(List(Map(col -> "bar")), columnPipe.createResults(Map()).toList)
+    val rels = a.getPRels(Seq())
+
+    assert(rels === Seq(r))
+  }
+
+  @Test def doesntReturnRelsAlreadyVisited() {
+    val a = createNode()
+    val b = createNode()
+    val rel = relate(a, b, "r")
+
+    val pA = new PatternNode("a")
+    val pB = new PatternNode("b")
+
+    val pRel = pA.relateTo("r", pB, None, Direction.BOTH, false)
+
+    val rels = pA.getPRels(Seq(MatchingPair(pRel, rel)))
+
+    assert(rels === Seq())
   }
 }

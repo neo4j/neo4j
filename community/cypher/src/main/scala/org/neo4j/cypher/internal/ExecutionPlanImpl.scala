@@ -1,5 +1,3 @@
-package org.neo4j.cypher.internal
-
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -19,12 +17,13 @@ package org.neo4j.cypher.internal
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.cypher.internal
 
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
 import collection.Seq
 import java.lang.Iterable
-import org.neo4j.cypher.pipes._
+import org.neo4j.cypher.internal.pipes._
 import org.neo4j.cypher.commands._
 import org.neo4j.cypher._
 

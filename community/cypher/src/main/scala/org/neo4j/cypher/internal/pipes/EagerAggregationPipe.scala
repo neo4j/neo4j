@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes
+package org.neo4j.cypher.internal.pipes
 
-import aggregation.AggregationFunction
 import collection.Seq
 import org.neo4j.cypher.commands.{AggregationItem, ReturnItem}
 import java.lang.String
 import org.neo4j.cypher.symbols.{Identifier, SymbolTable}
+import org.neo4j.cypher.pipes.aggregation.AggregationFunction
 
 // Eager aggregation means that this pipe will eagerly load the whole resulting subgraphs before starting
 // to emit aggregated results.

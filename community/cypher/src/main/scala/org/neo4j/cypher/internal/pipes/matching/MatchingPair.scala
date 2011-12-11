@@ -1,4 +1,4 @@
-package org.neo4j.cypher.pipes.matching
+package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.graphdb.{NotFoundException, Relationship, Node, PropertyContainer}
 

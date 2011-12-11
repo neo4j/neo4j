@@ -1,5 +1,3 @@
-package org.neo4j.cypher.pipes.matching
-
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -19,21 +17,34 @@ package org.neo4j.cypher.pipes.matching
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.cypher.internal.pipes.matching
 
-import org.scalatest.junit.JUnitSuite
+import org.neo4j.cypher.GraphDatabaseTestBase
 import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.symbols.{Identifier, NodeType, SymbolTable}
+import org.neo4j.cypher.commands.True
 
-class PatternRelationshipTest extends JUnitSuite with Assertions {
-  @Test def returnsTheOtherNode() {
-    val a = new PatternNode("a")
-    val b = new PatternNode("b")
 
-    val r = a.relateTo("r", b, None, Direction.BOTH, false)
+class JoinerBuilderTest extends GraphDatabaseTestBase with Assertions {
+  @Test def simplestCase() {
+    val pA = new PatternNode("a")
+    val pB = new PatternNode("b")
+    val pR = pA.relateTo("r", pB, None, Direction.BOTH, false)
+    val symbols = new SymbolTable(Identifier("a", NodeType()))
 
-    val result = r.getOtherNode(a)
+    val nodes = Map("a" -> pA, "b" -> pB)
+    val rels = Map("r" -> pR)
 
-    assert(result === b)
+    val patternGraph = new PatternGraph(nodes, rels, symbols)
+
+    val builder = new JoinerBuilder(patternGraph, Seq(True()))
+
+    val a = createNode()
+    val b = createNode()
+    val r = relate(a, b)
+
+    assert(builder.getMatches(Map("a" -> a)) === List(Map("a" -> a, "b" -> b, "r" -> r)))
   }
 }

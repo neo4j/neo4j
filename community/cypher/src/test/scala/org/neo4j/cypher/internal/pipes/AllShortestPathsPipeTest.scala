@@ -17,36 +17,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes
+package org.neo4j.cypher.internal.pipes
 
 import org.junit.Test
 import org.scalatest.Assertions
 import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.cypher.commands.ShortestPath
 import org.neo4j.graphdb.{Direction, Node, Path}
+import collection.Traversable
 
-class SingleShortestPathPipeTest extends GraphDatabaseTestBase with Assertions {
-  def runThroughPipeAndGetPath(a: Node, b: Node): Path = {
+class AllShortestPathsPipeTest extends GraphDatabaseTestBase with Assertions {
+  def runThroughPipeAndGetPath(a: Node, b: Node): Traversable[Path] = {
     val source = new FakePipe(List(Map("a" -> a, "b" -> b)))
 
-    val pipe = new SingleShortestPathPipe(source, ShortestPath("p", "a", "b", None, Direction.BOTH, Some(15), optional = true, single = true))
-    pipe.createResults(Map()).head("p").asInstanceOf[Path]
+    val pipe = new AllShortestPathsPipe(source, ShortestPath("p", "a", "b", None, Direction.BOTH, Some(15), true, false))
+    pipe.createResults(Map()).map(m => m("p").asInstanceOf[Path])
   }
 
   @Test def shouldReturnTheShortestPathBetweenTwoNodes() {
-    val a = createNode("a")
-    val b = createNode("b")
+    val (a, _, _, d) = createDiamond()
 
-    val r = relate(a, b, "rel")
+    val resultPaths = runThroughPipeAndGetPath(a, d)
 
-    val resultPath = runThroughPipeAndGetPath(a, b)
+    assert(resultPaths.size === 2)
 
-    val number_of_relationships_in_path = resultPath.length()
+    resultPaths.foreach(resultPath => {
+      val number_of_relationships_in_path = resultPath.length()
 
-    assert(number_of_relationships_in_path === 1)
-    assert(resultPath.lastRelationship() === r)
-    assert(resultPath.startNode() === a)
-    assert(resultPath.endNode() === b)
+      assert(number_of_relationships_in_path === 2)
+      assert(resultPath.startNode() === a)
+      assert(resultPath.endNode() === d)
+    })
   }
 
   @Test def shouldReturnNullWhenOptional() {
@@ -54,6 +55,6 @@ class SingleShortestPathPipeTest extends GraphDatabaseTestBase with Assertions {
     val b = createNode("b")
     // The secret is in what's not there - there is no relationship between a and b
 
-    assert(runThroughPipeAndGetPath(a, b) === null)
+    assert(runThroughPipeAndGetPath(a, b) === List(null))
   }
 }

@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.commands
 
-import org.neo4j.cypher.Comparer
 import collection.Seq
 import org.neo4j.cypher.symbols.{ScalarType, Identifier}
+import org.neo4j.cypher.internal.Comparer
 
 // TODO: Allow comparison of nodes and rels
 // This should be split into two - one for relative comparisons < > and so on, and one for equality comparisons = !=

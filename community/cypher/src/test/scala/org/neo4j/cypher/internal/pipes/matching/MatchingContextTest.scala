@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.neo4j.cypher.pipes.matching
+package org.neo4j.cypher.internal.pipes.matching
 
 import org.scalatest.Assertions
 import org.neo4j.cypher.GraphDatabaseTestBase

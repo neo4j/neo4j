@@ -54,9 +54,14 @@ class ExecutionEngine(graph: GraphDatabaseService) {
   @throws(classOf[SyntaxException])
   def execute(query: Query, map: JavaMap[String, Any]): ExecutionResult = execute(query, map.asScala.toMap)
 
+  @throws(classOf[SyntaxException])
+  def prepare(query: String): ExecutionPlan = prepare(parser.parse(query))
 
   @throws(classOf[SyntaxException])
-  def execute(query: Query, params: Map[String, Any]): ExecutionResult = new ExecutionPlanImpl(query, graph).execute(params)
+  def prepare(query: Query): ExecutionPlan = new ExecutionPlanImpl(query, graph)
+
+  @throws(classOf[SyntaxException])
+  def execute(query: Query, params: Map[String, Any]): ExecutionResult = prepare(query).execute(params)
 
 
   def checkScalaVersion() {
@@ -65,6 +70,11 @@ class ExecutionEngine(graph: GraphDatabaseService) {
         util.Properties.versionString)
     }
   }
+
+  private val executionPlanCache = Map[String, ExecutionPlan]()
+//  private def getOrCreatePlan(query:Query):ExecutionPlan = {
+//    executionPlanCache.getOrElse(query.queryString)
+//  }
 
 }
 

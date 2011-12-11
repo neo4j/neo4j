@@ -17,15 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes.aggregation
+package org.neo4j.cypher.internal.pipes.aggregation
 
-import org.neo4j.cypher.{SyntaxException, Comparer}
+import org.neo4j.cypher.internal.Comparer
 import java.lang.Boolean
 import org.neo4j.cypher.commands.Expression
+import org.neo4j.cypher.pipes.aggregation.AggregationFunction
+import org.neo4j.cypher.SyntaxException
 
 trait MinMax extends AggregationFunction with Comparer {
-  val value: Expression
-
+  def value: Expression
   def keep(comparisonResult: Int): Boolean
 
   private var biggestSeen: Any = null

@@ -17,6 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes.matching
+package org.neo4j.cypher.internal.pipes.matching
 
 abstract class PatternElement(val key: String)

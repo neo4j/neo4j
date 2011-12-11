@@ -44,6 +44,7 @@ import org.junit.Test
 import org.neo4j.cypher.SyntaxException
 import org.scalatest.junit.JUnitSuite
 import org.neo4j.cypher.commands.Entity
+import org.neo4j.cypher.internal.pipes.aggregation.MaxFunction
 
 class MaxFunctionTest extends JUnitSuite {
   @Test def singleValueReturnsThatNumber() {

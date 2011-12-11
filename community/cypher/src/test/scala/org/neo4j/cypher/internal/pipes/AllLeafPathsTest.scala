@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes
+package org.neo4j.cypher.internal.pipes
 
 import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.cypher.symbols.{Identifier, NodeType, SymbolTable}
 import org.neo4j.graphdb.{Relationship, Direction, Node}
 import org.neo4j.cypher.{PathImpl, GraphDatabaseTestBase}
-import org.neo4j.cypher.commands.{AllLeafs, Entity}
+import org.neo4j.cypher.commands.AllLeafs
 
 
 class AllLeafPathsTest extends GraphDatabaseTestBase with Assertions {

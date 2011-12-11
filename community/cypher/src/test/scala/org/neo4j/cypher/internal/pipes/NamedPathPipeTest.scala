@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes
+package org.neo4j.cypher.internal.pipes
 
 import org.scalatest.Assertions
 import org.neo4j.cypher.{PathImpl, GraphDatabaseTestBase}
