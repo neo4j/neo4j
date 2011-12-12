@@ -117,6 +117,7 @@ public class StandaloneDatabase
                 {
                     broker = new FakeSlaveBroker( new MasterClient( "localhost",
                             Protocol.PORT, placeHolderGraphDb, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
+                            Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
                             Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ),
                             masterId, machineId, placeHolderGraphDb );
                 }

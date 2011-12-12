@@ -21,14 +21,19 @@ package slavetest;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.HAGraphDb.CONFIG_KEY_LOCK_READ_TIMEOUT;
+import static org.neo4j.kernel.HighlyAvailableGraphDatabase.CONFIG_KEY_READ_TIMEOUT;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Test;
@@ -68,12 +73,14 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
     }
 
     @Override
-    protected Broker makeSlaveBroker( MasterImpl master, int masterId, int id, GraphDatabaseService graphDb )
+    protected Broker makeSlaveBroker( MasterImpl master, int masterId, int id, AbstractGraphDatabase graphDb, Map<String, String> config )
     {
         final Machine masterMachine = new Machine( masterId, -1, 1, -1,
                 "localhost:" + Protocol.PORT );
+        int readTimeout = getConfigInt( config, CONFIG_KEY_READ_TIMEOUT, TEST_READ_TIMEOUT );
         final Master client = new MasterClient( masterMachine.getServer().first(), masterMachine.getServer().other(), graphDb,
-                Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS, Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT);
+                readTimeout, getConfigInt( config, CONFIG_KEY_LOCK_READ_TIMEOUT, readTimeout ),
+                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT);
         return new AbstractBroker( id, graphDb )
         {
             public boolean iAmMaster()
@@ -97,6 +104,12 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
                         "cannot instantiate master server on slave" );
             }
         };
+    }
+    
+    private int getConfigInt( Map<String, String> config, String key, int defaultValue )
+    {
+        String value = config.get( key );
+        return value != null ? Integer.parseInt( value ) : defaultValue;
     }
 
     @Test
@@ -380,7 +393,44 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         assertEquals( Pair.of( masterTxsBefore.first(), masterTxsBefore.other()+1 ), getTransactionCounts( master ) );
         assertEquals( Pair.of( slaveTxsBefore.first(), slaveTxsBefore.other()+1 ), getTransactionCounts( slave ) );
     }
-
+    
+    @Test
+    public void individuallyConfigurableLockReadTimeout() throws Exception
+    {
+        long lockTimeout = 1;
+        initializeDbs( 1, stringMap( CONFIG_KEY_LOCK_READ_TIMEOUT, String.valueOf( lockTimeout ) ) );
+        final Long nodeId = executeJobOnMaster( new CommonJobs.CreateNodeJob( true ) );
+        final Fetcher<DoubleLatch> latchFetcher = getDoubleLatch();
+        pullUpdates();
+        
+        // Hold lock on master
+        Thread lockHolder = new Thread( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    executeJobOnMaster( new CommonJobs.HoldLongLock( nodeId.longValue(), latchFetcher ) );
+                }
+                catch ( Exception e )
+                {
+                    throw new RuntimeException( e );
+                }
+            }
+        } );
+        lockHolder.start();
+        DoubleLatch latch = latchFetcher.fetch();
+        latch.awaitFirst();
+        
+        // Try to get it on slave (should fail)
+        long waitStart = System.currentTimeMillis();
+        assertFalse( executeJob( new CommonJobs.SetNodePropertyJob( nodeId.longValue(), "key", "value" ), 0 ) );
+        long waitTime = System.currentTimeMillis()-waitStart;
+        assertTrue( "" + waitTime, Math.abs( waitTime-lockTimeout*1000 ) < (lockTimeout*1000)/2 );
+        latch.countDownSecond();
+    }
+    
     private Pair<Integer, Integer> getTransactionCounts( GraphDatabaseService master )
     {
         return Pair.of( 

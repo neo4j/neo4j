@@ -171,8 +171,8 @@ public abstract class Client<M> implements ChannelPipelineFactory
             @SuppressWarnings( "unchecked" )
             BlockingReadHandler<ChannelBuffer> reader = (BlockingReadHandler<ChannelBuffer>)
                     channel.getPipeline().get( "blockingHandler" );
-            DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader, readTimeout, getInternalProtocolVersion(),
-                    applicationProtocolVersion );
+            DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader, getReadTimeout( type, readTimeout ),
+                    getInternalProtocolVersion(), applicationProtocolVersion );
 
             R response = deserializer.read( dechunkingBuffer, channelContext.third() );
             StoreId storeId = readStoreId( dechunkingBuffer, channelContext.third() );
@@ -197,6 +197,11 @@ public abstract class Client<M> implements ChannelPipelineFactory
         {
             releaseChannel( type, channelContext );
         }
+    }
+
+    protected int getReadTimeout( RequestType<M> type, int readTimeout )
+    {
+        return readTimeout;
     }
 
     protected boolean shouldCheckStoreId( RequestType<M> type )

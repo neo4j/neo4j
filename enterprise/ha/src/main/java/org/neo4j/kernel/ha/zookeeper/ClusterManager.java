@@ -41,6 +41,7 @@ public class ClusterManager extends AbstractZooKeeperManager
     public ClusterManager( String zooKeeperServers )
     {
         super( zooKeeperServers, null, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
+                Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT );
         this.zooKeeper = instantiateZooKeeper();
     }

@@ -716,13 +716,44 @@ public abstract class CommonJobs
         public Void execute( GraphDatabaseService db ) throws RemoteException
         {
             tx = db.beginTx();
-            Node node = db.createNode();
+            db.createNode();
             return null;
         }
         
         public void rollback()
         {
             tx.finish();
+        }
+    }
+    
+    public static class HoldLongLock extends TransactionalJob<Void>
+    {
+        private final long nodeId;
+        private final Fetcher<DoubleLatch> latchFetcher;
+
+        public HoldLongLock( long nodeId, Fetcher<DoubleLatch> latchFetcher )
+        {
+            this.nodeId = nodeId;
+            this.latchFetcher = latchFetcher;
+        }
+
+        @Override
+        protected Void executeInTransaction( GraphDatabaseService db, Transaction tx )
+        {
+            DoubleLatch latch = latchFetcher.fetch();
+            Node node = db.getNodeById( nodeId );
+            node.removeProperty( "something something" );
+            try
+            {
+                latch.countDownFirst();
+                latch.awaitSecond();
+            }
+            catch ( RemoteException e )
+            {
+                throw new RuntimeException( e );
+            }
+            tx.success();
+            return null;
         }
     }
 }

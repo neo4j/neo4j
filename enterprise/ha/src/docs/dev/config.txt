@@ -64,6 +64,8 @@ Note that while the +HighlyAvailableGraphDatabase+ supports the same API as the 
 | ha.coordinators       | comma delimited coordinator connections   | localhost:2181,localhost:2182,localhost:2183 | yes
 | ha.pull_interval      | interval for polling master from a slave, in seconds | 30 | no
 | ha.slave_coordinator_update_mode | creates a slave-only instance that will never become a master  | none | no
+| ha.read_timeout       | how long a slave will wait for response from master before giving up (default 20) | 20 | no
+| ha.lock_read_timeout  | how long a slave lock acquisition request will wait for response from master before giving up (defaults to what ha.read_timeout is, or its default if absent) | 40 | no
 |========================================================================================
 
 [CAUTION]

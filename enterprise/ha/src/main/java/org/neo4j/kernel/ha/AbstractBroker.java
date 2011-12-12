@@ -79,7 +79,7 @@ public abstract class AbstractBroker implements Broker
     {
         return new BrokerFactory()
         {
-            public Broker create( GraphDatabaseService graphDb, Map<String, String> graphDbConfig )
+            public Broker create( AbstractGraphDatabase graphDb, Map<String, String> graphDbConfig )
             {
                 return broker;
             }
