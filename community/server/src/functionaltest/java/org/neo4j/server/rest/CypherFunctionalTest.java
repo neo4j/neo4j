@@ -26,6 +26,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.matchers.JUnitMatchers.containsString;
 
 import java.io.UnsupportedEncodingException;
+import java.util.Map;
 
 import javax.ws.rs.core.Response.Status;
 
@@ -133,6 +134,20 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
 
         assertEquals( 3, ( JsonHelper.jsonToMap( response ) ).size() );
         assertTrue( response.contains( "message" ) );
+    }
+    
+    @Test
+    @Documented
+    @Graph( value = { "I know you" }, autoIndexNodes = true )
+    public void send_collect_queries() throws Exception {
+        data.get();
+        String script = "start n = node(%I%,%you%) return collect(n.name), collect(n)";
+        String response = cypherRestCall( script, Status.OK);
+
+
+        Map<String, Object> resultMap = JsonHelper.jsonToMap( response );
+        assertEquals( 2, resultMap.size() );
+        assertTrue( response.contains( "[ [ [ \"I\"" ) );
     }
 
     @Test

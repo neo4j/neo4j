@@ -91,11 +91,75 @@ public class CypherResultRepresentation extends ObjectRepresentation
         {
             return new PathRepresentation<Path>((Path) r );
         }
+        else if ( r instanceof Iterable )
+        {
+            return getListRepresentation( (Iterable) r );
+        }
         else
         {
             return ValueRepresentation.string( r.toString() );
         }
     }
 
+    Representation getListRepresentation( Iterable data )
+    {
+        final List<Representation> results = convertValuesToRepresentations( data );
+        return new ListRepresentation( getType( results ), results );
+    }
 
+    List<Representation> convertValuesToRepresentations( Iterable data )
+    {
+        final List<Representation> results = new ArrayList<Representation>();
+        for ( final Object value : data )
+        {
+            if ( value instanceof Iterable )
+            {
+                List<Representation> nested = new ArrayList<Representation>();
+                nested.addAll( convertValuesToRepresentations( (Iterable) value ) );
+                results.add( new ListRepresentation( getType( nested ), nested ) );
+            }
+            else
+            {
+                results.add( getSingleRepresentation( value ) );
+            }
+        }
+        return results;
+    }
+
+    RepresentationType getType( List<Representation> representations )
+    {
+        if ( representations == null || representations.isEmpty() )
+            return RepresentationType.STRING;
+        return representations.get( 0 ).getRepresentationType();
+    }
+
+    Representation getSingleRepresentation( Object result )
+    {
+        if ( result == null )
+            return ValueRepresentation.string( "null" );
+        else if ( result instanceof Node )
+        {
+            return new NodeRepresentation( (Node) result );
+        }
+        else if ( result instanceof Relationship )
+        {
+            return new RelationshipRepresentation( (Relationship) result );
+        }
+        else if ( result instanceof Double || result instanceof Float )
+        {
+            return ValueRepresentation.number( ( (Number) result ).doubleValue() );
+        }
+        else if ( result instanceof Long )
+        {
+            return ValueRepresentation.number( ( (Long) result ).longValue() );
+        }
+        else if ( result instanceof Integer )
+        {
+            return ValueRepresentation.number( ( (Integer) result ).intValue() );
+        }
+        else
+        {
+            return ValueRepresentation.string( result.toString() );
+        }
+    }
 }
