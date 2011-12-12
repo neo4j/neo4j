@@ -64,7 +64,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         initializeDbs( 1 );
         assertTrue(
                 "Slave Broker is not a client",
-                ( (HighlyAvailableGraphDatabase) getSlave( 0 ) ).getBroker().getMaster().first() instanceof MasterClient );
+                ( (HighlyAvailableGraphDatabase) getSlave( 0 ) ).getRawHaDb().getBroker().getMaster().first() instanceof MasterClient );
     }
 
     @Override
