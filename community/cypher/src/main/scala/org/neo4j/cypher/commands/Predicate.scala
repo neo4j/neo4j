@@ -74,7 +74,7 @@ case class Not(a: Predicate) extends Predicate {
   def containsIsNull: Boolean = a.containsIsNull
 }
 
-case class HasRelationship(from: Expression, to: Expression, dir: Direction, relType: Option[String]) extends Predicate {
+case class HasRelationshipTo(from: Expression, to: Expression, dir: Direction, relType: Option[String]) extends Predicate {
   def isMatch(m: Map[String, Any]): Boolean = {
     val fromNode = from(m).asInstanceOf[Node]
     val toNode = to(m).asInstanceOf[Node]
@@ -89,6 +89,22 @@ case class HasRelationship(from: Expression, to: Expression, dir: Direction, rel
   def containsIsNull: Boolean = false
 
   def dependencies: Seq[Identifier] = from.dependencies(NodeType()) ++ to.dependencies(NodeType())
+}
+
+case class HasRelationship(from: Expression, dir: Direction, relType: Option[String]) extends Predicate {
+  def isMatch(m: Map[String, Any]): Boolean = {
+    val fromNode = from(m).asInstanceOf[Node]
+    relType match {
+      case None => fromNode.getRelationships(dir).iterator().hasNext
+      case Some(typ) => fromNode.getRelationships(dir, DynamicRelationshipType.withName(typ)).iterator().hasNext
+    }
+  }
+
+  def atoms: Seq[Predicate] = Seq(this)
+
+  def containsIsNull: Boolean = false
+
+  def dependencies: Seq[Identifier] = from.dependencies(NodeType())
 }
 
 case class IsNull(value: Expression) extends Predicate {

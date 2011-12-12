@@ -1361,7 +1361,8 @@ return p
 
     val result = parseAndExecute("""
 start root  = node(1)
-match p = allLeafPaths( root-->leaf )
+match p = root-[*]->leaf
+where not(leaf-->())
 return p, leaf
 """)
 

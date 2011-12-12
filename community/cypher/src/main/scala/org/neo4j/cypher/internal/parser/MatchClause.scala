@@ -42,18 +42,13 @@ trait MatchClause extends JavaTokenParsers with Tokens {
     case p ~ "=" ~ pathSegment => NamedPath(p, pathSegment: _*)
   }
 
-  def pathSegment: Parser[List[Pattern]] = relatedTos | shortestPath | allLeafs
+  def pathSegment: Parser[List[Pattern]] = relatedTos | shortestPath
 
   def singlePathSegment: Parser[Pattern] = relatedTos ^^ {
     case p => if (p.length > 1)
       throw new SyntaxException("Shortest path does not support having multiple path segments.")
     else
       p.head
-  }
-
-  def allLeafs: Parser[List[Pattern]] = ignoreCase("allleafpaths") ~> parens(singlePathSegment) ^^ {
-    case RelatedTo(left, right, relName, relType, direction, optional) => List(AllLeafs(left, right, namer.name(None), direction, relType, None, false))
-    case _ => throw new SyntaxException("allLeafPaths only support simple relationships between nodes.")
   }
 
   def shortestPath: Parser[List[Pattern]] = (ignoreCase("shortestPath") | ignoreCase("allShortestPaths")) ~ parens(singlePathSegment) ^^ {

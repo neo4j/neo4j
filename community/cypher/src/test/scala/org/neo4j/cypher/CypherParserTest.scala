@@ -1018,7 +1018,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       """start a=node(0), b=node(1) where a-->b return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
-        where(HasRelationship(Entity("a"), Entity("b"), Direction.OUTGOING, None))
+        where(HasRelationshipTo(Entity("a"), Entity("b"), Direction.OUTGOING, None))
         returns (ExpressionReturnItem(Entity("a"))))
   }
 
@@ -1028,7 +1028,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       """start a=node(0), b=node(1) where a-[:KNOWS]-b return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
-        where(HasRelationship(Entity("a"), Entity("b"), Direction.BOTH, Some("KNOWS")))
+        where(HasRelationshipTo(Entity("a"), Entity("b"), Direction.BOTH, Some("KNOWS")))
         returns (ExpressionReturnItem(Entity("a"))))
   }
 
@@ -1037,16 +1037,16 @@ class CypherParserTest extends JUnitSuite with Assertions {
       """start a=node(0), b=node(1) where a--b return a""",
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
-        where(HasRelationship(Entity("a"), Entity("b"), Direction.BOTH, None))
+        where(HasRelationshipTo(Entity("a"), Entity("b"), Direction.BOTH, None))
         returns (ExpressionReturnItem(Entity("a"))))
   }
 
-  @Test def shouldSupportAllLeafPaths() {
+  @Test def shouldSupportHasRelationshipToAnyNode() {
     testQuery(
-      """start a=node(0) match allLeafPaths(a-->leaf) return a""",
+      """start a=node(0) where a-->() return a""",
       Query.
         start(NodeById("a", 0)).
-        matches(AllLeafs("a", "leaf", "  UNNAMED2", Direction.OUTGOING, None, None, false))
+        where(HasRelationship(Entity("a"), Direction.OUTGOING, None))
         returns (ExpressionReturnItem(Entity("a"))))
   }
 

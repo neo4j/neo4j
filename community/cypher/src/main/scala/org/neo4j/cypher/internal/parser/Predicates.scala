@@ -25,7 +25,7 @@ import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.SyntaxException
 
 trait Predicates extends JavaTokenParsers with Tokens with Expressions {
-  def predicate: Parser[Predicate] = (isNull | isNotNull | orderedComparison | not | notEquals | equals | regexp | hasProperty | parens(predicate) | sequencePredicate | hasRelationship) * (
+  def predicate: Parser[Predicate] = (isNull | isNotNull | orderedComparison | not | notEquals | equals | regexp | hasProperty | parens(predicate) | sequencePredicate | hasRelationshipTo | hasRelationship) * (
     ignoreCase("and") ^^^ {
       (a: Predicate, b: Predicate) => And(a, b)
     } |
@@ -92,8 +92,12 @@ trait Predicates extends JavaTokenParsers with Tokens with Expressions {
 
   def isNotNull: Parser[Predicate] = expressionOrEntity <~ ignoreCase("is not null") ^^ (x => Not(IsNull(x)))
 
-  def hasRelationship: Parser[Predicate] = expressionOrEntity ~ relInfo ~ expressionOrEntity ^^ {
-    case a ~ rel ~ b => HasRelationship(a, b, rel._1, rel._2)
+  def hasRelationshipTo: Parser[Predicate] = expressionOrEntity ~ relInfo ~ expressionOrEntity ^^ {
+    case a ~ rel ~ b => HasRelationshipTo(a, b, rel._1, rel._2)
+  }
+
+  def hasRelationship: Parser[Predicate] = expressionOrEntity ~ relInfo <~ "()" ^^ {
+    case a ~ rel  => HasRelationship(a, rel._1, rel._2)
   }
 
   def relInfo: Parser[(Direction, Option[String])] = opt("<") ~ "-" ~ opt("[:" ~> identity <~ "]") ~ "-" ~ opt(">") ^^ {

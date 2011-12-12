@@ -38,7 +38,7 @@ class HasRelationshipTest extends GraphDatabaseTestBase with Assertions {
     b = createNode()
   }
 
-  def createPredicate(dir: Direction, relType: Option[String]): HasRelationship = HasRelationship(Entity("a"), Entity("b"), dir, relType)
+  def createPredicate(dir: Direction, relType: Option[String]): HasRelationshipTo = HasRelationshipTo(Entity("a"), Entity("b"), dir, relType)
 
   @Test def givenTwoRelatedNodesThenReturnsTrue() {
     relate(a, b)
