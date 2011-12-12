@@ -73,10 +73,9 @@ public class ZooClient extends AbstractZooKeeperManager
 
     public ZooClient( String servers, int machineId, RootPathGetter rootPathGetter,
             ResponseReceiver receiver, String haServer, int backupPort, int clientReadTimeout,
-            int clientLockReadTimeout, int maxConcurrentChannelsPerClient,
-            boolean writeLastCommittedTx, AbstractGraphDatabase graphDb )
+            int maxConcurrentChannelsPerClient, boolean writeLastCommittedTx, AbstractGraphDatabase graphDb )
     {
-        super( servers, graphDb, clientReadTimeout, clientLockReadTimeout, maxConcurrentChannelsPerClient );
+        super( servers, graphDb, clientReadTimeout, maxConcurrentChannelsPerClient );
         this.receiver = receiver;
         this.rootPathGetter = rootPathGetter;
         this.haServer = haServer;
