@@ -35,6 +35,7 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.ha.ConnectionInformation;
@@ -100,7 +101,7 @@ public class ZooClient extends AbstractZooKeeperManager
         try
         {
             String path = event.getPath();
-            msgLog.logMessage( this + ", " + new Date() + " Got event: " + event + "(path=" + path + ")", true );
+            msgLog.logMessage( this + ", " + new Date() + " Got event: " + event + " (path=" + path + ")", true );
             if ( path == null && event.getState() == Watcher.Event.KeeperState.Expired )
             {
                 keeperState = KeeperState.Expired;
@@ -133,9 +134,8 @@ public class ZooClient extends AbstractZooKeeperManager
                         Pair<Master, Machine> masterAfterIWrote = getMasterFromZooKeeper( false, false );
                         msgLog.logMessage( "Get master after write:" + masterAfterIWrote );
                         int masterId = masterAfterIWrote.other().getMachineId();
-                        msgLog.logMessage( "Setting '" + MASTER_NOTIFY_CHILD + "' to " + masterId );
                         setDataChangeWatcher( MASTER_NOTIFY_CHILD, masterId );
-                        msgLog.logMessage( "Did set '" + MASTER_NOTIFY_CHILD + "' to " + masterId );
+                        msgLog.logMessage( "Set '" + MASTER_NOTIFY_CHILD + "' to " + masterId );
                         if ( sessionId != -1 )
                         {
                             receiver.newMaster( new Exception() );
@@ -162,28 +162,23 @@ public class ZooClient extends AbstractZooKeeperManager
             }
             else if ( event.getType() == Watcher.Event.EventType.NodeDataChanged )
             {
-                Pair<Master, Machine> currentMaster = getCachedMaster();
+                int newMasterMachineId = toInt( getZooKeeper().getData( path, true, null ) );
                 if ( path.contains( MASTER_NOTIFY_CHILD ) )
                 {
-                    setDataChangeWatcher( MASTER_NOTIFY_CHILD, -1 );
-                    
                     // This event is for the masters eyes only so it should only
                     // be the (by zookeeper spoken) master which should make sure
                     // it really is master.
-                    if ( currentMaster.other().getMachineId() == machineId )
+                    if ( newMasterMachineId == machineId )
                     {
                         receiver.newMaster( new Exception() );
                     }
                 }
                 else if ( path.contains( MASTER_REBOUND_CHILD ) )
                 {
-                    if ( writeLastCommittedTx ) setDataChangeWatcher( MASTER_REBOUND_CHILD, -1 );
-                    else subscribeToDataChangeWatcher( MASTER_REBOUND_CHILD );
-                    
                     // This event is for all the others after the master got the
                     // MASTER_NOTIFY_CHILD which then shouts out to the others to
                     // become slaves if they don't already are.
-                    if ( currentMaster.other().getMachineId() != machineId )
+                    if ( newMasterMachineId != machineId )
                     {
                         receiver.newMaster( new Exception() );
                     }
@@ -194,16 +189,21 @@ public class ZooClient extends AbstractZooKeeperManager
                 }
             }
         }
-        catch ( RuntimeException e )
+        catch ( Exception e )
         {
             msgLog.logMessage( "Error in ZooClient.process", e, true );
             e.printStackTrace();
-            throw e;
+            throw Exceptions.launderedException( e );
         }
         finally
         {
             msgLog.flush();
         }
+    }
+
+    private int toInt( byte[] data )
+    {
+        return ByteBuffer.wrap( data ).getInt();
     }
 
     @Override
