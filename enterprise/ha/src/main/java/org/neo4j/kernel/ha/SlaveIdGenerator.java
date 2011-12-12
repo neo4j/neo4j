@@ -147,7 +147,10 @@ public class SlaveIdGenerator implements IdGenerator
             }
             else
             {
-                assert master.other().getMachineId() == allocationMaster;
+                if ( master.other().getMachineId() != allocationMaster )
+                {
+                    throw new ComException( "Master changed" );
+                }
             }
             return nextId;
         }
