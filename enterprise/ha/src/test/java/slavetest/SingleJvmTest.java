@@ -66,7 +66,7 @@ public class SingleJvmTest extends AbstractHaTest
         haDbs = haDbs != null ? haDbs : new ArrayList<GraphDatabaseService>();
         File slavePath = dbPath( machineId );
         PlaceHolderGraphDatabaseService placeHolderDb = new PlaceHolderGraphDatabaseService( slavePath.getAbsolutePath() );
-        Broker broker = makeSlaveBroker( master, 0, machineId, placeHolderDb );
+        Broker broker = makeSlaveBroker( master, 0, machineId, placeHolderDb, config );
         Map<String,String> cfg = new HashMap<String, String>(config);
         cfg.put( HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID, Integer.toString(machineId) );
         cfg.put( Config.KEEP_LOGICAL_LOGS, "true" );
@@ -114,7 +114,7 @@ public class SingleJvmTest extends AbstractHaTest
         return new FakeMasterBroker( masterId, graphDb );
     }
 
-    protected Broker makeSlaveBroker( MasterImpl master, int masterId, int id, AbstractGraphDatabase graphDb )
+    protected Broker makeSlaveBroker( MasterImpl master, int masterId, int id, AbstractGraphDatabase graphDb, Map<String, String> config )
     {
         return new FakeSlaveBroker( master, masterId, id, graphDb );
     }

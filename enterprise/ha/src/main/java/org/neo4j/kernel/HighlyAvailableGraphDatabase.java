@@ -107,6 +107,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     public static final String CONFIG_KEY_MAX_CONCURRENT_CHANNELS_PER_SLAVE = "ha.max_concurrent_channels_per_slave";
     public static final String CONFIG_KEY_BRANCHED_DATA_POLICY = "ha.branched_data_policy";
     public static final String CONFIG_KEY_READ_TIMEOUT = "ha.read_timeout";
+    public static final String CONFIG_KEY_LOCK_READ_TIMEOUT = "ha.lock_read_timeout";
     public static final String CONFIG_KEY_SLAVE_COORDINATOR_UPDATE_MODE = "ha.slave_coordinator_update_mode";
 
     private static final String CONFIG_DEFAULT_HA_CLUSTER_NAME = "neo4j.ha";
@@ -335,7 +336,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
     {
         if ( localGraph != null ) return localGraph;
         return waitForCondition( new LocalGraphAvailableCondition(), (getClientReadTimeoutFromConfig( config )-5)*1000 );
-}
+    }
 
     private <T,E extends Exception> T waitForCondition( Condition<T,E> condition, int timeMillis ) throws E
     {
@@ -373,6 +374,7 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
                         getHaServerFromConfig( config ),
                         getBackupPortFromConfig( config ),
                         getClientReadTimeoutFromConfig( config ),
+                        getClientLockReadTimeoutFromConfig( config ),
                         getMaxConcurrentChannelsPerSlaveFromConfig( config ),
                         slaveUpdateMode.syncWithZooKeeper,
                         HighlyAvailableGraphDatabase.this );
@@ -421,6 +423,12 @@ public class HighlyAvailableGraphDatabase extends AbstractGraphDatabase
         return value != null ? Integer.parseInt( value ) : Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS;
     }
 
+    private int getClientLockReadTimeoutFromConfig( Map<String, String> config )
+    {
+        String value = config.get( CONFIG_KEY_READ_TIMEOUT );
+        return value != null ? Integer.parseInt( value ) : getClientReadTimeoutFromConfig( config );
+    }
+    
     private int getMaxConcurrentChannelsPerSlaveFromConfig( Map<String, String> config )
     {
         String value = config.get( CONFIG_KEY_MAX_CONCURRENT_CHANNELS_PER_SLAVE );
