@@ -420,7 +420,7 @@ public class HAGraphDb extends AbstractGraphDatabase
 
     private int getClientLockReadTimeoutFromConfig( Map<String, String> config )
     {
-        String value = config.get( CONFIG_KEY_READ_TIMEOUT );
+        String value = config.get( CONFIG_KEY_LOCK_READ_TIMEOUT );
         return value != null ? Integer.parseInt( value ) : getClientReadTimeoutFromConfig( config );
     }
     
