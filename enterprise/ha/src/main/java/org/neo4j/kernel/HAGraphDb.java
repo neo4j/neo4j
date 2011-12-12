@@ -125,6 +125,7 @@ public class HAGraphDb extends AbstractGraphDatabase
     private final long startupTime;
     private final BranchedDataPolicy branchedDataPolicy;
     private final SlaveUpdateMode slaveUpdateMode;
+    private final int readTimeout;
 
     private final List<KernelEventHandler> kernelEventHandlers =
             new CopyOnWriteArrayList<KernelEventHandler>();
@@ -151,6 +152,7 @@ public class HAGraphDb extends AbstractGraphDatabase
             throw new IllegalArgumentException( "null config, proper configuration required" );
         }
         initializeTxManagerKernelPanicEventHandler();
+        this.readTimeout = getClientReadTimeoutFromConfig( config );
         this.startupTime = System.currentTimeMillis();
         this.config = config;
         config.put( Config.KEEP_LOGICAL_LOGS, "true" );
@@ -336,7 +338,7 @@ public class HAGraphDb extends AbstractGraphDatabase
     {
         if ( localGraph != null ) return localGraph;
         return waitForCondition( new LocalGraphAvailableCondition(), (getClientReadTimeoutFromConfig( config )-5)*1000 );
-}
+    }
 
     private <T,E extends Exception> T waitForCondition( Condition<T,E> condition, int timeMillis ) throws E
     {
@@ -373,7 +375,7 @@ public class HAGraphDb extends AbstractGraphDatabase
                         getCoordinatorsFromConfig( config ),
                         getHaServerFromConfig( config ),
                         getBackupPortFromConfig( config ),
-                        getClientReadTimeoutFromConfig( config ),
+                        readTimeout,
                         getClientLockReadTimeoutFromConfig( config ),
                         getMaxConcurrentChannelsPerSlaveFromConfig( config ),
                         slaveUpdateMode.syncWithZooKeeper,
@@ -720,8 +722,23 @@ public class HAGraphDb extends AbstractGraphDatabase
             throw new BranchedDataException( "Maybe not branched data, but it could solve it", e );
         }
 
-        Pair<Integer, Long> mastersMaster = master.first().getMasterIdForCommittedTx(
-                myLastCommittedTx, getStoreId( newDb ) ).response();
+        long endTime = System.currentTimeMillis()+readTimeout*1000;
+        Pair<Integer, Long> mastersMaster = null;
+        RuntimeException failure = null;
+        while ( mastersMaster == null && System.currentTimeMillis() < endTime )
+        {
+            try
+            {
+                mastersMaster = master.first().getMasterIdForCommittedTx(
+                        myLastCommittedTx, getStoreId( newDb ) ).response();
+            }
+            catch ( ComException e )
+            {   // Maybe new master isn't up yet... let's wait a little and retry
+                failure = e;
+                sleeep( 500 );
+            }
+        }
+        if ( mastersMaster == null ) throw failure;
 
         if ( myMaster.first() != XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER
             && !myMaster.equals( mastersMaster ) )
@@ -737,6 +754,18 @@ public class HAGraphDb extends AbstractGraphDatabase
         }
         getMessageLog().logMessage( "Master id for last committed tx ok with highestTxId=" +
             myLastCommittedTx + " with masterId=" + myMaster, true );
+    }
+
+    private void sleeep( int millis )
+    {
+        try
+        {
+            Thread.sleep( 500 );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.interrupted();
+        }
     }
 
     private StoreId getStoreId( EmbeddedGraphDbImpl db )
