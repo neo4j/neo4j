@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -43,9 +42,6 @@ import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
-import org.neo4j.kernel.KernelData;
-import org.neo4j.kernel.TransactionBuilder;
-import org.neo4j.kernel.impl.util.StringLogger;
 
 public abstract class WrappedGraphDatabase extends AbstractGraphDatabase
 {
@@ -53,7 +49,7 @@ public abstract class WrappedGraphDatabase extends AbstractGraphDatabase
 
     public WrappedGraphDatabase( GraphDatabaseService graphdb )
     {
-        super( storeDirOf( graphdb ) );
+        graphdb.getClass(); // null check
         this.graphdb = graphdb;
     }
     
@@ -65,16 +61,6 @@ public abstract class WrappedGraphDatabase extends AbstractGraphDatabase
             return ( (AbstractGraphDatabase) graphdb ).getStoreDir();
         }
         return "."; // (in-?) sane default
-    }
-    
-    @Override
-    protected StringLogger createStringLogger()
-    {
-        if ( graphdb instanceof AbstractGraphDatabase )
-        {
-            return ( (AbstractGraphDatabase) graphdb ).getMessageLog();
-        }
-        return super.createStringLogger();
     }
 
     @Override
@@ -99,11 +85,6 @@ public abstract class WrappedGraphDatabase extends AbstractGraphDatabase
 
     protected abstract WrappedRelationship<? extends WrappedGraphDatabase> relationship( Relationship relationship,
             boolean created );
-    
-    protected Lock lock( Lock lock )
-    {
-        return lock;
-    }
 
     Iterable<Node> nodes( final Iterable<Node> nodes )
     {
@@ -188,10 +169,6 @@ public abstract class WrappedGraphDatabase extends AbstractGraphDatabase
     @Override
     public final WrappedTransaction beginTx()
     {
-        if ( graphdb instanceof AbstractGraphDatabase )
-        {
-            return (WrappedTransaction) super.beginTx();
-        }
         boolean openTx;
         try
         {
@@ -244,7 +221,7 @@ public abstract class WrappedGraphDatabase extends AbstractGraphDatabase
     }
 
     @Override
-    protected final void close()
+    public final void shutdown()
     {
         try
         {
@@ -454,55 +431,11 @@ public abstract class WrappedGraphDatabase extends AbstractGraphDatabase
         return indexManager;
     }
     
-    private static class WrappedTransactionBuilder extends WrappedObject<TransactionBuilder> implements
-            TransactionBuilder
-    {
-        WrappedTransactionBuilder( WrappedGraphDatabase graphdb, TransactionBuilder wrapped )
-        {
-            super( graphdb, wrapped );
-        }
-
-        @Override
-        public WrappedTransaction begin()
-        {
-            boolean openTx;
-            try
-            {
-                graphdb.onBeginTransaction();
-                openTx = true;
-            }
-            catch ( TransactionNotAllowedException exception )
-            {
-                exception.throwCause();
-                openTx = false;
-            }
-            return new WrappedTransaction( graphdb, openTx ? wrapped.begin() : null );
-        }
-
-        @Override
-        public WrappedTransactionBuilder unforced()
-        {
-            return new WrappedTransactionBuilder( graphdb, wrapped.unforced() );
-        }
-    }
-
     private static class WrappedTransaction extends WrappedObject<Transaction> implements Transaction
     {
         WrappedTransaction( WrappedGraphDatabase graphdb, Transaction tx )
         {
             super( graphdb, tx );
-        }
-
-        @Override
-        public Lock acquireReadLock( PropertyContainer entity )
-        {
-            return graphdb.lock( wrapped.acquireReadLock( entity ) );
-        }
-
-        @Override
-        public Lock acquireWriteLock( PropertyContainer entity )
-        {
-            return graphdb.lock( wrapped.acquireWriteLock( entity ) );
         }
 
         @Override
@@ -550,16 +483,6 @@ public abstract class WrappedGraphDatabase extends AbstractGraphDatabase
     private static final String NOT_AGD = "Underlying graph database is not an AbstractGraphDatabase";
 
     @Override
-    public TransactionBuilder tx()
-    {
-        if ( graphdb instanceof AbstractGraphDatabase )
-        {
-            return new WrappedTransactionBuilder( this, ( (AbstractGraphDatabase) graphdb ).tx() );
-        }
-        throw new UnsupportedOperationException( NOT_AGD );
-    }
-    
-    @Override
     public Config getConfig()
     {
         // WARNING: this is an escape hatch to the underlying implementation
@@ -581,12 +504,22 @@ public abstract class WrappedGraphDatabase extends AbstractGraphDatabase
     }
     
     @Override
-    public KernelData getKernelData()
+    public String getStoreDir()
     {
         if ( graphdb instanceof AbstractGraphDatabase )
         {
-            return ( (AbstractGraphDatabase) graphdb ).getKernelData();
+            return ( (AbstractGraphDatabase) graphdb ).getStoreDir();
         }
-        throw new UnsupportedOperationException( NOT_AGD );
+        throw new UnsupportedOperationException(NOT_AGD);
+    }
+    
+    @Override
+    public boolean isReadOnly()
+    {
+        if ( graphdb instanceof AbstractGraphDatabase )
+        {
+            return ( (AbstractGraphDatabase) graphdb ).isReadOnly();
+        }
+        throw new UnsupportedOperationException(NOT_AGD);
     }
 }
