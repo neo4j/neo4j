@@ -23,10 +23,14 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
+import java.util.Collections;
 
+import org.neo4j.backup.check.ConsistencyCheck;
+import org.neo4j.helpers.Args;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.LogExtractor;
@@ -34,15 +38,18 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.LogExtractor;
 class RebuildFromLogs
 {
     private final XaDataSource nioneo;
+    private final StoreAccess stores;
 
-    public RebuildFromLogs( AbstractGraphDatabase graphdb )
+    RebuildFromLogs( AbstractGraphDatabase graphdb )
     {
         this.nioneo = getDataSource( graphdb, Config.DEFAULT_DATA_SOURCE_NAME );
+        this.stores = new StoreAccess( graphdb );
     }
 
-    void applyTransactionsFrom( File sourceDir ) throws IOException
+    RebuildFromLogs applyTransactionsFrom( File sourceDir ) throws IOException
     {
-        AbstractGraphDatabase graphdb = new EmbeddedGraphDatabase( sourceDir.getAbsolutePath() );
+        AbstractGraphDatabase graphdb = new EmbeddedGraphDatabase( sourceDir.getAbsolutePath(),
+                Collections.singletonMap( Config.KEEP_LOGICAL_LOGS, "true" ) );
         try
         {
             XaDataSource nioneo = getDataSource( graphdb, Config.DEFAULT_DATA_SOURCE_NAME );
@@ -58,6 +65,7 @@ class RebuildFromLogs
         {
             graphdb.shutdown();
         }
+        return this;
     }
 
     public void applyTransaction( long txId, ReadableByteChannel txData ) throws IOException
@@ -76,17 +84,24 @@ class RebuildFromLogs
 
     public static void main( String[] args )
     {
+        if ( args == null )
+        {
+            printUsage();
+            return;
+        }
+        Args params = new Args( args );
+        boolean full = params.getBoolean( "full", false, true );
+        args = params.orphans().toArray( new String[0] );
         if ( args.length != 2 )
         {
-            System.err.println( RebuildFromLogs.class.getName()
-                                + " expects exactly two arguments: <source dir with logs> <target dir for graphdb>" );
+            printUsage( "Exactly two positional arguments expected: <source dir with logs> <target dir for graphdb>" );
             System.exit( -1 );
             return;
         }
         File source = new File( args[0] ), target = new File( args[1] );
         if ( !source.isDirectory() )
         {
-            System.err.println( source + " is not a directory" );
+            printUsage( source + " is not a directory" );
             System.exit( -1 );
             return;
         }
@@ -96,7 +111,7 @@ class RebuildFromLogs
             {
                 if ( OnlineBackup.directoryContainsDb( target.getAbsolutePath() ) )
                 {
-                    System.err.println( "target graph database already exists" );
+                    printUsage( "target graph database already exists" );
                     System.exit( -1 );
                     return;
                 }
@@ -107,24 +122,24 @@ class RebuildFromLogs
             }
             else
             {
-                System.err.println( target + " is a file" );
+                printUsage( target + " is a file" );
                 System.exit( -1 );
                 return;
             }
         }
         if ( findMaxLogFileId( source ) < 0 )
         {
-            System.err.println( "Inconsistent number of log files found in " + source );
+            printUsage( "Inconsistent number of log files found in " + source );
             System.exit( -1 );
             return;
         }
         AbstractGraphDatabase graphdb = OnlineBackup.startTemporaryDb(
-                target.getAbsolutePath(), VerificationLevel.LOGGING );
+                target.getAbsolutePath(), full ? VerificationLevel.FULL_WITH_LOGGING : VerificationLevel.LOGGING );
         try
         {
             try
             {
-                new RebuildFromLogs( graphdb ).applyTransactionsFrom( source );
+                new RebuildFromLogs( graphdb ).applyTransactionsFrom( source ).fullCheck(!full);
             }
             finally
             {
@@ -138,6 +153,30 @@ class RebuildFromLogs
             System.exit( -1 );
             return;
         }
+    }
+
+    private void fullCheck( boolean full )
+    {
+        if ( full )
+        {
+            try
+            {
+                new ConsistencyCheck( stores, true ).run();
+            }
+            catch ( AssertionError summary )
+            {
+                System.err.println( summary.getMessage() );
+            }
+        }
+    }
+
+    private static void printUsage( String... msgLines )
+    {
+        for ( String line : msgLines ) System.err.println( line );
+        System.err.println( Args.jarUsage( RebuildFromLogs.class, "[-full] <source dir with logs> <target dir for graphdb>" ) );
+        System.err.println( "WHERE:   <source dir>  is the path for where transactions to rebuild from are stored" );
+        System.err.println( "         <target dir>  is the path for where to create the new graph database" );
+        System.err.println( "         -full     --  to run a full check over the entire store for each transaction" );
     }
 
     private static int findMaxLogFileId( File source )

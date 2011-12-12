@@ -56,7 +56,7 @@ public class VerifyingTransactionInterceptorProvider extends
             return null;
         }
         return new VerifyingTransactionInterceptor( (NeoStoreXaDataSource) ds,
-                true );
+                VerifyingTransactionInterceptor.CheckerMode.DIFF, true );
     }
 
     @Override
