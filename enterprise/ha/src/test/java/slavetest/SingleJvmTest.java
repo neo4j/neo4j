@@ -32,6 +32,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.HAGraphDb;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.FakeMasterBroker;
@@ -70,8 +71,8 @@ public class SingleJvmTest extends AbstractHaTest
         cfg.put( HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID, Integer.toString(machineId) );
         cfg.put( Config.KEEP_LOGICAL_LOGS, "true" );
         cfg.put( HighlyAvailableGraphDatabase.CONFIG_KEY_READ_TIMEOUT, String.valueOf( TEST_READ_TIMEOUT ) );
-        HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase(
-                slavePath.getAbsolutePath(), cfg, wrapBrokerAndSetPlaceHolderDb( placeHolderDb, broker ) );
+        HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase( new HAGraphDb(
+                slavePath.getAbsolutePath(), cfg, wrapBrokerAndSetPlaceHolderDb( placeHolderDb, broker ) ) );
         placeHolderDb.setDb( db );
         haDbs.set( machineId-1, db );
     }
@@ -102,8 +103,8 @@ public class SingleJvmTest extends AbstractHaTest
         String path = dbPath( 0 ).getAbsolutePath();
         PlaceHolderGraphDatabaseService placeHolderDb = new PlaceHolderGraphDatabaseService( path );
         Broker broker = makeMasterBroker( masterId, placeHolderDb );
-        HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase( path,
-                config, wrapBrokerAndSetPlaceHolderDb( placeHolderDb, broker ) );
+        HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase( new HAGraphDb(
+                path, config, wrapBrokerAndSetPlaceHolderDb( placeHolderDb, broker ) ) );
         placeHolderDb.setDb( db );
         return placeHolderDb;
     }

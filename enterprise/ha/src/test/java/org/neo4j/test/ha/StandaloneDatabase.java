@@ -32,6 +32,7 @@ import org.junit.Ignore;
 import org.neo4j.com.Client;
 import org.neo4j.com.Protocol;
 import org.neo4j.helpers.Format;
+import org.neo4j.kernel.HAGraphDb;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.FakeMasterBroker;
@@ -120,8 +121,8 @@ public class StandaloneDatabase
                             masterId, machineId, placeHolderGraphDb );
                 }
                 config = removeDashes( config );
-                HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase( storeDir, config,
-                        AbstractHaTest.wrapBrokerAndSetPlaceHolderDb( placeHolderGraphDb, broker ) );
+                HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase( new HAGraphDb( storeDir, config,
+                        AbstractHaTest.wrapBrokerAndSetPlaceHolderDb( placeHolderGraphDb, broker ) ) );
                 placeHolderGraphDb.setDb( db );
                 System.out.println( "Started HA db (w/o zoo keeper)" );
                 return db;

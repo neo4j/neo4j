@@ -51,6 +51,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.Config;
@@ -189,8 +190,15 @@ public abstract class AbstractHaTest
             int vNodeIndexServicePropCount = 0;
             int vNodeIndexProviderPropCount = 0;
 
-            Set<Node> otherNodes = IteratorUtil.addToCollection( otherDb.getAllNodes().iterator(),
-                    new HashSet<Node>() );
+            Set<Long> others = IteratorUtil.addToCollection(
+                    new IterableWrapper<Long, Node>( otherDb.getAllNodes() )
+                    {
+                        @Override
+                        protected Long underlyingObjectToObject( Node node )
+                        {
+                            return node.getId();
+                        }
+                    }, new HashSet<Long>() );
             for ( Node node : refDb.getAllNodes() )
             {
                 Node otherNode = otherDb.getNodeById( node.getId() );
@@ -200,10 +208,10 @@ public abstract class AbstractHaTest
                 vRelPropCount += counts[2];
                 vNodeIndexServicePropCount += counts[3];
                 vNodeIndexProviderPropCount += counts[4];
-                otherNodes.remove( otherNode );
+                others.remove( otherNode.getId() );
                 vNodeCount++;
             }
-            assertTrue( otherNodes.isEmpty() );
+            assertTrue( others.isEmpty() );
 
             if ( expectsResults )
             {
