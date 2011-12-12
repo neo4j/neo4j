@@ -354,7 +354,7 @@ public class Jetty6WebServer implements WebServer
                             if ( context.getContextPath()
                                     .equals( rule.forUriPath() ) )
                             {
-                                final Filter jettyFilter = new SecurityFilter( rule );
+                                final Filter jettyFilter = new SecurityFilter( rule, server.getDatabase().graph );
                                 context.addFilter( new FilterHolder( jettyFilter ), "/*", Handler.ALL );
                                 log.info( "Security rule [%s] installed on server", rule.getClass().getCanonicalName() );
                             }

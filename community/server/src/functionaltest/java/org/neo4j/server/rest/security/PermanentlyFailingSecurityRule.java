@@ -21,6 +21,8 @@ package org.neo4j.server.rest.security;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+
 //START SNIPPET: failingRule
 public class PermanentlyFailingSecurityRule implements SecurityRule
 {
@@ -28,10 +30,11 @@ public class PermanentlyFailingSecurityRule implements SecurityRule
     public static final String REALM = "WallyWorld"; // as per RFC2617 :-);
 
     @Override
-    public boolean isAuthorized( HttpServletRequest request )
+    public boolean isAuthorized( HttpServletRequest request, GraphDatabaseService graph )
     {
-        return false; // always fails - a production implementation performs
-                      // deployment-specific authorization logic here
+        // always fails - a production implementation performs
+        // deployment-specific authorization logic here
+        return graph.getReferenceNode().getId() == -1; 
     }
 
     @Override
