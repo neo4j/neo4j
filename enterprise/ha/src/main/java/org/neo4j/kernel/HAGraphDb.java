@@ -559,7 +559,6 @@ public class HAGraphDb extends AbstractGraphDatabase
         Pair<Integer, Long> myMaster;
         try
         {
-
             myMaster = nioneoDataSource.getMasterForCommittedTx( myLastCommittedTx );
         }
         catch ( NoSuchLogVersionException e )
