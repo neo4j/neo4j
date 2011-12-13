@@ -33,30 +33,31 @@ class CypherTest(unit_tests.GraphDatabaseTest):
         # END SNIPPET: basicCypherQuery
         
         # START SNIPPET: getCypherResultColumn
-        result = db.query("START n=node(0) RETURN n")
+        root_node = "START n=node(0) RETURN n"
         
         # Fetch an iterator for the "n" column
-        col = result['n']
+        column = db.query(root_node)['n']
         
-        for value in col:
-            node = value
+        for cell in column:
+            node = cell
         
-        # We know it's a single result,
-        # so we could have done this as well
-        node = result['n'].single
+        # Coumns support "single":
+        column = db.query(root_node)['n']
+        node = column.single
         # END SNIPPET: getCypherResultColumn
         
         self.assertEquals(0, node.id)
         
         # START SNIPPET: iterateCypherResult
-        result = db.query("START n=node(0) RETURN n")
+        root_node = "START n=node(0) RETURN n"
         
         # Iterate through all result rows
-        for row in result:
+        for row in db.query(root_node):
             node = row['n']
             
-        # Or, we can use single here as well
-        node = result.single['n']
+        # We know it's a single result,
+        # so we could have done this as well
+        node = db.query(root_node).single['n']
         # END SNIPPET: iterateCypherResult
         self.assertEquals(0, node.id)
         
