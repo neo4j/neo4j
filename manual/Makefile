@@ -9,8 +9,7 @@ IMGDIR           = $(SRCDIR)/images
 CSSDIR           = $(SRCDIR)/css
 JSDIR            = $(SRCDIR)/js
 CONFDIR          = $(SRCDIR)/conf
-DOCBOOKFILE      = $(BUILDDIR)/$(PROJECTNAME).xml
-DOCBOOKSHORTINFOFILE = $(BUILDDIR)/$(PROJECTNAME)-shortinfo.xml
+DOCBOOKFILE      = $(BUILDDIR)/$(PROJECTNAME)-shortinfo.xml
 DOCBOOKFILEHTML  = $(BUILDDIR)/$(PROJECTNAME)-html.xml
 FOPDIR           = $(BUILDDIR)/pdf
 FOPFILE          = $(FOPDIR)/$(PROJECTNAME).fo
@@ -107,9 +106,8 @@ cleanup:
 	#
 	#
 ifndef KEEP
-	rm -f "$(DOCBOOKFILE)"
 	rm -f "$(DOCBOOKFILEPDF)"
-	rm -f "$(DOCBOOKSHORTINFOFILE)"
+	rm -f "$(DOCBOOKFILE)"
 	rm -f "$(BUILDDIR)/"*.xml
 	rm -f "$(ANNOTATEDDIR)/"*.xml
 	rm -f "$(FOPDIR)/images"
@@ -149,16 +147,6 @@ text-check: text
 	#
 	"$(SCRIPTDIR)/textcheck.sh" "$(TEXTFILE)"
 
-docbook:  manpages copyimages
-	#
-	#
-	# Building docbook output.
-	#
-	#
-	mkdir -p "$(BUILDDIR)"
-	"$(ASCIIDOC)" $(ASCIIDOC_FLAGS) --backend docbook --attribute docinfo --doctype book --conf-file="$(CONFDIR)/asciidoc.conf" --conf-file="$(CONFDIR)/docbook45.conf" --out-file "$(DOCBOOKFILE)" "$(SRCFILE)"
-	xmllint --nonet --noout --xinclude --postvalid "$(DOCBOOKFILE)"
-
 docbook-shortinfo:  manpages copyimages
 	#
 	#
@@ -167,8 +155,8 @@ docbook-shortinfo:  manpages copyimages
 	#
 	#
 	mkdir -p "$(BUILDDIR)"
-	"$(ASCIIDOC)" $(ASCIIDOC_FLAGS) --backend docbook --attribute docinfo1 --doctype book --conf-file="$(CONFDIR)/asciidoc.conf" --conf-file="$(CONFDIR)/docbook45.conf" --out-file "$(DOCBOOKSHORTINFOFILE)" "$(SRCFILE)"
-	xmllint --nonet --noout --xinclude --postvalid "$(DOCBOOKSHORTINFOFILE)"
+	"$(ASCIIDOC)" $(ASCIIDOC_FLAGS) --backend docbook --attribute docinfo1 --doctype book --conf-file="$(CONFDIR)/asciidoc.conf" --conf-file="$(CONFDIR)/docbook45.conf" --out-file "$(DOCBOOKFILE)" "$(SRCFILE)"
+	xmllint --nonet --noout --xinclude --postvalid "$(DOCBOOKFILE)"
 
 docbook-html:  manpages copyimages
 	#
@@ -190,7 +178,7 @@ pdf: docbook-shortinfo copyimages
 	#
 	mkdir -p "$(FOPDIR)"
 	cd "$(FOPDIR)"
-	xsltproc --xinclude --output "$(FOPFILE)" "$(CONFDIR)/fo.xsl" "$(DOCBOOKSHORTINFOFILE)"
+	xsltproc --xinclude --output "$(FOPFILE)" "$(CONFDIR)/fo.xsl" "$(DOCBOOKFILE)"
 	ln -s "$(SRCDIR)/images" "$(FOPDIR)/images"
 	#export FOP_OPTS="-Xmx2048m"
 	#fop -fo $(FOPFILE) -pdf $(FOPPDF) -c $(CONFDIR)/fop.xml
@@ -257,7 +245,7 @@ text: docbook-shortinfo
 	#
 	mkdir -p "$(TEXTDIR)"
 	cd "$(TEXTDIR)"
-	xsltproc --xinclude --stringparam callout.graphics 0 --stringparam navig.graphics 0 --stringparam admon.textlabel 1 --stringparam admon.graphics 0  --output "$(TEXTHTMLFILE)" "$(CONFDIR)/text.xsl" "$(DOCBOOKSHORTINFOFILE)"
+	xsltproc --xinclude --stringparam callout.graphics 0 --stringparam navig.graphics 0 --stringparam admon.textlabel 1 --stringparam admon.graphics 0  --output "$(TEXTHTMLFILE)" "$(CONFDIR)/text.xsl" "$(DOCBOOKFILE)"
 	cd "$(SRCDIR)"
 	cp -f "$(SCRIPTDIR)/bom" "$(TEXTFILE)"
 	w3m -cols "$(TEXTWIDTH)" -dump -T text/html -no-graph "$(TEXTHTMLFILE)" >> "$(TEXTFILE)"

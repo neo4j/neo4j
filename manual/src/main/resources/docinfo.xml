@@ -31,6 +31,39 @@
   <holder>Neo Technology</holder>
 </copyright>
 
+<abstract>
+  <title>Quickstart</title>
+  <para>
+    <itemizedlist>
+      <listitem>
+        <para>
+          <xref linkend="what-is-a-graphdb" />
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          <xref linkend="tutorials-java-embedded" />
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          <xref linkend="tutorials-python-embedded" />
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          <xref linkend="server" />
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          <xref linkend="rest-api" />
+        </para>
+      </listitem>
+    </itemizedlist>
+  </para>
+</abstract>
+
 <legalnotice>
   <title>License: Creative Commons 3.0</title>
   <simpara>This book is presented in open source and licensed through
