@@ -19,32 +19,32 @@
  */
 package org.neo4j.kernel;
 
-import java.util.Map;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.HAGraphDb;
 import org.neo4j.tooling.wrap.WrappedGraphDatabase;
 import org.neo4j.tooling.wrap.WrappedNode;
 import org.neo4j.tooling.wrap.WrappedRelationship;
 
+import java.util.Map;
+
 public class HighlyAvailableGraphDatabase extends WrappedGraphDatabase
 {
-    public static final String CONFIG_KEY_OLD_SERVER_ID = "ha.machine_id";
-    public static final String CONFIG_KEY_SERVER_ID = "ha.server_id";
+    public static final String CONFIG_KEY_OLD_SERVER_ID = HaConfig.CONFIG_KEY_OLD_SERVER_ID;
+    public static final String CONFIG_KEY_SERVER_ID = HaConfig.CONFIG_KEY_SERVER_ID;
 
-    public static final String CONFIG_KEY_OLD_COORDINATORS = "ha.zoo_keeper_servers";
-    public static final String CONFIG_KEY_COORDINATORS = "ha.coordinators";
+    public static final String CONFIG_KEY_OLD_COORDINATORS = HaConfig.CONFIG_KEY_OLD_COORDINATORS;
+    public static final String CONFIG_KEY_COORDINATORS = HaConfig.CONFIG_KEY_COORDINATORS;
 
-    public static final String CONFIG_KEY_SERVER = "ha.server";
-    public static final String CONFIG_KEY_CLUSTER_NAME = "ha.cluster_name";
-    public static final String CONFIG_KEY_PULL_INTERVAL = "ha.pull_interval";
-    public static final String CONFIG_KEY_ALLOW_INIT_CLUSTER = "ha.allow_init_cluster";
-    public static final String CONFIG_KEY_MAX_CONCURRENT_CHANNELS_PER_SLAVE = "ha.max_concurrent_channels_per_slave";
-    public static final String CONFIG_KEY_BRANCHED_DATA_POLICY = "ha.branched_data_policy";
-    public static final String CONFIG_KEY_READ_TIMEOUT = "ha.read_timeout";
-    public static final String CONFIG_KEY_SLAVE_COORDINATOR_UPDATE_MODE = "ha.slave_coordinator_update_mode";
-    
+    public static final String CONFIG_KEY_SERVER = HaConfig.CONFIG_KEY_SERVER;
+    public static final String CONFIG_KEY_CLUSTER_NAME = HaConfig.CONFIG_KEY_CLUSTER_NAME;
+    public static final String CONFIG_KEY_PULL_INTERVAL = HaConfig.CONFIG_KEY_PULL_INTERVAL;
+    public static final String CONFIG_KEY_ALLOW_INIT_CLUSTER = HaConfig.CONFIG_KEY_ALLOW_INIT_CLUSTER;
+    public static final String CONFIG_KEY_MAX_CONCURRENT_CHANNELS_PER_SLAVE = HaConfig.CONFIG_KEY_MAX_CONCURRENT_CHANNELS_PER_SLAVE;
+    public static final String CONFIG_KEY_BRANCHED_DATA_POLICY = HaConfig.CONFIG_KEY_BRANCHED_DATA_POLICY;
+    public static final String CONFIG_KEY_READ_TIMEOUT = HaConfig.CONFIG_KEY_READ_TIMEOUT;
+    public static final String CONFIG_KEY_LOCK_READ_TIMEOUT = HaConfig.CONFIG_KEY_LOCK_READ_TIMEOUT;
+    public static final String CONFIG_KEY_SLAVE_COORDINATOR_UPDATE_MODE = HaConfig.CONFIG_KEY_SLAVE_COORDINATOR_UPDATE_MODE;
+
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> config )
     {
         this( new HAGraphDb( storeDir, config ) );
@@ -68,6 +68,11 @@ public class HighlyAvailableGraphDatabase extends WrappedGraphDatabase
     public void pullUpdates()
     {
         ( (HAGraphDb) graphdb ).pullUpdates();
+    }
+
+    public boolean isMaster()
+    {
+        return ( (HAGraphDb) graphdb ).isMaster();
     }
 
     public HAGraphDb getRawHaDb()

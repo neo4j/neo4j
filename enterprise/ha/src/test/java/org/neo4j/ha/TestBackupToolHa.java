@@ -26,9 +26,9 @@ import static org.neo4j.backup.TestBackupToolEmbedded.createSomeData;
 import static org.neo4j.backup.TestBackupToolEmbedded.runBackupToolFromOtherJvmToGetExitCode;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
-import static org.neo4j.kernel.HighlyAvailableGraphDatabase.CONFIG_KEY_COORDINATORS;
-import static org.neo4j.kernel.HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID;
-import static org.neo4j.kernel.HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER;
+import static org.neo4j.kernel.HaConfig.CONFIG_KEY_COORDINATORS;
+import static org.neo4j.kernel.HaConfig.CONFIG_KEY_SERVER_ID;
+import static org.neo4j.kernel.HaConfig.CONFIG_KEY_SERVER;
 
 import java.io.File;
 import java.util.ArrayList;

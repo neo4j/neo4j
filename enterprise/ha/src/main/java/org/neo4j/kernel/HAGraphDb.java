@@ -19,33 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import static java.lang.Math.max;
-import static java.util.Arrays.asList;
-import static org.neo4j.backup.OnlineBackupExtension.parsePort;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.Config.ENABLE_ONLINE_BACKUP;
-import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryFileNamePattern;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryLogVersion;
-
-import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
-
-import org.neo4j.com.Client;
 import org.neo4j.com.ComException;
 import org.neo4j.com.MasterUtil;
 import org.neo4j.com.Response;
@@ -62,7 +35,6 @@ import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.ha.AsyncZooKeeperLastCommittedTxIdSetter;
 import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.BrokerFactory;
@@ -77,12 +49,10 @@ import org.neo4j.kernel.ha.SlaveLockManager.SlaveLockManagerFactory;
 import org.neo4j.kernel.ha.SlaveRelationshipTypeCreator;
 import org.neo4j.kernel.ha.SlaveTxHook;
 import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
-import org.neo4j.kernel.ha.TimeUtil;
 import org.neo4j.kernel.ha.ZooKeeperLastCommittedTxIdSetter;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
-import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -92,27 +62,48 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
+
+import static java.lang.Math.max;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryFileNamePattern;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryLogVersion;
+
 public class HAGraphDb extends AbstractGraphDatabase
         implements GraphDatabaseService, ResponseReceiver
 {
-    public static final String CONFIG_KEY_OLD_SERVER_ID = HighlyAvailableGraphDatabase.CONFIG_KEY_OLD_SERVER_ID;
-    public static final String CONFIG_KEY_SERVER_ID = HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID;
+    public static final String CONFIG_KEY_OLD_SERVER_ID = HaConfig.CONFIG_KEY_OLD_SERVER_ID;
+    public static final String CONFIG_KEY_SERVER_ID = HaConfig.CONFIG_KEY_SERVER_ID;
 
-    public static final String CONFIG_KEY_OLD_COORDINATORS = HighlyAvailableGraphDatabase.CONFIG_KEY_OLD_COORDINATORS;
-    public static final String CONFIG_KEY_COORDINATORS = HighlyAvailableGraphDatabase.CONFIG_KEY_COORDINATORS;
+    public static final String CONFIG_KEY_OLD_COORDINATORS = HaConfig.CONFIG_KEY_OLD_COORDINATORS;
+    public static final String CONFIG_KEY_COORDINATORS = HaConfig.CONFIG_KEY_COORDINATORS;
 
-    public static final String CONFIG_KEY_SERVER = HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER;
-    public static final String CONFIG_KEY_CLUSTER_NAME = HighlyAvailableGraphDatabase.CONFIG_KEY_CLUSTER_NAME;
-    public static final String CONFIG_KEY_PULL_INTERVAL = HighlyAvailableGraphDatabase.CONFIG_KEY_PULL_INTERVAL;
-    public static final String CONFIG_KEY_ALLOW_INIT_CLUSTER = HighlyAvailableGraphDatabase.CONFIG_KEY_ALLOW_INIT_CLUSTER;
-    public static final String CONFIG_KEY_MAX_CONCURRENT_CHANNELS_PER_SLAVE = HighlyAvailableGraphDatabase.CONFIG_KEY_MAX_CONCURRENT_CHANNELS_PER_SLAVE;
-    public static final String CONFIG_KEY_BRANCHED_DATA_POLICY = HighlyAvailableGraphDatabase.CONFIG_KEY_BRANCHED_DATA_POLICY;
-    public static final String CONFIG_KEY_READ_TIMEOUT = HighlyAvailableGraphDatabase.CONFIG_KEY_READ_TIMEOUT;
-    public static final String CONFIG_KEY_LOCK_READ_TIMEOUT = "ha.lock_read_timeout";
-    public static final String CONFIG_KEY_SLAVE_COORDINATOR_UPDATE_MODE = HighlyAvailableGraphDatabase.CONFIG_KEY_SLAVE_COORDINATOR_UPDATE_MODE;
+    public static final String CONFIG_KEY_SERVER = HaConfig.CONFIG_KEY_SERVER;
+    public static final String CONFIG_KEY_CLUSTER_NAME = HaConfig.CONFIG_KEY_CLUSTER_NAME;
+    public static final String CONFIG_KEY_PULL_INTERVAL = HaConfig.CONFIG_KEY_PULL_INTERVAL;
+    public static final String CONFIG_KEY_ALLOW_INIT_CLUSTER = HaConfig.CONFIG_KEY_ALLOW_INIT_CLUSTER;
+    public static final String CONFIG_KEY_MAX_CONCURRENT_CHANNELS_PER_SLAVE = HaConfig.CONFIG_KEY_MAX_CONCURRENT_CHANNELS_PER_SLAVE;
+    public static final String CONFIG_KEY_BRANCHED_DATA_POLICY = HaConfig.CONFIG_KEY_BRANCHED_DATA_POLICY;
+    public static final String CONFIG_KEY_READ_TIMEOUT = HaConfig.CONFIG_KEY_READ_TIMEOUT;
+    public static final String CONFIG_KEY_LOCK_READ_TIMEOUT = HaConfig.CONFIG_KEY_LOCK_READ_TIMEOUT;
+    public static final String CONFIG_KEY_SLAVE_COORDINATOR_UPDATE_MODE = HaConfig.CONFIG_KEY_SLAVE_COORDINATOR_UPDATE_MODE;
 
-    private static final String CONFIG_DEFAULT_HA_CLUSTER_NAME = "neo4j.ha";
-    private static final int CONFIG_DEFAULT_PORT = 6361;
+    private static final String CONFIG_DEFAULT_HA_CLUSTER_NAME = HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME;
+    private static final int CONFIG_DEFAULT_PORT = HaConfig.CONFIG_DEFAULT_PORT;
 
     private final String storeDir;
     private final Map<String, String> config;
@@ -126,7 +117,7 @@ public class HAGraphDb extends AbstractGraphDatabase
     private volatile Throwable causeOfShutdown;
     private final long startupTime;
     private final BranchedDataPolicy branchedDataPolicy;
-    private final SlaveUpdateMode slaveUpdateMode;
+    private final HaConfig.SlaveUpdateMode slaveUpdateMode;
     private final int readTimeout;
 
     private final List<KernelEventHandler> kernelEventHandlers =
@@ -145,7 +136,7 @@ public class HAGraphDb extends AbstractGraphDatabase
     }
 
     /**
-     * Only for testing (and {@link org.neo4j.kernel.ha.BackupFromHaCluster})
+     * Only for testing
      */
     public HAGraphDb( String storeDir, Map<String, String> config,
             BrokerFactory brokerFactory )
@@ -154,22 +145,19 @@ public class HAGraphDb extends AbstractGraphDatabase
         {
             throw new IllegalArgumentException( "null config, proper configuration required" );
         }
-        initializeTxManagerKernelPanicEventHandler();
-        this.readTimeout = getClientReadTimeoutFromConfig( config );
         this.startupTime = System.currentTimeMillis();
         this.storeDir = storeDir;
         this.config = config;
+        initializeTxManagerKernelPanicEventHandler();
+        this.readTimeout = HaConfig.getClientReadTimeoutFromConfig( config );
+        this.slaveUpdateMode = HaConfig.getSlaveUpdateModeFromConfig( config );
+        this.machineId = HaConfig.getMachineIdFromConfig( config );
+        this.branchedDataPolicy = HaConfig.getBranchedDataPolicyFromConfig( config );
         config.put( Config.KEEP_LOGICAL_LOGS, "true" );
-        this.slaveUpdateMode = getSlaveUpdateModeFromConfig( config );
-        this.brokerFactory = brokerFactory != null ? brokerFactory : defaultBrokerFactory(
-                this, config );
-        this.machineId = getMachineIdFromConfig( config );
+        this.brokerFactory = brokerFactory != null ? brokerFactory : defaultBrokerFactory();
         this.broker = this.brokerFactory.create( this, config );
         this.msgLog = StringLogger.getLogger( storeDir );
-        this.branchedDataPolicy = getBranchedDataPolicyFromConfig( config );
-
-        boolean allowInitFromConfig = getAllowInitFromConfig( config );
-        startUp( allowInitFromConfig );
+        startUp( HaConfig.getAllowInitFromConfig( config ) );
     }
 
     private void initializeTxManagerKernelPanicEventHandler()
@@ -236,11 +224,6 @@ public class HAGraphDb extends AbstractGraphDatabase
         this.msgLog.logMessage( "Cleaning database " + storeDir + " (" + branchedDataPolicy.name() +
                 ") to make way for new db from master" );
         branchedDataPolicy.handle( this );
-    }
-
-    public static Map<String,String> loadConfigurations( String file )
-    {
-        return EmbeddedGraphDatabase.loadConfigurations( file );
     }
 
     private synchronized void startUp( boolean allowInit )
@@ -342,7 +325,7 @@ public class HAGraphDb extends AbstractGraphDatabase
     private EmbeddedGraphDbImpl localGraph()
     {
         if ( localGraph != null ) return localGraph;
-        return waitForCondition( new LocalGraphAvailableCondition(), (getClientReadTimeoutFromConfig( config )-5)*1000 );
+        return waitForCondition( new LocalGraphAvailableCondition(), ( HaConfig.getClientReadTimeoutFromConfig( config )-5)*1000 );
     }
 
     private <T,E extends Exception> T waitForCondition( Condition<T,E> condition, int timeMillis ) throws E
@@ -366,138 +349,16 @@ public class HAGraphDb extends AbstractGraphDatabase
         throw condition.failure();
     }
 
-    private BrokerFactory defaultBrokerFactory( final GraphDatabaseService graphDb,
-            final Map<String, String> config )
+    private BrokerFactory defaultBrokerFactory()
     {
         return new BrokerFactory()
         {
             @Override
             public Broker create( AbstractGraphDatabase graphDb, Map<String, String> config )
             {
-                return new ZooKeeperBroker( graphDb,
-                        getClusterNameFromConfig( config ),
-                        machineId,
-                        getCoordinatorsFromConfig( config ),
-                        getHaServerFromConfig( config ),
-                        getBackupPortFromConfig( config ),
-                        readTimeout,
-                        getClientLockReadTimeoutFromConfig( config ),
-                        getMaxConcurrentChannelsPerSlaveFromConfig( config ),
-                        slaveUpdateMode.syncWithZooKeeper,
-                        HAGraphDb.this );
+                return new ZooKeeperBroker( graphDb, config, HAGraphDb.this );
             }
         };
-    }
-
-    private static String getConfigValue( Map<String, String> config, String... oneKeyOutOf/*prioritized in descending order*/ )
-    {
-        String firstFound = null;
-        int foundIndex = -1;
-        for ( int i = 0; i < oneKeyOutOf.length; i++ )
-        {
-            String toTry = oneKeyOutOf[i];
-            String value = config.get( toTry );
-            if ( value != null )
-            {
-                if ( firstFound != null ) throw new RuntimeException( "Multiple configuration values set for the same logical key: " + asList( oneKeyOutOf ) );
-                firstFound = value;
-                foundIndex = i;
-            }
-        }
-        if ( firstFound == null ) throw new RuntimeException( "No configuration set for any of: " + asList( oneKeyOutOf ) );
-        if ( foundIndex > 0 ) System.err.println( "Deprecated configuration key '" + oneKeyOutOf[foundIndex] +
-                "' used instead of the preferred '" + oneKeyOutOf[0] + "'" );
-        return firstFound;
-    }
-
-    private BranchedDataPolicy getBranchedDataPolicyFromConfig( Map<String, String> config )
-    {
-        return config.containsKey( CONFIG_KEY_BRANCHED_DATA_POLICY ) ?
-                BranchedDataPolicy.valueOf( config.get( CONFIG_KEY_BRANCHED_DATA_POLICY ) ) :
-                BranchedDataPolicy.keep_all;
-    }
-
-    private SlaveUpdateMode getSlaveUpdateModeFromConfig( Map<String, String> config )
-    {
-        return config.containsKey( CONFIG_KEY_SLAVE_COORDINATOR_UPDATE_MODE ) ?
-                SlaveUpdateMode.valueOf( config.get( CONFIG_KEY_SLAVE_COORDINATOR_UPDATE_MODE ) ) :
-                SlaveUpdateMode.async;
-    }
-
-    private int getClientReadTimeoutFromConfig( Map<String, String> config2 )
-    {
-        String value = config.get( CONFIG_KEY_READ_TIMEOUT );
-        return value != null ? Integer.parseInt( value ) : Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT;
-    }
-
-    private int getClientLockReadTimeoutFromConfig( Map<String, String> config )
-    {
-        String value = config.get( CONFIG_KEY_LOCK_READ_TIMEOUT );
-        return value != null ? Integer.parseInt( value ) : getClientReadTimeoutFromConfig( config );
-    }
-    
-    private int getMaxConcurrentChannelsPerSlaveFromConfig( Map<String, String> config )
-    {
-        String value = config.get( CONFIG_KEY_MAX_CONCURRENT_CHANNELS_PER_SLAVE );
-        return value != null ? Integer.parseInt( value ) : Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT;
-    }
-    /**
-     * @return the port for the backup server if that is enabled, or 0 if disabled.
-     */
-    private static int getBackupPortFromConfig( Map<?, ?> config )
-    {
-        String backupConfig = (String) config.get( ENABLE_ONLINE_BACKUP );
-        Integer port = parsePort( backupConfig );
-        return port != null ? port : 0;
-    }
-
-    private static String getClusterNameFromConfig( Map<?, ?> config )
-    {
-        String clusterName = (String) config.get( CONFIG_KEY_CLUSTER_NAME );
-        if ( clusterName == null ) clusterName = CONFIG_DEFAULT_HA_CLUSTER_NAME;
-        return clusterName;
-    }
-
-    private static String getHaServerFromConfig( Map<?, ?> config )
-    {
-        String haServer = (String) config.get( CONFIG_KEY_SERVER );
-        if ( haServer == null )
-        {
-            InetAddress host = null;
-            try
-            {
-                host = InetAddress.getLocalHost();
-            }
-            catch ( UnknownHostException hostBecomesNull )
-            {
-                // handled by null check
-            }
-            if ( host == null )
-            {
-                throw new IllegalStateException(
-                        "Could not auto configure host name, please supply " + CONFIG_KEY_SERVER );
-            }
-            haServer = host.getHostAddress() + ":" + CONFIG_DEFAULT_PORT;
-        }
-        return haServer;
-    }
-
-    private static boolean getAllowInitFromConfig( Map<?, ?> config )
-    {
-        String allowInit = (String) config.get( CONFIG_KEY_ALLOW_INIT_CLUSTER );
-        if ( allowInit == null ) return true;
-        return Boolean.parseBoolean( allowInit );
-    }
-
-    private static String getCoordinatorsFromConfig( Map<String, String> config )
-    {
-        return getConfigValue( config, CONFIG_KEY_COORDINATORS, CONFIG_KEY_OLD_COORDINATORS );
-    }
-
-    private static int getMachineIdFromConfig( Map<String, String> config )
-    {
-        // Fail fast if null
-        return Integer.parseInt( getConfigValue( config, CONFIG_KEY_SERVER_ID, CONFIG_KEY_OLD_SERVER_ID ) );
     }
 
     public Broker getBroker()
@@ -557,7 +418,7 @@ public class HAGraphDb extends AbstractGraphDatabase
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[" + CONFIG_KEY_SERVER_ID + ":" + machineId + "]";
+        return getClass().getSimpleName() + "[" + HaConfig.CONFIG_KEY_SERVER_ID + ":" + machineId + "]";
     }
 
     protected synchronized void reevaluateMyself( StoreId storeId )
@@ -758,7 +619,7 @@ public class HAGraphDb extends AbstractGraphDatabase
     {
         try
         {
-            Thread.sleep( 500 );
+            Thread.sleep( millis );
         }
         catch ( InterruptedException e )
         {
@@ -775,10 +636,9 @@ public class HAGraphDb extends AbstractGraphDatabase
 
     private void instantiateAutoUpdatePullerIfConfigSaysSo()
     {
-        String pullInterval = this.config.get( CONFIG_KEY_PULL_INTERVAL );
-        if ( pullInterval != null )
+        long pullInterval = HaConfig.getPullIntervalFromConfig( config );
+        if ( pullInterval > 0 )
         {
-            long timeMillis = TimeUtil.parseTimeMillis( pullInterval );
             updatePuller = new ScheduledThreadPoolExecutor( 1 );
             updatePuller.scheduleWithFixedDelay( new Runnable()
             {
@@ -794,7 +654,7 @@ public class HAGraphDb extends AbstractGraphDatabase
                         msgLog.logMessage( "Pull updates failed", e  );
                     }
                 }
-            }, timeMillis, timeMillis, TimeUnit.MILLISECONDS );
+            }, pullInterval, pullInterval, TimeUnit.MILLISECONDS );
         }
     }
 
@@ -1142,43 +1002,6 @@ public class HAGraphDb extends AbstractGraphDatabase
         }
     }
 
-    private static enum SlaveUpdateMode
-    {
-        sync( true )
-        {
-            @Override
-            LastCommittedTxIdSetter createUpdater( Broker broker )
-            {
-                return new ZooKeeperLastCommittedTxIdSetter( broker );
-            }
-        },
-        async( true )
-        {
-            @Override
-            LastCommittedTxIdSetter createUpdater( Broker broker )
-            {
-                return new AsyncZooKeeperLastCommittedTxIdSetter( broker );
-            }
-        },
-        none( false )
-        {
-            @Override
-            LastCommittedTxIdSetter createUpdater( Broker broker )
-            {
-                return CommonFactories.defaultLastCommittedTxIdSetter();
-            }
-        };
-
-        private final boolean syncWithZooKeeper;
-
-        SlaveUpdateMode( boolean syncWithZooKeeper )
-        {
-            this.syncWithZooKeeper = syncWithZooKeeper;
-        }
-
-        abstract LastCommittedTxIdSetter createUpdater( Broker broker );
-    }
-    
     private interface Condition<T, E extends Exception>
     {
         T tryToFullfill();

@@ -25,11 +25,16 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 
+import java.util.Map;
+
 public class FakeMasterBroker extends AbstractBroker
 {
-    public FakeMasterBroker( int myMachineId, GraphDatabaseService graphDb )
+    private Map<String, String> config;
+
+    public FakeMasterBroker( int myMachineId, GraphDatabaseService graphDb, Map<String, String> config )
     {
         super( myMachineId, graphDb );
+        this.config = config;
     }
 
     @Override
@@ -61,6 +66,6 @@ public class FakeMasterBroker extends AbstractBroker
 
     public Object instantiateMasterServer( GraphDatabaseService graphDb )
     {
-        return new MasterServer( new MasterImpl( graphDb ), Protocol.PORT, getStoreDir() );
+        return new MasterServer( new MasterImpl( graphDb, config ), Protocol.PORT, getStoreDir() );
     }
 }

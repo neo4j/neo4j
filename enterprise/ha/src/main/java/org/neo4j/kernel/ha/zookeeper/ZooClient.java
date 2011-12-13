@@ -19,15 +19,6 @@
  */
 package org.neo4j.kernel.ha.zookeeper;
 
-import static org.neo4j.kernel.ha.zookeeper.ClusterManager.getSingleRootPath;
-
-import java.nio.BufferUnderflowException;
-import java.nio.ByteBuffer;
-import java.util.Date;
-import java.util.List;
-
-import javax.management.remote.JMXServiceURL;
-
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -38,12 +29,22 @@ import org.apache.zookeeper.ZooKeeper;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.ha.ConnectionInformation;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.ResponseReceiver;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import javax.management.remote.JMXServiceURL;
+import java.nio.BufferUnderflowException;
+import java.nio.ByteBuffer;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import static org.neo4j.kernel.ha.zookeeper.ClusterManager.getSingleRootPath;
 
 public class ZooClient extends AbstractZooKeeperManager
 {
@@ -72,22 +73,36 @@ public class ZooClient extends AbstractZooKeeperManager
     private final int backupPort;
     private final boolean writeLastCommittedTx;
 
-    public ZooClient( String servers, int machineId, RootPathGetter rootPathGetter,
-            ResponseReceiver receiver, String haServer, int backupPort, int clientReadTimeout,
-            int clientLockReadTimeout, int maxConcurrentChannelsPerClient,
-            boolean writeLastCommittedTx, AbstractGraphDatabase graphDb )
+    public ZooClient( AbstractGraphDatabase graphDb, Map<String, String> config, ResponseReceiver receiver )
     {
-        super( servers, graphDb, clientReadTimeout, clientLockReadTimeout, maxConcurrentChannelsPerClient );
+        super( HaConfig.getCoordinatorsFromConfig( config ),
+            graphDb,
+            HaConfig.getClientReadTimeoutFromConfig( config ),
+            HaConfig.getClientLockReadTimeoutFromConfig( config ),
+            HaConfig.getMaxConcurrentChannelsPerSlaveFromConfig( config ) );
         this.receiver = receiver;
-        this.rootPathGetter = rootPathGetter;
-        this.haServer = haServer;
-        this.machineId = machineId;
-        this.backupPort = backupPort;
-        this.writeLastCommittedTx = writeLastCommittedTx;
-        this.sequenceNr = "not initialized yet";
+        machineId = HaConfig.getMachineIdFromConfig( config );
+        backupPort = HaConfig.getBackupPortFromConfig( config );
+        haServer = HaConfig.getHaServerFromConfig( config );
+        writeLastCommittedTx = HaConfig.getSlaveUpdateModeFromConfig( config ).syncWithZooKeeper;
+        rootPathGetter = getRootPathGetter( graphDb.getStoreDir() );
+        sequenceNr = "not initialized yet";
         String storeDir = ((AbstractGraphDatabase) graphDb).getStoreDir();
-        this.msgLog = StringLogger.getLogger( storeDir );
-        this.zooKeeper = instantiateZooKeeper();
+        msgLog = StringLogger.getLogger( storeDir );
+        zooKeeper = instantiateZooKeeper();
+    }
+
+    static RootPathGetter getRootPathGetter( String storeDir )
+    {
+        try
+        {
+            new NeoStoreUtil( storeDir );
+            return RootPathGetter.forKnownStore( storeDir );
+        }
+        catch ( RuntimeException e )
+        {
+            return RootPathGetter.forUnknownStore( storeDir );
+        }
     }
 
     @Override

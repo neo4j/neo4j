@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.enterprise;
 
+import org.neo4j.kernel.HaConfig;
+import org.neo4j.server.configuration.Configurator;
+import org.neo4j.server.startup.healthcheck.Neo4jPropertiesMustExistRule;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
-
-import org.neo4j.kernel.HighlyAvailableGraphDatabase;
-import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.startup.healthcheck.Neo4jPropertiesMustExistRule;
 
 public class Neo4jHAPropertiesMustExistRule extends Neo4jPropertiesMustExistRule
 {
@@ -84,14 +84,14 @@ public class Neo4jHAPropertiesMustExistRule extends Neo4jPropertiesMustExistRule
                 String machineId = null;
                 try
                 {
-                    machineId = getSinglePropertyFromCandidates( dbTuning, HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID,
-                            HighlyAvailableGraphDatabase.CONFIG_KEY_OLD_SERVER_ID, "<not set>" );
+                    machineId = getSinglePropertyFromCandidates( dbTuning, HaConfig.CONFIG_KEY_SERVER_ID,
+                            HaConfig.CONFIG_KEY_OLD_SERVER_ID, "<not set>" );
                     if ( Integer.parseInt( machineId ) < 0 ) throw new NumberFormatException();
                 }
                 catch ( NumberFormatException e )
                 {
                     failureMessage = String.format( "%s in %s needs to be a non-negative integer, not %s",
-                            HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID, dbTuningFilename, machineId );
+                            HaConfig.CONFIG_KEY_SERVER_ID, dbTuningFilename, machineId );
                     return false;
                 }
                 catch ( IllegalArgumentException e )
@@ -103,8 +103,8 @@ public class Neo4jHAPropertiesMustExistRule extends Neo4jPropertiesMustExistRule
                 String[] zkServers = null;
                 try
                 {
-                    zkServers = getSinglePropertyFromCandidates( dbTuning, HighlyAvailableGraphDatabase.CONFIG_KEY_COORDINATORS,
-                            HighlyAvailableGraphDatabase.CONFIG_KEY_OLD_COORDINATORS, "" ).split( "," );
+                    zkServers = getSinglePropertyFromCandidates( dbTuning, HaConfig.CONFIG_KEY_COORDINATORS,
+                            HaConfig.CONFIG_KEY_OLD_COORDINATORS, "" ).split( "," );
                 }
                 catch ( IllegalArgumentException e )
                 {
@@ -114,7 +114,7 @@ public class Neo4jHAPropertiesMustExistRule extends Neo4jPropertiesMustExistRule
                 if ( zkServers.length <= 0 )
                 {
                     failureMessage = String.format( "%s in %s needs to specify at least one server",
-                            HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID, dbTuningFilename );
+                            HaConfig.CONFIG_KEY_SERVER_ID, dbTuningFilename );
                     return false;
                 }
                 for ( String zk : zkServers )
@@ -122,7 +122,7 @@ public class Neo4jHAPropertiesMustExistRule extends Neo4jPropertiesMustExistRule
                     if ( !zk.contains( ":" ) )
                     {
                         failureMessage = String.format( "Invalid server config \"%s\" for %s in %s", zk,
-                                HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID, dbTuningFilename );
+                                HaConfig.CONFIG_KEY_SERVER_ID, dbTuningFilename );
                         return false;
                     }
                 }

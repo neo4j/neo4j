@@ -19,15 +19,16 @@
  */
 package slavetest;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Date;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.Config;
+import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.zookeeper.NeoStoreUtil;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Date;
 
 public class StartHaDb
 {
@@ -57,9 +58,9 @@ public class StartHaDb
     private static GraphDatabaseService startDb() throws IOException
     {
         return new HighlyAvailableGraphDatabase( PATH.getPath(), MapUtil.stringMap(
-                HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID, "" + MY_MACHINE_ID,
-                HighlyAvailableGraphDatabase.CONFIG_KEY_COORDINATORS, join( ZOO_KEEPER_SERVERS, "," ),
-                HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER, ME,
+                HaConfig.CONFIG_KEY_SERVER_ID, "" + MY_MACHINE_ID,
+                HaConfig.CONFIG_KEY_COORDINATORS, join( ZOO_KEEPER_SERVERS, "," ),
+                HaConfig.CONFIG_KEY_SERVER, ME,
                 Config.ENABLE_REMOTE_SHELL, "true",
                 Config.KEEP_LOGICAL_LOGS, "true" ) );
     }
