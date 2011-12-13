@@ -447,6 +447,11 @@ div.abstract ul.itemizedlist li.listitem p
   line-height: inherit;
 }
 
+div.abstract ul.itemizedlist li.listitem p a i
+{
+  font-style: normal;
+}
+
 div.titlepage hr
 {
   margin: 0;
