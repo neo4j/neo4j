@@ -135,7 +135,7 @@ case class Has(property: Property) extends Predicate {
   def isMatch(m: Map[String, Any]): Boolean = property match {
     case Property(identifier, propertyName) => {
       val propContainer = m(identifier).asInstanceOf[PropertyContainer]
-      propContainer.hasProperty(propertyName)
+      propContainer != null && propContainer.hasProperty(propertyName)
     }
   }
 

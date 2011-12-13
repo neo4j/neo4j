@@ -1416,5 +1416,17 @@ return other
 
     assert(exception.getMessage === "n.A_PROPERTY_THAT_IS_MISSING does not exist on Node[0]")
   }
+
+  @Test def shouldNotThrowExceptionWhenStuffIsMissing() {
+    val a = createNode()
+    val b = createNode()
+    relate(a,b)
+    val result = parseAndExecute("""START n=node(1)
+MATCH n-->x0-[?]->x1
+WHERE x1.type AND x1.type="http://dbpedia.org/ontology/Film" AND x1.label AND x1.label="Reservoir Dogs"
+RETURN x0.name?
+""")
+    assert( List() === result.toList )
+  }
 }
 
