@@ -136,10 +136,16 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
         assertTrue( response.contains( "message" ) );
     }
     
+    /**
+     * When sending queries that
+     * return nested results like list and maps,
+     * these will get serialized into nested JSON representations
+     * according to their types.
+     */
     @Test
     @Documented
     @Graph( value = { "I know you" }, autoIndexNodes = true )
-    public void send_collect_queries() throws Exception {
+    public void nested_results() throws Exception {
         data.get();
         String script = "start n = node(%I%,%you%) return collect(n.name), collect(n)";
         String response = cypherRestCall( script, Status.OK);
