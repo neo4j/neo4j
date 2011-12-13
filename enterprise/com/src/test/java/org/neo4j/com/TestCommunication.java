@@ -304,7 +304,7 @@ public class TestCommunication
         ClientCrashingWriter writer = new ClientCrashingWriter( client, failAtSize );
         try
         {
-            client.streamSomeData( writer, Protocol.DEFAULT_FRAME_LENGTH*5 );
+            client.streamSomeData( writer, Protocol.DEFAULT_FRAME_LENGTH*10 );
             fail( "Should fail in the middle" );
         }
         catch ( Exception e )
