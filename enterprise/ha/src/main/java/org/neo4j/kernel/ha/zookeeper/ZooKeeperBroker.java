@@ -19,16 +19,9 @@
  */
 package org.neo4j.kernel.ha.zookeeper;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.Socket;
-import java.util.Map;
-
-import javax.management.remote.JMXServiceURL;
-
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.ha.AbstractBroker;
 import org.neo4j.kernel.ha.ConnectionInformation;
@@ -40,24 +33,29 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.management.Neo4jManager;
 
+import javax.management.remote.JMXServiceURL;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.util.Map;
+
 public class ZooKeeperBroker extends AbstractBroker
 {
     private final ZooClient zooClient;
     private final String haServer;
-    private final int machineId;
+    private int clientLockReadTimeout;
     private final String clusterName;
+    private Map<String, String> config;
 
-    public ZooKeeperBroker( AbstractGraphDatabase graphDb, String clusterName, int machineId,
-            String zooKeeperServers, String haServer, int backupPort, int clientReadTimeout,
-            int clientLockReadTimeout, int maxConcurrentChannelsPerClient, boolean writeLastCommittedTx, ResponseReceiver receiver )
+    public ZooKeeperBroker( AbstractGraphDatabase graphDb, Map<String, String> config, ResponseReceiver receiver )
     {
-        super( machineId, graphDb );
-        this.clusterName = clusterName;
-        this.machineId = machineId;
-        this.haServer = haServer;
-        this.zooClient = new ZooClient( zooKeeperServers, machineId, getRootPathGetter( graphDb.getStoreDir() ),
-                receiver, haServer, backupPort, clientReadTimeout, clientLockReadTimeout,
-                maxConcurrentChannelsPerClient, writeLastCommittedTx, graphDb );
+        super( HaConfig.getMachineIdFromConfig( config ), graphDb );
+        this.config = config;
+        this.clusterName = HaConfig.getClusterNameFromConfig( config );
+        this.haServer = HaConfig.getHaServerFromConfig( config );
+        this.clientLockReadTimeout = HaConfig.getClientLockReadTimeoutFromConfig( config );
+        this.zooClient = new ZooClient( graphDb, config, receiver );
     }
 
     @Override
@@ -125,19 +123,6 @@ public class ZooKeeperBroker extends AbstractBroker
         return zooClient.createCluster( clusterName, storeIdSuggestion );
     }
 
-    private RootPathGetter getRootPathGetter( String storeDir )
-    {
-        try
-        {
-            new NeoStoreUtil( storeDir );
-            return RootPathGetter.forKnownStore( storeDir );
-        }
-        catch ( RuntimeException e )
-        {
-            return RootPathGetter.forUnknownStore( storeDir );
-        }
-    }
-
     @Override
     public void setConnectionInformation( KernelData kernel )
     {
@@ -193,13 +178,13 @@ public class ZooKeeperBroker extends AbstractBroker
     public Machine getMasterExceptMyself()
     {
         Map<Integer, Machine> machines = zooClient.getAllMachines( true );
-        machines.remove( this.machineId );
+        machines.remove( getMyMachineId() );
         return zooClient.getMasterBasedOn( machines.values() );
     }
 
     public Object instantiateMasterServer( AbstractGraphDatabase graphDb )
     {
-        MasterServer server = new MasterServer( new MasterImpl( graphDb ),
+        MasterServer server = new MasterServer( new MasterImpl( graphDb, config ),
                 Machine.splitIpAndPort( haServer ).other(), graphDb.getMessageLog() );
         return server;
     }
@@ -224,7 +209,7 @@ public class ZooKeeperBroker extends AbstractBroker
     @Override
     public void rebindMaster()
     {
-        zooClient.setDataChangeWatcher( ZooClient.MASTER_REBOUND_CHILD, machineId );
+        zooClient.setDataChangeWatcher( ZooClient.MASTER_REBOUND_CHILD, getMyMachineId() );
     }
 
     @Override

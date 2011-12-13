@@ -19,13 +19,6 @@
  */
 package slavetest;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-
 import org.junit.After;
 import org.junit.Ignore;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -34,11 +27,19 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.HAGraphDb;
+import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.FakeMasterBroker;
 import org.neo4j.kernel.ha.FakeSlaveBroker;
 import org.neo4j.kernel.ha.MasterImpl;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 @Ignore( "SingleJvmWithNettyTest covers this and more" )
 public class SingleJvmTest extends AbstractHaTest
@@ -69,9 +70,9 @@ public class SingleJvmTest extends AbstractHaTest
         PlaceHolderGraphDatabaseService placeHolderDb = new PlaceHolderGraphDatabaseService( slavePath.getAbsolutePath() );
         Broker broker = makeSlaveBroker( master, 0, machineId, placeHolderDb, config );
         Map<String,String> cfg = new HashMap<String, String>(config);
-        cfg.put( HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID, Integer.toString(machineId) );
+        cfg.put( HaConfig.CONFIG_KEY_SERVER_ID, Integer.toString(machineId) );
         cfg.put( Config.KEEP_LOGICAL_LOGS, "true" );
-        cfg.put( HighlyAvailableGraphDatabase.CONFIG_KEY_READ_TIMEOUT, String.valueOf( TEST_READ_TIMEOUT ) );
+        addDefaultReadTimeout( cfg );
         HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase( new HAGraphDb(
                 slavePath.getAbsolutePath(), cfg, wrapBrokerAndSetPlaceHolderDb( placeHolderDb, broker ) ) );
         placeHolderDb.setDb( db );
@@ -92,27 +93,35 @@ public class SingleJvmTest extends AbstractHaTest
     @Override
     protected void startUpMaster( Map<String, String> extraConfig ) throws Exception
     {
-        master = new MasterImpl( startUpMasterDb( extraConfig ) );
+        master = new MasterImpl( startUpMasterDb( extraConfig ), extraConfig );
     }
     
     protected PlaceHolderGraphDatabaseService startUpMasterDb( Map<String, String> extraConfig ) throws Exception
     {
         int masterId = 0;
         Map<String, String> config = MapUtil.stringMap( extraConfig,
-                HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID, String.valueOf( masterId ),
-                HighlyAvailableGraphDatabase.CONFIG_KEY_READ_TIMEOUT, String.valueOf( TEST_READ_TIMEOUT ) );
+                HaConfig.CONFIG_KEY_SERVER_ID, String.valueOf( masterId ));
+        addDefaultReadTimeout( config );
         String path = dbPath( 0 ).getAbsolutePath();
         PlaceHolderGraphDatabaseService placeHolderDb = new PlaceHolderGraphDatabaseService( path );
-        Broker broker = makeMasterBroker( masterId, placeHolderDb );
+        Broker broker = makeMasterBroker( masterId, placeHolderDb, config );
         HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase( new HAGraphDb(
                 path, config, wrapBrokerAndSetPlaceHolderDb( placeHolderDb, broker ) ) );
         placeHolderDb.setDb( db );
         return placeHolderDb;
     }
 
-    protected Broker makeMasterBroker( int masterId, GraphDatabaseService graphDb )
+    private void addDefaultReadTimeout( Map<String, String> config )
     {
-        return new FakeMasterBroker( masterId, graphDb );
+        if (!config.containsKey( HaConfig.CONFIG_KEY_READ_TIMEOUT ))
+        {
+            config.put( HaConfig.CONFIG_KEY_READ_TIMEOUT, String.valueOf( TEST_READ_TIMEOUT ) );
+        }
+    }
+
+    protected Broker makeMasterBroker( int masterId, GraphDatabaseService graphDb, Map<String, String> config )
+    {
+        return new FakeMasterBroker( masterId, graphDb, config );
     }
 
     protected Broker makeSlaveBroker( MasterImpl master, int masterId, int id, AbstractGraphDatabase graphDb, Map<String, String> config )

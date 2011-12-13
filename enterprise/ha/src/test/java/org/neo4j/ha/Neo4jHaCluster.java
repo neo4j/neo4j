@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.junit.Ignore;
 import org.neo4j.kernel.Config;
+import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.test.ha.LocalhostZooKeeperCluster;
 
@@ -39,9 +40,9 @@ public class Neo4jHaCluster
             int haPort, Map<String, String> config )
     {
         config = new HashMap<String, String>( config );
-        config.put( HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID, "1" );
-        config.put( HighlyAvailableGraphDatabase.CONFIG_KEY_COORDINATORS, zk.getConnectionString() );
-        config.put( HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER, ( "127.0.0.1:" + haPort ) );
+        config.put( HaConfig.CONFIG_KEY_SERVER_ID, "1" );
+        config.put( HaConfig.CONFIG_KEY_COORDINATORS, zk.getConnectionString() );
+        config.put( HaConfig.CONFIG_KEY_SERVER, ( "127.0.0.1:" + haPort ) );
         config.put( Config.ENABLE_REMOTE_SHELL, "true" );
         config.put( Config.KEEP_LOGICAL_LOGS, "true" );
         return new HighlyAvailableGraphDatabase( storeDir.getAbsolutePath(), config );

@@ -26,6 +26,7 @@ import java.util.Date;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.Config;
+import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.zookeeper.NeoStoreUtil;
 
@@ -48,9 +49,9 @@ public class ManualTest1
     private static GraphDatabaseService startDb() throws IOException
     {
         return new HighlyAvailableGraphDatabase( PATH.getPath(), MapUtil.stringMap(
-                HighlyAvailableGraphDatabase.CONFIG_KEY_OLD_SERVER_ID, "1",
-                HighlyAvailableGraphDatabase.CONFIG_KEY_OLD_COORDINATORS, "127.0.0.1:2181,127.0.0.1:2182",
-                HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER, ME,
+                HaConfig.CONFIG_KEY_OLD_SERVER_ID, "1",
+                HaConfig.CONFIG_KEY_OLD_COORDINATORS, "127.0.0.1:2181,127.0.0.1:2182",
+                HaConfig.CONFIG_KEY_SERVER, ME,
                 Config.ENABLE_REMOTE_SHELL, "true",
                 Config.KEEP_LOGICAL_LOGS, "true" ) );
     }

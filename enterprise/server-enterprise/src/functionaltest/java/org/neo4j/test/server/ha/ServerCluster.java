@@ -35,7 +35,7 @@ import java.util.Set;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.HaConfig;
 import org.neo4j.management.HighAvailability;
 import org.neo4j.server.Bootstrapper;
 import org.neo4j.server.configuration.Configurator;
@@ -169,10 +169,10 @@ public final class ServerCluster
 
         // Kernel (and HA) configuration
         config( dbConfig, //
-                Pair.of( HighlyAvailableGraphDatabase.CONFIG_KEY_CLUSTER_NAME, name ),//
-                Pair.of( HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER, "localhost:" + ports.first() ),//
-                Pair.of( HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID, Integer.toString( id ) ),//
-                Pair.of( HighlyAvailableGraphDatabase.CONFIG_KEY_COORDINATORS, keeperCluster.getConnectionString() ) );
+                Pair.of( HaConfig.CONFIG_KEY_CLUSTER_NAME, name ),//
+                Pair.of( HaConfig.CONFIG_KEY_SERVER, "localhost:" + ports.first() ),//
+                Pair.of( HaConfig.CONFIG_KEY_SERVER_ID, Integer.toString( id ) ),//
+                Pair.of( HaConfig.CONFIG_KEY_COORDINATORS, keeperCluster.getConnectionString() ) );
 
         return Pair.of( serverConfig.getAbsolutePath(), serverDir );
     }

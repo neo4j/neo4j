@@ -19,22 +19,6 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
-import javax.transaction.NotSupportedException;
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
-
 import org.neo4j.com.MasterUtil;
 import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
@@ -50,6 +34,7 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
@@ -60,6 +45,21 @@ import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 
+import javax.transaction.NotSupportedException;
+import javax.transaction.SystemException;
+import javax.transaction.Transaction;
+import javax.transaction.TransactionManager;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+
 /**
  * This is the real master code that executes on a master. The actual
  * communication over network happens in {@link MasterClient} and
@@ -68,6 +68,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public class MasterImpl implements Master
 {
     private static final int ID_GRAB_SIZE = 1000;
+    public static final int UNFINISHED_TRANSACTION_CLEANUP_DELAY = 5;
 
     private final GraphDatabaseService graphDb;
     private final StringLogger msgLog;
@@ -75,11 +76,13 @@ public class MasterImpl implements Master
     private final Map<SlaveContext, Pair<Transaction, AtomicLong/*Time since last suspended*/>> transactions = Collections
             .synchronizedMap( new HashMap<SlaveContext, Pair<Transaction, AtomicLong>>() );
     private final ScheduledExecutorService unfinishedTransactionsExecutor;
+    private int unfinishedTransactionThreshold;
 
-    public MasterImpl( GraphDatabaseService db )
+    public MasterImpl( GraphDatabaseService db, Map<String, String> config )
     {
         this.graphDb = db;
         this.msgLog = ((AbstractGraphDatabase) db ).getMessageLog();
+        this.unfinishedTransactionThreshold = HaConfig.getClientLockReadTimeoutFromConfig( config );
         this.unfinishedTransactionsExecutor = Executors.newSingleThreadScheduledExecutor();
         this.unfinishedTransactionsExecutor.scheduleWithFixedDelay( new Runnable()
         {
@@ -93,11 +96,11 @@ public class MasterImpl implements Master
                     {
                         safeTransactions = new HashMap<SlaveContext, Pair<Transaction,AtomicLong>>( transactions );
                     }
-                    
+
                     for ( Map.Entry<SlaveContext, Pair<Transaction, AtomicLong>> entry : safeTransactions.entrySet() )
                     {
                         long time = entry.getValue().other().get();
-                        if ( time != 0 && System.currentTimeMillis()-time >= 30*1000 )
+                        if ( time != 0 && System.currentTimeMillis()-time >= unfinishedTransactionThreshold*1000 )
                         {
                             long displayableTime = (time == 0 ? 0 : (System.currentTimeMillis()-time));
                             msgLog.logMessage( "Found old tx " + entry.getKey() + ", " + entry.getValue().first() + ", " + displayableTime );
@@ -124,7 +127,7 @@ public class MasterImpl implements Master
                     // The show must go on
                 }
             }
-        }, 5, 5, TimeUnit.SECONDS );
+        }, UNFINISHED_TRANSACTION_CLEANUP_DELAY, UNFINISHED_TRANSACTION_CLEANUP_DELAY, TimeUnit.SECONDS );
     }
 
     public GraphDatabaseService getGraphDb()
