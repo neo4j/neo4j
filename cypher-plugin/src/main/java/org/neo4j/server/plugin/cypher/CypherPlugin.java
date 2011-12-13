@@ -35,7 +35,6 @@ import org.neo4j.server.plugins.ServerPlugin;
 import org.neo4j.server.plugins.Source;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.CypherResultRepresentation;
-import org.neo4j.server.rest.repr.JSONTableRepresentation;
 import org.neo4j.server.rest.repr.Representation;
 
 /* This is a class that will represent a server side
@@ -50,11 +49,9 @@ import org.neo4j.server.rest.repr.Representation;
  * and much, much more.
  */
 
-@Description( "A server side Query language plugin for the Neo4j REST server" )
+@Description( "DEPRECATED (go to /db/data/cypher): A server side plugin for the Cypher Query Language" )
 public class CypherPlugin extends ServerPlugin
 {
-
-    public final String DATA_TABLE = "json-data-table";
 
     @Name( "execute_query" )
     @Description( "execute a query" )
@@ -82,10 +79,6 @@ public class CypherPlugin extends ServerPlugin
         catch ( Exception e )
         {
             throw new BadInputException( e );
-        }
-        if ( format != null && format.equals( DATA_TABLE ) )
-        {
-            return new JSONTableRepresentation( result );
         }
         return new CypherResultRepresentation( result );
 

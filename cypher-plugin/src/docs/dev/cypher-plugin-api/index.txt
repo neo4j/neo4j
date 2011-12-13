@@ -2,7 +2,7 @@
 Cypher Plugin
 =============
 
-NOTICE: This functionality is now provided by the core REST API. 
+WARNING: This functionality is now provided by the core REST API. 
 The plugin will continue to work for some time, but is as of Neo4j 1.6 deprecated.
 See <<rest-api-cypher>> for documentation on the built in cypher support.
 
@@ -18,8 +18,6 @@ include::send-a-query.txt[]
 include::return-paths.txt[]
 
 include::send-queries-with-parameters.txt[]
-
-include::return-json-table-format.txt[]
 
 include::server-errors.txt[]
 

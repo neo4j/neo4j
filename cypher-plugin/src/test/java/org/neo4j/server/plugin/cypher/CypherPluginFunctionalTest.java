@@ -104,24 +104,6 @@ public class CypherPluginFunctionalTest extends AbstractRestFunctionalTestBase {
     }
 
     /**
-     * The plugin can return a JSONTable representation
-     * of the results. For details, see
-     * http://code.google.com/apis/chart/interactive/docs/reference.html#dataparam[Google Data Table Format]
-     */
-    @Test
-    @Documented
-    @Graph( "I know you" )
-    public void return_JSON_table_format() throws Exception {
-        data.get();
-        String script = "start x  = node(%I%) match path = (x--friend) return path, friend.name";
-        String response = doRestCall( script, Status.OK );
-
-        assertEquals( 2, ( JsonHelper.jsonToMap( response ) ).size() );
-        assertThat( response, containsString( "path" ) );
-        assertThat( response, containsString( "friend.name" ) );
-    }
-
-    /**
      * Cypher supports queries with parameters
      * which are submitted as a JSON map.
      */
