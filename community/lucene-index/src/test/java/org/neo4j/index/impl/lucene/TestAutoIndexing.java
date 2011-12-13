@@ -683,7 +683,7 @@ public class TestAutoIndexing
                 1 } );
 
         newTransaction();
-        ( (ImpermanentGraphDatabase) graphDb ).getConfig().getGraphDbModule().getNodeManager().clearCache();
+        ( (EmbeddedGraphDatabase) graphDb ).getConfig().getGraphDbModule().getNodeManager().clearCache();
         node1.removeProperty( "nodeProp" );
         newTransaction();
         assertFalse( node1.hasProperty( "nodeProp" ) );
