@@ -10,7 +10,7 @@
   <groupId>org.neo4j.server.plugin</groupId>
   <artifactId>neo4j-gremlin-plugin</artifactId>
   <packaging>jar</packaging>
-  <version>1.5.1-SNAPSHOT</version>
+  <version>1.5.1.RC1</version>
   <name>neo4j-gremlin-plugin</name>
 
   <properties>
