@@ -19,24 +19,6 @@
  */
 package slavetest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.HighlyAvailableGraphDatabase.CONFIG_KEY_PULL_INTERVAL;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -51,6 +33,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.AbstractGraphDatabase;
@@ -65,6 +48,24 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.LogExtractor;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.HaConfig.CONFIG_KEY_PULL_INTERVAL;
 
 public abstract class AbstractHaTest
 {
@@ -191,8 +192,15 @@ public abstract class AbstractHaTest
             int vNodeIndexServicePropCount = 0;
             int vNodeIndexProviderPropCount = 0;
 
-            Set<Node> otherNodes = IteratorUtil.addToCollection( GlobalGraphOperations.at( otherDb ).getAllNodes().iterator(),
-                    new HashSet<Node>() );
+            Set<Long> others = IteratorUtil.addToCollection(
+                    new IterableWrapper<Long, Node>( GlobalGraphOperations.at( otherDb ).getAllNodes() )
+                    {
+                        @Override
+                        protected Long underlyingObjectToObject( Node node )
+                        {
+                            return node.getId();
+                        }
+                    }, new HashSet<Long>() );
             for ( Node node : GlobalGraphOperations.at( refDb ).getAllNodes() )
             {
                 Node otherNode = otherDb.getNodeById( node.getId() );
@@ -202,10 +210,10 @@ public abstract class AbstractHaTest
                 vRelPropCount += counts[2];
                 vNodeIndexServicePropCount += counts[3];
                 vNodeIndexProviderPropCount += counts[4];
-                otherNodes.remove( otherNode );
+                others.remove( otherNode.getId() );
                 vNodeCount++;
             }
-            assertTrue( otherNodes.isEmpty() );
+            assertTrue( others.isEmpty() );
 
             if ( expectsResults )
             {

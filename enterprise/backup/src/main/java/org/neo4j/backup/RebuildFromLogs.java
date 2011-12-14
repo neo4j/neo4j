@@ -161,7 +161,7 @@ class RebuildFromLogs
         {
             try
             {
-                new ConsistencyCheck( stores, true ).run();
+                ConsistencyCheck.run( stores, true );
             }
             catch ( AssertionError summary )
             {

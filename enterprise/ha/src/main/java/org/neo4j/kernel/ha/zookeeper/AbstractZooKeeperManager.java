@@ -31,12 +31,21 @@ import java.util.Map;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.neo4j.com.ComException;
+import org.neo4j.com.Response;
+import org.neo4j.com.SlaveContext;
+import org.neo4j.com.StoreWriter;
+import org.neo4j.com.TxExtractor;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.ha.IdAllocation;
+import org.neo4j.kernel.ha.LockResult;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterClient;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
@@ -51,28 +60,23 @@ public abstract class AbstractZooKeeperManager implements Watcher
     private final String servers;
     private final Map<Integer, String> haServersCache = Collections.synchronizedMap(
             new HashMap<Integer, String>() );
-    private Pair<Master, Machine> cachedMaster = Pair.<Master, Machine>of( null, Machine.NO_MACHINE );
+    private Pair<Master, Machine> cachedMaster = NO_MASTER_MACHINE_PAIR;
 
     private final AbstractGraphDatabase graphDb;
     private final StringLogger msgLog;
     private final int maxConcurrentChannelsPerSlave;
     private final int clientReadTimeout;
+    private final int clientLockReadTimeout;
 
     public AbstractZooKeeperManager( String servers, AbstractGraphDatabase graphDb,
-            int clientReadTimeout, int maxConcurrentChannelsPerSlave )
+            int clientReadTimeout, int clientLockReadTimeout, int maxConcurrentChannelsPerSlave )
     {
         this.servers = servers;
         this.graphDb = graphDb;
+        this.clientLockReadTimeout = clientLockReadTimeout;
         this.maxConcurrentChannelsPerSlave = maxConcurrentChannelsPerSlave;
         this.clientReadTimeout = clientReadTimeout;
-        if ( graphDb != null )
-        {
-            msgLog = graphDb.getMessageLog();
-        }
-        else
-        {
-            msgLog = StringLogger.DEV_NULL;
-        }
+        this.msgLog = graphDb != null ? graphDb.getMessageLog() : StringLogger.DEV_NULL;
     }
 
     protected ZooKeeper instantiateZooKeeper()
@@ -120,33 +124,30 @@ public abstract class AbstractZooKeeperManager implements Watcher
     {
         if ( cachedMaster != null )
         {
-            MasterClient client = (MasterClient) cachedMaster.first();
-            if ( client != null )
-            {
-                client.shutdown();
-            }
-            cachedMaster = Pair.<Master, Machine>of( null, Machine.NO_MACHINE );
+            Master client = cachedMaster.first();
+            if ( client != null ) client.shutdown();
+            cachedMaster = NO_MASTER_MACHINE_PAIR;
         }
     }
 
     protected Pair<Master, Machine> getMasterFromZooKeeper( boolean wait, boolean allowChange )
     {
         Machine master = getMasterBasedOn( getAllMachines( wait ).values() );
-        MasterClient masterClient = null;
+        Master masterClient = null;
         if ( cachedMaster.other().getMachineId() != master.getMachineId() )
         {
             invalidateMaster();
-            if ( !allowChange ) return Pair.<Master, Machine>of( null, master );
+            if ( !allowChange ) return NO_MASTER_MACHINE_PAIR;
             if ( master != Machine.NO_MACHINE && master.getMachineId() != getMyMachineId() )
             {
                 masterClient = new MasterClient( master.getServer().first(), master.getServer().other(), graphDb,
-                        clientReadTimeout, maxConcurrentChannelsPerSlave );
+                        clientReadTimeout, clientLockReadTimeout, maxConcurrentChannelsPerSlave );
             }
             cachedMaster = Pair.<Master, Machine>of( masterClient, master );
         }
         return cachedMaster;
     }
-
+    
     protected abstract int getMyMachineId();
 
     public Pair<Master, Machine> getCachedMaster()
@@ -288,7 +289,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
         try
         {
             invalidateMaster();
-            cachedMaster = Pair.<Master, Machine>of( null, Machine.NO_MACHINE );
+            cachedMaster = NO_MASTER_MACHINE_PAIR;
             getZooKeeper().close();
         }
         catch ( InterruptedException e )
@@ -304,4 +305,104 @@ public abstract class AbstractZooKeeperManager implements Watcher
     {
         return servers;
     }
+    
+    private static final Master NO_MASTER = new Master()
+    {
+        @Override
+        public void shutdown() {}
+        
+        @Override
+        public Response<Void> pullUpdates( SlaveContext context )
+        {
+            throw noMasterException();
+        }
+        
+        private ComException noMasterException()
+        {
+            return new ComException( "No master" );
+        }
+
+        @Override
+        public Response<Void> initializeTx( SlaveContext context )
+        {
+            throw noMasterException();
+        }
+        
+        @Override
+        public Response<Pair<Integer, Long>> getMasterIdForCommittedTx( long txId, StoreId myStoreId )
+        {
+            throw noMasterException();
+        }
+        
+        @Override
+        public Response<Void> finishTransaction( SlaveContext context, boolean success )
+        {
+            throw noMasterException();
+        }
+        
+        @Override
+        public Response<Integer> createRelationshipType( SlaveContext context, String name )
+        {
+            throw noMasterException();
+        }
+        
+        @Override
+        public Response<Void> copyStore( SlaveContext context, StoreWriter writer )
+        {
+            throw noMasterException();
+        }
+        
+        @Override
+        public Response<Long> commitSingleResourceTransaction( SlaveContext context, String resource,
+                TxExtractor txGetter )
+        {
+            throw noMasterException();
+        }
+        
+        @Override
+        public Response<IdAllocation> allocateIds( IdType idType )
+        {
+            throw noMasterException();
+        }
+        
+        @Override
+        public Response<LockResult> acquireRelationshipWriteLock( SlaveContext context,
+                long... relationships )
+        {
+            throw noMasterException();
+        }
+        
+        @Override
+        public Response<LockResult> acquireRelationshipReadLock( SlaveContext context,
+                long... relationships )
+        {
+            throw noMasterException();
+        }
+        
+        @Override
+        public Response<LockResult> acquireNodeWriteLock( SlaveContext context, long... nodes )
+        {
+            throw noMasterException();
+        }
+        
+        @Override
+        public Response<LockResult> acquireNodeReadLock( SlaveContext context, long... nodes )
+        {
+            throw noMasterException();
+        }
+        
+        @Override
+        public Response<LockResult> acquireGraphWriteLock( SlaveContext context )
+        {
+            throw noMasterException();
+        }
+        
+        @Override
+        public Response<LockResult> acquireGraphReadLock( SlaveContext context )
+        {
+            throw noMasterException();
+        }
+    };
+
+    private static final Pair<Master, Machine> NO_MASTER_MACHINE_PAIR = Pair.of( NO_MASTER, Machine.NO_MACHINE );
 }

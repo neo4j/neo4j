@@ -19,18 +19,6 @@
  */
 package slavetest;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.util.Collection;
-import java.util.concurrent.CountDownLatch;
-
 import org.junit.Test;
 import org.neo4j.com.Client;
 import org.neo4j.com.Protocol;
@@ -56,6 +44,23 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.HaConfig.CONFIG_KEY_LOCK_READ_TIMEOUT;
+import static org.neo4j.kernel.HaConfig.CONFIG_KEY_READ_TIMEOUT;
+
 public class SingleJvmWithNettyTest extends SingleJvmTest
 {
     @Test
@@ -64,16 +69,18 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         initializeDbs( 1 );
         assertTrue(
                 "Slave Broker is not a client",
-                ( (HighlyAvailableGraphDatabase) getSlave( 0 ) ).getBroker().getMaster().first() instanceof MasterClient );
+                ( (HighlyAvailableGraphDatabase) getSlave( 0 ) ).getRawHaDb().getBroker().getMaster().first() instanceof MasterClient );
     }
 
     @Override
-    protected Broker makeSlaveBroker( MasterImpl master, int masterId, int id, AbstractGraphDatabase graphDb )
+    protected Broker makeSlaveBroker( MasterImpl master, int masterId, int id, AbstractGraphDatabase graphDb, Map<String, String> config )
     {
         final Machine masterMachine = new Machine( masterId, -1, 1, -1,
                 "localhost:" + Protocol.PORT );
+        int readTimeout = getConfigInt( config, CONFIG_KEY_READ_TIMEOUT, TEST_READ_TIMEOUT );
         final Master client = new MasterClient( masterMachine.getServer().first(), masterMachine.getServer().other(), graphDb,
-                TEST_READ_TIMEOUT, Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT);
+                readTimeout, getConfigInt( config, CONFIG_KEY_LOCK_READ_TIMEOUT, readTimeout ),
+                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT);
         return new AbstractBroker( id, graphDb )
         {
             public boolean iAmMaster()
@@ -97,6 +104,12 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
                         "cannot instantiate master server on slave" );
             }
         };
+    }
+    
+    private int getConfigInt( Map<String, String> config, String key, int defaultValue )
+    {
+        String value = config.get( key );
+        return value != null ? Integer.parseInt( value ) : defaultValue;
     }
 
     @Test
@@ -381,6 +394,82 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         assertEquals( Pair.of( slaveTxsBefore.first(), slaveTxsBefore.other()+1 ), getTransactionCounts( slave ) );
     }
     
+    @Test
+    public void individuallyConfigurableLockReadTimeout() throws Exception
+    {
+        long lockTimeout = 1;
+        initializeDbs( 1, stringMap( CONFIG_KEY_LOCK_READ_TIMEOUT, String.valueOf( lockTimeout ) ) );
+        final Long nodeId = executeJobOnMaster( new CommonJobs.CreateNodeJob( true ) );
+        final Fetcher<DoubleLatch> latchFetcher = getDoubleLatch();
+        pullUpdates();
+        
+        // Hold lock on master
+        Thread lockHolder = new Thread( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    executeJobOnMaster( new CommonJobs.HoldLongLock( nodeId, latchFetcher ) );
+                }
+                catch ( Exception e )
+                {
+                    throw new RuntimeException( e );
+                }
+            }
+        } );
+        lockHolder.start();
+        DoubleLatch latch = latchFetcher.fetch();
+        latch.awaitFirst();
+        
+        // Try to get it on slave (should fail)
+        long waitStart = System.currentTimeMillis();
+        assertFalse( executeJob( new CommonJobs.SetNodePropertyJob( nodeId, "key", "value" ), 0 ) );
+        long waitTime = System.currentTimeMillis()-waitStart;
+        assertTrue( "" + waitTime, Math.abs( waitTime-lockTimeout*1000 ) < (lockTimeout*1000)/2 );
+        latch.countDownSecond();
+    }
+    
+    @Test
+    public void useLockTimeoutForCleaningUpTransactions() throws Exception
+    {
+        final long lockTimeout = 1;
+        initializeDbs( 1, stringMap( CONFIG_KEY_LOCK_READ_TIMEOUT, String.valueOf( lockTimeout ) ) );
+        final Long nodeId = executeJobOnMaster( new CommonJobs.CreateNodeJob( true ) );
+        final Fetcher<DoubleLatch> latchFetcher = getDoubleLatch();
+        pullUpdates();
+
+        Thread lockHolder = new Thread( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                DoubleLatch latch = latchFetcher.fetch();
+                try
+                {
+                    latch.awaitFirst();
+                    Thread.sleep( ( lockTimeout + MasterImpl.UNFINISHED_TRANSACTION_CLEANUP_DELAY ) * 1000 );
+                    latch.countDownSecond();
+                }
+                catch ( Exception e )
+                {
+                    throw new RuntimeException( e );
+                }
+            }
+        } );
+        lockHolder.start();
+
+        try
+        {
+            executeJob( new CommonJobs.HoldLongLock( nodeId, latchFetcher ), 0 );
+            fail( "Should have cleaned up transaction and thrown exception." );
+        }
+        catch ( TransactionFailureException e )
+        {
+        }
+    }
+
     private Pair<Integer, Integer> getTransactionCounts( GraphDatabaseService master )
     {
         return Pair.of( 

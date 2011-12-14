@@ -19,12 +19,6 @@
  */
 package slavetest;
 
-import java.io.Serializable;
-import java.rmi.Remote;
-import java.rmi.RemoteException;
-import java.rmi.server.UnicastRemoteObject;
-import java.util.Map;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -46,6 +40,12 @@ import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.test.ha.StandaloneDatabase;
+
+import java.io.Serializable;
+import java.rmi.Remote;
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
+import java.util.Map;
 
 public abstract class CommonJobs
 {
@@ -589,7 +589,6 @@ public abstract class CommonJobs
         public Object execute( GraphDatabaseService db ) throws RemoteException
         {
             GraphProperties properties = ((AbstractGraphDatabase)db).getConfig().getGraphDbModule().getNodeManager().getGraphProperties();
-            System.out.println( "Getting " + properties + ", " + ((AbstractGraphDatabase)db).getConfig().getGraphDbModule().getNodeManager() );
             return properties.getProperty( key );
         }
     }
@@ -836,13 +835,44 @@ public abstract class CommonJobs
         public Void execute( GraphDatabaseService db ) throws RemoteException
         {
             tx = db.beginTx();
-            Node node = db.createNode();
+            db.createNode();
             return null;
         }
         
         public void rollback()
         {
             tx.finish();
+        }
+    }
+    
+    public static class HoldLongLock extends TransactionalJob<Void>
+    {
+        private final long nodeId;
+        private final Fetcher<DoubleLatch> latchFetcher;
+
+        public HoldLongLock( long nodeId, Fetcher<DoubleLatch> latchFetcher )
+        {
+            this.nodeId = nodeId;
+            this.latchFetcher = latchFetcher;
+        }
+
+        @Override
+        protected Void executeInTransaction( GraphDatabaseService db, Transaction tx )
+        {
+            DoubleLatch latch = latchFetcher.fetch();
+            Node node = db.getNodeById( nodeId );
+            node.removeProperty( "something something" );
+            try
+            {
+                latch.countDownFirst();
+                latch.awaitSecond();
+            }
+            catch ( RemoteException e )
+            {
+                throw new RuntimeException( e );
+            }
+            tx.success();
+            return null;
         }
     }
 }

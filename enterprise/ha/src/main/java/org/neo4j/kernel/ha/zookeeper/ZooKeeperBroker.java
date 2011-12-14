@@ -22,13 +22,16 @@ package org.neo4j.kernel.ha.zookeeper;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.util.Map;
 
 import javax.management.remote.JMXServiceURL;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.ha.AbstractBroker;
 import org.neo4j.kernel.ha.ConnectionInformation;
@@ -42,21 +45,23 @@ import org.neo4j.management.Neo4jManager;
 
 public class ZooKeeperBroker extends AbstractBroker
 {
+    // Connect timeout to zk instance for fetching info, in ms
+    private static final int FETCH_INFO_TIMEOUT = 500;
+
     private final ZooClient zooClient;
     private final String haServer;
-    private final int machineId;
+    private int clientLockReadTimeout;
     private final String clusterName;
+    private Map<String, String> config;
 
-    public ZooKeeperBroker( AbstractGraphDatabase graphDb, String clusterName, int machineId,
-            String zooKeeperServers, String haServer, int backupPort, int clientReadTimeout,
-            int maxConcurrentChannelsPerClient, boolean writeLastCommittedTx, ResponseReceiver receiver )
+    public ZooKeeperBroker( AbstractGraphDatabase graphDb, Map<String, String> config, ResponseReceiver receiver )
     {
-        super( machineId, graphDb );
-        this.clusterName = clusterName;
-        this.machineId = machineId;
-        this.haServer = haServer;
-        this.zooClient = new ZooClient( zooKeeperServers, machineId, getRootPathGetter( graphDb.getStoreDir() ),
-                receiver, haServer, backupPort, clientReadTimeout, maxConcurrentChannelsPerClient, writeLastCommittedTx, graphDb );
+        super( HaConfig.getMachineIdFromConfig( config ), graphDb );
+        this.config = config;
+        this.clusterName = HaConfig.getClusterNameFromConfig( config );
+        this.haServer = HaConfig.getHaServerFromConfig( config );
+        this.clientLockReadTimeout = HaConfig.getClientLockReadTimeoutFromConfig( config );
+        this.zooClient = new ZooClient( graphDb, config, receiver );
     }
 
     @Override
@@ -86,9 +91,17 @@ public class ZooKeeperBroker extends AbstractBroker
         {
             return result.append( " BAD SERVER STRING" ).toString();
         }
+        SocketAddress sockAddr = new InetSocketAddress( host, port );
         try
         {
-            Socket soc = new Socket( host, port );
+            /*
+             * There is a chance the zk instance has gone down for the count -
+             * the process, the network interface or the whole machine. We don't
+             * want to block the main thread in such a case, just fail.
+             */
+            Socket soc = new Socket();
+            soc.connect( sockAddr, FETCH_INFO_TIMEOUT );
+
             BufferedReader in = new BufferedReader( new InputStreamReader( soc.getInputStream() ) );
             try
             {
@@ -122,19 +135,6 @@ public class ZooKeeperBroker extends AbstractBroker
     public StoreId createCluster( StoreId storeIdSuggestion )
     {
         return zooClient.createCluster( clusterName, storeIdSuggestion );
-    }
-
-    private RootPathGetter getRootPathGetter( String storeDir )
-    {
-        try
-        {
-            new NeoStoreUtil( storeDir );
-            return RootPathGetter.forKnownStore( storeDir );
-        }
-        catch ( RuntimeException e )
-        {
-            return RootPathGetter.forUnknownStore( storeDir );
-        }
     }
 
     @Override
@@ -187,18 +187,18 @@ public class ZooKeeperBroker extends AbstractBroker
     {
         return zooClient.getMasterFromZooKeeper( true, allowChange );
     }
-    
+
     @Override
     public Machine getMasterExceptMyself()
     {
         Map<Integer, Machine> machines = zooClient.getAllMachines( true );
-        machines.remove( this.machineId );
+        machines.remove( getMyMachineId() );
         return zooClient.getMasterBasedOn( machines.values() );
     }
 
     public Object instantiateMasterServer( AbstractGraphDatabase graphDb )
     {
-        MasterServer server = new MasterServer( new MasterImpl( graphDb ),
+        MasterServer server = new MasterServer( new MasterImpl( graphDb, config ),
                 Machine.splitIpAndPort( haServer ).other(), graphDb.getMessageLog() );
         return server;
     }
@@ -223,7 +223,7 @@ public class ZooKeeperBroker extends AbstractBroker
     @Override
     public void rebindMaster()
     {
-        zooClient.setDataChangeWatcher( ZooClient.MASTER_REBOUND_CHILD, machineId );
+        zooClient.setDataChangeWatcher( ZooClient.MASTER_REBOUND_CHILD, getMyMachineId() );
     }
 
     @Override

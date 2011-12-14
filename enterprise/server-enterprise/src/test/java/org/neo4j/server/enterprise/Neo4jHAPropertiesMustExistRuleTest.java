@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.util.Properties;
 
 import org.junit.Test;
-import org.neo4j.kernel.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.HaConfig;
 import org.neo4j.server.configuration.Configurator;
 
 public class Neo4jHAPropertiesMustExistRuleTest
@@ -57,8 +57,8 @@ public class Neo4jHAPropertiesMustExistRuleTest
         File dbTuningFile = ServerTestUtils.createTempPropertyFile();
         ServerTestUtils.writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, dbTuningFile.getAbsolutePath(), serverPropertyFile);
         ServerTestUtils.writePropertyToFile( Configurator.DB_MODE_KEY, "ha", serverPropertyFile );
-        ServerTestUtils.writePropertyToFile( HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID, "1", dbTuningFile );
-        ServerTestUtils.writePropertyToFile( HighlyAvailableGraphDatabase.CONFIG_KEY_COORDINATORS,
+        ServerTestUtils.writePropertyToFile( HaConfig.CONFIG_KEY_SERVER_ID, "1", dbTuningFile );
+        ServerTestUtils.writePropertyToFile( HaConfig.CONFIG_KEY_COORDINATORS,
                 "localhost:0000", dbTuningFile );
 
         assertRulePass( rule, serverPropertyFile );
@@ -75,8 +75,8 @@ public class Neo4jHAPropertiesMustExistRuleTest
         File dbTuningFile = ServerTestUtils.createTempPropertyFile();
         ServerTestUtils.writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, dbTuningFile.getAbsolutePath(), serverPropertyFile);
         ServerTestUtils.writePropertyToFile( Configurator.DB_MODE_KEY, "ha", serverPropertyFile );
-        ServerTestUtils.writePropertyToFile( HighlyAvailableGraphDatabase.CONFIG_KEY_OLD_SERVER_ID, "1", dbTuningFile );
-        ServerTestUtils.writePropertyToFile( HighlyAvailableGraphDatabase.CONFIG_KEY_OLD_COORDINATORS,
+        ServerTestUtils.writePropertyToFile( HaConfig.CONFIG_KEY_OLD_SERVER_ID, "1", dbTuningFile );
+        ServerTestUtils.writePropertyToFile( HaConfig.CONFIG_KEY_OLD_COORDINATORS,
                 "localhost:0000", dbTuningFile );
 
         assertRulePass( rule, serverPropertyFile );
@@ -93,9 +93,9 @@ public class Neo4jHAPropertiesMustExistRuleTest
         File dbTuningFile = ServerTestUtils.createTempPropertyFile();
         ServerTestUtils.writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, dbTuningFile.getAbsolutePath(), serverPropertyFile);
         ServerTestUtils.writePropertyToFile( Configurator.DB_MODE_KEY, "ha", serverPropertyFile );
-        ServerTestUtils.writePropertyToFile( HighlyAvailableGraphDatabase.CONFIG_KEY_OLD_SERVER_ID, "1", dbTuningFile );
-        ServerTestUtils.writePropertyToFile( HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID, "1", dbTuningFile );
-        ServerTestUtils.writePropertyToFile( HighlyAvailableGraphDatabase.CONFIG_KEY_COORDINATORS,
+        ServerTestUtils.writePropertyToFile( HaConfig.CONFIG_KEY_OLD_SERVER_ID, "1", dbTuningFile );
+        ServerTestUtils.writePropertyToFile( HaConfig.CONFIG_KEY_SERVER_ID, "1", dbTuningFile );
+        ServerTestUtils.writePropertyToFile( HaConfig.CONFIG_KEY_COORDINATORS,
                 "localhost:0000", dbTuningFile );
 
         assertRuleFail( rule, serverPropertyFile );
@@ -112,10 +112,10 @@ public class Neo4jHAPropertiesMustExistRuleTest
         File dbTuningFile = ServerTestUtils.createTempPropertyFile();
         ServerTestUtils.writePropertyToFile(Configurator.DB_TUNING_PROPERTY_FILE_KEY, dbTuningFile.getAbsolutePath(), serverPropertyFile);
         ServerTestUtils.writePropertyToFile( Configurator.DB_MODE_KEY, "ha", serverPropertyFile );
-        ServerTestUtils.writePropertyToFile( HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID, "1", dbTuningFile );
-        ServerTestUtils.writePropertyToFile( HighlyAvailableGraphDatabase.CONFIG_KEY_COORDINATORS,
+        ServerTestUtils.writePropertyToFile( HaConfig.CONFIG_KEY_SERVER_ID, "1", dbTuningFile );
+        ServerTestUtils.writePropertyToFile( HaConfig.CONFIG_KEY_COORDINATORS,
                 "localhost:0000", dbTuningFile );
-        ServerTestUtils.writePropertyToFile( HighlyAvailableGraphDatabase.CONFIG_KEY_OLD_COORDINATORS,
+        ServerTestUtils.writePropertyToFile( HaConfig.CONFIG_KEY_OLD_COORDINATORS,
                 "localhost:0000", dbTuningFile );
 
         assertRuleFail( rule, serverPropertyFile );

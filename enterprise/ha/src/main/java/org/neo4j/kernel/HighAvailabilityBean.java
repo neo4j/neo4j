@@ -66,24 +66,24 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
 
     private static boolean isHA( ManagementData management )
     {
-        return management.getKernelData().graphDatabase() instanceof HighlyAvailableGraphDatabase;
+        return management.getKernelData().graphDatabase() instanceof HAGraphDb;
     }
 
     private static class HighAvailibilityImpl extends Neo4jMBean implements HighAvailability
     {
-        private final HighlyAvailableGraphDatabase db;
+        private final HAGraphDb db;
 
         HighAvailibilityImpl( ManagementData management )
                 throws NotCompliantMBeanException
         {
             super( management );
-            this.db = (HighlyAvailableGraphDatabase) management.getKernelData().graphDatabase();
+            this.db = (HAGraphDb) management.getKernelData().graphDatabase();
         }
 
         HighAvailibilityImpl( ManagementData management, boolean isMXBean )
         {
             super( management, isMXBean );
-            this.db = (HighlyAvailableGraphDatabase) management.getKernelData().graphDatabase();
+            this.db = (HAGraphDb) management.getKernelData().graphDatabase();
         }
 
         public String getMachineId()

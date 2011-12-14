@@ -19,19 +19,12 @@
  */
 package org.neo4j.test.ha;
 
-import java.io.File;
-import java.io.PrintStream;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.junit.Ignore;
 import org.neo4j.com.Client;
 import org.neo4j.com.Protocol;
 import org.neo4j.helpers.Format;
+import org.neo4j.kernel.HAGraphDb;
+import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.FakeMasterBroker;
@@ -40,10 +33,18 @@ import org.neo4j.kernel.ha.MasterClient;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.management.HighAvailability;
 import org.neo4j.test.subprocess.SubProcess;
-
 import slavetest.AbstractHaTest;
 import slavetest.Job;
 import slavetest.PlaceHolderGraphDatabaseService;
+
+import java.io.File;
+import java.io.PrintStream;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static java.util.Arrays.asList;
 
@@ -57,9 +58,9 @@ public class StandaloneDatabase
             String[] extraArgs )
     {
         List<String> args = new ArrayList<String>();
-        args.add( HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER );
+        args.add( HaConfig.CONFIG_KEY_SERVER );
         args.add( haServer );
-        args.add( HighlyAvailableGraphDatabase.CONFIG_KEY_COORDINATORS );
+        args.add( HaConfig.CONFIG_KEY_COORDINATORS );
         args.add( zooKeeper.getConnectionString() );
         args.addAll( asList( extraArgs ) );
 
@@ -110,18 +111,19 @@ public class StandaloneDatabase
                 final Broker broker;
                 if ( machineId == masterId )
                 {
-                    broker = new FakeMasterBroker( machineId, placeHolderGraphDb );
+                    broker = new FakeMasterBroker( machineId, placeHolderGraphDb, config );
                 }
                 else
                 {
                     broker = new FakeSlaveBroker( new MasterClient( "localhost",
                             Protocol.PORT, placeHolderGraphDb, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
+                            Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
                             Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ),
                             masterId, machineId, placeHolderGraphDb );
                 }
                 config = removeDashes( config );
-                HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase( storeDir, config,
-                        AbstractHaTest.wrapBrokerAndSetPlaceHolderDb( placeHolderGraphDb, broker ) );
+                HighlyAvailableGraphDatabase db = new HighlyAvailableGraphDatabase( new HAGraphDb( storeDir, config,
+                        AbstractHaTest.wrapBrokerAndSetPlaceHolderDb( placeHolderGraphDb, broker ) ) );
                 placeHolderGraphDb.setDb( db );
                 System.out.println( "Started HA db (w/o zoo keeper)" );
                 return db;
@@ -265,7 +267,7 @@ public class StandaloneDatabase
         final HighlyAvailableGraphDatabase start()
         {
             Map<String, String> params = new HashMap<String, String>();
-            params.put( HighlyAvailableGraphDatabase.CONFIG_KEY_SERVER_ID, Integer.toString( machineId ) );
+            params.put( HaConfig.CONFIG_KEY_SERVER_ID, Integer.toString( machineId ) );
             for ( int i = 0; i < config.length; i += 2 )
             {
                 params.put( config[i], config[i + 1] );

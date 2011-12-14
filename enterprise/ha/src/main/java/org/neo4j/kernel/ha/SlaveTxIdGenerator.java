@@ -72,10 +72,6 @@ public class SlaveTxIdGenerator implements TxIdGenerator
         try
         {
             final int eventIdentifier = txManager.getEventIdentifier();
-            if ( broker.getMaster().first() == null )
-            {
-                broker.getMasterReally( true );
-            }
             Response<Long> response = broker.getMaster().first().commitSingleResourceTransaction(
                     onlyForThisDataSource( receiver.getSlaveContext( eventIdentifier ), dataSource ),
                     dataSource.getName(), new TxExtractor()
