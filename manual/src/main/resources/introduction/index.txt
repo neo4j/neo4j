@@ -7,6 +7,8 @@ include::highlights.txt[]
 Graph Database Concepts
 =======================
 
+This chapter contains an introduction to the graph data model and also compares it to other data models used when persisting data.
+
 :leveloffset: 2
 
 include::what-is-a-graphdb.txt[]

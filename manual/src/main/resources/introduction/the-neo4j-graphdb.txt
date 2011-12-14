@@ -2,7 +2,7 @@
 The Neo4j Graph Database
 ========================
 
-This chapter will introduce more details on the data model and behavior of Neo4j.
+This chapter goes into more detail on the data model and behavior of Neo4j.
 
 [[graphdb-neo4j-nodes]]
 == Nodes ==
@@ -174,7 +174,7 @@ A path is one or more nodes with connecting relationships, typically retrieved a
 ----
 "A Path" [fillcolor="NODEHIGHLIGHT"]
 "A Path" -> "Start Node" [label="has a"]
-"A Path" -> "Relationship" [label="can contain one or more"]raversal
+"A Path" -> "Relationship" [label="can contain one or more"]
 "Relationship" -> "Node" [label="accompanied by a"]
 "A Path" -> "End Node" [label="has an"]
 ----
