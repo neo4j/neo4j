@@ -66,7 +66,7 @@ class SematicErrorTest extends ExecutionEngineHelper {
 
   @Test def shortestPathNeedsBothEndNodes() {
     expectedError("start n=node(0) match p=shortestPath(n-->b) return p",
-      "Unknown identifier `b`.")
+      "To find a shortest path, both ends of the path need to be provided. Couldn't find `b`")
   }
 
   def parse(txt:String):Query = new CypherParser().parse(txt)

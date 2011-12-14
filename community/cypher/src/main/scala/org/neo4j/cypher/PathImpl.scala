@@ -21,15 +21,14 @@ package org.neo4j.cypher
 
 import java.util.{Iterator => JavaIterator}
 import java.lang.{Iterable => JavaIterable}
-import org.neo4j.graphdb.{Relationship, PropertyContainer, Node}
 import scala.collection.JavaConverters._
 import org.neo4j.kernel.Traversal
+import org.neo4j.graphdb.{Path, Relationship, PropertyContainer, Node}
 
 case class PathImpl(pathEntities: PropertyContainer*)
   extends org.neo4j.graphdb.Path
   with Traversable[PropertyContainer]
   with CypherArray {
-
 
   assert(isProperPath)
 
@@ -51,7 +50,7 @@ case class PathImpl(pathEntities: PropertyContainer*)
 
   def endNode(): Node = pathEntities.last.asInstanceOf[Node]
 
-  def lastRelationship(): Relationship =  pathEntities.length match {
+  def lastRelationship(): Relationship = pathEntities.length match {
     case 1 => null
     case _ => entities[Relationship].last
   }
@@ -70,5 +69,15 @@ case class PathImpl(pathEntities: PropertyContainer*)
     pathEntities.foreach(f(_))
   }
 
-  override def toString(): String = Traversal.defaultPathToString( this );
+  override def toString(): String = Traversal.defaultPathToString(this)
+
+  override def canEqual(that: Any) = that != null && that.isInstanceOf[Path]
+
+  override def equals(p1: Any):Boolean = {
+    if (!canEqual(p1)) return false
+
+    val that = p1.asInstanceOf[Path]
+
+    that.asScala.toList == pathEntities.toList
+  }
 }

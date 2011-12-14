@@ -51,6 +51,12 @@ trait MatchClause extends JavaTokenParsers with Tokens {
       p.head
   }
 
+  def foo(relName: String): Option[String] =
+    if (relName.startsWith("  UNNAMED"))
+      None
+    else
+      Some(relName)
+
   def shortestPath: Parser[List[Pattern]] = (ignoreCase("shortestPath") | ignoreCase("allShortestPaths")) ~ parens(singlePathSegment) ^^ {
     case algo ~ relInfo => {
 
@@ -60,12 +66,12 @@ trait MatchClause extends JavaTokenParsers with Tokens {
       }
 
       relInfo match {
-        case RelatedTo(left, right, relName, relType, direction, optional) => List(ShortestPath(namer.name(None), left, right, relType, direction, Some(1), optional, single))
+        case RelatedTo(left, right, relName, relType, direction, optional) => List(ShortestPath(namer.name(None), left, right, relType, direction, Some(1), optional, single, foo(relName)))
         case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, direction, relIterable, optional) => {
           if (minHops.nonEmpty) {
             throw new SyntaxException("Shortest path does not support a minimal length")
           }
-          List(ShortestPath(namer.name(None), start, end, relType, direction, maxHops, optional, single))
+          List(ShortestPath(namer.name(None), start, end, relType, direction, maxHops, optional, single, relIterable))
         }
       }
 

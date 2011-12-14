@@ -49,9 +49,6 @@ case class Query(returns: Return,
         slice == other.slice &&
         namedPaths == other.namedPaths
     }
-
-//  override def hashCode() = Seq(returns, start, matching, where, aggregation, sort, slice, namedPaths, queryString).
-//    reduceLeft((code:Int, elem) => code * 41 + elem.hashCode())
 }
 
 case class Return(columns: List[String], returnItems: ReturnItem*)
@@ -60,11 +57,7 @@ case class Start(startItems: StartItem*)
 
 case class Match(patterns: Pattern*)
 
-case class NamedPaths(paths: NamedPath*) extends Traversable[Pattern] {
-  def foreach[U](f: (Pattern) => U) {
-    paths.flatten.foreach(f)
-  }
-}
+case class NamedPaths(paths: NamedPath*)
 
 case class Aggregation(aggregationItems: AggregationItem*)
 
