@@ -149,11 +149,11 @@ public class ZooClient extends AbstractZooKeeperManager
                         Pair<Master, Machine> masterAfterIWrote = getMasterFromZooKeeper( false, false );
                         msgLog.logMessage( "Get master after write:" + masterAfterIWrote );
                         int masterId = masterAfterIWrote.other().getMachineId();
-                        setDataChangeWatcher( MASTER_NOTIFY_CHILD, masterId );
+//                        setDataChangeWatcher( MASTER_NOTIFY_CHILD, masterId );
                         msgLog.logMessage( "Set '" + MASTER_NOTIFY_CHILD + "' to " + masterId );
                         if ( sessionId != -1 )
                         {
-                            receiver.newMaster( new Exception() );
+                            receiver.newMaster( new Exception( "Got SyncConnected event from ZK" ) );
                         }
                         sessionId = newSessionId;
                     }
@@ -287,11 +287,6 @@ public class ZooClient extends AbstractZooKeeperManager
     
     protected void setDataChangeWatcher( String child, int currentMasterId )
     {
-        setDataChangeWatcher( child, currentMasterId, false );
-    }
-    
-    protected void setDataChangeWatcher( String child, int currentMasterId, boolean checkIfCurrentMasterIsSame )
-    {
         try
         {
             String root = getRoot();
@@ -303,14 +298,10 @@ public class ZooClient extends AbstractZooKeeperManager
                 data = zooKeeper.getData( path, true, null );
                 exists = true;
                 
-                if ( checkIfCurrentMasterIsSame )
+                if ( ByteBuffer.wrap( data ).getInt() == currentMasterId )
                 {
-                    int id = ByteBuffer.wrap( data ).getInt();
-                    if ( currentMasterId == -1 || id == currentMasterId )
-                    {
-                        msgLog.logMessage( child + " not set, is already " + currentMasterId );
-                        return;
-                    }
+                    msgLog.logMessage( child + " not set, is already " + currentMasterId );
+                    return;
                 }
             }
             catch ( KeeperException e )
@@ -482,8 +473,8 @@ public class ZooClient extends AbstractZooKeeperManager
                 ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL );
 
             // Add watches to our master notification nodes
-            setDataChangeWatcher( MASTER_NOTIFY_CHILD, -1 );
-            setDataChangeWatcher( MASTER_REBOUND_CHILD, -1 );
+            subscribeToDataChangeWatcher( MASTER_NOTIFY_CHILD );
+            subscribeToDataChangeWatcher( MASTER_REBOUND_CHILD );
             return created.substring( created.lastIndexOf( "_" ) + 1 );
         }
         catch ( KeeperException e )
