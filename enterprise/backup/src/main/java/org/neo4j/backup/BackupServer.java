@@ -21,6 +21,7 @@ package org.neo4j.backup;
 
 import org.jboss.netty.channel.Channel;
 import org.neo4j.backup.BackupClient.BackupRequestType;
+import org.neo4j.com.Client;
 import org.neo4j.com.Protocol;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Server;
@@ -35,7 +36,8 @@ class BackupServer extends Server<TheBackupInterface, Object>
     
     public BackupServer( TheBackupInterface realMaster, int port, String storeDir )
     {
-        super( realMaster, port, storeDir, FRAME_LENGTH, PROTOCOL_VERSION );
+        super( realMaster, port, storeDir, FRAME_LENGTH, PROTOCOL_VERSION,
+                DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS );
     }
 
     @Override
