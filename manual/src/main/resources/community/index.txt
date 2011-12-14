@@ -1,3 +1,12 @@
+[[community]]
+Community
+=========
+
+[partintro]
+--
+The Neo4j project has a strong community around it.
+Read about how to get help from the community and how to contribute to it.
+--
 
 :leveloffset: 1
 
@@ -6,6 +15,5 @@ include::help.txt[]
 :leveloffset: 1
 
 include::contributing.txt[]
-
 
 

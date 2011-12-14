@@ -11,66 +11,11 @@ include::preface/preface.txt[]
 
 :leveloffset: 0
 
-[[introduction]]
-Introduction
-============
-
-[partintro]
---
-This part gives a bird's eye view of what a graph database is, and then outlines some specifics of Neo4j.
---
-
-:leveloffset: 1
-
 include::introduction/index.txt[]
 
 :leveloffset: 0
 
-[[tutorials]]
-Tutorials
-=========
-
-[partintro]
---
-The tutorial part describes how to set up your environment, and write programs using Neo4j.
-It takes you from Hello World to advanced usage of graphs.
---
-
-:leveloffset: 1
-
-include::{importdir}/neo4j-examples-docs-jar/dev/index.txt[]
-
-:leveloffset: 1
-
-include::{importdir}/neo4j-python-embedded-docs-jar/dev/tutorial/index.txt[]
-
-:leveloffset: 1
-
-include::{importdir}/neo4j-server-examples-docs-jar/dev/index.txt[]
-
-:leveloffset: 1
-
-include::{importdir}/neo4j-examples-docs-jar/dev/domain-modeling.txt[]
-
-:leveloffset: 1
-
-[[tutorials-rest]]
-Using the Neo4j REST API
-========================
-
-The included Java example shows a ``low-level'' approach to using the Neo4j REST API from Java.
-For other options, see below.
-
-include::community/rest-clients.txt[]
-
-
-:leveloffset: 2
-
-include::{importdir}/neo4j-server-examples-docs-jar/dev/server-java-rest-client.txt[]
-
-:leveloffset: 1
-
-include::{importdir}/neo4j-examples-docs-jar/dev/traversal-framework.txt[]
+include::tutorials/index.txt[]
 
 :leveloffset: 0
 
@@ -78,48 +23,13 @@ include::reference/index.txt[]
 
 :leveloffset: 0
 
-[[operations]]
-Operations
-==========
-
-[partintro]
---
-This part describes how to maintain a Neo4j installation.
-This includes topics such as backing up the database and monitoring the health of the database as well as diagnosing issues.
---
-
-:leveloffset: 1
-
 include::operations/index.txt[]
 
 :leveloffset: 0
 
-[[tools]]
-Tools
-=====
-
-[partintro]
---
-The Tools part describes available Neo4j tools and how to use them.
---
-
-:leveloffset: 1
-
 include::tools/index.txt[]
 
 :leveloffset: 0
-
-[[community]]
-Community
-=========
-
-[partintro]
---
-The Neo4j project has a strong community around it.
-Read about how to get help from the community and how to contribute to it.
---
-
-:leveloffset: 1
 
 include::community/index.txt[]
 

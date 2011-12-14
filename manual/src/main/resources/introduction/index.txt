@@ -1,3 +1,11 @@
+[[introduction]]
+Introduction
+============
+
+[partintro]
+--
+This part gives a bird's eye view of what a graph database is, and then outlines some specifics of Neo4j.
+--
 
 :leveloffset: 1
 

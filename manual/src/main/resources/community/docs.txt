@@ -284,13 +284,17 @@ Common attributes you can use in documents:
 These can substitute part of URLs that point to for example APIdocs or source code.
 Note that neo4j-git-tag also handles the case of snapshot/master.
 
+Sample Asciidoc attributes which can be used:
+
+* \{docdir} - root directory of the documents
+* \{nbsp} - non-breaking space
+
 == Comments ==
 
 There's a separate build including comments.
 The comments show up with a yellow background.
-It's located at http://docs.neo4j.org/annotated/.
-You can also use this page to search for content, as the full manual is on a single page.
-CAUTION: This version isn't intended for users in general, as the Disqus feature isn't available there.
+This build doesn't run by default, but after a normal build, you can use `make annotated` to build it.
+You can also use the resulting page to search for content, as the full manual is on a single page.
 
 Here's how to write a comment:
 
