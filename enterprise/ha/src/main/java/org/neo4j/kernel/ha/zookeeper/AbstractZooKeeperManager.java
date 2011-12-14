@@ -133,7 +133,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
     protected Pair<Master, Machine> getMasterFromZooKeeper( boolean wait, boolean allowChange )
     {
         Machine master = getMasterBasedOn( getAllMachines( wait ).values() );
-        Master masterClient = null;
+        Master masterClient = NO_MASTER;
         if ( cachedMaster.other().getMachineId() != master.getMachineId() )
         {
             invalidateMaster();

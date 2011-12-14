@@ -209,7 +209,8 @@ public class HAGraphDb extends AbstractGraphDatabase
             {
                 // Check if the cluster is up
                 Pair<Master, Machine> master = broker.getMasterReally( true );
-                if ( master != null && master.first() != null )
+                if ( master != null && !master.other().equals( Machine.NO_MACHINE ) &&
+                        master.other().getMachineId() != machineId )
                 { // Join the existing cluster
                     try
                     {
@@ -352,9 +353,9 @@ public class HAGraphDb extends AbstractGraphDatabase
                     newMaster( new NullPointerException(
                             "master returned from broker" ) );
                 }
-            }
-            receive( broker.getMaster().first().pullUpdates(
+                receive( broker.getMaster().first().pullUpdates(
                         getSlaveContext( -1 ) ) );
+            }
         }
         catch ( ZooKeeperException e )
         {
