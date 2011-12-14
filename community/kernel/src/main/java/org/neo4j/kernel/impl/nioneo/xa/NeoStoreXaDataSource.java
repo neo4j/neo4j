@@ -370,7 +370,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
                 + "This can take a while for large stores..." );
             neoStore.flushAll();
             neoStore.makeStoreOk();
-            neoStore.setVersion( xaContainer.getLogicalLog().getCurrentLogVersion() );
+            neoStore.setVersion( xaContainer.getLogicalLog().getHighestLogVersion() );
             logger.fine( "Rebuild of id generators complete." );
         }
 
