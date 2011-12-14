@@ -20,105 +20,26 @@
 
 package org.neo4j.cypher
 
-import pipes.Pipe
-import scala.collection.JavaConverters._
-import org.neo4j.graphdb.{PropertyContainer, Relationship, NotFoundException, Node}
-import collection.Traversable
-import java.io.{StringWriter, PrintWriter}
+import java.io.PrintWriter
 import java.lang.String
 import symbols.SymbolTable
 
 
-trait ExecutionResult extends Traversable[Map[String, Any]] with StringExtras with Pipe {
-  val symbols: SymbolTable
+trait ExecutionResult extends Iterator[Map[String, Any]] {
+  def columns: List[String]
 
-  val columns: List[String]
+  def symbols: SymbolTable
 
-  def javaColumns: java.util.List[String] = columns.asJava
+  def javaColumns: java.util.List[String]
 
-  def javaColumnAs[T](column: String) = columnAs[T](column).map(x => makeValueJavaCompatible(x).asInstanceOf[T]).asJava
+  def javaColumnAs[T](column: String): java.util.Iterator[T]
 
-  def columnAs[T](column: String): Iterator[T] = {
-    this.map(m => {
-      val item: Any = m.getOrElse(column, throw new NotFoundException("No column named '" + column + "' was found."))
-      item.asInstanceOf[T]
-    }).toIterator
-  }
+  def columnAs[T](column: String): Iterator[T]
 
-  def makeValueJavaCompatible(value: Any): Any = value match {
-    case iter: Seq[_] => iter.asJava
-    case x => x
-  }
+  def javaIterator: java.util.Iterator[java.util.Map[String, Any]]
 
-  def javaIterator: java.util.Iterator[java.util.Map[String, Any]] = this.map(m => {
-    m.map(kv => kv._1 -> makeValueJavaCompatible(kv._2)).asJava
-  }).toIterator.asJava
+  def dumpToString(writer: PrintWriter)
 
-  def calculateColumnSizes(result: Seq[Map[String, Any]]): Map[String, Int] = {
-    val columnSizes = new scala.collection.mutable.HashMap[String, Int] ++ columns.map(name => name -> name.size)
-
-    result.foreach((m) => {
-      m.foreach((kv) => {
-        val length = text(kv._2).size
-        if (!columnSizes.contains(kv._1) || columnSizes.get(kv._1).get < length) {
-          columnSizes.put(kv._1, length)
-        }
-      })
-    })
-    columnSizes.toMap
-  }
-
-  def dumpToString(writer: PrintWriter) {
-    val start = System.currentTimeMillis()
-    val result = this.toList
-    val timeTaken = System.currentTimeMillis() - start
-
-    val columnSizes = calculateColumnSizes(result)
-
-    val headers = columns.map((c) => Map[String, Any](c -> c)).reduceLeft(_ ++ _)
-    val headerLine: String = createString(columns, columnSizes, headers)
-    val lineWidth: Int = headerLine.length - 2
-    val --- = "+" + repeat("-", lineWidth) + "+"
-    val footer = "%d rows, %d ms".format(result.size, timeTaken)
-
-    writer.println(---)
-    writer.println(headerLine)
-    writer.println(---)
-
-    result.foreach(resultLine => writer.println(createString(columns, columnSizes, resultLine)))
-
-    writer.println(---)
-    writer.println(footer)
-  }
-
-  def dumpToString(): String = {
-    val stringWriter = new StringWriter()
-    val writer = new PrintWriter(stringWriter)
-    dumpToString(writer)
-    writer.close()
-    stringWriter.getBuffer.toString;
-  }
-
-  def props(x: PropertyContainer): String = x.getPropertyKeys.asScala.map(key => key + "->" + quoteString(x.getProperty(key))).mkString("{", ",", "}")
-
-  def text(obj: Any): String = obj match {
-    case x: Node => x.toString + props(x)
-    case x: Relationship => ":" + x.getType.toString + "[" + x.getId + "] " + props(x)
-    case null => "<null>"
-    case x => x.toString
-  }
-
-  def quoteString(in: Any): String = in match {
-    case x: String => "\"" + x + "\""
-    case x => x.toString
-  }
-
-  def createString(columns: List[String], columnSizes: Map[String, Int], m: Map[String, Any]): String = {
-    columns.map(c => {
-      val length = columnSizes.get(c).get
-      val txt = text(m.get(c).get)
-      val value = makeSize(txt, length)
-      value
-    }).mkString("| ", " | ", " |")
-  }
+  def dumpToString(): String
 }
+

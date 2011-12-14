@@ -103,15 +103,12 @@ public class JavaExecutionEngineTests {
 
         Iterable<Node> friends = ( Iterable<Node> ) result.columnAs( "collect(friend)" ).next();
         assertThat( friends, hasItems( andreasNode, johanNode ) );
-
-        Object friendCollection = result.iterator().next().get( "collect(friend)" );
-        assertThat( friendCollection, instanceOf( Iterable.class ) );
+        assertThat( friends, instanceOf( Iterable.class ) );
     }
 
     @Test
     public void testColumnAreInTheRightOrder() throws Exception {
         createTenNodes();
-        List<String> columns = asList( "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten" );
         String q = "start one=node(1), two=node(2), three=node(3), four=node(4), five=node(5), six=node(6), " +
                 "seven=node(7), eight=node(8), nine=node(9), ten=node(10) " +
                 "return one, two, three, four, five, six, seven, eight, nine, ten";

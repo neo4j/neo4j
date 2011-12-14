@@ -55,6 +55,7 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -69,7 +70,7 @@ public class TxManager extends AbstractTransactionManager
 {
     private static Logger log = Logger.getLogger( TxManager.class.getName() );
 
-    private ArrayMap<Thread,TransactionImpl> txThreadMap;
+    private ArrayMap<Thread,TransactionImpl> txThreadMap = new ArrayMap<Thread,TransactionImpl>( 5, true, true );
 
     private final String txLogDir;
     private static String separator = File.separator;
@@ -616,6 +617,11 @@ public class TxManager extends AbstractTransactionManager
 
     public void begin() throws NotSupportedException, SystemException
     {
+        begin( ForceMode.forced );
+    }
+    
+    public void begin( ForceMode forceMode ) throws NotSupportedException, SystemException
+    {
         if ( blocked )
         {
             throw new SystemException( "TxManager is preventing new transactions from starting " +
@@ -630,7 +636,7 @@ public class TxManager extends AbstractTransactionManager
             throw logAndReturn("TM error tx begin",new NotSupportedException(
                 "Nested transactions not supported" ));
         }
-        tx = new TransactionImpl( this );
+        tx = new TransactionImpl( this, forceMode );
         txThreadMap.put( thread, tx );
         int concurrentTxCount = txThreadMap.size();
         if ( concurrentTxCount > peakConcurrentTransactions )
@@ -1091,7 +1097,13 @@ public class TxManager extends AbstractTransactionManager
         }
         return -1;
     }
-
+    
+    @Override
+    public ForceMode getForceMode()
+    {
+        return ((TransactionImpl)getTransaction()).getForceMode();
+    }
+    
     public int getStartedTxCount()
     {
         return startedTxCount.get();

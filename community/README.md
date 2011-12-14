@@ -71,3 +71,10 @@ Build the standalone distributions
     cd standalone
     mvn clean package
 
+
+Working with the source code in Eclipse IDE
+===========================================
+
+Have a look at the readme file in cypher/ for how to get that project to work in Eclipse IDE.
+If it isn't setup properly, other projects (submodules) that depend on it will not get built by Eclipse.
+

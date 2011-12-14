@@ -21,6 +21,7 @@ package org.neo4j.server.rest.security;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.server.configuration.Configurator;
 
 public interface SecurityRule
@@ -32,7 +33,7 @@ public interface SecurityRule
      * @return <code>true</code> if the rule passes, <code>false</code> if the
      *         rule fails and the request is to be rejected.
      */
-    boolean isAuthorized( HttpServletRequest request );
+    boolean isAuthorized( HttpServletRequest request, GraphDatabaseService graph );
 
     /**
      * @return the root of the URI path from which rules will be valid, e.g.

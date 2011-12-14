@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NameData;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
@@ -79,7 +80,7 @@ class ReadTransaction implements NeoStoreTransaction
     }
 
     @Override
-    public boolean nodeLoadLight( long nodeId )
+    public NodeRecord nodeLoadLight( long nodeId )
     {
         return getNodeStore().loadLightNode( nodeId );
     }
@@ -232,9 +233,9 @@ class ReadTransaction implements NeoStoreTransaction
     }
 
     @Override
-    public ArrayMap<Integer,PropertyData> nodeLoadProperties( long nodeId, boolean light )
+    public ArrayMap<Integer,PropertyData> nodeLoadProperties( long nodeId, long firstProp, boolean light )
     {
-        return loadProperties( getPropertyStore(), getNodeStore().getRecord( nodeId ).getNextProp() );
+        return loadProperties( getPropertyStore(), firstProp );
     }
     
     @Override

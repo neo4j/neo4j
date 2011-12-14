@@ -48,6 +48,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.DatabaseBlockedException;
@@ -78,7 +79,7 @@ public class DatabaseActionsTest
         database = new Database( ServerTestUtils.EPHEMERAL_GRAPH_DATABASE_FACTORY, null );
         graphdbHelper = new GraphDbHelper( database );
         leaseManager = new LeaseManager( new FakeClock() );
-        actions = new DatabaseActions( database, leaseManager );
+        actions = new DatabaseActions( database, leaseManager, ForceMode.forced );
     }
 
     @AfterClass

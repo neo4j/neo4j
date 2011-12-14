@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -33,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
+import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
@@ -56,6 +58,7 @@ import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.LockManager;
+import org.neo4j.kernel.impl.transaction.PlaceboTm;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
@@ -161,6 +164,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
                     LogBufferFactory.class, CommonFactories.defaultLogBufferFactory(),
                     TxIdGenerator.class, TxIdGenerator.DEFAULT,
                     StringLogger.class, StringLogger.DEV_NULL,
+                    TransactionManager.class, new PlaceboTm(),
                     "store_dir", path(),
                     "neo_store", file( "neo" ),
                     "logical_log", file( "nioneo_logical.log" ) ) );
@@ -337,8 +341,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
 
         initializeStores();
         startTx();
-        assertEquals( false, xaCon.getWriteTransaction().nodeLoadLight( node1 ) );
-        assertEquals( false, xaCon.getWriteTransaction().nodeLoadLight( node2 ) );
+        assertNull( xaCon.getWriteTransaction().nodeLoadLight( node1 ) );
+        assertNull( xaCon.getWriteTransaction().nodeLoadLight( node2 ) );
         testGetRels( new long[] { rel1, rel2 } );
         // testGetProps( neoStore, new int[] {
         // n1prop1, n1prop2, n1prop3, n2prop1, n2prop2, n2prop3,
@@ -407,9 +411,9 @@ public class TestNeoStore extends AbstractNeo4jTestCase
             PropertyData prop2, PropertyData prop3, long rel1, long rel2,
             int relType1, int relType2 ) throws IOException
     {
-        assertTrue( xaCon.getWriteTransaction().nodeLoadLight( node ) );
-        ArrayMap<Integer,PropertyData> props = xaCon.getWriteTransaction().nodeLoadProperties( node,
-                false );
+        NodeRecord nodeRecord = xaCon.getWriteTransaction().nodeLoadLight( node );
+        assertTrue( nodeRecord != null );
+        ArrayMap<Integer,PropertyData> props = xaCon.getWriteTransaction().nodeLoadProperties( node, nodeRecord.getNextProp(), false );
         int count = 0;
         for ( int keyId : props.keySet() )
         {
@@ -480,9 +484,9 @@ public class TestNeoStore extends AbstractNeo4jTestCase
             PropertyData prop2, PropertyData prop3,
         long rel1, long rel2, int relType1, int relType2 ) throws IOException
     {
-        assertTrue( xaCon.getWriteTransaction().nodeLoadLight( node ) );
-        ArrayMap<Integer,PropertyData> props = xaCon.getWriteTransaction().nodeLoadProperties( node,
-                false );
+        NodeRecord nodeRecord = xaCon.getWriteTransaction().nodeLoadLight( node );
+        assertTrue( nodeRecord != null );
+        ArrayMap<Integer,PropertyData> props = xaCon.getWriteTransaction().nodeLoadProperties( node, nodeRecord.getNextProp(), false );
         int count = 0;
         for ( int keyId : props.keySet() )
         {
@@ -787,7 +791,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         throws IOException
     {
         ArrayMap<Integer,PropertyData> props = xaCon.getWriteTransaction().nodeLoadProperties( node,
-                false );
+                xaCon.getWriteTransaction().nodeLoadLight( node ).getNextProp(), false );
         int count = 0;
         for ( int keyId : props.keySet() )
         {
@@ -821,7 +825,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
             count++;
         }
         assertEquals( 3, count );
-        assertEquals( 3, xaCon.getWriteTransaction().nodeLoadProperties( node, false ).size() );
+        assertEquals( 3, xaCon.getWriteTransaction().nodeLoadProperties( node,
+                xaCon.getWriteTransaction().nodeLoadLight( node ).getNextProp(), false ).size() );
         AtomicLong pos = getPosition( xaCon, node );
         Iterator<RelationshipRecord> rels = getMore( xaCon, node, pos ).iterator();
         assertTrue( rels.hasNext() );
@@ -833,7 +838,7 @@ public class TestNeoStore extends AbstractNeo4jTestCase
         throws IOException
     {
         ArrayMap<Integer,PropertyData> props = xaCon.getWriteTransaction().nodeLoadProperties( node,
-                false );
+                xaCon.getWriteTransaction().nodeLoadLight( node ).getNextProp(), false );
         int count = 0;
         for ( int keyId : props.keySet() )
         {
@@ -867,7 +872,8 @@ public class TestNeoStore extends AbstractNeo4jTestCase
             count++;
         }
         assertEquals( 3, count );
-        assertEquals( 3, xaCon.getWriteTransaction().nodeLoadProperties( node, false ).size() );
+        assertEquals( 3, xaCon.getWriteTransaction().nodeLoadProperties( node,
+                xaCon.getWriteTransaction().nodeLoadLight( node ).getNextProp(), false ).size() );
         AtomicLong pos = getPosition( xaCon, node );
         Iterator<RelationshipRecord> rels = getMore( xaCon, node, pos ).iterator();
         assertTrue( rels.hasNext() );

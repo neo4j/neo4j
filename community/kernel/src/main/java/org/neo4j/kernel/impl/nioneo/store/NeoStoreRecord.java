@@ -23,7 +23,7 @@ public class NeoStoreRecord extends PrimitiveRecord
 {
     public NeoStoreRecord()
     {
-        super( -1 );
+        super( -1, Record.NO_NEXT_PROPERTY.intValue() );
         setInUse( true );
     }
     

@@ -35,7 +35,7 @@ import org.neo4j.kernel.IdType;
 public class RelationshipTypeStore extends AbstractNameStore<RelationshipTypeRecord>
 {
     public static final String TYPE_DESCRIPTOR = "RelationshipTypeStore";
-    private static final int RECORD_SIZE = 1/*inUse*/ + 5/*nameId*/;
+    private static final int RECORD_SIZE = 1/*inUse*/ + 4/*nameId*/;
 
     public RelationshipTypeStore( String fileName, Map<?,?> config )
     {

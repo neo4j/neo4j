@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
@@ -55,6 +56,7 @@ import org.neo4j.kernel.impl.core.PropertyIndex;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.LockManager;
+import org.neo4j.kernel.impl.transaction.PlaceboTm;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
@@ -375,7 +377,8 @@ public class TestXa extends AbstractNeo4jTestCase
         xaCon.getWriteTransaction().nodeCreate( node2 );
         PropertyData n1prop1 = xaCon.getWriteTransaction().nodeAddProperty(
                 node1, index( "prop1" ), "string1" );
-        xaCon.getWriteTransaction().nodeLoadProperties( node1, false );
+        xaCon.getWriteTransaction().nodeLoadProperties( node1,
+                xaCon.getWriteTransaction().nodeLoadLight( node1 ).getNextProp(), false );
         int relType1 = (int) ds.nextId( RelationshipType.class );
         xaCon.getWriteTransaction().createRelationshipType( relType1,
             "relationshiptype1" );
@@ -419,6 +422,7 @@ public class TestXa extends AbstractNeo4jTestCase
             LogBufferFactory.class, CommonFactories.defaultLogBufferFactory(),
             TxIdGenerator.class, TxIdGenerator.DEFAULT,
             StringLogger.class, StringLogger.DEV_NULL,
+            TransactionManager.class, new PlaceboTm(),
             "store_dir", path(),
             "neo_store", file( "neo" ),
             "logical_log", file( "nioneo_logical.log" ) );
@@ -579,7 +583,7 @@ public class TestXa extends AbstractNeo4jTestCase
         assertTrue( Arrays.equals(
                 (long[]) toRead.getValue(),
                 (long[]) xaCon.getWriteTransaction().nodeLoadProperties( node1,
-                        false ).get( toRead.getIndex() ).getValue() ) );
+                        xaCon.getWriteTransaction().nodeLoadLight( node1 ).getNextProp(), false ).get( toRead.getIndex() ).getValue() ) );
 
         xaRes.end( xid, XAResource.TMSUCCESS );
         xaRes.prepare( xid );
@@ -807,7 +811,8 @@ public class TestXa extends AbstractNeo4jTestCase
         xaCon.getWriteTransaction().nodeCreate( node2 );
         PropertyData n1prop1 = xaCon.getWriteTransaction().nodeAddProperty(
                 node1, index( "prop1" ), "string1" );
-        xaCon.getWriteTransaction().nodeLoadProperties( node1, false );
+        xaCon.getWriteTransaction().nodeLoadProperties( node1,
+                xaCon.getWriteTransaction().nodeLoadLight( node1 ).getNextProp(), false );
         int relType1 = (int) ds.nextId( RelationshipType.class );
         xaCon.getWriteTransaction().createRelationshipType( relType1, "relationshiptype1" );
         long rel1 = ds.nextId( Relationship.class );

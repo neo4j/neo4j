@@ -51,7 +51,7 @@ class ReadOnlyNodeManager extends NodeManager
     }
 
     @Override
-    public Relationship createRelationship( NodeImpl startNode, Node endNode,
+    public Relationship createRelationship( Node startNodeProxy, NodeImpl startNode, Node endNode,
         RelationshipType type )
     {
         throw new ReadOnlyDbException();

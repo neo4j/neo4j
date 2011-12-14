@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaResourceHelpImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
+import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public class TestXaFramework extends AbstractNeo4jTestCase
@@ -65,6 +66,14 @@ public class TestXaFramework extends AbstractNeo4jTestCase
     private String path()
     {
         String path = getStorePath( "xafrmwrk" );
+        try
+        {
+            FileUtils.deleteRecursively( new File( path ) );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
         new File( path ).mkdirs();
         return path;
     }
@@ -346,6 +355,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         config.put( LogBufferFactory.class, CommonFactories.defaultLogBufferFactory() );
         config.put( StringLogger.class, StringLogger.DEV_NULL );
         config.put( FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
+        config.put( TransactionManager.class, new PlaceboTm() );
         xaDsMgr.registerDataSource( "dummy_datasource", new DummyXaDataSource(
                 config ), UTF8.encode( "DDDDDD" ) );
         XaDataSource xaDs = xaDsMgr.getXaDataSource( "dummy_datasource" );
@@ -411,6 +421,7 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             config.put( LogBufferFactory.class, CommonFactories.defaultLogBufferFactory() );
             config.put( FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
             config.put( StringLogger.class, StringLogger.DEV_NULL );
+            config.put( TransactionManager.class, new PlaceboTm() );
             xaDsMgr.registerDataSource( "dummy_datasource1",
                     new DummyXaDataSource( config ), UTF8.encode( "DDDDDD" ) );
             xaDs1 = (DummyXaDataSource) xaDsMgr

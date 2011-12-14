@@ -21,7 +21,6 @@ package org.neo4j.cypher
 
 import commands.Query
 import org.junit.Before
-import parser.CypherParser
 
 
 trait ExecutionEngineHelper extends GraphDatabaseTestBase {

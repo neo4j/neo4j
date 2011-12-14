@@ -26,6 +26,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.kernel.impl.core.LockReleaser.CowEntityElement;
+import org.neo4j.kernel.impl.core.LockReleaser.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
@@ -84,6 +86,12 @@ public class GraphProperties extends Primitive implements PropertyContainer
     {
         return -1L;
     }
+    
+    @Override
+    protected long getFirstProp()
+    {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
     public boolean hasProperty( String key )
@@ -106,13 +114,13 @@ public class GraphProperties extends Primitive implements PropertyContainer
     @Override
     public void setProperty( String key, Object value )
     {
-        setProperty( nodeManager, key, value );
+        setProperty( nodeManager, this, key, value );
     }
 
     @Override
     public Object removeProperty( String key )
     {
-        return removeProperty( nodeManager, key );
+        return removeProperty( nodeManager, this, key );
     }
 
     @Override
@@ -135,7 +143,7 @@ public class GraphProperties extends Primitive implements PropertyContainer
     
     @Override
     protected void commitPropertyMaps( ArrayMap<Integer, PropertyData> cowPropertyAddMap,
-            ArrayMap<Integer, PropertyData> cowPropertyRemoveMap )
+            ArrayMap<Integer, PropertyData> cowPropertyRemoveMap, long firstProp )
     {
         if ( cowPropertyAddMap != null ) for ( Map.Entry<Integer, PropertyData> property : cowPropertyAddMap.entrySet() )
         {
@@ -183,5 +191,17 @@ public class GraphProperties extends Primitive implements PropertyContainer
             properties = new HashMap<Integer, PropertyData>();
         }
         loaded = true;
+    }
+    
+    @Override
+    public CowEntityElement getEntityElement( PrimitiveElement element, boolean create )
+    {
+        return element.graphElement( create );
+    }
+    
+    @Override
+    PropertyContainer asProxy( NodeManager nm )
+    {
+        return this;
     }
 }

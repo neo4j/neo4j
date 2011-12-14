@@ -354,10 +354,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
 
     private class TransactionFactory extends XaTransactionFactory
     {
-        TransactionFactory()
-        {
-        }
-
         @Override
         public XaTransaction create( int identifier )
         {

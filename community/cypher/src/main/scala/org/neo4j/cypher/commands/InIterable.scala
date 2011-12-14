@@ -22,7 +22,7 @@ import org.neo4j.cypher.symbols.{AnyIterableType, Identifier}
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-abstract class InIterable(iterable: Value, symbolName: String, inner: Predicate) extends Predicate {
+abstract class InIterable(iterable: Expression, symbolName: String, inner: Predicate) extends Predicate {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean
 
   def isMatch(m: Map[String, Any]): Boolean = {
@@ -40,18 +40,18 @@ abstract class InIterable(iterable: Value, symbolName: String, inner: Predicate)
   def containsIsNull: Boolean = false
 }
 
-case class AllInIterable(seqValue: Value, symbolName: String, inner: Predicate) extends InIterable(seqValue, symbolName, inner) {
+case class AllInIterable(iterable: Expression, symbolName: String, inner: Predicate) extends InIterable(iterable, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = f.forall _
 }
 
-case class AnyInIterable(seqValue: Value, symbolName: String, inner: Predicate) extends InIterable(seqValue, symbolName, inner) {
+case class AnyInIterable(iterable: Expression, symbolName: String, inner: Predicate) extends InIterable(iterable, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = f.exists _
 }
 
-case class NoneInIterable(seqValue: Value, symbolName: String, inner: Predicate) extends InIterable(seqValue, symbolName, inner) {
+case class NoneInIterable(iterable: Expression, symbolName: String, inner: Predicate) extends InIterable(iterable, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = x => !f.exists(x)
 }
 
-case class SingleInIterable(seqValue: Value, symbolName: String, inner: Predicate) extends InIterable(seqValue, symbolName, inner) {
+case class SingleInIterable(iterable: Expression, symbolName: String, inner: Predicate) extends InIterable(iterable, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = x => f.filter(x).length == 1
 }

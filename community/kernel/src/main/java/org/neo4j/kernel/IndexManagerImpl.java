@@ -227,7 +227,7 @@ class IndexManagerImpl implements IndexManager
             String dataSourceName = getIndexProvider( provider ).getDataSourceName();
             XaDataSource dataSource = graphDbImpl.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource( dataSourceName );
             IndexXaConnection connection = (IndexXaConnection) dataSource.getXaConnection();
-            Transaction tx = graphDbImpl.beginTx();
+            Transaction tx = graphDbImpl.tx().begin();
             try
             {
                 javax.transaction.Transaction javaxTx = graphDbImpl.getConfig().getTxModule().getTxManager().getTransaction();

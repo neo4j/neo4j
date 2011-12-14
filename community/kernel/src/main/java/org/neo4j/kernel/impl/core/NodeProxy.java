@@ -54,7 +54,7 @@ class NodeProxy implements Node
 
     public void delete()
     {
-        nm.getNodeForProxy( nodeId ).delete( nm );
+        nm.getNodeForProxy( nodeId ).delete( nm, this );
     }
 
     public Iterable<Relationship> getRelationships()
@@ -117,12 +117,12 @@ class NodeProxy implements Node
 
     public void setProperty( String key, Object value )
     {
-        nm.getNodeForProxy( nodeId ).setProperty( nm, key, value );
+        nm.getNodeForProxy( nodeId ).setProperty( nm, this, key, value );
     }
 
     public Object removeProperty( String key ) throws NotFoundException
     {
-        return nm.getNodeForProxy( nodeId ).removeProperty( nm, key );
+        return nm.getNodeForProxy( nodeId ).removeProperty( nm, this, key );
     }
 
     public Object getProperty( String key, Object defaultValue )
@@ -194,8 +194,7 @@ class NodeProxy implements Node
     public Relationship createRelationshipTo( Node otherNode,
         RelationshipType type )
     {
-        return nm.getNodeForProxy( nodeId ).createRelationshipTo( nm, otherNode,
-            type );
+        return nm.getNodeForProxy( nodeId ).createRelationshipTo( nm, this, otherNode, type );
     }
 
     /* Tentative expansion API

@@ -87,7 +87,7 @@ abstract class ArrayBasedPrimitive extends Primitive
     @Override
     protected void commitPropertyMaps(
             ArrayMap<Integer,PropertyData> cowPropertyAddMap,
-            ArrayMap<Integer,PropertyData> cowPropertyRemoveMap )
+            ArrayMap<Integer,PropertyData> cowPropertyRemoveMap, long firstProp )
     {
         if ( properties == null )
         {

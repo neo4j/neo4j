@@ -24,6 +24,7 @@ import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Executes {@link WorkerCommand}s in another thread. Very useful for writing
@@ -34,7 +35,7 @@ import java.util.concurrent.Future;
  *
  * @param <T>
  */
-public abstract class OtherThreadExecutor<T>
+public class OtherThreadExecutor<T>
 {
     private final ExecutorService commandExecutor = newSingleThreadExecutor();
     private final T state;
@@ -61,6 +62,22 @@ public abstract class OtherThreadExecutor<T>
         return executeDontWait( cmd ).get();
     }
 
+    public <R> R execute( WorkerCommand<T, R> cmd, long timeout ) throws Exception
+    {
+        Future<R> future = executeDontWait( cmd );
+        boolean success = false;
+        try
+        {
+            R result = future.get( timeout, TimeUnit.MILLISECONDS );
+            success = true;
+            return result;
+        }
+        finally
+        {
+            if ( !success ) future.cancel( true );
+        }
+    }
+    
     public interface WorkerCommand<T, R>
     {
         R doWork( T state );

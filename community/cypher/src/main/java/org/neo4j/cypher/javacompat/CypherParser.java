@@ -27,11 +27,11 @@ import org.neo4j.cypher.commands.Query;
  */
 public class CypherParser
 {
-    private org.neo4j.cypher.parser.CypherParser inner;
+    private org.neo4j.cypher.CypherParser inner;
 
     public CypherParser()
     {
-        inner = new org.neo4j.cypher.parser.CypherParser();
+        inner = new org.neo4j.cypher.CypherParser();
     }
 
     public Query parse( String query ) throws SyntaxException
@@ -40,10 +40,10 @@ public class CypherParser
     }
 
     public static Query parseStrict(String query) throws SyntaxException {
-        return new org.neo4j.cypher.parser.CypherParser().parse( query );
+        return new org.neo4j.cypher.CypherParser().parse( query );
     }
 
     public static Query parseConsole(String query) throws SyntaxException {
-        return new org.neo4j.cypher.parser.ConsoleCypherParser().parse( query );
+        return new org.neo4j.cypher.internal.parser.ConsoleCypherParser().parse( query );
     }
 }

@@ -32,6 +32,7 @@ import org.junit.Test;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.transaction.TxLog.Record;
+import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 
 public class TestTxLog
 {
@@ -93,7 +94,7 @@ public class TestTxLog
             assertEquals( TxLog.BRANCH_ADD, record.getType() );
             assertEqualByteArray( globalId, record.getGlobalId() );
             assertEqualByteArray( branchId, record.getBranchId() );
-            txLog.markAsCommitting( globalId );
+            txLog.markAsCommitting( globalId, ForceMode.unforced );
             assertEquals( 3, txLog.getRecordCount() );
             txLog.close();
             txLog = new TxLog( txFile(), CommonFactories.defaultFileSystemAbstraction() );
@@ -161,7 +162,7 @@ public class TestTxLog
             byte branchId[] = new byte[45];
             txLog.txStart( globalId );
             txLog.addBranch( globalId, branchId );
-            txLog.markAsCommitting( globalId );
+            txLog.markAsCommitting( globalId, ForceMode.unforced );
             txLog.truncate();
             assertEquals( 0,
                 getRecordLists( txLog.getDanglingRecords() ).length );
@@ -169,7 +170,7 @@ public class TestTxLog
             txLog = new TxLog( txFile(), CommonFactories.defaultFileSystemAbstraction() );
             txLog.txStart( globalId );
             txLog.addBranch( globalId, branchId );
-            txLog.markAsCommitting( globalId );
+            txLog.markAsCommitting( globalId, ForceMode.unforced );
             txLog.close();
             txLog = new TxLog( txFile(), CommonFactories.defaultFileSystemAbstraction() );
             assertEquals( 1,

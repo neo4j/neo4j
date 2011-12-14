@@ -69,7 +69,8 @@ public class SecurityRulesFunctionalTest extends ExclusiveServerTestBase
      * denied. In a production-quality implementation the rule
      * will likely lookup credentials/claims in a 3rd party
      * directory service (e.g. LDAP) or in a local database of
-     * authorized users.
+     * authorized users, or in the provided graph for this server in order
+     * to make context-specific security checks using the domain data.
      * 
      */
     @Test

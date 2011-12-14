@@ -49,6 +49,9 @@ case class Query(returns: Return,
         slice == other.slice &&
         namedPaths == other.namedPaths
     }
+
+//  override def hashCode() = Seq(returns, start, matching, where, aggregation, sort, slice, namedPaths, queryString).
+//    reduceLeft((code:Int, elem) => code * 41 + elem.hashCode())
 }
 
 case class Return(columns: List[String], returnItems: ReturnItem*)
@@ -67,4 +70,4 @@ case class Aggregation(aggregationItems: AggregationItem*)
 
 case class Sort(sortItems: SortItem*)
 
-case class Slice(from: Option[Value], limit: Option[Value])
+case class Slice(from: Option[Expression], limit: Option[Expression])

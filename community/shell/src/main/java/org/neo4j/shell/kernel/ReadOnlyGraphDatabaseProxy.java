@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -43,12 +44,54 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipAutoIndexer;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.kernel.PlaceboTransaction;
+import org.neo4j.kernel.TransactionBuilder;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 
 public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, IndexManager
 {
     private final GraphDatabaseService actual;
+    private final Transaction tx = new Transaction()
+    {
+        public void success()
+        {
+        }
+
+        public void failure()
+        {
+        }
+
+        public void finish()
+        {
+        }
+
+        @Override
+        public Lock acquireWriteLock( PropertyContainer entity )
+        {
+            return PlaceboTransaction.NO_LOCK;
+        }
+
+        @Override
+        public Lock acquireReadLock( PropertyContainer entity )
+        {
+            return PlaceboTransaction.NO_LOCK;
+        }
+    };
+    private final TransactionBuilder txBuilder = new TransactionBuilder()
+    {
+        @Override
+        public TransactionBuilder unforced()
+        {
+            throw new UnsupportedOperationException();
+        }
+        
+        @Override
+        public Transaction begin()
+        {
+            return beginTx();
+        }
+    };
 
     ReadOnlyGraphDatabaseProxy( GraphDatabaseService graphDb )
     {
@@ -78,20 +121,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, IndexMa
     public Transaction beginTx()
     {
         // return readOnly();
-        return new Transaction()
-        {
-            public void success()
-            {
-            }
-
-            public void failure()
-            {
-            }
-
-            public void finish()
-            {
-            }
-        };
+        return tx;
     }
 
     public Node createNode()

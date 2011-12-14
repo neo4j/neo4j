@@ -29,11 +29,11 @@ class ExtractTest extends Assertions {
     //extract( n in ["x", "xxx", "xx"] : length(n) )
 
     val l = Seq("x", "xxx", "xx")
-    val expression = ArrayLengthValue(EntityValue("n"))
-    val iterable = EntityValue("l")
+    val expression = LengthFunction(Entity("n"))
+    val iterable = Entity("l")
     val m = Map("l" -> l)
 
-    val extract = Extract(iterable, "n", expression)
+    val extract = ExtractFunction(iterable, "n", expression)
 
     assert( extract.apply(m) === Seq(1,3,2))
   }
@@ -41,11 +41,11 @@ class ExtractTest extends Assertions {
 
   @Test(expected = classOf[IterableRequiredException]) def requiresIterable() {
     val l = 12
-    val expression = ArrayLengthValue(EntityValue("n"))
-    val iterable = EntityValue("l")
+    val expression = LengthFunction(Entity("n"))
+    val iterable = Entity("l")
     val m = Map("l" -> l)
 
-    val extract = Extract(iterable, "n", expression)
+    val extract = ExtractFunction(iterable, "n", expression)
 
     assert( extract.apply(m) === Seq(1,3,2))
   }

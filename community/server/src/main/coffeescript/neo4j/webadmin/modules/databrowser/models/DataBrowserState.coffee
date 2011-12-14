@@ -73,6 +73,9 @@ define(
               return @set({type:"relationshipList", "data":new RelationshipList(result)}, opts)
             else if result[0] instanceof neo4j.models.Node
               return @set({type:"nodeList", "data":new NodeList(result)}, opts)
+        else if result instanceof neo4j.cypher.QueryResult and result.size() > 0
+          @set({type:"cypher"})
+          return @trigger "change:data"
 
         @set({type:"not-found", "data":null}, opts)
 

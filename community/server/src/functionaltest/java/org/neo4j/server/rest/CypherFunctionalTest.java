@@ -26,6 +26,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.matchers.JUnitMatchers.containsString;
 
 import java.io.UnsupportedEncodingException;
+import java.util.Map;
 
 import javax.ws.rs.core.Response.Status;
 
@@ -133,6 +134,26 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
 
         assertEquals( 3, ( JsonHelper.jsonToMap( response ) ).size() );
         assertTrue( response.contains( "message" ) );
+    }
+    
+    /**
+     * When sending queries that
+     * return nested results like list and maps,
+     * these will get serialized into nested JSON representations
+     * according to their types.
+     */
+    @Test
+    @Documented
+    @Graph( value = { "I know you" }, autoIndexNodes = true )
+    public void nested_results() throws Exception {
+        data.get();
+        String script = "start n = node(%I%,%you%) return collect(n.name), collect(n)";
+        String response = cypherRestCall( script, Status.OK);
+
+
+        Map<String, Object> resultMap = JsonHelper.jsonToMap( response );
+        assertEquals( 2, resultMap.size() );
+        assertTrue( response.contains( "[ [ [ \"I\"" ) );
     }
 
     @Test

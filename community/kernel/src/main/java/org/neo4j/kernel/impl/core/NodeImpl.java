@@ -30,6 +30,7 @@ import java.util.Map;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ReturnableEvaluator;
@@ -37,6 +38,8 @@ import org.neo4j.graphdb.StopEvaluator;
 import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.helpers.Triplet;
+import org.neo4j.kernel.impl.core.LockReleaser.CowEntityElement;
+import org.neo4j.kernel.impl.core.LockReleaser.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.transaction.LockType;
@@ -49,44 +52,64 @@ import org.neo4j.kernel.impl.util.RelIdIterator;
 
 class NodeImpl extends ArrayBasedPrimitive
 {
+    private static final long TWO_POWER_36 = (long) Math.pow( 2, 36 )-1;
     private static final RelIdArray[] NO_RELATIONSHIPS = new RelIdArray[0];
 
     private volatile RelIdArray[] relationships;
-    private long relChainPosition = Record.NO_NEXT_RELATIONSHIP.intValue();
-    private long id;
+    
+    // [    ,    ][    ,    ][    ,xxxx][xxxx,    ][    ,    ][    ,    ][    ,    ][    ,    ]: high bits of first prop (0xFF000000000)
+    // [    ,    ][    ,    ][    ,    ][    ,xxxx][xxxx,xxxx][xxxx,xxxx][xxxx,xxxx][xxxx,xxxx]: rel chain position (0xFFFFFFFFF)
+    private long relChainPositionAndMore;
+    
+    // [xxxx,xxxx][xxxx,xxxx][xxxx,xxxx][xxxx,    ][    ,    ][    ,    ][    ,    ][    ,    ]: low bits of first prop (0xFFFFFFF000000000)
+    // [    ,    ][    ,    ][    ,    ][    ,xxxx][xxxx,xxxx][xxxx,xxxx][xxxx,xxxx][xxxx,xxxx]: id (0xFFFFFFFFF)
+    private long idAndMore;
 
-    NodeImpl( long id )
+    NodeImpl( long id, long firstRel, long firstProp )
     {
-        this( id, false );
+        this( id, firstRel, firstProp, false );
     }
 
     // newNode will only be true for NodeManager.createNode
-    NodeImpl( long id, boolean newNode )
+    NodeImpl( long id, long firstRel, long firstProp, boolean newNode )
     {
         super( newNode );
-        this.id = id;
-        if ( newNode )
-        {
-            relationships = NO_RELATIONSHIPS;
-        }
+        idAndMore = id;
+        relChainPositionAndMore = firstRel & 0xFFFFFFFFFL;
+        setFirstProp( firstProp );
+        if ( newNode ) relationships = NO_RELATIONSHIPS;
     }
 
     @Override
     public long getId()
     {
-        return id;
+        return idAndMore & 0xFFFFFFFFFL;
+    }
+    
+    @Override
+    protected long getFirstProp()
+    {
+        long prop = ((idAndMore & 0xFFFFFFF000000000L) >>> 36) | ((relChainPositionAndMore & 0xFF000000000L) >>> 8);
+        return prop == TWO_POWER_36 ? Record.NO_NEXT_PROPERTY.intValue() : prop;
+    }
+    
+    private void setFirstProp( long prop )
+    {
+        idAndMore = ((prop & 0xFFFFFFF) << 36) | (idAndMore & 0xFFFFFFFFFL);
+        relChainPositionAndMore = ((prop & 0xFF0000000L) << 8) | (relChainPositionAndMore & 0xFFFFFFFFFL); 
     }
 
     @Override
     public int hashCode()
     {
+        long id = getId();
         return (int) (( id >>> 32 ) ^ id );
     }
 
     @Override
     public boolean equals( Object obj )
     {
-        return this == obj || ( obj instanceof NodeImpl && ( (NodeImpl) obj ).id == id );
+        return this == obj || ( obj instanceof NodeImpl && ( (NodeImpl) obj ).getId() == getId() );
     }
 
     @Override
@@ -113,7 +136,7 @@ class NodeImpl extends ArrayBasedPrimitive
     protected ArrayMap<Integer, PropertyData> loadProperties(
             NodeManager nodeManager, boolean light )
     {
-        return nodeManager.loadProperties( this, light );
+        return nodeManager.loadProperties( this, getFirstProp(), light );
     }
 
     List<RelIdIterator> getAllRelationships( NodeManager nodeManager, DirectionWrapper direction )
@@ -255,19 +278,19 @@ class NodeImpl extends ArrayBasedPrimitive
             this, direction, nodeManager, types, !hasMoreRelationshipsToLoad() );
     }
 
-    public void delete( NodeManager nodeManager )
+    public void delete( NodeManager nodeManager, Node proxy )
     {
-        nodeManager.acquireLock( this, LockType.WRITE );
+        nodeManager.acquireLock( proxy, LockType.WRITE );
         boolean success = false;
         try
         {
             ArrayMap<Integer,PropertyData> skipMap =
-                nodeManager.getCowPropertyRemoveMap( this, true );
+                nodeManager.getOrCreateCowPropertyRemoveMap( this );
             ArrayMap<Integer,PropertyData> removedProps =
                 nodeManager.deleteNode( this );
             if ( removedProps.size() > 0 )
             {
-                for ( int index : removedProps.keySet() )
+                for ( Integer index : removedProps.keySet() )
                 {
                     skipMap.put( index, removedProps.get( index ) );
                 }
@@ -276,7 +299,7 @@ class NodeImpl extends ArrayBasedPrimitive
         }
         finally
         {
-            nodeManager.releaseLock( this, LockType.WRITE );
+            nodeManager.releaseLock( proxy, LockType.WRITE );
             if ( !success )
             {
                 nodeManager.setRollbackOnly();
@@ -301,8 +324,8 @@ class NodeImpl extends ArrayBasedPrimitive
     void addRelationship( NodeManager nodeManager, RelationshipType type, long relId,
             DirectionWrapper dir )
     {
-        RelIdArray relationshipSet = nodeManager.getCowRelationshipAddMap(
-            this, type.name(), true );
+        RelIdArray relationshipSet = nodeManager.getOrCreateCowRelationshipAddMap(
+            this, type.name() );
         relationshipSet.add( relId, dir );
     }
 
@@ -311,8 +334,8 @@ class NodeImpl extends ArrayBasedPrimitive
     // a relationship delete is invoked.
     void removeRelationship( NodeManager nodeManager, RelationshipType type, long relId )
     {
-        Collection<Long> relationshipSet = nodeManager.getCowRelationshipRemoveMap(
-            this, type.name(), true );
+        Collection<Long> relationshipSet = nodeManager.getOrCreateCowRelationshipRemoveMap(
+            this, type.name() );
         relationshipSet.add( relId );
     }
 
@@ -330,8 +353,7 @@ class NodeImpl extends ArrayBasedPrimitive
         synchronized ( this )
         {
             if ( relationships == null )
-            {
-                this.relChainPosition = nodeManager.getRelationshipChainPosition( this );
+            {   // We got the relChainPosition in the constructor
                 ArrayMap<String,RelIdArray> tmpRelMap = new ArrayMap<String,RelIdArray>();
                 rels = getMoreRelationships( nodeManager, tmpRelMap );
                 this.relationships = toRelIdArray( tmpRelMap );
@@ -401,7 +423,7 @@ class NodeImpl extends ArrayBasedPrimitive
 
     boolean hasMoreRelationshipsToLoad()
     {
-        return relChainPosition != Record.NO_NEXT_RELATIONSHIP.intValue();
+        return getRelChainPosition() != Record.NO_NEXT_RELATIONSHIP.intValue();
     }
 
     boolean getMoreRelationships( NodeManager nodeManager )
@@ -489,10 +511,10 @@ class NodeImpl extends ArrayBasedPrimitive
         relationships = newArray;
     }
 
-    public Relationship createRelationshipTo( NodeManager nodeManager, Node otherNode,
-        RelationshipType type )
+    public Relationship createRelationshipTo( NodeManager nodeManager, Node thisProxy,
+        Node otherNode, RelationshipType type )
     {
-        return nodeManager.createRelationship( this, otherNode, type );
+        return nodeManager.createRelationship( thisProxy, this, otherNode, type );
     }
 
     /* Tentative expansion API
@@ -528,7 +550,7 @@ class NodeImpl extends ArrayBasedPrimitive
         StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
         RelationshipType relationshipType, Direction direction )
     {
-        return OldTraverserWrapper.traverse( new NodeProxy( id, nodeManager ),
+        return OldTraverserWrapper.traverse( new NodeProxy( getId(), nodeManager ),
                 traversalOrder, stopEvaluator,
                 returnableEvaluator, relationshipType, direction );
     }
@@ -538,7 +560,7 @@ class NodeImpl extends ArrayBasedPrimitive
         RelationshipType firstRelationshipType, Direction firstDirection,
         RelationshipType secondRelationshipType, Direction secondDirection )
     {
-        return OldTraverserWrapper.traverse( new NodeProxy( id, nodeManager ),
+        return OldTraverserWrapper.traverse( new NodeProxy( getId(), nodeManager ),
                 traversalOrder, stopEvaluator,
                 returnableEvaluator, firstRelationshipType, firstDirection,
                 secondRelationshipType, secondDirection );
@@ -548,7 +570,7 @@ class NodeImpl extends ArrayBasedPrimitive
         StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
         Object... relationshipTypesAndDirections )
     {
-        return OldTraverserWrapper.traverse( new NodeProxy( id, nodeManager ),
+        return OldTraverserWrapper.traverse( new NodeProxy( getId(), nodeManager ),
                 traversalOrder, stopEvaluator,
                 returnableEvaluator, relationshipTypesAndDirections );
     }
@@ -578,14 +600,23 @@ class NodeImpl extends ArrayBasedPrimitive
     {
         return getRelationships( nodeManager, type, dir ).iterator().hasNext();
     }
+    
+    @Override
+    protected void commitPropertyMaps( ArrayMap<Integer, PropertyData> cowPropertyAddMap,
+            ArrayMap<Integer, PropertyData> cowPropertyRemoveMap, long firstProp )
+    {
+        super.commitPropertyMaps( cowPropertyAddMap, cowPropertyRemoveMap, firstProp );
+        setFirstProp( firstProp );
+    }
 
     protected void commitRelationshipMaps(
         ArrayMap<String,RelIdArray> cowRelationshipAddMap,
-        ArrayMap<String,Collection<Long>> cowRelationshipRemoveMap )
+        ArrayMap<String,Collection<Long>> cowRelationshipRemoveMap, long firstRel )
     {
         if ( relationships == null )
         {
             // we will load full in some other tx
+            setRelChainPosition( firstRel );
             return;
         }
 
@@ -627,13 +658,14 @@ class NodeImpl extends ArrayBasedPrimitive
 
     long getRelChainPosition()
     {
-        return relChainPosition;
+        long position = relChainPositionAndMore & 0xFFFFFFFFFL;
+        return position == TWO_POWER_36 ? Record.NO_NEXT_RELATIONSHIP.intValue() : position;
     }
 
     void setRelChainPosition( long position )
     {
-        this.relChainPosition = position;
-        if ( !hasMoreRelationshipsToLoad() )
+        relChainPositionAndMore = (relChainPositionAndMore & 0xFFFFFFF000000000L) | (position & 0xFFFFFFFFFL);
+        if ( !hasMoreRelationshipsToLoad() && relationships != null )
         {
             // Shrink arrays
             for ( int i = 0; i < relationships.length; i++ )
@@ -651,5 +683,17 @@ class NodeImpl extends ArrayBasedPrimitive
     RelIdArray[] getRelationshipIds()
     {
         return relationships;
+    }
+    
+    @Override
+    public CowEntityElement getEntityElement( PrimitiveElement element, boolean create )
+    {
+        return element.nodeElement( getId(), create );
+    }
+
+    @Override
+    PropertyContainer asProxy( NodeManager nm )
+    {
+        return new NodeProxy( getId(), nm );
     }
 }

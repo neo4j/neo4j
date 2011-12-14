@@ -24,8 +24,14 @@ import javax.transaction.Status;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
+import org.neo4j.graphdb.Lock;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.impl.core.LockReleaser;
+import org.neo4j.kernel.impl.core.LockReleaser.LockElement;
+import org.neo4j.kernel.impl.transaction.LockManager;
+import org.neo4j.kernel.impl.transaction.LockType;
 
 public class TopLevelTransaction implements Transaction
 {
@@ -54,10 +60,14 @@ public class TopLevelTransaction implements Transaction
     
     private final TransactionManager transactionManager;
     private final TransactionOutcome transactionOutcome = new TransactionOutcome();
+    private final LockManager lockManager;
+    private final LockReleaser lockReleaser;
 
-    public TopLevelTransaction( TransactionManager transactionManager )
+    public TopLevelTransaction( TransactionManager transactionManager, LockManager lockManager, LockReleaser lockReleaser )
     {
         this.transactionManager = transactionManager;
+        this.lockManager = lockManager;
+        this.lockReleaser = lockReleaser;
     }
 
     public void failure()
@@ -133,5 +143,21 @@ public class TopLevelTransaction implements Transaction
                     "Unable to rollback transaction", e );
             }
         }
+    }
+    
+    @Override
+    public Lock acquireWriteLock( PropertyContainer entity )
+    {
+        lockManager.getWriteLock( entity );
+        LockElement lockElement = lockReleaser.addLockToTransaction( entity, LockType.WRITE );
+        return new LockImpl( lockManager, lockElement );
+    }
+
+    @Override
+    public Lock acquireReadLock( PropertyContainer entity )
+    {
+        lockManager.getReadLock( entity );
+        LockElement lockElement = lockReleaser.addLockToTransaction( entity, LockType.READ );
+        return new LockImpl( lockManager, lockElement );
     }
 }

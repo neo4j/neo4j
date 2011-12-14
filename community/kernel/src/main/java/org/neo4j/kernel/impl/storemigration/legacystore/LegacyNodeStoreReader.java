@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore;
 
+import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.longFromIntAndMod;
+
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -81,19 +83,16 @@ public class LegacyNodeStoreReader
                             long inUseByte = buffer.get();
 
                             boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
-                            nodeRecord = new NodeRecord( id );
-                            nodeRecord.setInUse( inUse );
                             if ( inUse )
                             {
                                 long nextRel = LegacyStore.getUnsignedInt( buffer );
-                                long nextProp = LegacyStore.getUnsignedInt( buffer );
-
                                 long relModifier = (inUseByte & 0xEL) << 31;
+                                long nextProp = LegacyStore.getUnsignedInt( buffer );
                                 long propModifier = (inUseByte & 0xF0L) << 28;
-
-                                nodeRecord.setNextRel( LegacyStore.longFromIntAndMod( nextRel, relModifier ) );
-                                nodeRecord.setNextProp( LegacyStore.longFromIntAndMod( nextProp, propModifier ) );
+                                nodeRecord = new NodeRecord( id, longFromIntAndMod( nextRel, relModifier ), longFromIntAndMod( nextProp, propModifier ) );
                             }
+                            else nodeRecord = new NodeRecord( id, Record.NO_NEXT_RELATIONSHIP.intValue(), Record.NO_NEXT_PROPERTY.intValue() );
+                            nodeRecord.setInUse( inUse );
                             id++;
                         }
                         return nodeRecord;

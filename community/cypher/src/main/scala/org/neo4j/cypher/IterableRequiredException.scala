@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher
 
-import commands.Value
+import commands.Expression
 
 class IterableRequiredException(message:String, cause:Throwable) extends CypherException(message, cause) {
   def this(message:String) = this(message, null)
-  def this(value:Value) = this("Expected " + value.identifier.name + " to be an iterable, but it is not.", null)
+  def this(expression:Expression) = this("Expected " + expression.identifier.name + " to be an iterable, but it is not.", null)
 }

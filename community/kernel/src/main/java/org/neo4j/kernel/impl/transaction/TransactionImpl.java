@@ -41,6 +41,7 @@ import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 
 class TransactionImpl implements Transaction
 {
@@ -65,12 +66,14 @@ class TransactionImpl implements Transaction
     private final int eventIdentifier;
 
     private final TxManager txManager;
+    private final ForceMode forceMode;
 
-    TransactionImpl( TxManager txManager )
+    TransactionImpl( TxManager txManager, ForceMode forceMode )
     {
         this.txManager = txManager;
         globalId = XidImpl.getNewGlobalId();
         eventIdentifier = txManager.getNextEventIdentifier();
+        this.forceMode = forceMode;
     }
 
     /**
@@ -518,7 +521,7 @@ class TransactionImpl implements Transaction
         {
             try
             {
-                txManager.getTxLog().markAsCommitting( getGlobalId() );
+                txManager.getTxLog().markAsCommitting( getGlobalId(), forceMode );
             }
             catch ( IOException e )
             {
@@ -641,5 +644,10 @@ class TransactionImpl implements Transaction
                 + "] already suspended" );
         }
         active = false;
+    }
+    
+    public ForceMode getForceMode()
+    {
+        return forceMode;
     }
 }

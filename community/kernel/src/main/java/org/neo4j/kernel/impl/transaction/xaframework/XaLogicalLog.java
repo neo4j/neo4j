@@ -19,19 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.cache.LruCache;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
-import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.BufferedFileChannel;
-import org.neo4j.kernel.impl.util.FileUtils;
-import org.neo4j.kernel.impl.util.StringLogger;
-
-import javax.transaction.xa.XAException;
-import javax.transaction.xa.Xid;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -44,6 +31,20 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+
+import javax.transaction.xa.XAException;
+import javax.transaction.xa.Xid;
+
+import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.impl.cache.LruCache;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
+import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.BufferedFileChannel;
+import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * <CODE>XaLogicalLog</CODE> is a transaction and logical log combined. In
@@ -93,7 +94,7 @@ public class XaLogicalLog
     private char currentLog = CLEAN;
     private boolean keepLogs = false;
     private boolean autoRotate = true;
-    private long rotateAtSize = 25*1024*1024; // 25MB
+    private long rotateAtSize = 25 * 1024 * 1024; // 25MB
 
     private final LogBufferFactory logBufferFactory;
     private boolean doingRecovery;
@@ -213,6 +214,7 @@ public class XaLogicalLog
         if ( fileSystem.fileExists( fileName ) )
         {
             renameLogFileToRightVersion( fileName, fileSystem.getFileSize( fileName ) );
+            xaTf.getAndSetNewVersion();
         }
     }
 
@@ -275,19 +277,36 @@ public class XaLogicalLog
     public synchronized int start( Xid xid, int masterId, int myId ) throws XAException
     {
         int xidIdent = getNextIdentifier();
+        long timeWritten = System.currentTimeMillis();
+        LogEntry.Start start = new LogEntry.Start( xid, xidIdent, masterId,
+                myId, -1, timeWritten );
+        /*
+         * We don't write the entry yet. We will store it and hope
+         * that when the commands/commit/prepare/done entry are going to be
+         * written, we will be asked to write the corresponding entry before.
+         */
+        xidIdentMap.put( xidIdent, start );
+        return xidIdent;
+    }
+
+    public synchronized void writeStartEntry( int identifier )
+            throws XAException
+    {
         try
         {
             long position = writeBuffer.getFileChannelPosition();
-            long timeWritten = System.currentTimeMillis();
-            LogEntry.Start start = new LogEntry.Start( xid, xidIdent, masterId, myId, position, timeWritten );
-            LogIoUtils.writeStart( writeBuffer, xidIdent, xid, masterId, myId, timeWritten );
-            xidIdentMap.put( xidIdent, start );
+            LogEntry.Start start = xidIdentMap.get( identifier );
+            start.setStartPosition( position );
+            LogIoUtils.writeStart( writeBuffer, identifier, start.getXid(),
+                    start.getMasterId(), start.getLocalId(),
+                    start.getTimeWritten() );
         }
         catch ( IOException e )
         {
-            throw Exceptions.withCause( new XAException( "Logical log couldn't start transaction: " + e ), e );
+            throw Exceptions.withCause( new XAException(
+                            "Logical log couldn't write transaction start entry: "
+                                    + e ), e );
         }
-        return xidIdent;
     }
 
     // [TX_PREPARE][identifier]
@@ -314,7 +333,7 @@ public class XaLogicalLog
     }
 
     // [TX_1P_COMMIT][identifier]
-    public synchronized void commitOnePhase( int identifier, long txId )
+    public synchronized void commitOnePhase( int identifier, long txId, ForceMode forceMode )
         throws XAException
     {
         LogEntry.Start startEntry = xidIdentMap.get( identifier );
@@ -323,7 +342,7 @@ public class XaLogicalLog
         try
         {
             LogIoUtils.writeCommit( false, writeBuffer, identifier, txId, System.currentTimeMillis() );
-            writeBuffer.force();
+            forceMode.force( writeBuffer );
             cacheTxStartPosition( txId, startEntry.getMasterId(), startEntry );
         }
         catch ( IOException e )
@@ -391,7 +410,7 @@ public class XaLogicalLog
     }
 
     // [TX_2P_COMMIT][identifier]
-    public synchronized void commitTwoPhase( int identifier, long txId )
+    public synchronized void commitTwoPhase( int identifier, long txId, ForceMode forceMode )
         throws XAException
     {
         LogEntry.Start startEntry = xidIdentMap.get( identifier );
@@ -400,7 +419,7 @@ public class XaLogicalLog
         try
         {
             LogIoUtils.writeCommit( true, writeBuffer, identifier, txId, System.currentTimeMillis() );
-            writeBuffer.force();
+            forceMode.force( writeBuffer );
             cacheTxStartPosition( txId, startEntry.getMasterId(), startEntry );
         }
         catch ( IOException e )
@@ -1420,7 +1439,7 @@ public class XaLogicalLog
     }
 
     public synchronized void applyTransactionWithoutTxId( ReadableByteChannel byteChannel,
-            long nextTxId, int masterId ) throws IOException
+            long nextTxId, int masterId, ForceMode forceMode ) throws IOException
     {
         if ( nextTxId != (xaTf.getLastCommittedTx() + 1) )
         {
@@ -1453,7 +1472,7 @@ public class XaLogicalLog
                 xidIdent, nextTxId, System.currentTimeMillis() );
         LogIoUtils.writeLogEntry( commit, writeBuffer );
         // need to manually force since xaRm.commit will not do it (transaction marked as recovered)
-        writeBuffer.force();
+        forceMode.force( writeBuffer );
         Xid xid = startEntry.getXid();
         try
         {
@@ -1540,6 +1559,35 @@ public class XaLogicalLog
     }
 
     /**
+     * Rotates this logical log. The pending transactions are moved over to a
+     * new log buffer and the internal structures updated to reflect the new
+     * file offsets. The old log is either renamed or thrown away, depending on
+     * the value of the last call to {@link #setKeepLogs(boolean)}. Additional
+     * side effects include a force() of the store and increment of the log
+     * version.
+     *
+     * Outline of how rotation happens:
+     *
+     * <li>The store is flushed - can't have pending changes if there is no log
+     * that contains the commands</li>
+     *
+     * <li>Switch current filename with old and check that new doesn't exist and
+     * the versioned backup isn't there also</li>
+     *
+     * <li>Force the current log buffer</li>
+     *
+     * <li>Create new log file, write header</li>
+     *
+     * <li>Find the position for the first pending transaction. From there start
+     * scanning, transferring the entries of the pending transactions from the
+     * old log to the new, updating the start positions in the in-memory tables</li>
+     *
+     * <li>Keep or delete old log</li>
+     *
+     * <li>Update the log version stored</li>
+     *
+     * <li>Instantiate the new log buffer</li>
+     *
      * @return the last tx in the produced log
      * @throws IOException I/O error.
      */
@@ -1660,14 +1708,23 @@ public class XaLogicalLog
         }
     }
 
+    /**
+     * Gets the file position of the first of the start entries searching
+     * from {@code endPosition} and to smallest positions.
+     *
+     * @param endPosition The largest possible position for the Start entries
+     * @return The smallest possible position for the Start entries, at most
+     *         {@code endPosition}
+     */
     private long getFirstStartEntry( long endPosition )
     {
         long firstEntryPosition = endPosition;
         for ( LogEntry.Start entry : xidIdentMap.values() )
         {
-            if ( entry.getStartPosition() < firstEntryPosition )
+            if ( entry.getStartPosition() > 0
+                 && entry.getStartPosition() < firstEntryPosition )
             {
-                assert entry.getStartPosition() > 0;
+                // assert entry.getStartPosition() > 0;
                 firstEntryPosition = entry.getStartPosition();
             }
         }

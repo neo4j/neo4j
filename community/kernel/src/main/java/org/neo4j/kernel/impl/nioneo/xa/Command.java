@@ -374,8 +374,7 @@ public abstract class Command extends XaCommand
             {
                 throw new IOException( "Illegal in use flag: " + inUseFlag );
             }
-            NodeRecord record = new NodeRecord( id );
-            record.setInUse( inUse );
+            NodeRecord record;
             if ( inUse )
             {
                 buffer.clear();
@@ -385,9 +384,10 @@ public abstract class Command extends XaCommand
                     return null;
                 }
                 buffer.flip();
-                record.setNextRel( buffer.getLong() );
-                record.setNextProp( buffer.getLong() );
+                record = new NodeRecord( id, buffer.getLong(), buffer.getLong() );
             }
+            else record = new NodeRecord( id, Record.NO_NEXT_RELATIONSHIP.intValue(), Record.NO_NEXT_PROPERTY.intValue() );
+            record.setInUse( inUse );
             return new NodeCommand( neoStore == null ? null : neoStore.getNodeStore(), record );
         }
 

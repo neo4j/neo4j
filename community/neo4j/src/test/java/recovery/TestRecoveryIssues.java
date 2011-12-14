@@ -37,6 +37,7 @@ import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.impl.transaction.TxLog;
+import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResourceHelpImpl;
 import org.neo4j.test.AbstractSubProcessTestBase;
 import org.neo4j.test.subprocess.BreakPoint;
@@ -244,7 +245,7 @@ public class TestRecoveryIssues extends AbstractSubProcessTestBase
         log.txStart( globalId );
         log.addBranch( globalId, UTF8.encode( "414141" ) );
         log.addBranch( globalId, LuceneDataSource.DEFAULT_BRANCH_ID );
-        log.markAsCommitting( globalId );
+        log.markAsCommitting( globalId, ForceMode.unforced );
         log.force();
         log.close();
     }

@@ -47,7 +47,7 @@ class RelationshipProxy implements Relationship
 
     public void delete()
     {
-        nm.getRelForProxy( relId ).delete( nm );
+        nm.getRelForProxy( relId ).delete( nm, this );
     }
 
     public Node[] getNodes()
@@ -102,12 +102,12 @@ class RelationshipProxy implements Relationship
 
     public void setProperty( String key, Object property )
     {
-        nm.getRelForProxy( relId ).setProperty( nm, key, property );
+        nm.getRelForProxy( relId ).setProperty( nm, this, key, property );
     }
 
     public Object removeProperty( String key )
     {
-        return nm.getRelForProxy( relId ).removeProperty( nm, key );
+        return nm.getRelForProxy( relId ).removeProperty( nm, this, key );
     }
 
     public boolean isType( RelationshipType type )

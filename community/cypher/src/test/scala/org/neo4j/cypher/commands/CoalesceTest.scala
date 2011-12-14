@@ -25,17 +25,17 @@ import org.junit.Test
 
 class CoalesceTest extends Assertions {
   @Test def givenANonNullValueThenReturnsTheValue() {
-    val func = new CoalesceValue(Literal("a"))
+    val func = new CoalesceFunction(Literal("a"))
     assert( func(Map()) === "a" )
   }
 
   @Test def givenANullValueThenReturnsNull() {
-    val func = new CoalesceValue(Literal(null))
+    val func = new CoalesceFunction(Literal(null))
     assert( func(Map()) === null )
   }
 
   @Test def givenOneNullAndOneValueThenReturnsTheValue() {
-    val func = new CoalesceValue(Literal(null), Literal("Alistair"))
+    val func = new CoalesceFunction(Literal(null), Literal("Alistair"))
     assert( func(Map()) === "Alistair" )
   }
 

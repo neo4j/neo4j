@@ -24,7 +24,6 @@ import java.util.Map;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
@@ -83,11 +82,11 @@ public class GraphDatabaseTestAccess extends AbstractGraphDatabase
     {
         impl.shutdown();
     }
-
+    
     @Override
-    public Transaction beginTx()
+    public TransactionBuilder tx()
     {
-        return impl.beginTx();
+        return impl.tx();
     }
 
     @Override

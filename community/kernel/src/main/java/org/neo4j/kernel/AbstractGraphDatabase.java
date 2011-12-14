@@ -26,6 +26,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.tooling.GlobalGraphOperations;
@@ -69,7 +70,22 @@ public abstract class AbstractGraphDatabase implements GraphDatabaseService
     {
         return msgLog;
     }
-
+    
+    @Override
+    public Transaction beginTx()
+    {
+        return tx().begin();
+    }
+    
+    /**
+     * Returns a new builder where some aspects of the behavior can be configured.
+     * The transaction will ultimately begin when calling {@link TransactionBuilder#begin()}.
+     * 
+     * @return a builder for configuring transaction behavior and ultimately
+     * begin a transaction.
+     */
+    public abstract TransactionBuilder tx();
+    
     /**
      * Get a single management bean. Delegates to {@link #getSingleManagementBean(Class)}.
      *

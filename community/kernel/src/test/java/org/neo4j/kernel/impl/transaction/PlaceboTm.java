@@ -26,9 +26,8 @@ import javax.transaction.NotSupportedException;
 import javax.transaction.RollbackException;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
 
-class PlaceboTm implements TransactionManager
+public class PlaceboTm extends AbstractTransactionManager
 {
     public void begin() throws NotSupportedException, SystemException
     {
@@ -86,5 +85,19 @@ class PlaceboTm implements TransactionManager
     {
         // TODO Auto-generated method stub
         return null;
+    }
+
+    @Override
+    public void init( XaDataSourceManager xaDsManager )
+    {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void stop()
+    {
+        // TODO Auto-generated method stub
+        
     }
 }
