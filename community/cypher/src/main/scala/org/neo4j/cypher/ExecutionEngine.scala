@@ -20,12 +20,12 @@
 package org.neo4j.cypher
 
 import commands._
-import internal.ExecutionPlanImpl
+import internal.{LRUCache, ExecutionPlanImpl}
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
 import java.lang.Error
 import java.util.{Map => JavaMap}
-
+import scala.deprecated
 
 class ExecutionEngine(graph: GraphDatabaseService) {
   checkScalaVersion()
@@ -35,34 +35,28 @@ class ExecutionEngine(graph: GraphDatabaseService) {
   val parser = new CypherParser()
 
   @throws(classOf[SyntaxException])
-  def execute(query: String): ExecutionResult = execute(parser.parse(query))
+  def execute(query: String): ExecutionResult = execute(query, Map[String, Any]())
 
   @throws(classOf[SyntaxException])
-  def execute(query: String, params: Map[String, Any]): ExecutionResult = {
-    execute(parser.parse(query), params)
-  }
+  def execute(query: String, params: Map[String, Any]): ExecutionResult = prepare(query).execute(params)
 
   @throws(classOf[SyntaxException])
-  def execute(query: String, params: JavaMap[String, Any]): ExecutionResult = {
-    execute(parser.parse(query), params.asScala.toMap)
-  }
+  def execute(query: String, params: JavaMap[String, Any]): ExecutionResult = execute(query, params.asScala.toMap)
 
   @throws(classOf[SyntaxException])
+  def prepare(query: String): ExecutionPlan = executionPlanCache.getOrElseUpdate(query, new ExecutionPlanImpl(parser.parse(query), graph))
+
+  @throws(classOf[SyntaxException])
+  @deprecated(message = "You should not parse queries manually any more. Use the execute(String) instead")
   def execute(query: Query): ExecutionResult = execute(query, Map[String, Any]())
 
-  // This is here to support Java people
   @throws(classOf[SyntaxException])
+  @deprecated(message = "You should not parse queries manually any more. Use the execute(String) instead")
   def execute(query: Query, map: JavaMap[String, Any]): ExecutionResult = execute(query, map.asScala.toMap)
 
   @throws(classOf[SyntaxException])
-  def prepare(query: String): ExecutionPlan = prepare(parser.parse(query))
-
-  @throws(classOf[SyntaxException])
-  def prepare(query: Query): ExecutionPlan = new ExecutionPlanImpl(query, graph)
-
-  @throws(classOf[SyntaxException])
-  def execute(query: Query, params: Map[String, Any]): ExecutionResult = prepare(query).execute(params)
-
+  @deprecated(message = "You should not parse queries manually any more. Use the execute(String) instead")
+  def execute(query: Query, params: Map[String, Any]): ExecutionResult = new ExecutionPlanImpl(query, graph).execute(params)
 
   def checkScalaVersion() {
     if (util.Properties.versionString.matches("^version 2.9.0")) {
@@ -71,10 +65,7 @@ class ExecutionEngine(graph: GraphDatabaseService) {
     }
   }
 
-  private val executionPlanCache = Map[String, ExecutionPlan]()
-//  private def getOrCreatePlan(query:Query):ExecutionPlan = {
-//    executionPlanCache.getOrElse(query.queryString)
-//  }
-
+  private val cacheSize: Int = 100
+  private val executionPlanCache = new LRUCache[String, ExecutionPlan](cacheSize) {}
 }
 
