@@ -87,25 +87,6 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public class HAGraphDb extends AbstractGraphDatabase
         implements GraphDatabaseService, ResponseReceiver
 {
-    public static final String CONFIG_KEY_OLD_SERVER_ID = HaConfig.CONFIG_KEY_OLD_SERVER_ID;
-    public static final String CONFIG_KEY_SERVER_ID = HaConfig.CONFIG_KEY_SERVER_ID;
-
-    public static final String CONFIG_KEY_OLD_COORDINATORS = HaConfig.CONFIG_KEY_OLD_COORDINATORS;
-    public static final String CONFIG_KEY_COORDINATORS = HaConfig.CONFIG_KEY_COORDINATORS;
-
-    public static final String CONFIG_KEY_SERVER = HaConfig.CONFIG_KEY_SERVER;
-    public static final String CONFIG_KEY_CLUSTER_NAME = HaConfig.CONFIG_KEY_CLUSTER_NAME;
-    public static final String CONFIG_KEY_PULL_INTERVAL = HaConfig.CONFIG_KEY_PULL_INTERVAL;
-    public static final String CONFIG_KEY_ALLOW_INIT_CLUSTER = HaConfig.CONFIG_KEY_ALLOW_INIT_CLUSTER;
-    public static final String CONFIG_KEY_MAX_CONCURRENT_CHANNELS_PER_SLAVE = HaConfig.CONFIG_KEY_MAX_CONCURRENT_CHANNELS_PER_SLAVE;
-    public static final String CONFIG_KEY_BRANCHED_DATA_POLICY = HaConfig.CONFIG_KEY_BRANCHED_DATA_POLICY;
-    public static final String CONFIG_KEY_READ_TIMEOUT = HaConfig.CONFIG_KEY_READ_TIMEOUT;
-    public static final String CONFIG_KEY_LOCK_READ_TIMEOUT = HaConfig.CONFIG_KEY_LOCK_READ_TIMEOUT;
-    public static final String CONFIG_KEY_SLAVE_COORDINATOR_UPDATE_MODE = HaConfig.CONFIG_KEY_SLAVE_COORDINATOR_UPDATE_MODE;
-
-    private static final String CONFIG_DEFAULT_HA_CLUSTER_NAME = HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME;
-    private static final int CONFIG_DEFAULT_PORT = HaConfig.CONFIG_DEFAULT_PORT;
-
     private final String storeDir;
     private final Map<String, String> config;
     private final BrokerFactory brokerFactory;
