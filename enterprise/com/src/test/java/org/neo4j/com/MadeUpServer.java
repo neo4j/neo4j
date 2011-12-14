@@ -32,7 +32,8 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
 
     public MadeUpServer( MadeUpCommunicationInterface realMaster, int port, byte internalProtocolVersion, byte applicationProtocolVersion )
     {
-        super( realMaster, port, StringLogger.DEV_NULL, FRAME_LENGTH, applicationProtocolVersion );
+        super( realMaster, port, StringLogger.DEV_NULL, FRAME_LENGTH, applicationProtocolVersion,
+                DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS );
         this.internalProtocolVersion = internalProtocolVersion;
     }
 
