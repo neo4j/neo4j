@@ -149,7 +149,7 @@ public class HAGraphDb extends AbstractGraphDatabase
                 {
                     getMessageLog().logMessage( "TxManager not ok, doing internal restart" );
                     internalShutdown( true );
-                    newMaster( null, new Exception( "Tx manager not ok" ) );
+                    newMaster( new Exception( "Tx manager not ok" ) );
                 }
             }
 
@@ -371,12 +371,12 @@ public class HAGraphDb extends AbstractGraphDatabase
         }
         catch ( ZooKeeperException e )
         {
-            newMaster( null, e );
+            newMaster( e );
             throw e;
         }
         catch ( ComException e )
         {
-            newMaster( null, e );
+            newMaster( e );
             throw e;
         }
     }
@@ -785,7 +785,7 @@ public class HAGraphDb extends AbstractGraphDatabase
         }
         catch ( IOException e )
         {
-            newMaster( null, e );
+            newMaster( e );
             throw new RuntimeException( e );
         }
     }
