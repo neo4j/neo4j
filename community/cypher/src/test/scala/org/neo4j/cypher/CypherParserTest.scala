@@ -1050,6 +1050,15 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns (ExpressionReturnItem(Entity("a"))))
   }
 
+  @Test def shouldHandleLFAsWhiteSpace() {
+    testQuery(
+      "start\na=node(0)\nwhere\na-->()\nreturn\na",
+      Query.
+        start(NodeById("a", 0)).
+        where(HasRelationship(Entity("a"), Direction.OUTGOING, None))
+        returns (ExpressionReturnItem(Entity("a"))))
+  }
+
   def testQuery(query: String, expectedQuery: Query) {
     val parser = new CypherParser()
 
