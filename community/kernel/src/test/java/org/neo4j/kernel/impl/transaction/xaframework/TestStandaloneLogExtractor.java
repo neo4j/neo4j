@@ -34,24 +34,24 @@ public class TestStandaloneLogExtractor
     @Test
     public void testRecreateCleanDbFromStandaloneExtractor() throws Exception
     {
-        run( true );
+        run( true, 1 );
     }
     
     @Test
     public void testRecreateUncleanDbFromStandaloneExtractor() throws Exception
     {
-        run( false );
+        run( false, 2 );
     }
     
-    private void run( boolean cleanShutdown ) throws Exception
+    private void run( boolean cleanShutdown, int nr ) throws Exception
     {
-        String sourceDir = forTest( getClass() ).directory( "source", true ).getAbsolutePath();
+        String sourceDir = forTest( getClass() ).directory( "source" + nr, true ).getAbsolutePath();
         Runtime.getRuntime().exec( new String[] {
                 "java", "-cp", System.getProperty( "java.class.path" ), CreateSomeTransactions.class.getName(),
                 sourceDir, "" + cleanShutdown
         } ).waitFor();
         
-        AbstractGraphDatabase newDb = new EmbeddedGraphDatabase( TargetDirectory.forTest( getClass() ).directory( "target", true ).getAbsolutePath() );
+        AbstractGraphDatabase newDb = new EmbeddedGraphDatabase( TargetDirectory.forTest( getClass() ).directory( "target" + nr, true ).getAbsolutePath() );
         XaDataSource ds = newDb.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
         LogExtractor extractor = LogExtractor.from( sourceDir );
         long expectedTxId = 2;
