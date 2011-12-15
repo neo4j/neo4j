@@ -131,6 +131,8 @@ class GraphTest(unit_tests.GraphDatabaseTest):
         db = self.graphdb
         with db.transaction:
             node_or_rel = db.node()
+        
+        
         # START SNIPPET: setProperties
         with db.transaction:
             node_or_rel['name'] = 'Thomas Anderson'

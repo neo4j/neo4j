@@ -49,12 +49,14 @@ BOTH = ANY = Direction.ANY = Direction.BOTH
 INCOMING = Direction.INCOMING
 OUTGOING = Direction.OUTGOING
 
+
 class DirectionalType(object):
     def __init__(self, reltype, direction):
         self.type = reltype
         self.dir = direction
     def __repr__(self):
         return "%r.%s" % (self.dir, self.type.name())
+
 
 class NodeProxy(extends(NodeProxy)):
     def __getattr__(self, attr):
@@ -67,6 +69,7 @@ class NodeProxy(extends(NodeProxy)):
     # Backwards compat
     rels = relationships
 
+
 class RelationshipProxy(extends(RelationshipProxy)):
     
     @property
@@ -74,6 +77,7 @@ class RelationshipProxy(extends(RelationshipProxy)):
     
     @property
     def end(self):   return self.getEndNode()
+
 
 class PropertyContainer(extends(PropertyContainer)):
     def __getitem__(self, key):
@@ -109,7 +113,7 @@ class PropertyContainer(extends(PropertyContainer)):
             rethrow_current_exception_as(Exception)
   
     def items(self):
-        for k in self.getPropertyKeys():
+        for k in self.keys():
             yield k, self[k]
 
     def keys(self):
@@ -123,6 +127,7 @@ class PropertyContainer(extends(PropertyContainer)):
     def has_key(self, key):
         return self.hasProperty(key)
             
+
 class Transaction(extends(Transaction)):
     def __enter__(self):
         return self
@@ -192,6 +197,7 @@ class NodeRelationships(object):
 
     def __call__(self, *nodes, **properties):
         return self.create(self.__type, *nodes, **properties)
+
 
 class IterableWrapper(extends(IterableWrapper)):
         
