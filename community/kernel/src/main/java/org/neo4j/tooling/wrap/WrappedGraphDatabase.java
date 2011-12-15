@@ -110,54 +110,50 @@ public abstract class WrappedGraphDatabase extends AbstractGraphDatabase
         };
     }
 
-    @SuppressWarnings( { "unchecked", "rawtypes" } )
-    protected WrappedIndex.WrappedNodeIndex<? extends WrappedGraphDatabase> nodeIndex( final Index<Node> index, String indexName )
+    protected WrappedIndex.WrappedNodeIndex nodeIndex( final Index<Node> index, String indexName )
     {
         return new WrappedIndex.WrappedNodeIndex( this )
         {
             @Override
-            protected ReadableIndex actual()
+            protected ReadableIndex<Node> actual()
             {
                 return index;
             }
         };
     }
 
-    @SuppressWarnings( { "unchecked", "rawtypes" } )
-    protected WrappedIndex.WrappedRelationshipIndex<? extends WrappedGraphDatabase> relationshipIndex(
+    protected WrappedIndex.WrappedRelationshipIndex relationshipIndex(
             final RelationshipIndex index, String indexName )
     {
         return new WrappedIndex.WrappedRelationshipIndex( this )
         {
             @Override
-            protected ReadableIndex actual()
+            protected ReadableRelationshipIndex actual()
             {
                 return index;
             }
         };
     }
 
-    @SuppressWarnings( { "unchecked", "rawtypes" } )
-    protected WrappedIndex.WrappedNodeIndex<? extends WrappedGraphDatabase> automaticNodeIndex( final ReadableIndex<Node> index )
+    protected WrappedIndex.WrappedNodeIndex automaticNodeIndex( final ReadableIndex<Node> index )
     {
         return new WrappedIndex.WrappedNodeIndex( this )
         {
             @Override
-            protected ReadableIndex actual()
+            protected ReadableIndex<Node> actual()
             {
                 return index;
             }
         };
     }
 
-    @SuppressWarnings( { "unchecked", "rawtypes" } )
-    protected WrappedIndex.WrappedRelationshipIndex<? extends WrappedGraphDatabase> automaticRelationshipIndex(
+    protected WrappedIndex.WrappedRelationshipIndex automaticRelationshipIndex(
             final ReadableRelationshipIndex index )
     {
         return new WrappedIndex.WrappedRelationshipIndex( this )
         {
             @Override
-            protected ReadableIndex actual()
+            protected ReadableRelationshipIndex actual()
             {
                 return index;
             }

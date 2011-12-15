@@ -170,18 +170,17 @@ public abstract class WrappedIndex<T extends PropertyContainer, I extends Readab
         return actual().isWriteable();
     }
 
-    public static abstract class WrappedNodeIndex<G extends WrappedGraphDatabase> extends
+    public static abstract class WrappedNodeIndex extends
             WrappedIndex<Node, ReadableIndex<Node>>
     {
-        protected WrappedNodeIndex( G graphdb )
+        protected WrappedNodeIndex( WrappedGraphDatabase graphdb )
         {
             super( graphdb );
         }
 
-        @SuppressWarnings( "unchecked" )
-        protected G graphdb()
+        protected WrappedGraphDatabase graphdb()
         {
-            return (G) graphdb;
+            return graphdb;
         }
 
         @Override
@@ -191,18 +190,17 @@ public abstract class WrappedIndex<T extends PropertyContainer, I extends Readab
         }
     }
 
-    public static abstract class WrappedRelationshipIndex<G extends WrappedGraphDatabase> extends
+    public static abstract class WrappedRelationshipIndex extends
             WrappedIndex<Relationship, ReadableRelationshipIndex> implements RelationshipIndex
     {
-        protected WrappedRelationshipIndex( G graphdb )
+        protected WrappedRelationshipIndex( WrappedGraphDatabase graphdb )
         {
             super( graphdb );
         }
 
-        @SuppressWarnings( "unchecked" )
-        protected G graphdb()
+        protected WrappedGraphDatabase graphdb()
         {
-            return (G) graphdb;
+            return graphdb;
         }
 
         @Override
