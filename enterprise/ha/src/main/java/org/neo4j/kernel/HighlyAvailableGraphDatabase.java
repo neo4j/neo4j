@@ -99,13 +99,12 @@ public class HighlyAvailableGraphDatabase extends WrappedGraphDatabase
     }
 
     @Override
-    @SuppressWarnings( { "unchecked", "rawtypes" } )
-    protected WrappedIndex.WrappedNodeIndex<? extends WrappedGraphDatabase> nodeIndex( Index<Node> index, final String indexName )
+    protected WrappedIndex.WrappedNodeIndex nodeIndex( Index<Node> index, final String indexName )
     {
         return new WrappedIndex.WrappedNodeIndex( this )
         {
             @Override
-            protected ReadableIndex actual()
+            protected ReadableIndex<Node> actual()
             {
                 return HighlyAvailableGraphDatabase.this.graphdb.index().forNodes( indexName );
             }
@@ -113,14 +112,13 @@ public class HighlyAvailableGraphDatabase extends WrappedGraphDatabase
     }
 
     @Override
-    @SuppressWarnings( { "unchecked", "rawtypes" } )
-    protected WrappedIndex.WrappedRelationshipIndex<? extends WrappedGraphDatabase> relationshipIndex(
+    protected WrappedIndex.WrappedRelationshipIndex relationshipIndex(
             RelationshipIndex index, final String indexName )
     {
         return new WrappedIndex.WrappedRelationshipIndex( this )
         {
             @Override
-            protected ReadableIndex actual()
+            protected ReadableRelationshipIndex actual()
             {
                 return HighlyAvailableGraphDatabase.this.index().forRelationships( indexName );
             }
@@ -128,13 +126,12 @@ public class HighlyAvailableGraphDatabase extends WrappedGraphDatabase
     }
 
     @Override
-    @SuppressWarnings( { "unchecked", "rawtypes" } )
-    protected WrappedIndex.WrappedNodeIndex<? extends WrappedGraphDatabase> automaticNodeIndex( ReadableIndex<Node> index )
+    protected WrappedIndex.WrappedNodeIndex automaticNodeIndex( ReadableIndex<Node> index )
     {
         return new WrappedIndex.WrappedNodeIndex( this )
         {
             @Override
-            protected ReadableIndex actual()
+            protected ReadableIndex<Node> actual()
             {
                 return HighlyAvailableGraphDatabase.this.index().getNodeAutoIndexer().getAutoIndex();
             }
@@ -142,14 +139,13 @@ public class HighlyAvailableGraphDatabase extends WrappedGraphDatabase
     }
 
     @Override
-    @SuppressWarnings( { "unchecked", "rawtypes" } )
-    protected WrappedIndex.WrappedRelationshipIndex<? extends WrappedGraphDatabase> automaticRelationshipIndex(
+    protected WrappedIndex.WrappedRelationshipIndex automaticRelationshipIndex(
             ReadableRelationshipIndex index )
     {
         return new WrappedIndex.WrappedRelationshipIndex( this )
         {
             @Override
-            protected ReadableIndex actual()
+            protected ReadableRelationshipIndex actual()
             {
                 return HighlyAvailableGraphDatabase.this.index().getRelationshipAutoIndexer().getAutoIndex();
             }
