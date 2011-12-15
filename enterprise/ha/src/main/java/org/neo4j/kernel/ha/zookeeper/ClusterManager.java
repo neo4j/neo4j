@@ -181,7 +181,7 @@ public class ClusterManager extends AbstractZooKeeperManager
     }
     
     @Override
-    protected ZooKeeper getZooKeeper()
+    public ZooKeeper getZooKeeper()
     {
         return this.zooKeeper;
     }

@@ -19,15 +19,6 @@
  */
 package org.neo4j.kernel.ha.zookeeper;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
@@ -47,6 +38,15 @@ import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterClient;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Contains basic functionality for a ZooKeeper manager, f.ex. how to get
@@ -92,7 +92,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
         }
     }
 
-    protected abstract ZooKeeper getZooKeeper();
+    public abstract ZooKeeper getZooKeeper();
 
     public abstract String getRoot();
     

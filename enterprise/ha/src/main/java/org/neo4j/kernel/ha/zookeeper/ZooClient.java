@@ -670,7 +670,7 @@ public class ZooClient extends AbstractZooKeeperManager
     }
 
     @Override
-    protected ZooKeeper getZooKeeper()
+    public ZooKeeper getZooKeeper()
     {
         return zooKeeper;
     }
