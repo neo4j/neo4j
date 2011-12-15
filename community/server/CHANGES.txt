@@ -1,3 +1,7 @@
+NOT YET RELEASED
+--------------------
+o Webadmin data browser now supports cypher queries
+
 1.6.M01 (2011-11-24)
 --------------------
 o Cypher console in webadmin is now a Neo4j Shell console with the exact same Cypher support included.
