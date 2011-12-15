@@ -88,6 +88,7 @@ public class HighlyAvailableGraphDatabase extends WrappedGraphDatabase
     @Override
     protected WrappedNode<? extends WrappedGraphDatabase> node( Node node, boolean created )
     {
+        if ( node == null ) return null;
         return new LookupNode( this, node.getId() );
     }
 
@@ -95,6 +96,7 @@ public class HighlyAvailableGraphDatabase extends WrappedGraphDatabase
     protected WrappedRelationship<? extends WrappedGraphDatabase> relationship( Relationship relationship,
             boolean created )
     {
+        if ( relationship == null ) return null;
         return new LookupRelationship( this, relationship.getId() );
     }
 

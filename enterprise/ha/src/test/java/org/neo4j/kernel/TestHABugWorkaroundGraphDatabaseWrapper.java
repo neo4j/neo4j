@@ -161,6 +161,8 @@ public class TestHABugWorkaroundGraphDatabaseWrapper
         assertTrue( node1.hasRelationship( TestTypes.TEST, Direction.OUTGOING ) );
         assertTrue( node1.hasRelationship() );
         assertFalse( node1.hasRelationship( TestTypes.TEST, Direction.INCOMING ) );
+        assertNotNull( node2.getSingleRelationship( TestTypes.TEST, Direction.BOTH ) );
+        assertNull( node2.getSingleRelationship( TestTypes.FOO, Direction.BOTH ) );
     }
 
     @Test
