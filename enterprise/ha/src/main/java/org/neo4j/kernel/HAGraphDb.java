@@ -712,7 +712,7 @@ public class HAGraphDb extends AbstractGraphDatabase
         if ( this.updatePuller != null )
         {
             msgLog.logMessage( "Internal shutdown updatePuller", true );
-            this.updatePuller.shutdown();
+            this.updatePuller.shutdownNow();
             msgLog.logMessage( "Internal shutdown updatePuller DONE", true );
             this.updatePuller = null;
         }

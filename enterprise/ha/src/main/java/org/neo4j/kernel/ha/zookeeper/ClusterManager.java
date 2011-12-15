@@ -107,7 +107,7 @@ public class ClusterManager extends AbstractZooKeeperManager
     private String readRootPath()
     {
         waitForSyncConnected();
-        String result = getSingleRootPath( getZooKeeper() );
+        String result = getSingleRootPath( zooKeeper );
         if ( result == null )
         {
             throw new RuntimeException( "No root child found in zoo keeper" );
@@ -181,8 +181,9 @@ public class ClusterManager extends AbstractZooKeeperManager
     }
     
     @Override
-    protected ZooKeeper getZooKeeper()
+    public ZooKeeper getZooKeeper( boolean sync )
     {
+        if ( sync ) this.zooKeeper.sync( getRoot(), null, null );
         return this.zooKeeper;
     }
 }
