@@ -20,45 +20,36 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
-import static org.neo4j.test.BatchTransaction.beginBatchTx;
 import static org.neo4j.test.TargetDirectory.forTest;
 
 import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.test.BatchTransaction;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TargetDirectory;
 
 public class TestStandaloneLogExtractor
 {
     @Test
-    public void testRecreateDbFromStandaloneExtractor() throws Exception
+    public void testRecreateCleanDbFromStandaloneExtractor() throws Exception
+    {
+        run( true );
+    }
+    
+    @Test
+    public void testRecreateUncleanDbFromStandaloneExtractor() throws Exception
+    {
+        run( false );
+    }
+    
+    private void run( boolean cleanShutdown ) throws Exception
     {
         String sourceDir = forTest( getClass() ).directory( "source", true ).getAbsolutePath();
-        GraphDatabaseService db = new EmbeddedGraphDatabase( sourceDir, stringMap( KEEP_LOGICAL_LOGS, "true" ) );
-        
-        BatchTransaction tx = beginBatchTx( db );
-        Node node = db.createNode();
-        node.setProperty( "name", "First" );
-        Node otherNode = db.createNode();
-        node.createRelationshipTo( otherNode, MyRelTypes.TEST );
-        tx.restart();
-        
-        for ( int i = 0; i < 5; i++ )
-        {
-            db.createNode().setProperty( "type", i );
-            tx.restart();
-        }
-        tx.finish();
-        DbRepresentation sourceRep = DbRepresentation.of( db );
-        db.shutdown();
+        Runtime.getRuntime().exec( new String[] {
+                "java", "-cp", System.getProperty( "java.class.path" ), CreateSomeTransactions.class.getName(),
+                sourceDir, "" + cleanShutdown
+        } ).waitFor();
         
         AbstractGraphDatabase newDb = new EmbeddedGraphDatabase( TargetDirectory.forTest( getClass() ).directory( "target", true ).getAbsolutePath() );
         XaDataSource ds = newDb.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
@@ -79,7 +70,9 @@ public class TestStandaloneLogExtractor
             if ( txId == -1 ) break;
             ds.applyCommittedTransaction( txId, buffer );
         }
-        assertEquals( sourceRep, DbRepresentation.of( newDb ) );
+        DbRepresentation newRep = DbRepresentation.of( newDb );
         newDb.shutdown();
+        
+        assertEquals( DbRepresentation.of( sourceDir ), newRep );
     }
 }

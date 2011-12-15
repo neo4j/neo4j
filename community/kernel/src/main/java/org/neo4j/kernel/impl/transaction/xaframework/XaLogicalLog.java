@@ -107,10 +107,6 @@ public class XaLogicalLog implements LogLoader
 
     private final StringLogger msgLog;
 
-//    private final LruCache<Long, TxPosition> txStartPositionCache =
-//            new LruCache<Long, TxPosition>( "Tx start position cache", 10000, null );
-//    private final LruCache<Long /*log version*/, Long /*last committed tx*/> logHeaderCache =
-//            new LruCache<Long, Long>( "Log header cache", 1000, null );
     private final LogPositionCache positionCache = new LogPositionCache();
     private final FileSystemAbstraction fileSystem;
 
