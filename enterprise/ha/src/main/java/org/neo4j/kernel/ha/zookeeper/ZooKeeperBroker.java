@@ -232,4 +232,9 @@ public class ZooKeeperBroker extends AbstractBroker
     {
         zooClient.setDataChangeWatcher( ZooClient.MASTER_NOTIFY_CHILD, newMaster.getMachineId() );
     }
+
+    protected ZooClient getZooClient()
+    {
+        return zooClient;
+    }
 }
