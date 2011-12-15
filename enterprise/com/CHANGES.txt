@@ -1,3 +1,7 @@
+1.6.M02 (2011-12-16)
+----------------
+o Now closes connections if either side dies during streaming
+
 1.5 (2011-10-18)
 ----------------
 o Added com protocol version (one internal version and one application version) which must match in order
