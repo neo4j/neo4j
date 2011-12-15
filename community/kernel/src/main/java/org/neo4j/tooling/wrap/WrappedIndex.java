@@ -32,12 +32,13 @@ import org.neo4j.graphdb.index.RelationshipIndex;
 
 import static org.neo4j.tooling.wrap.WrappedEntity.unwrap;
 
-public abstract class WrappedIndex<T extends PropertyContainer, I extends ReadableIndex<T>> extends WrappedObject<I>
-        implements Index<T>
+public abstract class WrappedIndex<T extends PropertyContainer, I extends ReadableIndex<T>> implements Index<T>
 {
-    private WrappedIndex( WrappedGraphDatabase graphdb, I index )
+    final WrappedGraphDatabase graphdb;
+
+    private WrappedIndex( WrappedGraphDatabase graphdb )
     {
-        super( graphdb, index );
+        this.graphdb = graphdb;
     }
 
     @SuppressWarnings( "unchecked" )
@@ -45,7 +46,7 @@ public abstract class WrappedIndex<T extends PropertyContainer, I extends Readab
     {
         if ( index instanceof WrappedIndex<?, ?> )
         {
-            return ( (WrappedIndex<T, Index<T>>) index ).wrapped;
+            return ( (WrappedIndex<T, Index<T>>) index ).actual();
         }
         else
         {
@@ -53,26 +54,35 @@ public abstract class WrappedIndex<T extends PropertyContainer, I extends Readab
         }
     }
 
+    protected abstract I actual();
+
     abstract T wrap( T entity );
+
+    @Override
+    public String toString()
+    {
+        return actual().toString();
+    }
 
     @Override
     public String getName()
     {
-        return wrapped.getName();
+        return actual().getName();
     }
 
     @Override
     public Class<T> getEntityType()
     {
-        return wrapped.getEntityType();
+        return actual().getEntityType();
     }
 
     @Override
     public void add( T entity, String key, Object value )
     {
-        if ( wrapped instanceof Index<?> )
+        I actual = actual();
+        if ( actual instanceof Index<?> )
         {
-            ( (Index<T>) wrapped ).add( unwrap( entity ), key, value );
+            ( (Index<T>) actual ).add( unwrap( entity ), key, value );
         }
         else
         {
@@ -83,9 +93,10 @@ public abstract class WrappedIndex<T extends PropertyContainer, I extends Readab
     @Override
     public void remove( T entity, String key, Object value )
     {
-        if ( wrapped instanceof Index<?> )
+        I actual = actual();
+        if ( actual instanceof Index<?> )
         {
-            ( (Index<T>) wrapped ).remove( unwrap( entity ), key, value );
+            ( (Index<T>) actual ).remove( unwrap( entity ), key, value );
         }
         else
         {
@@ -96,9 +107,10 @@ public abstract class WrappedIndex<T extends PropertyContainer, I extends Readab
     @Override
     public void remove( T entity, String key )
     {
-        if ( wrapped instanceof Index<?> )
+        I actual = actual();
+        if ( actual instanceof Index<?> )
         {
-            ( (Index<T>) wrapped ).remove( unwrap( entity ), key );
+            ( (Index<T>) actual ).remove( unwrap( entity ), key );
         }
         else
         {
@@ -109,9 +121,10 @@ public abstract class WrappedIndex<T extends PropertyContainer, I extends Readab
     @Override
     public void remove( T entity )
     {
-        if ( wrapped instanceof Index<?> )
+        I actual = actual();
+        if ( actual instanceof Index<?> )
         {
-            ( (Index<T>) wrapped ).remove( unwrap( entity ) );
+            ( (Index<T>) actual ).remove( unwrap( entity ) );
         }
         else
         {
@@ -122,9 +135,10 @@ public abstract class WrappedIndex<T extends PropertyContainer, I extends Readab
     @Override
     public void delete()
     {
-        if ( wrapped instanceof Index<?> )
+        I actual = actual();
+        if ( actual instanceof Index<?> )
         {
-            ( (Index<T>) wrapped ).delete();
+            ( (Index<T>) actual ).delete();
         }
         else
         {
@@ -135,33 +149,33 @@ public abstract class WrappedIndex<T extends PropertyContainer, I extends Readab
     @Override
     public IndexHits<T> get( String key, Object value )
     {
-        return new Hits( wrapped.get( key, value ) );
+        return new Hits( actual().get( key, value ) );
     }
 
     @Override
     public IndexHits<T> query( String key, Object queryOrQueryObject )
     {
-        return new Hits( wrapped.query( key, queryOrQueryObject ) );
+        return new Hits( actual().query( key, queryOrQueryObject ) );
     }
 
     @Override
     public IndexHits<T> query( Object queryOrQueryObject )
     {
-        return new Hits( wrapped.query( queryOrQueryObject ) );
+        return new Hits( actual().query( queryOrQueryObject ) );
     }
 
     @Override
     public boolean isWriteable()
     {
-        return wrapped.isWriteable();
+        return actual().isWriteable();
     }
 
-    public static class WrappedNodeIndex<G extends WrappedGraphDatabase> extends
+    public static abstract class WrappedNodeIndex<G extends WrappedGraphDatabase> extends
             WrappedIndex<Node, ReadableIndex<Node>>
     {
-        protected WrappedNodeIndex( G graphdb, ReadableIndex<Node> index )
+        protected WrappedNodeIndex( G graphdb )
         {
-            super( graphdb, index );
+            super( graphdb );
         }
 
         @SuppressWarnings( "unchecked" )
@@ -177,12 +191,12 @@ public abstract class WrappedIndex<T extends PropertyContainer, I extends Readab
         }
     }
 
-    public static class WrappedRelationshipIndex<G extends WrappedGraphDatabase> extends
+    public static abstract class WrappedRelationshipIndex<G extends WrappedGraphDatabase> extends
             WrappedIndex<Relationship, ReadableRelationshipIndex> implements RelationshipIndex
     {
-        protected WrappedRelationshipIndex( G graphdb, ReadableRelationshipIndex index )
+        protected WrappedRelationshipIndex( G graphdb )
         {
-            super( graphdb, index );
+            super( graphdb );
         }
 
         @SuppressWarnings( "unchecked" )
@@ -194,22 +208,21 @@ public abstract class WrappedIndex<T extends PropertyContainer, I extends Readab
         @Override
         public IndexHits<Relationship> get( String key, Object valueOrNull, Node startNodeOrNull, Node endNodeOrNull )
         {
-            return new Hits( wrapped.get( key, valueOrNull, unwrap( startNodeOrNull ), unwrap( endNodeOrNull ) ) );
+            return new Hits( actual().get( key, valueOrNull, unwrap( startNodeOrNull ), unwrap( endNodeOrNull ) ) );
         }
 
         @Override
         public IndexHits<Relationship> query( String key, Object queryOrQueryObjectOrNull, Node startNodeOrNull,
                 Node endNodeOrNull )
         {
-            return new Hits( wrapped.query( key, queryOrQueryObjectOrNull, unwrap( startNodeOrNull ),
+            return new Hits( actual().query( key, queryOrQueryObjectOrNull, unwrap( startNodeOrNull ),
                     unwrap( endNodeOrNull ) ) );
         }
 
         @Override
         public IndexHits<Relationship> query( Object queryOrQueryObjectOrNull, Node startNodeOrNull, Node endNodeOrNull )
         {
-            return new Hits(
-                    wrapped.query( queryOrQueryObjectOrNull, unwrap( startNodeOrNull ), unwrap( endNodeOrNull ) ) );
+            return new Hits( actual().query( queryOrQueryObjectOrNull, unwrap( startNodeOrNull ), unwrap( endNodeOrNull ) ) );
         }
 
         @Override

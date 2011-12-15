@@ -111,29 +111,57 @@ public abstract class WrappedGraphDatabase extends AbstractGraphDatabase
     }
 
     @SuppressWarnings( { "unchecked", "rawtypes" } )
-    protected WrappedIndex.WrappedNodeIndex<? extends WrappedGraphDatabase> nodeIndex( Index<Node> index )
+    protected WrappedIndex.WrappedNodeIndex<? extends WrappedGraphDatabase> nodeIndex( final Index<Node> index, String indexName )
     {
-        return new WrappedIndex.WrappedNodeIndex( this, index );
+        return new WrappedIndex.WrappedNodeIndex( this )
+        {
+            @Override
+            protected ReadableIndex actual()
+            {
+                return index;
+            }
+        };
     }
 
     @SuppressWarnings( { "unchecked", "rawtypes" } )
     protected WrappedIndex.WrappedRelationshipIndex<? extends WrappedGraphDatabase> relationshipIndex(
-            RelationshipIndex index )
+            final RelationshipIndex index, String indexName )
     {
-        return new WrappedIndex.WrappedRelationshipIndex( this, index );
+        return new WrappedIndex.WrappedRelationshipIndex( this )
+        {
+            @Override
+            protected ReadableIndex actual()
+            {
+                return index;
+            }
+        };
     }
 
     @SuppressWarnings( { "unchecked", "rawtypes" } )
-    protected WrappedIndex.WrappedNodeIndex<? extends WrappedGraphDatabase> readableNodeIndex( ReadableIndex<Node> index )
+    protected WrappedIndex.WrappedNodeIndex<? extends WrappedGraphDatabase> automaticNodeIndex( final ReadableIndex<Node> index )
     {
-        return new WrappedIndex.WrappedNodeIndex( this, index );
+        return new WrappedIndex.WrappedNodeIndex( this )
+        {
+            @Override
+            protected ReadableIndex actual()
+            {
+                return index;
+            }
+        };
     }
 
     @SuppressWarnings( { "unchecked", "rawtypes" } )
-    protected WrappedIndex.WrappedRelationshipIndex<? extends WrappedGraphDatabase> readableRelationshipIndex(
-            ReadableRelationshipIndex index )
+    protected WrappedIndex.WrappedRelationshipIndex<? extends WrappedGraphDatabase> automaticRelationshipIndex(
+            final ReadableRelationshipIndex index )
     {
-        return new WrappedIndex.WrappedRelationshipIndex( this, index );
+        return new WrappedIndex.WrappedRelationshipIndex( this )
+        {
+            @Override
+            protected ReadableIndex actual()
+            {
+                return index;
+            }
+        };
     }
 
     protected void onBeginTransaction() throws TransactionNotAllowedException
@@ -309,28 +337,28 @@ public abstract class WrappedGraphDatabase extends AbstractGraphDatabase
         @Override
         public RelationshipIndex forRelationships( String indexName, Map<String, String> customConfiguration )
         {
-            return relationshipIndex( graphdb.index().forRelationships( indexName, customConfiguration ) );
+            return relationshipIndex( graphdb.index().forRelationships( indexName, customConfiguration ), indexName );
         }
 
         @SuppressWarnings( { "unchecked", "rawtypes" } )
         @Override
         public RelationshipIndex forRelationships( String indexName )
         {
-            return relationshipIndex( graphdb.index().forRelationships( indexName ) );
+            return relationshipIndex( graphdb.index().forRelationships( indexName ), indexName );
         }
 
         @SuppressWarnings( { "unchecked", "rawtypes" } )
         @Override
         public Index<Node> forNodes( String indexName, Map<String, String> customConfiguration )
         {
-            return nodeIndex( graphdb.index().forNodes( indexName, customConfiguration ) );
+            return nodeIndex( graphdb.index().forNodes( indexName, customConfiguration ), indexName );
         }
 
         @SuppressWarnings( { "unchecked", "rawtypes" } )
         @Override
         public Index<Node> forNodes( String indexName )
         {
-            return nodeIndex( graphdb.index().forNodes( indexName ) );
+            return nodeIndex( graphdb.index().forNodes( indexName ), indexName );
         }
 
         @Override
@@ -369,7 +397,7 @@ public abstract class WrappedGraphDatabase extends AbstractGraphDatabase
         @Override
         public ReadableIndex<Node> getAutoIndex()
         {
-            return readableNodeIndex( actual().getAutoIndex() );
+            return automaticNodeIndex( actual().getAutoIndex() );
         }
     };
     private final RelationshipAutoIndexer autoRelationshipIndex = new WrappedRelationshipAutoIndex();
@@ -421,7 +449,7 @@ public abstract class WrappedGraphDatabase extends AbstractGraphDatabase
         @Override
         public ReadableRelationshipIndex getAutoIndex()
         {
-            return readableRelationshipIndex( actual().getAutoIndex() );
+            return automaticRelationshipIndex( actual().getAutoIndex() );
         }
     }
 
