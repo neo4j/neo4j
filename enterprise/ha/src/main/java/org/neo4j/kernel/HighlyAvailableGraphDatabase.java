@@ -21,7 +21,12 @@ package org.neo4j.kernel;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.ReadableIndex;
+import org.neo4j.graphdb.index.ReadableRelationshipIndex;
+import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.tooling.wrap.WrappedGraphDatabase;
+import org.neo4j.tooling.wrap.WrappedIndex;
 import org.neo4j.tooling.wrap.WrappedNode;
 import org.neo4j.tooling.wrap.WrappedRelationship;
 
@@ -91,6 +96,64 @@ public class HighlyAvailableGraphDatabase extends WrappedGraphDatabase
             boolean created )
     {
         return new LookupRelationship( this, relationship.getId() );
+    }
+
+    @Override
+    @SuppressWarnings( { "unchecked", "rawtypes" } )
+    protected WrappedIndex.WrappedNodeIndex<? extends WrappedGraphDatabase> nodeIndex( Index<Node> index, final String indexName )
+    {
+        return new WrappedIndex.WrappedNodeIndex( this )
+        {
+            @Override
+            protected ReadableIndex actual()
+            {
+                return HighlyAvailableGraphDatabase.this.graphdb.index().forNodes( indexName );
+            }
+        };
+    }
+
+    @Override
+    @SuppressWarnings( { "unchecked", "rawtypes" } )
+    protected WrappedIndex.WrappedRelationshipIndex<? extends WrappedGraphDatabase> relationshipIndex(
+            RelationshipIndex index, final String indexName )
+    {
+        return new WrappedIndex.WrappedRelationshipIndex( this )
+        {
+            @Override
+            protected ReadableIndex actual()
+            {
+                return HighlyAvailableGraphDatabase.this.index().forRelationships( indexName );
+            }
+        };
+    }
+
+    @Override
+    @SuppressWarnings( { "unchecked", "rawtypes" } )
+    protected WrappedIndex.WrappedNodeIndex<? extends WrappedGraphDatabase> automaticNodeIndex( ReadableIndex<Node> index )
+    {
+        return new WrappedIndex.WrappedNodeIndex( this )
+        {
+            @Override
+            protected ReadableIndex actual()
+            {
+                return HighlyAvailableGraphDatabase.this.index().getNodeAutoIndexer().getAutoIndex();
+            }
+        };
+    }
+
+    @Override
+    @SuppressWarnings( { "unchecked", "rawtypes" } )
+    protected WrappedIndex.WrappedRelationshipIndex<? extends WrappedGraphDatabase> automaticRelationshipIndex(
+            ReadableRelationshipIndex index )
+    {
+        return new WrappedIndex.WrappedRelationshipIndex( this )
+        {
+            @Override
+            protected ReadableIndex actual()
+            {
+                return HighlyAvailableGraphDatabase.this.index().getRelationshipAutoIndexer().getAutoIndex();
+            }
+        };
     }
 
     private static class LookupNode extends WrappedNode<HighlyAvailableGraphDatabase>
