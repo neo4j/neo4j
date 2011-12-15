@@ -21,6 +21,7 @@ package org.neo4j.windows.test;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 
@@ -28,77 +29,94 @@ import org.junit.Test;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.vagrant.Box;
-import org.neo4j.vagrant.SSHShell;
-import org.neo4j.vagrant.Shell.Result;
+import org.neo4j.vagrant.CygwinShell;
 import org.neo4j.vagrant.ShellException;
 import org.neo4j.vagrant.Vagrant;
 
+import com.sun.jersey.api.client.ClientHandlerException;
+
 public class TheTest {
-    
-    protected String vagrantBaseDir() {
+
+    protected String vagrantBaseDir()
+    {
         return System.getProperty("user.dir") + "/target/test-classes/vagrant/";
     }
-    
-    protected Vagrant vagrant(Box baseBox) {
+
+    protected Vagrant vagrant(Box baseBox)
+    {
         return vagrant(baseBox, baseBox.getName() + "-vanilla");
     }
-    
-    protected Vagrant vagrant(Box box, String projectFolderName) {
+
+    protected Vagrant vagrant(Box box, String projectFolderName)
+    {
         Vagrant v;
         File projectFolder = new File(vagrantBaseDir() + projectFolderName);
-        if(!projectFolder.exists()) {
+        if (!projectFolder.exists())
+        {
             projectFolder.mkdirs();
             v = vagrant(box, projectFolder);
             v.init(box);
-        } else {
+        } else
+        {
             v = vagrant(box, projectFolder);
         }
         return v;
     }
-    
-    protected Vagrant vagrant(Box box, File projectFolder) {
+
+    protected Vagrant vagrant(Box box, File projectFolder)
+    {
         Vagrant v = new Vagrant(projectFolder);
         v.ensureBoxExists(box);
         return v;
     }
-    
-    @Test 
-    public void testInstallAndUninstall() throws Throwable {
-        
-        Vagrant v = vagrant(Box.WINDOWS_2008_R2_AMD64, "windows-2008R2-amd64-plain");
-        
-        try {
-            v.up();
-            
-            v.copyFromHost(System.getProperty("user.dir") + "/target/test-classes/test", "/home/vagrant");
 
-            SSHShell vm = v.ssh();
-            Result r = vm.run("cat /home/vagrant/test");
-            System.out.println(r.getOutput());
-        } catch(ShellException e) {
+    @Test
+    public void testInstallAndUninstall() throws Throwable
+    {
+        Vagrant v = vagrant(Box.WINDOWS_2008_R2_AMD64,
+                "windows-2008R2-amd64-jre6");
+        v.up();
+        
+        // Transaction tx = v.beginTx();
+        try
+        {
+
+            v.copyFromHost(
+                    System.getProperty("user.dir")
+                            + "/target/classes/installer-windows-1.6-SNAPSHOT-windows-community.msi",
+                    "/home/vagrant/installer.msi");
+
+            CygwinShell sh = new CygwinShell(v.ssh());
+            sh.run(":> install.log");
+            sh.runDOS("msiexec /quiet /L*v install.log /i installer.msi INSTALL_DIR=\"C:\\det är dåligt. mycket mycket dåligt. gör inte såhär.\"");
+            //checkDataRest();
+            //sh.run(":> uninstall.log");
+            //sh.runDOS("msiexec /quiet /L*v uninstall.log /x installer.msi");
+            sh.close();
+
+            try
+            {
+                checkDataRest();
+                fail("Server is still listening to port 7474 even after uninstall");
+            } catch (ClientHandlerException e)
+            {
+                // no-op
+            }
+
+        } catch (ShellException e)
+        {
             System.out.println(e.getResult().getOutput());
-        } finally {
-//            v.destroy();
+            throw e;
+        } finally
+        {
+            // tx.finish();
         }
-//        Result install = run("msiexec /i target\\neo4j-community-setup-1.6-SNAPSHOT.msi /quiet INSTALL_DIR=\"C:\\det är dåligt. mycket mycket dåligt. gör inte såhär.\"");
-//        install.checkResults();
-//        checkDataRest();
-//
-//        Result uninstall = run("msiexec /x target\\neo4j-community-setup-1.6-SNAPSHOT.msi /quiet");
-//        uninstall.checkResults();
-//        try {
-//            checkDataRest();
-//            fail("Server is still listening to port 7474 even after uninstall");
-//        } catch (ClientHandlerException e) {
-//            // no-op
-//        }
     }
-    
-    
 
-    private void checkDataRest() throws Exception {
+    private void checkDataRest() throws Exception
+    {
         JaxRsResponse r = RestRequest.req().get(
-                "http://localhost:7474/db/data/");
+                "http://localhost:27474/db/data/");
         assertThat(r.getStatus(), equalTo(200));
     }
 }

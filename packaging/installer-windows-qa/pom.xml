@@ -1,117 +1,155 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<parent>
-		<groupId>org.neo4j.build</groupId>
-		<artifactId>parent-pom</artifactId>
-		<version>25</version>
-		<relativePath />
-	</parent>
-	<groupId>org.neo4j</groupId>
-	<artifactId>installer-windows-qa</artifactId>
-	<version>1.6-SNAPSHOT</version>
-	<packaging>jar</packaging>
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.neo4j.build</groupId>
+    <artifactId>parent-pom</artifactId>
+    <version>25</version>
+    <relativePath />
+  </parent>
+  <groupId>org.neo4j</groupId>
+  <artifactId>installer-windows-qa</artifactId>
+  <version>1.6-SNAPSHOT</version>
+  <packaging>jar</packaging>
 
-	<name>Neo4j Windows Installer Quality Assurance</name>
-	<description>QA for Windows installers for the Neo4j Server</description>
+  <name>Neo4j Windows Installer Quality Assurance</name>
+  <description>QA for Windows installers for the Neo4j Server</description>
 
-	<url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
-	<scm>
-		<connection>scm:git:git://github.com/neo4j/packaging.git</connection>
-		<developerConnection>scm:git:git@github.com:neo4j/packaging.git</developerConnection>
-		<url>https://github.com/neo4j/packaging</url>
-	</scm>
+  <scm>
+    <connection>scm:git:git://github.com/neo4j/packaging.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/packaging.git</developerConnection>
+    <url>https://github.com/neo4j/packaging</url>
+  </scm>
 
-	<properties>
-		<short-name>installer-windows-qa</short-name>
-		<neo4j.version>${project.version}</neo4j.version>
-		<license-text.header>GPL-3-header.txt</license-text.header>
-	</properties>
+  <properties>
+    <short-name>installer-windows-qa</short-name>
+    <neo4j.version>1.6-SNAPSHOT</neo4j.version>
+    <license-text.header>GPL-3-header.txt</license-text.header>
+  </properties>
 
-	<dependencies>
+  <dependencies>
 
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit-dep</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.hamcrest</groupId>
-			<artifactId>hamcrest-all</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>com.sun.jersey</groupId>
-			<artifactId>jersey-client</artifactId>
-			<version>1.9</version>
-		</dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit-dep</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-all</artifactId>
+    </dependency>
+    
+    <dependency>
+      <groupId>com.sun.jersey</groupId>
+      <artifactId>jersey-client</artifactId>
+      <version>1.9</version>
+    </dependency>
 
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>installer-windows</artifactId>
+      <version>${neo4j.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
 
-		<dependency>
-			<groupId>org.neo4j.app</groupId>
-			<artifactId>neo4j-server</artifactId>
-			<version>1.6-SNAPSHOT</version>
-			<type>test-jar</type>
-			<scope>test</scope>
-		</dependency>
+    <dependency>
+      <groupId>org.neo4j.app</groupId>
+      <artifactId>neo4j-server</artifactId>
+      <version>${neo4j.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
 
-		<dependency>
-			<groupId>net.schmizz</groupId>
-			<artifactId>sshj</artifactId>
-			<version>0.6.1</version>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.bouncycastle</groupId>
-			<artifactId>bcmail-jdk16</artifactId>
-			<version>1.46</version>
-			<type>jar</type>
-			<scope>compile</scope>
-		</dependency>
-	</dependencies>
+    <dependency>
+      <groupId>net.schmizz</groupId>
+      <artifactId>sshj</artifactId>
+      <version>0.6.1</version>
+      <scope>compile</scope>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcmail-jdk16</artifactId>
+      <version>1.46</version>
+      <type>jar</type>
+      <scope>compile</scope>
+    </dependency>
+  </dependencies>
 
-	<build>
-		<plugins>
+  <build>
+    <plugins>
 
-			<!--plugin> <groupId>org.apache.maven.plugins</groupId> <artifactId>maven-dependency-plugin</artifactId> 
-				<version>2.2</version> <executions> <execution> <id>unpack</id> <phase>process-resources</phase> 
-				<goals> <goal>copy</goal> </goals> <configuration> <artifactItems> <artifactItem> 
-				<groupId>org.neo4j</groupId> <artifactId>installer-windows</artifactId> <classifier>windows-community</classifier> 
-				<type>msi</type> <outputDirectory>${project.build.outputDirectory}</outputDirectory> 
-				<includes>**/*</includes> </artifactItem> <artifactItem> <groupId>org.neo4j</groupId> 
-				<artifactId>installer-windows</artifactId> <classifier>windows-advanced</classifier> 
-				<type>msi</type> <outputDirectory>${project.build.outputDirectory}</outputDirectory> 
-				<includes>**/*</includes> </artifactItem> <artifactItem> <groupId>org.neo4j</groupId> 
-				<artifactId>installer-windows</artifactId> <classifier>windows-enterprise</classifier> 
-				<type>msi</type> <outputDirectory>${project.build.outputDirectory}</outputDirectory> 
-				<includes>**/*</includes> </artifactItem> </artifactItems> </configuration> 
-				</execution> </executions> </plugin -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>2.2</version>
+        <executions>
+          <execution>
+            <id>unpack</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.neo4j</groupId>
+                  <artifactId>installer-windows</artifactId>
+                  <classifier>windows-community</classifier>
+                  <type>msi</type>
+                  <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                  <includes>**/*</includes>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.neo4j</groupId>
+                  <artifactId>installer-windows</artifactId>
+                  <classifier>windows-advanced</classifier>
+                  <type>msi</type>
+                  <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                  <includes>**/*</includes>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.neo4j</groupId>
+                  <artifactId>installer-windows</artifactId>
+                  <classifier>windows-enterprise</classifier>
+                  <type>msi</type>
+                  <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                  <includes>**/*</includes>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
 
-		</plugins>
-	</build>
+    </plugins>
+  </build>
 
-	<repositories>
-		<repository>
-			<id>neo4j-snapshot-repository</id>
-			<name>Publically available Maven 2 repository for Neo4j</name>
-			<url>http://m2.neo4j.org/snapshots</url>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-			<releases>
-				<enabled>false</enabled>
-			</releases>
-		</repository>
-		<repository>
-			<id>neo4j-release-repository</id>
-			<name>Publically available Maven 2 repository for Neo4j</name>
-			<url>http://m2.neo4j.org/releases</url>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
-			<releases>
-				<enabled>true</enabled>
-			</releases>
-		</repository>
-	</repositories>
+  <repositories>
+    <repository>
+      <id>neo4j-snapshot-repository</id>
+      <name>Publically available Maven 2 repository for Neo4j</name>
+      <url>http://m2.neo4j.org/snapshots</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+    </repository>
+    <repository>
+      <id>neo4j-release-repository</id>
+      <name>Publically available Maven 2 repository for Neo4j</name>
+      <url>http://m2.neo4j.org/releases</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+    </repository>
+  </repositories>
 
 </project>

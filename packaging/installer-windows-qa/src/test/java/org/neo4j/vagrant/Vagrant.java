@@ -20,8 +20,10 @@
 package org.neo4j.vagrant;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.apache.commons.lang.StringUtils;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.vagrant.Shell.Result;
 
 public class Vagrant {
@@ -29,46 +31,64 @@ public class Vagrant {
     private Shell sh;
     private SSHConfig sshConfig;
 
-    public Vagrant(File projectFolder) {
+    public Vagrant(File projectFolder)
+    {
         this.sh = new Shell(projectFolder);
-        this.sh.getEnvironment().put("HOME", projectFolder.getAbsolutePath());
+        this.sh.getEnvironment().put("HOME", System.getProperty("user.home"));
     }
 
-    public void ensureBoxExists(Box box) {
-        for(String boxName : vagrant("box list").getOutputAsList()) {
-            if(boxName.equals(box.getName())) {
+    public void ensureBoxExists(Box box)
+    {
+        for (String boxName : vagrant("box list").getOutputAsList())
+        {
+            if (boxName.equals(box.getName()))
+            {
                 return;
             }
         }
-        
-        vagrant("box add", box.getName(), box.getUrl());
+
+        File oldWorkingDir = sh.getWorkingDir();
+        try
+        {
+            sh.setWorkingDir(File.createTempFile("ignore","").getParentFile());
+            vagrant("box add", box.getName(), box.getUrl());
+            sh.setWorkingDir(oldWorkingDir);
+        } catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
-    public void init(Box box) {
+    public void init(Box box)
+    {
         vagrant("init", box.getName());
     }
 
-    public void up() {
+    public void up()
+    {
         vagrant("up");
     }
 
-    public void halt() {
+    public void halt()
+    {
         vagrant("halt");
     }
 
-    public void destroy() {
+    public void destroy()
+    {
         vagrant("destroy");
     }
-    
-    public SSHShell ssh() {
+
+    public SSHShell ssh()
+    {
         return new SSHShell(sshConfiguration());
     }
 
     /**
      * Use SCP to move a file from the host to the VM.
      * 
-     * This is really slow. If you are running a non-windows VM, 
-     * opt for using normal vagrant shared folders instead.
+     * This is really slow. If you are running a non-windows VM, opt for using
+     * normal vagrant shared folders instead.
      * 
      * @param hostPath
      * @param vmPath
@@ -77,14 +97,15 @@ public class Vagrant {
     public Result copyFromHost(String hostPath, String vmPath)
     {
         SSHConfig cfg = sshConfiguration();
-        return scp(cfg.getPrivateKeyPath(), hostPath, sshPath(cfg, vmPath), cfg.getPort());
+        return scp(cfg.getPrivateKeyPath(), hostPath, sshPath(cfg, vmPath),
+                cfg.getPort());
     }
-    
+
     /**
      * Use SCP to move a file to the host from the VM.
      * 
-     * This is really slow. If you are running a non-windows VM, 
-     * opt for using normal vagrant shared folders instead.
+     * This is really slow. If you are running a non-windows VM, opt for using
+     * normal vagrant shared folders instead.
      * 
      * @param hostPath
      * @param vmPath
@@ -93,44 +114,57 @@ public class Vagrant {
     public Result copyFromVM(String vmPath, String hostPath)
     {
         SSHConfig cfg = sshConfiguration();
-        return scp(cfg.getPrivateKeyPath(), sshPath(cfg, vmPath), hostPath, cfg.getPort());
+        return scp(cfg.getPrivateKeyPath(), sshPath(cfg, vmPath), hostPath,
+                cfg.getPort());
     }
 
-    public SSHConfig sshConfiguration() {
-        if(this.sshConfig == null) {
-            this.sshConfig = SSHConfig.createFromVagrantOutput(vagrant("ssh-config").getOutputAsList());
+    public SSHConfig sshConfiguration()
+    {
+        if (this.sshConfig == null)
+        {
+            this.sshConfig = SSHConfig.createFromVagrantOutput(vagrant(
+                    "ssh-config").getOutputAsList());
         }
-        
+
         return this.sshConfig;
     }
 
-    public Shell getShell() {
+    public Transaction beginTx()
+    {
+        vagrant("sandbox on");
+        return new VagrantTransaction(this);
+    }
+
+    public Shell getShell()
+    {
         return sh;
     }
-    
-    private Result vagrant(String ... cmds) {
-        
-        Result r = sh.run("vagrant" + " " + StringUtils.join(cmds," "));
-        
-        if(r.getExitCode() != 0) {
+
+    protected Result vagrant(String... cmds)
+    {
+
+        Result r = sh.run("vagrant" + " " + StringUtils.join(cmds, " "));
+
+        if (r.getExitCode() != 0)
+        {
             throw new ShellException(r);
         }
         return r;
     }
-    
-    private Result scp(String privateKeyPath, String from, String to, int port) {
-        Result r = sh.run("scp -i " + privateKeyPath + 
-                          " -o StrictHostKeyChecking=no" +
-                          " -P " + port + 
-                          " " + from +
-                          " " + to);
-        if(r.getExitCode() != 0) {
+
+    private Result scp(String privateKeyPath, String from, String to, int port)
+    {
+        Result r = sh.run("scp -i " + privateKeyPath
+                + " -o StrictHostKeyChecking=no" + " -P " + port + " " + from
+                + " " + to);
+        if (r.getExitCode() != 0)
+        {
             throw new ShellException(r);
         }
-        
+
         return r;
     }
-    
+
     /*
      * user@host:port/path/path/path
      */
@@ -138,5 +172,4 @@ public class Vagrant {
     {
         return cfg.getUser() + "@" + cfg.getHost() + ":" + path;
     }
-
 }

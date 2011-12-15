@@ -122,4 +122,14 @@ public class Shell {
         return envList;
     }
 
+    public void setWorkingDir(File dir)
+    {
+        workingDir = dir;
+    }
+
+    public File getWorkingDir()
+    {
+        return workingDir;
+    }
+
 }

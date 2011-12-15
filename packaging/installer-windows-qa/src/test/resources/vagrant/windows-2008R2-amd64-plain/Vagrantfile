@@ -6,7 +6,7 @@ Vagrant::Config.run do |config|
   
   config.vm.share_folder "v-data", "/data", "."
   
-  config.vm.forward_port "neo4j-server", 7474, 17474
+  config.vm.forward_port "neo4j-server", 7474, 27474
 
   # Enable provisioning with Puppet stand alone.  Puppet manifests
   # are contained in a directory path relative to this Vagrantfile.
