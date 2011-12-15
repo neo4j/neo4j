@@ -139,15 +139,34 @@ class GraphTest(unit_tests.GraphDatabaseTest):
             node_or_rel['favourite_words'] = ['banana','blue']
         # END SNIPPET: setProperties
         
+        
+        # START SNIPPET: programaticSetProperties
+        with db.transaction:
+            node_or_rel.set('name', 'Thomas Anderson')
+        # END SNIPPET: programaticSetProperties
+        
+        
         # START SNIPPET: getProperties
         numbers = node_or_rel['favourite_numbers']
         # END SNIPPET: getProperties
+        
+        
+        # START SNIPPET: programaticGetProperties
+        numbers = node_or_rel.get('favourite_numbers')
+        
+        # With default value
+        value = node_or_rel.get('some_property', 'defaultvalue')
+        # END SNIPPET: programaticGetProperties
+        
+        self.assertEqual(value, 'defaultvalue')
+        
         
         # START SNIPPET: deleteProperties
         with db.transaction:
             del node_or_rel['favourite_numbers']
         # END SNIPPET: deleteProperties
             del node_or_rel['favourite_words']
+        
         
         # START SNIPPET: loopProperties
         # Loop key and value at the same time
@@ -162,6 +181,7 @@ class GraphTest(unit_tests.GraphDatabaseTest):
         for value in node_or_rel.values():
             pass
         # END SNIPPET: loopProperties
+        
         
         items = list(node_or_rel.items())
         self.assertEqual(len(items), 2)
