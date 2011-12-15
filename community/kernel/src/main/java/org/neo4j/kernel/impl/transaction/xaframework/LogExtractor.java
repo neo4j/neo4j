@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static java.lang.Math.max;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHighestHistoryLogVersion;
 import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.readAndAssertLogHeader;
 
 import java.io.File;
@@ -38,12 +41,13 @@ import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.util.BufferedFileChannel;
 
 public class LogExtractor
 {
+    private static final String[] ACTIVE_POSTFIXES = { ".1", ".2" };
+    
     /**
      * If tx range is smaller than this threshold ask the position cache for the
      * start position farthest back. Otherwise jump to right log and scan.
@@ -526,24 +530,46 @@ public class LogExtractor
     {
         LogLoader loader = new LogLoader()
         {
-            private final FileSystemAbstraction FILE_SYSTEM = CommonFactories.defaultFileSystemAbstraction();
-            private final long highestLogVersion = XaLogicalLog.getHighestHistoryLogVersion( new File( storeDir ),
-                    NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME );
+            private final FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
+            private final Map<Long, String> activeLogFiles = getActiveLogs( storeDir );
+            private final long highestLogVersion = max( getHighestHistoryLogVersion( new File( storeDir ),
+                    LOGICAL_LOG_DEFAULT_NAME ), maxKey( activeLogFiles ) );
             
             @Override
             public ReadableByteChannel getLogicalLogOrMyselfCommitted( long version, long position )
                     throws IOException
             {
-                String name = new File( storeDir, NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME + ".v" + version ).getAbsolutePath();
+                String name = new File( storeDir, LOGICAL_LOG_DEFAULT_NAME + ".v" + version ).getAbsolutePath();
                 if ( !new File( name ).exists() )
-                {   // TODO Maybe check .1 or .2 if that's the one?
-                    throw new NoSuchLogVersionException( version );
+                {
+                    name = activeLogFiles.get( version );
+                    if ( name == null ) throw new NoSuchLogVersionException( version );
                 }
-                FileChannel channel = FILE_SYSTEM.open( name, "r" );
+                FileChannel channel = fileSystem.open( name, "r" );
                 channel.position( position );
                 return new BufferedFileChannel( channel );
             }
             
+            private long maxKey( Map<Long, String> activeLogFiles )
+            {
+                long max = 0;
+                for ( Long key : activeLogFiles.keySet() ) max = max( max, key );
+                return max;
+            }
+
+            private Map<Long, String> getActiveLogs( String storeDir ) throws IOException
+            {
+                Map<Long, String> result = new HashMap<Long, String>();
+                for ( String postfix : ACTIVE_POSTFIXES )
+                {
+                    File candidateFile = new File( storeDir, LOGICAL_LOG_DEFAULT_NAME + postfix );
+                    if ( !candidateFile.exists() ) continue;
+                    long[] header = LogIoUtils.readLogHeader( fileSystem, candidateFile );
+                    result.put( header[0], candidateFile.getAbsolutePath() );
+                }
+                return result;
+            }
+
             @Override
             public long getHighestLogVersion()
             {
