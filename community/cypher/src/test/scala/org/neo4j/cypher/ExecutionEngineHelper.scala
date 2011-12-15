@@ -39,8 +39,9 @@ trait ExecutionEngineHelper extends GraphDatabaseTestBase {
 
 
   def parseAndExecute(q: String, params: (String, Any)*): ExecutionResult = {
-    val query = new CypherParser().parse(q)
-    execute(query, params: _*)
+    val plan = engine.prepare(q)
+    println(plan)
+    plan.execute(params.toMap)
   }
 
 }

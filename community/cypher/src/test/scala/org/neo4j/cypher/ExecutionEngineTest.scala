@@ -1410,6 +1410,24 @@ return other
     assert(List(Map("other" -> c)) === result.toList)
   }
 
+  @Test def shouldHandleAggregationAndSortingOnSomeOverlappingColumns() {
+    createNode("COL1"->"A", "COL2"->"A", "num"->1)
+    createNode("COL1"->"B", "COL2"->"B", "num"->2)
+
+    val result = parseAndExecute("""
+start a  = node(1,2)
+return a.COL1, a.COL2, avg(a.num)
+order by a.COL1
+""")
+    
+    println(result)
+
+    assert(List(
+      Map("a.COL1" -> "A", "a.COL2"->"A", "avg(a.num)"->1),
+      Map("a.COL1" -> "B", "a.COL2"->"B", "avg(a.num)"->2)
+    ) === result.toList)
+  }
+
   @Test def shouldThrowNiceErrorMessageWhenPropertyIsMissing() {
     val query = new CypherParser().parse("start n=node(0) return n.A_PROPERTY_THAT_IS_MISSING")
 
