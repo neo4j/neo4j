@@ -120,7 +120,7 @@ public class HighlyAvailableGraphDatabase extends WrappedGraphDatabase
             @Override
             protected ReadableRelationshipIndex actual()
             {
-                return HighlyAvailableGraphDatabase.this.index().forRelationships( indexName );
+                return HighlyAvailableGraphDatabase.this.graphdb.index().forRelationships( indexName );
             }
         };
     }
@@ -133,7 +133,7 @@ public class HighlyAvailableGraphDatabase extends WrappedGraphDatabase
             @Override
             protected ReadableIndex<Node> actual()
             {
-                return HighlyAvailableGraphDatabase.this.index().getNodeAutoIndexer().getAutoIndex();
+                return HighlyAvailableGraphDatabase.this.graphdb.index().getNodeAutoIndexer().getAutoIndex();
             }
         };
     }
@@ -147,7 +147,7 @@ public class HighlyAvailableGraphDatabase extends WrappedGraphDatabase
             @Override
             protected ReadableRelationshipIndex actual()
             {
-                return HighlyAvailableGraphDatabase.this.index().getRelationshipAutoIndexer().getAutoIndex();
+                return HighlyAvailableGraphDatabase.this.graphdb.index().getRelationshipAutoIndexer().getAutoIndex();
             }
         };
     }
