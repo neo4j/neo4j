@@ -1,6 +1,7 @@
 1.6.M02 (2011-12-16)
 --------------------
 o Added progress indicator to backups
+o More checks regarding properties in the incremental consistency checker.
 
 1.5.M02 (2011-10-10)
 --------------------

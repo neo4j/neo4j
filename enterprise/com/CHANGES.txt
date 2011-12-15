@@ -1,6 +1,8 @@
 1.6.M02 (2011-12-16)
-----------------
-o Now closes connections if either side dies during streaming
+--------------------
+o Server stops streaming to a client if the client should crash or disconnect meanwhile.
+o Individually configurable read timeout for awaiting lock acquisition with ha.lock_read_timeout.
+  Server "silent channel checker" uses that lock timeout threshold also.
 
 1.5 (2011-10-18)
 ----------------

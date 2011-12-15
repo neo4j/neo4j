@@ -1,3 +1,12 @@
+1.6.M02 (2011-12-15)
+--------------------
+o Introduced ability to wait a while in some key points regarding master election to reduce the noise of possible exceptions
+  during master switch.
+o Uses the graphdb wrapper to make Index/Node/Relationship references able to survive master switches.
+o Fixed bugs where master switch events would sometimes not react accordingly.
+o "Old transactions" checker uses the lock read timeout as threshold.
+o Fix for null returned from AbstractZooKeeperManager#getMaster(), instead returns a master which always fails with ComException.
+
 1.6.M01 (2011-11-24)
 --------------------
 o Added entry about HAProxy in manual.
