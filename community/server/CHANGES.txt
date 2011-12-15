@@ -1,6 +1,11 @@
-NOT YET RELEASED
+1.6.M02 (2011-12-16)
 --------------------
 o Webadmin data browser now supports cypher queries
+o DEPRECATION: Cypher execution is now part of the core REST API, the cypher plugin is deprecated.
+o Updated to gremlin 1.4
+o Fixed bug in how auto indexes are represented
+o Max request execution time can now be limited
+o Hypermedia URLs returned by the server now set their host based on the HTTP host header
 
 1.6.M01 (2011-11-24)
 --------------------
