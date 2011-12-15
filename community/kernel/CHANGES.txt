@@ -1,4 +1,4 @@
-1.6.M02 (2011-12-15)
+1.6.M02 (2011-12-16)
 --------------------
 o Lower memory usage of ImpermanentGraphDatabase.
 o Abstracted stores that stores id/name pairs into AbstractNameStore/AbstractNameRecord and removed lots of duplicated code.
