@@ -27,6 +27,8 @@ sudo apt-get install python-jpype
 
 Then, make sure the +JAVA_HOME+ environment variable is set to your 'jre' or 'jdk' folder, so that JPype can find the JVM.
 
+NOTE: Installation can be problematic on OSX. See the following Stack Overflow discussion for help: http://stackoverflow.com/questions/8525193/cannot-install-jpype-on-os-x-lion-to-use-with-neo4j
+
 
 === Installing neo4j-embedded ===
 
