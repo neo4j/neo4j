@@ -185,6 +185,7 @@ public class ZooClient extends AbstractZooKeeperManager
             else if ( event.getType() == Watcher.Event.EventType.NodeDataChanged )
             {
                 int newMasterMachineId = toInt( getZooKeeper( true ).getData( path, true, null ) );
+                msgLog.logMessage( "Got event data " + newMasterMachineId );
                 if ( path.contains( MASTER_NOTIFY_CHILD ) )
                 {
                     // This event is for the masters eyes only so it should only
