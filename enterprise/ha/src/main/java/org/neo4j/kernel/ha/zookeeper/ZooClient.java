@@ -19,6 +19,17 @@
  */
 package org.neo4j.kernel.ha.zookeeper;
 
+import static org.neo4j.kernel.ha.zookeeper.ClusterManager.getSingleRootPath;
+
+import java.io.IOException;
+import java.nio.BufferUnderflowException;
+import java.nio.ByteBuffer;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import javax.management.remote.JMXServiceURL;
+
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -26,25 +37,20 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
+import org.neo4j.com.ComException;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.ha.ConnectionInformation;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.ResponseReceiver;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
+import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
+import org.neo4j.kernel.impl.transaction.xaframework.NullLogBuffer;
+import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import javax.management.remote.JMXServiceURL;
-import java.nio.BufferUnderflowException;
-import java.nio.ByteBuffer;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-
-import static org.neo4j.kernel.ha.zookeeper.ClusterManager.getSingleRootPath;
 
 public class ZooClient extends AbstractZooKeeperManager
 {
@@ -56,6 +62,7 @@ public class ZooClient extends AbstractZooKeeperManager
     private String sequenceNr;
 
     private long committedTx;
+    private int masterForCommittedTx;
 
     private final Object keeperStateMonitor = new Object();
     private volatile KeeperState keeperState = KeeperState.Disconnected;
@@ -148,11 +155,11 @@ public class ZooClient extends AbstractZooKeeperManager
                         Pair<Master, Machine> masterAfterIWrote = getMasterFromZooKeeper( false, false );
                         msgLog.logMessage( "Get master after write:" + masterAfterIWrote );
                         int masterId = masterAfterIWrote.other().getMachineId();
-                        setDataChangeWatcher( MASTER_NOTIFY_CHILD, masterId );
+//                        setDataChangeWatcher( MASTER_NOTIFY_CHILD, masterId );
                         msgLog.logMessage( "Set '" + MASTER_NOTIFY_CHILD + "' to " + masterId );
                         if ( sessionId != -1 )
                         {
-                            receiver.newMaster( new Exception() );
+                            receiver.newMaster( new Exception( "Got SyncConnected event from ZK" ) );
                         }
                         sessionId = newSessionId;
                     }
@@ -176,7 +183,8 @@ public class ZooClient extends AbstractZooKeeperManager
             }
             else if ( event.getType() == Watcher.Event.EventType.NodeDataChanged )
             {
-                int newMasterMachineId = toInt( getZooKeeper().getData( path, true, null ) );
+                int newMasterMachineId = toInt( getZooKeeper( true ).getData( path, true, null ) );
+                msgLog.logMessage( "Got event data " + newMasterMachineId );
                 if ( path.contains( MASTER_NOTIFY_CHILD ) )
                 {
                     // This event is for the masters eyes only so it should only
@@ -286,11 +294,6 @@ public class ZooClient extends AbstractZooKeeperManager
     
     protected void setDataChangeWatcher( String child, int currentMasterId )
     {
-        setDataChangeWatcher( child, currentMasterId, false );
-    }
-    
-    protected void setDataChangeWatcher( String child, int currentMasterId, boolean checkIfCurrentMasterIsSame )
-    {
         try
         {
             String root = getRoot();
@@ -302,14 +305,10 @@ public class ZooClient extends AbstractZooKeeperManager
                 data = zooKeeper.getData( path, true, null );
                 exists = true;
                 
-                if ( checkIfCurrentMasterIsSame )
+                if ( ByteBuffer.wrap( data ).getInt() == currentMasterId )
                 {
-                    int id = ByteBuffer.wrap( data ).getInt();
-                    if ( currentMasterId == -1 || id == currentMasterId )
-                    {
-                        msgLog.logMessage( child + " not set, is already " + currentMasterId );
-                        return;
-                    }
+                    msgLog.logMessage( child + " not set, is already " + currentMasterId );
+                    return;
                 }
             }
             catch ( KeeperException e )
@@ -413,6 +412,7 @@ public class ZooClient extends AbstractZooKeeperManager
             Pair<String, Long> info = rootPathGetter.getRootPath( zooKeeper );
             rootPath = info.first();
             committedTx = info.other();
+            masterForCommittedTx = getFirstMasterForTx( committedTx );
         }
     }
 
@@ -446,26 +446,12 @@ public class ZooClient extends AbstractZooKeeperManager
         }
     }
     
-    private int getCurrentMasterId()
-    {
-        try
-        {
-            TxIdGenerator generator = (TxIdGenerator) ((AbstractGraphDatabase)this.getGraphDb()).getConfig().getParams().get( TxIdGenerator.class );
-            return generator.getCurrentMasterId();
-        }
-        catch ( Exception e )
-        {
-            // This will happen if the graph database hasn't started yet
-            return -1;
-        }
-    }
-
-    private byte[] dataRepresentingMe( long txId )
+    private byte[] dataRepresentingMe( long txId, int master )
     {
         byte[] array = new byte[12];
         ByteBuffer buffer = ByteBuffer.wrap( array );
         buffer.putLong( txId );
-        buffer.putInt( getCurrentMasterId() );
+        buffer.putInt( master );
         return array;
     }
 
@@ -477,12 +463,12 @@ public class ZooClient extends AbstractZooKeeperManager
             writeHaServerConfig();
             String root = getRoot();
             String path = root + "/" + machineId + "_";
-            String created = zooKeeper.create( path, dataRepresentingMe( committedTx ),
+            String created = zooKeeper.create( path, dataRepresentingMe( committedTx, masterForCommittedTx ),
                 ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL );
 
             // Add watches to our master notification nodes
-            setDataChangeWatcher( MASTER_NOTIFY_CHILD, -1 );
-            setDataChangeWatcher( MASTER_REBOUND_CHILD, -1 );
+            subscribeToDataChangeWatcher( MASTER_NOTIFY_CHILD );
+            subscribeToDataChangeWatcher( MASTER_REBOUND_CHILD );
             return created.substring( created.lastIndexOf( "_" ) + 1 );
         }
         catch ( KeeperException e )
@@ -650,12 +636,13 @@ public class ZooClient extends AbstractZooKeeperManager
 
     public synchronized void setCommittedTx( long tx )
     {
-//        msgLog.logMessage( "ZooClient setting txId=" + tx + " for machine=" + machineId, true );
         waitForSyncConnected();
         this.committedTx = tx;
+        int master = getMasterForTx( tx );
+        this.masterForCommittedTx = master;
         String root = getRoot();
         String path = root + "/" + machineId + "_" + sequenceNr;
-        byte[] data = dataRepresentingMe( tx );
+        byte[] data = dataRepresentingMe( tx, master );
         try
         {
             zooKeeper.setData( path, data, -1 );
@@ -671,6 +658,41 @@ public class ZooClient extends AbstractZooKeeperManager
         }
     }
 
+    private int getFirstMasterForTx( long committedTx )
+    {
+        if ( committedTx == 1 ) return XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
+        LogExtractor extractor = null;
+        try
+        {
+            extractor = LogExtractor.from( getGraphDb().getStoreDir(), committedTx );
+            long tx = extractor.extractNext( NullLogBuffer.INSTANCE );
+            if ( tx != committedTx ) throw new RuntimeException( "Master for " + committedTx + " not found" );
+            return extractor.getLastStartEntry().getMasterId();
+        }
+        catch ( IOException e )
+        {
+            msgLog.logMessage( "Couldn't get master for " + committedTx + " using " +
+                    XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER + " temporarily", e );
+            return XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
+        }
+        finally
+        {
+            if ( extractor != null ) extractor.close();
+        }
+    }
+    
+    private int getMasterForTx( long tx )
+    {
+        try
+        {
+            return getGraphDb().getConfig().getTxModule().getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME ).getMasterForCommittedTx( tx ).first();
+        }
+        catch ( IOException e )
+        {
+            throw new ComException( "Master id not found for tx:" + tx, e );
+        }
+    }
+
     @Override
     public void shutdown()
     {
@@ -679,8 +701,9 @@ public class ZooClient extends AbstractZooKeeperManager
     }
 
     @Override
-    protected ZooKeeper getZooKeeper()
+    public ZooKeeper getZooKeeper( boolean sync )
     {
+        if ( sync ) zooKeeper.sync( rootPath, null, null );
         return zooKeeper;
     }
 

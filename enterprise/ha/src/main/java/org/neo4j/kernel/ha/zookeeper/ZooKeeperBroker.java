@@ -19,16 +19,6 @@
  */
 package org.neo4j.kernel.ha.zookeeper;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketAddress;
-import java.util.Map;
-
-import javax.management.remote.JMXServiceURL;
-
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.HaConfig;
@@ -42,6 +32,15 @@ import org.neo4j.kernel.ha.ResponseReceiver;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.management.Neo4jManager;
+
+import javax.management.remote.JMXServiceURL;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.SocketAddress;
+import java.util.Map;
 
 public class ZooKeeperBroker extends AbstractBroker
 {
@@ -199,7 +198,8 @@ public class ZooKeeperBroker extends AbstractBroker
     public Object instantiateMasterServer( AbstractGraphDatabase graphDb )
     {
         MasterServer server = new MasterServer( new MasterImpl( graphDb, config ),
-                Machine.splitIpAndPort( haServer ).other(), graphDb.getMessageLog() );
+                Machine.splitIpAndPort( haServer ).other(), graphDb.getMessageLog(),
+                clientLockReadTimeout );
         return server;
     }
 
@@ -229,6 +229,11 @@ public class ZooKeeperBroker extends AbstractBroker
     @Override
     public void notifyMasterChange( Machine newMaster )
     {
-        zooClient.setDataChangeWatcher( ZooClient.MASTER_NOTIFY_CHILD, newMaster.getMachineId(), true );
+        zooClient.setDataChangeWatcher( ZooClient.MASTER_NOTIFY_CHILD, newMaster.getMachineId() );
+    }
+
+    protected ZooClient getZooClient()
+    {
+        return zooClient;
     }
 }

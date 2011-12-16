@@ -51,7 +51,7 @@ Adding more Neo4j HA instances is very easy in this setup since the coordinator 
 
 == Installation Notes ==
 
-For installation instructions of a High Availability cluster please visit the Neo4j Wiki footnote:[http://wiki.neo4j.org/content/High_Availability_Cluster].
+For installation instructions of a High Availability cluster see <<ha-setup-tutorial>>.
 
 Note that while the +HighlyAvailableGraphDatabase+ supports the same API as the +EmbeddedGraphDatabase+, it does have additional configuration parameters. 
 

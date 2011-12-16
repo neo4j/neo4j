@@ -44,9 +44,10 @@ public class MasterServer extends Server<Master, Void>
     
     static final int FRAME_LENGTH = Protocol.DEFAULT_FRAME_LENGTH;
     
-    public MasterServer( Master realMaster, final int port, StringLogger logger )
+    public MasterServer( Master realMaster, final int port, StringLogger logger, int oldChannelThreshold )
     {
-        super( realMaster, port, logger, FRAME_LENGTH, PROTOCOL_VERSION );
+        super( realMaster, port, logger, FRAME_LENGTH, PROTOCOL_VERSION, DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS,
+                oldChannelThreshold );
     }
     
     @Override

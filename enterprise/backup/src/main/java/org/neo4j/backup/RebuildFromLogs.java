@@ -19,21 +19,21 @@
  */
 package org.neo4j.backup;
 
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHighestHistoryLogVersion;
+
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
-import java.util.Collections;
 
 import org.neo4j.backup.check.ConsistencyCheck;
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
+import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.LogExtractor;
 
 class RebuildFromLogs
 {
@@ -48,12 +48,10 @@ class RebuildFromLogs
 
     RebuildFromLogs applyTransactionsFrom( File sourceDir ) throws IOException
     {
-        AbstractGraphDatabase graphdb = new EmbeddedGraphDatabase( sourceDir.getAbsolutePath(),
-                Collections.singletonMap( Config.KEEP_LOGICAL_LOGS, "true" ) );
+        LogExtractor extractor = null;
         try
         {
-            XaDataSource nioneo = getDataSource( graphdb, Config.DEFAULT_DATA_SOURCE_NAME );
-            LogExtractor extractor = nioneo.getLogExtractor( 2, nioneo.getLastCommittedTxId() );
+            extractor = LogExtractor.from( sourceDir.getAbsolutePath(), 2 );
             for ( InMemoryLogBuffer buffer = new InMemoryLogBuffer();; buffer.reset() )
             {
                 long txId = extractor.extractNext( buffer );
@@ -63,7 +61,7 @@ class RebuildFromLogs
         }
         finally
         {
-            graphdb.shutdown();
+            if ( extractor != null ) extractor.close();
         }
         return this;
     }
@@ -79,8 +77,6 @@ class RebuildFromLogs
         if ( datasource == null ) throw new NullPointerException( "Could not access " + name );
         return datasource;
     }
-
-    private static final String LOG_NAME_PREFIX = "nioneo_logical.log.v";
 
     public static void main( String[] args )
     {
@@ -179,24 +175,8 @@ class RebuildFromLogs
         System.err.println( "         -full     --  to run a full check over the entire store for each transaction" );
     }
 
-    private static int findMaxLogFileId( File source )
+    private static long findMaxLogFileId( File source )
     {
-        int max = -1;
-        for ( File file : source.listFiles( new FilenameFilter()
-        {
-            @Override
-            public boolean accept( File dir, String name )
-            {
-                return name.startsWith( LOG_NAME_PREFIX );
-            }
-        } ) )
-        {
-            max = Math.max( max, Integer.parseInt( file.getName().substring( LOG_NAME_PREFIX.length() ) ) );
-        }
-        for ( int filenr = 0; filenr <= max; filenr++ )
-        {
-            if ( !new File( source, LOG_NAME_PREFIX + filenr ).isFile() ) return -1;
-        }
-        return max;
+        return getHighestHistoryLogVersion( source, LOGICAL_LOG_DEFAULT_NAME );
     }
 }

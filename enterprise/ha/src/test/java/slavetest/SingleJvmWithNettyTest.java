@@ -470,6 +470,38 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         }
     }
 
+    @Test
+    public void useLockTimeoutToPreventCleaningUpLongRunningTransactions() throws Exception
+    {
+        final long lockTimeout = 100;
+        initializeDbs( 1, stringMap( CONFIG_KEY_LOCK_READ_TIMEOUT, String.valueOf( lockTimeout ) ) );
+        final Long nodeId = executeJobOnMaster( new CommonJobs.CreateNodeJob( true ) );
+        final Fetcher<DoubleLatch> latchFetcher = getDoubleLatch();
+        pullUpdates();
+
+        Thread lockHolder = new Thread( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                DoubleLatch latch = latchFetcher.fetch();
+                try
+                {
+                    latch.awaitFirst();
+                    Thread.sleep( MasterImpl.UNFINISHED_TRANSACTION_CLEANUP_DELAY*2 * 1000 );
+                    latch.countDownSecond();
+                }
+                catch ( Exception e )
+                {
+                    throw new RuntimeException( e );
+                }
+            }
+        } );
+        lockHolder.start();
+
+        executeJob( new CommonJobs.HoldLongLock( nodeId, latchFetcher ), 0 );
+    }
+
     private Pair<Integer, Integer> getTransactionCounts( GraphDatabaseService master )
     {
         return Pair.of( 

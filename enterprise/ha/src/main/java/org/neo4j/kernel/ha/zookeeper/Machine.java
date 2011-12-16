@@ -77,7 +77,8 @@ public class Machine
     public String toString()
     {
         return "MachineInfo[ID:" + machineId + ", sequence:" + sequenceId +
-                ", last committed tx id:" + lastCommittedTxId + ", server:" + server + "]";
+                ", last tx:" + lastCommittedTxId + ", server:" + server +
+                ", master for last tx:" + masterForCommittedTxId + "]";
     }
 
     @Override

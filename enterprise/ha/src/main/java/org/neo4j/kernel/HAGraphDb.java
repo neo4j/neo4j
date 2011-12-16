@@ -19,6 +19,23 @@
  */
 package org.neo4j.kernel;
 
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.com.ComException;
 import org.neo4j.com.MasterUtil;
 import org.neo4j.com.Response;
@@ -61,49 +78,9 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
-
-import static java.lang.Math.max;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryFileNamePattern;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryLogVersion;
-
 public class HAGraphDb extends AbstractGraphDatabase
         implements GraphDatabaseService, ResponseReceiver
 {
-    public static final String CONFIG_KEY_OLD_SERVER_ID = HaConfig.CONFIG_KEY_OLD_SERVER_ID;
-    public static final String CONFIG_KEY_SERVER_ID = HaConfig.CONFIG_KEY_SERVER_ID;
-
-    public static final String CONFIG_KEY_OLD_COORDINATORS = HaConfig.CONFIG_KEY_OLD_COORDINATORS;
-    public static final String CONFIG_KEY_COORDINATORS = HaConfig.CONFIG_KEY_COORDINATORS;
-
-    public static final String CONFIG_KEY_SERVER = HaConfig.CONFIG_KEY_SERVER;
-    public static final String CONFIG_KEY_CLUSTER_NAME = HaConfig.CONFIG_KEY_CLUSTER_NAME;
-    public static final String CONFIG_KEY_PULL_INTERVAL = HaConfig.CONFIG_KEY_PULL_INTERVAL;
-    public static final String CONFIG_KEY_ALLOW_INIT_CLUSTER = HaConfig.CONFIG_KEY_ALLOW_INIT_CLUSTER;
-    public static final String CONFIG_KEY_MAX_CONCURRENT_CHANNELS_PER_SLAVE = HaConfig.CONFIG_KEY_MAX_CONCURRENT_CHANNELS_PER_SLAVE;
-    public static final String CONFIG_KEY_BRANCHED_DATA_POLICY = HaConfig.CONFIG_KEY_BRANCHED_DATA_POLICY;
-    public static final String CONFIG_KEY_READ_TIMEOUT = HaConfig.CONFIG_KEY_READ_TIMEOUT;
-    public static final String CONFIG_KEY_LOCK_READ_TIMEOUT = HaConfig.CONFIG_KEY_LOCK_READ_TIMEOUT;
-    public static final String CONFIG_KEY_SLAVE_COORDINATOR_UPDATE_MODE = HaConfig.CONFIG_KEY_SLAVE_COORDINATOR_UPDATE_MODE;
-
-    private static final String CONFIG_DEFAULT_HA_CLUSTER_NAME = HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME;
-    private static final int CONFIG_DEFAULT_PORT = HaConfig.CONFIG_DEFAULT_PORT;
-
     private final Map<String, String> config;
     private final BrokerFactory brokerFactory;
     private final Broker broker;
@@ -168,7 +145,7 @@ public class HAGraphDb extends AbstractGraphDatabase
                 {
                     getMessageLog().logMessage( "TxManager not ok, doing internal restart" );
                     internalShutdown( true );
-                    newMaster( null, new Exception( "Tx manager not ok" ) );
+                    newMaster( new Exception( "Tx manager not ok" ) );
                 }
             }
 
@@ -232,7 +209,8 @@ public class HAGraphDb extends AbstractGraphDatabase
             {
                 // Check if the cluster is up
                 Pair<Master, Machine> master = broker.getMasterReally( true );
-                if ( master != null && master.first() != null )
+                if ( master != null && !master.other().equals( Machine.NO_MACHINE ) &&
+                        master.other().getMachineId() != machineId )
                 { // Join the existing cluster
                     try
                     {
@@ -305,16 +283,7 @@ public class HAGraphDb extends AbstractGraphDatabase
 
     private long highestLogVersion()
     {
-        Pattern logFilePattern = getHistoryFileNamePattern( LOGICAL_LOG_DEFAULT_NAME );
-        long highest = -1;
-        for ( File file : new File( getStoreDir() ).listFiles() )
-        {
-            if ( logFilePattern.matcher( file.getName() ).matches() )
-            {
-                highest = max( highest, getHistoryLogVersion( file ) );
-            }
-        }
-        return highest;
+        return XaLogicalLog.getHighestHistoryLogVersion( new File( getStoreDir() ), LOGICAL_LOG_DEFAULT_NAME );
     }
 
     private EmbeddedGraphDbImpl localGraph()
@@ -384,18 +353,18 @@ public class HAGraphDb extends AbstractGraphDatabase
                     newMaster( new NullPointerException(
                             "master returned from broker" ) );
                 }
-            }
-            receive( broker.getMaster().first().pullUpdates(
+                receive( broker.getMaster().first().pullUpdates(
                         getSlaveContext( -1 ) ) );
+            }
         }
         catch ( ZooKeeperException e )
         {
-            newMaster( null, e );
+            newMaster( e );
             throw e;
         }
         catch ( ComException e )
         {
-            newMaster( null, e );
+            newMaster( e );
             throw e;
         }
     }
@@ -711,7 +680,7 @@ public class HAGraphDb extends AbstractGraphDatabase
         if ( this.updatePuller != null )
         {
             getMessageLog().logMessage( "Internal shutdown updatePuller", true );
-            this.updatePuller.shutdown();
+            this.updatePuller.shutdownNow();
             getMessageLog().logMessage( "Internal shutdown updatePuller DONE", true );
             this.updatePuller = null;
         }
@@ -804,7 +773,7 @@ public class HAGraphDb extends AbstractGraphDatabase
         }
         catch ( IOException e )
         {
-            newMaster( null, e );
+            newMaster( e );
             throw new RuntimeException( e );
         }
     }

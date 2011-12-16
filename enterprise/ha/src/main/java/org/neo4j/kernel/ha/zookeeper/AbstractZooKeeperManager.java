@@ -21,7 +21,6 @@ package org.neo4j.kernel.ha.zookeeper;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,9 +35,7 @@ import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
 import org.neo4j.com.StoreWriter;
 import org.neo4j.com.TxExtractor;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.IdAllocation;
@@ -92,11 +89,11 @@ public abstract class AbstractZooKeeperManager implements Watcher
         }
     }
 
-    protected abstract ZooKeeper getZooKeeper();
+    public abstract ZooKeeper getZooKeeper( boolean sync );
 
     public abstract String getRoot();
     
-    protected GraphDatabaseService getGraphDb()
+    protected AbstractGraphDatabase getGraphDb()
     {
         return graphDb;
     }
@@ -115,7 +112,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
 
     protected Pair<Long, Integer> readDataRepresentingInstance( String path ) throws InterruptedException, KeeperException
     {
-        byte[] data = getZooKeeper().getData( path, false, null );
+        byte[] data = getZooKeeper( false ).getData( path, false, null );
         ByteBuffer buf = ByteBuffer.wrap( data );
         return Pair.of( buf.getLong(), buf.getInt() );
     }
@@ -133,7 +130,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
     protected Pair<Master, Machine> getMasterFromZooKeeper( boolean wait, boolean allowChange )
     {
         Machine master = getMasterBasedOn( getAllMachines( wait ).values() );
-        Master masterClient = null;
+        Master masterClient = NO_MASTER;
         if ( cachedMaster.other().getMachineId() != master.getMachineId() )
         {
             invalidateMaster();
@@ -157,15 +154,11 @@ public abstract class AbstractZooKeeperManager implements Watcher
 
     protected Machine getMasterBasedOn( Collection<Machine> machines )
     {
-        Collection<Triplet<Integer, Long, Integer>> debugData =
-                new ArrayList<Triplet<Integer,Long,Integer>>();
         Machine master = null;
         int lowestSeq = Integer.MAX_VALUE;
         long highestTxId = -1;
         for ( Machine info : machines )
         {
-            debugData.add( Triplet.of( info.getMachineId(),
-                    info.getLastCommittedTxId(), info.getSequenceId() ) );
             if ( info.getLastCommittedTxId() != -1 && info.getLastCommittedTxId() >= highestTxId )
             {
                 if ( info.getLastCommittedTxId() > highestTxId
@@ -179,7 +172,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
             }
         }
         log( "getMaster " + (master != null ? master.getMachineId() : "none") +
-                " based on " + debugData );
+                " based on " + machines );
         return master != null ? master : Machine.NO_MACHINE;
     }
 
@@ -193,7 +186,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
         {
             Map<Integer, Machine> result = new HashMap<Integer, Machine>();
             String root = getRoot();
-            List<String> children = getZooKeeper().getChildren( root, false );
+            List<String> children = getZooKeeper( true ).getChildren( root, false );
             for ( String child : children )
             {
                 Pair<Integer, Integer> parsedChild = parseChild( child );
@@ -255,7 +248,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
         String haServerPath = rootPath + "/" + HA_SERVERS_CHILD + "/" + machineId;
         try
         {
-            byte[] serverData = getZooKeeper().getData( haServerPath, false, null );
+            byte[] serverData = getZooKeeper( true ).getData( haServerPath, false, null );
             ByteBuffer buffer = ByteBuffer.wrap( serverData );
             int backupPort = buffer.getInt();
             byte length = buffer.get();
@@ -290,7 +283,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
         {
             invalidateMaster();
             cachedMaster = NO_MASTER_MACHINE_PAIR;
-            getZooKeeper().close();
+            getZooKeeper( false ).close();
         }
         catch ( InterruptedException e )
         {
@@ -401,6 +394,11 @@ public abstract class AbstractZooKeeperManager implements Watcher
         public Response<LockResult> acquireGraphReadLock( SlaveContext context )
         {
             throw noMasterException();
+        }
+        
+        public String toString()
+        {
+            return "NO_MASTER";
         }
     };
 

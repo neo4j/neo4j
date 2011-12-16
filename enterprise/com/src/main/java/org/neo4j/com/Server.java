@@ -72,7 +72,7 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
     // It's ok if there are more transactions, since these worker threads doesn't
     // do any actual work themselves, but spawn off other worker threads doing the
     // actual work. So this is more like a core Netty I/O pool worker size.
-    protected final static int DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS = 200;
+    public final static int DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS = 200;
 
     private final ChannelFactory channelFactory;
     private final ServerBootstrap bootstrap;
@@ -98,19 +98,16 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
     private final ScheduledExecutorService silentChannelExecutor;
 
     private final byte applicationProtocolVersion;
-    
-    public Server( M realMaster, final int port, StringLogger logger, int frameLength, byte applicationProtocolVersion )
-    {
-        this( realMaster, port, logger, frameLength, applicationProtocolVersion, DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS );
-    }
+    private final int oldChannelThresholdMillis;
     
     public Server( M realMaster, final int port, StringLogger logger, int frameLength, byte applicationProtocolVersion,
-            int maxNumberOfConcurrentTransactions )
+            int maxNumberOfConcurrentTransactions, int oldChannelThreshold/*seconds*/ )
     {
         this.realMaster = realMaster;
         this.frameLength = frameLength;
         this.applicationProtocolVersion = applicationProtocolVersion;
         this.msgLog = logger;
+        this.oldChannelThresholdMillis = oldChannelThreshold*1000;
         executor = Executors.newCachedThreadPool();
         masterCallExecutor = Executors.newCachedThreadPool();
         unfinishedTransactionExecutor = Executors.newScheduledThreadPool( 2 );
@@ -153,12 +150,12 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
                     for ( Map.Entry<Channel, Pair<SlaveContext, AtomicLong>> channel : connectedSlaveChannels.entrySet() )
                     {   // Has this channel been silent for a while?
                         long age = System.currentTimeMillis()-channel.getValue().other().get();
-                        if ( age > 30*1000 )
+                        if ( age > oldChannelThresholdMillis )
                         {
                             msgLog.logMessage( "Found a silent channel " + channel + ", " + age );
                             channels.put( channel.getKey(), Boolean.TRUE );
                         }
-                        else if ( age > 5*1000 )
+                        else if ( age > oldChannelThresholdMillis/2 )
                         {   // Then add it to a list to check
                             channels.put( channel.getKey(), Boolean.FALSE );
                         }
