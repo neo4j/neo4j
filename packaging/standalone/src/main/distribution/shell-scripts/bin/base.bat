@@ -50,7 +50,7 @@ set wrapperJarFilename=${windows-wrapper.filename}
 set command=""
 call:parseConfig "%~dp0..\%configFile%"
 
-for /F %%v in ('echo %1^|findstr "^help$ ^start$ ^stop$ ^query$ ^restart$ ^install$ ^remove$ ^console$"') do set command=%%v
+for /F %%v in ('echo %1^|findstr "^help$ ^start$ ^stop$ ^query$ ^restart$ ^install$ ^uninstall$ ^remove$ ^console$"') do set command=%%v
 
 if %command% == "" (
     set command=console
@@ -197,6 +197,7 @@ rem end function install
 rem
 rem function remove
 rem
+:uninstall
 :remove
 call:stop
 sc delete %serviceName%
