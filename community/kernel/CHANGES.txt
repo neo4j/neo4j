@@ -1,3 +1,20 @@
+1.6.M02 (2011-12-16)
+--------------------
+o Lower memory usage of ImpermanentGraphDatabase.
+o Abstracted stores that stores id/name pairs into AbstractNameStore/AbstractNameRecord and removed lots of duplicated code.
+o Fixed a race condition in the property cache which cuold poison the cache.
+o Fixed an issue where a JVM crash in the wrong place would make the next startup rename the current logical log without
+  incrementing the logVersion, making the next log rename fail.
+o Start records in the logical log aren't written until the transaction starts preparing/committing. This fixes an issue
+  with the logical log not being rotated sometimes.
+o Added AbstractGraphDatabase#tx() which returns a TransactionBuilder possible of configuring the transaction to be "unforced"
+  meaning that logical logs won't be forced when committing. Means better performance for small non-critical transactions.
+o Reduced number of proxy object instantiation and node record loading in general.
+o Added a wrapping graphdb abstraction, which makes instances survive even if the underlying db restarts.
+o Detached LogExtractor from XaLogicaLog so that it can be used without having a db running.
+o Added an API for progress indication. With a default implementation that prints dots (every 0.5%) and percentages
+  (every 10%) to a PrintStream.
+
 1.6.M01 (2011-11-24)
 --------------------
 o ImpermantentGraphDatabase now uses purely in-memory structures for speed during tests. It's done on a FileChannel level

@@ -149,7 +149,7 @@ case class ExtractFunction(iterable: Expression, id: String, expression: Express
     case x: Iterable[Any] => x.map(iterValue => {
       val innerMap = m + (id -> iterValue)
       expression(innerMap)
-    })
+    }).toList
     case _ => throw new IterableRequiredException(iterable)
   }
 

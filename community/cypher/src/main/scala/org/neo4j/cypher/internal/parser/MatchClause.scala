@@ -29,7 +29,7 @@ trait MatchClause extends JavaTokenParsers with Tokens {
 
   def matching: Parser[(Match, NamedPaths)] = ignoreCase("match") ~> rep1sep(path, ",") ^^ {
     case matching => {
-      val unamedPaths: List[Pattern] = matching.filter(_.isInstanceOf[List[Pattern]]).map(_.asInstanceOf[List[Pattern]]).flatten
+      val unamedPaths: List[Pattern] = matching.filter(_.isInstanceOf[List[Pattern]]).map(_.asInstanceOf[List[Pattern]]).flatten ++ matching.filter(_.isInstanceOf[Pattern]).map(_.asInstanceOf[Pattern])
       val namedPaths: List[NamedPath] = matching.filter(_.isInstanceOf[NamedPath]).map(_.asInstanceOf[NamedPath])
 
       (Match(unamedPaths: _*), NamedPaths(namedPaths: _*))
@@ -38,8 +38,13 @@ trait MatchClause extends JavaTokenParsers with Tokens {
 
   def path: Parser[Any] = pathSegment | parenPath
 
-  def parenPath: Parser[NamedPath] = identity ~ "=" ~ optParens(pathSegment) ^^ {
-    case p ~ "=" ~ pathSegment => NamedPath(p, pathSegment: _*)
+  def parenPath: Parser[Any] = identity ~ "=" ~ optParens(pathSegment) ^^ {
+    case p ~ "=" ~ pathSegment => {
+      if (pathSegment.size == 1 && pathSegment.head.isInstanceOf[PathPattern])
+        pathSegment.head.asInstanceOf[PathPattern].cloneWithOtherName(p).asInstanceOf[Pattern]
+      else
+        NamedPath(p, pathSegment: _*)
+    }
   }
 
   def pathSegment: Parser[List[Pattern]] = relatedTos | shortestPath
@@ -51,6 +56,12 @@ trait MatchClause extends JavaTokenParsers with Tokens {
       p.head
   }
 
+  def optionRelName(relName: String): Option[String] =
+    if (relName.startsWith("  UNNAMED"))
+      None
+    else
+      Some(relName)
+
   def shortestPath: Parser[List[Pattern]] = (ignoreCase("shortestPath") | ignoreCase("allShortestPaths")) ~ parens(singlePathSegment) ^^ {
     case algo ~ relInfo => {
 
@@ -60,12 +71,12 @@ trait MatchClause extends JavaTokenParsers with Tokens {
       }
 
       relInfo match {
-        case RelatedTo(left, right, relName, relType, direction, optional) => List(ShortestPath(namer.name(None), left, right, relType, direction, Some(1), optional, single))
+        case RelatedTo(left, right, relName, relType, direction, optional) => List(ShortestPath(namer.name(None), left, right, relType, direction, Some(1), optional, single, optionRelName(relName)))
         case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, direction, relIterable, optional) => {
           if (minHops.nonEmpty) {
             throw new SyntaxException("Shortest path does not support a minimal length")
           }
-          List(ShortestPath(namer.name(None), start, end, relType, direction, maxHops, optional, single))
+          List(ShortestPath(namer.name(None), start, end, relType, direction, maxHops, optional, single, relIterable))
         }
       }
 

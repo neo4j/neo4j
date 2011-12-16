@@ -1,5 +1,5 @@
-<NOT YET RELEASED>
-------------------
+1.6.M02 (2011-12-16)
+--------------------
 o Added allShortestPaths
 o Added COALESCE
 o Added column aliasing with AS

@@ -54,6 +54,14 @@ case class RelatedTo(left: String, right: String, relName: String, relType: Opti
   }
 }
 
+abstract class PathPattern extends Pattern {
+  def pathName: String
+  def start: String
+  def end: String
+  def cloneWithOtherName(newName: String): PathPattern
+  def relIterator:Option[String]
+}
+
 case class VarLengthRelatedTo(pathName: String,
                               start: String,
                               end: String,
@@ -62,9 +70,12 @@ case class VarLengthRelatedTo(pathName: String,
                               relType: Option[String],
                               direction: Direction,
                               relIterator: Option[String],
-                              optional: Boolean) extends Pattern {
+                              optional: Boolean) extends PathPattern {
 
   override def toString: String = pathName + "=" + node(start) + left(direction) + relInfo + right(direction) + node(end)
+
+
+  def cloneWithOtherName(newName: String) = VarLengthRelatedTo(newName, start, end, minHops, maxHops, relType, direction, relIterator, optional)
 
   private def relInfo: String = {
     var info = if (optional) "?" else ""
@@ -82,23 +93,12 @@ case class VarLengthRelatedTo(pathName: String,
   }
 }
 
-case class AllLeafs(startNode: String,
-                    endName: String,
-                    pathName: String,
-                    dir: Direction,
-                    relType: Option[String],
-                    maxLength: Option[Int],
-                    optional: Boolean) extends Pattern {
-  override def toString: String = pathName + "=allLeafs(" + startNode + left(dir) + relInfo + right(dir) + endName + ")"
+case class ShortestPath(pathName: String, start: String, end: String, relType: Option[String], dir: Direction, maxDepth: Option[Int], optional: Boolean, single: Boolean, relIterator:Option[String]) extends PathPattern {
+  override def toString: String = pathName + "=" + algo + "(" + start + left(dir) + relInfo + right(dir) + end + ")"
+  
+  private def algo = if(single) "singleShortestPath" else "allShortestPath"
 
-  private def relInfo = relType match {
-    case None => ""
-    case Some(typ) => "[:`" + typ + "`]"
-  }
-}
-
-case class ShortestPath(pipeName: String, startName: String, endName: String, relType: Option[String], dir: Direction, maxDepth: Option[Int], optional: Boolean, single: Boolean) extends Pattern {
-  override def toString: String = pipeName + "=shortestPath(" + startName + left(dir) + relInfo + right(dir) + endName + ")"
+  def cloneWithOtherName(newName: String) = ShortestPath(newName, start, end, relType, dir, maxDepth, optional, single, None)
 
   private def relInfo: String = {
     var info = "["
@@ -106,6 +106,6 @@ case class ShortestPath(pipeName: String, startName: String, endName: String, re
     if (relType.nonEmpty) info = info + ":" + relType.get
     info = info + "*"
     if (maxDepth.nonEmpty) info = info + ".." + maxDepth.get
-    info
+    info + "]"
   }
 }

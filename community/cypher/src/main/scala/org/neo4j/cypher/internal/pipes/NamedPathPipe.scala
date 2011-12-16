@@ -31,9 +31,7 @@ class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
   def getFirstNode[U]: String = {
     val firstNode = path.pathPattern.head match {
       case RelatedTo(left, right, relName, x, xx, optional) => left
-      case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, direction, iterableRel, optional) => start
-      case ShortestPath(_, start, _, _, _, _, _, _) => start
-      case AllLeafs(start, _, _, _, _, _, _) => start
+      case path:PathPattern => path.start
     }
     firstNode
   }
@@ -45,9 +43,7 @@ class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
 
     val p: Seq[PropertyContainer] = path.pathPattern.foldLeft(Seq(get(firstNode)))((soFar, p) => p match {
       case RelatedTo(left, right, relName, x, xx, optional) => soFar ++ Seq(get(relName), get(right))
-      case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, direction, iterableRel, optional) => getPath(m, pathName, soFar)
-      case ShortestPath(pathName, _, _, _, _, _, _, _) => getPath(m, pathName, soFar)
-      case AllLeafs(_, _, pathName, _, _, _, _) => getPath(m, pathName, soFar)
+      case path:PathPattern => getPath(m, path.pathName, soFar)
     })
 
     m + (path.pathName -> buildPath(p))

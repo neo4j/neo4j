@@ -808,10 +808,11 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val result = parseAndExecute("start n=node(1) match p=n-[:KNOWS*1..2]->x return p")
 
+    val toList: List[Path] = result.columnAs[Path]("p").toList
     assertEquals(List(
       PathImpl(node("A"), r1, node("B")),
       PathImpl(node("A"), r1, node("B"), r2, node("C"))
-    ), result.columnAs[Path]("p").toList)
+    ), toList)
   }
 
   @Test def aVarLengthPathOfLengthZero() {
@@ -902,7 +903,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("a", 1), NodeById("b", 2)).
-      namedPaths(NamedPath("p", ShortestPath("  UNNAMED1", "a", "b", None, Direction.BOTH, Some(15), false, true))).
+      namedPaths(NamedPath("p", ShortestPath("  UNNAMED1", "a", "b", None, Direction.BOTH, Some(15), false, true, None))).
       returns(ExpressionReturnItem(Entity("p")))
 
     val result = execute(query).toList.head("p").asInstanceOf[Path]
@@ -920,7 +921,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("a", 1), NodeById("b", 2)).
-      namedPaths(NamedPath("p", ShortestPath("  UNNAMED1", "a", "b", None, Direction.BOTH, None, false, true))).
+      namedPaths(NamedPath("p", ShortestPath("  UNNAMED1", "a", "b", None, Direction.BOTH, None, false, true, None))).
       returns(ExpressionReturnItem(Entity("p")))
 
     //Checking that we don't get an exception

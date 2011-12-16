@@ -21,23 +21,19 @@ package org.neo4j.kernel.impl.util;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.Config;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.LogExtractor;
+import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 
 public class CompareTxStreams
 {
     public static void main( String[] args ) throws IOException
     {
-        EmbeddedGraphDatabase db1 = new EmbeddedGraphDatabase( args[0] );
-        EmbeddedGraphDatabase db2 = new EmbeddedGraphDatabase( args[1] );
-        
+        LogExtractor extractor1 = null;
+        LogExtractor extractor2 = null;
         try
         {
-            LogExtractor extractor1 = getLogExtractor( db1 );
-            LogExtractor extractor2 = getLogExtractor( db2 );
+            extractor1 = LogExtractor.from( args[0] );
+            extractor2 = LogExtractor.from( args[1] );
             boolean branchingDetected = false;
             long lastTx = 1;
             while ( true )
@@ -76,14 +72,13 @@ public class CompareTxStreams
         }
         finally
         {
-            db1.shutdown();
-            db2.shutdown();
+            closeExtractor( extractor1 );
+            closeExtractor( extractor2 );
         }
     }
     
-    private static LogExtractor getLogExtractor( EmbeddedGraphDatabase db ) throws IOException
+    private static void closeExtractor( LogExtractor extractor )
     {
-        XaDataSource ds = db.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
-        return ds.getLogExtractor( 2, ds.getLastCommittedTxId() );
+        if ( extractor != null ) extractor.close();
     }
 }

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.pipes
 import matching.MatchingContext
 import org.neo4j.cypher.commands._
 import java.lang.String
-import org.neo4j.cypher.symbols.{IterableType, RelationshipType, NodeType, Identifier}
+import org.neo4j.cypher.symbols._
 
 class MatchPipe(source: Pipe, patterns: Seq[Pattern], predicates: Seq[Predicate]) extends Pipe {
   val matchingContext = new MatchingContext(patterns, source.symbols, predicates)
@@ -30,7 +30,11 @@ class MatchPipe(source: Pipe, patterns: Seq[Pattern], predicates: Seq[Predicate]
 
   def identifiers = patterns.flatMap(_ match {
     case RelatedTo(left, right, rel, relType, dir, optional) => Seq(Identifier(left, NodeType()), Identifier(right, NodeType()), Identifier(rel, RelationshipType()))
-    case VarLengthRelatedTo(pathName, left, right, minHops, maxHops, relType, dir, iterableRel, optional) => Seq(Identifier(left, NodeType()), Identifier(right, NodeType())) ++ iterableOfRelationships(iterableRel)
+    case path: PathPattern => Seq(
+      Identifier(path.start, NodeType()),
+      Identifier(path.end, NodeType()),
+      Identifier(path.pathName, PathType())
+    ) ++ iterableOfRelationships(path.relIterator)
     case _ => Seq()
   })
 

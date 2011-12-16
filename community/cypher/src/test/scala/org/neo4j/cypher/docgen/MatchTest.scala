@@ -147,7 +147,7 @@ class MatchTest extends DocumentingTestBase {
         " to the same node. If the distance between two nodes is zero, they are, by definition, the same node.",
       queryText = """start a=node(%A%) match p1=a-[:KNOWS*0..1]->b, p2=b-[:BLOCKS*0..1]->c return a,b,c, length(p1), length(p2)""",
       returns = "This query will return four paths, some of them with length zero.",
-      (p) => assertEquals(Set(
+      p => assertEquals(Set(
         Map("a" -> node("A"), "b" -> node("A"), "c" -> node("A"), "LENGTH(p1)" -> 0, "LENGTH(p2)" -> 0),
         Map("a" -> node("A"), "b" -> node("A"), "c" -> node("C"), "LENGTH(p1)" -> 0, "LENGTH(p2)" -> 1),
         Map("a" -> node("A"), "b" -> node("B"), "c" -> node("B"), "LENGTH(p1)" -> 1, "LENGTH(p2)" -> 0),

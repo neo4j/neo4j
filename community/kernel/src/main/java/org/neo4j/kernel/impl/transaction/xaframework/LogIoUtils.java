@@ -22,16 +22,31 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 
 import javax.transaction.xa.Xid;
 
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 
 public class LogIoUtils
 {
     private static final short CURRENT_FORMAT_VERSION = ( LogEntry.CURRENT_VERSION ) & 0xFF;
     static final int LOG_HEADER_SIZE = 16;
+    
+    public static long[] readLogHeader( FileSystemAbstraction fileSystem, File file ) throws IOException
+    {
+        FileChannel channel = fileSystem.open( file.getAbsolutePath(), "r" );
+        try
+        {
+            return readLogHeader( ByteBuffer.allocateDirect( 100*1000 ), channel, true );
+        }
+        finally
+        {
+            channel.close();
+        }
+    }
 
     public static long[] readLogHeader( ByteBuffer buffer, ReadableByteChannel channel,
             boolean strict ) throws IOException

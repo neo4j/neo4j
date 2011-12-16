@@ -1,3 +1,9 @@
+1.6.M02 (2011-12-16)
+--------------------
+o Better AddRelationshipCommand#toString and added script for dumping index logs
+o Added tests to ensure that the host header is used when creating link URIs in responses
+o Fix auto indexing bug on removal of non-loaded heavy properties
+
 1.6.M01 (2011-11-24)
 --------------------
 o Added LRU cache for open indexes so that a limit can be set. Thanks vivekprahlad (github id) for the patch.

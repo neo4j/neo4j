@@ -27,7 +27,6 @@ import java.util.StringTokenizer;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.ClosableIterable;
-import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.LogExtractor;
 
 /**
  * <CODE>XaDataSource</CODE> is as a factory for creating
