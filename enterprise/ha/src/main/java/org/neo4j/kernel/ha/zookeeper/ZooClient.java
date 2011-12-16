@@ -47,9 +47,9 @@ import org.neo4j.kernel.ha.ConnectionInformation;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.ResponseReceiver;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.NullLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
+import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.LogExtractor;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public class ZooClient extends AbstractZooKeeperManager
@@ -69,7 +69,7 @@ public class ZooClient extends AbstractZooKeeperManager
     private volatile boolean shutdown = false;
     private final RootPathGetter rootPathGetter;
     private String rootPath;
-    
+
     // Has the format <host-name>:<port>
     private final String haServer;
 
@@ -126,19 +126,7 @@ public class ZooClient extends AbstractZooKeeperManager
             if ( path == null && event.getState() == Watcher.Event.KeeperState.Expired )
             {
                 keeperState = KeeperState.Expired;
-                if ( zooKeeper != null )
-                {
-                    try
-                    {
-                        zooKeeper.close();
-                    }
-                    catch ( InterruptedException e )
-                    {
-                        e.printStackTrace();
-                        Thread.interrupted();
-                    }
-                }
-                zooKeeper = instantiateZooKeeper();
+                receiver.reconnect( new Exception() );
             }
             else if ( path == null && event.getState() == Watcher.Event.KeeperState.SyncConnected )
             {
@@ -291,7 +279,7 @@ public class ZooClient extends AbstractZooKeeperManager
             throw new ZooKeeperException( "Interrupted", e );
         }
     }
-    
+
     protected void setDataChangeWatcher( String child, int currentMasterId )
     {
         try
@@ -304,7 +292,7 @@ public class ZooClient extends AbstractZooKeeperManager
             {
                 data = zooKeeper.getData( path, true, null );
                 exists = true;
-                
+
                 if ( ByteBuffer.wrap( data ).getInt() == currentMasterId )
                 {
                     msgLog.logMessage( child + " not set, is already " + currentMasterId );
@@ -445,7 +433,7 @@ public class ZooClient extends AbstractZooKeeperManager
             throw new ZooKeeperException( "Interrupted.", e );
         }
     }
-    
+
     private byte[] dataRepresentingMe( long txId, int master )
     {
         byte[] array = new byte[12];
@@ -685,7 +673,7 @@ public class ZooClient extends AbstractZooKeeperManager
             if ( extractor != null ) extractor.close();
         }
     }
-    
+
     private int getMasterForTx( long tx )
     {
         try

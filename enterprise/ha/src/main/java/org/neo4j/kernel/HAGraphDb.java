@@ -83,7 +83,7 @@ public class HAGraphDb extends AbstractGraphDatabase
 {
     private final Map<String, String> config;
     private final BrokerFactory brokerFactory;
-    private final Broker broker;
+    private Broker broker;
     private volatile EmbeddedGraphDbImpl localGraph;
     private final int machineId;
     private volatile MasterServer masterServer;
@@ -388,6 +388,24 @@ public class HAGraphDb extends AbstractGraphDatabase
     public String toString()
     {
         return getClass().getSimpleName() + "[" + HaConfig.CONFIG_KEY_SERVER_ID + ":" + machineId + "]";
+    }
+
+    /**
+     * Shuts down the broker, invalidating every connection to the zookeeper
+     * cluster and starts it again. Should be called in case a ConnectionExpired
+     * event is received, this is the equivalent of building the ZK connection
+     * from start. Also triggers a master reelect, to make sure that the state
+     * ZK ended up in during our absence is respected.
+     */
+    @Override
+    public void reconnect( Exception e )
+    {
+        if ( broker != null )
+        {
+            broker.shutdown();
+        }
+        this.broker = brokerFactory.create( this, config );
+        newMaster( e );
     }
 
     protected synchronized void reevaluateMyself( StoreId storeId )
@@ -945,10 +963,10 @@ public class HAGraphDb extends AbstractGraphDatabase
     private interface Condition<T, E extends Exception>
     {
         T tryToFullfill();
-        
+
         E failure();
     }
-    
+
     private class LocalGraphAvailableCondition implements Condition<EmbeddedGraphDbImpl, RuntimeException>
     {
         @Override
@@ -956,7 +974,7 @@ public class HAGraphDb extends AbstractGraphDatabase
         {
             return localGraph;
         }
-        
+
         public RuntimeException failure()
         {
             if ( causeOfShutdown != null )

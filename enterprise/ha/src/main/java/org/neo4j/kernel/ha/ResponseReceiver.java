@@ -36,4 +36,6 @@ public interface ResponseReceiver
     <T> T receive( Response<T> response );
 
     void newMaster( Exception cause );
+
+    void reconnect( Exception cause );
 }
