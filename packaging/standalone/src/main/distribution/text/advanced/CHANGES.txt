@@ -1,6 +1,32 @@
+1.6.M02 (2011-12-16)
+--------------------
+o [cypher] BREAKING CHANGE: Changed the syntax for iterable predicated ALL/NONE/ANY/SINGLE to use WHERE instead of a colon
+o [cypher] BREAKING CHANGE: ExecutionResult is now a read-once, forward only iterator.
+o [server] DEPRECATION: Cypher execution is now part of the core REST API, the cypher plugin is deprecated. 
+o [server] Webadmin data browser now supports cypher queries
+o [server] Updated to gremlin 1.4
+o [server] Fixed bug in how auto indexes are represented
+o [server] Max request execution time can now be limited
+o [server] Hypermedia URLs returned by the server now set their host based on the HTTP host header
+o [kernel] Lower memory usage of ImpermanentGraphDatabase.
+o [kernel] Abstracted stores that stores id/name pairs into AbstractNameStore/AbstractNameRecord and removed lots of duplicated code.
+o [kernel] Fixed a race condition in the property cache which cuold poison the cache.
+o [kernel] Fixed an issue where a JVM crash in the wrong place would make the next startup rename the current logical log without
+  incrementing the logVersion, making the next log rename fail.
+o [kernel] Start records in the logical log aren't written until the transaction starts preparing/committing. This fixes an issue
+  with the logical log not being rotated sometimes.
+o [kernel] Added AbstractGraphDatabase#tx() which returns a TransactionBuilder possible of configuring the transaction to be "unforced"
+  meaning that logical logs won't be forced when committing. Means better performance for small non-critical transactions.
+o [kernel] Reduced number of proxy object instantiation and node record loading in general.
+o [kernel] Added a wrapping graphdb abstraction, which makes instances survive even if the underlying db restarts.
+o [cypher] Added allShortestPaths
+o [cypher] Added COALESCE
+o [cypher] Added column aliasing with AS
+o [cypher] Fixed problems with optional graph elements
+
 1.6.M01 (2011-11-24)
 --------------------
-io Added support for a branched data bean (implemented in HA)
+o Added support for a branched data bean (implemented in HA)
 o Added info on latest committed txId in TransactionManager bean
 
 1.5 (2011-10-31)
