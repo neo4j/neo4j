@@ -19,12 +19,11 @@
  */
 package org.neo4j.server.webadmin.rest;
 
-import java.rmi.RemoteException;
-
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.KernelExtension;
+import org.neo4j.server.logging.Logger;
 import org.neo4j.server.webadmin.console.ScriptSession;
 import org.neo4j.shell.ShellClient;
 import org.neo4j.shell.ShellException;
@@ -34,8 +33,12 @@ import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.impl.ShellServerExtension;
 
+import java.rmi.RemoteException;
+
 public class ShellSession implements ScriptSession
 {
+    public static final Logger log = Logger.getLogger( ShellSession.class );
+
     private final ShellClient client;
     private final CollectingOutput output;
     
@@ -55,21 +58,6 @@ public class ShellSession implements ScriptSession
         {
             throw new RuntimeException( "Unable to start shell client", e );
         }
-
-//        try
-//        {
-//            output = new CollectingOutput();
-//            client = new RemoteClient( RmiLocation.location( "localhost",
-//                    AbstractServer.DEFAULT_PORT, AbstractServer.DEFAULT_NAME ), output );
-//        }
-//        catch ( ShellException e )
-//        {
-//            throw new RuntimeException( "Unable to start shell client", e );
-//        }
-//        catch ( RemoteException e )
-//        {
-//            throw new RuntimeException( "Unable to start shell client", e );
-//        }
     }
 
     @Override
@@ -79,6 +67,7 @@ public class ShellSession implements ScriptSession
         if ( script.equals( "exit" ) || script.equals( "quit" ) ) return Pair.of( "No you don't", client.getPrompt() );
         try
         {
+            log.debug( script );
             client.evaluate( removeFirstEnter( script ) );
             return Pair.of( output.asString(), client.getPrompt() );
         }
