@@ -25,8 +25,10 @@ import org.neo4j.com.SlaveContext;
 public interface ResponseReceiver
 {
     SlaveContext getSlaveContext( int eventIdentifier );
-    
+
     <T> T receive( Response<T> response );
-    
+
     void newMaster( Exception cause );
+
+    void reconnect( Exception cause );
 }
