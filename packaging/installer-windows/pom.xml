@@ -25,7 +25,7 @@
 
 	<properties>
 		<short-name>installer-windows</short-name>
-		<neo4j.version>1.6-SNAPSHOT</neo4j.version>
+		<neo4j.version>1.6.M02</neo4j.version>
 
 		<buildnumber>0</buildnumber>
 
