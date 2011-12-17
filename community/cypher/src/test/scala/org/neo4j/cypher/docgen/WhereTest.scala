@@ -40,7 +40,7 @@ class WhereTest extends DocumentingTestBase {
       text = "To filter on a property, write your clause after the `WHERE` keyword.",
       queryText = """start n=node(%Andres%, %Tobias%) where n.age < 30 return n""",
       returns = """The node.""",
-      (p) => assertEquals(List(node("Tobias")), p.columnAs[Node]("n").toList))
+      assertions = (p) => assertEquals(List(node("Tobias")), p.columnAs[Node]("n").toList))
   }
 
   @Test def boolean_operations() {
@@ -49,7 +49,7 @@ class WhereTest extends DocumentingTestBase {
       text = "You can use the expected boolean operators `AND` and `OR`, and also the boolean function `NOT()`.",
       queryText = """start n=node(%Andres%, %Tobias%) where (n.age < 30 and n.name = "Tobias") or not(n.name = "Tobias")  return n""",
       returns = """The node.""",
-      (p) => assertEquals(List(node("Andres"), node("Tobias")), p.columnAs[Node]("n").toList))
+      assertions = (p) => assertEquals(List(node("Andres"), node("Tobias")), p.columnAs[Node]("n").toList))
   }
 
   @Test def regular_expressions() {
@@ -58,7 +58,7 @@ class WhereTest extends DocumentingTestBase {
       text = "You can match on regular expressions by using `=~ /regexp/`, like this:",
       queryText = """start n=node(%Andres%, %Tobias%) where n.name =~ /Tob.*/ return n""",
       returns = """The node named Tobias.""",
-      (p) => assertEquals(List(node("Tobias")), p.columnAs[Node]("n").toList))
+      assertions = (p) => assertEquals(List(node("Tobias")), p.columnAs[Node]("n").toList))
   }
 
   @Test def regular_expressions_escaped() {
@@ -67,7 +67,16 @@ class WhereTest extends DocumentingTestBase {
       text = "If you need a forward slash inside of your regular expression, escape it just like you expect to.",
       queryText = """start n=node(%Andres%, %Tobias%) where n.name =~ /Some\/thing/ return n""",
       returns = """No nodes match this regular expression.""",
-      (p) => assertEquals(List(), p.toList))
+      assertions = (p) => assertEquals(List(), p.toList))
+  }
+
+  @Test def regular_expressions_case_insensitive() {
+    testQuery(
+      title = "Case insensitive regular expressions",
+      text = "By pre-pending a regular expression with (?i), the whole expression becomes case insensitive.",
+      queryText = """start n=node(%Andres%, %Tobias%) where n.name =~ /(?i)ANDR.*/ return n""",
+      returns = """The node with name 'Andres' is returned.""",
+      assertions = (p) => assertEquals(List(Map("n" -> node("Andres"))), p.toList))
   }
 
   @Test def has_property() {
@@ -76,7 +85,7 @@ class WhereTest extends DocumentingTestBase {
       text = "To only include nodes/relationships that have a property, just write out the identifier and the property you expect it to have.",
       queryText = """start n=node(%Andres%, %Tobias%) where n.belt return n""",
       returns = """The node named Andres.""",
-      (p) => assertEquals(List(node("Andres")), p.columnAs[Node]("n").toList))
+      assertions = (p) => assertEquals(List(node("Andres")), p.columnAs[Node]("n").toList))
   }
 
   @Test def compare_if_property_exists() {
@@ -86,7 +95,7 @@ class WhereTest extends DocumentingTestBase {
         " with the dot notation, followed by a question mark",
       queryText = """start n=node(%Andres%, %Tobias%) where n.belt? = 'white' return n""",
       returns = "All nodes, even those without the belt property",
-      (p) => assertEquals(List(node("Andres"), node("Tobias")), p.columnAs[Node]("n").toList))
+      assertions = (p) => assertEquals(List(node("Andres"), node("Tobias")), p.columnAs[Node]("n").toList))
   }
 
   @Test def filter_on_relationship_type() {
@@ -97,7 +106,7 @@ class WhereTest extends DocumentingTestBase {
         "In this example, the query does a regular expression comparison with the name of the relationship type.",
       queryText = """start n=node(%Andres%) match (n)-[r]->() where type(r) =~ /K.*/ return r""",
       returns = """The relationship that has a type whose name starts with K.""",
-      (p) => assertEquals("KNOWS", p.columnAs[Relationship]("r").toList.head.getType.name()))
+      assertions = (p) => assertEquals("KNOWS", p.columnAs[Relationship]("r").toList.head.getType.name()))
   }
 
   @Test def filter_on_null() {
@@ -107,7 +116,7 @@ class WhereTest extends DocumentingTestBase {
         " Also like SQL, the negative is IS NOT NULL, althought NOT(IS NULL x) also works.",
       queryText = """start a=node(%Tobias%), b=node(%Andres%, %Peter%) match a<-[r?]-b where r is null return b""",
       returns = "Nodes that Tobias is not connected to",
-      (p) => assertEquals(List(Map("b" -> node("Peter"))), p.toList))
+      assertions = (p) => assertEquals(List(Map("b" -> node("Peter"))), p.toList))
   }
 
   @Test def has_relationship_to() {
@@ -126,6 +135,6 @@ do not have a relationship between them.
       """,
       queryText = """start a=node(%Tobias%), b=node(%Andres%, %Peter%) match a<-[r?]-b where r is null return b""",
       returns = "Nodes that Tobias is not connected to",
-      (p) => assertEquals(List(Map("b" -> node("Peter"))), p.toList))
+      assertions = (p) => assertEquals(List(Map("b" -> node("Peter"))), p.toList))
   }
 }
