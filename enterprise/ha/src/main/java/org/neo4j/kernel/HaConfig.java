@@ -49,10 +49,12 @@ public class HaConfig
     public static final String CONFIG_KEY_READ_TIMEOUT = "ha.read_timeout";
     public static final String CONFIG_KEY_SLAVE_COORDINATOR_UPDATE_MODE = "ha.slave_coordinator_update_mode";
     public static final String CONFIG_KEY_LOCK_READ_TIMEOUT = "ha.lock_read_timeout";
+    public static final String CONFIG_KEY_COORDINATOR_FETCH_INFO_TIMEOUT = "ha.coordinator_fetch_info_timeout";
 
     public static final String CONFIG_DEFAULT_HA_CLUSTER_NAME = "neo4j.ha";
     public static final int CONFIG_DEFAULT_PORT = 6361;
     public static final long CONFIG_DEFAULT_PULL_INTERVAL = -1;
+    public static final int CONFIG_DEFAULT_COORDINATOR_FETCH_INFO_TIMEOUT = 500;
 
     public static String getConfigValue( Map<String, String> config, String... oneKeyOutOf/*prioritized in descending order*/ )
     {
@@ -169,6 +171,12 @@ public class HaConfig
         String backupConfig = (String) config.get( ENABLE_ONLINE_BACKUP );
         Integer port = parsePort( backupConfig );
         return port != null ? port : 0;
+    }
+
+    public static int getFetchInfoTimeoutFromConfig( Map<String, String> config )
+    {
+        String value = config.get( CONFIG_KEY_COORDINATOR_FETCH_INFO_TIMEOUT );
+        return value != null ? Integer.parseInt( value ) : CONFIG_DEFAULT_COORDINATOR_FETCH_INFO_TIMEOUT;
     }
 
     public static Map<String,String> loadConfigurations( String file )

@@ -44,23 +44,22 @@ import java.util.Map;
 
 public class ZooKeeperBroker extends AbstractBroker
 {
-    // Connect timeout to zk instance for fetching info, in ms
-    private static final int FETCH_INFO_TIMEOUT = 500;
-
     private final ZooClient zooClient;
     private final String haServer;
     private int clientLockReadTimeout;
     private final String clusterName;
     private Map<String, String> config;
+    private int fetchInfoTimeout;
 
     public ZooKeeperBroker( AbstractGraphDatabase graphDb, Map<String, String> config, ResponseReceiver receiver )
     {
         super( HaConfig.getMachineIdFromConfig( config ), graphDb );
         this.config = config;
-        this.clusterName = HaConfig.getClusterNameFromConfig( config );
-        this.haServer = HaConfig.getHaServerFromConfig( config );
-        this.clientLockReadTimeout = HaConfig.getClientLockReadTimeoutFromConfig( config );
-        this.zooClient = new ZooClient( graphDb, config, receiver );
+        clusterName = HaConfig.getClusterNameFromConfig( config );
+        haServer = HaConfig.getHaServerFromConfig( config );
+        clientLockReadTimeout = HaConfig.getClientLockReadTimeoutFromConfig( config );
+        fetchInfoTimeout = HaConfig.getFetchInfoTimeoutFromConfig( config );
+        zooClient = new ZooClient( graphDb, config, receiver );
     }
 
     @Override
@@ -99,7 +98,7 @@ public class ZooKeeperBroker extends AbstractBroker
              * want to block the main thread in such a case, just fail.
              */
             Socket soc = new Socket();
-            soc.connect( sockAddr, FETCH_INFO_TIMEOUT );
+            soc.connect( sockAddr, fetchInfoTimeout );
 
             BufferedReader in = new BufferedReader( new InputStreamReader( soc.getInputStream() ) );
             try
