@@ -1062,17 +1062,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
   def testQuery(query: String, expectedQuery: Query) {
     val parser = new CypherParser()
 
-    try {
       val ast = parser.parse(query)
 
       assert(expectedQuery === ast)
-    } catch {
-      case x => {
-        println(x)
-        throw new Exception(query + "\n\n" + x.getMessage)
-      }
-    }
   }
-
-
 }

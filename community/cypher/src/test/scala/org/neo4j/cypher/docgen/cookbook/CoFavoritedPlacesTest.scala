@@ -70,7 +70,6 @@ class CoFavoritedPlacesTest extends DocumentingTestBase {
       		ORDER By otherPlace.name desc""",
       returns = "The list of possible friends ranked by them liking similar stuff that are not yet friends.",
       (p) => {
-        println(p.dumpToString())
         assertEquals(List(Map("otherPlace.name" -> "MelsPlace", "collect(tag.name)" -> List("Cool", "Cosy")),
                 Map("otherPlace.name" -> "CoffeeShop3", "collect(tag.name)" -> List("Cosy")),
                 Map("otherPlace.name" -> "CoffeeShop2", "collect(tag.name)" -> List("Cool"))),p.toList)

@@ -222,8 +222,6 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val result = execute(query)
 
     val textOutput = result.dumpToString()
-
-    println(textOutput)
   }
 
   @Test def doesNotFailOnVisualizingEmptyOutput() {
@@ -233,8 +231,6 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
       returns(ExpressionReturnItem(Entity("start")))
 
     val result = execute(query)
-
-    println(result.dumpToString())
   }
 
   @Test def shouldGetRelatedToRelatedTo() {
@@ -1419,8 +1415,6 @@ start a  = node(1,2)
 return a.COL1, a.COL2, avg(a.num)
 order by a.COL1
 """)
-
-    println(result)
 
     assert(List(
       Map("a.COL1" -> "A", "a.COL2" -> "A", "avg(a.num)" -> 1),
