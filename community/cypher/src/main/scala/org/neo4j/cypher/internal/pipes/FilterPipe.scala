@@ -22,11 +22,13 @@ package org.neo4j.cypher.internal.pipes
 import org.neo4j.cypher.commands.Predicate
 import java.lang.String
 
-class FilterPipe(source: Pipe, predicate: Predicate) extends Pipe {
+class FilterPipe(source: Pipe, predicate: Predicate) extends PipeWithSource(source) {
   val symbols = source.symbols
 
   def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] =
     source.createResults(params).filter(predicate isMatch)
 
   override def executionPlan(): String = source.executionPlan() + "\r\n" + "Filter(" + predicate.toString + ")"
+
+  def dependencies = predicate.dependencies
 }

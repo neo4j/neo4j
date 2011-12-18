@@ -88,8 +88,8 @@ with StringExtras {
         case StringExpected() => fail(input, "String literal expected")
         case "string matching regex `(?i)\\Qrel\\E' expected but `(' found" => fail(input, "The syntax for bound nodes has changed in v1.5 of Neo4j. Now, it is START a=node(<nodeId>), or START a=node:idxName(key='value').")
         case "string matching regex `-?\\d+' expected but `)' found" => fail(input, "Last element of list must be a value")
-        case "string matching regex `(?i)\\Qreturn\\E' expected but end of source found" => throw new SyntaxException("Missing RETURN clause")
-        case _ => throw new SyntaxException(message)
+        case "string matching regex `(?i)\\Qreturn\\E' expected but end of source found" => throw new SyntaxException("Missing RETURN clause")       
+        case _ => fail(input, message)
       }
     }
   }

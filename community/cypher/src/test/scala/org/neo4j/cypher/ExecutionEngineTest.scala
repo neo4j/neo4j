@@ -1411,20 +1411,20 @@ return other
   }
 
   @Test def shouldHandleAggregationAndSortingOnSomeOverlappingColumns() {
-    createNode("COL1"->"A", "COL2"->"A", "num"->1)
-    createNode("COL1"->"B", "COL2"->"B", "num"->2)
+    createNode("COL1" -> "A", "COL2" -> "A", "num" -> 1)
+    createNode("COL1" -> "B", "COL2" -> "B", "num" -> 2)
 
     val result = parseAndExecute("""
 start a  = node(1,2)
 return a.COL1, a.COL2, avg(a.num)
 order by a.COL1
 """)
-    
+
     println(result)
 
     assert(List(
-      Map("a.COL1" -> "A", "a.COL2"->"A", "avg(a.num)"->1),
-      Map("a.COL1" -> "B", "a.COL2"->"B", "avg(a.num)"->2)
+      Map("a.COL1" -> "A", "a.COL2" -> "A", "avg(a.num)" -> 1),
+      Map("a.COL1" -> "B", "a.COL2" -> "B", "avg(a.num)" -> 2)
     ) === result.toList)
   }
 
@@ -1436,16 +1436,32 @@ order by a.COL1
     assert(exception.getMessage === "n.A_PROPERTY_THAT_IS_MISSING does not exist on Node[0]")
   }
 
+  @Test def shouldAllowAllPredicateOnArrayProperty() {
+    val a = createNode("array" -> Array(1, 2, 3, 4))
+
+    val result = parseAndExecute("start a = node(1) where any(x in a.array where x = 2) return a")
+
+    assert(List(Map("a" -> a)) === result.toList)
+  }
+
+  @Test def shouldAllowStringComparisonsInArray() {
+    val a = createNode("array" -> Array("Cypher duck", "Gremlin orange", "I like the snow"))
+
+    val result = parseAndExecute("start a = node(1) where single(x in a.array where x =~ /.*the.*/) return a")
+
+    assert(List(Map("a" -> a)) === result.toList)
+  }
+
   @Test def shouldNotThrowExceptionWhenStuffIsMissing() {
     val a = createNode()
     val b = createNode()
-    relate(a,b)
+    relate(a, b)
     val result = parseAndExecute("""START n=node(1)
 MATCH n-->x0-[?]->x1
 WHERE x1.type AND x1.type="http://dbpedia.org/ontology/Film" AND x1.label AND x1.label="Reservoir Dogs"
 RETURN x0.name?
 """)
-    assert( List() === result.toList )
+    assert(List() === result.toList)
   }
 }
 

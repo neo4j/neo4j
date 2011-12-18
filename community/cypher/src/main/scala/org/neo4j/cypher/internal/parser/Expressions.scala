@@ -27,7 +27,7 @@ trait Expressions extends JavaTokenParsers with Tokens {
 
   def entity: Parser[Entity] = identity ^^ (x => Entity(x))
 
-  def expression: Parser[Expression] = (boolean | extract | function | coalesceFunc | nullableProperty | property | stringExpression | decimal | parameter)
+  def expression: Parser[Expression] = (boolean | extract | function | coalesceFunc | nullableProperty | property | stringExpression | decimal | parameter | entity)
 
   def property: Parser[Expression] = identity ~ "." ~ identity ^^ {
     case v ~ "." ~ p => Property(v, p)
