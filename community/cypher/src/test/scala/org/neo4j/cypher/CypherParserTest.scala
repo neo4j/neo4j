@@ -504,7 +504,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a = NODE(1) return a.name?",
       Query.
         start(NodeById("a", 1)).
-        returns(ExpressionReturnItem(NullableProperty("a", "name"))))
+        returns(ExpressionReturnItem(Nullable(Property("a", "name")))))
   }
 
   @Test def nestedBooleanOperatorsAndParentesis() {
@@ -1009,7 +1009,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
     assertEquals(
       Query.
         start(NodeById("a", 1)).
-        returns(ExpressionReturnItem(NullableProperty("a", "name"))),
+        returns(ExpressionReturnItem(Nullable(Property("a", "name")))),
       executionTree)
   }
 

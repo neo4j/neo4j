@@ -356,7 +356,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
   @Test def shouldBeAbleToOutputNullForMissingProperties() {
     val query = Query.
       start(NodeById("node", 0)).
-      returns(ExpressionReturnItem(NullableProperty("node", "name")))
+      returns(ExpressionReturnItem(Nullable(Property("node", "name"))))
 
     val result = execute(query)
     assertEquals(List(Map("node.name" -> null)), result.toList)
@@ -637,7 +637,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("node", n1.getId, n2.getId, n3.getId)).
-      aggregation(ValueAggregationItem(Count(NullableProperty("node", "x")))).
+      aggregation(ValueAggregationItem(Count(Nullable(Property("node", "x"))))).
       returns(ExpressionReturnItem(Property("node", "y")))
 
     val result = execute(query)
@@ -656,7 +656,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("node", n1.getId, n2.getId, n3.getId)).
-      aggregation(ValueAggregationItem(Sum(NullableProperty("node", "x")))).
+      aggregation(ValueAggregationItem(Sum(Nullable(Property("node", "x"))))).
       returns(ExpressionReturnItem(Property("node", "y")))
 
     val result = execute(query)
@@ -1442,6 +1442,14 @@ order by a.COL1
     val a = createNode("array" -> Array("Cypher duck", "Gremlin orange", "I like the snow"))
 
     val result = parseAndExecute("start a = node(1) where single(x in a.array where x =~ /.*the.*/) return a")
+
+    assert(List(Map("a" -> a)) === result.toList)
+  }
+
+  @Test def shouldBeAbleToCompareWithTrue() {
+    val a = createNode("first" -> true)
+
+    val result = parseAndExecute("start a = node(1) where a.first = true return a")
 
     assert(List(Map("a" -> a)) === result.toList)
   }

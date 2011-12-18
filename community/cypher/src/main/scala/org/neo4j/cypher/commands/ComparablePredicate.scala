@@ -33,8 +33,8 @@ abstract sealed class ComparablePredicate(a: Expression, b: Expression) extends 
     val left: Any = a.apply(m)
     val right: Any = b.apply(m)
 
-    if((a.isInstanceOf[NullableProperty] && left == null) ||
-      (b.isInstanceOf[NullableProperty] && right == null))
+    if((a.isInstanceOf[Nullable] && left == null) ||
+      (b.isInstanceOf[Nullable] && right == null))
       return true
 
     val comparisonResult: Int = compare(left, right)

@@ -36,7 +36,7 @@ class ReturnTest extends DocumentingTestBase {
       text = "To return a node, list it in the return statemenet.",
       queryText = """start n=node(%B%) return n""",
       returns = """The node.""",
-      (p) => assertEquals(List(Map("n" -> node("B"))), p.toList))
+      assertions = (p) => assertEquals(List(Map("n" -> node("B"))), p.toList))
   }
 
   @Test def returnRelationship() {
@@ -45,7 +45,7 @@ class ReturnTest extends DocumentingTestBase {
       text = "To return a relationship, just include it in the return list.",
       queryText = """start n=node(%A%) match (n)-[r:KNOWS]->(c) return r""",
       returns = """The relationship.""",
-      (p) => assertEquals(1, p.size))
+      assertions = (p) => assertEquals(1, p.size))
   }
 
   @Test def returnProperty() {
@@ -54,7 +54,7 @@ class ReturnTest extends DocumentingTestBase {
       text = "To return a property, use the dot separator, like this:",
       queryText = """start n=node(%A%) return n.name""",
       returns = """The the value of the property 'name'.""",
-      (p) => assertEquals(List(Map("n.name" -> "A")), p.toList))
+      assertions = (p) => assertEquals(List(Map("n.name" -> "A")), p.toList))
   }
 
 
@@ -66,7 +66,7 @@ class ReturnTest extends DocumentingTestBase {
       queryText = """start `This isn't a common identifier`=node(%A%)
 return `This isn't a common identifier`.`<<!!__??>>`""",
       returns = """The node indexed with name "A" is returned""",
-      (p) => assertEquals(List(Map("This isn't a common identifier.<<!!__??>>" -> "Yes!")), p.toList))
+      assertions = (p) => assertEquals(List(Map("This isn't a common identifier.<<!!__??>>" -> "Yes!")), p.toList))
   }
 
   @Test def nullable_properties() {
@@ -76,7 +76,7 @@ return `This isn't a common identifier`.`<<!!__??>>`""",
 like this:""",
       queryText = """start n=node(%A%, %B%) return n.age?""",
       returns = """The age when the node has that property, or +null+ if the property is not there.""",
-      (p) => assertEquals(List(55, null), p.columnAs[Int]("n.age").toList))
+      assertions = (p) => assertEquals(List(55, null), p.columnAs[Int]("n.age").toList))
   }
 
   @Test def distinct_output() {
@@ -85,7 +85,7 @@ like this:""",
       text = """`DISTINCT` retrieves only unique rows depending on the columns that have been selected to output.""",
       queryText = """start a=node(%A%) match (a)-->(b) return distinct b""",
       returns = """The node named B, but only once.""",
-      (p) => assertEquals(List(node("B")), p.columnAs[Node]("b").toList))
+      assertions = (p) => assertEquals(List(node("B")), p.columnAs[Node]("b").toList))
   }
 
   @Test def column_aliasing() {
@@ -94,6 +94,6 @@ like this:""",
       text = """If the name of the column should be different from the expression used, you can rename it by using AS <new name>.""",
       queryText = """start a=node(%A%) return a.age AS SomethingTotallyDifferent""",
       returns = """Returns the age property of a node, but renames the column.""",
-      (p) => assertEquals(List(55), p.columnAs[Node]("SomethingTotallyDifferent").toList))
+      assertions = (p) => assertEquals(List(55), p.columnAs[Node]("SomethingTotallyDifferent").toList))
   }
 }

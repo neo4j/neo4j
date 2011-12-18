@@ -34,7 +34,7 @@ trait Expressions extends JavaTokenParsers with Tokens {
   }
 
   def nullableProperty: Parser[Expression] = property <~ "?" ^^ {
-    case Property(e, p) => NullableProperty(e, p)
+    case p => Nullable(p)
   }
 
   def stringExpression: Parser[Expression] = string ^^ (x => Literal(x))
