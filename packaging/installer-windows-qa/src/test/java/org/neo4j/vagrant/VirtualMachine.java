@@ -25,13 +25,13 @@ import java.io.IOException;
 import org.apache.commons.lang.StringUtils;
 import org.neo4j.vagrant.Shell.Result;
 
-public class Vagrant {
+public class VirtualMachine {
 
     private Shell sh;
     private SSHConfig sshConfig;
     private boolean transactional;
 
-    public Vagrant(File projectFolder, boolean transactional)
+    public VirtualMachine(File projectFolder, boolean transactional)
     {
         this.sh = new Shell(projectFolder);
         this.sh.getEnvironment().put("HOME", System.getProperty("user.home"));

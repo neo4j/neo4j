@@ -39,7 +39,7 @@
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-all</artifactId>
     </dependency>
-    
+
     <dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-client</artifactId>
@@ -68,7 +68,7 @@
       <version>0.6.1</version>
       <scope>compile</scope>
     </dependency>
-    
+
     <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcmail-jdk16</artifactId>
@@ -119,6 +119,27 @@
                   <includes>**/*</includes>
                 </artifactItem>
               </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>process-resources</phase>
+            <goals><goal>run</goal></goals>
+            <configuration>
+              <target>
+                <move file="${project.build.outputDirectory}/installer-windows-${project.version}-windows-community.msi" 
+                      toFile="${project.build.outputDirectory}/installer-windows-community.msi" />
+                <move file="${project.build.outputDirectory}/installer-windows-${project.version}-windows-advanced.msi" 
+                      toFile="${project.build.outputDirectory}/installer-windows-advanced.msi" />
+                <move file="${project.build.outputDirectory}/installer-windows-${project.version}-windows-enterprise.msi" 
+                      toFile="${project.build.outputDirectory}/installer-windows-enterprise.msi" />
+              </target>
             </configuration>
           </execution>
         </executions>
