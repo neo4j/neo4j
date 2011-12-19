@@ -20,13 +20,16 @@
 package org.neo4j.kernel.impl.transaction;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.info.LockInfo;
+import org.neo4j.kernel.info.LockingTransaction;
+import org.neo4j.kernel.info.WaitingThread;
 
 /**
  * The LockManager can lock resources for reading or writing. By doing this one
@@ -225,6 +228,17 @@ public class LockManager
         }
         lock.dumpStack();
     }
+    
+    public void eachLock( Visitor<LockInfo> visitor )
+    {
+        synchronized ( resourceLockMap )
+        {
+            for ( RWLock lock : resourceLockMap.values() )
+            {
+                if ( visitor.visit( lock.info() ) ) break;
+            }
+        }
+    }
 
     /**
      * Utility method for debugging. Dumps the resource allocation graph to
@@ -240,30 +254,60 @@ public class LockManager
      */
     public void dumpAllLocks()
     {
-        synchronized ( resourceLockMap )
+        DumpVisitor dump = new DumpVisitor();
+        eachLock( dump );
+        dump.done();
+    }
+    
+    private static class DumpVisitor implements Visitor<LockInfo>
+    {
+        int emptyLockCount = 0;
+
+        @Override
+        public boolean visit( LockInfo lock )
         {
-            Iterator<RWLock> itr = resourceLockMap.values().iterator();
-            int emptyLockCount = 0;
-            while ( itr.hasNext() )
+            if ( lock.getWriteCount() > 0 || lock.getReadCount() > 0 )
             {
-                RWLock lock = itr.next();
-                if ( lock.getWriteCount() > 0 || lock.getReadCount() > 0 )
-                {
-                    lock.dumpStack();
-                }
-                else
-                {
-                    if ( lock.getWaitingThreadsCount() > 0 )
-                    {
-                        lock.dumpStack();
-                    }
-                    emptyLockCount++;
-                }
+                dumpStack( lock );
             }
+            else
+            {
+                if ( lock.getWaitingThreadsCount() > 0 )
+                {
+                    dumpStack( lock );
+                }
+                emptyLockCount++;
+            }
+            return false;
+        }
+
+        private void dumpStack( LockInfo lock )
+        {
+            System.out.println( "Total lock count: readCount=" + lock.getReadCount() + " writeCount="
+                                + lock.getWriteCount() + " for " + lock.getResource() );
+            System.out.println( "Waiting list:" );
+            StringBuilder waitlist = new StringBuilder();
+            String sep = "";
+            for ( WaitingThread we : lock.getWaitingThreads() )
+            {
+                waitlist.append( sep ).append( "[tid=" ).append( we.getThreadId() ).append( "(" ).append(
+                        we.getReadCount() ).append( "r," ).append( we.getWriteCount() ).append( "w )," ).append(
+                        we.isWaitingOnWriteLock() ? "Write" : "Read" ).append( "Lock]" );
+                sep = ", ";
+            }
+            System.out.println( waitlist );
+            for ( LockingTransaction tle : lock.getLockingTransactions() )
+            {
+                System.out.println( "" + tle.getTransaction() + "(" + tle.getReadCount() + "r," + tle.getWriteCount()
+                                    + "w)" );
+            }
+        }
+
+        void done()
+        {
             if ( emptyLockCount > 0 )
             {
-                System.out.println( "There are " + emptyLockCount
-                    + " empty locks" );
+                System.out.println( "There are " + emptyLockCount + " empty locks" );
             }
             else
             {
