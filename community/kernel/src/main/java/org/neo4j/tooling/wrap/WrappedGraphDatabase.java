@@ -19,11 +19,6 @@
  */
 package org.neo4j.tooling.wrap;
 
-import java.util.Collection;
-import java.util.IdentityHashMap;
-import java.util.Map;
-import java.util.Set;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
@@ -46,6 +41,11 @@ import org.neo4j.kernel.Config;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.TransactionBuilder;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import java.util.Collection;
+import java.util.IdentityHashMap;
+import java.util.Map;
+import java.util.Set;
 
 public abstract class WrappedGraphDatabase extends AbstractGraphDatabase
 {
@@ -210,7 +210,7 @@ public abstract class WrappedGraphDatabase extends AbstractGraphDatabase
     }
     
     @Override
-    public final WrappedTransaction beginTx()
+    public final Transaction beginTx()
     {
         if ( graphdb instanceof AbstractGraphDatabase )
         {
