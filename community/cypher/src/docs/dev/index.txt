@@ -63,6 +63,7 @@ Accepted names for parameter are letters and number, and any combination of thes
 
 Here follows a few examples of how you can use parameters from Java.
 
+*Parameter for node id*
 [snippet,java]
 ----
 component=neo4j-cypher
@@ -71,14 +72,16 @@ tag=exampleWithParameterForNodeId
 classifier=test-sources
 ----
 
+*Parameter for node object*
 [snippet,java]
 ----
 component=neo4j-cypher
 source=org/neo4j/cypher/javacompat/JavaExecutionEngineTests.java
-tag=exampleWithParameterForNode
+tag=exampleWithParameterForNodeObject
 classifier=test-sources
 ----
 
+*Parameter for multiple node ids*
 [snippet,java]
 ----
 component=neo4j-cypher
@@ -87,6 +90,7 @@ tag=exampleWithParameterForMultipleNodeIds
 classifier=test-sources
 ----
 
+*Parameter for string literal*
 [snippet,java]
 ----
 component=neo4j-cypher
@@ -95,6 +99,7 @@ tag=exampleWithStringLiteralAsParameter
 classifier=test-sources
 ----
 
+*Parameter for index key and value*
 [snippet,java]
 ----
 component=neo4j-cypher
@@ -103,6 +108,7 @@ tag=exampleWithParametersForIndexKeyAndValue
 classifier=test-sources
 ----
 
+*Parameter for index query*
 [snippet,java]
 ----
 component=neo4j-cypher
@@ -111,6 +117,7 @@ tag=exampleWithParametersForQuery
 classifier=test-sources
 ----
 
+* Numeric parameters for SKIP and LIMIT *
 [snippet,java]
 ----
 component=neo4j-cypher
@@ -119,6 +126,7 @@ tag=exampleWithParameterForSkipLimit
 classifier=test-sources
 ----
 
+* Parameter for regular expression *
 [snippet,java]
 ----
 component=neo4j-cypher

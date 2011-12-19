@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.mortbay.jetty.Server;
 import org.neo4j.server.NeoServer;
+import org.neo4j.server.guard.Guard;
 import org.neo4j.server.rest.security.SecurityRule;
 
 public interface WebServer
@@ -55,7 +56,7 @@ public interface WebServer
     
     void addSecurityRules(SecurityRule ... rules);
 
-    void addExecutionLimitFilter(int max);
+    void addExecutionLimitFilter( Guard guard );
 
     @Deprecated
     Server getJetty();

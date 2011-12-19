@@ -43,6 +43,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 
@@ -917,5 +918,25 @@ public class TestRelationship extends AbstractNeo4jTestCase
             count++;
         }
         assertEquals( allRelationships.size(), count );
+    }
+    
+    @Test
+    public void createAndClearCacheBeforeCommit()
+    {
+        Node node = getGraphDb().createNode();
+        clearCache();
+        node.createRelationshipTo( getGraphDb().createNode(), TEST );
+        clearCache();
+        assertEquals( 1, IteratorUtil.count( node.getRelationships() ) );
+    }
+    
+    @Test
+    public void setPropertyAndClearCacheBeforeCommit() throws Exception
+    {
+        Node node = getGraphDb().createNode();
+        clearCache();
+        node.setProperty( "name", "Test" );
+        clearCache();
+        assertEquals( "Test", node.getProperty( "name" ) );
     }
 }

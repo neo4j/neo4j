@@ -65,12 +65,6 @@ class SyntaxExceptionTest extends JUnitSuite {
       "Last element of list must be a value")
   }
 
-  @Test def shouldComplainAboutNonQuotedStrings() {
-    expectError(
-      "start s = node(1) where s.name = Name and s.age = 10 return s",
-      "Probably missing quotes around a string")
-  }
-
   @Test def shouldWarnAboutMissingStart() {
     expectError(
       "where s.name = Name and s.age = 10 return s",

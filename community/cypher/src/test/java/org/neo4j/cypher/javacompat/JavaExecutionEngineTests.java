@@ -207,12 +207,12 @@ public class JavaExecutionEngineTests {
     }
 
     @Test
-    public void exampleWithParameterForNode() throws Exception {
-        // START SNIPPET: exampleWithParameterForNode
+    public void exampleWithParameterForNodeObject() throws Exception {
+        // START SNIPPET: exampleWithParameterForNodeObject
         Map<String, Object> params = new HashMap<String, Object>();
         params.put( "node", andreasNode );
         ExecutionResult result = engine.execute( "start n=node({node}) return n.name", params );
-        // END SNIPPET: exampleWithParameterForNode
+        // END SNIPPET: exampleWithParameterForNodeObject
 
         assertThat( result.columns(), hasItem( "n.name" ) );
         Iterator<Object> n_column = result.columnAs( "n.name" );

@@ -32,7 +32,8 @@ abstract class Expression extends (Map[String, Any] => Any) {
   def declareDependencies(extectedType: AnyType): Seq[Identifier]
 
   def dependencies(extectedType: AnyType): Seq[Identifier] = {
-    if (!extectedType.isAssignableFrom(identifier.typ))
+    val myType = identifier.typ
+    if (!extectedType.isAssignableFrom(myType))
       throw new SyntaxException(identifier.name + " expected to be of type " + extectedType + " but it is of type " + identifier.typ)
     declareDependencies(extectedType)
   }
@@ -56,6 +57,23 @@ abstract class CastableExpression extends Expression {
   override def dependencies(extectedType: AnyType): Seq[Identifier] = declareDependencies(extectedType)
 }
 
+case class Nullable(expression: Expression) extends Expression {
+  def identifier = expression.identifier
+
+  def apply(m: Map[String, Any]) = try {
+    expression.apply(m)
+  } catch {
+    case x:SyntaxException => if (x.cause.isInstanceOf[NotFoundException])
+      null
+    else
+      throw x
+  }
+
+  def declareDependencies(extectedType: AnyType) = expression.dependencies(extectedType)
+
+  override def dependencies(extectedType: AnyType) = expression.dependencies(extectedType)
+}
+
 case class Property(entity: String, property: String) extends CastableExpression {
   protected def handleNotFound(propertyContainer: PropertyContainer, x: NotFoundException): Any = throw new SyntaxException("%s.%s does not exist on %s".format(entity, property, propertyContainer), x)
 
@@ -75,6 +93,8 @@ case class Property(entity: String, property: String) extends CastableExpression
   override def toString(): String = entity + "." + property
 
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = Seq(Identifier(entity, MapType()))
+
+
 }
 
 case class RelationshipTypeFunction(relationship: Expression) extends Expression {

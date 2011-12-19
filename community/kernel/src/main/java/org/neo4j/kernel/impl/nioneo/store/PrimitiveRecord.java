@@ -43,6 +43,6 @@ public abstract class PrimitiveRecord extends Abstract64BitRecord
 
     public long getCommittedNextProp()
     {
-        return isCreated() ? nextProp : committedNextProp;
+        return isCreated() ? Record.NO_NEXT_PROPERTY.intValue() : committedNextProp;
     }
 }

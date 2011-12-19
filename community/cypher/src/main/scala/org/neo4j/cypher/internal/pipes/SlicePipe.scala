@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.pipes
 
 import org.neo4j.cypher.commands.Expression
 import java.lang.String
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) extends Pipe {
   val symbols = source.symbols
@@ -37,13 +38,13 @@ class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) 
     def asInt(v:Expression)=v(first).asInstanceOf[Int]
 
     (skip, limit) match {
-      case (None, None) => sourceTraversable
       case (Some(x), None) => sourceTraversable.drop(asInt(x))
       case (None, Some(x)) => sourceTraversable.take(asInt(x))
       case (Some(startAt), Some(count)) => {
         val start = asInt(startAt)
         sourceTraversable.slice(start, start + asInt(count))
       }
+      case (None, None)=>throw new ThisShouldNotHappenError("Andres Taylor", "A slice pipe that doesn't slice should never exist.")
     }
   }
 
@@ -53,6 +54,7 @@ class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression]) 
       case (None, Some(l)) => "Limit: " + l.toString()
       case (Some(s), None) => "Skip: " + s.toString()
       case (Some(s), Some(l)) => "Skip: " + s.toString() + ", " + "Limit: " + l.toString()
+      case (None, None)=>throw new ThisShouldNotHappenError("Andres Taylor", "A slice pipe that doesn't slice should never exist.")
     }
     source.executionPlan() + "\r\n" + "Slice(" + info + ")"
   }

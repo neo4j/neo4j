@@ -1,3 +1,8 @@
+<NOT YET RELEASED>
+------------------
+o Added a different aggregation logic. Makes aggregating on the same columns as sorting much faster
+o Made it possible to query on array properties
+
 1.6.M02 (2011-12-16)
 --------------------
 o Added allShortestPaths

@@ -25,6 +25,7 @@ import org.neo4j.cypher.symbols._
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb.{DynamicRelationshipType, Node, Direction, PropertyContainer}
 import org.neo4j.cypher.internal.pipes.Dependant
+import java.util.regex.{Pattern=>RegexPattern}
 
 abstract class Predicate extends Dependant {
   def ++(other: Predicate): Predicate = And(this, other)
@@ -149,9 +150,20 @@ case class Has(property: Property) extends Predicate {
 }
 
 case class RegularExpression(a: Expression, regex: Expression) extends Predicate {
+
+  val pat: (Map[String, Any]) => RegexPattern = getPattern
+
+  private def getPattern: (Map[String, Any]) => RegexPattern = regex match {
+    case Literal(x) => {
+      val pattern = x.toString.r.pattern
+      (x: Map[String, Any]) => pattern
+    }
+    case _ =>  (x: Map[String, Any]) => regex(x).toString.r.pattern
+  }
+
   def isMatch(m: Map[String, Any]): Boolean = {
     val value = a.apply(m).asInstanceOf[String]
-    regex(m).toString.r.pattern.matcher(value).matches()
+    getPattern(m).matcher(value).matches()
   }
 
   def dependencies: Seq[Identifier] = a.dependencies(StringType()) ++ regex.dependencies(StringType())

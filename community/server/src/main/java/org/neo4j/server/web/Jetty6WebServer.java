@@ -52,6 +52,8 @@ import org.mortbay.jetty.webapp.WebAppContext;
 import org.mortbay.resource.Resource;
 import org.mortbay.thread.QueuedThreadPool;
 import org.neo4j.server.NeoServer;
+import org.neo4j.server.guard.GuardingRequestFilter;
+import org.neo4j.server.guard.Guard;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.security.SecurityFilter;
 import org.neo4j.server.rest.security.SecurityRule;
@@ -366,7 +368,7 @@ public class Jetty6WebServer implements WebServer
     }
 
     @Override
-    public void addExecutionLimitFilter( final int limit )
+    public void addExecutionLimitFilter( final Guard guard )
     {
         jetty.addLifeCycleListener( new JettyLifeCylcleListenerAdapter()
         {
@@ -378,7 +380,7 @@ public class Jetty6WebServer implements WebServer
                     if ( handler instanceof Context )
                     {
                         final Context context = (Context) handler;
-                        final Filter jettyFilter = new LimitRequestTimeFilter( limit );
+                        final Filter jettyFilter = new GuardingRequestFilter( guard );
                         final FilterHolder holder = new FilterHolder( jettyFilter );
                         context.addFilter( holder, "/*", Handler.ALL );
                     }

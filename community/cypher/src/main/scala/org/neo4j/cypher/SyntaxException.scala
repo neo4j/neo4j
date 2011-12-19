@@ -19,6 +19,6 @@
  */
 package org.neo4j.cypher
 
-class SyntaxException(message:String, cause:Throwable) extends CypherException(message, cause) {
+class SyntaxException(message:String, val cause:Throwable) extends CypherException(message, cause) {
   def this(message:String) = this(message, null)
 }

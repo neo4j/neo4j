@@ -29,8 +29,11 @@ object AnyType {
 
     if(obj.isInstanceOf[Number])
       return NumberType()
-
-    AnyType()
+    
+    if(obj.isInstanceOf[Seq[_]] || obj.isInstanceOf[Array[_]])
+      return AnyIterableType()
+    
+    ScalarType()
   }
 
   lazy val instance = new AnyType()
