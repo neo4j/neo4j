@@ -666,7 +666,12 @@ public class ZooClient extends AbstractZooKeeperManager
         {
             extractor = LogExtractor.from( getGraphDb().getStoreDir(), committedTx );
             long tx = extractor.extractNext( NullLogBuffer.INSTANCE );
-            if ( tx != committedTx ) throw new RuntimeException( "Master for " + committedTx + " not found" );
+            if ( tx != committedTx )
+            {
+                msgLog.logMessage( "Tried to extract master for tx " + committedTx + " at initialization, but got tx " + tx +
+                        " back. Will be using " + XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER + " temporarily" );
+                return XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
+            }
             return extractor.getLastStartEntry().getMasterId();
         }
         catch ( IOException e )
