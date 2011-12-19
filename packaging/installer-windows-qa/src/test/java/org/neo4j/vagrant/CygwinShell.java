@@ -19,6 +19,8 @@
  */
 package org.neo4j.vagrant;
 
+import org.neo4j.vagrant.Shell.Result;
+
 public class CygwinShell {
 
     private SSHShell sh;
@@ -28,9 +30,9 @@ public class CygwinShell {
         this.sh = ssh;
     }
 
-    public void run(String ... cmds)
+    public Result run(String ... cmds)
     {
-        sh.run(cmds);
+        return sh.run(cmds);
     }
 
     public void close()
@@ -38,11 +40,11 @@ public class CygwinShell {
         sh.close();
     }
 
-    public void runDOS(String cmd)
+    public Result runDOS(String cmd)
     {
         String batfile = "dos-exec-" + RandomString.generate(5) + ".bat";
         System.out.println("EXECUTING: " + "echo '" + cmd + "' > " + batfile + " && chmod +x " + batfile + " && " + batfile + " && rm " + batfile);
-        sh.run("echo '" + cmd + "' > " + batfile + " && chmod +x " + batfile + " && ./" + batfile + " && rm " + batfile);
+        return sh.run("echo '" + cmd + "' > " + batfile + " && chmod +x " + batfile + " && ./" + batfile + " && rm " + batfile);
     }
 
 }

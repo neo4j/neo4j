@@ -130,19 +130,33 @@
         <executions>
           <execution>
             <phase>process-resources</phase>
-            <goals><goal>run</goal></goals>
+            <goals>
+              <goal>run</goal>
+            </goals>
             <configuration>
               <target>
-                <move file="${project.build.outputDirectory}/installer-windows-${project.version}-windows-community.msi" 
-                      toFile="${project.build.outputDirectory}/installer-windows-community.msi" />
-                <move file="${project.build.outputDirectory}/installer-windows-${project.version}-windows-advanced.msi" 
-                      toFile="${project.build.outputDirectory}/installer-windows-advanced.msi" />
-                <move file="${project.build.outputDirectory}/installer-windows-${project.version}-windows-enterprise.msi" 
-                      toFile="${project.build.outputDirectory}/installer-windows-enterprise.msi" />
+                <move
+                  file="${project.build.outputDirectory}/installer-windows-${project.version}-windows-community.msi"
+                  toFile="${project.build.outputDirectory}/installer-windows-community.msi" />
+                <move
+                  file="${project.build.outputDirectory}/installer-windows-${project.version}-windows-advanced.msi"
+                  toFile="${project.build.outputDirectory}/installer-windows-advanced.msi" />
+                <move
+                  file="${project.build.outputDirectory}/installer-windows-${project.version}-windows-enterprise.msi"
+                  toFile="${project.build.outputDirectory}/installer-windows-enterprise.msi" />
               </target>
             </configuration>
           </execution>
         </executions>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <neo4j.version>${neo4j.version}</neo4j.version>
+          </systemPropertyVariables>
+        </configuration>
       </plugin>
 
     </plugins>
