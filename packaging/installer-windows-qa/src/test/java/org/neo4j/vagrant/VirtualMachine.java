@@ -82,6 +82,12 @@ public class VirtualMachine {
         vagrant("destroy");
     }
 
+    public void reboot()
+    {
+        halt();
+        up();
+    }
+
     public SSHShell ssh()
     {
         return new SSHShell(sshConfiguration());
