@@ -19,12 +19,17 @@
  */
 package org.neo4j.management.impl;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
+import org.neo4j.kernel.info.LockInfo;
 import org.neo4j.management.LockManager;
 
 @Service.Implementation( ManagementBeanProvider.class )
@@ -40,6 +45,12 @@ public final class LockManagerBean extends ManagementBeanProvider
     {
         return new LockManagerImpl( management );
     }
+    
+    @Override
+    protected Neo4jMBean createMXBean( ManagementData management ) throws NotCompliantMBeanException
+    {
+        return new LockManagerImpl( management, true );
+    }
 
     private static class LockManagerImpl extends Neo4jMBean implements LockManager
     {
@@ -51,9 +62,31 @@ public final class LockManagerBean extends ManagementBeanProvider
             this.lockManager = management.getKernelData().getConfig().getLockManager();
         }
 
+        LockManagerImpl( ManagementData management, boolean mxBean ) throws NotCompliantMBeanException
+        {
+            super( management, mxBean );
+            this.lockManager = management.getKernelData().getConfig().getLockManager();
+        }
+
         public long getNumberOfAdvertedDeadlocks()
         {
             return lockManager.getDetectedDeadlockCount();
+        }
+
+        @Override
+        public LockInfo[] getLocks()
+        {
+            final List<LockInfo> locks = new ArrayList<LockInfo>();
+            lockManager.eachLock( new Visitor<LockInfo>()
+            {
+                @Override
+                public boolean visit( LockInfo lock )
+                {
+                    locks.add( lock );
+                    return false;
+                }
+            } );
+            return locks.toArray( new LockInfo[locks.size()] );
         }
     }
 }
