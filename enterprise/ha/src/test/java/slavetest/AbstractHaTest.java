@@ -763,6 +763,22 @@ public abstract class AbstractHaTest
         jobShouldNotBlock.join();
     }
     
+    @Ignore( "Exposes a weakness in HA protocol where locks cannot be released individually," +
+    		"but instead are always released when the transaction finishes" )
+    @Test
+    public void manuallyAcquireThenReleaseLocks() throws Exception
+    {
+        initializeDbs( 2 );
+        long node = executeJobOnMaster( new CommonJobs.CreateNodeJob( true ) );
+        pullUpdates();
+        Fetcher<DoubleLatch> latchFetcher = getDoubleLatch();
+        executeJob( new CommonJobs.AcquireNodeLockAndReleaseManually( node, latchFetcher ), 0 );
+        // This should be able to complete
+        executeJob( new CommonJobs.SetNodePropertyJob( node, "key", "value" ), 1 );
+        latchFetcher.fetch().countDownFirst();
+        pullUpdates();
+    }
+    
     static class WorkerThread extends Thread
     {
         private final AbstractHaTest testCase;

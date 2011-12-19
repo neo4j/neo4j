@@ -19,9 +19,16 @@
  */
 package slavetest;
 
+import java.io.Serializable;
+import java.rmi.Remote;
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
+import java.util.Map;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
@@ -40,12 +47,6 @@ import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.test.ha.StandaloneDatabase;
-
-import java.io.Serializable;
-import java.rmi.Remote;
-import java.rmi.RemoteException;
-import java.rmi.server.UnicastRemoteObject;
-import java.util.Map;
 
 public abstract class CommonJobs
 {
@@ -872,6 +873,34 @@ public abstract class CommonJobs
                 throw new RuntimeException( e );
             }
             tx.success();
+            return null;
+        }
+    }
+
+    public static class AcquireNodeLockAndReleaseManually extends TransactionalJob<Void>
+    {
+        private final long nodeId;
+        private final Fetcher<DoubleLatch> latchFetcher;
+
+        public AcquireNodeLockAndReleaseManually( long nodeId, Fetcher<DoubleLatch> latchFetcher )
+        {
+            this.nodeId = nodeId;
+            this.latchFetcher = latchFetcher;
+        }
+        
+        @Override
+        protected Void executeInTransaction( GraphDatabaseService db, Transaction tx )
+        {
+            Lock lock = tx.acquireWriteLock( db.getNodeById( nodeId ) );
+            lock.release();
+            try
+            {
+                latchFetcher.fetch().awaitFirst();
+            }
+            catch ( RemoteException e )
+            {
+                throw new RuntimeException( e );
+            }
             return null;
         }
     }
