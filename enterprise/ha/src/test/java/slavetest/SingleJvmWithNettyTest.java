@@ -19,6 +19,7 @@
  */
 package slavetest;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.com.Client;
 import org.neo4j.com.Protocol;
@@ -41,6 +42,7 @@ import org.neo4j.kernel.ha.MasterClient;
 import org.neo4j.kernel.ha.MasterImpl;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -500,6 +502,65 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         lockHolder.start();
 
         executeJob( new CommonJobs.HoldLongLock( nodeId, latchFetcher ), 0 );
+    }
+
+    @Ignore
+    @Test
+    public void readLockWithoutTxOnSlaveShouldNotGrabIndefiniteLockOnMaster() throws Exception
+    {
+        final long lockTimeout = 2;
+        initializeDbs( 1, stringMap( CONFIG_KEY_LOCK_READ_TIMEOUT, String.valueOf( lockTimeout ) ) );
+        final Fetcher<DoubleLatch> latchFetcher = getDoubleLatch();
+        final long[] id = new long[1];
+        Thread lockHolder = new Thread( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                DoubleLatch latch = latchFetcher.fetch();
+                try
+                {
+                    final GraphDatabaseService slaveDb = getSlave( 0 );
+                    Node node;
+                    Transaction tx = slaveDb.beginTx();
+                    try
+                    {
+                        node = slaveDb.createNode();
+                        tx.success();
+                    }
+                    finally
+                    {
+                        tx.finish();
+                    }
+                    final Config config = ( (AbstractGraphDatabase) slaveDb ).getConfig();
+                    config.getLockManager().getReadLock( node );
+                    config.getLockReleaser().addLockToTransaction( node, LockType.READ );
+                    id[0] = node.getId();
+                    latch.countDownFirst();
+                    latch.awaitSecond();
+                }
+                catch ( Exception e )
+                {
+                    throw new RuntimeException( e );
+                }
+            }
+        }, "slaveLockHolder" );
+        lockHolder.start();
+        final DoubleLatch latch = latchFetcher.fetch();
+        latch.awaitFirst();
+        final HighlyAvailableGraphDatabase masterDb = getMasterHaDb();
+        final Transaction tx = masterDb.beginTx();
+        try {
+            long startTime = System.currentTimeMillis();
+            masterDb.getNodeById(id[0]).setProperty( "name", "David" );
+            long duration = System.currentTimeMillis() - startTime;
+            latch.countDownSecond();
+            assertTrue( "Read lock was acquired but not released.", duration < lockTimeout*1000 );
+        }
+        finally
+        {
+            tx.finish();
+        }
     }
 
     private Pair<Integer, Integer> getTransactionCounts( GraphDatabaseService master )
