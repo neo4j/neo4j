@@ -103,6 +103,7 @@ public class BatchOperationService
                          } else if(field.equals(ID_KEY)) {
                              jobId = jp.getIntValue();
                          } else if(field.equals(BODY_KEY)) {
+                             //TODO: this swallows escapes like "\\"
                              jobBody = StreamingJsonUtils.readCurrentValueAsString(jp, token);
                          }
                      }

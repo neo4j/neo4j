@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.json.JSONException;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -355,6 +356,38 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
                 .entity().contains(german) );
         testBatch(anode, asian);
         testBatch(gnode, german);
+    }
+    
+    @Test
+    @Ignore
+    @Graph("Peter likes Production\\\"Code\"")
+    public void shouldHandleEscapedStrings() throws JsonParseException, ClientHandlerException,
+            UniformInterfaceException, JSONException {
+        String string = "Production\\\"Code\"";
+        Node gnode = getNode( string );
+        assertEquals( gnode.getProperty( "name" ), string );
+        Map<String, Object> map = JsonHelper.jsonToMap( gen.get()
+                .expectedStatus( 200 )
+                .get( getNodeUri( gnode ) )
+                .entity() );
+        assertTrue( ((Map)map.get( "data" )).get("name").equals(string) );
+        testBatch(gnode, string);
+//        String jsonString = new PrettyJSON()
+//        .array()
+//            .object()
+//                .key("method") .value("PUT")
+//                .key("to")     .value("/node/"+gnode.getId()+"/properties")
+//                .key("body")     .object().key( "name" ).value( "string\\ and \"test\"" ).endObject()
+//            .endObject()
+//        .endArray()
+//        .toString();
+//        String entity = gen.get()
+//            .expectedStatus( 200 )
+//            .payload( jsonString )
+//            .post( batchUri() )
+//            .entity();
+//        assertEquals( gnode.getProperty( "name" ), string );
+//        assertTrue( ((Map)map.get( "b" )).get("name").equals(string) );
     }
 
     private void testBatch( Node anode, String asian )
