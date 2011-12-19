@@ -4,30 +4,8 @@
 Vagrant::Config.run do |config|
   config.vm.box = "windows-2008R2-amd64"
   
-  config.vm.share_folder "v-data", "/data", "."
+  config.vm.forward_port "neo4j-server", 7474, 7474
   
-  config.vm.forward_port "neo4j-server", 7474, 27474
-
-  # Enable provisioning with Puppet stand alone.  Puppet manifests
-  # are contained in a directory path relative to this Vagrantfile.
-  # You will need to create the manifests directory and a manifest in
-  # the file windows-2008R2-amd64.pp in the manifests_path directory.
-  #
-  # An example Puppet manifest to provision the message of the day:
-  #
-  # # group { "puppet":
-  # #   ensure => "present",
-  # # }
-  # #
-  # # File { owner => 0, group => 0, mode => 0644 }
-  # #
-  # # file { '/etc/motd':
-  # #   content => "Welcome to your Vagrant-built virtual machine!
-  # #               Managed by Puppet.\n"
-  # # }
-  #
-  # config.vm.provision :puppet do |puppet|
-  #   puppet.manifests_path = "manifests"
-  #   puppet.manifest_file  = "windows-2008R2-amd64.pp"
-  # end
+  config.vm.provision :shell, :path => "provision.sh"
+  
 end

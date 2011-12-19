@@ -23,18 +23,19 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.commons.lang.StringUtils;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.vagrant.Shell.Result;
 
 public class Vagrant {
 
     private Shell sh;
     private SSHConfig sshConfig;
+    private boolean transactional;
 
-    public Vagrant(File projectFolder)
+    public Vagrant(File projectFolder, boolean transactional)
     {
         this.sh = new Shell(projectFolder);
         this.sh.getEnvironment().put("HOME", System.getProperty("user.home"));
+        this.transactional = transactional;
     }
 
     public void ensureBoxExists(Box box)
@@ -67,6 +68,8 @@ public class Vagrant {
     public void up()
     {
         vagrant("up");
+        if(transactional) 
+            vagrant("sandbox on");
     }
 
     public void halt()
@@ -129,10 +132,22 @@ public class Vagrant {
         return this.sshConfig;
     }
 
-    public Transaction beginTx()
+    public void commit()
     {
-        vagrant("sandbox on");
-        return new VagrantTransaction(this);
+        if(transactional) {
+            vagrant("sandbox commit");
+            return;
+        }
+        throw new IllegalArgumentException("You have to create Vagrant object with transactional=true to use transactions.");
+    }
+    
+    public void rollback()
+    {
+        if(transactional) {
+            vagrant("sandbox rollback");
+            return;
+        }
+        throw new IllegalArgumentException("You have to create Vagrant object with transactional=true to use transactions.");
     }
 
     public Shell getShell()
