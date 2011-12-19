@@ -295,24 +295,17 @@ public class HAGraphDb extends AbstractGraphDatabase
     private EmbeddedGraphDbImpl localGraph()
     {
         if ( localGraph != null ) return localGraph;
-        return waitForCondition( new LocalGraphAvailableCondition(), ( HaConfig.getClientReadTimeoutFromConfig( config )-5)*1000 );
+        int secondsWait = Math.max( HaConfig.getClientReadTimeoutFromConfig( config )-5, 5 );
+        return waitForCondition( new LocalGraphAvailableCondition(), secondsWait*1000 );
     }
 
     private <T,E extends Exception> T waitForCondition( Condition<T,E> condition, int timeMillis ) throws E
     {
-        long endTime = System.currentTimeMillis();
+        long endTime = System.currentTimeMillis()+timeMillis;
         T result = condition.tryToFullfill();
         while ( result == null && System.currentTimeMillis() < endTime )
         {
-            try
-            {
-                // TODO Naive implementation
-                Thread.sleep( 1 );
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.interrupted();
-            }
+            sleepWithoutInterruption( 1, "Failed waiting for " + condition + " to be fulfilled" );
             result = condition.tryToFullfill();
             if ( result != null ) return result;
         }
@@ -599,7 +592,7 @@ public class HAGraphDb extends AbstractGraphDatabase
             catch ( ComException e )
             {   // Maybe new master isn't up yet... let's wait a little and retry
                 failure = e;
-                sleeep( 500 );
+                sleepWithoutInterruption( 500, "Failed waiting for next attempt to contact master" );
             }
         }
         if ( mastersMaster == null ) throw failure;
@@ -622,18 +615,6 @@ public class HAGraphDb extends AbstractGraphDatabase
                 "Master id for last committed tx ok with highestTxId="
                         + myLastCommittedTx + " with masterId=" + myMaster,
                 true );
-    }
-
-    private void sleeep( int millis )
-    {
-        try
-        {
-            Thread.sleep( millis );
-        }
-        catch ( InterruptedException e )
-        {
-            Thread.interrupted();
-        }
     }
 
     private StoreId getStoreId( EmbeddedGraphDbImpl db )
