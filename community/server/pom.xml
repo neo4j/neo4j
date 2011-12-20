@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.neo4j.build</groupId>
         <artifactId>parent-pom</artifactId>
-        <version>28</version>
+        <version>29</version>
         <relativePath />
     </parent>
 
@@ -160,19 +160,17 @@
         </dependency>
 
         <dependency>
-            <groupId>org.codehaus.jackson</groupId>
-            <artifactId>jackson-jaxrs</artifactId>
-            <version>1.8.3</version>
+          <groupId>org.codehaus.jackson</groupId>
+          <artifactId>jackson-jaxrs</artifactId>
+          <version>1.8.3</version>
         </dependency>
+
         <dependency>
             <groupId>com.tinkerpop.gremlin</groupId>
             <artifactId>gremlin-groovy</artifactId>
             <version>${gremlin.version}</version>
             <type>jar</type>
             <exclusions>
-                <exclusion>
-                    <groupId>org.neo4j</groupId>
-                </exclusion>
                 <!-- Sail support not needed -->
                 <exclusion>
                     <groupId>com.tinkerpop.blueprints</groupId>
@@ -206,6 +204,10 @@
                 <exclusion>
                     <groupId>org.neo4j</groupId>
                     <artifactId>neo4j-management</artifactId>
+                </exclusion>
+                <exclusion>
+                  <artifactId>jackson-jaxrs</artifactId>
+                  <groupId>org.codehaus.jackson</groupId>
                 </exclusion>
             </exclusions>
         </dependency>
