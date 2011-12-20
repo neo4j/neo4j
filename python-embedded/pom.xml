@@ -14,7 +14,7 @@
 	<parent>
 		<groupId>org.neo4j.build</groupId>
 		<artifactId>parent-pom</artifactId>
-		<version>25</version>
+		<version>29</version>
 		<relativePath />
 	</parent>
 
@@ -25,7 +25,7 @@
 	<name>Embedded Neo4j Python bindings</name>
 	<packaging>jar</packaging>
 	<description>
-    Python bindings for the embedded Neo4j graph database.
+		Python bindings for the embedded Neo4j graph database.
 	</description>
 
 	<scm>
@@ -46,6 +46,7 @@
 
 		<neo4j.version>1.6-SNAPSHOT</neo4j.version>
 		<gremlin.version>1.2</gremlin.version>
+		<docs.url>http://docs.neo4j.org/chunked/${project.version}/python-embedded.html</docs.url>
 	</properties>
 
 	<licenses>
@@ -64,7 +65,7 @@ affiliates (each, a "Commercial Agreement"), the terms of the license in
 such Commercial Agreement will supersede the GNU GENERAL PUBLIC LICENSE
 Version 3 and you may use the Software solely pursuant to the terms of
 the relevant Commercial Agreement.
-      </comments>
+			</comments>
 		</license>
 	</licenses>
 
@@ -92,7 +93,7 @@ the relevant Commercial Agreement.
 	</repositories>
 
 	<build>
-    	<sourceDirectory>src/main/python</sourceDirectory>
+		<sourceDirectory>src/main/python</sourceDirectory>
 		<testSourceDirectory>src/test/python</testSourceDirectory>
 
 		<plugins>
@@ -139,6 +140,15 @@ the relevant Commercial Agreement.
 						<include>**/*.py</include>
 					</includes>
 				</configuration>
+				<executions>
+					<execution>
+						<id>attach-python-sources</id>
+						<goals>
+							<goal>jar-no-fork</goal>
+							<goal>test-jar-no-fork</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 
 			<!-- Assemble python distribution -->
