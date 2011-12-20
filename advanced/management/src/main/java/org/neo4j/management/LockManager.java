@@ -19,6 +19,8 @@
  */
 package org.neo4j.management;
 
+import java.util.List;
+
 import org.neo4j.jmx.Description;
 import org.neo4j.jmx.ManagementInterface;
 import org.neo4j.kernel.info.LockInfo;
@@ -34,5 +36,10 @@ public interface LockManager
     long getNumberOfAdvertedDeadlocks();
 
     @Description( "Information about all locks held by Neo4j" )
-    LockInfo[] getLocks();
+    List<LockInfo> getLocks();
+
+    @Description( "Information about contended locks (locks where at least one thread is waiting) held by Neo4j. "
+                  + "The parameter is used to get locks where threads have waited for at least the specified number "
+                  + "of milliseconds, a value of 0 retrieves all contended locks." )
+    List<LockInfo> getContendedLocks( long minWaitTime );
 }

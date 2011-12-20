@@ -19,13 +19,11 @@
  */
 package org.neo4j.management.impl;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
@@ -45,7 +43,7 @@ public final class LockManagerBean extends ManagementBeanProvider
     {
         return new LockManagerImpl( management );
     }
-    
+
     @Override
     protected Neo4jMBean createMXBean( ManagementData management ) throws NotCompliantMBeanException
     {
@@ -62,7 +60,7 @@ public final class LockManagerBean extends ManagementBeanProvider
             this.lockManager = management.getKernelData().getConfig().getLockManager();
         }
 
-        LockManagerImpl( ManagementData management, boolean mxBean ) throws NotCompliantMBeanException
+        LockManagerImpl( ManagementData management, boolean mxBean )
         {
             super( management, mxBean );
             this.lockManager = management.getKernelData().getConfig().getLockManager();
@@ -74,19 +72,15 @@ public final class LockManagerBean extends ManagementBeanProvider
         }
 
         @Override
-        public LockInfo[] getLocks()
+        public List<LockInfo> getLocks()
         {
-            final List<LockInfo> locks = new ArrayList<LockInfo>();
-            lockManager.eachLock( new Visitor<LockInfo>()
-            {
-                @Override
-                public boolean visit( LockInfo lock )
-                {
-                    locks.add( lock );
-                    return false;
-                }
-            } );
-            return locks.toArray( new LockInfo[locks.size()] );
+            return lockManager.getAllLocks();
+        }
+
+        @Override
+        public List<LockInfo> getContendedLocks( long minWaitTime )
+        {
+            return lockManager.getAwaitedLocks( minWaitTime );
         }
     }
 }

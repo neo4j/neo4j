@@ -20,7 +20,10 @@
 package org.neo4j.management;
 
 import java.io.File;
+import java.lang.Thread.State;
 import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -35,6 +38,8 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.info.LockInfo;
 import org.neo4j.kernel.info.LockingTransaction;
+import org.neo4j.kernel.info.ResourceType;
+import org.neo4j.kernel.info.WaitingThread;
 
 public class TestLockManagerBean
 {
@@ -49,7 +54,7 @@ public class TestLockManagerBean
     @Test
     public void restingGraphHoldsNoLocks()
     {
-        assertEquals( "unexpected lock count", 0, lockManager.getLocks().length );
+        assertEquals( "unexpected lock count", 0, lockManager.getLocks().size() );
     }
 
     @Test
@@ -60,9 +65,9 @@ public class TestLockManagerBean
         {
             graphDb.getReferenceNode().setProperty( "key", "value" );
 
-            LockInfo[] locks = lockManager.getLocks();
-            assertEquals( "unexpected lock count", 1, locks.length );
-            LockInfo lock = locks[0];
+            List<LockInfo> locks = lockManager.getLocks();
+            assertEquals( "unexpected lock count", 1, locks.size() );
+            LockInfo lock = locks.get( 0 );
             assertNotNull( "null lock", lock );
             Collection<LockingTransaction> transactions = lock.getLockingTransactions();
             assertEquals( "unexpected transaction count", 1, transactions.size() );
@@ -81,10 +86,10 @@ public class TestLockManagerBean
         {
             tx.finish();
         }
-        LockInfo[] locks = lockManager.getLocks();
-        assertEquals( "unexpected lock count", 0, locks.length );
+        List<LockInfo> locks = lockManager.getLocks();
+        assertEquals( "unexpected lock count", 0, locks.size() );
     }
-    
+
     @Test
     public void explicitLocksAffectTheLockCount()
     {
@@ -93,21 +98,21 @@ public class TestLockManagerBean
         {
             Node root = graphDb.getReferenceNode();
             Lock first = tx.acquireReadLock( root );
-            
+
             LockInfo lock = getSingleLock();
             assertEquals( "read count", 1, lock.getReadCount() );
             assertEquals( "write count", 0, lock.getWriteCount() );
-            
+
             tx.acquireReadLock( root );
             lock = getSingleLock();
             assertEquals( "read count", 2, lock.getReadCount() );
             assertEquals( "write count", 0, lock.getWriteCount() );
-            
+
             tx.acquireWriteLock( root );
             lock = getSingleLock();
             assertEquals( "read count", 2, lock.getReadCount() );
             assertEquals( "write count", 1, lock.getWriteCount() );
-            
+
             first.release();
             lock = getSingleLock();
             assertEquals( "read count", 1, lock.getReadCount() );
@@ -117,15 +122,129 @@ public class TestLockManagerBean
         {
             tx.finish();
         }
-        LockInfo[] locks = lockManager.getLocks();
-        assertEquals( "unexpected lock count", 0, locks.length );
+        List<LockInfo> locks = lockManager.getLocks();
+        assertEquals( "unexpected lock count", 0, locks.size() );
+    }
+
+    @Test
+    public void canGetToContendedLocksOnly() throws Exception
+    {
+        final Node root = graphDb.getReferenceNode();
+
+        Transaction tx = graphDb.beginTx();
+        try
+        {
+            graphDb.createNode();
+            Lock lock = tx.acquireReadLock( root );
+
+            List<LockInfo> locks = lockManager.getLocks();
+            assertEquals( "unexpected lock count", 2, locks.size() );
+            for ( LockInfo l : locks )
+            {
+                switch ( l.getResourceType() )
+                {
+                case NODE:
+                    if ( "0".equals( l.getResourceId() ) )
+                    {
+                        assertEquals( "read count", 1, l.getReadCount() );
+                        assertEquals( "write count", 0, l.getWriteCount() );
+                    }
+                    else
+                    {
+                        assertEquals( "read count", 0, l.getReadCount() );
+                        assertEquals( "write count", 1, l.getWriteCount() );
+                    }
+                    break;
+                default:
+                    fail( "Unexpected locked resource type: " + l.getResourceType() );
+                }
+            }
+            final CountDownLatch latch = new CountDownLatch( 1 );
+            Thread t = new Thread()
+            {
+                @Override
+                public void run()
+                {
+                    Transaction tx = graphDb.beginTx();
+                    try
+                    {
+                        root.setProperty( "block", "here" );
+                    }
+                    finally
+                    {
+                        tx.finish();
+                    }
+                    latch.countDown();
+                }
+            };
+            t.start();
+            awaitWaitingStateIn( t );
+
+            locks = lockManager.getLocks();
+            assertEquals( "unexpected lock count", 2, locks.size() );
+            for ( LockInfo l : locks )
+            {
+                switch ( l.getResourceType() )
+                {
+                case NODE:
+                    if ( "0".equals( l.getResourceId() ) )
+                    {
+                        assertEquals( "read count", 1, l.getReadCount() );
+                        assertEquals( "write count", 0, l.getWriteCount() );
+                        List<WaitingThread> waiters = l.getWaitingThreads();
+                        assertEquals( "unxpected number of waiting threads", 1, waiters.size() );
+                        WaitingThread waiter = waiters.get( 0 );
+                        assertNotNull( waiter );
+                    }
+                    else
+                    {
+                        assertEquals( "read count", 0, l.getReadCount() );
+                        assertEquals( "write count", 1, l.getWriteCount() );
+                    }
+                    break;
+                default:
+                    fail( "Unexpected locked resource type: " + l.getResourceType() );
+                }
+            }
+            locks = lockManager.getContendedLocks( 0 );
+            assertEquals( "unexpected lock count", 1, locks.size() );
+            LockInfo l = locks.get( 0 );
+            assertEquals( "resource type", ResourceType.NODE, l.getResourceType() );
+            assertEquals( "resource id", "0", l.getResourceId() );
+            assertEquals( "read count", 1, l.getReadCount() );
+            assertEquals( "write count", 0, l.getWriteCount() );
+            List<WaitingThread> waiters = l.getWaitingThreads();
+            assertEquals( "unxpected number of waiting threads", 1, waiters.size() );
+            WaitingThread waiter = waiters.get( 0 );
+            assertNotNull( waiter );
+
+            lock.release();
+            latch.await();
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+
+    private void awaitWaitingStateIn( Thread t )
+    {
+        while ( t.getState() != State.WAITING )
+            try
+            {
+                Thread.sleep( 1 );
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.interrupted();
+            }
     }
 
     private LockInfo getSingleLock()
     {
-        LockInfo[] locks = lockManager.getLocks();
-        assertEquals( "unexpected lock count", 1, locks.length );
-        LockInfo lock = locks[0];
+        List<LockInfo> locks = lockManager.getLocks();
+        assertEquals( "unexpected lock count", 1, locks.size() );
+        LockInfo lock = locks.get( 0 );
         assertNotNull( "null lock", lock );
         return lock;
     }
