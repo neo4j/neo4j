@@ -17,33 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.vagrant;
+package org.neo4j.qa.driver;
 
-import org.neo4j.vagrant.Shell.Result;
+import org.neo4j.vagrant.VirtualMachine;
 
-public class ShellException extends RuntimeException {
 
-    /**
-     * 
-     */
-    private static final long serialVersionUID = -1718095011821914612L;
+public class WindowsCommunityDriver extends AbstractWindowsDriver {
 
-    private Result result;
-
-    public ShellException(Result r)
+    public WindowsCommunityDriver(VirtualMachine vm, String installerName)
     {
-        super("'" + r.getCommand() + "' failed with exit code: " + r.getExitCode());
-        result = r;
+        super(vm, installerName);
     }
-
-    public ShellException(Throwable e)
-    {
-        super(e);
-    }
-
-    public Result result()
-    {
-        return result;
-    }
-
 }

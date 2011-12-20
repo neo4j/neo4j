@@ -17,33 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.vagrant;
+package org.neo4j.qa.driver;
 
-import org.neo4j.vagrant.Shell.Result;
+public interface EnterpriseDriver extends Neo4jDriver {
 
-public class ShellException extends RuntimeException {
-
-    /**
-     * 
-     */
-    private static final long serialVersionUID = -1718095011821914612L;
-
-    private Result result;
-
-    public ShellException(Result r)
-    {
-        super("'" + r.getCommand() + "' failed with exit code: " + r.getExitCode());
-        result = r;
-    }
-
-    public ShellException(Throwable e)
-    {
-        super(e);
-    }
-
-    public Result result()
-    {
-        return result;
-    }
+    void runZookeeperInstall();
+    void runZookeeperUninstall();
+    void startZookeeperService();
+    void stopZookeeperService();
 
 }

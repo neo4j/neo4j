@@ -27,44 +27,39 @@ public class VMFactory {
 
     private static String workingDir = System.getProperty("jagrant.workingdir", System.getProperty("user.home") + "/jagrant/");
     private static String templateDir = System.getProperty("jagrant.templatedir", System.getProperty("user.dir") + "/target/test-classes/vagrant/");
-    
 
-    public static VirtualMachine vm(Box box, String name, String templateProject)
+    public static VirtualMachine vm(VMDefinition config)
     {
         VirtualMachine v;
-        File projectFolder = new File(workingDir + name);
-        File templateFolder = new File(templateDir + templateProject);
-        
-        System.out.println(projectFolder.getAbsolutePath());
-        System.out.println(templateFolder.getAbsolutePath());
+        File projectFolder = new File(workingDir + config.vmName());
+        File templateFolder = new File(templateDir + config.vmName());
         
         if (!projectFolder.exists())
         {
             projectFolder.mkdirs();
-            v = vm(box, projectFolder);
+            v = vm(projectFolder, config);
             if(!templateFolder.exists()) {
-                System.out.println("No vagrant project for " + templateProject + " ("+templateFolder.getAbsolutePath()+"), using vagrant init.");
-                v.init(box);
-            } else {
-                copyFolder(templateFolder, projectFolder);
+                System.out.println("No vagrant project for " + config.vmName() + " ("+templateFolder.getAbsolutePath()+"), using vagrant init.");
+                v.init(config.box());
             }
         } else
         {
-            v = vm(box, projectFolder);
+            v = vm(projectFolder, config);
         }
+        
+        if(templateFolder.exists()) {
+            copyFolder(templateFolder, projectFolder);
+        }
+        
         return v;
     }
 
-    public static VirtualMachine vm(Box box, File projectFolder)
+    private static VirtualMachine vm(File projectFolder, VMDefinition config)
     {
-        VirtualMachine v = new VirtualMachine(projectFolder, true);
-        v.ensureBoxExists(box);
+        VirtualMachine v = new VirtualMachine(projectFolder, config);
+        v.ensureBoxExists(config.box());
+        v.setTransactional(true);
         return v;
-    }
-
-    protected static VirtualMachine vm(Box baseBox, String name)
-    {
-        return vm(baseBox, name, baseBox.getName() + "-vanilla");
     }
     
 }

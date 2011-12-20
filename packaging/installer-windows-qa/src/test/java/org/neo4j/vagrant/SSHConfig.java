@@ -20,11 +20,12 @@
 package org.neo4j.vagrant;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class SSHConfig {
 
-    public static SSHConfig createFromVagrantOutput(String [] out) {
+    public static SSHConfig createFromVagrantOutput(List<String> out) {
         Map<String,String> cfg = new HashMap<String,String>();
         for(String line : out) {
             if(line.startsWith("  ")) {
@@ -48,22 +49,22 @@ public class SSHConfig {
     private String host;
     private int port;
 
-    public int getPort()
+    public int port()
     {
         return port;
     }
 
-    public String getHost()
+    public String host()
     {
         return host;
     }
 
-    public String getUser()
+    public String user()
     {
         return user;
     }
 
-    public String getPrivateKeyPath()
+    public String privateKeyPath()
     {
         return privateKeyPath;
     }

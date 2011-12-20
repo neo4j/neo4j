@@ -24,7 +24,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
@@ -50,8 +52,8 @@ public class Shell {
             return message;
         }
         
-        public String [] getOutputAsList() {
-            return message.split("\n");
+        public List<String> getOutputAsList() {
+            return Arrays.asList(message.split("\n"));
         }
         
         public String getCommand() {

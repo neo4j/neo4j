@@ -17,33 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.vagrant;
+package org.neo4j.qa;
 
-import org.neo4j.vagrant.Shell.Result;
+public class SharedConstants {
 
-public class ShellException extends RuntimeException {
-
-    /**
-     * 
-     */
-    private static final long serialVersionUID = -1718095011821914612L;
-
-    private Result result;
-
-    public ShellException(Result r)
-    {
-        super("'" + r.getCommand() + "' failed with exit code: " + r.getExitCode());
-        result = r;
-    }
-
-    public ShellException(Throwable e)
-    {
-        super(e);
-    }
-
-    public Result result()
-    {
-        return result;
-    }
-
+    public static final String NEO4J_VERSION = System.getProperty(
+            "neo4j.version", "NO-NEO4J.VERSION-ENV-VAR-SET");
+    public static final String INSTALLER_DIR = System.getProperty(
+            "neo4j.installer-dir", System.getProperty("user.dir")
+                    + "/target/classes/");
+    
+    public static final String WINDOWS_COMMUNITY_INSTALLER  = INSTALLER_DIR + "installer-windows-community.msi";
+    public static final String WINDOWS_ADVANCED_INSTALLER   = INSTALLER_DIR + "installer-windows-advanced.msi";
+    public static final String WINDOWS_ENTERPRISE_INSTALLER = INSTALLER_DIR + "installer-windows-enterprise.msi";
+    
 }

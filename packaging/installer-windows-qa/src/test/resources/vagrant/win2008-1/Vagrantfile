@@ -1,0 +1,11 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant::Config.run do |config|
+  config.vm.box = "windows-2008R2-amd64"
+  
+  config.vm.forward_port "neo4j-server", 7474, 7474
+  
+  config.vm.provision :shell, :path => "provision.sh"
+  
+end

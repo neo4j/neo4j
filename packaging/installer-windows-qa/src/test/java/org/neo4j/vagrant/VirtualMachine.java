@@ -29,13 +29,14 @@ public class VirtualMachine {
 
     private Shell sh;
     private SSHConfig sshConfig;
-    private boolean transactional;
+    private boolean transactional = false;
+    private VMDefinition definition;
 
-    public VirtualMachine(File projectFolder, boolean transactional)
+    public VirtualMachine(File projectFolder, VMDefinition config)
     {
         this.sh = new Shell(projectFolder);
         this.sh.getEnvironment().put("HOME", System.getProperty("user.home"));
-        this.transactional = transactional;
+        this.definition = config;
     }
 
     public void ensureBoxExists(Box box)
@@ -106,8 +107,8 @@ public class VirtualMachine {
     public Result copyFromHost(String hostPath, String vmPath)
     {
         SSHConfig cfg = sshConfiguration();
-        return scp(cfg.getPrivateKeyPath(), hostPath, sshPath(cfg, vmPath),
-                cfg.getPort());
+        return scp(cfg.privateKeyPath(), hostPath, sshPath(cfg, vmPath),
+                cfg.port());
     }
 
     /**
@@ -123,8 +124,8 @@ public class VirtualMachine {
     public Result copyFromVM(String vmPath, String hostPath)
     {
         SSHConfig cfg = sshConfiguration();
-        return scp(cfg.getPrivateKeyPath(), sshPath(cfg, vmPath), hostPath,
-                cfg.getPort());
+        return scp(cfg.privateKeyPath(), sshPath(cfg, vmPath), hostPath,
+                cfg.port());
     }
 
     public SSHConfig sshConfiguration()
@@ -160,6 +161,15 @@ public class VirtualMachine {
     {
         return sh;
     }
+    
+    public void setTransactional(boolean transactional) {
+        this.transactional = transactional;
+    }
+
+    public VMDefinition definition()
+    {
+        return definition;
+    }
 
     protected Result vagrant(String... cmds)
     {
@@ -191,6 +201,6 @@ public class VirtualMachine {
      */
     private String sshPath(SSHConfig cfg, String path)
     {
-        return cfg.getUser() + "@" + cfg.getHost() + ":" + path;
+        return cfg.user() + "@" + cfg.host() + ":" + path;
     }
 }

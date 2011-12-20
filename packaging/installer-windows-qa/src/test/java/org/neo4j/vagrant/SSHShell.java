@@ -30,7 +30,6 @@ import net.schmizz.sshj.transport.verification.HostKeyVerifier;
 import org.apache.commons.lang.StringUtils;
 import org.neo4j.vagrant.Shell.Result;
 
-
 public class SSHShell {
     
     private SSHClient client;
@@ -44,8 +43,8 @@ public class SSHShell {
         try {
             client = new SSHClient();
             client.addHostKeyVerifier(ALLOW_ALL);
-            client.connect(cfg.getHost(), cfg.getPort());
-            client.authPublickey(cfg.getUser(), client.loadKeys(cfg.getPrivateKeyPath()));
+            client.connect(cfg.host(), cfg.port());
+            client.authPublickey(cfg.user(), client.loadKeys(cfg.privateKeyPath()));
         } catch (Throwable e) {
             e.printStackTrace();
             throw new ShellException(e);

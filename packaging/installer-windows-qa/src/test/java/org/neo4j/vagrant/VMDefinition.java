@@ -19,31 +19,10 @@
  */
 package org.neo4j.vagrant;
 
-import org.neo4j.vagrant.Shell.Result;
+public interface VMDefinition {
 
-public class ShellException extends RuntimeException {
-
-    /**
-     * 
-     */
-    private static final long serialVersionUID = -1718095011821914612L;
-
-    private Result result;
-
-    public ShellException(Result r)
-    {
-        super("'" + r.getCommand() + "' failed with exit code: " + r.getExitCode());
-        result = r;
-    }
-
-    public ShellException(Throwable e)
-    {
-        super(e);
-    }
-
-    public Result result()
-    {
-        return result;
-    }
-
+    String vmName();
+    String ip();
+    Box box();
+    
 }
