@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>25</version>
+    <version>29</version>
     <relativePath />
   </parent>
 
@@ -24,6 +24,7 @@
     <jersey.server.version>1.6</jersey.server.version>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <bundle.namespace>org.neo4j.server.plugin.cypher</bundle.namespace>
+    <docs.url>http://docs.neo4j.org/chunked/${project.version}/cypher-plugin.html</docs.url>
   </properties>
   <licenses>
     <license>
