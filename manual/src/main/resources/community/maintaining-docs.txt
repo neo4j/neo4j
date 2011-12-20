@@ -1,0 +1,12 @@
+[[community-docs-maintain]]
+Maintaining Neo4j Documentation
+===============================
+
+Some parts of the documentation need extra care from the community to stay up to date.
+They typically refer to different kinds of community contributions. 
+Below is a list of such places, feel free to look into them and check for outdated or missing content!
+The easiest way to contribute fixes is to comment at the http://docs.neo4j.org/chunked/snapshot/[online HTML version].
+
+* <<tutorials-rest>>
+
+

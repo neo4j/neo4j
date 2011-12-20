@@ -25,6 +25,10 @@ include::docs.txt[]
 
 :leveloffset: 2
 
+include::maintaining-docs.txt[]
+
+:leveloffset: 2
+
 include::contributors.txt[]
 
 :leveloffset: 1
