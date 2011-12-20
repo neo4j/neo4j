@@ -59,6 +59,9 @@ public class UniquenessOfPathsTest extends AbstractJavaDocTestbase
      * 
      * @@output
      * 
+     * In the default `path.toString()` implementation, `(1)--[knows,2]-->(4)` denotes 
+     * a node with ID=1 having a relationship with ID 2 or type `knows` to a node with ID-4.
+     * 
      * Let's create a new +TraversalDescription+ from the old one,
      * having +NODE_GLOBAL+ uniqueness to see the difference.
      * 
