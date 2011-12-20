@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>25</version>
+    <version>28</version>
     <relativePath />
   </parent>
 
@@ -58,6 +58,16 @@ the relevant Commercial Agreement.
       <artifactId>neo4j-server</artifactId>
       <version>${neo4j.version}</version>
       <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>neo4j</artifactId>
+          <groupId>org.neo4j</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>jackson-jaxrs</artifactId>
+          <groupId>org.codehaus.jackson</groupId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.neo4j.app</groupId>
@@ -109,6 +119,24 @@ the relevant Commercial Agreement.
       <artifactId>blueprints-neo4j-graph</artifactId>
       <version>${blueprints.version}</version>
       <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>neo4j</artifactId>
+          <groupId>org.neo4j</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>neo4j-ha</artifactId>
+          <groupId>org.neo4j</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>neo4j-management</artifactId>
+          <groupId>org.neo4j</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>jackson-jaxrs</artifactId>
+          <groupId>org.codehaus.jackson</groupId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <!-- Jackson Dependencies -->
