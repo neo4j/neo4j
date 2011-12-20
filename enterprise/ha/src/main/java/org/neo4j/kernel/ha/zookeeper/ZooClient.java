@@ -143,9 +143,6 @@ public class ZooClient extends AbstractZooKeeperManager
                         msgLog.logMessage( "Did setup, seq=" + sequenceNr + " new sessionId=" + newSessionId );
                         Pair<Master, Machine> masterAfterIWrote = getMasterFromZooKeeper( false, false );
                         msgLog.logMessage( "Get master after write:" + masterAfterIWrote );
-                        int masterId = masterAfterIWrote.other().getMachineId();
-//                        setDataChangeWatcher( MASTER_NOTIFY_CHILD, masterId );
-                        msgLog.logMessage( "Set '" + MASTER_NOTIFY_CHILD + "' to " + masterId );
                         if ( sessionId != -1 )
                         {
                             receiver.newMaster( new Exception( "Got SyncConnected event from ZK" ) );
@@ -268,11 +265,27 @@ public class ZooClient extends AbstractZooKeeperManager
         String path = root + "/" + child;
         try
         {
-            zooKeeper.getData( path, true, null );
-        }
-        catch ( KeeperException e )
-        {
-            msgLog.logMessage( "Couldn't get master notify node", e );
+            try
+            {
+                zooKeeper.getData( path, true, null );
+            }
+            catch ( KeeperException e )
+            {
+                if ( e.code() == KeeperException.Code.NONODE )
+                {   // Create it if it doesn't exist
+                    byte[] data = new byte[4];
+                    ByteBuffer.wrap( data ).putInt( -1 );
+                    try
+                    {
+                        zooKeeper.create( path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT );
+                    }
+                    catch ( KeeperException ce )
+                    {
+                        if ( e.code() != KeeperException.Code.NODEEXISTS ) throw new ZooKeeperException( "Creation error", ce );
+                    }
+                }
+                else throw new ZooKeeperException( "Couldn't get or create " + child, e );
+            }
         }
         catch ( InterruptedException e )
         {
