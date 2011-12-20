@@ -47,9 +47,9 @@ import org.neo4j.kernel.ha.ConnectionInformation;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.ResponseReceiver;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.NullLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
-import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.LogExtractor;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public class ZooClient extends AbstractZooKeeperManager
