@@ -21,6 +21,8 @@ package org.neo4j.kernel.info;
 
 import java.beans.ConstructorProperties;
 
+import org.neo4j.helpers.Format;
+
 public final class WaitingThread extends LockingTransaction
 {
     public static WaitingThread create( String transaction, int readCount, int writeCount, Thread thread,
@@ -46,6 +48,13 @@ public final class WaitingThread extends LockingTransaction
         this.threadName = threadName;
         this.waitingSince = waitingSince;
         this.writeLock = writeLock;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "[\"" + threadName + "\" (id=" + threadId + ") " + super.toString() + " waiting for "
+               + ( writeLock ? "write" : "read" ) + " lock since " + Format.date( waitingSince ) + "]";
     }
 
     public boolean isWaitingOnReadLock()

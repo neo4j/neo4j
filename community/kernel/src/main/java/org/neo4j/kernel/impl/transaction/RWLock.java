@@ -28,10 +28,14 @@ import javax.transaction.Synchronization;
 import javax.transaction.Transaction;
 import javax.transaction.xa.XAResource;
 
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.info.LockInfo;
 import org.neo4j.kernel.info.LockingTransaction;
+import org.neo4j.kernel.info.ResourceType;
 import org.neo4j.kernel.info.WaitingThread;
 
 /**
@@ -480,7 +484,33 @@ class RWLock
                     thread.element.readCount, thread.element.writeCount, thread.waitingThread, thread.since,
                     thread.lockType == LockType.WRITE ) );
         }
-        return new LockInfo( resource.toString(), readCount, writeCount, transactions.values() );
+        ResourceType type;
+        String id;
+        if ( resource instanceof Node )
+        {
+            type = ResourceType.NODE;
+            id = Long.toString( ( (Node) resource ).getId() );
+        }
+        else if ( resource instanceof Relationship )
+        {
+            type = ResourceType.NODE;
+            id = Long.toString( ( (Relationship) resource ).getId() );
+        }
+        else
+        {
+            type = ResourceType.OTHER;
+            id = resource.toString();
+        }
+        return new LockInfo( type, id, readCount, writeCount, transactions.values() );
+    }
+
+    synchronized boolean acceptVisitorIfWaitedSinceBefore( Visitor<LockInfo> visitor, long waitStart )
+    {
+        for ( WaitElement thread : waitingThreadList )
+        {
+            if ( thread.since < waitStart ) return visitor.visit( info() );
+        }
+        return false;
     }
 
     public String toString()

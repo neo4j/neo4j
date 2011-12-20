@@ -37,6 +37,12 @@ public class LockingTransaction implements Serializable
         this.writeCount = writeCount;
     }
 
+    @Override
+    public String toString()
+    {
+        return "{" + transaction + ", readCount=" + readCount + ", writeCount=" + writeCount + "}";
+    }
+
     public String getTransaction()
     {
         return transaction;

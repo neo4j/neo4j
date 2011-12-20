@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.transaction.Transaction;
@@ -228,8 +230,25 @@ public class LockManager
         }
         lock.dumpStack();
     }
-    
-    public void eachLock( Visitor<LockInfo> visitor )
+
+    public List<LockInfo> getAllLocks()
+    {
+        return eachLock( new ListAppendingVisitor() ).result;
+    }
+
+    public List<LockInfo> getAwaitedLocks( long minWaitTime )
+    {
+        return eachAwaitedLock( new ListAppendingVisitor(), minWaitTime ).result;
+    }
+
+    /**
+     * Visit all locks.
+     * 
+     * The supplied visitor may not block.
+     * 
+     * @param visitor visitor for visiting each lock.
+     */
+    private <V extends Visitor<LockInfo>> V eachLock( V visitor )
     {
         synchronized ( resourceLockMap )
         {
@@ -238,6 +257,31 @@ public class LockManager
                 if ( visitor.visit( lock.info() ) ) break;
             }
         }
+        return visitor;
+    }
+    
+    /**
+     * Visit all locks that some thread has been waiting for at least the
+     * supplied number of milliseconds.
+     * 
+     * The supplied visitor may not block.
+     * 
+     * @param visitor visitor for visiting each lock that has had a thread
+     *            waiting at least the specified time.
+     * @param minWaitTime the number of milliseconds a thread should have waited
+     *            on a lock for it to be visited.
+     */
+    private <V extends Visitor<LockInfo>> V eachAwaitedLock( V visitor, long minWaitTime )
+    {
+        long waitStart = System.currentTimeMillis() - minWaitTime;
+        synchronized ( resourceLockMap )
+        {
+            for ( RWLock lock : resourceLockMap.values() )
+            {
+                if ( lock.acceptVisitorIfWaitedSinceBefore( visitor, waitStart ) ) break;
+            }
+        }
+        return visitor;
     }
 
     /**
@@ -257,6 +301,18 @@ public class LockManager
         DumpVisitor dump = new DumpVisitor();
         eachLock( dump );
         dump.done();
+    }
+
+    private static class ListAppendingVisitor implements Visitor<LockInfo>
+    {
+        private final List<LockInfo> result = new ArrayList<LockInfo>();
+
+        @Override
+        public boolean visit( LockInfo element )
+        {
+            result.add( element );
+            return false;
+        }
     }
     
     private static class DumpVisitor implements Visitor<LockInfo>
@@ -284,7 +340,8 @@ public class LockManager
         private void dumpStack( LockInfo lock )
         {
             System.out.println( "Total lock count: readCount=" + lock.getReadCount() + " writeCount="
-                                + lock.getWriteCount() + " for " + lock.getResource() );
+                                + lock.getWriteCount() + " for "
+                                + lock.getResourceType().toString( lock.getResourceId() ) );
             System.out.println( "Waiting list:" );
             StringBuilder waitlist = new StringBuilder();
             String sep = "";

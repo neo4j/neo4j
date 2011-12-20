@@ -29,20 +29,30 @@ import java.util.List;
 public final class LockInfo
 {
     private final String resource;
+    private final ResourceType type;
     private final int readCount;
     private final int writeCount;
     private final List<WaitingThread> waitingThreads;
     private final LockingTransaction[] lockingTxs;
 
-    @ConstructorProperties( { "resource", "readCount", "writeCount", "lockingTransactions" } )
-    public LockInfo( String resource, int readCount, int writeCount, List<LockingTransaction> locking )
+    @ConstructorProperties( { "resourceType", "resourceId", "readCount", "writeCount", "lockingTransactions",
+            "waitingThreads" } )
+    public LockInfo( ResourceType type, String resourceId, int readCount, int writeCount,
+            List<LockingTransaction> locking, List<WaitingThread> waiting )
     {
-        this( resource, readCount, writeCount, (Collection<LockingTransaction>) locking );
+        this.type = type;
+        this.resource = resourceId;
+        this.readCount = readCount;
+        this.writeCount = writeCount;
+        this.lockingTxs = locking.toArray( new LockingTransaction[locking.size()] );
+        this.waitingThreads = new ArrayList<WaitingThread>( waiting );
     }
 
-    public LockInfo( String resource, int readCount, int writeCount, Collection<LockingTransaction> locking )
+    public LockInfo( ResourceType type, String resourceId, int readCount, int writeCount,
+            Collection<LockingTransaction> locking )
     {
-        this.resource = resource;
+        this.type = type;
+        this.resource = resourceId;
         this.readCount = readCount;
         this.writeCount = writeCount;
         this.waitingThreads = new ArrayList<WaitingThread>();
@@ -55,7 +65,19 @@ public final class LockInfo
         }
     }
 
-    public String getResource()
+    @Override
+    public String toString()
+    {
+        return new StringBuilder( type.toString( resource ) ).append( "{readCount=" ).append( readCount ).append(
+                ", writeCount=" ).append( writeCount ).append( "}" ).toString();
+    }
+
+    public ResourceType getResourceType()
+    {
+        return type;
+    }
+
+    public String getResourceId()
     {
         return resource;
     }
