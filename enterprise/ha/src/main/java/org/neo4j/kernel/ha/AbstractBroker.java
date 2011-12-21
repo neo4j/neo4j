@@ -102,7 +102,7 @@ public abstract class AbstractBroker implements Broker
                                                  + " does not support ConnectionInformation" );
     }
 
-    public StoreId createCluster( StoreId storeIdSuggestion )
+    public StoreId getClusterStoreId()
     {
         throw new UnsupportedOperationException( getClass().getName() );
     }

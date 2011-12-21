@@ -36,6 +36,7 @@ import org.jboss.netty.handler.timeout.TimeoutException;
 import org.junit.Ignore;
 import org.neo4j.helpers.Format;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.ha.zookeeper.ClusterManager;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.subprocess.SubProcess;
@@ -90,7 +91,7 @@ public final class LocalhostZooKeeperCluster
             ClusterManager cm = null;
             try
             {
-                cm = new ClusterManager( getConnectionString() );
+                cm = new ClusterManager( getConnectionString(), HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME );
                 cm.waitForSyncConnected();
                 break;
             }

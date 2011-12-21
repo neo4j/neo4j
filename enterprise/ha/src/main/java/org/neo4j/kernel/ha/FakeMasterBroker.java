@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
 public class FakeMasterBroker extends AbstractBroker
 {
     private Map<String, String> config;
+    private StoreId storeId = new StoreId();
 
     public FakeMasterBroker( int myMachineId, GraphDatabaseService graphDb, Map<String, String> config )
     {
@@ -39,9 +40,9 @@ public class FakeMasterBroker extends AbstractBroker
     }
 
     @Override
-    public StoreId createCluster( StoreId storeIdSuggestion )
+    public StoreId getClusterStoreId()
     {
-        return storeIdSuggestion; // Master will always win
+        return storeId; // Master will always win
     }
 
     public Machine getMasterMachine()

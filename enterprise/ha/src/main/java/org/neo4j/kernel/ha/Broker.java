@@ -55,7 +55,7 @@ public interface Broker
 
     ConnectionInformation[] getConnectionInformation();
 
-    StoreId createCluster( StoreId storeIdSuggestion );
+    StoreId getClusterStoreId();
 
     void logStatus( StringLogger msgLog );
 }

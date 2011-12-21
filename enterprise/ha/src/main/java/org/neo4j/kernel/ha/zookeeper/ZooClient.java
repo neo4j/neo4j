@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.ha.zookeeper;
 
-import static org.neo4j.kernel.ha.zookeeper.ClusterManager.getSingleRootPath;
+import static org.neo4j.kernel.ha.zookeeper.ClusterManager.asRootPath;
 
 import java.io.IOException;
 import java.nio.BufferUnderflowException;
@@ -67,8 +67,8 @@ public class ZooClient extends AbstractZooKeeperManager
     private final Object keeperStateMonitor = new Object();
     private volatile KeeperState keeperState = KeeperState.Disconnected;
     private volatile boolean shutdown = false;
-    private final RootPathGetter rootPathGetter;
     private String rootPath;
+    private volatile StoreId storeId;
 
     // Has the format <host-name>:<port>
     private final String haServer;
@@ -79,6 +79,8 @@ public class ZooClient extends AbstractZooKeeperManager
     private final ResponseReceiver receiver;
     private final int backupPort;
     private final boolean writeLastCommittedTx;
+    private final String clusterName;
+    private final boolean allowCreateCluster;
 
     public ZooClient( AbstractGraphDatabase graphDb, Map<String, String> config, ResponseReceiver receiver )
     {
@@ -92,24 +94,12 @@ public class ZooClient extends AbstractZooKeeperManager
         backupPort = HaConfig.getBackupPortFromConfig( config );
         haServer = HaConfig.getHaServerFromConfig( config );
         writeLastCommittedTx = HaConfig.getSlaveUpdateModeFromConfig( config ).syncWithZooKeeper;
-        rootPathGetter = getRootPathGetter( graphDb.getStoreDir() );
+        clusterName = HaConfig.getClusterNameFromConfig( config );
         sequenceNr = "not initialized yet";
         String storeDir = graphDb.getStoreDir();
         msgLog = StringLogger.getLogger( storeDir );
+        allowCreateCluster = HaConfig.getAllowInitFromConfig( config );
         zooKeeper = instantiateZooKeeper();
-    }
-
-    static RootPathGetter getRootPathGetter( String storeDir )
-    {
-        try
-        {
-            new NeoStoreUtil( storeDir );
-            return RootPathGetter.forKnownStore( storeDir );
-        }
-        catch ( RuntimeException e )
-        {
-            return RootPathGetter.forUnknownStore( storeDir );
-        }
     }
 
     @Override
@@ -384,7 +374,6 @@ public class ZooClient extends AbstractZooKeeperManager
                 throw new ZooKeeperException( "Got interrupted", e );
             }
             // try create root
-            if ( getSingleRootPath( zooKeeper ) != null ) throw new RuntimeException( "There's already an HA cluster managed by this ZooKeeper cluster" );
             try
             {
                 byte data[] = new byte[0];
@@ -411,9 +400,29 @@ public class ZooClient extends AbstractZooKeeperManager
     {
         if ( rootPath == null )
         {
-            Pair<String, Long> info = rootPathGetter.getRootPath( zooKeeper );
-            rootPath = info.first();
-            committedTx = info.other();
+            storeId = ClusterManager.getClusterStoreId( zooKeeper, clusterName );
+            if ( storeId != null )
+            {   // There's a cluster in place, let's use that
+                rootPath = asRootPath( storeId );
+                if ( NeoStoreUtil.storeExists( getGraphDb().getStoreDir() ) )
+                {   // We have a local store, use and verify against it
+                    NeoStoreUtil store = new NeoStoreUtil( getGraphDb().getStoreDir() );
+                    committedTx = store.getLastCommittedTx();
+                    if ( !storeId.equals( store.asStoreId() ) ) throw new ZooKeeperException( "StoreId in database doesn't match that of the ZK cluster" );
+                }
+                else
+                {   // No local store
+                    committedTx = 1;
+                }
+            }
+            else
+            {   // Cluster doesn't exist
+                if ( !allowCreateCluster ) throw new RuntimeException( "Not allowed to create cluster" );
+                storeId = new StoreId();
+                createCluster( storeId );
+                rootPath = asRootPath( storeId );
+                committedTx = 1;
+            }
             masterForCommittedTx = getFirstMasterForTx( committedTx );
         }
     }
@@ -720,7 +729,7 @@ public class ZooClient extends AbstractZooKeeperManager
         return machineId == this.machineId ? haServer : super.getHaServer( machineId, wait );
     }
 
-    public synchronized StoreId createCluster( String clusterName, StoreId storeIdSuggestion )
+    private synchronized StoreId createCluster( StoreId storeIdSuggestion )
     {
         String path = "/" + clusterName;
         try
@@ -754,5 +763,10 @@ public class ZooClient extends AbstractZooKeeperManager
         {
             throw new ZooKeeperException( "createCluster interrupted", e );
         }
+    }
+    
+    public StoreId getClusterStoreId()
+    {
+        return storeId;
     }
 }

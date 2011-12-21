@@ -23,7 +23,6 @@ import static org.neo4j.com.Server.DEFAULT_BACKUP_PORT;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.zookeeper.KeeperException;
@@ -31,25 +30,34 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.ZooKeeper;
 import org.neo4j.com.Client;
+import org.neo4j.kernel.HaConfig;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 
 public class ClusterManager extends AbstractZooKeeperManager
 {
     private final ZooKeeper zooKeeper;
     private String rootPath;
     private KeeperState state = KeeperState.Disconnected;
+    private final String clusterName;
     
     public ClusterManager( String zooKeeperServers )
+    {
+        this( zooKeeperServers, HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME );
+    }
+    
+    public ClusterManager( String zooKeeperServers, String clusterName )
     {
         super( zooKeeperServers, null, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
                 Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT );
+        this.clusterName = clusterName;
         this.zooKeeper = instantiateZooKeeper();
     }
     
     @Override
     protected int getMyMachineId()
     {
-        throw new UnsupportedOperationException("Not implemented ClusterManager.getMyMachineId()");
+        throw new UnsupportedOperationException( "Not implemented ClusterManager.getMyMachineId()" );
     }
     
     public void waitForSyncConnected()
@@ -107,46 +115,31 @@ public class ClusterManager extends AbstractZooKeeperManager
     private String readRootPath()
     {
         waitForSyncConnected();
-        String result = getSingleRootPath( zooKeeper );
-        if ( result == null )
-        {
-            throw new RuntimeException( "No root child found in zoo keeper" );
-        }
-        return result;
+        StoreId storeId = getClusterStoreId( zooKeeper, clusterName );
+        if ( storeId == null ) throw new RuntimeException( "Cluster '" + clusterName + "' not found" );
+        return asRootPath( storeId );
     }
-
-    public static String getSingleRootPath( ZooKeeper keeper )
+    
+    public static String asRootPath( StoreId storeId )
+    {
+        return "/" + storeId.getCreationTime() + "_" + storeId.getRandomId();
+    }
+    
+    public static StoreId getClusterStoreId( ZooKeeper keeper, String clusterName )
     {
         try
         {
-            List<String> children = keeper.getChildren( "/", false );
-            String foundChild = null;
-            for ( String child : children )
-            {
-                if ( child.contains( "_" ) )
-                {
-                    if ( foundChild != null )
-                    {
-                        throw new RuntimeException( "Multiple roots found, " +
-                                foundChild + " and " + child );
-                    }
-                    foundChild = child;
-                }
-            }
-        
-            if ( foundChild != null )
-            {
-                return "/" + foundChild;
-            }
-            return null;
+            byte[] child = keeper.getData( "/" + clusterName, false, null );
+            return StoreId.deserialize( child );
         }
         catch ( KeeperException e )
         {
-            throw new RuntimeException( e );
+            if ( e.code() == KeeperException.Code.NONODE ) return null;
+            throw new ZooKeeperException( "Error getting store id", e );
         }
         catch ( InterruptedException e )
         {
-            throw new RuntimeException( e );
+            throw new ZooKeeperException( "Interrupted", e );
         }
     }
 

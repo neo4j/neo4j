@@ -25,8 +25,10 @@ import java.net.URISyntaxException;
 import org.apache.zookeeper.KeeperException;
 import org.neo4j.backup.BackupExtensionService;
 import org.neo4j.com.ComException;
+import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.ha.zookeeper.ClusterManager;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 
@@ -42,15 +44,16 @@ public final class HaBackupProvider extends BackupExtensionService
     }
 
     @Override
-    public URI resolve( URI address )
+    public URI resolve( URI address, Args args )
     {
         String master = null;
         try
         {
             System.out.println( "Asking coordinator service at '" + address
                                 + "' for master" );
+            String clusterName = args.get( HaConfig.CONFIG_KEY_CLUSTER_NAME, HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME );
             master = getMasterServerInCluster( address.getSchemeSpecificPart().substring(
-                    2 ) ); // skip the "//" part
+                    2 ), clusterName ); // skip the "//" part
             System.out.println( "Found master '" + master + "' in cluster" );
         }
         catch ( ComException e )
@@ -79,9 +82,9 @@ public final class HaBackupProvider extends BackupExtensionService
         return toReturn;
     }
 
-    private static String getMasterServerInCluster( String from )
+    private static String getMasterServerInCluster( String from, String clusterName )
     {
-        ClusterManager clusterManager = new ClusterManager( from );
+        ClusterManager clusterManager = new ClusterManager( from, clusterName );
         Pair<String, Integer> masterServer = null;
         try
         {

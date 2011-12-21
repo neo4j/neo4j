@@ -217,7 +217,7 @@ public class HAGraphDb extends AbstractGraphDatabase
                 Pair<Master, Machine> master = broker.getMasterReally( true );
                 if ( master != null && !master.other().equals( Machine.NO_MACHINE ) &&
                         master.other().getMachineId() != machineId )
-                { // Join the existing cluster
+                {   // Join the existing cluster
                     try
                     {
                         copyStoreFromMaster( master );
@@ -232,15 +232,11 @@ public class HAGraphDb extends AbstractGraphDatabase
                         msgLog.logMessage( "Problems copying store from master", e );
                     }
                 }
-                else if ( allowInit )
-                { // Try to initialize the cluster and become master
-                    exception = null;
-                    StoreId myStoreId = new StoreId();
-                    storeId = broker.createCluster( myStoreId );
-                    if ( storeId.equals( myStoreId ) )
-                    { // I am master
-                        break;
-                    }
+                else
+                {   // I seem to be the master, the broker have created the cluster for me
+                    // I'm just going to start up now
+                    storeId = broker.getClusterStoreId();
+                    break;
                 }
                 // I am not master, and could not connect to the master:
                 // wait for other machine(s) to join.
@@ -399,7 +395,7 @@ public class HAGraphDb extends AbstractGraphDatabase
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[" + HaConfig.CONFIG_KEY_SERVER_ID + ":" + machineId + "]";
+        return getClass().getSimpleName() + "[" + getStoreDir() + ", " + HaConfig.CONFIG_KEY_SERVER_ID + ":" + machineId + "]";
     }
 
     /**
