@@ -517,6 +517,18 @@ public class HAGraphDb extends AbstractGraphDatabase
             getMessageLog().logMessage( "COULD NOT CONNECT: " + socketAddr, e );
             return false;
         }
+        finally
+        {
+            try
+            {
+                socket.close();
+            }
+            catch ( IOException e )
+            {
+                msgLog.logMessage(
+                        "Could not close test socket to " + socketAddr, e );
+            }
+        }
         return true;
     }
 
@@ -534,7 +546,7 @@ public class HAGraphDb extends AbstractGraphDatabase
                 CommonFactories.defaultFileSystemAbstraction() );
         instantiateAutoUpdatePullerIfConfigSaysSo();
         logHaInfo( "Started as slave" );
-        checkConnectionToMaster( master );
+        // checkConnectionToMaster( master );
         return result;
     }
 
