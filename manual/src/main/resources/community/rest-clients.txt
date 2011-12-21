@@ -5,6 +5,7 @@
 | name | language / framework | URL
 | Neo4jClient | .NET | http://hg.readify.net/neo4jclient/
 | py2neo | Python |  http://py2neo.org/
+| Bulbflow | Python | http://bulbflow.com/
 | neo4jrestclient | Python | https://github.com/versae/neo4j-rest-client
 | neo4django | Django | https://github.com/scholrly/neo4django
 | Neo4jPHP | PHP | https://github.com/jadell/Neo4jPHP
