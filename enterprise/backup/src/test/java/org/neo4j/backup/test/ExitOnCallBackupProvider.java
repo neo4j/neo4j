@@ -22,6 +22,7 @@ package org.neo4j.backup.test;
 import java.net.URI;
 
 import org.neo4j.backup.BackupExtensionService;
+import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Service;
 
 /**
@@ -39,10 +40,9 @@ public class ExitOnCallBackupProvider extends BackupExtensionService
     }
 
     @Override
-    public URI resolve( URI from )
+    public URI resolve( URI from, Args args )
     {
         System.exit( from.getPort() );
         return null;
     }
-
 }

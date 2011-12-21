@@ -26,35 +26,33 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.StoreId;
 
 public class NeoStoreUtil
 {
-    private static final int RECORD_SIZE = 9;
-
     private final long creationTime;
     private final long storeId;
     private final long txId;
-    private final long version;
+    private final long logVersion;
+    private final long storeVersion;
     
     public NeoStoreUtil( String storeDir )
     {
         try
         {
-            FileChannel fileChannel = new RandomAccessFile( storeDir + File.separator + NeoStore.DEFAULT_NAME, "r" ).getChannel();
-            ByteBuffer buf = ByteBuffer.allocate( 4*9 );
-            if ( fileChannel.read( buf ) != 4*9 )
+            FileChannel fileChannel = new RandomAccessFile( neoStoreFile( storeDir ), "r" ).getChannel();
+            int recordsToRead = 5;
+            ByteBuffer buf = ByteBuffer.allocate( recordsToRead*NeoStore.RECORD_SIZE );
+            if ( fileChannel.read( buf ) != recordsToRead*NeoStore.RECORD_SIZE )
             {
                 throw new RuntimeException( "Unable to read neo store header information" );
             }
             buf.flip();
-            buf.get(); // in use byte
-            creationTime = buf.getLong();
-            buf.get(); // in use byte
-            storeId = buf.getLong();
-            buf.get(); 
-            version = buf.getLong(); // skip log version
-            buf.get(); // in use byte
-            txId = buf.getLong();
+            creationTime = nextRecord( buf );
+            storeId = nextRecord( buf );
+            logVersion = nextRecord( buf );
+            txId = nextRecord( buf );
+            storeVersion = nextRecord( buf );
             fileChannel.close();
         }
         catch ( IOException e )
@@ -63,6 +61,12 @@ public class NeoStoreUtil
         }
     }
     
+    private long nextRecord( ByteBuffer buf )
+    {
+        buf.get(); // in use byte
+        return buf.getLong();
+    }
+
     public long getCreationTime()
     {
         return creationTime;
@@ -78,8 +82,28 @@ public class NeoStoreUtil
         return txId;
     }
     
-    public long getVersion()
+    public long getLogVersion()
     {
-        return version;
+        return logVersion;
+    }
+    
+    public long getStoreVersion()
+    {
+        return storeVersion;
+    }
+    
+    public StoreId asStoreId()
+    {
+        return new StoreId( creationTime, storeId, storeVersion );
+    }
+
+    public static boolean storeExists( String storeDir )
+    {
+        return neoStoreFile( storeDir ).exists();
+    }
+
+    private static File neoStoreFile( String storeDir )
+    {
+        return new File( storeDir, NeoStore.DEFAULT_NAME );
     }
 }

@@ -84,7 +84,7 @@ public class BackupTool
         if ( service != null )
         { // If in here, it means a module was loaded. Use it and substitute the
           // passed URI
-            backupURI = service.resolve( backupURI );
+            backupURI = service.resolve( backupURI, arguments );
         }
         doBackup( full, backupURI, to, verify );
     }

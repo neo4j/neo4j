@@ -47,7 +47,6 @@ public class ZooKeeperBroker extends AbstractBroker
     private final ZooClient zooClient;
     private final String haServer;
     private int clientLockReadTimeout;
-    private final String clusterName;
     private Map<String, String> config;
     private int fetchInfoTimeout;
 
@@ -55,7 +54,6 @@ public class ZooKeeperBroker extends AbstractBroker
     {
         super( HaConfig.getMachineIdFromConfig( config ), graphDb );
         this.config = config;
-        clusterName = HaConfig.getClusterNameFromConfig( config );
         haServer = HaConfig.getHaServerFromConfig( config );
         clientLockReadTimeout = HaConfig.getClientLockReadTimeoutFromConfig( config );
         fetchInfoTimeout = HaConfig.getFetchInfoTimeoutFromConfig( config );
@@ -130,9 +128,9 @@ public class ZooKeeperBroker extends AbstractBroker
     }
 
     @Override
-    public StoreId createCluster( StoreId storeIdSuggestion )
+    public StoreId getClusterStoreId()
     {
-        return zooClient.createCluster( clusterName, storeIdSuggestion );
+        return zooClient.getClusterStoreId();
     }
 
     @Override
