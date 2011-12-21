@@ -421,22 +421,8 @@ public class MasterImpl implements Master
     public Response<Integer> createRelationshipType( SlaveContext context, String name )
     {
         Config config = getGraphDbConfig();
-        
-        // Does this type exist already?
-        Integer id = config.getRelationshipTypeHolder().getIdFor( name );
-        if ( id != null )
-        {
-            // OK, return
-            return packResponse( context, id );
-        }
-
-        // No? Create it then
-        id = config.getRelationshipTypeCreator().getOrCreate(
-                config.getTxModule().getTxManager(),
-                config.getIdGeneratorModule().getIdGenerator(),
-                config.getPersistenceModule().getPersistenceManager(),
-                config.getRelationshipTypeHolder(), name );
-        return packResponse( context, id );
+        config.getRelationshipTypeHolder().addValidRelationshipType( name, true );
+        return packResponse( context, config.getRelationshipTypeHolder().getIdFor( name ) );
     }
 
     public Response<Void> pullUpdates( SlaveContext context )
