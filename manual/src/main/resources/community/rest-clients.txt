@@ -9,6 +9,7 @@
 | neo4django | Django | https://github.com/scholrly/neo4django
 | Neo4jPHP | PHP | https://github.com/jadell/Neo4jPHP
 | neography | Ruby | https://github.com/maxdemarzi/neography
+| node.js | JavaScript | https://github.com/thingdom/node-neo4j
 |===============================================================================
 
 
