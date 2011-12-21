@@ -27,6 +27,9 @@ import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_D
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.SocketAddress;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -430,7 +433,7 @@ public class HAGraphDb extends AbstractGraphDatabase
                 {   // I am currently master, so restart as slave.
                     // This will result in clearing of free ids from .id files, see SlaveIdGenerator.
                     internalShutdown( true );
-                    newDb = startAsSlave( storeId );
+                    newDb = startAsSlave( storeId, master );
                 }
                 else
                 {   // I am already a slave, so just forget the ids I got from the previous master
@@ -488,7 +491,37 @@ public class HAGraphDb extends AbstractGraphDatabase
         getMessageLog().logMessage( "--- HIGH AVAILABILITY CONFIGURATION END ---", true );
     }
 
-    private EmbeddedGraphDbImpl startAsSlave( StoreId storeId )
+    /**
+     * Tries to create a plain old socket connection to the master to ensure
+     * that connectivity exists. This is supposed to happen right after a new
+     * master election and provided we are a slave. Useful because it is
+     * blocking and is as simple as possible - diagnostically more useful than
+     * the failure netty might give later on.
+     * 
+     * @param master The master
+     * @return true if the connection was successful, false if it threw an
+     *         exception.
+     */
+    private boolean checkConnectionToMaster( Pair<Master, Machine> master )
+    {
+        Pair<String, Integer> connectionInfo = master.other().getServer();
+        SocketAddress socketAddr = new InetSocketAddress(
+                connectionInfo.first(), connectionInfo.other() );
+        Socket socket = new Socket();
+        try
+        {
+            socket.connect( socketAddr );
+        }
+        catch ( Exception e )
+        {
+            getMessageLog().logMessage( "COULD NOT CONNECT: " + socketAddr, e );
+            return false;
+        }
+        return true;
+    }
+
+    private EmbeddedGraphDbImpl startAsSlave( StoreId storeId,
+            Pair<Master, Machine> master )
     {
         getMessageLog().logMessage( "Starting[" + machineId + "] as slave", true );
         EmbeddedGraphDbImpl result = new EmbeddedGraphDbImpl( getStoreDir(), storeId, config, this,
@@ -501,6 +534,7 @@ public class HAGraphDb extends AbstractGraphDatabase
                 CommonFactories.defaultFileSystemAbstraction() );
         instantiateAutoUpdatePullerIfConfigSaysSo();
         logHaInfo( "Started as slave" );
+        checkConnectionToMaster( master );
         return result;
     }
 
