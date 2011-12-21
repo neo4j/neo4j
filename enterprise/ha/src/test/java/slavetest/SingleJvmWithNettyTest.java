@@ -429,7 +429,10 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         long waitStart = System.currentTimeMillis();
         assertFalse( executeJob( new CommonJobs.SetNodePropertyJob( nodeId, "key", "value" ), 0 ) );
         long waitTime = System.currentTimeMillis()-waitStart;
-        assertTrue( "" + waitTime, Math.abs( waitTime-lockTimeout*1000 ) < (lockTimeout*1000)/2 );
+        // Asserting time spent in a unit test is error prone. Comparing lockTimeout=1
+        // against the default (20) / 2 = 10 should be pretty fine and should still verify
+        // the correct behavior.
+        assertTrue( "" + waitTime, waitTime < Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS*1000/2 );
         latch.countDownSecond();
     }
     
