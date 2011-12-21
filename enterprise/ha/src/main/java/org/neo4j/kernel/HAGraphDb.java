@@ -509,7 +509,7 @@ public class HAGraphDb extends AbstractGraphDatabase
      * master election and provided we are a slave. Useful because it is
      * blocking and is as simple as possible - diagnostically more useful than
      * the failure netty might give later on.
-     * 
+     *
      * @param master The master
      * @return true if the connection was successful, false if it threw an
      *         exception.
@@ -526,7 +526,7 @@ public class HAGraphDb extends AbstractGraphDatabase
         }
         catch ( Exception e )
         {
-            getMessageLog().logMessage( "COULD NOT CONNECT: " + socketAddr, e );
+            msgLog.logMessage( "COULD NOT CONNECT: " + socketAddr, e );
             return false;
         }
         return true;
