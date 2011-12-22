@@ -5,3 +5,4 @@ org.neo4j.management.impl.MemoryMappingBean
 org.neo4j.management.impl.StoreFileBean
 org.neo4j.management.impl.TransactionManagerBean
 org.neo4j.management.impl.XaManagerBean
+org.neo4j.management.impl.DiagnosticsBean
