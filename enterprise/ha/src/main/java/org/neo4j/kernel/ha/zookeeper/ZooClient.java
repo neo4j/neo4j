@@ -418,10 +418,10 @@ public class ZooClient extends AbstractZooKeeperManager
             else
             {   // Cluster doesn't exist
                 if ( !allowCreateCluster ) throw new RuntimeException( "Not allowed to create cluster" );
-                storeId = new StoreId();
-                createCluster( storeId );
-                rootPath = asRootPath( storeId );
-                committedTx = 1;
+                StoreId storeIdSuggestion = NeoStoreUtil.storeExists( getGraphDb().getStoreDir() ) ?
+                        new NeoStoreUtil( getGraphDb().getStoreDir() ).asStoreId() : new StoreId();
+                storeId = createCluster( storeIdSuggestion );
+                makeSureRootPathIsFound();
             }
             masterForCommittedTx = getFirstMasterForTx( committedTx );
         }
