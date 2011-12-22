@@ -72,6 +72,20 @@ terms of the relevant Commercial Agreement.
     </dependency>
     
     <dependency>
+      <groupId>org.neo4j.app</groupId>
+      <artifactId>neo4j-server</artifactId>
+      <type>test-jar</type>
+      <version>${neo4j.version}</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <type>test-jar</type>
+      <version>${neo4j.version}</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-advanced</artifactId>
       <version>1.6-SNAPSHOT</version>

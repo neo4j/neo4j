@@ -19,10 +19,44 @@
  */
 package org.neo4j.server.advanced;
 
+import java.lang.management.ManagementFactory;
+
+import javax.management.InstanceAlreadyExistsException;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+
+
 import org.neo4j.server.NeoServerBootstrapper;
+import org.neo4j.server.advanced.jmx.ServerManagement;
 
 public class AdvancedNeoServerBootstrapper extends NeoServerBootstrapper
 {
-    // Deliberately does nothing, override when there is a difference for
-    // Advanced in what the server does
+    
+    public Integer start( String[] args )
+    {
+        
+        int result =  super.start( args );
+        registerJMX();
+        return result;
+    }
+    private void registerJMX()
+    {
+        ServerManagement bean;
+        try
+        {
+            bean = new ServerManagement( this );
+            MBeanServer beanServer = ManagementFactory.getPlatformMBeanServer();
+            beanServer.registerMBean( bean, new ObjectName( "org.neo4j.ServerManagement" , "restartServer", "lifecycle" ));
+        }
+        catch ( InstanceAlreadyExistsException e )
+        {
+            // this is ok on restart
+        }
+        catch ( Exception e )
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+
 }
