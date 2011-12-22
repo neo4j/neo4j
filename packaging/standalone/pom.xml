@@ -4,7 +4,7 @@
   <parent>
     <artifactId>assembly-pom</artifactId>
     <groupId>org.neo4j.build</groupId>
-    <version>25</version>
+    <version>29</version>
     <relativePath />
   </parent>
 
