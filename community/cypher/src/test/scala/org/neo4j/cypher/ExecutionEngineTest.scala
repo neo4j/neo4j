@@ -1465,5 +1465,15 @@ RETURN x0.name?
 """)
     assert(List() === result.toList)
   }
+
+  @Test def shouldFindNodesBothDirections() {
+    val a = createNode()
+    relate(a, refNode, "Admin")
+    val result = parseAndExecute("""start n = node(0) match (n) -[:Admin]- (b) return Id(n), Id(b)""")
+    assert(List(Map("ID(n)"->0, "ID(b)"->1)) === result.toList)
+
+    val result2 = parseAndExecute("""start n = node(1) match (n) -[:Admin]- (b) return Id(n), Id(b)""")
+    assert(List(Map("ID(n)"->1, "ID(b)"->0)) === result2.toList)
+  }
 }
 
