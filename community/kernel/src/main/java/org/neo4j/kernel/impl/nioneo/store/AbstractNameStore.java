@@ -385,7 +385,7 @@ public abstract class AbstractNameStore<T extends AbstractNameRecord> extends Ab
     }
 
     @Override
-    public void logIdUsage( StringLogger logger )
+    public void logIdUsage( StringLogger.LineLogger logger )
     {
         NeoStore.logIdUsage( logger, this );
     }

@@ -46,5 +46,5 @@ public interface Store
 
     public WindowPoolStats getWindowPoolStats();
 
-    public void logIdUsage( StringLogger logger );
+    public void logIdUsage( StringLogger.LineLogger logger );
 }

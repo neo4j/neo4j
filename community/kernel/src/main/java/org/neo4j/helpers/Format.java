@@ -55,10 +55,23 @@ public class Format
         return TIME.format( date );
     }
 
+    public static String bytes( long bytes )
+    {
+        double size = bytes;
+        for ( String suffix : BYTE_SIZES )
+        {
+            if ( size < 1024 ) return String.format( "%.2f %s", Double.valueOf( size ), suffix );
+            size /= 1024;
+        }
+        return String.format( "%.2f TB", Double.valueOf( size ) );
+    }
+
     private Format()
     {
         // No instances
     }
+
+    private static final String[] BYTE_SIZES = { "B", "kB", "MB", "GB" };
 
     private static final ThreadLocalFormat DATE = new ThreadLocalFormat( "yyyy-MM-dd HH:mm:ss.SSSZ" ),
             TIME = new ThreadLocalFormat( "HH:mm:ss.SSS" );

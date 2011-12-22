@@ -651,16 +651,16 @@ public class NeoStore extends AbstractStore
     }
 
     @Override
-    public void logVersions( StringLogger msgLog )
+    public void logVersions( StringLogger.LineLogger logger )
     {
-        super.logVersions( msgLog );
-        nodeStore.logVersions( msgLog );
-        relStore.logVersions( msgLog );
-        relTypeStore.logVersions( msgLog );
-        propStore.logVersions( msgLog );
+        super.logVersions( logger );
+        nodeStore.logVersions( logger );
+        relStore.logVersions( logger );
+        relTypeStore.logVersions( logger );
+        propStore.logVersions( logger );
     }
 
-    public void logIdUsage( StringLogger msgLog )
+    public void logIdUsage( StringLogger.LineLogger msgLog )
     {
         nodeStore.logIdUsage( msgLog );
         relStore.logIdUsage( msgLog );
@@ -675,9 +675,9 @@ public class NeoStore extends AbstractStore
         return result;
     }
 
-    public static void logIdUsage( StringLogger logger, Store store )
+    public static void logIdUsage( StringLogger.LineLogger logger, Store store )
     {
-        logger.logMessage( String.format( "  %s: used=%s high=%s", store.getTypeDescriptor(),
+        logger.logLine( String.format( "%s: used=%s high=%s", store.getTypeDescriptor(),
                 store.getNumberOfIdsInUse(), store.getHighestPossibleIdInUse() ) );
     }
 

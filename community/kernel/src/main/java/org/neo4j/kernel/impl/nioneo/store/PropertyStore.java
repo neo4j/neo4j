@@ -749,7 +749,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     }
 
     @Override
-    public void logVersions( StringLogger msgLog )
+    public void logVersions( StringLogger.LineLogger msgLog )
     {
         super.logVersions( msgLog );
         propertyIndexStore.logVersions( msgLog );
@@ -758,7 +758,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     }
 
     @Override
-    public void logIdUsage( StringLogger logger )
+    public void logIdUsage( StringLogger.LineLogger logger )
     {
         NeoStore.logIdUsage( logger, this );
         propertyIndexStore.logIdUsage( logger );

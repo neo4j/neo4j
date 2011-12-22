@@ -23,8 +23,14 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.Writer;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.helpers.Format;
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
+import org.neo4j.helpers.collection.Visitor;
 
 public abstract class StringLogger
 {
@@ -33,6 +39,20 @@ public abstract class StringLogger
         new ActualStringLogger( new PrintWriter( System.out ) );
     private static final int DEFAULT_THRESHOLD_FOR_ROTATION = 100 * 1024 * 1024;
     private static final int NUMBER_OF_OLD_LOGS_TO_KEEP = 2;
+    
+    public static class LineLogger
+    {
+        private final StringLogger target;
+
+        private LineLogger(StringLogger target) {
+            this.target = target;
+        }
+        
+        public void logLine( String line )
+        {
+            target.logLine( line );
+        }
+    }
     
     public static StringLogger logger( String storeDir )
     {
@@ -44,38 +64,151 @@ public abstract class StringLogger
         return new ActualStringLogger( new File( storeDir, DEFAULT_NAME ).getAbsolutePath(),
                 rotationThreshold );
     }
-    
-    public abstract void logMessage( String msg );
 
-    public abstract void logMessage( String msg, Throwable cause );
+    public static StringLogger wrap( final StringBuffer target )
+    {
+        return new ActualStringLogger( new PrintWriter( new Writer()
+        {
+            @Override
+            public void write( char[] cbuf, int off, int len ) throws IOException
+            {
+                target.append( cbuf, off, len );
+            }
+
+            public void write( int c ) throws IOException
+            {
+                target.appendCodePoint( c );
+            }
+
+            public void write( char[] cbuf ) throws IOException
+            {
+                target.append( cbuf );
+            }
+
+            public void write( String str ) throws IOException
+            {
+                target.append( str );
+            }
+
+            public void write( String str, int off, int len ) throws IOException
+            {
+                target.append( str, off, len );
+            }
+
+            public Writer append( char c ) throws IOException
+            {
+                target.append( c );
+                return this;
+            }
+
+            public Writer append( CharSequence csq ) throws IOException
+            {
+                target.append( csq );
+                return this;
+            }
+
+            public Writer append( CharSequence csq, int start, int end ) throws IOException
+            {
+                target.append( csq, start, end );
+                return this;
+            }
+
+            @Override
+            public void flush() throws IOException
+            {
+                // do nothing
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+                // do nothing
+            }
+        } ) );
+    }
+    
+    public void logMessage( String msg )
+    {
+        logMessage( msg, false );
+    }
+
+    public void logMessage( String msg, Throwable cause )
+    {
+        logMessage( msg, cause, false );
+    }
+
+    public void logLongMessage( String msg, Visitor<LineLogger> source )
+    {
+        logLongMessage( msg, source, false );
+    }
+
+    public void logLongMessage( String msg, Iterable<String> source )
+    {
+        logLongMessage( msg, source, false );
+    }
+
+    public void logLongMessage( String msg, Iterable<String> source, boolean flush )
+    {
+        logLongMessage( msg, source.iterator(), flush );
+    }
+
+    public void logLongMessage( String msg, Iterator<String> source )
+    {
+        logLongMessage( msg, source, false );
+    }
+
+    public void logLongMessage( String msg, final Iterator<String> source, boolean flush )
+    {
+        logLongMessage( msg, new Visitor<LineLogger>()
+        {
+            @Override
+            public boolean visit( LineLogger logger )
+            {
+                for ( String line : loop( source ) )
+                {
+                    logger.logLine( line );
+                }
+                return true;
+            }
+        }, flush );
+    }
+    
+    public abstract void logLongMessage( String msg, Visitor<LineLogger> source, boolean flush );
 
     public abstract void logMessage( String msg, boolean flush );
 
     public abstract void logMessage( String msg, Throwable cause, boolean flush );
+    
+    public abstract void addRotationListener( Runnable listener );
 
     public abstract void flush();
 
     public abstract void close();
     
+    abstract void logLine( String line );
+    
     public static final StringLogger DEV_NULL = new StringLogger()
     {
         @Override
-        public void logMessage( String msg ) {}
+        public void logMessage( String msg, boolean flush ) {}
 
         @Override
-        public void logMessage( String msg, Throwable cause ) {}
+        public void logMessage( String msg, Throwable cause, boolean flush ) {}
 
         @Override
-        public synchronized void logMessage( String msg, boolean flush ) {}
+        public void logLongMessage( String msg, Visitor<LineLogger> source, boolean flush ) {}
 
         @Override
-        public synchronized void logMessage( String msg, Throwable cause, boolean flush ) {}
+        void logLine( String line ) {}
 
         @Override
         public void flush() {}
 
         @Override
         public void close() {}
+
+        @Override
+        public void addRotationListener( Runnable listener ) {}
     };
     
     private static class ActualStringLogger extends StringLogger
@@ -83,6 +216,7 @@ public abstract class StringLogger
         private PrintWriter out;
         private final Integer rotationThreshold;
         private final File file;
+        private final List<Runnable> onRotation = new CopyOnWriteArrayList<Runnable>(); 
         
         private ActualStringLogger( String filename, int rotationThreshold )
         {
@@ -108,22 +242,23 @@ public abstract class StringLogger
             this.rotationThreshold = null;
             this.file = null;
         }
-    
+
+        @Override
+        public void addRotationListener( Runnable trigger )
+        {
+            onRotation.add( trigger );
+        }
+
         private void instantiateWriter() throws IOException
         {
             out = new PrintWriter( new FileWriter( file, true ) );
+            for ( Runnable trigger : onRotation )
+            {
+                trigger.run();
+            }
         }
     
-        public void logMessage( String msg )
-        {
-            logMessage( msg, false );
-        }
-    
-        public void logMessage( String msg, Throwable cause )
-        {
-            logMessage( msg, cause, false );
-        }
-    
+        @Override
         public synchronized void logMessage( String msg, boolean flush )
         {
 //            ensureOpen();
@@ -140,6 +275,7 @@ public abstract class StringLogger
             return Format.date();
         }
     
+        @Override
         public synchronized void logMessage( String msg, Throwable cause, boolean flush )
         {
 //            ensureOpen();
@@ -150,6 +286,24 @@ public abstract class StringLogger
                 out.flush();
             }
             checkRotation();
+        }
+        
+        @Override
+        public synchronized void logLongMessage( String msg, Visitor<LineLogger> source, boolean flush )
+        {
+            out.println( time() + ": " + msg );
+            source.visit( new LineLogger( this ) );
+            if ( flush )
+            {
+                out.flush();
+            }
+            checkRotation();
+        }
+        
+        @Override
+        void logLine( String line )
+        {
+            out.println( "    " + line );
         }
     
 //        private void ensureOpen()
@@ -224,11 +378,13 @@ public abstract class StringLogger
             }
         }
     
+        @Override
         public void flush()
         {
             out.flush();
         }
     
+        @Override
         public void close()
         {
             out.close();

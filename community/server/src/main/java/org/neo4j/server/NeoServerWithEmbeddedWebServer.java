@@ -28,8 +28,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.configuration.Configuration;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.GraphDatabaseFactory;
@@ -90,20 +90,12 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
 
         initWebServer();
 
-        StringLogger logger = startDatabase();
+        DiagnosticsManager dm = startDatabase();
 
-        if ( logger != null )
-        {
-            logger.logMessage( "--- SERVER STARTUP START ---" );
+        StringLogger logger = dm.getTargetLog();
+        logger.logMessage( "--- SERVER STARTUP START ---" );
 
-            Configuration configuration = configurator.configuration();
-            logger.logMessage( "Server configuration:" );
-            for ( Object key : IteratorUtil.asIterable( configuration.getKeys() ) )
-            {
-                if ( key instanceof String )
-                    logger.logMessage( "  " + key + " = " + configuration.getProperty( (String) key ) );
-            }
-        }
+        dm.register( Configurator.DIAGNOSTICS, configurator );
 
         startExtensionInitialization();
 
@@ -111,7 +103,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
 
         startWebServer( logger );
 
-        if ( logger != null ) logger.logMessage( "--- SERVER STARTUP END ---", true );
+        logger.logMessage( "--- SERVER STARTUP END ---", true );
     }
 
     /**
@@ -172,7 +164,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
         }
     }
 
-    private StringLogger startDatabase()
+    private DiagnosticsManager startDatabase()
     {
         String dbLocation = new File( configurator.configuration()
                 .getString( Configurator.DATABASE_LOCATION_PROPERTY_KEY ) ).getAbsolutePath();
@@ -192,7 +184,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
         {
             this.database = new Database( dbFactory, dbLocation );
         }
-        return database.getStringLogger();
+        return database.graph.getConfig().getDiagnosticsManager();
     }
 
     private void initGuard()
