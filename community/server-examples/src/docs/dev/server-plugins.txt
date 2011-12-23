@@ -71,6 +71,11 @@ https://github.com/neo4j/community/blob/{neo4j-git-tag}/server-examples/src/main
 
 To deploy the code, simply compile it into a .jar file and place it onto the server classpath (which by
 convention is the plugins directory under the Neo4j server home directory).
+
+[TIP]
+Make sure the directories listings are retained in the jarfile by either building with default Maven, or with `jar -cvf myext.jar *`, making sure
+to jar directories instead of specifying single files.
+
 The .jar file must include the file META-INF/services/org.neo4j.server.plugins.ServerPlugin with the fully qualified name of the implementation class.
 In this case, we'd have only a single entry in our config file, though multiple entries are allowed, each on a separate line:
 
