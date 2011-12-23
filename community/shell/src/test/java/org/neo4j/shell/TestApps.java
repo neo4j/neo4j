@@ -29,6 +29,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -169,6 +170,15 @@ public class TestApps extends AbstractShellTest
         executeCommand( "rmrel -f " + relationships[0].getId() );
         assertRelationshipDoesntExist( relationships[0] );
         assertNodeExists( otherNode );
+    }
+    
+    @Test
+    @Ignore
+    public void correctCypherExecution() throws Exception
+    {
+        executeCommand( "mkrel -ct KNOWS " );
+        executeCommand( "START n = node(1) return n", ".*Node\\[1\\].*" );
+        executeCommand( "START n = node(1) match n--() return n", ".*Node\\[1\\].*" );
     }
 
     @Test
