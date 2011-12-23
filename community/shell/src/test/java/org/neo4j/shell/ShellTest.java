@@ -154,7 +154,7 @@ public class ShellTest
         doc.add("mkrel -t KNOWS -cv", "", "create Thomas direct friends");
         doc.add("cd 3", "", "go to the new node");
         doc.add("set name \"Morpheus\"", "", "set the name property");
-        doc.add("mkrel -t KNOWS -n 2", "", "create relationship to Trinity");
+        doc.add("mkrel -t KNOWS 2", "", "create relationship to Trinity");
 
         doc.add("ls -rv", "", "list the relationships of node 3");
         doc.add("cd -r 2", "", "change the current position to relationship #2");
