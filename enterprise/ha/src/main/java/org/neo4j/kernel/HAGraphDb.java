@@ -27,9 +27,6 @@ import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_D
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketAddress;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -86,7 +83,7 @@ public class HAGraphDb extends AbstractGraphDatabase
 {
     private final Map<String, String> config;
     private final BrokerFactory brokerFactory;
-    private Broker broker;
+    private volatile Broker broker;
     private volatile EmbeddedGraphDbImpl localGraph;
     private final int machineId;
     private volatile MasterServer masterServer;
@@ -97,6 +94,12 @@ public class HAGraphDb extends AbstractGraphDatabase
     private final BranchedDataPolicy branchedDataPolicy;
     private final HaConfig.SlaveUpdateMode slaveUpdateMode;
     private final int readTimeout;
+    /*
+     *  True iff it is ok to pull updates. Used to control the
+     *  update puller during master switches, to reduce could not connect
+     *  log statements. More elegant that stopping and starting the executor.
+     */
+    private volatile boolean pullUpdates;
 
     private final List<KernelEventHandler> kernelEventHandlers =
             new CopyOnWriteArrayList<KernelEventHandler>();
@@ -132,6 +135,7 @@ public class HAGraphDb extends AbstractGraphDatabase
         config.put( Config.KEEP_LOGICAL_LOGS, "true" );
         this.brokerFactory = brokerFactory != null ? brokerFactory : defaultBrokerFactory();
         this.broker = this.brokerFactory.create( this, config );
+        this.pullUpdates = false;
         startUp( HaConfig.getAllowInitFromConfig( config ) );
     }
 
@@ -413,6 +417,7 @@ public class HAGraphDb extends AbstractGraphDatabase
         boolean iAmCurrentlyMaster = masterServer != null;
         getMessageLog().logMessage( "ReevaluateMyself: machineId=" + machineId + " with master[" + master +
                 "] (I am master=" + iAmCurrentlyMaster + ", " + localGraph + ")" );
+        pullUpdates = false;
         EmbeddedGraphDbImpl newDb = null;
         try
         {
@@ -449,6 +454,18 @@ public class HAGraphDb extends AbstractGraphDatabase
 
                 // Assign the db last
                 this.localGraph = newDb;
+
+                /*
+                 * We have to instantiate the update puller after the local db has been assigned.
+                 * Another way to do it is to wait on a LocalGraphAvailableCondition. I chose this,
+                 * it is simpler to follow, provided you know what a volatile does.
+                 */
+                if ( masterServer == null )
+                {
+                    // The above being true means we are a slave
+                    instantiateAutoUpdatePullerIfConfigSaysSo();
+                    pullUpdates = true;
+                }
             }
         }
         catch ( Throwable t )
@@ -491,47 +508,6 @@ public class HAGraphDb extends AbstractGraphDatabase
         getMessageLog().logMessage( "--- HIGH AVAILABILITY CONFIGURATION END ---", true );
     }
 
-    /**
-     * Tries to create a plain old socket connection to the master to ensure
-     * that connectivity exists. This is supposed to happen right after a new
-     * master election and provided we are a slave. Useful because it is
-     * blocking and is as simple as possible - diagnostically more useful than
-     * the failure netty might give later on.
-     *
-     * @param master The master
-     * @return true if the connection was successful, false if it threw an
-     *         exception.
-     */
-    private boolean checkConnectionToMaster( Pair<Master, Machine> master )
-    {
-        Pair<String, Integer> connectionInfo = master.other().getServer();
-        SocketAddress socketAddr = new InetSocketAddress(
-                connectionInfo.first(), connectionInfo.other() );
-        Socket socket = new Socket();
-        try
-        {
-            socket.connect( socketAddr );
-        }
-        catch ( Exception e )
-        {
-            getMessageLog().logMessage( "COULD NOT CONNECT: " + socketAddr, e );
-            return false;
-        }
-        finally
-        {
-            try
-            {
-                socket.close();
-            }
-            catch ( IOException e )
-            {
-                getMessageLog().logMessage(
-                        "Could not close test socket to " + socketAddr, e );
-            }
-        }
-        return true;
-    }
-
     private EmbeddedGraphDbImpl startAsSlave( StoreId storeId,
             Pair<Master, Machine> master )
     {
@@ -544,9 +520,9 @@ public class HAGraphDb extends AbstractGraphDatabase
                 new SlaveTxHook( broker, this ),
                 slaveUpdateMode.createUpdater( broker ),
                 CommonFactories.defaultFileSystemAbstraction() );
-        instantiateAutoUpdatePullerIfConfigSaysSo();
+        // instantiateAutoUpdatePullerIfConfigSaysSo() moved to
+        // reevaluateMyself(), after the local db has been assigned
         logHaInfo( "Started as slave" );
-        // checkConnectionToMaster( master );
         return result;
     }
 
@@ -659,7 +635,10 @@ public class HAGraphDb extends AbstractGraphDatabase
                 {
                     try
                     {
-                        pullUpdates();
+                        if ( pullUpdates )
+                        {
+                            pullUpdates();
+                        }
                     }
                     catch ( Exception e )
                     {
@@ -718,11 +697,27 @@ public class HAGraphDb extends AbstractGraphDatabase
     public synchronized void internalShutdown( boolean rotateLogs )
     {
         getMessageLog().logMessage( "Internal shutdown of HA db[" + machineId + "] reference=" + this + ", masterServer=" + masterServer, new Exception( "Internal shutdown" ), true );
+        pullUpdates = false;
         if ( this.updatePuller != null )
         {
             getMessageLog().logMessage( "Internal shutdown updatePuller", true );
-            this.updatePuller.shutdownNow();
-            getMessageLog().logMessage( "Internal shutdown updatePuller DONE", true );
+            try
+            {
+                /*
+                 * Be gentle, interrupting running threads could leave the
+                 * file channels in a bad shape.
+                 */
+                this.updatePuller.shutdown();
+                this.updatePuller.awaitTermination( 5, TimeUnit.SECONDS );
+            }
+            catch ( InterruptedException e )
+            {
+                getMessageLog().logMessage(
+                        "Got exception while waiting for update puller termination",
+                        e, true );
+            }
+            getMessageLog().logMessage( "Internal shutdown updatePuller DONE",
+                    true );
             this.updatePuller = null;
         }
         if ( this.masterServer != null )
