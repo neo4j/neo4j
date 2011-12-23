@@ -19,7 +19,7 @@
  */
 package org.neo4j.vagrant;
 
-import static org.neo4j.vagrant.FileUtilMethodsThatAreDuplicatedAThousandTimes.copyFolder;
+import static org.neo4j.vagrant.UtilMethodsThatAreDuplicatedAThousandTimes.copyFolder;
 
 import java.io.File;
 
@@ -27,12 +27,14 @@ public class VMFactory {
 
     private static String workingDir = System.getProperty("jagrant.workingdir", System.getProperty("user.home") + "/jagrant/");
     private static String templateDir = System.getProperty("jagrant.templatedir", System.getProperty("user.dir") + "/target/test-classes/vagrant/");
+    private static String templateShareDir = System.getProperty("jagrant.templatesharedir", System.getProperty("user.dir") + "/target/test-classes/vagrant/all/");
 
     public static VirtualMachine vm(VMDefinition config)
     {
         VirtualMachine v;
         File projectFolder = new File(workingDir + config.vmName());
         File templateFolder = new File(templateDir + config.vmName());
+        File templateSharedFolder = new File(templateShareDir);
         
         if (!projectFolder.exists())
         {
@@ -50,6 +52,7 @@ public class VMFactory {
         if(templateFolder.exists()) {
             copyFolder(templateFolder, projectFolder);
         }
+        copyFolder(templateSharedFolder, projectFolder);
         
         return v;
     }

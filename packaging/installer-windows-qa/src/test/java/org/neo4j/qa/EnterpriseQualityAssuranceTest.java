@@ -26,7 +26,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
-import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -51,9 +51,15 @@ public class EnterpriseQualityAssuranceTest {
         
         Object[][] ps = new Object[][] { 
             { new EnterpriseDriver []{
-              new WindowsEnterpriseDriver( win1, SharedConstants.WINDOWS_ENTERPRISE_INSTALLER ),
-              new WindowsEnterpriseDriver( win2, SharedConstants.WINDOWS_ENTERPRISE_INSTALLER ),
-              new WindowsEnterpriseDriver( win3, SharedConstants.WINDOWS_ENTERPRISE_INSTALLER ) 
+              new WindowsEnterpriseDriver( win1, 
+                      SharedConstants.WINDOWS_ENTERPRISE_INSTALLER, 
+                      SharedConstants.WINDOWS_COORDINATOR_INSTALLER),
+              new WindowsEnterpriseDriver( win2, 
+                      SharedConstants.WINDOWS_ENTERPRISE_INSTALLER, 
+                      SharedConstants.WINDOWS_COORDINATOR_INSTALLER ),
+              new WindowsEnterpriseDriver( win3, 
+                      SharedConstants.WINDOWS_ENTERPRISE_INSTALLER, 
+                      SharedConstants.WINDOWS_COORDINATOR_INSTALLER ) 
             }}
         };
         
@@ -68,56 +74,60 @@ public class EnterpriseQualityAssuranceTest {
         this.drivers = drivers;
     }
     
-    @After
+    @Before
     public void resetVMs() {
         for(EnterpriseDriver d : drivers) {
-            d.close();
-            //d.getVM().rollback();
+            //d.close();
+            d.vm().rollback();
         }
     }
     
     @Test
     public void highAvailabilityQualityAssuranceTest() {
-        EnterpriseDriver d;
+        EnterpriseDriver driver = null;
         List<String> coordinators = new ArrayList<String>();
 
         for( int i=0; i<drivers.length; i++) {
-            d = drivers[i];
-            d.up();
-            d.runInstall();
-            d.stopService();
-            setupZookeeper(d, i + 1);
-            coordinators.add(d.getVM().definition().ip() + ":" + (zooClientPortBase + i + 1));
+            driver = drivers[i];
+            driver.up();
+            setupZookeeper(driver, i + 1);
+            coordinators.add(driver.vm().definition().ip() + ":" + (zooClientPortBase + i + 1));
+            driver.runInstall();
+            driver.stopService();
         }
         
         String coordinatorsConfigValue = StringUtils.join(coordinators,",");
         
         for( int i=0; i<drivers.length; i++) {
-            d = drivers[i];
-            String neo4jConf = d.installDir() + "/conf/neo4j.properties";
-            String serverConf = d.installDir() + "/conf/neo4j-server.properties";
+            driver = drivers[i];
+            String neo4jConf = driver.installDir() + "/conf/neo4j.properties";
+            String serverConf = driver.installDir() + "/conf/neo4j-server.properties";
             
-            d.setConfig(neo4jConf, "ha.server_id", "" + (i+1));
-            d.setConfig(neo4jConf, "ha.server", "0.0.0.0:6001");
-            d.setConfig(neo4jConf, "ha.coordinators", coordinatorsConfigValue);
+            driver.setConfig(neo4jConf, "ha.cluster_name", "mycluster");
+            driver.setConfig(neo4jConf, "ha.server_id", "" + (i+1));
+            driver.setConfig(neo4jConf, "ha.server", "0.0.0.0:6001");
+            driver.setConfig(neo4jConf, "ha.coordinators", coordinatorsConfigValue);
             
-            d.setConfig(serverConf, "org.neo4j.server.database.mode", "HA");
-            d.startService();
+            driver.setConfig(serverConf, "org.neo4j.server.database.mode", "HA");
+            
+            // The database folder has to be empty when any but the first HA instance boots up
+            driver.destroyDatabase();
+            driver.startService();
         }
         
         // At this point, we should have a running neo4j cluster.
     }
     
     private void setupZookeeper(EnterpriseDriver d, int serverId) {
-        String zookeeperConf = d.installDir() + "/conf/coord.cfg";
+        String zookeeperConf = d.zookeeperInstallDir() + "/conf/coord.cfg";
         
         d.runZookeeperInstall();
         d.stopZookeeperService();
         for( int o=0; o<drivers.length; o++) {
-            d.setConfig(zookeeperConf, "server." + (o+1), drivers[o].getVM().definition().ip() + ":2888:3888");
+            d.setConfig(zookeeperConf, "server." + (o+1), drivers[o].vm().definition().ip() + ":2888:3888");
         }
         d.setConfig(zookeeperConf, "clientPort", (zooClientPortBase + serverId) + "");
-        d.writeFile("" + serverId, d.installDir() + "/data/coordinator/myid");
+        d.writeFile("" + serverId, d.zookeeperInstallDir() + "/data/coordinator/myid");
         d.startZookeeperService();
     }
 }

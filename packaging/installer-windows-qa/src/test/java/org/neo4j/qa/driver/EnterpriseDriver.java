@@ -25,5 +25,5 @@ public interface EnterpriseDriver extends Neo4jDriver {
     void runZookeeperUninstall();
     void startZookeeperService();
     void stopZookeeperService();
-
+    String zookeeperInstallDir();
 }

@@ -34,7 +34,7 @@ public class VirtualMachine {
 
     public VirtualMachine(File projectFolder, VMDefinition config)
     {
-        this.sh = new Shell(projectFolder);
+        this.sh = new Shell("host/" + config.vmName(), projectFolder);
         this.sh.getEnvironment().put("HOME", System.getProperty("user.home"));
         this.definition = config;
     }
@@ -91,7 +91,7 @@ public class VirtualMachine {
 
     public SSHShell ssh()
     {
-        return new SSHShell(sshConfiguration());
+        return new SSHShell(definition().vmName(), sshConfiguration());
     }
 
     /**

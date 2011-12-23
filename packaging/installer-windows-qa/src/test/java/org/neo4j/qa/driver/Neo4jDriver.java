@@ -25,7 +25,7 @@ import org.neo4j.vagrant.VirtualMachine;
 
 public interface Neo4jDriver {
 
-    VirtualMachine getVM();
+    VirtualMachine vm();
 
     /**
      * Should install some edition of Neo4j.
@@ -51,6 +51,11 @@ public interface Neo4jDriver {
      * Start the neo4j service.
      */
     void startService();
+
+    /**
+     * Delete the database
+     */
+    void destroyDatabase();
 
     /**
      * Close resources, like running
@@ -97,5 +102,6 @@ public interface Neo4jDriver {
      * @param value
      */
     void setConfig(String configFilePath, String key, String value);
+
 
 }

@@ -28,7 +28,7 @@ import java.io.OutputStream;
 
 import org.apache.commons.io.IOUtils;
 
-public class FileUtilMethodsThatAreDuplicatedAThousandTimes {
+public class UtilMethodsThatAreDuplicatedAThousandTimes {
 
     public static void copyFolder(File src, File dest)
     {

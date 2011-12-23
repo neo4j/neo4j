@@ -28,19 +28,19 @@ public enum Neo4jVM implements VMDefinition {
     // in corresponding vagrant configuration.
     // Vagrant config files are in src/test/resources/vagrant
     
-    WIN_1(Box.WINDOWS_2008_R2_AMD64, "win2008-1","33.33.34.10", "7474"),
-    WIN_2(Box.WINDOWS_2008_R2_AMD64, "win2008-1","33.33.34.11", "7475"),
-    WIN_3(Box.WINDOWS_2008_R2_AMD64, "win2008-1","33.33.34.12", "7476");
+    WIN_1(Box.WINDOWS_2008_R2_AMD64, "win2008-1", "33.33.33.10", "7474"),
+    WIN_2(Box.WINDOWS_2008_R2_AMD64, "win2008-2", "33.33.33.11", "7475"),
+    WIN_3(Box.WINDOWS_2008_R2_AMD64, "win2008-3", "33.33.33.12", "7476");
     
     private final Box box;
     private final String name;
-    private final String ip;
     private final String serverPort;
+    private final String ip;
     
     private Neo4jVM(Box box, String name, String ip, String serverPort) {
         this.box = box;
         this.name = name;
-        this.ip = ip;
+        this.ip = ip; 
         this.serverPort = serverPort;
     }
 
@@ -51,15 +51,15 @@ public enum Neo4jVM implements VMDefinition {
     }
     
     @Override
-    public Box box()
-    {
-        return box;
-    }
-    
-    @Override
     public String ip()
     {
         return ip;
+    }
+    
+    @Override
+    public Box box()
+    {
+        return box;
     }
 
     public String serverPort()

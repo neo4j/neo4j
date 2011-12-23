@@ -19,38 +19,74 @@
  */
 package org.neo4j.qa.driver;
 
+import org.neo4j.vagrant.Shell.Result;
 import org.neo4j.vagrant.VirtualMachine;
 
 
 public class WindowsEnterpriseDriver extends AbstractWindowsDriver implements EnterpriseDriver {
 
-    public WindowsEnterpriseDriver(VirtualMachine vm, String installerName)
+    private static final String ZOOKEEPER_INSTALL_DIR = "zookeeper\\ with\\ space";
+    private static final String ZOOKEEPER_WIN_INSTALL_DIR = "zookeeper with space";
+    private static final String ZOOKEEPER_SERVICE = "Neo4jCoordinator";
+    private String zookeeperInstallerPath;
+
+    public WindowsEnterpriseDriver(VirtualMachine vm, String installerName, String zookeeperInstallerPath)
     {
         super(vm, installerName);
+        this.zookeeperInstallerPath = zookeeperInstallerPath;
     }
 
     @Override
     public void runZookeeperInstall()
     {
-        cygSh.run(installDir() + "/bin/Neo4jCoordinator.bat install");
+        vm.copyFromHost(zookeeperInstallerPath, "/home/vagrant/zookeeper.msi");
+        cygSh.run(":> zookeeper-install.log");
+        cygSh.runDOS("msiexec /quiet /L* zookeeper-install.log /i zookeeper.msi INSTALL_DIR=\"C:\\"+ZOOKEEPER_WIN_INSTALL_DIR+"\"");
+        if(!installIsSuccessful("/home/vagrant/zookeeper-install.log")){
+            dumplog("/home/vagrant/zookeeper-install.log");
+            dumplog(zookeeperInstallDir() + "/data/log/neo4j-zookeeper.log");
+            throw new RuntimeException("Zookeeper install failed, dumped logs to stdout.");
+        }
     }
 
     @Override
     public void runZookeeperUninstall()
     {
-        cygSh.run(installDir() + "/bin/Neo4jCoordinator.bat remove");
+        cygSh.run(":> zookeeper-uninstall.log");
+        cygSh.runDOS("msiexec /quiet /L* zookeeper-uninstall.log /x zookeeper.msi");
+        if(!installIsSuccessful("/home/vagrant/zookeeper-uninstall.log")){
+            dumplog("/home/vagrant/zookeeper-uninstall.log");
+            dumplog(zookeeperInstallDir() + "/data/log/neo4j-zookeeper.log");
+            throw new RuntimeException("Zookeeper uninstall failed, dumped logs to stdout.");
+        }
     }
 
     @Override
     public void startZookeeperService()
     {
-        cygSh.run("net start Neo4jCoordinator");
+        Result r = sh().run("net start " + ZOOKEEPER_SERVICE);
+        if(!r.getOutput().contains("service was started successfully")) {
+            dumplog(installDir() + "/data/log/neo4j.0.0.log");
+            dumplog(zookeeperInstallDir() + "/data/log/neo4j-zookeeper.log");
+            throw new RuntimeException("Tried to start neo4j coordinator, failed. Output was: \n" + r.getOutput());
+        }
     }
 
     @Override
     public void stopZookeeperService()
     {
-        cygSh.run("net stop Neo4jCoordinator");
+        Result r = sh().run("net stop " + ZOOKEEPER_SERVICE);
+        if(!r.getOutput().contains("service was stopped successfully")) {
+            dumplog(installDir() + "/data/log/neo4j.0.0.log");
+            dumplog(zookeeperInstallDir() + "/data/log/neo4j-zookeeper.log");
+            throw new RuntimeException("Tried to stop neo4j coordinator, failed. Output was: \n" + r.getOutput());
+        }
+    }
+
+    @Override
+    public String zookeeperInstallDir()
+    {
+        return "/cygdrive/c/" + ZOOKEEPER_INSTALL_DIR;
     }
 
 

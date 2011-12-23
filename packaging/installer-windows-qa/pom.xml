@@ -80,9 +80,7 @@
 
   <build>
     <plugins>
-
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <version>2.2</version>
         <executions>
@@ -93,30 +91,31 @@
               <goal>copy</goal>
             </goals>
             <configuration>
+              <outputDirectory>${project.build.outputDirectory}</outputDirectory>
               <artifactItems>
                 <artifactItem>
                   <groupId>org.neo4j</groupId>
                   <artifactId>installer-windows</artifactId>
                   <classifier>windows-community</classifier>
                   <type>msi</type>
-                  <outputDirectory>${project.build.outputDirectory}</outputDirectory>
-                  <includes>**/*</includes>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.neo4j</groupId>
                   <artifactId>installer-windows</artifactId>
                   <classifier>windows-advanced</classifier>
                   <type>msi</type>
-                  <outputDirectory>${project.build.outputDirectory}</outputDirectory>
-                  <includes>**/*</includes>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.neo4j</groupId>
                   <artifactId>installer-windows</artifactId>
                   <classifier>windows-enterprise</classifier>
                   <type>msi</type>
-                  <outputDirectory>${project.build.outputDirectory}</outputDirectory>
-                  <includes>**/*</includes>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.neo4j</groupId>
+                  <artifactId>installer-windows</artifactId>
+                  <classifier>windows-coordinator</classifier>
+                  <type>msi</type>
                 </artifactItem>
               </artifactItems>
             </configuration>
@@ -144,6 +143,9 @@
                 <move
                   file="${project.build.outputDirectory}/installer-windows-${project.version}-windows-enterprise.msi"
                   toFile="${project.build.outputDirectory}/installer-windows-enterprise.msi" />
+                <move
+                  file="${project.build.outputDirectory}/installer-windows-${project.version}-windows-coordinator.msi"
+                  toFile="${project.build.outputDirectory}/installer-windows-coordinator.msi" />
               </target>
             </configuration>
           </execution>
@@ -155,6 +157,7 @@
         <configuration>
           <systemPropertyVariables>
             <neo4j.version>${neo4j.version}</neo4j.version>
+            <java.util.logging.config.file>test-logging.properties</java.util.logging.config.file>
           </systemPropertyVariables>
         </configuration>
       </plugin>

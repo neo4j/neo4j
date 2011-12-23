@@ -63,8 +63,9 @@ public class Shell {
 
     private File workingDir;
     private Map<String,String> env = new HashMap<String, String>();
+    private String shellName;
     
-    public static String streamToString(InputStream in) {
+    public static String outputToString(String shellName, InputStream in) {
         BufferedReader bre = new BufferedReader(new InputStreamReader(in));
         StringBuilder builder = new StringBuilder();
         String line;
@@ -72,7 +73,7 @@ public class Shell {
             while ((line = bre.readLine()) != null) {
                 builder.append(line);
                 builder.append("\n");
-                logOutput(line);
+                logOutput(shellName + "> ", line);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -80,11 +81,12 @@ public class Shell {
         return builder.toString();
     }
 
-    private static void logOutput(String line) {
-        System.out.println("[out]: " + line);
+    protected static void logOutput(String prefix, String line) {
+        System.out.println(prefix + line);
     }
     
-    public Shell(File workingDir) {
+    public Shell(String shellName, File workingDir) {
+        this.shellName = shellName;
         this.workingDir = workingDir;
     }
     
@@ -95,9 +97,10 @@ public class Shell {
     public Result run(String ... cmds) {
         String cmd = StringUtils.join(cmds, " ");
         try {
+            logOutput(shellName + " $ ", cmd);
             Process proc = startProcess(cmd);
             
-            String msg = streamToString(proc.getInputStream()) + streamToString(proc.getErrorStream());
+            String msg = outputToString(shellName, proc.getInputStream()) + outputToString(shellName, proc.getErrorStream());
             proc.waitFor();
 
             return new Result(proc.exitValue(), msg, cmd);
@@ -108,7 +111,6 @@ public class Shell {
     
     public Process startProcess(String cmd) {
         try {
-            System.out.println(cmd);
             return Runtime.getRuntime().exec(cmd, getEnvironmentParams(), workingDir);
         } catch (IOException e) {
             throw new RuntimeException(e);

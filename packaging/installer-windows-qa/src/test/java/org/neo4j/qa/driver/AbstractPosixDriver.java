@@ -36,11 +36,11 @@ public abstract class AbstractPosixDriver implements Neo4jDriver {
 
     @Override
     public void close() {
-        sh.close();
+        if(sh != null) sh.close();
     }   
 
     @Override
-    public VirtualMachine getVM()
+    public VirtualMachine vm()
     {
         return vm;
     }
@@ -56,6 +56,11 @@ public abstract class AbstractPosixDriver implements Neo4jDriver {
         sh.close();
         vm.halt();
         up();
+    }
+    
+    @Override
+    public void destroyDatabase() {
+        sh.run("rm -rf " + installDir() + "/data/graph.db");
     }
     
     //
@@ -82,5 +87,12 @@ public abstract class AbstractPosixDriver implements Neo4jDriver {
         // Remove any pre-existing config directive for this key, then append
         // the new setting at the bottom of the file.
         sh.run("sed -i 's/^"+key+"=.*//g' "+configFilePath+" && echo " + key + "=" + value + " >> " + configFilePath);
+    }
+    
+    public SSHShell sh()
+    {
+        if(sh != null)
+            return sh;
+        throw new RuntimeException("No connection to machine. You need to run #up() before running any other commands.");
     }
 }

@@ -63,7 +63,9 @@ public class CommonQualityAssuranceTest {
         Object[][] ps = new Object[][] { 
                 { new WindowsCommunityDriver(  windows, SharedConstants.WINDOWS_COMMUNITY_INSTALLER )  },
                 { new WindowsAdvancedDriver(   windows, SharedConstants.WINDOWS_ADVANCED_INSTALLER )   },
-                { new WindowsEnterpriseDriver( windows, SharedConstants.WINDOWS_ENTERPRISE_INSTALLER ) } };
+                { new WindowsEnterpriseDriver( windows, 
+                        SharedConstants.WINDOWS_ENTERPRISE_INSTALLER, 
+                        SharedConstants.WINDOWS_COORDINATOR_INSTALLER ) } };
         
         return Arrays.asList(ps);
     }
@@ -71,7 +73,7 @@ public class CommonQualityAssuranceTest {
     public CommonQualityAssuranceTest(Neo4jDriver driver)
     {
         this.driver = driver;
-        this.vm = driver.getVM();
+        this.vm = driver.vm();
     }
 
     @Before

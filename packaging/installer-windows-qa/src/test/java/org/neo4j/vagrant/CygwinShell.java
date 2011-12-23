@@ -43,7 +43,6 @@ public class CygwinShell {
     public Result runDOS(String cmd)
     {
         String batfile = "dos-exec-" + RandomString.generate(5) + ".bat";
-        System.out.println("EXECUTING: " + "echo '" + cmd + "' > " + batfile + " && chmod +x " + batfile + " && " + batfile + " && rm " + batfile);
         return sh.run("echo '" + cmd + "' > " + batfile + " && chmod +x " + batfile + " && ./" + batfile + " && rm " + batfile);
     }
 

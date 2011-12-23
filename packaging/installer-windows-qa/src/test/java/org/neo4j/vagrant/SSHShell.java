@@ -33,13 +33,15 @@ import org.neo4j.vagrant.Shell.Result;
 public class SSHShell {
     
     private SSHClient client;
+    private String vmName;
     private static final HostKeyVerifier ALLOW_ALL = new HostKeyVerifier() {
         public boolean verify(String arg0, int arg1, PublicKey arg2) {
             return true;
         }
     };
 
-    public SSHShell(SSHConfig cfg) {
+    public SSHShell(String vmName, SSHConfig cfg) {
+        this.vmName = vmName;
         try {
             client = new SSHClient();
             client.addHostKeyVerifier(ALLOW_ALL);
@@ -56,18 +58,26 @@ public class SSHShell {
         String cmd = StringUtils.join(cmds, " ");
         try {
             session = client.startSession();
+            Shell.logOutput(vmName + " $ ", cmd);
             Command command = session.exec(cmd);
-            String msg = Shell.streamToString(command.getInputStream()) + Shell.streamToString(command.getErrorStream());
-            return new Result(command.getExitStatus(),msg,cmd);
+            String msg = Shell.outputToString(vmName, command.getInputStream()) + Shell.outputToString(vmName, command.getErrorStream());
+            try {
+                int x = command.getExitStatus();
+                return new Result(x,msg,cmd);
+            } catch(NullPointerException e) { // TODO: sshj sometimes throws nullpointer on getExitStatus, find out why
+                e.printStackTrace();
+                return new Result(-1,msg,cmd);
+            }
         } catch (Exception e) {
             throw new ShellException(e);
         } finally {
-            if(session != null)
+            if(session != null) {
                 try {
                     session.close();
                 } catch (Exception e) {
                     throw new ShellException(e);
                 }
+            }
         }
     }
     
