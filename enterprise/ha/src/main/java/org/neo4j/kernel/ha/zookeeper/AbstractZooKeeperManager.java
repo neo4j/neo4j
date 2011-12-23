@@ -57,7 +57,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
     private final String servers;
     private final Map<Integer, String> haServersCache = Collections.synchronizedMap(
             new HashMap<Integer, String>() );
-    private Pair<Master, Machine> cachedMaster = NO_MASTER_MACHINE_PAIR;
+    private volatile Pair<Master, Machine> cachedMaster = NO_MASTER_MACHINE_PAIR;
 
     private final AbstractGraphDatabase graphDb;
     private final StringLogger msgLog;
@@ -75,7 +75,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
         this.clientReadTimeout = clientReadTimeout;
         if ( graphDb != null )
         {
-            String storeDir = ((AbstractGraphDatabase) graphDb).getStoreDir();
+            String storeDir = graphDb.getStoreDir();
             msgLog = StringLogger.getLogger( storeDir );
         }
         else
@@ -100,7 +100,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
     public abstract ZooKeeper getZooKeeper( boolean sync );
 
     public abstract String getRoot();
-    
+
     protected AbstractGraphDatabase getGraphDb()
     {
         return graphDb;
@@ -152,7 +152,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
         }
         return cachedMaster;
     }
-    
+
     protected abstract int getMyMachineId();
 
     public Pair<Master, Machine> getCachedMaster()
@@ -306,18 +306,18 @@ public abstract class AbstractZooKeeperManager implements Watcher
     {
         return servers;
     }
-    
+
     private static final Master NO_MASTER = new Master()
     {
         @Override
         public void shutdown() {}
-        
+
         @Override
         public Response<Void> pullUpdates( SlaveContext context )
         {
             throw noMasterException();
         }
-        
+
         private ComException noMasterException()
         {
             return new ComException( "No master" );
@@ -328,70 +328,71 @@ public abstract class AbstractZooKeeperManager implements Watcher
         {
             throw noMasterException();
         }
-        
+
         @Override
         public Response<Pair<Integer, Long>> getMasterIdForCommittedTx( long txId, StoreId myStoreId )
         {
             throw noMasterException();
         }
-        
+
         @Override
         public Response<Void> finishTransaction( SlaveContext context, boolean success )
         {
             throw noMasterException();
         }
-        
+
         @Override
         public Response<Integer> createRelationshipType( SlaveContext context, String name )
         {
             throw noMasterException();
         }
-        
+
         @Override
         public Response<Void> copyStore( SlaveContext context, StoreWriter writer )
         {
             throw noMasterException();
         }
-        
+
         @Override
         public Response<Long> commitSingleResourceTransaction( SlaveContext context, String resource,
                 TxExtractor txGetter )
         {
             throw noMasterException();
         }
-        
+
         @Override
         public Response<IdAllocation> allocateIds( IdType idType )
         {
             throw noMasterException();
         }
-        
+
         @Override
         public Response<LockResult> acquireRelationshipWriteLock( SlaveContext context,
                 long... relationships )
         {
             throw noMasterException();
         }
-        
+
         @Override
         public Response<LockResult> acquireRelationshipReadLock( SlaveContext context,
                 long... relationships )
         {
             throw noMasterException();
         }
-        
+
         @Override
         public Response<LockResult> acquireNodeWriteLock( SlaveContext context, long... nodes )
         {
             throw noMasterException();
         }
-        
+
         @Override
         public Response<LockResult> acquireNodeReadLock( SlaveContext context, long... nodes )
         {
             throw noMasterException();
         }
-        
+
+        @Override
         public String toString()
         {
             return "NO_MASTER";
