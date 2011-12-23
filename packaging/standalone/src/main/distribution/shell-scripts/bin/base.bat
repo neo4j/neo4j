@@ -50,7 +50,7 @@ set wrapperJarFilename=${windows-wrapper.filename}
 set command=""
 call:parseConfig "%~dp0..\%configFile%"
 
-for /F %%v in ('echo %1^|findstr "^help$ ^start$ ^stop$ ^query$ ^restart$ ^install$ ^uninstall$ ^remove$ ^console$"') do set command=%%v
+for /F %%v in ('echo %1^|findstr "^help$ ^start$ ^stop$ ^status$ ^restart$ ^install$ ^uninstall$ ^remove$ ^console$"') do set command=%%v
 
 if %command% == "" (
     set command=console
@@ -144,14 +144,14 @@ goto:eof
 rem end function callerror
 
 rem
-rem function query
+rem function status
 rem
-:query
+:status
 call:getStatus
 echo %status%
 goto:eof
 
-rem end function query
+rem end function status
 
 rem
 rem function getStatus
@@ -257,7 +257,7 @@ rem
 rem function help
 rem
 :help
-echo Proper arguments for this command are: help start stop query restart install remove console
+echo Proper arguments for this command are: help start stop status restart install remove console
 goto:eof
 
 rem end function help
