@@ -292,6 +292,7 @@ public class TestApps extends AbstractShellTest
         otherNode.setProperty( name, nodeTwoName );
         Relationship relationship = node.createRelationshipTo( otherNode, RELATIONSHIP_TYPE );
         relationship.setProperty( name, relationshipName );
+        Node strayNode = db.createNode();
         finishTx();
         
         executeCommand( "cd -a " + node.getId() );
@@ -300,6 +301,12 @@ public class TestApps extends AbstractShellTest
         executeCommand( "START r = relationship({self}) RETURN r.name", relationshipName );
         executeCommand( "cd " + otherNode.getId() );
         executeCommand( "START n = node({self}) RETURN n.name", nodeTwoName );
+        
+        executeCommand( "cd -a " + strayNode.getId() );
+        beginTx();
+        strayNode.delete();
+        finishTx();
+        executeCommand( "START n = node(" + node.getId() + ") RETURN n.name", nodeOneName );
     }
     
     @Test
