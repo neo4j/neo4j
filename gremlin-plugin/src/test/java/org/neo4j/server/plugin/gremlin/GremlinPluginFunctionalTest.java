@@ -65,6 +65,19 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
                 MediaType.APPLICATION_FORM_URLENCODED_TYPE ).post( ENDPOINT ).entity();
         assertTrue( response.contains( "you" ) );
     }
+    
+    @Test
+    @Documented
+    @Graph( value = { "I know you" }, autoIndexNodes = true )
+    public void testIndexIteration() throws UnsupportedEncodingException
+    {
+        data.get();
+        String script = "g.idx('node_auto_index')[[name:'I']]";
+        gen().expectedStatus( Status.OK.getStatusCode() ).description(
+                formatGroovy( script ) );
+        String response = doRestCall( script, Status.OK);
+        assertTrue( response.contains( "I" ) );
+    }
 
     /**
      * Send a Gremlin Script, URL-encoded with UTF-8 encoding, with additional
