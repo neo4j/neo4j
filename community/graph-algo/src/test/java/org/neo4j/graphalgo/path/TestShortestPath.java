@@ -35,6 +35,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
@@ -387,5 +388,29 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         
         assertPathDef( shortestPath( expanderForTypes( R1, OUTGOING ), 2 ).findSinglePath( a, c ), "a", "c" );
         assertPathDef( shortestPath( expanderForTypes( R1, INCOMING ), 2 ).findSinglePath( c, a ), "c", "a" );
+    }
+    
+    @Ignore( "Exposes a problem where the expected path isn't returned" )
+    @Test
+    public void pathsWithLengthProblem() throws Exception
+    {
+        /*
+         * 
+         *    (a)-->(b)-->(c)<--(f)
+         *      \   ^      |
+         *       v /       v
+         *       (d)      (e)
+         * 
+         */
+        
+        graph.makeEdgeChain( "f,c" );
+        graph.makeEdgeChain( "c,e" );
+        graph.makeEdgeChain( "a,b,c" );
+        graph.makeEdgeChain( "a,d,b" );
+        
+        Node a = graph.getNode( "a" );
+        Node c = graph.getNode( "c" );
+        
+        assertPaths( new ShortestPath( 3, expanderForTypes( R1 ), 10, true ).findAllPaths( a, c ), "a,d,b,c" );
     }
 }
