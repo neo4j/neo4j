@@ -21,6 +21,7 @@ package org.neo4j.server.rest.web;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringWriter;
 import java.net.URI;
 import java.util.Map;
 
@@ -34,8 +35,11 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import org.codehaus.jackson.JsonFactory;
+import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonToken;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.database.Database;
@@ -79,6 +83,7 @@ public class BatchOperationService
         try
         {
             JsonParser jp = jsonFactory.createJsonParser(body);
+            ObjectMapper mapper = new ObjectMapper();
             
             BatchOperationResults results = new BatchOperationResults();
             
@@ -103,8 +108,13 @@ public class BatchOperationService
                          } else if(field.equals(ID_KEY)) {
                              jobId = jp.getIntValue();
                          } else if(field.equals(BODY_KEY)) {
-                             //TODO: this swallows escapes like "\\"
-                             jobBody = StreamingJsonUtils.readCurrentValueAsString(jp, token);
+                            JsonNode node = mapper.readTree(jp);
+                            StringWriter out = new StringWriter();
+                            JsonGenerator gen = jsonFactory.createJsonGenerator(out);
+                            mapper.writeTree(gen, node);
+                            gen.flush();
+                            gen.close();
+                            jobBody = out.toString();
                          }
                      }
 

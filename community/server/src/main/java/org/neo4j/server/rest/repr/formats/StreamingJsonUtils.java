@@ -20,7 +20,6 @@
 package org.neo4j.server.rest.repr.formats;
 
 import java.io.IOException;
-
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonToken;
