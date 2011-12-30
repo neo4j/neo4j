@@ -140,6 +140,19 @@ class IndexTest(unit_tests.GraphDatabaseTest):
         
         self.assertEquals(0,node['name'])
             
+    def test_iterate_index(self):
+        with self.graphdb.transaction:
+
+            idx = self.graphdb.node.indexes.create('test')
+            for x in range(50):
+                idx['akey']['avalue'] = self.graphdb.node(name=x)
+
+        hits = []
+        for hit in idx['akey']['avalue']:
+            hits.append(hit)
+
+        self.assertEquals(50,len(hits))
+            
     def test_slice_query_result(self):
         with self.graphdb.transaction:
         
