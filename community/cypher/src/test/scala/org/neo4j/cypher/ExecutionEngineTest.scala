@@ -1466,6 +1466,22 @@ RETURN x0.name?
     assert(List() === result.toList)
   }
 
+  @Test def shouldBeAbleToHandleMultipleOptionalRelationshipsAndMultipleStartPoints() {
+    val a = createNode()
+    val b = createNode()
+    val z = createNode()
+    val x = createNode()
+    val y = createNode()
+
+    relate(a,z)
+    relate(a,x)
+    relate(b,x)
+    relate(b,y)
+
+    val result = parseAndExecute("""START a=node(1), b=node(2) match a-[?]->x<-[?]-b return x""")
+    assert(List(z,x,y) === result.columnAs[Node]("x").toList)
+  }
+
   @Test def shouldFindNodesBothDirections() {
     val a = createNode()
     relate(a, refNode, "Admin")
