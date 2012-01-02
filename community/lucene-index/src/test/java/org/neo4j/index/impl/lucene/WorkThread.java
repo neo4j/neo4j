@@ -23,8 +23,10 @@ import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.graphdb.index.UniqueFactory;
 import org.neo4j.test.OtherThreadExecutor;
 
 public class WorkThread extends OtherThreadExecutor<CommandState>
@@ -95,6 +97,38 @@ public class WorkThread extends OtherThreadExecutor<CommandState>
             {
                 state.index.add( node, key, value );
                 return null;
+            }
+        } );
+    }
+    
+    public Future<Node> getOrCreate( final String key, final Object value, final Object initialValue ) throws Exception
+    {
+        return executeDontWait( new WorkerCommand<CommandState, Node>()
+        {
+            @Override
+            public Node doWork( CommandState state )
+            {
+                UniqueFactory.UniqueNodeFactory factory = new UniqueFactory.UniqueNodeFactory( state.index )
+                {
+                    @Override
+                    protected void initialize( Node node, String key, Object value )
+                    {
+                        node.setProperty( key, initialValue );
+                    }
+                };
+                return factory.getOrCreate( key, value );
+            }
+        } );
+    }
+    
+    public Object getProperty( final PropertyContainer entity, final String key ) throws Exception
+    {
+        return execute( new WorkerCommand<CommandState, Object>()
+        {
+            @Override
+            public Object doWork( CommandState state )
+            {
+                return entity.getProperty( key );
             }
         } );
     }
