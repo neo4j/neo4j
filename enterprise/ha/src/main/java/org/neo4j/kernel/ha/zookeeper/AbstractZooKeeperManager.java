@@ -472,6 +472,18 @@ public abstract class AbstractZooKeeperManager implements Watcher
         }
 
         @Override
+        public Response<LockResult> acquireIndexReadLock( SlaveContext context, String index, String key )
+        {
+            throw noMasterException();
+        }
+        
+        @Override
+        public Response<LockResult> acquireIndexWriteLock( SlaveContext context, String index, String key )
+        {
+            throw noMasterException();
+        }
+        
+        @Override
         public String toString()
         {
             return "NO_MASTER";

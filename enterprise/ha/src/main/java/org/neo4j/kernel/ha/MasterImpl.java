@@ -43,7 +43,6 @@ import org.neo4j.com.StoreWriter;
 import org.neo4j.com.TxExtractor;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
@@ -54,6 +53,7 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.LockReleaser;
+import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
@@ -155,15 +155,15 @@ public class MasterImpl implements Master
         }
     }
     
-    private <T extends PropertyContainer> Response<LockResult> acquireLock( SlaveContext context,
-            LockGrabber lockGrabber, T... entities )
+    private Response<LockResult> acquireLock( SlaveContext context,
+            LockGrabber lockGrabber, Object... entities )
     {
         Transaction otherTx = suspendOtherAndResumeThis( context, false );
         try
         {
             LockManager lockManager = getGraphDbConfig().getLockManager();
             LockReleaser lockReleaser = getGraphDbConfig().getLockReleaser();
-            for ( T entity : entities )
+            for ( Object entity : entities )
             {
                 lockGrabber.grab( lockManager, lockReleaser, entity );
             }
@@ -506,6 +506,19 @@ public class MasterImpl implements Master
             lockReleaser.addLockToTransaction( entity, LockType.WRITE );
         }
     };
+    
+    @Override
+    public Response<LockResult> acquireIndexReadLock( SlaveContext context, String index, String key )
+    {
+        return acquireLock( context, READ_LOCK_GRABBER, new NodeManager.IndexLock( index, key ) );
+    }
+    
+    @Override
+    public Response<LockResult> acquireIndexWriteLock( SlaveContext context, String index,
+            String key )
+    {
+        return acquireLock( context, WRITE_LOCK_GRABBER, new NodeManager.IndexLock( index, key ) );
+    }
 
     // =====================================================================
     // Just some methods which aren't really used when running a HA cluster,

@@ -37,6 +37,8 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Before;
+import java.util.concurrent.Future;
+
 import org.junit.Test;
 import org.neo4j.com.Client;
 import org.neo4j.com.Client.ConnectionLostHandler;
@@ -556,6 +558,31 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         {
             fail( "Should not have gotten more than one failed pullUpdates during master switch." );
         }
+    }
+    
+    @Test
+    public void indexPutIfAbsent() throws Exception
+    {
+        initializeDbs( 2 );
+        long node = executeJobOnMaster( new CommonJobs.CreateNodeJob( true ) );
+        pullUpdates();
+
+        Worker t1 = new Worker( getSlave( 0 ) );
+        Worker t2 = new Worker( getSlave( 1 ) );
+        t1.beginTx();
+        t2.beginTx();
+        String index = "index";
+        String key = "key";
+        String value = "Mattias";
+        assertTrue( t2.putIfAbsent( index, node, key, value ).get() );
+        Future<Boolean> futurePut = t1.putIfAbsent( index, node, key, value );
+        t1.waitUntilWaiting();
+        t2.finishTx( true );
+        assertFalse( futurePut.get() );
+        t1.finishTx( true );
+
+        assertEquals( node, getSlave( 0 ).index().forNodes( index ).get( key, value ).getSingle().getId() );
+        assertEquals( node, getSlave( 1 ).index().forNodes( index ).get( key, value ).getSingle().getId() );
     }
 
     private Pair<Integer, Integer> getTransactionCounts( GraphDatabaseService master )

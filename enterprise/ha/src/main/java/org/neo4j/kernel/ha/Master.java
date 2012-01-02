@@ -71,4 +71,8 @@ public interface Master
             long startTxId, long endTxId );
 
     void shutdown();
+
+    Response<LockResult> acquireIndexWriteLock( SlaveContext context, String index, String key );
+
+    Response<LockResult> acquireIndexReadLock( SlaveContext context, String index, String key );
 }

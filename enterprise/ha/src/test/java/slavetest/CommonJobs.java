@@ -756,4 +756,67 @@ public abstract class CommonJobs
             return null;
         }
     }
+    
+    public static class IndexPutIfAbsentPartOne extends TransactionalJob<Boolean>
+    {
+        final long nodeId;
+        final String key;
+        final Object value;
+        final Fetcher<DoubleLatch> latchFetcher;
+        final String index;
+
+        public IndexPutIfAbsentPartOne( long nodeId, String index, String key, Object value, Fetcher<DoubleLatch> latchFetcher )
+        {
+            this.nodeId = nodeId;
+            this.index = index;
+            this.key = key;
+            this.value = value;
+            this.latchFetcher = latchFetcher;
+        }
+
+        @Override
+        protected Boolean executeInTransaction( GraphDatabaseService db, Transaction tx )
+        {
+            DoubleLatch latch = latchFetcher.fetch();
+            boolean result = db.index().forNodes( index ).putIfAbsent( db.getNodeById( nodeId ), key, value );
+            try
+            {
+                latch.countDownFirst();
+                latch.awaitSecond();
+            }
+            catch ( RemoteException e )
+            {
+                throw new RuntimeException( e );
+            }
+            tx.success();
+            return result;
+        }
+    }
+
+    public static class IndexPutIfAbsentPartTwo extends IndexPutIfAbsentPartOne
+    {
+        public IndexPutIfAbsentPartTwo( long nodeId, String index, String key, Object value,
+                Fetcher<DoubleLatch> latchFetcher )
+        {
+            super( nodeId, index, key, value, latchFetcher );
+        }
+        
+        @Override
+        protected Boolean executeInTransaction( GraphDatabaseService db, Transaction tx )
+        {
+            DoubleLatch latch = latchFetcher.fetch();
+            try
+            {
+                latch.awaitFirst();
+                latch.countDownSecond();
+            }
+            catch ( RemoteException e )
+            {
+                throw new RuntimeException( e );
+            }
+            boolean result = db.index().forNodes( index ).putIfAbsent( db.getNodeById( nodeId ), key, value );
+            tx.success();
+            return result;
+        }
+    }
 }
