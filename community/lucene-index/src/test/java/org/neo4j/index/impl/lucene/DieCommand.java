@@ -19,11 +19,14 @@
  */
 package org.neo4j.index.impl.lucene;
 
-public class DieCommand extends Command
+import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
+
+public class DieCommand implements WorkerCommand<CommandState, Void>
 {
     @Override
-    public void doWork( CommandState state )
+    public Void doWork( CommandState state )
     {
         state.alive = false;
+        return null;
     }
 }

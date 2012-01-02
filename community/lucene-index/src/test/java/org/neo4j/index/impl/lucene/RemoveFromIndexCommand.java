@@ -19,7 +19,9 @@
  */
 package org.neo4j.index.impl.lucene;
 
-public class RemoveFromIndexCommand extends Command
+import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
+
+public class RemoveFromIndexCommand implements WorkerCommand<CommandState, Void>
 {
     private String key;
     private String value;
@@ -31,8 +33,9 @@ public class RemoveFromIndexCommand extends Command
     }
 
     @Override
-    public void doWork( CommandState state )
+    public Void doWork( CommandState state )
     {
         state.index.remove( state.node, key, value );
+        return null;
     }
 }

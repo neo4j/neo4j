@@ -21,12 +21,12 @@ package org.neo4j.index.impl.lucene;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 
-public class QueryIndexCommand extends Command
+public class QueryIndexCommand implements WorkerCommand<CommandState, IndexHits<Node>>
 {
     private String key;
     private Object value;
-    private IndexHits<Node> result;
 
     public QueryIndexCommand( String key, Object value )
     {
@@ -35,13 +35,8 @@ public class QueryIndexCommand extends Command
     }
 
     @Override
-    public void doWork( CommandState state )
+    public IndexHits<Node> doWork( CommandState state )
     {
-        result = state.index.get( key, value );
-    }
-
-    public IndexHits<Node> getResult()
-    {
-        return result;
+        return state.index.get( key, value );
     }
 }

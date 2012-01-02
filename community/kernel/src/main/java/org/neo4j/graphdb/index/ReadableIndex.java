@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb.index;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 
 /**
@@ -85,4 +86,10 @@ public interface ReadableIndex<T extends PropertyContainer>
      * @return true iff mutating operations are supported.
      */
     boolean isWriteable();
+
+    /**
+     * Get the {@link GraphDatabaseService graph database} that owns this index.
+     * @return the {@link GraphDatabaseService graph database} that owns this index.
+     */
+    GraphDatabaseService getGraphDatabase();
 }

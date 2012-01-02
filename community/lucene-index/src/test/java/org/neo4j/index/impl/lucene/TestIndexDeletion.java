@@ -23,9 +23,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.index.Neo4jTestCase.assertContains;
 import static org.neo4j.index.impl.lucene.Contains.contains;
-import static org.neo4j.index.impl.lucene.HasThrownException.hasThrownException;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -72,7 +72,7 @@ public class TestIndexDeletion
     }
 
     @After
-    public void commitTx()
+    public void commitTx() throws Exception
     {
         finishTx( true );
         for ( WorkThread worker : workers )
@@ -192,7 +192,7 @@ public class TestIndexDeletion
     }
 
     @Test
-    public void deleteInOneTxShouldNotAffectTheOther() throws InterruptedException
+    public void deleteInOneTxShouldNotAffectTheOther() throws Exception
     {
         index.delete();
 
@@ -203,35 +203,27 @@ public class TestIndexDeletion
 
 	@Test
 	public void deleteAndCommitShouldBePublishedToOtherTransaction2()
-			throws InterruptedException {
+			throws Exception {
 		WorkThread firstTx = createWorker();
 		WorkThread secondTx = createWorker();
 
 		firstTx.beginTransaction();
-		firstTx.waitForCommandToComplete();
-
 		secondTx.beginTransaction();
-		secondTx.waitForCommandToComplete();
 
 		firstTx.createNodeAndIndexBy(key, "some value");
-		firstTx.waitForCommandToComplete();
-
 		secondTx.createNodeAndIndexBy(key, "some other value");
-		secondTx.waitForCommandToComplete();
 
 		firstTx.deleteIndex();
-		firstTx.waitForCommandToComplete();
-
 		firstTx.commit();
-		firstTx.waitForCommandToComplete();
 
-		secondTx.queryIndex(key, "some other value");
-		secondTx.waitForCommandToComplete();
-
-		assertThat(secondTx, hasThrownException());
+		try
+		{
+		    secondTx.queryIndex(key, "some other value");
+		    fail( "Should throw exception" );
+		}
+		catch ( Exception e ) { /* Good */ }
 
 		secondTx.rollback();
-		secondTx.waitForCommandToComplete();
 
 		// Since $Before will start a tx, add a value and keep tx open and
 		// workers will delete the index so this test will fail in @After
@@ -240,7 +232,7 @@ public class TestIndexDeletion
 	}
 
     @Test
-    public void indexDeletesShouldNotByVisibleUntilCommit()
+    public void indexDeletesShouldNotByVisibleUntilCommit() throws Exception
     {
         commitTx();
 
@@ -248,12 +240,9 @@ public class TestIndexDeletion
         WorkThread secondTx = createWorker();
 
         firstTx.beginTransaction();
-        firstTx.waitForCommandToComplete();
         firstTx.removeFromIndex( key, value );
-        firstTx.waitForCommandToComplete();
 
         IndexHits<Node> indexHits = secondTx.queryIndex( key, value );
-        secondTx.waitForCommandToComplete();
         assertThat( indexHits, contains( node ) );
 
         firstTx.rollback();
@@ -320,8 +309,6 @@ public class TestIndexDeletion
     {
         WorkThread workThread = new WorkThread( index, graphDb );
         workers.add( workThread );
-        workThread.start();
-        workThread.waitForWorkerToStart();
         return workThread;
     }
 }

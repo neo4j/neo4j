@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.StringTokenizer;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
@@ -236,6 +237,12 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
         {
             return false;
         }
+        
+        @Override
+        public GraphDatabaseService getGraphDatabase()
+        {
+            return delegate.getGraphDatabase();
+        }
     }
 
     /**
@@ -285,41 +292,58 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
         {
             return delegate.query( queryOrQueryObject );
         }
+        
+        private UnsupportedOperationException readOnlyIndex()
+        {
+            return new UnsupportedOperationException( "read only index" );
+        }
 
         @Override
         public void add( T entity, String key, Object value )
         {
-            throw new UnsupportedOperationException( "read only index" );
+            throw readOnlyIndex();
+        }
+        
+        @Override
+        public boolean putIfAbsent( T entity, String key, Object value )
+        {
+            throw readOnlyIndex();
         }
 
         @Override
         public void remove( T entity, String key, Object value )
         {
-            throw new UnsupportedOperationException( "read only index" );
+            throw readOnlyIndex();
         }
 
         @Override
         public void remove( T entity, String key )
         {
-            throw new UnsupportedOperationException( "read only index" );
+            throw readOnlyIndex();
         }
 
         @Override
         public void remove( T entity )
         {
-            throw new UnsupportedOperationException( "read only index" );
+            throw readOnlyIndex();
         }
 
         @Override
         public void delete()
         {
-            throw new UnsupportedOperationException( "read only index" );
+            throw readOnlyIndex();
         }
 
         @Override
         public boolean isWriteable()
         {
             return false;
+        }
+        
+        @Override
+        public GraphDatabaseService getGraphDatabase()
+        {
+            return delegate.getGraphDatabase();
         }
     }
 }

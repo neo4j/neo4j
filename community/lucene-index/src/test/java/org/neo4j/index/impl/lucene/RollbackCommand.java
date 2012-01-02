@@ -19,13 +19,16 @@
  */
 package org.neo4j.index.impl.lucene;
 
-public class RollbackCommand extends Command
+import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
+
+public class RollbackCommand implements WorkerCommand<CommandState, Void>
 {
     @Override
-    public void doWork( CommandState state )
+    public Void doWork( CommandState state )
     {
         state.tx.failure();
         state.tx.finish();
         state.tx = null;
+        return null;
     }
 }

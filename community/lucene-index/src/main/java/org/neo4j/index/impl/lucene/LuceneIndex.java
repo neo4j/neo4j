@@ -35,12 +35,14 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.index.lucene.QueryContext;
+import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
@@ -85,6 +87,12 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
             throw new IllegalStateException( "This index (" + identifier + ") has been deleted" );
         }
     }
+    
+    @Override
+    public GraphDatabaseService getGraphDatabase()
+    {
+        return service.graphDb();
+    }
 
     LuceneXaConnection getReadOnlyConnection()
     {
@@ -109,7 +117,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
      * documentation.
      *
      * Adds key/value to the {@code entity} in this index. Added values are
-     * searchable withing the transaction, but composite {@code AND}
+     * searchable within the transaction, but composite {@code AND}
      * queries aren't guaranteed to return added values correctly within that
      * transaction. When the transaction has been committed all such queries
      * are guaranteed to return correct results.
@@ -130,7 +138,17 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         }
     }
 
+<<<<<<< HEAD
     private void assertKeyNotNull( String key )
+=======
+    @Override
+    public boolean putIfAbsent( T entity, String key, Object value )
+    {
+        return ((AbstractGraphDatabase)service.graphDb()).getConfig().getGraphDbModule().getNodeManager().indexPutIfAbsent( this, entity, key, value );
+    }
+
+    private void assertValidKey( String key )
+>>>>>>> 0dddf2a... Basic functionality for Index#putIfAbsent
     {
         if ( key == null )
         {
@@ -143,7 +161,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
      * generic documentation.
      *
      * Removes key/value to the {@code entity} in this index. Removed values
-     * are excluded withing the transaction, but composite {@code AND}
+     * are excluded within the transaction, but composite {@code AND}
      * queries aren't guaranteed to exclude removed values correctly within
      * that transaction. When the transaction has been committed all such
      * queries are guaranteed to return correct results.

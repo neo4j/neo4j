@@ -19,11 +19,14 @@
  */
 package org.neo4j.index.impl.lucene;
 
-public class BeginTransactionCommand extends Command
+import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
+
+public class BeginTransactionCommand implements WorkerCommand<CommandState, Void>
 {
     @Override
-    public void doWork( CommandState state )
+    public Void doWork( CommandState state )
     {
         state.tx = state.graphDb.beginTx();
+        return null;
     }
 }

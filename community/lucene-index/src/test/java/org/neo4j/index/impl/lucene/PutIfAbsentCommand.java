@@ -19,7 +19,25 @@
  */
 package org.neo4j.index.impl.lucene;
 
-public abstract class Command
+import org.neo4j.graphdb.Node;
+import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
+
+public class PutIfAbsentCommand implements WorkerCommand<CommandState, Boolean>
 {
-    public abstract void doWork( CommandState state );
+    private final String key;
+    private final Object value;
+    private final Node node;
+
+    public PutIfAbsentCommand( Node node, String key, Object value )
+    {
+        this.node = node;
+        this.key = key;
+        this.value = value;
+    }
+
+    @Override
+    public Boolean doWork( CommandState state )
+    {
+        return state.index.putIfAbsent( node, key, value );
+    }
 }

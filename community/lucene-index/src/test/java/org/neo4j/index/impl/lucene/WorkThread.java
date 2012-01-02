@@ -19,57 +19,118 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import java.util.Map;
+import java.util.concurrent.Future;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.graphdb.index.UniqueFactory;
+import org.neo4j.test.OtherThreadExecutor;
 
-public class WorkThread extends BaseWorker
+public class WorkThread extends OtherThreadExecutor<CommandState>
 {
-    public WorkThread( Index<Node> index, GraphDatabaseService graphDb ) 
+    private volatile boolean txOngoing;
+
+    public WorkThread( Index<Node> index, GraphDatabaseService graphDb )
     {
-        super( index, graphDb );
+        super( new CommandState( index, graphDb ) );
     }
 
-    public void createNodeAndIndexBy( String key, String value )
+    public void createNodeAndIndexBy( String key, String value ) throws Exception
     {
-        queueCommand( new CreateNodeAndIndexByCommand( key, value ) );
+        execute( new CreateNodeAndIndexByCommand( key, value ) );
     }
 
-    public void deleteIndex()
+    public void deleteIndex() throws Exception
     {
-        queueCommand( new DeleteIndexCommand() );
+        execute( new DeleteIndexCommand() );
     }
 
-    public IndexHits<Node> queryIndex( String key, Object value )
+    public IndexHits<Node> queryIndex( String key, Object value ) throws Exception
     {
-        QueryIndexCommand cmd = new QueryIndexCommand( key, value );
-        queueCommand( cmd );
-        return cmd.getResult();
+        return execute( new QueryIndexCommand( key, value ) );
     }
 
-    public void commit()
+    public void commit() throws Exception
     {
-        queueCommand( new CommitCommand() );
+        execute( new CommitCommand() );
+        txOngoing = false;
     }
 
-    public void beginTransaction()
+    public void beginTransaction() throws Exception
     {
-        queueCommand( new BeginTransactionCommand() );
+        assert !txOngoing;
+        execute( new BeginTransactionCommand() );
+        txOngoing = true;
     }
 
-    public void removeFromIndex( String key, String value )
+    public void removeFromIndex( String key, String value ) throws Exception
     {
-        queueCommand( new RemoveFromIndexCommand( key, value ) );
+        execute( new RemoveFromIndexCommand( key, value ) );
     }
 
-    public void rollback()
+    public void rollback() throws Exception
     {
-        queueCommand( new RollbackCommand() );
+        if ( !txOngoing ) return;
+        execute( new RollbackCommand() );
+        txOngoing = false;
     }
 
-    public void die()
+    public void die() throws Exception
     {
-        queueCommand( new DieCommand() );
+        execute( new DieCommand() );
+    }
+
+    public Future<Boolean> putIfAbsent( Node node, String key, Object value ) throws Exception
+    {
+        return executeDontWait( new PutIfAbsentCommand( node, key, value ) );
+    }
+
+    public void add( final Node node, final String key, final Object value ) throws Exception
+    {
+        execute( new WorkerCommand<CommandState, Void>()
+        {
+            @Override
+            public Void doWork( CommandState state )
+            {
+                state.index.add( node, key, value );
+                return null;
+            }
+        } );
+    }
+
+    public Future<Node> getOrCreate( final String key, final Object value, final Object initialValue ) throws Exception
+    {
+        return executeDontWait( new WorkerCommand<CommandState, Node>()
+        {
+            @Override
+            public Node doWork( CommandState state )
+            {
+                UniqueFactory.UniqueNodeFactory factory = new UniqueFactory.UniqueNodeFactory( state.index )
+                {
+                    @Override
+                    protected void initialize( Node node, Map<String, Object> properties )
+                    {
+                        node.setProperty( key, initialValue );
+                    }
+                };
+                return factory.getOrCreate( key, value );
+            }
+        } );
+    }
+
+    public Object getProperty( final PropertyContainer entity, final String key ) throws Exception
+    {
+        return execute( new WorkerCommand<CommandState, Object>()
+        {
+            @Override
+            public Object doWork( CommandState state )
+            {
+                return entity.getProperty( key );
+            }
+        } );
     }
 }
