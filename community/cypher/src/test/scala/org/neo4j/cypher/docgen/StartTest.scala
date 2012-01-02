@@ -49,7 +49,7 @@ class StartTest extends DocumentingTestBase {
       title = "Relationship by id",
       text = "Binding a relationship as a start point is done with the relationship(*) function, which can also be abbreviated rel(*).",
       queryText = "start r=relationship(0) return r",
-      returns = "The relationshop with id 0 is returned",
+      returns = "The relationship with id 0 is returned",
       (p) => assertThat(p.columnAs[Relationship]("r").toList.asJava, hasItem(rel(0))))
   }
 

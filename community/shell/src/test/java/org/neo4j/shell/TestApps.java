@@ -29,6 +29,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -170,6 +171,15 @@ public class TestApps extends AbstractShellTest
         assertRelationshipDoesntExist( relationships[0] );
         assertNodeExists( otherNode );
     }
+    
+    @Test
+    @Ignore
+    public void correctCypherExecution() throws Exception
+    {
+        executeCommand( "mkrel -ct KNOWS " );
+        executeCommand( "START n = node(1) return n", ".*Node\\[1\\].*" );
+        executeCommand( "START n = node(1) match n--() return n", ".*Node\\[1\\].*" );
+    }
 
     @Test
     public void rmrelCanDeleteStrandedNodes() throws Exception
@@ -282,6 +292,7 @@ public class TestApps extends AbstractShellTest
         otherNode.setProperty( name, nodeTwoName );
         Relationship relationship = node.createRelationshipTo( otherNode, RELATIONSHIP_TYPE );
         relationship.setProperty( name, relationshipName );
+        Node strayNode = db.createNode();
         finishTx();
         
         executeCommand( "cd -a " + node.getId() );
@@ -290,6 +301,12 @@ public class TestApps extends AbstractShellTest
         executeCommand( "START r = relationship({self}) RETURN r.name", relationshipName );
         executeCommand( "cd " + otherNode.getId() );
         executeCommand( "START n = node({self}) RETURN n.name", nodeTwoName );
+        
+        executeCommand( "cd -a " + strayNode.getId() );
+        beginTx();
+        strayNode.delete();
+        finishTx();
+        executeCommand( "START n = node(" + node.getId() + ") RETURN n.name", nodeOneName );
     }
     
     @Test

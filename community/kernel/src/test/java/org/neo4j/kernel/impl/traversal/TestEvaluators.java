@@ -23,6 +23,7 @@ import static org.neo4j.graphdb.traversal.Evaluation.EXCLUDE_AND_CONTINUE;
 import static org.neo4j.graphdb.traversal.Evaluation.INCLUDE_AND_CONTINUE;
 import static org.neo4j.graphdb.traversal.Evaluation.INCLUDE_AND_PRUNE;
 import static org.neo4j.graphdb.traversal.Evaluators.lastRelationshipTypeIs;
+import static org.neo4j.graphdb.traversal.Evaluators.returnWhereEndNodeIs;
 import static org.neo4j.kernel.Traversal.description;
 
 import org.junit.BeforeClass;
@@ -65,6 +66,19 @@ public class TestEvaluators extends AbstractTestBase
         expectPaths( description().evaluator( lastRelationshipTypeIs(
                 INCLUDE_AND_CONTINUE, EXCLUDE_AND_CONTINUE, Types.C ) ).traverse( a ),
                 "a,b,c,d,e", "a,f,g", "a,b,h", "a,b,h,i,k" );
+    }
+    
+    @Test
+    public void endNodeIs()
+    {
+        Node a = getNodeWithName( "a" );
+        Node c = getNodeWithName( "c" );
+        Node h = getNodeWithName( "h" );
+        Node g = getNodeWithName( "g" );
+        
+        expectPaths( description().evaluator( returnWhereEndNodeIs( c, h, g ) ).traverse( a ),
+                "a,b,c", "a,b,h", "a,f,g" );
+        expectPaths( description().evaluator( returnWhereEndNodeIs( g ) ).traverse( a ), "a,f,g" );
     }
     
     @Test

@@ -21,9 +21,12 @@ package org.neo4j.index.impl.lucene;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.apache.lucene.document.Document;
@@ -50,6 +53,8 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     static final String KEY_DOC_ID = "_id_";
     static final String KEY_START_NODE_ID = "_start_node_id_";
     static final String KEY_END_NODE_ID = "_end_node_id_";
+    
+    private static Set<String> FORBIDDEN_KEYS = new HashSet<String>( Arrays.asList( null, KEY_DOC_ID, KEY_START_NODE_ID, KEY_END_NODE_ID ) );
 
     final LuceneIndexImplementation service;
     private IndexIdentifier identifier;
@@ -123,18 +128,18 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     public void add( T entity, String key, Object value )
     {
         LuceneXaConnection connection = getConnection();
-        assertKeyNotNull( key );
+        assertValidKey( key );
         for ( Object oneValue : IoPrimitiveUtils.asArray( value ) )
         {
             connection.add( this, entity, key, oneValue );
         }
     }
 
-    private void assertKeyNotNull( String key )
+    private void assertValidKey( String key )
     {
-        if ( key == null )
+        if ( FORBIDDEN_KEYS.contains( key ) )
         {
-            throw new IllegalArgumentException( "Key can't be null" );
+            throw new IllegalArgumentException( "Key " + key + " forbidden" );
         }
     }
 
@@ -157,7 +162,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     public void remove( T entity, String key, Object value )
     {
         LuceneXaConnection connection = getConnection();
-        assertKeyNotNull( key );
+        assertValidKey( key );
         for ( Object oneValue : IoPrimitiveUtils.asArray( value ) )
         {
             connection.remove( this, entity, key, oneValue );
@@ -167,7 +172,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     public void remove( T entity, String key )
     {
         LuceneXaConnection connection = getConnection();
-        assertKeyNotNull( key );
+        assertValidKey( key );
         connection.remove( this, entity, key );
     }
 

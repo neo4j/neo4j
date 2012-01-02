@@ -24,7 +24,7 @@ import org.neo4j.cypher.CypherParser
 
 trait ConsoleMode extends ReturnItems {
   override def returnExpressions: Parser[Expression] = (nullableProperty | expression | entity) ^^ {
-    case Property(v,p) => NullableProperty(v,p)
+    case Property(v,p) => Nullable(Property(v,p))
     case x => x
   }
 }

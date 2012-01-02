@@ -19,15 +19,24 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Map;
 
 import javax.transaction.Synchronization;
 import javax.transaction.Transaction;
 import javax.transaction.xa.XAResource;
 
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.info.LockInfo;
+import org.neo4j.kernel.info.LockingTransaction;
+import org.neo4j.kernel.info.ResourceType;
+import org.neo4j.kernel.info.WaitingThread;
 
 /**
  * A read/write lock is a lock that will allow many transactions to acquire read
@@ -98,6 +107,7 @@ class RWLock
         final TxLockElement element;
         final LockType lockType;
         final Thread waitingThread;
+        final long since = System.currentTimeMillis();
 
         WaitElement( TxLockElement element, LockType lockType, Thread thread )
         {
@@ -459,6 +469,48 @@ class RWLock
             System.out.println( "" + tle.tx + "(" + tle.readCount + "r,"
                 + tle.writeCount + "w)" );
         }
+    }
+
+    synchronized LockInfo info()
+    {
+        Map<TxLockElement, LockingTransaction> transactions = new HashMap<TxLockElement, LockingTransaction>();
+        for ( TxLockElement tle : txLockElementMap.values() )
+        {
+            transactions.put( tle, new LockingTransaction( tle.tx.toString(), tle.readCount, tle.writeCount ) );
+        }
+        for ( WaitElement thread : waitingThreadList )
+        {
+            transactions.put( thread.element, WaitingThread.create( thread.element.tx.toString(),
+                    thread.element.readCount, thread.element.writeCount, thread.waitingThread, thread.since,
+                    thread.lockType == LockType.WRITE ) );
+        }
+        ResourceType type;
+        String id;
+        if ( resource instanceof Node )
+        {
+            type = ResourceType.NODE;
+            id = Long.toString( ( (Node) resource ).getId() );
+        }
+        else if ( resource instanceof Relationship )
+        {
+            type = ResourceType.NODE;
+            id = Long.toString( ( (Relationship) resource ).getId() );
+        }
+        else
+        {
+            type = ResourceType.OTHER;
+            id = resource.toString();
+        }
+        return new LockInfo( type, id, readCount, writeCount, transactions.values() );
+    }
+
+    synchronized boolean acceptVisitorIfWaitedSinceBefore( Visitor<LockInfo> visitor, long waitStart )
+    {
+        for ( WaitElement thread : waitingThreadList )
+        {
+            if ( thread.since < waitStart ) return visitor.visit( info() );
+        }
+        return false;
     }
 
     public String toString()

@@ -269,7 +269,7 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
     }
 
     @Override
-    public void logIdUsage( StringLogger logger )
+    public void logIdUsage( StringLogger.LineLogger logger )
     {
         NeoStore.logIdUsage( logger, this );
     }

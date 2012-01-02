@@ -35,7 +35,3 @@ The Neo4j graph pattern matching component
 
 %{source-code|snippet=findFriends|file=src/test/java/examples/TestSiteIndexExamples.java}
 
-* Learning more
-
- For more examples and usage documentation, see the Neo4j wiki page about
- {{{http://wiki.neo4j.org/content/Graph_Pattern_Matching}Graph Matching}}.

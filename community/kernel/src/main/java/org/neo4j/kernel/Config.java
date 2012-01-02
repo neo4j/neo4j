@@ -22,11 +22,13 @@ package org.neo4j.kernel;
 import static java.util.regex.Pattern.quote;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import javax.transaction.TransactionManager;
 
 import org.neo4j.helpers.Args;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
 import org.neo4j.kernel.impl.core.GraphDbModule;
@@ -47,11 +49,14 @@ import org.neo4j.kernel.impl.transaction.TxHook;
 import org.neo4j.kernel.impl.transaction.TxModule;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.info.DiagnosticsManager;
+import org.neo4j.kernel.info.DiagnosticsPhase;
+import org.neo4j.kernel.info.DiagnosticsProvider;
 
 /**
  * A non-standard configuration object.
  */
-public class Config
+public class Config implements DiagnosticsProvider
 {
     static final String NIO_NEO_DB_CLASS = "org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource";
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
@@ -243,6 +248,7 @@ public class Config
     private final boolean backupSlave;
     private final IdGeneratorFactory idGeneratorFactory;
     private final TxIdGenerator txIdGenerator;
+    private final DiagnosticsManager diagnostics;
 
     Config( AbstractGraphDatabase graphDb, StoreId storeId,
             Map<String, String> inputParams, KernelPanicEventGenerator kpe,
@@ -287,6 +293,8 @@ public class Config
         params.put( GraphDbModule.class, graphDbModule );
         params.put( TxHook.class, txModule.getTxHook() );
         params.put( StringLogger.class, graphDb.getMessageLog() );
+        params.put( DiagnosticsManager.class, this.diagnostics = new DiagnosticsManager( graphDb.getMessageLog() ) );
+        diagnostics.appendProvider( this );
     }
 
     public static Map<Object, Object> getDefaultParams()
@@ -463,5 +471,49 @@ public class Config
     {
         Object result = config != null ? config.get( key ) : defaultValue;
         return result != null ? result : defaultValue;
+    }
+
+    public DiagnosticsManager getDiagnosticsManager()
+    {
+        return diagnostics;
+    }
+    
+    @Override
+    public String getDiagnosticsIdentifier()
+    {
+        return getClass().getName();
+    }
+    
+    @Override
+    public void acceptDiagnosticsVisitor( Object visitor )
+    {
+        // nothing visits configuration
+    }
+    
+    @Override
+    public void dump( DiagnosticsPhase phase, StringLogger log )
+    {
+        if ( phase.isInitialization() || phase.isExplicitlyRequested() )
+        {
+            log.logLongMessage( "Neo4j Kernel properties:", new PrefetchingIterator<String>()
+            {
+                final Iterator<Object> keys = params.keySet().iterator();
+
+                @Override
+                protected String fetchNextOrNull()
+                {
+                    while ( keys.hasNext() )
+                    {
+                        Object key = keys.next();
+                        if ( key instanceof String )
+                        {
+                            Object value = params.get( key );
+                            return key + "=" + value;
+                        }
+                    }
+                    return null;
+                }
+            }, true );
+        }
     }
 }

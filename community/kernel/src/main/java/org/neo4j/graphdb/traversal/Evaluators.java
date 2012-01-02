@@ -19,9 +19,12 @@
  */
 package org.neo4j.graphdb.traversal;
 
+import static java.util.Arrays.asList;
+
 import java.util.HashSet;
 import java.util.Set;
 
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -231,5 +234,55 @@ public abstract class Evaluators
     {
         return lastRelationshipTypeIs( Evaluation.INCLUDE_AND_PRUNE, Evaluation.EXCLUDE_AND_CONTINUE,
                 type, orAnyOfTheseTypes );
+    }
+    
+    /**
+     * Returns an {@link Evaluator} which looks at each {@link Path} and includes those
+     * where the {@link Path#endNode()} is one of {@code possibleEndNodes}.
+     * 
+     * @param evaluationIfMatch the {@link Evaluation} to return for those paths which
+     * have a matching end node.
+     * @param evaluationIfNoMatch  the {@link Evaluation} to return for those paths which
+     * doesn't have a matching end node.
+     * @param possibleEndNodes end nodes for paths to be included in the result.
+     * @return an {@link Evaluator} which looks at each {@link Path} and includes those
+     * where the {@link Path#endNode()} is one of {@code possibleEndNodes}.
+     */
+    public static Evaluator endNodeIs( final Evaluation evaluationIfMatch,
+            final Evaluation evaluationIfNoMatch, Node... possibleEndNodes )
+    {
+        if ( possibleEndNodes.length == 1 )
+        {
+            final Node target = possibleEndNodes[0];
+            return new Evaluator()
+            {
+                @Override
+                public Evaluation evaluate( Path path )
+                {
+                    return target.equals( path.endNode() ) ? evaluationIfMatch : evaluationIfNoMatch;
+                }
+            };
+        }
+        
+        final Set<Node> endNodes = new HashSet<Node>( asList( possibleEndNodes ) );
+        return new Evaluator()
+        {
+            @Override
+            public Evaluation evaluate( Path path )
+            {
+                return endNodes.contains( path.endNode() ) ? evaluationIfMatch : evaluationIfNoMatch;
+            }
+        };
+    }
+    
+    /**
+     * @see #endNodeIs(Evaluation, Evaluation, Node...),
+     * uses {@link Evaluation#INCLUDE_AND_CONTINUE} for {@code evaluationIfMatch}
+     * and {@link Evaluation#EXCLUDE_AND_CONTINUE} for {@code evaluationIfNoMatch}.
+     * @param possibleEndNodes end nodes for paths to be included in the result.
+     */
+    public static Evaluator returnWhereEndNodeIs( Node... possibleEndNodes )
+    {
+        return endNodeIs( Evaluation.INCLUDE_AND_CONTINUE, Evaluation.EXCLUDE_AND_CONTINUE, possibleEndNodes );
     }
 }

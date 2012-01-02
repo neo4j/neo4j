@@ -27,14 +27,14 @@ trait Expressions extends JavaTokenParsers with Tokens {
 
   def entity: Parser[Entity] = identity ^^ (x => Entity(x))
 
-  def expression: Parser[Expression] = (boolean | extract | function | coalesceFunc | nullableProperty | property | stringExpression | decimal | parameter)
+  def expression: Parser[Expression] = (boolean | extract | function | coalesceFunc | nullableProperty | property | stringExpression | decimal | parameter | entity)
 
   def property: Parser[Expression] = identity ~ "." ~ identity ^^ {
     case v ~ "." ~ p => Property(v, p)
   }
 
   def nullableProperty: Parser[Expression] = property <~ "?" ^^ {
-    case Property(e, p) => NullableProperty(e, p)
+    case p => Nullable(p)
   }
 
   def stringExpression: Parser[Expression] = string ^^ (x => Literal(x))

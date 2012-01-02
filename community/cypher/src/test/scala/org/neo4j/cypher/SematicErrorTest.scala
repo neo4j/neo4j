@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher
 
-import commands._
 import org.junit.Assert._
 import org.junit.Test
 
@@ -64,18 +63,20 @@ class SematicErrorTest extends ExecutionEngineHelper {
       "13.0 expected to be of type StringType but it is of type NumberType")
   }
 
+  @Test def shouldComplainAboutUnknownIdentifier() {
+    expectedError("start s = node(1) where s.name = Name and s.age = 10 return s",
+      "Unknown identifier `Name`.")
+  }
+
   @Test def shortestPathNeedsBothEndNodes() {
     expectedError("start n=node(0) match p=shortestPath(n-->b) return p",
       "To find a shortest path, both ends of the path need to be provided. Couldn't find `b`")
   }
 
-  def parse(txt:String):Query = new CypherParser().parse(txt)
-
-  def expectedError(query: String, message: String) { expectedError(parse(query), message) }
-
-  def expectedError(query: Query, message: String) {
+  def expectedError(query: String, message: String) {
     try {
-      execute(query).toList
+      val result = parseAndExecute(query)
+      result.toList
       fail("Did not get the expected syntax error, expected: " + message)
     } catch {
       case x: CypherException => assertEquals(message, x.getMessage)

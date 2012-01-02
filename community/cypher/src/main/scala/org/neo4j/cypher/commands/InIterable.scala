@@ -26,7 +26,11 @@ abstract class InIterable(iterable: Expression, symbolName: String, inner: Predi
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean
 
   def isMatch(m: Map[String, Any]): Boolean = {
-    val seq = iterable(m).asInstanceOf[Seq[_]]
+    val seq = iterable(m) match {
+      case x:Seq[_] => x
+      case x:Array[_] => x.toSeq
+    }
+
     seqMethod(seq)(item => {
       val innerMap = m ++ Map(symbolName -> item)
       inner.isMatch(innerMap)
@@ -38,20 +42,28 @@ abstract class InIterable(iterable: Expression, symbolName: String, inner: Predi
   def atoms: Seq[Predicate] = Seq(this)
 
   def containsIsNull: Boolean = false
+  def name:String
+                   //all(x in a.array where x = 0)
+  override def toString = name + "(" + symbolName + " in " + iterable + " where " + inner + ")"
 }
 
 case class AllInIterable(iterable: Expression, symbolName: String, inner: Predicate) extends InIterable(iterable, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = f.forall _
+
+  def name = "all"
 }
 
 case class AnyInIterable(iterable: Expression, symbolName: String, inner: Predicate) extends InIterable(iterable, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = f.exists _
+  def name = "any"
 }
 
 case class NoneInIterable(iterable: Expression, symbolName: String, inner: Predicate) extends InIterable(iterable, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = x => !f.exists(x)
+  def name = "none"
 }
 
 case class SingleInIterable(iterable: Expression, symbolName: String, inner: Predicate) extends InIterable(iterable, symbolName, inner) {
   def seqMethod[U](f: Seq[U]): ((U) => Boolean) => Boolean = x => f.filter(x).length == 1
+  def name = "single"
 }

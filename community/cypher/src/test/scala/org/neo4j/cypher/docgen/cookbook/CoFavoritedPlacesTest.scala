@@ -1,5 +1,3 @@
-package org.neo4j.cypher.docgen.cookbook
-
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -19,11 +17,11 @@ package org.neo4j.cypher.docgen.cookbook
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.cypher.docgen.cookbook
 
 import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.cypher.docgen.DocumentingTestBase
-import org.junit.Ignore
 
 
 class CoFavoritedPlacesTest extends DocumentingTestBase {
@@ -72,7 +70,6 @@ class CoFavoritedPlacesTest extends DocumentingTestBase {
       		ORDER By otherPlace.name desc""",
       returns = "The list of possible friends ranked by them liking similar stuff that are not yet friends.",
       (p) => {
-        println(p.dumpToString())
         assertEquals(List(Map("otherPlace.name" -> "MelsPlace", "collect(tag.name)" -> List("Cool", "Cosy")),
                 Map("otherPlace.name" -> "CoffeeShop3", "collect(tag.name)" -> List("Cosy")),
                 Map("otherPlace.name" -> "CoffeeShop2", "collect(tag.name)" -> List("Cool"))),p.toList)

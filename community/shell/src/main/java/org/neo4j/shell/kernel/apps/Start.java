@@ -20,6 +20,7 @@
 package org.neo4j.shell.kernel.apps;
 
 import java.rmi.RemoteException;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.cypher.SyntaxException;
@@ -28,7 +29,6 @@ import org.neo4j.cypher.javacompat.CypherParser;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Output;
@@ -85,8 +85,16 @@ public class Start extends GraphDatabaseApp
 
     private Map<String, Object> getParameters( Session session ) throws ShellException
     {
-        NodeOrRelationship self = getCurrent( session );
-        return MapUtil.map( "self", self.isNode() ? self.asNode() :self.asRelationship() );
+        Map<String, Object> params = new HashMap<String, Object>();
+        try
+        {
+            NodeOrRelationship self = getCurrent( session );
+            params.put( "self", self.isNode() ? self.asNode() :self.asRelationship() );
+        }
+        catch ( ShellException e )
+        { // OK, current didn't exist
+        }
+        return params;
     }
 
     private boolean looksToBeComplete( String query )

@@ -41,11 +41,11 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, pre
   }
 
   private def decideWhichMatcherToUse() = {
-    if (JoinerBuilder.canHandlePatter(patternGraph)) {
-      new JoinerBuilder(patternGraph, predicates)
-    } else {
+//    if (JoinerBuilder.canHandlePatter(patternGraph)) {
+//      new JoinerBuilder(patternGraph, predicates)
+//    } else {
       new PatterMatchingBuilder(patternGraph, predicates)
-    }
+//    }
   }
 
   private def buildPatternGraph(): PatternGraph = {

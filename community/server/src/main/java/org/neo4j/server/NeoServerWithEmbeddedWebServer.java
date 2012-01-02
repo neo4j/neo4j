@@ -28,11 +28,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.configuration.Configuration;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.GraphDatabaseFactory;
+import org.neo4j.server.guard.GuardedDatabaseFactory;
+import org.neo4j.server.guard.Guard;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.modules.PluginInitializer;
 import org.neo4j.server.modules.RESTApiModule;
@@ -43,6 +45,8 @@ import org.neo4j.server.rest.security.SecurityRule;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheck;
 import org.neo4j.server.startup.healthcheck.StartupHealthCheckFailedException;
 import org.neo4j.server.web.WebServer;
+
+import static org.neo4j.server.configuration.Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY;
 
 public class NeoServerWithEmbeddedWebServer implements NeoServer
 {
@@ -56,6 +60,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
     private final List<ServerModule> serverModules = new ArrayList<ServerModule>();
     private PluginInitializer pluginInitializer;
     private final Bootstrapper bootstrapper;
+    private Guard guard;
 
     public NeoServerWithEmbeddedWebServer( Bootstrapper bootstrapper,
             StartupHealthCheck startupHealthCheck, Configurator configurator, WebServer webServer,
@@ -81,22 +86,16 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
         // container
         startupHealthCheck();
 
+        initGuard();
+
         initWebServer();
 
-        StringLogger logger = startDatabase();
+        DiagnosticsManager dm = startDatabase();
 
-        if ( logger != null )
-        {
-            logger.logMessage( "--- SERVER STARTUP START ---" );
+        StringLogger logger = dm.getTargetLog();
+        logger.logMessage( "--- SERVER STARTUP START ---" );
 
-            Configuration configuration = configurator.configuration();
-            logger.logMessage( "Server configuration:" );
-            for ( Object key : IteratorUtil.asIterable( configuration.getKeys() ) )
-            {
-                if ( key instanceof String )
-                    logger.logMessage( "  " + key + " = " + configuration.getProperty( (String) key ) );
-            }
-        }
+        dm.register( Configurator.DIAGNOSTICS, configurator );
 
         startExtensionInitialization();
 
@@ -104,7 +103,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
 
         startWebServer( logger );
 
-        if ( logger != null ) logger.logMessage( "--- SERVER STARTUP END ---", true );
+        logger.logMessage( "--- SERVER STARTUP END ---", true );
     }
 
     /**
@@ -165,11 +164,17 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
         }
     }
 
-    private StringLogger startDatabase()
+    private DiagnosticsManager startDatabase()
     {
         String dbLocation = new File( configurator.configuration()
                 .getString( Configurator.DATABASE_LOCATION_PROPERTY_KEY ) ).getAbsolutePath();
         GraphDatabaseFactory dbFactory = bootstrapper.getGraphDatabaseFactory( configurator.configuration() );
+
+        if ( guard != null )
+        {
+            dbFactory = new GuardedDatabaseFactory( dbFactory, guard );
+        }
+
         Map<String, String> databaseTuningProperties = configurator.getDatabaseTuningProperties();
         if ( databaseTuningProperties != null )
         {
@@ -179,7 +184,13 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
         {
             this.database = new Database( dbFactory, dbLocation );
         }
-        return database.getStringLogger();
+        return database.graph.getConfig().getDiagnosticsManager();
+    }
+
+    private void initGuard()
+    {
+        Integer limit = getConfiguration().getInteger( WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, null);
+        guard = limit != null ? new Guard( limit ) : null;
     }
 
     @Override
@@ -246,8 +257,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
             }
             webServer.addSecurityRules( securityRules );
 
-            int limit = configurator.configuration().getInt( Configurator.WEBSERVER_LIMIT_EXECUTION_TIME_PROPERTY_KEY, -1 );
-            webServer.addExecutionLimitFilter( limit );
+            if (guard != null) webServer.addExecutionLimitFilter( guard );
 
             webServer.start();
             if ( logger != null ) logger.logMessage( "Server started on: " + baseUri() );

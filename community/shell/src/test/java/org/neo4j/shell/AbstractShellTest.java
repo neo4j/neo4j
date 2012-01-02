@@ -89,6 +89,7 @@ public abstract class AbstractShellTest
         assert tx != null;
         if ( success ) tx.success();
         tx.finish();
+        tx = null;
     }
 
     @AfterClass

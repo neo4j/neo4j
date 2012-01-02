@@ -31,6 +31,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
+import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription.Graph;
 
 import com.sun.jersey.api.client.ClientHandlerException;
@@ -355,6 +356,50 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
                 .entity().contains(german) );
         testBatch(anode, asian);
         testBatch(gnode, german);
+    }
+    
+    @Test
+    //@Ignore
+    @Graph("Peter likes Jazz")
+    public void shouldHandleEscapedStrings() throws ClientHandlerException,
+            UniformInterfaceException, JSONException, PropertyValueException {
+    	String string = "Jazz";
+        Node gnode = getNode( string );
+        assertEquals( gnode.getProperty( "name" ), string );
+        
+        String name = "string\\ and \"test\"";
+        
+        String jsonString = new PrettyJSON()
+        .array()
+            .object()
+                .key("method") .value("PUT")
+                .key("to")     .value("/node/"+gnode.getId()+"/properties")
+                .key("body")   .object().key( "name" ).value(name).endObject()
+            .endObject()
+        .endArray()
+        .toString();
+        gen.get()
+            .expectedStatus( 200 )
+            .payload( jsonString )
+            .post( batchUri() )
+            .entity();
+        
+        jsonString = new PrettyJSON()
+        .array()
+            .object()
+                .key("method") .value("GET")
+                .key("to")     .value("/node/"+gnode.getId()+"/properties/name")
+            .endObject()
+        .endArray()
+        .toString();
+        String entity = gen.get()
+            .expectedStatus( 200 )
+            .payload( jsonString )
+            .post( batchUri() )
+            .entity();
+        
+        List<Map<String, Object>> results = JsonHelper.jsonToList(entity);
+        assertEquals(results.get(0).get("body"), name);
     }
 
     private void testBatch( Node anode, String asian )

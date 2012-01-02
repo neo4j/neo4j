@@ -52,6 +52,11 @@ https://github.com/neo4j/community/blob/{neo4j-git-tag}/server-examples/src/main
 
 Build this code, and place the resulting jar file (and any custom dependencies) into the +$NEO4J_SERVER_HOME/plugins+ directory, and include this class in the +neo4j-server.properties+ file, like so:
 
+[TIP]
+Make sure the directories listings are retained in the jarfile by either building with default Maven, or with `jar -cvf myext.jar *`, making sure
+to jar directories instead of specifying single files.
+
+
 [source]
 ------
 #Comma separated list of JAXRS packages containing JAXRS Resource, one package name for each mountpoint.

@@ -40,6 +40,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.ClosableIterable;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.core.LockReleaser;
 import org.neo4j.kernel.impl.core.PropertyIndex;
@@ -63,6 +64,9 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.info.DiagnosticsExtractor;
+import org.neo4j.kernel.info.DiagnosticsManager;
+import org.neo4j.kernel.info.DiagnosticsPhase;
 
 /**
  * A <CODE>NeoStoreXaDataSource</CODE> is a factory for
@@ -96,6 +100,52 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
     private boolean logApplied = false;
 
     private final StringLogger msgLog;
+
+    private enum Diagnostics implements DiagnosticsExtractor<NeoStoreXaDataSource>
+    {
+        NEO_STORE_VERSIONS( "Store versions:" )
+        {
+            @Override
+            void dump( NeoStoreXaDataSource source, StringLogger.LineLogger log )
+            {
+                source.neoStore.logVersions( log );
+            }
+        },
+        NEO_STORE_ID_USAGE( "Id usage:" )
+        {
+            @Override
+            void dump( NeoStoreXaDataSource source, StringLogger.LineLogger log )
+            {
+                source.neoStore.logIdUsage( log );
+            }
+        };
+
+        private final String message;
+
+        private Diagnostics( String message )
+        {
+            this.message = message;
+        }
+
+        @Override
+        public void dumpDiagnostics( final NeoStoreXaDataSource source, DiagnosticsPhase phase, StringLogger log )
+        {
+            if ( phase.isInitialization() || phase.isExplicitlyRequested() )
+            {
+                log.logLongMessage( message, new Visitor<StringLogger.LineLogger>()
+                {
+                    @Override
+                    public boolean visit( StringLogger.LineLogger logger )
+                    {
+                        dump( source, logger );
+                        return false;
+                    }
+                }, true );
+            }
+        }
+
+        abstract void dump( NeoStoreXaDataSource source, StringLogger.LineLogger log );
+    }
 
     /**
      * Creates a <CODE>NeoStoreXaDataSource</CODE> using configuration from
@@ -577,17 +627,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource
         return msgLog;
     }
 
-    public void logStoreVersions()
+    public void registerDiagnosticsWith( DiagnosticsManager manager )
     {
-        msgLog.logMessage( "Store versions:" );
-        neoStore.logVersions( msgLog );
-        msgLog.flush();
-    }
-
-    public void logIdUsage()
-    {
-        msgLog.logMessage( "Id usage:" );
-        neoStore.logIdUsage( msgLog );
-        msgLog.flush();
+        manager.registerAll( Diagnostics.class, this );
     }
 }

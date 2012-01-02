@@ -21,5 +21,5 @@ package org.neo4j.cypher
 
 trait ExecutionPlan {
   def execute(params: Map[String,Any]): ExecutionResult
-  def execute(params: (String, Any)*): ExecutionResult = execute(params.toSeq:_*)
+//  def execute(params: (String, Any)*): ExecutionResult = execute(params.toMap)
 }

@@ -162,8 +162,9 @@ class GraphDbInstance
 
         started = true;
 
-        ConfigurationLogging.logConfig( params, graphDb.getClass(), storeDir, dumpToConsole, logger, autoConfigurator,
+        KernelDiagnostics.register( config.getDiagnosticsManager(), graphDb,
                 (NeoStoreXaDataSource) persistenceSource.getXaDataSource() );
+        config.getDiagnosticsManager().startup();
 
         return Collections.unmodifiableMap( params );
     }

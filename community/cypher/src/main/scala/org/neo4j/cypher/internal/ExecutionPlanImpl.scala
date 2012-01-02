@@ -28,14 +28,27 @@ import org.neo4j.cypher.commands._
 import org.neo4j.cypher._
 
 class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends ExecutionPlan {
-  val executionPlan: (Map[String, Any]) => PipeExecutionResult = prepareExecutionPlan()
+  val (executionPlan, executionPlanText) = prepareExecutionPlan()
 
-  def execute(params: Map[String, Any]): ExecutionResult = executionPlan(params)
+  def execute(params: Map[String, Any]): ExecutionResult = {
+    val plan = executionPlan(params)
+    plan
+  }
 
-  private def prepareExecutionPlan(): (Map[String, Any]) => PipeExecutionResult = {
+  private def canUseOrderedAggregation(sortColumns: Seq[String], keyColumns: Seq[String]): Boolean = {
+    //    start a  = node(1,2)
+    //    return a.COL1, a.COL2, avg(a.num)
+    //    order by a.COL1
+
+    val take = keyColumns.take(sortColumns.size)
+    take == sortColumns
+  }
+
+  private def prepareExecutionPlan(): ((Map[String, Any]) => PipeExecutionResult, String) = {
     query match {
       case Query(returns, start, matching, where, aggregation, sort, slice, namedPaths, queryText) => {
-
+        var sorted = false
+        var aggregated = false
         val predicates = where match {
           case None => Seq()
           case Some(w) => w.atoms
@@ -65,14 +78,41 @@ class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends Execu
 
         context.pipe = new ExtractPipe(context.pipe, allReturnItems)
 
-        aggregation match {
-          case None =>
-          case Some(aggr) => {
-            context.pipe = new EagerAggregationPipe(context.pipe, returns.returnItems, aggr.aggregationItems)
+        (aggregation, sort) match {
+          case (Some(agg), Some(sorting)) => {
+            val sortColumns = sorting.sortItems.map(_.returnItem.columnName)
+            val keyColumns = returns.returnItems.map(_.columnName)
+
+            if (canUseOrderedAggregation(sortColumns, keyColumns)) {
+
+              val keyColumnsNotAlreadySorted = returns.
+                returnItems.
+                filterNot(ri => sortColumns.contains(ri.columnName))
+                .map(x => SortItem(x, true))
+
+              val newSort = Some(Sort(sorting.sortItems ++ keyColumnsNotAlreadySorted: _*))
+
+              createSortPipe(newSort, allReturnItems, context)
+              context.pipe = new OrderedAggregationPipe(context.pipe, returns.returnItems, agg.aggregationItems)
+              sorted = true
+              aggregated = true
+            }
+          }
+          case _ =>
+        }
+
+        if (!aggregated) {
+          aggregation match {
+            case None =>
+            case Some(aggr) => {
+              context.pipe = new EagerAggregationPipe(context.pipe, returns.returnItems, aggr.aggregationItems)
+            }
           }
         }
 
-        createSortPipe(sort, allReturnItems, context)
+        if (!sorted) {
+          createSortPipe(sort, allReturnItems, context)
+        }
 
         slice match {
           case None =>
@@ -83,7 +123,10 @@ class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends Execu
 
         val result = new ColumnFilterPipe(context.pipe, returnItems)
 
-        params: Map[String, Any] => new PipeExecutionResult(result.createResults(params), result.symbols, returns.columns)
+        val func = (params: Map[String, Any]) => new PipeExecutionResult(result.createResults(params), result.symbols, returns.columns)
+        val executionPlan = result.executionPlan()
+
+        (func, executionPlan)
       }
     }
   }
@@ -228,6 +271,8 @@ class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends Execu
       case x => throw new ParameterWrongTypeException("Expected a propertycontainer or number here, but got: " + x.toString)
     }
   }
+
+  override def toString = executionPlanText
 }
 
 private class CurrentContext(var pipe: Pipe, var predicates: Seq[Predicate])
