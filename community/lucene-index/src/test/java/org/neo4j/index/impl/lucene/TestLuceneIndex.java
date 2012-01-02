@@ -1530,6 +1530,29 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
     
     @Test
+    public void putIfAbsentShouldntBlockIfNotAbsent() throws Exception
+    {
+        Index<Node> index = nodeIndex( testname.getMethodName(), LuceneIndexImplementation.EXACT_CONFIG );
+        Node node = graphDb.createNode();
+        String key = "key";
+        String value = "value";
+        index.add( node, key, value );
+        restartTx();
+        
+        WorkThread otherThread = new WorkThread( index, graphDb, node );
+        otherThread.beginTransaction();
+        
+        // Should not grab lock
+        index.putIfAbsent( node, key, value );
+        
+        // Should be able to complete right away
+        assertFalse( otherThread.putIfAbsent( node, key, value ).get() );
+        
+        otherThread.commit();
+        commitTx();
+    }
+    
+    @Test
     public void getOrCreateNodeWithUniqueFactory() throws Exception
     {
         final String key = "name";
