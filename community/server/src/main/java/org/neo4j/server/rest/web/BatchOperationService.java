@@ -48,7 +48,6 @@ import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.BatchOperationResults;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.OutputFormat;
-import org.neo4j.server.rest.repr.formats.StreamingJsonUtils;
 import org.neo4j.server.web.WebServer;
 
 @Path( "/batch" )
