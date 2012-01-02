@@ -101,4 +101,16 @@ public interface Index<T extends PropertyContainer> extends ReadableIndex<T>
      * it again becomes ok to use this index.
      */
     void delete();
+
+    /**
+     * Add the entity to the index unless it is already indexed.
+     * 
+     * @param entity the entity (i.e {@link Node} or {@link Relationship})
+     * to associate the key/value pair with.
+     * @param key the key in the key/value pair to associate with the entity.
+     * @param value the value in the key/value pair to associate with the
+     * entity.
+     * @return {@code true} if the entity was added to the index, {@code false} otherwise.
+     */
+    boolean putIfAbsent( T entity, String key, Object value );
 }

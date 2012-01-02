@@ -24,7 +24,9 @@ import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Executes {@link WorkerCommand}s in another thread. Very useful for writing
@@ -35,10 +37,12 @@ import java.util.concurrent.TimeUnit;
  *
  * @param <T>
  */
-public class OtherThreadExecutor<T>
+public class OtherThreadExecutor<T> implements ThreadFactory
 {
-    private final ExecutorService commandExecutor = newSingleThreadExecutor();
+    private static final AtomicLong THREADID = new AtomicLong();
+    private final ExecutorService commandExecutor = newSingleThreadExecutor(this);
     private final T state;
+    private volatile Thread thread;
 
     public OtherThreadExecutor( T initialState )
     {
@@ -81,5 +85,50 @@ public class OtherThreadExecutor<T>
     public interface WorkerCommand<T, R>
     {
         R doWork( T state );
+    }
+
+    @Override
+    public Thread newThread( Runnable r )
+    {
+        Thread thread = new Thread( r, getClass().getName() + ":" + THREADID.getAndIncrement() )
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    super.run();
+                }
+                finally
+                {
+                    OtherThreadExecutor.this.thread = null;
+                }
+            }
+        };
+        this.thread = thread;
+        return thread;
+    }
+
+    public void waitUntilWaiting()
+    {
+        Thread thread = getThread();
+        while ( thread.getState() != Thread.State.WAITING )
+        {
+            try
+            {
+                Thread.sleep( 1 );
+            }
+            catch ( InterruptedException e )
+            {
+                // whatever
+            }
+        }
+    }
+
+    private Thread getThread()
+    {
+        Thread thread = null;
+        while (thread == null) thread = this.thread;
+        return thread;
     }
 }

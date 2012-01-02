@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser.Operator;
@@ -49,9 +50,12 @@ import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -68,6 +72,8 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class TestLuceneIndex extends AbstractLuceneIndexTest
 {
+    public final @Rule TestName testname = new TestName();
+    
     @SuppressWarnings( "unchecked" )
     private <T extends PropertyContainer> void makeSureAdditionsCanBeRead(
             Index<T> index, EntityCreator<T> entityCreator )
@@ -1407,5 +1413,116 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         catch ( IllegalArgumentException e )
         {   // OK
         }
+    }
+
+    @Ignore( "an issue that should be fixed at some point" )
+    @Test( expected = NotFoundException.class )
+    public void shouldNotBeAbleToIndexNodeThatIsNotCommitted() throws Exception
+    {
+        Index<Node> index = nodeIndex( testname.getMethodName(),
+                LuceneIndexImplementation.EXACT_CONFIG );
+        Node node = graphDb.createNode();
+        String key = "noob";
+        String value = "Johan";
+
+        WorkThread thread = new WorkThread( index, graphDb, node );
+        thread.beginTransaction();
+        try
+        {
+            thread.add( node, key, value );
+        }
+        finally
+        {
+            thread.rollback();
+        }
+    }
+
+    @Test
+    public void putIfAbsentSingleThreaded()
+    {
+        Index<Node> index = nodeIndex( testname.getMethodName(), LuceneIndexImplementation.EXACT_CONFIG );
+        Node node = graphDb.createNode();
+        String key = "name";
+        String value = "Mattias";
+        String value2 = "Persson";
+        assertTrue( index.putIfAbsent( node, key, value ) );
+        assertEquals( node, index.get( key, value ).getSingle() );
+        assertFalse( index.putIfAbsent( node, key, value ) );
+        assertTrue( index.putIfAbsent( node, key, value2 ) );
+        assertFalse( index.putIfAbsent( node, key, value2 ) );
+        restartTx();
+        assertFalse( index.putIfAbsent( node, key, value ) );
+        assertFalse( index.putIfAbsent( node, key, value2 ) );
+        assertEquals( node, index.get( key, value ).getSingle() );
+    }
+
+    @Test
+    public void putIfAbsentMultiThreaded() throws Exception
+    {
+        Index<Node> index = nodeIndex( testname.getMethodName(), LuceneIndexImplementation.EXACT_CONFIG );
+        Node node = graphDb.createNode();
+        commitTx();
+        String key = "name";
+        String value = "Mattias";
+        
+        WorkThread t1 = new WorkThread( index, graphDb, node );
+        WorkThread t2 = new WorkThread( index, graphDb, node );
+        t1.beginTransaction();
+        t2.beginTransaction();
+        assertTrue( t2.putIfAbsent( node, key, value ).get() );
+        Future<Boolean> futurePut = t1.putIfAbsent( node, key, value );
+        t1.waitUntilWaiting();
+        t2.commit();
+        assertFalse( futurePut.get() );
+        t1.commit();
+
+        assertEquals( node, index.get( key, value ).getSingle() );
+    }
+
+    @Test
+    public void putIfAbsentOnOtherValueInOtherThread() throws Exception
+    {
+        Index<Node> index = nodeIndex( testname.getMethodName(), LuceneIndexImplementation.EXACT_CONFIG );
+        Node node = graphDb.createNode();
+        commitTx();
+        String key = "name";
+        String value = "Mattias";
+        String otherValue = "Tobias";
+        
+        WorkThread t1 = new WorkThread( index, graphDb, node );
+        WorkThread t2 = new WorkThread( index, graphDb, node );
+        t1.beginTransaction();
+        t2.beginTransaction();
+        assertTrue( t2.putIfAbsent( node, key, value ).get() );
+        Future<Boolean> futurePut = t1.putIfAbsent( node, key, otherValue );
+        t2.commit();
+        assertTrue( futurePut.get() );
+        t1.commit();
+
+        assertEquals( node, index.get( key, value ).getSingle() );
+        assertEquals( node, index.get( key, otherValue ).getSingle() );
+    }
+
+    @Test
+    public void putIfAbsentOnOtherKeyInOtherThread() throws Exception
+    {
+        Index<Node> index = nodeIndex( testname.getMethodName(), LuceneIndexImplementation.EXACT_CONFIG );
+        Node node = graphDb.createNode();
+        commitTx();
+        String key = "name";
+        String otherKey = "friend";
+        String value = "Mattias";
+        
+        WorkThread t1 = new WorkThread( index, graphDb, node );
+        WorkThread t2 = new WorkThread( index, graphDb, node );
+        t1.beginTransaction();
+        t2.beginTransaction();
+        assertTrue( t2.putIfAbsent( node, key, value ).get() );
+        assertTrue( t1.putIfAbsent( node, otherKey, value ).get() );
+        t2.commit();
+        t1.commit();
+
+        assertEquals( node, index.get( key, value ).getSingle() );
+        assertEquals( node, index.get( otherKey, value ).getSingle() );
     }
 }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import java.util.concurrent.Future;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.Index;
@@ -77,5 +79,23 @@ public class WorkThread extends OtherThreadExecutor<CommandState>
     public void die() throws Exception
     {
         execute( new DieCommand() );
+    }
+    
+    public Future<Boolean> putIfAbsent( Node node, String key, Object value ) throws Exception
+    {
+        return executeDontWait( new PutIfAbsentCommand( node, key, value ) );
+    }
+
+    public void add( final Node node, final String key, final Object value ) throws Exception
+    {
+        execute( new WorkerCommand<CommandState, Void>()
+        {
+            @Override
+            public Void doWork( CommandState state )
+            {
+                state.index.add( node, key, value );
+                return null;
+            }
+        } );
     }
 }
