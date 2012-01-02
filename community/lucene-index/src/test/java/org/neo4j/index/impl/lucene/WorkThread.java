@@ -101,7 +101,6 @@ public class WorkThread extends OtherThreadExecutor<CommandState>
             }
         } );
     }
-
     public Future<Node> getOrCreate( final String key, final Object value, final Object initialValue ) throws Exception
     {
         return executeDontWait( new WorkerCommand<CommandState, Node>()

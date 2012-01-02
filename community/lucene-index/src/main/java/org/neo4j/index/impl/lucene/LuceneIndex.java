@@ -138,22 +138,18 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         }
     }
 
-<<<<<<< HEAD
     private void assertKeyNotNull( String key )
-=======
-    @Override
-    public boolean putIfAbsent( T entity, String key, Object value )
-    {
-        return ((AbstractGraphDatabase)service.graphDb()).getConfig().getGraphDbModule().getNodeManager().indexPutIfAbsent( this, entity, key, value );
-    }
-
-    private void assertValidKey( String key )
->>>>>>> 0dddf2a... Basic functionality for Index#putIfAbsent
     {
         if ( key == null )
         {
             throw new IllegalArgumentException( "Key can't be null" );
         }
+    }
+
+    @Override
+    public boolean putIfAbsent( T entity, String key, Object value )
+    {
+        return ((AbstractGraphDatabase)service.graphDb()).getConfig().getGraphDbModule().getNodeManager().indexPutIfAbsent( this, entity, key, value );
     }
 
     /**

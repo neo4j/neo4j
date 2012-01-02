@@ -42,6 +42,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser.Operator;
@@ -49,13 +50,11 @@ import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
-<<<<<<< HEAD
-=======
 import org.junit.Ignore;
 import org.junit.Rule;
->>>>>>> 0dddf2a... Basic functionality for Index#putIfAbsent
 import org.junit.Test;
 import org.junit.rules.TestName;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -66,6 +65,7 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
+import org.neo4j.graphdb.index.UniqueFactory;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
@@ -1510,5 +1510,90 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
         assertEquals( node, index.get( key, value ).getSingle() );
         assertEquals( node, index.get( otherKey, value ).getSingle() );
+    }
+    
+    @Test
+    public void getOrCreateNodeWithUniqueFactory() throws Exception
+    {
+        final String key = "name";
+        final String value = "Mattias";
+        final String property = "counter";
+        
+        final Index<Node> index = nodeIndex( testname.getMethodName(), LuceneIndexImplementation.EXACT_CONFIG );
+        final AtomicInteger counter = new AtomicInteger();
+        UniqueFactory<Node> factory = new UniqueFactory.UniqueNodeFactory( index )
+        {
+            @Override
+            protected void initialize( Node node, String k, Object v )
+            {
+                assertEquals( key, k );
+                assertEquals( value, v );
+                node.setProperty( property, counter.getAndIncrement() );
+            }
+        };
+        Node unique = factory.getOrCreate( key, value );
+        
+        assertNotNull( unique );
+        assertEquals( "not initialized", 0, unique.getProperty( property, null ) );
+        assertEquals( unique, index.get( key, value ).getSingle() );
+        
+        assertEquals( unique, factory.getOrCreate( key, value ) );
+        assertEquals( "initialized more than once", 0, unique.getProperty( property ) );
+        assertEquals( unique, index.get( key, value ).getSingle() );
+    }
+    
+    @Test
+    public void getOrCreateRelationshipWithUniqueFactory() throws Exception
+    {
+        final String key = "name";
+        final String value = "Mattias";
+        
+        final Node root = graphDb.createNode();
+        final Index<Relationship> index = relationshipIndex( testname.getMethodName(), LuceneIndexImplementation.EXACT_CONFIG );
+        final DynamicRelationshipType type = DynamicRelationshipType.withName( "SINGLE" );
+        UniqueFactory<Relationship> factory = new UniqueFactory.UniqueRelationshipFactory( index )
+        {
+            @Override
+            protected Relationship create( String k, Object v )
+            {
+                assertEquals( key, k );
+                assertEquals( value, v );
+                return root.createRelationshipTo( graphDatabase().createNode(), type );
+            }
+        };
+        
+        Relationship unique = factory.getOrCreate( key, value );
+        assertEquals( unique, root.getSingleRelationship( type, Direction.BOTH ) );
+        assertNotNull( unique );
+
+        assertEquals( unique, index.get( key, value ).getSingle() );
+
+        assertEquals( unique, factory.getOrCreate( key, value ) );
+        assertEquals( unique, root.getSingleRelationship( type, Direction.BOTH ) );
+        assertEquals( unique, index.get( key, value ).getSingle() );
+    }
+    
+    @Test
+    public void getOrCreateMultiThreaded() throws Exception
+    {
+        Index<Node> index = nodeIndex( testname.getMethodName(), LuceneIndexImplementation.EXACT_CONFIG );
+        String key = "name";
+        String value = "Mattias";
+        
+        WorkThread t1 = new WorkThread( index, graphDb, null );
+        WorkThread t2 = new WorkThread( index, graphDb, null );
+        t1.beginTransaction();
+        t2.beginTransaction();
+        Node node = t2.getOrCreate( key, value, 0 ).get();
+        assertNotNull( node );
+        assertEquals( 0, t2.getProperty( node, key ) );
+        Future<Node> futurePut = t1.getOrCreate( key, value, 1 );
+        t1.waitUntilWaiting();
+        t2.commit();
+        assertEquals( node, futurePut.get() );
+        assertEquals( 0, t1.getProperty( node, key ) );
+        t1.commit();
+
+        assertEquals( node, index.get( key, value ).getSingle() );
     }
 }

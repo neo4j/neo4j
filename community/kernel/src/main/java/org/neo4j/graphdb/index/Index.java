@@ -104,7 +104,11 @@ public interface Index<T extends PropertyContainer> extends ReadableIndex<T>
 
     /**
      * Add the entity to the index unless it is already indexed.
-     * 
+     *  
+     * If another thread is adding a unique mapping to the same index with the
+     * same key at the same time, this method will block until completion of the
+     * transaction in the other thread.
+     *
      * @param entity the entity (i.e {@link Node} or {@link Relationship})
      * to associate the key/value pair with.
      * @param key the key in the key/value pair to associate with the entity.

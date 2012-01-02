@@ -798,17 +798,27 @@ public class NodeManager
         lockType.unacquire( new IndexLock( index, key ), lockManager, lockReleaser );
     }
     
-    private static class IndexLock
+    public static class IndexLock
     {
         private final String index;
         private final String key;
 
-        IndexLock( String index, String key )
+        public IndexLock( String index, String key )
         {
             this.index = index;
             this.key = key;
         }
+        
+        public String getIndex()
+        {
+            return index;
+        }
 
+        public String getKey()
+        {
+            return key;
+        }
+        
         @Override
         public int hashCode()
         {   // Auto-generated
