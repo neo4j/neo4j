@@ -183,6 +183,20 @@ public class MasterClient extends Client<Master> implements Master
                 EMPTY_SERIALIZER, LOCK_RESULT_DESERIALIZER );
     }
     
+    @Override
+    public Response<LockResult> acquireIndexReadLock( SlaveContext context, String index, String key )
+    {
+        return sendRequest( HaRequestType.ACQUIRE_INDEX_READ_LOCK, context,
+                new AcquireIndexLockSerializer( index, key ), LOCK_RESULT_DESERIALIZER );
+    }
+    
+    @Override
+    public Response<LockResult> acquireIndexWriteLock( SlaveContext context, String index, String key )
+    {
+        return sendRequest( HaRequestType.ACQUIRE_INDEX_WRITE_LOCK, context,
+                new AcquireIndexLockSerializer( index, key ), LOCK_RESULT_DESERIALIZER );
+    }
+    
     public Response<Long> commitSingleResourceTransaction( SlaveContext context,
             final String resource, final TxExtractor txGetter )
     {
@@ -466,8 +480,47 @@ public class MasterClient extends Client<Master> implements Master
             {
                 return true;
             }
-        };
+        },
+        
+        //====
+        ACQUIRE_INDEX_READ_LOCK( new MasterCaller<Master, LockResult>()
+        {
+            @Override
+            public Response<LockResult> callMaster( Master master, SlaveContext context,
+                    ChannelBuffer input, ChannelBuffer target )
+            {
+                return master.acquireIndexReadLock( context, readString( input ), readString( input ) );
+            }
+    
+        }, LOCK_SERIALIZER, true )
+        {
+            @Override
+            public boolean isLock()
+            {
+                return true;
+            }
+        },
 
+
+        //====
+        ACQUIRE_INDEX_WRITE_LOCK( new MasterCaller<Master, LockResult>()
+        {
+            @Override
+            public Response<LockResult> callMaster( Master master, SlaveContext context,
+                    ChannelBuffer input, ChannelBuffer target )
+            {
+                return master.acquireIndexWriteLock( context, readString( input ), readString( input ) );
+            }
+    
+        }, LOCK_SERIALIZER, true )
+        {
+            @Override
+            public boolean isLock()
+            {
+                return true;
+            }
+        };
+        
         @SuppressWarnings( "rawtypes" )
         final MasterCaller caller;
         @SuppressWarnings( "rawtypes" )
@@ -546,6 +599,25 @@ public class MasterClient extends Client<Master> implements Master
             {
                 buffer.writeLong( entity );
             }
+        }
+    }
+    
+    protected static class AcquireIndexLockSerializer implements Serializer
+    {
+        private final String index;
+        private final String key;
+
+        AcquireIndexLockSerializer( String index, String key )
+        {
+            this.index = index;
+            this.key = key;
+        }
+        
+        @Override
+        public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
+        {
+            writeString( buffer, index );
+            writeString( buffer, key );
         }
     }
 

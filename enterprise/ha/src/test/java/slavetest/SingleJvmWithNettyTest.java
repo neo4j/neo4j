@@ -19,6 +19,24 @@
  */
 package slavetest;
 
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.HaConfig.CONFIG_KEY_LOCK_READ_TIMEOUT;
+import static org.neo4j.kernel.HaConfig.CONFIG_KEY_READ_TIMEOUT;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
+
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.com.Client;
@@ -45,23 +63,6 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.util.Collection;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.HaConfig.CONFIG_KEY_LOCK_READ_TIMEOUT;
-import static org.neo4j.kernel.HaConfig.CONFIG_KEY_READ_TIMEOUT;
 
 public class SingleJvmWithNettyTest extends SingleJvmTest
 {
@@ -564,6 +565,31 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         {
             tx.finish();
         }
+    }
+    
+    @Test
+    public void indexPutIfAbsent() throws Exception
+    {
+        initializeDbs( 2 );
+        long node = executeJobOnMaster( new CommonJobs.CreateNodeJob( true ) );
+        pullUpdates();
+
+        Worker t1 = new Worker( getSlave( 0 ) );
+        Worker t2 = new Worker( getSlave( 1 ) );
+        t1.beginTx();
+        t2.beginTx();
+        String index = "index";
+        String key = "key";
+        String value = "Mattias";
+        assertTrue( t2.putIfAbsent( index, node, key, value ).get() );
+        Future<Boolean> futurePut = t1.putIfAbsent( index, node, key, value );
+        t1.waitUntilWaiting();
+        t2.finishTx( true );
+        assertFalse( futurePut.get() );
+        t1.finishTx( true );
+
+        assertEquals( node, getSlave( 0 ).index().forNodes( index ).get( key, value ).getSingle().getId() );
+        assertEquals( node, getSlave( 1 ).index().forNodes( index ).get( key, value ).getSingle().getId() );
     }
 
     private Pair<Integer, Integer> getTransactionCounts( GraphDatabaseService master )

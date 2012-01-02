@@ -32,6 +32,7 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.LockManagerFactory;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.core.GraphProperties;
+import org.neo4j.kernel.impl.core.NodeManager.IndexLock;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.TxHook;
@@ -84,6 +85,7 @@ public class SlaveLockManager extends LockManager
         if ( resource instanceof Node ) grabber = LockGrabber.NODE_READ;
         else if ( resource instanceof Relationship ) grabber = LockGrabber.RELATIONSHIP_READ;
         else if ( resource instanceof GraphProperties ) grabber = LockGrabber.GRAPH_READ;
+        else if ( resource instanceof IndexLock ) grabber = LockGrabber.INDEX_READ;
 
         try
         {
@@ -147,6 +149,7 @@ public class SlaveLockManager extends LockManager
         if ( resource instanceof Node ) grabber = LockGrabber.NODE_WRITE;
         else if ( resource instanceof Relationship ) grabber = LockGrabber.RELATIONSHIP_WRITE;
         else if ( resource instanceof GraphProperties ) grabber = LockGrabber.GRAPH_WRITE;
+        else if ( resource instanceof IndexLock ) grabber = LockGrabber.INDEX_WRITE;
 
         try
         {
@@ -238,6 +241,24 @@ public class SlaveLockManager extends LockManager
             Response<LockResult> acquireLock( Master master, SlaveContext context, Object resource )
             {
                 return master.acquireGraphWriteLock( context );
+            }
+        },
+        INDEX_WRITE
+        {
+            @Override
+            Response<LockResult> acquireLock( Master master, SlaveContext context, Object resource )
+            {
+                IndexLock lock = (IndexLock) resource;
+                return master.acquireIndexWriteLock( context, lock.getIndex(), lock.getKey() );
+            }
+        },
+        INDEX_READ
+        {
+            @Override
+            Response<LockResult> acquireLock( Master master, SlaveContext context, Object resource )
+            {
+                IndexLock lock = (IndexLock) resource;
+                return master.acquireIndexReadLock( context, lock.getIndex(), lock.getKey() );
             }
         };
         

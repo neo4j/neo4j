@@ -72,4 +72,8 @@ public interface Master
     Response<Void> copyStore( SlaveContext context, StoreWriter writer );
     
     void shutdown();
+
+    Response<LockResult> acquireIndexWriteLock( SlaveContext context, String index, String key );
+
+    Response<LockResult> acquireIndexReadLock( SlaveContext context, String index, String key );
 }
