@@ -92,7 +92,7 @@ public abstract class Bootstrapper
         }
         catch ( TransactionFailureException tfe )
         {
-            tfe.printStackTrace();
+            log.error(tfe);
             log.error( String.format( "Failed to start Neo Server on port [%d], because ", server.getWebServerPort() )
                        + tfe + ". Another process may be using database location " + server.getDatabase()
                                .getLocation() );
@@ -100,7 +100,7 @@ public abstract class Bootstrapper
         }
         catch ( Exception e )
         {
-            e.printStackTrace();
+            log.error(e);
             log.error( "Failed to start Neo Server on port [%s]", server.getWebServerPort() );
             return WEB_SERVER_STARTUP_ERROR_CODE;
         }
