@@ -1636,4 +1636,12 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
         assertEquals( node, index.get( key, value ).getSingle() );
     }
+    
+    @Test
+    public void useStandardAnalyzer() throws Exception
+    {
+        Index<Node> index = nodeIndex( testname.getMethodName(), stringMap( "analyzer", MyStandardAnalyzer.class.getName() ) );
+        Node node = graphDb.createNode();
+        index.add( node, "name", "Mattias" );
+    }
 }

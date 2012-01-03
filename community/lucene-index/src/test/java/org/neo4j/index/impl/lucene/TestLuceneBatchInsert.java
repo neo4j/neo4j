@@ -350,6 +350,18 @@ public class TestLuceneBatchInsert
         provider.shutdown();
         inserter.shutdown();
     }
+
+    @Test
+    public void useStandardAnalyzer() throws Exception
+    {
+        BatchInserter inserter = new BatchInserterImpl( PATH );
+        BatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( inserter );
+        BatchInserterIndex index = provider.nodeIndex( "myindex", stringMap( "analyzer", MyStandardAnalyzer.class.getName() ) );
+        index.add( 0, map( "name", "Mattias" ) );
+        provider.shutdown();
+        inserter.shutdown();
+    }
+    
     private enum EdgeType implements RelationshipType
     {
         KNOWS
