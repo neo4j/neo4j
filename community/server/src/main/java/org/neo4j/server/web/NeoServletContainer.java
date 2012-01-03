@@ -19,9 +19,11 @@
  */
 package org.neo4j.server.web;
 
-import java.util.Collection;
-import java.util.Set;
-
+import com.sun.jersey.api.core.HttpContext;
+import com.sun.jersey.api.core.ResourceConfig;
+import com.sun.jersey.spi.container.WebApplication;
+import com.sun.jersey.spi.container.servlet.ServletContainer;
+import com.sun.jersey.spi.container.servlet.WebConfig;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.NeoServerProvider;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
@@ -37,11 +39,8 @@ import org.neo4j.server.rest.repr.OutputFormatProvider;
 import org.neo4j.server.rest.repr.RepresentationFormatRepository;
 import org.neo4j.server.rrd.RrdDbProvider;
 
-import com.sun.jersey.api.core.HttpContext;
-import com.sun.jersey.api.core.ResourceConfig;
-import com.sun.jersey.spi.container.WebApplication;
-import com.sun.jersey.spi.container.servlet.ServletContainer;
-import com.sun.jersey.spi.container.servlet.WebConfig;
+import java.util.Collection;
+import java.util.Set;
 
 @SuppressWarnings( "serial" )
 public class NeoServletContainer extends ServletContainer
