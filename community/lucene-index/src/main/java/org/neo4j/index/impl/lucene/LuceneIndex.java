@@ -55,11 +55,11 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     static final String KEY_DOC_ID = "_id_";
     static final String KEY_START_NODE_ID = "_start_node_id_";
     static final String KEY_END_NODE_ID = "_end_node_id_";
-    
+
     private static Set<String> FORBIDDEN_KEYS = new HashSet<String>( Arrays.asList( null, KEY_DOC_ID, KEY_START_NODE_ID, KEY_END_NODE_ID ) );
 
     final LuceneIndexImplementation service;
-    private IndexIdentifier identifier;
+    private final IndexIdentifier identifier;
     final IndexType type;
     private volatile boolean deleted;
 
@@ -92,7 +92,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
             throw new IllegalStateException( "This index (" + identifier + ") has been deleted" );
         }
     }
-    
+
     @Override
     public GraphDatabaseService getGraphDatabase()
     {
@@ -144,7 +144,7 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     }
 
     @Override
-    public boolean putIfAbsent( T entity, String key, Object value )
+    public T putIfAbsent( T entity, String key, Object value )
     {
         return ((AbstractGraphDatabase)service.graphDb()).getConfig().getGraphDbModule().getNodeManager().indexPutIfAbsent( this, entity, key, value );
     }

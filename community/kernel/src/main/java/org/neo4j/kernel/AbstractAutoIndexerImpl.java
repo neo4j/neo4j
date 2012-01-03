@@ -237,7 +237,7 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
         {
             return false;
         }
-        
+
         @Override
         public GraphDatabaseService getGraphDatabase()
         {
@@ -292,7 +292,7 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
         {
             return delegate.query( queryOrQueryObject );
         }
-        
+
         private UnsupportedOperationException readOnlyIndex()
         {
             return new UnsupportedOperationException( "read only index" );
@@ -303,9 +303,9 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
         {
             throw readOnlyIndex();
         }
-        
+
         @Override
-        public boolean putIfAbsent( T entity, String key, Object value )
+        public T putIfAbsent( T entity, String key, Object value )
         {
             throw readOnlyIndex();
         }
@@ -339,7 +339,7 @@ abstract class AbstractAutoIndexerImpl<T extends PropertyContainer> implements
         {
             return false;
         }
-        
+
         @Override
         public GraphDatabaseService getGraphDatabase()
         {

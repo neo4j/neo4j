@@ -132,7 +132,7 @@ public class RepresentationTestAccess
         }
 
         @Override
-        public Map<String, Object> readMap( String input )
+        public Map<String, Object> readMap( String input, String... requiredKeys )
         {
             throw new UnsupportedOperationException( "StringFormat.readMap()" );
         }

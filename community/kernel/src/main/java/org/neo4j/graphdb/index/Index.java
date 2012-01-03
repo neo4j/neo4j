@@ -32,10 +32,10 @@ import org.neo4j.graphdb.Relationship;
  * {@link #get(String, Object)} for exact lookups and {@link #query(Object)} or
  * {@link #query(String, Object)} for more advanced querying, exposing querying
  * capabilities from the backend which is backing this particular index.
- * 
+ *
  * Write operations participates in transactions so committing and rolling back
  * works the same way as usual in Neo4j.
- * 
+ *
  * @author Mattias Persson
  *
  * @param <T> The type of entities this index manages. It may be either
@@ -47,7 +47,7 @@ public interface Index<T extends PropertyContainer> extends ReadableIndex<T>
      * Adds a key/value pair for {@code entity} to the index. If that key/value
      * pair for the entity is already in the index it's up to the
      * implementation to make it so that such an operation is idempotent.
-     * 
+     *
      * @param entity the entity (i.e {@link Node} or {@link Relationship})
      * to associate the key/value pair with.
      * @param key the key in the key/value pair to associate with the entity.
@@ -55,12 +55,12 @@ public interface Index<T extends PropertyContainer> extends ReadableIndex<T>
      * entity.
      */
     void add( T entity, String key, Object value );
-    
+
     /**
      * Removes a key/value pair for {@code entity} from the index. If that
      * key/value pair isn't associated with {@code entity} in this index this
      * operation doesn't do anything.
-     * 
+     *
      * @param entity the entity (i.e {@link Node} or {@link Relationship})
      * to dissociate the key/value pair from.
      * @param key the key in the key/value pair to dissociate from the entity.
@@ -68,32 +68,32 @@ public interface Index<T extends PropertyContainer> extends ReadableIndex<T>
      * entity.
      */
     void remove( T entity, String key, Object value );
-    
+
     /**
      * Removes key/value pairs for {@code entity} where key is {@code key}
      * from the index.
-     * 
+     *
      * Implementations can choose to not implement this method and should
      * in that case throw {@link UnsupportedOperationException}.
-     * 
+     *
      * @param entity the entity ({@link Node} or {@link Relationship}) to
      * remove the this index.
      */
     void remove( T entity, String key );
-    
+
     /**
      * Removes an entity from the index and all its key/value pairs which
      * has been previously associated using
      * {@link #add(PropertyContainer, String, Object)}.
-     * 
+     *
      * Implementations can choose to not implement this method and should
      * in that case throw {@link UnsupportedOperationException}.
-     * 
+     *
      * @param entity the entity ({@link Node} or {@link Relationship}) to
      * remove the this index.
      */
     void remove( T entity );
-    
+
     /**
      * Clears the index and deletes the configuration associated with it. After
      * this it's invalid to call any other method on this index. However if the
@@ -104,7 +104,7 @@ public interface Index<T extends PropertyContainer> extends ReadableIndex<T>
 
     /**
      * Add the entity to the index unless it is already indexed.
-     *  
+     *
      * If another thread is adding a unique mapping to the same index with the
      * same key at the same time, this method will block until completion of the
      * transaction in the other thread.
@@ -114,7 +114,8 @@ public interface Index<T extends PropertyContainer> extends ReadableIndex<T>
      * @param key the key in the key/value pair to associate with the entity.
      * @param value the value in the key/value pair to associate with the
      * entity.
-     * @return {@code true} if the entity was added to the index, {@code false} otherwise.
+     * @return the previously indexed entity, or {@code null} if no entity was
+     * indexed before (and the specified entity was added to the index).
      */
-    boolean putIfAbsent( T entity, String key, Object value );
+    T putIfAbsent( T entity, String key, Object value );
 }

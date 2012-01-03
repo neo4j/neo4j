@@ -58,7 +58,7 @@ public abstract class WrappedIndex<T extends PropertyContainer, I extends Readab
     protected abstract I actual();
 
     abstract T wrap( T entity );
-    
+
     @Override
     public GraphDatabaseService getGraphDatabase()
     {
@@ -178,12 +178,12 @@ public abstract class WrappedIndex<T extends PropertyContainer, I extends Readab
     }
 
     @Override
-    public boolean putIfAbsent( T entity, String key, Object value )
+    public T putIfAbsent( T entity, String key, Object value )
     {
         I actual = actual();
         if ( actual instanceof Index<?> )
         {
-            return ((Index<T>) actual).putIfAbsent( entity, key, value );
+            return wrap( ((Index<T>) actual).putIfAbsent( entity, key, value ) );
         }
         else
         {
