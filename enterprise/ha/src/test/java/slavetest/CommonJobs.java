@@ -365,17 +365,17 @@ public abstract class CommonJobs
     public static class CreateNodeJob extends TransactionalJob<Long>
     {
         private final boolean beSuccessful;
-        
+
         public CreateNodeJob()
         {
             this( true );
         }
-        
+
         public CreateNodeJob( boolean beSuccessful )
         {
             this.beSuccessful = beSuccessful;
         }
-        
+
         @Override
         protected Long executeInTransaction( GraphDatabaseService db, Transaction tx )
         {
@@ -561,13 +561,13 @@ public abstract class CommonJobs
     {
         private final String key;
         private final Object value;
-        
+
         public SetGraphPropertyJob( String key, Object value )
         {
             this.key = key;
             this.value = value;
         }
-        
+
         @Override
         protected Void executeInTransaction( GraphDatabaseService db, Transaction tx )
         {
@@ -576,7 +576,7 @@ public abstract class CommonJobs
             return null;
         }
     }
-    
+
     public static class GetGraphProperty extends AbstractJob<Object>
     {
         private final String key;
@@ -585,7 +585,7 @@ public abstract class CommonJobs
         {
             this.key = key;
         }
-        
+
         @Override
         public Object execute( GraphDatabaseService db ) throws RemoteException
         {
@@ -593,7 +593,7 @@ public abstract class CommonJobs
             return properties.getProperty( key );
         }
     }
-    
+
     public static class SetGraphProperty2 extends TransactionalJob<Boolean[]>
     {
         private final Fetcher<DoubleLatch> fetcher;
@@ -632,7 +632,7 @@ public abstract class CommonJobs
             return new Boolean[] { success, deadlock };
         }
     }
-    
+
     public static class PerformanceAcquireWriteLocksJob extends TransactionalJob<Void>
     {
         private final int amount;
@@ -828,24 +828,24 @@ public abstract class CommonJobs
             return null;
         }
     }
-    
+
     public static class CreateNodeNoCommit extends AbstractJob<Void>
     {
         private Transaction tx;
-        
+
         public Void execute( GraphDatabaseService db ) throws RemoteException
         {
             tx = db.beginTx();
             db.createNode();
             return null;
         }
-        
+
         public void rollback()
         {
             tx.finish();
         }
     }
-    
+
     public static class HoldLongLock extends TransactionalJob<Void>
     {
         private final long nodeId;
@@ -887,7 +887,7 @@ public abstract class CommonJobs
             this.nodeId = nodeId;
             this.latchFetcher = latchFetcher;
         }
-        
+
         @Override
         protected Void executeInTransaction( GraphDatabaseService db, Transaction tx )
         {
@@ -904,8 +904,8 @@ public abstract class CommonJobs
             return null;
         }
     }
-    
-    public static class IndexPutIfAbsentPartOne extends TransactionalJob<Boolean>
+
+    public static class IndexPutIfAbsentPartOne extends TransactionalJob<Node>
     {
         final long nodeId;
         final String key;
@@ -923,10 +923,10 @@ public abstract class CommonJobs
         }
 
         @Override
-        protected Boolean executeInTransaction( GraphDatabaseService db, Transaction tx )
+        protected Node executeInTransaction( GraphDatabaseService db, Transaction tx )
         {
             DoubleLatch latch = latchFetcher.fetch();
-            boolean result = db.index().forNodes( index ).putIfAbsent( db.getNodeById( nodeId ), key, value );
+            Node result = db.index().forNodes( index ).putIfAbsent( db.getNodeById( nodeId ), key, value );
             try
             {
                 latch.countDownFirst();
@@ -948,9 +948,9 @@ public abstract class CommonJobs
         {
             super( nodeId, index, key, value, latchFetcher );
         }
-        
+
         @Override
-        protected Boolean executeInTransaction( GraphDatabaseService db, Transaction tx )
+        protected Node executeInTransaction( GraphDatabaseService db, Transaction tx )
         {
             DoubleLatch latch = latchFetcher.fetch();
             try
@@ -962,7 +962,7 @@ public abstract class CommonJobs
             {
                 throw new RuntimeException( e );
             }
-            boolean result = db.index().forNodes( index ).putIfAbsent( db.getNodeById( nodeId ), key, value );
+            Node result = db.index().forNodes( index ).putIfAbsent( db.getNodeById( nodeId ), key, value );
             tx.success();
             return result;
         }
