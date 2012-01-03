@@ -1466,6 +1466,7 @@ RETURN x0.name?
     assert(List() === result.toList)
   }
 
+  @Ignore
   @Test def shouldBeAbleToHandleMultipleOptionalRelationshipsAndMultipleStartPoints() {
     val a = createNode()
     val b = createNode()
