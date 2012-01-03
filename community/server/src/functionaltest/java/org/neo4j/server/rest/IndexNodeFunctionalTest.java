@@ -19,11 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
@@ -32,6 +27,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response.Status;
 
 import org.junit.AfterClass;
@@ -39,12 +36,22 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+<<<<<<< HEAD
+=======
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
+>>>>>>> d3302c3... Improved the putIfAbsent/getOrCreate API and exposed it in the REST API.
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.helpers.FunctionalTestHelper;
+<<<<<<< HEAD
 import org.neo4j.server.helpers.ServerHelper;
+=======
+import org.neo4j.server.rest.RESTDocsGenerator.ResponseEntity;
+>>>>>>> d3302c3... Improved the putIfAbsent/getOrCreate API and exposed it in the REST API.
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -52,7 +59,17 @@ import org.neo4j.server.rest.domain.URIHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.TestData;
 
+<<<<<<< HEAD
 public class IndexNodeFunctionalTest
+=======
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
+
+public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
+>>>>>>> d3302c3... Improved the putIfAbsent/getOrCreate API and exposed it in the REST API.
 {
     private static NeoServerWithEmbeddedWebServer server;
     private static FunctionalTestHelper functionalTestHelper;
@@ -76,6 +93,7 @@ public class IndexNodeFunctionalTest
                 .setGraph( server.getDatabase().graph );
     }
 
+<<<<<<< HEAD
     @AfterClass
     public static void stopServer()
     {
@@ -93,6 +111,21 @@ public class IndexNodeFunctionalTest
         gen.get()
                 .expectedStatus( 204 )
                 .get( functionalTestHelper.nodeIndexUri() );
+=======
+    long createNode()
+    {
+        AbstractGraphDatabase graphdb = server().getDatabase().graph;
+        Transaction tx = graphdb.beginTx();
+        Node node;
+        try {
+            node = graphdb.createNode();
+
+            tx.success();
+        } finally {
+            tx.finish();
+        }
+        return node.getId();
+>>>>>>> d3302c3... Improved the putIfAbsent/getOrCreate API and exposed it in the REST API.
     }
 
     /**
@@ -116,7 +149,7 @@ public class IndexNodeFunctionalTest
 
     /**
      * Create node index
-     * 
+     *
      * NOTE: Instead of creating the index this way, you can simply start to use
      * it, and it will be created automatically.
      */
@@ -138,7 +171,7 @@ public class IndexNodeFunctionalTest
         assertEquals( expectedIndexes, helper.getNodeIndexes().length );
         assertThat( helper.getNodeIndexes(), FunctionalTestHelper.arrayContains( indexName ) );
     }
-    
+
     @Test
     public void shouldCreateANamedNodeIndexWithSpaces() throws JsonParseException
     {
@@ -180,11 +213,11 @@ public class IndexNodeFunctionalTest
 
     /**
      * Add node to index.
-     * 
+     *
      * Associates a node with the given key/value pair in the given index.
-     * 
+     *
      * NOTE: Spaces in the URI have to be escaped.
-     * 
+     *
      * CAUTION: This does *not* overwrite previous entries. If you index the
      * same key/value/item combination twice, two index entries are created. To
      * do update-type operations, you need to delete the old entry before adding
@@ -224,7 +257,7 @@ public class IndexNodeFunctionalTest
 
     /**
      * Find node by exact match.
-     * 
+     *
      * NOTE: Spaces in the URI have to be escaped.
      */
     @Documented
@@ -251,12 +284,12 @@ public class IndexNodeFunctionalTest
 
     /**
      * Find node by query.
-     * 
+     *
      * The query language used here depends on what type of index you are
      * querying. The default index type is Lucene, in which case you should use
      * the Lucene query language here. Below and Example of a fuzzy search over
      * multiple keys.
-     * 
+     *
      * See: http://lucene.apache.org/java/3_1_0/queryparsersyntax.html
      */
     @Documented
@@ -568,5 +601,91 @@ public class IndexNodeFunctionalTest
                         corruptJson );
         assertEquals( 400, response.getStatus() );
         response.close();
+    }
+
+    /**
+     * Create a unique node in an index.
+     */
+    @Documented
+    @Test
+    public void get_or_create_node() throws Exception
+    {
+        final String index = "people", key = "name", value = "Tobias";
+        helper.createNodeIndex( index );
+        ResponseEntity response = gen.get()
+                                     .expectedStatus( 201 /* created */)
+                                     .payloadType( MediaType.APPLICATION_JSON_TYPE )
+                                     .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value
+                                                       + "\", \"properties\": {\"" + key + "\": \"" + value
+                                                       + "\", \"sequence\": 1}}" )
+                                     .post( functionalTestHelper.nodeIndexUri() + index + "?unique" );
+
+        MultivaluedMap<String, String> headers = response.response().getHeaders();
+        Map<String, Object> result = JsonHelper.jsonToMap( response.entity() );
+        assertEquals( result.get( "indexed" ), headers.getFirst( "Location" ) );
+        Map<String, Object> data = assertCast( Map.class, result.get( "data" ) );
+        assertEquals( value, data.get( key ) );
+        assertEquals( 1, data.get( "sequence" ) );
+    }
+
+    /**
+     * Create a unique node in an index.
+     */
+    @Documented
+    @Test
+    public void get_or_create_node_if_existing() throws Exception
+    {
+        final String index = "people", key = "name", value = "Peter";
+
+        GraphDatabaseService graphdb = graphdb();
+        Transaction tx = graphdb.beginTx();
+        try
+        {
+            Node peter = graphdb.createNode();
+            peter.setProperty( key, value );
+            peter.setProperty( "sequence", 1 );
+            graphdb.index().forNodes( index ).add( peter, key, value );
+
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+
+        helper.createNodeIndex( index );
+        ResponseEntity response = gen.get()
+                                     .expectedStatus( 200 /* ok */)
+                                     .payloadType( MediaType.APPLICATION_JSON_TYPE )
+                                     .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value
+                                                       + "\", \"properties\": {\"" + key + "\": \"" + value
+                                                       + "\", \"sequence\": 2}}" )
+                                     .post( functionalTestHelper.nodeIndexUri() + index + "?unique" );
+
+        Map<String, Object> result = JsonHelper.jsonToMap( response.entity() );
+        Map<String, Object> data = assertCast( Map.class, result.get( "data" ) );
+        assertEquals( value, data.get( key ) );
+        assertEquals( 1, data.get( "sequence" ) );
+    }
+
+    /**
+     * Add a node to an index unless a node already exists for the given mapping.
+     */
+    @Documented
+    @Test
+    public void put_node_if_absent() throws Exception
+    {
+        final String index = "people", key = "name", value = "Mattias";
+        helper.createNodeIndex( index );
+        gen.get().expectedStatus( 201 /* created */ )
+                 .payloadType( MediaType.APPLICATION_JSON_TYPE )
+                 .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value + "\", \"uri\":\"" + functionalTestHelper.nodeUri( helper.createNode() ) + "\"}" )
+                 .post( functionalTestHelper.nodeIndexUri() + index + "?unique" );
+    }
+
+    private static <T> T assertCast( Class<T> type, Object object )
+    {
+        assertTrue( type.isInstance( object ) );
+        return type.cast( object );
     }
 }

@@ -34,9 +34,9 @@ public class WorkThread extends OtherThreadExecutor<CommandState>
 {
     private volatile boolean txOngoing;
 
-    public WorkThread( Index<Node> index, GraphDatabaseService graphDb )
+    public WorkThread( Index<Node> index, GraphDatabaseService graphDb, Node node )
     {
-        super( new CommandState( index, graphDb ) );
+        super( new CommandState( index, graphDb, node ) );
     }
 
     public void createNodeAndIndexBy( String key, String value ) throws Exception
@@ -84,7 +84,7 @@ public class WorkThread extends OtherThreadExecutor<CommandState>
         execute( new DieCommand() );
     }
 
-    public Future<Boolean> putIfAbsent( Node node, String key, Object value ) throws Exception
+    public Future<Node> putIfAbsent( Node node, String key, Object value ) throws Exception
     {
         return executeDontWait( new PutIfAbsentCommand( node, key, value ) );
     }
@@ -101,6 +101,7 @@ public class WorkThread extends OtherThreadExecutor<CommandState>
             }
         } );
     }
+    
     public Future<Node> getOrCreate( final String key, final Object value, final Object initialValue ) throws Exception
     {
         return executeDontWait( new WorkerCommand<CommandState, Node>()

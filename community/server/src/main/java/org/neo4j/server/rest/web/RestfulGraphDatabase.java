@@ -40,12 +40,14 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.helpers.Pair;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.domain.TraverserReturnType;
 import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.repr.BadInputException;
+import org.neo4j.server.rest.repr.IndexedEntityRepresentation;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.OutputFormat;
@@ -133,6 +135,12 @@ public class RestfulGraphDatabase
                 .build();
     }
 
+    private Long extractNodeIdOrNull( String uri ) throws BadInputException
+    {
+        if ( uri == null ) return null;
+        return Long.valueOf( extractNodeId( uri ) );
+    }
+
     private long extractNodeId( String uri ) throws BadInputException
     {
         try
@@ -148,7 +156,13 @@ public class RestfulGraphDatabase
             throw new BadInputException( ex );
         }
     }
-    
+
+    private Long extractRelationshipIdOrNull(String uri) throws BadInputException
+    {
+        if ( uri == null ) return null;
+        return extractRelationshipId( uri );
+    }
+
     private long extractRelationshipId(String uri) throws BadInputException
     {
         return extractNodeId( uri );
@@ -701,14 +715,23 @@ public class RestfulGraphDatabase
     @POST
     @Path( PATH_NAMED_NODE_INDEX )
     @Consumes( MediaType.APPLICATION_JSON )
-    public Response addToNodeIndex( @PathParam( "indexName" ) String indexName, String postBody )
+    public Response addToNodeIndex( @PathParam( "indexName" ) String indexName, @QueryParam( "unique" ) String unique, String postBody )
     {
-        
         try
         {
-            Map<String, Object> entityBody = input.readMap( postBody );
-            return output.created( actions.addToNodeIndex( indexName, String.valueOf( entityBody.get( "key" ) ),
-                    String.valueOf( entityBody.get( "value" ) ), extractNodeId( entityBody.get( "uri" ).toString() ) ) );
+            if ( unique( unique ) )
+            {
+                Map<String, Object> entityBody = input.readMap( postBody, "key", "value" );
+                Pair<IndexedEntityRepresentation, Boolean> result = actions.getOrCreateIndexedNode( indexName, String.valueOf( entityBody.get( "key" ) ),
+                       String.valueOf( entityBody.get( "value" ) ), extractNodeIdOrNull( getStringOrNull( entityBody, "uri" ) ), getMapOrNull( entityBody, "properties" ) );
+                return result.other().booleanValue() ? output.created( result.first() ) : output.ok( result.first() );
+            }
+            else
+            {
+                Map<String, Object> entityBody = input.readMap( postBody, "key", "value", "uri" );
+                return output.created( actions.addToNodeIndex( indexName, String.valueOf( entityBody.get( "key" ) ),
+                        String.valueOf( entityBody.get( "value" ) ), extractNodeId( entityBody.get( "uri" ).toString() ) ) );
+            }
         }
         catch ( UnsupportedOperationException e )
         {
@@ -722,18 +745,29 @@ public class RestfulGraphDatabase
         {
             return output.serverError( e );
         }
-        
     }
 
     @POST
     @Path( PATH_NAMED_RELATIONSHIP_INDEX )
-    public Response addToRelationshipIndex( @PathParam( "indexName" ) String indexName, String postBody )
+    public Response addToRelationshipIndex( @PathParam( "indexName" ) String indexName, @QueryParam( "unique" ) String unique, String postBody )
     {
         try
         {
-            Map<String, Object> entityBody = input.readMap( postBody );
-            return output.created( actions.addToRelationshipIndex( indexName, String.valueOf( entityBody.get( "key" ) ),
-                    String.valueOf( entityBody.get( "value" ) ), extractRelationshipId( entityBody.get( "uri" ).toString() ) ) );
+            if ( unique( unique ) )
+            {
+                Map<String, Object> entityBody = input.readMap( postBody, "key", "value" );
+                Pair<IndexedEntityRepresentation, Boolean> result = actions.getOrCreateIndexedRelationship( indexName, String.valueOf( entityBody.get( "key" ) ),
+                       String.valueOf( entityBody.get( "value" ) ), extractRelationshipIdOrNull( getStringOrNull( entityBody, "uri" ) ),
+                       extractNodeIdOrNull( getStringOrNull( entityBody, "start" ) ), getStringOrNull( entityBody, "type" ), extractNodeIdOrNull( getStringOrNull( entityBody, "end" ) ),
+                       getMapOrNull( entityBody, "properties" ) );
+                return result.other().booleanValue() ? output.created( result.first() ) : output.ok( result.first() );
+            }
+            else
+            {
+                Map<String, Object> entityBody = input.readMap( postBody, "key", "value", "uri" );
+                return output.created( actions.addToRelationshipIndex( indexName, String.valueOf( entityBody.get( "key" ) ),
+                        String.valueOf( entityBody.get( "value" ) ), extractRelationshipId( entityBody.get( "uri" ).toString() ) ) );
+            }
         }
         catch ( UnsupportedOperationException e )
         {
@@ -747,6 +781,42 @@ public class RestfulGraphDatabase
         {
             return output.serverError( e );
         }
+    }
+
+    private boolean unique( String uniqueParam )
+    {
+        boolean unique;
+        if ( uniqueParam == null )
+        {
+            unique = false;
+        } else if ("".equals( uniqueParam )) {
+            unique = true;
+        } else {
+            unique = Boolean.parseBoolean( uniqueParam );
+        }
+        return unique;
+    }
+
+    private String getStringOrNull( Map<String, Object> map, String key ) throws BadInputException
+    {
+        Object object = map.get( key );
+        if ( object instanceof String )
+        {
+            return (String) object;
+        }
+        if ( object == null ) return null;
+        throw new BadInputException( "\"" + key + "\" should be a string" );
+    }
+
+    private static Map<String, Object> getMapOrNull( Map<String, Object> data, String key ) throws BadInputException
+    {
+        Object object = data.get( key );
+        if ( object instanceof Map<?,?> )
+        {
+            return (Map<String,Object>) object;
+        }
+        if ( object == null ) return null;
+        throw new BadInputException( "\"" + key + "\" should be a map" );
     }
 
     @GET

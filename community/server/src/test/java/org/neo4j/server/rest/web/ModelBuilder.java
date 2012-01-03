@@ -25,7 +25,7 @@ import java.util.Map;
 
 /**
  * Helps generate testable data models, using a RestfulGraphDatabase.
- * 
+ *
  */
 public class ModelBuilder
 {
@@ -54,11 +54,11 @@ public class ModelBuilder
         dm.indexedNodeKeyValues.put( key, value );
 
         dm.indexedNodeUriToEntityMap.put(
-                (URI) rgd.addToNodeIndex( dm.nodeIndexName, "{\"key\": \"" + key + "\", \"value\":\"" + value + "\", \"uri\": \"" + thomas.location + "\"}" )
+                (URI) rgd.addToNodeIndex( dm.nodeIndexName, null, "{\"key\": \"" + key + "\", \"value\":\"" + value + "\", \"uri\": \"" + thomas.location + "\"}" )
                         .getMetadata()
                         .getFirst( "Location" ), thomas );
         dm.indexedNodeUriToEntityMap.put(
-                (URI) rgd.addToNodeIndex( dm.nodeIndexName, "{\"key\": \"" + key + "\", \"value\":\"" + value + "\", \"uri\": \"" + agent.location + "\"}" )
+                (URI) rgd.addToNodeIndex( dm.nodeIndexName, null, "{\"key\": \"" + key + "\", \"value\":\"" + value + "\", \"uri\": \"" + agent.location + "\"}" )
                         .getMetadata()
                         .getFirst( "Location" ), agent );
 

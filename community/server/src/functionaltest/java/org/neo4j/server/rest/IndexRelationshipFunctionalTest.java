@@ -19,10 +19,13 @@
  */
 package org.neo4j.server.rest;
 
+<<<<<<< HEAD
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
 
+=======
+>>>>>>> d3302c3... Improved the putIfAbsent/getOrCreate API and exposed it in the REST API.
 import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
@@ -31,15 +34,25 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
+<<<<<<< HEAD
 import org.junit.AfterClass;
+=======
+import static java.util.Arrays.asList;
+
+>>>>>>> d3302c3... Improved the putIfAbsent/getOrCreate API and exposed it in the REST API.
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
+<<<<<<< HEAD
 import org.neo4j.server.NeoServerWithEmbeddedWebServer;
+=======
+import org.neo4j.kernel.impl.annotations.Documented;
+>>>>>>> d3302c3... Improved the putIfAbsent/getOrCreate API and exposed it in the REST API.
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.helpers.ServerHelper;
@@ -50,7 +63,16 @@ import org.neo4j.server.rest.domain.URIHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.TestData;
 
+<<<<<<< HEAD
 public class IndexRelationshipFunctionalTest
+=======
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
+
+public class IndexRelationshipFunctionalTest extends AbstractRestFunctionalTestBase
+>>>>>>> d3302c3... Improved the putIfAbsent/getOrCreate API and exposed it in the REST API.
 {
     private static NeoServerWithEmbeddedWebServer server;
     private static FunctionalTestHelper functionalTestHelper;
@@ -84,7 +106,7 @@ public class IndexRelationshipFunctionalTest
      * GET ${org.neo4j.server.rest.web}/index/relationship/
      * <p/>
      * TODO: could be abstract
-     * 
+     *
      * @return the Reponse
      */
     public JaxRsResponse httpGetIndexRelationshipRoot()
@@ -96,6 +118,12 @@ public class IndexRelationshipFunctionalTest
      * POST ${org.neo4j.server.rest.web}/index/relationship {
      * "name":"index-name" "config":{ // optional map of index configuration
      * params "key1":"value1", "key2":"value2" } }
+<<<<<<< HEAD
+=======
+     *
+     * POST ${org.neo4j.server.rest.web}/index/relationship/{indexName}/{key}/{
+     * value} "http://uri.for.node.to.index"
+>>>>>>> d3302c3... Improved the putIfAbsent/getOrCreate API and exposed it in the REST API.
      */
     @Test
     public void shouldCreateANamedRelationshipIndex() throws JsonParseException
@@ -111,6 +139,29 @@ public class IndexRelationshipFunctionalTest
                 .get( 0 ) );
         assertEquals( expectedIndexes, helper.getRelationshipIndexes().length );
         assertNotNull( helper.getRelationshipIndex( indexName ) );
+<<<<<<< HEAD
+=======
+
+        // Add a relationship to the index
+        String key = "key";
+        String value = "value";
+        String relationshipType = "related-to";
+        long relationshipId = helper.createRelationship( relationshipType );
+        response = httpPostIndexRelationshipNameKeyValue( indexName, relationshipId, key, value );
+        assertEquals( Status.CREATED.getStatusCode(), response.getStatus() );
+        String indexUri = response.getHeaders().get( "Location" ).get( 0 );
+        assertNotNull( indexUri );
+        assertEquals( Arrays.asList( (Long) relationshipId ), helper.getIndexedRelationships( indexName, key, value ) );
+
+        // Get the relationship from the indexed URI (Location in header)
+        response = httpGet( indexUri );
+        assertEquals( 200, response.getStatus() );
+
+        String discovredEntity = response.getEntity();
+
+        Map<String, Object> map = JsonHelper.jsonToMap( discovredEntity );
+        assertNotNull( map.get( "self" ) );
+>>>>>>> d3302c3... Improved the putIfAbsent/getOrCreate API and exposed it in the REST API.
     }
 
     private JaxRsResponse httpPostIndexRelationshipRoot( String jsonIndexSpecification )
@@ -320,6 +371,7 @@ public class IndexRelationshipFunctionalTest
         helper.addRelationshipToIndex( indexName, key1, value2, relationship );
         helper.addRelationshipToIndex( indexName, key2, value1, relationship );
         helper.addRelationshipToIndex( indexName, key2, value2, relationship );
+<<<<<<< HEAD
         assertEquals( 1, helper.getIndexedRelationships( indexName, key1, value1 )
                 .size() );
         assertEquals( 1, helper.getIndexedRelationships( indexName, key1, value2 )
@@ -373,6 +425,36 @@ public class IndexRelationshipFunctionalTest
         JaxRsResponse response = RestRequest.req()
                 .delete( functionalTestHelper.indexRelationshipUri( indexName ) );
 
+=======
+        assertEquals( 1, helper.getIndexedRelationships( indexName, key1, value1 ).size() );
+        assertEquals( 1, helper.getIndexedRelationships( indexName, key1, value2 ).size() );
+        assertEquals( 1, helper.getIndexedRelationships( indexName, key2, value1 ).size() );
+        assertEquals( 1, helper.getIndexedRelationships( indexName, key2, value2 ).size() );
+        JaxRsResponse response = RestRequest.req().delete(
+                functionalTestHelper.relationshipIndexUri() + indexName + "/" + key1 + "/" + value1 + "/" + relationship );
+        assertEquals( 204, response.getStatus() );
+        assertEquals( 0, helper.getIndexedRelationships( indexName, key1, value1 ).size() );
+        assertEquals( 1, helper.getIndexedRelationships( indexName, key1, value2 ).size() );
+        assertEquals( 1, helper.getIndexedRelationships( indexName, key2, value1 ).size() );
+        assertEquals( 1, helper.getIndexedRelationships( indexName, key2, value2 ).size() );
+        response = RestRequest.req().delete(
+                functionalTestHelper.relationshipIndexUri() + indexName + "/" + key2 + "/" + relationship );
+        assertEquals( 204, response.getStatus() );
+        assertEquals( 0, helper.getIndexedRelationships( indexName, key1, value1 ).size() );
+        assertEquals( 1, helper.getIndexedRelationships( indexName, key1, value2 ).size() );
+        assertEquals( 0, helper.getIndexedRelationships( indexName, key2, value1 ).size() );
+        assertEquals( 0, helper.getIndexedRelationships( indexName, key2, value2 ).size() );
+        response = RestRequest.req().delete(
+                functionalTestHelper.relationshipIndexUri() + indexName + "/" + relationship );
+        assertEquals( 204, response.getStatus() );
+        assertEquals( 0, helper.getIndexedRelationships( indexName, key1, value1 ).size() );
+        assertEquals( 0, helper.getIndexedRelationships( indexName, key1, value2 ).size() );
+        assertEquals( 0, helper.getIndexedRelationships( indexName, key2, value1 ).size() );
+        assertEquals( 0, helper.getIndexedRelationships( indexName, key2, value2 ).size() );
+
+        // Delete the index
+        response = RestRequest.req().delete( functionalTestHelper.indexRelationshipUri( indexName ) );
+>>>>>>> d3302c3... Improved the putIfAbsent/getOrCreate API and exposed it in the REST API.
         assertEquals( 204, response.getStatus() );
     }
 
@@ -421,5 +503,43 @@ public class IndexRelationshipFunctionalTest
                 .post( functionalTestHelper.indexRelationshipUri( indexName ), corruptJson );
 
         assertEquals( 400, response.getStatus() );
+    }
+
+    /**
+     * Create a unique relationship in an index.
+     */
+    @Documented
+    @Test
+    public void get_or_create_relationship() throws Exception
+    {
+        final String index = "knowledge", key = "name", value = "Tobias";
+        helper.createRelationshipIndex( index );
+        long start = helper.createNode();
+        long end = helper.createNode();
+        gen.get()
+           .expectedStatus( 201 /* created */)
+           .payloadType( MediaType.APPLICATION_JSON_TYPE )
+           .payload( "{\"key\": \"" + key + "\", \"value\":\"" + value +
+                     "\", \"start\": \"" + functionalTestHelper.nodeUri( start ) +
+                     "\", \"end\": \"" + functionalTestHelper.nodeUri( end ) +
+                     "\", \"type\": \"" + index + "\"}" )
+           .post( functionalTestHelper.relationshipIndexUri() + index + "/?unique" );
+    }
+
+    /**
+     * Add a relationship to an index unless a relationship already exists for the given mapping.
+     */
+    @Documented
+    @Test
+    public void put_relationship_if_absent() throws Exception
+    {
+        final String index = "knowledge", key = "name", value = "Mattias";
+        helper.createRelationshipIndex( index );
+        gen.get()
+           .expectedStatus( 201 /* created */)
+           .payloadType( MediaType.APPLICATION_JSON_TYPE )
+           .payload( "{\"key\": \"" + key + "\", \"value\":\"" + value +
+                     "\", \"uri\": \"" + functionalTestHelper.relationshipUri( helper.createRelationship( index ) ) + "\"}" )
+           .post( functionalTestHelper.relationshipIndexUri() + index + "/?unique" );
     }
 }

@@ -944,7 +944,7 @@ public class RestfulGraphDatabaseTest
         assertEquals( response.getMetadata()
                 .getFirst( HttpHeaders.CONTENT_ENCODING ), "UTF-8" );
     }
-    
+
     @Test
     public void shouldBeAbleToIndexNode() throws DatabaseBlockedException, JsonParseException
     {
@@ -957,11 +957,218 @@ public class RestfulGraphDatabaseTest
         postBody.put( "value", "my/key" );
         postBody.put( "uri", nodeUri.toString() );
 
-        response = service.addToNodeIndex( "node", JsonHelper.createJsonFrom( postBody ) );
+        response = service.addToNodeIndex( "node", null, JsonHelper.createJsonFrom( postBody ) );
 
         assertEquals( 201, response.getStatus() );
         assertNotNull( response.getMetadata()
                 .getFirst( "Location" ) );
+    }
+
+    @Test
+    public void shouldBeAbleToIndexNodeUniquely() throws Exception
+    {
+        Map<String, String> postBody = new HashMap<String, String>();
+        postBody.put( "key", "mykey" );
+        postBody.put( "value", "my/key" );
+        for ( int i = 0; i < 2; i++ )
+        {
+            Response response = service.addToNodeIndex( "unique-nodes", "", JsonHelper.createJsonFrom( postBody ) );
+
+            assertEquals( 201 - i, response.getStatus() );
+            if ( i == 0 ) assertNotNull( response.getMetadata().getFirst( "Location" ) );
+        }
+    }
+
+    @Test
+    public void shouldNotBeAbleToIndexNodeUniquelyWithBothUriAndPropertiesInPayload() throws Exception
+    {
+        URI node = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
+        Map<String, Object> postBody = new HashMap<String, Object>();
+        postBody.put( "key", "mykey" );
+        postBody.put( "value", "my/key" );
+        postBody.put( "uri", node.toString() );
+        postBody.put( "properties", new HashMap<String, Object>() );
+
+        Response response = service.addToNodeIndex( "unique-nodes", "", JsonHelper.createJsonFrom( postBody ) );
+        assertEquals( 400, response.getStatus() );
+    }
+
+    @Test
+    public void uniquelyIndexedNodeGetsTheSpecifiedKeyAndValueAsPropertiesIfNoPropertiesAreSpecified() throws Exception
+    {
+        final String key = "somekey", value = "somevalue";
+
+        Map<String, Object> postBody = new HashMap<String, Object>();
+        postBody.put( "key", key );
+        postBody.put( "value", value );
+
+        Response response = service.addToNodeIndex( "unique-nodes", "", JsonHelper.createJsonFrom( postBody ) );
+        assertEquals( 201, response.getStatus() );
+        Object node = response.getMetadata().getFirst( "Location" );
+        assertNotNull( node );
+        String uri = node.toString();
+        Map<String, Object> properties = helper.getNodeProperties( Long.parseLong( uri.substring( uri.lastIndexOf( '/' ) +1) ) );
+        assertEquals( 1, properties.size() );
+        assertEquals( value, properties.get( key ) );
+    }
+
+    @Test
+    public void specifiedPropertiesOverrideKeyAndValueForUniquelyIndexedNodes() throws Exception
+    {
+        final String key = "a_key", value = "a value";
+
+        Map<String, Object> postBody = new HashMap<String, Object>();
+        postBody.put( "key", key );
+        postBody.put( "value", value );
+        Map<String, Object> properties = new HashMap<String, Object>();
+        properties.put( "name", "Jürgen" );
+        properties.put( "age", "42" );
+        properties.put( "occupation", "crazy" );
+        postBody.put( "properties", properties );
+
+        Response response = service.addToNodeIndex( "unique-nodes", "", JsonHelper.createJsonFrom( postBody ) );
+        assertEquals( 201, response.getStatus() );
+        Object node = response.getMetadata().getFirst( "Location" );
+        assertNotNull( node );
+        String uri = node.toString();
+        assertEquals( properties, helper.getNodeProperties( Long.parseLong( uri.substring( uri.lastIndexOf( '/' ) +1) ) ) );
+    }
+
+    @Test
+    public void shouldNotBeAbleToIndexNodeUniquelyWithRequiredParameterMissing() throws Exception
+    {
+        URI node = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
+        Map<String, Object> body = new HashMap<String, Object>();
+        body.put( "key", "mykey" );
+        body.put( "value", "my/key" );
+        for ( String key : body.keySet() )
+        {
+            Map<String, Object> postBody = new HashMap<String, Object>( body );
+            postBody.remove( key );
+            Response response = service.addToNodeIndex( "unique-nodes", "", JsonHelper.createJsonFrom( postBody ) );
+
+            assertEquals( "unexpected response code with \"" + key + "\" missing.", 400, response.getStatus() );
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToIndexRelationshipUniquely() throws Exception
+    {
+        URI start = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
+        URI end = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
+        Map<String, String> postBody = new HashMap<String, String>();
+        postBody.put( "key", "mykey" );
+        postBody.put( "value", "my/key" );
+        postBody.put( "start", start.toString() );
+        postBody.put( "end", end.toString() );
+        postBody.put( "type", "knows" );
+        for ( int i = 0; i < 2; i++ )
+        {
+            Response response = service.addToNodeIndex( "unique-relationships", "", JsonHelper.createJsonFrom( postBody ) );
+
+            assertEquals( 201 - i, response.getStatus() );
+            if ( i == 0 ) assertNotNull( response.getMetadata().getFirst( "Location" ) );
+        }
+    }
+
+    @Test
+    public void uniquelyIndexedRelationshipGetsTheSpecifiedKeyAndValueAsPropertiesIfNoPropertiesAreSpecified() throws Exception
+    {
+        final String key = "somekey", value = "somevalue";
+        URI start = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
+        URI end = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
+
+        Map<String, Object> postBody = new HashMap<String, Object>();
+        postBody.put( "key", key );
+        postBody.put( "value", value );
+        postBody.put( "start", start.toString() );
+        postBody.put( "end", end.toString() );
+        postBody.put( "type", "knows" );
+
+        Response response = service.addToRelationshipIndex( "unique-relationships", "", JsonHelper.createJsonFrom( postBody ) );
+        assertEquals( 201, response.getStatus() );
+        Object rel = response.getMetadata().getFirst( "Location" );
+        assertNotNull( rel );
+        String uri = rel.toString();
+        Map<String, Object> properties = helper.getRelationshipProperties( Long.parseLong( uri.substring( uri.lastIndexOf( '/' ) +1) ) );
+        assertEquals( 1, properties.size() );
+        assertEquals( value, properties.get( key ) );
+    }
+
+    @Test
+    public void specifiedPropertiesOverrideKeyAndValueForUniquelyIndexedRelationships() throws Exception
+    {
+        final String key = "a_key", value = "a value";
+        URI start = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
+        URI end = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
+
+        Map<String, Object> postBody = new HashMap<String, Object>();
+        postBody.put( "key", key );
+        postBody.put( "value", value );
+        postBody.put( "start", start.toString() );
+        postBody.put( "end", end.toString() );
+        postBody.put( "type", "knows" );
+        Map<String, Object> properties = new HashMap<String, Object>();
+        properties.put( "name", "Jürgen" );
+        properties.put( "age", "42" );
+        properties.put( "occupation", "crazy" );
+        postBody.put( "properties", properties );
+
+        Response response = service.addToRelationshipIndex( "unique-relationships", "", JsonHelper.createJsonFrom( postBody ) );
+        assertEquals( 201, response.getStatus() );
+        Object rel = response.getMetadata().getFirst( "Location" );
+        assertNotNull( rel );
+        String uri = rel.toString();
+        assertEquals( properties, helper.getRelationshipProperties( Long.parseLong( uri.substring( uri.lastIndexOf( '/' ) +1) ) ) );
+    }
+
+    @Test
+    public void shouldNotBeAbleToIndexRelationshipUniquelyWithBothUriAndCreationalDataInPayload() throws Exception
+    {
+        URI start = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
+        URI end = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
+        String path = start.getPath();
+        URI rel = (URI) service.createRelationship( 
+                                                    Long.parseLong( path.substring( path.lastIndexOf( '/' ) + 1 ) ),
+                                                    "{\"to\":\"" + end + "\",\"type\":\"knows\"}" ).getMetadata()
+                               .getFirst( "Location" );
+        Map<String, Object> unwanted = new HashMap<String, Object>();
+        unwanted.put( "properties", new HashMap() );
+        unwanted.put( "start", start.toString() );
+        unwanted.put( "end", end.toString() );
+        unwanted.put( "type", "friend" );
+        for ( Map.Entry<String, Object> bad : unwanted.entrySet() )
+        {
+            Map<String, Object> postBody = new HashMap<String, Object>();
+            postBody.put( "key", "mykey" );
+            postBody.put( "value", "my/key" );
+            postBody.put( "uri", rel.toString() );
+            postBody.put( bad.getKey(), bad.getValue() );
+
+            Response response = service.addToRelationshipIndex( "unique-relationships", "", JsonHelper.createJsonFrom( postBody ) );
+            assertEquals( "unexpected response code with \"" + bad.getKey() + "\".", 400, response.getStatus() );
+        }
+    }
+
+    @Test
+    public void shouldNotBeAbleToIndexRelationshipUniquelyWithRequiredParameterMissing() throws Exception
+    {
+        URI start = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
+        URI end = (URI) service.createNode( null ).getMetadata().getFirst( "Location" );
+        Map<String, Object> body = new HashMap<String, Object>();
+        body.put( "key", "mykey" );
+        body.put( "value", "my/key" );
+        body.put( "start", start.toString() );
+        body.put( "end", end.toString() );
+        body.put( "type", "knows" );
+        for ( String key : body.keySet() )
+        {
+            Map<String, Object> postBody = new HashMap<String, Object>( body );
+            postBody.remove( key );
+            Response response = service.addToRelationshipIndex( "unique-relationships", "", JsonHelper.createJsonFrom( postBody ) );
+
+            assertEquals( "unexpected response code with \"" + key + "\" missing.", 400, response.getStatus() );
+        }
     }
 
     @Test
@@ -1505,7 +1712,7 @@ public class RestfulGraphDatabaseTest
         assertEquals(
                 Status.CREATED.getStatusCode(),
                 service.addToNodeIndex(
-                        "node",
+                        "node", null,
                         markWithUnicodeMarker( "{\"key\":\"foo\", \"value\":\"bar\", \"uri\": \"" + nodeLocation
                                                + "\"}" ) )
                         .getStatus() );

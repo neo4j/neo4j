@@ -690,12 +690,12 @@ public class NodeManager
                 se );
         }
     }
-    
-    public <T extends PropertyContainer> boolean indexPutIfAbsent( Index<T> index, T entity, String key, Object value )
+
+    public <T extends PropertyContainer> T indexPutIfAbsent( Index<T> index, T entity, String key, Object value )
     {
         T existing = index.get( key, value ).getSingle();
-        if ( existing != null ) return false;
-        
+        if ( existing != null ) return existing;
+
         // Grab lock
         IndexLock lock = new IndexLock( index.getName(), key );
         LockType.WRITE.acquire( lock, lockManager );
@@ -706,12 +706,12 @@ public class NodeManager
             if ( existing != null )
             {
                 LockType.WRITE.release( lock, lockManager );
-                return false;
+                return existing;
             }
-            
+
             // Add
             index.add( entity, key, value );
-            return true;
+            return null;
         }
         finally
         {
@@ -757,7 +757,6 @@ public class NodeManager
     {
         lockType.acquire( new IndexLock( index, key ), lockManager );
     }
-    
     void acquireTxBoundLock( PropertyContainer resource, LockType lockType )
     {
         lockType.acquire( resource, lockManager );
@@ -792,12 +791,12 @@ public class NodeManager
             throw new LockException( "Unknown lock type: " + lockType );
         }
     }
-    
+
     void releaseIndexLock( String index, String key, LockType lockType )
     {
         lockType.unacquire( new IndexLock( index, key ), lockManager, lockReleaser );
     }
-    
+
     public static class IndexLock
     {
         private final String index;
@@ -808,7 +807,7 @@ public class NodeManager
             this.index = index;
             this.key = key;
         }
-        
+
         public String getIndex()
         {
             return index;
@@ -818,7 +817,7 @@ public class NodeManager
         {
             return key;
         }
-        
+
         @Override
         public int hashCode()
         {   // Auto-generated
@@ -856,7 +855,7 @@ public class NodeManager
             return true;
         }
     }
-    
+
     public long getHighestPossibleIdInUse( Class<?> clazz )
     {
         return idGenerator.getHighestPossibleIdInUse( clazz );
@@ -1102,6 +1101,11 @@ public class NodeManager
     LockReleaser getLockReleaser()
     {
         return this.lockReleaser;
+    }
+
+    LockManager getLockManager()
+    {
+        return this.lockManager;
     }
 
     void addRelationshipType( RelationshipTypeData type )

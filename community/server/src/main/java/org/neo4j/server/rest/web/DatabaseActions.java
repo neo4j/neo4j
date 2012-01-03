@@ -41,6 +41,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipExpander;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.index.Index;
@@ -48,7 +49,9 @@ import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.ReadableIndex;
 import org.neo4j.graphdb.index.ReadableRelationshipIndex;
 import org.neo4j.graphdb.index.RelationshipIndex;
+import org.neo4j.graphdb.index.UniqueFactory;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Traversal;
@@ -62,6 +65,7 @@ import org.neo4j.server.rest.domain.TraverserReturnType;
 import org.neo4j.server.rest.paging.Lease;
 import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.paging.PagedTraverser;
+import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.DatabaseRepresentation;
 import org.neo4j.server.rest.repr.IndexRepresentation;
 import org.neo4j.server.rest.repr.IndexedEntityRepresentation;
@@ -908,6 +912,137 @@ public class DatabaseActions
         finally
         {
             tx.finish();
+        }
+    }
+
+    public Pair<IndexedEntityRepresentation, Boolean> getOrCreateIndexedNode( String indexName, String key,
+                                                                              String value, Long nodeOrNull,
+                                                                              Map<String, Object> properties ) throws BadInputException, NodeNotFoundException
+    {
+        Transaction tx = graphDb.beginTx();
+        try
+        {
+            Node result;
+            boolean created;
+            if ( nodeOrNull != null )
+            {
+                if ( properties != null )
+                {
+                    throw new BadInputException( "Cannot specify properties for a new node, when a node to index is specified." );
+                }
+                Node node = node( nodeOrNull.longValue() );
+                result = graphDb.index().forNodes( indexName ).putIfAbsent( node, key, value );
+                if ( ( created = ( result == null ) ) == true ) result = node;
+            }
+            else
+            {
+                UniqueNodeFactory factory = new UniqueNodeFactory( indexName, properties );
+                result = factory.getOrCreate( key, value );
+                created = factory.created;
+            }
+            tx.success();
+            return Pair.of( new IndexedEntityRepresentation( result, key, value,
+                        new NodeIndexRepresentation( indexName, Collections.<String, String>emptyMap() ) ),
+                        Boolean.valueOf( created ) );
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+
+    public Pair<IndexedEntityRepresentation, Boolean> getOrCreateIndexedRelationship( String indexName, String key,
+                                                                                      String value, Long relationshipOrNull,
+                                                                                      Long startNode, String type, Long endNode,
+                                                                                      Map<String, Object> properties ) throws BadInputException, RelationshipNotFoundException, NodeNotFoundException
+    {
+        Transaction tx = graphDb.beginTx();
+        try
+        {
+            Relationship result;
+            boolean created;
+            if ( relationshipOrNull != null )
+            {
+                if ( startNode != null || type != null || endNode != null || properties != null )
+                {
+                    throw new BadInputException( "Either specify a relationship to index uniquely, or the means for creating it." );
+                }
+                Relationship relationship = relationship( relationshipOrNull.longValue() );
+                result = graphDb.index().forRelationships( indexName ).putIfAbsent( relationship, key, value );
+                if ( ( created = ( result == null ) ) == true ) result = relationship;
+            }
+            else if ( startNode == null || type == null || endNode == null )
+            {
+                throw new BadInputException( "Either specify a relationship to index uniquely, or the means for creating it." );
+            }
+            else
+            {
+                UniqueRelationshipFactory factory = new UniqueRelationshipFactory( indexName, node( startNode.longValue() ), node( endNode.longValue() ), type, properties );
+                result = factory.getOrCreate( key, value );
+                created = factory.created;
+            }
+            tx.success();
+            return Pair.of( new IndexedEntityRepresentation( result, key, value,
+                        new RelationshipIndexRepresentation( indexName, Collections.<String, String>emptyMap() ) ),
+                        Boolean.valueOf( created ) );
+        }
+        finally
+        {
+            tx.finish();
+        }
+    }
+
+    private class UniqueRelationshipFactory extends UniqueFactory.UniqueRelationshipFactory
+    {
+        private final Node start, end;
+        private final RelationshipType type;
+        private final Map<String, Object> properties;
+        boolean created;
+
+        UniqueRelationshipFactory( String index, Node start, Node end, String type, Map<String, Object> properties )
+        {
+            super( graphDb, index );
+            this.start = start;
+            this.end = end;
+            this.type = DynamicRelationshipType.withName( type );
+            this.properties = properties;
+        }
+        @Override
+        protected Relationship create( Map<String, Object> ignored )
+        {
+            return start.createRelationshipTo( end, type );
+        }
+
+        @Override
+        protected void initialize( Relationship relationship, Map<String, Object> indexed )
+        {
+            for ( Map.Entry<String, Object> property : (properties == null ? indexed : properties).entrySet() )
+            {
+                relationship.setProperty( property.getKey(), property.getValue() );
+            }
+            this.created = true;
+        }
+    }
+
+    private class UniqueNodeFactory extends UniqueFactory.UniqueNodeFactory
+    {
+        private final Map<String, Object> properties;
+        boolean created;
+
+        UniqueNodeFactory( String index, Map<String, Object> properties )
+        {
+            super( graphDb, index );
+            this.properties = properties;
+        }
+
+        @Override
+        protected void initialize( Node node, Map<String, Object> indexed )
+        {
+            for ( Map.Entry<String, Object> property : (properties == null ? indexed : properties).entrySet() )
+            {
+                node.setProperty( property.getKey(), property.getValue() );
+            }
+            this.created = true;
         }
     }
 

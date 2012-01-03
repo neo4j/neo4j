@@ -22,7 +22,7 @@ package org.neo4j.index.impl.lucene;
 import org.neo4j.graphdb.Node;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 
-public class PutIfAbsentCommand implements WorkerCommand<CommandState, Boolean>
+public class PutIfAbsentCommand implements WorkerCommand<CommandState, Node>
 {
     private final String key;
     private final Object value;
@@ -36,7 +36,7 @@ public class PutIfAbsentCommand implements WorkerCommand<CommandState, Boolean>
     }
 
     @Override
-    public Boolean doWork( CommandState state )
+    public Node doWork( CommandState state )
     {
         return state.index.putIfAbsent( node, key, value );
     }

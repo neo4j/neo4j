@@ -197,6 +197,7 @@ public class TestIndexDeletion
         index.delete();
 
         WorkThread firstTx = createWorker();
+        firstTx.beginTransaction();
         firstTx.createNodeAndIndexBy( key, "another value" );
         firstTx.commit();
     }
@@ -307,7 +308,7 @@ public class TestIndexDeletion
 
     private WorkThread createWorker()
     {
-        WorkThread workThread = new WorkThread( index, graphDb );
+        WorkThread workThread = new WorkThread( index, graphDb, node );
         workers.add( workThread );
         return workThread;
     }

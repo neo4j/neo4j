@@ -50,6 +50,21 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, IndexMa
 {
     private final GraphDatabaseService actual;
 
+    private final Transaction tx = new Transaction()
+    {
+        public void success()
+        {
+        }
+
+        public void failure()
+        {
+        }
+
+        public void finish()
+        {
+        }
+    };
+
     ReadOnlyGraphDatabaseProxy( GraphDatabaseService graphDb )
     {
         this.actual = graphDb;
@@ -552,11 +567,11 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, IndexMa
         {
             readOnly();
         }
-        
-        public boolean putIfAbsent( T entity, String key, Object value )
+
+        public T putIfAbsent( T entity, String key, Object value )
         {
             readOnly();
-            return false;
+            return null;
         }
 
         public IndexHits<T> get( String key, Object value )
@@ -594,7 +609,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, IndexMa
         {
             return false;
         }
-        
+
         @Override
         public GraphDatabaseService getGraphDatabase()
         {
