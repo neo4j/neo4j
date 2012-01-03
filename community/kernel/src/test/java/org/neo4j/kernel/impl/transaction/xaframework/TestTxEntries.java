@@ -30,6 +30,11 @@ public class TestTxEntries
 {
     @Test
     @Ignore
+    /*
+     * Starts a JVM, executes a tx that fails on prepare and rollbacks,
+     * triggering a bug where an extra start entry for that tx is written
+     * in the xa log.
+     */
     public void testStartEntryWrittenOnceOnRollback() throws Exception
     {
         String storeDir = TargetDirectory.forTest( TestTxEntries.class ).directory(
@@ -40,7 +45,7 @@ public class TestTxEntries
                         new String[] { "java", "-cp",
                                 System.getProperty( "java.class.path" ),
                                 RollbackUnclean.class.getName(), storeDir } ).waitFor() );
-        // new DumpLogicalLog().dump( storeDir );
+        // The bug tested by this case throws exception during recovery, below
         new EmbeddedGraphDatabase( storeDir ).shutdown();
     }
 }

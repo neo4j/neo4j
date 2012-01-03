@@ -26,6 +26,9 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 public class RollbackUnclean
 {
+    /*
+     * Creates a damaged log file with dual start entries for the tx that is rolledback
+     */
     public static void main( String[] args )
     {
         String storeDir = args[0];
@@ -43,16 +46,23 @@ public class RollbackUnclean
         tx.success();
         try
         {
+            // Will throw exception, causing the tx to be rolledback.
             tx.finish();
         }
         catch ( Exception nothingToSeeHereMoveAlong )
         {
             // InvalidRecordException coming, node1 has rels
         }
+        /*
+         *  The damage has already been done. The following just makes sure
+         *  the corrupting tx is flushed to disk, since we will exit
+         *  uncleanly.
+         */
         tx = db.beginTx();
         node1.setProperty( "foo", "bar" );
         tx.success();
         tx.finish();
+        // No shutdown
         System.exit( 0 );
     }
 }
