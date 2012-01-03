@@ -22,6 +22,7 @@ package slavetest;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
 import org.neo4j.test.OtherThreadExecutor;
 
 public class Worker extends OtherThreadExecutor<WorkerState>
@@ -30,7 +31,7 @@ public class Worker extends OtherThreadExecutor<WorkerState>
     {
         super( new WorkerState( db ) );
     }
-    
+
     public void beginTx() throws Exception
     {
         execute( new WorkerCommand<WorkerState, Void>()
@@ -43,7 +44,7 @@ public class Worker extends OtherThreadExecutor<WorkerState>
             }
         } );
     }
-    
+
     public void finishTx( final boolean success ) throws Exception
     {
         execute( new WorkerCommand<WorkerState, Void>()
@@ -56,13 +57,13 @@ public class Worker extends OtherThreadExecutor<WorkerState>
             }
         } );
     }
-    
-    public Future<Boolean> putIfAbsent( final String index, final long node, final String key, final Object value ) throws Exception
+
+    public Future<Node> putIfAbsent( final String index, final long node, final String key, final Object value ) throws Exception
     {
-        return executeDontWait( new WorkerCommand<WorkerState, Boolean>()
+        return executeDontWait( new WorkerCommand<WorkerState, Node>()
         {
             @Override
-            public Boolean doWork( WorkerState state )
+            public Node doWork( WorkerState state )
             {
                 return state.db.index().forNodes( index ).putIfAbsent( state.db.getNodeById( node ), key, value );
             }
