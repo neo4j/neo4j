@@ -90,7 +90,7 @@ public abstract class AbstractWebadminTest extends SharedServerTestBase {
     
     @AfterClass
     public static void tearDown() throws Exception {
-        webdriverFacade.closeBrowser();
+        webdriverFacade.quitBrowser();
     }
     
     private static void copyFile(File sourceFile, File destFile) throws IOException {

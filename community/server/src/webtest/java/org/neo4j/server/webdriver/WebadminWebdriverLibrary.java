@@ -62,10 +62,12 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
         waitForTitleToBe( "Neo4j Monitoring and Management Tool" );
     }
 
-    public void clickOnTab(String tab) {
-        getElement( By.xpath( "//ul[@id='mainmenu']//a[contains(.,'"+tab+"')]") ).click();
+    public void clickOnTab( String tabName )
+    {
+        ElementReference tab = getElement( By.xpath( "//ul[@id='mainmenu']//a[contains(.,'" + tabName + "')]" ) );
+        new Condition<ElementReference>( new ElementClickable(), tab ).waitUntilFulfilled();
     }
-    
+
     public void searchForInDataBrowser(CharSequence ... keysToSend) {
         clearInput( dataBrowserSearchField );
         dataBrowserSearchField.sendKeys( keysToSend );
@@ -141,12 +143,13 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
 
     public void writeTo(By by, CharSequence ... toWrite) {
         ElementReference el = getElement( by );
-        clearInput( el );
+        el.click();
+        el.clear();
         el.sendKeys( toWrite );
     }
     
     private long extractEntityIdFromLastSegmentOfUrl(String url) {
         return Long.valueOf(url.substring(url.lastIndexOf("/") + 1,url.length()));
     }
-    
+
 }

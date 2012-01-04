@@ -24,37 +24,61 @@ import java.lang.reflect.InvocationTargetException;
 
 import org.openqa.selenium.WebDriver;
 
-public class WebDriverFacade {
-
+public class WebDriverFacade
+{
     private WebDriver browser;
 
-    public WebDriver getWebDriver() throws InvocationTargetException, IllegalAccessException, InstantiationException {
-        if (browser == null) {
-            try {
-                browser = getDriverConstructor().newInstance();
-            } catch(Throwable problem) {
-                throw new RuntimeException("Couldn't instantiate the selected selenium driver. See nested exception.", problem);
+    public WebDriver getWebDriver() throws InvocationTargetException, IllegalAccessException, InstantiationException
+    {
+        if ( browser == null )
+        {
+            try
+            {
+                String driverName = lookupDriverName();
+                fetchAdditionalDependencies(driverName);
+                browser = getDriverConstructor( driverName ).newInstance();
+            }
+            catch ( Throwable problem )
+            {
+                throw new RuntimeException( "Couldn't instantiate the selected selenium driver. See nested exception.", problem );
             }
         }
         return browser;
     }
 
-    public void closeBrowser() throws IllegalAccessException, InvocationTargetException, InstantiationException {
-        if (browser != null) {
-            browser.close();
-            browser.quit();
+    private String lookupDriverName()
+    {
+        String driverName = System.getProperty( "webdriver.impl.class", "org.openqa.selenium.firefox.FirefoxDriver" );
+        System.out.println( "Using " + driverName );
+        return driverName;
+    }
+
+    private static void fetchAdditionalDependencies( String driverName )
+    {
+        if ("org.openqa.selenium.chrome.ChromeDriver".equals( driverName ))
+        {
+            WebdriverChromeDriver.ensurePresent();
         }
     }
-    
+
     @SuppressWarnings("unchecked")
-    private Constructor<WebDriver> getDriverConstructor() {
-        
-        String driverName = System.getProperty("webdriver.impl.class", "org.openqa.selenium.firefox.FirefoxDriver");
-        System.out.println(driverName);System.out.println(driverName);System.out.println(driverName);System.out.println(driverName);System.out.println(driverName);System.out.println(driverName);System.out.println(driverName);System.out.println(driverName);
-        try {
-            return (Constructor<WebDriver>) Thread.currentThread().getContextClassLoader().loadClass(driverName).getConstructor();
-        } catch (Throwable problem) {
-            throw new RuntimeException("Couldn't load " + driverName, problem);
+    private Constructor<WebDriver> getDriverConstructor( String driverName )
+    {
+        try
+        {
+            return (Constructor<WebDriver>) Thread.currentThread().getContextClassLoader().loadClass( driverName ).getConstructor();
+        }
+        catch ( Throwable problem )
+        {
+            throw new RuntimeException( "Couldn't load " + driverName, problem );
+        }
+    }
+
+    public void quitBrowser() throws IllegalAccessException, InvocationTargetException, InstantiationException
+    {
+        if ( browser != null )
+        {
+            browser.quit();
         }
     }
 }

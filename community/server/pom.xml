@@ -43,7 +43,8 @@
         <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
 
         <!-- Default location for chrome controller binary, used by webdriver for running tests in Chrome. Available from (http://code.google.com/p/chromium/downloads/list) see README.txt for details on this. -->
-        <webdriver.chrome.driver>/usr/bin/chromedriver</webdriver.chrome.driver>
+        <webdriver.chrome.driver>webdriver-binaries/chromedriver</webdriver.chrome.driver>
+        <webdriver.chrome.driver.download.url>http://chromium.googlecode.com/files/chromedriver_mac_18.0.995.0.zip</webdriver.chrome.driver.download.url>
     </properties>
 
     <scm>
@@ -465,6 +466,8 @@
                     <systemPropertyVariables>
                         <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
                         <webdriver.impl.class>${webdriver.impl.class}</webdriver.impl.class>
+                        <webdriver.chrome.driver>${webdriver.chrome.driver}</webdriver.chrome.driver>
+                        <webdriver.chrome.driver.download.url>${webdriver.chrome.driver.download.url}</webdriver.chrome.driver.download.url>
                     </systemPropertyVariables>
                     <argLine>-Xmx1024m</argLine>
                     <forkMode>once</forkMode>
@@ -786,7 +789,7 @@
             </properties>
         </profile>
         <profile>
-            <id>chrome</id>
+            <id>chrome-mac</id>
             <properties>
                 <webdriver.impl.class>org.openqa.selenium.chrome.ChromeDriver</webdriver.impl.class>
             </properties>

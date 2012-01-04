@@ -28,11 +28,14 @@ import static org.neo4j.server.webdriver.ElementVisible.elementVisible;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.WebElement;
 
 public class WebdriverLibrary
@@ -86,7 +89,7 @@ public class WebdriverLibrary
     
     public void clearInput(ElementReference el) {
         int len = el.getValue().length();
-        
+
         CharSequence[] backspaces = new CharSequence[len];
         Arrays.fill(backspaces, Keys.BACK_SPACE);
         
@@ -117,5 +120,30 @@ public class WebdriverLibrary
     
     public void refresh() {
         d.get( d.getCurrentUrl() );
+    }
+
+    static class ElementClickable extends BaseMatcher<ElementReference>
+    {
+        public boolean matches( Object item )
+        {
+            try {
+                ((ElementReference) item).click();
+                return true;
+            }
+            catch ( WebDriverException webDriverException )
+            {
+                if (webDriverException.getMessage().contains( "Element is not clickable" ))
+                {
+                    return false;
+                } else {
+                    throw webDriverException;
+                }
+            }
+        }
+
+        public void describeTo( Description description )
+        {
+            description.appendText( "Should be clickable" );
+        }
     }
 }
