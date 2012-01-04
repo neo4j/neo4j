@@ -44,7 +44,8 @@ public class TestTxEntries
                         System.getProperty( "java.class.path" ),
                         RollbackUnclean.class.getName(), storeDir } );
         InputStream stdout = process.getInputStream();
-        while ( stdout.read() >= 0 )
+        InputStream stderr = process.getErrorStream();
+        while ( stdout.read() >= 0 || stderr.read() > 0 )
         {
             // just consume everything
         }
