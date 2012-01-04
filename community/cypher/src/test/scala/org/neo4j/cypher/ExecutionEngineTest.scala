@@ -1492,5 +1492,13 @@ RETURN x0.name?
     val result2 = parseAndExecute("""start n = node(1) match (n) -[:Admin]- (b) return Id(n), Id(b)""")
     assert(List(Map("ID(n)"->1, "ID(b)"->0)) === result2.toList)
   }
+
+  @Ignore("Issue 168")
+  @Test def shouldAllowOrderingOnAggregateFunction() {
+    createNode()
+
+    val result = parseAndExecute("start n = node({nodeId}) match (n)-[:KNOWS]-(c) return n, count(c) as cnt order by count(c)")
+    assert(List() === result.toList)
+  }
 }
 
