@@ -1500,5 +1500,13 @@ RETURN x0.name?
     val result = parseAndExecute("start n = node({nodeId}) match (n)-[:KNOWS]-(c) return n, count(c) as cnt order by count(c)")
     assert(List() === result.toList)
   }
+
+  @Test def shouldIgnoreNodesInParameters() {
+    val a = createNode()
+    relate(refNode, a, "X")
+
+    val result = parseAndExecute("start c = node(1) match (n)--(c) return n", "self" -> refNode)
+    assert(1 === result.size)
+  }
 }
 
