@@ -23,15 +23,14 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.InputStream;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.test.StreamConsumer;
 import org.neo4j.test.TargetDirectory;
 
 public class TestTxEntries
 {
     @Test
-    @Ignore
     /*
      * Starts a JVM, executes a tx that fails on prepare and rollbacks,
      * triggering a bug where an extra start entry for that tx is written
@@ -47,10 +46,12 @@ public class TestTxEntries
                         RollbackUnclean.class.getName(), storeDir } );
         InputStream stdout = process.getInputStream();
         InputStream stderr = process.getErrorStream();
-        while ( stdout.read() >= 0 || stderr.read() > 0 )
-        {
-            // just consume everything
-        }
+        Thread out = new Thread( new StreamConsumer( stdout, System.out ) );
+        Thread err = new Thread( new StreamConsumer( stderr, System.err ) );
+        out.start();
+        err.start();
+        out.join();
+        err.join();
         int exit = process.waitFor();
         assertEquals( 0, exit );
         // The bug tested by this case throws exception during recovery, below
