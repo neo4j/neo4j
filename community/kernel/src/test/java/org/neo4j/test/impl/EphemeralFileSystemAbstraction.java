@@ -116,7 +116,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     {
         private final DynamicByteBuffer fileAsBuffer = new DynamicByteBuffer();
         private final byte[] scratchPad = new byte[1024];
-        private final byte[] zeroBuffer = new byte[1024];
+        private static final byte[] zeroBuffer = new byte[1024];
         private int size;
         private int locked;
 
@@ -135,14 +135,18 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
                 pending -= howMuchToReadThisTime;
             }
             // Fill the rest with zeros
-            pending = available - wanted;
-            while (pending > 0)
-            {
-                int howMuchToReadThisTime = min(pending, scratchPad.length);
-                dst.put(zeroBuffer, 0, howMuchToReadThisTime);
-                pending -= howMuchToReadThisTime;
-            }
+            fillWithZeros( dst, available - wanted );
             return wanted;
+        }
+
+        private void fillWithZeros( ByteBuffer target, int bytes )
+        {
+            while ( bytes > 0 )
+            {
+                int howMuchToReadThisTime = min( bytes, zeroBuffer.length );
+                target.put( zeroBuffer, 0, howMuchToReadThisTime );
+                bytes -= howMuchToReadThisTime;
+            }
         }
 
         public EphemeralFileChannel reset()
@@ -169,7 +173,25 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
                 fileAsBuffer.put(scratchPad, 0, howMuchToWriteThisTime);
                 pending -= howMuchToWriteThisTime;
             }
-            size = max(size, (int) position());
+            
+            // If we just made a jump in the file fill the rest of the gab with zeros
+            int newSize = max(size, (int) position());
+            int intermediaryBytes = newSize-wanted-size;
+            if ( intermediaryBytes > 0 )
+            {
+                int oldPos = fileAsBuffer.position();
+                try
+                {
+                    fileAsBuffer.position( size );
+                    fillWithZeros( fileAsBuffer.buf, intermediaryBytes );
+                }
+                finally
+                {
+                    fileAsBuffer.position( oldPos );
+                }
+            }
+            
+            size = newSize;
             return wanted;
         }
 
@@ -555,7 +577,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             this.buf.position(i);
         }
 
-        public long position()
+        public int position()
         {
             return this.buf.position();
         }

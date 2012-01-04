@@ -164,6 +164,30 @@ public class NeoStore extends AbstractStore
     protected void initStorage()
     {
         instantiateChildStores();
+        
+        /* [MP:2012-01-03] Fix for the problem in 1.5.M02 where store version got upgraded but
+         * corresponding store version record was not added. That record was added in the release
+         * thereafter so this missing record doesn't trigger an upgrade of the neostore file and so any
+         * unclean shutdown on such a db with 1.5.M02 < neo4j version <= 1.6.M02 would make that
+         * db unable to start for that version with a "Mismatching store version found" exception.
+         * 
+         * This will make a cleanly shut down 1.5.M02, then started and cleanly shut down with 1.6.M03 (or higher)
+         * successfully add the missing record.
+         */
+        setRecovered();
+        try
+        {
+            if ( getCreationTime() != 0 /*Store that wasn't just now created*/ &&
+                    getStoreVersion() == 0 /*Store is missing the store version record*/ )
+            {
+                setStoreVersion( versionStringToLong( CommonAbstractStore.ALL_STORES_VERSION ) );
+                updateHighId();
+            }
+        }
+        finally
+        {
+            unsetRecovered();
+        }
     }
     
     /**
