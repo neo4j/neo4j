@@ -423,6 +423,7 @@ public class XaResourceManager
         checkStartWritten( txStatus, xaTransaction );
         if ( onePhase )
         {
+            txStatus.markAsPrepared();
             if ( !xaTransaction.isReadOnly() )
             {
                 if ( !xaTransaction.isRecovered() )
@@ -436,7 +437,6 @@ public class XaResourceManager
                             xaTransaction.getCommitTxId(), getForceMode() );
                 }
             }
-            txStatus.markAsPrepared();
         }
         if ( !txStatus.prepared() || txStatus.rollback() )
         {
