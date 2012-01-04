@@ -56,6 +56,7 @@ import org.neo4j.shell.TextUtil;
 import org.neo4j.shell.impl.AbstractApp;
 import org.neo4j.shell.impl.AbstractClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
+import org.neo4j.shell.util.json.JSONException;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 /**
@@ -263,6 +264,42 @@ public abstract class GraphDatabaseApp extends AbstractApp
             builder.append( display );
         }
         out.println( builder.toString() );
+    }
+
+    protected void setProperties( PropertyContainer entity, String propertyJson ) throws ShellException
+    {
+        if ( propertyJson == null )
+        {
+            return;
+        }
+        
+        try
+        {
+            Map<String, Object> properties = parseJSONMap( propertyJson );
+            for ( Map.Entry<String, Object> entry : properties.entrySet() )
+            {
+                entity.setProperty( entry.getKey(), entry.getValue() );
+            }
+        }
+        catch ( JSONException e )
+        {
+            throw ShellException.wrapCause( e );
+        }
+    }
+
+    protected void cdTo( Session session, Node node ) throws RemoteException, ShellException
+    {
+        List<TypedId> wd = readCurrentWorkingDir( session );
+        try
+        {
+            NodeOrRelationship current = getCurrent( session );
+            wd.add( getCurrent( session ).getTypedId() );
+        }
+        catch ( ShellException e )
+        {   // OK not found then
+        }
+        writeCurrentWorkingDir( wd, session );
+        setCurrent( session, NodeOrRelationship.wrap( node ) );
     }
 
     private static String getDisplayNameForCurrent(

@@ -20,12 +20,9 @@
 package org.neo4j.shell.kernel.apps;
 
 import java.rmi.RemoteException;
-import java.util.List;
-import java.util.Map;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Service;
@@ -36,7 +33,6 @@ import org.neo4j.shell.OptionValueType;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
-import org.neo4j.shell.util.json.JSONException;
 
 /**
  * Mimics the POSIX application "mkdir", but neo4j has relationships instead of
@@ -131,34 +127,7 @@ public class Mkrel extends GraphDatabaseApp
                 " created" );
         }
         
-        if ( parser.options().containsKey( "cd" ) )
-        {
-            List<TypedId> wd = readCurrentWorkingDir( session );
-            wd.add( current.getTypedId() );
-            writeCurrentWorkingDir( wd, session );
-            setCurrent( session, NodeOrRelationship.wrap( node ) );
-        }
+        if ( parser.options().containsKey( "cd" ) ) cdTo( session, node );
         return null;
-    }
-
-    private void setProperties( PropertyContainer entity, String propertyJson ) throws ShellException
-    {
-        if ( propertyJson == null )
-        {
-            return;
-        }
-        
-        try
-        {
-            Map<String, Object> properties = parseJSONMap( propertyJson );
-            for ( Map.Entry<String, Object> entry : properties.entrySet() )
-            {
-                entity.setProperty( entry.getKey(), entry.getValue() );
-            }
-        }
-        catch ( JSONException e )
-        {
-            throw ShellException.wrapCause( e );
-        }
     }
 }

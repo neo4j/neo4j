@@ -53,7 +53,7 @@ public class ShellTest
         assertTrue( parser.options().containsKey( "a" ) );
         assertTrue( parser.arguments().isEmpty() );
     }
-
+    
     @Test
     public void testParserArguments() throws Exception
     {

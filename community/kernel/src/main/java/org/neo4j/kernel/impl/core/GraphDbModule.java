@@ -205,10 +205,11 @@ public class GraphDbModule
         }
     }
 
-    public void createNewReferenceNode()
+    public Node createNewReferenceNode()
     {
         Node node = nodeManager.createNode();
         nodeManager.setReferenceNodeId( node.getId() );
+        return node;
     }
 
     public void reload( Map<Object,Object> params )

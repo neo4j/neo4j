@@ -139,6 +139,11 @@ public class TestApps extends AbstractShellTest
         executeCommand( "mv number other-number" );
         assertNull( thirdRelationship.getProperty( "number", null ) );
         assertEquals( 11, thirdRelationship.getProperty( "other-number" ) );
+        
+        // Create and go to
+        executeCommand( "cd end" );
+        executeCommand( "mkrel -ct " + type1.name() + " --np \"{'name':'new'}\" --cd" );
+        executeCommand( "ls -p", "name", "new" );
     }
 
     @Test
@@ -325,5 +330,25 @@ public class TestApps extends AbstractShellTest
         executeCommand( "ls -f blame", "!Mattias", "Someone else" );
         executeCommand( "ls -pf .*ame", "Mattias", "Someone else" );
         executeCommand( "ls -f .*ame", "Mattias", "Someone else" );
+    }
+    
+    @Test
+    public void createNewNode() throws Exception
+    {
+        executeCommand( "mknode --np \"{'name':'test'}\" --cd" );
+        executeCommand( "ls", "name", "test", "!-" /*no relationship*/ );
+        executeCommand( "mkrel -t KNOWS 0" );
+        executeCommand( "ls", "name", "test", "-", "KNOWS" );
+    }
+    
+    @Ignore( "Setting a new reference node isn't persistent" )
+    @Test
+    public void setNewReferenceNode() throws Exception
+    {
+        executeCommandExpectingException( "mknode -r", "exists" );
+        executeCommand( "rmnode" ); // Delete the reference node
+        executeCommand( "mknode -r --cd --np \"{'name':'test'}\"" );
+        executeCommand( "cd" );
+        executeCommand( "ls -p", "name", "test" );
     }
 }
