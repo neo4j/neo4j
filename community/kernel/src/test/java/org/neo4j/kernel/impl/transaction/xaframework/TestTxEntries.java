@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import static org.junit.Assert.assertEquals;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.test.TargetDirectory;
@@ -29,7 +28,6 @@ import org.neo4j.test.TargetDirectory;
 public class TestTxEntries
 {
     @Test
-    @Ignore
     /*
      * Starts a JVM, executes a tx that fails on prepare and rollbacks,
      * triggering a bug where an extra start entry for that tx is written
