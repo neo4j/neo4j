@@ -1493,12 +1493,17 @@ RETURN x0.name?
     assert(List(Map("ID(n)"->1, "ID(b)"->0)) === result2.toList)
   }
 
-  @Ignore("Issue 168")
   @Test def shouldAllowOrderingOnAggregateFunction() {
     createNode()
 
-    val result = parseAndExecute("start n = node({nodeId}) match (n)-[:KNOWS]-(c) return n, count(c) as cnt order by count(c)")
+    val result = parseAndExecute("start n = node(0) match (n)-[:KNOWS]-(c) return n, count(c) as cnt order by cnt")
     assert(List() === result.toList)
+  }
+
+  @Test def shouldNotAllowOrderingOnNodes() {
+    createNode()
+
+    intercept[SyntaxException]( parseAndExecute("start n = node(0,1) return n order by n").toList )
   }
 
   @Test def shouldIgnoreNodesInParameters() {
@@ -1517,7 +1522,7 @@ RETURN x0.name?
   }
 
   @Test def shouldHandleComparisonsWithDifferentTypes() {
-    val a = createNode("belt"->13)
+    createNode("belt"->13)
 
     val result = parseAndExecute("start n=node(1) where n.belt = 'white' OR n.belt = false return n")
     assert(List() === result.toList)

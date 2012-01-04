@@ -35,12 +35,6 @@ class SyntaxExceptionTest extends JUnitSuite {
     }
   }
 
-  @Test def shouldRaiseErrorWhenSortingOnNode() {
-    expectError(
-      "start s = node(1) return s order by s",
-      "Cannot ORDER BY on nodes or relationships")
-  }
-
   @Test def shouldRaiseErrorWhenMissingIndexValue() {
     expectError(
       "start s = node:index(key=) return s",
