@@ -1508,5 +1508,11 @@ RETURN x0.name?
     val result = parseAndExecute("start c = node(1) match (n)--(c) return n", "self" -> refNode)
     assert(1 === result.size)
   }
-}
 
+  @Test def shouldHandleParametersNamedAsIdentifiers() {
+    val a = createNode("bar"->"Andres")
+
+    val result = parseAndExecute("start foo=node(1) where foo.bar = {foo} return foo.bar", "foo" -> "Andres")
+    assert(List(Map("foo.bar"->"Andres")) === result.toList)
+  }
+}
