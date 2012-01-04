@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import static org.junit.Assert.assertEquals;
 
+import java.io.InputStream;
+
 import org.junit.Test;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.test.TargetDirectory;
@@ -37,12 +39,17 @@ public class TestTxEntries
     {
         String storeDir = TargetDirectory.forTest( TestTxEntries.class ).directory(
                 "rollBack", true ).getAbsolutePath();
-        assertEquals(
-                0,
-                Runtime.getRuntime().exec(
-                        new String[] { "java", "-cp",
-                                System.getProperty( "java.class.path" ),
-                                RollbackUnclean.class.getName(), storeDir } ).waitFor() );
+        Process process = Runtime.getRuntime().exec(
+                new String[] { "java", "-cp",
+                        System.getProperty( "java.class.path" ),
+                        RollbackUnclean.class.getName(), storeDir } );
+        InputStream stdout = process.getInputStream();
+        while ( stdout.read() >= 0 )
+        {
+            // just consume everything
+        }
+        int exit = process.waitFor();
+        assertEquals( 0, exit );
         // The bug tested by this case throws exception during recovery, below
         new EmbeddedGraphDatabase( storeDir ).shutdown();
     }
