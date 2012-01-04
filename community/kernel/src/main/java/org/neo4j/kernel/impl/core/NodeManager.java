@@ -426,7 +426,7 @@ public class NodeManager
             loadLock.unlock();
         }
     }
-    
+
     public Node getNodeById( long nodeId ) throws NotFoundException
     {
         Node node = getNodeByIdOrNull( nodeId );
@@ -436,14 +436,14 @@ public class NodeManager
         }
         return node;
     }
-    
+
     public Iterator<Node> getAllNodes()
     {
         final long highId = getHighestPossibleIdInUse( Node.class );
         return new PrefetchingIterator<Node>()
         {
             private long currentId;
-            
+
             @Override
             protected Node fetchNextOrNull()
             {
@@ -554,7 +554,7 @@ public class NodeManager
             loadLock.unlock();
         }
     }
-    
+
     public Relationship getRelationshipById( long id ) throws NotFoundException
     {
         Relationship relationship = getRelationshipByIdOrNull( id );
@@ -571,7 +571,7 @@ public class NodeManager
         return new PrefetchingIterator<Relationship>()
         {
             private long currentId;
-            
+
             @Override
             protected Relationship fetchNextOrNull()
             {
@@ -594,7 +594,7 @@ public class NodeManager
             }
         };
     }
-    
+
     RelationshipType getRelationshipTypeById( int id )
     {
         return relTypeHolder.getRelationshipType( id );
@@ -721,7 +721,7 @@ public class NodeManager
     {
          relCache.putAll( map );
     }
-    
+
     ArrayMap<Integer, PropertyData> loadGraphProperties( boolean light )
     {
         return persistenceManager.graphLoadProperties( light );
@@ -771,12 +771,12 @@ public class NodeManager
                 se );
         }
     }
-    
-    public <T extends PropertyContainer> boolean indexPutIfAbsent( Index<T> index, T entity, String key, Object value )
+
+    public <T extends PropertyContainer> T indexPutIfAbsent( Index<T> index, T entity, String key, Object value )
     {
         T existing = index.get( key, value ).getSingle();
-        if ( existing != null ) return false;
-        
+        if ( existing != null ) return existing;
+
         // Grab lock
         IndexLock lock = new IndexLock( index.getName(), key );
         LockType.WRITE.acquire( lock, lockManager );
@@ -787,12 +787,12 @@ public class NodeManager
             if ( existing != null )
             {
                 LockType.WRITE.release( lock, lockManager );
-                return false;
+                return existing;
             }
-            
+
             // Add
             index.add( entity, key, value );
-            return true;
+            return null;
         }
         finally
         {
@@ -804,17 +804,17 @@ public class NodeManager
     {
         lockType.acquire( resource.asProxy( this ), lockManager );
     }
-    
+
     void acquireLock( PropertyContainer resource, LockType lockType )
     {
         lockType.acquire( resource, lockManager );
     }
-    
+
     void acquireIndexLock( String index, String key, LockType lockType )
     {
         lockType.acquire( new IndexLock( index, key ), lockManager );
     }
-    
+
     void releaseLock( Primitive resource, LockType lockType )
     {
         lockType.unacquire( resource.asProxy( this ), lockManager, lockReleaser );
@@ -824,12 +824,12 @@ public class NodeManager
     {
         lockType.unacquire( resource, lockManager, lockReleaser );
     }
-    
+
     void releaseIndexLock( String index, String key, LockType lockType )
     {
         lockType.unacquire( new IndexLock( index, key ), lockManager, lockReleaser );
     }
-    
+
     public static class IndexLock
     {
         private final String index;
@@ -840,7 +840,7 @@ public class NodeManager
             this.index = index;
             this.key = key;
         }
-        
+
         public String getIndex()
         {
             return index;
@@ -850,7 +850,7 @@ public class NodeManager
         {
             return key;
         }
-        
+
         @Override
         public int hashCode()
         {   // Auto-generated
@@ -888,7 +888,7 @@ public class NodeManager
             return true;
         }
     }
-    
+
     public long getHighestPossibleIdInUse( Class<?> clazz )
     {
         return idGenerator.getHighestPossibleIdInUse( clazz );
@@ -1025,7 +1025,7 @@ public class NodeManager
     {
         persistenceManager.graphRemoveProperty( property );
     }
-    
+
     ArrayMap<Integer,PropertyData> deleteRelationship( RelationshipImpl rel )
     {
         deletePrimitive( rel );
@@ -1148,7 +1148,7 @@ public class NodeManager
     {
         return this.lockReleaser;
     }
-    
+
     LockManager getLockManager()
     {
         return this.lockManager;
@@ -1314,17 +1314,17 @@ public class NodeManager
     {
         relationshipPropertyTrackers.remove( relationshipPropertyTracker );
     }
-    
+
     PersistenceManager getPersistenceManager()
     {
         return persistenceManager;
     }
-    
+
     private GraphProperties instantiateGraphProperties()
     {
         return new GraphProperties( this );
     }
-    
+
     public GraphProperties getGraphProperties()
     {
         return graphProperties;

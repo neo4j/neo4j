@@ -19,12 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
@@ -33,12 +27,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
+
+import static java.util.Arrays.asList;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.database.DatabaseBlockedException;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
@@ -46,6 +44,11 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.domain.URIHelper;
 import org.neo4j.server.rest.web.PropertyValueException;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
 
 public class IndexRelationshipFunctionalTest extends AbstractRestFunctionalTestBase
 {
@@ -71,7 +74,7 @@ public class IndexRelationshipFunctionalTest extends AbstractRestFunctionalTestB
      * GET ${org.neo4j.server.rest.web}/index/relationship/
      * <p/>
      * TODO: could be abstract
-     * 
+     *
      * @return the Reponse
      */
     public JaxRsResponse httpGetIndexRelationshipRoot()
@@ -83,7 +86,7 @@ public class IndexRelationshipFunctionalTest extends AbstractRestFunctionalTestB
      * POST ${org.neo4j.server.rest.web}/index/relationship {
      * "name":"index-name" "config":{ // optional map of index configuration
      * params "key1":"value1", "key2":"value2" } }
-     * 
+     *
      * POST ${org.neo4j.server.rest.web}/index/relationship/{indexName}/{key}/{
      * value} "http://uri.for.node.to.index"
      */
@@ -112,7 +115,7 @@ public class IndexRelationshipFunctionalTest extends AbstractRestFunctionalTestB
         String indexUri = response.getHeaders().get( "Location" ).get( 0 );
         assertNotNull( indexUri );
         assertEquals( Arrays.asList( (Long) relationshipId ), helper.getIndexedRelationships( indexName, key, value ) );
-        
+
         // Get the relationship from the indexed URI (Location in header)
         response = httpGet( indexUri );
         assertEquals( 200, response.getStatus() );
@@ -305,7 +308,7 @@ public class IndexRelationshipFunctionalTest extends AbstractRestFunctionalTestB
         assertEquals( 0, helper.getIndexedRelationships( indexName, key1, value2 ).size() );
         assertEquals( 0, helper.getIndexedRelationships( indexName, key2, value1 ).size() );
         assertEquals( 0, helper.getIndexedRelationships( indexName, key2, value2 ).size() );
-        
+
         // Delete the index
         response = RestRequest.req().delete( functionalTestHelper.indexRelationshipUri( indexName ) );
         assertEquals( 204, response.getStatus() );
@@ -357,5 +360,43 @@ public class IndexRelationshipFunctionalTest extends AbstractRestFunctionalTestB
                 .post( functionalTestHelper.indexRelationshipUri( indexName ), corruptJson );
 
         assertEquals( 400, response.getStatus() );
+    }
+
+    /**
+     * Create a unique relationship in an index.
+     */
+    @Documented
+    @Test
+    public void get_or_create_relationship() throws Exception
+    {
+        final String index = "knowledge", key = "name", value = "Tobias";
+        helper.createRelationshipIndex( index );
+        long start = helper.createNode();
+        long end = helper.createNode();
+        gen.get()
+           .expectedStatus( 201 /* created */)
+           .payloadType( MediaType.APPLICATION_JSON_TYPE )
+           .payload( "{\"key\": \"" + key + "\", \"value\":\"" + value +
+                     "\", \"start\": \"" + functionalTestHelper.nodeUri( start ) +
+                     "\", \"end\": \"" + functionalTestHelper.nodeUri( end ) +
+                     "\", \"type\": \"" + index + "\"}" )
+           .post( functionalTestHelper.relationshipIndexUri() + index + "/?unique" );
+    }
+
+    /**
+     * Add a relationship to an index unless a relationship already exists for the given mapping.
+     */
+    @Documented
+    @Test
+    public void put_relationship_if_absent() throws Exception
+    {
+        final String index = "knowledge", key = "name", value = "Mattias";
+        helper.createRelationshipIndex( index );
+        gen.get()
+           .expectedStatus( 201 /* created */)
+           .payloadType( MediaType.APPLICATION_JSON_TYPE )
+           .payload( "{\"key\": \"" + key + "\", \"value\":\"" + value +
+                     "\", \"uri\": \"" + functionalTestHelper.relationshipUri( helper.createRelationship( index ) ) + "\"}" )
+           .post( functionalTestHelper.relationshipIndexUri() + index + "/?unique" );
     }
 }

@@ -1466,6 +1466,23 @@ RETURN x0.name?
     assert(List() === result.toList)
   }
 
+  @Ignore
+  @Test def shouldBeAbleToHandleMultipleOptionalRelationshipsAndMultipleStartPoints() {
+    val a = createNode()
+    val b = createNode()
+    val z = createNode()
+    val x = createNode()
+    val y = createNode()
+
+    relate(a,z)
+    relate(a,x)
+    relate(b,x)
+    relate(b,y)
+
+    val result = parseAndExecute("""START a=node(1), b=node(2) match a-[?]->x<-[?]-b return x""")
+    assert(List(z,x,y) === result.columnAs[Node]("x").toList)
+  }
+
   @Test def shouldFindNodesBothDirections() {
     val a = createNode()
     relate(a, refNode, "Admin")
@@ -1475,5 +1492,27 @@ RETURN x0.name?
     val result2 = parseAndExecute("""start n = node(1) match (n) -[:Admin]- (b) return Id(n), Id(b)""")
     assert(List(Map("ID(n)"->1, "ID(b)"->0)) === result2.toList)
   }
-}
 
+  @Ignore("Issue 168")
+  @Test def shouldAllowOrderingOnAggregateFunction() {
+    createNode()
+
+    val result = parseAndExecute("start n = node({nodeId}) match (n)-[:KNOWS]-(c) return n, count(c) as cnt order by count(c)")
+    assert(List() === result.toList)
+  }
+
+  @Test def shouldIgnoreNodesInParameters() {
+    val a = createNode()
+    relate(refNode, a, "X")
+
+    val result = parseAndExecute("start c = node(1) match (n)--(c) return n", "self" -> refNode)
+    assert(1 === result.size)
+  }
+
+  @Test def shouldHandleParametersNamedAsIdentifiers() {
+    val a = createNode("bar"->"Andres")
+
+    val result = parseAndExecute("start foo=node(1) where foo.bar = {foo} return foo.bar", "foo" -> "Andres")
+    assert(List(Map("foo.bar"->"Andres")) === result.toList)
+  }
+}

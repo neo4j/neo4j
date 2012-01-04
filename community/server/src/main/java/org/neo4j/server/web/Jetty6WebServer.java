@@ -19,23 +19,8 @@
  */
 package org.neo4j.server.web;
 
-import static java.lang.String.format;
-
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
-
-import javax.servlet.Filter;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import com.sun.jersey.api.core.ResourceConfig;
+import com.sun.jersey.spi.container.servlet.ServletContainer;
 import org.mortbay.component.LifeCycle;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Handler;
@@ -43,24 +28,29 @@ import org.mortbay.jetty.Server;
 import org.mortbay.jetty.SessionManager;
 import org.mortbay.jetty.handler.MovedContextHandler;
 import org.mortbay.jetty.nio.SelectChannelConnector;
-import org.mortbay.jetty.servlet.Context;
-import org.mortbay.jetty.servlet.FilterHolder;
-import org.mortbay.jetty.servlet.HashSessionManager;
-import org.mortbay.jetty.servlet.ServletHolder;
-import org.mortbay.jetty.servlet.SessionHandler;
+import org.mortbay.jetty.servlet.*;
 import org.mortbay.jetty.webapp.WebAppContext;
 import org.mortbay.resource.Resource;
 import org.mortbay.thread.QueuedThreadPool;
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.guard.GuardingRequestFilter;
 import org.neo4j.server.guard.Guard;
+import org.neo4j.server.guard.GuardingRequestFilter;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.rest.security.SecurityFilter;
 import org.neo4j.server.rest.security.SecurityRule;
 import org.neo4j.server.rest.web.AllowAjaxFilter;
 
-import com.sun.jersey.api.core.ResourceConfig;
-import com.sun.jersey.spi.container.servlet.ServletContainer;
+import javax.servlet.Filter;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.*;
+
+import static java.lang.String.format;
 
 public class Jetty6WebServer implements WebServer
 {
@@ -216,6 +206,7 @@ public class Jetty6WebServer implements WebServer
 
         ServletContainer container = new NeoServletContainer( server, server.getInjectables( packageNames ) );
         ServletHolder servletHolder = new ServletHolder( container );
+        servletHolder.setInitParameter(ResourceConfig.FEATURE_DISABLE_WADL, String.valueOf(true));
         servletHolder.setInitParameter( "com.sun.jersey.config.property.packages", toCommaSeparatedList( packageNames ) );
         servletHolder.setInitParameter( ResourceConfig.PROPERTY_CONTAINER_RESPONSE_FILTERS,
                 AllowAjaxFilter.class.getName() );

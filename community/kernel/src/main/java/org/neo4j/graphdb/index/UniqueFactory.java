@@ -19,6 +19,9 @@
  */
 package org.neo4j.graphdb.index;
 
+import java.util.Collections;
+import java.util.Map;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -26,25 +29,25 @@ import org.neo4j.graphdb.Relationship;
 
 /**
  * A utility class for creating unique (with regard to a given index) entities.
- * 
+ *
  * Uses the {@link Index#putIfAbsent(PropertyContainer, String, Object) putIfAbsent() method} of the referenced index.
- * 
+ *
  * @author Tobias Lindaaker <tobias.lindaaker@neotechnology.com>
- * 
+ *
  * @param <T> the type of entity created by this {@link UniqueFactory}.
  */
 public abstract class UniqueFactory<T extends PropertyContainer>
 {
     /**
      * Implementation of {@link UniqueFactory} for {@link Node}.
-     * 
+     *
      * @author Tobias Lindaaker <tobias.lindaaker@neotechnology.com>
      */
     public static abstract class UniqueNodeFactory extends UniqueFactory<Node>
     {
         /**
          * Create a new {@link UniqueFactory} for nodes.
-         * 
+         *
          * @param index the index to store entities uniquely in.
          */
         public UniqueNodeFactory( Index<Node> index )
@@ -54,7 +57,7 @@ public abstract class UniqueFactory<T extends PropertyContainer>
 
         /**
          * Create a new {@link UniqueFactory} for nodes.
-         * 
+         *
          * @param graphdb the graph database to get the index from.
          * @param index the name of the index to store entities uniquely in.
          */
@@ -64,28 +67,27 @@ public abstract class UniqueFactory<T extends PropertyContainer>
         }
 
         /**
-         * Implement this method to initialize the {@link Node} created for being stored in the index.
-         * 
-         * This method will be invoked exactly once per created unique node.
-         * 
-         * The created node might be discarded if another thread creates an node concurrently.
-         * This method will however only be invoked in the transaction that succeeds in creating the node.
-         * 
-         * @param node the created node to initialize.
-         * @param key the key under which this node is uniquely indexed.
-         * @param value the value with which this node is uniquely indexed.
+         * Default implementation of {@link UniqueFactory#create(Map)}, creates a plain node. Override to
+         * retrieve the node to add to the index by some other means than by creating it. For initialization of the
+         * {@link Node}, use the {@link UniqueFactory#initialize(PropertyContainer, Map)} method.
+         *
+         * @see UniqueFactory#create(Map)
+         * @see UniqueFactory#initialize(PropertyContainer, Map)
          */
         @Override
-        protected abstract void initialize( Node node, String key, Object value );
-
-        @Override
-        final Node create( String key, Object value )
+        protected Node create( Map<String, Object> properties )
         {
             return graphDatabase().createNode();
         }
 
+        /**
+         * Default implementation of {@link UniqueFactory#delete(PropertyContainer)}. Invokes
+         * {@link Node#delete()}.
+         *
+         * @see UniqueFactory#delete(PropertyContainer)
+         */
         @Override
-        void delete( Node node )
+        protected void delete( Node node )
         {
             node.delete();
         }
@@ -93,14 +95,14 @@ public abstract class UniqueFactory<T extends PropertyContainer>
 
     /**
      * Implementation of {@link UniqueFactory} for {@link Relationship}.
-     * 
+     *
      * @author Tobias Lindaaker <tobias.lindaaker@neotechnology.com>
      */
     public static abstract class UniqueRelationshipFactory extends UniqueFactory<Relationship>
     {
         /**
          * Create a new {@link UniqueFactory} for relationships.
-         * 
+         *
          * @param index the index to store entities uniquely in.
          */
         public UniqueRelationshipFactory( Index<Relationship> index )
@@ -110,7 +112,7 @@ public abstract class UniqueFactory<T extends PropertyContainer>
 
         /**
          * Create a new {@link UniqueFactory} for relationships.
-         * 
+         *
          * @param graphdb the graph database to get the index from.
          * @param index the name of the index to store entities uniquely in.
          */
@@ -120,30 +122,65 @@ public abstract class UniqueFactory<T extends PropertyContainer>
         }
 
         /**
-         * Implement this method to create the {@link Relationship} to index.
-         * 
-         * This method will be invoked exactly once per transaction that attempts to create an entry in the index.
-         * The created relationship might be discarded if another thread creates a relationship with the same mapping concurrently.
-         * 
-         * @param key the key under which this relationship is uniquely indexed.
-         * @param value the value with which this relationship is uniquely indexed.
-         * @return the relationship to add to the index.
+         * Default implementation of {@link UniqueFactory#initialize(PropertyContainer, Map)}, does nothing
+         * for {@link Relationship Relationships}. Override to perform some action with the guarantee that this method
+         * is only invoked for the transaction that succeeded in creating the {@link Relationship}.
+         *
+         * @see UniqueFactory#initialize(PropertyContainer, Map)
+         * @see UniqueFactory#create(Map)
          */
         @Override
-        protected abstract Relationship create( String key, Object value );
-
-        @Override
-        void initialize( Relationship relationship, String key, Object value )
+        protected void initialize( Relationship relationship, Map<String, Object> properties )
         {
-            // creation is done in create()
+            // this class has the create() method, initialize() is optional
         }
 
+        /**
+         * Default implementation of {@link UniqueFactory#delete(PropertyContainer)}. Invokes
+         * {@link Relationship#delete()}.
+         *
+         * @see UniqueFactory#delete(PropertyContainer)
+         */
         @Override
-        void delete( Relationship relationship )
+        protected void delete( Relationship relationship )
         {
             relationship.delete();
         }
     }
+
+    /**
+     * Implement this method to create the @{link Node} or {@link Relationship} to index.
+     *
+     * This method will be invoked exactly once per transaction that attempts to create an entry in the index.
+     * The created entity might be discarded if another thread creates an entity with the same mapping concurrently.
+     *
+     * @param properties the properties that this entity will is to be indexed uniquely with.
+     * @return the entity to add to the index.
+     */
+    protected abstract T create( Map<String, Object> properties );
+
+    /**
+     * Implement this method to initialize the {@link Node} or {@link Relationship} created for being stored in the index.
+     *
+     * This method will be invoked exactly once per created unique entity.
+     *
+     * The created entity might be discarded if another thread creates an entity concurrently.
+     * This method will however only be invoked in the transaction that succeeds in creating the node.
+     *
+     * @param created the created entity to initialize.
+     * @param properties the properties that this entity was indexed uniquely with.
+     */
+    protected abstract void initialize( T created, Map<String, Object> properties );
+
+    /**
+     * Invoked after a new entity has been {@link #create(Map) created}, but adding it to the index failed (due to being
+     * added by another transaction concurrently). The purpose of this method is to undo the {@link #create(Map)
+     * creation of the entity}, the default implementations of this method remove the entity. Override this method to
+     * define a different behavior.
+     *
+     * @param created the entity that was created but was not added to the index.
+     */
+    protected abstract void delete( T created );
 
     /**
      * Get the indexed entity, creating it (exactly once) if no indexed entity exists.
@@ -153,37 +190,20 @@ public abstract class UniqueFactory<T extends PropertyContainer>
      */
     public final T getOrCreate( String key, Object value )
     {
-        T result, created = null;
-        try
+        T result = index.get( key, value ).getSingle();
+        if ( result != null ) return result;
+        Map<String, Object> properties = Collections.singletonMap( key, value );
+        T created = create( properties );
+        result = index.putIfAbsent( created, key, value );
+        if ( result == null )
         {
-            do
-            {
-                result = index.get( key, value ).getSingle();
-                if ( result != null ) return result;
-                if ( created == null )
-                {
-                    created = create( key, value );
-                    if ( created == null )
-                        throw new AssertionError( "create() returned null" );
-                }
-                result = created;
-                if ( index.putIfAbsent( result, key, value ) )
-                {
-                    initialize( result, key, value );
-                    created = null;
-                    return result;
-                }
-                else
-                {
-                    result = null; // try again
-                }
-            }
-            while ( result == null );
-            return result;
+            initialize( created, properties );
+            return created;
         }
-        finally
+        else
         {
-            if ( created != null ) delete( created );
+            delete( created );
+            return result;
         }
     }
 
@@ -211,10 +231,4 @@ public abstract class UniqueFactory<T extends PropertyContainer>
     {
         this.index = index;
     }
-
-    abstract T create( String key, Object value );
-
-    abstract void initialize( T created, String key, Object value );
-
-    abstract void delete( T result );
 }

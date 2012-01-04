@@ -29,7 +29,7 @@ public interface InputFormat
 {
     Object readValue( String input ) throws BadInputException;
 
-    Map<String, Object> readMap( String input ) throws BadInputException;
+    Map<String, Object> readMap( String input, String... requiredKeys ) throws BadInputException;
 
     List<Object> readList( String input ) throws BadInputException;
 

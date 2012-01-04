@@ -21,8 +21,10 @@ package org.neo4j.server.rest.repr;
 
 import java.net.URI;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -97,16 +99,18 @@ public class DefaultFormat extends RepresentationFormat
     }
 
     @Override
-    public Map<String, Object> readMap( String input ) throws BadInputException
+    public Map<String, Object> readMap( String input, String... requiredKeys ) throws BadInputException
     {
+        Map<String, Object> result;
         try
         {
-            return inner.readMap( input );
+            result = inner.readMap( input );
         }
         catch ( BadInputException e )
         {
             throw newMediaTypeNotSupportedException();
         }
+        return validateKeys( result, requiredKeys );
     }
 
     @Override
@@ -133,5 +137,26 @@ public class DefaultFormat extends RepresentationFormat
         {
             throw newMediaTypeNotSupportedException();
         }
+    }
+
+    public static <T> Map<String, T> validateKeys( Map<String, T> map, String... requiredKeys ) throws BadInputException
+    {
+        Set<String> missing = null;
+        for ( String key : requiredKeys )
+        {
+            if ( !map.containsKey( key ) ) ( missing == null ? ( missing = new HashSet<String>() ) : missing ).add( key );
+        }
+        if ( missing != null )
+        {
+            if ( missing.size() == 1 )
+            {
+                throw new BadInputException( "Missing required key: \"" + missing.iterator().next() + "\"" );
+            }
+            else
+            {
+                throw new BadInputException( "Missing required keys: " + missing );
+            }
+        }
+        return map;
     }
 }

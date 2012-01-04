@@ -19,24 +19,6 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static org.apache.lucene.search.NumericRangeQuery.newIntRange;
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.index.Neo4jTestCase.assertContains;
-import static org.neo4j.index.Neo4jTestCase.assertContainsInOrder;
-import static org.neo4j.index.impl.lucene.Contains.contains;
-import static org.neo4j.index.impl.lucene.IsEmpty.isEmpty;
-import static org.neo4j.index.lucene.QueryContext.numericRange;
-import static org.neo4j.index.lucene.ValueContext.numeric;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -73,10 +55,28 @@ import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
+import static org.apache.lucene.search.NumericRangeQuery.newIntRange;
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsNull.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.index.Neo4jTestCase.assertContains;
+import static org.neo4j.index.Neo4jTestCase.assertContainsInOrder;
+import static org.neo4j.index.impl.lucene.Contains.contains;
+import static org.neo4j.index.impl.lucene.IsEmpty.isEmpty;
+import static org.neo4j.index.lucene.QueryContext.numericRange;
+import static org.neo4j.index.lucene.ValueContext.numeric;
+
 public class TestLuceneIndex extends AbstractLuceneIndexTest
 {
     public final @Rule TestName testname = new TestName();
-    
+
     @SuppressWarnings( "unchecked" )
     private <T extends PropertyContainer> void makeSureAdditionsCanBeRead(
             Index<T> index, EntityCreator<T> entityCreator )
@@ -1360,7 +1360,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         String TEXT = "text";
         String NUMERIC = "numeric";
         String TEXT_1 = "text_1";
-        
+
         Index<Node> index = nodeIndex( "update-index", LuceneIndexImplementation.EXACT_CONFIG );
         Node n = graphDb.createNode();
         index.add(n, NUMERIC, new ValueContext(5).indexNumeric());
@@ -1381,7 +1381,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         // Test fails here
         assertNotNull( index.query(QueryContext.numericRange(NUMERIC, 5, 5, true, true)).getSingle() );
     }
-    
+
     @Test
     public void exactIndexWithCaseInsensitive() throws Exception
     {
@@ -1392,7 +1392,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         restartTx();
         assertContains( index.query( "name", "\"maTTias perSson\"" ), node );
     }
-    
+
     @Test
     public void notAbleToRemoveWithForbiddenKey() throws Exception
     {
@@ -1448,14 +1448,14 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         String key = "name";
         String value = "Mattias";
         String value2 = "Persson";
-        assertTrue( index.putIfAbsent( node, key, value ) );
+        assertNull( index.putIfAbsent( node, key, value ) );
         assertEquals( node, index.get( key, value ).getSingle() );
-        assertFalse( index.putIfAbsent( node, key, value ) );
-        assertTrue( index.putIfAbsent( node, key, value2 ) );
-        assertFalse( index.putIfAbsent( node, key, value2 ) );
+        assertNotNull( index.putIfAbsent( node, key, value ) );
+        assertNull( index.putIfAbsent( node, key, value2 ) );
+        assertNotNull( index.putIfAbsent( node, key, value2 ) );
         restartTx();
-        assertFalse( index.putIfAbsent( node, key, value ) );
-        assertFalse( index.putIfAbsent( node, key, value2 ) );
+        assertNotNull( index.putIfAbsent( node, key, value ) );
+        assertNotNull( index.putIfAbsent( node, key, value2 ) );
         assertEquals( node, index.get( key, value ).getSingle() );
     }
 
@@ -1467,16 +1467,16 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         commitTx();
         String key = "name";
         String value = "Mattias";
-        
+
         WorkThread t1 = new WorkThread( index, graphDb, node );
         WorkThread t2 = new WorkThread( index, graphDb, node );
         t1.beginTransaction();
         t2.beginTransaction();
-        assertTrue( t2.putIfAbsent( node, key, value ).get() );
-        Future<Boolean> futurePut = t1.putIfAbsent( node, key, value );
+        assertNull( t2.putIfAbsent( node, key, value ).get() );
+        Future<Node> futurePut = t1.putIfAbsent( node, key, value );
         t1.waitUntilWaiting();
         t2.commit();
-        assertFalse( futurePut.get() );
+        assertNotNull( futurePut.get() );
         t1.commit();
 
         assertEquals( node, index.get( key, value ).getSingle() );
@@ -1491,15 +1491,15 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         String key = "name";
         String value = "Mattias";
         String otherValue = "Tobias";
-        
+
         WorkThread t1 = new WorkThread( index, graphDb, node );
         WorkThread t2 = new WorkThread( index, graphDb, node );
         t1.beginTransaction();
         t2.beginTransaction();
-        assertTrue( t2.putIfAbsent( node, key, value ).get() );
-        Future<Boolean> futurePut = t1.putIfAbsent( node, key, otherValue );
+        assertNull( t2.putIfAbsent( node, key, value ).get() );
+        Future<Node> futurePut = t1.putIfAbsent( node, key, otherValue );
         t2.commit();
-        assertTrue( futurePut.get() );
+        assertNull( futurePut.get() );
         t1.commit();
 
         assertEquals( node, index.get( key, value ).getSingle() );
@@ -1515,20 +1515,20 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         String key = "name";
         String otherKey = "friend";
         String value = "Mattias";
-        
+
         WorkThread t1 = new WorkThread( index, graphDb, node );
         WorkThread t2 = new WorkThread( index, graphDb, node );
         t1.beginTransaction();
         t2.beginTransaction();
-        assertTrue( t2.putIfAbsent( node, key, value ).get() );
-        assertTrue( t1.putIfAbsent( node, otherKey, value ).get() );
+        assertNull( t2.putIfAbsent( node, key, value ).get() );
+        assertNull( t1.putIfAbsent( node, otherKey, value ).get() );
         t2.commit();
         t1.commit();
 
         assertEquals( node, index.get( key, value ).getSingle() );
         assertEquals( node, index.get( otherKey, value ).getSingle() );
     }
-    
+
     @Test
     public void putIfAbsentShouldntBlockIfNotAbsent() throws Exception
     {
@@ -1538,70 +1538,70 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         String value = "value";
         index.add( node, key, value );
         restartTx();
-        
+
         WorkThread otherThread = new WorkThread( index, graphDb, node );
         otherThread.beginTransaction();
-        
+
         // Should not grab lock
         index.putIfAbsent( node, key, value );
-        
+
         // Should be able to complete right away
-        assertFalse( otherThread.putIfAbsent( node, key, value ).get() );
-        
+        assertNotNull( otherThread.putIfAbsent( node, key, value ).get() );
+
         otherThread.commit();
         commitTx();
     }
-    
+
     @Test
     public void getOrCreateNodeWithUniqueFactory() throws Exception
     {
         final String key = "name";
         final String value = "Mattias";
         final String property = "counter";
-        
+
         final Index<Node> index = nodeIndex( testname.getMethodName(), LuceneIndexImplementation.EXACT_CONFIG );
         final AtomicInteger counter = new AtomicInteger();
         UniqueFactory<Node> factory = new UniqueFactory.UniqueNodeFactory( index )
         {
             @Override
-            protected void initialize( Node node, String k, Object v )
+            protected void initialize( Node node, Map<String, Object> properties )
             {
-                assertEquals( key, k );
-                assertEquals( value, v );
+                assertEquals( value, properties.get( key ) );
+                assertEquals( 1, properties.size() );
                 node.setProperty( property, counter.getAndIncrement() );
             }
         };
         Node unique = factory.getOrCreate( key, value );
-        
+
         assertNotNull( unique );
         assertEquals( "not initialized", 0, unique.getProperty( property, null ) );
         assertEquals( unique, index.get( key, value ).getSingle() );
-        
+
         assertEquals( unique, factory.getOrCreate( key, value ) );
         assertEquals( "initialized more than once", 0, unique.getProperty( property ) );
         assertEquals( unique, index.get( key, value ).getSingle() );
     }
-    
+
     @Test
     public void getOrCreateRelationshipWithUniqueFactory() throws Exception
     {
         final String key = "name";
         final String value = "Mattias";
-        
+
         final Node root = graphDb.createNode();
         final Index<Relationship> index = relationshipIndex( testname.getMethodName(), LuceneIndexImplementation.EXACT_CONFIG );
         final DynamicRelationshipType type = DynamicRelationshipType.withName( "SINGLE" );
         UniqueFactory<Relationship> factory = new UniqueFactory.UniqueRelationshipFactory( index )
         {
             @Override
-            protected Relationship create( String k, Object v )
+            protected Relationship create( Map<String, Object> properties )
             {
-                assertEquals( key, k );
-                assertEquals( value, v );
+                assertEquals( value, properties.get( key ) );
+                assertEquals( 1, properties.size() );
                 return root.createRelationshipTo( graphDatabase().createNode(), type );
             }
         };
-        
+
         Relationship unique = factory.getOrCreate( key, value );
         assertEquals( unique, root.getSingleRelationship( type, Direction.BOTH ) );
         assertNotNull( unique );
@@ -1612,14 +1612,14 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         assertEquals( unique, root.getSingleRelationship( type, Direction.BOTH ) );
         assertEquals( unique, index.get( key, value ).getSingle() );
     }
-    
+
     @Test
     public void getOrCreateMultiThreaded() throws Exception
     {
         Index<Node> index = nodeIndex( testname.getMethodName(), LuceneIndexImplementation.EXACT_CONFIG );
         String key = "name";
         String value = "Mattias";
-        
+
         WorkThread t1 = new WorkThread( index, graphDb, null );
         WorkThread t2 = new WorkThread( index, graphDb, null );
         t1.beginTransaction();
@@ -1636,7 +1636,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
         assertEquals( node, index.get( key, value ).getSingle() );
     }
-    
+
     @Test
     public void useStandardAnalyzer() throws Exception
     {

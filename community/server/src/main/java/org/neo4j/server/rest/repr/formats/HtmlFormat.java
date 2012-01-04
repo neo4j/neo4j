@@ -250,7 +250,7 @@ public class HtmlFormat extends RepresentationFormat
             builder.append( "<ul>" );
             {
                 builder.append( "<li>" );
-                Map<?, ?> indexMap = (Map<?, ?>) indexMapObject;
+                Map<?, ?> indexMap = indexMapObject;
                 String keyId = "key_" + counter;
                 String valueId = "value_" + counter;
                 builder.append( "<form action='javascript:neo4jHtmlBrowse.search(\"" )
@@ -377,7 +377,7 @@ public class HtmlFormat extends RepresentationFormat
     }
 
     @Override
-    public Map<String, Object> readMap( String input ) throws BadInputException
+    public Map<String, Object> readMap( String input, String... requiredKeys ) throws BadInputException
     {
         throw new WebApplicationException( Response.status( Response.Status.UNSUPPORTED_MEDIA_TYPE )
                 .entity( "Cannot read html" )

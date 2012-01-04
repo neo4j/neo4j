@@ -204,7 +204,10 @@ case class Entity(entityName: String) extends CastableExpression {
 }
 
 case class Parameter(parameterName: String) extends CastableExpression {
-  def apply(m: Map[String, Any]): Any = m.getOrElse(parameterName, throw new ParameterNotFoundException("Expected a parameter named " + parameterName))
+  def apply(m: Map[String, Any]): Any = m.getOrElse("-=PARAMETER=-"+parameterName+"-=PARAMETER=-", throw new ParameterNotFoundException("Expected a parameter named " + parameterName)) match {
+    case ParameterValue(x) => x
+    case _ => throw new ParameterNotFoundException("Expected a parameter named " + parameterName)
+  }
 
   def identifier: Identifier = Identifier(parameterName, AnyType())
 
@@ -212,3 +215,5 @@ case class Parameter(parameterName: String) extends CastableExpression {
 
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = Seq()
 }
+
+case class ParameterValue(value:Any)
