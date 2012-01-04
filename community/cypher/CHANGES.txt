@@ -2,6 +2,9 @@
 ------------------
 o Added a different aggregation logic. Makes aggregating on the same columns as sorting much faster
 o Made it possible to query on array properties
+o Fixed bug #157 - Comparing things of different types now gives false instead of type error
+o Fixed bug #140 - Identifier can now named same thing as a parameter
+o Fixed bug that tripped up the patter matchern when a nodes is sent in as a parameter
 
 1.6.M02 (2011-12-16)
 --------------------
