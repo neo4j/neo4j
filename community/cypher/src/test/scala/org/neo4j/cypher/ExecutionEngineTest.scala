@@ -1515,4 +1515,18 @@ RETURN x0.name?
     val result = parseAndExecute("start foo=node(1) where foo.bar = {foo} return foo.bar", "foo" -> "Andres")
     assert(List(Map("foo.bar"->"Andres")) === result.toList)
   }
+
+  @Test def shouldHandleComparisonsWithDifferentTypes() {
+    val a = createNode("belt"->13)
+
+    val result = parseAndExecute("start n=node(1) where n.belt = 'white' OR n.belt = false return n")
+    assert(List() === result.toList)
+  }
+
+  @Test def shouldAllowComparisonsOfNodes() {
+    val a = createNode()
+
+    val result = parseAndExecute("start a=node(0,1),b=node(1,0) where a != b return a,b")
+    assert(List(Map("a"->refNode, "b"->a),Map("b"->refNode, "a"->a)) === result.toList)
+  }
 }

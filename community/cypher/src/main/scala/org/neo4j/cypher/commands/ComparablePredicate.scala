@@ -20,8 +20,9 @@
 package org.neo4j.cypher.commands
 
 import collection.Seq
-import org.neo4j.cypher.symbols.{ScalarType, Identifier}
 import org.neo4j.cypher.internal.Comparer
+import java.lang.String
+import org.neo4j.cypher.symbols.{AnyType, ScalarType, Identifier}
 
 // TODO: Allow comparison of nodes and rels
 // This should be split into two - one for relative comparisons < > and so on, and one for equality comparisons = !=
@@ -50,9 +51,25 @@ abstract sealed class ComparablePredicate(a: Expression, b: Expression) extends 
   def containsIsNull: Boolean = false
 }
 
-case class Equals(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
-  def compare(comparisonResult: Int) = comparisonResult == 0
-  def sign: String = "=="
+case class Equals(a: Expression, b: Expression) extends Predicate with Comparer {
+  def isMatch(m: Map[String, Any]): Boolean = {
+    val left = a(m)
+    val right = b(m)
+
+    if((a.isInstanceOf[Nullable] && left == null) ||
+      (b.isInstanceOf[Nullable] && right == null))
+      true
+    else
+      left == right
+  }
+
+  def atoms = Seq(this)
+
+  def containsIsNull = false
+
+  def dependencies = a.dependencies(AnyType()) ++ b.dependencies(AnyType())
+
+  override def toString = a.toString() + " == " + b.toString()
 }
 
 case class LessThan(a: Expression, b: Expression) extends ComparablePredicate(a, b) {

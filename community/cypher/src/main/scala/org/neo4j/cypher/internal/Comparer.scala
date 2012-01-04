@@ -27,12 +27,12 @@ import org.neo4j.cypher.SyntaxException
  * Comparer is a trait that enables it's subclasses to compare to AnyRef with each other.
  */
 trait Comparer {
-  def compareValuesOfSameType(l: AnyRef, r: AnyRef): Int = (l, r) match {
+  private def compareValuesOfSameType(l: AnyRef, r: AnyRef): Int = (l, r) match {
     case (left: Comparable[AnyRef], right: Comparable[AnyRef]) => left.compareTo(right)
     case _ => throw new RuntimeException("This shouldn't happen")
   }
 
-  def compareValuesOfDifferentTypes(l: Any, r: Any): Int = (l, r) match {
+  private def compareValuesOfDifferentTypes(l: Any, r: Any): Int = (l, r) match {
     case (left: Long, right: Number) => BigDecimal.valueOf(left).compareTo(BigDecimal.valueOf(right.doubleValue()))
     case (left: Number, right: Long) => BigDecimal.valueOf(left.doubleValue()).compareTo(BigDecimal.valueOf(right))
     case (left: Number, right: Number) => java.lang.Double.compare(left.doubleValue(), right.doubleValue())
@@ -46,7 +46,7 @@ trait Comparer {
     }
   }
 
-  def areComparableOfSameType(l: AnyRef, r: AnyRef): Boolean = {
+  private def areComparableOfSameType(l: AnyRef, r: AnyRef): Boolean = {
     l.isInstanceOf[Comparable[_]] &&
       r.isInstanceOf[Comparable[_]] &&
       l.getClass.isInstance(r)
@@ -68,7 +68,6 @@ trait Comparer {
       }
     comparisonResult
   }
-
 }
 
 
