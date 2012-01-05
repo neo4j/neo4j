@@ -19,7 +19,8 @@
  */
 package org.neo4j.server.rest;
 
-import java.io.StringWriter;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.ObjectWriter;
 
 /*
  * Naive implementation of a JSON prettifier.
@@ -30,50 +31,19 @@ public class JSONPrettifier
 
     public static String parse( final String json )
     {
-        StringWriter w = new StringWriter();
-        String indent = "\n";
-        boolean inString = false, escaped = false;
-
-        for ( char c : json.toCharArray() )
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectWriter writer = mapper.defaultPrettyPrintingWriter();
+        Object myObject;
+        try
         {
-            if ( c == '\\' )
-            { // Track escape characters
-                escaped = !escaped;
-                w.append( c );
-            }
-            else if ( c == '"' && !escaped )
-            { // Enter and exit strings
-                inString = !inString;
-                w.append( c );
-            }
-            else if ( inString )
-            { // Inside strings
-                w.append( c );
-            }
-            else if ( c == '[' || c == '{' )
-            { // Opening brackets
-                w.append( c );
-                indent += INDENTATION;
-                w.append( indent );
-            }
-            else if ( c == ']' || c == '}' )
-            { // Closing brackets
-                indent = indent.substring( 0,
-                        indent.length() - INDENTATION.length() );
-                w.append( indent );
-                w.append( c );
-            }
-            else if ( c == ',' )
-            { // Comma
-                w.append( c );
-                w.append( indent );
-            }
-            else
-            { // Everything else
-                w.append( c );
-            }
+            myObject = mapper.readValue( json, Object.class );
+            return writer.writeValueAsString(myObject );
         }
-
-        return w.toString();
+        catch ( Exception e )
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        throw new RuntimeException( "bad input " + json );
     }
 }
