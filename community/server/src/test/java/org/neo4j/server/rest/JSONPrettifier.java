@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.rest;
 
+import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectWriter;
 
@@ -27,10 +28,11 @@ import org.codehaus.jackson.map.ObjectWriter;
  */
 public class JSONPrettifier
 {
-    private static final String INDENTATION = "  ";
-
     public static String parse( final String json )
     {
+        if(json==null) {
+            return "";
+        }
         ObjectMapper mapper = new ObjectMapper();
         ObjectWriter writer = mapper.defaultPrettyPrintingWriter();
         Object myObject;
@@ -39,11 +41,15 @@ public class JSONPrettifier
             myObject = mapper.readValue( json, Object.class );
             return writer.writeValueAsString(myObject );
         }
+        catch ( JsonParseException e )
+        {
+            //this prolly isn't JSON
+            return json;
+        }
         catch ( Exception e )
         {
-            // TODO Auto-generated catch block
             e.printStackTrace();
+            throw new RuntimeException( "bad input " + json );
         }
-        throw new RuntimeException( "bad input " + json );
     }
 }
