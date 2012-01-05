@@ -6,6 +6,7 @@ o Fixed bug #157 - Comparing things of different types now gives false instead o
 o Fixed bug #140 - Identifier can now named same thing as a parameter
 o Fixed bug that tripped up the patter matchern when a node is sent in as a parameter
 o Fixed bug #168 - Ordering on renamed columns now works well
+o Fixed bug #170 - Arrays are now pretty-printed instead of Array.toString
 
 1.6.M02 (2011-12-16)
 --------------------
