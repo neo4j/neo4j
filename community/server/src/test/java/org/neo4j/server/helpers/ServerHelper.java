@@ -108,7 +108,6 @@ public class ServerHelper
     public static NeoServer createServer( boolean persistent ) throws IOException
     {
         ServerBuilder builder = ServerBuilder.server();
-        builder.onPort( 7000 );
         if ( persistent ) builder = builder.persistent();
         NeoServer server = builder.build();
         server.start();
