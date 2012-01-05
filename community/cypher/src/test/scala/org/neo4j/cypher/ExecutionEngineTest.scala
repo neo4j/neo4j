@@ -1530,6 +1530,17 @@ RETURN x0.name?
     assert(List(Map("ID(n)" -> 1, "ID(b)" -> 0)) === result2.toList)
   }
 
+  @Test def shouldToStringArraysPrettily() {
+    createNode("foo" -> Array("one", "two"))
+
+    val result = parseAndExecute("""start n = node(1) return n.foo""")
+
+
+    val string = result.dumpToString()
+
+    assertThat(string, containsString("""["one","two"]"""))
+  }
+
   @Test def shouldAllowOrderingOnAggregateFunction() {
     createNode()
 
