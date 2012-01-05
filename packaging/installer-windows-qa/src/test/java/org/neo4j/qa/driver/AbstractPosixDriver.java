@@ -28,6 +28,7 @@ public abstract class AbstractPosixDriver implements Neo4jDriver {
 
     protected VirtualMachine vm;
     protected SSHShell sh;
+    private Neo4jServerAPI serverAPI;
 
     public AbstractPosixDriver(VirtualMachine vm)
     {
@@ -62,6 +63,15 @@ public abstract class AbstractPosixDriver implements Neo4jDriver {
     public void destroyDatabase() {
         sh.run("rm -rf " + installDir() + "/data/graph.db");
     }
+
+    @Override
+    public Neo4jServerAPI api() {
+        if(serverAPI == null) {
+            System.out.println("http://" + vm().definition().ip() + ":7474");
+            serverAPI = new Neo4jServerAPI("http://" + vm().definition().ip() + ":7474");
+        }
+        return serverAPI;
+    }
     
     //
     // File management
@@ -89,10 +99,4 @@ public abstract class AbstractPosixDriver implements Neo4jDriver {
         sh.run("sed -i 's/^"+key+"=.*//g' "+configFilePath+" && echo " + key + "=" + value + " >> " + configFilePath);
     }
     
-    public SSHShell sh()
-    {
-        if(sh != null)
-            return sh;
-        throw new RuntimeException("No connection to machine. You need to run #up() before running any other commands.");
-    }
 }

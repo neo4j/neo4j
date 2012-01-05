@@ -43,6 +43,11 @@ public interface Neo4jDriver {
     void reboot();
 
     /**
+     * Boot this machine.
+     */
+    void up();
+
+    /**
      * Stop the neo4j service.
      */
     void stopService();
@@ -91,17 +96,18 @@ public interface Neo4jDriver {
     List<String> listDir(String string);
 
     /**
-     * Boot this machine.
-     */
-    void up();
-
-    /**
      * Modify a configuration file.
      * @param configFilePath
      * @param key
      * @param value
      */
     void setConfig(String configFilePath, String key, String value);
+    
+
+    /** 
+     * Get a simple REST API client
+     */
+    Neo4jServerAPI api();
 
 
 }

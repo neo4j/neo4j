@@ -185,6 +185,9 @@ public class VirtualMachine {
 
     private Result scp(String privateKeyPath, String from, String to, int port)
     {
+        from = escapeSshPathIfNecessary(from);
+        to = escapeSshPathIfNecessary(to);
+        
         Result r = sh.run("scp -i " + privateKeyPath
                 + " -o StrictHostKeyChecking=no" + " -P " + port + " " + from
                 + " " + to);
@@ -194,6 +197,14 @@ public class VirtualMachine {
         }
 
         return r;
+    }
+
+    private String escapeSshPathIfNecessary(String path)
+    {
+        if(path.contains(":") && path.contains("\\ ")) {
+            return "\"" + path + "\"";
+        }
+        return path;
     }
 
     /*

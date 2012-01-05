@@ -80,7 +80,7 @@ public abstract class AbstractWindowsDriver extends AbstractPosixDriver {
     
     @Override
     public void startService() {
-        Result r = sh().run("net start neo4j");
+        Result r = sh.run("net start neo4j");
         if(!r.getOutput().contains("service was started successfully")) {
             dumplog(installDir() + "/data/log/neo4j.0.0.log");
             throw new RuntimeException("Tried to start neo4j, failed. Output was: \n" + r.getOutput());
@@ -89,7 +89,7 @@ public abstract class AbstractWindowsDriver extends AbstractPosixDriver {
     
     @Override
     public void stopService() {
-        Result r = sh().run("net stop neo4j");
+        Result r = sh.run("net stop neo4j");
         if(!r.getOutput().contains("service was stopped successfully")) {
             dumplog(installDir() + "/data/log/neo4j.0.0.log");
             throw new RuntimeException("Tried to stop neo4j, failed. Output was: \n" + r.getOutput());

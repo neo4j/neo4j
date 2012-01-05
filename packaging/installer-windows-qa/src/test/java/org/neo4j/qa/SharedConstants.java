@@ -27,6 +27,11 @@ public class SharedConstants {
             "neo4j.installer-dir", System.getProperty("user.dir")
                     + "/target/classes/");
     
+
+    public static final String TEST_LOGS_DIR = System.getProperty(
+            "neo4j.installer-dir", System.getProperty("user.dir")
+                    + "/target/test-logs/");
+    
     public static final String WINDOWS_COMMUNITY_INSTALLER  = INSTALLER_DIR + "installer-windows-community.msi";
     public static final String WINDOWS_ADVANCED_INSTALLER   = INSTALLER_DIR + "installer-windows-advanced.msi";
     public static final String WINDOWS_ENTERPRISE_INSTALLER = INSTALLER_DIR + "installer-windows-enterprise.msi";

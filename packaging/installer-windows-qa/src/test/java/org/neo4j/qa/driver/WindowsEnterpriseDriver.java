@@ -64,7 +64,7 @@ public class WindowsEnterpriseDriver extends AbstractWindowsDriver implements En
     @Override
     public void startZookeeperService()
     {
-        Result r = sh().run("net start " + ZOOKEEPER_SERVICE);
+        Result r = sh.run("net start " + ZOOKEEPER_SERVICE);
         if(!r.getOutput().contains("service was started successfully")) {
             dumplog(installDir() + "/data/log/neo4j.0.0.log");
             dumplog(zookeeperInstallDir() + "/data/log/neo4j-zookeeper.log");
@@ -75,7 +75,7 @@ public class WindowsEnterpriseDriver extends AbstractWindowsDriver implements En
     @Override
     public void stopZookeeperService()
     {
-        Result r = sh().run("net stop " + ZOOKEEPER_SERVICE);
+        Result r = sh.run("net stop " + ZOOKEEPER_SERVICE);
         if(!r.getOutput().contains("service was stopped successfully")) {
             dumplog(installDir() + "/data/log/neo4j.0.0.log");
             dumplog(zookeeperInstallDir() + "/data/log/neo4j-zookeeper.log");
