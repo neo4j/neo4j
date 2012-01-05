@@ -68,6 +68,11 @@ OnlineBackup]
 == High Availability ==
 
 To perform a backup on an HA cluster you specify one or more coordinators managing that cluster.
+
+NOTE: If you have specified a cluster name for your HA cluster, you need to specify
+      it when doing backups, so that the backup system knows which cluster to back up.
+      Add the config parameter: -ha.cluster_name my_custom_cluster_name
+
 [source,shell]
 ----
 # Performing a full backup from HA cluster, specifying two possible coordinators
