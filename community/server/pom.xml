@@ -40,7 +40,7 @@
         <testWithExternalServer>false</testWithExternalServer>
 
         <webdriver.version>2.5.0</webdriver.version>
-        <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
+        <webdriver.implementation>Firefox</webdriver.implementation>
 
         <!-- Default location for chrome controller binary, used by webdriver for running tests in Chrome. Available from (http://code.google.com/p/chromium/downloads/list) see README.txt for details on this. -->
         <webdriver.chrome.driver>webdriver-binaries/chromedriver</webdriver.chrome.driver>
@@ -465,7 +465,7 @@
                 <configuration>
                     <systemPropertyVariables>
                         <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
-                        <webdriver.impl.class>${webdriver.impl.class}</webdriver.impl.class>
+                        <webdriver.implementation>${webdriver.implementation}</webdriver.implementation>
                         <webdriver.chrome.driver>${webdriver.chrome.driver}</webdriver.chrome.driver>
                         <webdriver.chrome.driver.download.url>${webdriver.chrome.driver.download.url}</webdriver.chrome.driver.download.url>
                     </systemPropertyVariables>
@@ -783,21 +783,15 @@
 
         <!-- Firefox is default implementation, set in properties at the top of this file. -->
         <profile>
-            <id>htmlunit</id>
-            <properties>
-                <webdriver.impl.class>org.openqa.selenium.htmlunit.HtmlUnitDriver</webdriver.impl.class>
-            </properties>
-        </profile>
-        <profile>
             <id>chrome-mac</id>
             <properties>
-                <webdriver.impl.class>org.openqa.selenium.chrome.ChromeDriver</webdriver.impl.class>
+                <webdriver.implementation>Chrome</webdriver.implementation>
             </properties>
         </profile>
         <profile>
-            <id>ie</id>
+            <id>sauce-labs-firefox-windows</id>
             <properties>
-                <webdriver.impl.class>org.openqa.selenium.ie.InternetExplorerDriver</webdriver.impl.class>
+                <webdriver.implementation>SauceLabsFirefoxWindows</webdriver.implementation>
             </properties>
         </profile>
 

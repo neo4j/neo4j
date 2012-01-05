@@ -30,11 +30,13 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
 {
     
     private static final String USE_DEV_HTML_FILE_KEY = "testWithDevHtmlFile";
+    private static final String AVOID_REDIRECT_AND_GO_STRAIGHT_TO_WEB_ADMIN_HOMEPAGE = "avoidRedirectAndGoStraightToWebAdminHomepage";
+
     private String serverUrl;
     private final ElementReference dataBrowserSearchField;
     private final ElementReference dataBrowserItemSubtitle;
     private final ElementReference dataBrowserSearchButton;
-    
+
     public WebadminWebdriverLibrary(WebDriverFacade wf, String serverUrl) throws InvocationTargetException, IllegalAccessException, InstantiationException {
         super(wf);
         
@@ -56,6 +58,8 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
     public void goToWebadminStartPage() {
         if(isUsingDevDotHTML()) {
             d.get( serverUrl + "webadmin/dev.html" );
+        } else if(avoidRedirectAndGoStraightToWebAdminHomepage()) {
+            d.get( serverUrl + "webadmin/" );
         } else {
             goToServerRoot();
         }
@@ -119,6 +123,11 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
     private boolean isUsingDevDotHTML()
     {
         return System.getProperty( USE_DEV_HTML_FILE_KEY, "false" ).equals("true");
+    }
+
+    private boolean avoidRedirectAndGoStraightToWebAdminHomepage()
+    {
+        return System.getProperty( AVOID_REDIRECT_AND_GO_STRAIGHT_TO_WEB_ADMIN_HOMEPAGE, "false" ).equals("true");
     }
 
     public void confirmAll()
