@@ -34,30 +34,24 @@ public class SSHShell {
     
     private SSHClient client;
     private String vmName;
+    private SSHConfig config;
     private static final HostKeyVerifier ALLOW_ALL = new HostKeyVerifier() {
         public boolean verify(String arg0, int arg1, PublicKey arg2) {
             return true;
         }
     };
 
-    public SSHShell(String vmName, SSHConfig cfg) {
+    public SSHShell(String vmName, SSHConfig config) {
         this.vmName = vmName;
-        try {
-            client = new SSHClient();
-            client.addHostKeyVerifier(ALLOW_ALL);
-            client.connect(cfg.host(), cfg.port());
-            client.authPublickey(cfg.user(), client.loadKeys(cfg.privateKeyPath()));
-        } catch (Throwable e) {
-            e.printStackTrace();
-            throw new ShellException(e);
-        }
+        this.config = config;
+        connect();
     }
     
     public Result run(String ... cmds) {
         Session session = null;
         String cmd = StringUtils.join(cmds, " ");
         try {
-            session = client.startSession();
+            session = startSession();
             Shell.logOutput(vmName + " $ ", cmd);
             Command command = session.exec(cmd);
             String msg = Shell.outputToString(vmName, command.getInputStream()) + Shell.outputToString(vmName, command.getErrorStream());
@@ -81,9 +75,35 @@ public class SSHShell {
         }
     }
     
+    private void connect()
+    {
+        try {
+            if(client != null) {
+                try {
+                    client.disconnect();
+                } catch(AssertionError e) {
+                    // om nom nom
+                }
+            }
+            client = new SSHClient();
+            client.addHostKeyVerifier(ALLOW_ALL);
+            client.connect(config.host(), config.port());
+            client.authPublickey(config.user(), client.loadKeys(config.privateKeyPath()));
+        } catch(Exception e) {
+            throw new ShellException(e);
+        }
+    }
+
     public Session startSession() {
         try {
-            return client.startSession();
+            Session session;
+            try {
+                session = client.startSession();
+            } catch(AssertionError e) {
+                connect();
+                session = client.startSession();
+            }
+            return session;
         } catch (Exception e) {
             throw new ShellException(e);
         }

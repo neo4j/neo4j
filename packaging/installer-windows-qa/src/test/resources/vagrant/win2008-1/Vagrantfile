@@ -8,7 +8,6 @@ Vagrant::Config.run do |config|
   config.vm.system = Neo4j::Cygwin
   
   config.vm.network("33.33.33.10")
-  config.vm.forward_port "neo4j-server", 7474, 7474
   
   config.vm.provision :shell, :path => "share/win2008-disable-firewall.sh"
   

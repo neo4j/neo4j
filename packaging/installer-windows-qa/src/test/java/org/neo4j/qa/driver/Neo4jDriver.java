@@ -102,12 +102,16 @@ public interface Neo4jDriver {
      * @param value
      */
     void setConfig(String configFilePath, String key, String value);
-    
 
     /** 
      * Get a simple REST API client
      */
     Neo4jServerAPI api();
 
-
+    /**
+     * Download relevant neo4j logs to the 
+     * specified directory.
+     * @param logDir
+     */
+    void downloadLogsTo(String logDir);
 }

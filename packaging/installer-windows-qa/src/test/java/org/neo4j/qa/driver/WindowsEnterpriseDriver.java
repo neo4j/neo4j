@@ -25,6 +25,7 @@ import org.neo4j.vagrant.VirtualMachine;
 
 public class WindowsEnterpriseDriver extends AbstractWindowsDriver implements EnterpriseDriver {
 
+    private static final String BACKUP_DIR_NAME = "backups";
     private static final String ZOOKEEPER_INSTALL_DIR = "zookeeper\\ with\\ space";
     private static final String ZOOKEEPER_WIN_INSTALL_DIR = "zookeeper with space";
     private static final String ZOOKEEPER_SERVICE = "Neo4jCoordinator";
@@ -43,9 +44,7 @@ public class WindowsEnterpriseDriver extends AbstractWindowsDriver implements En
         cygSh.run(":> zookeeper-install.log");
         cygSh.runDOS("msiexec /quiet /L* zookeeper-install.log /i zookeeper.msi INSTALL_DIR=\"C:\\"+ZOOKEEPER_WIN_INSTALL_DIR+"\"");
         if(!installIsSuccessful("/home/vagrant/zookeeper-install.log")){
-            dumplog("/home/vagrant/zookeeper-install.log");
-            dumplog(zookeeperInstallDir() + "/data/log/neo4j-zookeeper.log");
-            throw new RuntimeException("Zookeeper install failed, dumped logs to stdout.");
+            throw new RuntimeException("Zookeeper install failed ["+vm().definition().ip()+"].");
         }
     }
 
@@ -55,9 +54,7 @@ public class WindowsEnterpriseDriver extends AbstractWindowsDriver implements En
         cygSh.run(":> zookeeper-uninstall.log");
         cygSh.runDOS("msiexec /quiet /L* zookeeper-uninstall.log /x zookeeper.msi");
         if(!installIsSuccessful("/home/vagrant/zookeeper-uninstall.log")){
-            dumplog("/home/vagrant/zookeeper-uninstall.log");
-            dumplog(zookeeperInstallDir() + "/data/log/neo4j-zookeeper.log");
-            throw new RuntimeException("Zookeeper uninstall failed, dumped logs to stdout.");
+            throw new RuntimeException("Zookeeper uninstall failed ["+vm().definition().ip()+"].");
         }
     }
 
@@ -66,9 +63,7 @@ public class WindowsEnterpriseDriver extends AbstractWindowsDriver implements En
     {
         Result r = sh.run("net start " + ZOOKEEPER_SERVICE);
         if(!r.getOutput().contains("service was started successfully")) {
-            dumplog(installDir() + "/data/log/neo4j.0.0.log");
-            dumplog(zookeeperInstallDir() + "/data/log/neo4j-zookeeper.log");
-            throw new RuntimeException("Tried to start neo4j coordinator, failed. Output was: \n" + r.getOutput());
+            throw new RuntimeException("Tried to start neo4j coordinator ["+vm().definition().ip()+"], failed. Output was: \n" + r.getOutput());
         }
     }
 
@@ -77,9 +72,7 @@ public class WindowsEnterpriseDriver extends AbstractWindowsDriver implements En
     {
         Result r = sh.run("net stop " + ZOOKEEPER_SERVICE);
         if(!r.getOutput().contains("service was stopped successfully")) {
-            dumplog(installDir() + "/data/log/neo4j.0.0.log");
-            dumplog(zookeeperInstallDir() + "/data/log/neo4j-zookeeper.log");
-            throw new RuntimeException("Tried to stop neo4j coordinator, failed. Output was: \n" + r.getOutput());
+            throw new RuntimeException("Tried to stop neo4j coordinator ["+vm().definition().ip()+"], failed. Output was: \n" + r.getOutput());
         }
     }
 
@@ -87,6 +80,48 @@ public class WindowsEnterpriseDriver extends AbstractWindowsDriver implements En
     public String zookeeperInstallDir()
     {
         return "/cygdrive/c/" + ZOOKEEPER_INSTALL_DIR;
+    }
+
+    @Override
+    public void performFullHABackup(String backupName, String coordinatorAddresses)
+    {
+        haBackup(backupName, coordinatorAddresses, "full");
+    }
+
+    @Override
+    public void performIncrementalHABackup(String backupName,
+            String coordinatorAddresses)
+    {
+        haBackup(backupName, coordinatorAddresses, "incremental");
+    }
+
+    @Override
+    public void replaceGraphDataDirWithBackup(String backupName)
+    {
+        cygSh.run("rm -rf " + installDir() + "/data/graph.db");
+        cygSh.run("mv " + installDir()+"/"+BACKUP_DIR_NAME+"/"+backupName + " " + installDir() + "/data/graph.db");
+    }
+
+    @Override
+    public void downloadLogsTo(String target) {
+        super.downloadLogsTo(target);
+        String ip = vm().definition().ip();
+        downloadLog(installDir() + "/data/log/neo4j-zookeeper.log", target + "/" + ip + "-neo4j-zookeeper-client.log");
+        downloadLog(zookeeperInstallDir() + "/data/log/neo4j-zookeeper.log", target + "/" + ip + "-neo4j-zookeeper-server.log");
+        downloadLog("/home/vagrant/zookeeper-install.log", target + "/" + ip + "-zookeeper-install.log");
+        downloadLog("/home/vagrant/zookeeper-uninstall.log", target + "/" + ip + "-zookeeper-uninstall.log");
+    }
+    
+    private void haBackup(String backupName, String coordinatorAddresses,
+            String mode)
+    {
+        Result r = cygSh.run("cd " + installDir() + " && bin/Neo4jBackup.bat" + 
+                " -" + mode +
+                " -from ha://" + coordinatorAddresses +
+                " -to " + BACKUP_DIR_NAME + "/" + backupName);
+        if(!r.getOutput().contains("Done")) {
+            throw new RuntimeException("Performing backup failed. Expected output to say 'Done', got this instead: \n" + r.getOutput());
+        }
     }
 
 

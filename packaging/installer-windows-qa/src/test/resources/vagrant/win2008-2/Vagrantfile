@@ -9,8 +9,6 @@ Vagrant::Config.run do |config|
   
   config.vm.network("33.33.33.11")
   
-  config.vm.forward_port "neo4j-server", 7474, 7475
-  
   config.vm.provision :shell, :path => "share/win2008-disable-firewall.sh"
   
 end

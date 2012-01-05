@@ -67,7 +67,6 @@ public abstract class AbstractPosixDriver implements Neo4jDriver {
     @Override
     public Neo4jServerAPI api() {
         if(serverAPI == null) {
-            System.out.println("http://" + vm().definition().ip() + ":7474");
             serverAPI = new Neo4jServerAPI("http://" + vm().definition().ip() + ":7474");
         }
         return serverAPI;

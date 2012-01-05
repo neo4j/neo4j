@@ -26,4 +26,8 @@ public interface EnterpriseDriver extends Neo4jDriver {
     void startZookeeperService();
     void stopZookeeperService();
     String zookeeperInstallDir();
+    
+    void performFullHABackup(String backupName, String coordinatorAddresses);
+    void performIncrementalHABackup(String backupName, String coordinatorAddresses);
+    void replaceGraphDataDirWithBackup(String backupName);
 }

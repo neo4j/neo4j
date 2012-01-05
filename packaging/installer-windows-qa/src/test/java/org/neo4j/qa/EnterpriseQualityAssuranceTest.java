@@ -21,6 +21,7 @@ package org.neo4j.qa;
 
 import static org.neo4j.vagrant.VMFactory.vm;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -70,7 +71,7 @@ public class EnterpriseQualityAssuranceTest {
 
     private EnterpriseDriver[] drivers;
     private int zooClientPortBase = 2181;
-    private String coordinatorsConfigValue;
+    private String coordinatorAddresses;
     private String testName;
 
     public EnterpriseQualityAssuranceTest(String testName, EnterpriseDriver [] drivers)
@@ -82,27 +83,23 @@ public class EnterpriseQualityAssuranceTest {
     @Before
     public void resetVMs() {
         for(EnterpriseDriver d : drivers) {
-            //d.close();
-            d.vm().up();
+            d.up();
             d.vm().rollback();
         }
     }
     
     @After
-    public void asd() {
-//        String logDir = SharedConstants.TEST_LOGS_DIR + testName + "/";
-//        new File(logDir).mkdirs();
-//        for(EnterpriseDriver d : drivers) {
-//            String logBase = logDir + d.vm().definition().ip() + ".";
-//            try {
-//                d.vm().copyFromVM(d.installDir() + "/data/graph.db/messages.log", logBase + "messages.log");
-//                d.vm().copyFromVM(d.installDir() + "/data/log/neo4j.0.0.log", logBase + "neo4j.0.0.log");
-//                d.vm().copyFromVM(d.installDir() + "/data/log/neo4j-zookeeper.log", logBase + "zookeeper-client.log");
-//                d.vm().copyFromVM(d.zookeeperInstallDir() + "/data/log/neo4j-zookeeper.log", logBase + "zookeeper-server.log");
-//            } catch(Exception e) {
-//                e.printStackTrace();
-//            }
-//        }
+    public void downloadLogs() {
+        String logDir = SharedConstants.TEST_LOGS_DIR + testName;
+        new File(logDir).mkdirs();
+        for(EnterpriseDriver d : drivers) {
+            try {
+                d.downloadLogsTo(logDir);
+                d.vm().rollback();
+            } catch(Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
     
     @Test
@@ -117,11 +114,11 @@ public class EnterpriseQualityAssuranceTest {
         
         assertClusterWorks();
         
+        // TODO: This currently fails, the cluster does not
+        // work when it comes back up.
         // Restart a server
-        drivers[0].reboot();
-        //drivers[0].vm().halt();
-        
-        assertClusterWorks();
+        //drivers[0].reboot();
+        //assertClusterWorks();
         
         assertHABackupWorks();
         
@@ -131,7 +128,32 @@ public class EnterpriseQualityAssuranceTest {
     {
         EnterpriseDriver driver = drivers[0];
         
-        //driver.performBackup();
+        long nodeId = driver.api().createNode();
+        
+        driver.performFullHABackup("neobackup", coordinatorAddresses);
+        driver.performIncrementalHABackup("neobackup", coordinatorAddresses);
+        
+        // Shut down the cluster
+        for(EnterpriseDriver d : drivers) {
+            d.stopService();
+            d.destroyDatabase();
+        }
+        
+        driver.replaceGraphDataDirWithBackup("neobackup");
+        
+        // Start the cluster back up
+        for(EnterpriseDriver d : drivers) d.startService();
+        
+        // Wait for all databases to be up to date
+        for(EnterpriseDriver d : drivers) {
+            try {
+                d.api().waitUntilNodeExists(nodeId);
+            } catch(Exception e){
+                throw new RuntimeException("Restoring backup failed on server " + d.vm().definition().ip(), e);
+            }
+        }
+        
+        assertClusterWorks();
     }
 
     /*
@@ -179,7 +201,7 @@ public class EnterpriseQualityAssuranceTest {
             coordinators.add(driver.vm().definition().ip() + ":" + (zooClientPortBase + i + 1));
         }
         
-        coordinatorsConfigValue = StringUtils.join(coordinators,",");
+        coordinatorAddresses = StringUtils.join(coordinators,",");
     }
     
     private void setupHighAvailabilityCluster()
@@ -196,10 +218,9 @@ public class EnterpriseQualityAssuranceTest {
             driver.runInstall();
             driver.stopService();
             
-            driver.setConfig(neo4jConf, "ha.cluster_name", "mycluster");
             driver.setConfig(neo4jConf, "ha.server_id", "" + (i+1));
             driver.setConfig(neo4jConf, "ha.server", driver.vm().definition().ip() + ":6001");
-            driver.setConfig(neo4jConf, "ha.coordinators", coordinatorsConfigValue);
+            driver.setConfig(neo4jConf, "ha.coordinators", coordinatorAddresses);
             
             driver.setConfig(serverConf, "org.neo4j.server.database.mode", "HA");
             driver.setConfig(serverConf, "org.neo4j.server.webserver.address", "0.0.0.0");

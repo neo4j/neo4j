@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
+import org.apache.commons.io.FileUtils;
 import org.neo4j.vagrant.CygwinShell;
 import org.neo4j.vagrant.Shell.Result;
 import org.neo4j.vagrant.VirtualMachine;
@@ -32,7 +33,8 @@ import org.neo4j.vagrant.VirtualMachine;
  */
 public abstract class AbstractWindowsDriver extends AbstractPosixDriver {
 
-    private static final String WIN_INSTALL_FOLDER = "neo4j install with spaces";
+    private static final String TEMP_DOWNLOAD_LOG_PATH = "/home/vagrant/tobedownloaded.log";
+    protected static final String WIN_INSTALL_DIR = "C:\\neo4j install with spaces";
     private static final String INSTALL_FOLDER = "neo4j\\ install\\ with\\ spaces";
     private static final String INSTALL_DIR = "/cygdrive/c/" + INSTALL_FOLDER;
     
@@ -50,12 +52,10 @@ public abstract class AbstractWindowsDriver extends AbstractPosixDriver {
     public void runInstall() {
         vm.copyFromHost(installerPath, "/home/vagrant/" + installerFileName);
         cygSh.run("touch install.log");
-        cygSh.runDOS("msiexec /quiet /L* install.log /i " + installerFileName + " INSTALL_DIR=\"C:\\"+WIN_INSTALL_FOLDER+"\"");
+        cygSh.runDOS("msiexec /quiet /L* install.log /i " + installerFileName + " INSTALL_DIR=\""+WIN_INSTALL_DIR+"\"");
         
         if(!installIsSuccessful("/home/vagrant/install.log")) {
-            dumplog("/home/vagrant/install.log");
-            dumplog(installDir() + "/data/log/neo4j.0.0.log");
-            throw new RuntimeException("Failed to install neo4j, see build log.");
+            throw new RuntimeException("Failed to install neo4j ["+vm().definition().ip()+"], see build log.");
         }
     }
     
@@ -66,9 +66,7 @@ public abstract class AbstractWindowsDriver extends AbstractPosixDriver {
         cygSh.runDOS("msiexec /quiet /L* uninstall.log /x " + installerFileName);
         
         if(!installIsSuccessful("/home/vagrant/uninstall.log")) {
-            dumplog("/home/vagrant/uninstall.log");
-            dumplog(installDir() + "/data/log/neo4j.0.0.log");
-            throw new RuntimeException("Failed to uninstall neo4j, see build log.");
+            throw new RuntimeException("Failed to uninstall neo4j ["+vm().definition().ip()+"], see build log.");
         }
     }
 
@@ -82,8 +80,7 @@ public abstract class AbstractWindowsDriver extends AbstractPosixDriver {
     public void startService() {
         Result r = sh.run("net start neo4j");
         if(!r.getOutput().contains("service was started successfully")) {
-            dumplog(installDir() + "/data/log/neo4j.0.0.log");
-            throw new RuntimeException("Tried to start neo4j, failed. Output was: \n" + r.getOutput());
+            throw new RuntimeException("Tried to start neo4j ["+vm().definition().ip()+"], failed. Output was: \n" + r.getOutput());
         }
     }
     
@@ -91,8 +88,7 @@ public abstract class AbstractWindowsDriver extends AbstractPosixDriver {
     public void stopService() {
         Result r = sh.run("net stop neo4j");
         if(!r.getOutput().contains("service was stopped successfully")) {
-            dumplog(installDir() + "/data/log/neo4j.0.0.log");
-            throw new RuntimeException("Tried to stop neo4j, failed. Output was: \n" + r.getOutput());
+            throw new RuntimeException("Tried to stop neo4j ["+vm().definition().ip()+"], failed. Output was: \n" + r.getOutput());
         }
     }    
     
@@ -101,11 +97,31 @@ public abstract class AbstractWindowsDriver extends AbstractPosixDriver {
         return INSTALL_DIR;
     }
     
-    protected void dumplog(String logPath) {
-        System.out.println("Dumping log: " + logPath);
-        System.out.println();
-        sh.run("cat " + logPath);
-        System.out.println();
+    @Override
+    public void downloadLogsTo(String target) {
+        String ip = vm().definition().ip();
+        System.out.println("Downloading logs for server " + ip + " to " + target + ".");
+        downloadLog(installDir() + "/data/graph.db/messages.log", target + "/" + ip + "-messages.log");
+        downloadLog(installDir() + "/data/log/neo4j.0.0.log", target + "/" + ip + "-neo4j.0.0.log");
+        downloadLog("/home/vagrant/install.log", target + "/" + ip + "-install.log");
+        downloadLog("/home/vagrant/uninstall.log", target + "/" + ip + "-uninstall.log");
+    }
+    
+    protected void downloadLog(String from, String to)
+    {
+        if( ! cygSh.run("ls " + from).getOutput().contains("No such file")) {
+            cygSh.run("rm " + TEMP_DOWNLOAD_LOG_PATH);
+            cygSh.run("cp " + from + " " + TEMP_DOWNLOAD_LOG_PATH);
+            vm().copyFromVM(TEMP_DOWNLOAD_LOG_PATH, to);
+        } else {
+            try
+            {
+                FileUtils.writeStringToFile(new File(to), "This log file did not exist on the VM.");
+            } catch (IOException e1)
+            {   
+                throw new RuntimeException(e1);
+            }
+        }
     }
     
     protected boolean installIsSuccessful(String logPath) {
