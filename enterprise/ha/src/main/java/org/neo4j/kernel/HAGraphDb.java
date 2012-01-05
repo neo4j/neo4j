@@ -595,6 +595,9 @@ public class HAGraphDb extends AbstractGraphDatabase
         }
         catch ( Exception e )
         {
+            getMessageLog().logMessage(
+                    "Exception while getting master ID for txId "
+                            + myLastCommittedTx + ".", e );
             throw new BranchedDataException( "Maybe not branched data, but it could solve it", e );
         }
 
