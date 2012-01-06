@@ -47,6 +47,7 @@
         <webdriver.chrome.driver>webdriver-binaries/chromedriver</webdriver.chrome.driver>
         <webdriver.chrome.driver.download.url>http://chromium.googlecode.com/files/chromedriver_mac_18.0.995.0.zip</webdriver.chrome.driver.download.url>
         <webdriver.sauce.labs.url>**Needs to provided externally by the CI job for security reasons**</webdriver.sauce.labs.url>
+        <webdriver.override.neo-server.baseuri></webdriver.override.neo-server.baseuri>
     </properties>
 
     <scm>
@@ -472,6 +473,7 @@
                         <webdriver.chrome.driver>${webdriver.chrome.driver}</webdriver.chrome.driver>
                         <webdriver.chrome.driver.download.url>${webdriver.chrome.driver.download.url}</webdriver.chrome.driver.download.url>
                         <webdriver.sauce.labs.url>${webdriver.sauce.labs.url}</webdriver.sauce.labs.url>
+                        <webdriver.override.neo-server.baseuri>${webdriver.override.neo-server.baseuri}</webdriver.override.neo-server.baseuri>
                     </systemPropertyVariables>
                     <argLine>-Xmx1024m</argLine>
                     <forkMode>once</forkMode>

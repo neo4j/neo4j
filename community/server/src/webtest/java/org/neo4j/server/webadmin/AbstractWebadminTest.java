@@ -27,6 +27,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 
+import org.apache.commons.lang.StringUtils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -52,9 +53,18 @@ public abstract class AbstractWebadminTest extends SharedServerTestBase {
     @BeforeClass
     public static void setup() throws Exception {
         webdriverFacade = new WebDriverFacade();
-        wl = new WebadminWebdriverLibrary( webdriverFacade, server().baseUri().toString() );
+        wl = new WebadminWebdriverLibrary( webdriverFacade, deriveBaseUri() );
     }
-    
+
+    private static String deriveBaseUri()
+    {
+        String overrideBaseUri = System.getProperty( "webdriver.override.neo-server.baseuri" );
+        if ( StringUtils.isNotEmpty( overrideBaseUri )) {
+            return overrideBaseUri;
+        }
+        return server().baseUri().toString();
+    }
+
     @After
     public void doc() {
         gen.get().document("target/docs","webadmin");
