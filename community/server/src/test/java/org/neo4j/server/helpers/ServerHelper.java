@@ -21,6 +21,7 @@ package org.neo4j.server.helpers;
 
 import java.io.IOException;
 
+import org.apache.commons.lang.StringUtils;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.server.NeoServer;
@@ -108,9 +109,18 @@ public class ServerHelper
     public static NeoServer createServer( boolean persistent ) throws IOException
     {
         ServerBuilder builder = ServerBuilder.server();
+        configureHostname( builder );
         if ( persistent ) builder = builder.persistent();
         NeoServer server = builder.build();
         server.start();
         return server;
+    }
+
+    private static void configureHostname( ServerBuilder builder )
+    {
+        String hostName = System.getProperty( "neo-server.test.hostname" );
+        if (StringUtils.isNotEmpty( hostName )) {
+            builder.onHost( hostName );
+        }
     }
 }

@@ -26,6 +26,7 @@
         <neo4j-server.mainClass>org.neo4j.server.Bootstrapper</neo4j-server.mainClass>
         <neo-server.home>target/generated-resources/appassembler/jsw</neo-server.home>
         <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
+        <neo-server.test.hostname></neo-server.test.hostname>
 
         <!-- This code name is injected into Webadmin, please update it
    when updating the project version. -->
@@ -466,6 +467,7 @@
                 <configuration>
                     <systemPropertyVariables>
                         <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
+                        <neo-server.test.hostname>${neo-server.test.hostname}</neo-server.test.hostname>
                         <webdriver.implementation>${webdriver.implementation}</webdriver.implementation>
                         <webdriver.chrome.driver>${webdriver.chrome.driver}</webdriver.chrome.driver>
                         <webdriver.chrome.driver.download.url>${webdriver.chrome.driver.download.url}</webdriver.chrome.driver.download.url>
