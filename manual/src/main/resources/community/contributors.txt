@@ -38,5 +38,6 @@ As an Open Source Project, the Neo4j User community extends its warmest thanks t
 |James Thornton |https://github.com/espeed[espeed]
 |Radhakrishna Kalyan |https://github.com/nrkkalyan[nrkkalyan]
 |Michel van den Berg |https://github.com/promontis[promontis]
+|Brandon McCauslin |https://github.com/ bm3780[ bm3780]
 |=======
 
