@@ -26,6 +26,7 @@
         <neo4j-server.mainClass>org.neo4j.server.Bootstrapper</neo4j-server.mainClass>
         <neo-server.home>target/generated-resources/appassembler/jsw</neo-server.home>
         <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
+        <neo-server.test.hostname></neo-server.test.hostname>
 
         <!-- This code name is injected into Webadmin, please update it
    when updating the project version. -->
@@ -45,6 +46,7 @@
         <!-- Default location for chrome controller binary, used by webdriver for running tests in Chrome. Available from (http://code.google.com/p/chromium/downloads/list) see README.txt for details on this. -->
         <webdriver.chrome.driver>webdriver-binaries/chromedriver</webdriver.chrome.driver>
         <webdriver.chrome.driver.download.url>http://chromium.googlecode.com/files/chromedriver_mac_18.0.995.0.zip</webdriver.chrome.driver.download.url>
+        <webdriver.sauce.labs.url>**Needs to provided externally by the CI job for security reasons**</webdriver.sauce.labs.url>
     </properties>
 
     <scm>
@@ -465,9 +467,11 @@
                 <configuration>
                     <systemPropertyVariables>
                         <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
+                        <neo-server.test.hostname>${neo-server.test.hostname}</neo-server.test.hostname>
                         <webdriver.implementation>${webdriver.implementation}</webdriver.implementation>
                         <webdriver.chrome.driver>${webdriver.chrome.driver}</webdriver.chrome.driver>
                         <webdriver.chrome.driver.download.url>${webdriver.chrome.driver.download.url}</webdriver.chrome.driver.download.url>
+                        <webdriver.sauce.labs.url>${webdriver.sauce.labs.url}</webdriver.sauce.labs.url>
                     </systemPropertyVariables>
                     <argLine>-Xmx1024m</argLine>
                     <forkMode>once</forkMode>

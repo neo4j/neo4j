@@ -531,7 +531,7 @@ public class RESTDocsGenerator extends AsciiDocGenerator
                     line( fw, "* *+" + header.getKey() + ":+* +" + header.getValue() + "+" );
                 }
             }
-            writeEntity( fw, data.entity );
+            writeEntity( fw, JSONPrettifier.parse( data.entity ) );
             line( fw, "" );
         }
         catch ( IOException e )
