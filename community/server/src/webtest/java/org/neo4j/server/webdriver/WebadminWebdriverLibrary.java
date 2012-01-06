@@ -22,9 +22,7 @@ package org.neo4j.server.webdriver;
 import java.lang.reflect.InvocationTargetException;
 
 import org.openqa.selenium.By;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.firefox.FirefoxDriver;
-import org.openqa.selenium.ie.InternetExplorerDriver;
+import org.openqa.selenium.JavascriptExecutor;
 
 public class WebadminWebdriverLibrary extends WebdriverLibrary
 {
@@ -136,17 +134,12 @@ public class WebadminWebdriverLibrary extends WebdriverLibrary
     }
     
     public Object executeScript(String script, Object ... args) {
-        if(d instanceof FirefoxDriver) {
-            FirefoxDriver fd = (FirefoxDriver)d;
-            return fd.executeScript( script, args);
-        } else if (d instanceof ChromeDriver) {
-            ChromeDriver cd = (ChromeDriver)d;
-            return cd.executeScript( script, args );
-        } else if(d instanceof InternetExplorerDriver) {
-            InternetExplorerDriver id = (InternetExplorerDriver)d;
-            return id.executeScript( script, args );
+        if(d instanceof JavascriptExecutor ) {
+            JavascriptExecutor javascriptExecutor = (JavascriptExecutor) d;
+            return javascriptExecutor.executeScript( script, args);
         } else {
-            throw new RuntimeException("Arbitrary script execution is only available for chrome, IE and firefox.");
+            throw new RuntimeException("Arbitrary script execution is only available for WebDrivers that implement " +
+                    "the JavascriptExecutor interface.");
         }
     }
 
