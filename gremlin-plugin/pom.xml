@@ -16,7 +16,7 @@
   <properties>
     <!-- Jar Versions -->
     <spring.version>3.0.4.RELEASE</spring.version>
-    <jackson.version>1.5.2</jackson.version>
+    <jackson.version>1.8.3</jackson.version>
     <cxf.version>2.3.1</cxf.version>
     <servlet-api.version>2.5</servlet-api.version>
     <neo4j.version>1.6-SNAPSHOT</neo4j.version>
