@@ -184,7 +184,6 @@ class GraphTest(unit_tests.GraphDatabaseTest):
             pass
         # END SNIPPET: loopProperties
         
-        
         items = list(node_or_rel.items())
         self.assertEqual(len(items), 2)
         self.assertEqual(items[1][0],'age')
@@ -197,6 +196,13 @@ class GraphTest(unit_tests.GraphDatabaseTest):
         values = list(node_or_rel.values())
         self.assertEqual(len(values), 2)
         self.assertEqual(values[1],42)
+        
+    def test_property_types(self):
+        with self.graphdb.transaction:
+            n = self.graphdb.node()
+            n['a_bool'] = True
+            self.assertEqual(n['a_bool'], True)
+            self.assertEqual(isinstance(n['a_bool'], bool), True)
         
     def test_remove_properties(self):
         with self.graphdb.transaction:

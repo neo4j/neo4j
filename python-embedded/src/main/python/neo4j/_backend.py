@@ -204,6 +204,8 @@ except: # this isn't jython (and doesn't have the java module)
                 return value.doubleValue()
             if isinstance(value, integers):
                 return value.longValue()
+            if isinstance(value, java.Boolean):
+                return bool(value)
             return value
         return from_java(value)
         
