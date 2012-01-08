@@ -200,9 +200,26 @@ class GraphTest(unit_tests.GraphDatabaseTest):
     def test_property_types(self):
         with self.graphdb.transaction:
             n = self.graphdb.node()
+
+            # Booleans
             n['a_bool'] = True
-            self.assertEqual(n['a_bool'], True)
-            self.assertEqual(isinstance(n['a_bool'], bool), True)
+            self.assertEqual(n['a_bool'], True) 
+            self.assertEqual(type(n['a_bool']), bool)
+
+            # Strings
+            n['a_string'] = 'my fancy string I made'
+            self.assertEqual(n['a_string'], 'my fancy string I made') 
+            self.assertEqual(type(n['a_string']), unicode)
+
+            # Longs
+            n['a_long'] = 1337
+            self.assertEqual(n['a_long'], 1337) 
+            self.assertEqual(type(n['a_long']), long)
+
+            # Lists
+            n['a_list'] = [1,2,3]
+            self.assertEqual(n['a_list'], [1,2,3])
+            self.assertEqual(type(n['a_list']), list)
         
     def test_remove_properties(self):
         with self.graphdb.transaction:

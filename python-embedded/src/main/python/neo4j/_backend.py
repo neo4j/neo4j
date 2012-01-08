@@ -206,6 +206,8 @@ except: # this isn't jython (and doesn't have the java module)
                 return value.longValue()
             if isinstance(value, java.Boolean):
                 return bool(value)
+            if isinstance(value, jpype._jarray._JavaArrayClass):
+                return list(value)
             return value
         return from_java(value)
         
