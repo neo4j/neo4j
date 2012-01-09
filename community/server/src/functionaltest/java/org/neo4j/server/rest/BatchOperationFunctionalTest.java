@@ -73,63 +73,43 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
     @Graph("Joe knows John")
     public void shouldPerformMultipleOperations() throws Exception {
         long idJoe = data.get().get( "Joe" ).getId();
-        String jsonString = new PrettyJSON().array()
+        String jsonString = new PrettyJSON()
+            .array()
+                .object()
+                    .key("method")  .value("PUT")
+                    .key("to")      .value("/node/" + idJoe + "/properties")
+                    .key("body")
+                        .object()
+                            .key("age").value(1)
+                        .endObject()
+                    .key("id")      .value(0)
+                .endObject()
+                .object()
+                    .key("method")  .value("GET")
+                    .key("to")      .value("/node/" + idJoe)
+                    .key("id")      .value(1)
+                .endObject()
+                .object()
+                    .key("method")  .value("POST")
+                    .key("to")      .value("/node")
+                    .key("body")
+                        .object()
+                            .key("age").value(1)
+                        .endObject()
+                    .key("id")      .value(2)
+                .endObject()
+                .object()
+                    .key("method")  .value("POST")
+                    .key("to")      .value("/node")
+                    .key("body")
+                        .object()
+                            .key("age").value(1)
+                        .endObject()
+                    .key("id")      .value(3)
+                .endObject()
+            .endArray().toString();
 
-                .object()
-                .key("method")
-                .value("PUT")
-                .key("to")
-                .value("/node/"+idJoe+"/properties")
-                .key("body")
-                .object()
-                .key("age")
-                .value(1)
-                .endObject()
-                .key("id")
-                .value(0)
-                .endObject()
 
-                .object()
-                .key("method")
-                .value("GET")
-                .key("to")
-                .value("/node/"+idJoe)
-                .key("id")
-                .value(1)
-                .endObject()
-
-                .object()
-                .key("method")
-                .value("POST")
-                .key("to")
-                .value("/node")
-                .key("body")
-                .object()
-                .key("age")
-                .value(1)
-                .endObject()
-                .key("id")
-                .value(2)
-                .endObject()
-
-                .object()
-                .key("method")
-                .value("POST")
-                .key("to")
-                .value("/node")
-                .key("body")
-                .object()
-                .key("age")
-                .value(1)
-                .endObject()
-                .key("id")
-                .value(3)
-                .endObject()
-
-                .endArray()
-                .toString();
-
-            
         String entity = gen.get()
         .payload(jsonString)
         .expectedStatus(200)
@@ -179,72 +159,52 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
     @Documented
     @Test
     public void shouldBeAbleToReferToCreatedResource() throws Exception {
-        String jsonString = new PrettyJSON().array()
+        String jsonString = new PrettyJSON()
+            .array()
                 .object()
-                .key("method")
-                .value("POST")
-                .key("to")
-                .value("/node")
-                .key("id")
-                .value(0)
-                .key("body")
-                .object()
-                .key("name")
-                .value("bob")
-                .endObject()
+                    .key("method")  .value("POST")
+                    .key("to")      .value("/node")
+                    .key("id")      .value(0)
+                    .key("body")
+                        .object()
+                            .key("name").value("bob")
+                        .endObject()
                 .endObject()
                 .object()
-                .key("method")
-                .value("POST")
-                .key("to")
-                .value("/node")
-                .key("id")
-                .value(1)
-                .key("body")
-                .object()
-                .key("age")
-                .value(12)
-                .endObject()
+                    .key("method")  .value("POST")
+                    .key("to")      .value("/node")
+                    .key("id")      .value(1)
+                    .key("body")
+                        .object()
+                            .key("age").value(12)
+                        .endObject()
                 .endObject()
                 .object()
-                .key("method")
-                .value("POST")
-                .key("to")
-                .value("{0}/relationships")
-                .key("id")
-                .value(3)
-                .key("body")
-                .object()
-                .key("to")
-                .value("{1}")
-                .key("data")
-                .object()
-                .key("since")
-                .value("2010")
-                .endObject()
-                .key("type")
-                .value("KNOWS")
-                .endObject()
+                    .key("method")  .value("POST")
+                    .key("to")      .value("{0}/relationships")
+                    .key("id")      .value(3)
+                    .key("body")
+                        .object()
+                            .key("to").value("{1}")
+                            .key("data")
+                                .object()
+                                    .key("since").value("2010")
+                                .endObject()
+                            .key("type").value("KNOWS")
+                        .endObject()
                 .endObject()
                 .object()
-                .key("method")
-                .value("POST")
-                .key("to")
-                .value("/index/relationship/my_rels")
-                .key("id")
-                .value(4)
-                .key("body")
-                .object()
-                .key("key")
-                .value("since")
-                .key("value")
-                .value("2010")
-                .key("uri")
-                .value("{3}")
+                    .key("method")  .value("POST")
+                    .key("to")      .value("/index/relationship/my_rels")
+                    .key("id")      .value(4)
+                    .key("body")
+                        .object()
+                            .key("key").value("since")
+                            .key("value").value("2010")
+                            .key("uri").value("{3}")
+                        .endObject()
                 .endObject()
-                .endObject()
-                .endArray()
-                .toString();
+            .endArray().toString();
 
         String entity = gen.get()
         .expectedStatus( 200 )
@@ -272,22 +232,19 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
 
         int originalNodeCount = countNodes();
 
-        JaxRsResponse response = RestRequest.req().post(batchUri(), new PrettyJSON().array()
-
+        final String jsonString = new PrettyJSON()
+            .array()
                 .object()
-                .key("method")
-                .value("POST")
-                .key("to")
-                .value("/node")
-                .key("body")
-                .object()
-                .key("age")
-                .value(1)
+                    .key("method").value("POST")
+                    .key("to").value("/node")
+                    .key("body")
+                        .object()
+                            .key("age").value(1)
+                        .endObject()
                 .endObject()
-                .endObject()
+            .endArray().toString();
 
-                .endArray()
-                .toString());
+        JaxRsResponse response = RestRequest.req().post(batchUri(), jsonString);
 
         assertEquals(200, response.getStatus());
         assertEquals(originalNodeCount + 1, countNodes());
@@ -310,7 +267,11 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
                     .key("to")     .value("/node")
                     .key("body")   
                         .object()
-                            .key("age")  .array().value(true).value("hello").endArray()
+                            .key("age")
+                                .array()
+                                    .value(true)
+                                    .value("hello")
+                                .endArray()
                         .endObject()
                 .endObject()
             .endArray()
@@ -323,11 +284,29 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
     
     @Test
     public void shouldRollbackAllWhenGivenIncorrectRequest() throws JsonParseException, ClientHandlerException,
-            UniformInterfaceException {
+            UniformInterfaceException, JSONException {
 
-        String jsonString = "[" + "{ " + "\"method\":\"POST\"," + "\"to\":\"/node\", " + "\"body\":{ \"age\":1 }"
-                + "}," + "{ " + "\"method\":\"POST\"," + "\"to\":\"/node\", "
-                + "\"body\":[\"a_list\",\"this_makes_no_sense\"]" + "}" + "]";
+        String jsonString = new PrettyJSON()
+            .array()
+                .object()
+                    .key("method") .value("POST")
+                    .key("to")     .value("/node")
+                    .key("body")
+                        .object()
+                            .key("age").value("1")
+                        .endObject()
+                .endObject()
+                .object()
+                    .key("method") .value("POST")
+                    .key("to")     .value("/node")
+                    .key("body")
+                        .array()
+                            .value("a_list")
+                            .value("this_makes_no_sense")
+                        .endArray()
+                .endObject()
+            .endArray()
+            .toString();
 
         int originalNodeCount = countNodes();
 
@@ -374,7 +353,10 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
             .object()
                 .key("method") .value("PUT")
                 .key("to")     .value("/node/"+gnode.getId()+"/properties")
-                .key("body")   .object().key( "name" ).value(name).endObject()
+                .key("body")
+                    .object()
+                        .key("name").value(name)
+                    .endObject()
             .endObject()
         .endArray()
         .toString();
@@ -402,12 +384,9 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
         assertEquals(results.get(0).get("body"), name);
     }
 
-    private void testBatch( Node anode, String asian )
+    private void testBatch( Node anode, String asian ) throws JSONException
     {
-        String jsonString;
-        try
-        {
-            jsonString = new PrettyJSON()
+        String jsonString = new PrettyJSON()
             .array()
                 .object()
                     .key("method") .value("GET")
@@ -421,23 +400,36 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
                 .post( batchUri() )
                 .entity();
         assertTrue( entity.contains( asian) );
-
-        }
-        catch ( JSONException e )
-        {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        
     }
 
     @Test
     public void shouldRollbackAllWhenInsertingIllegalData() throws JsonParseException, ClientHandlerException,
-            UniformInterfaceException {
+            UniformInterfaceException, JSONException {
 
-        String jsonString = "[" + "{ " + "\"method\":\"POST\"," + "\"to\":\"/node\", " + "\"body\":{ \"age\":1 }"
-                + "}," + "{ " + "\"method\":\"POST\"," + "\"to\":\"/node\", "
-                + "\"body\":{ \"age\":{ \"age\":{ \"age\":1 } } }" + "}" + "]";
+        String jsonString = new PrettyJSON()
+            .array()
+                .object()
+                    .key("method")  .value("POST")
+                    .key("to")      .value("/node")
+                    .key("body")
+                        .object()
+                            .key("age").value(1)
+                        .endObject()
+                .endObject()
+
+                .object()
+                    .key("method").value("POST")
+                    .key("to").value("/node")
+                    .key("body")
+                        .object()
+                            .key("age")
+                                .object()
+                                    .key("age").value(1)
+                                .endObject()
+                        .endObject()
+                .endObject()
+
+            .endArray().toString();
 
         int originalNodeCount = countNodes();
 
@@ -450,10 +442,24 @@ public class BatchOperationFunctionalTest extends AbstractRestFunctionalTestBase
 
     @Test
     public void shouldRollbackAllOnSingle404() throws JsonParseException, ClientHandlerException,
-            UniformInterfaceException {
+            UniformInterfaceException, JSONException {
 
-        String jsonString = "[" + "{ " + "\"method\":\"POST\"," + "\"to\":\"/node\", " + "\"body\":{ \"age\":1 }"
-                + "}," + "{ " + "\"method\":\"POST\"," + "\"to\":\"www.google.com\"" + "}" + "]";
+        String jsonString = new PrettyJSON()
+            .array()
+                .object()
+                    .key("method")  .value("POST")
+                    .key("to")      .value("/node")
+                    .key("body")
+                        .object()
+                            .key("age").value(1)
+                        .endObject()
+                .endObject()
+                .object()
+                    .key("method")  .value("POST")
+                    .key("to")      .value("www.google.com")
+                .endObject()
+
+            .endArray().toString();
 
         int originalNodeCount = countNodes();
 
