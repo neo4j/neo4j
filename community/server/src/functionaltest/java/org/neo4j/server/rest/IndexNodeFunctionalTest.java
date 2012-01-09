@@ -250,10 +250,10 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
      *
      * The query language used here depends on what type of index you are
      * querying. The default index type is Lucene, in which case you should use
-     * the Lucene query language here. Below and Example of a fuzzy search over
+     * the Lucene query language here. Below an example of a fuzzy search over
      * multiple keys.
      *
-     * See: http://lucene.apache.org/java/3_1_0/queryparsersyntax.html
+     * See: http://lucene.apache.org/java/{lucene-version}/queryparsersyntax.html
      */
     @Documented
     @Test
