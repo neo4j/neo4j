@@ -20,11 +20,13 @@
 package org.dummy.web.service;
 
 import java.util.Iterator;
+import java.util.List;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -53,6 +55,21 @@ public class DummyThirdPartyWebService
     {
         return Response.ok()
                 .entity( String.valueOf( countNodesIn( db ) ) )
+                .build();
+    }
+
+    @GET
+    @Path( "needs-auth-header" )
+    @Produces( MediaType.APPLICATION_JSON )
+    public Response authHeader( @Context HttpHeaders headers )
+    {
+        final List<String> authentication = headers.getRequestHeader("Authorization");
+
+        if (authentication == null || authentication.size() != 1)
+            throw new IllegalArgumentException("missing header");
+
+        return Response.ok()
+                .entity("{\"Authorization\":\"" + authentication.get(0) + "\"}")
                 .build();
     }
 

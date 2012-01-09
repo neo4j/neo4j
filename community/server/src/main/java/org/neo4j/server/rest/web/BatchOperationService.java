@@ -22,6 +22,7 @@ package org.neo4j.server.rest.web;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.ServletException;
@@ -42,7 +43,6 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.domain.BatchOperationFailedException;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.BatchOperationResults;
-import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.StreamingJsonUtils;
 import org.neo4j.server.web.WebServer;
@@ -55,6 +55,7 @@ public class BatchOperationService
     private static final String METHOD_KEY = "method";
     private static final String BODY_KEY = "body";
     private static final String TO_KEY = "to";
+    private static final String[] HEADERS_TO_PASSOVER = { "Authorization" };
 
     private static final JsonFactory jsonFactory = new JsonFactory();
     
@@ -70,7 +71,8 @@ public class BatchOperationService
     }
 
     @POST
-    public Response performBatchOperations( @Context UriInfo uriInfo, InputStream body ) throws BadInputException
+    public Response performBatchOperations( @Context UriInfo uriInfo, @Context HttpHeaders httpHeaders, 
+                                            InputStream body ) throws BadInputException
     {
         AbstractGraphDatabase db = database.graph;
 
@@ -107,7 +109,7 @@ public class BatchOperationService
                      }
 
                      // Read one job description. Execute it.
-                     performJob(results, uriInfo, jobMethod, jobPath, jobBody, jobId);
+                     performJob(results, uriInfo, jobMethod, jobPath, jobBody, jobId, httpHeaders);
                  }
             }
 
@@ -131,7 +133,8 @@ public class BatchOperationService
         }
     }
 
-    private void performJob( BatchOperationResults results, UriInfo uriInfo, String method, String path, String body, Integer id )
+    private void performJob( BatchOperationResults results, UriInfo uriInfo, String method, String path, String body, 
+                             Integer id, HttpHeaders httpHeaders )
             throws IOException, ServletException
     {
         // Replace {[ID]} placeholders with location values
@@ -143,6 +146,7 @@ public class BatchOperationService
 
         InternalJettyServletRequest req = new InternalJettyServletRequest(method, targetUri.toString(), body );
         InternalJettyServletResponse res = new InternalJettyServletResponse();
+        addHeaders(req, httpHeaders);
 
         webServer.invokeDirectly( targetUri.getPath(), req, res );
 
@@ -155,6 +159,17 @@ public class BatchOperationService
         {
             throw new BatchOperationFailedException( res.getStatus(), res.getOutputStream()
                     .toString() );
+        }
+    }
+    
+    private void addHeaders(final InternalJettyServletRequest res, final HttpHeaders httpHeaders)
+    {
+        for ( String header : HEADERS_TO_PASSOVER)
+        {
+            final List<String> value = httpHeaders.getRequestHeader(header);
+            if (value == null) continue;
+            if (value.size() != 1) throw new IllegalArgumentException("expecting one value per header");
+            res.addHeader(header, value.get(0));
         }
     }
 
