@@ -64,23 +64,14 @@ public class InternalJettyServletResponse extends Response
         }
     }
 
-    private Map<String, Object> headers;
-    private Output output;
-    private int status;
-    private String message;
+    private final Map<String, Object> headers = new HashMap<String, Object>();
+    private final Output output = new Output();
+    private int status = -1;
+    private String message = "";
 
     public InternalJettyServletResponse()
     {
         super( null );
-    }
-
-    public void setup()
-    {
-        output = new Output();
-        
-        status = -1;
-        message = "";
-        headers = new HashMap<String, Object>();
     }
 
     public void addCookie( Cookie cookie )
