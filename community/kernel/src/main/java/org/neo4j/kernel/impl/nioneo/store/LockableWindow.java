@@ -69,6 +69,8 @@ abstract class LockableWindow implements PersistenceWindow
     {
         return type;
     }
+    
+    protected abstract void writeOut();
 
     void setOperationType( OperationType type )
     {

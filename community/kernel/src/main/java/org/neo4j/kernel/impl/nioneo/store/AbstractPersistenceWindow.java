@@ -95,7 +95,7 @@ abstract class AbstractPersistenceWindow extends LockableWindow
         }
     }
     
-    void writeOut()
+    protected void writeOut()
     {
         ByteBuffer byteBuffer = buffer.getBuffer();
         byteBuffer.clear();

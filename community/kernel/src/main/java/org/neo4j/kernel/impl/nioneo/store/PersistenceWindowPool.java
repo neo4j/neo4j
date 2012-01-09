@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.nioneo.store;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.channels.FileChannel;
+import java.nio.channels.FileChannel.MapMode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -92,14 +93,7 @@ public class PersistenceWindowPool
         this.availableMem = mappedMem;
         this.useMemoryMapped = useMemoryMappedBuffers;
         this.readOnly = readOnly;
-        if ( readOnly )
-        {
-            mapMode = FileChannel.MapMode.READ_ONLY;
-        }
-        else
-        {
-            mapMode = FileChannel.MapMode.READ_WRITE;
-        }
+        this.mapMode = readOnly ? MapMode.READ_ONLY : MapMode.READ_WRITE;
         setupBricks();
         dumpStatus();
     }
@@ -442,14 +436,7 @@ public class PersistenceWindowPool
             LockableWindow window = mappedBrick.getWindow();
             if ( window.getWaitingThreadsCount() == 0 && !window.isMarked() )
             {
-                if ( window instanceof MappedPersistenceWindow )
-                {
-                    ((MappedPersistenceWindow) window).unmap();
-                }
-                else if ( window instanceof PlainPersistenceWindow )
-                {
-                    ((PlainPersistenceWindow) window).writeOut();
-                }
+                if ( !readOnly ) window.writeOut();
                 mappedBrick.setWindow( null );
                 memUsed -= brickSize;
             }
@@ -527,14 +514,7 @@ public class PersistenceWindowPool
             LockableWindow window = mappedBrick.getWindow();
             if ( window.getWaitingThreadsCount() == 0 && !window.isMarked() )
             {
-                if ( window instanceof MappedPersistenceWindow )
-                {
-                    ((MappedPersistenceWindow) window).unmap();
-                }
-                else if ( !readOnly && window instanceof PlainPersistenceWindow )
-                {
-                    ((PlainPersistenceWindow) window).writeOut();
-                }
+                if ( !readOnly ) window.writeOut();
                 mappedBrick.setWindow( null );
                 memUsed -= brickSize;
                 try

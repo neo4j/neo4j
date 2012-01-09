@@ -98,7 +98,7 @@ class MappedPersistenceWindow extends LockableWindow
         return position() == ((MappedPersistenceWindow) o).position();
     }
 
-    void unmap()
+    protected void writeOut()
     {
         if ( buffer != null )
         {

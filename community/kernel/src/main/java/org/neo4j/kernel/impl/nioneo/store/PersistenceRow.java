@@ -103,7 +103,7 @@ class PersistenceRow extends LockableWindow
         }
     }
     
-    void writeOut()
+    protected void writeOut()
     {
         ByteBuffer byteBuffer = buffer.getBuffer();
         if ( getOperationType() == OperationType.WRITE )
