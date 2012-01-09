@@ -34,7 +34,7 @@ _Where $\{neo4j-version} is the intended version._
 To create a plugin, your code must inherit from the http://components.neo4j.org/server-api/{neo4j-version}/apidocs/org/neo4j/server/plugins/ServerPlugin.html[ServerPlugin] class.
 Your plugin should also:
 
-* ensure that it can produce an (Iterable of) Node, Relationship or Path,
+* ensure that it can produce an (Iterable of) Node, Relationship or Path, or any Java primitive or String
 * specify parameters,
 * specify a point of extension and of course 
 * contain the application logic.
