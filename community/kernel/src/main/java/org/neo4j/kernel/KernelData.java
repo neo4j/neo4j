@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel;
 
+import static org.neo4j.helpers.Exceptions.launderedException;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -29,6 +31,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.index.IndexProvider;
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public abstract class KernelData
@@ -149,8 +152,20 @@ public abstract class KernelData
             catch ( Throwable cause )
             {
                 msgLog.logMessage( "Failed to load index provider " + index.identifier(), cause );
+                if ( isAnUpgradeProblem( cause ) ) throw launderedException( cause );
+                else cause.printStackTrace();
             }
         }
+    }
+
+    private boolean isAnUpgradeProblem( Throwable cause )
+    {
+        while ( cause != null )
+        {
+            if ( cause instanceof UpgradeNotAllowedByConfigurationException ) return true;
+            cause = cause.getCause();
+        }
+        return false;
     }
 
     void loadExtensions( Collection<KernelExtension<?>> loadedExtensions, StringLogger msgLog )

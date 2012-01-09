@@ -36,11 +36,11 @@ public class TestIndexProviderStore
         FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
         file.mkdirs();
         file.delete();
-        IndexProviderStore store = new IndexProviderStore( file, fileSystem );
+        IndexProviderStore store = new IndexProviderStore( file, fileSystem, 0, false );
         store.setVersion( 5 );
         store.setLastCommittedTx( 12 );
         store.close();
-        store = new IndexProviderStore( file, fileSystem );
+        store = new IndexProviderStore( file, fileSystem, 0, false );
         assertEquals( 5, store.getVersion() );
         assertEquals( 12, store.getLastCommittedTx() );
         store.close();

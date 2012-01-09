@@ -20,6 +20,7 @@
 package org.neo4j.index.impl.lucene;
 
 import static org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy.SNAPSHOT_ID;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
 
 import java.io.File;
 import java.io.IOException;
@@ -87,9 +88,10 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
  */
 public class LuceneDataSource extends LogBackedXaDataSource
 {
-    public static final Version LUCENE_VERSION = Version.LUCENE_31;
+    public static final Version LUCENE_VERSION = Version.LUCENE_35;
     public static final String DEFAULT_NAME = "lucene-index";
     public static final byte[] DEFAULT_BRANCH_ID = UTF8.encode( "162374" );
+    public static final long INDEX_VERSION = versionStringToLong( "3.5" );
 
     /**
      * Default {@link Analyzer} for fulltext parsing.
@@ -165,7 +167,8 @@ public class LuceneDataSource extends LogBackedXaDataSource
         cleanWriteLocks( baseStorePath );
         this.indexStore = (IndexStore) params.get( IndexStore.class );
         FileSystemAbstraction fileSystem = (FileSystemAbstraction) params.get( FileSystemAbstraction.class );
-        this.providerStore = newIndexStore( storeDir, fileSystem );
+        boolean allowUpgrade = Boolean.parseBoolean( (String) params.get( Config.ALLOW_STORE_UPGRADE ) );
+        this.providerStore = newIndexStore( storeDir, fileSystem, allowUpgrade );
         this.typeCache = new IndexTypeCache( indexStore );
         boolean isReadOnly = false;
         this.directoryGetter = parseBoolean( params, "ephemeral", false ) ? DirectoryGetter.MEMORY : DirectoryGetter.FS;
@@ -286,10 +289,10 @@ public class LuceneDataSource extends LogBackedXaDataSource
         return Pair.of( dir.getAbsolutePath(), created );
     }
 
-    static IndexProviderStore newIndexStore( String dbStoreDir, FileSystemAbstraction fileSystem )
+    static IndexProviderStore newIndexStore( String dbStoreDir, FileSystemAbstraction fileSystem, boolean allowUpgrade )
     {
         File file = new File( getStoreDir( dbStoreDir ).first() + File.separator + "lucene-store.db" );
-        return new IndexProviderStore( file, fileSystem );
+        return new IndexProviderStore( file, fileSystem, INDEX_VERSION, allowUpgrade );
     }
 
     @Override
@@ -423,29 +426,30 @@ public class LuceneDataSource extends LogBackedXaDataSource
 
     /**
      * If nothing has changed underneath (since the searcher was last created
-     * or refreshed) {@code null} is returned. But if something has changed a
+     * or refreshed) {@code searcher} is returned. But if something has changed a
      * refreshed searcher is returned. It makes use if the
-     * {@link IndexReader#reopen()} which faster than opening an index from
+     * {@link IndexReader#openIfChanged(IndexReader, IndexWriter, boolean)} which faster than opening an index from
      * scratch.
      *
      * @param searcher the {@link IndexSearcher} to refresh.
+     * @param writer 
      * @return a refreshed version of the searcher or, if nothing has changed,
      * {@code null}.
      * @throws IOException if there's a problem with the index.
      */
-    private Pair<IndexSearcherRef, AtomicBoolean> refreshSearcher( Pair<IndexSearcherRef, AtomicBoolean> searcher )
+    private Pair<IndexSearcherRef, AtomicBoolean> refreshSearcher( Pair<IndexSearcherRef, AtomicBoolean> searcher, IndexWriter writer )
     {
         try
         {
             IndexReader reader = searcher.first().getSearcher().getIndexReader();
-            IndexReader reopened = reader.reopen();
-            if ( reopened != reader )
+            IndexReader reopened = IndexReader.openIfChanged( reader, writer, true );
+            if ( reopened != null )
             {
                 IndexSearcher newSearcher = new IndexSearcher( reopened );
                 searcher.first().detachOrClose();
                 return Pair.of( new IndexSearcherRef( searcher.first().getIdentifier(), newSearcher ), new AtomicBoolean() );
             }
-            return null;
+            return searcher;
         }
         catch ( IOException e )
         {
@@ -494,9 +498,9 @@ public class LuceneDataSource extends LogBackedXaDataSource
         try
         {
             Pair<IndexSearcherRef, AtomicBoolean> searcher = indexSearchers.get( identifier );
+            IndexWriter writer = getIndexWriter( identifier );
             if ( searcher == null )
             {
-                IndexWriter writer = getIndexWriter( identifier );
                 IndexReader reader = IndexReader.open( writer, true );
                 IndexSearcher indexSearcher = new IndexSearcher( reader );
                 searcher = Pair.of( new IndexSearcherRef( identifier, indexSearcher ), new AtomicBoolean() );
@@ -506,7 +510,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             {
                 if ( searcher.other().compareAndSet( true, false ) )
                 {
-                    searcher = refreshSearcher( searcher );
+                    searcher = refreshSearcher( searcher, writer );
                     if ( searcher != null )
                     {
                         indexSearchers.put( identifier, searcher );

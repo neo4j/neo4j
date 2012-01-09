@@ -101,72 +101,80 @@ class GraphDbInstance
 
         kernelExtensionLoader.configureKernelExtensions();
 
-        config.getTxModule().registerDataSource( Config.DEFAULT_DATA_SOURCE_NAME,
+        XaDataSource nioneoDs = config.getTxModule().registerDataSource( Config.DEFAULT_DATA_SOURCE_NAME,
                 Config.NIO_NEO_DB_CLASS, NeoStoreXaDataSource.BRANCH_ID, params );
-        // hack for lucene index recovery if in path
-        if ( !config.isReadOnly() || config.isBackupSlave() )
+        boolean success = false;
+        try
         {
-            try
+            // hack for lucene index recovery if in path
+            if ( !config.isReadOnly() || config.isBackupSlave() )
             {
-                Class clazz = Class.forName( Config.LUCENE_DS_CLASS );
-                cleanWriteLocksInLuceneDirectory( storeDir + File.separator + "lucene" );
-                byte luceneId[] = UTF8.encode( "162373" );
-                registerLuceneDataSource( "lucene", clazz.getName(),
-                        config.getTxModule(), storeDir + File.separator + "lucene",
-                        config.getLockManager(), luceneId, params );
+                try
+                {
+                    Class clazz = Class.forName( Config.LUCENE_DS_CLASS );
+                    cleanWriteLocksInLuceneDirectory( storeDir + File.separator + "lucene" );
+                    byte luceneId[] = UTF8.encode( "162373" );
+                    registerLuceneDataSource( "lucene", clazz.getName(),
+                            config.getTxModule(), storeDir + File.separator + "lucene",
+                            config.getLockManager(), luceneId, params );
+                }
+                catch ( ClassNotFoundException e )
+                { // ok index util not on class path
+                }
+                catch ( NoClassDefFoundError err )
+                { // ok index util not on class path
+                }
+    
+                try
+                {
+                    Class clazz = Class.forName( Config.LUCENE_FULLTEXT_DS_CLASS );
+                    cleanWriteLocksInLuceneDirectory( storeDir + File.separator + "lucene-fulltext" );
+                    byte[] luceneId = UTF8.encode( "262374" );
+                    registerLuceneDataSource( "lucene-fulltext",
+                            clazz.getName(), config.getTxModule(),
+                            storeDir + File.separator + "lucene-fulltext", config.getLockManager(),
+                            luceneId, params );
+                }
+                catch ( ClassNotFoundException e )
+                { // ok index util not on class path
+                }
+                catch ( NoClassDefFoundError err )
+                { // ok index util not on class path
+                }
             }
-            catch ( ClassNotFoundException e )
-            { // ok index util not on class path
-            }
-            catch ( NoClassDefFoundError err )
-            { // ok index util not on class path
-            }
-
-            try
-            {
-                Class clazz = Class.forName( Config.LUCENE_FULLTEXT_DS_CLASS );
-                cleanWriteLocksInLuceneDirectory( storeDir + File.separator + "lucene-fulltext" );
-                byte[] luceneId = UTF8.encode( "262374" );
-                registerLuceneDataSource( "lucene-fulltext",
-                        clazz.getName(), config.getTxModule(),
-                        storeDir + File.separator + "lucene-fulltext", config.getLockManager(),
-                        luceneId, params );
-            }
-            catch ( ClassNotFoundException e )
-            { // ok index util not on class path
-            }
-            catch ( NoClassDefFoundError err )
-            { // ok index util not on class path
-            }
+            persistenceSource = new NioNeoDbPersistenceSource();
+            config.setPersistenceSource( Config.DEFAULT_DATA_SOURCE_NAME, create );
+            config.getIdGeneratorModule().setPersistenceSourceInstance(
+                    persistenceSource );
+            config.getTxModule().init();
+            config.getPersistenceModule().init();
+            persistenceSource.init();
+            config.getIdGeneratorModule().init();
+            config.getGraphDbModule().init();
+    
+            kernelExtensionLoader.initializeIndexProviders();
+    
+            config.getTxModule().start();
+            config.getPersistenceModule().start( config.getTxModule().getTxManager(), persistenceSource,
+                    config.getSyncHookFactory(), config.getLockReleaser() );
+            persistenceSource.start( config.getTxModule().getXaDataSourceManager() );
+            config.getIdGeneratorModule().start();
+            config.getGraphDbModule().start( config.getLockReleaser(),
+                    config.getPersistenceModule().getPersistenceManager(),
+                    config.getRelationshipTypeCreator(), params );
+    
+            started = true;
+    
+            KernelDiagnostics.register( config.getDiagnosticsManager(), graphDb,
+                    (NeoStoreXaDataSource) persistenceSource.getXaDataSource() );
+            config.getDiagnosticsManager().startup();
+            success = true;
+            return Collections.unmodifiableMap( params );
         }
-        persistenceSource = new NioNeoDbPersistenceSource();
-        config.setPersistenceSource( Config.DEFAULT_DATA_SOURCE_NAME, create );
-        config.getIdGeneratorModule().setPersistenceSourceInstance(
-                persistenceSource );
-        config.getTxModule().init();
-        config.getPersistenceModule().init();
-        persistenceSource.init();
-        config.getIdGeneratorModule().init();
-        config.getGraphDbModule().init();
-
-        kernelExtensionLoader.initializeIndexProviders();
-
-        config.getTxModule().start();
-        config.getPersistenceModule().start( config.getTxModule().getTxManager(), persistenceSource,
-                config.getSyncHookFactory(), config.getLockReleaser() );
-        persistenceSource.start( config.getTxModule().getXaDataSourceManager() );
-        config.getIdGeneratorModule().start();
-        config.getGraphDbModule().start( config.getLockReleaser(),
-                config.getPersistenceModule().getPersistenceManager(),
-                config.getRelationshipTypeCreator(), params );
-
-        started = true;
-
-        KernelDiagnostics.register( config.getDiagnosticsManager(), graphDb,
-                (NeoStoreXaDataSource) persistenceSource.getXaDataSource() );
-        config.getDiagnosticsManager().startup();
-
-        return Collections.unmodifiableMap( params );
+        finally
+        {
+            if ( !success ) nioneoDs.close();
+        }
     }
 
     private static Map<Object, Object> subset( Map<Object, Object> source, String... keys )

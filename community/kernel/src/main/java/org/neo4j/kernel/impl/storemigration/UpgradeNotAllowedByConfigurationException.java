@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.nioneo.store.StoreFailureException;
 
 public class UpgradeNotAllowedByConfigurationException extends StoreFailureException
@@ -26,5 +27,13 @@ public class UpgradeNotAllowedByConfigurationException extends StoreFailureExcep
     public UpgradeNotAllowedByConfigurationException( String msg )
     {
         super( msg );
+    }
+    
+    public UpgradeNotAllowedByConfigurationException()
+    {
+        super( String.format(
+                "Failed to start Neo4j with an older data store version. "
+                        + "To enable automatic upgrade, please set configuration parameter \"%s=true\"",
+                Config.ALLOW_STORE_UPGRADE ) );
     }
 }

@@ -26,34 +26,34 @@ import java.nio.channels.FileChannel;
 import java.util.Random;
 
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 
 public class IndexProviderStore
 {
-    private static final int FILE_LENGTH = 8*4;
+    private static final int FILE_LENGTH = 8*5;
     
     private long creationTime;
     private long randomIdentifier;
     private long version;
+    private long indexVersion;
     
     private final FileChannel fileChannel;
     private final ByteBuffer buf = ByteBuffer.allocate( FILE_LENGTH );
     private long lastCommittedTx;
     private final File file;
-    private final FileSystemAbstraction fileSystem;
     
-    public IndexProviderStore( File file, FileSystemAbstraction fileSystem )
+    public IndexProviderStore( File file, FileSystemAbstraction fileSystem, long expectedVersion, boolean allowUpgrade )
     {
         this.file = file;
-        this.fileSystem = fileSystem;
         if ( !file.exists() )
         {
-            create( file, fileSystem );
+            create( file, fileSystem, expectedVersion );
         }
         try
         {
             fileChannel = fileSystem.open( file.getAbsolutePath(), "rw" );
             int bytesRead = fileChannel.read( buf );
-            if ( bytesRead != FILE_LENGTH && bytesRead != FILE_LENGTH-8 )
+            if ( bytesRead != FILE_LENGTH && bytesRead != FILE_LENGTH-8 && !allowUpgrade )
             {
                 throw new RuntimeException( "Expected to read " + FILE_LENGTH +
                         " or " + (FILE_LENGTH-8) + " bytes" );
@@ -62,7 +62,12 @@ public class IndexProviderStore
             creationTime = buf.getLong();
             randomIdentifier = buf.getLong();
             version = buf.getLong();
-            lastCommittedTx = bytesRead == FILE_LENGTH ? buf.getLong() : 1;
+            lastCommittedTx = bytesRead/8 >= 4 ? buf.getLong() : 1;
+            Long readIndexVersion = bytesRead/8 >= 5 ? buf.getLong() : null;
+            boolean versionDiffers = readIndexVersion == null || readIndexVersion.longValue() != expectedVersion;
+            if ( versionDiffers && !allowUpgrade ) throw new UpgradeNotAllowedByConfigurationException();
+            indexVersion = expectedVersion;
+            if ( versionDiffers ) writeOut();
         }
         catch ( IOException e )
         {
@@ -70,7 +75,7 @@ public class IndexProviderStore
         }
     }
     
-    static void create( File file, FileSystemAbstraction fileSystem )
+    static void create( File file, FileSystemAbstraction fileSystem, long indexVersion )
     {
         if ( file.exists() )
         {
@@ -82,7 +87,7 @@ public class IndexProviderStore
             ByteBuffer buf = ByteBuffer.allocate( FILE_LENGTH );
             long time = System.currentTimeMillis();
             long identifier = new Random( time ).nextLong();
-            buf.putLong( time ).putLong( identifier ).putLong( 0 ).putLong( 1 );
+            buf.putLong( time ).putLong( identifier ).putLong( 0 ).putLong( 1 ).putLong( indexVersion );
             buf.flip();
             writeBuffer( fileChannel, buf );
             fileChannel.close();
@@ -95,9 +100,10 @@ public class IndexProviderStore
 
     private static void writeBuffer( FileChannel fileChannel, ByteBuffer buf ) throws IOException
     {
-        if ( fileChannel.write( buf ) != FILE_LENGTH )
+        int written = fileChannel.write( buf );
+        if ( written != FILE_LENGTH )
         {
-            throw new RuntimeException( "Expected to write " + FILE_LENGTH + " bytes" );
+            throw new RuntimeException( "Expected to write " + FILE_LENGTH + " bytes, but wrote " + written );
         }
     }
     
@@ -120,6 +126,11 @@ public class IndexProviderStore
     {
         return version;
     }
+    
+    public long getIndexVersion()
+    {
+        return indexVersion;
+    }
 
     public synchronized long incrementVersion()
     {
@@ -140,6 +151,12 @@ public class IndexProviderStore
         this.lastCommittedTx = txId;
     }
     
+    public synchronized void setIndexVersion( long indexVersion )
+    {
+        this.indexVersion = indexVersion;
+        writeOut();
+    }
+    
     public long getLastCommittedTx()
     {
         return this.lastCommittedTx;
@@ -149,7 +166,7 @@ public class IndexProviderStore
     {
         buf.clear();
         buf.putLong( creationTime ).putLong( randomIdentifier ).putLong( 
-            version ).putLong( lastCommittedTx );
+            version ).putLong( lastCommittedTx ).putLong( indexVersion );
         buf.flip();
         try
         {
