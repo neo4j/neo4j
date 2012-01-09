@@ -192,6 +192,11 @@ public class InternalJettyServletRequest extends Request
         return cookies;
     }
 
+    public void addHeader(String header, String value)
+    {
+        headers.put(header, value);
+    }
+
     @Override
     public long getDateHeader( String name )
     {
