@@ -800,6 +800,18 @@
                 <webdriver.implementation>SauceLabsFirefoxWindows</webdriver.implementation>
             </properties>
         </profile>
+        <profile>
+            <id>sauce-labs-chrome-windows</id>
+            <properties>
+                <webdriver.implementation>SauceLabsChromeWindows</webdriver.implementation>
+            </properties>
+        </profile>
+        <profile>
+            <id>sauce-labs-internet-explorer-windows</id>
+            <properties>
+                <webdriver.implementation>SauceLabsInternetExplorerWindows</webdriver.implementation>
+            </properties>
+        </profile>
 
         <profile>
             <id>initial-build</id>

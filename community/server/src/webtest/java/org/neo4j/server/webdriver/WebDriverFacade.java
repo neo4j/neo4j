@@ -91,6 +91,16 @@ public class WebDriverFacade
 
                 return WebdriverSauceLabsDriver.createDriver( capabilities );
             }
+        },
+        SauceLabsInternetExplorerWindows() {
+            public WebDriver createInstance() throws MalformedURLException
+            {
+                DesiredCapabilities capabilities = DesiredCapabilities.internetExplorer();
+                capabilities.setCapability( "platform", Platform.VISTA );
+                capabilities.setCapability( "name", "Neo4j Web Testing" );
+
+                return WebdriverSauceLabsDriver.createDriver( capabilities );
+            }
         };
 
         public abstract WebDriver createInstance() throws Exception;
