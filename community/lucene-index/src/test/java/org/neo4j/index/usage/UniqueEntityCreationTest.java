@@ -47,13 +47,6 @@ public class UniqueEntityCreationTest
         new ThreadRunner().run();
     }
 
-    @Test
-    public void testOptimisticCreation() throws InterruptedException
-    {
-        graphDatabaseService = new ImpermanentGraphDatabase();
-        new ThreadRunner().run();
-    }
-
     class ThreadRunner implements Runnable
     {
         public static final int NUM_USERS = 10;
