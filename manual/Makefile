@@ -224,7 +224,7 @@ singlehtml:  manpages copyimages
 	cp -fr "$(JSDIR)" "$(SINGLEHTMLDIR)/js"
 
 # builds docbook format first
-annotated:  manpages copyimages
+annotated:  dist
 	#
 	#
 	# Building annotated html output.
