@@ -55,15 +55,14 @@ public class BatchOperationService
     private static final String METHOD_KEY = "method";
     private static final String BODY_KEY = "body";
     private static final String TO_KEY = "to";
-    
-    private static final JsonFactory jsonFactory = new JsonFactory(); 
+
+    private static final JsonFactory jsonFactory = new JsonFactory();
     
     private final OutputFormat output;
     private final WebServer webServer;
     private final Database database;
 
-    public BatchOperationService( @Context Database database, @Context WebServer webServer, @Context InputFormat input,
-            @Context OutputFormat output )
+    public BatchOperationService(@Context Database database, @Context WebServer webServer, @Context OutputFormat output)
     {
         this.output = output;
         this.webServer = webServer;
@@ -86,7 +85,7 @@ public class BatchOperationService
             String field;
             String jobMethod, jobPath, jobBody;
             Integer jobId;
-            
+
             // TODO: Perhaps introduce a simple DSL for 
             // deserializing streamed JSON?
             while( (token = jp.nextToken()) != null) {
@@ -135,11 +134,6 @@ public class BatchOperationService
     private void performJob( BatchOperationResults results, UriInfo uriInfo, String method, String path, String body, Integer id )
             throws IOException, ServletException
     {
-        
-
-        InternalJettyServletRequest req = new InternalJettyServletRequest();
-        InternalJettyServletResponse res = new InternalJettyServletResponse();
-
         // Replace {[ID]} placeholders with location values
         Map<Integer, String> locations = results.getLocations();
         path = replaceLocationPlaceholders( path, locations );
@@ -147,8 +141,8 @@ public class BatchOperationService
 
         URI targetUri = calculateTargetUri( uriInfo, path );
 
-        req.setup( method, targetUri.toString(), body );
-        res.setup();
+        InternalJettyServletRequest req = new InternalJettyServletRequest(method, targetUri.toString(), body );
+        InternalJettyServletResponse res = new InternalJettyServletResponse();
 
         webServer.invokeDirectly( targetUri.getPath(), req, res );
 
