@@ -325,6 +325,11 @@
 						  <type>zip</type>
 						  <classifier>windows-enterprise</classifier>
 						</artifact>
+						<artifact>
+						  <file>target/neo4j-coordinator-setup-${neo4j.version}.msi</file>
+						  <type>zip</type>
+						  <classifier>windows-coordinator</classifier>
+						</artifact>
 					  </artifacts>
 					</configuration>
 				  </execution>

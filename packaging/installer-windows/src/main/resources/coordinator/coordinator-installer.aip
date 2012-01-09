@@ -143,10 +143,10 @@
     <ROW Registry="Version" Root="-1" Key="Software\[Manufacturer]\[ProductName]" Name="Version" Value="[ProductVersion]" Component_="ProductInformation"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiServCtrlComponent">
-    <ROW ServiceControl="Neo4j_Coordinator.exe" Name="Neo4j Coordinator.exe" Event="161" Wait="1" Component_="Neo4j_Coordinator.exe"/>
+    <ROW ServiceControl="Neo4j_Coordinator.exe" Name="Neo4jCoordinator" Event="161" Wait="1" Component_="Neo4j_Coordinator.exe"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiServInstComponent">
-    <ROW ServiceInstall="Neo4j_Coordinator.exe" Name="Neo4j Coordinator.exe" DisplayName="Neo4j Coordinator" ServiceType="16" StartType="2" ErrorControl="1" Component_="Neo4j_Coordinator.exe" Description="Zookeeper instance to coordinate a Neo4j Cluster"/>
+    <ROW ServiceInstall="Neo4j_Coordinator.exe" Name="Neo4jCoordinator" DisplayName="Neo4j Coordinator" ServiceType="16" StartType="2" ErrorControl="1" Component_="Neo4j_Coordinator.exe" Description="Zookeeper instance to coordinate a Neo4j Cluster"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiThemeComponent">
     <ATTRIBUTE name="UsedTheme" value="classic"/>
