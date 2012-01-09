@@ -25,6 +25,13 @@ from util import PythonicIterator
         
 from core import Direction, DirectionalType
 
+# Give the user references to the 
+# direct evaluator decision choices.
+INCLUDE_AND_CONTINUE = Evaluation.INCLUDE_AND_CONTINUE
+INCLUDE_AND_PRUNE = Evaluation.INCLUDE_AND_PRUNE
+EXCLUDE_AND_CONTINUE = Evaluation.EXCLUDE_AND_CONTINUE
+EXCLUDE_AND_PRUNE = Evaluation.EXCLUDE_AND_PRUNE
+
 class DynamicEvaluator(implements(Evaluator)):
     def __init__(self, eval_method):
         self._eval_method = eval_method

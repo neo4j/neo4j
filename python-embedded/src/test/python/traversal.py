@@ -291,6 +291,33 @@ class TraversalTest(unit_tests.GraphDatabaseTest):
             # END SNIPPET: loopThroughPath
             
             break
+
+    def test_import_decision_shortcut(self):
+        from neo4j.traversal import INCLUDE_AND_CONTINUE, INCLUDE_AND_PRUNE, EXCLUDE_AND_CONTINUE, EXCLUDE_AND_PRUNE
+        self.create_data()
+        db = self.graphdb
+
+        def iac(path):
+            return INCLUDE_AND_CONTINUE
+
+        def iap(path):
+            return INCLUDE_AND_PRUNE
+
+        def eac(path):
+            return EXCLUDE_AND_CONTINUE            
+
+        def eap(path):
+            return EXCLUDE_AND_PRUNE
+
+        traverser = db.traversal()\
+            .evaluator(iac)\
+            .evaluator(iap)\
+            .evaluator(eac)\
+            .evaluator(eap)\
+            .traverse(self.source)
+            
+        res = list(traverser.nodes)
+        self.assertEqual(len(res), 0)
         
         
 if __name__ == '__main__':
