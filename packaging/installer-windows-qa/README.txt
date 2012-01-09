@@ -1,26 +1,14 @@
-Windows installer project
--------------------------
+Windows installer QA
+--------------------
 
-Builds windows installers for all neo4j server editions. 
+Tests all windows installers (community, advanced, enterprise and coordinator) on windows VMs.
 
-The actual installer is built with AdvancedInstaller (http://www.advancedinstaller.com/). 
-That means you need to run this project on windows, and you need AdvancedInstaller installed.
-The project expects AdvancedInstaller to be installed in C:\Program Files\Caphyon\Advanced Installer 8.6\bin\x86\AdvancedInstaller.com, but you can change that by setting the "ai.executable" maven property.
+Required to run:
 
-To build:
+  * Virtual Box
+  * Vagrant (gem install vagrant)
+  * sahara (gem install sahara) <-- provides rollback capability for vagrant
 
-  mvn clean package
+To run the tests:
 
-Installers will be located under target/
-
-
-Working on this project
------------------------
-
-Installer config is done through the "installer.commands" file, located in src/main/resources
-See http://www.advancedinstaller.com/user-guide/command-line-editing.html for available commands.
-
-More complex changes than what is supported via commands must be done via the AdvancedInstaller GUI.
-The AdvancedInstaller project is located at src/main/resources/installer.ai.
-
-Please see the ANT script in pom.xml for how the installer.ai project is modified and executed by the installer.commands file.
+  mvn clean test

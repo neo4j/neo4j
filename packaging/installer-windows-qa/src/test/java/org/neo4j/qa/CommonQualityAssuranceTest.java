@@ -163,7 +163,7 @@ public class CommonQualityAssuranceTest {
     private void assertRESTWorks() throws Exception
     {
         JaxRsResponse r = RestRequest.req().get(
-                "http://localhost:7474/db/data/");
+                "http://"+vm.definition().ip()+":7474/db/data/");
         assertThat(r.getStatus(), equalTo(200));
     }
 
