@@ -20,22 +20,35 @@
 package org.neo4j.kernel.impl.index;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
 
 import java.io.File;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.kernel.CommonFactories;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 
 public class TestIndexProviderStore
 {
+    private File file;
+    private FileSystemAbstraction fileSystem;
+
+    @Before
+    public void createStore()
+    {
+        file = new File( "target/test-data/index-provider-store" );
+        fileSystem = CommonFactories.defaultFileSystemAbstraction();
+        file.mkdirs();
+        file.delete();
+    }
+    
     @Test
     public void lastCommitedTxGetsStoredBetweenSessions() throws Exception
     {
-        File file = new File( "target/test-data/index-provider-store" );
-        FileSystemAbstraction fileSystem = CommonFactories.defaultFileSystemAbstraction();
-        file.mkdirs();
-        file.delete();
         IndexProviderStore store = new IndexProviderStore( file, fileSystem, 0, false );
         store.setVersion( 5 );
         store.setLastCommittedTx( 12 );
@@ -43,6 +56,26 @@ public class TestIndexProviderStore
         store = new IndexProviderStore( file, fileSystem, 0, false );
         assertEquals( 5, store.getVersion() );
         assertEquals( 12, store.getLastCommittedTx() );
+        store.close();
+    }
+    
+    @Test
+    public void shouldFailUpgradeIfNotAllowed()
+    {
+        IndexProviderStore store = new IndexProviderStore( file, fileSystem, versionStringToLong( "3.1" ), true );
+        store.close();
+        store = new IndexProviderStore( file, fileSystem, versionStringToLong( "3.1" ), false );
+        store.close();
+        try
+        {
+            new IndexProviderStore( file, fileSystem, versionStringToLong( "3.5" ), false );
+            fail( "Shouldn't be able to upgrade there" );
+        }
+        catch ( UpgradeNotAllowedByConfigurationException e )
+        {   // Good
+        }
+        store = new IndexProviderStore( file, fileSystem, versionStringToLong( "3.5" ), true );
+        assertEquals( "3.5", NeoStore.versionLongToString( store.getIndexVersion() ) );
         store.close();
     }
 }
