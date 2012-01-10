@@ -715,7 +715,7 @@ public class NodeManager
         }
         finally
         {
-            LockType.WRITE.unacquire( lock, lockManager, lockReleaser );
+            if ( existing == null ) LockType.WRITE.unacquire( lock, lockManager, lockReleaser );
         }
     }
 
@@ -818,6 +818,12 @@ public class NodeManager
             return key;
         }
 
+        @Override
+        public String toString()
+        {
+            return "IndexLock[" + index + ":" + key + "]";
+        }
+        
         @Override
         public int hashCode()
         {   // Auto-generated
