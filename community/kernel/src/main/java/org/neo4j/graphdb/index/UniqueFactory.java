@@ -26,6 +26,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
 
 /**
  * A utility class for creating unique (with regard to a given index) entities.
@@ -190,20 +191,29 @@ public abstract class UniqueFactory<T extends PropertyContainer>
      */
     public final T getOrCreate( String key, Object value )
     {
-        T result = index.get( key, value ).getSingle();
-        if ( result != null ) return result;
-        Map<String, Object> properties = Collections.singletonMap( key, value );
-        T created = create( properties );
-        result = index.putIfAbsent( created, key, value );
-        if ( result == null )
+        Transaction tx = graphDatabase().beginTx();
+        try
         {
-            initialize( created, properties );
-            return created;
-        }
-        else
-        {
-            delete( created );
+            T result = index.get( key, value ).getSingle();
+            if ( result != null ) return result;
+            Map<String, Object> properties = Collections.singletonMap( key, value );
+            T created = create( properties );
+            result = index.putIfAbsent( created, key, value );
+            if ( result == null )
+            {
+                initialize( created, properties );
+                result = created;
+            }
+            else
+            {
+                delete( created );
+            }
+            tx.success();
             return result;
+        }
+        finally
+        {
+            tx.finish();
         }
     }
 

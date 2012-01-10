@@ -107,7 +107,7 @@ The delete semantics can be summarized in the following bullets:
 * Any write operation on a node or relationship after it has been deleted (but not yet committed) will throw an exception
 * After commit trying to acquire a new or work with an old reference to a deleted node or relationship will throw an exception.
 
-[[transactions-get-or-create]]
+[[transactions-unique-nodes]]
 == Creating unique nodes ==
 In many use cases, a certain level of uniqueness is desired among entities. You could for instance imagine that only
 one user with a certain e-mail address may exist in a system. If multiple concurrent threads naively try to create the
@@ -118,14 +118,32 @@ and single-instance deployments.
 By using a single thread, no two threads will even try to create a particular entity simultaneously. On HA,
 an external single-threaded client can perform the operations on the cluster.
 
+[[transactions-get-or-create]]
+=== Get or create ===
+By using http://api.neo4j.org/{neo4j-version}/org/neo4j/graphdb/index/Index.html#putIfAbsent(T,%20java.lang.String,%20java.lang.Object)[+put-if-absent+] functionality,
+entity uniqueness can be guaranteed using an index. Here the index acts as the lock and will only lock the smallest part needed to guaranteed uniqueness across threads and transactions.
+To get the more high-level +get-or-create+ functionality make use of http://api.neo4j.org/{neo4j-version}/org/neo4j/graphdb/index/UniqueFactory.html[+UniqueFactory+] as seen in the example below.
+
+Example code:
+[snippet,java]
+----
+component=neo4j-examples
+source=org/neo4j/examples/GetOrCreateTest.java
+classifier=test-sources
+tag=getOrCreate
+----
+
 === Pessimistic locking ===
-By using explicit, pessimistic locking, unique creation of entities can be achieved. It is most commonly done by
-locking on a single or a set of common nodes. The easiest way to acquire a write lock on a node is by removing a
-non-existent property.
+[IMPORTANT]
+While this is a working solution, please consider using the preferred  <<transactions-get-or-create>> instead.
+
+By using explicit, pessimistic locking, unique creation of entities can be achieved in a multi-threaded environment.
+It is most commonly done by locking on a single or a set of common nodes.
 
 One might be tempted to use Java synchronization for this, but it is dangerous. By mixing locks in the Neo4j kernel
 and in the Java runtime, it is easy to produce deadlocks that are not detectable by Neo4j. As long as all locking is
 done by Neo4j, all deadlocks will be detected and avoided.
+Also, a solution using manual synchronization doesn't ensure uniqueness in an HA environment.
 
 Example code:
 [snippet,java]
@@ -134,21 +152,6 @@ component=neo4j-examples
 source=org/neo4j/examples/GetOrCreateTest.java
 classifier=test-sources
 tag=pessimisticLocking
-----
-
-=== Optimistically create ===
-By leveraging the fact that the first indexed node will always be returned first in an index search, we can implement
-unique creation without locking. The idea is that we query the index and just select the first node returned, ignoring
-any duplicates. We can even clean up any duplicates we find. If the node is not yet indexed, we index it and repeat
-the procedure.
-
-Example code:
-[snippet,java]
-----
-component=neo4j-examples
-source=org/neo4j/examples/GetOrCreateTest.java
-classifier=test-sources
-tag=optimisticCreation
 ----
 
 [[transactions-events]]

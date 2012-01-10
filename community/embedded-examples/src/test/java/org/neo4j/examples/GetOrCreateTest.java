@@ -18,22 +18,20 @@
  */
 package org.neo4j.examples;
 
-import org.junit.Ignore;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.graphdb.index.IndexHits;
-
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Set;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import org.neo4j.graphdb.index.UniqueFactory;
 
 public class GetOrCreateTest extends AbstractJavaDocTestbase
 {
@@ -51,12 +49,12 @@ public class GetOrCreateTest extends AbstractJavaDocTestbase
         }
     }
 
-    class OptimisticGetOrCreate implements GetOrCreate
+    class UniqueFactoryGetOrCreate implements GetOrCreate
     {
         @Override
         public Node getOrCreateUser( String username, GraphDatabaseService graphDb, Node lockNode )
         {
-            return getOrCreateUserOptimistically( username, graphDb );
+            return getOrCreateUserWithUniqueFactory( username, graphDb );
         }
     }
 
@@ -158,24 +156,19 @@ public class GetOrCreateTest extends AbstractJavaDocTestbase
     @Test
     public void testPessimisticLocking() throws InterruptedException
     {
-        System.out.println( "testPessimisticLocking" );
         new ThreadRunner( new PessimisticGetOrCreate() ).run();
     }
-
 
     // START SNIPPET: pessimisticLocking
     public Node getOrCreateUserPessimistically( String username, GraphDatabaseService graphDb, Node lockNode )
     {
         Index<Node> usersIndex = graphDb.index().forNodes( "users" );
         Node userNode = usersIndex.get( "name", username ).getSingle();
-        if ( userNode != null )
-        {
-            return userNode;
-        }
+        if ( userNode != null ) return userNode;
         Transaction tx = graphDb.beginTx();
         try
         {
-            lockNode.removeProperty( "__dummy__" );
+            tx.acquireWriteLock( lockNode );
             userNode = usersIndex.get( "name", username ).getSingle();
             if ( userNode == null )
             {
@@ -194,95 +187,24 @@ public class GetOrCreateTest extends AbstractJavaDocTestbase
     // END SNIPPET: pessimisticLocking
 
     @Test
-    @Ignore("Ignoring during investigation of behaviour change in Lucene 3.5")
-    public void testOptimisticCreation() throws InterruptedException
+    public void getOrCreateWithUniqueFactory() throws Exception
     {
-        System.out.println( "testOptimisticCreation" );
-        new ThreadRunner( new OptimisticGetOrCreate() ).run();
+        new ThreadRunner( new UniqueFactoryGetOrCreate() ).run();
     }
-
-    // START SNIPPET: optimisticCreation
-    private Node getOrCreateUserOptimistically( String username, GraphDatabaseService graphDb )
+    
+    // START SNIPPET: getOrCreate
+    public Node getOrCreateUserWithUniqueFactory( String username, GraphDatabaseService graphDb )
     {
-        Index<Node> usersIndex = graphDb.index().forNodes( "users" );
-        Node userNode = getFirstUserNode( username, graphDb, usersIndex );
-        if ( userNode == null )
+        UniqueFactory<Node> factory = new UniqueFactory.UniqueNodeFactory( graphDb, "users" )
         {
-            addUserNode( username, graphDb, usersIndex );
-            userNode = getFirstUserNode( username, graphDb, usersIndex );
-        }
-        return userNode;
-    }
-
-    private Node getFirstUserNode( String username, GraphDatabaseService graphDb, Index<Node> usersIndex )
-    {
-        final IndexHits<Node> userHits = usersIndex.get( "name", username );
-        Node firstUser = null;
-        Set<Node> duplicates = new HashSet<Node>();
-        try
-        {
-            for ( Node user : userHits )
+            @Override
+            protected void initialize( Node created, Map<String, Object> properties )
             {
-                if ( firstUser == null )
-                {
-                    firstUser = user;
-                }
-                else
-                {
-                    duplicates.add( user );
-                }
+                created.setProperty( "name", properties.get( "name" ) );
             }
-        }
-        finally
-        {
-            userHits.close();
-        }
-        if ( !duplicates.isEmpty() )
-        {
-            try
-            {
-                deleteNodes( username, graphDb, usersIndex, duplicates );
-            }
-            catch ( Exception e )
-            {
-                // May produce errors due to duplicate nodes already having been removed.
-            }
-        }
-        return firstUser;
+        };
+        
+        return factory.getOrCreate( "name", username );
     }
-
-    private void deleteNodes( String username, GraphDatabaseService graphDb, Index<Node> usersIndex, Set<Node> duplicates )
-    {
-        Transaction tx = graphDb.beginTx();
-        try
-        {
-            for ( Node duplicate : duplicates )
-            {
-                usersIndex.remove( duplicate, "name", username );
-                duplicate.delete();
-            }
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
-    }
-
-    private void addUserNode( String username, GraphDatabaseService graphDb, Index<Node> usersIndex )
-    {
-        Transaction tx = graphDb.beginTx();
-        try
-        {
-            Node userNode = graphDb.createNode();
-            userNode.setProperty( "name", username );
-            usersIndex.add( userNode, "name", username );
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
-    }
-    // END SNIPPET: optimisticCreation
+    // END SNIPPET: getOrCreate
 }
