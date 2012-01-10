@@ -215,11 +215,6 @@
 										dir="${project.build.outputDirectory}/neo4j-enterprise-${neo4j.version}"
 										includes="**" />
 								</move>
-								<copy toDir="${project.build.outputDirectory}/coordinator/coordinator">
-									<fileset
-										dir="${project.build.outputDirectory}/enterprise"
-										includes="**" />
-								</copy>
 
 								<!-- Run installer projects -->
 								<exec executable="debuild" dir="${project.build.outputDirectory}/community">
@@ -237,12 +232,6 @@
 									<arg line="-uc" />
 									<arg line="-B" />
                                 </exec>
-								<exec executable="debuild" dir="${project.build.outputDirectory}/coordinator">
-									<arg line="-us" />
-									<arg line="-uc" />
-									<arg line="-B" />
-                                </exec>
-
 							</target>
 						</configuration>
 					</execution>
@@ -277,11 +266,6 @@
 						  <file>${project.build.outputDirectory}/neo4j-enterprise_${neo4j.version.debian_compliant}_all.deb</file>
 						  <type>deb</type>
 						  <classifier>debian-enterprise</classifier>
-						</artifact>
-						<artifact>
-						  <file>${project.build.outputDirectory}/neo4j-coordinator_${neo4j.version.debian_compliant}_all.deb</file>
-						  <type>deb</type>
-						  <classifier>debian-coordinator</classifier>
 						</artifact>
 					  </artifacts>
 					</configuration>
