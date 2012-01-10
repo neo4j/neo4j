@@ -1,0 +1,6 @@
+neo4j (${neo4j.version.debian_compliant}) ${neo4j.version.stability}; urgency=low
+
+  * See https://trac.neo4j.org/browser/components/server/tags/0.6-1.3.M01/CHANGES.txt for more details.
+
+ -- ${neo4j.debian.maintainer}  ${neo4j.debian.buildDate}
+
