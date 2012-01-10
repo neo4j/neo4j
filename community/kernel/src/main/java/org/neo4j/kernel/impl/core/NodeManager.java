@@ -796,7 +796,7 @@ public class NodeManager
         }
         finally
         {
-            LockType.WRITE.unacquire( lock, lockManager, lockReleaser );
+            if ( existing == null ) LockType.WRITE.unacquire( lock, lockManager, lockReleaser );
         }
     }
 
@@ -886,6 +886,12 @@ public class NodeManager
             else if ( !key.equals( other.key ) )
                 return false;
             return true;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "IndexLock[" + index + ":" + key + "]";
         }
     }
 
