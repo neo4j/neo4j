@@ -44,7 +44,7 @@ trait Predicates extends JavaTokenParsers with Tokens with Expressions {
 
   def sequencePredicate: Parser[Predicate] = (allInSeq | anyInSeq | noneInSeq | singleInSeq)
 
-  def symbolIterablePredicate: Parser[(Expression, String, Predicate)] = identity ~ ignoreCase("in") ~ expression ~ ignoreCase("where") ~ predicate ^^ {
+  def symbolIterablePredicate: Parser[(Expression, String, Predicate)] = identity ~ ignoreCase("in") ~ expression ~ (ignoreCase("where") | ":") ~ predicate ^^ {
     case symbol ~ in ~ iterable ~ where ~ klas => (iterable, symbol, klas)
   }
 

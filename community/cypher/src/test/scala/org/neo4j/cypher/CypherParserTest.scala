@@ -792,6 +792,19 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns (ExpressionReturnItem(Entity("b"))))
   }
 
+  @Test def supportsTheOldSyntaxForIterablePredicates() {
+    testQuery(
+      """start a = node(1) match p = a --> b --> c where ALL(n in NODES(p) : n.name = "Andres") return b""",
+      Query.
+        start(NodeById("a", 1)).
+        namedPaths(
+        NamedPath("p",
+          RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING, false),
+          RelatedTo("b", "c", "  UNNAMED2", None, Direction.OUTGOING, false))).
+        where(AllInIterable(NodesFunction(Entity("p")), "n", Equals(Property("n", "name"), Literal("Andres"))))
+        returns (ExpressionReturnItem(Entity("b"))))
+  }
+
   @Test def extractNameFromAllNodes() {
     testQuery(
       """start a = node(1) match p = a --> b --> c return extract(n in nodes(p) : n.name)""",
