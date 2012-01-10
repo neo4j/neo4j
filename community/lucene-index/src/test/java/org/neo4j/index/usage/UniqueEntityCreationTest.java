@@ -20,12 +20,10 @@
 package org.neo4j.index.usage;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.junit.Test;
@@ -38,162 +36,126 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class UniqueEntityCreationTest
 {
-    GraphDatabaseService graphDatabaseService;
-    
+    public static final int NUM_KEYS = 5;
+    public static final int NUM_THREADS = 20;
+
+    GraphDatabaseService database;
+
     @Test
     public void testOptimisticCreation() throws InterruptedException
     {
-        graphDatabaseService = new ImpermanentGraphDatabase();
-        new ThreadRunner().run();
-    }
+        database = new ImpermanentGraphDatabase();
 
-    class ThreadRunner implements Runnable
-    {
-        public static final int NUM_USERS = 10;
-
-        @Override
-        public void run()
+        final List<List<Node>> results = new ArrayList<List<Node>>();
+        final List<Thread> threads = new ArrayList<Thread>();
+        for ( int i = 0; i < NUM_THREADS; i++ )
         {
-            final List<List<Node>> results = new ArrayList<List<Node>>();
-            final List<Thread> threads = new ArrayList<Thread>();
-            for ( int i = 0; i < 10; i++ )
+            final int threadNumber = i;
+
+            threads.add( new Thread()
             {
-                threads.add( new Thread()
+                @Override
+                public void run()
                 {
-                    @Override
-                    public void run()
+                    List<Node> subResult = new ArrayList<Node>();
+                    for ( int j = 0; j < NUM_KEYS; j++ )
                     {
-                        List<Node> subresult = new ArrayList<Node>();
-                        for ( int j = 0; j < NUM_USERS; j++ )
+                        String key = "key" + j;
+                        Index<Node> index = database.index().forNodes( "users" );
+                        Node userNode = getFirstNode( threadNumber, key, database, index );
+                        if ( userNode == null )
                         {
-                            subresult.add( getOrCreateUserOptimistically( getUsername( j ), graphDatabaseService) );
+                            addNode( key, database, index );
+                            userNode = getFirstNode( threadNumber, key, database, index );
                         }
-                        results.add( subresult );
+                        subResult.add( userNode );
                     }
-                } );
-            }
-            for ( Thread thread : threads )
-            {
-                thread.start();
-            }
-            for ( Thread thread : threads )
-            {
-                try
-                {
-                    thread.join();
+                    results.add( subResult );
                 }
-                catch ( InterruptedException e )
-                {
-                    e.printStackTrace();
-                }
-            }
-            List<Node> first = results.remove( 0 );
-            for ( List<Node> subresult : results )
-            {
-                assertEquals( first, subresult );
-            }
-            for ( int i = 0; i < NUM_USERS; i++ )
-            {
-                final String username = getUsername( i );
-                getOrCreateUserOptimistically( username, graphDatabaseService );
-                assertUserExistsUniquely( username );
-            }
+            } );
         }
-
-        private String getUsername( int j )
+        for ( Thread thread : threads )
         {
-            return "User" + j;
+            thread.start();
         }
-
-        private void assertUserExistsUniquely( String username )
+        for ( Thread thread : threads )
         {
             try
             {
-                assertNotNull( "User '" + username + "' not created.",
-                    graphDatabaseService.index().forNodes( "users" ).get( "name", username ).getSingle() );
+                thread.join();
             }
-            catch ( NoSuchElementException e )
+            catch ( InterruptedException e )
             {
-                throw new RuntimeException( "User '" + username + "' not created uniquely.", e );
+                e.printStackTrace();
             }
         }
-    }
-
-    private Node getOrCreateUserOptimistically( String username, GraphDatabaseService graphDb )
-    {
-        Index<Node> usersIndex = graphDb.index().forNodes( "users" );
-        Node userNode = getFirstUserNode( username, graphDb, usersIndex );
-        if ( userNode == null )
+        List<Node> first = results.remove( 0 );
+        for ( List<Node> subresult : results )
         {
-            addUserNode( username, graphDb, usersIndex );
-            userNode = getFirstUserNode( username, graphDb, usersIndex );
+            assertEquals( first, subresult );
         }
-        return userNode;
     }
 
-    private Node getFirstUserNode( String username, GraphDatabaseService graphDb, Index<Node> usersIndex )
+    private Node getFirstNode( int threadNumber, String key, GraphDatabaseService graphDb, Index<Node> index )
     {
-        final IndexHits<Node> userHits = usersIndex.get( "name", username );
-        Node firstUser = null;
+        final IndexHits<Node> hits = index.get( "name", key );
+        Node firstNode = null;
         Set<Node> duplicates = new HashSet<Node>();
         try
         {
-            for ( Node user : userHits )
+            for ( Node node : hits )
             {
-                if ( firstUser == null )
+                if ( firstNode == null )
                 {
-                    firstUser = user;
+                    firstNode = node;
                 }
                 else
                 {
-                    duplicates.add( user );
+                    duplicates.add( node );
                 }
             }
         }
         finally
         {
-            userHits.close();
+            hits.close();
         }
         if ( !duplicates.isEmpty() )
         {
-            try
+            ArrayList<Node> duplicatesList = new ArrayList( duplicates );
+            for ( int i = 0; i < duplicatesList.size(); i++ )
             {
-                deleteNodes( username, graphDb, usersIndex, duplicates );
-            }
-            catch ( Exception e )
-            {
-                // May produce errors due to duplicate nodes already having been removed.
+                Node node = duplicatesList.get( i );
+                String message = String.format( "Thread %d: For %s, found node %d, deleting node %d (duplicate %d)",
+                        threadNumber, key, firstNode.getId(), node.getId(), i );
+                Transaction tx = graphDb.beginTx();
+                try
+                {
+                    index.remove( node, "name", key );
+                    node.delete();
+                    tx.success();
+                }
+                catch ( Exception e )
+                {
+                    message += " threw " + e.getClass().getSimpleName();
+                }
+                finally
+                {
+                    tx.finish();
+                }
+                System.out.println( message );
             }
         }
-        return firstUser;
+        return firstNode;
     }
 
-    private void deleteNodes( String username, GraphDatabaseService graphDb, Index<Node> usersIndex, Set<Node> duplicates )
-    {
-        Transaction tx = graphDb.beginTx();
-        try
-        {
-            for ( Node duplicate : duplicates )
-            {
-                usersIndex.remove( duplicate, "name", username );
-                duplicate.delete();
-            }
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
-    }
-
-    private void addUserNode( String username, GraphDatabaseService graphDb, Index<Node> usersIndex )
+    private void addNode( String key, GraphDatabaseService graphDb, Index<Node> usersIndex )
     {
         Transaction tx = graphDb.beginTx();
         try
         {
             Node userNode = graphDb.createNode();
-            userNode.setProperty( "name", username );
-            usersIndex.add( userNode, "name", username );
+            userNode.setProperty( "name", key );
+            usersIndex.add( userNode, "name", key );
             tx.success();
         }
         finally
