@@ -203,7 +203,12 @@ installservice() {
     detectos
     findjava
     if [ ! -x "$JAVACMD" ] ; then
-      read -p "It was not possible to determine JAVA_HOME. Do you want to continue with the installation? [yN]" yn
+      if [[ $HEADLESS == false ]]; then
+        read -p "It was not possible to determine JAVA_HOME. Do you want to continue with the installation? [yN]" yn
+      else
+        echo "It was not possible to determine JAVA_HOME. This will need to be set to start neo4j-coordinator."
+        yn= "y"
+      fi
       case $yn in
               [yY]* ) echo "WARNING: Alright, but $FRIENDLY_NAME will fail to launch until Java has been properly installed and configured."
               ;;
@@ -230,7 +235,11 @@ installservice() {
             stopit
           fi
           if ! `id $NEO4J_USER &> /dev/null` ; then
-            read -p "User \"$NEO4J_USER\" does not yet exist. Shall I create the account for you? [Yn]" yn
+            if [[ $HEADLESS == false ]]; then
+              read -p "User \"$NEO4J_USER\" does not yet exist. Shall I create the account for you? [Yn]" yn
+            else
+              yn= "y"
+            fi
             case $yn in
               [Nn]* ) echo "WARNING: Alright, but Neo4j Coordinator will fail to launch until that user has been created."
               set_user $NEO4J_USER
@@ -271,7 +280,32 @@ showinfo() {
   echo "CLASSPATH:         $CLASSPATH"
 }
 
-case "$1" in
+# END FUNCTIONS
+# BEGIN MAIN
+
+# Parse option flags
+while getopts "u:h" opt; do
+  case $opt in
+    h)
+      echo "Running in headless (-h) mode" >&2
+      HEADLESS=true
+      ;;
+    u)
+      echo "Installing with user $OPTARG"
+      NEO4J_USER=$OPTARG
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      exit 1
+      ;;
+    :)
+      echo "Option -$OPTARG requires an argument." >&2
+      exit 1
+      ;;
+  esac
+done
+
+case "${!OPTIND}" in
   console)
     console
     ;;
