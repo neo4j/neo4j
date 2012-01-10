@@ -8,12 +8,12 @@
     <relativePath />
   </parent>
   <groupId>org.neo4j</groupId>
-  <artifactId>installer-windows-qa</artifactId>
+  <artifactId>installer-qa</artifactId>
   <version>1.6-SNAPSHOT</version>
   <packaging>jar</packaging>
 
-  <name>Neo4j Windows Installer Quality Assurance</name>
-  <description>QA for Windows installers for the Neo4j Server</description>
+  <name>Neo4j Installer Quality Assurance</name>
+  <description>QA for installers for the Neo4j Server</description>
 
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
@@ -24,7 +24,7 @@
   </scm>
 
   <properties>
-    <short-name>installer-windows-qa</short-name>
+    <short-name>installer-qa</short-name>
     <neo4j.version>1.6-SNAPSHOT</neo4j.version>
     <license-text.header>GPL-3-header.txt</license-text.header>
   </properties>
