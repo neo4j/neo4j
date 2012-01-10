@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.neo4j.app</groupId>
     <artifactId>neo4j-server</artifactId>
-    <version>1.6-SNAPSHOT</version>
+    <version>1.6.M03</version>
     <name>Neo4j Server</name>
     <description>Standalone Neo4j server application.</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -26,7 +26,7 @@
         <neo4j-server.mainClass>org.neo4j.server.Bootstrapper</neo4j-server.mainClass>
         <neo-server.home>target/generated-resources/appassembler/jsw</neo-server.home>
         <neo-server.confdir>target/test-classes/etc/neo-server</neo-server.confdir>
-        <neo-server.test.hostname></neo-server.test.hostname>
+        <neo-server.test.hostname />
 
         <!-- This code name is injected into Webadmin, please update it
    when updating the project version. -->
@@ -47,7 +47,7 @@
         <webdriver.chrome.driver>webdriver-binaries/chromedriver</webdriver.chrome.driver>
         <webdriver.chrome.driver.download.url>http://chromium.googlecode.com/files/chromedriver_mac_18.0.995.0.zip</webdriver.chrome.driver.download.url>
         <webdriver.sauce.labs.url>**Needs to provided externally by the CI job for security reasons**</webdriver.sauce.labs.url>
-        <webdriver.override.neo-server.baseuri></webdriver.override.neo-server.baseuri>
+        <webdriver.override.neo-server.baseuri />
     </properties>
 
     <scm>
@@ -78,14 +78,14 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j</artifactId>
-            <version>1.6-SNAPSHOT</version>
+            <version>1.6.M03</version>
             <type>pom</type>
         </dependency>
 
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-kernel</artifactId>
-            <version>1.6-SNAPSHOT</version>
+            <version>1.6.M03</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
@@ -93,13 +93,13 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>server-api</artifactId>
-            <version>1.6-SNAPSHOT</version>
+            <version>1.6.M03</version>
         </dependency>
 
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-cypher</artifactId>
-            <version>1.6-SNAPSHOT</version>
+            <version>1.6.M03</version>
         </dependency>
 
         <dependency>
@@ -287,14 +287,14 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-graphviz</artifactId>
-            <version>1.6-SNAPSHOT</version>
+            <version>1.6.M03</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-shell</artifactId>
-            <version>1.6-SNAPSHOT</version>
+            <version>1.6.M03</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
