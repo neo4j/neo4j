@@ -1,3 +1,9 @@
+1.6.M03 (2012-01-12)
+--------------------
+o Added the ability to monitor the locks (optionally filter on contended-only and how long they've lived) in the LockManager through JMX.
+o Added a management bean for the diagnostics logging SPI.
+o Adding possiblity to restart server via JMX.
+
 1.6.M02 (2011-12-16)
 --------------------
 o [cypher] BREAKING CHANGE: Changed the syntax for iterable predicated ALL/NONE/ANY/SINGLE to use WHERE instead of a colon

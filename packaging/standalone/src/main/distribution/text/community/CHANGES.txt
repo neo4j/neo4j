@@ -1,3 +1,22 @@
+1.6.M03 (2012-01-12)
+--------------------
+o Added a different aggregation logic. Makes aggregating on the same columns as sorting much faster
+o Made it possible to query on array properties
+o Fixed bugs #157,#140,#168,#170 and a bug which prevented a node sent in as a parameter unable to be returned in a result
+o Added means of introspecting locks taken by the LockManager.
+o Added a diagnostics API.
+o Added Index#putIfAbsent which ensures uniquely put key/value pair for an entity.
+o Added UniqueFactory which gets or creates entities uniquely using Index#putIfAbsent
+o Fixed an issue with upgrading an 1.5.M02 store where a "store version" record wouldn't be added and which caused problems after non-clean shutdown.
+o Fixed an issue where sometimes dual start entries for a transaction would be added in the logical log.
+o Upgraded to Lucene version 3.5.
+o Added request timeout, controlled with org.neo4j.server.webserver.limit.executiontime (disabled by default).
+  Request header (max-execution-time) can shorten it if specified.
+o Fixed issues #113, #166, #172
+o Allow overriding of server base url for when test browser needs to access server via a different hostname from the bind address.
+o Exposes get-or-create-uniquely via REST in ex. POST /index/node/<name>?unique {...}
+o Added shell command mknode for creating new nodes w/o creating a relationship.
+
 1.6.M02 (2011-12-16)
 --------------------
 o [server] Webadmin data browser now supports cypher queries
