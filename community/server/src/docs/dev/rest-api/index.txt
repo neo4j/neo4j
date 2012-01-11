@@ -134,15 +134,30 @@ include::find-node-by-exact-match.txt[]
 
 include::find-node-by-query.txt[]
 
+[[rest-api-unique-indexes]]
+== Unique Indexes ==
+
+For more information, see <<transactions-unique-nodes>>.
+
+include::create-a-unique-node-in-an-index.txt[]
+
+include::create-a-unique-node-in-an-index-(the-case-where-it-exists).txt[]
+
+include::add-a-node-to-an-index-unless-a-node-already-exists-for-the-given-mapping.txt[]
+
+include::create-a-unique-relationship-in-an-index.txt[]
+
+include::add-a-relationship-to-an-index-unless-a-relationship-already-exists-for-the-given-mapping.txt[]
+
 [[rest-api-auto-indexes]]
-== Auto-Indexes ==
+== Automatic Indexes ==
 
 include::find-node-by-exact-match-from-an-automatic-index.txt[]
 
 include::find-node-by-query-from-an-automatic-index.txt[]
 
 [[rest-api-configurable-auto-indexes]]
-== Configurable Auto-Indexing ==
+== Configurable Automatic Indexing ==
 
 Out of the box auto-indexing supports exact matches since they are created with the default configuration (http://docs.neo4j.org/chunked/snapshot/indexing-create.html) the first time you access them. However it is possible to intervene in the lifecycle of the server before any auto indexes are created to change their configuration.
 

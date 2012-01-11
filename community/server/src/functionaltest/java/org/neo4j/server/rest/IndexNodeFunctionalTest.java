@@ -592,7 +592,7 @@ public class IndexNodeFunctionalTest extends AbstractRestFunctionalTestBase
     }
 
     /**
-     * Create a unique node in an index.
+     * Create a unique node in an index (the case where it exists).
      */
     @Documented
     @Test
