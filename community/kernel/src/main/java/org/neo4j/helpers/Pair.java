@@ -21,18 +21,18 @@ package org.neo4j.helpers;
 
 /**
  * Utility to handle pairs of objects.
+ *
+ * @param <T1> the type of the {@link #first() first value} of the pair.
+ * @param <T2> the type of the {@link #other() other value} of the pair.
  */
 public abstract class Pair<T1, T2>
 {
-    Pair()
-    {
-    }
-
     /**
      * Create a new pair of objects.
      *
      * @param first the first object in the pair.
      * @param other the other object in the pair.
+     * @return a new pair of the two parameters.
      */
     public static <T1, T2> Pair<T1, T2> of( final T1 first, final T2 other )
     {
@@ -50,6 +50,11 @@ public abstract class Pair<T1, T2>
                 return other;
             }
         };
+    }
+
+    Pair()
+    {
+        // package private, limited number of subclasses
     }
 
     /**
@@ -74,16 +79,14 @@ public abstract class Pair<T1, T2>
         return ( 31 * hashCode( first() ) ) | hashCode( other() );
     }
 
-    @SuppressWarnings( "unchecked" )
     @Override
     public boolean equals( Object obj )
     {
         if ( this == obj ) return true;
         if ( obj instanceof Pair )
         {
-            if ( obj.getClass() != this.getClass() ) return false;
-            Pair that = (Pair) obj;
-            return equals( this.first(), that.first() ) && equals( this.other(), that.other() );
+            @SuppressWarnings( "rawtypes" ) Pair that = (Pair) obj;
+            return equals( this.other(), that.other() ) && equals( this.first(), that.first() );
         }
         return false;
     }

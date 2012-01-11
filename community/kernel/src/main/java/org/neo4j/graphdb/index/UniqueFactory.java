@@ -150,7 +150,7 @@ public abstract class UniqueFactory<T extends PropertyContainer>
     }
 
     /**
-     * Implement this method to create the @{link Node} or {@link Relationship} to index.
+     * Implement this method to create the {@link Node} or {@link Relationship} to index.
      *
      * This method will be invoked exactly once per transaction that attempts to create an entry in the index.
      * The created entity might be discarded if another thread creates an entity with the same mapping concurrently.

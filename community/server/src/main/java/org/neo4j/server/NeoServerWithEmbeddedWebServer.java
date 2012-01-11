@@ -109,7 +109,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
     }
 
     /**
-     * Initializes individual plugins using the mechanism provided via @{see PluginInitializer} and the java service
+     * Initializes individual plugins using the mechanism provided via {@link PluginInitializer} and the java service
      * locator
      *
      * @param logger
