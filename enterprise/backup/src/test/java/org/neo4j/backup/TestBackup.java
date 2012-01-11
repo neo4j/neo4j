@@ -44,6 +44,7 @@ import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.subprocess.SubProcess;
 
@@ -119,6 +120,28 @@ public class TestBackup
         backup.incremental( backupPath );
         // END SNIPPET: onlineBackup
         assertEquals( furtherRepresentation, DbRepresentation.of( backupPath ) );
+        shutdownServer( server );
+    }
+
+    @Test
+    public void makeSureNoLogFileRemains() throws Exception
+    {
+        createInitialDataSet( serverPath );
+        ServerInterface server = startServer( serverPath );
+        OnlineBackup backup = OnlineBackup.from( "localhost" );
+
+        // First check full
+        backup.full( backupPath );
+        assertFalse( checkLogFileExistence( backupPath ) );
+        // Then check empty incremental
+        backup.incremental( backupPath );
+        assertFalse( checkLogFileExistence( backupPath ) );
+        // Then check real incremental
+        shutdownServer( server );
+        addMoreData( serverPath );
+        server = startServer( serverPath );
+        backup.incremental( backupPath );
+        assertFalse( checkLogFileExistence( backupPath ) );
         shutdownServer( server );
     }
 
@@ -413,5 +436,10 @@ public class TestBackup
             state = new Object();
             db.shutdown();
         }
+    }
+
+    private static boolean checkLogFileExistence( String directory )
+    {
+        return new File( directory, StringLogger.DEFAULT_NAME ).exists();
     }
 }
