@@ -47,14 +47,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>installer-windows</artifactId>
-      <version>${neo4j.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
       <version>${neo4j.version}</version>
@@ -93,29 +85,57 @@
             <configuration>
               <outputDirectory>${project.build.outputDirectory}</outputDirectory>
               <artifactItems>
+                <!-- Windows installers -->
                 <artifactItem>
                   <groupId>org.neo4j</groupId>
                   <artifactId>installer-windows</artifactId>
+                  <version>${neo4j.version}</version>
                   <classifier>windows-community</classifier>
                   <type>msi</type>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.neo4j</groupId>
                   <artifactId>installer-windows</artifactId>
+                  <version>${neo4j.version}</version>
                   <classifier>windows-advanced</classifier>
                   <type>msi</type>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.neo4j</groupId>
                   <artifactId>installer-windows</artifactId>
+                  <version>${neo4j.version}</version>
                   <classifier>windows-enterprise</classifier>
                   <type>msi</type>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.neo4j</groupId>
                   <artifactId>installer-windows</artifactId>
+                  <version>${neo4j.version}</version>
                   <classifier>windows-coordinator</classifier>
                   <type>msi</type>
+                </artifactItem>
+
+                <!-- Debian installers -->
+                <artifactItem>
+                  <groupId>org.neo4j</groupId>
+                  <artifactId>installer-debian</artifactId>
+                  <version>${neo4j.version}</version>
+                  <classifier>debian-community</classifier>
+                  <type>deb</type>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.neo4j</groupId>
+                  <artifactId>installer-debian</artifactId>
+                  <version>${neo4j.version}</version>
+                  <classifier>debian-advanced</classifier>
+                  <type>deb</type>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.neo4j</groupId>
+                  <artifactId>installer-debian</artifactId>
+                  <version>${neo4j.version}</version>
+                  <classifier>debian-enterprise</classifier>
+                  <type>deb</type>
                 </artifactItem>
               </artifactItems>
             </configuration>
@@ -134,6 +154,7 @@
             </goals>
             <configuration>
               <target>
+                <!-- Windows installers -->
                 <move
                   file="${project.build.outputDirectory}/installer-windows-${project.version}-windows-community.msi"
                   toFile="${project.build.outputDirectory}/installer-windows-community.msi" />
@@ -146,6 +167,17 @@
                 <move
                   file="${project.build.outputDirectory}/installer-windows-${project.version}-windows-coordinator.msi"
                   toFile="${project.build.outputDirectory}/installer-windows-coordinator.msi" />
+
+                <!-- Debian installers -->
+                <move
+                  file="${project.build.outputDirectory}/installer-debian-${project.version}-debian-community.deb"
+                  toFile="${project.build.outputDirectory}/installer-debian-community.deb" />
+                <move
+                  file="${project.build.outputDirectory}/installer-debian-${project.version}-debian-advanced.deb"
+                  toFile="${project.build.outputDirectory}/installer-debian-advanced.deb" />
+                <move
+                  file="${project.build.outputDirectory}/installer-debian-${project.version}-debian-enterprise.deb"
+                  toFile="${project.build.outputDirectory}/installer-debian-enterprise.deb" />
               </target>
             </configuration>
           </execution>

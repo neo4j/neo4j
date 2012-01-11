@@ -9,7 +9,7 @@ Homepage: http://neo4j.org/
 Package: neo4j
 Architecture: all
 Depends: ${misc:Depends}, daemon, adduser, psmisc, default-jre
-Conflicts: neo4j-enterprise, neo4j-advanced, neo4j
+Conflicts: 
 Replaces: neo4j-enterprise, neo4j-advanced
 Description: The Neo4j database server. 
              .
