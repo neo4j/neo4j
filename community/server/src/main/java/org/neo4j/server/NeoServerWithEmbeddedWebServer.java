@@ -33,8 +33,8 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.GraphDatabaseFactory;
-import org.neo4j.server.guard.GuardedDatabaseFactory;
 import org.neo4j.server.guard.Guard;
+import org.neo4j.server.guard.GuardedDatabaseFactory;
 import org.neo4j.server.logging.Logger;
 import org.neo4j.server.modules.PluginInitializer;
 import org.neo4j.server.modules.RESTApiModule;
@@ -107,7 +107,7 @@ public class NeoServerWithEmbeddedWebServer implements NeoServer
     }
 
     /**
-     * Initializes individual plugins using the mechanism provided via @{see PluginInitializer} and the java service
+     * Initializes individual plugins using the mechanism provided via {@link PluginInitializer} and the java service
      * locator
      */
     protected void startExtensionInitialization()
