@@ -1,3 +1,7 @@
+1.6.M03 (2012-01-12)
+--------------------
+o Support for multiple HA clusters in one ZK cluster. Cluster selection is done with -ha.cluster_name.
+
 1.6.M02 (2011-12-16)
 --------------------
 o Added progress indicator to backups

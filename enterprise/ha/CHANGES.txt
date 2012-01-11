@@ -1,3 +1,11 @@
+1.6.M03 (2012-01-12)
+--------------------
+o Corrected ZK Expired event handling. Now, instead of restarting the zookeeper client, the whole broker is restarted and newMaster is called.
+  This leads to proper reconnect to the ZK quorum and parsing of the possibly updated cluster state.
+o Added support for having one ZK cluster managing many HA clusters (controlled by ha.cluster_name config).
+o Fixed issues with update puller being shutdown incorrectly and sometimes having references to stale objects.
+o Added support for creating unique entities via Index#putIfAbsent.
+
 1.6.M02 (2011-12-15)
 --------------------
 o Introduced ability to wait a while in some key points regarding master election to reduce the noise of possible exceptions
