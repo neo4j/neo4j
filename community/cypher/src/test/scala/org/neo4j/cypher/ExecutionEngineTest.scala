@@ -1562,12 +1562,37 @@ RETURN x0.name?
     assert(1 === result.size)
   }
 
+  @Test def shouldReturnDifferentResultsWithDifferentParams() {
+    val a = createNode()
+    
+    val b = createNode()
+    relate(a,b)
+    
+    relate(refNode, a, "X")
+
+    assert( 1 === parseAndExecute("start a = node({a}) match a-->b return b", "a" -> a).size )
+    assert( 0 === parseAndExecute("start a = node({a}) match a-->b return b", "a" -> b).size )
+  }
+
   @Test def shouldHandleParametersNamedAsIdentifiers() {
     val a = createNode("bar" -> "Andres")
 
     val result = parseAndExecute("start foo=node(1) where foo.bar = {foo} return foo.bar", "foo" -> "Andres")
     assert(List(Map("foo.bar" -> "Andres")) === result.toList)
   }
+  
+  @Test def shouldHandleRelationshipIndexQuery() {
+    val a = createNode()
+    val b = createNode()
+    val r = relate(a,b)
+    indexRel(r, "relIdx", "key", "value")
+
+
+    val result = parseAndExecute("start r=relationship:relIdx(key='value') return r")
+    assert(List(Map("r" -> r)) === result.toList)
+  }
+  
+  
 
   @Test def shouldHandleComparisonsWithDifferentTypes() {
     createNode("belt" -> 13)

@@ -46,6 +46,9 @@ class GraphDatabaseTestBase extends JUnitSuite {
   def indexNode(n: Node, idxName: String, key: String, value: String) {
     inTx(() => n.getGraphDatabase.index.forNodes(idxName).add(n, key, value))
   }
+  def indexRel(r: Relationship, idxName: String, key: String, value: String) {
+    inTx(() => r.getGraphDatabase.index.forRelationships(idxName).add(r, key, value))
+  }
 
   def createNode(): Node = createNode(Map[String, Any]())
 

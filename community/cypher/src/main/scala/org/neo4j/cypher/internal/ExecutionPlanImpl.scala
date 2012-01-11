@@ -242,6 +242,13 @@ class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends Execu
         indexHits.asScala
       })
 
+    case RelationshipByIndexQuery(varName, idxName, query) =>
+      new RelationshipStartPipe(lastPipe, varName, m => {
+        val queryText = query(m)
+        val indexHits: Iterable[Relationship] = graph.index.forRelationships(idxName).query(queryText)
+        indexHits.asScala
+      })
+
     case NodeById(varName, valueGenerator) => new NodeStartPipe(lastPipe, varName, m => makeNodes[Node](valueGenerator(m), varName, graph.getNodeById))
     case RelationshipById(varName, id) => new RelationshipStartPipe(lastPipe, varName, m => makeNodes[Relationship](id(m), varName, graph.getRelationshipById))
   }
