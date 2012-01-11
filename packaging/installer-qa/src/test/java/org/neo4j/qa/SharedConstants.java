@@ -37,4 +37,8 @@ public class SharedConstants {
     public static final String WINDOWS_ENTERPRISE_INSTALLER = INSTALLER_DIR + "installer-windows-enterprise.msi";
     public static final String WINDOWS_COORDINATOR_INSTALLER  = INSTALLER_DIR + "installer-windows-coordinator.msi";
     
+    public static final String UBUNTU_COMMUNITY_INSTALLER = INSTALLER_DIR + "installer-debian-community.deb";
+    public static final String UBUNTU_ADVANCED_INSTALLER = INSTALLER_DIR + "installer-debian-advanced.deb";
+    public static final String UBUNTU_ENTERPRISE_INSTALLER = INSTALLER_DIR + "installer-debian-enterprise.deb";
+    
 }

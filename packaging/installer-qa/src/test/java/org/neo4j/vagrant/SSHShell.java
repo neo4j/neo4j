@@ -54,14 +54,11 @@ public class SSHShell {
             session = startSession();
             Shell.logOutput(vmName + " $ ", cmd);
             Command command = session.exec(cmd);
+            
             String msg = Shell.outputToString(vmName, command.getInputStream()) + Shell.outputToString(vmName, command.getErrorStream());
-            try {
-                int x = command.getExitStatus();
-                return new Result(x,msg,cmd);
-            } catch(NullPointerException e) { // TODO: sshj sometimes throws nullpointer on getExitStatus, find out why
-                e.printStackTrace();
-                return new Result(-1,msg,cmd);
-            }
+            Integer x = command.getExitStatus();
+            
+            return new Result(x == null? -1 : 0,msg,cmd);
         } catch (Exception e) {
             throw new ShellException(e);
         } finally {

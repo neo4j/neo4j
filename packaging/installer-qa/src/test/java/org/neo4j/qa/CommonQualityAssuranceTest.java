@@ -26,8 +26,11 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.vagrant.VMFactory.vm;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
@@ -36,14 +39,15 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.neo4j.qa.driver.Neo4jDriver;
+import org.neo4j.qa.driver.UbuntuDebAdvancedDriver;
+import org.neo4j.qa.driver.UbuntuDebCommunityDriver;
+import org.neo4j.qa.driver.UbuntuDebEnterpriseDriver;
 import org.neo4j.qa.driver.WindowsAdvancedDriver;
 import org.neo4j.qa.driver.WindowsCommunityDriver;
 import org.neo4j.qa.driver.WindowsEnterpriseDriver;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.vagrant.VirtualMachine;
-
-import scala.actors.threadpool.Arrays;
 
 import com.sun.jersey.api.client.ClientHandlerException;
 
@@ -54,20 +58,35 @@ public class CommonQualityAssuranceTest {
     private Neo4jDriver driver;
 
     @Parameters
-    @SuppressWarnings("unchecked")
     public static Collection<Object[]> testParameters()
     {
+        Map<String, Neo4jDriver[]> platforms = new HashMap<String, Neo4jDriver[]>();
+        List<Object[]> testParameters = new ArrayList<Object[]>();
         
         VirtualMachine windows = vm(Neo4jVM.WIN_1);
+        VirtualMachine ubuntu = vm(Neo4jVM.UBUNTU_1);
         
-        Object[][] ps = new Object[][] { 
-                { new WindowsCommunityDriver(  windows, SharedConstants.WINDOWS_COMMUNITY_INSTALLER )  },
-                { new WindowsAdvancedDriver(   windows, SharedConstants.WINDOWS_ADVANCED_INSTALLER )   },
-                { new WindowsEnterpriseDriver( windows, 
-                        SharedConstants.WINDOWS_ENTERPRISE_INSTALLER, 
-                        SharedConstants.WINDOWS_COORDINATOR_INSTALLER ) } };
+        // Windows
+        platforms.put(Platforms.UBUNTU_DEB, new Neo4jDriver[] {
+            new WindowsCommunityDriver(  windows, SharedConstants.WINDOWS_COMMUNITY_INSTALLER ),
+            new WindowsAdvancedDriver(   windows, SharedConstants.WINDOWS_ADVANCED_INSTALLER ),
+            new WindowsEnterpriseDriver( windows, 
+                    SharedConstants.WINDOWS_ENTERPRISE_INSTALLER, 
+                    SharedConstants.WINDOWS_COORDINATOR_INSTALLER ) });
         
-        return Arrays.asList(ps);
+        // Ubuntu, with debian installer
+        platforms.put(Platforms.UBUNTU_DEB, new Neo4jDriver[] {
+                new UbuntuDebCommunityDriver(  ubuntu, SharedConstants.UBUNTU_COMMUNITY_INSTALLER ),
+                new UbuntuDebAdvancedDriver(  ubuntu, SharedConstants.UBUNTU_ADVANCED_INSTALLER ),
+                new UbuntuDebEnterpriseDriver(  ubuntu, SharedConstants.UBUNTU_ENTERPRISE_INSTALLER )});
+        
+        for(String platform : System.getProperty("test-platforms", Platforms.ALL).split(",")) {
+            for(Neo4jDriver d : platforms.get(platform)) {
+                testParameters.add(new Object[]{d});
+            }
+        }
+        
+        return testParameters;
     }
 
     public CommonQualityAssuranceTest(Neo4jDriver driver)
@@ -80,13 +99,17 @@ public class CommonQualityAssuranceTest {
     public void boot()
     {
         driver.up();
+        vm.rollback();
     }
 
     @After
     public void rollbackChanges()
     {
         driver.close();
-        vm.rollback(); // We'll be reusing this vm.
+        // We don't roll back after a test, it's done before.
+        // This is bad practice (we leave the VM dirty), but
+        // it makes debugging significantly easier because
+        // the VM can be inspected.
     }
 
     /*

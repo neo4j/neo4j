@@ -17,27 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.vagrant;
+package org.neo4j.qa;
 
-public enum Box {
+import org.apache.commons.lang.StringUtils;
+
+
+public class Platforms {
+
+    public static final String WINDOWS = "windows";
     
-    WINDOWS_2008_R2_AMD64("windows-2008R2-amd64", "/home/jake/Projects/vagranttest/package.box"), 
-    UBUNTU_11_04_SERVER("ubuntu-11.04-amd64", "https://github.com/downloads/divio/vagrant-boxes/vagrant-ubuntu-11.04-server-amd64-v1.box");
-    
-    private String boxName;
-    private String boxUrl;
+    // Ubuntu with debian installer method
+    public static final String UBUNTU_DEB = "ubuntu-deb";
 
-    private Box(String boxName, String boxUrl) {
-        this.boxName = boxName;
-        this.boxUrl = boxUrl;
-    }
-
-    public String getName() {
-        return boxName;
-    }
-
-    public String getUrl() {
-        return boxUrl;
-    }
+    public static final String ALL = StringUtils.join(new String[]{WINDOWS,UBUNTU_DEB},",");
     
 }
