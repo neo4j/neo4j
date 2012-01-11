@@ -27,6 +27,7 @@ define ['./Console'], (Console) ->
     initialize : (opts) =>
       @server = opts.server
       @lang = opts.lang
+      @setPromptPrefix "#{@lang}> "
       @set {"showPrompt":true},{silent:true}
   
     executeStatement : (statement) ->
