@@ -115,7 +115,13 @@ class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends Execu
 
         val result = new ColumnFilterPipe(context.pipe, returnItems)
 
-        val func = (params: Map[String, Any]) => new PipeExecutionResult(result.createResults(params), result.symbols, returns.columns)
+        val func = (params: Map[String, Any]) => {
+          val start = System.currentTimeMillis()
+          val results = result.createResults(params)
+          val timeTaken = System.currentTimeMillis() - start
+
+          new PipeExecutionResult(results, result.symbols, returns.columns, timeTaken)
+        }
         val executionPlan = result.executionPlan()
 
         (func, executionPlan)

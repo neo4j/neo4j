@@ -40,6 +40,9 @@ trait ExecutionEngineHelper extends GraphDatabaseTestBase {
 
   def parseAndExecute(q: String, params: (String, Any)*): ExecutionResult = {
     val plan = engine.prepare(q)
+    
+    println(plan.execute(params.toMap).dumpToString())
+    
     plan.execute(params.toMap)
   }
 

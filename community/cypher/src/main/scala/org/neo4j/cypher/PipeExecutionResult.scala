@@ -28,7 +28,7 @@ import java.lang.String
 import symbols.SymbolTable
 
 
-class PipeExecutionResult(result: Traversable[Map[String, Any]], val symbols:SymbolTable, val columns: List[String])
+class PipeExecutionResult(result: Traversable[Map[String, Any]], val symbols:SymbolTable, val columns: List[String], val timeTaken:Long)
   extends ExecutionResult
   with StringExtras {
   def javaColumns: java.util.List[String] = columns.asJava
@@ -66,9 +66,7 @@ class PipeExecutionResult(result: Traversable[Map[String, Any]], val symbols:Sym
   }
 
   def dumpToString(writer: PrintWriter) {
-    val start = System.currentTimeMillis()
     val eagerResult = result.toList
-    val timeTaken = System.currentTimeMillis() - start
 
     val columnSizes = calculateColumnSizes(eagerResult)
 
