@@ -76,18 +76,17 @@ convention is the plugins directory under the Neo4j server home directory).
 Make sure the directories listings are retained in the jarfile by either building with default Maven, or with `jar -cvf myext.jar *`, making sure
 to jar directories instead of specifying single files.
 
-The .jar file must include the file META-INF/services/org.neo4j.server.plugins.ServerPlugin with the fully qualified name of the implementation class.
-In this case, we'd have only a single entry in our config file, though multiple entries are allowed, each on a separate line:
+The '.jar' file must include the file 'META-INF/services/org.neo4j.server.plugins.ServerPlugin' with the fully qualified name of the implementation class.
+This is an example with multiple entries, each on a separate line:
 
 [source]
 ----
-org.neo4j.server.examples.GetAll
-# Any other plugins in the same jar file must be listed here 
----- 
+include::org.neo4j.server.plugins.ServerPlugin[]
+----
 
-The code above makes an extension visible in the database representation (via the @PluginTarget annotation)
+The code above makes an extension visible in the database representation (via the +@PluginTarget+ annotation)
 whenever it is served from the Neo4j Server.
-Simply changing the @PluginTarget parameter to Node.class or Relationship.class allows us to target those parts of the data model should we wish.
+Simply changing the +@PluginTarget+ parameter to +Node.class+ or +Relationship.class+ allows us to target those parts of the data model should we wish.
 The functionality extensions provided by the plugin are automatically advertised in representations on the wire.
 For example, clients can discover the extension implemented by the above plugin easily by examining the representations
 they receive as responses from the server, e.g. by performing a +GET+ on the default database URI:

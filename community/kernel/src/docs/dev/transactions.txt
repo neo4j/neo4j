@@ -120,9 +120,9 @@ an external single-threaded client can perform the operations on the cluster.
 
 [[transactions-get-or-create]]
 === Get or create ===
-By using http://api.neo4j.org/{neo4j-version}/org/neo4j/graphdb/index/Index.html#putIfAbsent(T,%20java.lang.String,%20java.lang.Object)[+put-if-absent+] functionality,
+By using http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#putIfAbsent%28T,%20java.lang.String,%20java.lang.Object%29[+put-if-absent+] functionality,
 entity uniqueness can be guaranteed using an index. Here the index acts as the lock and will only lock the smallest part needed to guaranteed uniqueness across threads and transactions.
-To get the more high-level +get-or-create+ functionality make use of http://api.neo4j.org/{neo4j-version}/org/neo4j/graphdb/index/UniqueFactory.html[+UniqueFactory+] as seen in the example below.
+To get the more high-level +get-or-create+ functionality make use of http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/UniqueFactory.html[+UniqueFactory+] as seen in the example below.
 
 Example code:
 [snippet,java]
@@ -165,3 +165,4 @@ At this point the transaction is still running so changes can still be made. How
 This method can also throw an exception and will, in such a case, prevent the transaction from being committed (where a call to +afterRollback+ will follow).
 If +beforeCommit+ is successfully executed the transaction will be committed and the +afterCommit+ method will be called with the same transaction data as well as the object returned from +beforeCommit+.
 This assumes that all other handlers (if more were registered) also executed +beforeCommit+ successfully.
+
