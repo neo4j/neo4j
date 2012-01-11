@@ -33,13 +33,11 @@ define(
 
       onAjaxSend : =>
         @runningRequests++
-        console.log "Increased", @runningRequests
         if @runningRequests is 1
           @timeout = setTimeout @show, 1000
 
       onAjaxComplete : =>
         @runningRequests--
-        console.log "Decreased", @runningRequests
         if @runningRequests <= 0
           @runningRequests = 0
           clearTimeout @timeout
