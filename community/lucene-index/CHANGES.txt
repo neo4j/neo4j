@@ -1,3 +1,8 @@
+1.6.M03 (2012-01-12)
+--------------------
+o Upgraded to Lucene version 3.5.
+o Implemented the new Index#putIfAbsent.
+
 1.6.M02 (2011-12-16)
 --------------------
 o Better AddRelationshipCommand#toString and added script for dumping index logs

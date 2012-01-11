@@ -1,3 +1,12 @@
+1.6.M03 (2012-01-12)
+--------------------
+o Added means of introspecting locks taken by the LockManager.
+o Added a diagnostics API.
+o Added Index#putIfAbsent which ensures uniquely put key/value pair for an entity.
+o Added UniqueFactory which gets or creates entities uniquely using Index#putIfAbsent
+o Fixed an issue with upgrading an 1.5.M02 store where a "store version" record wouldn't be added and which caused problems after non-clean shutdown.
+o Fixed an issue where sometimes dual start entries for a transaction would be added in the logical log.
+
 1.6.M02 (2011-12-16)
 --------------------
 o Lower memory usage of ImpermanentGraphDatabase.
@@ -14,6 +23,7 @@ o Added a wrapping graphdb abstraction, which makes instances survive even if th
 o Detached LogExtractor from XaLogicaLog so that it can be used without having a db running.
 o Added an API for progress indication. With a default implementation that prints dots (every 0.5%) and percentages
   (every 10%) to a PrintStream.
+o Added Transaction#acquire{Read,Write}Lock for manually grabbing locks on nodes/relationships. Such locks can also be released earlier than tx.finish.
 
 1.6.M01 (2011-11-24)
 --------------------

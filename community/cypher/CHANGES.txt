@@ -1,5 +1,5 @@
-<NOT YET RELEASED>
-------------------
+1.6.M03 (2012-01-12)
+--------------------
 o Added a different aggregation logic. Makes aggregating on the same columns as sorting much faster
 o Made it possible to query on array properties
 o Fixed bug #157 - Comparing things of different types now gives false instead of type error

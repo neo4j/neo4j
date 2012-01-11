@@ -1,3 +1,14 @@
+1.6.M03 (2012-01-12)
+--------------------
+o Added mknode for creating new nodes w/o creating a relationship.
+o Some fixes regarding executing commands when the current node didn't exist.
+
+1.6.M01 (2011-11-24)
+--------------------
+o Passes the current node as {self} parameter to Cypher (start command).
+o Added multi-line support in the shell.
+o App/command names are parsed as case-insensitive.
+
 1.5.M01 (2011-08-31)
 --------------------
 o More documentation and integration with manual.

@@ -1,3 +1,11 @@
+1.6.M03 (2012-01-12)
+--------------------
+o Added request timeout, controlled with org.neo4j.server.webserver.limit.executiontime (disabled by default).
+  Request header (max-execution-time) can shorten it if specified.
+o Fixed issues #113, #166, #172
+o Allow overriding of server base url for when test browser needs to access server via a different hostname from the bind address.
+o Exposes get-or-create-uniquely via REST in ex. POST /index/node/<name>?unique {...}
+
 1.6.M02 (2011-12-16)
 --------------------
 o Webadmin data browser now supports cypher queries

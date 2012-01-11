@@ -1,3 +1,7 @@
+1.6.M03 (2012-01-12)
+--------------------
+o Replaced invalid test for creating unique entities in an "optimistic" manner with the new UniqueFactory.
+
 1.6.M02 (2011-12-16)
 --------------------
 
