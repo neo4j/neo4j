@@ -222,10 +222,11 @@ installservice() {
       if [[ -e "/etc/init.d/${SERVICE_NAME}" ]]; then
         echo "${SERVICE_NAME} already installed."
       else
-        if ! `grep -q neo4j /etc/init.d/*` ; then
-          eval echo "Please install neo4j first."
-          exit 1
-        fi
+        # JH: Removed this check to allow installing coordinator on it's own.
+        #if ! `grep -q neo4j /etc/init.d/*` ; then
+        #  eval echo "Please install neo4j first."
+        #  exit 1
+        #fi
         if [ $UID != 0 ] ; then
           eval echo  'Must be root to perform this action.'
           exit 1
