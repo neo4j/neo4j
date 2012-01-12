@@ -5,7 +5,6 @@ o Added request timeout, controlled with org.neo4j.server.webserver.limit.execut
 o Fixed issues #113, #166, #172
 o Allow overriding of server base url for when test browser needs to access server via a different hostname from the bind address.
 o Exposes get-or-create-uniquely via REST in ex. POST /index/node/<name>?unique {...}
-o BREAKING CHANGE: org.neo4j.server.rest.security.SecurityRule#isAuthorized signature changed to include GraphDatabaseService.
 
 1.6.M02 (2011-12-16)
 --------------------
