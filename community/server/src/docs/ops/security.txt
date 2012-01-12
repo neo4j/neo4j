@@ -40,7 +40,7 @@ Exposing your server without implementing a security layer poses a substantial s
 
 == Security in Depth ==
 
-Although the Neo4j server has competent security features built-in, for sensitive deployments it is often sensible to front it with a proxy like Apache `mod_proxy` footnote:[http://httpd.apache.org/docs/2.2/mod/mod_proxy.html].
+Although the Neo4j server has a number of security features built-in (see the above chapters), for sensitive deployments it is often sensible to front against the outside world it with a proxy like Apache `mod_proxy` footnote:[http://httpd.apache.org/docs/2.2/mod/mod_proxy.html].
 This provides a number of advantages:
 
 * Control access to the Neo4j server to specific IP addresses, URL patterns and IP ranges. This can be used to make for instance only the +/db/data+ namespace accessible to non-local clients, while the +/db/admin+ URLs only respond to a specific IP address.
