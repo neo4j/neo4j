@@ -30,5 +30,9 @@ public class Platforms {
     public static final String UBUNTU_DEB = "ubuntu-deb";
 
     public static final String ALL = StringUtils.join(new String[]{WINDOWS,UBUNTU_DEB},",");
+
+    public static String[] getPlaformsToUse() {
+        return System.getProperty("test-platforms", Platforms.ALL).split(",");
+    }
     
 }

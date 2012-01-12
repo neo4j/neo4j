@@ -67,7 +67,7 @@ public class CommonQualityAssuranceTest {
         VirtualMachine ubuntu = vm(Neo4jVM.UBUNTU_1);
         
         // Windows
-        platforms.put(Platforms.UBUNTU_DEB, new Neo4jDriver[] {
+        platforms.put(Platforms.WINDOWS, new Neo4jDriver[] {
             new WindowsCommunityDriver(  windows, SharedConstants.WINDOWS_COMMUNITY_INSTALLER ),
             new WindowsAdvancedDriver(   windows, SharedConstants.WINDOWS_ADVANCED_INSTALLER ),
             new WindowsEnterpriseDriver( windows, 
@@ -78,9 +78,10 @@ public class CommonQualityAssuranceTest {
         platforms.put(Platforms.UBUNTU_DEB, new Neo4jDriver[] {
                 new UbuntuDebCommunityDriver(  ubuntu, SharedConstants.UBUNTU_COMMUNITY_INSTALLER ),
                 new UbuntuDebAdvancedDriver(  ubuntu, SharedConstants.UBUNTU_ADVANCED_INSTALLER ),
-                new UbuntuDebEnterpriseDriver(  ubuntu, SharedConstants.UBUNTU_ENTERPRISE_INSTALLER )});
+                new UbuntuDebEnterpriseDriver(  ubuntu, SharedConstants.UBUNTU_ENTERPRISE_INSTALLER, 
+                                                        SharedConstants.UBUNTU_COORDINATOR_INSTALLER )});
         
-        for(String platform : System.getProperty("test-platforms", Platforms.ALL).split(",")) {
+        for(String platform : Platforms.getPlaformsToUse()) {
             for(Neo4jDriver d : platforms.get(platform)) {
                 testParameters.add(new Object[]{d});
             }

@@ -137,6 +137,13 @@
                   <classifier>debian-enterprise</classifier>
                   <type>deb</type>
                 </artifactItem>
+                <artifactItem>
+                  <groupId>org.neo4j</groupId>
+                  <artifactId>installer-debian</artifactId>
+                  <version>${neo4j.version}</version>
+                  <classifier>debian-coordinator</classifier>
+                  <type>deb</type>
+                </artifactItem>
               </artifactItems>
             </configuration>
           </execution>
@@ -178,6 +185,9 @@
                 <move
                   file="${project.build.outputDirectory}/installer-debian-${project.version}-debian-enterprise.deb"
                   toFile="${project.build.outputDirectory}/installer-debian-enterprise.deb" />
+                <move
+                  file="${project.build.outputDirectory}/installer-debian-${project.version}-debian-coordinator.deb"
+                  toFile="${project.build.outputDirectory}/installer-debian-coordinator.deb" />
               </target>
             </configuration>
           </execution>

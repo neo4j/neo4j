@@ -61,7 +61,7 @@ public abstract class AbstractPosixDriver implements Neo4jDriver {
     
     @Override
     public void destroyDatabase() {
-        sh.run("rm -rf " + installDir() + "/data/graph.db");
+        sh.run("sudo rm -rf " + installDir() + "/data/graph.db");
     }
 
     @Override
@@ -88,14 +88,14 @@ public abstract class AbstractPosixDriver implements Neo4jDriver {
     
     @Override
     public void writeFile(String contents, String path) {
-        sh.run("echo '"+contents+"' > " + path);
+        sh.run("echo '"+contents+"' | sudo tee " + path + " > /dev/null");
     }
 
     @Override
     public void setConfig(String configFilePath, String key, String value) {
         // Remove any pre-existing config directive for this key, then append
         // the new setting at the bottom of the file.
-        sh.run("sed -i 's/^"+key+"=.*//g' "+configFilePath+" && echo " + key + "=" + value + " >> " + configFilePath);
+        sh.run("sudo sed -i 's/^"+key+"=.*//g' "+configFilePath+" && sudo echo " + key + "=" + value + " >> " + configFilePath);
     }
     
 }

@@ -24,7 +24,9 @@ import static org.neo4j.vagrant.VMFactory.vm;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.junit.After;
@@ -34,10 +36,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.neo4j.qa.driver.EnterpriseDriver;
+import org.neo4j.qa.driver.UbuntuDebEnterpriseDriver;
 import org.neo4j.qa.driver.WindowsEnterpriseDriver;
 import org.neo4j.vagrant.VirtualMachine;
-
-import scala.actors.threadpool.Arrays;
 
 @RunWith(value = Parameterized.class)
 public class EnterpriseQualityAssuranceTest {
@@ -46,27 +47,53 @@ public class EnterpriseQualityAssuranceTest {
     @SuppressWarnings("unchecked")
     public static Collection<Object[]> testParameters()
     {
+
+        Map<String, Object[]> platforms = new HashMap<String, Object[]>();
+        List<Object[]> testParameters = new ArrayList<Object[]>();
         
         VirtualMachine win1 = vm(Neo4jVM.WIN_1);
         VirtualMachine win2 = vm(Neo4jVM.WIN_2);
         VirtualMachine win3 = vm(Neo4jVM.WIN_3);
         
-        Object[][] ps = new Object[][] { 
-            { "windows",
-              new EnterpriseDriver []{
-              new WindowsEnterpriseDriver( win1, 
-                      SharedConstants.WINDOWS_ENTERPRISE_INSTALLER, 
-                      SharedConstants.WINDOWS_COORDINATOR_INSTALLER),
-              new WindowsEnterpriseDriver( win2, 
-                      SharedConstants.WINDOWS_ENTERPRISE_INSTALLER, 
-                      SharedConstants.WINDOWS_COORDINATOR_INSTALLER ),
-              new WindowsEnterpriseDriver( win3, 
-                      SharedConstants.WINDOWS_ENTERPRISE_INSTALLER, 
-                      SharedConstants.WINDOWS_COORDINATOR_INSTALLER ) 
-            }}
-        };
+        VirtualMachine ubuntu1 = vm(Neo4jVM.UBUNTU_1);
+        VirtualMachine ubuntu2 = vm(Neo4jVM.UBUNTU_2);
+        VirtualMachine ubuntu3 = vm(Neo4jVM.UBUNTU_3);
         
-        return Arrays.asList(ps);
+        // Windows
+        platforms.put(Platforms.WINDOWS, new Object[] { 
+                Platforms.WINDOWS,
+                new EnterpriseDriver []{
+                    new WindowsEnterpriseDriver( win1, 
+                            SharedConstants.WINDOWS_ENTERPRISE_INSTALLER, 
+                            SharedConstants.WINDOWS_COORDINATOR_INSTALLER),
+                    new WindowsEnterpriseDriver( win2, 
+                            SharedConstants.WINDOWS_ENTERPRISE_INSTALLER, 
+                            SharedConstants.WINDOWS_COORDINATOR_INSTALLER ),
+                    new WindowsEnterpriseDriver( win3, 
+                            SharedConstants.WINDOWS_ENTERPRISE_INSTALLER, 
+                            SharedConstants.WINDOWS_COORDINATOR_INSTALLER ) 
+                }});
+        
+        // Ubuntu, with debian installer
+        platforms.put(Platforms.UBUNTU_DEB, new Object[] { 
+                Platforms.UBUNTU_DEB,
+                new EnterpriseDriver []{
+                    new UbuntuDebEnterpriseDriver( ubuntu1, 
+                            SharedConstants.UBUNTU_ENTERPRISE_INSTALLER, 
+                            SharedConstants.UBUNTU_COORDINATOR_INSTALLER  ),
+                    new UbuntuDebEnterpriseDriver( ubuntu2, 
+                            SharedConstants.UBUNTU_ENTERPRISE_INSTALLER, 
+                            SharedConstants.UBUNTU_COORDINATOR_INSTALLER  ),
+                    new UbuntuDebEnterpriseDriver( ubuntu3, 
+                            SharedConstants.UBUNTU_ENTERPRISE_INSTALLER, 
+                            SharedConstants.UBUNTU_COORDINATOR_INSTALLER  ) 
+                }});
+        
+        for(String platform : Platforms.getPlaformsToUse()) {
+            testParameters.add(platforms.get(platform));
+        }
+        
+        return testParameters;
     }
 
     private EnterpriseDriver[] drivers;

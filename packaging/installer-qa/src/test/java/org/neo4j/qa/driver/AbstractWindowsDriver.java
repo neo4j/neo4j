@@ -106,6 +106,11 @@ public abstract class AbstractWindowsDriver extends AbstractPosixDriver {
         downloadLog("/home/vagrant/install.log", target + "/" + ip + "-install.log");
         downloadLog("/home/vagrant/uninstall.log", target + "/" + ip + "-uninstall.log");
     }
+
+    @Override
+    public void writeFile(String contents, String path) {
+        sh.run("echo '"+contents+"' > " + path);
+    }
     
     protected void downloadLog(String from, String to)
     {

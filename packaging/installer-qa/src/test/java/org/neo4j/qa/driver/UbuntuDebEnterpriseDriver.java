@@ -19,18 +19,97 @@
  */
 package org.neo4j.qa.driver;
 
+import org.neo4j.vagrant.Shell.Result;
 import org.neo4j.vagrant.VirtualMachine;
 
-public class UbuntuDebEnterpriseDriver extends AbstractUbuntuDebDriver {
+public class UbuntuDebEnterpriseDriver extends AbstractUbuntuDebDriver implements EnterpriseDriver {
 
-    public UbuntuDebEnterpriseDriver(VirtualMachine vm, String installerPath)
+    private static final String ZOOKEEPER_INSTALL_DIR = "/var/lib/neo4j-coordinator";
+    private static final String BACKUP_DIR = "/home/vagrant";
+    private String zookeeperInstallerPath;
+
+    public UbuntuDebEnterpriseDriver(VirtualMachine vm, String installerPath, String zookeeperInstallerPath)
     {
         super(vm, installerPath);
+        this.zookeeperInstallerPath = zookeeperInstallerPath;
     }
     
     @Override
     public void runUninstall() {
         sh.run("sudo dpkg -r neo4j-enterprise");
+    }
+
+    @Override
+    public void runZookeeperInstall()
+    {
+        vm.copyFromHost(zookeeperInstallerPath, "/home/vagrant/zookeeper.deb");
+        sh.run("sudo dpkg -i /home/vagrant/zookeeper.deb");
+        sh.run("sudo chmod -R 777 " + ZOOKEEPER_INSTALL_DIR + "/conf");
+    }
+
+    @Override
+    public void runZookeeperUninstall()
+    {
+        sh.run("sudo apt-get -qy remove zookeeper");
+    }
+
+    @Override
+    public void startZookeeperService()
+    {
+        sh.run("sudo /etc/init.d/neo4j-coord start");
+    }
+
+    @Override
+    public void stopZookeeperService()
+    {
+        sh.run("sudo /etc/init.d/neo4j-coord stop");
+    }
+
+    @Override
+    public String zookeeperInstallDir()
+    {
+        return ZOOKEEPER_INSTALL_DIR;
+    }
+
+    @Override
+    public void performFullHABackup(String backupName, String coordinatorAddresses)
+    {
+        haBackup(backupName, coordinatorAddresses, "full");
+    }
+    
+    @Override
+    public void performIncrementalHABackup(String backupName,
+            String coordinatorAddresses)
+    {
+        haBackup(backupName, coordinatorAddresses, "incremental");
+    }
+
+    @Override
+    public void replaceGraphDataDirWithBackup(String backupName)
+    {
+        sh.run("sudo rm -rf " + installDir() + "/data/graph.db");
+        sh.run("sudo mv " + BACKUP_DIR+"/"+backupName + " " + installDir() + "/data/graph.db");
+        sh.run("sudo chown neo4j:adm -R " + installDir() + "/data/graph.db");
+    }
+
+    @Override
+    public void downloadLogsTo(String target) {
+        super.downloadLogsTo(target);
+        String ip = vm().definition().ip();
+        downloadLog(installDir() + "/data/log/neo4j-zookeeper.log", target + "/" + ip + "-neo4j-zookeeper-client.log");
+        downloadLog(zookeeperInstallDir() + "/data/log/neo4j-zookeeper.log", target + "/" + ip + "-neo4j-zookeeper-server.log");
+    }
+    
+    private void haBackup(String backupName, String coordinatorAddresses,
+            String mode)
+    {
+        Result r = sh.run("cd " + installDir() + " && sudo chmod +x bin/neo4j-backup && sudo bin/neo4j-backup" + 
+                " -" + mode +
+                " -from ha://" + coordinatorAddresses +
+                " -to " + BACKUP_DIR + "/" + backupName);
+        if(!r.getOutput().contains("Done")) {
+            throw new RuntimeException("Performing backup failed. Expected output to say 'Done', got this instead: \n" + r.getOutput());
+        }
     }
 }
 

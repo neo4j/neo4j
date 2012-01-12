@@ -40,5 +40,6 @@ public class SharedConstants {
     public static final String UBUNTU_COMMUNITY_INSTALLER = INSTALLER_DIR + "installer-debian-community.deb";
     public static final String UBUNTU_ADVANCED_INSTALLER = INSTALLER_DIR + "installer-debian-advanced.deb";
     public static final String UBUNTU_ENTERPRISE_INSTALLER = INSTALLER_DIR + "installer-debian-enterprise.deb";
+    public static final String UBUNTU_COORDINATOR_INSTALLER  = INSTALLER_DIR + "installer-debian-coordinator.deb";
     
 }
