@@ -468,8 +468,8 @@ public class LockReleaser
                 CowRelElement relElement = entry.getValue();
                 if ( param == Status.STATUS_COMMITTED )
                 {
-                    rel.commitPropertyMaps( relElement.getPropertyAddMap( false ),
-                        relElement.getPropertyRemoveMap( false ), Record.NO_NEXT_PROPERTY.intValue() );
+                    rel.commitPropertyMaps( relElement.propertyAddMap,
+                        relElement.propertyRemoveMap, Record.NO_NEXT_PROPERTY.intValue() );
                 }
                 else if ( param != Status.STATUS_ROLLEDBACK )
                 {
