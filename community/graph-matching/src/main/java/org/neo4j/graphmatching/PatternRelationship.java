@@ -26,6 +26,7 @@ import org.neo4j.graphdb.RelationshipType;
 /**
  * Represents a pattern for matching a {@link Relationship}.
  */
+@Deprecated
 public class PatternRelationship extends AbstractPatternObject<Relationship>
 {
 	private final RelationshipType type;

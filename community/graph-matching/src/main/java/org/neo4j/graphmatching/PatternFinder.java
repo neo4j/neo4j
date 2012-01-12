@@ -36,6 +36,7 @@ import org.neo4j.graphdb.Relationship;
  * Performs the actual finding of matches given the pattern of how a match
  * looks like and a {@link Node} to start traversing from.
  */
+@Deprecated
 class PatternFinder implements Iterable<PatternMatch>, Iterator<PatternMatch>
 {
     private Set<Relationship> visitedRels = new HashSet<Relationship>();

@@ -38,6 +38,7 @@ import org.neo4j.helpers.collection.FilteringIterable;
  * The PatternMatcher is the engine that performs the matching of a graph
  * pattern with the actual graph.
  */
+@Deprecated
 public class PatternMatcher
 {
 	private static PatternMatcher matcher = new PatternMatcher();

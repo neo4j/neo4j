@@ -18,6 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /**
+ * 
  * Facilities for finding occurrences of patterns in a Neo4j graph.
  * 
  * The main classes for defining a graph pattern is the
@@ -41,4 +42,5 @@
  * }
  * </code></pre>
  */
+@Deprecated
 package org.neo4j.graphmatching;

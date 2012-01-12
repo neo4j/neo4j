@@ -24,6 +24,7 @@ import java.util.regex.Pattern;
 /**
  * This class contain factory methods for some common {@link ValueMatcher}s.
  */
+@Deprecated
 public abstract class CommonValueMatchers
 {
     private CommonValueMatchers()

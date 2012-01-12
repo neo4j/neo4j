@@ -28,6 +28,7 @@ import org.neo4j.graphmatching.filter.FilterExpression;
  * Represents a group in SPARQL. A group can carry filters, which can restrict
  * the returned result set.
  */
+@Deprecated
 public class PatternGroup
 {
     private Collection<FilterExpression> regexExpression =

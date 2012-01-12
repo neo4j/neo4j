@@ -30,6 +30,7 @@ import org.neo4j.graphdb.Relationship;
  * Represents one match found by the {@link PatternMatcher}. The match is
  * itself a graph which looks like the pattern fed to the {@link PatternMatcher}
  */
+@Deprecated
 public class PatternMatch
 {
 	private Map<PatternNode,PatternElement> elements =

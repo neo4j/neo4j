@@ -30,6 +30,7 @@ import java.util.*;
  *
  * @param <T> either {@link Node} or {@link Relationship}.
  */
+@Deprecated
 public abstract class AbstractPatternObject<T extends PropertyContainer>
 {
     private T assocication;

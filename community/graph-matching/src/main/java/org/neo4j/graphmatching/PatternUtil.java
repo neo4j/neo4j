@@ -26,6 +26,7 @@ import java.util.Set;
 /**
  * Utility methods for working with a pattern graph.
  */
+@Deprecated
 public class PatternUtil
 {
     /**

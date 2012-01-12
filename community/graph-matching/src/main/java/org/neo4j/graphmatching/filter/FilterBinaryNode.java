@@ -22,6 +22,7 @@ package org.neo4j.graphmatching.filter;
 /**
  * Matches two {@link FilterExpression}s with AND or OR.
  */
+@Deprecated
 public class FilterBinaryNode implements FilterExpression
 {
     private FilterExpression e1;

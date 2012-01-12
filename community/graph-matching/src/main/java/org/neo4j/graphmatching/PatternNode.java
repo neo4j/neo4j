@@ -28,6 +28,7 @@ import java.util.LinkedList;
 /**
  * Represents a pattern for matching a {@link Node}.
  */
+@Deprecated
 public class PatternNode extends AbstractPatternObject<Node>
 {
     /**

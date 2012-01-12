@@ -30,6 +30,7 @@ import java.util.Set;
  * float[], String[] etc... And we'd like to deal with those as objects instead
  * so that an equals method may be used.
  */
+@Deprecated
 public class ArrayPropertyUtil
 {
     /**

@@ -25,6 +25,7 @@ import org.neo4j.graphmatching.PatternNode;
 /**
  * Abstract class which contains {@link PatternElement} label and property key.
  */
+@Deprecated
 public abstract class AbstractFilterExpression implements FilterExpression
 {
     private final String label;

@@ -25,6 +25,7 @@ import org.neo4j.graphmatching.PatternNode;
  * An implementation which can compare commons expressions, f.ex:
  * less than (<), greater than or equal to (>=) a.s.o.
  */
+@Deprecated
 public class CompareExpression extends AbstractFilterExpression
 {
     private final String operator;

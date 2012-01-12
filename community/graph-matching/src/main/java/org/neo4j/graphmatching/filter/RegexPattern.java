@@ -26,6 +26,7 @@ import org.neo4j.graphmatching.PatternNode;
 /**
  * A regex pattern with or without options, f.ex. "i" means case-insensitive.
  */
+@Deprecated
 public class RegexPattern extends AbstractFilterExpression
 {
     private final Pattern pattern;

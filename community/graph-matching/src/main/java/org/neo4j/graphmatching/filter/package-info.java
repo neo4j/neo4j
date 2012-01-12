@@ -20,4 +20,5 @@
 /**
  * Filters that allow you to filter out based on properties on nodes and relationships.
  */
+@Deprecated
 package org.neo4j.graphmatching.filter;

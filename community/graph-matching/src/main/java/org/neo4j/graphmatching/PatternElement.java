@@ -28,6 +28,7 @@ import org.neo4j.graphdb.Relationship;
  * as the last {@link Relationship} and {@link PatternRelationship} to get
  * there.
  */
+@Deprecated
 public class PatternElement
 {
 	private PatternNode pNode;

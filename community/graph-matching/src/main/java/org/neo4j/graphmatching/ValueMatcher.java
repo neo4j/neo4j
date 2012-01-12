@@ -26,6 +26,7 @@ import org.neo4j.graphdb.Relationship;
  * An interface which abstracts value matching. Examples of value matchers would be:
  * exact matchi, regex match a.s.o. Also look at {@link CommonValueMatchers}.
  */
+@Deprecated
 public interface ValueMatcher
 {
     /**

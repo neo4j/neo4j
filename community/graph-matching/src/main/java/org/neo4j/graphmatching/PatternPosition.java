@@ -32,6 +32,7 @@ import org.neo4j.graphdb.Relationship;
  * match is a graph) it uses the PatternPosition to know where in the matching
  * pattern we are at the moment.
  */
+@Deprecated
 class PatternPosition
 {
 	private Node currentNode;

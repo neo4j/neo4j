@@ -23,6 +23,7 @@ package org.neo4j.graphmatching.filter;
  * Is either a regex leaf, that is, a real regex pattern or an abstraction of
  * two {@link FilterExpression}s which are ANDed or ORed together.
  */
+@Deprecated
 public interface FilterExpression
 {
     /**

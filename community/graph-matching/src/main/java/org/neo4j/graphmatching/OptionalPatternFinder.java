@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.neo4j.graphdb.Node;
 
+@Deprecated
 class OptionalPatternFinder
 {
     private List<PatternFinder> optionalFinders;
