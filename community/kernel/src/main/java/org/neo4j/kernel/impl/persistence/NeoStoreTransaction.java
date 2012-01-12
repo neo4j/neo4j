@@ -244,8 +244,7 @@ public interface NeoStoreTransaction
      * @return The properties loaded, as a map from property index id to
      *         property data.
      */
-    public ArrayMap<Integer,PropertyData> nodeLoadProperties( long nodeId, long firstProp,
-            boolean light );
+    public ArrayMap<Integer,PropertyData> nodeLoadProperties( long nodeId, boolean light );
 
     /**
      * Loads the complete property chain for the given relationship and returns

@@ -54,12 +54,6 @@ class LowRelationshipImpl extends RelationshipImpl
     {
         return idAndMore&0xFFFFFFFFFFL;
     }
-    
-    @Override
-    protected long getFirstProp()
-    {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     long getStartNodeId()

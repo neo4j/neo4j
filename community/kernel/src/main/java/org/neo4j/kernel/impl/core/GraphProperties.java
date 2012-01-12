@@ -86,12 +86,6 @@ public class GraphProperties extends Primitive implements PropertyContainer
     {
         return -1L;
     }
-    
-    @Override
-    protected long getFirstProp()
-    {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     public boolean hasProperty( String key )

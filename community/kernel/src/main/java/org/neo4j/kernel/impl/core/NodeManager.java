@@ -727,9 +727,9 @@ public class NodeManager
         return persistenceManager.graphLoadProperties( light );
     }
 
-    ArrayMap<Integer, PropertyData> loadProperties( NodeImpl node, long firstProp, boolean light )
+    ArrayMap<Integer, PropertyData> loadProperties( NodeImpl node, boolean light )
     {
-        return persistenceManager.loadNodeProperties( node.getId(), firstProp, light );
+        return persistenceManager.loadNodeProperties( node.getId(), light );
     }
 
     ArrayMap<Integer,PropertyData> loadProperties(

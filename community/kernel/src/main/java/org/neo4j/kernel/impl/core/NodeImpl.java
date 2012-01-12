@@ -52,18 +52,12 @@ import org.neo4j.kernel.impl.util.RelIdIterator;
 
 class NodeImpl extends ArrayBasedPrimitive
 {
-    private static final long TWO_POWER_36 = (long) Math.pow( 2, 36 )-1;
     private static final RelIdArray[] NO_RELATIONSHIPS = new RelIdArray[0];
 
     private volatile RelIdArray[] relationships;
     
-    // [    ,    ][    ,    ][    ,xxxx][xxxx,    ][    ,    ][    ,    ][    ,    ][    ,    ]: high bits of first prop (0xFF000000000)
-    // [    ,    ][    ,    ][    ,    ][    ,xxxx][xxxx,xxxx][xxxx,xxxx][xxxx,xxxx][xxxx,xxxx]: rel chain position (0xFFFFFFFFF)
-    private long relChainPositionAndMore;
-    
-    // [xxxx,xxxx][xxxx,xxxx][xxxx,xxxx][xxxx,    ][    ,    ][    ,    ][    ,    ][    ,    ]: low bits of first prop (0xFFFFFFF000000000)
-    // [    ,    ][    ,    ][    ,    ][    ,xxxx][xxxx,xxxx][xxxx,xxxx][xxxx,xxxx][xxxx,xxxx]: id (0xFFFFFFFFF)
-    private long idAndMore;
+    private long relChainPosition = Record.NO_NEXT_RELATIONSHIP.intValue();
+    private long id;
 
     NodeImpl( long id, long firstRel, long firstProp )
     {
@@ -73,32 +67,20 @@ class NodeImpl extends ArrayBasedPrimitive
     // newNode will only be true for NodeManager.createNode
     NodeImpl( long id, long firstRel, long firstProp, boolean newNode )
     {
+        /* TODO firstRel/firstProp isn't used yet due to some unresolved issue with clearing
+         * of cache and keeping those first ids in the node instead of loading on demand.
+         */
         super( newNode );
-        idAndMore = id;
-        relChainPositionAndMore = firstRel & 0xFFFFFFFFFL;
-        setFirstProp( firstProp );
+        this.id = id;
         if ( newNode ) relationships = NO_RELATIONSHIPS;
     }
 
     @Override
     public long getId()
     {
-        return idAndMore & 0xFFFFFFFFFL;
+        return id;
     }
     
-    @Override
-    protected long getFirstProp()
-    {
-        long prop = ((idAndMore & 0xFFFFFFF000000000L) >>> 36) | ((relChainPositionAndMore & 0xFF000000000L) >>> 8);
-        return prop == TWO_POWER_36 ? Record.NO_NEXT_PROPERTY.intValue() : prop;
-    }
-    
-    private void setFirstProp( long prop )
-    {
-        idAndMore = ((prop & 0xFFFFFFF) << 36) | (idAndMore & 0xFFFFFFFFFL);
-        relChainPositionAndMore = ((prop & 0xFF0000000L) << 8) | (relChainPositionAndMore & 0xFFFFFFFFFL); 
-    }
-
     @Override
     public int hashCode()
     {
@@ -136,7 +118,7 @@ class NodeImpl extends ArrayBasedPrimitive
     protected ArrayMap<Integer, PropertyData> loadProperties(
             NodeManager nodeManager, boolean light )
     {
-        return nodeManager.loadProperties( this, getFirstProp(), light );
+        return nodeManager.loadProperties( this, light );
     }
 
     List<RelIdIterator> getAllRelationships( NodeManager nodeManager, DirectionWrapper direction )
@@ -353,7 +335,8 @@ class NodeImpl extends ArrayBasedPrimitive
         synchronized ( this )
         {
             if ( relationships == null )
-            {   // We got the relChainPosition in the constructor
+            {
+                relChainPosition = nodeManager.getRelationshipChainPosition( this );
                 ArrayMap<String,RelIdArray> tmpRelMap = new ArrayMap<String,RelIdArray>();
                 rels = getMoreRelationships( nodeManager, tmpRelMap );
                 this.relationships = toRelIdArray( tmpRelMap );
@@ -601,14 +584,6 @@ class NodeImpl extends ArrayBasedPrimitive
         return getRelationships( nodeManager, type, dir ).iterator().hasNext();
     }
     
-    @Override
-    protected void commitPropertyMaps( ArrayMap<Integer, PropertyData> cowPropertyAddMap,
-            ArrayMap<Integer, PropertyData> cowPropertyRemoveMap, long firstProp )
-    {
-        super.commitPropertyMaps( cowPropertyAddMap, cowPropertyRemoveMap, firstProp );
-        setFirstProp( firstProp );
-    }
-
     protected void commitRelationshipMaps(
         ArrayMap<String,RelIdArray> cowRelationshipAddMap,
         ArrayMap<String,Collection<Long>> cowRelationshipRemoveMap, long firstRel )
@@ -616,7 +591,6 @@ class NodeImpl extends ArrayBasedPrimitive
         if ( relationships == null )
         {
             // we will load full in some other tx
-            setRelChainPosition( firstRel );
             return;
         }
 
@@ -658,13 +632,12 @@ class NodeImpl extends ArrayBasedPrimitive
 
     long getRelChainPosition()
     {
-        long position = relChainPositionAndMore & 0xFFFFFFFFFL;
-        return position == TWO_POWER_36 ? Record.NO_NEXT_RELATIONSHIP.intValue() : position;
+        return relChainPosition;
     }
 
     void setRelChainPosition( long position )
     {
-        relChainPositionAndMore = (relChainPositionAndMore & 0xFFFFFFF000000000L) | (position & 0xFFFFFFFFFL);
+        relChainPosition = position;
         if ( !hasMoreRelationshipsToLoad() && relationships != null )
         {
             // Shrink arrays

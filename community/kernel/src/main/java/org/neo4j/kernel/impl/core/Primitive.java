@@ -53,8 +53,6 @@ abstract class Primitive
 
     public abstract long getId();
     
-    protected abstract long getFirstProp();
-    
     protected abstract void setEmptyProperties();
     
     protected abstract PropertyData[] allProperties();

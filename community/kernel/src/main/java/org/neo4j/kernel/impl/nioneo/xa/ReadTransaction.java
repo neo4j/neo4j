@@ -233,9 +233,9 @@ class ReadTransaction implements NeoStoreTransaction
     }
 
     @Override
-    public ArrayMap<Integer,PropertyData> nodeLoadProperties( long nodeId, long firstProp, boolean light )
+    public ArrayMap<Integer,PropertyData> nodeLoadProperties( long nodeId, boolean light )
     {
-        return loadProperties( getPropertyStore(), firstProp );
+        return loadProperties( getPropertyStore(), getNodeStore().getRecord( nodeId ).getNextProp() );
     }
     
     @Override

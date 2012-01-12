@@ -108,10 +108,9 @@ public class PersistenceManager
         return getReadOnlyResource().getMoreRelationships( nodeId, position );
     }
 
-    public ArrayMap<Integer,PropertyData> loadNodeProperties( long nodeId, long firstProp,
-            boolean light )
+    public ArrayMap<Integer,PropertyData> loadNodeProperties( long nodeId, boolean light )
     {
-        return getReadOnlyResourceIfPossible().nodeLoadProperties( nodeId, firstProp, light );
+        return getReadOnlyResourceIfPossible().nodeLoadProperties( nodeId, light );
     }
 
     public ArrayMap<Integer,PropertyData> loadRelProperties( long relId,
