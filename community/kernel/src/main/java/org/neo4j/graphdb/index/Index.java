@@ -103,11 +103,15 @@ public interface Index<T extends PropertyContainer> extends ReadableIndex<T>
     void delete();
 
     /**
-     * Add the entity to the index unless it is already indexed.
-     *
-     * If another thread is adding a unique mapping to the same index with the
-     * same key at the same time, this method will block until completion of the
-     * transaction in the other thread.
+     * Add the entity to this index for the given key/value pair if this particular
+     * key/value pair doesn't already exist.
+     * 
+     * This ensures that only one entity will be associated with the key/value pair
+     * even if multiple transactions are trying to add it at the same time. One of those
+     * transactions will win and add it while the others will block, waiting for the
+     * winning transaction to finish. If the winning transaction was successful these
+     * other transactions will return the associated entity instead of adding it.
+     * If it wasn't successful the waiting transactions will begin a new race to add it.
      *
      * @param entity the entity (i.e {@link Node} or {@link Relationship})
      * to associate the key/value pair with.
