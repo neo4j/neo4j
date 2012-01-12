@@ -21,16 +21,13 @@ package org.neo4j.server.rest.security;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-
 public class PermanentlyPassingSecurityRule implements SecurityRule {
     
     public static final String REALM = "WallyWorld"; // as per RFC2617 :-);
 
     @Override
-    public boolean isAuthorized( HttpServletRequest request, GraphDatabaseService graph )
+    public boolean isAuthorized( HttpServletRequest request )
     {
-        assert graph != null;
         return true; // always passes
     }
 

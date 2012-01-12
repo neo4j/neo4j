@@ -30,18 +30,14 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-
 public class SecurityFilter implements Filter
 {
 
     private final SecurityRule rule;
-    private final GraphDatabaseService graph;
 
-    public SecurityFilter( SecurityRule rule, GraphDatabaseService graph )
+    public SecurityFilter( SecurityRule rule )
     {
         this.rule = rule;
-        this.graph = graph;
     }
 
     @Override
@@ -57,7 +53,7 @@ public class SecurityFilter implements Filter
         validateRequestType( request );
         validateResponseType( response );
 
-        if ( rule.isAuthorized( (HttpServletRequest) request, graph ) )
+        if ( rule.isAuthorized( (HttpServletRequest) request ) )
         {
             chain.doFilter( request, response );
         }
