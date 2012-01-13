@@ -20,6 +20,7 @@ define(
 
       shortcuts : 
         "s" : "focusOnSearchField"
+        "v" : "switchDataView"
 
       init : (appState) =>
         @appState = appState
@@ -63,11 +64,22 @@ define(
         v.setProfileToManage profile
         @appState.set mainView : v
 
+      # 
+      # Keyboard shortcuts
+      # 
+
       focusOnSearchField : (ev) =>
         @base()
         setTimeout( () -> 
           $("#data-console").focus()
         1)
+
+      switchDataView : (ev) =>
+        @getDataBrowserView().switchView()
+
+      #
+      # Internals
+      #
 
       queryChanged : =>
         query = @dataModel.get "query"

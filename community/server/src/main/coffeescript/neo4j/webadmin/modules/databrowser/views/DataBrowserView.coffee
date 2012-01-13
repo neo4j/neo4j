@@ -98,17 +98,16 @@ define(
 
       switchView : (ev) =>
         if @viewType == "visualized"
-          $(ev.target).removeClass("tabular")
+          $(ev.target).removeClass("tabular") if ev?
           @switchToTabularView()
         else
-          $(ev.target).addClass("tabular")
+          $(ev.target).addClass("tabular") if ev? 
           @switchToVisualizedView()
         
         @renderDataView()
           
 
       switchToVisualizedView : =>
-        
         if @dataView?
           @dataView.detach()
         
