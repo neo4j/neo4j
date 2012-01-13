@@ -90,8 +90,14 @@ abstract class KernelDiagnostics implements DiagnosticsProvider
         private static long logStoreFiles( StringLogger.LineLogger logger, String prefix, File dir )
         {
             if ( !dir.isDirectory() ) return 0;
+            File[] files = dir.listFiles();
+            if ( files == null )
+            {
+                logger.logLine( prefix + "<INACCESSIBLE>" );
+                return 0;
+            }
             long total = 0;
-            for ( File file : dir.listFiles() )
+            for ( File file : files )
             {
                 long size;
                 String filename = file.getName();

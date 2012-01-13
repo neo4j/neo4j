@@ -136,7 +136,7 @@ public final class DiagnosticsManager implements Iterable<DiagnosticsProvider>
             return true;
         }
     }
-    
+
     public StringLogger getTargetLog()
     {
         return logger;
@@ -179,7 +179,7 @@ public final class DiagnosticsManager implements Iterable<DiagnosticsProvider>
         {
             if ( identifier.equals( provider.getDiagnosticsIdentifier() ) )
             {
-                provider.dump( DiagnosticsPhase.EXPLICIT, log );
+                dump( provider, DiagnosticsPhase.EXPLICIT, log );
                 return;
             }
         }
@@ -198,7 +198,7 @@ public final class DiagnosticsManager implements Iterable<DiagnosticsProvider>
         phase.emitStart( logger );
         for ( DiagnosticsProvider provider : providers )
         {
-            provider.dump( phase, logger );
+            dump( provider, phase, logger );
         }
         phase.emitDone( logger );
     }
@@ -235,8 +235,20 @@ public final class DiagnosticsManager implements Iterable<DiagnosticsProvider>
     private void dump( DiagnosticsPhase phase, DiagnosticsProvider provider )
     {
         phase.emitStart( logger, provider );
-        provider.dump( phase, logger );
+        dump( provider, phase, logger );
         phase.emitDone( logger, provider );
+    }
+
+    private static void dump( DiagnosticsProvider provider, DiagnosticsPhase phase, StringLogger logger )
+    {
+        try
+        {
+            provider.dump( phase, logger );
+        }
+        catch ( Exception cause )
+        {
+            logger.logMessage( "Failure while logging diagnostics for " + provider, cause );
+        }
     }
 
     @Override
