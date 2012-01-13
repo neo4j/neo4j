@@ -1406,6 +1406,11 @@ return other
     assert(List(Map("other" -> c)) === result.toList)
   }
 
+  @Test def shouldHandleCheckingThatANodeDoesNotHaveAProp() {
+    val result = parseAndExecute("start a=node(0) where not(a.propertyDoesntExist) return a")
+    assert(List(Map("a" -> refNode)) === result.toList)
+  }
+
   @Test def shouldHandleAggregationAndSortingOnSomeOverlappingColumns() {
     createNode("COL1" -> "A", "COL2" -> "A", "num" -> 1)
     createNode("COL1" -> "B", "COL2" -> "B", "num" -> 2)
@@ -1425,9 +1430,9 @@ order by a.COL1
   @Test def shouldThrowNiceErrorMessageWhenPropertyIsMissing() {
     val query = new CypherParser().parse("start n=node(0) return n.A_PROPERTY_THAT_IS_MISSING")
 
-    val exception = intercept[SyntaxException](execute(query).toList)
+    val exception = intercept[EntityNotFoundException](execute(query).toList)
 
-    assert(exception.getMessage === "n.A_PROPERTY_THAT_IS_MISSING does not exist on Node[0]")
+    assert(exception.getMessage === "The property 'A_PROPERTY_THAT_IS_MISSING' does not exist on Node[0]")
   }
 
   @Test def shouldAllowAllPredicateOnArrayProperty() {
@@ -1517,7 +1522,7 @@ RETURN x0.name?
     relate(c, y4, "X", "CY")
 
     val result = parseAndExecute("""START a=node(1), b=node(2), c=node(3) match a-[?]-x-->y-[?]-c, b-[?]-z<--y, z-->x return x""")
-    assert(List(x1,x2,x3,x4) === result.columnAs[Node]("x").toList)
+    assert(List(x1, x2, x3, x4) === result.columnAs[Node]("x").toList)
   }
 
   @Test def shouldFindNodesBothDirections() {
@@ -1564,14 +1569,14 @@ RETURN x0.name?
 
   @Test def shouldReturnDifferentResultsWithDifferentParams() {
     val a = createNode()
-    
+
     val b = createNode()
-    relate(a,b)
-    
+    relate(a, b)
+
     relate(refNode, a, "X")
 
-    assert( 1 === parseAndExecute("start a = node({a}) match a-->b return b", "a" -> a).size )
-    assert( 0 === parseAndExecute("start a = node({a}) match a-->b return b", "a" -> b).size )
+    assert(1 === parseAndExecute("start a = node({a}) match a-->b return b", "a" -> a).size)
+    assert(0 === parseAndExecute("start a = node({a}) match a-->b return b", "a" -> b).size)
   }
 
   @Test def shouldHandleParametersNamedAsIdentifiers() {
@@ -1580,19 +1585,18 @@ RETURN x0.name?
     val result = parseAndExecute("start foo=node(1) where foo.bar = {foo} return foo.bar", "foo" -> "Andres")
     assert(List(Map("foo.bar" -> "Andres")) === result.toList)
   }
-  
+
   @Test def shouldHandleRelationshipIndexQuery() {
     val a = createNode()
     val b = createNode()
-    val r = relate(a,b)
+    val r = relate(a, b)
     indexRel(r, "relIdx", "key", "value")
 
 
     val result = parseAndExecute("start r=relationship:relIdx(key='value') return r")
     assert(List(Map("r" -> r)) === result.toList)
   }
-  
-  
+
 
   @Test def shouldHandleComparisonsWithDifferentTypes() {
     createNode("belt" -> 13)

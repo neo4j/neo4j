@@ -49,10 +49,6 @@ case class Literal(v: Any) extends Expression {
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = Seq()
 }
 
-case class NullableProperty(subEntity: String, subProperty: String) extends Property(subEntity, subProperty) {
-  protected override def handleNotFound(propertyContainer: PropertyContainer, x: NotFoundException): Any = null
-}
-
 abstract class CastableExpression extends Expression {
   override def dependencies(extectedType: AnyType): Seq[Identifier] = declareDependencies(extectedType)
 }
@@ -63,10 +59,7 @@ case class Nullable(expression: Expression) extends Expression {
   def apply(m: Map[String, Any]) = try {
     expression.apply(m)
   } catch {
-    case x:SyntaxException => if (x.cause.isInstanceOf[NotFoundException])
-      null
-    else
-      throw x
+    case x:EntityNotFoundException => null
   }
 
   def declareDependencies(extectedType: AnyType) = expression.dependencies(extectedType)
@@ -75,15 +68,13 @@ case class Nullable(expression: Expression) extends Expression {
 }
 
 case class Property(entity: String, property: String) extends CastableExpression {
-  protected def handleNotFound(propertyContainer: PropertyContainer, x: NotFoundException): Any = throw new SyntaxException("%s.%s does not exist on %s".format(entity, property, propertyContainer), x)
-
   def apply(m: Map[String, Any]): Any = {
     m(entity).asInstanceOf[PropertyContainer] match {
       case null => null
       case propertyContainer => try {
         propertyContainer.getProperty(property)
       } catch {
-        case x: NotFoundException => handleNotFound(propertyContainer, x)
+        case x: NotFoundException => throw new EntityNotFoundException("The property '%s' does not exist on %s".format(property, propertyContainer),x)
       }
     }
   }

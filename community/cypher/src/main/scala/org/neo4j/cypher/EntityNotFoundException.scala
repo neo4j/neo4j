@@ -19,24 +19,4 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.helpers.ThisShouldNotHappenError
-
-class SyntaxException(message: String, val offset: Option[Int]=None) extends CypherException(message, null) {
-
-  override def toString(query: String) : String = offset match {
-    case Some(value) => getMessage + "\n" + findErrorLine(value, query.split('\n'))
-    case None => getMessage
-  }
-
-  private def findErrorLine(offset: Int, message: Seq[String]): String =
-    message.toList match {
-      case Nil => throw new ThisShouldNotHappenError("Andrés & Tobias", "message converted to empty list")
-      case head :: tail => {
-        if (head.size > offset) {
-          "\"" + head + "\"\n" + " " * offset + " ^"
-        } else {
-          findErrorLine(offset - head.size - 1, tail) //The extra minus one is there for the now missing \n
-        }
-      }
-    }
-}
+class EntityNotFoundException(message:String, cause:Throwable) extends CypherException(message, cause)

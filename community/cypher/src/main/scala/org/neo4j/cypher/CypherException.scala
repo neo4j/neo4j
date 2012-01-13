@@ -21,4 +21,5 @@ package org.neo4j.cypher
 
 abstract class CypherException(message: String, cause: Throwable) extends RuntimeException(message, cause) {
   def this(message:String) = this(message, null)
+  def toString(query:String) : String = this.toString()
 }

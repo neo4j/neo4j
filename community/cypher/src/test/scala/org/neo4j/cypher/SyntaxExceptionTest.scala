@@ -55,6 +55,13 @@ class SyntaxExceptionTest extends JUnitSuite {
       "Need identifier assignment")
   }
 
+  @Ignore
+  @Test def shouldRaiseErrorWhenMissingReturnColumns() {
+    expectError(
+      "start s = node(0) return",
+      "Expected comma separated list of returnable values")
+  }
+
   @Test def shouldRaiseErrorWhenMissingReturn() {
     expectError(
       "start s = node(0)",
@@ -119,6 +126,13 @@ class SyntaxExceptionTest extends JUnitSuite {
   @Test def unclosedParenthesis() {
     expectError(
       "start a=node(0 return a",
+      "Unclosed parenthesis")
+  }
+
+  @Ignore
+  @Test def trailingComa() {
+    expectError(
+      "start a=node(0,1,) return a",
       "Unclosed parenthesis")
   }
 
