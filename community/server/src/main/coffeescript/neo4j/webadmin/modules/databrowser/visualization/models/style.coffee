@@ -29,7 +29,8 @@ define(
     
     LABEL_PATTERN_TOOLTIP = """You can use placeholders in the label.<br/>
 {id} for node id<br/>
-{PROPERTYNAME} for properties.<br/><br/>
+{PROPERTYNAME} or {prop.PROPERTYNAME} for properties.<br/>
+{props} for all properties.<br/><br/>
 <b>Truncate values</b><br/>
 {bigproperty|truncate:10}<br/><br/>
 <b>Use first matching property</b><br/>
@@ -163,14 +164,16 @@ Use ";" to create multiline labels.<br/><br/>
         
       getLabelCtx : (visualNode) ->
         ctx = {
-          id : "N/A"
+          id : "N/A",
+          props : "",
+          prop : {}
         }
         if visualNode.neoNode
-          ctx['id'] = visualNode.neoNode.getId()
           for k,v of visualNode.neoNode.getProperties()
             ctx[k] = JSON.stringify(v)
-        if not ctx['prop']?
-          ctx['prop'] = ctx
+          ctx['id'] = visualNode.neoNode.getId()
+          ctx['props'] = JSON.stringify(visualNode.neoNode.getProperties())
+          ctx['prop'] = visualNode.neoNode.getProperties()
         ctx
 
 
