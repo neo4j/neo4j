@@ -53,6 +53,13 @@ public class GremlinSessionTest
     }
 
     @Test
+    public void testGremlinVersion()
+    {
+        String result = session.evaluate( "Gremlin.version()" ).first();
+        assertEquals( "1.4" + NEWLINE, result );
+    }
+
+    @Test
     public void canCreateNodesAndEdgesInGremlinLand()
     {
         String result = session.evaluate( "g.addVertex(null)" ).first();

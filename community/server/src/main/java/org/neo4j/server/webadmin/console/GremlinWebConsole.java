@@ -42,6 +42,7 @@ public class GremlinWebConsole
         {
             groovy.execute( "import " + imps );
         }
+        groovy.execute( "import com.tinkerpop.gremlin.groovy.*" );
         groovy.setResultHook( new GremlinResultHook( groovy, io ) );
         Gremlin.load();
     }
