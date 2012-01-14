@@ -1,3 +1,5 @@
+package org.neo4j.cypher.internal.parser.v16
+
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -17,18 +19,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.commands._
-import org.neo4j.cypher.CypherParser
+import scala.util.parsing.combinator._
+import org.neo4j.cypher.commands.{Parameter, Literal, Expression}
 
-trait ConsoleMode extends ReturnItems {
-  override def returnExpressions: Parser[Expression] = (nullableProperty | expression | entity) ^^ {
-    case Property(v,p) => Nullable(Property(v,p))
-    case x => x
+trait SkipLimitClause extends JavaTokenParsers with Tokens {
+  def skip: Parser[Expression] = ignoreCase("skip") ~> numberOrParam ^^ (x => x)
+
+  def limit: Parser[Expression] = ignoreCase("limit") ~> numberOrParam ^^ (x => x)
+
+  private def numberOrParam: Parser[Expression] = (parameter|positiveNumber) ^^ {
+    case x:Parameter => x
+    case x:String => Literal(x.toInt)
   }
 }
 
-class ConsoleCypherParser extends CypherParser with ConsoleMode {
 
-}
+
+
+

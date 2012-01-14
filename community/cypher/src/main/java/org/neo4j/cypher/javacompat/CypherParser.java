@@ -44,6 +44,6 @@ public class CypherParser
     }
 
     public static Query parseConsole(String query) throws SyntaxException {
-        return new org.neo4j.cypher.internal.parser.ConsoleCypherParser().parse( query );
+        return new org.neo4j.cypher.internal.parser.v16.ConsoleCypherParser().parse( query );
     }
 }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import internal.parser.ConsoleCypherParser
+import internal.parser.v16.ConsoleCypherParser
 import org.neo4j.cypher.commands._
 import org.junit.Assert._
 import org.neo4j.graphdb.Direction
@@ -792,19 +792,6 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns (ExpressionReturnItem(Entity("b"))))
   }
 
-  @Test def supportsTheOldSyntaxForIterablePredicates() {
-    testQuery(
-      """start a = node(1) match p = a --> b --> c where ALL(n in NODES(p) : n.name = "Andres") return b""",
-      Query.
-        start(NodeById("a", 1)).
-        namedPaths(
-        NamedPath("p",
-          RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING, false),
-          RelatedTo("b", "c", "  UNNAMED2", None, Direction.OUTGOING, false))).
-        where(AllInIterable(NodesFunction(Entity("p")), "n", Equals(Property("n", "name"), Literal("Andres"))))
-        returns (ExpressionReturnItem(Entity("b"))))
-  }
-
   @Test def extractNameFromAllNodes() {
     testQuery(
       """start a = node(1) match p = a --> b --> c return extract(n in nodes(p) : n.name)""",
@@ -1071,6 +1058,15 @@ class CypherParserTest extends JUnitSuite with Assertions {
         where(HasRelationship(Entity("a"), Direction.OUTGOING, None))
         returns (ExpressionReturnItem(Entity("a"))))
   }
+
+  @Test def shouldBeAbleToParseThingsLikeIts15AllOverAgain() {
+      testQuery(
+        "cypher 1.5 start a = node(1) where ANY(x in NODES(p) : x.name = 'Andres') return b",
+        Query.
+          start(NodeById("a", 1)).
+          where(AnyInIterable(NodesFunction(Entity("p")), "x", Equals(Property("x", "name"), Literal("Andres"))))
+          returns (ExpressionReturnItem(Entity("b"))))
+    }
 
   def testQuery(query: String, expectedQuery: Query) {
     val parser = new CypherParser()

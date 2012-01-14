@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.parser.v15
 
 import scala.util.parsing.combinator._
 import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.commands.{Parameter, Literal, ParameterValue, Expression}
+import org.neo4j.cypher.commands.{Parameter, Literal, Expression}
 
 trait Tokens extends JavaTokenParsers {
   val keywords = List("start", "where", "return", "limit", "skip", "order", "by")

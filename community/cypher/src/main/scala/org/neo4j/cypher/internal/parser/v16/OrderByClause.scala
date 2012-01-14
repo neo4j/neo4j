@@ -1,3 +1,5 @@
+package org.neo4j.cypher.internal.parser.v16
+
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -17,11 +19,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
+
 trait OrderByClause extends JavaTokenParsers with Tokens with ReturnItems  {
   def desc:Parser[String] = ignoreCase("descending") | ignoreCase("desc")
 

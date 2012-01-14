@@ -1,3 +1,5 @@
+package org.neo4j.cypher.internal.parser.v16
+
 /**
  * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -17,21 +19,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.commands._
-import scala.util.parsing.combinator._
-trait WhereClause extends JavaTokenParsers with Tokens with Predicates {
-  def where: Parser[Predicate] = ignoreCase("where") ~> predicate
+import org.neo4j.cypher.CypherParser
+
+trait ConsoleMode extends ReturnItems {
+  override def returnExpressions: Parser[Expression] = (nullableProperty | expression | entity) ^^ {
+    case Property(v,p) => Nullable(Property(v,p))
+    case x => x
+  }
 }
 
+class ConsoleCypherParser extends CypherParser with ConsoleMode {
 
-
-
-
-
-
-
-
-
-
+}
