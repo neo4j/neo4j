@@ -21,9 +21,8 @@ package org.neo4j.cypher.internal.parser.v16
  */
 
 import org.neo4j.cypher.commands._
-import scala.util.parsing.combinator._
 
-trait WhereClause extends JavaTokenParsers with Tokens with Predicates {
+trait WhereClause extends Base with Predicates {
   def where: Parser[Predicate] = ignoreCase("where") ~> predicate
 }
 

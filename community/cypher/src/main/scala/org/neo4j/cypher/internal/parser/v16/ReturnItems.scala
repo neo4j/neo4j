@@ -21,16 +21,15 @@ package org.neo4j.cypher.internal.parser.v16
  */
 
 import org.neo4j.cypher.commands._
-import scala.util.parsing.combinator._
 
-trait ReturnItems extends JavaTokenParsers with Tokens with Expressions {
+trait ReturnItems extends Base with Expressions {
   def returnItem: Parser[ReturnItem] = returnExpressions ^^ {
     case expression => ExpressionReturnItem(expression)
   }
 
   def returnExpressions: Parser[Expression] = nullableProperty | expression | entity
 
-  def functionNames = ignoreCase("count") | ignoreCase("sum") | ignoreCase("min") | ignoreCase("max") | ignoreCase("avg") | ignoreCase("collect")
+  def functionNames = ignoreCases("count", "sum", "min", "max", "avg", "collect")
 
   def aggregationFunction: Parser[AggregationItem] = functionNames ~ parens(opt(ignoreCase("distinct")) ~ returnExpressions) ^^ {
     case name ~ (distinct ~ inner) => {
@@ -56,7 +55,7 @@ trait ReturnItems extends JavaTokenParsers with Tokens with Expressions {
     case "*" => CountStar()
   }
 
-  def aggregate: Parser[AggregationItem] = (countStar | aggregationFunction)
+  def aggregate: Parser[AggregationItem] = countStar | aggregationFunction | failure("wut?")
 }
 
 

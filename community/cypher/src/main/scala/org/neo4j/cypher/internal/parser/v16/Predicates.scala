@@ -21,11 +21,10 @@ package org.neo4j.cypher.internal.parser.v16
  */
 
 import org.neo4j.cypher.commands._
-import scala.util.parsing.combinator._
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.SyntaxException
 
-trait Predicates extends JavaTokenParsers with Tokens with Expressions {
+trait Predicates extends Base with Expressions {
   def predicate: Parser[Predicate] = (isNull | isNotNull | orderedComparison | not | notEquals | equals | regexp | hasProperty | parens(predicate) | sequencePredicate | hasRelationshipTo | hasRelationship) * (
     ignoreCase("and") ^^^ {
       (a: Predicate, b: Predicate) => And(a, b)
@@ -45,9 +44,10 @@ trait Predicates extends JavaTokenParsers with Tokens with Expressions {
 
   def sequencePredicate: Parser[Predicate] = (allInSeq | anyInSeq | noneInSeq | singleInSeq)
 
-  def symbolIterablePredicate: Parser[(Expression, String, Predicate)] = identity ~ ignoreCase("in") ~ expression ~ ignoreCase("where")  ~ predicate ^^ {
-    case symbol ~ in ~ iterable ~ where ~ klas => (iterable, symbol, klas)
-  }
+  def symbolIterablePredicate: Parser[(Expression, String, Predicate)] =
+    (identity ~ ignoreCase("in") ~ expression ~ ignoreCase("where")  ~ predicate ^^ {    case symbol ~ in ~ iterable ~ where ~ klas => (iterable, symbol, klas)  }
+      |identity ~> ignoreCase("in") ~ expression ~> failure("expected where"))
+
 
   def allInSeq: Parser[Predicate] = ignoreCase("all") ~> parens(symbolIterablePredicate) ^^ (x => AllInIterable(x._1, x._2, x._3))
 

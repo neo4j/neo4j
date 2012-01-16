@@ -21,14 +21,13 @@ package org.neo4j.cypher.internal.parser.v16
  */
 
 import org.neo4j.cypher.commands._
-import scala.util.parsing.combinator._
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.Direction
 
-trait MatchClause extends JavaTokenParsers with Tokens {
+trait MatchClause extends Base {
   val namer = new NodeNamer
 
-  def matching: Parser[(Match, NamedPaths)] = ignoreCase("match") ~> rep1sep(path, ",") ^^ {
+  def matching: Parser[(Match, NamedPaths)] = ignoreCase("match") ~> comaList(path) ^^ {
     case matching => {
       val unamedPaths: List[Pattern] = matching.filter(_.isInstanceOf[List[Pattern]]).map(_.asInstanceOf[List[Pattern]]).flatten ++ matching.filter(_.isInstanceOf[Pattern]).map(_.asInstanceOf[Pattern])
       val namedPaths: List[NamedPath] = matching.filter(_.isInstanceOf[NamedPath]).map(_.asInstanceOf[NamedPath])
@@ -37,7 +36,10 @@ trait MatchClause extends JavaTokenParsers with Tokens {
     }
   }
 
-  def path: Parser[Any] = pathSegment | parenPath
+  def path: Parser[Any] =
+    (pathSegment
+      | parenPath
+      | failure("expected identifier"))
 
   def parenPath: Parser[Any] = identity ~ "=" ~ optParens(pathSegment) ^^ {
     case p ~ "=" ~ pathSegment => {
@@ -126,14 +128,13 @@ trait MatchClause extends JavaTokenParsers with Tokens {
     }
   }
 
-  def node: Parser[Option[String]] = parensNode | relatedNode
+  def node: Parser[Option[String]] = (
+    parensNode
+      | relatedNode)
 
   def parensNode: Parser[Option[String]] = parens(opt(identity))
 
-  def relatedNode: Parser[Option[String]] = opt(identity) ^^ {
-    case None => throw new SyntaxException("Matching nodes without identifiers have to have parenthesis: ()")
-    case x => x
-  }
+  def relatedNode: Parser[Option[String]] = identity ^^ (x => Some(x)) | failure("Matching nodes without identifiers have to have parenthesis: ()")
 
   def relatedTail = opt("<") ~ "-" ~ opt("[" ~> relationshipInfo <~ "]") ~ "-" ~ opt(">") ~ node ^^ {
     case back ~ "-" ~ relInfo ~ "-" ~ forward ~ end => relInfo match {

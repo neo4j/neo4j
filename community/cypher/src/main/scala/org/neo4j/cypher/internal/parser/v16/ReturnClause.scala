@@ -21,23 +21,26 @@ package org.neo4j.cypher.internal.parser.v16
  */
 
 import org.neo4j.cypher.commands._
-import scala.util.parsing.combinator._
 
-trait ReturnClause extends JavaTokenParsers with Tokens with ReturnItems {
+trait ReturnClause extends Base with ReturnItems {
+  def column = aggregationColumn | expressionColumn
 
-  def column = (aggregate | returnItem) ~ opt(ignoreCase("AS") ~> identity) ^^ {
-    case returnItem ~ alias => {
-      alias match {
-        case None => returnItem
-        case Some(newColumnName) => returnItem match {
-          case x: AggregationItem => AliasAggregationItem(x, newColumnName)
-          case x => AliasReturnItem(x, newColumnName)
-        }
-      }
-    }
+  def returns = returnsClause | failure("expected return clause")
+
+
+  def alias: Parser[Option[String]] = opt(ignoreCase("as") ~> identity)
+
+  def aggregationColumn = aggregate ~ alias ^^ {
+    case agg ~ Some(newName) => AliasAggregationItem(agg, newName)
+    case agg ~ None => agg
   }
 
-  def returns: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> opt("distinct") ~ rep1sep(column, ",") ^^ {
+  def expressionColumn = returnItem ~ alias ^^ {
+    case col ~ Some(newName) => AliasReturnItem(col, newName)
+    case col ~ None => col
+  }
+
+  def returnsClause: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> opt("distinct") ~ comaList(column) ^^ {
     case distinct ~ items => {
       val aggregationItems = items.filter(_.isInstanceOf[AggregationItem]).map(_.asInstanceOf[AggregationItem])
 

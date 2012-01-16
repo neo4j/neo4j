@@ -20,18 +20,19 @@ package org.neo4j.cypher.internal.parser.v16
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import scala.util.parsing.combinator._
 import org.neo4j.cypher.commands.{Parameter, Literal, Expression}
 
-trait SkipLimitClause extends JavaTokenParsers with Tokens {
+trait SkipLimitClause extends Base {
   def skip: Parser[Expression] = ignoreCase("skip") ~> numberOrParam ^^ (x => x)
 
   def limit: Parser[Expression] = ignoreCase("limit") ~> numberOrParam ^^ (x => x)
 
-  private def numberOrParam: Parser[Expression] = (parameter|positiveNumber) ^^ {
-    case x:Parameter => x
-    case x:String => Literal(x.toInt)
-  }
+  private def numberOrParam: Parser[Expression] =
+    ((parameter | positiveNumber) ^^ {
+      case x: Parameter => x
+      case x: String => Literal(x.toInt)
+    }
+      | failure("expected positive integer or parameter"))
 }
 
 
