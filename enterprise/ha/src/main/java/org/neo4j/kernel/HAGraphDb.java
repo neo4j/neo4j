@@ -81,6 +81,8 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public class HAGraphDb extends AbstractGraphDatabase
         implements GraphDatabaseService, ResponseReceiver
 {
+    private static final int STORE_COPY_RETRIES = 3;
+
     private final Map<String, String> config;
     private final BrokerFactory brokerFactory;
     private volatile Broker broker;
@@ -170,16 +172,19 @@ public class HAGraphDb extends AbstractGraphDatabase
         } );
     }
 
-    private void getFreshDatabaseFromMaster( )
+    private void getFreshDatabaseFromMaster( Pair<Master, Machine> master,
+            boolean branched )
     {
-        Pair<Master, Machine> master = broker.getMasterReally( true );
+        assert master != null;
         // Assume it's shut down at this point
-
         internalShutdown( false );
-        makeWayForNewDb();
+        if ( branched )
+        {
+            makeWayForNewDb();
+        }
 
         Exception exception = null;
-        for ( int i = 0; i < 60; i++ )
+        for ( int i = 0; i < STORE_COPY_RETRIES; i++ )
         {
             try
             {
@@ -193,6 +198,7 @@ public class HAGraphDb extends AbstractGraphDatabase
                 sleepWithoutInterruption( 1000, "" );
                 exception = e;
                 master = broker.getMasterReally( true );
+                BranchedDataPolicy.keep_none.handle( this );
             }
         }
         throw new RuntimeException( "Gave up trying to copy store from master", exception );
@@ -222,7 +228,7 @@ public class HAGraphDb extends AbstractGraphDatabase
                 {   // Join the existing cluster
                     try
                     {
-                        copyStoreFromMaster( master );
+                        getFreshDatabaseFromMaster( master, false /*branched*/);
                         getMessageLog().logMessage( "copied store from master" );
                         exception = null;
                         break;
@@ -266,7 +272,8 @@ public class HAGraphDb extends AbstractGraphDatabase
         }
     }
 
-    private void copyStoreFromMaster( Pair<Master, Machine> master ) throws Exception
+    private void copyStoreFromMaster( Pair<Master, Machine> master )
+            throws Exception
     {
         getMessageLog().logMessage( "Copying store from master" );
         Response<Void> response = master.first().copyStore( new SlaveContext( 0, machineId, 0, new Pair[0] ),
@@ -833,7 +840,7 @@ public class HAGraphDb extends AbstractGraphDatabase
         catch ( BranchedDataException bde )
         {
             getMessageLog().logMessage( "Branched data occured, retrying" );
-            getFreshDatabaseFromMaster();
+            getFreshDatabaseFromMaster( broker.getMasterReally( true ), true /*branched*/);
             doNewMaster( storeId, bde );
         }
     }
