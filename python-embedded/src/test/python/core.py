@@ -243,8 +243,13 @@ class GraphTest(unit_tests.GraphDatabaseTest):
         # You don't have to be in a transaction
         # to do read operations.
         a_node = db.node[some_node_id]
+
+        # Ids on nodes and relationships are available via the "id"
+        # property, eg.:
+        node_id = a_node.id
         # END SNIPPET: getNodeById
         self.assertNotEqual(a_node, None)
+        self.assertEqual(node_id, some_node_id)
                 
     def test_get_all_nodes(self):
         db = self.graphdb
