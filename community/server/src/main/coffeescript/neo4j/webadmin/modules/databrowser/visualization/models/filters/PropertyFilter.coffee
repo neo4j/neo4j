@@ -76,7 +76,7 @@ define(
 
     class PropertyFilter extends Filter
       
-      @name : 'propertyFilter'
+      @type : 'propertyFilter'
       
       @compareMethods : 
         '==' : {label : "is",    cmp : (actual, expected) -> actual == expected}
@@ -90,7 +90,7 @@ define(
         'method' : 'exists'
       
       getViewClass : ()-> PropertyFilterView
-      getType : () -> PropertyFilter.name
+      getType : () -> PropertyFilter.type
       
       getMethodName : -> @get 'method'
       getPropertyName : -> @get 'propertyName'
