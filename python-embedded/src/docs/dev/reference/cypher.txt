@@ -72,14 +72,11 @@ classifier=test-sources
 
 === Prepared queries ===
 
-If you are executing similar queries over and over, you can pre-parse a parameterized version of the query.
-Then you can just execute that pre-parsed query with appropriate parameters.
+Prepared queries, where you could retrieve a pre-parsed version of a cypher query to be used later,
+is deprecated. Cypher will recognize if it has previously parsed a given query, and won't parse the
+same string twice. 
 
-[snippet,python]
-----
-component=neo4j-python-embedded
-source=cypher.py
-tag=preparedCypherQuery
-classifier=test-sources
-----
+So, in effect, all cypher queries are prepared queries, if you use them more than once. Use parameterized
+queries to gain the full power of this - then a generic query can be pre-parsed, and modified with parameters
+each time it is executed.
 

@@ -299,7 +299,7 @@ class GraphTest(unit_tests.GraphDatabaseTest):
         db = self.graphdb
         
         # START SNIPPET: createRelationship
-        with self.graphdb.transaction:
+        with db.transaction:
             # Nodes to create a relationship between
             steven = self.graphdb.node(name='Steve Brook')
             poplar_bluff = self.graphdb.node(name='Poplar Bluff')
@@ -361,7 +361,7 @@ class GraphTest(unit_tests.GraphDatabaseTest):
     def test_relationship_attributes(self):
         db = self.graphdb
         
-        with self.graphdb.transaction:
+        with db.transaction:
             source = self.graphdb.node()
             target = self.graphdb.node()
             
@@ -381,7 +381,7 @@ class GraphTest(unit_tests.GraphDatabaseTest):
         
     def test_get_relationship_by_id(self):
         db = self.graphdb
-        with self.graphdb.transaction:
+        with db.transaction:
             source = self.graphdb.node()
             target = self.graphdb.node()
             rel = source.Knows(target)
@@ -414,7 +414,7 @@ class GraphTest(unit_tests.GraphDatabaseTest):
         
         db = self.graphdb
         
-        with self.graphdb.transaction:
+        with db.transaction:
             node1 = self.graphdb.node()
             node2 = self.graphdb.node()
             rel = node1.Knows(node2)
