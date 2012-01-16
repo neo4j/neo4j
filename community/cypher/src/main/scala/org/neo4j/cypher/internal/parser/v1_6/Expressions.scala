@@ -17,37 +17,44 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v15
+package org.neo4j.cypher.internal.parser.v1_6
 
 import org.neo4j.cypher.commands._
-import scala.util.parsing.combinator._
-import org.neo4j.cypher.SyntaxException
 
-trait Values extends JavaTokenParsers with Tokens {
+trait Expressions extends Base {
 
-  def entityValue: Parser[Entity] = identity ^^ ( x => Entity(x) )
+  def entity: Parser[Entity] = identity ^^ (x => Entity(x))
 
-  def value: Parser[Expression] = (boolean | function | nullableProperty | property | stringValue | decimal | parameter)
+  def expression: Parser[Expression] =
+    (ignoreCase("true") ^^ (x => Literal(true))
+      | ignoreCase("false") ^^ (x => Literal(false))
+      | extract
+      | function
+      | identity~>parens(expression | entity)~>failure("Unknown function")
+      | coalesceFunc
+      | nullableProperty
+      | property
+      | string ^^ (x => Literal(x))
+      | number ^^ (x => Literal(x.toDouble))
+      | parameter
+      | entity
+      | failure("illegal start of value") )
 
   def property: Parser[Expression] = identity ~ "." ~ identity ^^ {
     case v ~ "." ~ p => Property(v, p)
   }
 
-  def nullableProperty: Parser[Expression] = property <~ "?" ^^ {
-    case Property(e, p) => Nullable(Property(e, p))
+  def nullableProperty: Parser[Expression] = property <~ "?" ^^ (p => Nullable(p))
+
+  def extract: Parser[Expression] = ignoreCase("extract") ~> parens(identity ~ ignoreCase("in") ~ expression ~ ":" ~ expression) ^^ {
+    case (id ~ in ~ iter ~ ":" ~ expression) => ExtractFunction(iter, id, expression)
   }
 
-  def stringValue: Parser[Expression] = string ^^ (x => Literal(x))
+  def coalesceFunc: Parser[Expression] = ignoreCase("coalesce") ~> parens(comaList(expression)) ^^ {
+    case expressions => CoalesceFunction(expressions: _*)
+  }
 
-  def decimal: Parser[Expression] = decimalNumber ^^ (x => Literal(x.toDouble))
-
-  def boolean: Parser[Expression] = (trueX | falseX)
-
-  def trueX: Parser[Expression] = ignoreCase("true") ^^ (x => Literal(true))
-
-  def falseX: Parser[Expression] = ignoreCase("false") ^^ (x => Literal(false))
-
-  def function: Parser[Expression] = ident ~ parens(value | entityValue) ^^{
+  def function: Parser[Expression] = ignoreCases("type", "id", "length", "nodes", "rels", "relationships") ~ parens(expression | entity) ^^ {
     case functionName ~ inner => functionName.toLowerCase match {
       case "type" => RelationshipTypeFunction(inner)
       case "id" => IdFunction(inner)
@@ -55,7 +62,6 @@ trait Values extends JavaTokenParsers with Tokens {
       case "nodes" => NodesFunction(inner)
       case "rels" => RelationshipFunction(inner)
       case "relationships" => RelationshipFunction(inner)
-      case x => throw new SyntaxException("No function '" + x + "' exists.")
     }
   }
 }

@@ -17,23 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v15
+package org.neo4j.cypher.internal.parser.v1_6
 
 import org.neo4j.cypher.commands._
-import scala.util.parsing.combinator._
 
-trait StartClause extends JavaTokenParsers with Tokens {
-  def start: Parser[Start] = ignoreCase("start") ~> rep1sep(startBit, ",") ^^ (x => Start(x: _*))
+trait StartClause extends Base {
+  def start: Parser[Start] = ignoreCase("start") ~> comaList(startBit) ^^ (x => Start(x: _*)) | failure("Missing START clause")
 
-  def startBit = identity ~ "=" ~ lookup ^^ {
-    case id ~ "=" ~ l => l(id)
-  }
+  def startBit =
+    (identity ~ "=" ~ lookup ^^ {    case id ~ "=" ~ l => l(id)  }
+      | identity ~> failure("Need identifier assignment") )
 
-  def nodes = ignoreCase("node") ^^ (x => "node")
+  def nodes = ignoreCase("node")
 
   def rels = (ignoreCase("relationship") | ignoreCase("rel")) ^^ (x => "rel")
 
-  def lookup: Parser[(String) => StartItem] = (nodes | rels) ~ (parens(parameter) | ids | idxLookup | idxString) ^^ {
+  def typ = nodes | rels | failure("Need either node or relationship here")
+
+  def lookup: Parser[(String) => StartItem] = typ ~ (parens(parameter) | ids | idxLookup | idxString) ^^ {
     case "node" ~ l => l match {
       case l: Expression => (id: String) => NodeById(id, l)
       case x: (String, Expression, Expression) => (id: String) => NodeByIndex(id, x._1, x._2, x._3)
@@ -47,7 +48,7 @@ trait StartClause extends JavaTokenParsers with Tokens {
     }
   }
 
-  def ids = parens(rep1sep(wholeNumber, ",")) ^^ (x => Literal(x.map(_.toLong)))
+  def ids = parens(comaList(wholeNumber)) ^^ (x => Literal(x.map(_.toLong)))
 
   def idxString: Parser[(String, Expression)] = ":" ~> identity ~ parens(parameter|stringLit) ^^ {
     case id ~ valu => (id, valu)
@@ -59,9 +60,12 @@ trait StartClause extends JavaTokenParsers with Tokens {
 
   def idxQueries: Parser[(Expression, Expression)] = idxQuery
 
-  def idxQuery: Parser[(Expression, Expression)] = (id | parameter) ~ "=" ~ (parameter | stringLit) ^^ {
-    case k ~ "=" ~ v => (k, v)
-  }
+  def indexValue = parameter | stringLit | failure("String literal or parameter expected")
+  def idxQuery: Parser[(Expression, Expression)] = (
+    (id | parameter) ~ "=" ~ indexValue ^^ {    case k ~ "=" ~ v => (k, v)  }
+    //| (id | parameter) ~> "=" ~> failure("Need index value")
+    | "=" ~> failure("Need index key")
+    )
 
   def id: Parser[Expression] = identity ^^ (x => Literal(x))
 

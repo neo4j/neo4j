@@ -17,33 +17,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v15
+package org.neo4j.cypher.internal.parser.v1_5
 
 
+import org.neo4j.cypher._
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
-trait ReturnClause extends JavaTokenParsers with Tokens with ReturnItems {
+trait OrderByClause extends JavaTokenParsers with Tokens with ReturnItems  {
+  def desc:Parser[String] = ignoreCase("descending") | ignoreCase("desc")
 
+  def asc:Parser[String] = ignoreCase("ascending") | ignoreCase("asc")
 
-  def returns: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> opt("distinct") ~ rep1sep((aggregate | returnItem), ",") ^^
-    { case distinct ~ items => {
-      val list = items.filter(_.isInstanceOf[AggregationItem]).map(_.asInstanceOf[AggregationItem])
+  def ascOrDesc:Parser[Boolean] = opt(asc | desc) ^^ {
+    case None => true
+    case Some(txt) => txt.toLowerCase.startsWith("a")
+  }
 
-      val none: Option[Aggregation] = distinct match {
-        case Some(x) => Some(Aggregation())
-        case None => None
+  def sortItem :Parser[SortItem] = (aggregate | returnItem) ~ ascOrDesc ^^ {
+    case returnItem ~ reverse => {
+      returnItem match {
+        case ExpressionReturnItem(Entity(_)) => throw new SyntaxException("Cannot ORDER BY on nodes or relationships")
+        case _ => SortItem(returnItem, reverse)
       }
+    }
+  }
 
-      (
-        Return(items.map(_.columnName).toList, items.filter(!_.isInstanceOf[AggregationItem]): _*),
-        list match {
-          case List() => none
-          case _ => Some(Aggregation(list : _*))
-        }
-      )
-    }}
-
-
+  def order: Parser[Sort] = ignoreCase("order by")  ~> rep1sep(sortItem, ",") ^^
+    {
+      case items => Sort(items:_*)
+    }
 }
 
 

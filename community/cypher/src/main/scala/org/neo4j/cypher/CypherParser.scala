@@ -23,8 +23,8 @@ import org.neo4j.cypher.commands._
 
 class CypherParser {
 
-  val v15 = new internal.parser.v15.CypherParser
-  val v16 = new internal.parser.v16.CypherParser
+  val v15 = new internal.parser.v1_5.CypherParser
+  val v16 = new internal.parser.v1_6.CypherParser
 
   @throws(classOf[SyntaxException])
   def parse(queryText: String): Query = if (queryText.startsWith("cypher")) {

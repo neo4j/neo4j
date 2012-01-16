@@ -17,17 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v15
+package org.neo4j.cypher.internal.parser.v1_5
 
 import org.neo4j.cypher.commands._
+import scala.util.parsing.combinator._
 
-trait ConsoleMode extends ReturnItems {
-  override def returnValues: Parser[Expression] = (nullableProperty | value | entityValue) ^^ {
-    case Property(v,p) => Nullable(Property(v,p))
-    case x => x
-  }
+trait WhereClause extends JavaTokenParsers with Tokens with Clauses {
+  def where: Parser[Predicate] = ignoreCase("where") ~> clause
 }
 
-class ConsoleCypherParser extends CypherParser with ConsoleMode {
 
-}
+
+
+
+
+
+
+
+
+

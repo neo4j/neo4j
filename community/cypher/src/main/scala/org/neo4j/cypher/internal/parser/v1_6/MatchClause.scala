@@ -17,30 +17,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v15
-
+package org.neo4j.cypher.internal.parser.v1_6
 
 import org.neo4j.cypher.commands._
-import scala.util.parsing.combinator._
-import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.SyntaxException
+import org.neo4j.graphdb.Direction
 
-trait MatchClause extends JavaTokenParsers with Tokens {
+trait MatchClause extends Base {
   val namer = new NodeNamer
 
-  def matching: Parser[(Match, NamedPaths)] = ignoreCase("match") ~> rep1sep(path, ",") ^^ {
+  def matching: Parser[(Match, NamedPaths)] = ignoreCase("match") ~> comaList(path) ^^ {
     case matching => {
-      val unamedPaths: List[Pattern] = matching.filter(_.isInstanceOf[List[Pattern]]).map(_.asInstanceOf[List[Pattern]]).flatten
+      val unamedPaths: List[Pattern] = matching.filter(_.isInstanceOf[List[Pattern]]).map(_.asInstanceOf[List[Pattern]]).flatten ++ matching.filter(_.isInstanceOf[Pattern]).map(_.asInstanceOf[Pattern])
       val namedPaths: List[NamedPath] = matching.filter(_.isInstanceOf[NamedPath]).map(_.asInstanceOf[NamedPath])
 
       (Match(unamedPaths: _*), NamedPaths(namedPaths: _*))
     }
   }
 
-  def path: Parser[Any] = pathSegment | parenPath
+  def path: Parser[Any] =
+    (pathSegment
+      | parenPath
+      | failure("expected identifier"))
 
-  def parenPath: Parser[NamedPath] = identity ~ "=" ~ optParens(pathSegment) ^^ {
-    case p ~ "=" ~ pathSegment => NamedPath(p, pathSegment: _*)
+  def parenPath: Parser[Any] = identity ~ "=" ~ optParens(pathSegment) ^^ {
+    case p ~ "=" ~ pathSegment => {
+      if (pathSegment.size == 1 && pathSegment.head.isInstanceOf[PathPattern])
+        pathSegment.head.asInstanceOf[PathPattern].cloneWithOtherName(p).asInstanceOf[Pattern]
+      else
+        NamedPath(p, pathSegment: _*)
+    }
   }
 
   def pathSegment: Parser[List[Pattern]] = relatedTos | shortestPath
@@ -52,15 +58,30 @@ trait MatchClause extends JavaTokenParsers with Tokens {
       p.head
   }
 
-  def shortestPath: Parser[List[Pattern]] = ignoreCase("shortestPath") ~> parens(singlePathSegment) ^^ {
-    _ match {
-      case RelatedTo(left, right, relName, relType, direction, optional) => List(ShortestPath(namer.name(None), left, right, relType, direction, Some(1), optional, true, None))
-      case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, direction, relIterable, optional) => {
-        if (minHops.nonEmpty) {
-          throw new SyntaxException("Shortest path does not support a minimal length")
-        }
-        List(ShortestPath(namer.name(None), start, end, relType, direction, maxHops, optional, true, None))
+  def optionRelName(relName: String): Option[String] =
+    if (relName.startsWith("  UNNAMED"))
+      None
+    else
+      Some(relName)
+
+  def shortestPath: Parser[List[Pattern]] = (ignoreCase("shortestPath") | ignoreCase("allShortestPaths")) ~ parens(singlePathSegment) ^^ {
+    case algo ~ relInfo => {
+
+      val single = algo match {
+        case "shortestpath" => true
+        case "allshortestpaths" => false
       }
+
+      relInfo match {
+        case RelatedTo(left, right, relName, relType, direction, optional) => List(ShortestPath(namer.name(None), left, right, relType, direction, Some(1), optional, single, optionRelName(relName)))
+        case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, direction, relIterable, optional) => {
+          if (minHops.nonEmpty) {
+            throw new SyntaxException("Shortest path does not support a minimal length")
+          }
+          List(ShortestPath(namer.name(None), start, end, relType, direction, maxHops, optional, single, relIterable))
+        }
+      }
+
     }
   }
 
@@ -106,14 +127,13 @@ trait MatchClause extends JavaTokenParsers with Tokens {
     }
   }
 
-  def node: Parser[Option[String]] = parensNode | relatedNode
+  def node: Parser[Option[String]] = (
+    parensNode
+      | relatedNode)
 
   def parensNode: Parser[Option[String]] = parens(opt(identity))
 
-  def relatedNode: Parser[Option[String]] = opt(identity) ^^ {
-    case None => throw new SyntaxException("Matching nodes without identifiers have to have parenthesis: ()")
-    case x => x
-  }
+  def relatedNode: Parser[Option[String]] = identity ^^ (x => Some(x)) | failure("Matching nodes without identifiers have to have parenthesis: ()")
 
   def relatedTail = opt("<") ~ "-" ~ opt("[" ~> relationshipInfo <~ "]") ~ "-" ~ opt(">") ~ node ^^ {
     case back ~ "-" ~ relInfo ~ "-" ~ forward ~ end => relInfo match {

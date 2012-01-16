@@ -17,21 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v16
+package org.neo4j.cypher.internal.parser.v1_6
 
-import org.neo4j.cypher.commands.{Parameter, Literal, Expression}
+import org.neo4j.cypher.commands._
 
-trait SkipLimitClause extends Base {
-  def skip: Parser[Expression] = ignoreCase("skip") ~> numberOrParam ^^ (x => x)
+trait OrderByClause extends Base with ReturnItems  {
+  def desc:Parser[String] = ignoreCases("descending", "desc")
 
-  def limit: Parser[Expression] = ignoreCase("limit") ~> numberOrParam ^^ (x => x)
+  def asc:Parser[String] = ignoreCases("ascending", "asc")
 
-  private def numberOrParam: Parser[Expression] =
-    ((parameter | positiveNumber) ^^ {
-      case x: Parameter => x
-      case x: String => Literal(x.toInt)
-    }
-      | failure("expected positive integer or parameter"))
+  def ascOrDesc:Parser[Boolean] = opt(asc | desc) ^^ {
+    case None => true
+    case Some(txt) => txt.toLowerCase.startsWith("a")
+  }
+
+  def sortItem :Parser[SortItem] = (aggregate | returnItem) ~ ascOrDesc ^^ { case returnItem ~ reverse => SortItem(returnItem, reverse)  }
+
+  def order: Parser[Sort] = 
+    (ignoreCase("order by") ~> comaList(sortItem) ^^ { case items => Sort(items:_*) }
+      | ignoreCase("order") ~> failure("expected by"))
 }
 
 

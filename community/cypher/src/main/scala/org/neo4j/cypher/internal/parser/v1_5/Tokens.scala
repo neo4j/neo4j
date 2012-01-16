@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v15
+package org.neo4j.cypher.internal.parser.v1_5
 
 
 import scala.util.parsing.combinator._

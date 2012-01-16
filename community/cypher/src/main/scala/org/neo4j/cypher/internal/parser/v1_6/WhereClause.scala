@@ -17,13 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v15
+package org.neo4j.cypher.internal.parser.v1_6
 
 import org.neo4j.cypher.commands._
-import scala.util.parsing.combinator._
 
-trait WhereClause extends JavaTokenParsers with Tokens with Clauses {
-  def where: Parser[Predicate] = ignoreCase("where") ~> clause
+trait WhereClause extends Base with Predicates {
+  def where: Parser[Predicate] = ignoreCase("where") ~> predicate
 }
 
 
