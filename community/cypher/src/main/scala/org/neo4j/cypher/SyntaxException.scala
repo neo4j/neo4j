@@ -21,22 +21,32 @@ package org.neo4j.cypher
 
 import org.neo4j.helpers.ThisShouldNotHappenError
 
-class SyntaxException(message: String, val offset: Option[Int]=None) extends CypherException(message, null) {
-
-  override def toString(query: String) : String = offset match {
-    case Some(value) => getMessage + "\n" + findErrorLine(value, query.split('\n'))
+class SyntaxException(message: String, val query:String,  val offset: Option[Int]) extends CypherException(message, null) {
+  def this(message: String, query:String, offset: Int) = this(message,query,Some(offset)) 
+  def this(message:String) = this(message,"",None)
+  
+  override def getLocalizedMessage = offset match {
+    case Some(idx) =>getMessage + "\n" + findErrorLine(idx, query.split('\n').toList)
     case None => getMessage
-  }
+  }  
 
-  private def findErrorLine(offset: Int, message: Seq[String]): String =
+  private def findErrorLine(idx: Int, message: List[String]): String =
     message.toList match {
       case Nil => throw new ThisShouldNotHappenError("Andrés & Tobias", "message converted to empty list")
-      case head :: tail => {
-        if (head.size > offset) {
-          "\"" + head + "\"\n" + " " * offset + " ^"
-        } else {
-          findErrorLine(offset - head.size - 1, tail) //The extra minus one is there for the now missing \n
-        }
+
+      case List(x) => {
+        val i = if (x.size > idx)
+          idx
+        else
+          x.size
+
+        "\"" + x + "\"\n" + " " * i + " ^"
+      }
+
+      case head :: tail => if (head.size > idx) {
+        "\"" + head + "\"\n" + " " * idx + " ^"
+      } else {
+        findErrorLine(idx - head.size - 1, tail) //The extra minus one is there for the now missing \n
       }
     }
 }

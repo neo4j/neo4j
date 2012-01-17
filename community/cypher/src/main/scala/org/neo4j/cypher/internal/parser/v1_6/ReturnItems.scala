@@ -28,9 +28,9 @@ trait ReturnItems extends Base with Expressions {
 
   def returnExpressions: Parser[Expression] = nullableProperty | expression | entity
 
-  def functionNames = ignoreCases("count", "sum", "min", "max", "avg", "collect")
+  def aggregateFunctionNames = ignoreCases("count", "sum", "min", "max", "avg", "collect")
 
-  def aggregationFunction: Parser[AggregationItem] = functionNames ~ parens(opt(ignoreCase("distinct")) ~ returnExpressions) ^^ {
+  def aggregationFunction: Parser[AggregationItem] = aggregateFunctionNames ~ parens(opt(ignoreCase("distinct")) ~ returnExpressions) ^^ {
     case name ~ (distinct ~ inner) => {
       val aggregate = name match {
         case "count" => Count(inner)

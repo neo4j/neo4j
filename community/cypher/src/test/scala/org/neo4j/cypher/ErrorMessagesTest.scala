@@ -21,46 +21,52 @@ package org.neo4j.cypher
 
 import internal.StringExtras
 import org.scalatest.Assertions
+import org.junit.Assert._
 import org.junit.{Ignore, Test}
 
-@Ignore
 class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with StringExtras {
   @Test def noReturnColumns() {
     expectError(
       "start s = node(0) return",
-      "Expected comma separated list of returnable values")
+      "return column list expected")
   }
 
   @Test def badNodeIdentifier() {
     expectError(
       "START a = node(0) MATCH a-[WORKED_ON]-[30] return a",
-      "Expected node, got '[30]'")
+      "expected node identifier")
+  }
+
+  @Test def badStart() {
+    expectError(
+      "starta = node(0) return a",
+      "expected 'START'")
   }
 
   @Test def functionDoesNotExist() {
     expectSyntaxError(
       "START a = node(0) return dontDoIt(a)",
-      "No function named 'dontDoIt' exists.", 22)
+      "unknown function", 36)
   }
 
   @Test def noIndexName() {
     expectSyntaxError(
       "start a = node(name=\"sebastian\") match a-[:WORKED_ON]-b return b",
-      "Expected index name", 22)
+      "expected graph entity id", 15)
   }
 
   @Test def aggregateFunctionInWhere() {
     expectError(
       "START a = node(0) WHERE count(a) > 10 RETURN a",
-      "Aggregate functions (like 'count') are not valid in the WHERE clause.")
+      "aggregate functions can not be used in the WHERE clause")
   }
 
 
   @Test def twoIndexQueriesInSameStart() {
     expectSyntaxError(
       "start a = node:node_auto_index(name=\"sebastian\",name=\"magnus\") return a",
-      "')' expected but ',' found",
-      22)
+      "Unclosed parenthesis",
+      47)
   }
 
   @Test def semiColonInMiddleOfQuery() {
@@ -71,17 +77,18 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
     start n=node(2)
     match p-[IS_A]->n, p-[r:WORKED_ON]->u
     return p, sum(r.months)""",
-      "Return expected but ';' found",
-      42)
+      "expected return clause",
+      44)
   }
 
   @Test def extraGTSymbol() {
     expectSyntaxError(
       "start p=node(2) match p->[:IS_A]->dude return dude.name",
-      "'-' expected but '>' found",
-      22)
+      "`-' expected but `>' found",
+      24)
   }
 
+  @Ignore
   @Test def sumOnNonNumericalValue() {
     createNode("prop" -> "fish")
     expectError(
@@ -89,6 +96,7 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
       "sum(n.prop) - Sum can only handle numerical values. Node[77]{prop->'fish'}.")
   }
 
+  @Ignore
   @Test def missingComaBetweenColumns() {
     expectSyntaxError(
       "start p=node(2) return sum wo.months",
@@ -96,18 +104,33 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
       22)
   }
 
+  @Ignore
+  @Test def missingComaBetweenStartNodes() {
+    expectSyntaxError(
+      "start a=node(0) b=node(1) return a",
+      "Expected comma separated list of returnable values",
+      22)
+  }
+
+  @Test def tooManyLinksInShortestPath() {
+    expectSyntaxError(
+      "start a=node(2),b=node(1) match shortestPath(a-->x-->b)  return sum wo.months",
+      "expected single path segment",
+      54)
+  }
+
   @Test def noEqualsSignInStart() {
     expectSyntaxError(
       "start r:relationship:rels() return r",
-      "'=' expected but ':' found",
-      22)
+      "expected identifier assignment",
+      7)
   }
 
   @Test def relTypeInsteadOfRelIdInStart() {
     expectSyntaxError(
       "start r = relationship(:WORKED_ON) return r",
-      "Expected an indexquery, got ':WORKED_ON'",
-      22)
+      "expected graph entity id",
+      23)
   }
 
   @Test def nonExistingProperty() {
@@ -119,32 +142,37 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
   @Test def noNodeIdInStart() {
     expectSyntaxError(
       "start r = node() return r",
-      "Need at least one node id to bind to identifier 'r'",
-      22)
+      "expected graph entity id",
+      15)
   }
 
   @Test def startExpressionWithoutIdentifier() {
     expectSyntaxError(
       "start a = node:node_auto_index(name=\"magnus\"),node:node_auto_index(name=\"sebastian) return b,c",
-      "Need an identifier to bind to",
-      22)
+      "expected identifier assignment",
+      50)
   }
 
   @Test def noPredicatesInWhereClause() {
     expectSyntaxError(
       "START a=node(0) where return a",
-      "?",
-      22)
+      "reserved keyword",
+      29)
   }
 
   private def expectError[T <: CypherException](query: String, expectedError: String)(implicit manifest: Manifest[T]): T = {
     val error = intercept[T](engine.execute(query).toList)
-    assert(expectedError === error.getMessage)
+
+    val s = query + "\n" + error.toString()
+    assertEquals(s, expectedError, error.getMessage)
+
     error
   }
 
   private def expectSyntaxError(query: String, expectedError: String, expectedOffset: Int) {
-    assert(expectedOffset === expectError[SyntaxException](query, expectedError).offset)
+    val exception = expectError[SyntaxException](query, expectedError)
+    val s = query + "\n" + exception.toString()
+    assertEquals(s, Some(expectedOffset), exception.offset)
   }
 
 }

@@ -23,8 +23,23 @@ import org.neo4j.cypher.commands._
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.SyntaxException
 
-trait Predicates extends Base with Expressions {
-  def predicate: Parser[Predicate] = (isNull | isNotNull | orderedComparison | not | notEquals | equals | regexp | hasProperty | parens(predicate) | sequencePredicate | hasRelationshipTo | hasRelationship) * (
+trait Predicates extends Base with Expressions with ReturnItems {
+  def predicate: Parser[Predicate] = (
+    isNull 
+      | isNotNull 
+      | orderedComparison 
+      | not 
+      | notEquals 
+      | equals 
+      | regexp 
+      | hasProperty 
+      | parens(predicate) 
+      | sequencePredicate 
+      | hasRelationshipTo 
+      | hasRelationship
+      | aggregateFunctionNames ~> parens(expression) ~> failure("aggregate functions can not be used in the WHERE clause")
+    
+    ) * (
     ignoreCase("and") ^^^ {
       (a: Predicate, b: Predicate) => And(a, b)
     } |
@@ -37,11 +52,9 @@ trait Predicates extends Base with Expressions {
     case a ~ "=~" ~ b => RegularExpression(a, b)
   }
 
-  def hasProperty: Parser[Predicate] = property ^^ {
-    case prop => Has(prop.asInstanceOf[Property])
-  }
+  def hasProperty: Parser[Predicate] = property ^^ ( prop => Has(prop.asInstanceOf[Property]))
 
-  def sequencePredicate: Parser[Predicate] = (allInSeq | anyInSeq | noneInSeq | singleInSeq)
+  def sequencePredicate: Parser[Predicate] = allInSeq | anyInSeq | noneInSeq | singleInSeq
 
   def symbolIterablePredicate: Parser[(Expression, String, Predicate)] =
     (identity ~ ignoreCase("in") ~ expression ~ ignoreCase("where")  ~ predicate ^^ {    case symbol ~ in ~ iterable ~ where ~ klas => (iterable, symbol, klas)  }
@@ -56,52 +69,34 @@ trait Predicates extends Base with Expressions {
 
   def singleInSeq: Parser[Predicate] = ignoreCase("single") ~> parens(symbolIterablePredicate) ^^ (x => SingleInIterable(x._1, x._2, x._3))
 
-  def equals: Parser[Predicate] = expression ~ "=" ~ expression ^^ {
-    case l ~ "=" ~ r => Equals(l, r)
-  }
+  def equals: Parser[Predicate] = expression ~ "=" ~ expression ^^ { case l ~ "=" ~ r => Equals(l, r)  }
 
-  def notEquals: Parser[Predicate] = expression ~ ("!=" | "<>") ~ expression ^^ {
-    case l ~ wut ~ r => Not(Equals(l, r))
-  }
+  def notEquals: Parser[Predicate] = expression ~ ("!=" | "<>") ~ expression ^^ { case l ~ wut ~ r => Not(Equals(l, r)) }
 
   def orderedComparison: Parser[Predicate] = (lessThanOrEqual | greaterThanOrEqual | lessThan | greaterThan)
 
-  def lessThan: Parser[Predicate] = expression ~ "<" ~ expression ^^ {
-    case l ~ "<" ~ r => LessThan(l, r)
-  }
+  def lessThan: Parser[Predicate] = expression ~ "<" ~ expression ^^ { case l ~ "<" ~ r => LessThan(l, r) }
 
-  def greaterThan: Parser[Predicate] = expression ~ ">" ~ expression ^^ {
-    case l ~ ">" ~ r => GreaterThan(l, r)
-  }
+  def greaterThan: Parser[Predicate] = expression ~ ">" ~ expression ^^ { case l ~ ">" ~ r => GreaterThan(l, r) }
 
-  def lessThanOrEqual: Parser[Predicate] = expression ~ "<=" ~ expression ^^ {
-    case l ~ "<=" ~ r => LessThanOrEqual(l, r)
-  }
+  def lessThanOrEqual: Parser[Predicate] = expression ~ "<=" ~ expression ^^ { case l ~ "<=" ~ r => LessThanOrEqual(l, r) }
 
-  def greaterThanOrEqual: Parser[Predicate] = expression ~ ">=" ~ expression ^^ {
-    case l ~ ">=" ~ r => GreaterThanOrEqual(l, r)
-  }
+  def greaterThanOrEqual: Parser[Predicate] = expression ~ ">=" ~ expression ^^ { case l ~ ">=" ~ r => GreaterThanOrEqual(l, r) }
 
-  def not: Parser[Predicate] = ignoreCase("not") ~ "(" ~ predicate ~ ")" ^^ {
-    case not ~ "(" ~ inner ~ ")" => Not(inner)
-  }
+  def not: Parser[Predicate] = ignoreCase("not") ~ "(" ~ predicate ~ ")" ^^ { case not ~ "(" ~ inner ~ ")" => Not(inner) }
 
-  def expressionOrEntity = (expression | entity)
+  def expressionOrEntity = expression | entity
 
   def isNull: Parser[Predicate] = expressionOrEntity <~ ignoreCase("is null") ^^ (x => IsNull(x))
 
   def isNotNull: Parser[Predicate] = expressionOrEntity <~ ignoreCase("is not null") ^^ (x => Not(IsNull(x)))
 
-  def hasRelationshipTo: Parser[Predicate] = expressionOrEntity ~ relInfo ~ expressionOrEntity ^^ {
-    case a ~ rel ~ b => HasRelationshipTo(a, b, rel._1, rel._2)
-  }
+  def hasRelationshipTo: Parser[Predicate] = expressionOrEntity ~ relInfo ~ expressionOrEntity ^^ { case a ~ rel ~ b => HasRelationshipTo(a, b, rel._1, rel._2) }
 
-  def hasRelationship: Parser[Predicate] = expressionOrEntity ~ relInfo <~ "()" ^^ {
-    case a ~ rel  => HasRelationship(a, rel._1, rel._2)
-  }
+  def hasRelationship: Parser[Predicate] = expressionOrEntity ~ relInfo <~ "()" ^^ { case a ~ rel  => HasRelationship(a, rel._1, rel._2) }
 
   def relInfo: Parser[(Direction, Option[String])] = opt("<") ~ "-" ~ opt("[:" ~> identity <~ "]") ~ "-" ~ opt(">") ^^ {
-    case Some("<") ~ "-" ~ relType ~ "-" ~ Some(">") => throw new SyntaxException("Can't be connected both ways.")
+    case Some("<") ~ "-" ~ relType ~ "-" ~ Some(">") => throw new SyntaxException("Can't be connected both ways.", "query", 666)
     case Some("<") ~ "-" ~ relType ~ "-" ~ None => (Direction.INCOMING, relType)
     case None ~ "-" ~ relType ~ "-" ~ Some(">") => (Direction.OUTGOING, relType)
     case None ~ "-" ~ relType ~ "-" ~ None => (Direction.BOTH, relType)

@@ -24,7 +24,10 @@ import org.neo4j.cypher.commands._
 trait ReturnClause extends Base with ReturnItems {
   def column = aggregationColumn | expressionColumn
 
-  def returns = returnsClause | failure("expected return clause")
+  def returns = 
+    (returnsClause
+      | ignoreCase("return") ~> failure("return column list expected")
+      | failure("expected return clause"))
 
 
   def alias: Parser[Option[String]] = opt(ignoreCase("as") ~> identity)
@@ -58,11 +61,4 @@ trait ReturnClause extends Base with ReturnItems {
       (returnItems, aggregation)
     }
   }
-
-
 }
-
-
-
-
-

@@ -17,24 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.pipes.aggregation
+package org.neo4j.cypher
 
-import org.junit.Test
-import org.junit.Assert._
-import org.neo4j.cypher.commands.Entity
+class ExpectedNumericalValueException(message:String) extends CypherException(message,null) {
 
-class CollectFunctionTest {
-  @Test def singleOne() {
-    assertEquals(Seq(1), collectOn(1))
-  }
-
-  def collectOn(values: Any*): Any = {
-    val func = new CollectFunction(Entity("x"))
-
-    values.foreach(value => {
-      func(Map("x" -> value))
-    })
-
-    func.result
-  }
 }

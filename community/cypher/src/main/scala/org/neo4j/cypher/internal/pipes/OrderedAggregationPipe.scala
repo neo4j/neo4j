@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.pipes
 
+import aggregation.AggregationFunction
 import collection.Seq
 import org.neo4j.cypher.commands.{AggregationItem, ReturnItem}
 import java.lang.String
 import org.neo4j.cypher.symbols.{Identifier, SymbolTable}
-import org.neo4j.cypher.pipes.aggregation.AggregationFunction
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 // This class can be used to aggregate if the values sub graphs come in the order that they are keyed on

@@ -20,13 +20,22 @@
 package org.neo4j.cypher.internal.parser.v1_6
 
 import scala.util.parsing.combinator._
-import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.commands.{Literal, Parameter, Expression}
 
 abstract class Base extends JavaTokenParsers {
   val keywords = List("start", "where", "return", "limit", "skip", "order", "by")
 
-  def ignoreCase(str: String): Parser[String] = ("""(?i)\Q""" + str + """\E""").r ^^ (x => x.toLowerCase)
+  def ignoreCase(str: String): Parser[String] = ("""(?i)\b""" + str + """\b""").r ^^ (x => x.toLowerCase)
+
+  def onlyOne[T](msg: String, inner: Parser[List[T]]): Parser[T] = Parser {
+    in => inner.apply(in) match {
+      case x: NoSuccess => x
+      case Success(result, pos) => if (result.size > 1)
+        Failure(msg, pos)
+      else
+        Success(result.head, pos)
+    }
+  }
 
   def ignoreCases(strings: String*): Parser[String] = ignoreCases(strings.toList)
 
@@ -35,9 +44,9 @@ abstract class Base extends JavaTokenParsers {
     case first :: rest => ignoreCase(first) | ignoreCases(rest)
   }
 
-  def comaList[T](inner: Parser[T]): Parser[List[T]] = (
-    rep1sep(inner, ",")
-      | rep1sep(inner, ",") ~> "," ~> failure("trailing coma"))
+  def comaList[T](inner: Parser[T]): Parser[List[T]] =
+    rep1sep(inner, ",") |
+      rep1sep(inner, ",") ~> opt(",") ~> failure("trailing coma")
 
   def failIf(msg: String, inner: Parser[_]) = Parser {
     in => inner.apply(in) match {
@@ -48,15 +57,9 @@ abstract class Base extends JavaTokenParsers {
 
   def identity: Parser[String] = (nonKeywordIdentifier | escapedIdentity)
 
-  def nonKeywordIdentifier: Parser[String] = ident ^^ {
-    case str => {
-      if (keywords.contains(str.toLowerCase)) {
-        throw new SyntaxException(str + " is a reserved keyword and may not be used here.")
-      } else {
-        str
-      }
-    }
-  }
+  def nonKeywordIdentifier: Parser[String] =
+    not(ignoreCases(keywords: _*)) ~> ident |
+      ignoreCases(keywords: _*) ~> failure("reserved keyword")
 
   def lowerCaseIdent = ident ^^ (c => c.toLowerCase)
 
@@ -77,6 +80,7 @@ abstract class Base extends JavaTokenParsers {
   def stripQuotes(s: String) = s.substring(1, s.length - 1)
 
   def positiveNumber: Parser[String] = """\d+""".r
+  def anything: Parser[String] = """[.\s]""".r
 
   def string: Parser[String] = (stringLiteral | apostropheString) ^^ (str => stripQuotes(str))
 

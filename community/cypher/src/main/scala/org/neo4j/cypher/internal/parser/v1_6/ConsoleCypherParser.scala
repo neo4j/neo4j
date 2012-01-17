@@ -17,24 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.pipes.aggregation
+package org.neo4j.cypher.internal.parser.v1_6
 
-import org.junit.Test
-import org.junit.Assert._
-import org.neo4j.cypher.commands.Entity
+import org.neo4j.cypher.commands.Nullable
 
-class CollectFunctionTest {
-  @Test def singleOne() {
-    assertEquals(Seq(1), collectOn(1))
-  }
-
-  def collectOn(values: Any*): Any = {
-    val func = new CollectFunction(Entity("x"))
-
-    values.foreach(value => {
-      func(Map("x" -> value))
-    })
-
-    func.result
-  }
+class ConsoleCypherParser extends CypherParser {
+  override def createProperty(entity: String, propName: String) = Nullable(super.createProperty(entity, propName))
 }

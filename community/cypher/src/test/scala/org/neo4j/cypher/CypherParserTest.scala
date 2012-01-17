@@ -925,7 +925,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       Query.
         start(NodeById("a", 0), NodeById("b", 1)).
         matches(ShortestPath("p", "a", "b", None, Direction.OUTGOING, Some(1), false, true, None))
-        returns(ExpressionReturnItem(Entity("p"))))
+        returns (ExpressionReturnItem(Entity("p"))))
   }
 
   @Test def testShortestPathWithMaxDepth() {
@@ -1060,19 +1060,26 @@ class CypherParserTest extends JUnitSuite with Assertions {
   }
 
   @Test def shouldBeAbleToParseThingsLikeIts15AllOverAgain() {
-      testQuery(
-        "cypher 1.5 start a = node(1) where ANY(x in NODES(p) : x.name = 'Andres') return b",
-        Query.
-          start(NodeById("a", 1)).
-          where(AnyInIterable(NodesFunction(Entity("p")), "x", Equals(Property("x", "name"), Literal("Andres"))))
-          returns (ExpressionReturnItem(Entity("b"))))
-    }
+    testQuery(
+      "cypher 1.5 start a = node(1) where ANY(x in NODES(p) : x.name = 'Andres') return b",
+      Query.
+        start(NodeById("a", 1)).
+        where(AnyInIterable(NodesFunction(Entity("p")), "x", Equals(Property("x", "name"), Literal("Andres"))))
+        returns (ExpressionReturnItem(Entity("b"))))
+  }
 
   def testQuery(query: String, expectedQuery: Query) {
     val parser = new CypherParser()
 
-      val ast = parser.parse(query)
+    val ast = try {
+      parser.parse(query)
+    } catch {
+      case exception:SyntaxException => {
+        println(exception.toString(query))
+        throw exception
+      }
+    }
 
-      assert(expectedQuery === ast)
+    assert(expectedQuery === ast)
   }
 }

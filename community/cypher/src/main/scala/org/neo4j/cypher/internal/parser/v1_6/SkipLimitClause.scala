@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.parser.v1_6
 
-import org.neo4j.cypher.commands.{Parameter, Literal, Expression}
+import org.neo4j.cypher.commands.{Literal, Expression}
 
 trait SkipLimitClause extends Base {
   def skip: Parser[Expression] = ignoreCase("skip") ~> numberOrParam ^^ (x => x)
@@ -27,10 +27,8 @@ trait SkipLimitClause extends Base {
   def limit: Parser[Expression] = ignoreCase("limit") ~> numberOrParam ^^ (x => x)
 
   private def numberOrParam: Parser[Expression] =
-    ((parameter | positiveNumber) ^^ {
-      case x: Parameter => x
-      case x: String => Literal(x.toInt)
-    }
+    (positiveNumber ^^ (x => Literal(x.toInt))
+      | parameter ^^ (x => x)
       | failure("expected positive integer or parameter"))
 }
 

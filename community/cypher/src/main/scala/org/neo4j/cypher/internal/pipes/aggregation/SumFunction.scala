@@ -17,26 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes.aggregation
+package org.neo4j.cypher.internal.pipes.aggregation
 
-import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.commands.Expression
 
-class SumFunction(value:Expression) extends AggregationFunction with Plus {
-  private var soFar: Any = null
+class SumFunction(val value: Expression)
+  extends AggregationFunction
+  with Plus
+  with NumericExpressionOnly {
 
-  def result: Any = soFar match {
-    case null => 0
-    case _ => soFar
-  }
+  def name = "SUM"
+
+  var result: Any = 0
 
   def apply(data: Map[String, Any]) {
-    val number = value(data)
-
-    if(number != null && !number.isInstanceOf[Number]) {
-      throw new SyntaxException("Sum can only handle values of Number type, or null.")
-    }
-
-    soFar = plus(soFar, number)
+    actOnNumber(value(data), (number) => {
+      result = plus(result, number)
+    })
   }
 }

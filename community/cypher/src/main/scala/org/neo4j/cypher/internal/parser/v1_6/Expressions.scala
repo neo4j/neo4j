@@ -30,7 +30,7 @@ trait Expressions extends Base {
       | ignoreCase("false") ^^ (x => Literal(false))
       | extract
       | function
-      | identity~>parens(expression | entity)~>failure("Unknown function")
+      | identity~>parens(expression | entity)~>failure("unknown function")
       | coalesceFunc
       | nullableProperty
       | property
@@ -41,8 +41,10 @@ trait Expressions extends Base {
       | failure("illegal start of value") )
 
   def property: Parser[Expression] = identity ~ "." ~ identity ^^ {
-    case v ~ "." ~ p => Property(v, p)
+    case v ~ "." ~ p => createProperty(v, p)
   }
+  
+  def createProperty(entity:String, propName:String):Expression
 
   def nullableProperty: Parser[Expression] = property <~ "?" ^^ (p => Nullable(p))
 

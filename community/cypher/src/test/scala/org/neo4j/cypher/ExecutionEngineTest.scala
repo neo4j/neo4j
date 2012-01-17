@@ -648,7 +648,6 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
         Map("node.y" -> "b", "count(node.x)" -> 1)))
   }
 
-
   @Test def shouldSumNonNullValues() {
     val n1 = createNode(Map("y" -> "a", "x" -> 33))
     val n2 = createNode(Map("y" -> "a"))

@@ -22,8 +22,7 @@ package org.neo4j.cypher.internal.pipes.aggregation
 import org.neo4j.cypher.internal.Comparer
 import java.lang.Boolean
 import org.neo4j.cypher.commands.Expression
-import org.neo4j.cypher.pipes.aggregation.AggregationFunction
-import org.neo4j.cypher.SyntaxException
+  import org.neo4j.cypher.SyntaxException
 
 trait MinMax extends AggregationFunction with Comparer {
   def value: Expression

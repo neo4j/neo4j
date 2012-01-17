@@ -51,12 +51,7 @@ trait MatchClause extends Base {
 
   def pathSegment: Parser[List[Pattern]] = relatedTos | shortestPath
 
-  def singlePathSegment: Parser[Pattern] = relatedTos ^^ {
-    case p => if (p.length > 1)
-      throw new SyntaxException("Shortest path does not support having multiple path segments.")
-    else
-      p.head
-  }
+  def singlePathSegment: Parser[Pattern] = onlyOne("expected single path segment", relatedTos)
 
   def optionRelName(relName: String): Option[String] =
     if (relName.startsWith("  UNNAMED"))
@@ -76,7 +71,7 @@ trait MatchClause extends Base {
         case RelatedTo(left, right, relName, relType, direction, optional) => List(ShortestPath(namer.name(None), left, right, relType, direction, Some(1), optional, single, optionRelName(relName)))
         case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, direction, relIterable, optional) => {
           if (minHops.nonEmpty) {
-            throw new SyntaxException("Shortest path does not support a minimal length")
+            throw new SyntaxException("Shortest path does not support a minimal length", "quert", 666)
           }
           List(ShortestPath(namer.name(None), start, end, relType, direction, maxHops, optional, single, relIterable))
         }
@@ -127,13 +122,14 @@ trait MatchClause extends Base {
     }
   }
 
-  def node: Parser[Option[String]] = (
-    parensNode
-      | relatedNode)
+  def node: Parser[Option[String]] =
+    (parensNode
+      | relatedNode
+      | failure("expected node identifier"))
 
   def parensNode: Parser[Option[String]] = parens(opt(identity))
 
-  def relatedNode: Parser[Option[String]] = identity ^^ (x => Some(x)) | failure("Matching nodes without identifiers have to have parenthesis: ()")
+  def relatedNode: Parser[Option[String]] = identity ^^ (x => Some(x)) //| failure("Matching nodes without identifiers have to have parenthesis: ()")
 
   def relatedTail = opt("<") ~ "-" ~ opt("[" ~> relationshipInfo <~ "]") ~ "-" ~ opt(">") ~ node ^^ {
     case back ~ "-" ~ relInfo ~ "-" ~ forward ~ end => relInfo match {

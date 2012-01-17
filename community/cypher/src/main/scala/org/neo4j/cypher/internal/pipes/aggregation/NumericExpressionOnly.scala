@@ -17,18 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v1_6
+package org.neo4j.cypher.internal.pipes.aggregation
 
-import org.neo4j.cypher.commands._
-import org.neo4j.cypher.CypherParser
+import org.neo4j.cypher.commands.Expression
+import org.neo4j.cypher.ExpectedNumericalValueException
 
-trait ConsoleMode extends ReturnItems {
-  override def returnExpressions: Parser[Expression] = (nullableProperty | expression | entity) ^^ {
-    case Property(v,p) => Nullable(Property(v,p))
-    case x => x
+trait NumericExpressionOnly {
+  def name: String
+
+  def value: Expression
+
+  def actOnNumber[U](obj: Any, f: Number => U) {
+    obj match {
+      case null =>
+      case number: Number => f(number)
+      case _ => throw new ExpectedNumericalValueException("%s(%s) can only handle numerical values, or null.".format(name, value.identifier.name))
+    }
   }
-}
-
-class ConsoleCypherParser extends CypherParser with ConsoleMode {
-
 }

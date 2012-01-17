@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.commands
 
-import org.neo4j.cypher.pipes.aggregation._
 import org.neo4j.cypher.internal.pipes.Dependant
 import collection.Seq
 import org.neo4j.cypher.symbols.{AnyType, IntegerType, Identifier}
+import org.neo4j.cypher.internal.pipes.aggregation._
 
 abstract sealed class ReturnItem(val identifier: Identifier) extends (Map[String, Any] => Any) with Dependant {
   def columnName = identifier.name

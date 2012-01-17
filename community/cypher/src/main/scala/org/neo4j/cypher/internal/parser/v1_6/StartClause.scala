@@ -22,17 +22,17 @@ package org.neo4j.cypher.internal.parser.v1_6
 import org.neo4j.cypher.commands._
 
 trait StartClause extends Base {
-  def start: Parser[Start] = ignoreCase("start") ~> comaList(startBit) ^^ (x => Start(x: _*)) | failure("Missing START clause")
+  def start: Parser[Start] = ignoreCase("start") ~> comaList(startBit) ^^ (x => Start(x: _*)) | failure("expected 'START'")
 
   def startBit =
-    (identity ~ "=" ~ lookup ^^ {    case id ~ "=" ~ l => l(id)  }
-      | identity ~> failure("Need identifier assignment") )
+    (identity ~ "=" ~ lookup ^^ { case id ~ "=" ~ l => l(id)  }
+      | identity ~> failure("expected identifier assignment") )
 
   def nodes = ignoreCase("node")
 
   def rels = (ignoreCase("relationship") | ignoreCase("rel")) ^^ (x => "rel")
 
-  def typ = nodes | rels | failure("Need either node or relationship here")
+  def typ = nodes | rels | failure("expected either node or relationship here")
 
   def lookup: Parser[(String) => StartItem] = typ ~ (parens(parameter) | ids | idxLookup | idxString) ^^ {
     case "node" ~ l => l match {
@@ -48,7 +48,11 @@ trait StartClause extends Base {
     }
   }
 
-  def ids = parens(comaList(wholeNumber)) ^^ (x => Literal(x.map(_.toLong)))
+  def ids = 
+    (parens(comaList(wholeNumber)) ^^ (x => Literal(x.map(_.toLong)))
+      | parens(comaList(wholeNumber) ~ opt(",")) ~> failure("trailing coma")
+      | "("~>failure("expected graph entity id"))
+      
 
   def idxString: Parser[(String, Expression)] = ":" ~> identity ~ parens(parameter|stringLit) ^^ {
     case id ~ valu => (id, valu)
@@ -60,12 +64,11 @@ trait StartClause extends Base {
 
   def idxQueries: Parser[(Expression, Expression)] = idxQuery
 
-  def indexValue = parameter | stringLit | failure("String literal or parameter expected")
-  def idxQuery: Parser[(Expression, Expression)] = (
-    (id | parameter) ~ "=" ~ indexValue ^^ {    case k ~ "=" ~ v => (k, v)  }
-    //| (id | parameter) ~> "=" ~> failure("Need index value")
-    | "=" ~> failure("Need index key")
-    )
+  def indexValue = parameter | stringLit | failure("string literal or parameter expected")
+
+  def idxQuery: Parser[(Expression, Expression)] =
+    ((id | parameter) ~ "=" ~ indexValue ^^ {    case k ~ "=" ~ v => (k, v)  }
+    | "=" ~> failure("Need index key")    )
 
   def id: Parser[Expression] = identity ^^ (x => Literal(x))
 

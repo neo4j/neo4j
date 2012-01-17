@@ -17,25 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.pipes.aggregation
+package org.neo4j.cypher.internal.pipes.aggregation
 
-import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.commands.Expression
 
-class AvgFunction(value: Expression) extends AggregationFunction with Plus {
+class AvgFunction(val value: Expression)
+  extends AggregationFunction
+  with Plus
+  with NumericExpressionOnly {
+
+  def name = "AVG"
+
   private var count: Int = 0
   private var sofar: Any = 0
 
   def result: Any = divide(sofar, count)
 
   def apply(data: Map[String, Any]) {
-    value(data) match {
-      case null =>
-      case number: Number => {
-        count = count + 1
-        sofar = plus(sofar, number)
-      }
-      case _ => throw new SyntaxException("AVG can only handle values of Number type, or null.")
-    }
+    actOnNumber(value(data), (number) => {
+      count = count + 1
+      sofar = plus(sofar, number)
+    })
   }
 }
