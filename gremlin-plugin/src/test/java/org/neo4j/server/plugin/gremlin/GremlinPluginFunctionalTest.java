@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -64,6 +64,19 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
                 "script=" + URLEncoder.encode( script, "UTF-8" ) ).payloadType(
                 MediaType.APPLICATION_FORM_URLENCODED_TYPE ).post( ENDPOINT ).entity();
         assertTrue( response.contains( "you" ) );
+    }
+    
+    @Test
+    @Documented
+    @Graph( value = { "I know you" }, autoIndexNodes = true )
+    public void testIndexIteration() throws UnsupportedEncodingException
+    {
+        data.get();
+        String script = "g.idx('node_auto_index')[[name:'I']]";
+        gen().expectedStatus( Status.OK.getStatusCode() ).description(
+                formatGroovy( script ) );
+        String response = doRestCall( script, Status.OK);
+        assertTrue( response.contains( "I" ) );
     }
 
     /**
