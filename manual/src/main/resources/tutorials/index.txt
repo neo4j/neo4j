@@ -12,6 +12,10 @@ It takes you from Hello World to advanced usage of graphs.
 
 include::{importdir}/neo4j-examples-docs-jar/dev/index.txt[]
 
+:leveloffset: 2
+
+include::{importdir}/neo4j-cypher-docs-jar/dev/java/index.txt[]
+
 :leveloffset: 1
 
 include::{importdir}/neo4j-python-embedded-docs-jar/dev/tutorial/index.txt[]
