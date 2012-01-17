@@ -27,7 +27,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
-import org.neo4j.cypher.SyntaxException;
 import org.neo4j.cypher.javacompat.CypherParser;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
@@ -72,7 +71,7 @@ public class CypherService {
             ExecutionResult result = executionEngine.execute( parser.parse( query ), params );
     
             return output.ok(new CypherResultRepresentation( result ));
-        } catch(SyntaxException e) {
+        } catch(Exception e) {
             return output.badRequest(e);
         }
     }
