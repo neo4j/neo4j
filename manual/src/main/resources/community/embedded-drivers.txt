@@ -1,0 +1,9 @@
+
+.Neo4j embedded drivers contributed by the community.
+[options="header"]
+|===============================================================================
+| name | language / framework | URL
+| Neo4j.rb | JRuby | https://github.com/andreasronge/neo4j
+|===============================================================================
+
+
