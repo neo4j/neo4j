@@ -46,6 +46,5 @@ Auto-deploy changes to webadmin files:
 
     mvn compile -Dbrew.watch=true -Pneodev
 
-Then go to [http://localhost:7474/webadmin/dev.html](http://localhost:7474/webadmin/dev.html)
+Then go to [http://localhost:7474/webadmin/](http://localhost:7474/webadmin/)
 
-The `dev.html` file loads each js file individually and unminified, which makes debugging a lot easier. 
