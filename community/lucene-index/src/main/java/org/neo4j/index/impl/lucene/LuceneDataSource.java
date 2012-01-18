@@ -356,10 +356,11 @@ public class LuceneDataSource extends LogBackedXaDataSource
             return createTransaction( identifier, this.getLogicalLog() );
         }
 
+        @SuppressWarnings( "unchecked" )
         @Override
         public void flushAll()
         {
-            for ( Map.Entry<IndexIdentifier, Pair<IndexWriter, AtomicBoolean>> entry : indexWriters.entrySet() )
+            for ( Map.Entry<IndexIdentifier, Pair<IndexWriter, AtomicBoolean>> entry : getAllIndexWriters() )
             {
                 try
                 {
@@ -394,6 +395,12 @@ public class LuceneDataSource extends LogBackedXaDataSource
     void getReadLock()
     {
         lock.readLock().lock();
+    }
+
+    @SuppressWarnings( "rawtypes" )
+    private synchronized Map.Entry[] getAllIndexWriters()
+    {
+        return indexWriters.entrySet().toArray( new Map.Entry[indexWriters.size()] );
     }
 
     void releaseReadLock()
@@ -750,13 +757,14 @@ public class LuceneDataSource extends LogBackedXaDataSource
         return this.xaContainer;
     }
 
+    @SuppressWarnings( "unchecked" )
     @Override
     public ClosableIterable<File> listStoreFiles( boolean includeLogicalLogs ) throws IOException
     {   // Never include logical logs since they are of little importance
         final Collection<File> files = new ArrayList<File>();
         final Collection<SnapshotDeletionPolicy> snapshots = new ArrayList<SnapshotDeletionPolicy>();
         makeSureAllIndexesAreInstantiated();
-        for ( Map.Entry<IndexIdentifier, Pair<IndexWriter, AtomicBoolean>> writer : indexWriters.entrySet() )
+        for ( Map.Entry<IndexIdentifier, Pair<IndexWriter, AtomicBoolean>> writer : getAllIndexWriters() )
         {
             SnapshotDeletionPolicy deletionPolicy = (SnapshotDeletionPolicy)
                     writer.getValue().first().getConfig().getIndexDeletionPolicy();
