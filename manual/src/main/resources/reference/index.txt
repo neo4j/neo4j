@@ -3,8 +3,8 @@ Reference
 =========
 [partintro]
 --
-The reference part is the authoritative source for details on Neo4j configuration and usage.
-It covers details on installation, capabilities, queries and high availability among other topics. 
+The reference part is the authoritative source for details on Neo4j usage.
+It covers details on capabilities, transactions, indexing and queries among other topics.
 --
 
 :leveloffset: 1
@@ -42,10 +42,6 @@ include::{importdir}/neo4j-cypher-plugin-docs-jar/dev/cypher-plugin-api/index.tx
 :leveloffset: 2
 
 include::{importdir}/neo4j-gremlin-plugin-docs-jar/dev/rest-api/index.txt[]
-
-:leveloffset: 1
-
-include::{importdir}/neo4j-ha-docs-jar/dev/index.txt[]
 
 :leveloffset: 1
 
