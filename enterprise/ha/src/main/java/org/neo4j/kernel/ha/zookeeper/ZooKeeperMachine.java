@@ -17,26 +17,28 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha;
+package org.neo4j.kernel.ha.zookeeper;
 
-import org.neo4j.com.Client.ConnectionLostHandler;
-import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
 
-public interface ResponseReceiver extends ConnectionLostHandler
+public class ZooKeeperMachine extends Machine
 {
-    /**
-     * Returns a {@link SlaveContext} instance that has {@code eventIdentifier}
-     * as the event identifier.
-     *
-     * @param eventIdentifier The event identifier of the returned slave context
-     * @return The slave context
-     */
-    SlaveContext getSlaveContext( int eventIdentifier );
+    public static final ZooKeeperMachine NO_MACHINE = new ZooKeeperMachine( -1,
+            -1, 1, SlaveContext.EMPTY.machineId(), null, "" );
 
-    <T> T receive( Response<T> response );
+    private final String zkPath;
 
-    void newMaster( Exception cause );
+    public ZooKeeperMachine( int machineId, int sequenceId,
+            long lastCommittedTxId, int masterForCommittedTxId, String server,
+            String zkPath )
+    {
+        super( machineId, sequenceId, lastCommittedTxId,
+                masterForCommittedTxId, server );
+        this.zkPath = zkPath;
+    }
 
-    void reconnect( Exception cause );
+    public String getZooKeeperPath()
+    {
+        return zkPath;
+    }
 }

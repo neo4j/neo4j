@@ -44,7 +44,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
         this.storeIdToExpect = storeIdToExpect;
         this.internalProtocolVersion = internalProtocolVersion;
     }
-    
+
     @Override
     protected byte getInternalProtocolVersion()
     {
@@ -86,7 +86,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
             }
         } );
     }
-    
+
     @Override
     public Response<Integer> throwException( final String messageInException )
     {
@@ -103,10 +103,10 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
                     throws IOException
             {
                 return buffer.readInt();
-            }
+                    }
         } );
     }
-    
+
     @Override
     protected StoreId getMyStoreId()
     {
