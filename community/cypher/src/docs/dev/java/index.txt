@@ -12,6 +12,8 @@ tag=execute
 classifier=test-sources
 ----
 
+NOTE: The classes used here are from the +org.neo4j.cypher.javacompat+ package, see link to the Java API below.
+
 Which will output:
 
 include::java-cypher-queries-result.txt[]
