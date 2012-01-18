@@ -120,13 +120,13 @@ public abstract class Client<M> implements ChannelPipelineFactory
                 ComException exception = new ComException( msg );
                 try
                 {
-                    Thread.sleep( 5000 );
+                    Thread.sleep( 1000 );
                 }
                 catch ( InterruptedException e )
                 {
                     msgLog.logMessage( "Interrupted", e );
                 }
-                connectionLostHandler.handle( exception );
+                // connectionLostHandler.handle( exception );
                 throw exception;
             }
 

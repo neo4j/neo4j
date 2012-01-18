@@ -92,7 +92,7 @@ public class HAGraphDb extends AbstractGraphDatabase
     private volatile EmbeddedGraphDbImpl localGraph;
     private final int machineId;
     private volatile MasterServer masterServer;
-    private ScheduledExecutorService updatePuller;
+    private volatile ScheduledExecutorService updatePuller;
     private volatile long updateTime = 0;
     private volatile Throwable causeOfShutdown;
     private final long startupTime;
@@ -374,7 +374,7 @@ public class HAGraphDb extends AbstractGraphDatabase
         }
         catch ( ComException e )
         {
-            newMaster( e );
+            // newMaster( e );
             throw e;
         }
     }
@@ -474,18 +474,17 @@ public class HAGraphDb extends AbstractGraphDatabase
 
                 // Assign the db last
                 this.localGraph = newDb;
-
-                /*
-                 * We have to instantiate the update puller after the local db has been assigned.
-                 * Another way to do it is to wait on a LocalGraphAvailableCondition. I chose this,
-                 * it is simpler to follow, provided you know what a volatile does.
-                 */
-                if ( masterServer == null )
-                {
-                    // The above being true means we are a slave
-                    instantiateAutoUpdatePullerIfConfigSaysSo();
-                    pullUpdates = true;
-                }
+            }
+            /*
+             * We have to instantiate the update puller after the local db has been assigned.
+             * Another way to do it is to wait on a LocalGraphAvailableCondition. I chose this,
+             * it is simpler to follow, provided you know what a volatile does.
+             */
+            if ( masterServer == null )
+            {
+                // The above being true means we are a slave
+                instantiateAutoUpdatePullerIfConfigSaysSo();
+                pullUpdates = true;
             }
         }
         catch ( Throwable t )
@@ -656,7 +655,7 @@ public class HAGraphDb extends AbstractGraphDatabase
     private void instantiateAutoUpdatePullerIfConfigSaysSo()
     {
         long pullInterval = HaConfig.getPullIntervalFromConfig( config );
-        if ( pullInterval > 0 )
+        if ( pullInterval > 0 && updatePuller == null )
         {
             updatePuller = new ScheduledThreadPoolExecutor( 1 );
             updatePuller.scheduleWithFixedDelay( new Runnable()
@@ -664,12 +663,13 @@ public class HAGraphDb extends AbstractGraphDatabase
                 @Override
                 public void run()
                 {
+                    if ( !pullUpdates )
+                    {
+                        return;
+                    }
                     try
                     {
-                        if ( pullUpdates )
-                        {
-                            pullUpdates();
-                        }
+                        pullUpdates();
                     }
                     catch ( Exception e )
                     {
@@ -761,6 +761,8 @@ public class HAGraphDb extends AbstractGraphDatabase
             }
             msgLog.logMessage( "Internal shutdown updatePuller DONE",
                     true );
+            // Do not skip this, update puller == null means it has been
+            // shutdown
             this.updatePuller = null;
         }
         if ( this.masterServer != null )
