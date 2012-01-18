@@ -213,7 +213,7 @@ public class HAGraphDb extends AbstractGraphDatabase
 
     private synchronized void startUp( boolean allowInit )
     {
-        getMessageLog().logMessage( "Starting up highly available graph database '" + getStoreDir() + "'" );
+        msgLog.logMessage( "Starting up highly available graph database '" + storeDir + "'" );
         StoreId storeId = null;
         if ( !new File( storeDir, NeoStore.DEFAULT_NAME ).exists() )
         {   // Try for
