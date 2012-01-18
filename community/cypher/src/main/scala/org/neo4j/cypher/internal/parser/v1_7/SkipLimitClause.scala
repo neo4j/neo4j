@@ -17,32 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.internal.parser.v1_7
 
-import org.neo4j.cypher.commands._
+import org.neo4j.cypher.commands.{Literal, Expression}
 
-class CypherParser(version: String) {
-  def this() = this ("1.7")
+trait SkipLimitClause extends Base {
+  def skip: Parser[Expression] = ignoreCase("skip") ~> numberOrParam ^^ (x => x)
 
-  val hasVersionDefined = """(?si)^\s*cypher\s*([^\s]+)\s*(.*)""".r
+  def limit: Parser[Expression] = ignoreCase("limit") ~> numberOrParam ^^ (x => x)
 
-  val v15 = new internal.parser.v1_5.CypherParserImpl
-  val v16 = new internal.parser.v1_6.CypherParserImpl
-  val v17 = new internal.parser.v1_7.CypherParserImpl
-
-  @throws(classOf[SyntaxException])
-  def parse(queryText: String): Query = {
-
-    val (v, q) = queryText match {
-      case hasVersionDefined(v1, q1) => (v1, q1)
-      case _ => (version, queryText)
-    }
-
-    v match {
-      case "1.5" => v15.parse(q)
-      case "1.6" => v16.parse(q)
-      case _ => throw new SyntaxException("Versions supported are 1.5, 1.6 and 1.7")
-    }
-
-  }
+  private def numberOrParam: Parser[Expression] =
+    (positiveNumber ^^ (x => Literal(x.toInt))
+      | parameter ^^ (x => x)
+      | failure("expected positive integer or parameter"))
 }
+
+
+
+
+
