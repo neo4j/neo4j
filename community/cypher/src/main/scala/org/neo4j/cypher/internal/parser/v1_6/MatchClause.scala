@@ -26,7 +26,11 @@ import org.neo4j.graphdb.Direction
 trait MatchClause extends Base {
   val namer = new NodeNamer
 
-  def matching: Parser[(Match, NamedPaths)] = ignoreCase("match") ~> comaList(path) ^^ {
+  def matching: Parser[(Match, NamedPaths)] = 
+    correctMatch |
+  ignoreCase("match") ~> failure("invalid pattern")
+
+  def correctMatch = ignoreCase("match") ~> comaList(path) ^^ {
     case matching => {
       val unamedPaths: List[Pattern] = matching.filter(_.isInstanceOf[List[Pattern]]).map(_.asInstanceOf[List[Pattern]]).flatten ++ matching.filter(_.isInstanceOf[Pattern]).map(_.asInstanceOf[Pattern])
       val namedPaths: List[NamedPath] = matching.filter(_.isInstanceOf[NamedPath]).map(_.asInstanceOf[NamedPath])
@@ -129,9 +133,16 @@ trait MatchClause extends Base {
 
   def parensNode: Parser[Option[String]] = parens(opt(identity))
 
-  def relatedNode: Parser[Option[String]] = identity ^^ (x => Some(x)) //| failure("Matching nodes without identifiers have to have parenthesis: ()")
+  def relatedNode: Parser[Option[String]] = identity ^^ (x => Some(x)) 
 
-  def relatedTail = opt("<") ~ "-" ~ opt("[" ~> relationshipInfo <~ "]") ~ "-" ~ opt(">") ~ node ^^ {
+  def relatedTail = workingLink |  
+    opt("<") ~> "-" ~> opt("[" ~> relationshipInfo ~> "]") ~> failure("expected -") |
+    opt("<") ~ "-" ~ "[" ~> relationshipInfo ~> failure("unclosed bracket") |
+    opt("<") ~ "-" ~ "[" ~> failure("expected relationship information") |
+    opt("<") ~ "-" ~> failure("expected [ or -") |
+    opt("<") ~> failure("w7")
+
+  def workingLink = opt("<") ~ "-" ~ opt("[" ~> relationshipInfo <~ "]") ~ "-" ~ opt(">") ~ node ^^ {
     case back ~ "-" ~ relInfo ~ "-" ~ forward ~ end => relInfo match {
       case Some((relName, relType, varLength, optional)) => (back, relName, relType, forward, end, varLength, optional)
       case None => (back, None, None, forward, end, None, false)

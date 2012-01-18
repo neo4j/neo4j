@@ -84,8 +84,56 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
   @Test def extraGTSymbol() {
     expectSyntaxError(
       "start p=node(2) match p->[:IS_A]->dude return dude.name",
-      "`-' expected but `>' found",
-      24)
+      "expected [ or -", 24)
+  }
+
+  @Test def badMatch() {
+    expectSyntaxError(
+      "start p=node(2) match p-[:IS_A]-!dude return dude.name",
+      "expected node identifier", 32)
+  }
+
+  @Test def badMatch2() {
+    expectSyntaxError(
+      "start p=node(2) match p-[:IS_A]>dude return dude.name",
+      "expected -", 31)
+  }
+
+  @Test def badMatch3() {
+    expectSyntaxError(
+      "start p=node(2) match p-[:IS_A->dude return dude.name",
+      "unclosed bracket", 30)
+  }
+
+  @Test def badMatch4() {
+    expectSyntaxError(
+      "start p=node(2) match p-[!]->dude return dude.name",
+      "expected relationship information", 25)
+  }
+
+  @Ignore
+  @Test def badMatch5() {
+    expectSyntaxError(
+      "start p=node(2) match p[:likes]->dude return dude.name",
+      "`-' expected but `>' found", 24)
+  }
+
+  @Test def badMatch6() {
+    expectSyntaxError(
+      "start p=node(2) match p-(:likes)->dude return dude.name",
+      "expected [ or -", 24)
+  }
+
+  @Test def badMatch7() {
+    expectSyntaxError(
+      "start p=node(2) match p->dude return dude.name",
+      "expected [ or -", 24)
+  }
+
+  @Test def badMatch8() {
+    expectSyntaxError(
+      "start p=node(2) match p->dude return dude.name",
+      "expected [ or -", 24)
   }
 
   @Ignore

@@ -31,7 +31,7 @@ abstract class Base extends JavaTokenParsers {
     in => inner.apply(in) match {
       case x: NoSuccess => x
       case Success(result, pos) => if (result.size > 1)
-        Failure(msg, pos)
+        Failure("INNER" + msg, pos)
       else
         Success(result.head, pos)
     }
@@ -47,13 +47,6 @@ abstract class Base extends JavaTokenParsers {
   def comaList[T](inner: Parser[T]): Parser[List[T]] =
     rep1sep(inner, ",") |
       rep1sep(inner, ",") ~> opt(",") ~> failure("trailing coma")
-
-  def failIf(msg: String, inner: Parser[_]) = Parser {
-    in => inner.apply(in) match {
-      case fail: NoSuccess => fail
-      case Success(p, q) => Failure(msg, in)
-    }
-  }
 
   def identity: Parser[String] = (nonKeywordIdentifier | escapedIdentity)
 
@@ -90,22 +83,5 @@ abstract class Base extends JavaTokenParsers {
 
   def parameter: Parser[Expression] = curly(identity | wholeNumber) ^^ (x => Parameter(x))
 
-  override def failure(msg: String): Parser[Nothing] = "" ~> super.failure(msg)
-
+  override def failure(msg: String): Parser[Nothing] = "" ~> super.failure("INNER" + msg)
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
