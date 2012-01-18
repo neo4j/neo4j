@@ -26,18 +26,26 @@ import java.lang.Error
 import java.util.{Map => JavaMap}
 import scala.deprecated
 import org.neo4j.kernel.AbstractGraphDatabase
+import org.neo4j.graphdb.GraphDatabaseService
 
-class ExecutionEngine(graph: AbstractGraphDatabase) {
+class ExecutionEngine(graph: GraphDatabaseService) {
   checkScalaVersion()
 
   require(graph != null, "Can't work with a null graph database")
 
   val parser = createCorrectParser()
 
-  def createCorrectParser() = graph.getConfig.getParams.asScala.get("cypher_parser_version") match {
-    case None => new CypherParser()
-    case Some(v) => new CypherParser(v.toString)
+  def createCorrectParser() = if (graph.isInstanceOf[AbstractGraphDatabase]) {
+    val database = graph.asInstanceOf[AbstractGraphDatabase]
+    database.getConfig.getParams.asScala.get("cypher_parser_version") match {
+      case None => new CypherParser()
+      case Some(v) => new CypherParser(v.toString)
+    }
   }
+  else {
+    new CypherParser()
+  }
+
 
   @throws(classOf[SyntaxException])
   def execute(query: String): ExecutionResult = execute(query, Map[String, Any]())

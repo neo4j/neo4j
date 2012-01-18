@@ -37,7 +37,7 @@ public class ExecutionEngine
      * Creates an execution engine around the give graph database
      * @param database The database to wrap
      */
-    public ExecutionEngine( AbstractGraphDatabase database )
+    public ExecutionEngine( GraphDatabaseService database )
     {
         inner = new org.neo4j.cypher.ExecutionEngine( database );
     }
