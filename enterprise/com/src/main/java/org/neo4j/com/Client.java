@@ -303,7 +303,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
     {
         channelPool.close( true );
         executor.shutdownNow();
-        msgLog.logMessage( getClass().getSimpleName() + " shutdown", true );
+        msgLog.logMessage( toString() + " shutdown", true );
     }
 
     @Override
@@ -311,7 +311,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
     {
         return getClass().getSimpleName() + "[" + address + "]";
     }
-    
+
     protected static TransactionStream readTransactionStreams( final ChannelBuffer buffer )
     {
         final String[] datasources = readTransactionStreamHeader( buffer );
