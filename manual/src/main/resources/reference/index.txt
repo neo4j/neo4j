@@ -9,14 +9,6 @@ It covers details on installation, capabilities, queries and high availability a
 
 :leveloffset: 1
 
-include::installation-deployment/index.txt[]
-
-:leveloffset: 1
-
-include::{importdir}/neo4j-kernel-docs-jar/ops/index.txt[]
-
-:leveloffset: 1
-
 include::capabilities/cap-details.txt[]
 
 :leveloffset: 1
@@ -29,11 +21,11 @@ include::{importdir}/neo4j-lucene-index-docs-jar/dev/index.txt[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-graph-algo-docs-jar/dev/index.txt[]
+include::{importdir}/neo4j-cypher-docs-jar/dev/index.txt[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-cypher-docs-jar/dev/index.txt[]
+include::{importdir}/neo4j-graph-algo-docs-jar/dev/index.txt[]
 
 :leveloffset: 1
 
