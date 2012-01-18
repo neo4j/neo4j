@@ -292,6 +292,12 @@ public abstract class Client<M> implements ChannelPipelineFactory
         msgLog.logMessage( getClass().getSimpleName() + " shutdown", true );
     }
 
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName() + "[" + address + "]";
+    }
+    
     protected static TransactionStream readTransactionStreams( final ChannelBuffer buffer )
     {
         final String[] datasources = readTransactionStreamHeader( buffer );

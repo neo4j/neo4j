@@ -769,4 +769,12 @@ public class ZooClient extends AbstractZooKeeperManager
     {
         return storeId;
     }
+    
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName() + "[serverId:" + machineId + ", seq:" + sequenceNr +
+                ", lastCommittedTx:" + committedTx + " w/ master:" + masterForCommittedTx +
+                ", session:" + sessionId + "]";
+    }
 }
