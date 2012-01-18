@@ -1,13 +1,10 @@
-[[language-drivers]]
-Additional Languages
-====================
+[[languages]]
+Languages
+=========
 
-The table below lists community contributed language drivers for using Neo4j in embedded mode.
+The table below lists community contributed language- and framework bindings for using Neo4j in embedded mode.
 
 include::{docdir}/community/embedded-drivers.txt[]
 
-:leveloffset: 2
-
-include::{importdir}/neo4j-python-embedded-docs-jar/dev/tutorial/index.txt[]
-
+For information on REST clients for different languages, see <<tutorials-rest>>.
 

@@ -38,9 +38,10 @@ include::{importdir}/neo4j-examples-docs-jar/dev/domain-modeling.txt[]
 
 :leveloffset: 1
 
+include::languages.txt[]
+
+:leveloffset: 1
+
 include::{importdir}/neo4j-python-embedded-docs-jar/dev/tutorial/index.txt[]
-
-
-//include::languages.txt[]
 
 
