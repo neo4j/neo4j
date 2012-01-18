@@ -27,6 +27,7 @@ import org.junit.matchers.JUnitMatchers._
 import org.neo4j.graphdb.{Path, Relationship, Direction, Node}
 import org.junit.{Ignore, Test}
 import org.neo4j.index.lucene.ValueContext
+import org.neo4j.test.ImpermanentGraphDatabase
 
 class ExecutionEngineTest extends ExecutionEngineHelper {
 
@@ -1609,5 +1610,20 @@ RETURN x0.name?
 
     val result = parseAndExecute("start a=node(0,1),b=node(1,0) where a != b return a,b")
     assert(List(Map("a" -> refNode, "b" -> a), Map("b" -> refNode, "a" -> a)) === result.toList)
+  }
+
+  @Test def createEngineWithSpecifiedParserVersion() {
+    val db = new ImpermanentGraphDatabase(Map[String, String]("cypher_parser_version" -> "1.5").asJava)
+    val engine = new ExecutionEngine(db)
+
+    try {
+      // This syntax is valid in 1.6, but should give an exception in 1.5
+      engine.execute("start n=node(0) where all(x in n.prop where x = 'monkey') return n")
+    } catch {
+      case x:SyntaxException =>
+      case _ => fail("expected exception")
+    } finally {
+      db.shutdown()
+    }
   }
 }

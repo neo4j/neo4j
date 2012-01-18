@@ -21,16 +21,19 @@ package org.neo4j.cypher.internal.parser.v1_5
 
 
 import org.neo4j.cypher._
+import internal.parser.ActualParser
 import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
 
-class CypherParser extends JavaTokenParsers
+class CypherParserImpl extends JavaTokenParsers
 with StartClause
 with MatchClause
 with WhereClause
 with ReturnClause
 with SkipLimitClause
-with OrderByClause {
+with OrderByClause
+with ActualParser
+{
 
   def query: Parser[Query] = start ~ opt(matching) ~ opt(where) ~ returns ~ opt(order) ~ opt(skip) ~ opt(limit) ^^ {
 

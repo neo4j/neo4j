@@ -21,23 +21,27 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.commands._
 
-class CypherParser {
+class CypherParser(version: String) {
+  def this() = this ("1.6")
 
-  val v15 = new internal.parser.v1_5.CypherParser
-  val v16 = new internal.parser.v1_6.CypherParser
+  val hasVersionDefined = """(?si)^\s*cypher\s*([^\s]+)\s*(.*)""".r
+
+  val v15 = new internal.parser.v1_5.CypherParserImpl
+  val v16 = new internal.parser.v1_6.CypherParserImpl
 
   @throws(classOf[SyntaxException])
-  def parse(queryText: String): Query = if (queryText.startsWith("cypher")) {
-    val q = queryText.slice(11, queryText.length())
-    val v = queryText.slice(7, 10)
+  def parse(queryText: String): Query = {
+
+    val (v, q) = queryText match {
+      case hasVersionDefined(v1, q1) => (v1, q1)
+      case _ => (version, queryText)
+    }
 
     v match {
       case "1.5" => v15.parse(q)
       case "1.6" => v16.parse(q)
       case _ => throw new SyntaxException("Only versions supported are 1.5 and 1.6")
     }
-  }
-  else {
-    v16.parse(queryText)
+
   }
 }

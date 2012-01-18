@@ -17,11 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v1_6
+package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.commands.Nullable
-import org.neo4j.cypher.internal.parser.ActualParser
+import org.neo4j.cypher.commands.Query
 
-class ConsoleCypherParser extends CypherParserImpl with ActualParser {
-  override def createProperty(entity: String, propName: String) = Nullable(super.createProperty(entity, propName))
+trait ActualParser {
+  def parse(queryText: String): Query
 }

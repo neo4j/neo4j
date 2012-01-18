@@ -22,17 +22,22 @@ package org.neo4j.cypher
 import commands._
 import internal.{LRUCache, ExecutionPlanImpl}
 import scala.collection.JavaConverters._
-import org.neo4j.graphdb._
 import java.lang.Error
 import java.util.{Map => JavaMap}
 import scala.deprecated
+import org.neo4j.kernel.AbstractGraphDatabase
 
-class ExecutionEngine(graph: GraphDatabaseService) {
+class ExecutionEngine(graph: AbstractGraphDatabase) {
   checkScalaVersion()
 
   require(graph != null, "Can't work with a null graph database")
 
-  val parser = new CypherParser()
+  val parser = createCorrectParser()
+
+  def createCorrectParser() = graph.getConfig.getParams.asScala.get("cypher_parser_version") match {
+    case None => new CypherParser()
+    case Some(v) => new CypherParser(v.toString)
+  }
 
   @throws(classOf[SyntaxException])
   def execute(query: String): ExecutionResult = execute(query, Map[String, Any]())

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.parser.v1_5
 
 import org.neo4j.cypher.commands._
+import org.neo4j.cypher.internal.parser.ActualParser
 
 trait ConsoleMode extends ReturnItems {
   override def returnValues: Parser[Expression] = (nullableProperty | value | entityValue) ^^ {
@@ -28,6 +29,6 @@ trait ConsoleMode extends ReturnItems {
   }
 }
 
-class ConsoleCypherParser extends CypherParser with ConsoleMode {
+class ConsoleCypherParser extends CypherParserImpl with ConsoleMode with ActualParser {
 
 }

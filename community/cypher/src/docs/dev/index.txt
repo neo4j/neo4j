@@ -46,4 +46,8 @@ include::ql/functions/index.txt[]
 
 :leveloffset: 2
 
+include::ql/compatibility.txt[]
+
+:leveloffset: 2
+
 include::ql/cookbook/index.txt[]

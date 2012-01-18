@@ -23,8 +23,10 @@ import org.neo4j.cypher.SyntaxException;
 import org.neo4j.cypher.commands.Query;
 
 /**
- * This is the entry point to parse strings to {@link Query}-objects
+ * This class is deprecated. You should not parse queries manually -
+ * end the string directly to the execution engine
  */
+@Deprecated
 public class CypherParser
 {
     private org.neo4j.cypher.CypherParser inner;

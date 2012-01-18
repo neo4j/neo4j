@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.javacompat;
 
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
+import org.neo4j.graphdb.Node;
+import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 
 public class JavaQuery
 {
@@ -44,7 +44,7 @@ public class JavaQuery
     void run()
     {
         // START SNIPPET: execute
-        GraphDatabaseService db = new EmbeddedGraphDatabase( DB_PATH );
+        AbstractGraphDatabase db = new EmbeddedGraphDatabase( DB_PATH );
         ExecutionEngine engine = new ExecutionEngine( db );
         ExecutionResult result = engine.execute( "start n=node(0) where 1=1 return n" );
         System.out.println( result );
