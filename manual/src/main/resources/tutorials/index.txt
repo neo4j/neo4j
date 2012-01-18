@@ -18,7 +18,11 @@ include::{importdir}/neo4j-cypher-docs-jar/dev/java/index.txt[]
 
 :leveloffset: 1
 
-include::{importdir}/neo4j-python-embedded-docs-jar/dev/tutorial/index.txt[]
+include::{importdir}/neo4j-cypher-docs-jar/dev/ql/cookbook/index.txt[]
+
+:leveloffset: 1
+
+include::rest.txt[]
 
 :leveloffset: 1
 
@@ -26,24 +30,17 @@ include::{importdir}/neo4j-server-examples-docs-jar/dev/index.txt[]
 
 :leveloffset: 1
 
+include::{importdir}/neo4j-examples-docs-jar/dev/traversal-framework.txt[]
+
+:leveloffset: 1
+
 include::{importdir}/neo4j-examples-docs-jar/dev/domain-modeling.txt[]
 
 :leveloffset: 1
 
-[[tutorials-rest]]
-Using the Neo4j REST API
-========================
+include::{importdir}/neo4j-python-embedded-docs-jar/dev/tutorial/index.txt[]
 
-The included Java example shows a ``low-level'' approach to using the Neo4j REST API from Java.
-For other options, see below.
 
-include::{docdir}/community/rest-clients.txt[]
+//include::languages.txt[]
 
-:leveloffset: 2
-
-include::{importdir}/neo4j-server-examples-docs-jar/dev/server-java-rest-client.txt[]
-
-:leveloffset: 1
-
-include::{importdir}/neo4j-examples-docs-jar/dev/traversal-framework.txt[]
 

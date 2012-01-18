@@ -4,8 +4,7 @@
 |===============================================================================
 | name | language / framework | URL
 | Neo4j.rb | JRuby | https://github.com/andreasronge/neo4j
-| Neo4 Python bindings | Python | <<python-embedded>>
-| Neo4django | Python | https://github.com/scholrly/neo4django
+| Neo4django | Python, Django | https://github.com/scholrly/neo4django
 | Neo4js | JavaScript | https://github.com/neo4j/neo4js
 | Gremlin | Java, Groovy | <<gremlin-plugin>>, https://github.com/tinkerpop/gremlin/wiki
 | Neo4j-Scala | Scala | https://github.com/FaKod/neo4j-scala
