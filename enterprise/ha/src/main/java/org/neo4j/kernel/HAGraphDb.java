@@ -374,6 +374,14 @@ public class HAGraphDb extends AbstractGraphDatabase
         }
         catch ( ComException e )
         {
+            /*
+             * A ComException means connection to the master could not be established.
+             * It is generally wrong to take this a sign to perform master election. The
+             * failure might be transient, the broker data might not be updated yet (a
+             * very real possibility for ZK specific installations) etc. So just throw the
+             * exception and hope that if the failure is real newMaster() will be called
+             * eventually
+             */
             // newMaster( e );
             throw e;
         }
