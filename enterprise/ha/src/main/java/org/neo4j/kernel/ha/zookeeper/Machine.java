@@ -24,7 +24,8 @@ import org.neo4j.helpers.Pair;
 
 public class Machine
 {
-    public static final Machine NO_MACHINE = new Machine( -1, -1, 1, SlaveContext.EMPTY.machineId(), null );
+    public static final Machine NO_MACHINE = new Machine( -1, -1, 1,
+            SlaveContext.EMPTY.machineId(), null );
 
     private final int machineId;
     private final int sequenceId;
@@ -57,7 +58,7 @@ public class Machine
     {
         return masterForCommittedTxId == machineId;
     }
-    
+
     public int getMasterForCommittedTxId()
     {
         return masterForCommittedTxId;

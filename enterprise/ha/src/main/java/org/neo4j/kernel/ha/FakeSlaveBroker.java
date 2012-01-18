@@ -26,13 +26,11 @@ import org.neo4j.kernel.ha.zookeeper.Machine;
 public class FakeSlaveBroker extends AbstractBroker
 {
     private final Master master;
-    private final Machine masterMachine;
 
     public FakeSlaveBroker( Master master, int masterMachineId, int myMachineId, GraphDatabaseService graphDb )
     {
         super( myMachineId, graphDb );
         this.master = master;
-        this.masterMachine = new Machine( masterMachineId, 0, 1, -1, null );
     }
 
     public Pair<Master, Machine> getMaster()

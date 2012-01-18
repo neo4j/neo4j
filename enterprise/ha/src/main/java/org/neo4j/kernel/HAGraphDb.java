@@ -848,6 +848,12 @@ public class HAGraphDb extends AbstractGraphDatabase
     }
 
     @Override
+    public void handle( Exception e )
+    {
+        newMaster( e );
+    }
+
+    @Override
     public void newMaster( Exception e )
     {
         newMaster( null, e );
@@ -871,7 +877,7 @@ public class HAGraphDb extends AbstractGraphDatabase
     {
         try
         {
-            msgLog.logMessage( "newMaster called", true );
+            msgLog.logMessage( "newMaster called", e, true );
             reevaluateMyself( storeId );
         }
         catch ( ZooKeeperException ee )

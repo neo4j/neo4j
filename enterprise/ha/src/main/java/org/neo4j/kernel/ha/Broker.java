@@ -48,7 +48,7 @@ public interface Broker
     void notifyMasterChange( Machine newMaster );
 
     void shutdown();
-    
+
     void setConnectionInformation( KernelData kernel );
 
     ConnectionInformation getConnectionInformation( int machineId );

@@ -160,7 +160,7 @@ public class ZooKeeperBroker extends AbstractBroker
     @Override
     public ConnectionInformation[] getConnectionInformation()
     {
-        Map<Integer, Machine> machines = zooClient.getAllMachines( false );
+        Map<Integer, ZooKeeperMachine> machines = zooClient.getAllMachines( false );
         Machine master = zooClient.getMasterBasedOn( machines.values() );
         ConnectionInformation[] result = new ConnectionInformation[machines.size()];
         int i = 0;
@@ -190,7 +190,7 @@ public class ZooKeeperBroker extends AbstractBroker
     @Override
     public Machine getMasterExceptMyself()
     {
-        Map<Integer, Machine> machines = zooClient.getAllMachines( true );
+        Map<Integer, ZooKeeperMachine> machines = zooClient.getAllMachines( true );
         machines.remove( getMyMachineId() );
         return zooClient.getMasterBasedOn( machines.values() );
     }

@@ -30,6 +30,7 @@ import java.util.Map;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.neo4j.com.Client.ConnectionLostHandler;
 import org.neo4j.com.ComException;
 import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
@@ -135,9 +136,10 @@ public abstract class AbstractZooKeeperManager implements Watcher
         }
     }
 
-    protected Pair<Master, Machine> getMasterFromZooKeeper( boolean wait, boolean allowChange )
+    protected Pair<Master, Machine> getMasterFromZooKeeper(
+            boolean wait, boolean allowChange )
     {
-        Machine master = getMasterBasedOn( getAllMachines( wait ).values() );
+        ZooKeeperMachine master = getMasterBasedOn( getAllMachines( wait ).values() );
         Master masterClient = NO_MASTER;
         if ( cachedMaster.other().getMachineId() != master.getMachineId() )
         {
@@ -145,10 +147,13 @@ public abstract class AbstractZooKeeperManager implements Watcher
             if ( !allowChange ) return NO_MASTER_MACHINE_PAIR;
             if ( master != Machine.NO_MACHINE && master.getMachineId() != getMyMachineId() )
             {
-                masterClient = new MasterClient( master.getServer().first(), master.getServer().other(), graphDb,
-                        clientReadTimeout, clientLockReadTimeout, maxConcurrentChannelsPerSlave );
+                masterClient = new MasterClient( master.getServer().first(),
+                        master.getServer().other(), graphDb,
+                        getConnectionLostHandler(), clientReadTimeout,
+                        clientLockReadTimeout, maxConcurrentChannelsPerSlave );
             }
-            cachedMaster = Pair.<Master, Machine>of( masterClient, master );
+            cachedMaster = Pair.<Master, Machine>of( masterClient,
+                    (Machine) master );
         }
         return cachedMaster;
     }
@@ -160,12 +165,13 @@ public abstract class AbstractZooKeeperManager implements Watcher
         return cachedMaster;
     }
 
-    protected Machine getMasterBasedOn( Collection<Machine> machines )
+    protected ZooKeeperMachine getMasterBasedOn(
+            Collection<ZooKeeperMachine> machines )
     {
-        Machine master = null;
+        ZooKeeperMachine master = null;
         int lowestSeq = Integer.MAX_VALUE;
         long highestTxId = -1;
-        for ( Machine info : machines )
+        for ( ZooKeeperMachine info : machines )
         {
             if ( info.getLastCommittedTxId() != -1 && info.getLastCommittedTxId() >= highestTxId )
             {
@@ -181,10 +187,38 @@ public abstract class AbstractZooKeeperManager implements Watcher
         }
         log( "getMaster " + (master != null ? master.getMachineId() : "none") +
                 " based on " + machines );
-        return master != null ? master : Machine.NO_MACHINE;
+        if ( master != null )
+        {
+            try
+            {
+                getZooKeeper( false ).getData(
+                        getRoot() + "/" + master.getZooKeeperPath(), true, null );
+            }
+            catch ( KeeperException e )
+            {
+                throw new ZooKeeperException(
+                        "Unable to get master data while setting watch", e );
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.interrupted();
+                throw new ZooKeeperException(
+                        "Interrupted while setting watch on master.", e );
+            }
+            return master;
+        }
+        else
+        {
+            return ZooKeeperMachine.NO_MACHINE;
+        }
     }
 
-    protected Map<Integer, Machine> getAllMachines( boolean wait )
+    protected ConnectionLostHandler getConnectionLostHandler()
+    {
+        return ConnectionLostHandler.NO_ACTION;
+    }
+
+    protected Map<Integer, ZooKeeperMachine> getAllMachines( boolean wait )
     {
         if ( wait )
         {
@@ -192,7 +226,7 @@ public abstract class AbstractZooKeeperManager implements Watcher
         }
         try
         {
-            Map<Integer, Machine> result = new HashMap<Integer, Machine>();
+            Map<Integer, ZooKeeperMachine> result = new HashMap<Integer, ZooKeeperMachine>();
             String root = getRoot();
             List<String> children = getZooKeeper( true ).getChildren( root, false );
             for ( String child : children )
@@ -210,8 +244,9 @@ public abstract class AbstractZooKeeperManager implements Watcher
                     Pair<Long, Integer> instanceData = readDataRepresentingInstance( root + "/" + child );
                     if ( !result.containsKey( id ) || seq > result.get( id ).getSequenceId() )
                     {
-                        result.put( id, new Machine( id, seq, instanceData.first(), instanceData.other(),
-                                getHaServer( id, wait ) ) );
+                        result.put( id, new ZooKeeperMachine( id, seq,
+                                instanceData.first(), instanceData.other(),
+                                getHaServer( id, wait ), child ) );
                     }
                 }
                 catch ( KeeperException inner )
@@ -399,5 +434,6 @@ public abstract class AbstractZooKeeperManager implements Watcher
         }
     };
 
-    private static final Pair<Master, Machine> NO_MASTER_MACHINE_PAIR = Pair.of( NO_MASTER, Machine.NO_MACHINE );
+    private static final Pair<Master, Machine> NO_MASTER_MACHINE_PAIR = Pair.of(
+            NO_MASTER, (Machine) ZooKeeperMachine.NO_MACHINE );
 }
