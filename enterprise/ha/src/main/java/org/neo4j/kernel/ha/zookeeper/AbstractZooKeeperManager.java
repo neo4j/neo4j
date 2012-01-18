@@ -246,7 +246,8 @@ public abstract class AbstractZooKeeperManager implements Watcher
                     {
                         result.put( id, new ZooKeeperMachine( id, seq,
                                 instanceData.first(), instanceData.other(),
-                                getHaServer( id, wait ), child ) );
+                                getHaServer( id, wait ), HA_SERVERS_CHILD + "/"
+                                                         + id ) );
                     }
                 }
                 catch ( KeeperException inner )

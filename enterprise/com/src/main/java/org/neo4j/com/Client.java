@@ -307,7 +307,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
     {
         channelPool.close( true );
         executor.shutdownNow();
-        msgLog.logMessage( getClass().getSimpleName() + " shutdown", true );
+        msgLog.logMessage( toString() + " shutdown", true );
     }
 
     @Override
