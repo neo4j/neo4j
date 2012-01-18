@@ -19,63 +19,10 @@
  */
 package org.neo4j.cypher.symbols
 
-import java.lang.String
-
-object AnyType {
-
-  def fromJava(obj:Any):AnyType = {
-    if(obj.isInstanceOf[String] || obj.isInstanceOf[Char])
-      return StringType()
-
-    if(obj.isInstanceOf[Number])
-      return NumberType()
-    
-    if(obj.isInstanceOf[Boolean])
-      return BooleanType()
-    
-    if(obj.isInstanceOf[Seq[_]] || obj.isInstanceOf[Array[_]])
-      return AnyIterableType()
-    
-    ScalarType()
-  }
-
-  lazy val instance = new AnyType()
+object BooleanType {
+  lazy val instance = new BooleanType()
 
   def apply() = instance
 }
 
-class AnyType {
-  override def equals(other: Any) = if (other == null)
-    false
-  else
-    other match {
-      case x: AnyRef => x.getClass == this.getClass
-      case _ => false
-    }
-
-  def isAssignableFrom(other: AnyType): Boolean = this.getClass.isAssignableFrom(other.getClass)
-
-  override def toString: String = this.getClass.getSimpleName
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+class BooleanType extends ScalarType

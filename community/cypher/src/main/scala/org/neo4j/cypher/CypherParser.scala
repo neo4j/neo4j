@@ -41,6 +41,7 @@ class CypherParser(version: String) {
     v match {
       case "1.5" => v15.parse(q)
       case "1.6" => v16.parse(q)
+      case "1.7" => v17.parse(q)
       case _ => throw new SyntaxException("Versions supported are 1.5, 1.6 and 1.7")
     }
 

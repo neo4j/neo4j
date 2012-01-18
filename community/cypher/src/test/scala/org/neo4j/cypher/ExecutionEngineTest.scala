@@ -1407,7 +1407,7 @@ return other
   }
 
   @Test def shouldHandleCheckingThatANodeDoesNotHaveAProp() {
-    val result = parseAndExecute("start a=node(0) where not(a.propertyDoesntExist) return a")
+    val result = parseAndExecute("start a=node(0) where not has(a.propertyDoesntExist) return a")
     assert(List(Map("a" -> refNode)) === result.toList)
   }
 
@@ -1465,7 +1465,7 @@ order by a.COL1
     relate(a, b)
     val result = parseAndExecute("""START n=node(1)
 MATCH n-->x0-[?]->x1
-WHERE x1.type AND x1.type="http://dbpedia.org/ontology/Film" AND x1.label AND x1.label="Reservoir Dogs"
+WHERE has(x1.type) AND x1.type="http://dbpedia.org/ontology/Film" AND has(x1.label) AND x1.label="Reservoir Dogs"
 RETURN x0.name?
 """)
     assert(List() === result.toList)

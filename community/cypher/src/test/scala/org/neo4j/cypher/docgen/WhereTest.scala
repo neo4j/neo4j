@@ -83,7 +83,7 @@ class WhereTest extends DocumentingTestBase {
     testQuery(
       title = "Property exists",
       text = "To only include nodes/relationships that have a property, just write out the identifier and the property you expect it to have.",
-      queryText = """start n=node(%Andres%, %Tobias%) where n.belt return n""",
+      queryText = """start n=node(%Andres%, %Tobias%) where has(n.belt) return n""",
       returns = """The node named Andres.""",
       assertions = (p) => assertEquals(List(node("Andres")), p.columnAs[Node]("n").toList))
   }

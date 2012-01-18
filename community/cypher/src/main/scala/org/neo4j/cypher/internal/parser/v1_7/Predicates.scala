@@ -25,15 +25,15 @@ import org.neo4j.cypher.SyntaxException
 
 trait Predicates extends Base with Expressions with ReturnItems {
   def predicate: Parser[Predicate] = (
-    isNull 
-      | isNotNull 
+    expressionOrEntity <~ ignoreCase("is null") ^^ (x => IsNull(x))
+      | expressionOrEntity <~ ignoreCase("is not null") ^^ (x => Not(IsNull(x)))
       | orderedComparison 
-      | not 
+      | ignoreCase("not") ~> predicate ^^ ( inner => Not(inner) )
       | notEquals 
       | equals 
       | regexp 
-      | hasProperty 
-      | parens(predicate) 
+      | ignoreCase("has") ~> parens(property) ^^ ( prop => Has(prop.asInstanceOf[Property]))
+      | parens(predicate)
       | sequencePredicate 
       | hasRelationshipTo 
       | hasRelationship
@@ -51,8 +51,6 @@ trait Predicates extends Base with Expressions with ReturnItems {
   def regexp: Parser[Predicate] = expression ~ "=~" ~ (regularLiteral | expression) ^^ {
     case a ~ "=~" ~ b => RegularExpression(a, b)
   }
-
-  def hasProperty: Parser[Predicate] = property ^^ ( prop => Has(prop.asInstanceOf[Property]))
 
   def sequencePredicate: Parser[Predicate] = allInSeq | anyInSeq | noneInSeq | singleInSeq
 
@@ -83,13 +81,7 @@ trait Predicates extends Base with Expressions with ReturnItems {
 
   def greaterThanOrEqual: Parser[Predicate] = expression ~ ">=" ~ expression ^^ { case l ~ ">=" ~ r => GreaterThanOrEqual(l, r) }
 
-  def not: Parser[Predicate] = ignoreCase("not") ~ "(" ~ predicate ~ ")" ^^ { case not ~ "(" ~ inner ~ ")" => Not(inner) }
-
   def expressionOrEntity = expression | entity
-
-  def isNull: Parser[Predicate] = expressionOrEntity <~ ignoreCase("is null") ^^ (x => IsNull(x))
-
-  def isNotNull: Parser[Predicate] = expressionOrEntity <~ ignoreCase("is not null") ^^ (x => Not(IsNull(x)))
 
   def hasRelationshipTo: Parser[Predicate] = expressionOrEntity ~ relInfo ~ expressionOrEntity ^^ { case a ~ rel ~ b => HasRelationshipTo(a, b, rel._1, rel._2) }
 
