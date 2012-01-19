@@ -131,9 +131,9 @@ public class MatrixNewTravTest
     {
         Node neoNode = getNeoNode();
         System.out.println( neoNode.getProperty( "name" ) + "'s friends:" );
+        int numberOfFriends = 0;
         // START SNIPPET: friends-usage
         Traverser friendsTraverser = getFriends( neoNode );
-        int numberOfFriends = 0;
         for ( Path friendPath : friendsTraverser )
         {
             System.out.println( "At depth " + friendPath.length() + " => "
@@ -162,9 +162,9 @@ public class MatrixNewTravTest
     public void printMatrixHackers() throws Exception
     {
         System.out.println( "Hackers:" );
+        int numberOfHackers = 0;
         // START SNIPPET: find--hackers-usage
         Traverser traverser = findHackers( getNeoNode() );
-        int numberOfHackers = 0;
         for ( Path hackerPath : traverser )
         {
             System.out.println( "At depth " + hackerPath.length() + " => "
