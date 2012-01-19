@@ -47,7 +47,7 @@ class OrderedAggregationPipeTest extends JUnitSuite with Assertions {
     val source = new FakePipe(List(), createSymbolTableFor("extractReturnItems"))
 
     val returnItems = List(ExpressionReturnItem(Entity("name")))
-    val grouping = List(ValueAggregationItem(Count(Entity("none-existing-identifier"))))
+    val grouping = List(ValueAggregationItem(Count(Entity("none-existing-identifier"), "x")))
     intercept[SyntaxException](new OrderedAggregationPipe(source, returnItems, grouping))
   }
 
@@ -76,7 +76,7 @@ class OrderedAggregationPipeTest extends JUnitSuite with Assertions {
       Map("name" -> "Peter", "age" -> 38)), createSymbolTableFor("name", "age"))
 
     val returnItems = List(ExpressionReturnItem(Entity("name")))
-    val grouping = List(ValueAggregationItem(Count((Entity("age")))))
+    val grouping = List(ValueAggregationItem(Count((Entity("age")), "count(age)")))
     val aggregationPipe = new OrderedAggregationPipe(source, returnItems, grouping)
 
     assertThat(aggregationPipe.createResults(Map()).toIterable.asJava, hasItems(
@@ -88,7 +88,7 @@ class OrderedAggregationPipeTest extends JUnitSuite with Assertions {
     val source = new FakePipe(List(), createSymbolTableFor("name"))
 
     val returnItems = List()
-    val grouping = List(ValueAggregationItem(Count((Entity("name")))))
+    val grouping = List(ValueAggregationItem(Count((Entity("name")), "x")))
     intercept[ThisShouldNotHappenError](new OrderedAggregationPipe(source, returnItems, grouping))
   }
 

@@ -45,7 +45,7 @@ class EagerAggregationPipeTest extends JUnitSuite {
     val source = new FakePipe(List(), createSymbolTableFor("extractReturnItems"))
 
     val returnItems = List(ExpressionReturnItem(Entity("name")))
-    val grouping = List(ValueAggregationItem(Count(Entity("none-existing-identifier"))))
+    val grouping = List(ValueAggregationItem(Count(Entity("none-existing-identifier"), "x")))
     new EagerAggregationPipe(source, returnItems, grouping)
   }
 
@@ -74,7 +74,7 @@ class EagerAggregationPipeTest extends JUnitSuite {
       Map("name" -> "Michael", "age" -> 31)), createSymbolTableFor("name"))
 
     val returnItems = List()
-    val grouping = List(ValueAggregationItem(Count((Entity("name")))))
+    val grouping = List(ValueAggregationItem(Count((Entity("name")), "count(name)")))
     val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)
 
     assertEquals(List(Map("count(name)" -> 3)), aggregationPipe.createResults(Map()).toList)

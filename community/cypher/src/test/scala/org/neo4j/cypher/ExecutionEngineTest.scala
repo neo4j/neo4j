@@ -556,8 +556,8 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("n", n1.getId, n2.getId, n3.getId, n4.getId)).
-      aggregation(ValueAggregationItem(Max(Property("n", "age")))).
-      orderBy(SortItem(ValueAggregationItem(Max(Property("n", "age"))), true)).
+      aggregation(ValueAggregationItem(Max(Property("n", "age"), "x"))).
+      orderBy(SortItem(ValueAggregationItem(Max(Property("n", "age"), "x")), true)).
       returns(ExpressionReturnItem(Property("n", "divison")))
 
     val result = execute(query)
@@ -638,7 +638,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("node", n1.getId, n2.getId, n3.getId)).
-      aggregation(ValueAggregationItem(Count(Nullable(Property("node", "x"))))).
+      aggregation(ValueAggregationItem(Count(Nullable(Property("node", "x")), "count(node.x)"))).
       returns(ExpressionReturnItem(Property("node", "y")))
 
     val result = execute(query)
@@ -656,7 +656,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("node", n1.getId, n2.getId, n3.getId)).
-      aggregation(ValueAggregationItem(Sum(Nullable(Property("node", "x"))))).
+      aggregation(ValueAggregationItem(Sum(Nullable(Property("node", "x")), "sum(node.x)"))).
       returns(ExpressionReturnItem(Property("node", "y")))
 
     val result = execute(query)
@@ -757,7 +757,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val result = parseAndExecute("start n=node(1) match p = n-->x return length(p)")
 
-    assertEquals(List(1), result.columnAs[Int]("LENGTH(p)").toList)
+    assertEquals(List(1), result.columnAs[Int]("length(p)").toList)
   }
 
   @Test def shouldBeAbleToFilterOnPathNodes() {
@@ -1316,7 +1316,7 @@ start a  = node(1)
 return coalesce(a.title?, a.name?)
 """)
 
-    assert(List(Map("COALESCE(a.title,a.name)" -> "A")) === result.toList)
+    assert(List(Map("coalesce(a.title?, a.name?)" -> "A")) === result.toList)
   }
 
   @Test def shouldReturnAnInterableWithAllRelationshipsFromAVarLength() {
@@ -1528,11 +1528,11 @@ RETURN x0.name?
   @Test def shouldFindNodesBothDirections() {
     val a = createNode()
     relate(a, refNode, "Admin")
-    val result = parseAndExecute("""start n = node(0) match (n) -[:Admin]- (b) return Id(n), Id(b)""")
-    assert(List(Map("ID(n)" -> 0, "ID(b)" -> 1)) === result.toList)
+    val result = parseAndExecute("""start n = node(0) match (n) -[:Admin]- (b) return id(n), id(b)""")
+    assert(List(Map("id(n)" -> 0, "id(b)" -> 1)) === result.toList)
 
-    val result2 = parseAndExecute("""start n = node(1) match (n) -[:Admin]- (b) return Id(n), Id(b)""")
-    assert(List(Map("ID(n)" -> 1, "ID(b)" -> 0)) === result2.toList)
+    val result2 = parseAndExecute("""start n = node(1) match (n) -[:Admin]- (b) return id(n), id(b)""")
+    assert(List(Map("id(n)" -> 1, "id(b)" -> 0)) === result2.toList)
   }
 
   @Test def shouldToStringArraysPrettily() {

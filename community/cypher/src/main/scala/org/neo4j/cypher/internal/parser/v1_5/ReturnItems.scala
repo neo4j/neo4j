@@ -35,19 +35,22 @@ trait ReturnItems extends JavaTokenParsers with Tokens with Values {
   def aggregationFunction: Parser[AggregationItem] = functionNames ~ parens(opt(ignoreCase("distinct")) ~ returnValues) ^^ {
     case name ~ (distinct ~ inner) => {
       val aggregate = name match {
-        case "count" => Count(inner)
-        case "sum" => Sum(inner)
-        case "min" => Min(inner)
-        case "max" => Max(inner)
-        case "avg" => Avg(inner)
-        case "collect" => Collect(inner)
+        case "count" => Count(inner, "count(" + inner.identifier.name + ")")
+        case "sum" => Sum(inner, "sum(" + inner.identifier.name + ")")
+        case "min" => Min(inner, "min(" + inner.identifier.name + ")")
+        case "max" => Max(inner, "max(" + inner.identifier.name + ")")
+        case "avg" => Avg(inner, "avg(" + inner.identifier.name + ")")
+        case "collect" => Collect(inner, "collect(" + inner.identifier.name + ")")
       }
 
       if (distinct.isEmpty) {
         ValueAggregationItem(aggregate)
       }
       else {
-        ValueAggregationItem(Distinct(aggregate, inner))
+        val innerName = aggregate.identifier.name
+        val name = innerName.substring(0, innerName.indexOf("(")) + "(distinct " + inner.identifier.name + ")"
+
+        ValueAggregationItem(Distinct(aggregate, inner, name))
       }
     }
   }

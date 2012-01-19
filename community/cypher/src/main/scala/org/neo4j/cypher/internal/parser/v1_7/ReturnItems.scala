@@ -23,34 +23,38 @@ import org.neo4j.cypher.commands._
 
 trait ReturnItems extends Base with Expressions {
   def returnItem: Parser[ReturnItem] = trap(returnExpressions) ^^ {
-    case (expression,name) => ExpressionReturnItem(expression, name)
+    case (expression, name) => ExpressionReturnItem(expression, name.replace("`", ""))
   }
 
   def returnExpressions: Parser[Expression] = nullableProperty | expression | entity
 
   def aggregateFunctionNames = ignoreCases("count", "sum", "min", "max", "avg", "collect")
 
-  def aggregationFunction: Parser[AggregationItem] = aggregateFunctionNames ~ parens(opt(ignoreCase("distinct")) ~ returnExpressions) ^^ {
-    case function ~ (distinct ~ inner) => {
+  def aggregationFunction: Parser[AggregationItem] = trap(aggregateFunctionNames ~ parens(opt(ignoreCase("distinct")) ~ returnExpressions)) ^^ {
+    case (function ~ (distinct ~ inner), unescapedName) => {
+      val name = unescapedName.replace("`", "")
+
       val aggregate = function match {
-        case "count" => Count(inner)
-        case "sum" => Sum(inner)
-        case "min" => Min(inner)
-        case "max" => Max(inner)
-        case "avg" => Avg(inner)
-        case "collect" => Collect(inner)
+        case "count" => Count(inner, name)
+        case "sum" => Sum(inner, name)
+        case "min" => Min(inner, name)
+        case "max" => Max(inner, name)
+        case "avg" => Avg(inner, name)
+        case "collect" => Collect(inner, name)
       }
 
       if (distinct.isEmpty) {
         ValueAggregationItem(aggregate)
       }
       else {
-        ValueAggregationItem(Distinct(aggregate, inner))
+        ValueAggregationItem(Distinct(aggregate, inner, name))
       }
     }
   }
 
-  def countStar: Parser[AggregationItem] = trap(ignoreCase("count") ~> parens("*")) ^^ { case (x,name) => CountStar(name)  }
+  def countStar: Parser[AggregationItem] = trap(ignoreCase("count") ~> parens("*")) ^^ {
+    case (x, name) => CountStar(name)
+  }
 
   def aggregate: Parser[AggregationItem] = countStar | aggregationFunction
 }

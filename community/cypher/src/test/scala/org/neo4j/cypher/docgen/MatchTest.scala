@@ -148,10 +148,10 @@ class MatchTest extends DocumentingTestBase {
       queryText = """start a=node(%A%) match p1=a-[:KNOWS*0..1]->b, p2=b-[:BLOCKS*0..1]->c return a,b,c, length(p1), length(p2)""",
       returns = "This query will return four paths, some of them with length zero.",
       assertions = p => assertEquals(Set(
-        Map("a" -> node("A"), "b" -> node("A"), "c" -> node("A"), "LENGTH(p1)" -> 0, "LENGTH(p2)" -> 0),
-        Map("a" -> node("A"), "b" -> node("A"), "c" -> node("C"), "LENGTH(p1)" -> 0, "LENGTH(p2)" -> 1),
-        Map("a" -> node("A"), "b" -> node("B"), "c" -> node("B"), "LENGTH(p1)" -> 1, "LENGTH(p2)" -> 0),
-        Map("a" -> node("A"), "b" -> node("B"), "c" -> node("D"), "LENGTH(p1)" -> 1, "LENGTH(p2)" -> 1))
+        Map("a" -> node("A"), "b" -> node("A"), "c" -> node("A"), "length(p1)" -> 0, "length(p2)" -> 0),
+        Map("a" -> node("A"), "b" -> node("A"), "c" -> node("C"), "length(p1)" -> 0, "length(p2)" -> 1),
+        Map("a" -> node("A"), "b" -> node("B"), "c" -> node("B"), "length(p1)" -> 1, "length(p2)" -> 0),
+        Map("a" -> node("A"), "b" -> node("B"), "c" -> node("D"), "length(p1)" -> 1, "length(p2)" -> 1))
         , p.toSet)
     )
   }

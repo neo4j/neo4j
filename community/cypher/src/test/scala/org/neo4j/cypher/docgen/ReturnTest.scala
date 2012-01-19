@@ -76,7 +76,7 @@ return `This isn't a common identifier`.`<<!!__??>>`""",
 like this:""",
       queryText = """start n=node(%A%, %B%) return n.age?""",
       returns = """The age when the node has that property, or +null+ if the property is not there.""",
-      assertions = (p) => assertEquals(List(55, null), p.columnAs[Int]("n.age").toList))
+      assertions = (p) => assertEquals(List(55, null), p.columnAs[Int]("n.age?").toList))
   }
 
   @Test def distinct_output() {

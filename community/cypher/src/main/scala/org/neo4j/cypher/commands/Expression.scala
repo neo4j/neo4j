@@ -54,6 +54,8 @@ abstract class CastableExpression extends Expression {
 }
 
 case class Nullable(expression: Expression) extends Expression {
+
+  //TODO Add question mark
   def identifier = expression.identifier
 
   def apply(m: Map[String, Any]) = try {

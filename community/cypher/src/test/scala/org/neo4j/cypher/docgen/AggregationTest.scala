@@ -50,7 +50,7 @@ class AggregationTest extends DocumentingTestBase {
       text = "To count the groups of relationship types, return the types and count them with +count(*)+.",
       queryText = "start n=node(%A%) match (n)-[r]->() return type(r), count(*)",
       returns = "The relationship types and their group count.",
-      p => assertEquals(Map("TYPE(r)" -> "KNOWS", "count(*)" -> 3), p.toList.head))
+      p => assertEquals(Map("type(r)" -> "KNOWS", "count(*)" -> 3), p.toList.head))
   }
 
   @Test def countEntities() {
@@ -69,7 +69,7 @@ class AggregationTest extends DocumentingTestBase {
       text = "You can count the non-null values by using +count(<identifier>)+.",
       queryText = "start n=node(%A%,%B%,%C%,%D%) return count(n.property?)",
       returns = "The count of related nodes.",
-      p => assertEquals(Map("count(n.property)" -> 3), p.toList.head))
+      p => assertEquals(Map("count(n.property?)" -> 3), p.toList.head))
   }
 
   @Test def sumProperty() {

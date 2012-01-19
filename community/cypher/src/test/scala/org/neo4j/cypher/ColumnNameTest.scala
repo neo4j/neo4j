@@ -19,7 +19,7 @@ class ColumnNameTest extends ExecutionEngineHelper {
   }
 
   @Test def shouldKeepUsedExpression4() {
-    val result = parseAndExecute("start n=node(0) match p=n-->b return aVg(    n.age     )")
-    assert(result.columns === List("aVg(    n.age     )"))
+    val result = parseAndExecute("start n=node(0) match p=n-->b return aVg(    n.aGe     )")
+    assert(result.columns === List("aVg(    n.aGe     )"))
   }
 }
