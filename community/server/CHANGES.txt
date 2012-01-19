@@ -1,3 +1,7 @@
+1.6 (2012-01-19)
+----------------
+o Fixes issues #173, #118, #138, #103
+
 1.6.M03 (2012-01-12)
 --------------------
 o Added request timeout, controlled with org.neo4j.server.webserver.limit.executiontime (disabled by default).
