@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.parser.v1_7
 import org.neo4j.cypher.commands._
 
 trait ReturnItems extends Base with Expressions {
-  def returnItem: Parser[ReturnItem] = returnExpressions ^^ {
-    case expression => ExpressionReturnItem(expression)
+  def returnItem: Parser[ReturnItem] = trap(returnExpressions) ^^ {
+    case (expression,name) => ExpressionReturnItem(expression, name)
   }
 
   def returnExpressions: Parser[Expression] = nullableProperty | expression | entity
@@ -31,8 +31,8 @@ trait ReturnItems extends Base with Expressions {
   def aggregateFunctionNames = ignoreCases("count", "sum", "min", "max", "avg", "collect")
 
   def aggregationFunction: Parser[AggregationItem] = aggregateFunctionNames ~ parens(opt(ignoreCase("distinct")) ~ returnExpressions) ^^ {
-    case name ~ (distinct ~ inner) => {
-      val aggregate = name match {
+    case function ~ (distinct ~ inner) => {
+      val aggregate = function match {
         case "count" => Count(inner)
         case "sum" => Sum(inner)
         case "min" => Min(inner)
@@ -50,11 +50,9 @@ trait ReturnItems extends Base with Expressions {
     }
   }
 
-  def countStar: Parser[AggregationItem] = ignoreCase("count") ~> parens("*") ^^ {
-    case "*" => CountStar()
-  }
+  def countStar: Parser[AggregationItem] = trap(ignoreCase("count") ~> parens("*")) ^^ { case (x,name) => CountStar(name)  }
 
-  def aggregate: Parser[AggregationItem] = countStar | aggregationFunction | failure("wut?")
+  def aggregate: Parser[AggregationItem] = countStar | aggregationFunction
 }
 
 
