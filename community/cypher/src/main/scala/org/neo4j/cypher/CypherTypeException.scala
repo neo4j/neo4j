@@ -19,6 +19,4 @@
  */
 package org.neo4j.cypher
 
-class ExpectedNumericalValueException(message:String) extends CypherException(message,null) {
-
-}
+class CypherTypeException(message:String) extends CypherException(message,null)
