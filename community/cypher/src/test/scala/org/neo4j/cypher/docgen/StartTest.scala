@@ -62,6 +62,15 @@ class StartTest extends DocumentingTestBase {
       (p) => assertEquals(List(node("A"), node("B"), node("C")), p.columnAs[Node]("n").toList))
   }
 
+  @Test def all_the_nodes() {
+    testQuery(
+      title = "All nodes",
+      text = "To get all the nodes, use an asterisk. This can be done with relationships as well.",
+      queryText = "start n=node(*) return n",
+      returns = "This query returns all the nodes in the graph.",
+      (p) => assertEquals(List(node("A"), node("B"), node("C")), p.columnAs[Node]("n").toList))
+  }
+
   @Test def nodes_by_index() {
     testQuery(
       title = "Node by index lookup",
