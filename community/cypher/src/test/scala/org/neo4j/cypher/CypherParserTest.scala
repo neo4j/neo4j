@@ -36,6 +36,20 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ExpressionReturnItem(Entity("s"))))
   }
 
+  @Test def allTheNodes() {
+    testQuery("start s = NODE(*) return s",
+      Query.
+        start(AllNodes("s")).
+        returns(ExpressionReturnItem(Entity("s"))))
+  }
+
+  @Test def allTheRels() {
+    testQuery("start r = relationship(*) return r",
+      Query.
+        start(AllRelationships("r")).
+        returns(ExpressionReturnItem(Entity("r"))))
+  }
+
   @Test def shouldHandleAliasingOfColumnNames() {
     testQuery("start s = NODE(1) return s as somethingElse",
       Query.

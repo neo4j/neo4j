@@ -52,7 +52,7 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
   @Test def noIndexName() {
     expectSyntaxError(
       "start a = node(name=\"sebastian\") match a-[:WORKED_ON]-b return b",
-      "expected graph entity id", 15)
+      "expected node id, or *", 15)
   }
 
   @Test def aggregateFunctionInWhere() {
@@ -177,7 +177,7 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
   @Test def relTypeInsteadOfRelIdInStart() {
     expectSyntaxError(
       "start r = relationship(:WORKED_ON) return r",
-      "expected graph entity id",
+      "expected relationship id, or *",
       23)
   }
 
@@ -190,7 +190,7 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
   @Test def noNodeIdInStart() {
     expectSyntaxError(
       "start r = node() return r",
-      "expected graph entity id",
+      "expected node id, or *",
       15)
   }
 

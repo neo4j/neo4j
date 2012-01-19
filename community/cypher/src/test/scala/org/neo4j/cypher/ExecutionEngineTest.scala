@@ -1597,12 +1597,19 @@ RETURN x0.name?
     assert(List(Map("r" -> r)) === result.toList)
   }
 
-
   @Test def shouldHandleComparisonsWithDifferentTypes() {
     createNode("belt" -> 13)
 
     val result = parseAndExecute("start n=node(1) where n.belt = 'white' OR n.belt = false return n")
     assert(List() === result.toList)
+  }
+
+  @Test def shouldGetAllNodes() {
+    val a = createNode()
+    val b = createNode()
+
+    val result = parseAndExecute("start n=node(*) return n")
+    assert(List(refNode,a,b) === result.columnAs[Node]("n").toList)
   }
 
   @Test def shouldAllowComparisonsOfNodes() {

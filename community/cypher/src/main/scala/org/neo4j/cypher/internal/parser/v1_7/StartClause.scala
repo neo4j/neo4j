@@ -25,8 +25,9 @@ trait StartClause extends Base {
   def start: Parser[Start] = ignoreCase("start") ~> comaList(startBit) ^^ (x => Start(x: _*)) | failure("expected 'START'")
 
   def startBit =
-    (identity ~ "=" ~ lookup ^^ { case id ~ "=" ~ l => l(id)  }
-      | identity ~> failure("expected identifier assignment") )
+    (identity ~ "=" ~ lookup ^^ {      case id ~ "=" ~ l => l(id)    }
+      | identity ~> "=" ~> opt("(") ~> failure("expected either node or relationship here")
+      | identity ~> failure("expected identifier assignment"))
 
   def nodes = ignoreCase("node")
 
@@ -34,27 +35,29 @@ trait StartClause extends Base {
 
   def typ = nodes | rels | failure("expected either node or relationship here")
 
-  def lookup: Parser[(String) => StartItem] = typ ~ (parens(parameter) | ids | idxLookup | idxString) ^^ {
-    case "node" ~ l => l match {
-      case l: Expression => (id: String) => NodeById(id, l)
-      case x: (String, Expression, Expression) => (id: String) => NodeByIndex(id, x._1, x._2, x._3)
-      case x: (String, Expression) => (id: String) => NodeByIndexQuery(id, x._1, x._2)
-    }
 
-    case "rel" ~ l => l match {
-      case l: Expression => (id: String) => RelationshipById(id, l)
-      case x: (String, Expression, Expression) => (id: String) => RelationshipByIndex(id, x._1, x._2, x._3)
-      case x: (String, Expression) => (id: String) => RelationshipByIndexQuery(id, x._1, x._2)
-    }
-  }
+  def lookup: Parser[String => StartItem] =
+    nodes ~> parens(parameter) ^^ (p => (column: String) => NodeById(column, p)) |
+      nodes ~> ids ^^ (p => (column: String) => NodeById(column, p)) |
+      nodes ~> idxLookup ^^ { case (idxName, key, value) => (column: String) => NodeByIndex(column, idxName, key, value) } |
+      nodes ~> idxString ^^ { case (idxName, query) => (column: String) => NodeByIndexQuery(column, idxName, query) } |
+      nodes ~> parens("*") ^^ ( x => (column: String) => AllNodes(column) )  |
+      rels ~> parens(parameter) ^^ (p => (column: String) => RelationshipById(column, p)) |
+      rels ~> ids ^^ (p => (column: String) => RelationshipById(column, p)) |
+      rels ~> idxLookup ^^ { case (idxName, key, value) => (column: String) => RelationshipByIndex(column, idxName, key, value) } |
+      rels ~> idxString ^^ { case (idxName, query) => (column: String) => RelationshipByIndexQuery(column, idxName, query) } |
+      rels ~> parens("*") ^^ ( x => (column: String) => AllRelationships(column) ) |
+      nodes ~> opt("(") ~> failure("expected node id, or *") |
+      rels ~> opt("(") ~> failure("expected relationship id, or *")
 
-  def ids = 
+
+  def ids =
     (parens(comaList(wholeNumber)) ^^ (x => Literal(x.map(_.toLong)))
       | parens(comaList(wholeNumber) ~ opt(",")) ~> failure("trailing coma")
-      | "("~>failure("expected graph entity id"))
-      
+      | "(" ~> failure("expected graph entity id"))
 
-  def idxString: Parser[(String, Expression)] = ":" ~> identity ~ parens(parameter|stringLit) ^^ {
+
+  def idxString: Parser[(String, Expression)] = ":" ~> identity ~ parens(parameter | stringLit) ^^ {
     case id ~ valu => (id, valu)
   }
 
@@ -67,8 +70,10 @@ trait StartClause extends Base {
   def indexValue = parameter | stringLit | failure("string literal or parameter expected")
 
   def idxQuery: Parser[(Expression, Expression)] =
-    ((id | parameter) ~ "=" ~ indexValue ^^ {    case k ~ "=" ~ v => (k, v)  }
-    | "=" ~> failure("Need index key")    )
+    ((id | parameter) ~ "=" ~ indexValue ^^ {
+      case k ~ "=" ~ v => (k, v)
+    }
+      | "=" ~> failure("Need index key"))
 
   def id: Parser[Expression] = identity ^^ (x => Literal(x))
 

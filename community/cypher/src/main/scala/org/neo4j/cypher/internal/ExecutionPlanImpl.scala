@@ -26,6 +26,7 @@ import java.lang.Iterable
 import org.neo4j.cypher.internal.pipes._
 import org.neo4j.cypher.commands._
 import org.neo4j.cypher._
+import org.neo4j.tooling.GlobalGraphOperations
 
 class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends ExecutionPlan {
   val (executionPlan, executionPlanText) = prepareExecutionPlan()
@@ -256,6 +257,8 @@ class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends Execu
       })
 
     case NodeById(varName, valueGenerator) => new NodeStartPipe(lastPipe, varName, m => makeNodes[Node](valueGenerator(m), varName, graph.getNodeById))
+    case AllNodes(identifierName) => new NodeStartPipe(lastPipe, identifierName, m => GlobalGraphOperations.at(graph).getAllNodes.asScala )
+    case AllRelationships(identifierName) => new RelationshipStartPipe(lastPipe, identifierName, m => GlobalGraphOperations.at(graph).getAllRelationships.asScala )
     case RelationshipById(varName, id) => new RelationshipStartPipe(lastPipe, varName, m => makeNodes[Relationship](id(m), varName, graph.getRelationshipById))
   }
 

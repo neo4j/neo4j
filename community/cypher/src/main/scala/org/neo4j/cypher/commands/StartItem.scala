@@ -35,6 +35,9 @@ case class NodeByIndex(varName:String, idxName: String, key:Expression, expressi
 case class NodeByIndexQuery(varName:String, idxName: String, query: Expression) extends NodeStartItem(varName)
 case class NodeById(varName:String, expression:Expression) extends NodeStartItem(varName)
 
+case class AllNodes(columnName:String) extends NodeStartItem(columnName)
+case class AllRelationships(columnName:String) extends RelationshipStartItem(columnName)
+
 object NodeById {
   def apply(varName:String, id: Long*) = new NodeById(varName, Literal(id))
 }
