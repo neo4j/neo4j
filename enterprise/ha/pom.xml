@@ -19,7 +19,7 @@
   <properties>
     <bundle.namespace>org.neo4j.kernel.ha</bundle.namespace>
     <short-name>ha</short-name>
-    <neo4j.version>1.5.1-SNAPSHOT</neo4j.version>
+    <neo4j.version>1.5.1.RC5</neo4j.version>
   </properties>
 
   <scm>
