@@ -290,97 +290,89 @@ public class HAGraphDb extends AbstractGraphDatabase
          * the logs might be missing or corrupt. Try to recover by asking the master for the transaction and
          * either patch the current log file or recreate the missing one.
          */
-        Collection<XaDataSource> dataSources = localDb.getConfig().getTxModule().getXaDataSourceManager().getAllRegisteredDataSources();
-        for (XaDataSource dataSource : dataSources)
+        XaDataSource dataSource = localDb.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource(
+                Config.DEFAULT_DATA_SOURCE_NAME );
+        msgLog.logMessage( "Checking dataSource " + dataSource.getName() );
+        boolean corrupted = false;
+        long version = -1; // the log version, -1 indicates current log
+        long myLastCommittedTx = dataSource.getLastCommittedTxId();
+        if ( myLastCommittedTx == 1 )
         {
-            msgLog.logMessage( "Checking dataSource " + dataSource.getName() );
-            boolean corrupted = false;
-            long version = -1; // the log version, -1 indicates current log
-            long myLastCommittedTx = dataSource.getLastCommittedTxId();
-            if ( myLastCommittedTx == 1 )
+            // The case of a brand new store, nothing to do
+            return;
+        }
+        try
+        {
+            int masterId = dataSource.getMasterForCommittedTx(
+                    myLastCommittedTx ).first();
+            if ( masterId == -1 )
             {
-                // The case of a brand new store, nothing to do
-                return;
-            }
-            try
-            {
-                int masterId = dataSource.getMasterForCommittedTx(
-                        myLastCommittedTx ).first();
-                if (masterId == -1)
-                {
-                    corrupted = true;
-                }
-            }
-            catch ( NoSuchLogVersionException e )
-            {
-                msgLog.logMessage( "Missing log version " + e.getVersion()
-                                   + " for transaction " + myLastCommittedTx
-                                   + " and datasource " + dataSource.getName() );
                 corrupted = true;
-                version = e.getVersion();
             }
-            catch ( IOException e )
+        }
+        catch ( NoSuchLogVersionException e )
+        {
+            msgLog.logMessage( "Missing log version " + e.getVersion()
+                               + " for transaction " + myLastCommittedTx
+                               + " and datasource " + dataSource.getName() );
+            corrupted = true;
+            version = e.getVersion();
+        }
+        catch ( IOException e )
+        {
+            msgLog.logMessage(
+                    "IO exceptions while trying to retrieve the master for the latest txid (= "
+                            + myLastCommittedTx + " )", e );
+        }
+        catch ( RuntimeException e )
+        {
+            msgLog.logMessage( "Runtime exception while getting master id for"
+                               + " for transaction " + myLastCommittedTx
+                               + " and datasource " + dataSource.getName(), e );
+            corrupted = true;
+            /*
+             * We have no available way to know where it should be - just
+             * overwrite the last one
+             */
+            version = dataSource.getCurrentLogVersion() - 1;
+        }
+        if ( corrupted )
+        {
+            if ( version != -1 )
             {
-                msgLog.logMessage(
-                        "IO exceptions while trying to retrieve the master for the latest txid (= "
-                                + myLastCommittedTx + " )", e );
+                msgLog.logMessage( "Logical log file for transaction "
+                                   + myLastCommittedTx + " not found." );
             }
-            catch ( RuntimeException e )
+            else
             {
-                msgLog.logMessage(
-                        "Runtime exception while getting master id for"
-                                + " for transaction " + myLastCommittedTx
-                                + " and datasource " + dataSource.getName(), e );
-                corrupted = true;
+                msgLog.logMessage( "Tried to extract transaction "
+                                   + myLastCommittedTx
+                                   + " but it was not present in the log. Trying to retrieve it from master." );
+            }
+            if ( copiedStore )
+            {
                 /*
-                 * We have no available way to know where it should be - just
-                 * overwrite the last one
+                 *  We copied the store, so there may be pending stuff to write to disk. No point in
+                 *  checking for log existence/sanity, since even if an error is detected we can
+                 *  attribute it to the copy operation being in progress. Just warn then.
                  */
-                version = dataSource.getCurrentLogVersion() - 1;
+                msgLog.logMessage( "A store copy might be in progress. Will not act on the apparent corruption" );
             }
-            if ( corrupted )
+            else
             {
-                if ( version != -1 )
+                try
                 {
-                    msgLog.logMessage(
-                            "Logical log file for transaction "
-                                    + myLastCommittedTx + " not found." );
+                    copyLogFromMaster( broker.getMaster(),
+                            Config.DEFAULT_DATA_SOURCE_NAME, version,
+                            myLastCommittedTx, myLastCommittedTx );
+                    // Rechecking, might cost something extra but worth it
+                    dataSource.getMasterForCommittedTx( myLastCommittedTx );
+                    msgLog.logMessage( "Log copy finished without problems" );
                 }
-                else
+                catch ( Exception e )
                 {
-                    msgLog.logMessage(
-                            "Tried to extract transaction "
-                                    + myLastCommittedTx
-                                    + " but it was not present in the log. Trying to retrieve it from master." );
-                }
-                if ( copiedStore )
-                {
-                    /*
-                     *  We copied the store, so there may be pending stuff to write to disk. No point in
-                     *  checking for log existence/sanity, since even if an error is detected we can
-                     *  attribute it to the copy operation being in progress. Just warn then.
-                     */
-                    msgLog.logMessage(
-                            "A store copy might be in progress. Will not act on the apparent corruption" );
-                }
-                else
-                {
-                    try
-                    {
-                        copyLogFromMaster( broker.getMaster(),
-                                Config.DEFAULT_DATA_SOURCE_NAME, version,
-                                myLastCommittedTx, myLastCommittedTx );
-                        // Rechecking, might cost something extra but worth it
-                        dataSource.getMasterForCommittedTx( myLastCommittedTx );
-                        msgLog.logMessage(
-                                "Log copy finished without problems" );
-                    }
-                    catch ( Exception e )
-                    {
-                        msgLog.logMessage(
-                                "Failed to retrieve log version " + version
-                                        + " from master.", e );
-                    }
+                    msgLog.logMessage( "Failed to retrieve log version "
+                                       + version + " from master.", e );
                 }
             }
         }
