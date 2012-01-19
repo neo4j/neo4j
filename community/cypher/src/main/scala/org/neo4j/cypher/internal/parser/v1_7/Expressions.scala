@@ -38,7 +38,11 @@ trait Expressions extends Base {
       | number ^^ (x => Literal(x.toDouble))
       | parameter
       | entity
-      | failure("illegal start of value") )
+      | failure("illegal start of value") ) * (
+      "+" ^^^ {
+        (a: Expression, b: Expression) => Add(a, b)
+      }
+    )
 
   def property: Parser[Expression] = identity ~ "." ~ identity ^^ {
     case v ~ "." ~ p => createProperty(v, p)

@@ -1619,6 +1619,13 @@ RETURN x0.name?
     assert(List(Map("a" -> refNode, "b" -> a), Map("b" -> refNode, "a" -> a)) === result.toList)
   }
 
+  @Test def shouldAllowAddition() {
+    createNode("age"->36)
+
+    val result = parseAndExecute("start a=node(1) return a.age + 5 as newAge")
+    assert(List(Map("newAge" -> 41)) === result.toList)
+  }
+
   @Test def createEngineWithSpecifiedParserVersion() {
     val db = new ImpermanentGraphDatabase(Map[String, String]("cypher_parser_version" -> "1.5").asJava)
     val engine = new ExecutionEngine(db)

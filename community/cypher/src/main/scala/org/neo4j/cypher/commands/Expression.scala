@@ -39,6 +39,26 @@ abstract class Expression extends (Map[String, Any] => Any) {
   }
 }
 
+case class Add(a: Expression, b: Expression) extends Expression {
+  def identifier = Identifier(a.identifier.name + " + " + b.identifier.name, ScalarType())
+
+  def apply(m: Map[String, Any]) = {
+    val aVal = a(m)
+    val bVal = b(m)
+
+    (aVal, bVal) match {
+      case (x: Number, y: Number) => x.doubleValue() + y.doubleValue()
+//      case (x: Number, y: String) => throw new CypherTypeException("Don't know how to add `" + aVal.toString + "` and `" + bVal.toString + "`")
+//      case (x: String, y: Number) => throw new CypherTypeException("Don't know how to add `" + aVal.toString + "` and `" + bVal.toString + "`")
+      case (x: String, y: String) => x + y
+      case _ => throw new CypherTypeException("Don't know how to add `" + aVal.toString + "` and `" + bVal.toString + "`")
+    }
+
+  }
+
+  def declareDependencies(extectedType: AnyType) = a.declareDependencies(extectedType) ++ b.declareDependencies(extectedType)
+}
+
 case class Literal(v: Any) extends Expression {
   def apply(m: Map[String, Any]) = v
 
@@ -61,7 +81,7 @@ case class Nullable(expression: Expression) extends Expression {
   def apply(m: Map[String, Any]) = try {
     expression.apply(m)
   } catch {
-    case x:EntityNotFoundException => null
+    case x: EntityNotFoundException => null
   }
 
   def declareDependencies(extectedType: AnyType) = expression.dependencies(extectedType)
@@ -76,7 +96,7 @@ case class Property(entity: String, property: String) extends CastableExpression
       case propertyContainer => try {
         propertyContainer.getProperty(property)
       } catch {
-        case x: NotFoundException => throw new EntityNotFoundException("The property '%s' does not exist on %s".format(property, propertyContainer),x)
+        case x: NotFoundException => throw new EntityNotFoundException("The property '%s' does not exist on %s".format(property, propertyContainer), x)
       }
     }
   }
@@ -197,7 +217,7 @@ case class Entity(entityName: String) extends CastableExpression {
 }
 
 case class Parameter(parameterName: String) extends CastableExpression {
-  def apply(m: Map[String, Any]): Any = m.getOrElse("-=PARAMETER=-"+parameterName+"-=PARAMETER=-", throw new ParameterNotFoundException("Expected a parameter named " + parameterName)) match {
+  def apply(m: Map[String, Any]): Any = m.getOrElse("-=PARAMETER=-" + parameterName + "-=PARAMETER=-", throw new ParameterNotFoundException("Expected a parameter named " + parameterName)) match {
     case ParameterValue(x) => x
     case _ => throw new ParameterNotFoundException("Expected a parameter named " + parameterName)
   }
@@ -209,4 +229,4 @@ case class Parameter(parameterName: String) extends CastableExpression {
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = Seq()
 }
 
-case class ParameterValue(value:Any)
+case class ParameterValue(value: Any)
