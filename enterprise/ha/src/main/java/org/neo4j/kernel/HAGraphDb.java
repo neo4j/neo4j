@@ -226,7 +226,6 @@ public class HAGraphDb extends AbstractGraphDatabase
     {
         msgLog.logMessage( "Starting up highly available graph database '" + storeDir + "'" );
         StoreId storeId = null;
-        boolean copiedStore = false;
         // TODO
         /*
          * This is kind of stupid. We need to actually check what this directory holds because
@@ -251,7 +250,6 @@ public class HAGraphDb extends AbstractGraphDatabase
                     {
                         getFreshDatabaseFromMaster( master, false /*branched*/);
                         msgLog.logMessage( "copied store from master" );
-                        copiedStore = true;
                         exception = null;
                         break;
                     }
@@ -280,8 +278,13 @@ public class HAGraphDb extends AbstractGraphDatabase
         }
         newMaster( storeId, new Exception( "Starting up for the first time" ) );
         // the localGraph() below is a blocking call and is there on purpose
-        EmbeddedGraphDbImpl localDb = localGraph();
+        localGraph();
+    }
 
+    private void checkAndRecoverCorruptLogs( EmbeddedGraphDbImpl localDb,
+            boolean copiedStore )
+    {
+        msgLog.logMessage( "Checking for log consistency" );
         /*
          * We are going over all data sources and try to retrieve the latest transaction. If that fails then
          * the logs might be missing or corrupt. Try to recover by asking the master for the transaction and
@@ -290,6 +293,7 @@ public class HAGraphDb extends AbstractGraphDatabase
         Collection<XaDataSource> dataSources = localDb.getConfig().getTxModule().getXaDataSourceManager().getAllRegisteredDataSources();
         for (XaDataSource dataSource : dataSources)
         {
+            msgLog.logMessage( "Checking dataSource " + dataSource.getName() );
             boolean corrupted = false;
             long version = -1; // the log version, -1 indicates current log
             long myLastCommittedTx = dataSource.getLastCommittedTxId();
@@ -309,6 +313,9 @@ public class HAGraphDb extends AbstractGraphDatabase
             }
             catch ( NoSuchLogVersionException e )
             {
+                msgLog.logMessage( "Missing log version " + e.getVersion()
+                                   + " for transaction " + myLastCommittedTx
+                                   + " and datasource " + dataSource.getName() );
                 corrupted = true;
                 version = e.getVersion();
             }
@@ -316,8 +323,20 @@ public class HAGraphDb extends AbstractGraphDatabase
             {
                 msgLog.logMessage(
                         "IO exceptions while trying to retrieve the master for the latest txid (= "
-                                + myLastCommittedTx + " )",
-                        e );
+                                + myLastCommittedTx + " )", e );
+            }
+            catch ( RuntimeException e )
+            {
+                msgLog.logMessage(
+                        "Runtime exception while getting master id for"
+                                + " for transaction " + myLastCommittedTx
+                                + " and datasource " + dataSource.getName(), e );
+                corrupted = true;
+                /*
+                 * We have no available way to know where it should be - just
+                 * overwrite the last one
+                 */
+                version = dataSource.getCurrentLogVersion() - 1;
             }
             if ( corrupted )
             {
@@ -351,6 +370,7 @@ public class HAGraphDb extends AbstractGraphDatabase
                         copyLogFromMaster( broker.getMaster(),
                                 Config.DEFAULT_DATA_SOURCE_NAME, version,
                                 myLastCommittedTx, myLastCommittedTx );
+                        // Rechecking, might cost something extra but worth it
                         dataSource.getMasterForCommittedTx( myLastCommittedTx );
                         msgLog.logMessage(
                                 "Log copy finished without problems" );
@@ -429,6 +449,7 @@ public class HAGraphDb extends AbstractGraphDatabase
         FileChannel newLog = ( (FileSystemAbstraction) localGraph().getConfig().getParams().get(
                 FileSystemAbstraction.class ) ).open(
                 ds.getFileName( logVersion ), "rw" );
+        newLog.truncate( 0 );
         ByteBuffer scratch = ByteBuffer.allocate( 64 );
         LogIoUtils.writeLogHeader( scratch, logVersion, startTxId );
         // scratch buffer is flipped by writeLogHeader
@@ -620,8 +641,6 @@ public class HAGraphDb extends AbstractGraphDatabase
                     ((SlaveIdGeneratorFactory) getConfig().getIdGeneratorFactory()).forgetIdAllocationsFromMaster();
                 }
 
-                ensureDataConsistencyWithMaster( newDb != null ? newDb : localGraph, master );
-                msgLog.logMessage( "Data consistent with master" );
             }
             if ( newDb != null )
             {
@@ -640,6 +659,10 @@ public class HAGraphDb extends AbstractGraphDatabase
                 // The above being true means we are a slave
                 instantiateAutoUpdatePullerIfConfigSaysSo();
                 pullUpdates = true;
+                checkAndRecoverCorruptLogs( localGraph, false );
+                ensureDataConsistencyWithMaster( newDb != null ? newDb
+                        : localGraph, master );
+                msgLog.logMessage( "Data consistent with master" );
             }
         }
         catch ( Throwable t )
@@ -744,7 +767,9 @@ public class HAGraphDb extends AbstractGraphDatabase
             msgLog.logMessage(
                     "Logical log file for txId "
                             + myLastCommittedTx
-                            + " not found, perhaps due to the db being copied from master. Ignoring." );
+                               + " missing [version="
+                               + e.getVersion()
+                               + "]. If this is startup then it will be recovered later, otherwise it might be a problem." );
             return;
         }
         catch ( IOException e )
