@@ -20,11 +20,11 @@ package org.neo4j.examples;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.test.JavaDocsGenerator;
-import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 public class MatrixTest
 {
@@ -52,7 +52,7 @@ public class MatrixTest
         assertTrue( friends.contains( "Cypher" ) );
         assertTrue( friends.contains( "Agent Smith" ) );
         assertTrue( hackers.contains( "The Architect" ) );
-        gen.saveToFile( "friends", AsciidocHelper.createOutputSnippet( friends ) );
-        gen.saveToFile( "hackers", AsciidocHelper.createOutputSnippet( hackers ) );
+        gen.saveToFile( "friends", createOutputSnippet( friends ) );
+        gen.saveToFile( "hackers", createOutputSnippet( hackers ) );
     }
 }
