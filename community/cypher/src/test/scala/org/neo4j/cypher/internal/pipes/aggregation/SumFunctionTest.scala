@@ -23,7 +23,7 @@ import org.junit.Assert._
 import org.junit.Test
 import org.scalatest.junit.JUnitSuite
 import org.neo4j.cypher.commands.Entity
-import org.neo4j.cypher.ExpectedNumericalValueException
+import org.neo4j.cypher.CypherTypeException
 
 class SumFunctionTest extends JUnitSuite {
   @Test def singleValueReturnsThatNumber() {
@@ -69,7 +69,7 @@ class SumFunctionTest extends JUnitSuite {
   }
 
   @Test def noNumberValuesThrowAnException() {
-    intercept[ExpectedNumericalValueException](sumOn(1, "wut"))
+    intercept[CypherTypeException](sumOn(1, "wut"))
   }
 
   def sumOn(values: Any*): Any = {
