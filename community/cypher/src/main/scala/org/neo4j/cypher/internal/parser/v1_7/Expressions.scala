@@ -23,10 +23,32 @@ import org.neo4j.cypher.commands._
 
 trait Expressions extends Base {
 
-  def entity: Parser[Entity] = identity ^^ (x => Entity(x))
+  def term: Parser[Expression] = factor ~ rep("*" ~ factor | "/" ~ factor) ^^ {
+    case head ~ rest => {
+      var result = head
+      rest.foreach {
+        case "*" ~ f => result = f  //TODO
+        case "/" ~ f => result = f  //TODO
+      }
 
-  def expression: Parser[Expression] =
-    (ignoreCase("true") ^^ (x => Literal(true))
+      result
+    }
+  }
+  
+  def expression: Parser[Expression] = term ~ rep( "+" ~ term | "-" ~ term) ^^ {
+    case head ~ rest => {
+      var result = head
+      rest.foreach {
+        case "+" ~ f => result = Add(result, f)
+        case "-" ~ f => result = Subtract(result, f)
+      }
+
+      result
+    }
+  }
+
+  def factor: Parser[Expression] =
+    ( ignoreCase("true") ^^ (x => Literal(true))
       | ignoreCase("false") ^^ (x => Literal(false))
       | extract
       | function
@@ -38,11 +60,16 @@ trait Expressions extends Base {
       | number ^^ (x => Literal(x.toDouble))
       | parameter
       | entity
-      | failure("illegal start of value") ) * (
-      "+" ^^^ {
-        (a: Expression, b: Expression) => Add(a, b)
-      }
-    )
+      | parens(expression)
+      | failure("illegal start of value") ) 
+  
+  /** (
+      "+" ^^^ { (a: Expression, b: Expression) => Add(a, b) } |
+      "-" ^^^ { (a: Expression, b: Expression) => Subtract(a, b) }
+    )*/
+
+  def entity: Parser[Entity] = identity ^^ (x => Entity(x))
+
 
   def property: Parser[Expression] = identity ~ "." ~ identity ^^ {
     case v ~ "." ~ p => createProperty(v, p)

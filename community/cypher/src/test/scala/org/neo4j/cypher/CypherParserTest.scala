@@ -172,6 +172,14 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ExpressionReturnItem(Add(Literal(12), Literal(2)), "12+2")))
   }
 
+  @Test def shouldHandleSubtraction() {
+    testQuery(
+      "start a = NODE(1) return 12-2",
+      Query.
+        start(NodeById("a", 1)).
+        returns(ExpressionReturnItem(Subtract(Literal(12), Literal(2)), "12-2")))
+  }
+
   @Test def shouldFilterOnPropWithDecimals() {
     testQuery(
       "start a = node(1) where a.extractReturnItems = 3.1415 return a",

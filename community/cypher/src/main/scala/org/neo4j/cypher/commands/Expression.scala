@@ -48,10 +48,25 @@ case class Add(a: Expression, b: Expression) extends Expression {
 
     (aVal, bVal) match {
       case (x: Number, y: Number) => x.doubleValue() + y.doubleValue()
-//      case (x: Number, y: String) => throw new CypherTypeException("Don't know how to add `" + aVal.toString + "` and `" + bVal.toString + "`")
-//      case (x: String, y: Number) => throw new CypherTypeException("Don't know how to add `" + aVal.toString + "` and `" + bVal.toString + "`")
       case (x: String, y: String) => x + y
       case _ => throw new CypherTypeException("Don't know how to add `" + aVal.toString + "` and `" + bVal.toString + "`")
+    }
+
+  }
+
+  def declareDependencies(extectedType: AnyType) = a.declareDependencies(extectedType) ++ b.declareDependencies(extectedType)
+}
+
+case class Subtract(a: Expression, b: Expression) extends Expression {
+  def identifier = Identifier(a.identifier.name + " + " + b.identifier.name, ScalarType())
+
+  def apply(m: Map[String, Any]) = {
+    val aVal = a(m)
+    val bVal = b(m)
+
+    (aVal, bVal) match {
+      case (x: Number, y: Number) => x.doubleValue() - y.doubleValue()
+      case _ => throw new CypherTypeException("Don't know how to subtract `" + bVal.toString + "` from `" + aVal.toString + "`")
     }
 
   }
