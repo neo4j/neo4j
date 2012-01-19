@@ -39,11 +39,8 @@ public class JavaQueryTest
         assertTrue(jq.resultString.contains( "1 rows" ));
         assertTrue(jq.resultNode.getId() == 0L);
 
-        gen.saveToFile( "target/docs", "result",
-                AsciidocHelper.createOutputSnippet( jq.resultString ) );
-        gen.saveToFile( "target/docs", "columns",
-                AsciidocHelper.createOutputSnippet( jq.columnsString ) );
-        gen.saveToFile( "target/docs", "node",
-                AsciidocHelper.createOutputSnippet( jq.resultNode.toString() ) );
+        gen.saveToFile( "result", AsciidocHelper.createOutputSnippet( jq.resultString ) );
+        gen.saveToFile( "columns", AsciidocHelper.createOutputSnippet( jq.columnsString ) );
+        gen.saveToFile( "node", AsciidocHelper.createOutputSnippet( jq.resultNode.toString() ) );
     }
 }

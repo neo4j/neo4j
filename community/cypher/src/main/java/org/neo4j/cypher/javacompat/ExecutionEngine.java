@@ -22,7 +22,6 @@ package org.neo4j.cypher.javacompat;
 import org.neo4j.cypher.SyntaxException;
 import org.neo4j.cypher.commands.Query;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.AbstractGraphDatabase;
 
 import java.util.Map;
 
