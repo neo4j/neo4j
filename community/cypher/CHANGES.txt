@@ -1,3 +1,9 @@
+<NOT YET RELEASED>
+------------------
+o Lots of changes to the parsers error reporting
+o Queries can now be pre-pended with which parser version to use
+o Database configuration can now change which version of the parser to use as default
+
 1.6.M03 (2012-01-12)
 --------------------
 o Added a different aggregation logic. Makes aggregating on the same columns as sorting much faster
