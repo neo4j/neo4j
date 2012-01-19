@@ -1631,7 +1631,7 @@ RETURN x0.name?
     val engine = new ExecutionEngine(db)
 
     try {
-      // This syntax is valid in 1.6, but should give an exception in 1.5
+      // This syntax is valid today, but should give an exception in 1.5
       engine.execute("start n=node(0) where all(x in n.prop where x = 'monkey') return n")
     } catch {
       case x:SyntaxException =>
