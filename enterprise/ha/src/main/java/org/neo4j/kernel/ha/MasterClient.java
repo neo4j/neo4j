@@ -242,6 +242,26 @@ public class MasterClient extends Client<Master> implements Master
         return sendRequest( HaRequestType.COPY_STORE, context, EMPTY_SERIALIZER, new Protocol.FileStreamsDeserializer( writer ) );
     }
 
+    @SuppressWarnings( "unchecked" )
+    @Override
+    public Response<Void> copyTransactions( SlaveContext context,
+            final String ds, final long startTxId, final long endTxId )
+    {
+        context = new SlaveContext( context.getSessionId(),
+                context.machineId(), context.getEventIdentifier(), new Pair[0] );
+
+        return sendRequest( HaRequestType.COPY_TRANSACTIONS, context, new Serializer()
+        {
+            public void write( ChannelBuffer buffer, ByteBuffer readBuffer )
+                    throws IOException
+            {
+                writeString( buffer, ds );
+                buffer.writeLong( startTxId );
+                buffer.writeLong( endTxId );
+            }
+        }, VOID_DESERIALIZER );
+    }
+
     public static enum HaRequestType implements RequestType<Master>
     {
         //====
@@ -406,6 +426,19 @@ public class MasterClient extends Client<Master> implements Master
                     ChannelBuffer input, final ChannelBuffer target )
             {
                 return master.copyStore( context, new ToNetworkStoreWriter( target ) );
+            }
+
+        }, VOID_SERIALIZER, true ),
+
+        // ====
+        COPY_TRANSACTIONS( new MasterCaller<Master, Void>()
+        {
+            public Response<Void> callMaster( Master master,
+                    SlaveContext context, ChannelBuffer input,
+                    final ChannelBuffer target )
+            {
+                return master.copyTransactions( context, readString( input ),
+                        input.readLong(), input.readLong() );
             }
 
         }, VOID_SERIALIZER, true ),

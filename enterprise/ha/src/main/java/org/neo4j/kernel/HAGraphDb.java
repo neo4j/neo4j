@@ -27,6 +27,9 @@ import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_D
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -70,10 +73,12 @@ import org.neo4j.kernel.ha.ZooKeeperLastCommittedTxIdSetter;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
@@ -221,6 +226,16 @@ public class HAGraphDb extends AbstractGraphDatabase
     {
         msgLog.logMessage( "Starting up highly available graph database '" + storeDir + "'" );
         StoreId storeId = null;
+        boolean copiedStore = false;
+        // TODO
+        /*
+         * This is kind of stupid. We need to actually check what this directory holds because
+         * it might be a failed attempt from a previous copy. We should try to start a db over that
+         * and if that fails (hence, something is broken) remove it, create a directory, copy from
+         * master there, apply txs there, try to start a db on that and if successful copy THAT to
+         * the actual working directory.
+         * tl;dr - this "test" would pass if someone did "touch neostore" in the work dir. It is stupid.
+         */
         if ( !new File( storeDir, NeoStore.DEFAULT_NAME ).exists() )
         {   // Try for
             long endTime = System.currentTimeMillis()+60000;
@@ -236,6 +251,7 @@ public class HAGraphDb extends AbstractGraphDatabase
                     {
                         getFreshDatabaseFromMaster( master, false /*branched*/);
                         msgLog.logMessage( "copied store from master" );
+                        copiedStore = true;
                         exception = null;
                         break;
                     }
@@ -263,7 +279,91 @@ public class HAGraphDb extends AbstractGraphDatabase
             }
         }
         newMaster( storeId, new Exception( "Starting up for the first time" ) );
-        localGraph();
+        // the localGraph() below is a blocking call and is there on purpose
+        EmbeddedGraphDbImpl localDb = localGraph();
+
+        /*
+         * We are going over all data sources and try to retrieve the latest transaction. If that fails then
+         * the logs might be missing or corrupt. Try to recover by asking the master for the transaction and
+         * either patch the current log file or recreate the missing one.
+         */
+        Collection<XaDataSource> dataSources = localDb.getConfig().getTxModule().getXaDataSourceManager().getAllRegisteredDataSources();
+        for (XaDataSource dataSource : dataSources)
+        {
+            boolean corrupted = false;
+            long version = -1; // the log version, -1 indicates current log
+            long myLastCommittedTx = dataSource.getLastCommittedTxId();
+            if ( myLastCommittedTx == 1 )
+            {
+                // The case of a brand new store, nothing to do
+                return;
+            }
+            try
+            {
+                int masterId = dataSource.getMasterForCommittedTx(
+                        myLastCommittedTx ).first();
+                if (masterId == -1)
+                {
+                    corrupted = true;
+                }
+            }
+            catch ( NoSuchLogVersionException e )
+            {
+                corrupted = true;
+                version = e.getVersion();
+            }
+            catch ( IOException e )
+            {
+                msgLog.logMessage(
+                        "IO exceptions while trying to retrieve the master for the latest txid (= "
+                                + myLastCommittedTx + " )",
+                        e );
+            }
+            if ( corrupted )
+            {
+                if ( version != -1 )
+                {
+                    msgLog.logMessage(
+                            "Logical log file for transaction "
+                                    + myLastCommittedTx + " not found." );
+                }
+                else
+                {
+                    msgLog.logMessage(
+                            "Tried to extract transaction "
+                                    + myLastCommittedTx
+                                    + " but it was not present in the log. Trying to retrieve it from master." );
+                }
+                if ( copiedStore )
+                {
+                    /*
+                     *  We copied the store, so there may be pending stuff to write to disk. No point in
+                     *  checking for log existence/sanity, since even if an error is detected we can
+                     *  attribute it to the copy operation being in progress. Just warn then.
+                     */
+                    msgLog.logMessage(
+                            "A store copy might be in progress. Will not act on the apparent corruption" );
+                }
+                else
+                {
+                    try
+                    {
+                        copyLogFromMaster( broker.getMaster(),
+                                Config.DEFAULT_DATA_SOURCE_NAME, version,
+                                myLastCommittedTx, myLastCommittedTx );
+                        dataSource.getMasterForCommittedTx( myLastCommittedTx );
+                        msgLog.logMessage(
+                                "Log copy finished without problems" );
+                    }
+                    catch ( Exception e )
+                    {
+                        msgLog.logMessage(
+                                "Failed to retrieve log version " + version
+                                        + " from master.", e );
+                    }
+                }
+            }
+        }
     }
 
     private void sleepWithoutInterruption( long time, String errorMessage )
@@ -296,6 +396,53 @@ public class HAGraphDb extends AbstractGraphDatabase
             copiedDb.shutdown();
         }
         msgLog.logMessage( "Done copying store from master" );
+    }
+
+    /**
+     * Tries to get a set of transactions for a specific data source from the
+     * master and possibly write it out as a versioned log file. Useful for
+     * recovering your damaged or missing log files.
+     *
+     * @param master The master to retrieve transactions from
+     * @param datasource The datasource for which the txs to retrieve
+     * @param logVersion The version of the log to rebuild, with -1 indicating
+     *            apply to current one
+     * @param startTxId The first tx to retrieve
+     * @param endTxId The last tx to retrieve
+     * @throws Exception
+     */
+    private void copyLogFromMaster( Pair<Master, Machine> master,
+            String datasource, long logVersion, long startTxId, long endTxId )
+            throws Exception
+    {
+        Response<Void> response = master.first().copyTransactions(
+                new SlaveContext( 0, machineId, 0, new Pair[0] ), datasource,
+                startTxId, endTxId );
+        if ( logVersion == -1 )
+        {
+            // No log version, just apply to the latest one
+            receive( response );
+            return;
+        }
+        XaDataSource ds = localGraph().getConfig().getTxModule().getXaDataSourceManager().getXaDataSource(
+                datasource );
+        FileChannel newLog = ( (FileSystemAbstraction) localGraph().getConfig().getParams().get(
+                FileSystemAbstraction.class ) ).open(
+                ds.getFileName( logVersion ), "rw" );
+        ByteBuffer scratch = ByteBuffer.allocate( 64 );
+        LogIoUtils.writeLogHeader( scratch, logVersion, startTxId );
+        // scratch buffer is flipped by writeLogHeader
+        newLog.write( scratch );
+        ReadableByteChannel received = response.transactions().next().third().extract();
+        scratch.flip();
+        while ( received.read( scratch ) > 0 )
+        {
+            scratch.flip();
+            newLog.write( scratch );
+            scratch.flip();
+        }
+        newLog.force( false );
+        newLog.close();
     }
 
     private long highestLogVersion()

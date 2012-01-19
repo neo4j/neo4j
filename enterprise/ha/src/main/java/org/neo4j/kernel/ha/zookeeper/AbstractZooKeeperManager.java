@@ -390,6 +390,13 @@ public abstract class AbstractZooKeeperManager implements Watcher
         }
 
         @Override
+        public Response<Void> copyTransactions( SlaveContext context,
+                String dsName, long startTxId, long endTxId )
+        {
+            throw noMasterException();
+        }
+
+        @Override
         public Response<Long> commitSingleResourceTransaction( SlaveContext context, String resource,
                 TxExtractor txGetter )
         {
