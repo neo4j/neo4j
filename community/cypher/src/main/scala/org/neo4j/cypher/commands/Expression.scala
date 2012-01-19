@@ -74,6 +74,56 @@ case class Subtract(a: Expression, b: Expression) extends Expression {
   def declareDependencies(extectedType: AnyType) = a.declareDependencies(extectedType) ++ b.declareDependencies(extectedType)
 }
 
+case class Multiply(a: Expression, b: Expression) extends Arithmetics(a, b) {
+  def operand = "*"
+
+  def verb = "multiply"
+
+  def stringWithString(a: String, b: String) = throwTypeError(a, b)
+
+  def numberWithNumber(a: Number, b: Number) = a.doubleValue() * b.doubleValue()
+}
+
+case class Divide(a: Expression, b: Expression) extends Arithmetics(a, b) {
+  def operand = "/"
+
+  def verb = "divide"
+
+  def stringWithString(a: String, b: String) = throwTypeError(a, b)
+
+  def numberWithNumber(a: Number, b: Number) = a.doubleValue() / b.doubleValue()
+}
+
+abstract class Arithmetics(a: Expression, b: Expression) extends Expression {
+  def identifier = Identifier("%s %s %s".format(a.identifier.name, operand, b.identifier.name), ScalarType())
+
+  def operand: String
+
+  def throwTypeError(bVal: Any, aVal: Any): Nothing = {
+    throw new CypherTypeException("Don't know how to subtract `" + bVal.toString + "` from `" + aVal.toString + "`")
+  }
+
+  def apply(m: Map[String, Any]) = {
+    val aVal = a(m)
+    val bVal = b(m)
+
+    (aVal, bVal) match {
+      case (x: Number, y: Number) => numberWithNumber(x,y)
+      case (x: String, y: String) => stringWithString(x,y)
+      case _ => throwTypeError(bVal, aVal)
+    }
+
+  }
+
+  def verb: String
+
+  def stringWithString(a: String, b: String): String
+
+  def numberWithNumber(a: Number, b: Number): Number
+
+  def declareDependencies(extectedType: AnyType) = a.declareDependencies(extectedType) ++ b.declareDependencies(extectedType)
+}
+
 case class Literal(v: Any) extends Expression {
   def apply(m: Map[String, Any]) = v
 

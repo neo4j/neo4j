@@ -1619,6 +1619,11 @@ RETURN x0.name?
     assert(List(Map("a" -> refNode, "b" -> a), Map("b" -> refNode, "a" -> a)) === result.toList)
   }
 
+  @Test def arithmeticsPrecedenceTest() {
+    val result = parseAndExecute("start a = NODE(0) return 12/4*3-2*4")
+    assert(List(Map("12/4*3-2*4" -> 1)) === result.toList)
+  }
+
   @Test def shouldAllowAddition() {
     createNode("age"->36)
 

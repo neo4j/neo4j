@@ -172,12 +172,22 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ExpressionReturnItem(Add(Literal(12), Literal(2)), "12+2")))
   }
 
-  @Test def shouldHandleSubtraction() {
+  @Test def arithmeticsPrecedence() {
     testQuery(
-      "start a = NODE(1) return 12-2",
+      "start a = NODE(1) return 12/4*3-2*4",
       Query.
         start(NodeById("a", 1)).
-        returns(ExpressionReturnItem(Subtract(Literal(12), Literal(2)), "12-2")))
+        returns(ExpressionReturnItem(
+        Subtract(
+          Divide(
+            Literal(12),
+            Multiply(
+              Literal(4),
+              Literal(3))),
+          Multiply(
+            Literal(2),
+            Literal(4)))
+        , "12/4*3-2*4")))
   }
 
   @Test def shouldFilterOnPropWithDecimals() {
@@ -1119,7 +1129,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
     val ast = try {
       parser.parse(query)
     } catch {
-      case exception:SyntaxException => {
+      case exception: SyntaxException => {
         println(exception.toString(query))
         throw exception
       }

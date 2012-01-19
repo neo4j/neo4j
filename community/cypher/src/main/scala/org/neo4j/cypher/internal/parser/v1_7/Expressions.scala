@@ -27,8 +27,8 @@ trait Expressions extends Base {
     case head ~ rest => {
       var result = head
       rest.foreach {
-        case "*" ~ f => result = f  //TODO
-        case "/" ~ f => result = f  //TODO
+        case "*" ~ f => result = Multiply(result,f)
+        case "/" ~ f => result = Divide(result,f)
       }
 
       result
