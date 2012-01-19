@@ -36,7 +36,7 @@ public interface Master
     Response<IdAllocation> allocateIds( IdType idType );
 
     Response<Integer> createRelationshipType( SlaveContext context, String name );
-    
+
     /**
      * Called when the first write operation of lock is performed for a transaction.
      */
@@ -45,11 +45,11 @@ public interface Master
     Response<LockResult> acquireNodeWriteLock( SlaveContext context, long... nodes );
 
     Response<LockResult> acquireNodeReadLock( SlaveContext context, long... nodes );
-    
+
     Response<LockResult> acquireGraphWriteLock( SlaveContext context );
 
     Response<LockResult> acquireGraphReadLock( SlaveContext context );
-    
+
     Response<LockResult> acquireRelationshipWriteLock( SlaveContext context, long... relationships );
 
     Response<LockResult> acquireRelationshipReadLock( SlaveContext context, long... relationships );
@@ -70,7 +70,10 @@ public interface Master
     Response<Pair<Integer,Long>> getMasterIdForCommittedTx( long txId, StoreId myStoreId );
 
     Response<Void> copyStore( SlaveContext context, StoreWriter writer );
-    
+
+    Response<Void> copyTransactions( SlaveContext context, String dsName,
+            long startTxId, long endTxId );
+
     void shutdown();
 
     Response<LockResult> acquireIndexWriteLock( SlaveContext context, String index, String key );

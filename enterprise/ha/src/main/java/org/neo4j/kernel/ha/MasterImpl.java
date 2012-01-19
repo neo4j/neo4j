@@ -19,6 +19,22 @@
  */
 package org.neo4j.kernel.ha;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+
+import javax.transaction.NotSupportedException;
+import javax.transaction.SystemException;
+import javax.transaction.Transaction;
+import javax.transaction.TransactionManager;
+
 import org.neo4j.com.MasterUtil;
 import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
@@ -45,21 +61,6 @@ import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import javax.transaction.NotSupportedException;
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This is the real master code that executes on a master. The actual
@@ -135,12 +136,12 @@ public class MasterImpl implements Master
     {
         return this.graphDb;
     }
-    
+
     private Config getGraphDbConfig()
     {
         return ((AbstractGraphDatabase)this.graphDb).getConfig();
     }
-    
+
     @Override
     public Response<Void> initializeTx( SlaveContext context )
     {
@@ -154,7 +155,7 @@ public class MasterImpl implements Master
             suspendThisAndResumeOther( otherTx, context );
         }
     }
-    
+
     private Response<LockResult> acquireLock( SlaveContext context,
             LockGrabber lockGrabber, Object... entities )
     {
@@ -182,12 +183,12 @@ public class MasterImpl implements Master
             suspendThisAndResumeOther( otherTx, context );
         }
     }
-    
+
     private <T> Response<T> packResponse( SlaveContext context, T response )
     {
         return packResponse( context, response, MasterUtil.ALL );
     }
-    
+
     private <T> Response<T> packResponse( SlaveContext context, T response, Predicate<Long> filter )
     {
         return MasterUtil.packResponse( graphDb, context, response, filter );
@@ -196,14 +197,14 @@ public class MasterImpl implements Master
     private Transaction getTxAndUpdateTimestamp( SlaveContext txId )
     {
         Pair<Transaction, AtomicLong> result = transactions.get( txId );
-        
+
         // update time stamp to current time so that we know that this tx just completed
         // a request and can now again start to be monitored, so that it can be
         // rolled back if it's getting old.
         result.other().set( System.currentTimeMillis() );
         return result.first();
     }
-    
+
     private Transaction getTx( SlaveContext txId )
     {
         Pair<Transaction, AtomicLong> result = transactions.get( txId );
@@ -350,12 +351,12 @@ public class MasterImpl implements Master
     {
         return acquireLock( context, WRITE_LOCK_GRABBER, graphProperties() );
     }
-    
+
     private PropertyContainer graphProperties()
     {
         return getGraphDbConfig().getGraphDbModule().getNodeManager().getGraphProperties();
     }
-    
+
     private Node[] nodesById( long[] ids )
     {
         Node[] result = new Node[ids.length];
@@ -452,7 +453,14 @@ public class MasterImpl implements Master
         writer.done();
         return packResponse( context, null );
     }
-    
+
+    @Override
+    public Response<Void> copyTransactions( SlaveContext context,
+            String dsName, long startTxId, long endTxId )
+    {
+        return MasterUtil.getTransactions( graphDb, dsName, startTxId, endTxId );
+    }
+
     @Override
     public void shutdown()
     {
@@ -501,13 +509,13 @@ public class MasterImpl implements Master
             lockReleaser.addLockToTransaction( entity, LockType.WRITE );
         }
     };
-    
+
     @Override
     public Response<LockResult> acquireIndexReadLock( SlaveContext context, String index, String key )
     {
         return acquireLock( context, READ_LOCK_GRABBER, new NodeManager.IndexLock( index, key ) );
     }
-    
+
     @Override
     public Response<LockResult> acquireIndexWriteLock( SlaveContext context, String index,
             String key )
