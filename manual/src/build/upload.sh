@@ -27,7 +27,7 @@ ROOTPATHDOCS=public_html/docs
 hostname=$(uname -n)
 
 # If you're not a Jenkins node, don't deploy the docs
-[ "${hostname}" == 'build1' ] &&  exit 0
+#[ "${hostname}" == 'build1' ] &&  exit 0
 
 echo "VERSION = $VERSION"
 echo "SYMLINKVERSION = $SYMLINKVERSION"
