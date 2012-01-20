@@ -19,30 +19,24 @@
  */
 package org.neo4j.shell.kernel.apps;
 
-import java.rmi.RemoteException;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.neo4j.cypher.SyntaxException;
-import org.neo4j.cypher.commands.Query;
-import org.neo4j.cypher.javacompat.CypherParser;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.helpers.Service;
-import org.neo4j.shell.App;
-import org.neo4j.shell.AppCommandParser;
-import org.neo4j.shell.Output;
-import org.neo4j.shell.Session;
-import org.neo4j.shell.ShellException;
+import org.neo4j.shell.*;
+
+import java.rmi.RemoteException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Mimics the POSIX application with the same name, i.e. renames a property. It
  * could also (regarding POSIX) move nodes, but it doesn't).
  */
 @Service.Implementation( App.class )
-public class Start extends GraphDatabaseApp
+public class Cypher extends GraphDatabaseApp
 {
-    public Start()
+    public Cypher()
     {
         super();
     }
@@ -50,17 +44,18 @@ public class Start extends GraphDatabaseApp
     @Override
     public String getDescription()
     {
-        return "Executes a Cypher query. Usage: start <rest of query>\n" +
-                "Example: START me = node({self}) MATCH me-[:KNOWS]->you RETURN you.name\n" +
+        return "Executes a Cypher query with an older parser. " +
+                "Usage: cypher <version> start <rest of query>\n" +
+                "Example: CYPHER 1.5 START me = node({self}) MATCH me-[:KNOWS]->you RETURN you.name\n" +
                 "where {self} will be replaced with the current location in the graph";
     }
 
     @Override
     protected String exec( AppCommandParser parser, Session session, Output out )
-        throws ShellException, RemoteException
+            throws ShellException, RemoteException
     {
         String query = parser.getLine();
-        
+
         if ( endsWithNewLine( query ) || looksToBeComplete( query ) )
         {
             ExecutionEngine engine = new ExecutionEngine( getServer().getDb() );
