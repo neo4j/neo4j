@@ -19,22 +19,15 @@
  */
 package org.neo4j.shell.kernel.apps;
 
-import org.neo4j.cypher.SyntaxException;
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.helpers.Service;
-import org.neo4j.shell.*;
-
-import java.rmi.RemoteException;
-import java.util.HashMap;
-import java.util.Map;
+import org.neo4j.shell.App;
 
 /**
  * Mimics the POSIX application with the same name, i.e. renames a property. It
  * could also (regarding POSIX) move nodes, but it doesn't).
  */
 @Service.Implementation( App.class )
-public class Cypher extends GraphDatabaseApp
+public class Cypher extends Start
 {
     public Cypher()
     {
@@ -48,57 +41,5 @@ public class Cypher extends GraphDatabaseApp
                 "Usage: cypher <version> start <rest of query>\n" +
                 "Example: CYPHER 1.5 START me = node({self}) MATCH me-[:KNOWS]->you RETURN you.name\n" +
                 "where {self} will be replaced with the current location in the graph";
-    }
-
-    @Override
-    protected String exec( AppCommandParser parser, Session session, Output out )
-            throws ShellException, RemoteException
-    {
-        String query = parser.getLine();
-
-        if ( endsWithNewLine( query ) || looksToBeComplete( query ) )
-        {
-            ExecutionEngine engine = new ExecutionEngine( getServer().getDb() );
-            try
-            {
-                ExecutionResult result = engine.execute( query, getParameters( session ) );
-                out.println( result.toString() );
-            }
-            catch ( SyntaxException e )
-            {
-                throw ShellException.wrapCause( e );
-            }
-            return null;
-        }
-        else
-        {
-            return "c";
-        }
-    }
-
-    private Map<String, Object> getParameters( Session session ) throws ShellException
-    {
-        Map<String, Object> params = new HashMap<String, Object>();
-        try
-        {
-            NodeOrRelationship self = getCurrent( session );
-            params.put( "self", self.isNode() ? self.asNode() :self.asRelationship() );
-        }
-        catch ( ShellException e )
-        { // OK, current didn't exist
-        }
-        return params;
-    }
-
-    private boolean looksToBeComplete( String query )
-    {
-        // TODO do for real
-        return query.toLowerCase().contains( "return" );
-//        return false;
-    }
-
-    private boolean endsWithNewLine( String query )
-    {
-        return query.length() > 0 && query.endsWith( "\n" );
     }
 }
