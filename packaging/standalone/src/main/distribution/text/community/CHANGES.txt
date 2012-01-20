@@ -1,3 +1,13 @@
+1.6 (2012-01-19)
+----------------
+o Fixed a ConcurrentModificationException problem in lucene index when rotating logs and listing store files.
+o Fixes issues #173, #118, #138, #103
+o Minor performance optimization in property handling code.
+Cypher:
+  o Lots of changes to the parsers error reporting
+  o Queries can now be pre-pended with which parser version to use
+  o Database configuration can now change which version of the parser to use as default
+
 1.6.M03 (2012-01-12)
 --------------------
 o Added a different aggregation logic. Makes aggregating on the same columns as sorting much faster
