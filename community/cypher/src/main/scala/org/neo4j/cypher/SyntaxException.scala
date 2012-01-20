@@ -24,8 +24,8 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 class SyntaxException(message: String, val query:String,  val offset: Option[Int]) extends CypherException(message, null) {
   def this(message: String, query:String, offset: Int) = this(message,query,Some(offset)) 
   def this(message:String) = this(message,"",None)
-  
-  override def getLocalizedMessage = offset match {
+
+  override def toString = offset match {
     case Some(idx) =>getMessage + "\n" + findErrorLine(idx, query.split('\n').toList)
     case None => getMessage
   }  
@@ -35,12 +35,12 @@ class SyntaxException(message: String, val query:String,  val offset: Option[Int
       case Nil => throw new ThisShouldNotHappenError("Andrés & Tobias", "message converted to empty list")
 
       case List(x) => {
-        val i = if (x.size > idx)
+        val spaces = if (x.size > idx)
           idx
         else
           x.size
 
-        "\"" + x + "\"\n" + " " * i + " ^"
+        "\"" + x + "\"\n" + " " * spaces + " ^"
       }
 
       case head :: tail => if (head.size > idx) {
