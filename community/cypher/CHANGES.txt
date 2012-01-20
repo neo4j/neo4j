@@ -1,5 +1,5 @@
-<NOT YET RELEASED>
-------------------
+1.6 (2012-01-19)
+----------------
 o Lots of changes to the parsers error reporting
 o Queries can now be pre-pended with which parser version to use
 o Database configuration can now change which version of the parser to use as default
