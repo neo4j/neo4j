@@ -386,7 +386,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("n", n1.getId, n4.getId)).
-      matches(RelatedTo("n", "x", "rel", None, Direction.OUTGOING, false)).
+      matches(RelatedTo("n", "x", "rel", None, Direction.OUTGOING, false, True())).
       where(Equals(Property("n", "animal"), Property("x", "animal"))).
       returns(ExpressionReturnItem(Entity("n")), ExpressionReturnItem(Entity("x")))
 
@@ -440,7 +440,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("a", refNode.getId)).
-      matches(RelatedTo("a", "b", "rel", None, Direction.OUTGOING, false)).
+      matches(RelatedTo("a", "b", "rel", None, Direction.OUTGOING, false, True())).
       aggregation(CountStar()).
       returns(ExpressionReturnItem(Entity("a")))
 
@@ -592,7 +592,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("n", 1)).
-      matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING, false)).
+      matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING, false, True())).
       where(Equals(RelationshipTypeFunction(Entity("r")), Literal("KNOWS"))).
       returns(ExpressionReturnItem(Entity("x")))
 
@@ -608,7 +608,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("n", 1)).
-      matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING, false)).
+      matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING, false, True())).
       returns(ExpressionReturnItem(RelationshipTypeFunction(Entity("r"))))
 
     val result = execute(query)
@@ -672,7 +672,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("n", 1)).
-      matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING, false)).
+      matches(RelatedTo("n", "x", "r", None, Direction.OUTGOING, false, True())).
       where(Or(Equals(RelationshipTypeFunction(Entity("r")), Literal("KNOWS")), Equals(RelationshipTypeFunction(Entity("r")), Literal("HATES")))).
       returns(ExpressionReturnItem(Entity("x")))
 
@@ -687,7 +687,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
 
     val query = Query.
       start(NodeById("a", 1)).
-      namedPaths(NamedPath("p", RelatedTo("a", "b", "rel", None, Direction.OUTGOING, false))).
+      namedPaths(NamedPath("p", RelatedTo("a", "b", "rel", None, Direction.OUTGOING, false, True()))).
       returns(ExpressionReturnItem(Entity("p"))) //  new CypherParser().parse("start a=(1) match p=(a-->b) return p")
 
     val result = execute(query)
@@ -704,8 +704,8 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
     val query = Query.
       start(NodeById("a", 1)).
       namedPaths(NamedPath("p",
-      RelatedTo("a", "b", "rel1", None, Direction.OUTGOING, false),
-      RelatedTo("b", "c", "rel2", None, Direction.OUTGOING, false))).
+      RelatedTo("a", "b", "rel1", None, Direction.OUTGOING, false, True()),
+      RelatedTo("b", "c", "rel2", None, Direction.OUTGOING, false, True()))).
       returns(ExpressionReturnItem(Entity("p"))) //  new CypherParser().parse("start a=(1) match p=(a-->b) return p")
 
     val result = execute(query)

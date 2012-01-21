@@ -72,12 +72,12 @@ trait MatchClause extends Base {
       }
 
       relInfo match {
-        case RelatedTo(left, right, relName, relType, direction, optional) => List(ShortestPath(namer.name(None), left, right, relType, direction, Some(1), optional, single, optionRelName(relName)))
-        case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, direction, relIterable, optional) => {
+        case RelatedTo(left, right, relName, relType, direction, optional,_) => List(ShortestPath(namer.name(None), left, right, relType, direction, Some(1), optional, single, optionRelName(relName), True()))
+        case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, direction, relIterable, optional, _) => {
           if (minHops.nonEmpty) {
             throw new SyntaxException("Shortest path does not support a minimal length", "quert", 666)
           }
-          List(ShortestPath(namer.name(None), start, end, relType, direction, maxHops, optional, single, relIterable))
+          List(ShortestPath(namer.name(None), start, end, relType, direction, maxHops, optional, single, relIterable, True()))
         }
       }
 
@@ -93,8 +93,8 @@ trait MatchClause extends Base {
           val dir = getDirection(back, forward)
 
           val result: Pattern = varLength match {
-            case None => RelatedTo(fromNode, toNode, namer.name(rel), relType, dir, optional)
-            case Some((minHops, maxHops)) => VarLengthRelatedTo(namer.name(None), fromNode, toNode, minHops, maxHops, relType, dir, rel, optional)
+            case None => RelatedTo(fromNode, toNode, namer.name(rel), relType, dir, optional, True())
+            case Some((minHops, maxHops)) => VarLengthRelatedTo(namer.name(None), fromNode, toNode, minHops, maxHops, relType, dir, rel, optional, True())
           }
 
           fromNode = toNode

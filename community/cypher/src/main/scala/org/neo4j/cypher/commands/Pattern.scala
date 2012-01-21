@@ -25,6 +25,8 @@ import java.lang.String
 abstract class Pattern {
   val optional: Boolean
 
+  val predicate : Predicate
+
   def node(name: String) = if (name.startsWith("  UNNAMED")) "()" else name
 
   def left(dir: Direction) = if (dir == Direction.INCOMING) "<-" else "-"
@@ -33,17 +35,11 @@ abstract class Pattern {
 }
 
 object RelatedTo {
-  def apply(left: String, right: String, relName: String, relType: String, direction: Direction, optional: Boolean = false) =
-    new RelatedTo(left, right, relName, Some(relType), direction, optional)
+  def apply(left: String, right: String, relName: String, relType: String, direction: Direction, optional: Boolean = false, predicate:Predicate=True()) =
+    new RelatedTo(left, right, relName, Some(relType), direction, optional, predicate)
 }
 
-object VarLengthRelatedTo {
-  def apply(pathName: String, start: String, end: String, minHops: Option[Int], maxHops: Option[Int], relType: String, direction: Direction, optional: Boolean = false) =
-    new VarLengthRelatedTo(pathName, start, end, minHops, maxHops, Some(relType), direction, None, optional)
-}
-
-
-case class RelatedTo(left: String, right: String, relName: String, relType: Option[String], direction: Direction, optional: Boolean) extends Pattern {
+case class RelatedTo(left: String, right: String, relName: String, relType: Option[String], direction: Direction, optional: Boolean, predicate:Predicate) extends Pattern {
   override def toString = node(left) + left(direction) + relInfo + right(direction) + node(right)
 
   private def relInfo: String = {
@@ -62,6 +58,11 @@ abstract class PathPattern extends Pattern {
   def relIterator:Option[String]
 }
 
+object VarLengthRelatedTo {
+  def apply(pathName: String, start: String, end: String, minHops: Option[Int], maxHops: Option[Int], relType: String, direction: Direction, optional: Boolean = false, predicate:Predicate=True()) =
+    new VarLengthRelatedTo(pathName, start, end, minHops, maxHops, Some(relType), direction, None, optional, predicate)
+}
+
 case class VarLengthRelatedTo(pathName: String,
                               start: String,
                               end: String,
@@ -70,12 +71,13 @@ case class VarLengthRelatedTo(pathName: String,
                               relType: Option[String],
                               direction: Direction,
                               relIterator: Option[String],
-                              optional: Boolean) extends PathPattern {
+                              optional: Boolean,
+                              predicate:Predicate) extends PathPattern {
 
   override def toString: String = pathName + "=" + node(start) + left(direction) + relInfo + right(direction) + node(end)
 
 
-  def cloneWithOtherName(newName: String) = VarLengthRelatedTo(newName, start, end, minHops, maxHops, relType, direction, relIterator, optional)
+  def cloneWithOtherName(newName: String) = VarLengthRelatedTo(newName, start, end, minHops, maxHops, relType, direction, relIterator, optional, predicate)
 
   private def relInfo: String = {
     var info = if (optional) "?" else ""
@@ -93,7 +95,18 @@ case class VarLengthRelatedTo(pathName: String,
   }
 }
 
-case class ShortestPath(pathName: String, start: String, end: String, relType: Option[String], dir: Direction, maxDepth: Option[Int], optional: Boolean, single: Boolean, relIterator:Option[String]) extends PathPattern {
+case class ShortestPath(
+                         pathName: String,
+                         start: String,
+                         end: String,
+                         relType: Option[String],
+                         dir: Direction,
+                         maxDepth: Option[Int],
+                         optional: Boolean,
+                         single: Boolean,
+                         relIterator:Option[String],
+                         predicate:Predicate=True())
+  extends PathPattern {
   override def toString: String = pathName + "=" + algo + "(" + start + left(dir) + relInfo + right(dir) + end + ")"
   
   private def algo = if(single) "singleShortestPath" else "allShortestPath"

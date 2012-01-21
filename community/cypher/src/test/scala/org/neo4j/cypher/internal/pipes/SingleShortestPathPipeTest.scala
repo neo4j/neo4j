@@ -22,14 +22,14 @@ package org.neo4j.cypher.internal.pipes
 import org.junit.Test
 import org.scalatest.Assertions
 import org.neo4j.cypher.GraphDatabaseTestBase
-import org.neo4j.cypher.commands.ShortestPath
 import org.neo4j.graphdb.{Direction, Node, Path}
+import org.neo4j.cypher.commands.{True, ShortestPath}
 
 class SingleShortestPathPipeTest extends GraphDatabaseTestBase with Assertions {
   def runThroughPipeAndGetPath(a: Node, b: Node): Path = {
     val source = new FakePipe(List(Map("a" -> a, "b" -> b)))
 
-    val pipe = new SingleShortestPathPipe(source, ShortestPath("p", "a", "b", None, Direction.BOTH, Some(15), optional = true, single = true, None))
+    val pipe = new SingleShortestPathPipe(source, ShortestPath("p", "a", "b", None, Direction.BOTH, Some(15), optional = true, single = true, None, True()))
     pipe.createResults(Map()).head("p").asInstanceOf[Path]
   }
 
