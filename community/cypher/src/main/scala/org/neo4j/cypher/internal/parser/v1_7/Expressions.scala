@@ -62,14 +62,9 @@ trait Expressions extends Base {
       | entity
       | parens(expression)
       | failure("illegal start of value") ) 
-  
-  /** (
-      "+" ^^^ { (a: Expression, b: Expression) => Add(a, b) } |
-      "-" ^^^ { (a: Expression, b: Expression) => Subtract(a, b) }
-    )*/
+
 
   def entity: Parser[Entity] = identity ^^ (x => Entity(x))
-
 
   def property: Parser[Expression] = identity ~ "." ~ identity ^^ {
     case v ~ "." ~ p => createProperty(v, p)
