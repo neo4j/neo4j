@@ -1075,7 +1075,6 @@ class CypherParserTest extends JUnitSuite with Assertions {
       parser.parse(query)
     } catch {
       case exception:SyntaxException => {
-        println(exception.toString(query))
         throw exception
       }
     }

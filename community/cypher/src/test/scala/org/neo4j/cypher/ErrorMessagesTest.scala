@@ -212,7 +212,7 @@ class ErrorMessagesTest extends ExecutionEngineHelper with Assertions with Strin
     val error = intercept[T](engine.execute(query).toList)
 
     val s = query + "\n" + error.toString()
-    assertEquals(s, expectedError, error.getMessage)
+    assertTrue(s, error.getMessage.contains(expectedError))
 
     error
   }

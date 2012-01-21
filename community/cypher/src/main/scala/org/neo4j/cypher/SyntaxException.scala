@@ -26,9 +26,11 @@ class SyntaxException(message: String, val query:String,  val offset: Option[Int
   def this(message:String) = this(message,"",None)
 
   override def toString = offset match {
-    case Some(idx) =>getMessage + "\n" + findErrorLine(idx, query.split('\n').toList)
-    case None => getMessage
-  }  
+    case Some(idx) =>message + "\n" + findErrorLine(idx, query.split('\n').toList)
+    case None => message
+  }
+
+  override def getMessage = toString
 
   private def findErrorLine(idx: Int, message: List[String]): String =
     message.toList match {
