@@ -1121,6 +1121,15 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns (ExpressionReturnItem(Entity("b"))))
   }
 
+  @Test def shouldAcceptRelationshipWithPredicate() {
+    testQuery(
+      "start a = node(1) match a-[r WHERE r.foo = 'bar']->b return b",
+      Query.
+        start(NodeById("a", 1)).
+        matches(RelatedTo("a", "b", "r", None, Direction.OUTGOING, false, Equals(Property("r", "foo"),Literal("bar"))))
+        returns (ExpressionReturnItem(Entity("b"))))
+  }
+
   def testQuery(query: String, expectedQuery: Query) {
     val parser = new CypherParser()
 

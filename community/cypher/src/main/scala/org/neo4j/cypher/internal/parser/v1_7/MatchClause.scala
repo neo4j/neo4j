@@ -23,7 +23,7 @@ import org.neo4j.cypher.commands._
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.Direction
 
-trait MatchClause extends Base {
+trait MatchClause extends Base with Predicates {
   val namer = new NodeNamer
 
   def matching: Parser[(Match, NamedPaths)] = 
@@ -88,13 +88,13 @@ trait MatchClause extends Base {
     case head ~ tails => {
       var fromNode = namer.name(head)
       val list = tails.map(_ match {
-        case (back, rel, relType, forward, end, varLength, optional) => {
+        case (back, rel, relType, forward, end, varLength, optional, predicate) => {
           val toNode = namer.name(end)
           val dir = getDirection(back, forward)
 
           val result: Pattern = varLength match {
-            case None => RelatedTo(fromNode, toNode, namer.name(rel), relType, dir, optional, True())
-            case Some((minHops, maxHops)) => VarLengthRelatedTo(namer.name(None), fromNode, toNode, minHops, maxHops, relType, dir, rel, optional, True())
+            case None => RelatedTo(fromNode, toNode, namer.name(rel), relType, dir, optional, predicate)
+            case Some((minHops, maxHops)) => VarLengthRelatedTo(namer.name(None), fromNode, toNode, minHops, maxHops, relType, dir, rel, optional, predicate)
           }
 
           fromNode = toNode
@@ -144,8 +144,8 @@ trait MatchClause extends Base {
 
   def workingLink = opt("<") ~ "-" ~ opt("[" ~> relationshipInfo <~ "]") ~ "-" ~ opt(">") ~ node ^^ {
     case back ~ "-" ~ relInfo ~ "-" ~ forward ~ end => relInfo match {
-      case Some((relName, relType, varLength, optional)) => (back, relName, relType, forward, end, varLength, optional)
-      case None => (back, None, None, forward, end, None, false)
+      case Some((relName, relType, varLength, optional, predicate)) => (back, relName, relType, forward, end, varLength, optional, predicate)
+      case None => (back, None, None, forward, end, None, false, True())
     }
   }
 
@@ -154,15 +154,20 @@ trait MatchClause extends Base {
     case Some(x) => Some(x.toInt)
   }
 
-  def relationshipInfo: Parser[(Option[String], Option[String], Option[(Option[Int], Option[Int])], Boolean)] =
-    opt(identity) ~ opt("?") ~ opt(":" ~> identity) ~ opt("*" ~ opt(wholeNumber) ~ opt("..") ~ opt(wholeNumber)) ^^ {
-      case relName ~ optional ~ relType ~ varLength => {
+  def relationshipInfo: Parser[(Option[String], Option[String], Option[(Option[Int], Option[Int])], Boolean, Predicate)] =
+    opt(identity) ~ opt("?") ~ opt(":" ~> identity) ~ opt("*" ~ opt(wholeNumber) ~ opt("..") ~ opt(wholeNumber)) ~ opt(ignoreCase("where")~> predicate) ^^ {
+      case relName ~ optional ~ relType ~ varLength ~ pred => {
+        val predicate = pred match {
+          case None => True()
+          case Some(p) => p
+        }
+        
         val hops = varLength match {
           case Some("*" ~ x ~ None ~ None) => Some((intOrNone(x), intOrNone(x)))
           case Some("*" ~ minHops ~ punktpunkt ~ maxHops) => Some((intOrNone(minHops), intOrNone(maxHops)))
           case None => None
         }
-        (relName, relType, hops, optional.isDefined)
+        (relName, relType, hops, optional.isDefined, predicate)
       }
     }
 }

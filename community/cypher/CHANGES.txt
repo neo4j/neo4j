@@ -2,8 +2,9 @@
 ------------------
 o The column names are now exactly as written in the RETURN expression
 o BREAKING CHANGE: To check whether a property exists on a node, use the HAS(...) function
-o Arithmetics 
+o Arithmetic & string concatenation
 o An identifier can now be assigned all the nodes in the graph - START a=node(*)
+o Predicates can be specified inside of a pattern relationship description
 
 1.6 (2012-01-19)
 ----------------
