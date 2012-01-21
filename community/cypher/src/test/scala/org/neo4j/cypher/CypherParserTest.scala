@@ -179,11 +179,11 @@ class CypherParserTest extends JUnitSuite with Assertions {
         start(NodeById("a", 1)).
         returns(ExpressionReturnItem(
         Subtract(
-          Divide(
-            Literal(12),
-            Multiply(
-              Literal(4),
-              Literal(3))),
+          Multiply(
+            Divide(
+              Literal(12),
+              Literal(4)),
+            Literal(3)),
           Multiply(
             Literal(2),
             Literal(4)))
