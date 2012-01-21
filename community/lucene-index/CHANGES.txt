@@ -1,3 +1,7 @@
+1.6 (2012-01-19)
+----------------
+o Fixed a ConcurrentModificationException problem when rotating logs and listing store files.
+
 1.6.M03 (2012-01-12)
 --------------------
 o Upgraded to Lucene version 3.5.

@@ -17,8 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.shell.kernel.apps;
 
-abstract class CypherException(message: String, cause: Throwable) extends RuntimeException(message, cause) {
-  def this(message:String) = this(message, null)
+import org.neo4j.helpers.Service;
+import org.neo4j.shell.App;
+
+/**
+ * Mimics the POSIX application with the same name, i.e. renames a property. It
+ * could also (regarding POSIX) move nodes, but it doesn't).
+ */
+@Service.Implementation( App.class )
+public class Cypher extends Start
+{
+    public Cypher()
+    {
+        super();
+    }
+
+    @Override
+    public String getDescription()
+    {
+        return "Executes a Cypher query with an older parser. " +
+                "Usage: cypher <version> start <rest of query>\n" +
+                "Example: CYPHER 1.5 START me = node({self}) MATCH me-[:KNOWS]->you RETURN you.name\n" +
+                "where {self} will be replaced with the current location in the graph";
+    }
 }
