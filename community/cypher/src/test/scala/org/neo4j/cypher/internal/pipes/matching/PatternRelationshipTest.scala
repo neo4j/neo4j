@@ -23,13 +23,14 @@ import org.scalatest.junit.JUnitSuite
 import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.commands.True
 
 class PatternRelationshipTest extends JUnitSuite with Assertions {
   @Test def returnsTheOtherNode() {
     val a = new PatternNode("a")
     val b = new PatternNode("b")
 
-    val r = a.relateTo("r", b, None, Direction.BOTH, false)
+    val r = a.relateTo("r", b, None, Direction.BOTH, false, True())
 
     val result = r.getOtherNode(a)
 

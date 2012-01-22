@@ -417,6 +417,15 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     assert(matchingContext.getMatches(Map("a" -> a)).toSeq.length === 0)
   }
 
+  @Test def predicateInPatternRelationship() {
+    relate(a, b, "rel", Map("foo"->"notBar"))
+
+    val patterns = Seq(RelatedTo("a", "b", "r", Some("rel"), Direction.OUTGOING, true, Equals(Property("r", "foo"), Literal("bar"))))
+    val matchingContext = new MatchingContext(patterns, bind("a"))
+
+    assertMatches(matchingContext.getMatches(Map("a" -> a)), 1, Map("a" -> a, "b" -> null, "r" -> null))
+  }
+
 
   def bind(boundSymbols: String*): SymbolTable = {
     val identifiersToCreate = boundSymbols.map(x => Identifier(x, NodeType()))

@@ -23,6 +23,7 @@ import org.neo4j.cypher.GraphDatabaseTestBase
 import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.graphdb.{DynamicRelationshipType, Direction}
+import org.neo4j.cypher.commands.True
 
 class HistoryTest extends GraphDatabaseTestBase with Assertions {
 
@@ -31,7 +32,7 @@ class HistoryTest extends GraphDatabaseTestBase with Assertions {
   @Test def excludingPatternRelsWorksAsExpected() {
     val a = new PatternNode("a")
     val b = new PatternNode("b")
-    val pr = a.relateTo("r", b, None, Direction.BOTH, false)
+    val pr = a.relateTo("r", b, None, Direction.BOTH, false, True())
     val r = relate(graph.getReferenceNode, graph.getReferenceNode, "rel")
     val mp = new MatchingPair(pr, r)
     val history = new History(Map(), Set(mp))

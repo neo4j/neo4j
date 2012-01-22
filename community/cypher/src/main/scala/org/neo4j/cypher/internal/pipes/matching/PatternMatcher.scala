@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.pipes.matching
 
-import org.neo4j.cypher.commands.Predicate
 import org.neo4j.graphdb.Node
+import org.neo4j.cypher.commands.{True, Predicate}
 
 class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predicate], includeOptionals: Boolean, source:Map[String,Any])
   extends Traversable[Map[String, Any]] {
@@ -74,6 +74,11 @@ class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predic
     } else {
 
       val newHistory = history.add(current)
+      
+      currentRel.predicate match {
+        case True() =>
+        case p => if(!p.isMatch(newHistory.toMap)) return false
+      } 
 
       if (isMatchSoFar(newHistory)) {
         val nextNode = rel.getOtherNode(gNode)

@@ -23,13 +23,14 @@ import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.GraphDatabaseTestBase
+import org.neo4j.cypher.commands.True
 
 class PatternNodeTest extends GraphDatabaseTestBase with Assertions {
   @Test def returnsPatternRelationships() {
     val a = new PatternNode("a")
     val b = new PatternNode("b")
 
-    val r = a.relateTo("r", b, None, Direction.BOTH, false)
+    val r = a.relateTo("r", b, None, Direction.BOTH, false, True())
 
     val rels = a.getPRels(Seq())
 
@@ -44,7 +45,7 @@ class PatternNodeTest extends GraphDatabaseTestBase with Assertions {
     val pA = new PatternNode("a")
     val pB = new PatternNode("b")
 
-    val pRel = pA.relateTo("r", pB, None, Direction.BOTH, false)
+    val pRel = pA.relateTo("r", pB, None, Direction.BOTH, false, True())
 
     val rels = pA.getPRels(Seq(MatchingPair(pRel, rel)))
 

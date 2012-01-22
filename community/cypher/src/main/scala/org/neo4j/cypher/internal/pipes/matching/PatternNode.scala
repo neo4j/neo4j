@@ -20,16 +20,17 @@
 package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.graphdb.{Direction, Node}
+import org.neo4j.cypher.commands.Predicate
 
-class PatternNode(key: String) extends PatternElement(key)  {
+class PatternNode(key: String) extends PatternElement(key) {
   val relationships = scala.collection.mutable.Set[PatternRelationship]()
 
-  def getPRels(history: Seq[MatchingPair]): Seq[PatternRelationship] = relationships.filterNot( r => history.exists(_.matches(r)) ).toSeq
+  def getPRels(history: Seq[MatchingPair]): Seq[PatternRelationship] = relationships.filterNot(r => history.exists(_.matches(r))).toSeq
 
   def getGraphRelationships(node: Node, pRel: PatternRelationship): Seq[GraphRelationship] = pRel.getGraphRelationships(this, node)
 
-  def relateTo(key: String, other: PatternNode, relType: Option[String], dir: Direction, optional:Boolean): PatternRelationship = {
-    val rel = new PatternRelationship(key, this, other, relType, dir, optional)
+  def relateTo(key: String, other: PatternNode, relType: Option[String], dir: Direction, optional: Boolean, predicate: Predicate): PatternRelationship = {
+    val rel = new PatternRelationship(key, this, other, relType, dir, optional, predicate)
     relationships.add(rel)
     other.relationships.add(rel)
     rel
@@ -41,9 +42,10 @@ class PatternNode(key: String) extends PatternElement(key)  {
                                     maxHops: Option[Int],
                                     relType: Option[String],
                                     dir: Direction,
-                                    iterableRel:Option[String],
-                                    optional:Boolean): PatternRelationship = {
-    val rel = new VariableLengthPatternRelationship(pathName, this, end, iterableRel, minHops, maxHops, relType, dir, optional)
+                                    iterableRel: Option[String],
+                                    optional: Boolean,
+                                    predicate: Predicate): PatternRelationship = {
+    val rel = new VariableLengthPatternRelationship(pathName, this, end, iterableRel, minHops, maxHops, relType, dir, optional, predicate)
     relationships.add(rel)
     end.relationships.add(rel)
     rel
