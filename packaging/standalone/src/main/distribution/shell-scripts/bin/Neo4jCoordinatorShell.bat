@@ -15,7 +15,7 @@ rem MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 rem GNU General Public License for more details.
 rem
 rem You should have received a copy of the GNU General Public License
-rem along with this program.  If not, see <http://www.gnu.org/licenses/>.
+rem along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 set ERROR_CODE=0
 
@@ -68,23 +68,21 @@ if "%JAVACMD%"=="" set JAVACMD=java
 
 if "%REPO%"=="" set REPO=%BASEDIR%\lib
 
-if "%COORDINATOR_LIB%"=="" set COORDINATOR_LIB=%BASEDIR%\system\coordinator\lib
-
 rem Setup the classpath
 set LIBPATH=""
 pushd "%REPO%"
-for %%G in (*.jar) do call:APPEND_TO_LIBPATH %%G %REPO%
+for %%G in (*.jar) do call:APPEND_TO_LIBPATH %%G
 popd
-pushd "%COORDINATOR_LIB%"
-for %%G in (*.jar) do call:APPEND_TO_LIBPATH %%G %COORDINATOR_LIB%
+set REPO=%BASEDIR%\system\coordinator\lib
+pushd "%REPO%"
+for %%G in (*.jar) do call:APPEND_TO_LIBPATH %%G
 popd
 goto LIBPATH_END
 
 : APPEND_TO_LIBPATH
 set filename=%~1
-set dir=%~2
 set suffix=%filename:~-4%
-if %suffix% equ .jar set LIBPATH=%LIBPATH%;"%dir%\%filename%"
+if %suffix% equ .jar set LIBPATH=%LIBPATH%;"%REPO%\%filename%"
 goto :EOF
 
 :LIBPATH_END

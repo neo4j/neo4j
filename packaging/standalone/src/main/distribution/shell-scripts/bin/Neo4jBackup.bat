@@ -64,7 +64,6 @@ set BASEDIR=%~dp0\..
 
 :repoSetup
 
-
 if "%JAVACMD%"=="" set JAVACMD=java
 
 if "%REPO%"=="" set REPO=%BASEDIR%\lib
@@ -77,7 +76,7 @@ popd
 set REPO=%BASEDIR%\system\coordinator\lib
 pushd "%REPO%"
 for %%G in (*.jar) do call:APPEND_TO_LIBPATH %%G
-popd 
+popd
 goto LIBPATH_END
 
 : APPEND_TO_LIBPATH
