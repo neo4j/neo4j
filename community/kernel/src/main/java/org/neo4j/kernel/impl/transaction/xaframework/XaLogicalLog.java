@@ -1073,6 +1073,9 @@ public class XaLogicalLog implements LogLoader
      * content is guaranteed to be present, including content just in the write
      * buffer.
      *
+     * Non synchronized, though it accesses writeBuffer. Use this method only
+     * through synchronized blocks or trouble will come your way.
+     *
      * @param version The version of the log to get a channel over
      * @param position The position to which to set the channel
      * @return The channel
@@ -1091,7 +1094,7 @@ public class XaLogicalLog implements LogLoader
             FileChannel channel = fileSystem.open( currentLogName, "r" );
             channel = new BufferedFileChannel( channel );
             /*
-             * this method is called **during** commmit{One,Two}Phase - i.e. before the log buffer
+             * this method is called **during** commit{One,Two}Phase - i.e. before the log buffer
              * is forced and in the case of 1PC without the writeOut() done in prepare (as in 2PC).
              * So, we need to writeOut(). The content of the buffer is written out to the file channel
              * so that the new channel returned above will see the new content. This logical log can
@@ -1630,7 +1633,7 @@ public class XaLogicalLog implements LogLoader
         }
         return highest;
     }
-    
+
     public boolean wasNonClean()
     {
         return nonCleanShutdown;
