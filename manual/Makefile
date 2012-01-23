@@ -75,7 +75,7 @@ ASCIIDOC_FLAGS = $(V) $(VERS) $(GITVERS) $(IMPDIR)
 
 A2X_FLAGS = $(K) $(ASCIIDOC_FLAGS)
 
-.PHONY: all dist docbook help clean pdf html offline-html singlehtml text cleanup annotated manpages upgrade installfilter html-check text-check check
+.PHONY: all dist docbook help clean pdf html offline-html singlehtml text cleanup annotated manpages upgrade installfilter html-check text-check check yearcheck
 
 help:
 	@echo "Please use 'make <target>' where <target> is one of"
@@ -92,7 +92,7 @@ help:
 	@echo "To set the version, use 'VERSION=[the version]'".
 	@echo "To set the importdir, use 'IMPORTDIR=[the importdir]'".
 
-dist: installfilter offline-html html html-check text text-check pdf manpages upgrade cleanup
+dist: installfilter offline-html html html-check text text-check pdf manpages upgrade cleanup yearcheck
 
 check: html-check text-check cleanup
 
@@ -295,4 +295,12 @@ slidestest:
 	"$(ASCIIDOC)" $(ASCIIDOC_FLAGS) --backend docbook --doctype article --conf-file="$(CONFDIR)/asciidoc.conf" --conf-file="$(CONFDIR)/docbook45.conf" --conf-file="$(CONFDIR)/docbook45-slides.conf" --out-file ./target/slidestest/article-slides.xml ./target/docs/neo4j-examples-docs-jar/dev/examples/hello-world.txt
 	xsltproc --xinclude --output ./target/slidestest/slides /usr/share/xml/docbook/stylesheet/docbook-xsl/slides/xhtml/default.xsl ./target/slidestest/article-slides.xml
 	xmllint --nonet --noout --xinclude --postvalid ./target/slidestest/article-slides.xml
+
+yearcheck:
+	#
+	#
+	# Check that the manual has the correct year set.
+	#
+	#
+	"$(SCRIPTDIR)/yearcheck.sh" "$(SRCDIR)"
 
