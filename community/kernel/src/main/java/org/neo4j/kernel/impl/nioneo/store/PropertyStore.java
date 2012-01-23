@@ -439,7 +439,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         {
             return new PropertyRecord( id );
         }
-        
+
         try
         {
             return getRecord( id, window, RecordLoad.FORCE );
@@ -449,7 +449,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
             releaseWindow( window );
         }
     }
-    
+
     @Override
     public PropertyRecord forceGetRaw( long id )
     {
@@ -743,7 +743,8 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     {
         // TODO: The next line is an ugly hack, but works.
         Buffer fromByteBuffer = new Buffer( null, buffer );
-        return getRecordFromBuffer( 0, fromByteBuffer ).inUse();
+        return buffer.limit() >= RECORD_SIZE
+               && getRecordFromBuffer( 0, fromByteBuffer ).inUse();
     }
 
     @Override
@@ -763,7 +764,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         stringPropertyStore.logIdUsage( logger );
         arrayPropertyStore.logIdUsage( logger );
     }
-    
+
     @Override
     public String toString()
     {
