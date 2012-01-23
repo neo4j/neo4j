@@ -29,7 +29,7 @@ class MatchPipe(source: Pipe, patterns: Seq[Pattern], predicates: Seq[Predicate]
   val symbols = source.symbols.add(identifiers: _*)
 
   def identifiers = patterns.flatMap(_ match {
-    case RelatedTo(left, right, rel, relType, dir, optional) => Seq(Identifier(left, NodeType()), Identifier(right, NodeType()), Identifier(rel, RelationshipType()))
+    case RelatedTo(left, right, rel, _, _, _, _) => Seq(Identifier(left, NodeType()), Identifier(right, NodeType()), Identifier(rel, RelationshipType()))
     case path: PathPattern => Seq(
       Identifier(path.start, NodeType()),
       Identifier(path.end, NodeType()),
