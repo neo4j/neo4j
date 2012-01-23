@@ -19,18 +19,23 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.neo4j.kernel.Config.ARRAY_BLOCK_SIZE;
+import static org.neo4j.kernel.Config.STRING_BLOCK_SIZE;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
+
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.*;
-import java.util.logging.Level;
-
-import static org.neo4j.kernel.Config.ARRAY_BLOCK_SIZE;
-import static org.neo4j.kernel.Config.STRING_BLOCK_SIZE;
 
 /**
  * Implementation of the property store. This implementation has two dynamic
@@ -433,7 +438,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         {
             return new PropertyRecord( id );
         }
-        
+
         try
         {
             return getRecord( id, window, RecordLoad.FORCE );
@@ -443,7 +448,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
             releaseWindow( window );
         }
     }
-    
+
     @Override
     public PropertyRecord forceGetRaw( long id )
     {
@@ -737,7 +742,8 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     {
         // TODO: The next line is an ugly hack, but works.
         Buffer fromByteBuffer = new Buffer( null, buffer );
-        return getRecordFromBuffer( 0, fromByteBuffer ).inUse();
+        return buffer.limit() >= RECORD_SIZE
+               && getRecordFromBuffer( 0, fromByteBuffer ).inUse();
     }
 
     @Override
@@ -757,7 +763,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         stringPropertyStore.logIdUsage( logger );
         arrayPropertyStore.logIdUsage( logger );
     }
-    
+
     @Override
     public String toString()
     {
