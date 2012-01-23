@@ -1612,6 +1612,17 @@ RETURN x0.name?
     assert(List(Map("a" -> refNode, "b" -> a), Map("b" -> refNode, "a" -> a)) === result.toList)
   }
 
+  @Ignore("Exposes #193")
+  @Test def shouldAggregateOnArrayValues() {
+    createNode("color" -> Array("red"))
+    createNode("color" -> Array("blue"))
+    createNode("color" -> Array("red"))
+
+    val result = parseAndExecute("start a=node(1,2,3) return distinct a.color, count(*)")
+
+    assert(List(Map("a.color" -> Array("red"), "count(*)" -> 2), Map("a.color" -> Array("blue"), "count(*)" -> 1)) === result.toList)
+  }
+
   @Test def createEngineWithSpecifiedParserVersion() {
     val db = new ImpermanentGraphDatabase(Map[String, String]("cypher_parser_version" -> "1.5").asJava)
     val engine = new ExecutionEngine(db)
@@ -1620,7 +1631,7 @@ RETURN x0.name?
       // This syntax is valid in 1.6, but should give an exception in 1.5
       engine.execute("start n=node(0) where all(x in n.prop where x = 'monkey') return n")
     } catch {
-      case x:SyntaxException =>
+      case x: SyntaxException =>
       case _ => fail("expected exception")
     } finally {
       db.shutdown()
