@@ -30,7 +30,7 @@ import org.neo4j.cypher.symbols.{PathType, Identifier}
 class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
   def getFirstNode[U]: String = {
     val firstNode = path.pathPattern.head match {
-      case RelatedTo(left, right, relName, x, xx, optional) => left
+      case RelatedTo(left, _, _, _, _, _, _) => left
       case path:PathPattern => path.start
     }
     firstNode
@@ -42,7 +42,7 @@ class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
     val firstNode: String = getFirstNode
 
     val p: Seq[PropertyContainer] = path.pathPattern.foldLeft(Seq(get(firstNode)))((soFar, p) => p match {
-      case RelatedTo(left, right, relName, x, xx, optional) => soFar ++ Seq(get(relName), get(right))
+      case RelatedTo(_, right, relName, _, _, _, _) => soFar ++ Seq(get(relName), get(right))
       case path:PathPattern => getPath(m, path.pathName, soFar)
     })
 

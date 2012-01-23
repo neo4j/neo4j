@@ -247,6 +247,7 @@ public class JavaExecutionEngineTests {
         assertEquals( "Johan", n_column.next() );
     }
 
+
     private void makeFriends( Node a, Node b ) {
         Transaction tx = db.beginTx();
         a.createRelationshipTo( b, DynamicRelationshipType.withName( "friend" ) );

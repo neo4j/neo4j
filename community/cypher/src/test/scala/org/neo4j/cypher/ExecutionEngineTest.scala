@@ -1151,7 +1151,7 @@ match p = a -[*]-> b
 return b, avg(length(p))
 """)
 
-    assert(List(b, c) === result.columnAs[Node]("b").toList)
+    assert(Set(b, c) === result.columnAs[Node]("b").toSet)
   }
 
   @Test def shouldHandleOptionalPaths() {
@@ -1609,7 +1609,7 @@ RETURN x0.name?
     val b = createNode()
 
     val result = parseAndExecute("start n=node(*) return n")
-    assert(List(refNode,a,b) === result.columnAs[Node]("n").toList)
+    assert(List(refNode, a, b) === result.columnAs[Node]("n").toList)
   }
 
   @Test def shouldAllowComparisonsOfNodes() {
@@ -1630,7 +1630,7 @@ RETURN x0.name?
   }
 
   @Test def shouldAllowAddition() {
-    createNode("age"->36)
+    createNode("age" -> 36)
 
     val result = parseAndExecute("start a=node(1) return a.age + 5 as newAge")
     assert(List(Map("newAge" -> 41)) === result.toList)
@@ -1641,9 +1641,22 @@ RETURN x0.name?
     createNode("color" -> Array("blue"))
     createNode("color" -> Array("red"))
 
-    val result = parseAndExecute("start a=node(1,2,3) return distinct a.color, count(*)")
+    val result = parseAndExecute("start a=node(1,2,3) return distinct a.color, count(*)").toList
+    result.foreach(x => {
+     val c = x("a.color").asInstanceOf[Array[_]]
+      if(c.deep == Array("red").deep)
+        assertEquals(x("count(*)"), 2)
+      else if(c.deep == Array("blue").deep)
+        assertEquals(x("count(*)"), 1)
+      else fail("wut?")
+    })
 
-    assert(List(Map("a.color" -> Array("red"), "count(*)" -> 2), Map("a.color" -> Array("blue"), "count(*)" -> 1)) === result.toList)
+
+    //    println(f().dumpToString())
+
+//    val result = f()
+
+//    assert(Set(Map("a.color" -> Array("red"), "count(*)" -> 2), Map("a.color" -> Array("blue"), "count(*)" -> 1)) === result.toSet)
   }
 
   @Test def createEngineWithSpecifiedParserVersion() {
