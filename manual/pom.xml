@@ -548,6 +548,40 @@
         </plugins>
       </build>
     </profile>
+    <profile>
+      <id>single</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>single</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>execute-asciidoc</id>
+                <phase>compile</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <executable>make</executable>
+                  <arguments>
+                    <argument>singlehtml</argument>
+                    <argument>VERSION=${project.version}</argument>
+                    <argument>IMPORTDIR=${docs.sources}</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 
   <distributionManagement>

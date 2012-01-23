@@ -213,7 +213,7 @@ offline-html:  manpages copyimages docbook-html
 	cp -fr "$(SRCDIR)/images/"*.png "$(CHUNKEDOFFLINEHTMLDIR)/images"
 
 # currently builds docbook format first
-singlehtml:  manpages copyimages
+singlehtml:  dist
 	#
 	#
 	# Building single html file output.
@@ -222,6 +222,10 @@ singlehtml:  manpages copyimages
 	mkdir -p "$(SINGLEHTMLDIR)"
 	"$(A2X)" $(A2X_FLAGS) -L -f xhtml -D "$(SINGLEHTMLDIR)" --conf-file="$(CONFDIR)/xhtml.conf" --asciidoc-opts "--conf-file=\"$(CONFDIR)/asciidoc.conf\"" --asciidoc-opts "--conf-file=\"$(CONFDIR)/docbook45.conf\"" --asciidoc-opts "--conf-file=\"$(CONFDIR)/linkedimages.conf\"" --xsl-file="$(CONFDIR)/xhtml.xsl" --xsltproc-opts "--stringparam admon.graphics 1" "$(SRCFILE)"
 	cp -fr "$(JSDIR)" "$(SINGLEHTMLDIR)/js"
+	cp -fr "$(CSSDIR)" "$(SINGLEHTMLDIR)/css"
+	cp -fr "$(IMGDIR)" "$(SINGLEHTMLDIR)/images"
+	mv "$(SINGLEHTMLDIR)/$(PROJECTNAME).html" "$(SINGLEHTMLDIR)/index.html"
+
 
 # builds docbook format first
 annotated:  dist
