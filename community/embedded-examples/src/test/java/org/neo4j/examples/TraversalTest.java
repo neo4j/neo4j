@@ -24,15 +24,7 @@ import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphViz;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
 
 import org.junit.Test;
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.traversal.Evaluators;
-import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.kernel.Traversal;
-import org.neo4j.kernel.Uniqueness;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.GraphDescription.Graph;
 
@@ -111,8 +103,7 @@ public class TraversalTest extends AbstractJavaDocTestbase
      * 
      * @@relationshipoutput
      * 
-     * The full source for this example is available at
-     * 
+     * The source code for the traversers in this example is available at:
      * @@github
      */
     @Test
@@ -123,108 +114,47 @@ public class TraversalTest extends AbstractJavaDocTestbase
     public void how_to_use_the_Traversal_framework()
     {
         Node joe = data.get().get( "Joe" );
+        TraversalExample example = new TraversalExample();
         gen.get().addSnippet(
                 "graph",
                         createGraphViz( "Traversal Example Graph", graphdb(),
                         gen.get().getTitle() ) );
 
-        String output = "";
-        // START SNIPPET: knowslikestraverser
-        for ( Path position : Traversal.description()
-                .depthFirst()
-                .relationships( Rels.KNOWS )
-                .relationships( Rels.LIKES, Direction.INCOMING )
-                .evaluator( Evaluators.toDepth( 5 ) )
-                .traverse( joe ) )
-        {
-            output += position + "\n";
-        }
-        // END SNIPPET: knowslikestraverser
+        String output = example.knowsLikesTraverser( joe );
         System.out.println( output );
         gen.get()
                 .addSnippet( "knowslikesoutput", createOutputSnippet( output ) );
 
-        // START SNIPPET: basetraverser
-        final TraversalDescription FRIENDS_TRAVERSAL = Traversal.description()
-                .depthFirst()
-                .relationships( Rels.KNOWS )
-                .uniqueness( Uniqueness.RELATIONSHIP_GLOBAL );
-        // END SNIPPET: basetraverser
-
-        output = "";
-        for ( Path path : FRIENDS_TRAVERSAL.traverse( joe ) )
-        {
-            output += path + "\n";
-        }
+        output = example.traverseBaseTraverser( joe );
         System.out.println( output );
         gen.get()
                 .addSnippet( "baseoutput", createOutputSnippet( output ) );
 
-        output = "";
-        // START SNIPPET: depth3
-        for ( Path path : FRIENDS_TRAVERSAL
-                .evaluator( Evaluators.toDepth( 3 ) )
-                .traverse( joe ) )
-        {
-            output += path + "\n";
-        }
-        // END SNIPPET: depth3
+        output = example.depth3( joe );
         System.out.println( output );
         gen.get()
                 .addSnippet( "output3", createOutputSnippet( output ) );        
 
-        output = "";
-        // START SNIPPET: depth4
-        for ( Path path : FRIENDS_TRAVERSAL
-                .evaluator( Evaluators.fromDepth( 2 ) )
-                .evaluator( Evaluators.toDepth( 4 ) )
-                .traverse( joe ) )
-        {
-            output += path + "\n";
-        }
-        // END SNIPPET: depth4
+        output = example.depth4( joe );
         System.out.println( output );
         gen.get()
                 .addSnippet( "output4", createOutputSnippet( output ) );        
 
-        output = "";
-        // START SNIPPET: nodes
-        for ( Node node : FRIENDS_TRAVERSAL
-                .traverse( joe )
-                .nodes() )
-        {
-            output += node.getProperty( "name" ) + "\n";
-        }
-        // END SNIPPET: nodes
+        output = example.nodes( joe );
         System.out.println( output );
         gen.get()
                 .addSnippet( "nodeoutput", createOutputSnippet( output ) );
 
-        output = "";
-        // START SNIPPET: relationships
-        for ( Relationship relationship : FRIENDS_TRAVERSAL
-                .traverse( joe )
-                .relationships() )
-        {
-            output += relationship.getType() + "\n";
-        }
-        // END SNIPPET: relationships
+        output = example.relationships( joe );
         System.out.println( output );
         gen.get()
                 .addSnippet( "relationshipoutput", createOutputSnippet( output ) );
 
         gen.get()
-                .addSourceSnippets( this.getClass(), "knowslikestraverser",
+                .addSourceSnippets( example.getClass(), "knowslikestraverser",
                         "sourceRels", "basetraverser", "depth3", "depth4",
                         "nodes", "relationships" );
-        gen.get().addGithubLink( "github", this.getClass(), "neo4j/community",
+        gen.get().addGithubSourceLink( "github", example.getClass(), "neo4j/community",
                 "embedded-examples" );
     }
-    
-    // START SNIPPET: sourceRels
-    private enum Rels implements RelationshipType
-    {
-        LIKES, KNOWS
-    }
-    // END SNIPPET: sourceRels
 }

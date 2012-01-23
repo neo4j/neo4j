@@ -45,9 +45,6 @@ public class Matrix
     private static final String MATRIX_DB = "target/matrix-db";
     private GraphDatabaseService graphDb;
 
-    int numberOfFriends;
-    int numberOfHackers;
-
     public static void main( String[] args )
     {
         Matrix matrix = new Matrix();
@@ -135,8 +132,8 @@ public class Matrix
     public String printNeoFriends()
     {
         Node neoNode = getNeoNode();
-        numberOfFriends = 0;
         // START SNIPPET: friends-usage
+        int numberOfFriends = 0;
         String output = neoNode.getProperty( "name" ) + "'s friends:\n";
         Traverser friendsTraverser = getFriends( neoNode );
         for ( Node friendNode : friendsTraverser )
@@ -145,13 +142,11 @@ public class Matrix
                         friendsTraverser.currentPosition().depth() + 
                         " => " + 
                         friendNode.getProperty( "name" ) + "\n";
-            // END SNIPPET: friends-usage
             numberOfFriends++;
-            // START SNIPPET: friends-usage
         }
+        output += "Number of friends found: " + numberOfFriends + "\n";
         // END SNIPPET: friends-usage
         return output;
-        // assertEquals( 4, numberOfFriends );
     }
 
     // START SNIPPET: get-friends
@@ -166,9 +161,9 @@ public class Matrix
 
     public String printMatrixHackers()
     {
-        String output = "Hackers:\n";
-        numberOfHackers = 0;
         // START SNIPPET: find--hackers-usage
+        String output = "Hackers:\n";
+        int numberOfHackers = 0;
         Traverser traverser = findHackers( getNeoNode() );
         for ( Node hackerNode : traverser )
         {
@@ -176,10 +171,9 @@ public class Matrix
                         traverser.currentPosition().depth() +
                         " => " + 
                         hackerNode.getProperty( "name" ) + "\n";
-            // END SNIPPET: find--hackers-usage
             numberOfHackers++;
-            // START SNIPPET: find--hackers-usage
         }
+        output += "Number of hackers found: " + numberOfHackers + "\n";
         // END SNIPPET: find--hackers-usage
         return output;
         // assertEquals( 1, numberOfHackers );

@@ -54,8 +54,7 @@ public class EmbeddedNeo4jWithIndexing
         Transaction tx = graphDb.beginTx();
         try
         {
-            // Create users sub reference node (see design guidelines on
-            // http://wiki.neo4j.org/ )
+            // Create users sub reference node
             Node usersReferenceNode = graphDb.createNode();
             graphDb.getReferenceNode().createRelationshipTo(
                 usersReferenceNode, RelTypes.USERS_REFERENCE );

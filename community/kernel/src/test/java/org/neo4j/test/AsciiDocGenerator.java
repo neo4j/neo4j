@@ -148,14 +148,6 @@ public abstract class AsciiDocGenerator
         }
     }
     
-    public static String createSourceSnippet( String tagName, Class<?> source )
-    {
-        return "[snippet,java]\n" + "----\n"
-               + "component=${project.artifactId}\n" + "source="
-               + getPath( source ) + "\n" + "classifier=test-sources\n"
-               + "tag=" + tagName + "\n" + "----\n";
-    }
-
     public static String getPath( Class<?> source )
     {
         return source.getPackage()
@@ -204,7 +196,25 @@ public abstract class AsciiDocGenerator
     }
 
     /**
+     * Added one or more source snippets from test sources, available from
+     * javadoc using
+     * 
+     * @@tagName.
+     * 
+     * @param source the class where the snippet is found
+     * @param tagNames the tag names which should be included
+     */
+    public void addTestSourceSnippets( Class<?> source, String... tagNames )
+    {
+        for ( String tagName : tagNames )
+        {
+            addSnippet( tagName, sourceSnippet( tagName, source, "test-sources" ) );
+        }
+    }
+
+    /**
      * Added one or more source snippets, available from javadoc using
+     * 
      * @@tagName.
      * 
      * @param source the class where the snippet is found
@@ -214,12 +224,34 @@ public abstract class AsciiDocGenerator
     {
         for ( String tagName : tagNames )
         {
-            addSnippet( tagName, createSourceSnippet( tagName, source ) );
+            addSnippet( tagName, sourceSnippet( tagName, source, "sources" ) );
         }
     }
 
-    public void addGithubLink( String key, Class<?> source, String repo,
+    private static String sourceSnippet( String tagName, Class<?> source,
+            String classifier )
+    {
+        return "[snippet,java]\n" + "----\n"
+               + "component=${project.artifactId}\n" + "source="
+               + getPath( source ) + "\n" + "classifier=" + classifier + "\n"
+               + "tag=" + tagName + "\n" + "----\n";
+    }
+
+    public void addGithubTestSourceLink( String key, Class<?> source,
+            String repo,
             String dir )
+    {
+        githubLink( key, source, repo, dir, "test" );
+    }
+
+    public void addGithubSourceLink( String key, Class<?> source, String repo,
+            String dir )
+    {
+        githubLink( key, source, repo, dir, "main" );
+    }
+
+    private void githubLink( String key, Class<?> source, String repo,
+            String dir, String mainOrTest )
     {
         String path = "https://github.com/" + repo
                          + "/blob/{neo4j-git-tag}/";
@@ -227,7 +259,7 @@ public abstract class AsciiDocGenerator
         {
             path += dir + "/";
         }
-        path += "src/test/java/" + getPath( source );
+        path += "src/" + mainOrTest + "/java/" + getPath( source );
         path += "[" + source.getSimpleName() + ".java]\n";
         addSnippet( key, path );
     }

@@ -18,7 +18,6 @@
  */
 package org.neo4j.examples;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
 
@@ -45,12 +44,12 @@ public class MatrixTest
         String friends = matrix.printNeoFriends();
         String hackers = matrix.printMatrixHackers();
         matrix.shutdown();
-        assertEquals( 4, matrix.numberOfFriends );
-        assertEquals( 1, matrix.numberOfHackers );
+        assertTrue( friends.contains( "friends found: 4" ) );
         assertTrue( friends.contains( "Trinity" ) );
         assertTrue( friends.contains( "Morpheus" ) );
         assertTrue( friends.contains( "Cypher" ) );
         assertTrue( friends.contains( "Agent Smith" ) );
+        assertTrue( hackers.contains( "hackers found: 1" ) );
         assertTrue( hackers.contains( "The Architect" ) );
         gen.saveToFile( "friends", createOutputSnippet( friends ) );
         gen.saveToFile( "hackers", createOutputSnippet( hackers ) );

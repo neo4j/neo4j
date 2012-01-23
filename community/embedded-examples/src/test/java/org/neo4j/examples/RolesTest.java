@@ -173,7 +173,7 @@ public class RolesTest extends AbstractJavaDocTestbase
     {
         // get Admins
         gen.get()
-                .addSourceSnippets( this.getClass(), "get-admins",
+                .addTestSourceSnippets( this.getClass(), "get-admins",
                         "get-user-memberships", "get-groups", "get-members", "read-traverser" );
         System.out.println( "All admins:" );
         // START SNIPPET: get-admins

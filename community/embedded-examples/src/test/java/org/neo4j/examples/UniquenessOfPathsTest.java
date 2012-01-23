@@ -89,7 +89,7 @@ public class UniquenessOfPathsTest extends AbstractJavaDocTestbase
         gen.get().addSnippet( "graph", createGraphViz("Descendants Example Graph", graphdb(), gen.get().getTitle()) );
         gen.get();
         gen.get()
-                .addSourceSnippets( this.getClass(), "traverser", "traverseNodeGlobal" );
+                .addTestSourceSnippets( this.getClass(), "traverser", "traverseNodeGlobal" );
         // START SNIPPET: traverser
         final Node target = data.get().get( "Principal1" );
         TraversalDescription td = Traversal.description()
