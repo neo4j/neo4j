@@ -25,7 +25,7 @@ import java.lang.String
 abstract class Pattern {
   val optional: Boolean
 
-  val predicate : Predicate
+  val predicate: Predicate
 
   def node(name: String) = if (name.startsWith("  UNNAMED")) "()" else name
 
@@ -35,11 +35,11 @@ abstract class Pattern {
 }
 
 object RelatedTo {
-  def apply(left: String, right: String, relName: String, relType: String, direction: Direction, optional: Boolean = false, predicate:Predicate=True()) =
+  def apply(left: String, right: String, relName: String, relType: String, direction: Direction, optional: Boolean = false, predicate: Predicate = True()) =
     new RelatedTo(left, right, relName, Some(relType), direction, optional, predicate)
 }
 
-case class RelatedTo(left: String, right: String, relName: String, relType: Option[String], direction: Direction, optional: Boolean, predicate:Predicate) extends Pattern {
+case class RelatedTo(left: String, right: String, relName: String, relType: Option[String], direction: Direction, optional: Boolean, predicate: Predicate) extends Pattern {
   override def toString = node(left) + left(direction) + relInfo + right(direction) + node(right)
 
   private def relInfo: String = {
@@ -52,14 +52,18 @@ case class RelatedTo(left: String, right: String, relName: String, relType: Opti
 
 abstract class PathPattern extends Pattern {
   def pathName: String
+
   def start: String
+
   def end: String
+
   def cloneWithOtherName(newName: String): PathPattern
-  def relIterator:Option[String]
+
+  def relIterator: Option[String]
 }
 
 object VarLengthRelatedTo {
-  def apply(pathName: String, start: String, end: String, minHops: Option[Int], maxHops: Option[Int], relType: String, direction: Direction, optional: Boolean = false, predicate:Predicate=True()) =
+  def apply(pathName: String, start: String, end: String, minHops: Option[Int], maxHops: Option[Int], relType: String, direction: Direction, optional: Boolean = false, predicate: Predicate = True()) =
     new VarLengthRelatedTo(pathName, start, end, minHops, maxHops, Some(relType), direction, None, optional, predicate)
 }
 
@@ -72,7 +76,7 @@ case class VarLengthRelatedTo(pathName: String,
                               direction: Direction,
                               relIterator: Option[String],
                               optional: Boolean,
-                              predicate:Predicate) extends PathPattern {
+                              predicate: Predicate) extends PathPattern {
 
   override def toString: String = pathName + "=" + node(start) + left(direction) + relInfo + right(direction) + node(end)
 
@@ -95,21 +99,20 @@ case class VarLengthRelatedTo(pathName: String,
   }
 }
 
-case class ShortestPath(
-                         pathName: String,
-                         start: String,
-                         end: String,
-                         relType: Option[String],
-                         dir: Direction,
-                         maxDepth: Option[Int],
-                         optional: Boolean,
-                         single: Boolean,
-                         relIterator:Option[String],
-                         predicate:Predicate=True())
+case class ShortestPath(pathName: String,
+                        start: String,
+                        end: String,
+                        relType: Option[String],
+                        dir: Direction,
+                        maxDepth: Option[Int],
+                        optional: Boolean,
+                        single: Boolean,
+                        relIterator: Option[String],
+                        predicate: Predicate = True())
   extends PathPattern {
   override def toString: String = pathName + "=" + algo + "(" + start + left(dir) + relInfo + right(dir) + end + ")"
-  
-  private def algo = if(single) "singleShortestPath" else "allShortestPath"
+
+  private def algo = if (single) "singleShortestPath" else "allShortestPath"
 
   def cloneWithOtherName(newName: String) = ShortestPath(newName, start, end, relType, dir, maxDepth, optional, single, None)
 

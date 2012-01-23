@@ -88,7 +88,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
       RelatedTo("b", "c", "r2", "rel", Direction.BOTH, false)
     )
 
-    val symbols = new SymbolTable(Identifier("r1", RelationshipType()),Identifier("r2", RelationshipType()))
+    val symbols = new SymbolTable(Identifier("r1", RelationshipType()), Identifier("r2", RelationshipType()))
 
     val matchingContext = new MatchingContext(patterns, symbols)
 
@@ -418,7 +418,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
   }
 
   @Test def predicateInPatternRelationship() {
-    relate(a, b, "rel", Map("foo"->"notBar"))
+    relate(a, b, "rel", Map("foo" -> "notBar"))
 
     val patterns = Seq(RelatedTo("a", "b", "r", Some("rel"), Direction.OUTGOING, true, Equals(Property("r", "foo"), Literal("bar"))))
     val matchingContext = new MatchingContext(patterns, bind("a"))
@@ -426,10 +426,20 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     assertMatches(matchingContext.getMatches(Map("a" -> a)), 1, Map("a" -> a, "b" -> null, "r" -> null))
   }
 
+  @Test def predicateInPatternRelationshipAlsoForVarLength() {
+    relate(a, b, "rel", Map("foo" -> "bar"))
+    relate(b, c, "rel", Map("foo" -> "notBar"))
+
+    val pred = AllInIterable(RelationshipFunction(Entity("p")), "r", Equals(Property("r", "foo"), Literal("bar")))
+    val patterns = Seq(VarLengthRelatedTo("p", "a", "b", Some(2), Some(2), None, Direction.OUTGOING, None, true, pred))
+    val matchingContext = new MatchingContext(patterns, bind("a"))
+
+    assertMatches(matchingContext.getMatches(Map("a" -> a)), 1, Map("a" -> a, "p" -> null, "b" -> null))
+  }
 
   def bind(boundSymbols: String*): SymbolTable = {
     val identifiersToCreate = boundSymbols.map(x => Identifier(x, NodeType()))
-    new SymbolTable(identifiersToCreate:_*)
+    new SymbolTable(identifiersToCreate: _*)
   }
 
   def assertMatches(matches: Traversable[Map[String, Any]], expectedSize: Int, expected: Map[String, Any]*) {
@@ -437,8 +447,7 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     assert(matchesList.size === expectedSize)
 
     expected.foreach(expectation => {
-      if (!matches.exists(compare(_, expectation)))
-      {
+      if (!matches.exists(compare(_, expectation))) {
 
         throw new Exception("Didn't find the expected row: " + expectation + "\r\nActual: " + matches.toList)
       }
