@@ -54,11 +54,10 @@ class SyntaxExceptionTest extends JUnitSuite {
       "expected identifier assignment")
   }
 
-  @Ignore
   @Test def shouldRaiseErrorWhenMissingReturnColumns() {
     expectError(
       "start s = node(0) return",
-      "Expected comma separated list of returnable values")
+      "return column list expected")
   }
 
   @Test def shouldRaiseErrorWhenMissingReturn() {
