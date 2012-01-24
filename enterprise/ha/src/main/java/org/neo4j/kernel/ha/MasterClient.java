@@ -89,7 +89,7 @@ public class MasterClient extends Client<Master> implements Master
             int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels )
     {
         super( hostNameOrIp, port, graphDb, MasterServer.FRAME_LENGTH, MasterServer.PROTOCOL_VERSION, readTimeoutSeconds,
-                maxConcurrentChannels, Math.min( maxConcurrentChannels, DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ) );
+                maxConcurrentChannels, maxConcurrentChannels );
         this.lockReadTimeout = lockReadTimeout;
     }
 

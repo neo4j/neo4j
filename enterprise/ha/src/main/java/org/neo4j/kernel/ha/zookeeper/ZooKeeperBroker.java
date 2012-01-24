@@ -198,7 +198,8 @@ public class ZooKeeperBroker extends AbstractBroker
     public Object instantiateMasterServer( GraphDatabaseService graphDb )
     {
         MasterServer server = new MasterServer( new MasterImpl( graphDb, config ),
-                Machine.splitIpAndPort( haServer ).other(), getStoreDir(), clientLockReadTimeout );
+                Machine.splitIpAndPort( haServer ).other(), getStoreDir(),
+                HaConfig.getMaxConcurrentTransactionsOnMasterFromConfig( config ), clientLockReadTimeout );
         return server;
     }
 
