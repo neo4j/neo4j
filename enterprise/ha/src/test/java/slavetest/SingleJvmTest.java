@@ -100,7 +100,7 @@ public class SingleJvmTest extends AbstractHaTest
     {
         int masterId = 0;
         Map<String, String> config = MapUtil.stringMap( extraConfig,
-                HaConfig.CONFIG_KEY_SERVER_ID, String.valueOf( masterId ));
+                HaConfig.CONFIG_KEY_SERVER_ID, String.valueOf( masterId ) );
         addDefaultReadTimeout( config );
         String path = dbPath( 0 ).getAbsolutePath();
         PlaceHolderGraphDatabaseService placeHolderDb = new PlaceHolderGraphDatabaseService( path );

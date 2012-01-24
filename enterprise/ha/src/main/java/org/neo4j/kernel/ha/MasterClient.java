@@ -91,9 +91,7 @@ public class MasterClient extends Client<Master> implements Master
         super( hostNameOrIp, port, graphDb.getMessageLog(),
                 Client.storeIdGetterForDb( graphDb ),
                 MasterServer.FRAME_LENGTH, MasterServer.PROTOCOL_VERSION,
-                readTimeoutSeconds, maxConcurrentChannels, Math.min(
-                        maxConcurrentChannels,
-                        DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ),
+                readTimeoutSeconds, maxConcurrentChannels, maxConcurrentChannels,
                 connectionLostHandler );
         this.lockReadTimeout = lockReadTimeout;
     }

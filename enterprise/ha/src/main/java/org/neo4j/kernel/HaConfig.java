@@ -20,6 +20,7 @@
 package org.neo4j.kernel;
 
 import org.neo4j.com.Client;
+import org.neo4j.com.Server;
 import org.neo4j.kernel.ha.AsyncZooKeeperLastCommittedTxIdSetter;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.TimeUtil;
@@ -50,6 +51,7 @@ public class HaConfig
     public static final String CONFIG_KEY_SLAVE_COORDINATOR_UPDATE_MODE = "ha.slave_coordinator_update_mode";
     public static final String CONFIG_KEY_LOCK_READ_TIMEOUT = "ha.lock_read_timeout";
     public static final String CONFIG_KEY_COORDINATOR_FETCH_INFO_TIMEOUT = "ha.coordinator_fetch_info_timeout";
+    public static final String CONFIG_KEY_MAX_CONCURRENT_TRANSACTIONS_ON_MASTER = "ha.max_concurrent_transactions_on_master";
 
     public static final String CONFIG_DEFAULT_HA_CLUSTER_NAME = "neo4j.ha";
     public static final int CONFIG_DEFAULT_PORT = 6361;
@@ -109,6 +111,12 @@ public class HaConfig
         return value != null ? Integer.parseInt( value ) : Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT;
     }
 
+    public static int getMaxConcurrentTransactionsOnMasterFromConfig( Map<String, String> config )
+    {
+        String value = config.get( HaConfig.CONFIG_KEY_MAX_CONCURRENT_TRANSACTIONS_ON_MASTER );
+        return value != null ? Integer.parseInt( value ) : Server.DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS;
+    }
+    
     public static String getClusterNameFromConfig( Map<String, String> config )
     {
         String clusterName = config.get( HaConfig.CONFIG_KEY_CLUSTER_NAME );

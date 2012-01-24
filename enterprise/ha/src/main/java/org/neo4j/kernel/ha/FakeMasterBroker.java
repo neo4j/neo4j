@@ -72,6 +72,6 @@ public class FakeMasterBroker extends AbstractBroker
     public Object instantiateMasterServer( AbstractGraphDatabase graphDb )
     {
         return new MasterServer( new MasterImpl( graphDb, config ), Protocol.PORT, graphDb.getMessageLog(),
-                HaConfig.getClientLockReadTimeoutFromConfig( config ) );
+                HaConfig.getMaxConcurrentTransactionsOnMasterFromConfig( config ), HaConfig.getClientLockReadTimeoutFromConfig( config ) );
     }
 }
