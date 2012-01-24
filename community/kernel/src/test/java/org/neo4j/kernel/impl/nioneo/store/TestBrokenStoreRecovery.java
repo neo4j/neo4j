@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2012 "Neo Technology,"
+ * Copyright (c) 2002-2011 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -46,7 +46,7 @@ public class TestBrokenStoreRecovery
      * that during recovery by truncating the logical log as well. Id
      * regeneration should proceed without exceptions, even though the last
      * property record is incomplete.
-     * 
+     *
      * @throws Exception
      */
     @Test
