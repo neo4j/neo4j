@@ -338,9 +338,9 @@ public class XaLogicalLog implements LogLoader
         assert txId != -1;
         try
         {
+            cacheTxStartPosition( txId, startEntry.getMasterId(), startEntry );
             LogIoUtils.writeCommit( false, writeBuffer, identifier, txId, System.currentTimeMillis() );
             writeBuffer.force();
-            cacheTxStartPosition( txId, startEntry.getMasterId(), startEntry );
         }
         catch ( IOException e )
         {
@@ -415,9 +415,9 @@ public class XaLogicalLog implements LogLoader
         assert txId != -1;
         try
         {
+            cacheTxStartPosition( txId, startEntry.getMasterId(), startEntry );
             LogIoUtils.writeCommit( true, writeBuffer, identifier, txId, System.currentTimeMillis() );
             writeBuffer.force();
-            cacheTxStartPosition( txId, startEntry.getMasterId(), startEntry );
         }
         catch ( IOException e )
         {
@@ -519,6 +519,7 @@ public class XaLogicalLog implements LogLoader
         {
             XaTransaction xaTx = xaRm.getXaTransaction( xid );
             xaTx.setCommitTxId( txId );
+            cacheTxStartPosition( txId, startEntry.getMasterId(), startEntry );
             xaRm.injectOnePhaseCommit( xid );
             registerRecoveredTransaction( txId );
         }
@@ -578,6 +579,7 @@ public class XaLogicalLog implements LogLoader
         {
             XaTransaction xaTx = xaRm.getXaTransaction( xid );
             xaTx.setCommitTxId( txId );
+            cacheTxStartPosition( txId, identifier, startEntry );
             xaRm.injectTwoPhaseCommit( xid );
             registerRecoveredTransaction( txId );
         }
@@ -1242,12 +1244,12 @@ public class XaLogicalLog implements LogLoader
         {
             XaTransaction xaTx = xaRm.getXaTransaction( xid );
             xaTx.setCommitTxId( nextTxId );
+            cacheTxStartPosition( nextTxId, masterId, startEntry );
             xaRm.commit( xid, true );
             LogEntry doneEntry = new LogEntry.Done( startEntry.getIdentifier() );
             LogIoUtils.writeLogEntry( doneEntry, writeBuffer );
             xidIdentMap.remove( startEntry.getIdentifier() );
             recoveredTxMap.remove( startEntry.getIdentifier() );
-            cacheTxStartPosition( nextTxId, masterId, startEntry );
         }
         catch ( XAException e )
         {
