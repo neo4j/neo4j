@@ -523,7 +523,9 @@ public class XaLogicalLog implements LogLoader
         {
             XaTransaction xaTx = xaRm.getXaTransaction( xid );
             xaTx.setCommitTxId( txId );
-            cacheTxStartPosition( txId, startEntry.getMasterId(), startEntry );
+            /*
+             * cacheTxStartPosition( txId, startEntry.getMasterId(), startEntry );
+             */
             xaRm.injectOnePhaseCommit( xid );
             registerRecoveredTransaction( txId );
         }
@@ -583,7 +585,9 @@ public class XaLogicalLog implements LogLoader
         {
             XaTransaction xaTx = xaRm.getXaTransaction( xid );
             xaTx.setCommitTxId( txId );
-            cacheTxStartPosition( txId, identifier, startEntry );
+            /*
+             * cacheTxStartPosition( txId, identifier, startEntry );
+             */
             xaRm.injectTwoPhaseCommit( xid );
             registerRecoveredTransaction( txId );
         }
