@@ -296,6 +296,7 @@ public class MasterUtil
                 }
                 resourceNames.add( resourceName );
                 final long masterLastTx = dataSource.getLastCommittedTxId();
+                if ( txEntry.other() >= masterLastTx ) continue;
                 LogExtractor logExtractor = getTransactionStreamForDatasource(
                         dataSource, txEntry.other() + 1, masterLastTx, stream,
                         filter );
@@ -336,12 +337,13 @@ public class MasterUtil
             throw new RuntimeException( "No data source '" + dataSourceName
                                         + "' found" );
         }
-        LogExtractor extractor = getTransactionStreamForDatasource( dataSource,
-                startTx, endTx, stream, MasterUtil.ALL );
+        
+        List<LogExtractor> extractors = startTx < endTx ? Collections.singletonList( 
+                getTransactionStreamForDatasource( dataSource, startTx, endTx, stream, MasterUtil.ALL ) ) :
+                Collections.<LogExtractor>emptyList();
         StoreId storeId = ( (NeoStoreXaDataSource) dsManager.getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME ) ).getStoreId();
         return new Response<Void>( null, storeId, createTransactionStream(
-                Collections.singletonList( dataSourceName ), stream,
-                Collections.singletonList( extractor ) ) );
+                Collections.singletonList( dataSourceName ), stream, extractors ) );
 
     }
 
