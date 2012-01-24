@@ -89,7 +89,7 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
                 graphDb,
                 ConnectionLostHandler.NO_ACTION,
                 readTimeout, getConfigInt( config, CONFIG_KEY_LOCK_READ_TIMEOUT, readTimeout ),
-                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT);
+                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT );
         return new AbstractBroker( id, graphDb )
         {
             public boolean iAmMaster()
