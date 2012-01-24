@@ -61,7 +61,7 @@ class SingleShortestPathPipeTest extends GraphDatabaseTestBase with Assertions {
     assert(runThroughPipeAndGetPath(a, b, path) === null)
   }
 
-  @Ignore("Does not work yet")
+  @Ignore
   @Test def shouldReturnLongerPathIfShorterDoesntMatchPredicate() {
     // Two paths exist: a->b->c, and a->c
     // The shorter is not a match, because of a property
