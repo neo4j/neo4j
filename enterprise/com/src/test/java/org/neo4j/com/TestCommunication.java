@@ -28,7 +28,6 @@ import static org.junit.Assert.fail;
 import java.io.File;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -294,7 +293,6 @@ public class TestCommunication
         server.shutdown();
     }
 
-    @Ignore( "This triggers client.shutdown() deadlock" )
     @Test
     public void serverStopsStreamingToDeadClient() throws Exception
     {
