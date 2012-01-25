@@ -1314,7 +1314,6 @@ public class XaLogicalLog implements LogLoader
         {
             if ( !successfullyApplied && logApplier.getStartEntry() != null )
             {   // Unmap this identifier if tx not applied correctly
-                xidIdentMap.remove( xidIdent );
                 try
                 {
                     xaRm.forget( logApplier.getStartEntry().getXid() );
@@ -1322,6 +1321,10 @@ public class XaLogicalLog implements LogLoader
                 catch ( XAException e )
                 {
                     throw new IOException( e );
+                }
+                finally
+                {
+                    xidIdentMap.remove( xidIdent );
                 }
             }
         }
