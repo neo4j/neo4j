@@ -72,6 +72,12 @@ public class TestGraphProperties
         db.shutdown();
     }
     
+    private void restartDb()
+    {
+        db.shutdown();
+        db = new ImpermanentGraphDatabase();
+    }
+    
     @Test
     public void basicProperties() throws Exception
     {
@@ -318,6 +324,26 @@ public class TestGraphProperties
         EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( storeDir );
         assertEquals( "Some value", db.getConfig().getGraphDbModule().getNodeManager().getGraphProperties().getProperty( "prop" ) );
         db.shutdown();
+    }
+    
+    @Test
+    public void testEquals()
+    {
+        GraphProperties graphProperties = db.getConfig().getGraphDbModule().getNodeManager().getGraphProperties();
+        tx = db.beginTx();
+        try
+        {
+            graphProperties.setProperty( "test", "test" );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+        
+        assertEquals( graphProperties, db.getConfig().getGraphDbModule().getNodeManager().getGraphProperties() );
+        restartDb();
+        assertFalse( graphProperties.equals( db.getConfig().getGraphDbModule().getNodeManager().getGraphProperties() ) );
     }
     
     private static class State

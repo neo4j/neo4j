@@ -198,4 +198,16 @@ public class GraphProperties extends Primitive implements PropertyContainer
     {
         return this;
     }
+    
+    public boolean equals( Object obj )
+    {
+        if ( !( obj instanceof GraphProperties ) ) return false;
+        return ((GraphProperties)obj).nodeManager.equals( nodeManager );
+    }
+    
+    @Override
+    public int hashCode()
+    {
+        return nodeManager.hashCode();
+    }
 }
