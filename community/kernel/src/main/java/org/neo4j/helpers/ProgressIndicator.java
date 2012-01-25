@@ -259,8 +259,8 @@ public interface ProgressIndicator
         @Override
         public void done( long totalProgress )
         {
-            System.out.println();
-            System.out.println( "=> " + totalProgress + " " + doneMessage );
+            if ( lastStep > 0 ) System.out.println();
+            System.out.println( "[" + totalProgress + " " + doneMessage + "]" );
         }
     }
 }
