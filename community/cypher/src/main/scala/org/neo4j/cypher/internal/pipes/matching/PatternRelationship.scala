@@ -36,11 +36,18 @@ class PatternRelationship(key: String,
 
   def getOtherNode(node: PatternNode) = if (startNode == node) endNode else startNode
 
+
   def getGraphRelationships(node: PatternNode, realNode: Node): Seq[GraphRelationship] = {
-    (relType match {
+    val result = (relType match {
       case Some(typeName) => realNode.getRelationships(getDirection(node), DynamicRelationshipType.withName(typeName))
       case None => realNode.getRelationships(getDirection(node))
     }).asScala.map(new SingleGraphRelationship(_)).toSeq
+
+
+    if (startNode == endNode)
+      result.filter( r => r.getOtherNode(realNode) == realNode )
+    else
+      result
   }
 
   protected def getDirection(node: PatternNode): Direction = {
@@ -68,7 +75,7 @@ class VariableLengthPatternRelationship(pathName: String,
                                         relType: Option[String],
                                         dir: Direction,
                                         optional: Boolean,
-                                        predicate:Predicate)
+                                        predicate: Predicate)
   extends PatternRelationship(pathName, start, end, relType, dir, optional, predicate) {
 
   override def getGraphRelationships(node: PatternNode, realNode: Node): Seq[GraphRelationship] = {

@@ -1636,6 +1636,29 @@ RETURN x0.name?
     assert(List(Map("newAge" -> 41)) === result.toList)
   }
 
+  @Test def shouldSolveSelfreferencingPattern() {
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+
+    relate(a, b)
+    relate(b, c)
+
+    val result = parseAndExecute("start a=node(1) match a-->b, b-->b return b")
+    assert(List() === result.toList)
+  }
+
+  @Test def shouldSolveSelfreferencingPattern2() {
+    val a = createNode()
+    val b = createNode()
+
+    val r = relate(a, a)
+    relate(a,b)
+
+    val result = parseAndExecute("start a=node(1) match a-[r]->a return r")
+    assert(List(Map("r" -> r)) === result.toList)
+  }
+
   @Test def shouldAggregateOnArrayValues() {
     createNode("color" -> Array("red"))
     createNode("color" -> Array("blue"))
@@ -1643,10 +1666,10 @@ RETURN x0.name?
 
     val result = parseAndExecute("start a=node(1,2,3) return distinct a.color, count(*)").toList
     result.foreach(x => {
-     val c = x("a.color").asInstanceOf[Array[_]]
-      if(c.deep == Array("red").deep)
+      val c = x("a.color").asInstanceOf[Array[_]]
+      if (c.deep == Array("red").deep)
         assertEquals(x("count(*)"), 2)
-      else if(c.deep == Array("blue").deep)
+      else if (c.deep == Array("blue").deep)
         assertEquals(x("count(*)"), 1)
       else fail("wut?")
     })
@@ -1654,9 +1677,9 @@ RETURN x0.name?
 
     //    println(f().dumpToString())
 
-//    val result = f()
+    //    val result = f()
 
-//    assert(Set(Map("a.color" -> Array("red"), "count(*)" -> 2), Map("a.color" -> Array("blue"), "count(*)" -> 1)) === result.toSet)
+    //    assert(Set(Map("a.color" -> Array("red"), "count(*)" -> 2), Map("a.color" -> Array("blue"), "count(*)" -> 1)) === result.toSet)
   }
 
   @Test def createEngineWithSpecifiedParserVersion() {
