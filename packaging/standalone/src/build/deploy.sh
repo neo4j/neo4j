@@ -66,9 +66,11 @@ cd target/upload
 
 ## create xml-version helper
 cat<<EOF >xmlgrep
-#!/usr/bin/perl -w
-use XML::Simple;
-print XML::Simple->new()->XMLin(shift)->{'version'};
+#!/usr/bin/ruby
+require 'rexml/document'
+file = File.read(ARGV[0])
+doc = REXML::Document.new(file)
+puts doc.root.elements['version'].text
 EOF
 chmod +x xmlgrep
 
