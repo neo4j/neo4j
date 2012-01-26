@@ -426,6 +426,24 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     assertMatches(matchingContext.getMatches(Map("a" -> a)), 1, Map("a" -> a, "b" -> null, "r" -> null))
   }
 
+  @Test def solveDoubleOptionalProblem() {
+    val e = createNode()
+    
+    relate(a,b)
+    relate(a,c)
+    relate(d,c)
+    relate(d,e)
+    
+    val patterns = Seq(
+      RelatedTo("a", "x", "r1", None, Direction.OUTGOING, true, True()),
+      RelatedTo("x", "b", "r2", None, Direction.INCOMING, true, True())
+    )
+
+    val matchingContext = new MatchingContext(patterns, bind("a", "b"))
+
+    assertMatches(matchingContext.getMatches(Map("a" -> a, "b"->d)), 3)
+  }
+
   @Test def predicateInPatternRelationshipAlsoForVarLength() {
     relate(a, b, "rel", Map("foo" -> "bar"))
     relate(b, c, "rel", Map("foo" -> "notBar"))

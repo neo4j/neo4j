@@ -45,7 +45,7 @@ class PatternRelationship(key: String,
 
 
     if (startNode == endNode)
-      result.filter( r => r.getOtherNode(realNode) == realNode )
+      result.filter(r => r.getOtherNode(realNode) == realNode)
     else
       result
   }
@@ -64,6 +64,31 @@ class PatternRelationship(key: String,
   }
 
   override def toString = key
+
+  def traverse[T](shouldFollow: (PatternElement) => Boolean,
+                  visitNode: (PatternNode, T) => T,
+                  visitRelationship: (PatternRelationship, T) => T,
+                  data: T,
+                  comingFrom: PatternNode) {
+
+    val moreData = visitRelationship(this, data)
+
+    val otherNode = getOtherNode(comingFrom)
+
+    if (shouldFollow(otherNode)) {
+      otherNode.traverse(shouldFollow, visitNode, visitRelationship, moreData)
+    }
+  }
+
+  def traverse[T](shouldFollow: (PatternElement) => Boolean,
+                  visitNode: (PatternNode, T) => T,
+                  visitRelationship: (PatternRelationship, T) => T,
+                  data: T) {
+
+    val moreData = visitRelationship(this, data)
+
+    Seq(startNode, endNode).filter(shouldFollow).foreach(n => n.traverse(shouldFollow, visitNode, visitRelationship, moreData))
+  }
 }
 
 class VariableLengthPatternRelationship(pathName: String,

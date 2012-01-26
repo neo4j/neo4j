@@ -23,7 +23,7 @@ import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.commands._
 import collection.immutable.Map
 import collection.{Traversable, Seq}
-import org.neo4j.cypher.symbols.{RelationshipType, NodeType, SymbolTable}
+import org.neo4j.cypher.symbols.{NodeType, SymbolTable}
 
 /**
  * This class is responsible for deciding how to get the parts of the pattern that are not already bound
@@ -45,6 +45,7 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, pre
 //      new JoinerBuilder(patternGraph, predicates)
 //    } else {
       new PatterMatchingBuilder(patternGraph, predicates)
+//    new DoubleOptionalPatternMatcher(patternGraph, predicates)
 //    }
   }
 
