@@ -28,7 +28,6 @@ import java.util.concurrent.CountDownLatch;
 
 import javax.transaction.xa.Xid;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.AbstractGraphDatabase;
@@ -59,7 +58,6 @@ import org.neo4j.test.subprocess.KillSubProcess;
  * 
  * @author Mattias Persson
  */
-@Ignore( "Until there's a proper fix for it" )
 public class TestMoveTxToNewLog extends AbstractSubProcessTestBase
 {
     private static final String NAME = "name";
