@@ -1,7 +1,7 @@
-#!/bin/bash -e
+#!/bin/bash -ex
 # depends libxml-simple-perl
 
-tcrepo=http://builder.neo4j.org/guestAuth/repository/download/bt65/lastSuccessful
+jenkins_repo='http://ci-01.neo4j.org/job/packaging/lastSuccessfulBuild/artifact'
 rootpathdist=dist
 
 function work {
@@ -22,8 +22,12 @@ function run_command {
 function fetch_artifact {
     artifact=$1
     filename=$2
-    curlcommand="curl -f -O $tcrepo/$artifact/$filename"
-    run_command "$curlcommand"
+    run_command "curl -u ${AUTH} -f -O $jenkins_repo/$artifact/$filename"
+}
+
+function upload_file {
+    filename=$1
+    run_command "s3cmd put --acl-public --guess-mime-type $filename s3://dist.neo4j.org/$filename"
 }
 
 function upload_package {
@@ -31,18 +35,12 @@ function upload_package {
     version=$2
     filenameWindows=$artifact-$version-windows.zip
     filenameUnix=$artifact-$version-unix.tar.gz
-    fetch_artifact standalone $filenameWindows
-    fetch_artifact standalone $filenameUnix
+    fetch_artifact standalone/target $filenameWindows
+    fetch_artifact standalone/target $filenameUnix
     upload_file $filenameWindows
     upload_file $filenameUnix
 }
 
-function upload_file {
-    filename=$1
-#    scpcommand="scp $filename dist-server:$rootpathdist/$filename"
-    uploadcommand="s3cmd put --acl-public --guess-mime-type $filename s3://dist.neo4j.org/$filename"
-    run_command "$uploadcommand"
-}
 
 # uses the global $artifact as input
 function get_version {
