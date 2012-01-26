@@ -255,7 +255,6 @@ Cypher will try to match the relationship where the connected nodes switch sides
     )
   }
 
-  @Ignore
   @Test def match_mimicking_or() {
     testQuery(
       title = "Matching on a bound relationship",
@@ -263,7 +262,7 @@ Cypher will try to match the relationship where the connected nodes switch sides
 Cypher will try to match the relationship where the connected nodes switch sides.""",
       queryText = "start a=node(%A%), b=node(%E%) match a-[?:KNOWS]-x-[?:KNOWS]-b return x",
       returns = "This returns the two connected nodes, once as the start node, and once as the end node",
-      assertions = p => assertEquals(List(node("D"), node("B"), node("C")), p.columnAs[Node]("x").toList)
+      assertions = p => assertEquals(Set(node("D"), node("B"), node("C")), p.columnAs[Node]("x").toSet)
     )
   }
 }

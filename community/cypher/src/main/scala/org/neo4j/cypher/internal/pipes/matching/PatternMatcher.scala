@@ -33,13 +33,12 @@ class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predic
     traverseNode(boundNodes.values.toSet, new History(source), f)
   }
 
-  private def traverseNode[U](remaining: Set[MatchingPair],
-                              history: History,
-                              yielder: Map[String, Any] => U): Boolean = {
-
-    val current = remaining.head
-    val leftToDoAfterThisOne = remaining.tail
-
+  protected def traverseNextSpecificNode[U](remaining: Set[MatchingPair],
+                                            history: History,
+                                            yielder: (Map[String, Any]) => U,
+                                            current: MatchingPair,
+                                            leftToDoAfterThisOne: Set[MatchingPair],
+                                            alreadyInExtraWork: Boolean): Boolean = {
     debug(current, history, leftToDoAfterThisOne)
 
     if (!current.matchesBoundEntity(boundNodes)) {
@@ -60,7 +59,16 @@ class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predic
       case List(single) => traverseRelationship(current, single, newHistory, leftToDoAfterThisOne, yielder)
       case _ => traverseRelationship(current, notYetVisited.head, newHistory, remaining, yielder)
     }
+  }
 
+  private def traverseNode[U](remaining: Set[MatchingPair],
+                              history: History,
+                              yielder: Map[String, Any] => U): Boolean = {
+
+    val current = remaining.head
+    val leftToDoAfterThisOne = remaining.tail
+
+    traverseNextSpecificNode(remaining, history, yielder, current, leftToDoAfterThisOne, false)
   }
 
   def traverseNextNodeFromRelationship[U](rel: GraphRelationship, gNode: Node, nextPNode: PatternNode, currentRel: PatternRelationship, history: History, remaining: Set[MatchingPair], yielder: (Map[String, Any]) => U): Boolean = {

@@ -19,14 +19,15 @@
  */
 package org.neo4j.cypher.internal.pipes.matching
 
-import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.symbols.{MapType, SymbolTable}
+import collection.mutable.{Set => MutableSet, Seq => MutableSeq}
+import org.neo4j.cypher.{PatternException, SyntaxException}
 
 class PatternGraph(val patternNodes: Map[String, PatternNode],
                    val patternRels: Map[String, PatternRelationship],
                    val bindings: SymbolTable) {
 
-  val (patternGraph, optionalElements, containsLoops) = validatePattern(patternNodes, patternRels, bindings)
+  val (patternGraph, optionalElements, containsLoops, doubleOptionalPaths) = validatePattern(patternNodes, patternRels, bindings)
 
   def apply(key: String) = patternGraph(key)
 
@@ -40,79 +41,124 @@ class PatternGraph(val patternNodes: Map[String, PatternNode],
 
   def boundElements = bindings.identifiers.filter(id => MapType().isAssignableFrom(id.typ)).map(_.name)
 
-  /*
-  This method is mutable, but it is only called from the constructor of this class. The created pattern graph
-   is immutable and thread safe.
-  */
   private def validatePattern(patternNodes: Map[String, PatternNode],
                               patternRels: Map[String, PatternRelationship],
-                              bindings: SymbolTable): (Map[String, PatternElement], Set[String], Boolean) = {
+                              bindings: SymbolTable): (Map[String, PatternElement], Set[String], Boolean, Seq[DoubleOptionalPath]) = {
     val overlaps = patternNodes.keys.filter(patternRels.keys.toSeq contains)
     if (overlaps.nonEmpty) {
-      throw new SyntaxException("Some identifiers are used as both relationships and nodes: " + overlaps.mkString(", "))
+      throw new PatternException("Some identifiers are used as both relationships and nodes: " + overlaps.mkString(", "))
     }
 
     val elementsMap: Map[String, PatternElement] = (patternNodes.values ++ patternRels.values).map(x => (x.key -> x)).toMap
-    val optionalElements = scala.collection.mutable.Set[String](elementsMap.keys.toSeq: _*)
+    val allElements = elementsMap.values.toSeq
 
-    def markMandatoryElements(x: PatternElement) {
-      if (optionalElements.contains(x.key)) {
-        x match {
-          case nod: PatternNode => {
-            optionalElements.remove(x.key)
-            nod.relationships.filter(!_.optional).foreach(markMandatoryElements)
-          }
-          case rel: PatternRelationship => if (!rel.optional) {
-            optionalElements.remove(x.key)
-            markMandatoryElements(rel.startNode)
-            markMandatoryElements(rel.endNode)
-          }
-        }
-      }
-    }
+    val boundElements = bindings.identifiers.flatMap(i => elementsMap.get(i.name))
 
-    var visited = scala.collection.mutable.Seq[PatternElement]()
-    var hasLoops = false
+    val hasLoops = checkIfWeHaveLoops(boundElements, allElements)
+    val optionalSet = getOptionalElements(boundElements, allElements)
+    val doubleOptionals = getDoubleOptionals(boundElements)
 
-    def visit(x: PatternElement) {
-      if (!visited.contains(x)) {
-        visited = visited ++ Seq(x)
-        x match {
-          case nod: PatternNode => nod.relationships.filterNot(visited.contains).foreach(rel => {
-            visited = visited ++ Seq(rel)
-            visit(rel.getOtherNode(nod))
+    (elementsMap, optionalSet, hasLoops, doubleOptionals)
+  }
+
+  private def getDoubleOptionals(boundPatternElements: Seq[PatternElement]): Seq[DoubleOptionalPath] = {
+    var visited = Set[PatternElement]()
+    var doubleOptionals = Seq[DoubleOptionalPath]()
+    
+
+    boundPatternElements.foreach(e => e.traverse(
+      shouldFollow = e => !visited.contains(e),
+      visit = (e, data: Seq[PatternElement]) => {
+        visited += e
+        val result = data ++ Seq(e)
+
+        val foundPathBetweenBoundElements = boundPatternElements.contains(e) && result.size > 1
+
+        if (foundPathBetweenBoundElements) {
+          val numberOfOptionals = result.foldLeft(0)((count, element) => {
+            val r = element match {
+              case x: PatternRelationship => if (x.optional) 1 else 0
+              case _ => 0
+            }
+
+            count + r
           })
-          case rel: PatternRelationship => {
-            visit(rel.startNode)
-            visit(rel.endNode)
+
+          if (numberOfOptionals > 2) {
+            throw new PatternException("Your pattern has at least one path between two bound elements, and these patterns are undefined for the time being. Valid use cases for this are very interesting to us - let us know at cypher@neo4j.org")
+          }
+          
+          if(numberOfOptionals > 1) {
+            
+            val leftNode = data(0)
+            val leftRel = data(1)
+            val rightNode = e
+            val rightRel = data.last
+
+
+            doubleOptionals = doubleOptionals ++ Seq[DoubleOptionalPath](
+              DoubleOptionalPath(leftNode.key, rightNode.key, leftRel.key),
+              DoubleOptionalPath(rightNode.key, leftNode.key, rightRel.key))
           }
         }
-      } else {
-        hasLoops = true
-      }
-    }
 
-    bindings.identifiers.foreach(id => {
-      val el = elementsMap.get(id.name)
-      el match {
-        case None =>
-        case Some(x) => {
-          if (visited.contains(x)) {
-            hasLoops = true
-          } else {
-            visit(x)
-          }
-          markMandatoryElements(x)
+
+        result
+      },
+      data = Seq[PatternElement]()
+    ))
+
+    doubleOptionals
+  }
+
+  private def getOptionalElements(boundPatternElements: Seq[PatternElement], allPatternElements: Seq[PatternElement]): Set[String] = {
+    val optionalElements = MutableSet[String](allPatternElements.map(_.key): _*)
+    var visited = Set[PatternElement]()
+
+    boundPatternElements.foreach(n => n.traverse(
+      shouldFollow = e => {
+        e match {
+          case x: PatternNode => !visited.contains(e)
+          case x: PatternRelationship => !visited.contains(e) && !x.optional
         }
-      }
-    })
+      },
+      visit = (e, x: Unit) => {
+        optionalElements.remove(e.key)
+        visited = visited ++ Set(e)
+      },
+      data = ()
+    ))
 
-    val notVisited = elementsMap.values.filterNot(visited contains)
+    optionalElements.toSet
+  }
 
-    if (notVisited.nonEmpty) {
-      throw new SyntaxException("All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These identifiers were found to be disconnected: " + notVisited.map(_.key).mkString("", ", ", ""))
+  private def checkIfWeHaveLoops(boundPatternElements: Seq[PatternElement], allPatternElements: Seq[PatternElement]) = {
+    var visited = Seq[PatternElement]()
+    var loop = false
+
+    val follow = (element: PatternElement) => element match {
+      case n: PatternNode => true
+      case r: PatternRelationship => !visited.contains(r)
     }
 
-    (elementsMap, optionalElements.toSet, hasLoops)
+    val vNode = (n: PatternNode, x: Unit) => {
+      if (visited.contains(n))
+        loop = true
+      visited = visited ++ Seq(n)
+    }
+
+    val vRel = (r: PatternRelationship, x: Unit) => visited = visited ++ Seq(r);
+
+    boundPatternElements.foreach {
+      case pr: PatternRelationship => pr.startNode.traverse(follow, vNode, vRel, ())
+      case pn: PatternNode => pn.traverse(follow, vNode, vRel, ())
+    }
+
+    val notVisitedElements = allPatternElements.filterNot(visited contains)
+    if (notVisitedElements.nonEmpty) {
+      throw new SyntaxException("All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These identifiers were found to be disconnected: " + notVisitedElements.map(_.key).mkString("", ", ", ""))
+    }
+
+    loop
   }
 }

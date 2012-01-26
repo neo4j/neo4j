@@ -19,4 +19,15 @@
  */
 package org.neo4j.cypher.internal.pipes.matching
 
-abstract class PatternElement(val key: String)
+abstract class PatternElement(val key: String) {
+  def traverse[T](shouldFollow: (PatternElement) => Boolean,
+                  visitNode: (PatternNode, T) => T,
+                  visitRelationship: (PatternRelationship, T) => T,
+                  data: T)
+
+  def traverse[T](shouldFollow: (PatternElement) => Boolean,
+                  visit: (PatternElement, T) => T,
+                  data: T) {
+    traverse(shouldFollow, visit, visit, data)
+  }
+}
