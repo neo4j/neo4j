@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.cypher.symbols.{MapType, SymbolTable}
-import collection.mutable.{Set => MutableSet, Seq => MutableSeq}
+import collection.mutable.{Set => MutableSet}
 import org.neo4j.cypher.{PatternException, SyntaxException}
 
 class PatternGraph(val patternNodes: Map[String, PatternNode],
@@ -30,6 +30,8 @@ class PatternGraph(val patternNodes: Map[String, PatternNode],
   val (patternGraph, optionalElements, containsLoops, doubleOptionalPaths) = validatePattern(patternNodes, patternRels, bindings)
 
   def apply(key: String) = patternGraph(key)
+  
+  val hasDoubleOptionals:Boolean = doubleOptionalPaths.nonEmpty
 
   def get(key: String) = patternGraph.get(key)
 
