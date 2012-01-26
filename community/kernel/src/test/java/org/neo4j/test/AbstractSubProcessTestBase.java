@@ -19,6 +19,8 @@
  */
 package org.neo4j.test;
 
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collections;
@@ -30,6 +32,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.SubProcess;
@@ -173,14 +176,20 @@ public class AbstractSubProcessTestBase
         public Bootstrapper( AbstractSubProcessTestBase test, int instance )
                                                                                throws IOException
         {
-            this( test, instance, Collections.EMPTY_MAP );
+            this( test, instance, Collections.<String, String>emptyMap() );
         }
 
         public Bootstrapper( AbstractSubProcessTestBase test, int instance,
                 Map<String, String> dbConfiguration ) throws IOException
         {
-            this.dbConfiguration = dbConfiguration;
+            this.dbConfiguration = addVitalConfig( dbConfiguration );
             this.storeDir = test.target.directory( "graphdb." + instance, true ).getCanonicalPath();
+        }
+
+        private Map<String, String> addVitalConfig( Map<String, String> dbConfiguration )
+        {
+            return stringMap( new HashMap<String, String>( dbConfiguration ),
+                    Config.KEEP_LOGICAL_LOGS, "true" );
         }
 
         protected AbstractGraphDatabase startup()
