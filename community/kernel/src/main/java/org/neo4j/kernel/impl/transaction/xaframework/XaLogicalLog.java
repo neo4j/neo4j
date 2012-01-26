@@ -1436,9 +1436,14 @@ public class XaLogicalLog implements LogLoader
         LogEntry entry;
         // Set<Integer> startEntriesWritten = new HashSet<Integer>();
         LogBuffer newLogBuffer = instantiateCorrectWriteBuffer( newLog );
+        boolean foundFirstStrayTx = false;
         while ((entry = LogIoUtils.readEntry( sharedBuffer, fileChannel, cf )) != null )
         {
-            if ( xidIdentMap.get( entry.getIdentifier() ) != null )
+            if ( !foundFirstStrayTx && xidIdentMap.get( entry.getIdentifier() ) != null )
+            {
+                foundFirstStrayTx = true;
+            }
+            if ( foundFirstStrayTx )
             {
                 if ( entry instanceof LogEntry.Start )
                 {
@@ -1457,11 +1462,6 @@ public class XaLogicalLog implements LogLoader
                     msgLog.logMessage( "Updated tx " + ((LogEntry.Commit) entry ).getTxId() +
                             " from " + oldPos + " to " + newPos );
                 }
-//                if ( !startEntriesWritten.contains( entry.getIdentifier() ) )
-//                {
-//                    throw new IOException( "Unable to rotate log since start entry for identifier[" +
-//                            entry.getIdentifier() + "] not written" );
-//                }
                 LogIoUtils.writeLogEntry( entry, newLogBuffer );
             }
         }
