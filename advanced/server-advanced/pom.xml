@@ -428,7 +428,7 @@ terms of the relevant Commercial Agreement.
         <repository>
           <id>neo4j-build</id>
           <name>Neo4j Developer Repository</name>
-          <url>https://m2.neo4j.org/content/groups/everything</url>
+          <url>http://m2.neo4j.org/content/groups/everything</url>
         </repository>
       </repositories>
     </profile>
@@ -465,7 +465,7 @@ terms of the relevant Commercial Agreement.
     <repository>
       <id>neo4j-release-repository</id>
       <name>Neo4j Maven 2 release repository</name>
-      <url>https://m2.neo4j.org/content/repositories/releases</url>
+      <url>http://m2.neo4j.org/content/repositories/releases</url>
       <releases>
         <enabled>true</enabled>
       </releases>
