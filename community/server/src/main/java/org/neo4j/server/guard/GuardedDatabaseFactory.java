@@ -50,6 +50,9 @@ public class GuardedDatabaseFactory implements GraphDatabaseFactory {
             @Override protected WrappedNode<WrappedGraphDatabase> node(final Node node, boolean created) {
                 // if (cnt++ % 1000 == 0)
                 guard.check();
+                if (node == null) {
+                    return null;
+                }
                 return new WrappedNode<WrappedGraphDatabase>(this) {
                     @Override protected Node actual() {
                         return node;
@@ -61,6 +64,9 @@ public class GuardedDatabaseFactory implements GraphDatabaseFactory {
             protected WrappedRelationship<WrappedGraphDatabase> relationship(final Relationship relationship, boolean created) {
                 // if (cnt++ % 1000 == 0)
                 guard.check();
+                if (relationship == null) {
+                    return null;
+                }
                 return new WrappedRelationship<WrappedGraphDatabase>(this) {
                     @Override protected Relationship actual() {
                         return relationship;
