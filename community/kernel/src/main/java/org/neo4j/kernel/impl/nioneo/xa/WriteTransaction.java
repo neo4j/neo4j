@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -72,6 +70,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
+
+import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
 
 /**
  * Transaction containing {@link Command commands} reflecting the operations
@@ -728,8 +728,9 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                     true );
             if ( !propRecord.isCreated() && propRecord.isChanged() )
             {
-                // Being here means a new value could be on disk. Re-read
+                // Being here means a new value could be on disk. Re-read and replace
                 propRecord = getPropertyStore().getRecord( propRecord.getId() );
+                addPropertyRecord( propRecord );
             }
             for ( PropertyBlock block : propRecord.getPropertyBlocks() )
             {
@@ -1091,13 +1092,21 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 nodeId + "] illegal since it has been deleted." );
         }
         assert assertPropertyChain( nodeRecord );
+
+        removeProperty( nodeRecord, propertyData, RecordAdded.NODE );
+        // propRecord.removeBlock( propertyData.getIndex() );
+    }
+
+    private void removeProperty( PrimitiveRecord hostRecord, PropertyData propertyData, RecordAdded adder )
+    {
+        long propertyId = propertyData.getId();
         PropertyRecord propRecord = getPropertyRecord( propertyId, false, true );
         if ( !propRecord.inUse() )
         {
             throw new IllegalStateException( "Unable to delete property[" +
                 propertyId + "] since it is already deleted." );
         }
-        propRecord.setNodeId( nodeId );
+        adder.setId( propRecord, hostRecord.getId() );
 
         PropertyBlock block = propRecord.removePropertyBlock( propertyData.getIndex() );
         if ( block == null )
@@ -1125,14 +1134,14 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
              * There are remaining blocks in the record. We do not unlink yet.
              */
             propRecord.setChanged();
-            assert assertPropertyChain( nodeRecord );
+            assert assertPropertyChain( hostRecord );
             return;
         }
         else
         {
-            if ( unlinkPropertyRecord( propRecord, nodeRecord ) )
+            if ( unlinkPropertyRecord( propRecord, hostRecord ) )
             {
-                addNodeRecord( nodeRecord );
+                adder.add( this, hostRecord );
             }
         }
     }
@@ -1274,7 +1283,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
              assert propertyRecord.size() > 0 : propertyRecord;
              */
             propertyRecord = addPropertyBlockToPrimitive( block, primitive,
-                    isNode );
+                    isNode ? RecordAdded.NODE : RecordAdded.RELATIONSHIP );
         }
         assert assertPropertyChain( primitive );
         return block.newPropertyData( propertyRecord, value );
@@ -1299,8 +1308,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         PropertyBlock block = new PropertyBlock();
         block.setCreated();
         getPropertyStore().encodeValue( block, index.getKeyId(), value );
-        PropertyRecord host = addPropertyBlockToPrimitive( block, relRecord,
-        /*isNode*/false );
+        PropertyRecord host = addPropertyBlockToPrimitive( block, relRecord, RecordAdded.RELATIONSHIP );
         assert assertPropertyChain( relRecord );
         return block.newPropertyData( host, value );
     }
@@ -1330,14 +1338,13 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
          * rollback only.
          */
         getPropertyStore().encodeValue( block, index.getKeyId(), value );
-        PropertyRecord host = addPropertyBlockToPrimitive( block, nodeRecord,
-        /*isNode*/true );
+        PropertyRecord host = addPropertyBlockToPrimitive( block, nodeRecord, RecordAdded.NODE );
         assert assertPropertyChain( nodeRecord );
         return block.newPropertyData( host, value );
     }
 
     private PropertyRecord addPropertyBlockToPrimitive( PropertyBlock block,
-            PrimitiveRecord primitive, boolean isNode )
+            PrimitiveRecord primitive, RecordAdded adder )
     {
         assert assertPropertyChain( primitive );
         int newBlockSizeInBytes = block.getSize();
@@ -1375,32 +1382,19 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             {
                 PropertyRecord prevProp = getPropertyRecord(
                         primitive.getNextProp(), true, true );
-                if ( isNode )
-                {
-                    addNodeRecord( (NodeRecord) primitive );
-                }
-                else
-                {
-                    addRelationshipRecord( (RelationshipRecord) primitive );
-                }
+                adder.add( this, primitive );
                 assert prevProp.getPrevProp() == Record.NO_PREVIOUS_PROPERTY.intValue();
                 prevProp.setPrevProp( host.getId() );
                 host.setNextProp( prevProp.getId() );
                 prevProp.setChanged();
+                adder.setId( prevProp, primitive.getId() );
             }
             primitive.setNextProp( host.getId() );
             host.addPropertyBlock( block );
             host.setInUse( true );
         }
         // Ok, here host does for the job. Use it
-        if ( isNode )
-        {
-            host.setNodeId( primitive.getId() );
-        }
-        else
-        {
-            host.setRelId( primitive.getId() );
-        }
+        adder.setId( host, primitive.getId() );
         addPropertyRecord( host );
         assert assertPropertyChain( primitive );
         return host;
@@ -1894,5 +1888,55 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             previous = current;
         }
         return true;
+    }
+
+    private static enum RecordAdded
+    {
+        NODE
+        {
+            @Override
+            void add( WriteTransaction tx, PrimitiveRecord record )
+            {
+                tx.addNodeRecord( (NodeRecord) record );
+            }
+
+            @Override
+            void setId( PropertyRecord record, long id )
+            {
+                record.setNodeId( id );
+            }
+        },
+        RELATIONSHIP
+        {
+            @Override
+            void add( WriteTransaction tx, PrimitiveRecord record )
+            {
+                tx.addRelationshipRecord( (RelationshipRecord) record );
+            }
+
+            @Override
+            void setId( PropertyRecord record, long id )
+            {
+                record.setRelId( id );
+            }
+        },
+        GRAPH
+        {
+            @Override
+            void add( WriteTransaction tx, PrimitiveRecord record )
+            {
+                //tx.neoStoreRecord = (NeoStoreRecord) record;
+            }
+
+            @Override
+            void setId( PropertyRecord record, long id )
+            {
+                record.setNodeId( -1 );
+            }
+        };
+
+        abstract void add( WriteTransaction tx, PrimitiveRecord record );
+
+        abstract void setId( PropertyRecord record, long id );
     }
 }
