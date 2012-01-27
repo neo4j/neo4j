@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
@@ -106,11 +107,13 @@ public class MasterUtil
                 long lastCommittedTx = ds.getXaContainer().getResourceManager().rotateLogicalLog();
                 appliedTransactions[i++] = Pair.of( ds.getName(), lastCommittedTx );
             }
-            catch ( IOException e )
-            {
-                // TODO: what about error message?
+            catch ( Throwable e )
+            {   // This must be treated as a kernel panic, failure to rotate is bad.
                 StringLogger.getLogger( ((AbstractGraphDatabase)graphDb).getStoreDir() ).logMessage(
                         "Unable to rotate log for " + ds, e );
+                // TODO If we do it in rotate() the transaction semantics for such a failure will change
+                // slightly and that has got to be verified somehow. But to have it in there feels much better.
+                ((AbstractGraphDatabase)graphDb).getConfig().getKernelPanicGenerator().generateEvent( ErrorState.TX_MANAGER_NOT_OK );
                 throw new MasterFailureException( e );
             }
         }
@@ -259,7 +262,7 @@ public class MasterUtil
              * If there's an error in here then close the log extractors,
              * otherwise if we're successful the TransactionStream will close it.
              */
-            logExtractor.close();
+            if ( logExtractor != null ) logExtractor.close();
             throw Exceptions.launderedException( t );
         }
     }
