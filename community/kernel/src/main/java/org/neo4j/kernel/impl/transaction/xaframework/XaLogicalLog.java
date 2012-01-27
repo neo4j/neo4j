@@ -28,9 +28,11 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -1414,9 +1416,10 @@ public class XaLogicalLog implements LogLoader
         // Set<Integer> startEntriesWritten = new HashSet<Integer>();
         LogBuffer newLogBuffer = instantiateCorrectWriteBuffer( newLog );
         boolean foundFirstStrayTx = false;
+        Set<Integer> identsWithStartEntry = new HashSet<Integer>();
         while ((entry = LogIoUtils.readEntry( sharedBuffer, fileChannel, cf )) != null )
         {
-            if ( !foundFirstStrayTx && xidIdentMap.get( entry.getIdentifier() ) != null )
+            if ( !foundFirstStrayTx && xidIdentMap.get( entry.getIdentifier() ) != null ) 
             {
                 foundFirstStrayTx = true;
             }
@@ -1424,22 +1427,26 @@ public class XaLogicalLog implements LogLoader
             {
                 if ( entry instanceof LogEntry.Start )
                 {
+                    identsWithStartEntry.add( entry.getIdentifier() );
                     LogEntry.Start startEntry = (LogEntry.Start) entry;
                     startEntry.setStartPosition( newLogBuffer.getFileChannelPosition() ); // newLog.position() );
                     // overwrite old start entry with new that has updated position
                     xidIdentMap.put( startEntry.getIdentifier(), startEntry );
                     // startEntriesWritten.add( entry.getIdentifier() );
                 }
-                else if ( entry instanceof LogEntry.Commit )
+                if ( identsWithStartEntry.contains( entry.getIdentifier() ) )
                 {
-                    LogEntry.Start startEntry = xidIdentMap.get( entry.getIdentifier() );
-                    LogEntry.Commit commitEntry = (LogEntry.Commit) entry;
-                    TxPosition oldPos = positionCache.getStartPosition( commitEntry.getTxId() );
-                    TxPosition newPos = cacheTxStartPosition( commitEntry.getTxId(), startEntry.getMasterId(), startEntry, logVersion+1 );
-                    msgLog.logMessage( "Updated tx " + ((LogEntry.Commit) entry ).getTxId() +
-                            " from " + oldPos + " to " + newPos );
+                    if ( entry instanceof LogEntry.Commit )
+                    {
+                        LogEntry.Start startEntry = xidIdentMap.get( entry.getIdentifier() );
+                        LogEntry.Commit commitEntry = (LogEntry.Commit) entry;
+                        TxPosition oldPos = positionCache.getStartPosition( commitEntry.getTxId() );
+                        TxPosition newPos = cacheTxStartPosition( commitEntry.getTxId(), startEntry.getMasterId(), startEntry, logVersion+1 );
+                        msgLog.logMessage( "Updated tx " + ((LogEntry.Commit) entry ).getTxId() +
+                                " from " + oldPos + " to " + newPos );
+                    }
+                    LogIoUtils.writeLogEntry( entry, newLogBuffer );
                 }
-                LogIoUtils.writeLogEntry( entry, newLogBuffer );
             }
         }
         newLogBuffer.force();
