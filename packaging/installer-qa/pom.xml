@@ -211,7 +211,7 @@
     <repository>
       <id>neo4j-snapshot-repository</id>
       <name>Publically available Maven 2 repository for Neo4j</name>
-      <url>http://m2.neo4j.org/snapshots</url>
+      <url>http://m2.neo4j.org/content/repositories/snapshots</url>
       <snapshots>
         <enabled>true</enabled>
       </snapshots>
@@ -222,7 +222,7 @@
     <repository>
       <id>neo4j-release-repository</id>
       <name>Publically available Maven 2 repository for Neo4j</name>
-      <url>http://m2.neo4j.org/releases</url>
+      <url>http://m2.neo4j.org/content/repositories/releases</url>
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
