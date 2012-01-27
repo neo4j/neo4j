@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -72,6 +70,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
+
+import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
 
 /**
  * Transaction containing {@link Command commands} reflecting the operations
@@ -399,7 +399,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     {
         lockReleaser.removeGraphPropertiesFromCache();
     }
-    
+
     private void addRelationshipType( int id )
     {
         setRecovered();
@@ -733,8 +733,9 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                     true );
             if ( !propRecord.isCreated() && propRecord.isChanged() )
             {
-                // Being here means a new value could be on disk. Re-read
+                // Being here means a new value could be on disk. Re-read and replace
                 propRecord = getPropertyStore().getRecord( propRecord.getId() );
+                addPropertyRecord( propRecord );
             }
             for ( PropertyBlock block : propRecord.getPropertyBlocks() )
             {
@@ -1048,11 +1049,11 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 nodeId + "] illegal since it has been deleted." );
         }
         assert assertPropertyChain( nodeRecord );
-        
+
         removeProperty( nodeRecord, propertyData, RecordAdded.NODE );
         // propRecord.removeBlock( propertyData.getIndex() );
     }
-    
+
     private void removeProperty( PrimitiveRecord hostRecord, PropertyData propertyData, RecordAdded adder )
     {
         long propertyId = propertyData.getId();
@@ -1332,6 +1333,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 prevProp.setPrevProp( host.getId() );
                 host.setNextProp( prevProp.getId() );
                 prevProp.setChanged();
+                adder.setId( prevProp, primitive.getId() );
             }
             primitive.setNextProp( host.getId() );
             host.addPropertyBlock( block );
@@ -1476,7 +1478,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         RelationshipTypeRecord record = new RelationshipTypeRecord( id );
         record.setInUse( true );
         record.setCreated();
-        int nameId = (int) getRelationshipTypeStore().nextNameId();
+        int nameId = getRelationshipTypeStore().nextNameId();
         record.setNameId( nameId );
 //        int length = name.length();
 //        char[] chars = new char[length];
@@ -1834,7 +1836,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
         return true;
     }
-    
+
     private NeoStoreRecord getOrLoadNeoStoreRecord()
     {
         if ( neoStoreRecord == null )
@@ -1843,7 +1845,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
         return neoStoreRecord;
     }
-    
+
     @Override
     public PropertyData graphAddProperty( PropertyIndex index, Object value )
     {
@@ -1872,7 +1874,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
     {
         removeProperty( getOrLoadNeoStoreRecord(), propertyData, RecordAdded.GRAPH );
     }
-    
+
     @Override
     public ArrayMap<Integer, PropertyData> graphLoadProperties( boolean light )
     {
@@ -1923,9 +1925,9 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
                 record.setNodeId( -1 );
             }
         };
-        
+
         abstract void add( WriteTransaction tx, PrimitiveRecord record );
-        
+
         abstract void setId( PropertyRecord record, long id );
     }
 }
