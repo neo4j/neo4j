@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import static java.lang.Thread.currentThread;
+import static java.lang.Thread.getAllStackTraces;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -58,5 +61,27 @@ public class DebugUtil
         {
             throw new RuntimeException( "Can't happen", e );
         }
+    }
+
+    public static boolean currentStackTraceContains( String className, String method )
+    {
+        try
+        {
+            return currentStackTraceContains( Class.forName( className ), method );
+        }
+        catch ( ClassNotFoundException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+    
+    public static boolean currentStackTraceContains( Class<?> cls, String method )
+    {
+        for ( StackTraceElement stack : getAllStackTraces().get( currentThread() ) )
+        {
+            if ( stack.getClassName().equals( cls.getName() ) && stack.getMethodName().equals( method ) )
+                return true;
+        }
+        return false;
     }
 }
