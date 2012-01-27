@@ -228,6 +228,7 @@ public class Config
     private final boolean backupSlave;
     private final IdGeneratorFactory idGeneratorFactory;
     private final TxIdGenerator txIdGenerator;
+    private final KernelPanicEventGenerator kpe;
 
     Config( GraphDatabaseService graphDb, String storeDir, StoreId storeId,
             Map<String, String> inputParams, KernelPanicEventGenerator kpe,
@@ -238,6 +239,7 @@ public class Config
             LastCommittedTxIdSetter lastCommittedTxIdSetter,
             FileSystemAbstraction fileSystem )
     {
+        this.kpe = kpe;
         this.storeDir = storeDir;
         this.inputParams = inputParams;
         // Get the default params and override with the user supplied values
@@ -441,5 +443,10 @@ public class Config
     {
         Object result = config != null ? config.get( key ) : defaultValue;
         return result != null ? result : defaultValue;
+    }
+
+    public KernelPanicEventGenerator getKernelPanicGenerator()
+    {
+        return kpe;
     }
 }
