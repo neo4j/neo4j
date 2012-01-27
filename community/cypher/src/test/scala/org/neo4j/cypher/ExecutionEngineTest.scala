@@ -1658,6 +1658,14 @@ RETURN x0.name?
     assert(List(Map("r" -> r)) === result.toList)
   }
 
+  @Ignore("Exposes #201")
+  @Test def shouldHandleRegexpOnMissingProperty() {
+    val a = createNode()
+
+    val result = parseAndExecute("start a=node(1) where a.foo? =~ /.*?blah.*?/ return a")
+    assert(List(Map("a" -> a)) === result.toList)
+  }
+
   @Test def shouldAggregateOnArrayValues() {
     createNode("color" -> Array("red"))
     createNode("color" -> Array("blue"))
@@ -1672,13 +1680,6 @@ RETURN x0.name?
         assertEquals(x("count(*)"), 1)
       else fail("wut?")
     })
-
-
-    //    println(f().dumpToString())
-
-    //    val result = f()
-
-    //    assert(Set(Map("a.color" -> Array("red"), "count(*)" -> 2), Map("a.color" -> Array("blue"), "count(*)" -> 1)) === result.toSet)
   }
 
   @Test def createEngineWithSpecifiedParserVersion() {

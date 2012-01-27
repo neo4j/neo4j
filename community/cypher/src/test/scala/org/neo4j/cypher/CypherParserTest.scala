@@ -1130,6 +1130,14 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns (ExpressionReturnItem(Entity("b"))))
   }
 
+  @Test def shouldHandleUpperCaseDistinct() {
+    testQuery("start s = NODE(1) return DISTINCT s",
+      Query.
+        start(NodeById("s", 1)).
+        aggregation().
+        returns(ExpressionReturnItem(Entity("s"))))
+  }
+
   def testQuery(query: String, expectedQuery: Query) {
     val parser = new CypherParser()
 
