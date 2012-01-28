@@ -62,7 +62,7 @@ case class Add(a: Expression, b: Expression) extends Expression {
 }
 
 case class Subtract(a: Expression, b: Expression) extends Expression {
-  def identifier = Identifier(a.identifier.name + " + " + b.identifier.name, ScalarType())
+  def identifier = Identifier(a.identifier.name + " + " + b.identifier.name, NumberType())
 
   def apply(m: Map[String, Any]) = {
     val aVal = a(m)
@@ -78,6 +78,30 @@ case class Subtract(a: Expression, b: Expression) extends Expression {
   def declareDependencies(extectedType: AnyType) = a.declareDependencies(extectedType) ++ b.declareDependencies(extectedType)
 
   def rewrite(f: (Expression) => Expression) = f(Subtract(a.rewrite(f), b.rewrite(f)))
+}
+
+case class Modulo(a: Expression, b: Expression) extends Arithmetics(a, b) {
+  def operand = "%"
+
+  def verb = "modulo"
+
+  def stringWithString(a: String, b: String) = throwTypeError(a, b)
+
+  def numberWithNumber(a: Number, b: Number) = a.doubleValue() % b.doubleValue()
+
+  def rewrite(f: (Expression) => Expression) = f(Modulo(a.rewrite(f), b.rewrite(f)))
+}
+
+case class Pow(a: Expression, b: Expression) extends Arithmetics(a, b) {
+  def operand = "^"
+
+  def verb = "power"
+
+  def stringWithString(a: String, b: String) = throwTypeError(a, b)
+
+  def numberWithNumber(a: Number, b: Number) = math.pow(a.doubleValue(), b.doubleValue())
+
+  def rewrite(f: (Expression) => Expression) = f(Pow(a.rewrite(f), b.rewrite(f)))
 }
 
 case class Multiply(a: Expression, b: Expression) extends Arithmetics(a, b) {

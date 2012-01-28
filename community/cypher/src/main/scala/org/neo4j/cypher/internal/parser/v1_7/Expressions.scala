@@ -24,12 +24,14 @@ import org.neo4j.cypher.internal.commands._
 
 trait Expressions extends Base {
 
-  def term: Parser[Expression] = factor ~ rep("*" ~ factor | "/" ~ factor) ^^ {
+  def term: Parser[Expression] = factor ~ rep("*" ~ factor | "/" ~ factor | "%" ~ factor | "^" ~ factor) ^^ {
     case head ~ rest => {
       var result = head
       rest.foreach {
         case "*" ~ f => result = Multiply(result,f)
         case "/" ~ f => result = Divide(result,f)
+        case "%" ~ f => result = Modulo(result,f)
+        case "^" ~ f => result = Pow(result,f)
       }
 
       result
@@ -83,7 +85,7 @@ trait Expressions extends Base {
     case expressions => CoalesceFunction(expressions: _*)
   }
 
-  def function: Parser[Expression] = ignoreCases("type", "id", "length", "nodes", "rels", "relationships", "abs") ~ parens(expression | entity) ^^ {
+  def function: Parser[Expression] = functionNames ~ parens(expression | entity) ^^ {
     case functionName ~ inner => functionName.toLowerCase match {
       case "type" => RelationshipTypeFunction(inner)
       case "id" => IdFunction(inner)
@@ -92,8 +94,13 @@ trait Expressions extends Base {
       case "rels" => RelationshipFunction(inner)
       case "relationships" => RelationshipFunction(inner)
       case "abs" => AbsFunction(inner)
+      case "round" => RoundFunction(inner)
+      case "sqrt" => SqrtFunction(inner)
+      case "sign" => SignFunction(inner)
     }
   }
+
+  def functionNames = ignoreCases("type", "id", "length", "nodes", "rels", "relationships", "abs", "round", "sqrt", "sign")
 }
 
 
