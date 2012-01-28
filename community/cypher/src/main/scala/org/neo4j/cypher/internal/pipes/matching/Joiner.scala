@@ -24,9 +24,14 @@ import org.neo4j.graphdb.{DynamicRelationshipType, Direction, Node}
 import collection.{Iterable, Traversable}
 import collection.immutable.Map
 import org.neo4j.cypher.commands.Predicate
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 /*
-This class performs simpler join operations
+This class performs simpler join operations, but faster than the full matcher.
+
+By linking together a number of these joiners, the whole pattern can be matched.
+Joiners can't handle loops or optional elements. Right now, they can't handle
+variable length relationships, but there's nothing stopping that, in theory.
  */
 class Joiner(source: Linkable,
              start: String,
@@ -37,16 +42,12 @@ class Joiner(source: Linkable,
              predicate: Predicate)
   extends Linkable {
 
-  def getResult(m: Map[String, Any]): Traversable[Map[String, Any]] = {
-    val traversable = source.getResult(m)
-    val map: Traversable[Iterable[Map[String, Any]]] = traversable.map(getSingleResult)
-    map.flatten
-  }
+  def getResult(m: Map[String, Any]): Traversable[Map[String, Any]] = source.getResult(m).flatMap(getSingleResult)
 
   def getSingleResult(m: Map[String, Any]): Iterable[Map[String, Any]] = {
     val startNode = m.get(start) match {
-      case None => throw new Exception("This should not happen")
-      case Some(x) => x.asInstanceOf[Node]
+      case Some(x: Node) => x
+      case _ => throw new ThisShouldNotHappenError("Andres Taylor", "The start node has to come from the underlying pipe!")
     }
 
     val rels = (relType match {
@@ -57,7 +58,9 @@ class Joiner(source: Linkable,
     val between = rels.flatMap(rel => {
       val otherNode = rel.getOtherNode(startNode)
 
-      val otherAlreadyFound = m.filter(kv => kv._1 != start && kv._2 == otherNode).nonEmpty
+      val otherAlreadyFound = m.exists {
+        case (key, value) => key != start && value == otherNode
+      }
 
       if (otherAlreadyFound) {
         None
@@ -68,17 +71,18 @@ class Joiner(source: Linkable,
       }
     })
 
-    between.filter( predicate.isMatch )
+    between.filter(predicate.isMatch)
   }
 
   def providesKeys(): Seq[String] = source.providesKeys() ++ Seq(relName, end)
 }
 
-class Start(val providesKeys:Seq[String]) extends Linkable {
+class Start(val providesKeys: Seq[String]) extends Linkable {
   def getResult(m: Map[String, Any]): Traversable[Map[String, Any]] = Seq(m)
 }
 
 trait Linkable {
   def getResult(m: Map[String, Any]): Traversable[Map[String, Any]]
-  def providesKeys():Seq[String]
+
+  def providesKeys(): Seq[String]
 }

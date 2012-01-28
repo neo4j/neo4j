@@ -35,7 +35,7 @@ class ExecutionEngine(graph: GraphDatabaseService) {
 
   val parser = createCorrectParser()
 
-  def createCorrectParser() = if (graph.isInstanceOf[AbstractGraphDatabase]) {
+  private def createCorrectParser() = if (graph.isInstanceOf[AbstractGraphDatabase]) {
     val database = graph.asInstanceOf[AbstractGraphDatabase]
     database.getConfig.getParams.asScala.get("cypher_parser_version") match {
       case None => new CypherParser()
@@ -71,7 +71,7 @@ class ExecutionEngine(graph: GraphDatabaseService) {
   @deprecated(message = "You should not parse queries manually any more. Use the execute(String) instead")
   def execute(query: Query, params: Map[String, Any]): ExecutionResult = new ExecutionPlanImpl(query, graph).execute(params)
 
-  def checkScalaVersion() {
+  private def checkScalaVersion() {
     if (util.Properties.versionString.matches("^version 2.9.0")) {
       throw new Error("Cypher can only run with Scala 2.9.0. It looks like the Scala version is: " +
         util.Properties.versionString)
