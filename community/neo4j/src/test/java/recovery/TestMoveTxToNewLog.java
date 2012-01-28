@@ -21,6 +21,7 @@ package recovery;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.neo4j.helpers.Exceptions.launderedException;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -33,6 +34,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.transaction.TxManager;
+import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.test.AbstractSubProcessTestBase;
@@ -194,6 +196,34 @@ public class TestMoveTxToNewLog extends AbstractSubProcessTestBase
         }
     }
     
+    /* Verifies the number of active transactions in XaLogicalLog */
+    private static class VerifyActiveTransactions implements Task
+    {
+        private final int count;
+
+        public VerifyActiveTransactions( int count )
+        {
+            this.count = count;
+        }
+
+        @SuppressWarnings( "rawtypes" )
+        @Override
+        public void run( AbstractGraphDatabase graphdb )
+        {
+            try
+            {
+                XaLogicalLog log = graphdb.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource(
+                        Config.DEFAULT_DATA_SOURCE_NAME ).getXaContainer().getLogicalLog();
+                ArrayMap activeXids = (ArrayMap) inaccessibleField( log, "xidIdentMap" ).get( log );
+                assertEquals( count, activeXids.size() );
+            }
+            catch ( Exception e )
+            {
+                throw launderedException( e );
+            }
+        }
+    }
+    
     /* Verifies that the data is in a correct state despite the steps performed in this test
      * to try to break data consistency. */
     private static class VerifyTask implements Task
@@ -286,10 +316,14 @@ public class TestMoveTxToNewLog extends AbstractSubProcessTestBase
         run( new CreateNamedNodeTask() );
         waitForDone.await();
         
+        run( new VerifyActiveTransactions( 1 ) );
+        
         /* Here we should have ended up with an active nioneo logical log that contains tx A (w/o DONE record)
          * and then B (w/ a DONE record). Verify that somehow?
-         * Now rotate the logical log (this will make tx A to be copied over to new log) */
+         * Now rotate the logical log (this should make A and everything after that to be copied over to new log) */
         run( new RotateTask() );
+        
+        run( new VerifyActiveTransactions( 1 ) );
         
         /* Restart the db. Here a recovery will take place and should apply transaction A in
          * that process so that the relationship created in transaction B is lost. */
