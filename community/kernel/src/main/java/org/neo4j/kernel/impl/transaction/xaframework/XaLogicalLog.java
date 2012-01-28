@@ -27,11 +27,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -1430,38 +1428,37 @@ public class XaLogicalLog implements LogLoader
             long firstEntryPosition = getFirstStartEntry( endPosition );
             fileChannel.position( firstEntryPosition );
             msgLog.logMessage( "Rotate log first start entry @ pos=" +
-                    firstEntryPosition );
+                    firstEntryPosition + " out of " + xidIdentMap );
         }
-        LogEntry entry;
-        // Set<Integer> startEntriesWritten = new HashSet<Integer>();
         LogBuffer newLogBuffer = instantiateCorrectWriteBuffer( newLog );
-        boolean foundFirstStrayTx = false;
-        Set<Integer> identsWithStartEntry = new HashSet<Integer>();
-        while ((entry = LogIoUtils.readEntry( sharedBuffer, fileChannel, cf )) != null )
+        
+        // Copy over active transactions to the new log
+        boolean foundFirstActiveTx = false;
+        Map<Integer,LogEntry.Start> transactionsToCopy = new HashMap<Integer,LogEntry.Start>();
+        for ( LogEntry entry = null; (entry = LogIoUtils.readEntry( sharedBuffer, fileChannel, cf )) != null; )
         {
-            if ( !foundFirstStrayTx && xidIdentMap.get( entry.getIdentifier() ) != null ) 
-            {
-                foundFirstStrayTx = true;
-            }
-            if ( foundFirstStrayTx )
+            Integer identifier = entry.getIdentifier();
+            boolean isActive = xidIdentMap.get( identifier ) != null;
+            if ( !foundFirstActiveTx && isActive ) foundFirstActiveTx = true;
+            if ( foundFirstActiveTx )
             {
                 if ( entry instanceof LogEntry.Start )
                 {
-                    identsWithStartEntry.add( entry.getIdentifier() );
                     LogEntry.Start startEntry = (LogEntry.Start) entry;
+                    transactionsToCopy.put( identifier, startEntry );
                     startEntry.setStartPosition( newLogBuffer.getFileChannelPosition() ); // newLog.position() );
-                    // overwrite old start entry with new that has updated position
-                    xidIdentMap.put( startEntry.getIdentifier(), startEntry );
-                    // startEntriesWritten.add( entry.getIdentifier() );
+                    // If the transaction is active then update it with the new one
+                    if ( isActive ) xidIdentMap.put( identifier, startEntry );
                 }
-                if ( identsWithStartEntry.contains( entry.getIdentifier() ) )
+                if ( transactionsToCopy.containsKey( identifier ) )
                 {
                     if ( entry instanceof LogEntry.Commit )
                     {
-                        LogEntry.Start startEntry = xidIdentMap.get( entry.getIdentifier() );
+                        LogEntry.Start startEntry = transactionsToCopy.get( identifier );
                         LogEntry.Commit commitEntry = (LogEntry.Commit) entry;
                         TxPosition oldPos = positionCache.getStartPosition( commitEntry.getTxId() );
-                        TxPosition newPos = cacheTxStartPosition( commitEntry.getTxId(), startEntry.getMasterId(), startEntry, logVersion+1 );
+                        TxPosition newPos = cacheTxStartPosition( commitEntry.getTxId(),
+                                startEntry.getMasterId(), startEntry, logVersion+1 );
                         msgLog.logMessage( "Updated tx " + ((LogEntry.Commit) entry ).getTxId() +
                                 " from " + oldPos + " to " + newPos );
                     }
@@ -1469,6 +1466,7 @@ public class XaLogicalLog implements LogLoader
                 }
             }
         }
+        
         newLogBuffer.force();
         newLog.position( newLogBuffer.getFileChannelPosition() );
         msgLog.logMessage( "Rotate: old log scanned, newLog @ pos=" +
