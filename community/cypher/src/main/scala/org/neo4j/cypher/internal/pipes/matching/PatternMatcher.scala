@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.graphdb.Node
-import org.neo4j.cypher.commands.{True, Predicate}
+import org.neo4j.cypher.internal.commands.{True, Predicate}
 
 class PatternMatcher(bindings: Map[String, MatchingPair], predicates: Seq[Predicate], includeOptionals: Boolean, source:Map[String,Any])
   extends Traversable[Map[String, Any]] {

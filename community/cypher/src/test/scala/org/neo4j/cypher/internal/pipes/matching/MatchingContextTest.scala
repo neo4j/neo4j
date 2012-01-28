@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.pipes.matching
 import org.scalatest.Assertions
 import org.neo4j.cypher.GraphDatabaseTestBase
 import org.neo4j.graphdb.{Node, Direction}
-import org.neo4j.cypher.commands._
+import org.neo4j.cypher.internal.commands._
 import org.junit.{Before, Test}
-import org.neo4j.cypher.symbols.{NodeType, RelationshipType, Identifier, SymbolTable}
+import org.neo4j.cypher.internal.symbols.{NodeType, RelationshipType, Identifier, SymbolTable}
 
 class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
   var a: Node = null

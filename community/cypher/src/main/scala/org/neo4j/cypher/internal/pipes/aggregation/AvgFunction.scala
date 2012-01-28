@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.pipes.aggregation
 
-import org.neo4j.cypher.commands.Expression
+import org.neo4j.cypher.internal.commands.Expression
 
 class AvgFunction(val value: Expression)
   extends AggregationFunction

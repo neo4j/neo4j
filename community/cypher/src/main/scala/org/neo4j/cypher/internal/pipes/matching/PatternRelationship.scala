@@ -23,7 +23,7 @@ import scala.collection.JavaConverters._
 import org.neo4j.graphdb.traversal.{TraversalDescription, Evaluators}
 import org.neo4j.graphdb._
 import org.neo4j.kernel.{Uniqueness, Traversal}
-import org.neo4j.cypher.commands.Predicate
+import org.neo4j.cypher.internal.commands.Predicate
 
 class PatternRelationship(key: String,
                           val startNode: PatternNode,

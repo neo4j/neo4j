@@ -54,7 +54,8 @@ public class ExecutionResult implements Iterable<Map<String,Object>>
     }
 
     /**
-     * Provides result objects from a single column of the result set.
+     * Provides result objects from a single column of the result set. This method is best used for
+     * single column results.
      *
      * @param n exact name of the column, as it appeared in the original query
      * @param <T> desired type cast for the result objects

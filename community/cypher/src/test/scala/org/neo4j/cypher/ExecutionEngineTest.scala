@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import commands._
+import internal.commands._
 import org.junit.Assert._
 import java.lang.String
 import scala.collection.JavaConverters._

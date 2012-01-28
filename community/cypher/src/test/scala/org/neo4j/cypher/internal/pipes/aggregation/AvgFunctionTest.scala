@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.pipes.aggregation
 
 import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.cypher.commands.Entity
+import org.neo4j.cypher.internal.commands.Entity
 
 class AvgFunctionTest {
   @Test def singleOne() {

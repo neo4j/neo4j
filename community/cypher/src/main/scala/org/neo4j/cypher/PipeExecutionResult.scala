@@ -24,7 +24,7 @@ import scala.collection.JavaConverters._
 import org.neo4j.graphdb.{PropertyContainer, Relationship, NotFoundException, Node}
 import java.io.{StringWriter, PrintWriter}
 import java.lang.String
-import symbols.SymbolTable
+import internal.symbols.SymbolTable
 
 
 class PipeExecutionResult(result: Traversable[Map[String, Any]], val symbols:SymbolTable, val columns: List[String], val timeTaken:Long)

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.parser.v1_5
 
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.commands._
+import internal.commands.{Sort, Entity, ExpressionReturnItem, SortItem}
 import scala.util.parsing.combinator._
 trait OrderByClause extends JavaTokenParsers with Tokens with ReturnItems  {
   def desc:Parser[String] = ignoreCase("descending") | ignoreCase("desc")

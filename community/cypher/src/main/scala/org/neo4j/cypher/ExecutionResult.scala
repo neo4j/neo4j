@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import java.io.PrintWriter
 import java.lang.String
-import symbols.SymbolTable
+import internal.symbols.SymbolTable
 
 
 trait ExecutionResult extends Iterator[Map[String, Any]] {

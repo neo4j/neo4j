@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.pipes
 
 import matching.MatchingContext
-import org.neo4j.cypher.commands._
 import java.lang.String
-import org.neo4j.cypher.symbols._
+import org.neo4j.cypher.internal.commands.{PathPattern, RelatedTo, Predicate, Pattern}
+import org.neo4j.cypher.internal.symbols._
 
 class MatchPipe(source: Pipe, patterns: Seq[Pattern], predicates: Seq[Predicate]) extends Pipe {
   val matchingContext = new MatchingContext(patterns, source.symbols, predicates)

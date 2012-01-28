@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.pipes
 import org.junit.Test
 import org.junit.Assert._
 import org.scalatest.junit.JUnitSuite
-import org.neo4j.cypher.commands.{Entity, ExpressionReturnItem, SortItem}
-import org.neo4j.cypher.symbols.{Identifier, SymbolTable}
+import org.neo4j.cypher.internal.commands.{Entity, ExpressionReturnItem, SortItem}
+import org.neo4j.cypher.internal.symbols.{Identifier, SymbolTable}
 import java.lang.String
 
 class SortPipeTest extends JUnitSuite{

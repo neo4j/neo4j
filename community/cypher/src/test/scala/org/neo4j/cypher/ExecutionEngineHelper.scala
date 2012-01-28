@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import commands.Query
+import internal.commands.Query
 import org.junit.Before
 
 

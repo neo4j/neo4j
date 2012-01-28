@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.pipes
 import org.neo4j.cypher.PathImpl
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import scala.collection.JavaConverters._
-import org.neo4j.cypher.commands._
 import collection.Seq
 import java.lang.String
-import org.neo4j.cypher.symbols.{PathType, Identifier}
+import org.neo4j.cypher.internal.commands.{PathPattern, RelatedTo, NamedPath}
+import org.neo4j.cypher.internal.symbols.{PathType, Identifier}
 
 class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
   def getFirstNode[U]: String = {

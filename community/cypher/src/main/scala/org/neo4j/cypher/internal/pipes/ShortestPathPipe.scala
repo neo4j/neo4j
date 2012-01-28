@@ -24,8 +24,8 @@ import org.neo4j.cypher.SyntaxException
 import java.lang.String
 import org.neo4j.graphdb.{Expander, DynamicRelationshipType, Node}
 import collection.Seq
-import org.neo4j.cypher.symbols.{NodeType, Identifier, PathType}
-import org.neo4j.cypher.commands.{ReturnItem, ShortestPath}
+import org.neo4j.cypher.internal.symbols.{NodeType, Identifier, PathType}
+import org.neo4j.cypher.internal.commands.{ReturnItem, ShortestPath}
 
 /**
  * Shortest pipe inserts a single shortest path between two already found nodes

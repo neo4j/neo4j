@@ -23,7 +23,7 @@ import org.neo4j.cypher.GraphDatabaseTestBase
 import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.graphdb.{DynamicRelationshipType, Direction}
-import org.neo4j.cypher.commands.True
+import org.neo4j.cypher.internal.commands.True
 
 class HistoryTest extends GraphDatabaseTestBase with Assertions {
 

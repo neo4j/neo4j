@@ -23,7 +23,7 @@ import org.junit.Assert._
 import org.junit.Test
 import org.neo4j.cypher.SyntaxException
 import org.scalatest.junit.JUnitSuite
-import org.neo4j.cypher.commands.Entity
+import org.neo4j.cypher.internal.commands.Entity
 
 class MinFunctionTest extends JUnitSuite {
   @Test def singleValueReturnsThatNumber() {

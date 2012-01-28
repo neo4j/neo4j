@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.commands._
 import collection.immutable.Map
 import collection.{Traversable, Seq}
-import org.neo4j.cypher.symbols.{NodeType, SymbolTable}
+import org.neo4j.cypher.internal.symbols.{NodeType, SymbolTable}
+import org.neo4j.cypher.internal.commands._
 
 /**
  * This class is responsible for deciding how to get the parts of the pattern that are not already bound

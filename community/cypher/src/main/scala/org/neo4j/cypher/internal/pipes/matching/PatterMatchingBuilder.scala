@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.graphdb.{Relationship, Node, Direction, PropertyContainer}
-import org.neo4j.cypher.commands.Predicate
+import org.neo4j.cypher.internal.commands.Predicate
 import collection.Seq
 import collection.immutable.Map
 import java.lang.String

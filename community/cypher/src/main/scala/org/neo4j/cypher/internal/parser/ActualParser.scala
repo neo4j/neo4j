@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.commands.Query
+import org.neo4j.cypher.internal.commands.Query
 
 trait ActualParser {
   def parse(queryText: String): Query

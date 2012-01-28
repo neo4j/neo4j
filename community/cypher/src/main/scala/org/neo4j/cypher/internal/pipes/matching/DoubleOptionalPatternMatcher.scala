@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.pipes.matching
 
-import org.neo4j.cypher.commands.Predicate
+import org.neo4j.cypher.internal.commands.Predicate
 import collection.immutable.Set
 import collection.Seq
 
