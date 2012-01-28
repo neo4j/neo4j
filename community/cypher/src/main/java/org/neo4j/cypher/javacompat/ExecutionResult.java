@@ -44,7 +44,7 @@ public class ExecutionResult implements Iterable<Map<String,Object>>
     /**
      * Constructor used by the Cypher framework. End-users should not
      * create an ExecutionResult directly, but instead use the result
-     * returned from calling {@link ExecutionEngine#execute(org.neo4j.cypher.commands.Query)}.
+     * returned from calling {@link ExecutionEngine#execute(org.neo4j.cypher.internal.commands.Query)}.
      *
      * @param projection
      */

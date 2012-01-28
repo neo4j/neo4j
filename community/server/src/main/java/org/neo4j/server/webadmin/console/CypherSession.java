@@ -39,7 +39,7 @@
 package org.neo4j.server.webadmin.console;
 
 import org.neo4j.cypher.SyntaxException;
-import org.neo4j.cypher.commands.Query;
+import org.neo4j.cypher.internal.commands.Query;
 import org.neo4j.cypher.javacompat.CypherParser;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
