@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.pipes
 
 import java.lang.String
-import org.neo4j.cypher.symbols.SymbolTable
+import org.neo4j.cypher.internal.symbols.SymbolTable
 
 /**
  * Pipe is a central part of Cypher. Most pipes are decorators - they

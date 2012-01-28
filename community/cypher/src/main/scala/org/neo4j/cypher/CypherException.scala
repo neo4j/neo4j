@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import commands.Expression
+import internal.commands.Expression
 
 abstract class CypherException(message: String, cause: Throwable) extends RuntimeException(message, cause) {
   def this(message:String) = this(message, null)

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import commands._
+import internal.commands._
 import internal.{LRUCache, ExecutionPlanImpl}
 import scala.collection.JavaConverters._
 import java.lang.Error

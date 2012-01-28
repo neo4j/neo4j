@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.pipes.aggregation
 import org.junit.Assert._
 import org.junit.Test
 import org.scalatest.junit.JUnitSuite
-import org.neo4j.cypher.commands.Entity
+import org.neo4j.cypher.internal.commands.Entity
 import org.neo4j.cypher.CypherTypeException
 
 class SumFunctionTest extends JUnitSuite {

@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.parser.v1_5
 
-import org.neo4j.cypher.commands._
 import org.neo4j.cypher.internal.parser.ActualParser
+import org.neo4j.cypher.internal.commands.{Nullable, Property, Expression}
 
 trait ConsoleMode extends ReturnItems {
   override def returnValues: Parser[Expression] = (nullableProperty | value | entityValue) ^^ {

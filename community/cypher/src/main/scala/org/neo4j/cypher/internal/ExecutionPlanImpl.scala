@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal
 
+import commands._
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
 import collection.Seq
 import java.lang.Iterable
 import org.neo4j.cypher.internal.pipes._
-import org.neo4j.cypher.commands._
 import org.neo4j.cypher._
 import org.neo4j.tooling.GlobalGraphOperations
 

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.pipes
 import org.neo4j.graphalgo.GraphAlgoFactory
 import java.lang.String
 import org.neo4j.graphdb.{Expander, Node}
-import org.neo4j.cypher.commands.ShortestPath
+import org.neo4j.cypher.internal.commands.ShortestPath
 
 class SingleShortestPathPipe(source: Pipe, ast: ShortestPath) extends ShortestPathPipe(source,ast) {
   override def executionPlan(): String = source.executionPlan() + "\r\n" + "SingleShortestPath(" + ast + ")"

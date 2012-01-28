@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.parser.v1_5
 
 
-import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
+import org.neo4j.cypher.internal.commands._
 
 trait ReturnItems extends JavaTokenParsers with Tokens with Values {
   def returnItem: Parser[ReturnItem] = returnValues ^^ {

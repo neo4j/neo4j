@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher
 
+import internal.commands._
 import internal.parser.v1_6.ConsoleCypherParser
-import org.neo4j.cypher.commands._
 import org.junit.Assert._
 import org.neo4j.graphdb.Direction
 import org.scalatest.junit.JUnitSuite

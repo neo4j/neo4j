@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.commands._
+import internal.commands.Query
 
 class CypherParser(version: String) {
   def this() = this ("1.7")

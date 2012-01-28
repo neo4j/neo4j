@@ -22,7 +22,7 @@ package org.neo4j.cypher.javacompat;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.cypher.commands.Query;
+import org.neo4j.cypher.internal.commands.Query;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;

@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.parser.v1_5
 
-import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
 import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.internal.commands._
 
 trait Values extends JavaTokenParsers with Tokens {
 

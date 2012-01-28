@@ -23,7 +23,7 @@ import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.GraphDatabaseTestBase
-import org.neo4j.cypher.commands.True
+import org.neo4j.cypher.internal.commands.True
 
 class PatternNodeTest extends GraphDatabaseTestBase with Assertions {
   @Test def returnsPatternRelationships() {

@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.pipes
 
 import aggregation.AggregationFunction
 import collection.Seq
-import org.neo4j.cypher.commands.{AggregationItem, ReturnItem}
+import org.neo4j.cypher.internal.commands.{AggregationItem, ReturnItem}
 import java.lang.String
-import org.neo4j.cypher.symbols.{Identifier, SymbolTable}
+import org.neo4j.cypher.internal.symbols.{Identifier, SymbolTable}
 
 // Eager aggregation means that this pipe will eagerly load the whole resulting subgraphs before starting
 // to emit aggregated results.

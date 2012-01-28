@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.parser.v1_5
 
 
 import org.neo4j.cypher._
+import internal.commands.{NamedPaths, Match, Slice, Query}
 import internal.parser.ActualParser
-import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
 
 class CypherParserImpl extends JavaTokenParsers

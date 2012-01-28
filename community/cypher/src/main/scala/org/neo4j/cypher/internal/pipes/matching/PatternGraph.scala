@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.pipes.matching
 
-import org.neo4j.cypher.symbols.{MapType, SymbolTable}
+import org.neo4j.cypher.internal.symbols.{MapType, SymbolTable}
 import collection.mutable.{Set => MutableSet}
 import org.neo4j.cypher.{PatternException, SyntaxException}
 

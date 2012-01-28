@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.parser.v1_6
 
 import scala.util.parsing.combinator._
-import org.neo4j.cypher.commands.{Literal, Parameter, Expression}
+import org.neo4j.cypher.internal.commands.{Literal, Parameter, Expression}
 
 abstract class Base extends JavaTokenParsers {
   val keywords = List("start", "where", "return", "limit", "skip", "order", "by")

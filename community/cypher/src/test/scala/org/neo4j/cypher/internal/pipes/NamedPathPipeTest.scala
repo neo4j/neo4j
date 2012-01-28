@@ -23,7 +23,7 @@ import org.scalatest.Assertions
 import org.neo4j.cypher.{PathImpl, GraphDatabaseTestBase}
 import org.neo4j.graphdb.{Relationship, Node, Direction}
 import org.junit.{Before, Test}
-import org.neo4j.cypher.commands.{True, Pattern, NamedPath, VarLengthRelatedTo}
+import org.neo4j.cypher.internal.commands.{True, Pattern, NamedPath, VarLengthRelatedTo}
 
 class NamedPathPipeTest extends GraphDatabaseTestBase with Assertions {
   var a: Node = null

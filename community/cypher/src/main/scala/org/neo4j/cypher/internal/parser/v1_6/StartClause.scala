@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.parser.v1_6
 
-import org.neo4j.cypher.commands._
+import org.neo4j.cypher.internal.commands._
+
 
 trait StartClause extends Base {
   def start: Parser[Start] = ignoreCase("start") ~> comaList(startBit) ^^ (x => Start(x: _*)) | failure("expected 'START'")

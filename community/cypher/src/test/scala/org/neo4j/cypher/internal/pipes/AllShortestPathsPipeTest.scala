@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.pipes
 import org.junit.Test
 import org.scalatest.Assertions
 import org.neo4j.cypher.GraphDatabaseTestBase
-import org.neo4j.cypher.commands.ShortestPath
+import org.neo4j.cypher.internal.commands.ShortestPath
 import org.neo4j.graphdb.{Direction, Node, Path}
 import collection.Traversable
 

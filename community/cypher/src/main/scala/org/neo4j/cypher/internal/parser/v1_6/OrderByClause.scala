@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.parser.v1_6
 
-import org.neo4j.cypher.commands._
+import org.neo4j.cypher.internal.commands.{SortItem, Sort}
+
 
 trait OrderByClause extends Base with ReturnItems  {
   def desc:Parser[String] = ignoreCases("descending", "desc")

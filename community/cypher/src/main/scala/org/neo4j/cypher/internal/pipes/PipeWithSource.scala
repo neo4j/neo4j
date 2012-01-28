@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import org.neo4j.cypher.symbols.Identifier
 import collection.Seq
+import org.neo4j.cypher.internal.symbols.Identifier
 
 
 abstract class PipeWithSource(source: Pipe) extends Pipe with Dependant {

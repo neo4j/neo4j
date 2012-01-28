@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.pipes
 
 import scala.math.signum
-import org.neo4j.cypher.commands.SortItem
+import org.neo4j.cypher.internal.commands.SortItem
 import java.lang.String
 import org.neo4j.cypher.internal.Comparer
 

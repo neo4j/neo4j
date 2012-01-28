@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.pipes
 
 import java.lang.String
-import org.neo4j.cypher.commands._
 import collection.Seq
 import collection.immutable.Map
-import org.neo4j.cypher.symbols.{SymbolTable, Identifier}
+import org.neo4j.cypher.internal.symbols.{SymbolTable, Identifier}
+import org.neo4j.cypher.internal.commands.ReturnItem
 
 //This class will extract properties and other stuff to make the maps
 //easy to work with for other pipes

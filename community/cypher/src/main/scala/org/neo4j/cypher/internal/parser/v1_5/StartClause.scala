@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.parser.v1_5
 
-import org.neo4j.cypher.commands._
 import scala.util.parsing.combinator._
+import org.neo4j.cypher.internal.commands._
 
 trait StartClause extends JavaTokenParsers with Tokens {
   def start: Parser[Start] = ignoreCase("start") ~> rep1sep(startBit, ",") ^^ (x => Start(x: _*))

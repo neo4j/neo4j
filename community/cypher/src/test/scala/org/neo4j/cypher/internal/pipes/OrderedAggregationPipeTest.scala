@@ -23,9 +23,9 @@ import org.junit.Test
 import org.junit.Assert._
 import org.junit.matchers.JUnitMatchers._
 import scala.collection.JavaConverters._
-import org.neo4j.cypher.commands._
+import org.neo4j.cypher.internal.commands._
 import org.scalatest.junit.JUnitSuite
-import org.neo4j.cypher.symbols.{IntegerType, SymbolTable, Identifier, NodeType}
+import org.neo4j.cypher.internal.symbols.{IntegerType, SymbolTable, Identifier, NodeType}
 import org.scalatest.Assertions
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.helpers.ThisShouldNotHappenError

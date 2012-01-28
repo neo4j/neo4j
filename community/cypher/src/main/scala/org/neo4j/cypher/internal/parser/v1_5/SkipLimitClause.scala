@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.parser.v1_5
 
 
 import scala.util.parsing.combinator._
-import org.neo4j.cypher.commands.{Parameter, Literal, Expression}
+import org.neo4j.cypher.internal.commands.{Parameter, Literal, Expression}
 
 trait SkipLimitClause extends JavaTokenParsers with Tokens {
   def skip: Parser[Expression] = ignoreCase("skip") ~> numberOrParam ^^ (x => x)
