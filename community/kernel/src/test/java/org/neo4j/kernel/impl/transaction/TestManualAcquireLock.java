@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.transaction;
 
 import static org.junit.Assert.fail;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Lock;
@@ -31,6 +33,20 @@ import org.neo4j.test.OtherThreadExecutor;
 
 public class TestManualAcquireLock extends AbstractNeo4jTestCase
 {
+    private Worker worker;
+    
+    @Before
+    public void doBefore() throws Exception
+    {
+        worker = new Worker();
+    }
+
+    @After
+    public void doAfter() throws Exception
+    {
+        worker.shutdown();
+    }
+    
     @Test
     public void releaseReleaseManually() throws Exception
     {

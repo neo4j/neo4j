@@ -131,4 +131,16 @@ public class OtherThreadExecutor<T> implements ThreadFactory
         while (thread == null) thread = this.thread;
         return thread;
     }
+    
+    public void shutdown()
+    {
+        commandExecutor.shutdown();
+        try
+        {
+            commandExecutor.awaitTermination( 1000, TimeUnit.SECONDS );
+        }
+        catch ( InterruptedException e )
+        {   // OK
+        }
+    }
 }

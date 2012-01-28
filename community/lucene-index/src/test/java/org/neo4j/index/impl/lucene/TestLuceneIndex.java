@@ -1480,6 +1480,9 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         t1.commit();
 
         assertEquals( node, index.get( key, value ).getSingle() );
+        
+        t1.shutdown();
+        t2.shutdown();
     }
 
     @Test
@@ -1504,6 +1507,9 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
         assertEquals( node, index.get( key, value ).getSingle() );
         assertEquals( node, index.get( key, otherValue ).getSingle() );
+
+        t1.shutdown();
+        t2.shutdown();
     }
 
     @Test
@@ -1527,6 +1533,9 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
         assertEquals( node, index.get( key, value ).getSingle() );
         assertEquals( node, index.get( otherKey, value ).getSingle() );
+
+        t1.shutdown();
+        t2.shutdown();
     }
 
     @Test
@@ -1550,6 +1559,8 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
         otherThread.commit();
         commitTx();
+        
+        otherThread.shutdown();
     }
 
     @Test
@@ -1635,6 +1646,9 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         t1.commit();
 
         assertEquals( node, index.get( key, value ).getSingle() );
+        
+        t1.shutdown();
+        t2.shutdown();
     }
 
     @Test

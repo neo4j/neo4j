@@ -237,6 +237,9 @@ public class TestGraphProperties
         assertEquals( value1, properties.getProperty( key1 ) );
         assertEquals( value3, properties.getProperty( key3 ) );
         assertEquals( value2, properties.getProperty( key2 ) );
+        
+        worker1.shutdown();
+        worker2.shutdown();
     }
     
     @Test

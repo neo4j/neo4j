@@ -71,6 +71,7 @@ public class TestIndexDeletion
         {
             worker.rollback();
             worker.die();
+            worker.shutdown();
         }
     }
 
