@@ -83,7 +83,7 @@ trait Expressions extends Base {
     case expressions => CoalesceFunction(expressions: _*)
   }
 
-  def function: Parser[Expression] = ignoreCases("type", "id", "length", "nodes", "rels", "relationships") ~ parens(expression | entity) ^^ {
+  def function: Parser[Expression] = ignoreCases("type", "id", "length", "nodes", "rels", "relationships", "abs") ~ parens(expression | entity) ^^ {
     case functionName ~ inner => functionName.toLowerCase match {
       case "type" => RelationshipTypeFunction(inner)
       case "id" => IdFunction(inner)
@@ -91,6 +91,7 @@ trait Expressions extends Base {
       case "nodes" => NodesFunction(inner)
       case "rels" => RelationshipFunction(inner)
       case "relationships" => RelationshipFunction(inner)
+      case "abs" => AbsFunction(inner)
     }
   }
 }

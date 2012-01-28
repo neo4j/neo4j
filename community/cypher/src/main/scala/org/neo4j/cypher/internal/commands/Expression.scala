@@ -58,7 +58,7 @@ case class Add(a: Expression, b: Expression) extends Expression {
 
   def declareDependencies(extectedType: AnyType) = a.declareDependencies(extectedType) ++ b.declareDependencies(extectedType)
 
-  def rewrite(f: (Expression) => Expression) = Add(f(a.rewrite(f)), f(b.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) = f(Add(a.rewrite(f), b.rewrite(f)))
 }
 
 case class Subtract(a: Expression, b: Expression) extends Expression {
@@ -77,7 +77,7 @@ case class Subtract(a: Expression, b: Expression) extends Expression {
 
   def declareDependencies(extectedType: AnyType) = a.declareDependencies(extectedType) ++ b.declareDependencies(extectedType)
 
-  def rewrite(f: (Expression) => Expression) = Subtract(f(a.rewrite(f)), f(b.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) = f(Subtract(a.rewrite(f), b.rewrite(f)))
 }
 
 case class Multiply(a: Expression, b: Expression) extends Arithmetics(a, b) {
@@ -89,7 +89,7 @@ case class Multiply(a: Expression, b: Expression) extends Arithmetics(a, b) {
 
   def numberWithNumber(a: Number, b: Number) = a.doubleValue() * b.doubleValue()
 
-  def rewrite(f: (Expression) => Expression) = Multiply(f(a.rewrite(f)), f(b.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) = f(Multiply(a.rewrite(f), b.rewrite(f)))
 }
 
 case class Divide(a: Expression, b: Expression) extends Arithmetics(a, b) {
@@ -101,7 +101,7 @@ case class Divide(a: Expression, b: Expression) extends Arithmetics(a, b) {
 
   def numberWithNumber(a: Number, b: Number) = a.doubleValue() / b.doubleValue()
 
-  def rewrite(f: (Expression) => Expression) = Divide(f(a.rewrite(f)), f(b.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) = f(Divide(a.rewrite(f), b.rewrite(f)))
 }
 
 abstract class Arithmetics(a: Expression, b: Expression) extends Expression {
@@ -151,9 +151,7 @@ abstract class CastableExpression extends Expression {
 }
 
 case class Nullable(expression: Expression) extends Expression {
-
-  //TODO Add question mark
-  def identifier = expression.identifier
+  def identifier = Identifier(expression.identifier.name + "?", expression.identifier.typ)
 
   def apply(m: Map[String, Any]) = try {
     expression.apply(m)
@@ -165,7 +163,7 @@ case class Nullable(expression: Expression) extends Expression {
 
   override def dependencies(extectedType: AnyType) = expression.dependencies(extectedType)
 
-  def rewrite(f: (Expression) => Expression) = Nullable(f(expression.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) = f(Nullable(expression.rewrite(f)))
 }
 
 case class Property(entity: String, property: String) extends CastableExpression {
@@ -198,7 +196,7 @@ case class RelationshipTypeFunction(relationship: Expression) extends Expression
 
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = relationship.dependencies(RelationshipType())
 
-  def rewrite(f: (Expression) => Expression) = RelationshipTypeFunction(f(relationship.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) = f(RelationshipTypeFunction(relationship.rewrite(f)))
 }
 
 case class CoalesceFunction(expressions: Expression*) extends Expression {
@@ -218,7 +216,7 @@ case class CoalesceFunction(expressions: Expression*) extends Expression {
 
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = expressions.flatMap(_.dependencies(AnyType()))
 
-  def rewrite(f: (Expression) => Expression) = CoalesceFunction(expressions.map( e=> f(e.rewrite(f)) ): _*)
+  def rewrite(f: (Expression) => Expression) = f(CoalesceFunction(expressions.map(e => e.rewrite(f)): _*))
 }
 
 case class LengthFunction(inner: Expression) extends Expression {
@@ -236,7 +234,7 @@ case class LengthFunction(inner: Expression) extends Expression {
     seq
   }
 
-  def rewrite(f: (Expression) => Expression) = LengthFunction(f(inner.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) = f(LengthFunction(inner.rewrite(f)))
 }
 
 case class IdFunction(inner: Expression) extends Expression {
@@ -249,7 +247,7 @@ case class IdFunction(inner: Expression) extends Expression {
 
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = inner.dependencies(MapType())
 
-  def rewrite(f: (Expression) => Expression) = IdFunction(f(inner.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) = f(IdFunction(inner.rewrite(f)))
 }
 
 case class NodesFunction(path: Expression) extends Expression {
@@ -262,7 +260,7 @@ case class NodesFunction(path: Expression) extends Expression {
 
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = path.dependencies(PathType())
 
-  def rewrite(f: (Expression) => Expression) = NodesFunction(f(path.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) = f(NodesFunction(path.rewrite(f)))
 }
 
 case class ExtractFunction(iterable: Expression, id: String, expression: Expression) extends Expression {
@@ -281,7 +279,7 @@ case class ExtractFunction(iterable: Expression, id: String, expression: Express
   // the new identifier inserted into the expression context, named with id
     iterable.dependencies(AnyIterableType()) ++ expression.dependencies(AnyType()).filterNot(_.name == id)
 
-  def rewrite(f: (Expression) => Expression) = ExtractFunction(f(iterable.rewrite(f)), id, f(expression.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) = f(ExtractFunction(iterable.rewrite(f), id, expression.rewrite(f)))
 }
 
 case class RelationshipFunction(path: Expression) extends Expression {
@@ -294,7 +292,7 @@ case class RelationshipFunction(path: Expression) extends Expression {
 
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = path.dependencies(PathType())
 
-  def rewrite(f: (Expression) => Expression) = RelationshipFunction(f(path.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) = f(RelationshipFunction(path.rewrite(f)))
 }
 
 case class Entity(entityName: String) extends CastableExpression {

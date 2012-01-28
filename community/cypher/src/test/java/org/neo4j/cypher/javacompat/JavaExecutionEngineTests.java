@@ -22,7 +22,6 @@ package org.neo4j.cypher.javacompat;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.cypher.internal.commands.Query;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -35,7 +34,8 @@ import java.util.*;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.matchers.JUnitMatchers.*;
 import static org.neo4j.cypher.javacompat.RegularExpressionMatcher.matchesPattern;
 import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
@@ -124,22 +124,6 @@ public class JavaExecutionEngineTests {
         }
         tx.success();
         tx.finish();
-    }
-
-    @Test
-    public void exampleConsole() throws Exception {
-        Query query = CypherParser.parseConsole(
-//START SNIPPET: Identifier
-                "start n=node(0) return n.NOT_EXISTING, n.`property with spaces in it`"
-//END SNIPPET: Identifier
-        );
-
-        ExecutionResult result = engine.execute( query );
-
-        assertThat( result.columns(), hasItem( "n.NOT_EXISTING" ) );
-        Iterator<Object> n_column = result.columnAs( "n.NOT_EXISTING" );
-        assertNull( n_column.next() );
-        assertThat( result.toString(), containsString( "null" ) );
     }
 
     @Test

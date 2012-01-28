@@ -360,7 +360,7 @@ class ExecutionEngineTest extends ExecutionEngineHelper {
       returns(ExpressionReturnItem(Nullable(Property("node", "name"))))
 
     val result = execute(query)
-    assertEquals(List(Map("node.name" -> null)), result.toList)
+    assertEquals(List(Map("node.name?" -> null)), result.toList)
   }
 
   @Test def testOnlyIfPropertyExists() {
@@ -1656,6 +1656,11 @@ RETURN x0.name?
 
     val result = parseAndExecute("start a=node(1) match a-[r]->a return r")
     assert(List(Map("r" -> r)) === result.toList)
+  }
+
+  @Test def absFunction() {
+    val result = parseAndExecute("start a=node(0) return abs(-1)")
+    assert(List(Map("abs(-1)" -> 1)) === result.toList)
   }
 
   @Ignore("Exposes #201")
