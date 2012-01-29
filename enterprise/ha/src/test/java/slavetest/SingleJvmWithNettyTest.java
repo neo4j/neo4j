@@ -596,6 +596,9 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
 
         assertEquals( node, getSlave( 0 ).index().forNodes( index ).get( key, value ).getSingle().getId() );
         assertEquals( node, getSlave( 1 ).index().forNodes( index ).get( key, value ).getSingle().getId() );
+        
+        t1.shutdown();
+        t2.shutdown();
     }
 
     private Pair<Integer, Integer> getTransactionCounts( GraphDatabaseService master )

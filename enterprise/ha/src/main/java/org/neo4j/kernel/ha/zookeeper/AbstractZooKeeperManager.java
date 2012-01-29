@@ -53,7 +53,13 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public abstract class AbstractZooKeeperManager implements Watcher
 {
     protected static final String HA_SERVERS_CHILD = "ha-servers";
-    protected static final int SESSION_TIME_OUT = 5000;
+    /*
+     * The timeout our client and the ZK cluster will negotiate. Round trip
+     * from Tokyo to Oregon on AWS with a cold ZK install (hence lots of writes
+     * on disk on session establishment) takes about 8 secs. 10 should be enough
+     * for everybody.
+     */
+    protected static final int SESSION_TIME_OUT = 10000;
 
     private final String servers;
     private final Map<Integer, String> haServersCache = Collections.synchronizedMap(
