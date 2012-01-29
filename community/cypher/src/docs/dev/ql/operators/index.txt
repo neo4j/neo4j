@@ -1,0 +1,9 @@
+[[query-operators]]
+Operators
+=========
+
+Operators in Cypher are of three different varieties - mathematical, equality and relationships.
+
+The mathematical operators are +, -, *, / and %. Of these, only the plus-sign works on strings.
+
+The equality operators are =, !=, <, >, <=, >=.
