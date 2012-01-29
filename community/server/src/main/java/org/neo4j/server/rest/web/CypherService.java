@@ -32,7 +32,6 @@ import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.repr.BadInputException;
-import org.neo4j.server.rest.repr.CypherAltResultRepresentation;
 import org.neo4j.server.rest.repr.CypherResultRepresentation;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.OutputFormat;
@@ -42,9 +41,7 @@ public class CypherService {
 
     private static final String PARAMS_KEY = "params";
     private static final String QUERY_KEY = "query";
-    private static final String FORMAT_KEY = "format";
-    public static final String GENERICS_FRIENDLY = "columns";
-    
+
     private ExecutionEngine executionEngine;
     private OutputFormat output;
     private InputFormat input;
@@ -72,14 +69,6 @@ public class CypherService {
         
         try {
             ExecutionResult result = executionEngine.execute( parser.parse( query ), params );
-            if(command.containsKey( FORMAT_KEY )) {
-                String key = (String) command.get( FORMAT_KEY );
-                if (key.equals( GENERICS_FRIENDLY )) {
-                    return output.ok(new CypherAltResultRepresentation( result ));
-                } else {
-                    return output.badRequest( new IllegalArgumentException("Format: "+command.get( FORMAT_KEY ) + " not supported") );
-                }
-            }
             return output.ok(new CypherResultRepresentation( result ));
         } catch(Exception e) {
             return output.badRequest(e);
