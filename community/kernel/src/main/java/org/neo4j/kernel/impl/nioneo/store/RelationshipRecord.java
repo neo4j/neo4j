@@ -102,4 +102,10 @@ public class RelationshipRecord extends PrimitiveRecord
                 ",tPrev=" ).append( secondPrevRel ).append( ",tNext=" ).append( secondNextRel ).append( ",prop=" ).append(
                 getNextProp() ).append( "]" ).toString();
     }
+
+    @Override
+    void setIdTo( PropertyRecord property )
+    {
+        property.setRelId( getId() );
+    }
 }

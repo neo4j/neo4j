@@ -26,7 +26,7 @@ public class NeoStoreRecord extends PrimitiveRecord
         super( -1, Record.NO_NEXT_PROPERTY.intValue() );
         setInUse( true );
     }
-    
+
     @Override
     public String toString()
     {
@@ -34,5 +34,11 @@ public class NeoStoreRecord extends PrimitiveRecord
                 "used=" + inUse() +
                 ",nextProp=" + getNextProp() +
                 "]";
+    }
+
+    @Override
+    void setIdTo( PropertyRecord property )
+    {
+        property.setNodeId( -1 );
     }
 }

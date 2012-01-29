@@ -47,6 +47,13 @@ public class PropertyRecord extends Abstract64BitRecord
         super( id );
     }
 
+    public PropertyRecord( long id, PrimitiveRecord primitive )
+    {
+        super( id );
+        setCreated();
+        primitive.setIdTo( this );
+    }
+
     public void setNodeId( long nodeId )
     {
         nodeIdSet = true;
@@ -191,9 +198,10 @@ public class PropertyRecord extends Abstract64BitRecord
         return isChanged;
     }
 
-    public void setChanged()
+    public void setChanged( PrimitiveRecord primitive )
     {
         isChanged = true;
+        primitive.setIdTo( this );
     }
 
     public long getPrevProp()
