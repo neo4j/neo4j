@@ -112,11 +112,16 @@ public class ConsoleService implements AdvertisableService
 
         ScriptSession scriptSession = getSession( args );
         log.trace( scriptSession.toString() );
-
+        try
+        {
         Pair<String, String> result = scriptSession.evaluate( (String) args.get( "command" ) );
         List<Representation> list = new ArrayList<Representation>(
                 asList( ValueRepresentation.string( result.first() ), ValueRepresentation.string( result.other() ) ) );
         return output.ok( new ListRepresentation( RepresentationType.STRING, list ) );
+        } catch (IllegalStateException ise)
+        {
+            return output.badRequest(ise);
+        }
     }
 
     private ScriptSession getSession( Map<String, Object> args )

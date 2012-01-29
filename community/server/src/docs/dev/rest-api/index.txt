@@ -225,6 +225,8 @@ of the field value - +Node+, +Relationship+, +Path+ or any simple value like +St
 
 include::send-a-query.txt[]
 
+include::return-columns-ordered-results.txt[]
+
 include::return-paths.txt[]
 
 include::send-queries-with-parameters.txt[]

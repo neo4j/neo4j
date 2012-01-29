@@ -35,12 +35,14 @@ import org.junit.Test;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.server.rest.web.CypherService;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphDescription.NODE;
 import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphDescription.REL;
 import org.neo4j.test.TestData.Title;
+import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
 
@@ -69,6 +71,32 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
         assertThat( response, containsString( "him" ) );
         assertThat( response, containsString( "25" ) );
         assertThat( response, not( containsString( "\"x\"" ) ) );
+    }
+    
+    /**
+     * A simple query returning all nodes connected to node 1, returning the
+     * node and the name property, if it exists, otherwise `null`:
+     */
+    @Test
+    @Documented
+    @Graph( nodes = {
+            @NODE( name = "I", setNameProperty = true ),
+            @NODE( name = "you", setNameProperty = true ),
+            @NODE( name = "him", setNameProperty = true, properties = {
+                    @PROP( key = "age", value = "25", type = GraphDescription.PropType.INTEGER ) } ) },
+            relationships = {
+                    @REL( start = "I", end = "him", type = "know", properties = { } ),
+                    @REL( start = "I", end = "you", type = "know", properties = { } ) } )
+    public void return_columns_ordered_results() throws UnsupportedEncodingException {
+        String script = createScript( "start x  = node(%I%) match x -[r]-> n return type(r), n.name?, n" );
+
+        String response = doAltCypherRestCall( cypherUri(), script, Status.OK );
+
+        assertThat( response, containsString( "you" ) );
+        assertThat( response, containsString( "him" ) );
+        assertThat( response, containsString( "25" ) );
+        assertThat( response, not( containsString( "\"x\"" ) ) );
+        assertThat( response, containsString( "col_name" ) );
     }
 
 
@@ -181,6 +209,25 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
     private String cypherUri()
     {
         return getDataUri() + "cypher";
+    }
+    
+    private String cypherAltUri()
+    {
+        return getDataUri() + "cypher_alt";
+    }
+    
+    protected String doAltCypherRestCall( String endpoint, String script, Status status, Pair<String, String>... params ) {
+        data.get();
+        String parameterString = createParameterString( params );
+
+
+        String queryString = "{\"query\": \"" + createScript( script ) + "\"," + parameterString+","+
+                "\"format\": \"" + CypherService.GENERICS_FRIENDLY + "\"}";
+
+        gen.get().expectedStatus( status.getStatusCode() ).payload(
+                queryString ).description(
+                AsciidocHelper.createCypherSnippet( script ) );
+        return gen.get().post( endpoint ).entity();
     }
     
 }
