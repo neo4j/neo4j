@@ -88,6 +88,10 @@ public class GremlinPlugin extends ServerPlugin
         {
             return ValueRepresentation.string( e.getMessage() );
         }
+        catch ( final IllegalStateException e )
+        {
+            return ValueRepresentation.string( e.getMessage() );
+        }
     }
 
     private Bindings createBindings( GraphDatabaseService neo4j, Map params )

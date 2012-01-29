@@ -604,7 +604,10 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     @Graph( "I know you" )
     public void testMixedAccessPatterns() throws UnsupportedEncodingException {
         data.get();
-        String response = gen().expectedStatus(OK.getStatusCode()).payload("{\"script\":\"g.clear()\"}").post(ENDPOINT).entity();
+        String response = "";
+        response = gen().expectedStatus(OK.getStatusCode()).payload("{\"command\":\"g.clear();g.addVertex([name:'foo']);\",\"engine\":\"gremlin\"}").post("http://localhost:7474/db/manage/server/console/").entity();
+        response = gen().expectedStatus(OK.getStatusCode()).payload("{\"script\":\"g.clear()\"}").post(ENDPOINT).entity();
+        //response = gen().expectedStatus(OK.getStatusCode()).payload("{\"command\":\"init()\",\"engine\":\"gremlin\"}").post("http://localhost:7474/db/manage/server/console/").entity();
         response = gen().expectedStatus(OK.getStatusCode()).payload("{\"command\":\"g.addVertex([name:'foo'])\",\"engine\":\"gremlin\"}").post("http://localhost:7474/db/manage/server/console/").entity();
 
     }
