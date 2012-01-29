@@ -134,6 +134,17 @@ public abstract class AbstractZooKeeperManager implements Watcher
         }
     }
 
+    /**
+     * Tries to discover the master from the zookeeper information. Will return
+     * a {@link Pair} of a {@link Master} and the {@link Machine} it resides
+     * on. If the new master is different than the current then the current is
+     * invalidated and if allowChange is set to true then the a connection to
+     * the new master is established otherwise a NO_MASTER is returned.
+     * 
+     * @param wait Whether to wait for a sync connected event
+     * @param allowChange If to connect to the new master
+     * @return The master machine pair, possibly a NO_MASTER_MACHINE_PAIR
+     */
     protected Pair<Master, Machine> getMasterFromZooKeeper(
             boolean wait, boolean allowChange )
     {
