@@ -37,4 +37,6 @@ public abstract class PrimitiveRecord extends Abstract64BitRecord
     {
         this.nextProp = nextProp;
     }
+
+    abstract void setIdTo( PropertyRecord property );
 }
