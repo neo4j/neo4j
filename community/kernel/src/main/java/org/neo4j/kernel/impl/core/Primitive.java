@@ -567,6 +567,7 @@ abstract class Primitive
 
         synchronized ( this )
         {
+            // Dereference the volatile once to avoid multiple barriers
             PropertyData[] newArray = properties;
 
             /*
@@ -582,13 +583,22 @@ abstract class Primitive
                 extraLength += cowPropertyAddMap.size();
             }
 
+            int newArraySize = newArray.length;
+
+            // make sure that we don't make inplace modifications to the existing array
+            // TODO: Refactor this to guarantee only one copy,
+            // currently it can do two copies in the clone() case if it also compacts
             if ( extraLength > 0 )
             {
-                newArray = new PropertyData[properties.length + extraLength];
-                System.arraycopy( properties, 0, newArray, 0, properties.length );
+                PropertyData[] oldArray = newArray;
+                newArray = new PropertyData[oldArray.length + extraLength];
+                System.arraycopy( oldArray, 0, newArray, 0, oldArray.length );
+            }
+            else
+            {
+                newArray = newArray.clone();
             }
 
-            int newArraySize = properties.length;
             if ( cowPropertyRemoveMap != null )
             {
                 for ( Integer keyIndex : cowPropertyRemoveMap.keySet() )
@@ -614,8 +624,7 @@ abstract class Primitive
                     for ( int i = 0; i < newArray.length; i++ )
                     {
                         PropertyData existingProperty = newArray[i];
-                        if ( existingProperty == null
-                             || addedProperty.getIndex() == existingProperty.getIndex() )
+                        if ( existingProperty == null || addedProperty.getIndex() == existingProperty.getIndex() )
                         {
                             newArray[i] = addedProperty;
                             if ( existingProperty == null )
@@ -631,8 +640,7 @@ abstract class Primitive
             if ( newArraySize < newArray.length )
             {
                 PropertyData[] compactedNewArray = new PropertyData[newArraySize];
-                System.arraycopy( newArray, 0, compactedNewArray, 0,
-                        newArraySize );
+                System.arraycopy( newArray, 0, compactedNewArray, 0, newArraySize );
                 properties = compactedNewArray;
             }
             else
