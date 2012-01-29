@@ -21,11 +21,9 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.InputStream;
-
 import org.junit.Test;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.test.StreamConsumer;
+import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
 
 public class TestTxEntries
@@ -44,15 +42,10 @@ public class TestTxEntries
                 new String[] { "java", "-cp",
                         System.getProperty( "java.class.path" ),
                         RollbackUnclean.class.getName(), storeDir } );
-        InputStream stdout = process.getInputStream();
-        InputStream stderr = process.getErrorStream();
-        Thread out = new Thread( new StreamConsumer( stdout, System.out ) );
-        Thread err = new Thread( new StreamConsumer( stderr, System.err ) );
-        out.start();
-        err.start();
-        out.join();
-        err.join();
+        ProcessStreamHandler streams = new ProcessStreamHandler( process );
+        streams.launch();
         int exit = process.waitFor();
+        streams.done();
         assertEquals( 0, exit );
         // The bug tested by this case throws exception during recovery, below
         new EmbeddedGraphDatabase( storeDir ).shutdown();
