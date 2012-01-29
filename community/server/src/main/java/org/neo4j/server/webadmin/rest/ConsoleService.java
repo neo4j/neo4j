@@ -118,9 +118,11 @@ public class ConsoleService implements AdvertisableService
         List<Representation> list = new ArrayList<Representation>(
                 asList( ValueRepresentation.string( result.first() ), ValueRepresentation.string( result.other() ) ) );
         return output.ok( new ListRepresentation( RepresentationType.STRING, list ) );
-        } catch (IllegalStateException ise)
+        } catch (Exception e)
         {
-            return output.badRequest(ise);
+            List<Representation> list = new ArrayList<Representation>(
+                    asList( ValueRepresentation.string( e.getClass() + " : " + e.getMessage() + "\n"), ValueRepresentation.string( null ) ));
+            return output.ok(new ListRepresentation( RepresentationType.STRING, list ));
         }
     }
 
