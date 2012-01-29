@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.neo4j.kernel.Config.ARRAY_BLOCK_SIZE;
-import static org.neo4j.kernel.Config.STRING_BLOCK_SIZE;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -36,6 +33,9 @@ import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.neo4j.kernel.Config.ARRAY_BLOCK_SIZE;
+import static org.neo4j.kernel.Config.STRING_BLOCK_SIZE;
 
 /**
  * Implementation of the property store. This implementation has two dynamic
@@ -494,7 +494,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         PropertyRecord toReturn = getRecordFromBuffer( id, buffer );
         if ( !toReturn.inUse() && load != RecordLoad.FORCE )
         {
-            throw new InvalidRecordException( "Record[" + id + "] not in use" );
+            throw new InvalidRecordException( "PropertyRecord[" + id + "] not in use" );
         }
         return toReturn;
     }
