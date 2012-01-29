@@ -979,7 +979,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
         }
         if ( propRecord.size() > 0 )
         {
-            propRecord.setChanged();
+            propRecord.setChanged( relRecord );
             assert assertPropertyChain( relRecord );
             return;
         }

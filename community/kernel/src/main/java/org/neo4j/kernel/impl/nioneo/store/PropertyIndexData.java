@@ -39,10 +39,4 @@ public class PropertyIndexData
     {
         return this.value;
     }
-
-    @Override
-    void setIdTo( PropertyRecord property )
-    {
-        property.setNodeId( -1 );
-    }
 }
