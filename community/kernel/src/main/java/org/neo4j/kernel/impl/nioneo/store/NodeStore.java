@@ -113,7 +113,7 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
         {
             return new NodeRecord( id ); // inUse=false by default
         }
-        
+
         try
         {
             return getRecord( id, window, RecordLoad.FORCE );
@@ -123,7 +123,7 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
             releaseWindow( window );
         }
     }
-    
+
     @Override
     public NodeRecord forceGetRaw( long id )
     {
@@ -218,7 +218,7 @@ public class NodeStore extends AbstractStore implements Store, RecordStore<NodeR
             switch ( load )
             {
             case NORMAL:
-                throw new InvalidRecordException( "Record[" + id + "] not in use" );
+                throw new InvalidRecordException( "NodeRecord[" + id + "] not in use" );
             case CHECK:
                 return null;
             }
