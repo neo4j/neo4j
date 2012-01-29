@@ -73,7 +73,7 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
 
         abstract ConsistencyCheck apply( DiffStore diffs, ConsistencyCheck checker );
     }
-    
+
     private final boolean rejectInconsistentTransactions;
 
     private final DiffStore diffs;
@@ -161,8 +161,15 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
         }
         catch ( AssertionError e )
         {
-            DataInconsistencyError error = new DataInconsistencyError( "Cannot apply transaction\n\t" + startEntry + "\n\t"
-                                                                       + commitEntry + "\n\t" + e.getMessage() );
+            DataInconsistencyError error = new DataInconsistencyError( "Cannot apply transaction\n\t"
+                                                                       + ( startEntry == null
+                                                                               ? "NO START ENTRY"
+                                                                               : startEntry.toString() )
+                                                                       + "\n\t"
+                                                                       + ( commitEntry == null
+                                                                               ? "NO COMMIT ENTRY"
+                                                                               : commitEntry.toString() ) + "\n\t"
+                                                                       + e.getMessage() );
             msgLog.logMessage( error.getMessage() );
             if ( rejectInconsistentTransactions )
             {
