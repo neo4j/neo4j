@@ -89,16 +89,11 @@ abstract class ArrayBasedPrimitive extends Primitive
             ArrayMap<Integer,PropertyData> cowPropertyAddMap,
             ArrayMap<Integer,PropertyData> cowPropertyRemoveMap, long firstProp )
     {
-        if ( properties == null )
-        {
-            // we will load full in some other tx
-            return;
-        }
-
         synchronized ( this )
         {
             // Dereference the volatile once to avoid multiple barriers
             PropertyData[] newArray = properties;
+            if ( newArray == null ) return;
 
             /*
              * add map will definitely be added in the properties array - all properties
