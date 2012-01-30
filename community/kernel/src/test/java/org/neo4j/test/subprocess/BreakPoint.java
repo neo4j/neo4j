@@ -31,7 +31,7 @@ public abstract class BreakPoint implements DebuggerDeadlockCallback
         ENTRY,
         EXIT
     }
-    
+
     public BreakPoint( Class<?> type, String method, Class<?>... args )
     {
         this(Event.ENTRY,type,method,args);
@@ -48,7 +48,7 @@ public abstract class BreakPoint implements DebuggerDeadlockCallback
             this.args[i] = args[i].getName();
         }
     }
-    
+
     @Override
     public String toString()
     {
@@ -77,6 +77,13 @@ public abstract class BreakPoint implements DebuggerDeadlockCallback
     volatile boolean enabled = false;
     private @SuppressWarnings( "restriction" )
     com.sun.jdi.request.EventRequest request = null;
+
+    @SuppressWarnings( "restriction" )
+    public synchronized boolean isEnabled()
+    {
+        if ( request != null ) return request.isEnabled();
+        return enabled;
+    }
 
     @SuppressWarnings( "restriction" )
     public synchronized BreakPoint enable()
@@ -148,14 +155,14 @@ public abstract class BreakPoint implements DebuggerDeadlockCallback
             }
         };
     }
-    
+
     public static BreakPoint thatCrashesTheProcess( final CountDownLatch crashNotification,
             final int letNumberOfCallsPass, Class<?> type, String method, Class<?>... args )
     {
         return new BreakPoint( type, method, args )
         {
             private volatile int numberOfCalls;
-            
+
             @Override
             protected void callback( DebugInterface debug ) throws KillSubProcess
             {
@@ -163,7 +170,7 @@ public abstract class BreakPoint implements DebuggerDeadlockCallback
                 {
                     return;
                 }
-                
+
                 debug.thread().suspend( null );
                 this.disable();
                 crashNotification.countDown();
