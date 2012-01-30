@@ -691,13 +691,6 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
             {
                 store.makeHeavy( record );
             }
-            assert record.getData().length > 0;
-            // assert ( ( record.getData().length == ( DEFAULT_DATA_BLOCK_SIZE -
-            // AbstractDynamicStore.BLOCK_HEADER_SIZE ) ) && (
-            // record.getNextBlock() != Record.NO_NEXT_BLOCK.intValue() ) )
-            // || ( ( record.getData().length < ( DEFAULT_DATA_BLOCK_SIZE -
-            // AbstractDynamicStore.BLOCK_HEADER_SIZE ) ) && (
-            // record.getNextBlock() == Record.NO_NEXT_BLOCK.intValue() ) );
             ByteBuffer buf = ByteBuffer.wrap( record.getData() );
             byte[] bytes = new byte[record.getData().length];
             totalSize += bytes.length;
@@ -713,7 +706,6 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
                 currentArray.length );
             offset += currentArray.length;
         }
-        assert bArray.length > 0;
         return bArray;
     }
 
