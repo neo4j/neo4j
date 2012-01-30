@@ -19,35 +19,18 @@
  */
 package org.neo4j.server.plugin.cypher;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.neo4j.cypher.commands.Query;
+import org.neo4j.cypher.internal.commands.Query;
 import org.neo4j.cypher.javacompat.CypherParser;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.server.plugins.Description;
-import org.neo4j.server.plugins.Name;
-import org.neo4j.server.plugins.Parameter;
-import org.neo4j.server.plugins.PluginTarget;
-import org.neo4j.server.plugins.ServerPlugin;
-import org.neo4j.server.plugins.Source;
+import org.neo4j.server.plugins.*;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.CypherResultRepresentation;
 import org.neo4j.server.rest.repr.Representation;
 
-/* This is a class that will represent a server side
- * Gremlin plugin and will return JSON
- * for the following use cases:
- * Add/delete vertices and edges from the graph.
- * Manipulate the graph indices.
- * Search for elements of a graph.
- * Load graph data from a file or URL.
- * Make use of JUNG algorithms.
- * Make use of SPARQL queries over OpenRDF-based graphs.
- * and much, much more.
- */
+import java.util.HashMap;
+import java.util.Map;
 
 @Description( "DEPRECATED (go to /db/data/cypher): A server side plugin for the Cypher Query Language" )
 public class CypherPlugin extends ServerPlugin
