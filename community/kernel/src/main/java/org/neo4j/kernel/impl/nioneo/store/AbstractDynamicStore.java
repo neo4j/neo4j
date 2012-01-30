@@ -331,7 +331,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
             }
             recordList.add( record );
             assert !record.isLight();
-            assert record.getLength() > 0;
             assert record.getData() != null;
         }
         while ( nextBlock != Record.NO_NEXT_BLOCK.intValue() );
