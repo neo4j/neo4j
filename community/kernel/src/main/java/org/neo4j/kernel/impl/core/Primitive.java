@@ -559,16 +559,11 @@ abstract class Primitive
             ArrayMap<Integer, PropertyData> cowPropertyAddMap,
             ArrayMap<Integer, PropertyData> cowPropertyRemoveMap )
     {
-        if ( properties == null )
-        {
-            // we will load full in some other tx
-            return;
-        }
-
         synchronized ( this )
         {
             // Dereference the volatile once to avoid multiple barriers
             PropertyData[] newArray = properties;
+            if (newArray == null) return; // we will load full in some other tx
 
             /*
              * add map will definitely be added in the properties array - all properties
