@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 public class DynamicRecord extends Abstract64BitRecord
 {
+    private static final int MAX_BYTES_IN_TO_STRING = 8, MAX_CHARS_IN_TO_STRING = 16;
     private byte[] data = null;
     private int length;
     private long nextBlock = Record.NO_NEXT_BLOCK.intValue();
@@ -106,10 +107,35 @@ public class DynamicRecord extends Abstract64BitRecord
         StringBuilder buf = new StringBuilder();
         buf.append( "DynamicRecord[" ).append( getId() ).append( ",used=" ).append(
                 inUse() ).append( "," ).append( "light=" ).append( isLight ).append(
-                "(" ).append( length ).append( "),data=" );
+                "(" ).append( length ).append( "),type=" );
+        PropertyType type = PropertyType.getPropertyType( this.type << 24, true );
+        if ( type == null ) buf.append( this.type ); else buf.append( type.name() );
+        buf.append( ",data=" );
         if ( data != null )
         {
-            buf.append( "byte[" + data.length + "]," );
+            if ( type == PropertyType.STRING && data.length <= MAX_CHARS_IN_TO_STRING )
+            {
+                buf.append( '"' );
+                buf.append( PropertyStore.getStringFor( data ) );
+                buf.append( "\"," );
+            }
+            else
+            {
+                buf.append( "byte[" );
+                if ( data.length <= MAX_BYTES_IN_TO_STRING )
+                {
+                    for ( int i = 0; i < data.length; i++ )
+                    {
+                        if (i != 0) buf.append( ',' );
+                        buf.append( data[i] );
+                    }
+                }
+                else
+                {
+                    buf.append( "size=" ).append( data.length );
+                }
+                buf.append( "]," );
+            }
         }
         else
         {

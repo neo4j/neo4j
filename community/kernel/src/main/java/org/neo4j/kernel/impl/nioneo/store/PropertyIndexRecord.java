@@ -41,6 +41,6 @@ public class PropertyIndexRecord extends AbstractNameRecord
     @Override
     protected String additionalToString()
     {
-        return "" + propCount;
+        return "propCount=" + propCount;
     }
 }

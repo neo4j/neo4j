@@ -166,17 +166,17 @@ public class PropertyRecord extends Abstract64BitRecord
         buf.append( "Property[" ).append( getId() ).append( ",used=" ).append( inUse() ).append( ",prev=" ).append(
                 prevProp ).append( ",next=" ).append( nextProp );
         if ( entityId != -1 ) buf.append( nodeIdSet ? ",node=" : ",rel=" ).append( entityId );
-        buf.append( ", Value[" );
+        buf.append( ",Value[" );
         Iterator<PropertyBlock> itr = blockRecords.iterator();
         while ( itr.hasNext() )
         {
             buf.append( itr.next() );
             if ( itr.hasNext() )
             {
-                buf.append( ", " );
+                buf.append( ',' );
             }
         }
-        buf.append( "], DeletedDynRecs[" );
+        buf.append( "],DeletedDynRecs[" );
         if ( !deletedRecords.isEmpty() )
         {
             Iterator<DynamicRecord> it = deletedRecords.iterator();
@@ -185,7 +185,7 @@ public class PropertyRecord extends Abstract64BitRecord
                 buf.append( it.next() );
                 if ( it.hasNext() )
                 {
-                    buf.append( ", " );
+                    buf.append( ',' );
                 }
             }
         }

@@ -163,32 +163,34 @@ public class PropertyBlock
     public String toString()
     {
         StringBuffer result = new StringBuffer("PropertyBlock[");
-        // result.append( inUse() ? "inUse, " : "notInUse, " );
-        result.append( valueBlocks == null ? -1 : getKeyIndexId() ).append(
-                ", " ).append( getType() );
-        result.append( ", " ).append(
-                valueBlocks == null ? "null" : "blocks[" + valueBlocks.length
-                                               + "]" ).append(
-                ", " );
-        result.append( "ValueRecords[" );
+        PropertyType type = getType();
+        result.append( type == null ? "<unknown type>" : type.name() ).append( ',' );
+        result.append( "key=" ).append( valueBlocks == null ? "?" : Integer.toString( getKeyIndexId() ) );
+        if ( type != null ) switch ( type )
+        {
+        case STRING:
+        case ARRAY:
+            result.append( ",firstDynamic=" ).append( getSingleValueBlock() );
+            break;
+        default:
+            result.append( ",value=" ).append( type.getValue( this, null ) );
+            break;
+        }
         if ( !isLight() )
         {
+            result.append( ",ValueRecords[" );
             Iterator<DynamicRecord> recIt = valueRecords.iterator();
             while ( recIt.hasNext() )
             {
                 result.append( recIt.next() );
                 if ( recIt.hasNext() )
                 {
-                    result.append( ", " );
+                    result.append( ',' );
                 }
             }
+            result.append( ']' );
         }
-        else
-        {
-            result.append( "<none>" );
-        }
-
-        result.append( "]]" );
+        result.append( ']' );
         return result.toString();
     }
 }

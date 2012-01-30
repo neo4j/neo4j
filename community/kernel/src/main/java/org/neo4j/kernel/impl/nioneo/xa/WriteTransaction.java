@@ -467,7 +467,7 @@ public class WriteTransaction extends XaTransaction implements NeoStoreTransacti
             if ( neoStoreCommand != null ) neoStoreCommand.execute();
             executeDeleted( propCommands, relCommands, nodeCommands );
             updateFirstRelationships();
-            lockReleaser.commitCows();
+            lockReleaser.commitCows(); // updates the cached primitives
             neoStore.setLastCommittedTx( getCommitTxId() );
         }
         finally

@@ -21,14 +21,15 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 public class AbstractNameRecord extends AbstractRecord
 {
     private int nameId = Record.NO_NEXT_BLOCK.intValue();
-    private List<DynamicRecord> nameRecords = new ArrayList<DynamicRecord>();
+    private final List<DynamicRecord> nameRecords = new ArrayList<DynamicRecord>();
     private boolean isLight;
-    
+
     AbstractNameRecord( int id )
     {
         super( id );
@@ -43,7 +44,7 @@ public class AbstractNameRecord extends AbstractRecord
     {
         return isLight;
     }
-    
+
     public int getNameId()
     {
         return nameId;
@@ -64,13 +65,28 @@ public class AbstractNameRecord extends AbstractRecord
         nameRecords.add( record );
     }
 
+    @Override
     public String toString()
     {
         StringBuilder buf = new StringBuilder( getClass().getSimpleName() + "[" );
-        buf.append( getId() ).append( "," ).append( inUse() ).append( "," ).append( nameId );
+        buf.append( getId() ).append( "," ).append( inUse() ? "in use" : "not used" ).append( ",nameId=" ).append( nameId );
         String more = additionalToString();
-        if ( more != null ) buf.append( "," + more );
-        return buf.append( "]" ).toString();
+        if ( more != null ) buf.append( ',' ).append( more );
+        if ( !isLight )
+        {
+            buf.append( ",NameRecords[" );
+            Iterator<DynamicRecord> recIt = nameRecords.iterator();
+            while ( recIt.hasNext() )
+            {
+                buf.append( recIt.next() );
+                if ( recIt.hasNext() )
+                {
+                    buf.append( ',' );
+                }
+            }
+            buf.append( ']' );
+        }
+        return buf.append( ']' ).toString();
     }
 
     protected String additionalToString()
