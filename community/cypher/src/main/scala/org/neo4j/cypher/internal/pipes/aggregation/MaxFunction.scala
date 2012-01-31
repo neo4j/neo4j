@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -21,9 +21,8 @@ package org.neo4j.cypher.internal.pipes.aggregation
 
 import org.neo4j.cypher.internal.Comparer
 import java.lang.Boolean
-import org.neo4j.cypher.commands.Expression
-import org.neo4j.cypher.pipes.aggregation.AggregationFunction
-import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.internal.commands.Expression
+  import org.neo4j.cypher.SyntaxException
 
 trait MinMax extends AggregationFunction with Comparer {
   def value: Expression

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,7 +20,10 @@
 package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.graphdb.{Relationship, Node, Direction, PropertyContainer}
-import org.neo4j.cypher.commands.Predicate
+import org.neo4j.cypher.internal.commands.Predicate
+import collection.Seq
+import collection.immutable.Map
+import java.lang.String
 
 
 class PatterMatchingBuilder(patternGraph: PatternGraph, predicates: Seq[Predicate]) extends MatcherBuilder {
@@ -48,7 +51,7 @@ class PatterMatchingBuilder(patternGraph: PatternGraph, predicates: Seq[Predicat
       mandatoryPattern
   }
 
-  private def createListOfBoundRelationshipsWithHangingNodes(undirectedBoundRelationships: Iterable[PatternRelationship], bindings: Map[String, Any]) = {
+  private def createListOfBoundRelationshipsWithHangingNodes(undirectedBoundRelationships: Iterable[PatternRelationship], bindings: Map[String, Any]): Seq[Map[String, MatchingPair]] = {
     val toList = undirectedBoundRelationships.map(patternRel => {
       val rel = bindings(patternRel.key).asInstanceOf[Relationship]
       val x = patternRel.key -> MatchingPair(patternRel, rel)
@@ -79,8 +82,10 @@ class PatterMatchingBuilder(patternGraph: PatternGraph, predicates: Seq[Predicat
     ).toSeq
 
   private def createPatternMatcher(boundPairs: Map[String, MatchingPair], includeOptionals: Boolean, source: Map[String, Any]): Traversable[Map[String, Any]] = {
-
-    val patternMatcher = new PatternMatcher(boundPairs, predicates, includeOptionals, source)
+    val patternMatcher = if (patternGraph.hasDoubleOptionals)
+      new DoubleOptionalPatternMatcher(boundPairs, predicates, includeOptionals, source, patternGraph.doubleOptionalPaths)
+    else
+      new PatternMatcher(boundPairs, predicates, includeOptionals, source)
 
     if (includeOptionals)
       patternMatcher.map(matchedGraph => matchedGraph ++ createNullValuesForOptionalElements(matchedGraph))
@@ -88,49 +93,39 @@ class PatterMatchingBuilder(patternGraph: PatternGraph, predicates: Seq[Predicat
       patternMatcher
   }
 
-  private def extractBoundMatchingPairs(bindings: Map[String, Any]): Map[String, MatchingPair] = {
-    bindings.flatMap(kv =>
-      if (!classOf[PropertyContainer].isInstance(kv._2))
-        Seq()
-      else {
+  private def extractBoundMatchingPairs(bindings: Map[String, Any]): Map[String, MatchingPair] = bindings.flatMap {
+    case (key, value: PropertyContainer) => {
+      val element = patternGraph(key)
 
-        val patternElement = patternGraph.get(kv._1)
+      value match {
+        case node: Node => Seq(key -> MatchingPair(element, node))
+        case rel: Relationship => {
+          val pr = element.asInstanceOf[PatternRelationship]
 
-        patternElement match {
-          case None => Seq()
-          case Some(element) => {
-            kv._2 match {
-              case node: Node => {
-                Seq(kv._1 -> MatchingPair(element, node))
-              }
-              case rel: Relationship => {
-                val pr = element.asInstanceOf[PatternRelationship]
+          val x = pr.dir match {
+            case Direction.OUTGOING => Some((pr.startNode, pr.endNode))
+            case Direction.INCOMING => Some((pr.endNode, pr.startNode))
+            case Direction.BOTH => None
+          }
 
-                val x = pr.dir match {
-                  case Direction.OUTGOING => Some((pr.startNode, pr.endNode))
-                  case Direction.INCOMING => Some((pr.endNode, pr.startNode))
-                  case Direction.BOTH => None
-                }
+          //We only want directed bound relationships. Undirected relationship patterns
+          //have to be treated a little differently
+          x match {
+            case Some((a, b)) => {
+              val t1 = a.key -> MatchingPair(a, rel.getStartNode)
+              val t2 = b.key -> MatchingPair(b, rel.getEndNode)
+              val t3 = pr.key -> MatchingPair(pr, rel)
 
-                //We only want directed bound relationships. Undirected relationship patterns
-                //have to be treated a little differently
-                x match {
-                  case Some((a, b)) => {
-                    val t1 = a.key -> MatchingPair(a, rel.getStartNode)
-                    val t2 = b.key -> MatchingPair(b, rel.getEndNode)
-                    val t3 = pr.key -> MatchingPair(pr, rel)
-
-                    Seq(t1, t2, t3)
-                  }
-                  case None => Seq()
-                }
-              }
+              Seq(t1, t2, t3)
             }
+            case None => Seq()
           }
         }
+      }
 
 
-      })
+    }
+    case _ => Seq()
   }
 }
 

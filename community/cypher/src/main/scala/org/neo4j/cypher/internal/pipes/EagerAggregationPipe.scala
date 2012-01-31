@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.pipes
 
+import aggregation.AggregationFunction
 import collection.Seq
-import org.neo4j.cypher.commands.{AggregationItem, ReturnItem}
+import org.neo4j.cypher.internal.commands.{AggregationItem, ReturnItem}
 import java.lang.String
-import org.neo4j.cypher.symbols.{Identifier, SymbolTable}
-import org.neo4j.cypher.pipes.aggregation.AggregationFunction
+import org.neo4j.cypher.internal.symbols.{Identifier, SymbolTable}
 
 // Eager aggregation means that this pipe will eagerly load the whole resulting subgraphs before starting
 // to emit aggregated results.
@@ -42,19 +42,19 @@ class EagerAggregationPipe(source: Pipe, val returnItems: Seq[ReturnItem], aggre
 
   def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = {
     // This is the temporary storage used while the aggregation is going on
-    val result = collection.mutable.Map[Seq[Any], Seq[AggregationFunction]]()
+    val result = collection.mutable.Map[NiceHasher, Seq[AggregationFunction]]()
     val keyNames = returnItems.map(_.columnName)
     val aggregationNames = aggregations.map(_.identifier.name)
 
     source.createResults(params).foreach(m => {
-      val groupValues = keyNames.map(m(_))
+      val groupValues: NiceHasher = new NiceHasher(keyNames.map(m(_)))
       val functions = result.getOrElseUpdate(groupValues, aggregations.map(_.createAggregationFunction))
       functions.foreach(func => func(m))
     })
 
     result.map {
       case (key, value: Seq[AggregationFunction]) => {
-        val elems = keyNames.zip(key) ++ aggregationNames.zip(value.map(_.result))
+        val elems = keyNames.zip(key.original) ++ aggregationNames.zip(value.map(_.result))
         elems.toMap
       }
     }

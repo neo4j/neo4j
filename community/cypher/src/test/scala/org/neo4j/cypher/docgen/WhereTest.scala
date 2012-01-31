@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -83,7 +83,7 @@ class WhereTest extends DocumentingTestBase {
     testQuery(
       title = "Property exists",
       text = "To only include nodes/relationships that have a property, just write out the identifier and the property you expect it to have.",
-      queryText = """start n=node(%Andres%, %Tobias%) where n.belt return n""",
+      queryText = """start n=node(%Andres%, %Tobias%) where has(n.belt) return n""",
       returns = """The node named Andres.""",
       assertions = (p) => assertEquals(List(node("Andres")), p.columnAs[Node]("n").toList))
   }
@@ -128,13 +128,13 @@ class WhereTest extends DocumentingTestBase {
       WHERE a<-[:KNOWS]-b
       WHERE a-[:KNOWS]-b
 
-      Note: You can not introduce new identifiers here! Although it might look very similar to the MATCH clause, the
+      Not that you can not introduce new identifiers here. Although it might look very similar to the MATCH clause, the
 WHERE clause is all about eliminating matched subgraphs. MATCH a-->b is very different from WHERE a-->b; the first will
 produce a subgraph for every relationship between a and b, and the latter will eliminate any matched subgraphs where a and b
 do not have a relationship between them.
       """,
-      queryText = """start a=node(%Tobias%), b=node(%Andres%, %Peter%) match a<-[r?]-b where r is null return b""",
+      queryText = """start a=node(%Tobias%), b=node(%Andres%, %Peter%) where a<--b return b""",
       returns = "Nodes that Tobias is not connected to",
-      assertions = (p) => assertEquals(List(Map("b" -> node("Peter"))), p.toList))
+      assertions = (p) => assertEquals(List(Map("b" -> node("Andres"))), p.toList))
   }
 }

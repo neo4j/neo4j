@@ -143,11 +143,11 @@ public class HelloWorldTest extends AbstractJavaDocTestbase
     public void helloWorldExample()
     {
         gen.get()
-                .addSourceSnippets( this.getClass(), "createReltype",
+                .addTestSourceSnippets( this.getClass(), "createReltype",
                         "startDb", "transaction", "addData", "removingData",
                         "shutdownServer", "readData" );
         gen.get()
-                .addGithubLink( "github", this.getClass(), "neo4j/community",
+                .addGithubTestSourceLink( "github", this.getClass(), "neo4j/community",
                         "embedded-examples" );
 
         // START SNIPPET: startDb

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,20 +19,33 @@
  */
 package org.neo4j.cypher
 
-import commands._
+import internal.commands._
 import internal.{LRUCache, ExecutionPlanImpl}
 import scala.collection.JavaConverters._
-import org.neo4j.graphdb._
 import java.lang.Error
 import java.util.{Map => JavaMap}
 import scala.deprecated
+import org.neo4j.kernel.AbstractGraphDatabase
+import org.neo4j.graphdb.GraphDatabaseService
 
 class ExecutionEngine(graph: GraphDatabaseService) {
   checkScalaVersion()
 
   require(graph != null, "Can't work with a null graph database")
 
-  val parser = new CypherParser()
+  val parser = createCorrectParser()
+
+  private def createCorrectParser() = if (graph.isInstanceOf[AbstractGraphDatabase]) {
+    val database = graph.asInstanceOf[AbstractGraphDatabase]
+    database.getConfig.getParams.asScala.get("cypher_parser_version") match {
+      case None => new CypherParser()
+      case Some(v) => new CypherParser(v.toString)
+    }
+  }
+  else {
+    new CypherParser()
+  }
+
 
   @throws(classOf[SyntaxException])
   def execute(query: String): ExecutionResult = execute(query, Map[String, Any]())
@@ -58,7 +71,7 @@ class ExecutionEngine(graph: GraphDatabaseService) {
   @deprecated(message = "You should not parse queries manually any more. Use the execute(String) instead")
   def execute(query: Query, params: Map[String, Any]): ExecutionResult = new ExecutionPlanImpl(query, graph).execute(params)
 
-  def checkScalaVersion() {
+  private def checkScalaVersion() {
     if (util.Properties.versionString.matches("^version 2.9.0")) {
       throw new Error("Cypher can only run with Scala 2.9.0. It looks like the Scala version is: " +
         util.Properties.versionString)

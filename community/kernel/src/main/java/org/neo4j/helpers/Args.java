@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -29,15 +29,15 @@ import java.util.Map;
  * key/value pairs or just "orphan" values (w/o a key associated).
  * <p>
  * A key is defined with one or more dashes in the beginning, for example:
- * 
+ *
  * <pre>
  *   '-path'
  *   '--path'
  * </pre>
- * 
+ *
  * A key/value pair can be either one single String from the array where there's
  * a '=' delimiter between the key and value, like so:
- * 
+ *
  * <pre>
  *   '--path=/my/path/to/something'
  * </pre>
@@ -53,7 +53,7 @@ public class Args
     private final List<String> orphans = new ArrayList<String>();
 //    private final Set<String> touchedParameters = new HashSet<String>();
 //    private final BitSet touchedOrphans = new BitSet();
-    
+
     /**
      * Suitable for main( String[] args )
      * @param args the arguments to parse.
@@ -63,46 +63,56 @@ public class Args
         this.args = args;
         parseArgs( args );
     }
-    
+
     public Args( Map<String, String> source )
     {
         this.args = null;
         putAll( source );
     }
-    
+
     public String[] source()
     {
         return this.args;
     }
-    
+
     public Map<String, String> asMap()
     {
         return new HashMap<String, String>( this.map );
     }
-    
+
     public boolean has( String  key )
     {
         return this.map.containsKey( key );
     }
-    
+
     public String get( String key, String defaultValue )
     {
         String value = this.map.get( key );
         return value != null ? value : defaultValue;
     }
-    
+
+    public String get( String key, String defaultValueIfNotFound, String defaultValueIfNoValue )
+    {
+        String value = this.map.get( key );
+        if ( value != null )
+        {
+            return value;
+        }
+        return this.map.containsKey( key ) ? defaultValueIfNoValue : defaultValueIfNotFound;
+    }
+
     public Number getNumber( String key, Number defaultValue )
     {
         String value = this.map.get( key );
         return value != null ? Double.parseDouble( value ) : defaultValue;
     }
-    
+
     public Boolean getBoolean( String key, Boolean defaultValue )
     {
         String value = this.map.get( key );
         return value != null ? Boolean.parseBoolean( value ) : defaultValue;
     }
-    
+
     public Boolean getBoolean( String key, Boolean defaultValueIfNotFound,
             Boolean defaultValueIfNoValue )
     {
@@ -113,27 +123,27 @@ public class Args
         }
         return this.map.containsKey( key ) ? defaultValueIfNoValue : defaultValueIfNotFound;
     }
-    
+
     public Object put( String key, String value )
     {
         return map.put( key, value );
     }
-    
+
     public void putAll( Map<String, String> source )
     {
         this.map.putAll( source );
     }
-    
+
     public List<String> orphans()
     {
         return new ArrayList<String>( this.orphans );
     }
-    
+
     private static boolean isOption( String arg )
     {
         return arg.startsWith( "-" );
     }
-    
+
     private static String stripOption( String arg )
     {
         while ( arg.length() > 0 && arg.charAt( 0 ) == '-' )
@@ -195,7 +205,7 @@ public class Args
             }
             out.println( "  " + parameter.getKey() + ":" + parameter.getValue() );
         }
-        
+
         first = true;
         for ( int i = 0; i < orphans.size(); i++ )
         {

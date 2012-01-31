@@ -1,7 +1,5 @@
-package org.neo4j.cypher
-
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,6 +17,7 @@ package org.neo4j.cypher
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.cypher
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Assert._
@@ -31,64 +30,71 @@ class SyntaxExceptionTest extends JUnitSuite {
       parser.parse(query)
       fail("Should have produced the error: " + expectedError)
     } catch {
-      case x: SyntaxException => assertTrue(x.getMessage, x.getMessage.startsWith(expectedError))
+      case x: SyntaxException => {
+        assertTrue(x.getMessage, x.getMessage.startsWith(expectedError))
+      }
     }
   }
 
   @Test def shouldRaiseErrorWhenMissingIndexValue() {
     expectError(
       "start s = node:index(key=) return s",
-      "String literal expected")
+      "string literal or parameter expected")
   }
 
   @Test def shouldRaiseErrorWhenMissingIndexKey() {
     expectError(
       "start s = node:index(=\"value\") return s",
-      "String literal expected")
+      "Need index key")
+  }
+
+  @Test def startWithoutNodeOrRel() {
+    expectError(
+      "start s return s",
+      "expected identifier assignment")
+  }
+
+  @Test def shouldRaiseErrorWhenMissingReturnColumns() {
+    expectError(
+      "start s = node(0) return",
+      "return column list expected")
   }
 
   @Test def shouldRaiseErrorWhenMissingReturn() {
     expectError(
       "start s = node(0)",
-      "Missing RETURN clause")
-  }
-
-  @Test def shouldRaiseErrorWhenFinishingAListWithAComma() {
-    expectError(
-      "start s = node(1,2,) return s order by s",
-      "Last element of list must be a value")
+      "expected return clause")
   }
 
   @Test def shouldWarnAboutMissingStart() {
     expectError(
       "where s.name = Name and s.age = 10 return s",
-      "Missing START clause")
+      "expected 'START'")
   }
 
   @Test def shouldComplainAboutWholeNumbers() {
     expectError(
       "start s=node(0) return s limit -1",
-      "Whole number expected")
+      "expected positive integer or parameter")
   }
 
   @Test def matchWithoutIdentifierHasToHaveParenthesis() {
     expectError(
-      "start a = node(0) match --> a return a",
-      "Matching nodes without identifiers have to have parenthesis: ()")
+      "start a = node(0) match a--b, --> a return a",
+      "expected identifier")
   }
-
 
   @Test def matchWithoutIdentifierHasToHaveParenthesis2() {
     expectError(
-      "start a = node(0) match (a) --> return a",
-      "return is a reserved keyword and may not be used here.")
+      "start a = node(0) match (a) -->, a-->b return a",
+      "expected node identifier")
   }
 
 
   @Test def shouldComplainAboutAStringBeingExpected() {
     expectError(
-      "start s=node:index(key = value) return s limit -1",
-      "String literal expected")
+      "start s=node:index(key = value) return s",
+      "string literal or parameter expected")
   }
 
   @Test def shortestPathCanNotHaveMinimumDepth() {
@@ -100,29 +106,72 @@ class SyntaxExceptionTest extends JUnitSuite {
   @Test def shortestPathCanNotHaveMultipleLinksInIt() {
     expectError(
       "start a=node(0), b=node(1) match p=shortestPath(a-->()-->b) return p",
-      "Shortest path does not support having multiple path segments")
+      "expected single path segment")
   }
 
   @Test def oldNodeSyntaxGivesHelpfulError() {
     expectError(
       "start a=(0) return a",
-      "The syntax for bound nodes has changed in v1.5 of Neo4j. Now, it is START a=node(<nodeId>), or START a=node:idxName(key='value').")
+      "expected either node or relationship here")
+  }
+
+  @Test def weirdSpelling() {
+    expectError(
+      "start a=ndoe(0) return a",
+      "expected either node or relationship here")
+  }
+
+  @Test def unclosedParenthesis() {
+    expectError(
+      "start a=node(0 return a",
+      "Unclosed parenthesis")
+  }
+
+  @Test def trailingComa() {
+    expectError(
+      "start a=node(0,1,) return a",
+      "trailing coma")
+  }
+
+  @Test def unclosedCurly() {
+    expectError(
+      "start a=node({0) return a",
+      "Unclosed curly bracket")
+  }
+
+  @Test def twoEqualSigns() {
+    expectError(
+      "start a==node(0) return a",
+      "expected either node or relationship here")
+  }
+
+  @Test def oldSyntax() {
+    expectError(
+      "start a=node(0) where all(x in a.prop : x = 'apa') return a",
+      "expected where")
+  }
+
+
+  @Test def forgetByInOrderBy() {
+    expectError(
+      "start a=node(0) return a order a.name",
+      "expected by")
   }
 
   @Test def unknownFunction() {
     expectError(
       "start a=node(0) return foo(a)",
-      "No function 'foo' exists.")
+      "unknown function")
   }
 
-  @Ignore @Test def nodeParenthesisMustBeClosed() {
+  @Test def nodeParenthesisMustBeClosed() {
     expectError(
       "start s=node(1) match s-->(x return x",
-      "Unfinished parenthesis around 'x'")
+      "Unclosed parenthesis")
   }
 
   @Test def handlesMultilineQueries() {
-    val query = """start
+    expectError("""start
     a=node(0),
     b=node(0),
     c=node(0),
@@ -130,16 +179,7 @@ class SyntaxExceptionTest extends JUnitSuite {
     e=node(0),
     f=node(0),
     g=node(0),
-    s=node:index(key = value) return s"""
-
-    val expected = """String literal expected
-"    s=node:index(key = value) return s"
-                        ^"""
-
-    try {
-      new CypherParser().parse(query)
-    } catch {
-      case x: SyntaxException => assertEquals(expected, x.getMessage)
-    }
+    s=node:index(key = value) return s""",
+      "string literal or parameter expected")
   }
 }

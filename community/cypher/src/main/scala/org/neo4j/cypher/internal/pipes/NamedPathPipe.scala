@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,15 +22,15 @@ package org.neo4j.cypher.internal.pipes
 import org.neo4j.cypher.PathImpl
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import scala.collection.JavaConverters._
-import org.neo4j.cypher.commands._
 import collection.Seq
 import java.lang.String
-import org.neo4j.cypher.symbols.{PathType, Identifier}
+import org.neo4j.cypher.internal.commands.{PathPattern, RelatedTo, NamedPath}
+import org.neo4j.cypher.internal.symbols.{PathType, Identifier}
 
 class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
   def getFirstNode[U]: String = {
     val firstNode = path.pathPattern.head match {
-      case RelatedTo(left, right, relName, x, xx, optional) => left
+      case RelatedTo(left, _, _, _, _, _, _) => left
       case path:PathPattern => path.start
     }
     firstNode
@@ -42,7 +42,7 @@ class NamedPathPipe(source: Pipe, path: NamedPath) extends Pipe {
     val firstNode: String = getFirstNode
 
     val p: Seq[PropertyContainer] = path.pathPattern.foldLeft(Seq(get(firstNode)))((soFar, p) => p match {
-      case RelatedTo(left, right, relName, x, xx, optional) => soFar ++ Seq(get(relName), get(right))
+      case RelatedTo(_, right, relName, _, _, _, _) => soFar ++ Seq(get(relName), get(right))
       case path:PathPattern => getPath(m, path.pathName, soFar)
     })
 

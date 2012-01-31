@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -148,10 +148,10 @@ class MatchTest extends DocumentingTestBase {
       queryText = """start a=node(%A%) match p1=a-[:KNOWS*0..1]->b, p2=b-[:BLOCKS*0..1]->c return a,b,c, length(p1), length(p2)""",
       returns = "This query will return four paths, some of them with length zero.",
       assertions = p => assertEquals(Set(
-        Map("a" -> node("A"), "b" -> node("A"), "c" -> node("A"), "LENGTH(p1)" -> 0, "LENGTH(p2)" -> 0),
-        Map("a" -> node("A"), "b" -> node("A"), "c" -> node("C"), "LENGTH(p1)" -> 0, "LENGTH(p2)" -> 1),
-        Map("a" -> node("A"), "b" -> node("B"), "c" -> node("B"), "LENGTH(p1)" -> 1, "LENGTH(p2)" -> 0),
-        Map("a" -> node("A"), "b" -> node("B"), "c" -> node("D"), "LENGTH(p1)" -> 1, "LENGTH(p2)" -> 1))
+        Map("a" -> node("A"), "b" -> node("A"), "c" -> node("A"), "length(p1)" -> 0, "length(p2)" -> 0),
+        Map("a" -> node("A"), "b" -> node("A"), "c" -> node("C"), "length(p1)" -> 0, "length(p2)" -> 1),
+        Map("a" -> node("A"), "b" -> node("B"), "c" -> node("B"), "length(p1)" -> 1, "length(p2)" -> 0),
+        Map("a" -> node("A"), "b" -> node("B"), "c" -> node("D"), "length(p1)" -> 1, "length(p2)" -> 1))
         , p.toSet)
     )
   }
@@ -255,7 +255,6 @@ Cypher will try to match the relationship where the connected nodes switch sides
     )
   }
 
-  @Ignore
   @Test def match_mimicking_or() {
     testQuery(
       title = "Matching on a bound relationship",
@@ -263,7 +262,7 @@ Cypher will try to match the relationship where the connected nodes switch sides
 Cypher will try to match the relationship where the connected nodes switch sides.""",
       queryText = "start a=node(%A%), b=node(%E%) match a-[?:KNOWS]-x-[?:KNOWS]-b return x",
       returns = "This returns the two connected nodes, once as the start node, and once as the end node",
-      assertions = p => assertEquals(List(node("D"), node("B"), node("C")), p.columnAs[Node]("x").toList)
+      assertions = p => assertEquals(Set(node("D"), node("B"), node("C")), p.columnAs[Node]("x").toSet)
     )
   }
 }

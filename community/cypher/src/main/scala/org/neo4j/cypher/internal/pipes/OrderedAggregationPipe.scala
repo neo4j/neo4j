@@ -1,7 +1,5 @@
-package org.neo4j.cypher.internal.pipes
-
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,12 +17,13 @@ package org.neo4j.cypher.internal.pipes
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.cypher.internal.pipes
 
+import aggregation.AggregationFunction
 import collection.Seq
-import org.neo4j.cypher.commands.{AggregationItem, ReturnItem}
+import org.neo4j.cypher.internal.commands.{AggregationItem, ReturnItem}
 import java.lang.String
-import org.neo4j.cypher.symbols.{Identifier, SymbolTable}
-import org.neo4j.cypher.pipes.aggregation.AggregationFunction
+import org.neo4j.cypher.internal.symbols.{Identifier, SymbolTable}
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 // This class can be used to aggregate if the values sub graphs come in the order that they are keyed on

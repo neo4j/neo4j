@@ -1,3 +1,7 @@
+1.6 (2012-01-19)
+----------------
+o Minor performance optimization in property handling code.
+
 1.6.M03 (2012-01-12)
 --------------------
 o Added means of introspecting locks taken by the LockManager.

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.commands._
 import collection.immutable.Map
 import collection.{Traversable, Seq}
-import org.neo4j.cypher.symbols.{RelationshipType, NodeType, SymbolTable}
+import org.neo4j.cypher.internal.symbols.{NodeType, SymbolTable}
+import org.neo4j.cypher.internal.commands._
 
 /**
  * This class is responsible for deciding how to get the parts of the pattern that are not already bound
@@ -57,7 +57,7 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, pre
       foreach(id => patternNodeMap(id.name) = new PatternNode(id.name)) //...and create patternNodes for them
 
     patterns.foreach(_ match {
-      case RelatedTo(left, right, rel, relType, dir, optional) => {
+      case RelatedTo(left, right, rel, relType, dir, optional, predicate) => {
         val leftNode: PatternNode = patternNodeMap.getOrElseUpdate(left, new PatternNode(left))
         val rightNode: PatternNode = patternNodeMap.getOrElseUpdate(right, new PatternNode(right))
 
@@ -65,12 +65,12 @@ class MatchingContext(patterns: Seq[Pattern], boundIdentifiers: SymbolTable, pre
           throw new SyntaxException("Can't re-use pattern relationship '%s' with different start/end nodes.".format(rel))
         }
 
-        patternRelMap(rel) = leftNode.relateTo(rel, rightNode, relType, dir, optional)
+        patternRelMap(rel) = leftNode.relateTo(rel, rightNode, relType, dir, optional, predicate)
       }
-      case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, dir, iterableRel, optional) => {
+      case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, dir, iterableRel, optional, predicate) => {
         val startNode: PatternNode = patternNodeMap.getOrElseUpdate(start, new PatternNode(start))
         val endNode: PatternNode = patternNodeMap.getOrElseUpdate(end, new PatternNode(end))
-        patternRelMap(pathName) = startNode.relateViaVariableLengthPathTo(pathName, endNode, minHops, maxHops, relType, dir, iterableRel, optional)
+        patternRelMap(pathName) = startNode.relateViaVariableLengthPathTo(pathName, endNode, minHops, maxHops, relType, dir, iterableRel, optional, predicate)
       }
       case _ =>
     })

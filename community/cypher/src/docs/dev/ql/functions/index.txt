@@ -29,3 +29,12 @@ Iterable functions return an iterable of things - nodes in a path, and so on.
 include::nodes.txt[]
 include::relationships.txt[]
 include::extract.txt[]
+
+== Mathematical functions ==
+These functions all operate on numerical expressions only, and will return an
+error if used on any other values.
+
+include::abs.txt[]
+include::round.txt[]
+include::sqrt.txt[]
+include::sign.txt[]

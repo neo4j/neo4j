@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.pipes
 import org.junit.Assert
 import org.junit.Test
 import org.scalatest.junit.JUnitSuite
-import org.neo4j.cypher.commands.{Entity, ExpressionReturnItem}
-import org.neo4j.cypher.symbols.{Identifier, NodeType, SymbolTable}
+import org.neo4j.cypher.internal.commands.{Entity, ExpressionReturnItem}
+import org.neo4j.cypher.internal.symbols.{Identifier, NodeType, SymbolTable}
 
 class ColumnFilterPipeTest extends JUnitSuite {
   @Test def shouldReturnColumnsFromReturnItems() {

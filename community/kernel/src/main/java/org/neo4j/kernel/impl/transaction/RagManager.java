@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,6 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.impl.util.ArrayMap;
+
+import javax.transaction.SystemException;
+import javax.transaction.Transaction;
+import javax.transaction.TransactionManager;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -26,14 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
-
-import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.impl.util.ArrayMap;
 
 /**
  * The Resource Allocation Graph manager is used for deadlock detection. It
@@ -207,11 +206,11 @@ class RagManager
                 if ( circle == null )
                 {
                     circle = new StringBuffer();
-                    circle.append( lockingTx + " <- " + resource );
+                    circle.append( lockingTx + " <-[:HELD_BY]- " + resource );
                 }
                 else
                 {
-                    circle.append( " <- " + lockingTx + " <- " + resource );
+                    circle.append( " <-[:WAITING_FOR]- " + lockingTx + " <-[:HELD_BY]- " + resource );
                 }
             }
             while ( !graphStack.isEmpty() );

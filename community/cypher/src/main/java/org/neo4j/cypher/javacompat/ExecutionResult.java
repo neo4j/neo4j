@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -44,7 +44,7 @@ public class ExecutionResult implements Iterable<Map<String,Object>>
     /**
      * Constructor used by the Cypher framework. End-users should not
      * create an ExecutionResult directly, but instead use the result
-     * returned from calling {@link ExecutionEngine#execute(org.neo4j.cypher.commands.Query)}.
+     * returned from calling {@link ExecutionEngine#execute(org.neo4j.cypher.internal.commands.Query)}.
      *
      * @param projection
      */
@@ -54,7 +54,8 @@ public class ExecutionResult implements Iterable<Map<String,Object>>
     }
 
     /**
-     * Provides result objects from a single column of the result set.
+     * Provides result objects from a single column of the result set. This method is best used for
+     * single column results.
      *
      * @param n exact name of the column, as it appeared in the original query
      * @param <T> desired type cast for the result objects

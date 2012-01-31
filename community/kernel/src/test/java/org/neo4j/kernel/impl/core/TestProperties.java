@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -27,7 +27,10 @@ import static org.junit.Assert.fail;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.test.TargetDirectory;
 
 public class TestProperties extends AbstractNeo4jTestCase
 {
@@ -67,6 +70,30 @@ public class TestProperties extends AbstractNeo4jTestCase
         {
             // good
         }
+    }
+
+    @Test
+    public void setPropertyWithEmptyStringAsName() throws Exception
+    {
+        /*
+         * Tries to create a property with an empty string as a property key
+         * and then tries to read it back. Uses a separate EmbeddedGraphDatabase
+         * with a TargetDirectory because we have to restart to test hitting the
+         * PropertyIndexStore on disk when reading it back.
+         */
+        String path = TargetDirectory.forTest( TestProperties.class ).directory(
+                "empty-string" ).getCanonicalPath();
+        EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( path );
+        Transaction tx = db.beginTx();
+        Node node = db.createNode();
+        long nodeId = node.getId();
+        node.setProperty( "", "bar" );
+        tx.success();
+        tx.finish();
+        assertEquals( "bar", db.getNodeById( nodeId ).getProperty( "" ) );
+        db.shutdown();
+        db = new EmbeddedGraphDatabase( path );
+        assertEquals( "bar", db.getNodeById( nodeId ).getProperty( "" ) );
     }
 
     @Test

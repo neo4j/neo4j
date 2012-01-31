@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,17 +19,21 @@
  */
 package org.neo4j.cypher.internal.pipes
 
-import org.junit.Test
 import org.scalatest.Assertions
 import org.neo4j.cypher.GraphDatabaseTestBase
-import org.neo4j.cypher.commands.ShortestPath
 import org.neo4j.graphdb.{Direction, Node, Path}
+import org.neo4j.cypher.internal.commands._
+import org.junit.{Ignore, Test}
 
 class SingleShortestPathPipeTest extends GraphDatabaseTestBase with Assertions {
-  def runThroughPipeAndGetPath(a: Node, b: Node): Path = {
+
+  val path = ShortestPath("p", "a", "b", None, Direction.BOTH, Some(15), optional = true, single = true, None, True())
+
+  def runThroughPipeAndGetPath(a: Node, b: Node, path: ShortestPath): Path = {
     val source = new FakePipe(List(Map("a" -> a, "b" -> b)))
 
-    val pipe = new SingleShortestPathPipe(source, ShortestPath("p", "a", "b", None, Direction.BOTH, Some(15), optional = true, single = true, None))
+
+    val pipe = new SingleShortestPathPipe(source, path)
     pipe.createResults(Map()).head("p").asInstanceOf[Path]
   }
 
@@ -39,7 +43,7 @@ class SingleShortestPathPipeTest extends GraphDatabaseTestBase with Assertions {
 
     val r = relate(a, b, "rel")
 
-    val resultPath = runThroughPipeAndGetPath(a, b)
+    val resultPath = runThroughPipeAndGetPath(a, b, path)
 
     val number_of_relationships_in_path = resultPath.length()
 
@@ -54,6 +58,30 @@ class SingleShortestPathPipeTest extends GraphDatabaseTestBase with Assertions {
     val b = createNode("b")
     // The secret is in what's not there - there is no relationship between a and b
 
-    assert(runThroughPipeAndGetPath(a, b) === null)
+    assert(runThroughPipeAndGetPath(a, b, path) === null)
+  }
+
+  @Ignore
+  @Test def shouldReturnLongerPathIfShorterDoesntMatchPredicate() {
+    // Two paths exist: a->b->c, and a->c
+    // The shorter is not a match, because of a property
+    // on the relationship.
+    
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
+
+
+    relate(a, b, "rel", Map("foo" -> "bar"))
+    relate(b, c, "rel", Map("foo" -> "bar"))
+
+    relate(a, c, "rel", Map("foo" -> "notBar"))
+
+    val pred = AllInIterable(RelationshipFunction(Entity("p")), "r", Equals(Property("r", "foo"), Literal("bar")))
+    val path = ShortestPath("p", "a", "b", None, Direction.OUTGOING, None, false, true, Some("r"), pred)
+
+
+    val result = runThroughPipeAndGetPath(a, c, path)
+    assert(2 === result.length())
   }
 }

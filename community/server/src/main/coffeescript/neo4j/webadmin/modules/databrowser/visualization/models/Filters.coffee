@@ -1,5 +1,5 @@
 ###
-Copyright (c) 2002-2011 "Neo Technology,"
+Copyright (c) 2002-2012 "Neo Technology,"
 Network Engine for Objects in Lund AB [http://neotechnology.com]
 
 This file is part of Neo4j.
@@ -31,7 +31,7 @@ define(
     
     filterMap = {}
     for f in filters
-      filterMap[f.name] = f
+      filterMap[f.type] = f
   
     class Filters extends LocalCollection
       
@@ -40,9 +40,12 @@ define(
       # Override the normal deserialization method, 
       # to allow us to deserialize to multiple different
       # filter types.
-      deserializeItem : (json) ->
-        if @filters[json.type]?
-          return new @filters[json.type](json)
-        throw new Error("Unknown filter type '#{json.type}' for visualization profile")
+      deserializeItem : (raw) ->
+        # Fix for a corruption bug where type was set to "d", rather than "propertyFilter"
+        raw.type = PropertyFilter.type if raw.type is 'd'
+
+        if @filters[raw.type]?
+          return new @filters[raw.type](raw)
+        throw new Error("Unknown filter type '#{raw.type}' for visualization profile")
 
 )

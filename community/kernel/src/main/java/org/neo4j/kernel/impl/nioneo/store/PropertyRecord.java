@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -45,6 +45,13 @@ public class PropertyRecord extends Abstract64BitRecord
     public PropertyRecord( long id )
     {
         super( id );
+    }
+
+    public PropertyRecord( long id, PrimitiveRecord primitive )
+    {
+        super( id );
+        setCreated();
+        primitive.setIdTo( this );
     }
 
     public void setNodeId( long nodeId )
@@ -159,17 +166,17 @@ public class PropertyRecord extends Abstract64BitRecord
         buf.append( "Property[" ).append( getId() ).append( ",used=" ).append( inUse() ).append( ",prev=" ).append(
                 prevProp ).append( ",next=" ).append( nextProp );
         if ( entityId != -1 ) buf.append( nodeIdSet ? ",node=" : ",rel=" ).append( entityId );
-        buf.append( ", Value[" );
+        buf.append( ",Value[" );
         Iterator<PropertyBlock> itr = blockRecords.iterator();
         while ( itr.hasNext() )
         {
             buf.append( itr.next() );
             if ( itr.hasNext() )
             {
-                buf.append( ", " );
+                buf.append( ',' );
             }
         }
-        buf.append( "], DeletedDynRecs[" );
+        buf.append( "],DeletedDynRecs[" );
         if ( !deletedRecords.isEmpty() )
         {
             Iterator<DynamicRecord> it = deletedRecords.iterator();
@@ -178,7 +185,7 @@ public class PropertyRecord extends Abstract64BitRecord
                 buf.append( it.next() );
                 if ( it.hasNext() )
                 {
-                    buf.append( ", " );
+                    buf.append( ',' );
                 }
             }
         }
@@ -191,9 +198,10 @@ public class PropertyRecord extends Abstract64BitRecord
         return isChanged;
     }
 
-    public void setChanged()
+    public void setChanged( PrimitiveRecord primitive )
     {
         isChanged = true;
+        primitive.setIdTo( this );
     }
 
     public long getPrevProp()

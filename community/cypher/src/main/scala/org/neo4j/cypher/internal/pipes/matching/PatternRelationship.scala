@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,22 +23,31 @@ import scala.collection.JavaConverters._
 import org.neo4j.graphdb.traversal.{TraversalDescription, Evaluators}
 import org.neo4j.graphdb._
 import org.neo4j.kernel.{Uniqueness, Traversal}
+import org.neo4j.cypher.internal.commands.Predicate
 
 class PatternRelationship(key: String,
                           val startNode: PatternNode,
                           val endNode: PatternNode,
                           val relType: Option[String],
                           val dir: Direction,
-                          val optional: Boolean)
+                          val optional: Boolean,
+                          val predicate: Predicate)
   extends PatternElement(key) {
 
   def getOtherNode(node: PatternNode) = if (startNode == node) endNode else startNode
 
+
   def getGraphRelationships(node: PatternNode, realNode: Node): Seq[GraphRelationship] = {
-    (relType match {
+    val result = (relType match {
       case Some(typeName) => realNode.getRelationships(getDirection(node), DynamicRelationshipType.withName(typeName))
       case None => realNode.getRelationships(getDirection(node))
     }).asScala.map(new SingleGraphRelationship(_)).toSeq
+
+
+    if (startNode == endNode)
+      result.filter(r => r.getOtherNode(realNode) == realNode)
+    else
+      result
   }
 
   protected def getDirection(node: PatternNode): Direction = {
@@ -55,6 +64,31 @@ class PatternRelationship(key: String,
   }
 
   override def toString = key
+
+  def traverse[T](shouldFollow: (PatternElement) => Boolean,
+                  visitNode: (PatternNode, T) => T,
+                  visitRelationship: (PatternRelationship, T) => T,
+                  data: T,
+                  comingFrom: PatternNode) {
+
+    val moreData = visitRelationship(this, data)
+
+    val otherNode = getOtherNode(comingFrom)
+
+    if (shouldFollow(otherNode)) {
+      otherNode.traverse(shouldFollow, visitNode, visitRelationship, moreData)
+    }
+  }
+
+  def traverse[T](shouldFollow: (PatternElement) => Boolean,
+                  visitNode: (PatternNode, T) => T,
+                  visitRelationship: (PatternRelationship, T) => T,
+                  data: T) {
+
+    val moreData = visitRelationship(this, data)
+
+    Seq(startNode, endNode).filter(shouldFollow).foreach(n => n.traverse(shouldFollow, visitNode, visitRelationship, moreData))
+  }
 }
 
 class VariableLengthPatternRelationship(pathName: String,
@@ -65,8 +99,9 @@ class VariableLengthPatternRelationship(pathName: String,
                                         maxHops: Option[Int],
                                         relType: Option[String],
                                         dir: Direction,
-                                        optional: Boolean)
-  extends PatternRelationship(pathName, start, end, relType, dir, optional) {
+                                        optional: Boolean,
+                                        predicate: Predicate)
+  extends PatternRelationship(pathName, start, end, relType, dir, optional, predicate) {
 
   override def getGraphRelationships(node: PatternNode, realNode: Node): Seq[GraphRelationship] = {
 

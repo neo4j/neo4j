@@ -53,7 +53,7 @@ build enterprise
 
 install the ASCIIDOC toolchain
 
-    brew install docbook asciidoc w3m fop
+    brew install docbook asciidoc w3m fop graphviz && sudo docbook-register
 
 build the manual
 

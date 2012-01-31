@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,7 +20,7 @@
 package org.neo4j.cypher.javacompat;
 
 import org.neo4j.cypher.SyntaxException;
-import org.neo4j.cypher.commands.Query;
+import org.neo4j.cypher.internal.commands.Query;
 import org.neo4j.graphdb.GraphDatabaseService;
 
 import java.util.Map;
@@ -42,12 +42,10 @@ public class ExecutionEngine
     }
 
     /**
-     * Executes a {@link Query} and returns an iterable that contains the result set
-     * @param query The query to execute
-     * @return A ExecutionResult that contains the result set
-     * @throws org.neo4j.cypher.SyntaxException If the Query contains errors,
-     * a SyntaxException exception might be thrown
+     * You should not parse queries manually and send them in - instead,
+     * use the overloaded method that takes a string
      */
+    @Deprecated
     public ExecutionResult execute( Query query ) throws SyntaxException
     {
         return new ExecutionResult(inner.execute( query ));
@@ -66,13 +64,10 @@ public class ExecutionEngine
     }
 
     /**
-     * Executes a {@link Query} and returns an iterable that contains the result set
-     * @param query The query to execute
-     * @param params Parameters for the query
-     * @return A ExecutionResult that contains the result set
-     * @throws org.neo4j.cypher.SyntaxException If the Query contains errors,
-     * a SyntaxException exception might be thrown
+     * You should not parse queries manually and send them in - instead,
+     * use the overloaded method that takes a string
      */
+    @Deprecated
     public ExecutionResult execute( Query query, Map<String, Object> params) throws SyntaxException
     {
         return new ExecutionResult(inner.execute(query, params));

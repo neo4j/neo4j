@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 public class NodeRecord extends PrimitiveRecord
 {
-    private long committedNextRel;
+    private final long committedNextRel;
     private long nextRel;
 
     public NodeRecord( long id, long nextRel, long nextProp )
@@ -39,7 +39,7 @@ public class NodeRecord extends PrimitiveRecord
     {
         this.nextRel = nextRel;
     }
-    
+
     public long getCommittedNextRel()
     {
         return isCreated() ? Record.NO_NEXT_RELATIONSHIP.intValue() : committedNextRel;
@@ -50,5 +50,11 @@ public class NodeRecord extends PrimitiveRecord
     {
         return new StringBuilder( "Node[" ).append( getId() ).append( ",used=" ).append( inUse() ).append( ",rel=" ).append(
                 nextRel ).append( ",prop=" ).append( getNextProp() ).append( "]" ).toString();
+    }
+
+    @Override
+    void setIdTo( PropertyRecord property )
+    {
+        property.setNodeId( getId() );
     }
 }

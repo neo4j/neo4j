@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,21 +19,15 @@
  */
 package org.neo4j.shell.kernel.apps;
 
-import java.rmi.RemoteException;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.neo4j.cypher.SyntaxException;
-import org.neo4j.cypher.commands.Query;
-import org.neo4j.cypher.javacompat.CypherParser;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.helpers.Service;
-import org.neo4j.shell.App;
-import org.neo4j.shell.AppCommandParser;
-import org.neo4j.shell.Output;
-import org.neo4j.shell.Session;
-import org.neo4j.shell.ShellException;
+import org.neo4j.shell.*;
+
+import java.rmi.RemoteException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Mimics the POSIX application with the same name, i.e. renames a property. It
@@ -63,12 +57,10 @@ public class Start extends GraphDatabaseApp
         
         if ( endsWithNewLine( query ) || looksToBeComplete( query ) )
         {
-            CypherParser qparser = new CypherParser();
             ExecutionEngine engine = new ExecutionEngine( getServer().getDb() );
             try
             {
-                Query cquery = qparser.parse( query );
-                ExecutionResult result = engine.execute( cquery, getParameters( session ) );
+                ExecutionResult result = engine.execute( query, getParameters( session ) );
                 out.println( result.toString() );
             }
             catch ( SyntaxException e )

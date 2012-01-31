@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -26,14 +26,16 @@ import java.io.Writer;
 
 public class JavaDocsGenerator extends AsciiDocGenerator
 {
+    private final static String DIRECTORY = "target" + File.separator + "docs";
+
     public JavaDocsGenerator( String title, String section )
     {
         super( title, section );
     }
     
-    public void saveToFile( String directory, String identifier, String text )
+    public void saveToFile( String identifier, String text )
     {
-        Writer fw = getFW( directory + File.separator + this.section,
+        Writer fw = getFW( DIRECTORY + File.separator + this.section,
                 getTitle() + "-" + identifier );
         try
         {

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -112,11 +112,18 @@ public class ConsoleService implements AdvertisableService
 
         ScriptSession scriptSession = getSession( args );
         log.trace( scriptSession.toString() );
-
+        try
+        {
         Pair<String, String> result = scriptSession.evaluate( (String) args.get( "command" ) );
         List<Representation> list = new ArrayList<Representation>(
                 asList( ValueRepresentation.string( result.first() ), ValueRepresentation.string( result.other() ) ) );
         return output.ok( new ListRepresentation( RepresentationType.STRING, list ) );
+        } catch (Exception e)
+        {
+            List<Representation> list = new ArrayList<Representation>(
+                    asList( ValueRepresentation.string( e.getClass() + " : " + e.getMessage() + "\n"), ValueRepresentation.string( null ) ));
+            return output.ok(new ListRepresentation( RepresentationType.STRING, list ));
+        }
     }
 
     private ScriptSession getSession( Map<String, Object> args )

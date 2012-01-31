@@ -22,6 +22,7 @@ The table below lists recent Neo4J versions, and the type of upgrade required.
 From Version,To Version,Upgrade Type
 1.3,1.4,Automatic
 1.4,1.5,Explicit
+1.5,1.6,Explicit
 |====
 
 == Automatic Upgrade ==
@@ -48,6 +49,11 @@ To perform a special upgrade (for significant changes to the database store):
 This upgrade includes a significant change to the layout of property store files, which reduces their size on disk,
 and improves IO performance.  To achieve this layout change, the upgrade process takes some time to process the
 whole of the existing database.  You should budget for several minutes per gigabyte of data as part of your upgrade planning.
+
+[[deployment-upgrading-one-six]]
+== Upgrade 1.5 -> 1.6 ==
+
+This upgrade changes lucene version from 3.1 to 3.5. The upgrade itself is done by Lucene by loading an index.
 
 In an HA environment these steps need to be performed:
 

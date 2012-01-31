@@ -1,7 +1,5 @@
-package org.neo4j.cypher
-
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,13 +17,14 @@ package org.neo4j.cypher
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.cypher
 
 import internal.StringExtras
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb.{PropertyContainer, Relationship, NotFoundException, Node}
 import java.io.{StringWriter, PrintWriter}
 import java.lang.String
-import symbols.SymbolTable
+import internal.symbols.SymbolTable
 
 
 class PipeExecutionResult(result: Traversable[Map[String, Any]], val symbols:SymbolTable, val columns: List[String], val timeTaken:Long)
@@ -37,7 +36,7 @@ class PipeExecutionResult(result: Traversable[Map[String, Any]], val symbols:Sym
 
   def columnAs[T](column: String): Iterator[T] = {
     this.map(m => {
-      val item: Any = m.getOrElse(column, throw new NotFoundException("No column named '" + column + "' was found."))
+      val item: Any = m.getOrElse(column, throw new NotFoundException("No column named '" + column + "' was found. Found: " + m.keys.mkString("(\"", "\", \"", "\")")))
       item.asInstanceOf[T]
     }).toIterator
   }

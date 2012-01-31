@@ -33,10 +33,10 @@ define(
           @show()
 
       hasBeenShownForThisSession : ->
-        @cookies.get("splashShown1.5") != null
+        @cookies.get("splashShown1.6") != null
 
       show : ->
-        @cookies.set("splashShown1.5", "1")
+        @cookies.set("splashShown1.6", "1")
         # Show boot screen for flashiness
         splash = $(template())
         $("body").append(splash)

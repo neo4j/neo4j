@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,7 +23,7 @@ import org.scalatest.Assertions
 import org.neo4j.cypher.{PathImpl, GraphDatabaseTestBase}
 import org.neo4j.graphdb.{Relationship, Node, Direction}
 import org.junit.{Before, Test}
-import org.neo4j.cypher.commands.{Pattern, NamedPath, VarLengthRelatedTo}
+import org.neo4j.cypher.internal.commands.{True, Pattern, NamedPath, VarLengthRelatedTo}
 
 class NamedPathPipeTest extends GraphDatabaseTestBase with Assertions {
   var a: Node = null
@@ -34,7 +34,7 @@ class NamedPathPipeTest extends GraphDatabaseTestBase with Assertions {
   var pattern: Pattern = null
 
   @Before def init() {
-    pattern = VarLengthRelatedTo("x", "a", "b", None, None, None, Direction.BOTH, None, false)
+    pattern = VarLengthRelatedTo("x", "a", "b", None, None, None, Direction.BOTH, None, false, True())
     a = createNode("a")
     b = createNode("b")
     c = createNode("c")

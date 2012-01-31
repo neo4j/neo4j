@@ -3,14 +3,14 @@
     <parent>
         <groupId>org.neo4j.build</groupId>
         <artifactId>parent-pom</artifactId>
-        <version>30</version>
+        <version>31</version>
         <relativePath />
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.neo4j.app</groupId>
     <artifactId>neo4j-server</artifactId>
-    <version>1.6-SNAPSHOT</version>
+    <version>1.7-SNAPSHOT</version>
     <name>Neo4j Server</name>
     <description>Standalone Neo4j server application.</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -78,14 +78,14 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j</artifactId>
-            <version>1.6-SNAPSHOT</version>
+            <version>1.7-SNAPSHOT</version>
             <type>pom</type>
         </dependency>
 
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-kernel</artifactId>
-            <version>1.6-SNAPSHOT</version>
+            <version>1.7-SNAPSHOT</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
@@ -93,13 +93,13 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>server-api</artifactId>
-            <version>1.6-SNAPSHOT</version>
+            <version>1.7-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-cypher</artifactId>
-            <version>1.6-SNAPSHOT</version>
+            <version>1.7-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -287,14 +287,14 @@
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-graphviz</artifactId>
-            <version>1.6-SNAPSHOT</version>
+            <version>1.7-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-shell</artifactId>
-            <version>1.6-SNAPSHOT</version>
+            <version>1.7-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -366,20 +366,6 @@
                                 <descriptor>src/main/assemblies/static-web.xml</descriptor>
                             </descriptors>
                         </configuration>
-                    </execution>
-                    <execution>
-                        <id>docs</id>
-                        <phase>package</phase>
-                        <configuration>
-                            <attach>true</attach>
-                            <appendAssemblyId>true</appendAssemblyId>
-                            <descriptors>
-                                <descriptor>src/main/assemblies/docs-assembly.xml</descriptor>
-                            </descriptors>
-                        </configuration>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
                     </execution>
                     <execution>
                         <id>sources</id>
@@ -819,7 +805,7 @@
                 <repository>
                     <id>neo4j-dev</id>
                     <name>Neo4j Developer Repository</name>
-                    <url>https://repo.neo4j.org/content/groups/dev/</url>
+                    <url>http://m2.neo4j.org/content/groups/everything/</url>
                 </repository>
             </repositories>
         </profile>
@@ -870,7 +856,7 @@
         <repository>
             <id>neo4j-release-repository</id>
             <name>Neo4j Maven 2 release repository</name>
-            <url>http://m2.neo4j.org/releases</url>
+            <url>http://m2.neo4j.org/content/repositories/releases</url>
             <releases>
                 <enabled>true</enabled>
             </releases>
@@ -881,7 +867,7 @@
         <repository>
             <id>neo4j-snapshot-repository</id>
             <name>Neo4j Maven 2 snapshot repository</name>
-            <url>http://m2.neo4j.org/snapshots</url>
+            <url>http://m2.neo4j.org/content/repositories/snapshots</url>
             <snapshots>
                 <enabled>true</enabled>
             </snapshots>

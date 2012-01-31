@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -23,15 +23,15 @@ import org.neo4j.cypher.GraphDatabaseTestBase
 import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.symbols.{Identifier, NodeType, SymbolTable}
-import org.neo4j.cypher.commands.True
+import org.neo4j.cypher.internal.symbols.{Identifier, NodeType, SymbolTable}
+import org.neo4j.cypher.internal.commands.True
 
 
 class JoinerBuilderTest extends GraphDatabaseTestBase with Assertions {
   @Test def simplestCase() {
     val pA = new PatternNode("a")
     val pB = new PatternNode("b")
-    val pR = pA.relateTo("r", pB, None, Direction.BOTH, false)
+    val pR = pA.relateTo("r", pB, None, Direction.BOTH, false, True())
     val symbols = new SymbolTable(Identifier("a", NodeType()))
 
     val nodes = Map("a" -> pA, "b" -> pB)

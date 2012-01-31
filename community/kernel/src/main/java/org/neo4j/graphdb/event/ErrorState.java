@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -32,5 +32,11 @@ public enum ErrorState
      * database data is stored is full and cannot be written to.
      */
     STORAGE_MEDIA_FULL,
+    
+    /**
+     * Not more transactions can be started or committed during this session
+     * and the database needs to be shut down, possible for maintenance before
+     * it can be started again.
+     */
     TX_MANAGER_NOT_OK,
 }

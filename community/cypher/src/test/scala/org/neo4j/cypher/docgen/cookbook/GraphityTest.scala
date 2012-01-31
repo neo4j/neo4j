@@ -1,7 +1,5 @@
-package org.neo4j.cypher.docgen.cookbook
-
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,6 +17,7 @@ package org.neo4j.cypher.docgen.cookbook
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.cypher.docgen.cookbook
 
 import org.junit.Test
 import org.junit.Assert._
@@ -54,9 +53,9 @@ class GraphityTest extends DocumentingTestBase {
         "RETURN me.name, friend.name, status.name, length(p) " +
         "ORDER BY length(p)",
       returns = "The activity stream for Jane.",
-      (p) => assertEquals(List(Map("status.name" -> "Bill_s1", "friend.name" -> "Bill", "me.name" -> "Jane", "LENGTH(p)" -> 1), 
-          Map("status.name" -> "Joe_s1", "friend.name" -> "Joe", "me.name" -> "Jane", "LENGTH(p)" -> 2),
-          Map("status.name" -> "Bob_s1", "friend.name" -> "Bob", "me.name" -> "Jane", "LENGTH(p)" -> 3)
+      (p) => assertEquals(List(Map("status.name" -> "Bill_s1", "friend.name" -> "Bill", "me.name" -> "Jane", "length(p)" -> 1),
+          Map("status.name" -> "Joe_s1", "friend.name" -> "Joe", "me.name" -> "Jane", "length(p)" -> 2),
+          Map("status.name" -> "Bob_s1", "friend.name" -> "Bob", "me.name" -> "Jane", "length(p)" -> 3)
           ), p.toList))
   }
 }

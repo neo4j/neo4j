@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -289,10 +289,8 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
 
             // Then go through the blocks
             int longsAppended = 0; // For marking the end of blocks
-            List<PropertyBlock> blocks = record.getPropertyBlocks();
-            for ( int i = 0; i < blocks.size(); i++ )
+            for ( PropertyBlock block : record.getPropertyBlocks() )
             {
-                PropertyBlock block = blocks.get( i );
                 long[] propBlockValues = block.getValueBlocks();
                 for ( int k = 0; k < propBlockValues.length; k++ )
                 {
@@ -332,9 +330,8 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
 
     private void updateDynamicRecords( List<DynamicRecord> records )
     {
-        for (int i = 0; i < records.size(); i++)
+        for (DynamicRecord valueRecord : records)
         {
-            DynamicRecord valueRecord = records.get( i );
             if ( valueRecord.getType() == PropertyType.STRING.intValue() )
             {
                 stringPropertyStore.updateRecord( valueRecord );
@@ -441,7 +438,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         {
             return new PropertyRecord( id );
         }
-        
+
         try
         {
             return getRecord( id, window, RecordLoad.FORCE );
@@ -451,7 +448,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
             releaseWindow( window );
         }
     }
-    
+
     @Override
     public PropertyRecord forceGetRaw( long id )
     {
@@ -497,7 +494,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         PropertyRecord toReturn = getRecordFromBuffer( id, buffer );
         if ( !toReturn.inUse() && load != RecordLoad.FORCE )
         {
-            throw new InvalidRecordException( "Record[" + id + "] not in use" );
+            throw new InvalidRecordException( "PropertyRecord[" + id + "] not in use" );
         }
         return toReturn;
     }
@@ -694,13 +691,6 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
             {
                 store.makeHeavy( record );
             }
-            assert record.getData().length > 0;
-            // assert ( ( record.getData().length == ( DEFAULT_DATA_BLOCK_SIZE -
-            // AbstractDynamicStore.BLOCK_HEADER_SIZE ) ) && (
-            // record.getNextBlock() != Record.NO_NEXT_BLOCK.intValue() ) )
-            // || ( ( record.getData().length < ( DEFAULT_DATA_BLOCK_SIZE -
-            // AbstractDynamicStore.BLOCK_HEADER_SIZE ) ) && (
-            // record.getNextBlock() == Record.NO_NEXT_BLOCK.intValue() ) );
             ByteBuffer buf = ByteBuffer.wrap( record.getData() );
             byte[] bytes = new byte[record.getData().length];
             totalSize += bytes.length;
@@ -716,7 +706,6 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
                 currentArray.length );
             offset += currentArray.length;
         }
-        assert bArray.length > 0;
         return bArray;
     }
 
@@ -745,7 +734,8 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
     {
         // TODO: The next line is an ugly hack, but works.
         Buffer fromByteBuffer = new Buffer( null, buffer );
-        return getRecordFromBuffer( 0, fromByteBuffer ).inUse();
+        return buffer.limit() >= RECORD_SIZE
+               && getRecordFromBuffer( 0, fromByteBuffer ).inUse();
     }
 
     @Override
@@ -765,7 +755,7 @@ public class PropertyStore extends AbstractStore implements Store, RecordStore<P
         stringPropertyStore.logIdUsage( logger );
         arrayPropertyStore.logIdUsage( logger );
     }
-    
+
     @Override
     public String toString()
     {

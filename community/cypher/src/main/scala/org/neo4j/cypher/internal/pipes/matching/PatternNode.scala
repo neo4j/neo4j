@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,16 +20,17 @@
 package org.neo4j.cypher.internal.pipes.matching
 
 import org.neo4j.graphdb.{Direction, Node}
+import org.neo4j.cypher.internal.commands.Predicate
 
-class PatternNode(key: String) extends PatternElement(key)  {
+class PatternNode(key: String) extends PatternElement(key) {
   val relationships = scala.collection.mutable.Set[PatternRelationship]()
 
-  def getPRels(history: Seq[MatchingPair]): Seq[PatternRelationship] = relationships.filterNot( r => history.exists(_.matches(r)) ).toSeq
+  def getPRels(history: Seq[MatchingPair]): Seq[PatternRelationship] = relationships.filterNot(r => history.exists(_.matches(r))).toSeq
 
   def getGraphRelationships(node: Node, pRel: PatternRelationship): Seq[GraphRelationship] = pRel.getGraphRelationships(this, node)
 
-  def relateTo(key: String, other: PatternNode, relType: Option[String], dir: Direction, optional:Boolean): PatternRelationship = {
-    val rel = new PatternRelationship(key, this, other, relType, dir, optional)
+  def relateTo(key: String, other: PatternNode, relType: Option[String], dir: Direction, optional: Boolean, predicate: Predicate): PatternRelationship = {
+    val rel = new PatternRelationship(key, this, other, relType, dir, optional, predicate)
     relationships.add(rel)
     other.relationships.add(rel)
     rel
@@ -41,13 +42,25 @@ class PatternNode(key: String) extends PatternElement(key)  {
                                     maxHops: Option[Int],
                                     relType: Option[String],
                                     dir: Direction,
-                                    iterableRel:Option[String],
-                                    optional:Boolean): PatternRelationship = {
-    val rel = new VariableLengthPatternRelationship(pathName, this, end, iterableRel, minHops, maxHops, relType, dir, optional)
+                                    iterableRel: Option[String],
+                                    optional: Boolean,
+                                    predicate: Predicate): PatternRelationship = {
+    val rel = new VariableLengthPatternRelationship(pathName, this, end, iterableRel, minHops, maxHops, relType, dir, optional, predicate)
     relationships.add(rel)
     end.relationships.add(rel)
     rel
   }
 
   override def toString = String.format("PatternNode[key=%s]", key)
+
+  def traverse[T](shouldFollow: (PatternElement) => Boolean,
+                  visitNode: (PatternNode, T) => T,
+                  visitRelationship: (PatternRelationship, T) => T,
+                  data: T) {
+
+    val moreData = visitNode(this, data)
+
+    val filter = relationships.filter(shouldFollow)
+    filter.foreach(r => r.traverse(shouldFollow, visitNode, visitRelationship, moreData, this))
+  }
 }

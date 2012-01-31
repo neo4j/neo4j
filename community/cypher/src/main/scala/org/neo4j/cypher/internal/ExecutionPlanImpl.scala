@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal
 
+import commands._
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb._
 import collection.Seq
 import java.lang.Iterable
 import org.neo4j.cypher.internal.pipes._
-import org.neo4j.cypher.commands._
 import org.neo4j.cypher._
+import org.neo4j.tooling.GlobalGraphOperations
 
 class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends ExecutionPlan {
   val (executionPlan, executionPlanText) = prepareExecutionPlan()
@@ -256,6 +257,8 @@ class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends Execu
       })
 
     case NodeById(varName, valueGenerator) => new NodeStartPipe(lastPipe, varName, m => makeNodes[Node](valueGenerator(m), varName, graph.getNodeById))
+    case AllNodes(identifierName) => new NodeStartPipe(lastPipe, identifierName, m => GlobalGraphOperations.at(graph).getAllNodes.asScala )
+    case AllRelationships(identifierName) => new RelationshipStartPipe(lastPipe, identifierName, m => GlobalGraphOperations.at(graph).getAllRelationships.asScala )
     case RelationshipById(varName, id) => new RelationshipStartPipe(lastPipe, varName, m => makeNodes[Relationship](id(m), varName, graph.getRelationshipById))
   }
 

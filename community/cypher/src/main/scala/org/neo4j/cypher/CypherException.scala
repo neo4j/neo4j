@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,6 +19,27 @@
  */
 package org.neo4j.cypher
 
+import internal.commands.Expression
+
 abstract class CypherException(message: String, cause: Throwable) extends RuntimeException(message, cause) {
   def this(message:String) = this(message, null)
 }
+
+class EntityNotFoundException(message:String, cause:Throwable) extends CypherException(message, cause)
+
+class CypherTypeException(message:String) extends CypherException(message,null)
+
+class IterableRequiredException(message:String, cause:Throwable) extends CypherException(message, cause) {
+  def this(message:String) = this(message, null)
+  def this(expression:Expression) = this("Expected " + expression.identifier.name + " to be an iterable, but it is not.", null)
+}
+
+class ParameterNotFoundException(message:String, cause:Throwable) extends CypherException(message, cause) {
+def this(message:String)=this(message,null)
+}
+
+class ParameterWrongTypeException(message:String, cause:Throwable) extends CypherException(message, cause) {
+  def this(message:String)=this(message,null)
+}
+
+class PatternException(message:String) extends CypherException(message, null)

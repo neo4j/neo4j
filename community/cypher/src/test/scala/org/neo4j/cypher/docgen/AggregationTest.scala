@@ -1,7 +1,5 @@
-package org.neo4j.cypher.docgen
-
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,6 +17,7 @@ package org.neo4j.cypher.docgen
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.cypher.docgen
 
 import org.junit.Test
 import org.junit.Assert._
@@ -51,7 +50,7 @@ class AggregationTest extends DocumentingTestBase {
       text = "To count the groups of relationship types, return the types and count them with +count(*)+.",
       queryText = "start n=node(%A%) match (n)-[r]->() return type(r), count(*)",
       returns = "The relationship types and their group count.",
-      p => assertEquals(Map("TYPE(r)" -> "KNOWS", "count(*)" -> 3), p.toList.head))
+      p => assertEquals(Map("type(r)" -> "KNOWS", "count(*)" -> 3), p.toList.head))
   }
 
   @Test def countEntities() {
@@ -70,7 +69,7 @@ class AggregationTest extends DocumentingTestBase {
       text = "You can count the non-null values by using +count(<identifier>)+.",
       queryText = "start n=node(%A%,%B%,%C%,%D%) return count(n.property?)",
       returns = "The count of related nodes.",
-      p => assertEquals(Map("count(n.property)" -> 3), p.toList.head))
+      p => assertEquals(Map("count(n.property?)" -> 3), p.toList.head))
   }
 
   @Test def sumProperty() {

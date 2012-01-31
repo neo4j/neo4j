@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -197,5 +197,17 @@ public class GraphProperties extends Primitive implements PropertyContainer
     PropertyContainer asProxy( NodeManager nm )
     {
         return this;
+    }
+    
+    public boolean equals( Object obj )
+    {
+        if ( !( obj instanceof GraphProperties ) ) return false;
+        return ((GraphProperties)obj).nodeManager.equals( nodeManager );
+    }
+    
+    @Override
+    public int hashCode()
+    {
+        return nodeManager.hashCode();
     }
 }

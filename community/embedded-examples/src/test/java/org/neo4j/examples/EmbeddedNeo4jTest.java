@@ -45,10 +45,10 @@ public class EmbeddedNeo4jTest
                 "Hello World Graph",
                 hello.graphDb, "java" );
         assertFalse( graph.isEmpty() );
-        gen.saveToFile( "target/docs", "graph", graph );
+        gen.saveToFile( "graph", graph );
 
         assertFalse( hello.greeting.isEmpty() );
-        gen.saveToFile( "target/docs", "output", hello.greeting + "\n\n" );
+        gen.saveToFile( "output", hello.greeting + "\n\n" );
 
         hello.removeData();
         hello.shutDown();

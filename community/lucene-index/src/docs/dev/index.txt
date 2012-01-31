@@ -2,8 +2,6 @@
 Indexing
 ========
 
-:lucene-version: 3_1_0
-
 Indexing in Neo4j can be done in two different ways:
 
 . The database itself is a _natural index_ consisting of its relationships of different types between nodes.

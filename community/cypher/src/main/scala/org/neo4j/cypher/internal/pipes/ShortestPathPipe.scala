@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -24,8 +24,8 @@ import org.neo4j.cypher.SyntaxException
 import java.lang.String
 import org.neo4j.graphdb.{Expander, DynamicRelationshipType, Node}
 import collection.Seq
-import org.neo4j.cypher.symbols.{NodeType, Identifier, PathType}
-import org.neo4j.cypher.commands.{ReturnItem, ShortestPath}
+import org.neo4j.cypher.internal.symbols.{NodeType, Identifier, PathType}
+import org.neo4j.cypher.internal.commands.{ReturnItem, ShortestPath}
 
 /**
  * Shortest pipe inserts a single shortest path between two already found nodes

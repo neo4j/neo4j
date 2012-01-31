@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -120,7 +120,7 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
         {
             return new RelationshipRecord( id, -1, -1, -1 );
         }
-        
+
         try
         {
             return getRecord( id, window, RecordLoad.FORCE );
@@ -275,7 +275,7 @@ public class RelationshipStore extends AbstractStore implements Store, RecordSto
             switch ( load )
             {
             case NORMAL:
-                throw new InvalidRecordException( "Record[" + id + "] not in use" );
+                throw new InvalidRecordException( "RelationshipRecord[" + id + "] not in use" );
             case CHECK:
                 return null;
             }

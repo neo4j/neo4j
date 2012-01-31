@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -31,18 +31,18 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 abstract class ArrayBasedPrimitive extends Primitive
 {
     private volatile PropertyData[] properties;
-    
+
     ArrayBasedPrimitive( boolean newPrimitive )
     {
         super( newPrimitive );
     }
-    
+
     @Override
     protected void setEmptyProperties()
     {
         properties = NO_PROPERTIES;
     }
-    
+
     private PropertyData[] toPropertyArray( ArrayMap<Integer, PropertyData> loadedProperties )
     {
         if ( loadedProperties == null || loadedProperties.size() == 0 )
@@ -58,7 +58,7 @@ abstract class ArrayBasedPrimitive extends Primitive
         }
         return result;
     }
-    
+
     @Override
     public void setProperties( ArrayMap<Integer, PropertyData> properties )
     {
@@ -89,16 +89,12 @@ abstract class ArrayBasedPrimitive extends Primitive
             ArrayMap<Integer,PropertyData> cowPropertyAddMap,
             ArrayMap<Integer,PropertyData> cowPropertyRemoveMap, long firstProp )
     {
-        if ( properties == null )
-        {
-            // we will load full in some other tx
-            return;
-        }
-
         synchronized ( this )
         {
+            // Dereference the volatile once to avoid multiple barriers
             PropertyData[] newArray = properties;
-    
+            if ( newArray == null ) return;
+
             /*
              * add map will definitely be added in the properties array - all properties
              * added and later removed in the same tx are removed from there as well.
@@ -111,14 +107,23 @@ abstract class ArrayBasedPrimitive extends Primitive
             {
                 extraLength += cowPropertyAddMap.size();
             }
-    
+
+            int newArraySize = newArray.length;
+
+            // make sure that we don't make inplace modifications to the existing array
+            // TODO: Refactor this to guarantee only one copy,
+            // currently it can do two copies in the clone() case if it also compacts
             if ( extraLength > 0 )
             {
-                newArray = new PropertyData[properties.length + extraLength];
-                System.arraycopy( properties, 0, newArray, 0, properties.length );
+                PropertyData[] oldArray = newArray;
+                newArray = new PropertyData[oldArray.length + extraLength];
+                System.arraycopy( oldArray, 0, newArray, 0, oldArray.length );
             }
-    
-            int newArraySize = properties.length;
+            else
+            {
+                newArray = newArray.clone();
+            }
+
             if ( cowPropertyRemoveMap != null )
             {
                 for ( Integer keyIndex : cowPropertyRemoveMap.keySet() )
@@ -136,7 +141,7 @@ abstract class ArrayBasedPrimitive extends Primitive
                     }
                 }
             }
-    
+
             if ( cowPropertyAddMap != null )
             {
                 for ( PropertyData addedProperty : cowPropertyAddMap.values() )
@@ -156,7 +161,7 @@ abstract class ArrayBasedPrimitive extends Primitive
                     }
                 }
             }
-    
+
             if ( newArraySize < newArray.length )
             {
                 PropertyData[] compactedNewArray = new PropertyData[newArraySize];

@@ -1,5 +1,5 @@
 ###
-Copyright (c) 2002-2011 "Neo Technology,"
+Copyright (c) 2002-2012 "Neo Technology,"
 Network Engine for Objects in Lund AB [http://neotechnology.com]
 
 This file is part of Neo4j.
@@ -76,7 +76,7 @@ define(
 
     class PropertyFilter extends Filter
       
-      @name : 'propertyFilter'
+      @type : 'propertyFilter'
       
       @compareMethods : 
         '==' : {label : "is",    cmp : (actual, expected) -> actual == expected}
@@ -90,7 +90,7 @@ define(
         'method' : 'exists'
       
       getViewClass : ()-> PropertyFilterView
-      getType : () -> PropertyFilter.name
+      getType : () -> PropertyFilter.type
       
       getMethodName : -> @get 'method'
       getPropertyName : -> @get 'propertyName'

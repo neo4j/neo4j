@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,6 +19,36 @@
  */
 package org.neo4j.cypher
 
-class SyntaxException(message:String, val cause:Throwable) extends CypherException(message, cause) {
-  def this(message:String) = this(message, null)
+import org.neo4j.helpers.ThisShouldNotHappenError
+
+class SyntaxException(message: String, val query:String,  val offset: Option[Int]) extends CypherException(message, null) {
+  def this(message: String, query:String, offset: Int) = this(message,query,Some(offset)) 
+  def this(message:String) = this(message,"",None)
+
+  override def toString = offset match {
+    case Some(idx) =>message + "\n" + findErrorLine(idx, query.split('\n').toList)
+    case None => message
+  }
+
+  override def getMessage = toString
+
+  private def findErrorLine(idx: Int, message: List[String]): String =
+    message.toList match {
+      case Nil => throw new ThisShouldNotHappenError("Andrés & Tobias", "message converted to empty list")
+
+      case List(x) => {
+        val spaces = if (x.size > idx)
+          idx
+        else
+          x.size
+
+        "\"" + x + "\"\n" + " " * spaces + " ^"
+      }
+
+      case head :: tail => if (head.size > idx) {
+        "\"" + head + "\"\n" + " " * idx + " ^"
+      } else {
+        findErrorLine(idx - head.size - 1, tail) //The extra minus one is there for the now missing \n
+      }
+    }
 }

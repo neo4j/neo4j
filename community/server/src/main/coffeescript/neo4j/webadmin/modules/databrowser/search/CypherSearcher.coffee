@@ -1,5 +1,5 @@
 ###
-Copyright (c) 2002-2011 "Neo Technology,"
+Copyright (c) 2002-2012 "Neo Technology,"
 Network Engine for Objects in Lund AB [http://neotechnology.com]
 
 This file is part of Neo4j.
@@ -26,7 +26,7 @@ define ["neo4j/webadmin/utils/ItemUrlResolver","lib/backbone"], (ItemUrlResolver
       @server = server
       @urlResolver = new ItemUrlResolver(server)
       @pattern = /// ^ 
-                    start # Start with "start"
+                    (start|cypher) # Start with "start" or "cypher"
                     (.+)  # followed by anything
                     return # Return statement is required
                     (.+)  # followed by anything

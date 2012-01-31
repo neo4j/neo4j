@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -20,16 +20,16 @@
 package org.neo4j.cypher.internal.pipes
 
 import matching.MatchingContext
-import org.neo4j.cypher.commands._
 import java.lang.String
-import org.neo4j.cypher.symbols._
+import org.neo4j.cypher.internal.commands.{PathPattern, RelatedTo, Predicate, Pattern}
+import org.neo4j.cypher.internal.symbols._
 
 class MatchPipe(source: Pipe, patterns: Seq[Pattern], predicates: Seq[Predicate]) extends Pipe {
   val matchingContext = new MatchingContext(patterns, source.symbols, predicates)
   val symbols = source.symbols.add(identifiers: _*)
 
   def identifiers = patterns.flatMap(_ match {
-    case RelatedTo(left, right, rel, relType, dir, optional) => Seq(Identifier(left, NodeType()), Identifier(right, NodeType()), Identifier(rel, RelationshipType()))
+    case RelatedTo(left, right, rel, _, _, _, _) => Seq(Identifier(left, NodeType()), Identifier(right, NodeType()), Identifier(rel, RelationshipType()))
     case path: PathPattern => Seq(
       Identifier(path.start, NodeType()),
       Identifier(path.end, NodeType()),

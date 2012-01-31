@@ -24,13 +24,7 @@ import static org.neo4j.visualization.asciidoc.AsciidocHelper.createGraphViz;
 import static org.neo4j.visualization.asciidoc.AsciidocHelper.createOutputSnippet;
 
 import org.junit.Test;
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.kernel.Traversal;
-import org.neo4j.kernel.Uniqueness;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.test.GraphDescription.Graph;
 
@@ -49,80 +43,118 @@ public class TraversalTest extends AbstractJavaDocTestbase
      * 
      * @@sourceRels
      * 
-     * The graph can be traversed with
+     * The graph can be traversed with for example the following traverser, starting at the ``Joe'' node:
      * 
-     * @@source1
+     * @@knowslikestraverser
+     * 
+     * The traversal will output:
+     * 
+     * @@knowslikesoutput
      * 
      * Since http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html[+TraversalDescription+]s 
      * are immutable it is also useful to create template descriptions which holds common 
-     * settings shared by different traversals, for example:
+     * settings shared by different traversals. For example, let's start with this traverser:
      * 
-     * @@source2
+     * @@basetraverser
+     * 
+     * This traverser would yield the following output (we will keep starting from the ``Joe'' node):
+     * 
+     * @@baseoutput
+     * 
+     * Now let's create a new traverser from it, restricting depth to three:
+     * 
+     * @@depth3
+     * 
+     * This will give us the following result:
+     * 
+     * @@output3
+     * 
+     * Or how about from depth two to four?
+     * That's done like this:
+     * 
+     * @@depth4
+     * 
+     * This traversal gives us:
+     * 
+     * @@output4
+     * 
+     * For various useful evaluators, see the 
+     * http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/Evaluators.html[Evaluators] Java API
+     * or simply implement the
+     * http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/Evaluator.html[Evaluator] interface yourself.
      * 
      * If you're not interested in the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Path.html[+Path+]s, 
-     * but f.ex. the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Node.html[+Node+]s 
-     * you can transform the traverser into an iterable of http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/Traverser.html#nodes()[nodes] 
-     * or http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/Traverser.html#relationships()[relationships]:
+     * but the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Node.html[+Node+]s 
+     * you can transform the traverser into an iterable of http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/Traverser.html#nodes()[nodes]
+     * like this:
      * 
-     * @@source3
+     * @@nodes
      * 
-     * The full source for this example is available at
+     * In this case we use it to retrieve the names:
      * 
+     * @@nodeoutput
+     * 
+     * http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/Traverser.html#relationships()[Relationships]
+     * are fine as well, here's how to get them:
+     * 
+     * @@relationships
+     * 
+     * Here the relationship types are written, and we get:
+     * 
+     * @@relationshipoutput
+     * 
+     * The source code for the traversers in this example is available at:
      * @@github
      */
     @Test
     @Documented
-    @Graph( {"Joe KNOWS Sara", "Lisa LIKES Joe" })
+    @Graph( { "Joe KNOWS Sara", "Lisa LIKES Joe", "Peter KNOWS Sara",
+            "Dirk KNOWS Peter", "Lars KNOWS Dirk", "Ed KNOWS Lars",
+            "Lisa KNOWS Lars" } )
     public void how_to_use_the_Traversal_framework()
     {
         Node joe = data.get().get( "Joe" );
+        TraversalExample example = new TraversalExample();
         gen.get().addSnippet(
                 "graph",
-                createGraphViz( "Hello World Graph", graphdb(),
+                        createGraphViz( "Traversal Example Graph", graphdb(),
                         gen.get().getTitle() ) );
-        // START SNIPPET: source1
 
-        for ( Path position : Traversal.description()
-                .depthFirst()
-                .relationships( Rels.KNOWS )
-                .relationships( Rels.LIKES, Direction.INCOMING )
-                .prune( Traversal.pruneAfterDepth( 5 ) )
-                .traverse( joe ) )
-        {
-          System.out.println( "Path from start node to current position is " + position );
-        }
-        // END SNIPPET: source1
+        String output = example.knowsLikesTraverser( joe );
+        System.out.println( output );
+        gen.get()
+                .addSnippet( "knowslikesoutput", createOutputSnippet( output ) );
 
-        // START SNIPPET: source2
-        final TraversalDescription FRIENDS_TRAVERSAL = Traversal.description()
-                .relationships( Rels.KNOWS )
-                .depthFirst()
-                .uniqueness( Uniqueness.RELATIONSHIP_GLOBAL );
-        
-        // Don't go further than depth 3
-        for ( Path position : FRIENDS_TRAVERSAL
-                  .prune( Traversal.pruneAfterDepth( 3 ) )
-                  .traverse( joe ) ) {}
-        // Don't go further than depth 4
-        for ( Path position : FRIENDS_TRAVERSAL
-                  .prune( Traversal.pruneAfterDepth( 4 ) )
-                  .traverse( joe ) ) {}
-        // END SNIPPET: source2
-        // START SNIPPET: source3
-        for ( Node position : FRIENDS_TRAVERSAL.traverse( joe ).nodes() ) {}
-        // END SNIPPET: source3
+        output = example.traverseBaseTraverser( joe );
+        System.out.println( output );
+        gen.get()
+                .addSnippet( "baseoutput", createOutputSnippet( output ) );
 
-        gen.get().addSnippet( "output",
-                createOutputSnippet( "Hello graphy world!" ) );
-        gen.get().addSourceSnippets( this.getClass(), "source1","sourceRels","source2","source3" );
-        gen.get().addGithubLink( "github", this.getClass(), "neo4j/community",
+        output = example.depth3( joe );
+        System.out.println( output );
+        gen.get()
+                .addSnippet( "output3", createOutputSnippet( output ) );        
+
+        output = example.depth4( joe );
+        System.out.println( output );
+        gen.get()
+                .addSnippet( "output4", createOutputSnippet( output ) );        
+
+        output = example.nodes( joe );
+        System.out.println( output );
+        gen.get()
+                .addSnippet( "nodeoutput", createOutputSnippet( output ) );
+
+        output = example.relationships( joe );
+        System.out.println( output );
+        gen.get()
+                .addSnippet( "relationshipoutput", createOutputSnippet( output ) );
+
+        gen.get()
+                .addSourceSnippets( example.getClass(), "knowslikestraverser",
+                        "sourceRels", "basetraverser", "depth3", "depth4",
+                        "nodes", "relationships" );
+        gen.get().addGithubSourceLink( "github", example.getClass(), "neo4j/community",
                 "embedded-examples" );
     }
-    
-    // START SNIPPET: sourceRels
-    private static enum Rels implements RelationshipType
-    {
-        LIKES, KNOWS
-    }
-    // END SNIPPET: sourceRels
 }

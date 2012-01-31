@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -183,6 +183,11 @@ public class ShellTest
 
         doc.add( "","","Now, let's ask some questions" );
         doc.add( "start morpheus = node:node_auto_index(name='Morpheus') " +
+                "match morpheus-[:KNOWS]-zionist " +
+                "return zionist.name",
+                "",
+                "Morpheus' friends, looking up Morpheus by name in the Neo4j autoindex" );
+        doc.add( "cypher 1.5 start morpheus = node:node_auto_index(name='Morpheus') " +
                 "match morpheus-[:KNOWS]-zionist " +
                 "return zionist.name",
                 "",

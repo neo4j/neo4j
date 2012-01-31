@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -59,6 +59,15 @@ class StartTest extends DocumentingTestBase {
       text = "Multiple nodes are selected by listing them separated by commas.",
       queryText = "start n=node(%A%, %B%, %C%) return n",
       returns = "The nodes listed in the START statement.",
+      (p) => assertEquals(List(node("A"), node("B"), node("C")), p.columnAs[Node]("n").toList))
+  }
+
+  @Test def all_the_nodes() {
+    testQuery(
+      title = "All nodes",
+      text = "To get all the nodes, use an asterisk. This can be done with relationships as well.",
+      queryText = "start n=node(*) return n",
+      returns = "This query returns all the nodes in the graph.",
       (p) => assertEquals(List(node("A"), node("B"), node("C")), p.columnAs[Node]("n").toList))
   }
 

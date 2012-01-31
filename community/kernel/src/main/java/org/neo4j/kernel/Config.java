@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -249,6 +249,7 @@ public class Config implements DiagnosticsProvider
     private final IdGeneratorFactory idGeneratorFactory;
     private final TxIdGenerator txIdGenerator;
     private final DiagnosticsManager diagnostics;
+    private final KernelPanicEventGenerator kpe;
 
     Config( AbstractGraphDatabase graphDb, StoreId storeId,
             Map<String, String> inputParams, KernelPanicEventGenerator kpe,
@@ -259,6 +260,7 @@ public class Config implements DiagnosticsProvider
             LastCommittedTxIdSetter lastCommittedTxIdSetter,
             FileSystemAbstraction fileSystem )
     {
+        this.kpe = kpe;
         this.storeDir = graphDb.getStoreDir();
         this.inputParams = inputParams;
         this.ephemeral = graphDb.isEphemeral();
@@ -515,5 +517,10 @@ public class Config implements DiagnosticsProvider
                 }
             }, true );
         }
+    }
+
+    public KernelPanicEventGenerator getKernelPanicGenerator()
+    {
+        return kpe;
     }
 }

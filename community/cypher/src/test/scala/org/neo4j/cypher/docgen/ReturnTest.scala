@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -76,7 +76,7 @@ return `This isn't a common identifier`.`<<!!__??>>`""",
 like this:""",
       queryText = """start n=node(%A%, %B%) return n.age?""",
       returns = """The age when the node has that property, or +null+ if the property is not there.""",
-      assertions = (p) => assertEquals(List(55, null), p.columnAs[Int]("n.age").toList))
+      assertions = (p) => assertEquals(List(55, null), p.columnAs[Int]("n.age?").toList))
   }
 
   @Test def distinct_output() {

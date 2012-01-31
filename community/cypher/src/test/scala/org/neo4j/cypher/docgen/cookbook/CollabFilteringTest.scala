@@ -1,7 +1,5 @@
-package org.neo4j.cypher.docgen.cookbook
-
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,6 +17,7 @@ package org.neo4j.cypher.docgen.cookbook
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.neo4j.cypher.docgen.cookbook
 
 import org.junit.Test
 import org.junit.Assert._
@@ -26,7 +25,7 @@ import org.neo4j.cypher.docgen.DocumentingTestBase
 
 class CollabFilteringTest extends DocumentingTestBase {
   def graphDescription = List("Joe knows Bill", "Joe knows Sara", "Sara knows Bill", "Sara knows Ian", "Bill knows Derrick",
-            "Bill knows Ian", "Sara knows Jill")
+    "Bill knows Ian", "Sara knows Jill")
 
   def section = "cookbook"
 
@@ -35,15 +34,16 @@ class CollabFilteringTest extends DocumentingTestBase {
       title = "Simple Friend Finder",
       text = """To find out the friends of Joes friends that are not already his friends, Cypher looks like:""",
       queryText = "start joe=node:node_auto_index(name = \"Joe\") " +
-      		"match joe-[:knows]->friend-[:knows]->friend_of_friend, " +
-      		"joe-[r?:knows]->friend_of_friend " +
-      		"where r IS NULL " +
-      		"return friend_of_friend.name, COUNT(*) " +
-      		"order by COUNT(*) DESC, friend_of_friend.name",
+        "match joe-[:knows]->friend-[:knows]->friend_of_friend, " +
+        "joe-[r?:knows]->friend_of_friend " +
+        "where r IS NULL " +
+        "return friend_of_friend.name, COUNT(*) " +
+        "order by COUNT(*) DESC, friend_of_friend.name",
       returns = "The list of Friends-of-friends  order by the number of connections to them, secondly by their name.",
-      (p) => assertEquals(List(Map("friend_of_friend.name" -> "Ian", "count(*)" -> 2),
-          Map("friend_of_friend.name" -> "Derrick", "count(*)" -> 1),
-          Map("friend_of_friend.name" -> "Jill", "count(*)" -> 1)), p.toList))
-  } 
+      (p) => assertEquals(List(
+        Map("friend_of_friend.name" -> "Ian", "COUNT(*)" -> 2),
+        Map("friend_of_friend.name" -> "Derrick", "COUNT(*)" -> 1),
+        Map("friend_of_friend.name" -> "Jill", "COUNT(*)" -> 1)), p.toList))
+  }
 }
 

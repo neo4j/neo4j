@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -70,6 +70,12 @@ public class TestGraphProperties
     public void doAfter() throws Exception
     {
         db.shutdown();
+    }
+    
+    private void restartDb()
+    {
+        db.shutdown();
+        db = new ImpermanentGraphDatabase();
     }
     
     @Test
@@ -231,6 +237,9 @@ public class TestGraphProperties
         assertEquals( value1, properties.getProperty( key1 ) );
         assertEquals( value3, properties.getProperty( key3 ) );
         assertEquals( value2, properties.getProperty( key2 ) );
+        
+        worker1.shutdown();
+        worker2.shutdown();
     }
     
     @Test
@@ -318,6 +327,26 @@ public class TestGraphProperties
         EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( storeDir );
         assertEquals( "Some value", db.getConfig().getGraphDbModule().getNodeManager().getGraphProperties().getProperty( "prop" ) );
         db.shutdown();
+    }
+    
+    @Test
+    public void testEquals()
+    {
+        GraphProperties graphProperties = db.getConfig().getGraphDbModule().getNodeManager().getGraphProperties();
+        tx = db.beginTx();
+        try
+        {
+            graphProperties.setProperty( "test", "test" );
+            tx.success();
+        }
+        finally
+        {
+            tx.finish();
+        }
+        
+        assertEquals( graphProperties, db.getConfig().getGraphDbModule().getNodeManager().getGraphProperties() );
+        restartDb();
+        assertFalse( graphProperties.equals( db.getConfig().getGraphDbModule().getNodeManager().getGraphProperties() ) );
     }
     
     private static class State

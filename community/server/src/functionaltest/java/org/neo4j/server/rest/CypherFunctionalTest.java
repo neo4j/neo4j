@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -41,6 +41,7 @@ import org.neo4j.test.GraphDescription.NODE;
 import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphDescription.REL;
 import org.neo4j.test.TestData.Title;
+import org.neo4j.visualization.asciidoc.AsciidocHelper;
 
 public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
 
@@ -70,6 +71,7 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
         assertThat( response, containsString( "25" ) );
         assertThat( response, not( containsString( "\"x\"" ) ) );
     }
+
 
 
     /**
@@ -182,5 +184,11 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
     {
         return getDataUri() + "cypher";
     }
+    
+    private String cypherAltUri()
+    {
+        return getDataUri() + "cypher_alt";
+    }
+
     
 }
