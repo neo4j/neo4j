@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
-    <version>25</version>
+    <version>31</version>
     <relativePath />
   </parent>
 
@@ -20,6 +20,7 @@
     <short-name>neo4j-advanced</short-name>
     <bundle.namespace>org.neo4j</bundle.namespace>
     <neo4j.version>1.5.1-SNAPSHOT</neo4j.version>
+    <licenseVersion>7</licenseVersion>
   </properties>
 
   <scm>

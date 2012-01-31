@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>25.U1</version>
+    <version>31</version>
     <relativePath />
   </parent>
 
@@ -35,6 +35,7 @@
     <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
 
     <neo4j.version>1.5.1-SNAPSHOT</neo4j.version>
+    <licenseVersion>7</licenseVersion>
   </properties>
 
   <packaging>jar</packaging>
