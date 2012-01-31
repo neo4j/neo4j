@@ -31,7 +31,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.HAGraphDb;
 import org.neo4j.kernel.HaConfig;
-import org.neo4j.kernel.ha.zookeeper.ClusterManager;
+import org.neo4j.kernel.ha.zookeeper.ZooKeeperClusterClient;
 import org.neo4j.kernel.ha.zookeeper.NeoStoreUtil;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.test.TargetDirectory;
@@ -63,7 +63,7 @@ public class TestClusterNames
         db1.shutdown();
         db0.shutdown();
 
-        ClusterManager cm = new ClusterManager( zoo.getConnectionString() );
+        ZooKeeperClusterClient cm = new ZooKeeperClusterClient( zoo.getConnectionString() );
         cm.waitForSyncConnected();
         StoreId zkStoreId = StoreId.deserialize( cm.getZooKeeper( false ).getData( "/" + HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME, false, null ) );
         StoreId storeId = new NeoStoreUtil( db0.getStoreDir() ).asStoreId();

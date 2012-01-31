@@ -21,7 +21,7 @@ package slavetest;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.HaConfig;
-import org.neo4j.kernel.ha.zookeeper.ClusterManager;
+import org.neo4j.kernel.ha.zookeeper.ZooKeeperClusterClient;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 
 public class DumpZooInfo
@@ -29,7 +29,7 @@ public class DumpZooInfo
     public static void main( String[] args )
     {
         Args arguments = new Args( args );
-        ClusterManager clusterManager = new ClusterManager( "localhost", arguments.get( HaConfig.CONFIG_KEY_CLUSTER_NAME, HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME ) );
+        ZooKeeperClusterClient clusterManager = new ZooKeeperClusterClient( "localhost", arguments.get( HaConfig.CONFIG_KEY_CLUSTER_NAME, HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME ) );
         clusterManager.waitForSyncConnected();
         System.out.println( "Master is " + clusterManager.getCachedMaster() );
         System.out.println( "Connected slaves" );
