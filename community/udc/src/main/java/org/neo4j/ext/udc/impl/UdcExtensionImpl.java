@@ -91,6 +91,7 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask> implements U
         int interval = DEFAULT_INTERVAL;
         String hostAddress = DEFAULT_HOST;
         String source = null;
+        String registration = null;
         try
         {
             firstDelay = configuration.getInt( FIRST_DELAY_CONFIG_KEY, Integer.toString( firstDelay ) );
@@ -123,13 +124,21 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask> implements U
         {
             // fall back to default
         }
+        try
+        {
+            registration = configuration.getString( UDC_REGISTRATION_KEY, registration );
+        }
+        catch ( Exception e )
+        {
+            // fall back to default
+        }
         NeoStoreXaDataSource ds = (NeoStoreXaDataSource) kernel.getConfig().getTxModule()
                 .getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
         boolean crashPing = ds.getXaContainer().getLogicalLog().wasNonClean();
         String storeId = Long.toHexString( ds.getRandomIdentifier() );
         String version = kernel.version().getRevision();
         if ( version.equals( "" ) ) version = kernel.version().getVersion();
-        UdcTimerTask task = new UdcTimerTask( hostAddress, version, storeId, source, crashPing );
+        UdcTimerTask task = new UdcTimerTask( hostAddress, version, storeId, source, crashPing, registration );
         timer.scheduleAtFixedRate( task, firstDelay, interval );
         return task;
     }

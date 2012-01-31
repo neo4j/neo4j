@@ -53,4 +53,9 @@ public interface UdcProperties {
      * Configuration key for overriding the source parameter in UDC
      */
     public static final String UDC_SOURCE_KEY = "neo4j.ext.udc.source";
+
+    /**
+     * Unique registration id
+     */
+    public static final String UDC_REGISTRATION_KEY = "neo4j.ext.udc.reg";
 }

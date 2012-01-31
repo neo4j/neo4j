@@ -156,6 +156,31 @@ public class UdcExtensionImplTest
         destroy( graphdb );
     }
 
+    @Test
+    public void shouldBeAbleToSpecifyRegistrationIdWithConfig() throws Exception
+    {
+        // first, set up the test server
+        LocalTestServer server = new LocalTestServer( null, null );
+        PingerHandler handler = new PingerHandler();
+        server.register( "/*", handler );
+        server.start();
+
+        final String hostname = server.getServiceHostName();
+        final String serverAddress = hostname + ":" + server.getServicePort();
+
+        Map<String, String> config = new HashMap<String, String>();
+        config.put( UdcExtensionImpl.FIRST_DELAY_CONFIG_KEY, "100" );
+        config.put( UdcExtensionImpl.UDC_HOST_ADDRESS_KEY, serverAddress );
+        config.put( UdcExtensionImpl.UDC_SOURCE_KEY, "test" );
+        config.put( UdcExtensionImpl.UDC_REGISTRATION_KEY, "marketoid" );
+
+        EmbeddedGraphDatabase graphdb = createTempDatabase( config );
+        assertGotSuccessWithRetry( IS_GREATER_THAN_ZERO );
+        assertEquals( "marketoid", handler.getQueryMap().get( "reg" ) );
+
+        destroy( graphdb );
+    }
+
     private static interface Condition<T>
     {
         boolean isTrue( T value );
