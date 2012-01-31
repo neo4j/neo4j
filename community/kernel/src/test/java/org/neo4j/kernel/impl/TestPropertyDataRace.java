@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl;
 
+import java.util.concurrent.CountDownLatch;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -27,9 +29,15 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.subprocess.*;
-
-import java.util.concurrent.CountDownLatch;
+import org.neo4j.test.subprocess.BreakPoint;
+import org.neo4j.test.subprocess.BreakpointHandler;
+import org.neo4j.test.subprocess.BreakpointTrigger;
+import org.neo4j.test.subprocess.DebugInterface;
+import org.neo4j.test.subprocess.DebuggedThread;
+import org.neo4j.test.subprocess.DebuggerDeadlockCallback;
+import org.neo4j.test.subprocess.EnabledBreakpoints;
+import org.neo4j.test.subprocess.ForeignBreakpoints;
+import org.neo4j.test.subprocess.SubProcessTestRunner;
 
 @ForeignBreakpoints( {
                       @ForeignBreakpoints.BreakpointDef( type = "org.neo4j.kernel.impl.core.ArrayBasedPrimitive",
