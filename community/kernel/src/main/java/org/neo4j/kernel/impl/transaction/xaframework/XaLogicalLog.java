@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import static java.lang.Math.max;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.newLogReaderBuffer;
 
 import java.io.File;
 import java.io.IOException;
@@ -1006,7 +1007,7 @@ public class XaLogicalLog implements LogLoader
 
     public static final int MASTER_ID_REPRESENTING_NO_MASTER = -1;
 
-    public synchronized Pair<Integer, Long> getMasterIdForCommittedTransaction( long txId ) throws IOException
+    public synchronized Pair<Integer, Long> getMasterForCommittedTransaction( long txId ) throws IOException
     {
         if ( txId == 1 )
         {
@@ -1312,7 +1313,7 @@ public class XaLogicalLog implements LogLoader
         }
         finally
         {
-            if ( !successfullyApplied && logApplier.getStartEntry() != null )
+            if ( !successfullyApplied && logApplier.getStartEntry() != null && xidIdentMap.get( xidIdent ) != null )
             {   // Unmap this identifier if tx not applied correctly
                 try
                 {
@@ -1433,42 +1434,9 @@ public class XaLogicalLog implements LogLoader
             msgLog.logMessage( "Rotate log first start entry @ pos=" +
                     firstEntryPosition + " out of " + xidIdentMap );
         }
-        LogBuffer newLogBuffer = instantiateCorrectWriteBuffer( newLog );
         
-        // Copy over active transactions to the new log
-        boolean foundFirstActiveTx = false;
-        Map<Integer,LogEntry.Start> transactionsToCopy = new HashMap<Integer,LogEntry.Start>();
-        for ( LogEntry entry = null; (entry = LogIoUtils.readEntry( sharedBuffer, fileChannel, cf )) != null; )
-        {
-            Integer identifier = entry.getIdentifier();
-            boolean isActive = xidIdentMap.get( identifier ) != null;
-            if ( !foundFirstActiveTx && isActive ) foundFirstActiveTx = true;
-            if ( foundFirstActiveTx )
-            {
-                if ( entry instanceof LogEntry.Start )
-                {
-                    LogEntry.Start startEntry = (LogEntry.Start) entry;
-                    transactionsToCopy.put( identifier, startEntry );
-                    startEntry.setStartPosition( newLogBuffer.getFileChannelPosition() ); // newLog.position() );
-                    // If the transaction is active then update it with the new one
-                    if ( isActive ) xidIdentMap.put( identifier, startEntry );
-                }
-                if ( transactionsToCopy.containsKey( identifier ) )
-                {
-                    if ( entry instanceof LogEntry.Commit )
-                    {
-                        LogEntry.Start startEntry = transactionsToCopy.get( identifier );
-                        LogEntry.Commit commitEntry = (LogEntry.Commit) entry;
-                        TxPosition oldPos = positionCache.getStartPosition( commitEntry.getTxId() );
-                        TxPosition newPos = cacheTxStartPosition( commitEntry.getTxId(),
-                                startEntry.getMasterId(), startEntry, logVersion+1 );
-                        msgLog.logMessage( "Updated tx " + ((LogEntry.Commit) entry ).getTxId() +
-                                " from " + oldPos + " to " + newPos );
-                    }
-                    LogIoUtils.writeLogEntry( entry, newLogBuffer );
-                }
-            }
-        }
+        LogBuffer newLogBuffer = instantiateCorrectWriteBuffer( newLog );
+        copyPartiallyWrittenTransactionsToTheNewLog( newLogBuffer );
         
         newLogBuffer.force();
         newLog.position( newLogBuffer.getFileChannelPosition() );
@@ -1497,6 +1465,64 @@ public class XaLogicalLog implements LogLoader
         msgLog.logMessage( "Log rotated, newLog @ pos=" +
                 writeBuffer.getFileChannelPosition() + " and version " + logVersion, true );
         return lastTx;
+    }
+
+    private void copyPartiallyWrittenTransactionsToTheNewLog( LogBuffer newLogBuffer ) throws IOException
+    {
+        boolean foundFirstActiveTx = false;
+        Map<Integer,LogEntry.Start> startEntriesEncountered = new HashMap<Integer,LogEntry.Start>();
+        for ( LogEntry entry = null; (entry = LogIoUtils.readEntry( sharedBuffer, fileChannel, cf )) != null; )
+        {
+            Integer identifier = entry.getIdentifier();
+            boolean isActive = xidIdentMap.get( identifier ) != null;
+            if ( !foundFirstActiveTx && isActive ) foundFirstActiveTx = true;
+            if ( foundFirstActiveTx )
+            {
+                if ( entry instanceof LogEntry.Start )
+                {
+                    LogEntry.Start startEntry = (LogEntry.Start) entry;
+                    startEntriesEncountered.put( identifier, startEntry );
+                    startEntry.setStartPosition( newLogBuffer.getFileChannelPosition() ); // newLog.position() );
+                    // If the transaction is active then update it with the new one
+                    if ( isActive ) xidIdentMap.put( identifier, startEntry );
+                }
+                else if ( entry instanceof LogEntry.Commit )
+                {
+                    LogEntry.Commit commitEntry = (LogEntry.Commit) entry;
+                    LogEntry.Start startEntry = startEntriesEncountered.get( identifier );
+                    if ( startEntry == null )
+                    {
+                        // Fetch from log extractor instead (all entries except done records, which will be copied from the source).
+                        startEntry = fetchTransactionBulkFromLogExtractor( commitEntry.getTxId(), newLogBuffer );
+                        startEntriesEncountered.put( identifier, startEntry );
+                    }
+                    else
+                    {
+                        TxPosition oldPos = positionCache.getStartPosition( commitEntry.getTxId() );
+                        TxPosition newPos = cacheTxStartPosition( commitEntry.getTxId(),
+                                startEntry.getMasterId(), startEntry, logVersion+1 );
+                        msgLog.logMessage( "Updated tx " + ((LogEntry.Commit) entry ).getTxId() +
+                                " from " + oldPos + " to " + newPos );
+                    }
+                }
+                if ( startEntriesEncountered.containsKey( identifier ) )
+                    LogIoUtils.writeLogEntry( entry, newLogBuffer );
+            }
+        }
+    }
+
+    private LogEntry.Start fetchTransactionBulkFromLogExtractor( long txId, LogBuffer target ) throws IOException
+    {
+        LogExtractor extractor = new LogExtractor( positionCache, this, cf, txId, txId );
+        InMemoryLogBuffer tempBuffer = new InMemoryLogBuffer();
+        extractor.extractNext( tempBuffer );
+        ByteBuffer localBuffer = newLogReaderBuffer();
+        for ( LogEntry readEntry = null; (readEntry = LogIoUtils.readEntry( localBuffer, tempBuffer, cf )) != null; )
+        {
+            if ( readEntry instanceof LogEntry.Commit ) break;
+            LogIoUtils.writeLogEntry( readEntry, target );
+        }
+        return extractor.getLastStartEntry();
     }
 
     private void assertFileDoesntExist( String file, String description ) throws IOException
