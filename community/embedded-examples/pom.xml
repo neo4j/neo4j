@@ -106,25 +106,6 @@
           </execution>
         </executions>
       </plugin>
-      <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>docs-assembly</id>
-            <phase>package</phase>
-            <configuration>
-              <attach>true</attach>
-              <appendAssemblyId>true</appendAssemblyId>
-              <descriptors>
-                <descriptor>src/main/assembly/docs-assembly.xml</descriptor>
-              </descriptors>
-            </configuration>
-            <goals>
-              <goal>single</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
       <!-- plugin>
         <artifactId>maven-source-plugin</artifactId>
         <executions>
