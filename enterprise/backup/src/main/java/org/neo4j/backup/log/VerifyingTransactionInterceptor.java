@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -74,7 +74,7 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
 
         abstract ConsistencyCheck apply( DiffStore diffs, ConsistencyCheck checker );
     }
-    
+
     private final boolean rejectInconsistentTransactions;
 
     private final DiffStore diffs;
@@ -162,8 +162,15 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
         }
         catch ( AssertionError e )
         {
-            DataInconsistencyError error = new DataInconsistencyError( "Cannot apply transaction\n\t" + startEntry + "\n\t"
-                                                                       + commitEntry + "\n\t" + e.getMessage() );
+            DataInconsistencyError error = new DataInconsistencyError( "Cannot apply transaction\n\t"
+                                                                       + ( startEntry == null
+                                                                               ? "NO START ENTRY"
+                                                                               : startEntry.toString() )
+                                                                       + "\n\t"
+                                                                       + ( commitEntry == null
+                                                                               ? "NO COMMIT ENTRY"
+                                                                               : commitEntry.toString() ) + "\n\t"
+                                                                       + e.getMessage() );
             msgLog.logMessage( error.getMessage() );
             if ( rejectInconsistentTransactions )
             {

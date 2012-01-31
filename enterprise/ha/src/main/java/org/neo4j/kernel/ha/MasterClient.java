@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -83,15 +83,19 @@ public class MasterClient extends Client<Master> implements Master
     };
     private final int lockReadTimeout;
 
-    public MasterClient( String hostNameOrIp, int port, AbstractGraphDatabase graphDb,
+    public MasterClient( String hostNameOrIp, int port,
+            AbstractGraphDatabase graphDb,
+            ConnectionLostHandler connectionLostHandler,
             int readTimeoutSeconds, int lockReadTimeout, int maxConcurrentChannels )
     {
-        super( hostNameOrIp, port, graphDb.getMessageLog(), Client.storeIdGetterForDb( graphDb ),
-                MasterServer.FRAME_LENGTH, MasterServer.PROTOCOL_VERSION, readTimeoutSeconds,
-                maxConcurrentChannels, Math.min( maxConcurrentChannels, DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT ) );
+        super( hostNameOrIp, port, graphDb.getMessageLog(),
+                Client.storeIdGetterForDb( graphDb ),
+                MasterServer.FRAME_LENGTH, MasterServer.PROTOCOL_VERSION,
+                readTimeoutSeconds, maxConcurrentChannels, maxConcurrentChannels,
+                connectionLostHandler );
         this.lockReadTimeout = lockReadTimeout;
     }
-    
+
     @Override
     protected int getReadTimeout( RequestType<Master> type, int readTimeout )
     {
@@ -103,7 +107,7 @@ public class MasterClient extends Client<Master> implements Master
     {
         return type != HaRequestType.COPY_STORE;
     }
-    
+
     public Response<IdAllocation> allocateIds( final IdType idType )
     {
         return sendRequest( HaRequestType.ALLOCATE_IDS, SlaveContext.EMPTY, new Serializer()
@@ -138,7 +142,7 @@ public class MasterClient extends Client<Master> implements Master
             }
         } );
     }
-    
+
     @Override
     public Response<Void> initializeTx( SlaveContext context )
     {
@@ -182,21 +186,21 @@ public class MasterClient extends Client<Master> implements Master
         return sendRequest( HaRequestType.ACQUIRE_GRAPH_READ_LOCK, context,
                 EMPTY_SERIALIZER, LOCK_RESULT_DESERIALIZER );
     }
-    
+
     @Override
     public Response<LockResult> acquireIndexReadLock( SlaveContext context, String index, String key )
     {
         return sendRequest( HaRequestType.ACQUIRE_INDEX_READ_LOCK, context,
                 new AcquireIndexLockSerializer( index, key ), LOCK_RESULT_DESERIALIZER );
     }
-    
+
     @Override
     public Response<LockResult> acquireIndexWriteLock( SlaveContext context, String index, String key )
     {
         return sendRequest( HaRequestType.ACQUIRE_INDEX_WRITE_LOCK, context,
                 new AcquireIndexLockSerializer( index, key ), LOCK_RESULT_DESERIALIZER );
     }
-    
+
     public Response<Long> commitSingleResourceTransaction( SlaveContext context,
             final String resource, final TxExtractor txGetter )
     {
@@ -266,7 +270,27 @@ public class MasterClient extends Client<Master> implements Master
 
         return sendRequest( HaRequestType.COPY_STORE, context, EMPTY_SERIALIZER, new Protocol.FileStreamsDeserializer( writer ) );
     }
-    
+
+    @SuppressWarnings( "unchecked" )
+    @Override
+    public Response<Void> copyTransactions( SlaveContext context,
+            final String ds, final long startTxId, final long endTxId )
+    {
+        context = new SlaveContext( context.getSessionId(),
+                context.machineId(), context.getEventIdentifier(), new Pair[0] );
+
+        return sendRequest( HaRequestType.COPY_TRANSACTIONS, context, new Serializer()
+        {
+            public void write( ChannelBuffer buffer, ByteBuffer readBuffer )
+                    throws IOException
+            {
+                writeString( buffer, ds );
+                buffer.writeLong( startTxId );
+                buffer.writeLong( endTxId );
+            }
+        }, VOID_DESERIALIZER );
+    }
+
     public static enum HaRequestType implements RequestType<Master>
     {
         //====
@@ -338,7 +362,7 @@ public class MasterClient extends Client<Master> implements Master
                 return true;
             }
         },
-        
+
         //====
         ACQUIRE_RELATIONSHIP_WRITE_LOCK( new AquireLockCall()
         {
@@ -355,7 +379,7 @@ public class MasterClient extends Client<Master> implements Master
                 return true;
             }
         },
-        
+
         //====
         ACQUIRE_RELATIONSHIP_READ_LOCK( new AquireLockCall()
         {
@@ -372,7 +396,7 @@ public class MasterClient extends Client<Master> implements Master
                 return true;
             }
         },
-        
+
         //====
         COMMIT( new MasterCaller<Master, Long>()
         {
@@ -385,7 +409,7 @@ public class MasterClient extends Client<Master> implements Master
                         TxExtractor.create( reader ) );
             }
         }, LONG_SERIALIZER, true ),
-        
+
         //====
         PULL_UPDATES( new MasterCaller<Master, Void>()
         {
@@ -395,7 +419,7 @@ public class MasterClient extends Client<Master> implements Master
                 return master.pullUpdates( context );
             }
         }, VOID_SERIALIZER, true ),
-        
+
         //====
         FINISH( new MasterCaller<Master, Void>()
         {
@@ -405,7 +429,7 @@ public class MasterClient extends Client<Master> implements Master
                 return master.finishTransaction( context, readBoolean( input ) );
             }
         }, VOID_SERIALIZER, true ),
-        
+
         //====
         GET_MASTER_ID_FOR_TX( new MasterCaller<Master, Pair<Integer,Long>>()
         {
@@ -423,7 +447,7 @@ public class MasterClient extends Client<Master> implements Master
                 result.writeLong( responseObject.other() );
             }
         }, false ),
-        
+
         //====
         COPY_STORE( new MasterCaller<Master, Void>()
         {
@@ -432,9 +456,22 @@ public class MasterClient extends Client<Master> implements Master
             {
                 return master.copyStore( context, new ToNetworkStoreWriter( target ) );
             }
-            
+
         }, VOID_SERIALIZER, true ),
-        
+
+        // ====
+        COPY_TRANSACTIONS( new MasterCaller<Master, Void>()
+        {
+            public Response<Void> callMaster( Master master,
+                    SlaveContext context, ChannelBuffer input,
+                    final ChannelBuffer target )
+            {
+                return master.copyTransactions( context, readString( input ),
+                        input.readLong(), input.readLong() );
+            }
+
+        }, VOID_SERIALIZER, true ),
+
         //====
         INITIALIZE_TX( new MasterCaller<Master, Void>()
         {
@@ -445,7 +482,7 @@ public class MasterClient extends Client<Master> implements Master
                 return master.initializeTx( context );
             }
         }, VOID_SERIALIZER, true ),
-        
+
         //====
         ACQUIRE_GRAPH_WRITE_LOCK( new MasterCaller<Master, LockResult>()
         {
@@ -463,7 +500,7 @@ public class MasterClient extends Client<Master> implements Master
                 return true;
             }
         },
-        
+
         //====
         ACQUIRE_GRAPH_READ_LOCK( new MasterCaller<Master, LockResult>()
         {
@@ -481,7 +518,7 @@ public class MasterClient extends Client<Master> implements Master
                 return true;
             }
         },
-        
+
         //====
         ACQUIRE_INDEX_READ_LOCK( new MasterCaller<Master, LockResult>()
         {
@@ -491,7 +528,7 @@ public class MasterClient extends Client<Master> implements Master
             {
                 return master.acquireIndexReadLock( context, readString( input ), readString( input ) );
             }
-    
+
         }, LOCK_SERIALIZER, true )
         {
             @Override
@@ -511,7 +548,7 @@ public class MasterClient extends Client<Master> implements Master
             {
                 return master.acquireIndexWriteLock( context, readString( input ), readString( input ) );
             }
-    
+
         }, LOCK_SERIALIZER, true )
         {
             @Override
@@ -520,7 +557,7 @@ public class MasterClient extends Client<Master> implements Master
                 return true;
             }
         };
-        
+
         @SuppressWarnings( "rawtypes" )
         final MasterCaller caller;
         @SuppressWarnings( "rawtypes" )
@@ -534,7 +571,7 @@ public class MasterClient extends Client<Master> implements Master
             this.serializer = serializer;
             this.includesSlaveContext = includesSlaveContext;
         }
-        
+
         protected int timeoutForLocking( int defaultTimeout )
         {
             // TODO Auto-generated method stub
@@ -545,12 +582,12 @@ public class MasterClient extends Client<Master> implements Master
         {
             return serializer;
         }
-        
+
         public MasterCaller getMasterCaller()
         {
             return caller;
         }
-        
+
         public byte id()
         {
             return (byte) ordinal();
@@ -560,7 +597,7 @@ public class MasterClient extends Client<Master> implements Master
         {
             return this.includesSlaveContext;
         }
-        
+
         public boolean isLock()
         {
             return false;
@@ -601,7 +638,7 @@ public class MasterClient extends Client<Master> implements Master
             }
         }
     }
-    
+
     protected static class AcquireIndexLockSerializer implements Serializer
     {
         private final String index;
@@ -612,7 +649,7 @@ public class MasterClient extends Client<Master> implements Master
             this.index = index;
             this.key = key;
         }
-        
+
         @Override
         public void write( ChannelBuffer buffer, ByteBuffer readBuffer ) throws IOException
         {

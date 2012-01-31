@@ -17,26 +17,28 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.com;
+package org.neo4j.kernel.ha.zookeeper;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
+import org.neo4j.com.SlaveContext;
 
-public class FailingByteChannel extends KnownDataByteChannel
+public class ZooKeeperMachine extends Machine
 {
-    private final String failWithMessage;
-    private final int sizeToFailAt;
+    public static final ZooKeeperMachine NO_MACHINE = new ZooKeeperMachine( -1,
+            -1, 1, SlaveContext.EMPTY.machineId(), null, "" );
 
-    public FailingByteChannel( int sizeToFailAt, String failWithMessage )
+    private final String zkPath;
+
+    public ZooKeeperMachine( int machineId, int sequenceId,
+            long lastCommittedTxId, int masterForCommittedTxId, String server,
+            String zkPath )
     {
-        super( sizeToFailAt*2 );
-        this.sizeToFailAt = sizeToFailAt;
-        this.failWithMessage = failWithMessage;
+        super( machineId, sequenceId, lastCommittedTxId,
+                masterForCommittedTxId, server );
+        this.zkPath = zkPath;
     }
 
-    public int read( ByteBuffer dst ) throws IOException
+    public String getZooKeeperPath()
     {
-        if ( position > sizeToFailAt ) throw new MadeUpException( failWithMessage );
-        return super.read( dst );
+        return zkPath;
     }
 }

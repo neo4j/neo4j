@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -79,9 +79,21 @@ public abstract class Client<M> implements ChannelPipelineFactory
     private final byte applicationProtocolVersion;
     private final StoreIdGetter storeIdGetter;
 
-    public Client( String hostNameOrIp, int port, StringLogger logger, StoreIdGetter storeIdGetter,
-            int frameLength, byte applicationProtocolVersion, int readTimeout, int maxConcurrentChannels,
-            int maxUnusedPoolSize )
+    public Client( String hostNameOrIp, int port, StringLogger logger,
+            StoreIdGetter storeIdGetter, int frameLength,
+            byte applicationProtocolVersion, int readTimeout,
+            int maxConcurrentChannels, int maxUnusedPoolSize )
+    {
+        this( hostNameOrIp, port, logger, storeIdGetter, frameLength,
+                applicationProtocolVersion, readTimeout, maxConcurrentChannels,
+                maxUnusedPoolSize, ConnectionLostHandler.NO_ACTION );
+    }
+
+    public Client( String hostNameOrIp, int port, StringLogger logger,
+            StoreIdGetter storeIdGetter, int frameLength,
+            byte applicationProtocolVersion, int readTimeout,
+            int maxConcurrentChannels, int maxUnusedPoolSize,
+            final ConnectionLostHandler connectionLostHandler )
     {
         this.msgLog = logger;
         this.storeIdGetter = storeIdGetter;
@@ -106,12 +118,19 @@ public abstract class Client<M> implements ChannelPipelineFactory
                     return channel;
                 }
 
-                // TODO Here it would be neat if we could ask the db to find us a new master
-                // and if this still will be a slave then retry to connect.
-
                 String msg = "Client could not connect to " + address;
                 msgLog.logMessage( msg, true );
-                throw new ComException( msg );
+                ComException exception = new ComException( msg );
+                try
+                {
+                    Thread.sleep( 1000 );
+                }
+                catch ( InterruptedException e )
+                {
+                    msgLog.logMessage( "Interrupted", e );
+                }
+                // connectionLostHandler.handle( exception );
+                throw exception;
             }
 
             @Override
@@ -148,7 +167,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
     {
         return sendRequest( type, context, serializer, deserializer, null );
     }
-    
+
     protected <R> Response<R> sendRequest( RequestType<M> type, SlaveContext context,
             Serializer serializer, Deserializer<R> deserializer, StoreId specificStoreId )
     {
@@ -216,7 +235,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
             throw new ComException( storeId + " from response doesn't match my " + myStoreId );
         }
     }
-    
+
     protected StoreId getMyStoreId()
     {
         if ( myStoreId == null ) myStoreId = storeIdGetter.get();
@@ -284,7 +303,13 @@ public abstract class Client<M> implements ChannelPipelineFactory
     {
         channelPool.close( true );
         executor.shutdownNow();
-        msgLog.logMessage( getClass().getSimpleName() + " shutdown", true );
+        msgLog.logMessage( toString() + " shutdown", true );
+    }
+
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName() + "[" + address + "]";
     }
 
     protected static TransactionStream readTransactionStreams( final ChannelBuffer buffer )
@@ -349,7 +374,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
             buffer.resetReaderIndex();
         }
     }
-    
+
     public static StoreIdGetter storeIdGetterForDb( final GraphDatabaseService db )
     {
         return new StoreIdGetter()
@@ -372,4 +397,17 @@ public abstract class Client<M> implements ChannelPipelineFactory
             throw new UnsupportedOperationException();
         }
     };
+
+    public interface ConnectionLostHandler
+    {
+        public static final ConnectionLostHandler NO_ACTION = new ConnectionLostHandler()
+        {
+
+            @Override
+            public void handle( Exception e )
+            {
+            }
+        };
+        void handle( Exception e );
+    }
 }

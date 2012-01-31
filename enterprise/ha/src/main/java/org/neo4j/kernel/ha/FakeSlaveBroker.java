@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -27,13 +27,11 @@ import org.neo4j.kernel.ha.zookeeper.Machine;
 public class FakeSlaveBroker extends AbstractBroker
 {
     private final Master master;
-    private final Machine masterMachine;
 
     public FakeSlaveBroker( Master master, int masterMachineId, int myMachineId, GraphDatabaseService graphDb )
     {
         super( myMachineId, graphDb );
         this.master = master;
-        this.masterMachine = new Machine( masterMachineId, 0, 1, -1, null );
     }
 
     public Pair<Master, Machine> getMaster()

@@ -4,13 +4,13 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-central</artifactId>
-    <version>30</version>
+    <version>31</version>
     <relativePath />
   </parent>
 
   <groupId>org.neo4j</groupId>
   <artifactId>neo4j-enterprise</artifactId>
-  <version>1.6-SNAPSHOT</version>
+  <version>1.7-SNAPSHOT</version>
   <name>Neo4j Enterprise</name>
   <packaging>jar</packaging>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -19,7 +19,7 @@
   <properties>
     <short-name>neo4j-enterprise</short-name>
     <bundle.namespace>org.neo4j</bundle.namespace>
-    <neo4j.version>1.6-SNAPSHOT</neo4j.version>
+    <neo4j.version>1.7-SNAPSHOT</neo4j.version>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/deployment-installation.html#editions</docs.url>
   </properties>
 
@@ -37,17 +37,17 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-com</artifactId>
-      <version>1.6-SNAPSHOT</version>
+      <version>1.7-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-backup</artifactId>
-      <version>1.6-SNAPSHOT</version>
+      <version>1.7-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ha</artifactId>
-      <version>1.6-SNAPSHOT</version>
+      <version>1.7-SNAPSHOT</version>
     </dependency>
   </dependencies>
 

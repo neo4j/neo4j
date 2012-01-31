@@ -3,14 +3,14 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>30</version>
+    <version>31</version>
     <relativePath />
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.app</groupId>
   <artifactId>neo4j-server-enterprise</artifactId>
-  <version>1.6-SNAPSHOT</version>
+  <version>1.7-SNAPSHOT</version>
   <name>Neo4j Enterprise Server</name>
   <description>Standalone Neo4j server application.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -34,7 +34,7 @@
     <webdriver.version>2.0b1</webdriver.version>
     <webdriver.impl.class>org.openqa.selenium.firefox.FirefoxDriver</webdriver.impl.class>
 
-    <neo4j.version>1.6-SNAPSHOT</neo4j.version>
+    <neo4j.version>1.7-SNAPSHOT</neo4j.version>
     <docs.url>http://docs.neo4j.org/chunked/${project.version}/server.html</docs.url>
   </properties>
 
@@ -73,7 +73,7 @@ terms of the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-enterprise</artifactId>
-      <version>1.6-SNAPSHOT</version>
+      <version>1.7-SNAPSHOT</version>
     </dependency>
 
     <!-- Test dependencies -->
@@ -87,7 +87,7 @@ terms of the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-ha</artifactId>
-      <version>1.6-SNAPSHOT</version>
+      <version>1.7-SNAPSHOT</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
@@ -489,7 +489,7 @@ terms of the relevant Commercial Agreement.
         <repository>
           <id>neo4j-dev</id>
           <name>Neo4j Developer Repository</name>
-          <url>https://repo.neo4j.org/content/groups/dev/</url>
+          <url>http://m2.neo4j.org/content/groups/everything/</url>
         </repository>
       </repositories>
     </profile>
@@ -526,7 +526,7 @@ terms of the relevant Commercial Agreement.
     <repository>
       <id>neo4j-release-repository</id>
       <name>Neo4j Maven 2 release repository</name>
-      <url>http://m2.neo4j.org/releases</url>
+      <url>http://m2.neo4j.org/content/repositories/releases</url>
       <releases>
         <enabled>true</enabled>
       </releases>
@@ -537,7 +537,7 @@ terms of the relevant Commercial Agreement.
     <repository>
       <id>neo4j-snapshot-repository</id>
       <name>Neo4j Maven 2 snapshot repository</name>
-      <url>http://m2.neo4j.org/snapshots</url>
+      <url>http://m2.neo4j.org/content/repositories/snapshots</url>
       <snapshots>
         <enabled>true</enabled>
       </snapshots>

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -18,53 +18,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.backup.check;
-
-import static org.neo4j.backup.check.InconsistencyType.PropertyBlockInconsistency.BlockInconsistencyType.DYNAMIC_NOT_IN_USE;
-import static org.neo4j.backup.check.InconsistencyType.PropertyBlockInconsistency.BlockInconsistencyType.ILLEGAL_PROPERTY_TYPE;
-import static org.neo4j.backup.check.InconsistencyType.PropertyBlockInconsistency.BlockInconsistencyType.INVALID_PROPERTY_KEY;
-import static org.neo4j.backup.check.InconsistencyType.PropertyBlockInconsistency.BlockInconsistencyType.UNUSED_PROPERTY_KEY;
-import static org.neo4j.backup.check.InconsistencyType.PropertyOwnerInconsistency.OwnerInconsistencyType.MULTIPLE_OWNERS;
-import static org.neo4j.backup.check.InconsistencyType.PropertyOwnerInconsistency.OwnerInconsistencyType.PROPERTY_CHANGED_FOR_WRONG_OWNER;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.DYNAMIC_LENGTH_TOO_LARGE;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.INVALID_TYPE_ID;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.NEXT_DYNAMIC_NOT_IN_USE;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.NEXT_PROPERTY_NOT_IN_USE;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.NON_FULL_DYNAMIC_WITH_NEXT;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.OVERWRITE_USED_DYNAMIC;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.OWNER_DOES_NOT_REFERENCE_BACK;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.OWNER_NOT_IN_USE;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.PREV_PROPERTY_NOT_IN_USE;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.PROPERTY_FOR_OTHER;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.PROPERTY_NEXT_WRONG_BACKREFERENCE;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.PROPERTY_NOT_IN_USE;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.PROPERTY_PREV_WRONG_BACKREFERENCE;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.RELATIONSHIP_FOR_OTHER_NODE;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.RELATIONSHIP_NOT_IN_USE;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.REPLACED_PROPERTY;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.SOURCE_NEXT_DIFFERENT_CHAIN;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.SOURCE_NEXT_NOT_IN_USE;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.SOURCE_NODE_INVALID;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.SOURCE_NODE_NOT_IN_USE;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.SOURCE_PREV_DIFFERENT_CHAIN;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.SOURCE_PREV_NOT_IN_USE;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.SOURCE_NO_BACKREF;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.TARGET_NEXT_DIFFERENT_CHAIN;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.TARGET_NEXT_NOT_IN_USE;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.TARGET_NODE_INVALID;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.TARGET_NODE_NOT_IN_USE;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.TARGET_PREV_DIFFERENT_CHAIN;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.TARGET_PREV_NOT_IN_USE;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.TARGET_NO_BACKREF;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.TYPE_NOT_IN_USE;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.UNUSED_KEY_NAME;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.UNUSED_TYPE_NAME;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.PROPERTY_CHANGED_WITHOUT_OWNER;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.RELATIONSHIP_NOT_REMOVED_FOR_DELETED_NODE;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.PROPERTY_NOT_REMOVED_FOR_DELETED_RELATIONSHIP;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.PROPERTY_NOT_REMOVED_FOR_DELETED_NODE;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.REMOVED_PROPERTY_STILL_REFERENCED;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.REMOVED_RELATIONSHIP_STILL_REFERENCED;
-import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.NEXT_DYNAMIC_NOT_REMOVED;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -89,6 +42,53 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 
+import static org.neo4j.backup.check.InconsistencyType.PropertyBlockInconsistency.BlockInconsistencyType.DYNAMIC_NOT_IN_USE;
+import static org.neo4j.backup.check.InconsistencyType.PropertyBlockInconsistency.BlockInconsistencyType.ILLEGAL_PROPERTY_TYPE;
+import static org.neo4j.backup.check.InconsistencyType.PropertyBlockInconsistency.BlockInconsistencyType.INVALID_PROPERTY_KEY;
+import static org.neo4j.backup.check.InconsistencyType.PropertyBlockInconsistency.BlockInconsistencyType.UNUSED_PROPERTY_KEY;
+import static org.neo4j.backup.check.InconsistencyType.PropertyOwnerInconsistency.OwnerInconsistencyType.MULTIPLE_OWNERS;
+import static org.neo4j.backup.check.InconsistencyType.PropertyOwnerInconsistency.OwnerInconsistencyType.PROPERTY_CHANGED_FOR_WRONG_OWNER;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.DYNAMIC_LENGTH_TOO_LARGE;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.INVALID_TYPE_ID;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.NEXT_DYNAMIC_NOT_IN_USE;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.NEXT_DYNAMIC_NOT_REMOVED;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.NEXT_PROPERTY_NOT_IN_USE;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.NON_FULL_DYNAMIC_WITH_NEXT;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.OVERWRITE_USED_DYNAMIC;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.OWNER_DOES_NOT_REFERENCE_BACK;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.OWNER_NOT_IN_USE;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.PREV_PROPERTY_NOT_IN_USE;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.PROPERTY_CHANGED_WITHOUT_OWNER;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.PROPERTY_FOR_OTHER;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.PROPERTY_NEXT_WRONG_BACKREFERENCE;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.PROPERTY_NOT_IN_USE;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.PROPERTY_NOT_REMOVED_FOR_DELETED_NODE;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.PROPERTY_NOT_REMOVED_FOR_DELETED_RELATIONSHIP;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.PROPERTY_PREV_WRONG_BACKREFERENCE;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.RELATIONSHIP_FOR_OTHER_NODE;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.RELATIONSHIP_NOT_IN_USE;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.RELATIONSHIP_NOT_REMOVED_FOR_DELETED_NODE;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.REMOVED_PROPERTY_STILL_REFERENCED;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.REMOVED_RELATIONSHIP_STILL_REFERENCED;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.REPLACED_PROPERTY;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.SOURCE_NEXT_DIFFERENT_CHAIN;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.SOURCE_NEXT_NOT_IN_USE;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.SOURCE_NODE_INVALID;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.SOURCE_NODE_NOT_IN_USE;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.SOURCE_NO_BACKREF;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.SOURCE_PREV_DIFFERENT_CHAIN;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.SOURCE_PREV_NOT_IN_USE;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.TARGET_NEXT_DIFFERENT_CHAIN;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.TARGET_NEXT_NOT_IN_USE;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.TARGET_NODE_INVALID;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.TARGET_NODE_NOT_IN_USE;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.TARGET_NO_BACKREF;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.TARGET_PREV_DIFFERENT_CHAIN;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.TARGET_PREV_NOT_IN_USE;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.TYPE_NOT_IN_USE;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.UNUSED_KEY_NAME;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.UNUSED_TYPE_NAME;
+
 /**
  * Finds inconsistency in a Neo4j store.
  *
@@ -104,7 +104,7 @@ public abstract class ConsistencyCheck extends RecordStore.Processor implements 
 {
     /**
      * Run a full consistency check on the specified store.
-     * 
+     *
      * @param args The arguments to the checker, the first is taken as the path
      *            to the store to check.
      */
@@ -200,7 +200,7 @@ public abstract class ConsistencyCheck extends RecordStore.Processor implements 
 
     /**
      * Creates a standard checker.
-     * 
+     *
      * @param stores the stores to check.
      */
     public ConsistencyCheck( StoreAccess stores )
@@ -210,10 +210,10 @@ public abstract class ConsistencyCheck extends RecordStore.Processor implements 
 
     /**
      * Creates a standard checker or a checker that validates property owners.
-     * 
+     *
      * Property ownership validation validates that each property record is only
      * referenced once. This check has a bit of memory overhead.
-     * 
+     *
      * @param stores the stores to check.
      * @param checkPropertyOwners if <code>true</code> ownership validation will
      *            be performed.
@@ -231,7 +231,7 @@ public abstract class ConsistencyCheck extends RecordStore.Processor implements 
         this.typeNames = stores.getTypeNameStore();
         this.propertyOwners = checkPropertyOwners ? new HashMap<Long, PropertyOwner>() : null;
     }
-    
+
     private static abstract class PropertyOwner
     {
         final long id;
@@ -249,7 +249,7 @@ public abstract class ConsistencyCheck extends RecordStore.Processor implements 
 
         abstract InconsistencyType propertyNotRemoved();
     }
-    
+
     private static final class OwningNode extends PropertyOwner
     {
         OwningNode( long id )
@@ -333,7 +333,7 @@ public abstract class ConsistencyCheck extends RecordStore.Processor implements 
         applyFiltered( propIndexes, progress, RecordStore.IN_USE );
         applyFiltered( propKeys, progress, RecordStore.IN_USE );
         applyFiltered( typeNames, progress, RecordStore.IN_USE );
-        
+
         if (progress != null) progress.done();
         checkResult();
     }
@@ -348,7 +348,7 @@ public abstract class ConsistencyCheck extends RecordStore.Processor implements 
      * be invoked at the end of the check. If inconsistencies were found an
      * {@link AssertionError} summarizing the number of inconsistencies will be
      * thrown.
-     * 
+     *
      * @throws AssertionError if any inconsistencies were found.
      */
     public void checkResult() throws AssertionError
@@ -771,8 +771,8 @@ public abstract class ConsistencyCheck extends RecordStore.Processor implements 
         if ( store instanceof DiffRecordStore<?> )
         {
             DiffRecordStore<DynamicRecord> diffs = (DiffRecordStore<DynamicRecord>) store;
-            if ( diffs.isModified( record.getId() ) )
-            {
+            if ( diffs.isModified( record.getId() ) && !record.isLight() )
+            { // if the record is really modified it will be heavy
                 DynamicRecord prev = diffs.forceGetRaw( record.getId() );
                 if ( prev.inUse() ) fail |= inconsistent( store, record, prev, OVERWRITE_USED_DYNAMIC );
             }
@@ -805,7 +805,7 @@ public abstract class ConsistencyCheck extends RecordStore.Processor implements 
         report( recordStore, record, referredStore, referred, type );
         return !type.isWarning();
     }
-    
+
     private <R extends AbstractBaseRecord> boolean inconsistent(
             RecordStore<R> store, R record, R referred, InconsistencyType type )
     {
@@ -822,7 +822,7 @@ public abstract class ConsistencyCheck extends RecordStore.Processor implements 
 
     /**
      * Report an inconsistency between two records.
-     * 
+     *
      * @param recordStore the store containing the record found to be inconsistent.
      * @param record the record found to be inconsistent.
      * @param referredStore the store containing the record the inconsistent record references.
@@ -833,8 +833,8 @@ public abstract class ConsistencyCheck extends RecordStore.Processor implements 
             RecordStore<R1> recordStore, R1 record, RecordStore<? extends R2> referredStore, R2 referred, InconsistencyType inconsistency );
 
     /**
-     * Report an internal inconsistency in a single record. 
-     * 
+     * Report an internal inconsistency in a single record.
+     *
      * @param recordStore the store the inconsistent record is stored in.
      * @param record the inconsistent record.
      * @param inconsistency a description of the inconsistency.

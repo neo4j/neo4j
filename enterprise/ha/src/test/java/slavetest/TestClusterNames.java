@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -46,13 +46,13 @@ public class TestClusterNames
     {
         zoo = LocalhostZooKeeperCluster.standardZoo( TestClusterNames.class );
     }
-    
+
     @After
     public void down()
     {
         zoo.shutdown();
     }
-    
+
     @Test
     public void makeSureStoreIdInStoreMatchesZKData() throws Exception
     {
@@ -62,14 +62,14 @@ public class TestClusterNames
         awaitStarted( db1 );
         db1.shutdown();
         db0.shutdown();
-        
+
         ClusterManager cm = new ClusterManager( zoo.getConnectionString() );
         cm.waitForSyncConnected();
         StoreId zkStoreId = StoreId.deserialize( cm.getZooKeeper( false ).getData( "/" + HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME, false, null ) );
         StoreId storeId = new NeoStoreUtil( db0.getStoreDir() ).asStoreId();
         assertEquals( storeId, zkStoreId );
     }
-    
+
     @Test
     public void makeSureMultipleHaClustersCanLiveInTheSameZKCluster() throws Exception
     {
@@ -79,14 +79,14 @@ public class TestClusterNames
         HAGraphDb db1Cluster1 = db( 1, cluster1Name, HaConfig.CONFIG_DEFAULT_PORT );
         awaitStarted( db0Cluster1 );
         awaitStarted( db1Cluster1 );
-        
+
         // Here's another cluster
         String cluster2Name = "cluster.2";
         HAGraphDb db0Cluster2 = db( 0, cluster2Name, HaConfig.CONFIG_DEFAULT_PORT+1 );
         HAGraphDb db1Cluster2 = db( 1, cluster2Name, HaConfig.CONFIG_DEFAULT_PORT+1 );
         awaitStarted( db0Cluster2 );
         awaitStarted( db1Cluster2 );
-        
+
         // Set property in one cluster, make sure it only affects that cluster
         String cluster1PropertyName = "c1";
         setRefNodeName( db1Cluster1, cluster1PropertyName );
@@ -95,7 +95,7 @@ public class TestClusterNames
         assertEquals( cluster1PropertyName, db1Cluster1.getReferenceNode().getProperty( "name" ) );
         assertNull( db0Cluster2.getReferenceNode().getProperty( "name", null ) );
         assertNull( db1Cluster2.getReferenceNode().getProperty( "name", null ) );
-        
+
         // Set property in the other cluster, make sure it only affects that cluster
         String cluster2PropertyName = "c2";
         setRefNodeName( db1Cluster2, cluster2PropertyName );
@@ -104,9 +104,10 @@ public class TestClusterNames
         assertEquals( cluster1PropertyName, db1Cluster1.getReferenceNode().getProperty( "name" ) );
         assertEquals( cluster2PropertyName, db0Cluster2.getReferenceNode().getProperty( "name" ) );
         assertEquals( cluster2PropertyName, db1Cluster2.getReferenceNode().getProperty( "name" ) );
-        
+
         // Restart an instance and make sure it rejoins the correct cluster again
         db0Cluster1.shutdown();
+        db1Cluster1.newMaster( new Exception() );
         pullUpdates( db1Cluster1 );
         db0Cluster1 = db( 0, cluster1Name, HaConfig.CONFIG_DEFAULT_PORT );
         pullUpdates( db0Cluster1, db1Cluster1 );
@@ -132,7 +133,7 @@ public class TestClusterNames
         assertEquals( cluster1PropertyName, db1Cluster1.getReferenceNode().getProperty( "name" ) );
         assertEquals( cluster2PropertyName, db0Cluster2.getReferenceNode().getProperty( "name" ) );
         assertEquals( cluster2PropertyName, db1Cluster2.getReferenceNode().getProperty( "name" ) );
-        
+
         db0Cluster1.shutdown();
         db1Cluster1.shutdown();
         db0Cluster2.shutdown();
@@ -167,14 +168,14 @@ public class TestClusterNames
     private HAGraphDb db( int serverId, String clusterName, int serverPort )
     {
         TargetDirectory dir = TargetDirectory.forTest( getClass() );
-        return new HAGraphDb( dir.directory( clusterName + "-" + serverId, true ).getAbsolutePath(), MapUtil.stringMap( 
+        return new HAGraphDb( dir.directory( clusterName + "-" + serverId, true ).getAbsolutePath(), MapUtil.stringMap(
                 HaConfig.CONFIG_KEY_SERVER_ID, String.valueOf( serverId ),
                 HaConfig.CONFIG_KEY_COORDINATORS, zoo.getConnectionString(),
                 HaConfig.CONFIG_KEY_CLUSTER_NAME, clusterName,
                 HaConfig.CONFIG_KEY_SERVER, "localhost:" + serverPort,
                 HaConfig.CONFIG_KEY_READ_TIMEOUT, String.valueOf( 2 ) ) );
     }
-    
+
     private void awaitStarted( GraphDatabaseService db )
     {
         while ( true )

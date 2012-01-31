@@ -17,26 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.com;
+package org.neo4j.kernel.ha;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
-public class FailingByteChannel extends KnownDataByteChannel
+public class UnableToResumeTransactionException extends RuntimeException
 {
-    private final String failWithMessage;
-    private final int sizeToFailAt;
-
-    public FailingByteChannel( int sizeToFailAt, String failWithMessage )
+    public UnableToResumeTransactionException( Throwable cause )
     {
-        super( sizeToFailAt*2 );
-        this.sizeToFailAt = sizeToFailAt;
-        this.failWithMessage = failWithMessage;
-    }
-
-    public int read( ByteBuffer dst ) throws IOException
-    {
-        if ( position > sizeToFailAt ) throw new MadeUpException( failWithMessage );
-        return super.read( dst );
+        super( cause );
     }
 }

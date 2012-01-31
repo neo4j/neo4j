@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -100,7 +100,7 @@ public class SingleJvmTest extends AbstractHaTest
     {
         int masterId = 0;
         Map<String, String> config = MapUtil.stringMap( extraConfig,
-                HaConfig.CONFIG_KEY_SERVER_ID, String.valueOf( masterId ));
+                HaConfig.CONFIG_KEY_SERVER_ID, String.valueOf( masterId ) );
         addDefaultReadTimeout( config );
         String path = dbPath( 0 ).getAbsolutePath();
         PlaceHolderGraphDatabaseService placeHolderDb = new PlaceHolderGraphDatabaseService( path );

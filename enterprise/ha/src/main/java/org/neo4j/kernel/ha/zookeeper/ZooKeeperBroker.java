@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,6 +19,16 @@
  */
 package org.neo4j.kernel.ha.zookeeper;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.SocketAddress;
+import java.util.Map;
+
+import javax.management.remote.JMXServiceURL;
+
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.HaConfig;
@@ -32,15 +42,6 @@ import org.neo4j.kernel.ha.ResponseReceiver;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.management.Neo4jManager;
-
-import javax.management.remote.JMXServiceURL;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketAddress;
-import java.util.Map;
 
 public class ZooKeeperBroker extends AbstractBroker
 {
@@ -157,7 +158,7 @@ public class ZooKeeperBroker extends AbstractBroker
     @Override
     public ConnectionInformation[] getConnectionInformation()
     {
-        Map<Integer, Machine> machines = zooClient.getAllMachines( false );
+        Map<Integer, ZooKeeperMachine> machines = zooClient.getAllMachines( false );
         Machine master = zooClient.getMasterBasedOn( machines.values() );
         ConnectionInformation[] result = new ConnectionInformation[machines.size()];
         int i = 0;
@@ -187,7 +188,7 @@ public class ZooKeeperBroker extends AbstractBroker
     @Override
     public Machine getMasterExceptMyself()
     {
-        Map<Integer, Machine> machines = zooClient.getAllMachines( true );
+        Map<Integer, ZooKeeperMachine> machines = zooClient.getAllMachines( true );
         machines.remove( getMyMachineId() );
         return zooClient.getMasterBasedOn( machines.values() );
     }
@@ -196,7 +197,7 @@ public class ZooKeeperBroker extends AbstractBroker
     {
         MasterServer server = new MasterServer( new MasterImpl( graphDb, config ),
                 Machine.splitIpAndPort( haServer ).other(), graphDb.getMessageLog(),
-                clientLockReadTimeout );
+                HaConfig.getMaxConcurrentTransactionsOnMasterFromConfig( config ), clientLockReadTimeout );
         return server;
     }
 

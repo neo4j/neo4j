@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -41,25 +41,25 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT,
                 Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT );
     }
-    
+
     public Response<Void> fullBackup( StoreWriter storeWriter )
     {
         return sendRequest( BackupRequestType.FULL_BACKUP, SlaveContext.EMPTY,
                 Protocol.EMPTY_SERIALIZER, new Protocol.FileStreamsDeserializer( storeWriter ) );
     }
-    
+
     public Response<Void> incrementalBackup( SlaveContext context )
     {
         return sendRequest( BackupRequestType.INCREMENTAL_BACKUP, context,
                 Protocol.EMPTY_SERIALIZER, Protocol.VOID_DESERIALIZER );
     }
-    
+
     @Override
     protected boolean shouldCheckStoreId( RequestType<TheBackupInterface> type )
     {
         return type != BackupRequestType.FULL_BACKUP;
     }
-    
+
     public static enum BackupRequestType implements RequestType<TheBackupInterface>
     {
         FULL_BACKUP( new MasterCaller<TheBackupInterface, Void>()
@@ -78,13 +78,13 @@ class BackupClient extends Client<TheBackupInterface> implements TheBackupInterf
                 return master.incrementalBackup( context );
             }
         }, Protocol.VOID_SERIALIZER )
-        
+
         ;
         @SuppressWarnings( "rawtypes" )
         private final MasterCaller masterCaller;
         @SuppressWarnings( "rawtypes" )
         private final ObjectSerializer serializer;
-        
+
         @SuppressWarnings( "rawtypes" )
         private BackupRequestType( MasterCaller masterCaller, ObjectSerializer serializer )
         {

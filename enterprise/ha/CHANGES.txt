@@ -1,3 +1,9 @@
+1.6 (2012-01-20)
+---------------
+o New HA request type allows for copy of transaction interval from master to slave, to recover from missing logical log files.
+o It is no longer required to run an update puller to trigger a master election when the master goes down abruptly.
+o Multiple retries on store copy operations during startup, so that long copies that get interrupted have a chance to complete.
+
 1.6.M03 (2012-01-12)
 --------------------
 o Corrected ZK Expired event handling. Now, instead of restarting the zookeeper client, the whole broker is restarted and newMaster is called.

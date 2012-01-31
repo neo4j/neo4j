@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -53,13 +53,15 @@ public class FakeMasterBroker extends AbstractBroker
 
     public Pair<Master, Machine> getMaster()
     {
-        return Pair.<Master, Machine>of( null, new Machine( getMyMachineId(), 0, 1, -1, null ) );
+        return Pair.<Master, Machine>of( null, new Machine( getMyMachineId(),
+                0, 1, -1, null ) );
         // throw new UnsupportedOperationException( "I am master" );
     }
 
     public Pair<Master, Machine> getMasterReally( boolean allowChange )
     {
-        return Pair.<Master, Machine>of( null, new Machine( getMyMachineId(), 0, 1, -1, null ) );
+        return Pair.<Master, Machine>of( null, new Machine( getMyMachineId(),
+                0, 1, -1, null ) );
     }
 
     public boolean iAmMaster()
@@ -70,6 +72,6 @@ public class FakeMasterBroker extends AbstractBroker
     public Object instantiateMasterServer( AbstractGraphDatabase graphDb )
     {
         return new MasterServer( new MasterImpl( graphDb, config ), Protocol.PORT, graphDb.getMessageLog(),
-                HaConfig.getClientLockReadTimeoutFromConfig( config ) );
+                HaConfig.getMaxConcurrentTransactionsOnMasterFromConfig( config ), HaConfig.getClientLockReadTimeoutFromConfig( config ) );
     }
 }

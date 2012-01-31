@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -44,7 +44,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
         this.storeIdToExpect = storeIdToExpect;
         this.internalProtocolVersion = internalProtocolVersion;
     }
-    
+
     @Override
     protected byte getInternalProtocolVersion()
     {
@@ -86,7 +86,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
             }
         } );
     }
-    
+
     @Override
     public Response<Integer> throwException( final String messageInException )
     {
@@ -103,10 +103,10 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
                     throws IOException
             {
                 return buffer.readInt();
-            }
+                    }
         } );
     }
-    
+
     @Override
     protected StoreId getMyStoreId()
     {
