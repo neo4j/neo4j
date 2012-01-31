@@ -125,7 +125,7 @@ public abstract class LogBackedXaDataSource extends XaDataSource
     @Override
     public Pair<Integer,Long> getMasterForCommittedTx( long txId ) throws IOException
     {
-        return logicalLog.getMasterIdForCommittedTransaction( txId );
+        return logicalLog.getMasterForCommittedTransaction( txId );
     }
     
     @Override
