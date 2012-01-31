@@ -19,6 +19,8 @@
  */
 package org.neo4j.test.ha;
 
+import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -37,11 +39,9 @@ import org.junit.Ignore;
 import org.neo4j.helpers.Format;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.HaConfig;
-import org.neo4j.kernel.ha.zookeeper.ClusterManager;
+import org.neo4j.kernel.ha.zookeeper.ZooKeeperClusterClient;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.subprocess.SubProcess;
-
-import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 
 @Ignore
 public final class LocalhostZooKeeperCluster
@@ -77,7 +77,7 @@ public final class LocalhostZooKeeperCluster
             if ( !success ) shutdown();
         }
     }
-    
+
     public static LocalhostZooKeeperCluster standardZoo( Class<?> owningTest)
     {
         return new LocalhostZooKeeperCluster( owningTest, 2181, 2182, 2183 );
@@ -88,10 +88,11 @@ public final class LocalhostZooKeeperCluster
         timeout = System.currentTimeMillis() + unit.toMillis( timeout );
         do
         {
-            ClusterManager cm = null;
+            ZooKeeperClusterClient cm = null;
             try
             {
-                cm = new ClusterManager( getConnectionString(), HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME );
+                cm = new ZooKeeperClusterClient( getConnectionString(),
+                        HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME );
                 cm.waitForSyncConnected();
                 break;
             }
