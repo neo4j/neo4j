@@ -147,6 +147,9 @@ public class DechunkingChannelBuffer implements ChannelBuffer
         {
             throw new ComException( "Couldn't read failure response", e );
         }
+        
+        if ( cause instanceof RuntimeException ) throw (RuntimeException) cause;
+        if ( cause instanceof Error ) throw (Error) cause;
         throw new ComException( cause );
     }
 

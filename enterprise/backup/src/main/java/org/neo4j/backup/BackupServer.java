@@ -26,6 +26,7 @@ import org.neo4j.com.Protocol;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Server;
 import org.neo4j.com.SlaveContext;
+import org.neo4j.com.TxChecksumVerifier;
 
 class BackupServer extends Server<TheBackupInterface, Object>
 {
@@ -37,7 +38,8 @@ class BackupServer extends Server<TheBackupInterface, Object>
     public BackupServer( TheBackupInterface realMaster, int port, String storeDir )
     {
         super( realMaster, port, storeDir, FRAME_LENGTH, PROTOCOL_VERSION,
-                DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS );
+                DEFAULT_MAX_NUMBER_OF_CONCURRENT_TRANSACTIONS, Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
+                TxChecksumVerifier.ALWAYS_MATCH );
     }
 
     @Override

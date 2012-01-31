@@ -19,6 +19,8 @@
  */
 package org.neo4j.com;
 
+import static org.neo4j.com.SlaveContext.lastAppliedTx;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -33,10 +35,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.com.SlaveContext.Tx;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.ClosableIterable;
@@ -91,21 +93,19 @@ public class MasterUtil
         return path;
     }
 
-    public static Pair<String, Long>[] rotateLogs( GraphDatabaseService graphDb )
+    public static Tx[] rotateLogs( GraphDatabaseService graphDb )
     {
         XaDataSourceManager dsManager =
                 ((AbstractGraphDatabase) graphDb).getConfig().getTxModule().getXaDataSourceManager();
         Collection<XaDataSource> sources = dsManager.getAllRegisteredDataSources();
 
-        @SuppressWarnings( "unchecked" )
-        Pair<String, Long>[] appliedTransactions = new Pair[sources.size()];
+        Tx[] appliedTransactions = new Tx[sources.size()];
         int i = 0;
         for ( XaDataSource ds : sources )
         {
             try
             {
-                long lastCommittedTx = ds.getXaContainer().getResourceManager().rotateLogicalLog();
-                appliedTransactions[i++] = Pair.of( ds.getName(), lastCommittedTx );
+                appliedTransactions[i++] = lastAppliedTx( ds.getName(), ds.getXaContainer().getResourceManager().rotateLogicalLog() );
             }
             catch ( Throwable e )
             {   // This must be treated as a kernel panic, failure to rotate is bad.
@@ -290,9 +290,9 @@ public class MasterUtil
         final List<LogExtractor> logExtractors = new ArrayList<LogExtractor>();
         try
         {
-            for ( Pair<String, Long> txEntry : context.lastAppliedTransactions() )
+            for ( Tx txEntry : context.lastAppliedTransactions() )
             {
-                String resourceName = txEntry.first();
+                String resourceName = txEntry.getDataSourceName();
                 final XaDataSource dataSource = dsManager.getXaDataSource( resourceName );
                 if ( dataSource == null )
                 {
@@ -300,9 +300,9 @@ public class MasterUtil
                 }
                 resourceNames.add( resourceName );
                 final long masterLastTx = dataSource.getLastCommittedTxId();
-                if ( txEntry.other() >= masterLastTx ) continue;
+                if ( txEntry.getTxId() >= masterLastTx ) continue;
                 LogExtractor logExtractor = getTransactionStreamForDatasource(
-                        dataSource, txEntry.other() + 1, masterLastTx, stream,
+                        dataSource, txEntry.getTxId() + 1, masterLastTx, stream,
                         filter );
                 logExtractors.add( logExtractor );
             }
