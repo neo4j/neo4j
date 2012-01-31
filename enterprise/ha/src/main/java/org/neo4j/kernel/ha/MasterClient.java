@@ -262,23 +262,23 @@ public class MasterClient extends Client<Master> implements Master
         }, storeId );
     }
 
-    @SuppressWarnings( "unchecked" )
     public Response<Void> copyStore( SlaveContext context, final StoreWriter writer )
     {
-        context = new SlaveContext( context.getSessionId(), context.machineId(),
-                context.getEventIdentifier(), new Pair[0] );
-
+        context = stripFromTransactions( context );
         return sendRequest( HaRequestType.COPY_STORE, context, EMPTY_SERIALIZER, new Protocol.FileStreamsDeserializer( writer ) );
     }
 
-    @SuppressWarnings( "unchecked" )
+    private SlaveContext stripFromTransactions( SlaveContext context )
+    {
+        return new SlaveContext( context.getSessionId(), context.machineId(),
+                context.getEventIdentifier(), new SlaveContext.Tx[0], context.getMasterId(), context.getChecksum() );
+    }
+
     @Override
     public Response<Void> copyTransactions( SlaveContext context,
             final String ds, final long startTxId, final long endTxId )
     {
-        context = new SlaveContext( context.getSessionId(),
-                context.machineId(), context.getEventIdentifier(), new Pair[0] );
-
+        context = stripFromTransactions( context );
         return sendRequest( HaRequestType.COPY_TRANSACTIONS, context, new Serializer()
         {
             public void write( ChannelBuffer buffer, ByteBuffer readBuffer )

@@ -27,8 +27,8 @@ import javax.transaction.TransactionManager;
 import org.neo4j.com.ComException;
 import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
+import org.neo4j.com.SlaveContext.Tx;
 import org.neo4j.com.TxExtractor;
-import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
@@ -119,10 +119,10 @@ public class SlaveTxIdGenerator implements TxIdGenerator
     @SuppressWarnings( "unchecked" )
     private SlaveContext onlyForThisDataSource( SlaveContext slaveContext, XaDataSource dataSource )
     {
-        Pair<String, Long> txForDs = null;
-        for ( Pair<String, Long> tx : slaveContext.lastAppliedTransactions() )
+        Tx txForDs = null;
+        for ( Tx tx : slaveContext.lastAppliedTransactions() )
         {
-            if ( tx.first().equals( dataSource.getName() ) )
+            if ( tx.getDataSourceName().equals( dataSource.getName() ) )
             {
                 txForDs = tx;
                 break;
@@ -134,7 +134,8 @@ public class SlaveTxIdGenerator implements TxIdGenerator
                     " didn't have the XA data source we are commiting (" + dataSource.getName() + ")" );
         }
         return new SlaveContext( slaveContext.getSessionId(), slaveContext.machineId(),
-                slaveContext.getEventIdentifier(), new Pair[] {txForDs} );
+                slaveContext.getEventIdentifier(), new Tx[] {txForDs}, slaveContext.getMasterId(),
+                slaveContext.getChecksum() );
     }
 
     public int getCurrentMasterId()

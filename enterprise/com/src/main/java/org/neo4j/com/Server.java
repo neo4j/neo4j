@@ -20,6 +20,7 @@
 package org.neo4j.com;
 
 import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
+import static org.neo4j.com.SlaveContext.lastAppliedTx;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -52,10 +53,12 @@ import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
+import org.neo4j.com.SlaveContext.Tx;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.Config;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -66,7 +69,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public abstract class Server<M, R> extends Protocol implements ChannelPipelineFactory
 {
-    static final byte INTERNAL_PROTOCOL_VERSION = 1;
+    static final byte INTERNAL_PROTOCOL_VERSION = 2;
     public static final int DEFAULT_BACKUP_PORT = 6362;
     
     // It's ok if there are more transactions, since these worker threads doesn't
@@ -99,14 +102,16 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
 
     private final byte applicationProtocolVersion;
     private final int oldChannelThresholdMillis;
+    private final TxChecksumVerifier txVerifier;
     
     public Server( M realMaster, final int port, StringLogger logger, int frameLength, byte applicationProtocolVersion,
-            int maxNumberOfConcurrentTransactions, int oldChannelThreshold/*seconds*/ )
+            int maxNumberOfConcurrentTransactions, int oldChannelThreshold/*seconds*/, TxChecksumVerifier txVerifier )
     {
         this.realMaster = realMaster;
         this.frameLength = frameLength;
         this.applicationProtocolVersion = applicationProtocolVersion;
         this.msgLog = logger;
+        this.txVerifier = txVerifier;
         this.oldChannelThresholdMillis = oldChannelThreshold*1000;
         executor = Executors.newCachedThreadPool();
         masterCallExecutor = Executors.newCachedThreadPool();
@@ -492,13 +497,24 @@ public abstract class Server<M, R> extends Protocol implements ChannelPipelineFa
         int machineId = buffer.readInt();
         int eventIdentifier = buffer.readInt();
         int txsSize = buffer.readByte();
-        @SuppressWarnings( "unchecked" )
-        Pair<String, Long>[] lastAppliedTransactions = new Pair[txsSize];
+        Tx[] lastAppliedTransactions = new Tx[txsSize];
+        Tx neoTx = null;
         for ( int i = 0; i < txsSize; i++ )
         {
-            lastAppliedTransactions[i] = Pair.of( readString( buffer ), buffer.readLong() );
+            String ds = readString( buffer );
+            Tx tx = lastAppliedTx( ds, buffer.readLong() );
+            lastAppliedTransactions[i] = tx;
+            
+            // Only perform checksum checks on the neo data source.
+            if ( ds.equals( Config.DEFAULT_DATA_SOURCE_NAME ) ) neoTx = tx;
         }
-        return new SlaveContext( sessionId, machineId, eventIdentifier, lastAppliedTransactions );
+        int masterId = buffer.readInt();
+        long checksum = buffer.readLong();
+        
+        // Only perform checksum checks on the neo data source. If there's none in the request
+        // then don't perform any such check.
+        if ( neoTx != null ) txVerifier.assertMatch( neoTx.getTxId(), masterId, checksum );
+        return new SlaveContext( sessionId, machineId, eventIdentifier, lastAppliedTransactions, masterId, checksum );
     }
 
     protected abstract RequestType<M> getRequestContext( byte id );

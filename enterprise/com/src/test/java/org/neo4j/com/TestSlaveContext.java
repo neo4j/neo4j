@@ -19,11 +19,10 @@
  */
 package org.neo4j.com;
 
-import org.junit.Test;
-import org.neo4j.helpers.Pair;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+
+import org.junit.Test;
 
 public class TestSlaveContext
 {
@@ -32,15 +31,15 @@ public class TestSlaveContext
     public void assertSimilarity()
     {
         // Different machine ids
-        assertFalse( new SlaveContext( 1234, 1, 2, new Pair[0] ).equals( new SlaveContext( 1234, 2, 2, new Pair[0] ) ) );
+        assertFalse( new SlaveContext( 1234, 1, 2, new SlaveContext.Tx[0], 0, 0 ).equals( new SlaveContext( 1234, 2, 2, new SlaveContext.Tx[0], 0, 0 ) ) );
 
         // Different event identifiers
-        assertFalse( new SlaveContext( 1234, 1, 10, new Pair[0] ).equals( new SlaveContext( 1234, 1, 20, new Pair[0] ) ) );
+        assertFalse( new SlaveContext( 1234, 1, 10, new SlaveContext.Tx[0], 0, 0 ).equals( new SlaveContext( 1234, 1, 20, new SlaveContext.Tx[0], 0, 0 ) ) );
 
         // Different session ids
-        assertFalse( new SlaveContext( 1001, 1, 5, new Pair[0] ).equals( new SlaveContext( 1101, 1, 5, new Pair[0] ) ) );
+        assertFalse( new SlaveContext( 1001, 1, 5, new SlaveContext.Tx[0], 0, 0 ).equals( new SlaveContext( 1101, 1, 5, new SlaveContext.Tx[0], 0, 0 ) ) );
 
         // Same everything
-        assertEquals( new SlaveContext( 12345, 4, 9, new Pair[0] ), new SlaveContext( 12345, 4, 9, new Pair[0] ) );
+        assertEquals( new SlaveContext( 12345, 4, 9, new SlaveContext.Tx[0], 0, 0 ), new SlaveContext( 12345, 4, 9, new SlaveContext.Tx[0], 0, 0 ) );
     }
 }
