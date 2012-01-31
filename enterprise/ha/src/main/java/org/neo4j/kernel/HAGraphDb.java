@@ -200,7 +200,8 @@ public class HAGraphDb extends AbstractGraphDatabase
          * so the channel is closed and the copy operation fails. Clients provided from
          * the clusterClient do not suffer from that - after getting hold of such an
          * object, even if the zk cluster goes down the operation will succeed, dependent
-         * only on the source machine being alive.
+         * only on the source machine being alive. If, in the meantime, the master changes
+         * then the verification after the new master election will call us again.
          */
         Pair<Master, Machine> master = clusterClient.getMasterClient();
         // Assume it's shut down at this point
