@@ -58,6 +58,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.BrokerFactory;
+import org.neo4j.kernel.ha.ClusterClient;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterIdGeneratorFactory;
 import org.neo4j.kernel.ha.MasterServer;
@@ -72,6 +73,7 @@ import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.ZooKeeperLastCommittedTxIdSetter;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
+import org.neo4j.kernel.ha.zookeeper.ZooKeeperClusterClient;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -94,6 +96,7 @@ public class HAGraphDb extends AbstractGraphDatabase
     private final Map<String, String> config;
     private final BrokerFactory brokerFactory;
     private volatile Broker broker;
+    private ClusterClient clusterClient;
     private volatile EmbeddedGraphDbImpl localGraph;
     private final int machineId;
     private volatile MasterServer masterServer;
@@ -119,18 +122,28 @@ public class HAGraphDb extends AbstractGraphDatabase
     private final StringLogger msgLog;
 
     /**
-     * Will instantiate its own ZooKeeper broker
+     * Will instantiate its own ZooKeeper broker and ClusterClient
      */
     public HAGraphDb( String storeDir, Map<String, String> config )
     {
-        this( storeDir, config, null );
+        this( storeDir, config, null, null );
     }
 
     /**
-     * Only for testing
+     * ONLY FOR TESTING
+     * Will instantiate its own ClusterClient
      */
     public HAGraphDb( String storeDir, Map<String, String> config,
             BrokerFactory brokerFactory )
+    {
+        this( storeDir, config, brokerFactory, null );
+    }
+
+    /**
+     * ONLY FOR TESTING
+     */
+    public HAGraphDb( String storeDir, Map<String, String> config,
+            BrokerFactory brokerFactory, ClusterClient clusterManager )
     {
         if ( config == null )
         {
@@ -148,6 +161,8 @@ public class HAGraphDb extends AbstractGraphDatabase
         this.brokerFactory = brokerFactory != null ? brokerFactory : defaultBrokerFactory();
         this.broker = this.brokerFactory.create( this, config );
         this.msgLog = StringLogger.getLogger( storeDir );
+        this.clusterClient = clusterManager != null ? clusterManager
+                : defaultClusterManager();
         this.pullUpdates = false;
         startUp( HaConfig.getAllowInitFromConfig( config ) );
     }
@@ -183,10 +198,17 @@ public class HAGraphDb extends AbstractGraphDatabase
         } );
     }
 
-    private void getFreshDatabaseFromMaster( Pair<Master, Machine> master,
-            boolean branched )
+    private void getFreshDatabaseFromMaster( boolean branched )
     {
-        assert master != null;
+        /*
+         * Use the cluster client here instead of the broker provided master client.
+         * The problem is that clients from the broker are shutdown when zk hiccups
+         * so the channel is closed and the copy operation fails. Clients provided from
+         * the clusterClient do not suffer from that - after getting hold of such an
+         * object, even if the zk cluster goes down the operation will succeed, dependent
+         * only on the source machine being alive.
+         */
+        Pair<Master, Machine> master = clusterClient.getMasterClient();
         // Assume it's shut down at this point
         internalShutdown( false );
         if ( branched )
@@ -208,7 +230,7 @@ public class HAGraphDb extends AbstractGraphDatabase
                 msgLog.logMessage( "Problems copying store from master", e );
                 sleepWithoutInterruption( 1000, "" );
                 exception = e;
-                master = broker.getMasterReally( true );
+                master = clusterClient.getMasterClient();
                 BranchedDataPolicy.keep_none.handle( this );
             }
         }
@@ -237,7 +259,7 @@ public class HAGraphDb extends AbstractGraphDatabase
          */
         if ( !new File( storeDir, NeoStore.DEFAULT_NAME ).exists() )
         {   // Try for
-            long endTime = System.currentTimeMillis()+60000;
+            long endTime = System.currentTimeMillis() + 60000;
             Exception exception = null;
             while ( System.currentTimeMillis() < endTime )
             {
@@ -248,7 +270,7 @@ public class HAGraphDb extends AbstractGraphDatabase
                 {   // Join the existing cluster
                     try
                     {
-                        getFreshDatabaseFromMaster( master, false /*branched*/);
+                        getFreshDatabaseFromMaster( false /*branched*/);
                         msgLog.logMessage( "copied store from master" );
                         exception = null;
                         break;
@@ -270,7 +292,6 @@ public class HAGraphDb extends AbstractGraphDatabase
                 // wait for other machine(s) to join.
                 sleepWithoutInterruption( 300, "Startup interrupted" );
             }
-
             if ( exception != null )
             {
                 throw new RuntimeException( "Tried to join the cluster, but was unable to", exception );
@@ -495,6 +516,13 @@ public class HAGraphDb extends AbstractGraphDatabase
         };
     }
 
+    private ClusterClient defaultClusterManager()
+    {
+        return new ZooKeeperClusterClient(
+                HaConfig.getCoordinatorsFromConfig( config ),
+                HaConfig.getClusterNameFromConfig( config ), this );
+    }
+
     public Broker getBroker()
     {
         return this.broker;
@@ -586,7 +614,9 @@ public class HAGraphDb extends AbstractGraphDatabase
      * cluster and starts it again. Should be called in case a ConnectionExpired
      * event is received, this is the equivalent of building the ZK connection
      * from start. Also triggers a master reelect, to make sure that the state
-     * ZK ended up in during our absence is respected.
+     * ZK ended up in during our absence is respected. The cluster manager is
+     * not used outside of startup where this call should not happen and also it
+     * doesn't keep a zoo client open - so is no reason to recreate it
      */
     @Override
     public void reconnect( Exception e )
@@ -1052,7 +1082,7 @@ public class HAGraphDb extends AbstractGraphDatabase
         catch ( BranchedDataException bde )
         {
             msgLog.logMessage( "Branched data occured, retrying" );
-            getFreshDatabaseFromMaster( broker.getMasterReally( true ), true /*branched*/);
+            getFreshDatabaseFromMaster( true /*branched*/);
             doNewMaster( storeId, bde );
         }
     }

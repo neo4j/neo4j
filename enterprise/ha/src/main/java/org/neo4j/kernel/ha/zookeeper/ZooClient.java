@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.ha.zookeeper;
 
-import static org.neo4j.kernel.ha.zookeeper.ClusterManager.asRootPath;
+import static org.neo4j.kernel.ha.zookeeper.ZooKeeperClusterClient.asRootPath;
 
 import java.io.IOException;
 import java.nio.BufferUnderflowException;
@@ -419,7 +419,7 @@ public class ZooClient extends AbstractZooKeeperManager
     {
         if ( rootPath == null )
         {
-            storeId = ClusterManager.getClusterStoreId( zooKeeper, clusterName );
+            storeId = ZooKeeperClusterClient.getClusterStoreId( zooKeeper, clusterName );
             if ( storeId != null )
             {   // There's a cluster in place, let's use that
                 rootPath = asRootPath( storeId );
