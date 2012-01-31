@@ -31,6 +31,7 @@ import org.neo4j.com.Protocol;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Server;
 import org.neo4j.com.SlaveContext;
+import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.kernel.ha.MasterClient.HaRequestType;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -43,12 +44,14 @@ public class MasterServer extends Server<Master, Void>
     static final byte PROTOCOL_VERSION = 2;
 
     static final int FRAME_LENGTH = Protocol.DEFAULT_FRAME_LENGTH;
+    private final TxChecksumVerifier txVerifier;
 
     public MasterServer( Master realMaster, final int port, StringLogger logger, int maxConcurrentTransactions,
-            int oldChannelThreshold )
+            int oldChannelThreshold, TxChecksumVerifier txVerifier )
     {
         super( realMaster, port, logger, FRAME_LENGTH, PROTOCOL_VERSION, maxConcurrentTransactions,
-                oldChannelThreshold );
+                oldChannelThreshold, txVerifier );
+        this.txVerifier = txVerifier;
     }
 
     @Override

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel;
 
+import static org.neo4j.com.SlaveContext.lastAppliedTx;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
@@ -43,6 +44,7 @@ import org.neo4j.com.ComException;
 import org.neo4j.com.MasterUtil;
 import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
+import org.neo4j.com.SlaveContext.Tx;
 import org.neo4j.com.ToFileStoreWriter;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -77,6 +79,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
@@ -319,8 +322,7 @@ public class HAGraphDb extends AbstractGraphDatabase
         }
         try
         {
-            int masterId = dataSource.getMasterForCommittedTx(
-                    myLastCommittedTx ).first();
+            int masterId = dataSource.getMasterForCommittedTx( myLastCommittedTx ).first();
             if ( masterId == -1 )
             {
                 corrupted = true;
@@ -417,7 +419,7 @@ public class HAGraphDb extends AbstractGraphDatabase
             throws Exception
     {
         getMessageLog().logMessage( "Copying store from master" );
-        Response<Void> response = master.first().copyStore( new SlaveContext( 0, machineId, 0, new Pair[0] ),
+        Response<Void> response = master.first().copyStore( emptyContext(),
                 new ToFileStoreWriter( getStoreDir() ) );
         long highestLogVersion = highestLogVersion();
         if ( highestLogVersion > -1 ) NeoStore.setVersion( getStoreDir(), highestLogVersion + 1 );
@@ -431,6 +433,11 @@ public class HAGraphDb extends AbstractGraphDatabase
             copiedDb.shutdown();
         }
         getMessageLog().logMessage( "Done copying store from master" );
+    }
+
+    private SlaveContext emptyContext()
+    {
+        return new SlaveContext( 0, machineId, 0, new Tx[0], 0, 0 );
     }
 
     /**
@@ -450,8 +457,7 @@ public class HAGraphDb extends AbstractGraphDatabase
             String datasource, long logVersion, long startTxId, long endTxId )
             throws Exception
     {
-        Response<Void> response = master.first().copyTransactions(
-                new SlaveContext( 0, machineId, 0, new Pair[0] ), datasource,
+        Response<Void> response = master.first().copyTransactions( emptyContext(), datasource,
                 startTxId, endTxId );
         if ( logVersion == -1 )
         {
@@ -952,6 +958,7 @@ public class HAGraphDb extends AbstractGraphDatabase
         }
         if ( this.localGraph != null )
         {
+            ((AbstractTransactionManager)localGraph.getConfig().getTxModule().getTxManager()).attemptWaitForTxCompletionAndBlockFutureTransactions( 7000 );
             if ( rotateLogs )
             {
                 for ( XaDataSource dataSource : getConfig().getTxModule().getXaDataSourceManager().getAllRegisteredDataSources() )
@@ -1008,17 +1015,28 @@ public class HAGraphDb extends AbstractGraphDatabase
     public SlaveContext getSlaveContext( int eventIdentifier )
     {
         // Constructs a slave context from scratch.
-        XaDataSourceManager localDataSourceManager =
-            getConfig().getTxModule().getXaDataSourceManager();
-        Collection<XaDataSource> dataSources = localDataSourceManager.getAllRegisteredDataSources();
-        @SuppressWarnings("unchecked")
-        Pair<String, Long>[] txs = new Pair[dataSources.size()];
-        int i = 0;
-        for ( XaDataSource dataSource : dataSources )
+        try
         {
-            txs[i++] = Pair.of( dataSource.getName(), dataSource.getLastCommittedTxId() );
+            XaDataSourceManager localDataSourceManager =
+                getConfig().getTxModule().getXaDataSourceManager();
+            Collection<XaDataSource> dataSources = localDataSourceManager.getAllRegisteredDataSources();
+            @SuppressWarnings("unchecked")
+            Tx[] txs = new Tx[dataSources.size()];
+            int i = 0;
+            Pair<Integer,Long> master = null;
+            for ( XaDataSource dataSource : dataSources )
+            {
+                long txId = dataSource.getLastCommittedTxId();
+                if ( dataSource.getName().equals( Config.DEFAULT_DATA_SOURCE_NAME ) )
+                    master = dataSource.getMasterForCommittedTx( txId );
+                txs[i++] = lastAppliedTx( dataSource.getName(), txId );
+            }
+            return new SlaveContext( startupTime, machineId, eventIdentifier, txs, master.first(), master.other() );
         }
-        return new SlaveContext( startupTime, machineId, eventIdentifier, txs );
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     @Override
@@ -1051,13 +1069,32 @@ public class HAGraphDb extends AbstractGraphDatabase
 
     private synchronized void newMaster( StoreId storeId, Exception e )
     {
-        try
+        BranchedDataException bde = null;
+        
+        /* MP: This is from BranchDetectingTxVerifier which can report branched data via a
+         * BranchedDataException embedded inside a ComException (just to pass through the usual
+         * code paths w/o any additional code). Feel free to refactor to get rid of this packing */
+        if ( e instanceof ComException && e.getCause() instanceof BranchedDataException )
         {
-            doNewMaster( storeId, e );
+            bde = (BranchedDataException) e.getCause();
+            getMessageLog().logMessage( "Master says I've got branched data: " + bde );
         }
-        catch ( BranchedDataException bde )
+        
+        if ( bde == null )
         {
-            getMessageLog().logMessage( "Branched data occured, retrying" );
+            try
+            {
+                doNewMaster( storeId, e );
+            }
+            catch ( BranchedDataException be )
+            {
+                bde = be;
+                getMessageLog().logMessage( "Branched data occured, retrying" );
+            }
+        }
+        
+        if ( bde != null )
+        {
             getFreshDatabaseFromMaster( true /*branched*/);
             doNewMaster( storeId, bde );
         }

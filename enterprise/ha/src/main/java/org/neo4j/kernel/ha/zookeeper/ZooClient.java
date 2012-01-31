@@ -719,7 +719,8 @@ public class ZooClient extends AbstractZooKeeperManager
     {
         try
         {
-            return getGraphDb().getConfig().getTxModule().getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME ).getMasterForCommittedTx( tx ).first();
+            return getGraphDb().getConfig().getTxModule().getXaDataSourceManager().getXaDataSource(
+                    Config.DEFAULT_DATA_SOURCE_NAME ).getMasterForCommittedTx( tx ).first();
         }
         catch ( IOException e )
         {
