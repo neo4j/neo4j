@@ -29,8 +29,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.junit.Assert.*;
-
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -40,6 +38,10 @@ import org.neo4j.kernel.info.LockInfo;
 import org.neo4j.kernel.info.LockingTransaction;
 import org.neo4j.kernel.info.ResourceType;
 import org.neo4j.kernel.info.WaitingThread;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 public class TestLockManagerBean
 {
@@ -74,11 +76,11 @@ public class TestLockManagerBean
             LockingTransaction txInfo = transactions.iterator().next();
             assertNotNull( "null transaction", txInfo );
             assertEquals( "read count", 0, txInfo.getReadCount() );
-            assertEquals( "write count", 1, txInfo.getWriteCount() );
+            assertEquals( "write count", 2, txInfo.getWriteCount() );
             assertNotNull( "transaction", txInfo.getTransaction() );
 
             assertEquals( "read count", 0, lock.getReadCount() );
-            assertEquals( "write count", 1, lock.getWriteCount() );
+            assertEquals( "write count", 2, lock.getWriteCount() );
 
             assertEquals( "waiting thread count", 0, lock.getWaitingThreadsCount() );
         }
