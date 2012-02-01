@@ -1,3 +1,10 @@
+1.6.1.RC2 (2012-02-01)
+---------------------
+o Many bug fixes around log rotation and transaction handling that led to corruption issues.
+o Bug fix around race condition in the cache that led to corruption of the store.
+o Performance optimizations around transaction extraction
+
+
 1.6 (2012-01-19)
 ----------------
 o Minor performance optimization in property handling code.
