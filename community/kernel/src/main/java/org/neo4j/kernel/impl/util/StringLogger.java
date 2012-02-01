@@ -29,8 +29,9 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.helpers.Format;
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import org.neo4j.helpers.collection.Visitor;
+
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 public abstract class StringLogger
 {
@@ -39,21 +40,24 @@ public abstract class StringLogger
         new ActualStringLogger( new PrintWriter( System.out ) );
     private static final int DEFAULT_THRESHOLD_FOR_ROTATION = 100 * 1024 * 1024;
     private static final int NUMBER_OF_OLD_LOGS_TO_KEEP = 2;
-    
-    public static class LineLogger
-    {
-        private final StringLogger target;
 
-        private LineLogger(StringLogger target) {
-            this.target = target;
-        }
-        
-        public void logLine( String line )
+    public interface LineLogger
+    {
+        void logLine( String line );
+    }
+
+    public static StringLogger logger( File logfile )
+    {
+        try
         {
-            target.logLine( line );
+            return new ActualStringLogger( new PrintWriter( new FileWriter( logfile, true ) ) );
+        }
+        catch ( IOException cause )
+        {
+            throw new RuntimeException( "Could not create log file: " + logfile, cause );
         }
     }
-    
+
     public static StringLogger logger( String storeDir )
     {
         return logger( storeDir, DEFAULT_THRESHOLD_FOR_ROTATION );
@@ -75,38 +79,45 @@ public abstract class StringLogger
                 target.append( cbuf, off, len );
             }
 
+            @Override
             public void write( int c ) throws IOException
             {
                 target.appendCodePoint( c );
             }
 
+            @Override
             public void write( char[] cbuf ) throws IOException
             {
                 target.append( cbuf );
             }
 
+            @Override
             public void write( String str ) throws IOException
             {
                 target.append( str );
             }
 
+            @Override
             public void write( String str, int off, int len ) throws IOException
             {
                 target.append( str, off, len );
             }
 
+            @Override
             public Writer append( char c ) throws IOException
             {
                 target.append( c );
                 return this;
             }
 
+            @Override
             public Writer append( CharSequence csq ) throws IOException
             {
                 target.append( csq );
                 return this;
             }
 
+            @Override
             public Writer append( CharSequence csq, int start, int end ) throws IOException
             {
                 target.append( csq, start, end );
@@ -126,7 +137,7 @@ public abstract class StringLogger
             }
         } ) );
     }
-    
+
     public void logMessage( String msg )
     {
         logMessage( msg, false );
@@ -172,21 +183,21 @@ public abstract class StringLogger
             }
         }, flush );
     }
-    
+
     public abstract void logLongMessage( String msg, Visitor<LineLogger> source, boolean flush );
 
     public abstract void logMessage( String msg, boolean flush );
 
     public abstract void logMessage( String msg, Throwable cause, boolean flush );
-    
+
     public abstract void addRotationListener( Runnable listener );
 
     public abstract void flush();
 
     public abstract void close();
-    
+
     abstract void logLine( String line );
-    
+
     public static final StringLogger DEV_NULL = new StringLogger()
     {
         @Override
@@ -210,14 +221,14 @@ public abstract class StringLogger
         @Override
         public void addRotationListener( Runnable listener ) {}
     };
-    
+
     private static class ActualStringLogger extends StringLogger
     {
         private PrintWriter out;
         private final Integer rotationThreshold;
         private final File file;
-        private final List<Runnable> onRotation = new CopyOnWriteArrayList<Runnable>(); 
-        
+        private final List<Runnable> onRotation = new CopyOnWriteArrayList<Runnable>();
+
         private ActualStringLogger( String filename, int rotationThreshold )
         {
             this.rotationThreshold = rotationThreshold;
@@ -235,7 +246,7 @@ public abstract class StringLogger
                 throw new RuntimeException( e );
             }
         }
-        
+
         private ActualStringLogger( PrintWriter writer )
         {
             this.out = writer;
@@ -257,7 +268,7 @@ public abstract class StringLogger
                 trigger.run();
             }
         }
-    
+
         @Override
         public synchronized void logMessage( String msg, boolean flush )
         {
@@ -269,12 +280,12 @@ public abstract class StringLogger
             }
             checkRotation();
         }
-    
+
         private String time()
         {
             return Format.date();
         }
-    
+
         @Override
         public synchronized void logMessage( String msg, Throwable cause, boolean flush )
         {
@@ -287,25 +298,25 @@ public abstract class StringLogger
             }
             checkRotation();
         }
-        
+
         @Override
         public synchronized void logLongMessage( String msg, Visitor<LineLogger> source, boolean flush )
         {
             out.println( time() + ": " + msg );
-            source.visit( new LineLogger( this ) );
+            source.visit( new LineLoggerImpl( this ) );
             if ( flush )
             {
                 out.flush();
             }
             checkRotation();
         }
-        
+
         @Override
         void logLine( String line )
         {
             out.println( "    " + line );
         }
-    
+
 //        private void ensureOpen()
 //        {
 //            /*
@@ -329,7 +340,7 @@ public abstract class StringLogger
 //                }
 //            }
 //        }
-    
+
         private void checkRotation()
         {
             if ( rotationThreshold != null && file.length() > rotationThreshold.intValue() )
@@ -337,7 +348,7 @@ public abstract class StringLogger
                 doRotation();
             }
         }
-    
+
         private void doRotation()
         {
             out.close();
@@ -351,7 +362,7 @@ public abstract class StringLogger
                 throw new RuntimeException( e );
             }
         }
-    
+
         /**
          * Will move:
          * messages.log.1 -> messages.log.2
@@ -367,7 +378,7 @@ public abstract class StringLogger
             {
                 oldLogFile.delete();
             }
-    
+
             for ( int i = NUMBER_OF_OLD_LOGS_TO_KEEP-1; i >= 0; i-- )
             {
                 oldLogFile = new File( file.getParentFile(), file.getName() + (i == 0 ? "" : ("." + i)) );
@@ -377,17 +388,32 @@ public abstract class StringLogger
                 }
             }
         }
-    
+
         @Override
         public void flush()
         {
             out.flush();
         }
-    
+
         @Override
         public void close()
         {
             out.close();
+        }
+    }
+
+    private static final class LineLoggerImpl implements LineLogger
+    {
+        private final StringLogger target;
+
+        LineLoggerImpl( StringLogger target )
+        {
+            this.target = target;
+        }
+
+        public void logLine( String line )
+        {
+            target.logLine( line );
         }
     }
 }
