@@ -540,11 +540,15 @@ the relevant Commercial Agreement.
           </execution>
         </executions>
         <configuration>
+          <headerDefinitions>
+            <headerDefinition>coffee_header.xml</headerDefinition>
+          </headerDefinitions>
           <strictCheck>true</strictCheck>
           <header>${license-text.header}</header>
           <includes>
             <include>src/**/*.java</include>
             <include>src/**/*.js</include>
+            <include>src/**/*.coffee</include>
             <include>src/**/*.scala</include>
             <include>src/**/*.xml</include>
           </includes>
@@ -556,6 +560,7 @@ the relevant Commercial Agreement.
           </excludes>
           <mapping>
             <scala>JAVADOC_STYLE</scala>
+            <coffee>COFFEE_STYLE</coffee>
           </mapping>
           <properties>
             <inceptionYear>${project.inceptionYear}</inceptionYear>
