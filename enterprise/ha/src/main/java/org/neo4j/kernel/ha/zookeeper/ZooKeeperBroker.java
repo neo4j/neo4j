@@ -49,10 +49,11 @@ public class ZooKeeperBroker extends AbstractBroker
     // Connect timeout to zk instance for fetching info, in ms
     private static final int FETCH_INFO_TIMEOUT = 500;
 
-    private final ZooClient zooClient;
+    private volatile ZooClient zooClient;
     private final String haServer;
     private int clientLockReadTimeout;
-    private Map<String, String> config;
+    private final Map<String, String> config;
+    private final ResponseReceiver receiver;
 
     public ZooKeeperBroker( AbstractGraphDatabase graphDb, Map<String, String> config, ResponseReceiver receiver )
     {
@@ -60,7 +61,13 @@ public class ZooKeeperBroker extends AbstractBroker
         this.config = config;
         haServer = HaConfig.getHaServerFromConfig( config );
         clientLockReadTimeout = HaConfig.getClientLockReadTimeoutFromConfig( config );
-        zooClient = new ZooClient( graphDb, config, receiver );
+        this.receiver = receiver;
+        startZooClient();
+    }
+
+    private void startZooClient()
+    {
+        this.zooClient = new ZooClient( getGraphDb(), config, receiver );
     }
 
     @Override
@@ -219,6 +226,13 @@ public class ZooKeeperBroker extends AbstractBroker
     public void shutdown()
     {
         zooClient.shutdown();
+    }
+
+    @Override
+    public void restart()
+    {
+        shutdown();
+        startZooClient();
     }
 
     @Override
