@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -19,11 +19,11 @@
  */
 package org.neo4j.backup.test;
 
-import java.net.URI;
-
 import org.neo4j.backup.BackupExtensionService;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Service;
+
+import java.net.URI;
 
 /**
  * A funny little extension used for testing. It exits the vm it runs on with an
