@@ -95,6 +95,7 @@ public class HAGraphDb extends AbstractGraphDatabase
 {
     private final String storeDir;
     private static final int STORE_COPY_RETRIES = 3;
+    private static final int NEW_MASTER_STARTUP_RETRIES = 3;
 
     private final Map<String, String> config;
     private final BrokerFactory brokerFactory;
@@ -1094,67 +1095,67 @@ public class HAGraphDb extends AbstractGraphDatabase
 
     private synchronized void newMaster( StoreId storeId, Exception e )
     {
-        BranchedDataException bde = null;
-        
         /* MP: This is from BranchDetectingTxVerifier which can report branched data via a
          * BranchedDataException embedded inside a ComException (just to pass through the usual
          * code paths w/o any additional code). Feel free to refactor to get rid of this packing */
         if ( e instanceof ComException && e.getCause() instanceof BranchedDataException )
         {
-            bde = (BranchedDataException) e.getCause();
+            BranchedDataException bde = (BranchedDataException) e.getCause();
             msgLog.logMessage( "Master says I've got branched data: " + bde );
         }
-        
-        if ( bde == null )
+
+        Throwable cause = null;
+        int i = 0;
+        while ( i++ < NEW_MASTER_STARTUP_RETRIES )
         {
             try
             {
-                doNewMaster( storeId, e );
+                msgLog.logMessage( "newMaster called", e, true );
+                reevaluateMyself( storeId );
+                return;
             }
-            catch ( BranchedDataException be )
+            catch ( ZooKeeperException zke )
             {
-                bde = be;
-                msgLog.logMessage( "Branched data occured, retrying" );
+                msgLog.logMessage(
+                        "ZooKeeper exception in newMaster, retry #" + i, zke );
+                e = zke;
+                cause = zke;
+                sleepWithoutInterruption( 500, "" );
+                continue;
+            }
+            catch ( ComException ce )
+            {
+                msgLog.logMessage(
+                        "Communication exception in newMaster, retry #" + i, ce );
+                e = ce;
+                cause = ce;
+                sleepWithoutInterruption( 500, "" );
+                continue;
+            }
+            catch ( BranchedDataException bde )
+            {
+                msgLog.logMessage(
+                        "Branched data occurred, during newMaster retry #" + i,
+                        bde );
+                getFreshDatabaseFromMaster( true /*branched*/);
+                e = bde;
+                cause = bde;
+                continue;
+            }
+            catch ( Throwable t )
+            {
+                cause = t;
+                break;
             }
         }
-        
-        if ( bde != null )
+        if ( cause != null && i == NEW_MASTER_STARTUP_RETRIES )
         {
-            getFreshDatabaseFromMaster( true /*branched*/);
-            doNewMaster( storeId, bde );
+            msgLog.logMessage(
+                    "Reevaluation ended in unknown exception " + cause
+                            + " so shutting down", cause, true );
+            shutdown( cause, false );
         }
-    }
-
-    private void doNewMaster( StoreId storeId, Exception e )
-    {
-        try
-        {
-            msgLog.logMessage( "newMaster called", e, true );
-            reevaluateMyself( storeId );
-        }
-        catch ( ZooKeeperException ee )
-        {
-            msgLog.logMessage( "ZooKeeper exception in newMaster", ee );
-            throw Exceptions.launderedException( ee );
-        }
-        catch ( ComException ee )
-        {
-            msgLog.logMessage( "Communication exception in newMaster", ee );
-            throw Exceptions.launderedException( ee );
-        }
-        catch ( BranchedDataException ee )
-        {
-            throw ee;
-        }
-        // BranchedDataException will escape from this method since the catch clause below
-        // sees to that.
-        catch ( Throwable t )
-        {
-            msgLog.logMessage( "Reevaluation ended in unknown exception " + t
-                    + " so shutting down", t, true );
-            shutdown( t, false );
-            throw Exceptions.launderedException( t );
-        }
+        throw Exceptions.launderedException( cause );
     }
 
     public MasterServer getMasterServerIfMaster()
