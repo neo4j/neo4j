@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.ha.zookeeper;
 
-import static org.neo4j.kernel.ha.zookeeper.ClusterManager.asRootPath;
+import static org.neo4j.kernel.ha.zookeeper.ZooKeeperClusterClient.asRootPath;
 
 import java.io.IOException;
 import java.nio.BufferUnderflowException;
@@ -418,7 +418,7 @@ public class ZooClient extends AbstractZooKeeperManager
     {
         if ( rootPath == null )
         {
-            storeId = ClusterManager.getClusterStoreId( zooKeeper, clusterName );
+            storeId = ZooKeeperClusterClient.getClusterStoreId( zooKeeper, clusterName );
             if ( storeId != null )
             {   // There's a cluster in place, let's use that
                 rootPath = asRootPath( storeId );
@@ -719,7 +719,8 @@ public class ZooClient extends AbstractZooKeeperManager
     {
         try
         {
-            return getGraphDb().getConfig().getTxModule().getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME ).getMasterForCommittedTx( tx ).first();
+            return getGraphDb().getConfig().getTxModule().getXaDataSourceManager().getXaDataSource(
+                    Config.DEFAULT_DATA_SOURCE_NAME ).getMasterForCommittedTx( tx ).first();
         }
         catch ( IOException e )
         {

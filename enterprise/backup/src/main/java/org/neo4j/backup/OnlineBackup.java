@@ -19,6 +19,8 @@
  */
 package org.neo4j.backup;
 
+import static org.neo4j.com.SlaveContext.lastAppliedTx;
+
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -34,9 +36,9 @@ import org.neo4j.com.MasterUtil;
 import org.neo4j.com.MasterUtil.TxHandler;
 import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
+import org.neo4j.com.SlaveContext.Tx;
 import org.neo4j.com.ToFileStoreWriter;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
@@ -223,17 +225,16 @@ public class OnlineBackup
         }
     }
 
-    @SuppressWarnings( "unchecked" )
     private SlaveContext slaveContextOf( GraphDatabaseService graphDb )
     {
         XaDataSourceManager dsManager =
                 ((AbstractGraphDatabase) graphDb).getConfig().getTxModule().getXaDataSourceManager();
-        List<Pair<String, Long>> txs = new ArrayList<Pair<String,Long>>();
+        List<Tx> txs = new ArrayList<Tx>();
         for ( XaDataSource ds : dsManager.getAllRegisteredDataSources() )
         {
-            txs.add( Pair.of( ds.getName(), ds.getLastCommittedTxId() ) );
+            txs.add( lastAppliedTx( ds.getName(), ds.getLastCommittedTxId() ) );
         }
-        return SlaveContext.anonymous( txs.toArray( new Pair[0] ) );
+        return SlaveContext.anonymous( txs.toArray( new Tx[0] ) );
     }
 
     private static boolean bumpLogFile( String targetDirectory, long toTimestamp )

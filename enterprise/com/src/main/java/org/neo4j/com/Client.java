@@ -43,9 +43,9 @@ import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
+import org.neo4j.com.SlaveContext.Tx;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
@@ -256,13 +256,15 @@ public abstract class Client<M> implements ChannelPipelineFactory
         targetBuffer.writeLong( context.getSessionId() );
         targetBuffer.writeInt( context.machineId() );
         targetBuffer.writeInt( context.getEventIdentifier() );
-        Pair<String, Long>[] txs = context.lastAppliedTransactions();
+        Tx[] txs = context.lastAppliedTransactions();
         targetBuffer.writeByte( txs.length );
-        for ( Pair<String, Long> tx : txs )
+        for ( Tx tx : txs )
         {
-            writeString( targetBuffer, tx.first() );
-            targetBuffer.writeLong( tx.other() );
+            writeString( targetBuffer, tx.getDataSourceName() );
+            targetBuffer.writeLong( tx.getTxId() );
         }
+        targetBuffer.writeInt( context.getMasterId() );
+        targetBuffer.writeLong( context.getChecksum() );
     }
 
     private Triplet<Channel, ChannelBuffer, ByteBuffer> getChannel( RequestType<M> type ) throws Exception

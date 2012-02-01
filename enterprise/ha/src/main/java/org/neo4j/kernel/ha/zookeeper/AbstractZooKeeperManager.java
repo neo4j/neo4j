@@ -129,11 +129,25 @@ public abstract class AbstractZooKeeperManager implements Watcher
         if ( cachedMaster != null )
         {
             Master client = cachedMaster.first();
-            if ( client != null ) client.shutdown();
+            if ( client != null )
+            {
+                client.shutdown();
+            }
             cachedMaster = NO_MASTER_MACHINE_PAIR;
         }
     }
 
+    /**
+     * Tries to discover the master from the zookeeper information. Will return
+     * a {@link Pair} of a {@link Master} and the {@link Machine} it resides
+     * on. If the new master is different than the current then the current is
+     * invalidated and if allowChange is set to true then the a connection to
+     * the new master is established otherwise a NO_MASTER is returned.
+     *
+     * @param wait Whether to wait for a sync connected event
+     * @param allowChange If to connect to the new master
+     * @return The master machine pair, possibly a NO_MASTER_MACHINE_PAIR
+     */
     protected Pair<Master, Machine> getMasterFromZooKeeper(
             boolean wait, boolean allowChange )
     {
@@ -145,15 +159,25 @@ public abstract class AbstractZooKeeperManager implements Watcher
             if ( !allowChange ) return NO_MASTER_MACHINE_PAIR;
             if ( master != Machine.NO_MACHINE && master.getMachineId() != getMyMachineId() )
             {
-                masterClient = new MasterClient( master.getServer().first(),
-                        master.getServer().other(), graphDb,
-                        getConnectionLostHandler(), clientReadTimeout,
-                        clientLockReadTimeout, maxConcurrentChannelsPerSlave );
+                // If there is a master and it is not me
+                masterClient = getMasterClientToMachine( master );
             }
             cachedMaster = Pair.<Master, Machine>of( masterClient,
                     (Machine) master );
         }
         return cachedMaster;
+    }
+
+    protected Master getMasterClientToMachine( Machine master )
+    {
+        if ( master == Machine.NO_MACHINE || master.getServer() == null )
+        {
+            return NO_MASTER;
+        }
+        return new MasterClient( master.getServer().first(),
+                master.getServer().other(), graphDb,
+                getConnectionLostHandler(), clientReadTimeout,
+                clientLockReadTimeout, maxConcurrentChannelsPerSlave );
     }
 
     protected abstract int getMyMachineId();

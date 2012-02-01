@@ -21,8 +21,6 @@ package org.neo4j.com;
 
 import java.util.Arrays;
 
-import org.neo4j.helpers.Pair;
-
 /**
  * A representation of the context in which an HA slave operates. Contains <li>
  * the machine id</li> <li>a list of the last applied transaction id for each
@@ -31,19 +29,56 @@ import org.neo4j.helpers.Pair;
  */
 public final class SlaveContext
 {
+    public static class Tx
+    {
+        private final String dataSourceName;
+        private final long txId;
+        
+        private Tx( String dataSourceName, long txId )
+        {
+            this.dataSourceName = dataSourceName;
+            this.txId = txId;
+        }
+        
+        public String getDataSourceName()
+        {
+            return dataSourceName;
+        }
+        
+        public long getTxId()
+        {
+            return txId;
+        }
+        
+        @Override
+        public String toString()
+        {
+            return dataSourceName + "/" + txId;
+        }
+    }
+    
+    public static Tx lastAppliedTx( String dataSourceName, long txId )
+    {
+        return new Tx( dataSourceName, txId );
+    }
+    
     private final int machineId;
-    private final Pair<String, Long>[] lastAppliedTransactions;
+    private final Tx[] lastAppliedTransactions;
     private final int eventIdentifier;
     private final int hashCode;
     private final long sessionId;
+    private final int masterId;
+    private final long checksum;
 
     public SlaveContext( long sessionId, int machineId, int eventIdentifier,
-            Pair<String, Long>[] lastAppliedTransactions )
+            Tx[] lastAppliedTransactions, int masterId, long checksum )
     {
         this.sessionId = sessionId;
         this.machineId = machineId;
         this.eventIdentifier = eventIdentifier;
         this.lastAppliedTransactions = lastAppliedTransactions;
+        this.masterId = masterId;
+        this.checksum = checksum;
 
         long hash = sessionId;
         hash = (31 * hash) ^ eventIdentifier;
@@ -56,7 +91,7 @@ public final class SlaveContext
         return machineId;
     }
 
-    public Pair<String, Long>[] lastAppliedTransactions()
+    public Tx[] lastAppliedTransactions()
     {
         return lastAppliedTransactions;
     }
@@ -69,6 +104,16 @@ public final class SlaveContext
     public long getSessionId()
     {
         return sessionId;
+    }
+    
+    public int getMasterId()
+    {
+        return masterId;
+    }
+    
+    public long getChecksum()
+    {
+        return checksum;
     }
 
     @Override
@@ -95,12 +140,11 @@ public final class SlaveContext
         return this.hashCode;
     }
 
-    @SuppressWarnings( "unchecked" )
-    public static SlaveContext EMPTY = new SlaveContext( -1, -1, -1, new Pair[0] );
+    public static SlaveContext EMPTY = new SlaveContext( -1, -1, -1, new Tx[0], -1, -1 );
 
-    public static SlaveContext anonymous( Pair<String, Long>[] lastAppliedTransactions )
+    public static SlaveContext anonymous( Tx[] lastAppliedTransactions )
     {
         return new SlaveContext( EMPTY.sessionId, EMPTY.machineId, EMPTY.eventIdentifier,
-                lastAppliedTransactions );
+                lastAppliedTransactions, EMPTY.masterId, EMPTY.checksum );
     }
 }
