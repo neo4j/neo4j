@@ -39,8 +39,6 @@
 package org.neo4j.server.webadmin.console;
 
 import org.neo4j.cypher.SyntaxException;
-import org.neo4j.cypher.internal.commands.Query;
-import org.neo4j.cypher.javacompat.CypherParser;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -68,8 +66,7 @@ public class CypherSession implements ScriptSession
         String resultString = null;
         try
         {
-            Query query = CypherParser.parseConsole( script );
-            ExecutionResult result = engine.execute( query );
+            ExecutionResult result = engine.execute( script );
             resultString = result.toString();
         }
         catch ( SyntaxException error )

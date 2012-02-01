@@ -154,20 +154,6 @@ public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
         assertTrue( response.contains( "[ [ [ \"I\"" ) );
     }
 
-    //not in the docs
-    @Test
-    @Graph( value = { "Category1 model_type Root", "Violin InstrumentCategorization Category1", "Trumpet InstrumentCategorization Category1" }, autoIndexNodes = true )
-    public void correct_collect_results() throws Exception {
-        data.get();
-        String script = "start CategoryRoot=node(%Root%) match CategoryRoot<-[:model_type]-Category<-[:InstrumentCategorization]-Instrument return Category, collect(Instrument)";
-        String response = cypherRestCall( script, Status.OK);
-
-
-        Map<String, Object> resultMap = JsonHelper.jsonToMap( response );
-        assertEquals( 2, resultMap.size() );
-        assertTrue( response.contains( "Violin" ) );
-    }
-
     @Test
     @Documented
     @Ignore

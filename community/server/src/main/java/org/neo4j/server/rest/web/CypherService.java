@@ -27,7 +27,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
-import org.neo4j.cypher.javacompat.CypherParser;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.server.database.Database;
@@ -45,12 +44,10 @@ public class CypherService {
     private ExecutionEngine executionEngine;
     private OutputFormat output;
     private InputFormat input;
-    private CypherParser parser;
 
     public CypherService(@Context Database database, @Context InputFormat input,
             @Context OutputFormat output) {
         this.executionEngine = new ExecutionEngine(database.graph);
-        this.parser = new CypherParser();
         this.input = input;
         this.output = output;
     }
@@ -66,9 +63,8 @@ public class CypherService {
         
         String query =  (String) command.get(QUERY_KEY);
         Map<String,Object> params = (Map<String, Object>) (command.containsKey(PARAMS_KEY) ? command.get(PARAMS_KEY) : new HashMap<String, Object>());
-        
         try {
-            ExecutionResult result = executionEngine.execute( parser.parse( query ), params );
+            ExecutionResult result = executionEngine.execute(  query, params );
             return output.ok(new CypherResultRepresentation( result ));
         } catch(Exception e) {
             return output.badRequest(e);
