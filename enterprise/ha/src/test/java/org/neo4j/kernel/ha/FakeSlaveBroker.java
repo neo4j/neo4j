@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.ha.zookeeper.Machine;
@@ -28,7 +27,8 @@ public class FakeSlaveBroker extends AbstractBroker
 {
     private final Master master;
 
-    public FakeSlaveBroker( Master master, int masterMachineId, int myMachineId, GraphDatabaseService graphDb )
+    public FakeSlaveBroker( Master master, int masterMachineId,
+            int myMachineId, AbstractGraphDatabase graphDb )
     {
         super( myMachineId, graphDb );
         this.master = master;

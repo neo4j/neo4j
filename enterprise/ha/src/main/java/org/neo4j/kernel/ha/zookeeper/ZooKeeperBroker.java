@@ -45,11 +45,12 @@ import org.neo4j.management.Neo4jManager;
 
 public class ZooKeeperBroker extends AbstractBroker
 {
-    private final ZooClient zooClient;
+    private volatile ZooClient zooClient;
     private final String haServer;
     private int clientLockReadTimeout;
-    private Map<String, String> config;
+    private final Map<String, String> config;
     private int fetchInfoTimeout;
+    private final ResponseReceiver receiver;
 
     public ZooKeeperBroker( AbstractGraphDatabase graphDb, Map<String, String> config, ResponseReceiver receiver )
     {
@@ -58,7 +59,13 @@ public class ZooKeeperBroker extends AbstractBroker
         haServer = HaConfig.getHaServerFromConfig( config );
         clientLockReadTimeout = HaConfig.getClientLockReadTimeoutFromConfig( config );
         fetchInfoTimeout = HaConfig.getFetchInfoTimeoutFromConfig( config );
-        zooClient = new ZooClient( graphDb, config, receiver );
+        this.receiver = receiver;
+        startZooClient();
+    }
+
+    private void startZooClient()
+    {
+        this.zooClient = new ZooClient( getGraphDb(), config, receiver );
     }
 
     @Override
@@ -217,6 +224,13 @@ public class ZooKeeperBroker extends AbstractBroker
     public void shutdown()
     {
         zooClient.shutdown();
+    }
+
+    @Override
+    public void restart()
+    {
+        shutdown();
+        startZooClient();
     }
 
     @Override

@@ -125,7 +125,8 @@ public class SingleJvmTest extends AbstractHaTest
         }
     }
 
-    protected Broker makeMasterBroker( int masterId, GraphDatabaseService graphDb, Map<String, String> config )
+    protected Broker makeMasterBroker( int masterId,
+            AbstractGraphDatabase graphDb, Map<String, String> config )
     {
         return new FakeMasterBroker( masterId, graphDb, config );
     }

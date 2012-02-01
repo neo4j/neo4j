@@ -96,7 +96,7 @@ public class HAGraphDb extends AbstractGraphDatabase
 
     private final Map<String, String> config;
     private final BrokerFactory brokerFactory;
-    private volatile Broker broker;
+    private final Broker broker;
     private ClusterClient clusterClient;
     private volatile EmbeddedGraphDbImpl localGraph;
     private final int machineId;
@@ -626,9 +626,8 @@ public class HAGraphDb extends AbstractGraphDatabase
     {
         if ( broker != null )
         {
-            broker.shutdown();
+            broker.restart();
         }
-        this.broker = brokerFactory.create( this, config );
         newMaster( e );
     }
 
