@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.neo4j.kernel.impl.util.RelIdArray.empty;
-
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -47,13 +46,15 @@ import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdIterator;
 
+import static org.neo4j.kernel.impl.util.RelIdArray.empty;
+
 class NodeImpl extends Primitive
 {
     private static final RelIdArray[] NO_RELATIONSHIPS = new RelIdArray[0];
 
     private volatile RelIdArray[] relationships;
     private long relChainPosition = Record.NO_NEXT_RELATIONSHIP.intValue();
-    private long id;
+    private final long id;
 
     NodeImpl( long id )
     {
@@ -467,26 +468,24 @@ class NodeImpl extends Primitive
 
     private void putRelIdArray( RelIdArray addRels )
     {
-        // Try to overwrite it if it's already set
-        //
-        // Make sure the same array is looped all the way through, that's why
-        // a safe reference is kept to it. If the real array has changed when
-        // we're about to set it then redo the loop. A kind of lock-free synchronization
+        // precondition: called under synchronization
 
+        // make a local reference to the array to avoid multiple read barrier hits
+        RelIdArray[] array = relationships;
+        // Try to overwrite it if it's already set
         String expectedType = addRels.getType();
-        for ( int i = 0; i < relationships.length; i++ )
+        for ( int i = 0; i < array.length; i++ )
         {
-            if ( relationships[i].getType().equals( expectedType ) )
+            if ( array[i].getType().equals( expectedType ) )
             {
-                relationships[i] = addRels;
+                array[i] = addRels;
                 return;
             }
         }
-
-        RelIdArray[] newArray = new RelIdArray[relationships.length+1];
-        System.arraycopy( relationships, 0, newArray, 0, relationships.length );
-        newArray[relationships.length] = addRels;
-        relationships = newArray;
+        // no previous entry of the given type - extend the array
+        array = Arrays.copyOf( array, array.length + 1 );
+        array[array.length - 1] = addRels;
+        relationships = array;
     }
 
     public Relationship createRelationshipTo( NodeManager nodeManager, Node otherNode,
@@ -631,14 +630,16 @@ class NodeImpl extends Primitive
     }
 
     void setRelChainPosition( long position )
-    {
-        this.relChainPosition = position;
-        if ( !hasMoreRelationshipsToLoad() )
+    { // precondition: must be called under synchronization
+        relChainPosition = position;
+        // use local reference to avoid multiple read barriers
+        RelIdArray[] array = relationships;
+        if ( !hasMoreRelationshipsToLoad() && array != null )
         {
-            // Shrink arrays
-            for ( int i = 0; i < relationships.length; i++ )
+            // Done loading - Shrink arrays
+            for ( int i = 0; i < array.length; i++ )
             {
-                relationships[i] = relationships[i].shrink();
+                array[i] = array[i].shrink();
             }
         }
     }

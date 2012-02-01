@@ -23,6 +23,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.kernel.impl.transaction.LockType;
 
 class RelationshipProxy implements Relationship
 {
@@ -39,7 +40,7 @@ class RelationshipProxy implements Relationship
     {
         return relId;
     }
-    
+
     public GraphDatabaseService getGraphDatabase()
     {
         return nm.getGraphDbService();
@@ -47,72 +48,72 @@ class RelationshipProxy implements Relationship
 
     public void delete()
     {
-        nm.getRelForProxy( relId ).delete( nm );
+        nm.getRelForProxy( this, LockType.WRITE ).delete( nm );
     }
 
     public Node[] getNodes()
     {
-        return nm.getRelForProxy( relId ).getNodes( nm );
+        return nm.getRelForProxy( this, null ).getNodes( nm );
     }
 
     public Node getOtherNode( Node node )
     {
-        return nm.getRelForProxy( relId ).getOtherNode( nm, node );
+        return nm.getRelForProxy( this, null ).getOtherNode( nm, node );
     }
 
     public Node getStartNode()
     {
-        return nm.getRelForProxy( relId ).getStartNode( nm );
+        return nm.getRelForProxy( this, null ).getStartNode( nm );
     }
 
     public Node getEndNode()
     {
-        return nm.getRelForProxy( relId ).getEndNode( nm );
+        return nm.getRelForProxy( this, null ).getEndNode( nm );
     }
 
     public RelationshipType getType()
     {
-        return nm.getRelForProxy( relId ).getType( nm );
+        return nm.getRelForProxy( this, null ).getType( nm );
     }
 
     public Iterable<String> getPropertyKeys()
     {
-        return nm.getRelForProxy( relId ).getPropertyKeys( nm );
+        return nm.getRelForProxy( this, null ).getPropertyKeys( nm );
     }
 
     public Iterable<Object> getPropertyValues()
     {
-        return nm.getRelForProxy( relId ).getPropertyValues( nm );
+        return nm.getRelForProxy( this, null ).getPropertyValues( nm );
     }
 
     public Object getProperty( String key )
     {
-        return nm.getRelForProxy( relId ).getProperty( nm, key );
+        return nm.getRelForProxy( this, null ).getProperty( nm, key );
     }
 
     public Object getProperty( String key, Object defaultValue )
     {
-        return nm.getRelForProxy( relId ).getProperty( nm, key, defaultValue );
+        return nm.getRelForProxy( this, null ).getProperty( nm, key, defaultValue );
     }
 
     public boolean hasProperty( String key )
     {
-        return nm.getRelForProxy( relId ).hasProperty( nm, key );
+        return nm.getRelForProxy( this, null ).hasProperty( nm, key );
     }
 
     public void setProperty( String key, Object property )
     {
-        nm.getRelForProxy( relId ).setProperty( nm, key, property );
+        nm.getRelForProxy( this, LockType.WRITE ).setProperty( nm, key, property );
     }
 
     public Object removeProperty( String key )
     {
-        return nm.getRelForProxy( relId ).removeProperty( nm, key );
+        return nm.getRelForProxy( this, LockType.WRITE ).removeProperty( nm, key );
     }
 
     public boolean isType( RelationshipType type )
     {
-        return nm.getRelForProxy( relId ).isType( nm, type );
+        return nm.getRelForProxy( this, null ).isType( nm, type );
     }
 
     public int compareTo( Object rel )
