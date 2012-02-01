@@ -1,3 +1,7 @@
+1.5.1 (2012-02-02)
+------------------
+o Better handling of failed transactions
+
 1.5.M02 (2012-10-10)
 --------------------
 o Fixed a windows-specific issue for long-running backups in that the active logical log was locked by the backup. Solved by rotating before backup.

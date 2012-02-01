@@ -1,3 +1,15 @@
+1.5.1 (2012-02-02)
+------------------
+o Numerous fixes of bugs that led to corruption of the store
+o Better handling of wrapped databases and wrapped entities
+o Added ha.lock_read_timeout configuration option
+o Added config option for ha.max_concurrent_transactions_on_master
+o Earlier finish off of failed transactions on master
+o Checksums on transactions lead to better branching detection
+o Stability improvements leading to less frequent master elections
+o Increased resiliance against zookeeper failures during store copies
+o Updated application protocol version to 2
+
 1.5.M02 (2011-10-10)
 --------------------
 o Uses new (faster, non-synchronized) way of extracting transactions when streaming transactions from master to slave.
