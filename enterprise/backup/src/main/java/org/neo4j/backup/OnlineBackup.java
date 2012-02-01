@@ -19,8 +19,6 @@
  */
 package org.neo4j.backup;
 
-import static org.neo4j.com.SlaveContext.lastAppliedTx;
-
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -40,8 +38,6 @@ import org.neo4j.com.SlaveContext;
 import org.neo4j.com.SlaveContext.Tx;
 import org.neo4j.com.ToFileStoreWriter;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.ConfigParam;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -50,6 +46,8 @@ import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.neo4j.com.SlaveContext.lastAppliedTx;
 
 public class OnlineBackup
 {
