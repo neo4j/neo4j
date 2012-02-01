@@ -19,18 +19,30 @@
  */
 package org.neo4j.backup;
 
+import java.util.Map;
+
 import org.neo4j.backup.log.InconsistencyLoggingTransactionInterceptorProvider;
 import org.neo4j.backup.log.VerifyingTransactionInterceptorProvider;
+import org.neo4j.kernel.Config;
+import org.neo4j.kernel.ConfigParam;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 
-enum VerificationLevel
+enum VerificationLevel implements ConfigParam
 {
-    NONE( null, null ),
+    NONE( null, null )
+    {
+        @Override
+        public void configure( Map<String, String> config )
+        {
+            // do nothing
+        }
+    },
     VERIFYING( VerifyingTransactionInterceptorProvider.NAME, "true" ),
     LOGGING( InconsistencyLoggingTransactionInterceptorProvider.NAME, "diff" ),
     FULL_WITH_LOGGING( InconsistencyLoggingTransactionInterceptorProvider.NAME, "full" );
 
-    final String interceptorName;
-    final String configValue;
+    private final String interceptorName;
+    private final String configValue;
 
     private VerificationLevel( String name, String value )
     {
@@ -41,5 +53,22 @@ enum VerificationLevel
     static VerificationLevel valueOf( boolean verification )
     {
         return verification ? VERIFYING : NONE;
+    }
+
+    @Override
+    public void configure( Map<String, String> config )
+    {
+        configure( config, configValue );
+    }
+
+    void configureWithDiffLog( Map<String, String> config, String targetFile )
+    {
+        configure( config, configValue + ";log=" + targetFile );
+    }
+
+    private void configure( Map<String, String> config, String value )
+    {
+        config.put( Config.INTERCEPT_DESERIALIZED_TRANSACTIONS, "true" );
+        config.put( TransactionInterceptorProvider.class.getSimpleName() + "." + interceptorName, value );
     }
 }

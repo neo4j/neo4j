@@ -19,10 +19,14 @@
  */
 package org.neo4j.backup.log;
 
+import java.io.File;
+import java.util.Map;
+
 import org.neo4j.backup.check.ConsistencyCheck;
 import org.neo4j.backup.check.DiffRecordStore;
 import org.neo4j.backup.check.DiffStore;
 import org.neo4j.backup.check.InconsistencyType;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DataInconsistencyError;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
@@ -36,6 +40,7 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptor;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.impl.util.StringLogger.LineLogger;
 
 class VerifyingTransactionInterceptor implements TransactionInterceptor
 {
@@ -87,13 +92,19 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
 
     private final CheckerMode mode;
 
-    VerifyingTransactionInterceptor(
-            NeoStoreXaDataSource ds, CheckerMode mode, boolean rejectInconsistentTransactions )
+    private final StringLogger difflog;
+
+    VerifyingTransactionInterceptor( NeoStoreXaDataSource ds, CheckerMode mode, boolean rejectInconsistentTransactions,
+                                     Map<String, String> extraConfig )
     {
         this.rejectInconsistentTransactions = rejectInconsistentTransactions;
         this.diffs = new DiffStore( ds.getNeoStore() );
         this.msgLog = ds.getMsgLog();
         this.mode = mode;
+        String log = extraConfig.get( "log" );
+        this.difflog = log == null ? null : ( "true".equalsIgnoreCase( log )
+                ? msgLog
+                : StringLogger.logger( new File( log ) ) );
     }
 
     public void setStartEntry( LogEntry.Start startEntry )
@@ -132,10 +143,11 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
             protected <R extends AbstractBaseRecord> void report( RecordStore<R> recordStore, R record, InconsistencyType inconsistency )
             {
                 if ( inconsistency.isWarning() ) return;
-                StringBuilder log = messageHeader( "Inconsistencies" );
+                StringBuilder log = messageHeader( "Inconsistencies" ).append( "\n\t" );
                 logRecord( log, recordStore, record );
                 log.append( inconsistency.message() );
                 msgLog.logMessage( log.toString() );
+                if ( difflog != null && difflog != msgLog ) difflog.logMessage( log.toString() );
             }
 
             @Override
@@ -149,76 +161,152 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
                     report( recordStore, record, inconsistency );
                     return;
                 }
-                StringBuilder log = messageHeader( "Inconsistencies" );
+                StringBuilder log = messageHeader( "Inconsistencies" ).append( "\n\t" );
                 logRecord( log, recordStore, record );
                 logRecord( log, referredStore, referred );
                 log.append( inconsistency.message() );
                 msgLog.logMessage( log.toString() );
+                if ( difflog != null && difflog != msgLog ) difflog.logMessage( log.toString() );
             }
         } );
+        DataInconsistencyError error = null;
         try
         {
             consistency.checkResult();
         }
         catch ( AssertionError e )
         {
-            DataInconsistencyError error = new DataInconsistencyError( "Cannot apply transaction\n\t"
-                                                                       + ( startEntry == null
-                                                                               ? "NO START ENTRY"
-                                                                               : startEntry.toString() )
-                                                                       + "\n\t"
-                                                                       + ( commitEntry == null
-                                                                               ? "NO COMMIT ENTRY"
-                                                                               : commitEntry.toString() ) + "\n\t"
-                                                                       + e.getMessage() );
+            error = new DataInconsistencyError( "Inconsistencies in transaction\n\t"
+                                                + ( startEntry == null ? "NO START ENTRY" : startEntry.toString() )
+                                                + "\n\t"
+                                                + ( commitEntry == null ? "NO COMMIT ENTRY" : commitEntry.toString() )
+                                                + "\n\t" + e.getMessage() );
             msgLog.logMessage( error.getMessage() );
-            if ( rejectInconsistentTransactions )
+            if ( difflog != null && difflog != msgLog ) difflog.logMessage( error.getMessage() );
+        }
+        if ( difflog != null || error != null )
+        {
+            //new DiffLogger().log( messageHeader( "Changes" ).toString() );
+
+            final String header = messageHeader( "Changes" ).toString();
+            StringLogger target = null;
+            Visitor<StringLogger.LineLogger> visitor = null;
+            if ( error != null )
             {
-                throw error;
+                target = msgLog;
+                if ( difflog != null && difflog != msgLog )
+                {
+                    visitor = new Visitor<StringLogger.LineLogger>()
+                    {
+                        @Override
+                        public boolean visit( final LineLogger first )
+                        {
+                            difflog.logLongMessage( header, new Visitor<StringLogger.LineLogger>()
+                            {
+                                @Override
+                                public boolean visit( final LineLogger other )
+                                {
+                                    other.logLine( startEntry == null ? "NO START ENTRY" : startEntry.toString() );
+                                    other.logLine( commitEntry == null ? "NO COMMIT ENTRY" : commitEntry.toString() );
+                                    logDiffLines( new LineLogger()
+                                    {
+                                        @Override
+                                        public void logLine( String line )
+                                        {
+                                            first.logLine( line );
+                                            other.logLine( line );
+                                        }
+                                    } );
+                                    return false;
+                                }
+                            } );
+                            return false;
+                        }
+                    };
+                }
+                else
+                {
+                    visitor = new Visitor<StringLogger.LineLogger>()
+                    {
+                        @Override
+                        public boolean visit( LineLogger lines )
+                        {
+                            logDiffLines( lines );
+                            return false;
+                        }
+                    };
+                }
             }
-            else // we log it
+            else
             {
-                // FIXME: there is a memory hazard here, this StringBuilder could grow quite large...
-                final StringBuilder changes = messageHeader( "Changes" );
-                diffs.applyToAll( new RecordStore.Processor()
+                target = difflog;
+                visitor = new Visitor<StringLogger.LineLogger>()
                 {
                     @Override
-                    protected <R extends AbstractBaseRecord> void processRecord( Class<R> type, RecordStore<R> store,
-                            R record )
+                    public boolean visit( LineLogger lines )
                     {
-                        DiffRecordStore<R> diff = (DiffRecordStore<R>) store;
-                        if ( diff.isModified( record.getLongId() ) )
-                        {
-                            logRecord( changes, store, record );
-                        }
+                        lines.logLine( startEntry == null ? "NO START ENTRY" : startEntry.toString() );
+                        lines.logLine( commitEntry == null ? "NO COMMIT ENTRY" : commitEntry.toString() );
+                        logDiffLines( lines );
+                        return false;
                     }
-                } );
-                for ( RecordStore<?> store : diffs.allStores() )
-                {
-                    changes.append( store ).append( ": highId(before) = " );
-                    changes.append( ( (DiffRecordStore<?>) store ).getRawHighId() );
-                    changes.append( ", highId(after) = " ).append( store.getHighId() ).append( "\n\t" );
-                }
-                msgLog.logMessage( changes.toString() );
+                };
             }
+            target.logLongMessage( header, visitor );
         }
+        if ( difflog != null ) difflog.close();
+        // re-throw error if we are rejecting inconsistencies
+        if ( error != null && rejectInconsistentTransactions ) throw error;
         // Chain of Responsibility continues
-        if ( next != null )
+        if ( next != null ) next.complete();
+    }
+
+    private void logDiffLines( final LineLogger logger )
+    {
+        diffs.applyToAll( new RecordStore.Processor()
         {
-            next.complete();
+            @Override
+            protected <R extends AbstractBaseRecord> void processRecord( Class<R> type, RecordStore<R> store, R record )
+            {
+                DiffRecordStore<R> diff = (DiffRecordStore<R>) store;
+                if ( diff.isModified( record.getLongId() ) )
+                {
+                    logRecord( logger, store, record );
+                }
+            }
+        } );
+        for ( RecordStore<?> store : diffs.allStores() )
+        {
+            logger.logLine( store + ": highId(before) = " + ( (DiffRecordStore<?>) store ).getRawHighId()
+                            + ", highId(after) = " + store.getHighId() );
         }
     }
 
-    private static <R extends AbstractBaseRecord> void logRecord( StringBuilder log, RecordStore<? extends R> store,
+    private static <R extends AbstractBaseRecord> void logRecord( final StringBuilder log,
+                                                                  RecordStore<? extends R> store, R record )
+    {
+        logRecord( new LineLogger()
+        {
+            @Override
+            public void logLine( String line )
+            {
+                log.append( line ).append( "\n\t" );
+            }
+        }, store, record );
+    }
+
+    private static <R extends AbstractBaseRecord> void logRecord( LineLogger log, RecordStore<? extends R> store,
             R record )
     {
         DiffRecordStore<? extends R> diff = (DiffRecordStore<? extends R>) store;
+        String prefix = "";
         if ( diff.isModified( record.getLongId() ) )
         {
-            log.append( "- " ).append( diff.forceGetRaw( record.getLongId() ) ).append( "\n\t+ " );
+            log.logLine( "- " + diff.forceGetRaw( record.getLongId() ) );
+            prefix = "+ ";
             record = store.forceGetRecord( record.getLongId() );
         }
-        log.append( record ).append( "\n\t" );
+        log.logLine( prefix + record );
     }
 
     private StringBuilder messageHeader( String type )
@@ -228,7 +316,7 @@ class VerifyingTransactionInterceptor implements TransactionInterceptor
             log.append( " (txId=" ).append( commitEntry.getTxId() ).append( ")" );
         else if ( startEntry != null )
             log.append( " (log local id = " ).append( startEntry.getIdentifier() ).append( ")" );
-        return log.append( ":\n\t" );
+        return log.append( ':' );
     }
 
     @Override

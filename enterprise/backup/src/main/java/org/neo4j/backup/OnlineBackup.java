@@ -26,6 +26,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -40,13 +41,13 @@ import org.neo4j.com.SlaveContext.Tx;
 import org.neo4j.com.ToFileStoreWriter;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.Config;
+import org.neo4j.kernel.ConfigParam;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 
@@ -141,13 +142,13 @@ public class OnlineBackup
         return Collections.unmodifiableMap( lastCommittedTxs );
     }
 
-    static EmbeddedGraphDatabase startTemporaryDb( String targetDirectory, VerificationLevel verification )
+    static EmbeddedGraphDatabase startTemporaryDb( String targetDirectory, ConfigParam... params )
     {
-        if ( verification != VerificationLevel.NONE ) {
-            return new EmbeddedGraphDatabase( targetDirectory, MapUtil.stringMap(
-                            Config.INTERCEPT_DESERIALIZED_TRANSACTIONS, "true",
-                            TransactionInterceptorProvider.class.getSimpleName()
-                            +"."+verification.interceptorName, verification.configValue ) );
+        if (params != null && params.length > 0) {
+            Map<String,String> config = new HashMap<String, String>();
+            for ( ConfigParam param : params )
+                if ( param != null ) param.configure( config );
+            return new EmbeddedGraphDatabase( targetDirectory, config );
         }
         else
             return new EmbeddedGraphDatabase( targetDirectory );

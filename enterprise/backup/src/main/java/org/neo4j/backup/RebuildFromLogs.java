@@ -19,21 +19,23 @@
  */
 package org.neo4j.backup;
 
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHighestHistoryLogVersion;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
+import java.util.Map;
 
 import org.neo4j.backup.check.ConsistencyCheck;
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
+import org.neo4j.kernel.ConfigParam;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHighestHistoryLogVersion;
 
 class RebuildFromLogs
 {
@@ -86,11 +88,13 @@ class RebuildFromLogs
             return;
         }
         Args params = new Args( args );
+        @SuppressWarnings( "boxing" )
         boolean full = params.getBoolean( "full", false, true );
         args = params.orphans().toArray( new String[0] );
         if ( args.length != 2 )
         {
-            printUsage( "Exactly two positional arguments expected: <source dir with logs> <target dir for graphdb>" );
+            printUsage( "Exactly two positional arguments expected: "
+                        + "<source dir with logs> <target dir for graphdb>, got " + args.length );
             System.exit( -1 );
             return;
         }
@@ -129,13 +133,16 @@ class RebuildFromLogs
             System.exit( -1 );
             return;
         }
-        AbstractGraphDatabase graphdb = OnlineBackup.startTemporaryDb(
-                target.getAbsolutePath(), full ? VerificationLevel.FULL_WITH_LOGGING : VerificationLevel.LOGGING );
+        String txdifflog = params.get( "txdifflog", null, new File( target, "txdiff.log" ).getAbsolutePath() );
+        AbstractGraphDatabase graphdb = OnlineBackup.startTemporaryDb( target.getAbsolutePath(),
+                                                                       new TxDiffLogConfig( full
+                                                                               ? VerificationLevel.FULL_WITH_LOGGING
+                                                                               : VerificationLevel.LOGGING, txdifflog ) );
         try
         {
             try
             {
-                new RebuildFromLogs( graphdb ).applyTransactionsFrom( source ).fullCheck(!full);
+                new RebuildFromLogs( graphdb ).applyTransactionsFrom( source ).fullCheck( !full );
             }
             finally
             {
@@ -178,5 +185,30 @@ class RebuildFromLogs
     private static long findMaxLogFileId( File source )
     {
         return getHighestHistoryLogVersion( source, LOGICAL_LOG_DEFAULT_NAME );
+    }
+
+    private static class TxDiffLogConfig implements ConfigParam
+    {
+        private final String targetFile;
+        private final VerificationLevel level;
+
+        TxDiffLogConfig( VerificationLevel level, String targetFile )
+        {
+            this.level = level;
+            this.targetFile = targetFile;
+        }
+
+        @Override
+        public void configure( Map<String, String> config )
+        {
+            if ( targetFile != null )
+            {
+                level.configureWithDiffLog( config, targetFile );
+            }
+            else
+            {
+                level.configure( config );
+            }
+        }
     }
 }
