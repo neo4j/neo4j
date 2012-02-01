@@ -389,6 +389,10 @@
             <exclude>src/main/resources/js/**</exclude>
             <exclude>src/main/resources/css/**</exclude>
             <exclude>src/bin/asciidoc/**</exclude>
+            <exclude>src/main/assemblies/*.xml</exclude>
+            <exclude>src/main/resources/neo4j-manual-docinfo.xml</exclude>
+            <exclude>src/main/resources/conf/fop.xml</exclude>
+            <exclude>src/main/resources/docinfo.xml</exclude>
           </excludes>
         </configuration>
       </plugin>
