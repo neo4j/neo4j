@@ -21,7 +21,6 @@ package org.neo4j.kernel.ha;
 
 import java.util.Map;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.ha.zookeeper.Machine;
@@ -31,9 +30,9 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public abstract class AbstractBroker implements Broker
 {
     private final int myMachineId;
-    private final GraphDatabaseService graphDb;
+    private final AbstractGraphDatabase graphDb;
 
-    public AbstractBroker( int myMachineId, GraphDatabaseService graphDb )
+    public AbstractBroker( int myMachineId, AbstractGraphDatabase graphDb )
     {
         this.myMachineId = myMachineId;
         this.graphDb = graphDb;
@@ -57,10 +56,20 @@ public abstract class AbstractBroker implements Broker
 
     public String getStoreDir()
     {
-        return ((AbstractGraphDatabase) graphDb).getStoreDir();
+        return graphDb.getStoreDir();
+    }
+
+    protected AbstractGraphDatabase getGraphDb()
+    {
+        return graphDb;
     }
 
     public void shutdown()
+    {
+        // Do nothing
+    }
+
+    public void restart()
     {
         // Do nothing
     }
@@ -74,7 +83,7 @@ public abstract class AbstractBroker implements Broker
     {
         // Do nothing
     }
-    
+
     public static BrokerFactory wrapSingleBroker( final Broker broker )
     {
         return new BrokerFactory()
