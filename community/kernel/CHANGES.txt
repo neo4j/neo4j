@@ -1,3 +1,12 @@
+1.5.1 (2012-02-02)
+------------------
+o Improvements in consistency checker
+o Added a wrapping database abstraction for dealing with stale primitive references
+o Bug fixes in the wrapping database abstraction
+o Many bug fixes around log rotation and transaction handling that led to corruption issues.
+o Bug fix around race condition in the cache that led to corruption of the store.
+o Performance optimizations around transaction extraction
+
 1.5 (2011-10-18)
 ----------------
 o Bug fixes for batch inserter and migration regarding new store format.

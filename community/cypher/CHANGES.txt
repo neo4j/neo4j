@@ -1,3 +1,7 @@
+1.5.1 (2012-02-02)
+------------------
+o Fixed problems with empty result sets on SKIP/LIMIT queries
+
 1.5 (2011-10-18)
 ----------------
 o Added DISTINCT for all aggregate functions

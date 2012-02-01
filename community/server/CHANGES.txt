@@ -1,3 +1,7 @@
+1.5.1 (2012-02-02)
+------------------
+o Pass (some) headers in batch-operations-service to sub-requests
+
 1.5 (2011-10-18)
 ----------------
 o Added useful server logging to data/graph.db/messages.log at startup.

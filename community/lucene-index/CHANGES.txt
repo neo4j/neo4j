@@ -1,3 +1,7 @@
+1.5.1.RC2 (2012-02-02)
+----------------------
+o Fixed a ConcurentModificationException on log rotation and store file listing
+
 1.5.M02 (2011-10-10)
 --------------------
 o Fixed an issue where null would be returned for consecutive calls after it got an initial
