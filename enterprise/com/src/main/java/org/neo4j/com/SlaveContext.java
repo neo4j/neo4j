@@ -49,6 +49,12 @@ public final class SlaveContext
         {
             return txId;
         }
+        
+        @Override
+        public String toString()
+        {
+            return dataSourceName + "/" + txId;
+        }
     }
     
     public static Tx lastAppliedTx( String dataSourceName, long txId )
