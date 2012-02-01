@@ -41,7 +41,11 @@
 
     <!-- Default location for chrome controller binary, used by webdriver for running tests in Chrome. Available from (http://code.google.com/p/chromium/downloads/list) see README.txt for details on this. -->
     <webdriver.chrome.driver>/usr/bin/chromedriver</webdriver.chrome.driver>
+    <licensesVersion>7</licensesVersion>
+    <currentYear>2012</currentYear>
   </properties>
+  <inceptionYear>2002</inceptionYear>
+
 
   <scm>
     <url>https://github.com/neo4j/community/tree/master/server</url>
@@ -386,29 +390,6 @@ the relevant Commercial Agreement.
       </plugin>
 
       <plugin>
-        <groupId>com.mycila.maven-license-plugin</groupId>
-        <artifactId>maven-license-plugin</artifactId>
-        <configuration>
-          <strictCheck>true</strictCheck>
-          <header>${license-text.header}</header>
-          <includes>
-            <include>src/**/*.java</include>
-            <include>src/**/*.js</include>
-            <include>src/**/*.scala</include>
-            <include>src/**/*.xml</include>
-          </includes>
-          <excludes>
-            <exclude>**/lib/*.js</exclude>
-            <exclude>**/lib/**/*.js</exclude>
-            <exclude>**/webadmin-html/**</exclude>
-          </excludes>
-          <mapping>
-            <scala>JAVADOC_STYLE</scala>
-          </mapping>
-        </configuration>
-      </plugin>
-
-      <plugin>
         <artifactId>maven-jar-plugin</artifactId>
         <executions>
           <execution>
@@ -536,6 +517,53 @@ the relevant Commercial Agreement.
           <optimizeOutputDir>${project.build.outputDirectory}/webadmin-html/js</optimizeOutputDir>
         </configuration>
       </plugin>
+
+      <!-- for license headers -->
+      <plugin>
+        <groupId>com.mycila.maven-license-plugin</groupId>
+        <artifactId>maven-license-plugin</artifactId>
+        <dependencies>
+          <dependency>
+            <groupId>org.neo4j.maven</groupId>
+            <artifactId>licenses</artifactId>
+            <version>${licensesVersion}</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <id>check-licenses</id>
+            <!-- fail as early as possible -->
+            <phase>initialize</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <strictCheck>true</strictCheck>
+          <header>${license-text.header}</header>
+          <includes>
+            <include>src/**/*.java</include>
+            <include>src/**/*.js</include>
+            <include>src/**/*.scala</include>
+            <include>src/**/*.xml</include>
+          </includes>
+          <excludes>
+            <exclude>**/lib/*.js</exclude>
+            <exclude>**/lib/**/*.js</exclude>
+            <exclude>**/javascript/vend/**</exclude>
+            <exclude>**/webadmin-html/**</exclude>
+          </excludes>
+          <mapping>
+            <scala>JAVADOC_STYLE</scala>
+          </mapping>
+          <properties>
+            <inceptionYear>${project.inceptionYear}</inceptionYear>
+            <currentYear>${currentYear}</currentYear>
+          </properties>
+        </configuration>
+      </plugin>      
+
       
     </plugins>
 
