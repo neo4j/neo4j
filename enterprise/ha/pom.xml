@@ -21,6 +21,7 @@
     <short-name>ha</short-name>
     <neo4j.version>1.5.1-SNAPSHOT</neo4j.version>
     <licensesVersion>7</licensesVersion>    
+    <currentYear>2012</currentYear>
   </properties>
   <inceptionYear>2002</inceptionYear>
 
@@ -59,24 +60,6 @@ terms of the relevant Commercial Agreement.
         </configuration>
       </plugin>
       <!-- for license headers -->
-      <plugin>
-        <groupId>com.keyboardsamurais.maven</groupId>
-        <artifactId>maven-timestamp-plugin</artifactId>
-        <version>1.0</version>
-        <executions>
-          <execution>
-            <id>create-current-year-timestamp</id>
-            <phase>validate</phase>
-            <goals>
-              <goal>create</goal>
-            </goals>
-            <configuration>
-              <propertyName>currentYear</propertyName>
-              <timestampPattern>yyyy</timestampPattern>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>      
       <plugin>
         <groupId>com.mycila.maven-license-plugin</groupId>
         <artifactId>maven-license-plugin</artifactId>
