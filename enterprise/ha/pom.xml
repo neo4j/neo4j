@@ -20,7 +20,9 @@
     <bundle.namespace>org.neo4j.kernel.ha</bundle.namespace>
     <short-name>ha</short-name>
     <neo4j.version>1.5.1-SNAPSHOT</neo4j.version>
+    <licensesVersion>7</licensesVersion>    
   </properties>
+  <inceptionYear>2002</inceptionYear>
 
   <scm>
     <url>https://github.com/neo4j/enterprise/tree/master/ha</url>
@@ -56,6 +58,68 @@ terms of the relevant Commercial Agreement.
           <!-- forkMode>perTest</forkMode -->
         </configuration>
       </plugin>
+      <!-- for license headers -->
+      <plugin>
+        <groupId>com.keyboardsamurais.maven</groupId>
+        <artifactId>maven-timestamp-plugin</artifactId>
+        <version>1.0</version>
+        <executions>
+          <execution>
+            <id>create-current-year-timestamp</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>create</goal>
+            </goals>
+            <configuration>
+              <propertyName>currentYear</propertyName>
+              <timestampPattern>yyyy</timestampPattern>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>      
+      <plugin>
+        <groupId>com.mycila.maven-license-plugin</groupId>
+        <artifactId>maven-license-plugin</artifactId>
+        <dependencies>
+          <dependency>
+            <groupId>org.neo4j.maven</groupId>
+            <artifactId>licenses</artifactId>
+            <version>${licensesVersion}</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <id>check-licenses</id>
+            <!-- fail as early as possible -->
+            <phase>initialize</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <strictCheck>true</strictCheck>
+          <header>${license-text.header}</header>
+          <includes>
+            <include>src/**/*.java</include>
+            <include>src/**/*.js</include>
+            <include>src/**/*.scala</include>
+            <include>src/**/*.xml</include>
+          </includes>
+          <excludes>
+            <exclude>**/lib/*.js</exclude>
+            <exclude>**/lib/**/*.js</exclude>
+            <exclude>**/javascript/vend/**</exclude>
+          </excludes>
+          <mapping>
+            <scala>JAVADOC_STYLE</scala>
+          </mapping>
+          <properties>
+            <inceptionYear>${project.inceptionYear}</inceptionYear>
+            <currentYear>${currentYear}</currentYear>
+          </properties>
+        </configuration>
+      </plugin>      
     </plugins>
   </build>
 
