@@ -48,7 +48,7 @@ abstract class Base extends JavaTokenParsers {
     rep1sep(inner, ",") |
       rep1sep(inner, ",") ~> opt(",") ~> failure("trailing coma")
 
-  def identity: Parser[String] = nonKeywordIdentifier | escapedIdentity
+  def identity: Parser[String] = (nonKeywordIdentifier | escapedIdentity)
 
   def nonKeywordIdentifier: Parser[String] =
     not(ignoreCases(keywords: _*)) ~> ident |

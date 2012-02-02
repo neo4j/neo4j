@@ -4,7 +4,7 @@ Cypher Query Language
 
 include::introduction.txt[]
 
-include::operators.txt[]
+include::ql/operators/index.txt[]
 
 include::parameters.txt[]
 

@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.commands._
 trait MatchClause extends Base with Predicates {
   val namer = new NodeNamer
 
-  def matching: Parser[(Match, NamedPaths)] =
+  def matching: Parser[(Match, NamedPaths)] = 
     correctMatch |
-      ignoreCase("match") ~> failure("invalid pattern")
+  ignoreCase("match") ~> failure("invalid pattern")
 
   def correctMatch = ignoreCase("match") ~> comaList(path) ^^ {
     case matching => {
@@ -45,8 +45,12 @@ trait MatchClause extends Base with Predicates {
       | failure("expected identifier"))
 
   def parenPath: Parser[Any] = identity ~ "=" ~ optParens(pathSegment) ^^ {
-    case p ~ "=" ~ pathSegment if (pathSegment.size == 1 && pathSegment.head.isInstanceOf[PathPattern]) => pathSegment.head.asInstanceOf[PathPattern].cloneWithOtherName(p).asInstanceOf[Pattern]
-    case p ~ "=" ~ pathSegment => NamedPath(p, pathSegment: _*)
+    case p ~ "=" ~ pathSegment => {
+      if (pathSegment.size == 1 && pathSegment.head.isInstanceOf[PathPattern])
+        pathSegment.head.asInstanceOf[PathPattern].cloneWithOtherName(p).asInstanceOf[Pattern]
+      else
+        NamedPath(p, pathSegment: _*)
+    }
   }
 
   def pathSegment: Parser[List[Pattern]] = relatedTos | shortestPath
@@ -69,16 +73,21 @@ trait MatchClause extends Base with Predicates {
 
       relInfo match {
         case RelatedTo(left, right, relName, relType, direction, optional, predicate) => List(ShortestPath(namer.name(None), left, right, relType, direction, Some(1), optional, single, optionRelName(relName), predicate))
-        case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, direction, relIterable, optional, predicate) if (minHops.nonEmpty) => throw new SyntaxException("Shortest path does not support a minimal length", "quert", 666)
-        case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, direction, relIterable, optional, predicate) => List(ShortestPath(namer.name(None), start, end, relType, direction, maxHops, optional, single, relIterable, predicate))
+        case VarLengthRelatedTo(pathName, start, end, minHops, maxHops, relType, direction, relIterable, optional, predicate) => {
+          if (minHops.nonEmpty) {
+            throw new SyntaxException("Shortest path does not support a minimal length", "quert", 666)
+          }
+          List(ShortestPath(namer.name(None), start, end, relType, direction, maxHops, optional, single, relIterable, predicate))
+        }
       }
+
     }
   }
 
   def relatedTos: Parser[List[Pattern]] = node ~ rep1(relatedTail) ^^ {
     case head ~ tails => {
       var fromNode = namer.name(head)
-      val list = tails.map {
+      val list = tails.map(_ match {
         case (back, rel, relType, forward, end, varLength, optional, predicate) => {
           val toNode = namer.name(end)
           val dir = getDirection(back, forward)
@@ -92,7 +101,7 @@ trait MatchClause extends Base with Predicates {
 
           result
         }
-      }
+      })
 
       list
     }
@@ -124,9 +133,9 @@ trait MatchClause extends Base with Predicates {
 
   def parensNode: Parser[Option[String]] = parens(opt(identity))
 
-  def relatedNode: Parser[Option[String]] = identity ^^ (x => Some(x))
+  def relatedNode: Parser[Option[String]] = identity ^^ (x => Some(x)) 
 
-  def relatedTail = workingLink |
+  def relatedTail = workingLink |  
     opt("<") ~> "-" ~> opt("[" ~> relationshipInfo ~> "]") ~> failure("expected -") |
     opt("<") ~ "-" ~ "[" ~> relationshipInfo ~> failure("unclosed bracket") |
     opt("<") ~ "-" ~ "[" ~> failure("expected relationship information") |
@@ -146,13 +155,13 @@ trait MatchClause extends Base with Predicates {
   }
 
   def relationshipInfo: Parser[(Option[String], Option[String], Option[(Option[Int], Option[Int])], Boolean, Predicate)] =
-    opt(identity) ~ opt("?") ~ opt(":" ~> identity) ~ opt("*" ~ opt(wholeNumber) ~ opt("..") ~ opt(wholeNumber)) ~ opt(ignoreCase("where") ~> predicate) ^^ {
+    opt(identity) ~ opt("?") ~ opt(":" ~> identity) ~ opt("*" ~ opt(wholeNumber) ~ opt("..") ~ opt(wholeNumber)) ~ opt(ignoreCase("where")~> predicate) ^^ {
       case relName ~ optional ~ relType ~ varLength ~ pred => {
         val predicate = pred match {
           case None => True()
           case Some(p) => p
         }
-
+        
         val hops = varLength match {
           case Some("*" ~ x ~ None ~ None) => Some((intOrNone(x), intOrNone(x)))
           case Some("*" ~ minHops ~ punktpunkt ~ maxHops) => Some((intOrNone(minHops), intOrNone(maxHops)))
