@@ -54,6 +54,7 @@ import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.NE
 import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.NEXT_DYNAMIC_NOT_REMOVED;
 import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.NEXT_PROPERTY_NOT_IN_USE;
 import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.NON_FULL_DYNAMIC_WITH_NEXT;
+import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.ORPHANED_PROPERTY;
 import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.OVERWRITE_USED_DYNAMIC;
 import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.OWNER_DOES_NOT_REFERENCE_BACK;
 import static org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency.OWNER_NOT_IN_USE;
@@ -417,7 +418,7 @@ public abstract class ConsistencyCheck extends RecordStore.Processor implements 
                     RelationshipRecord rel = rels.forceGetRecord( old.getNextRel() );
                     if ( rel.inUse() ) fail |= inconsistent( nodes, node, rels, rel, RELATIONSHIP_NOT_REMOVED_FOR_DELETED_NODE );
                 }
-                checkPropertyReference( node, nodes, new OwningNode( node.getId() ) );
+                fail |= checkPropertyReference( node, nodes, new OwningNode( node.getId() ) );
             }
             return fail;
         }
@@ -439,6 +440,7 @@ public abstract class ConsistencyCheck extends RecordStore.Processor implements 
         boolean fail = false;
         if ( props != null )
         {
+            R old = store.forceGetRaw( primitive.getId() );
             if ( primitive.inUse() )
             {
                 if ( !Record.NO_NEXT_PROPERTY.value( primitive.getNextProp() ) )
@@ -451,10 +453,19 @@ public abstract class ConsistencyCheck extends RecordStore.Processor implements 
                               || ( owner.ownerOf( prop ) != -1 && owner.ownerOf( prop ) != primitive.getId() ) )
                         fail |= inconsistent( store, primitive, props, prop, PROPERTY_FOR_OTHER );
                 }
+                if ( old.inUse() && old.getNextProp() != primitive.getNextProp() )
+                { // first property changed for this primitive record ...
+                    if ( !Record.NO_NEXT_PROPERTY.value( old.getNextProp() ) )
+                    {
+                        PropertyRecord oldProp = props.forceGetRecord( old.getNextProp() );
+                        if ( owner.ownerOf( oldProp ) != primitive.getId() )
+                            // ... but the old first property record didn't change accordingly
+                            fail |= inconsistent( props, oldProp, store, primitive, ORPHANED_PROPERTY );
+                    }
+                }
             }
             else
             {
-                R old = store.forceGetRaw( primitive.getId() );
                 if ( !Record.NO_NEXT_PROPERTY.value( old.getNextProp() ) )
                 { // NOTE: with reuse in the same tx this check is invalid
                     PropertyRecord prop = props.forceGetRecord( old.getNextProp() );

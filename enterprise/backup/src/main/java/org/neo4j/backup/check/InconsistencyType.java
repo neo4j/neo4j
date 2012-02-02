@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 public interface InconsistencyType
 {
     String message();
-    
+
     boolean isWarning();
 
     enum ReferenceInconsistency implements InconsistencyType
@@ -42,6 +42,7 @@ public interface InconsistencyType
         PROPERTY_NEXT_WRONG_BACKREFERENCE( "invalid next reference, next record does not reference back" ),
         PREV_PROPERTY_NOT_IN_USE( "invalid prev reference, prev record not in use" ),
         PROPERTY_PREV_WRONG_BACKREFERENCE( "invalid prev reference, prev record does not reference back" ),
+        ORPHANED_PROPERTY( "property record does not have a referencing node or relationship" ),
         OWNER_NOT_IN_USE( "owning record not in use" ),
         OWNER_DOES_NOT_REFERENCE_BACK( "owning record does not reference back" ),
         REPLACED_PROPERTY( "replacing used property record" ),
@@ -60,11 +61,11 @@ public interface InconsistencyType
         TARGET_PREV_DIFFERENT_CHAIN( "not part of the same chain, invalid prev(target) reference" ),
         SOURCE_PREV_NOT_IN_USE( "prev(target) reference to record not used" ),
         SOURCE_NO_BACKREF( "relationship first in source chain, but source node does not reference back" ),
-        SOURCE_PREV_DIFFERENT_CHAIN( "not part of the same chain, invalid prev(target) reference" ),
+        SOURCE_PREV_DIFFERENT_CHAIN( "not part of the same chain, invalid prev(source) reference" ),
         TARGET_NEXT_NOT_IN_USE( "prev(target) reference to record not used" ),
-        TARGET_NEXT_DIFFERENT_CHAIN( "not part of the same chain, invalid prev(target) reference" ),
+        TARGET_NEXT_DIFFERENT_CHAIN( "not part of the same chain, invalid next(target) reference" ),
         SOURCE_NEXT_NOT_IN_USE( "prev(target) reference to record not used" ),
-        SOURCE_NEXT_DIFFERENT_CHAIN( "not part of the same chain, invalid prev(target) reference" ),
+        SOURCE_NEXT_DIFFERENT_CHAIN( "not part of the same chain, invalid next(source) reference" ),
         PROPERTY_CHANGED_WITHOUT_OWNER( true, "the property record was changed but did not have an owning node or relationship" ),
         RELATIONSHIP_NOT_REMOVED_FOR_DELETED_NODE( "node was deleted but relationship was not removed" ),
         PROPERTY_NOT_REMOVED_FOR_DELETED_NODE( "node was deleted but property was not removed" ),
@@ -99,7 +100,7 @@ public interface InconsistencyType
             return warning;
         }
     }
-    
+
     class PropertyOwnerInconsistency implements InconsistencyType
     {
         public enum OwnerInconsistencyType
@@ -125,13 +126,13 @@ public interface InconsistencyType
         }
         private final OwnerInconsistencyType type;
         private final PropertyRecord[] properties;
-        
+
         private PropertyOwnerInconsistency( OwnerInconsistencyType type, PropertyRecord... properties )
         {
             this.type = type;
             this.properties = properties;
         }
-        
+
         @Override
         public String message()
         {
