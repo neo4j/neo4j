@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 
 public class AbstractNameRecord extends AbstractRecord
@@ -69,28 +68,21 @@ public class AbstractNameRecord extends AbstractRecord
     public String toString()
     {
         StringBuilder buf = new StringBuilder( getClass().getSimpleName() + "[" );
-        buf.append( getId() ).append( "," ).append( inUse() ? "in use" : "not used" ).append( ",nameId=" ).append( nameId );
-        String more = additionalToString();
-        if ( more != null ) buf.append( ',' ).append( more );
+        buf.append( getId() ).append( "," ).append( inUse() ? "in" : "no" ).append( " use" );
+        buf.append( ",nameId=" ).append( nameId );
+        additionalToString( buf );
         if ( !isLight )
         {
-            buf.append( ",NameRecords[" );
-            Iterator<DynamicRecord> recIt = nameRecords.iterator();
-            while ( recIt.hasNext() )
+            for ( DynamicRecord dyn : nameRecords )
             {
-                buf.append( recIt.next() );
-                if ( recIt.hasNext() )
-                {
-                    buf.append( ',' );
-                }
+                buf.append( ',' ).append( dyn );
             }
-            buf.append( ']' );
         }
         return buf.append( ']' ).toString();
     }
 
-    protected String additionalToString()
+    protected void additionalToString( StringBuilder buf )
     {
-        return null;
+        // default: nothing additional
     }
 }

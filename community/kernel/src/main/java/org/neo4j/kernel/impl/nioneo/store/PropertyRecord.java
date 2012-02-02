@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -166,30 +165,15 @@ public class PropertyRecord extends Abstract64BitRecord
         buf.append( "Property[" ).append( getId() ).append( ",used=" ).append( inUse() ).append( ",prev=" ).append(
                 prevProp ).append( ",next=" ).append( nextProp );
         if ( entityId != -1 ) buf.append( nodeIdSet ? ",node=" : ",rel=" ).append( entityId );
-        buf.append( ",Value[" );
-        Iterator<PropertyBlock> itr = blockRecords.iterator();
-        while ( itr.hasNext() )
+        for ( PropertyBlock block : blockRecords )
         {
-            buf.append( itr.next() );
-            if ( itr.hasNext() )
-            {
-                buf.append( ',' );
-            }
+            buf.append( ',' ).append( block );
         }
-        buf.append( "],DeletedDynRecs[" );
-        if ( !deletedRecords.isEmpty() )
+        for ( DynamicRecord dyn : deletedRecords )
         {
-            Iterator<DynamicRecord> it = deletedRecords.iterator();
-            while ( it.hasNext() )
-            {
-                buf.append( it.next() );
-                if ( it.hasNext() )
-                {
-                    buf.append( ',' );
-                }
-            }
+            buf.append( ",del:" ).append( dyn );
         }
-        buf.append( "]]" );
+        buf.append( "]" );
         return buf.toString();
     }
 
