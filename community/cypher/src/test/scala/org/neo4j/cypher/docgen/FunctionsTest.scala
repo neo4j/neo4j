@@ -35,7 +35,6 @@ class FunctionsTest extends DocumentingTestBase {
     "E" -> Map("age" -> 41, "eyes" -> "blue", "array" -> Array("one", "two", "three"))
   )
 
-
   def section = "functions"
 
   val common_arguments = List(
@@ -206,7 +205,7 @@ class FunctionsTest extends DocumentingTestBase {
       arguments = List("expression" -> "A numerical expression"),
       text = "SQRT returns the square root of a number",
       queryText = """start a=node(1) return sqrt(256)""",
-      returns = """All the nodes in the path p.""",
+      returns = """The square root of 256.""",
       assertions = (p) => assert(List(Map("sqrt(256)"->16))=== p.toList)
     )
   }
@@ -218,10 +217,11 @@ class FunctionsTest extends DocumentingTestBase {
       arguments = List("expression" -> "A numerical expression"),
       text = "Returns the signum of a number - zero if the expression is zero, -1 for any negative number, and 1 for any positive number.",
       queryText = "start n=node(1) return sign(-17), sign(0.1)",
-      returns = """All the nodes in the path p.""",
+      returns = "",
       assertions = (p) => assert(List(Map("sign(-17)"-> -1, "sign(0.1)"->1)) === p.toList)
     )
   }
+
   private def testThis(title: String, syntax: String, arguments: List[(String, String)], text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {
     val argsText = arguments.map(x => "* _" + x._1 + ":_ " + x._2).mkString("\r\n\r\n")
     val fullText = String.format("""%s
