@@ -19,6 +19,8 @@
  */
 package org.neo4j.com;
 
+import static org.neo4j.kernel.impl.util.Bits.numbersToBitString;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -89,6 +91,12 @@ public class DechunkingChannelBuffer implements ChannelBuffer
     private void readNextChunk()
     {
         ChannelBuffer readBuffer = readNext();
+        
+        /* Header layout:
+         * [    ,    ][    ,   x] 0: last chunk in message, 1: there a more chunks after this one
+         * [    ,    ][    ,  x ] 0: success, 1: failure
+         * [    ,    ][xxxx,xx  ] internal protocol version
+         * [xxxx,xxxx][    ,    ] application protocol version */
         byte[] header = new byte[2];
         readBuffer.readBytes( header );
         more = (header[0] & 0x1) != 0;
@@ -126,12 +134,12 @@ public class DechunkingChannelBuffer implements ChannelBuffer
         if ( readInternalProtocolVersion != internalProtocolVersion )
         {
             throw new IllegalProtocolVersionException( "Unexpected internal protocol version " + readInternalProtocolVersion +
-                    ", expected " + internalProtocolVersion );
+                    ", expected " + internalProtocolVersion + ". Header:" + numbersToBitString( header ) );
         }
         if ( header[1] != applicationProtocolVersion )
         {
             throw new IllegalProtocolVersionException( "Unexpected application protocol version " + header[1] +
-                    ", expected " + applicationProtocolVersion );
+                    ", expected " + applicationProtocolVersion + ". Header:" + numbersToBitString( header ) );
         }
     }
 
