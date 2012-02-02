@@ -117,10 +117,17 @@ public class ZooClient extends AbstractZooKeeperManager
 
     public void process( WatchedEvent event )
     {
+        String path = event.getPath();
+        msgLog.logMessage( this + ", " + new Date() + " Got event: " + event
+                           + " (path=" + path + ")", true );
+        if ( shutdown )
+        {
+            msgLog.logMessage( this
+                               + ", is shutdown, the above event is ignored" );
+            return;
+        }
         try
         {
-            String path = event.getPath();
-            msgLog.logMessage( this + ", " + new Date() + " Got event: " + event + " (path=" + path + ")", true );
             if ( path == null && event.getState() == Watcher.Event.KeeperState.Expired )
             {
                 keeperState = KeeperState.Expired;
@@ -789,7 +796,7 @@ public class ZooClient extends AbstractZooKeeperManager
     {
         return storeId;
     }
-    
+
     @Override
     public String toString()
     {
