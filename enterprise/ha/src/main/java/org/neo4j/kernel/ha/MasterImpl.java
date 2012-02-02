@@ -253,10 +253,10 @@ public class MasterImpl implements Master
                     }
                     else
                     {
-                        throw new IllegalStateException( "Transaction for " + txId +
-                                " not started on this master. There may have been a master switch between the" +
-                                " time this transaction started and up to now. This transaction cannot continue" +
-                                " since the state from the previous master isn't transferred." );
+                        throw new IllegalStateException( "Transaction " + txId + " has either timed out on the" +
+                        		" master or was not started on this master. There may have been a master switch" +
+                        		" between the time this transaction started and up to now. This transaction" +
+                        		" cannot continue since the state from the previous master isn't transferred." );
                     }
                 }
                 else

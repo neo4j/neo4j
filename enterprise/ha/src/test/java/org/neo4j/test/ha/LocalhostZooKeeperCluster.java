@@ -212,8 +212,7 @@ public final class LocalhostZooKeeperCluster
 
     public static void main( String[] args ) throws Exception
     {
-        LocalhostZooKeeperCluster cluster = new LocalhostZooKeeperCluster( ZooKeeperProcess.class,
-                2181, 2182, 2183 );
+        LocalhostZooKeeperCluster cluster = standardZoo( LocalhostZooKeeperCluster.class );
         try
         {
             System.out.println( "press return to exit" );
