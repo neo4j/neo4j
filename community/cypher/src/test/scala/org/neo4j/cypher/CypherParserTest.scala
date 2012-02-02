@@ -564,8 +564,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
   @Test def nestedBooleanOperatorsAndParentesis() {
     testQuery(
-      """start n = NODE(1,2,3) where (n.animal = "monkey" and n.food = "banana") or (n.animal = "cow" and n
-      .food="grass") return n""",
+      """start n = NODE(1,2,3) where (n.animal = "monkey" and n.food = "banana") or (n.animal = "cow" and n.food="grass") return n""",
       Query.
         start(NodeById("n", 1, 2, 3)).
         where(Or(
@@ -1151,6 +1150,29 @@ class CypherParserTest extends JUnitSuite with Assertions {
         ExpressionReturnItem(SignFunction(Literal(1)))
       )
     )
+  }
+
+  @Test def shouldAllowCommentAtEnd() {
+    testQuery("start s = NODE(1) return s // COMMENT",
+      Query.
+        start(NodeById("s", 1)).
+        returns(ExpressionReturnItem(Entity("s"))))
+  }
+
+  @Test def shouldAllowCommentAlone() {
+    testQuery("""start s = NODE(1) return s
+    // COMMENT""",
+      Query.
+        start(NodeById("s", 1)).
+        returns(ExpressionReturnItem(Entity("s"))))
+  }
+
+  @Test def shouldAllowCommentsInsideStrings() {
+    testQuery("start s = NODE(1) where s.apa = '//NOT A COMMENT' return s",
+      Query.
+        start(NodeById("s", 1)).
+        where(Equals(Property("s","apa"), Literal("//NOT A COMMENT")))
+        returns(ExpressionReturnItem(Entity("s"))))
   }
 
   def testQuery(query: String, expectedQuery: Query) {
