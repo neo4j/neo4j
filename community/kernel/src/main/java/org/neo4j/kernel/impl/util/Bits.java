@@ -199,9 +199,8 @@ public class Bits
         {
             long value = longs[longIndex];
             if ( builder.length() > 0 ) builder.append( "\n" );
-            builder.append( longIndex + ":[" );
+            builder.append( longIndex + ":" );
             numberToString( builder, value, 8 );
-            builder.append( "]" );
             if ( longIndex == 0 ) builder.append( " <-- START" );
         }
         return builder.toString();
@@ -209,51 +208,43 @@ public class Bits
     
     public static StringBuilder numberToString( StringBuilder builder, long value, int numberOfBytes )
     {
+        builder.append( "[" );
         for ( int i = 8*numberOfBytes-1; i >= 0; i-- )
         {
             if ( i > 0 && i % 8 == 0 ) builder.append( "," );
             boolean isSet = (value & (1L << i)) != 0;
             builder.append( isSet ? "1" : "0" );
         }
+        builder.append( "]" );
         return builder;
-    }
-    
-    private static StringBuilder startOfNumber()
-    {
-        return new StringBuilder( "[" );
-    }
-    
-    private static StringBuilder endOfNumber( StringBuilder builder )
-    {
-        return builder.append( "]" );
     }
     
     public static String numbersToBitString( byte[] values )
     {
-        StringBuilder builder = startOfNumber();
-        for ( byte value : values ) numberToString( builder, value, 8 );
-        return endOfNumber( builder ).toString();
+        StringBuilder builder = new StringBuilder();
+        for ( byte value : values ) numberToString( builder, value, 1 );
+        return builder.toString();
     }
     
     public static String numbersToBitString( short[] values )
     {
-        StringBuilder builder = startOfNumber();
-        for ( short value : values ) numberToString( builder, value, 16 );
-        return endOfNumber( builder ).toString();
+        StringBuilder builder = new StringBuilder();
+        for ( short value : values ) numberToString( builder, value, 2 );
+        return builder.toString();
     }
     
     public static String numbersToBitString( int[] values )
     {
-        StringBuilder builder = startOfNumber();
-        for ( int value : values ) numberToString( builder, value, 32 );
-        return endOfNumber( builder ).toString();
+        StringBuilder builder = new StringBuilder();
+        for ( int value : values ) numberToString( builder, value, 4 );
+        return builder.toString();
     }
     
     public static String numbersToBitString( long[] values )
     {
-        StringBuilder builder = startOfNumber();
-        for ( long value : values ) numberToString( builder, value, 64 );
-        return endOfNumber( builder ).toString();
+        StringBuilder builder = new StringBuilder();
+        for ( long value : values ) numberToString( builder, value, 8 );
+        return builder.toString();
     }
     
     @Override
