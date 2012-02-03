@@ -62,18 +62,16 @@ trait StartClause extends Base {
     case id ~ valu => (id, valu)
   }
 
-  def idxLookup: Parser[(String, Expression, Expression)] = ":" ~> identity ~ parens(idxQueries) ^^ {
-    case a ~ b => (a, b._1, b._2)
-  }
+  def idxLookup: Parser[(String, Expression, Expression)] =
+    ":" ~> identity ~ parens(idxQueries) ^^ { case a ~ b => (a, b._1, b._2)  } |
+      ":" ~> identity ~> "(" ~> (id|parameter) ~> failure("`=` expected")
 
   def idxQueries: Parser[(Expression, Expression)] = idxQuery
 
   def indexValue = parameter | stringLit | failure("string literal or parameter expected")
 
   def idxQuery: Parser[(Expression, Expression)] =
-    ((id | parameter) ~ "=" ~ indexValue ^^ {
-      case k ~ "=" ~ v => (k, v)
-    }
+    ((id | parameter) ~ "=" ~ indexValue ^^ { case k ~ "=" ~ v => (k, v) }
       | "=" ~> failure("Need index key"))
 
   def id: Parser[Expression] = identity ^^ (x => Literal(x))
