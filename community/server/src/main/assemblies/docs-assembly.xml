@@ -27,12 +27,26 @@
   </formats>
   <fileSets>
     <fileSet>
-      <directory>target/docs</directory>
+      <filtered>true</filtered>
+      <directory>target/docs/</directory>
       <outputDirectory>/</outputDirectory>
     </fileSet>
     <fileSet>
+      <filtered>true</filtered>
       <directory>src/docs</directory>
       <outputDirectory>/</outputDirectory>
+      <includes>
+        <include>*.txt</include>
+      </includes>
+    </fileSet>
+    <fileSet>
+      <filtered>false</filtered>
+      <directory>src/docs</directory>
+      <outputDirectory>/</outputDirectory>
+      <excludes>
+        <exclude>*.txt</exclude>
+      </excludes>
     </fileSet>
   </fileSets>
 </assembly>
+
