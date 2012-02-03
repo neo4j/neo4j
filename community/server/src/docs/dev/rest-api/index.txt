@@ -196,6 +196,11 @@ You have to do this early in your server lifecycle, before any normal auto index
 [[rest-api-traverse]]
 == Traversals ==
 
+[WARNING]
+The Traversal REST Endpoint executes arbitrary Groovy code under the hood as part of the evaluators definitions. In hosted and open environments, this can constitute a security risk.
+In these case, consider using declarative approaches like <<cypher-query-lang>> or write your own server side plugin executing the
+interesting traversals with the Java API ( see <<server-plugin>> ) or secure your server, see <<security-server>>.
+
 include::traversals.txt[]
 
 include::traversal-using-a-return-filter.txt[]
