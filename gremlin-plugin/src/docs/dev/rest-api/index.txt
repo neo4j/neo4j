@@ -17,7 +17,7 @@ example for responses tailored to specific needs.
 [WARNING]
 The Gremlin plugin lets you execute arbitrary Groovy code under the hood. In hosted and open environments, this can constitute a security risk.
 In these case, consider using declarative approaches like <<cypher-query-lang>> or write your own server side plugin executing the
-interesting Gremlin or Java routines, see <<server-plugin>> or secure your server, see <<security-server>>.
+interesting Gremlin or Java routines, see <<server-plugins>> or secure your server, see <<security-server>>.
 
 :leveloffset: 1
 
