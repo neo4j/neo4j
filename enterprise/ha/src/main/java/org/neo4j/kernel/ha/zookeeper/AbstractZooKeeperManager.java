@@ -56,10 +56,10 @@ public abstract class AbstractZooKeeperManager implements Watcher
     /*
      * The timeout our client and the ZK cluster will negotiate. Round trip
      * from Tokyo to Oregon on AWS with a cold ZK install (hence lots of writes
-     * on disk on session establishment) takes about 8 secs. 10 should be enough
-     * for everybody.
+     * on disk on session establishment) takes about 8 secs. HBase
+     * uses 60s default. For us 80 seems to be good enough.
      */
-    protected static final int SESSION_TIME_OUT = 10000;
+    protected static final int SESSION_TIME_OUT = 80000;
 
     private final String servers;
     private final Map<Integer, String> haServersCache = Collections.synchronizedMap(
