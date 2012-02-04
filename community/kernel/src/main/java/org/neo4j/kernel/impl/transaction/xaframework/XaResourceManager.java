@@ -48,7 +48,7 @@ public class XaResourceManager
     private final ArrayMap<Xid,XidStatus> xidMap =
         new ArrayMap<Xid,XidStatus>();
     private int recoveredTxCount = 0;
-    private Set<TransactionInfo> recoveredDoneRecords = new HashSet<TransactionInfo>();
+    private final Set<TransactionInfo> recoveredDoneRecords = new HashSet<TransactionInfo>();
 
     private XaLogicalLog log = null;
     private final XaTransactionFactory tf;
@@ -208,7 +208,7 @@ public class XaResourceManager
     private static class XidStatus
     {
         private boolean active = true;
-        private TransactionStatus txStatus;
+        private final TransactionStatus txStatus;
 
         XidStatus( XaTransaction xaTransaction )
         {
@@ -360,7 +360,7 @@ public class XaResourceManager
         }
     }
 
-    private Map<Xid,Integer> txOrderMap = new HashMap<Xid,Integer>();
+    private final Map<Xid,Integer> txOrderMap = new HashMap<Xid,Integer>();
     private int nextTxOrder = 0;
 
     // called during recovery
@@ -735,8 +735,7 @@ public class XaResourceManager
             ReadableByteChannel transaction ) throws IOException
     {
         long txId = TxIdGenerator.DEFAULT.generate( dataSource, 0 );
-        int masterId = txIdGenerator.getCurrentMasterId();
-        log.applyTransactionWithoutTxId( transaction, txId, masterId );
+        log.applyTransactionWithoutTxId( transaction, txId );
         return txId;
     }
 
