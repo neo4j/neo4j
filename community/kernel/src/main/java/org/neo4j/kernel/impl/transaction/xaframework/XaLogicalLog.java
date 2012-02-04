@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static java.lang.Math.max;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.newLogReaderBuffer;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -38,6 +35,8 @@ import java.util.regex.Pattern;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
+import static java.lang.Math.max;
+
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -50,6 +49,8 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.BufferedFileChannel;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.newLogReaderBuffer;
 
 /**
  * <CODE>XaLogicalLog</CODE> is a transaction and logical log combined. In
@@ -343,7 +344,7 @@ public class XaLogicalLog implements LogLoader
         assert txId != -1;
         try
         {
-            cacheTxStartPosition( txId, startEntry.getMasterId(), startEntry );
+            cacheTxStartPosition( txId, startEntry );
             LogIoUtils.writeCommit( false, writeBuffer, identifier, txId, System.currentTimeMillis() );
             forceMode.force( writeBuffer );
         }
@@ -354,21 +355,19 @@ public class XaLogicalLog implements LogLoader
         }
     }
 
-    private synchronized void cacheTxStartPosition( long txId, int masterId,
-            LogEntry.Start startEntry )
+    private synchronized void cacheTxStartPosition( long txId, LogEntry.Start startEntry )
     {
-        cacheTxStartPosition( txId, masterId, startEntry, logVersion );
+        cacheTxStartPosition( txId, startEntry, logVersion );
     }
 
-    private synchronized TxPosition cacheTxStartPosition( long txId, int masterId,
-            LogEntry.Start startEntry, long logVersion )
+    private synchronized TxPosition cacheTxStartPosition( long txId, LogEntry.Start startEntry, long logVersion )
     {
         if ( startEntry.getStartPosition() == -1 )
         {
             throw new RuntimeException( "StartEntry.position is " + startEntry.getStartPosition() );
         }
 
-        TxPosition result = new TxPosition( logVersion, masterId, startEntry.getIdentifier(),
+        TxPosition result = new TxPosition( logVersion, startEntry.getMasterId(), startEntry.getIdentifier(),
                 startEntry.getStartPosition(), startEntry.getTimeWritten() );
         positionCache.putStartPosition( txId, result );
         return result;
@@ -420,7 +419,7 @@ public class XaLogicalLog implements LogLoader
         assert txId != -1;
         try
         {
-            cacheTxStartPosition( txId, startEntry.getMasterId(), startEntry );
+            cacheTxStartPosition( txId, startEntry );
             LogIoUtils.writeCommit( true, writeBuffer, identifier, txId, System.currentTimeMillis() );
             forceMode.force( writeBuffer );
         }
@@ -524,7 +523,7 @@ public class XaLogicalLog implements LogLoader
         {
             XaTransaction xaTx = xaRm.getXaTransaction( xid );
             xaTx.setCommitTxId( txId );
-            cacheTxStartPosition( txId, startEntry.getMasterId(), startEntry );
+            cacheTxStartPosition( txId, startEntry );
             xaRm.injectOnePhaseCommit( xid );
             registerRecoveredTransaction( txId );
         }
@@ -584,7 +583,7 @@ public class XaLogicalLog implements LogLoader
         {
             XaTransaction xaTx = xaRm.getXaTransaction( xid );
             xaTx.setCommitTxId( txId );
-            cacheTxStartPosition( txId, identifier, startEntry );
+            cacheTxStartPosition( txId, startEntry );
             xaRm.injectTwoPhaseCommit( xid );
             registerRecoveredTransaction( txId );
         }
@@ -1228,7 +1227,7 @@ public class XaLogicalLog implements LogLoader
     }
 
     public synchronized void applyTransactionWithoutTxId( ReadableByteChannel byteChannel,
-            long nextTxId, int masterId, ForceMode forceMode ) throws IOException
+            long nextTxId, ForceMode forceMode ) throws IOException
     {
         if ( nextTxId != (xaTf.getLastCommittedTx() + 1) )
         {
@@ -1267,7 +1266,7 @@ public class XaLogicalLog implements LogLoader
         {
             XaTransaction xaTx = xaRm.getXaTransaction( xid );
             xaTx.setCommitTxId( nextTxId );
-            cacheTxStartPosition( nextTxId, masterId, startEntry );
+            cacheTxStartPosition( nextTxId, startEntry );
             xaRm.commit( xid, true );
             LogEntry doneEntry = new LogEntry.Done( startEntry.getIdentifier() );
             LogIoUtils.writeLogEntry( doneEntry, writeBuffer );
@@ -1334,8 +1333,7 @@ public class XaLogicalLog implements LogLoader
             throw new IOException( "Unable to find start entry" );
         }
         startEntry.setStartPosition( startEntryPosition );
-        cacheTxStartPosition( logApplier.getCommitEntry().getTxId(),
-                startEntry.getMasterId(), startEntry );
+        cacheTxStartPosition( logApplier.getCommitEntry().getTxId(), startEntry );
 //        System.out.println( "applyFullTx#end @ pos: " + writeBuffer.getFileChannelPosition() );
         checkLogRotation();
     }
@@ -1431,10 +1429,10 @@ public class XaLogicalLog implements LogLoader
             msgLog.logMessage( "Rotate log first start entry @ pos=" +
                     firstEntryPosition + " out of " + xidIdentMap );
         }
-        
+
         LogBuffer newLogBuffer = instantiateCorrectWriteBuffer( newLog );
         copyPartiallyWrittenTransactionsToTheNewLog( newLogBuffer );
-        
+
         newLogBuffer.force();
         newLog.position( newLogBuffer.getFileChannelPosition() );
         msgLog.logMessage( "Rotate: old log scanned, newLog @ pos=" +
@@ -1496,8 +1494,7 @@ public class XaLogicalLog implements LogLoader
                     else
                     {
                         TxPosition oldPos = positionCache.getStartPosition( commitEntry.getTxId() );
-                        TxPosition newPos = cacheTxStartPosition( commitEntry.getTxId(),
-                                startEntry.getMasterId(), startEntry, logVersion+1 );
+                        TxPosition newPos = cacheTxStartPosition( commitEntry.getTxId(), startEntry, logVersion+1 );
                         msgLog.logMessage( "Updated tx " + ((LogEntry.Commit) entry ).getTxId() +
                                 " from " + oldPos + " to " + newPos );
                     }
