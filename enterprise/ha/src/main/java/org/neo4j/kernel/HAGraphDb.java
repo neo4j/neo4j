@@ -664,27 +664,24 @@ public class HAGraphDb extends AbstractGraphDatabase
                     ((SlaveIdGeneratorFactory) getConfig().getIdGeneratorFactory()).forgetIdAllocationsFromMaster();
                 }
             }
-            if ( newDb != null )
-            {
-                doAfterLocalGraphStarted( newDb );
-
-                // Assign the db last
-                this.localGraph = newDb;
-            }
-            /*
-             * We have to instantiate the update puller after the local db has been assigned.
-             * Another way to do it is to wait on a LocalGraphAvailableCondition. I chose this,
-             * it is simpler to follow, provided you know what a volatile does.
-             */
             if ( masterServer == null )
             {
                 // The above being true means we are a slave
                 instantiateAutoUpdatePullerIfConfigSaysSo();
-                pullUpdates = true;
-                checkAndRecoverCorruptLogs( localGraph, false );
+                checkAndRecoverCorruptLogs( newDb != null ? newDb : localGraph,
+                        false );
                 ensureDataConsistencyWithMaster( newDb != null ? newDb
                         : localGraph, master );
                 getMessageLog().logMessage( "Data consistent with master" );
+            }
+            if ( newDb != null )
+            {
+                doAfterLocalGraphStarted( newDb );
+
+                // Assign the db last so that no references leak
+                this.localGraph = newDb;
+                // Now ok to pull updates
+                pullUpdates = true;
             }
         }
         catch ( Throwable t )
