@@ -225,17 +225,12 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask> implements U
                         formatter.format("%02x", b);
                     }
                     formattedMac = sb.toString();
-                } else {
-                    System.out.println("Address doesn't exist or is not accessible.");
                 }
-            } else {
-                System.out.println("Network Interface for the specified address is not found.");
             }
-        } catch (UnknownHostException e) {
-            ;
-        } catch (SocketException e) {
-            ;
+        } catch (Throwable t) {
+            ; //
         }
+
         return formattedMac;
     }
 }
