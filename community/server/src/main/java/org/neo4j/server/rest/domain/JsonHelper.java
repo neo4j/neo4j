@@ -103,7 +103,8 @@ public class JsonHelper
             OBJECT_MAPPER.writeValue( generator, data );
             writer.close();
             return writer.getBuffer()
-                    .toString();
+                    .toString()
+                    .replace("\\n", " ");
         }
         catch ( IOException e )
         {
