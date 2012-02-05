@@ -265,10 +265,10 @@ public class LogExtractor
     {
         return lastCommitEntry;
     }
-
+    
     public long getLastTxChecksum()
     {
-        return getLastStartEntry().getTimeWritten();
+        return getLastStartEntry().getChecksum();
     }
 
     public Start getLastStartEntry()
@@ -499,15 +499,15 @@ public class LogExtractor
         final int masterId;
         final int identifier;
         final long position;
-        final long timeWritten;
+        final long checksum;
 
-        public TxPosition( long version, int masterId, int identifier, long position, long timeWritten )
+        public TxPosition( long version, int masterId, int identifier, long position, long checksum )
         {
             this.version = version;
             this.masterId = masterId;
             this.identifier = identifier;
             this.position = position;
-            this.timeWritten = timeWritten;
+            this.checksum = checksum;
         }
 
         public boolean earlierThan( TxPosition other )
