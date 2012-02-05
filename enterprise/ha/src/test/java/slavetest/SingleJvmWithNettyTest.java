@@ -19,23 +19,7 @@
  */
 package slavetest;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.HaConfig.CONFIG_KEY_LOCK_READ_TIMEOUT;
-import static org.neo4j.kernel.HaConfig.CONFIG_KEY_READ_TIMEOUT;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.util.Collection;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-
+import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.com.Client;
 import org.neo4j.com.Client.ConnectionLostHandler;
@@ -57,13 +41,39 @@ import org.neo4j.kernel.ha.Broker;
 import org.neo4j.kernel.ha.Master;
 import org.neo4j.kernel.ha.MasterClient;
 import org.neo4j.kernel.ha.MasterImpl;
+import org.neo4j.kernel.ha.zookeeper.AbstractZooKeeperManager;
 import org.neo4j.kernel.ha.zookeeper.Machine;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.HaConfig.CONFIG_KEY_LOCK_READ_TIMEOUT;
+import static org.neo4j.kernel.HaConfig.CONFIG_KEY_READ_TIMEOUT;
+
 public class SingleJvmWithNettyTest extends SingleJvmTest
 {
+    private volatile Pair<Master, Machine> cachedMasterOverride;
+
+    @Before
+    public void setUp() 
+    {
+        cachedMasterOverride = null;
+    }
+    
     @Test
     public void assertThatNettyIsUsed() throws Exception
     {
@@ -95,10 +105,16 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
 
             public Pair<Master, Machine> getMasterReally( boolean allowChange )
             {
-                return getMaster();
+                if ( allowChange ) cachedMasterOverride = null;
+                return getMasterPair();
             }
 
             public Pair<Master, Machine> getMaster()
+            {
+                return cachedMasterOverride != null ? cachedMasterOverride : getMasterPair();
+            }
+
+            private Pair<Master, Machine> getMasterPair()
             {
                 return Pair.of( client, masterMachine );
             }
@@ -505,6 +521,34 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         lockHolder.start();
 
         executeJob( new CommonJobs.HoldLongLock( nodeId, latchFetcher ), 0 );
+    }
+
+    @Test
+    public void pullUpdatesDoesNewMasterWhenThereIsNoMaster() throws Exception
+    {
+        disableVerificationAfterTest();
+        initializeDbs( 2 );
+        executeJob( new CommonJobs.CreateNodeJob( true ), 0 );
+
+        cachedMasterOverride = AbstractZooKeeperManager.NO_MASTER_MACHINE_PAIR;
+        getMaster().shutdown();
+        int exceptionCount = 0;
+        for ( int i = 0; i < 3; i++ )
+        {
+            try
+            {
+                pullUpdates( 1 );
+            }
+            catch ( Exception e )
+            {
+                exceptionCount++;
+                e.printStackTrace();
+            }
+        }
+        if (exceptionCount > 1)
+        {
+            fail( "Should not have gotten more than one failed pullUpdates during master switch." );
+        }
     }
 
     private Pair<Integer, Integer> getTransactionCounts( GraphDatabaseService master )
