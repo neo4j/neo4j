@@ -105,7 +105,10 @@ public class HAGraphDb extends AbstractGraphDatabase
     private volatile ScheduledExecutorService updatePuller;
     private volatile long updateTime = 0;
     private volatile Throwable causeOfShutdown;
-    private final long startupTime;
+    
+    // Is used as a session id and is updated on each internal restart
+    private long startupTime;
+    
     private final BranchedDataPolicy branchedDataPolicy;
     private final HaConfig.SlaveUpdateMode slaveUpdateMode;
     private final int readTimeout;
@@ -150,7 +153,6 @@ public class HAGraphDb extends AbstractGraphDatabase
         {
             throw new IllegalArgumentException( "null config, proper configuration required" );
         }
-        this.startupTime = System.currentTimeMillis();
         this.config = config;
         initializeTxManagerKernelPanicEventHandler();
         this.readTimeout = HaConfig.getClientReadTimeoutFromConfig( config );
@@ -746,6 +748,7 @@ public class HAGraphDb extends AbstractGraphDatabase
         // instantiateAutoUpdatePullerIfConfigSaysSo() moved to
         // reevaluateMyself(), after the local db has been assigned
         logHaInfo( "Started as slave" );
+        this.startupTime = System.currentTimeMillis();
         return result;
     }
 
@@ -762,6 +765,7 @@ public class HAGraphDb extends AbstractGraphDatabase
                 CommonFactories.defaultFileSystemAbstraction() );
         this.masterServer = (MasterServer) broker.instantiateMasterServer( this );
         logHaInfo( "Started as master" );
+        this.startupTime = System.currentTimeMillis();
         return result;
     }
 
