@@ -93,9 +93,20 @@ public abstract class LogEntry
             this.startPosition = position;
         }
         
-        public long getTimeWritten()
+        long getTimeWritten()
         {
             return timeWritten;
+        }
+        
+        /**
+         * @return combines necessary state to get a unique checksum to identify this transaction uniquely.
+         */
+        public long getChecksum()
+        {
+            // [4 bits combined masterId/myId][4 bits xid hashcode, which combines time/randomness]
+            long lowBits = xid.hashCode();
+            long highBits = masterId*37 + myId;
+            return (highBits << 32) | lowBits;
         }
 
         @Override

@@ -366,7 +366,7 @@ public class XaLogicalLog implements LogLoader
         }
 
         TxPosition result = new TxPosition( logVersion, startEntry.getMasterId(), startEntry.getIdentifier(),
-                startEntry.getStartPosition(), startEntry.getTimeWritten() );
+                startEntry.getStartPosition(), startEntry.getChecksum() );
         positionCache.putStartPosition( txId, result );
         return result;
     }
@@ -1024,7 +1024,7 @@ public class XaLogicalLog implements LogLoader
         TxPosition cache = positionCache.getStartPosition( txId );
         if ( cache != null )
         {
-            return Pair.of( cache.masterId, cache.timeWritten );
+            return Pair.of( cache.masterId, cache.checksum );
         }
 
         LogExtractor extractor = getLogExtractor( txId, txId );
