@@ -19,6 +19,13 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import org.neo4j.helpers.UTF8;
+import org.neo4j.kernel.Config;
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.core.ReadOnlyDbException;
+import org.neo4j.kernel.impl.util.StringLogger;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -27,13 +34,6 @@ import java.nio.channels.OverlappingFileLockException;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import org.neo4j.helpers.UTF8;
-import org.neo4j.kernel.Config;
-import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.impl.core.ReadOnlyDbException;
-import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Contains common implementation for {@link AbstractStore} and
@@ -461,8 +461,9 @@ public abstract class CommonAbstractStore
             String mem = (String) config.get( realName + ".mapped_memory" );
             if ( mem != null )
             {
+                mem = mem.trim().toLowerCase();
                 long multiplier = 1;
-                if ( mem.endsWith( "M" ) )
+                if ( mem.endsWith( "m" ) )
                 {
                     multiplier = 1024 * 1024;
                     mem = mem.substring( 0, mem.length() - 1 );
@@ -472,7 +473,7 @@ public abstract class CommonAbstractStore
                     multiplier = 1024;
                     mem = mem.substring( 0, mem.length() - 1 );
                 }
-                else if ( mem.endsWith( "G" ) )
+                else if ( mem.endsWith( "g" ) )
                 {
                     multiplier = 1024*1024*1024;
                     mem = mem.substring( 0, mem.length() - 1 );
