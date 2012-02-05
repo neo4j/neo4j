@@ -22,8 +22,6 @@ package org.neo4j.ext.udc.impl;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.net.UnknownHostException;
 import java.util.Formatter;
 import java.util.Properties;
 import java.util.Timer;
