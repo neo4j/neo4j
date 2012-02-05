@@ -37,7 +37,7 @@ public class UdcTimerTask extends TimerTask
     private final String storeId;
     private final Pinger pinger;
 
-    public UdcTimerTask(String host, String version, String storeId, String source, boolean crashPing, String registration)
+    public UdcTimerTask(String host, String version, String storeId, String source, boolean crashPing, String registration, String mac)
     {
         successCounts.put( storeId, 0 );
         failureCounts.put( storeId, 0 );
@@ -57,7 +57,10 @@ public class UdcTimerTask extends TimerTask
         {
             params.put( "reg", registration );
         }
-
+        if (mac != null) 
+        {
+            params.put( "mac", mac );
+        }
 
         pinger = new Pinger( host, params, crashPing );
     }

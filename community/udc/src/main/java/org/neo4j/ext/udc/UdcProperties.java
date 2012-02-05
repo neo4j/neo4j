@@ -58,4 +58,9 @@ public interface UdcProperties {
      * Unique registration id
      */
     public static final String UDC_REGISTRATION_KEY = "neo4j.ext.udc.reg";
+
+    /**
+     * Ethernet mac address
+     */
+    public static final String UDC_MAC_KEY = "neo4j.ext.udc.mac";
 }

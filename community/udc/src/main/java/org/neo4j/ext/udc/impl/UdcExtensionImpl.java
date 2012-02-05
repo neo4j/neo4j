@@ -20,6 +20,11 @@
 package org.neo4j.ext.udc.impl;
 
 import java.io.InputStream;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.net.UnknownHostException;
+import java.util.Formatter;
 import java.util.Properties;
 import java.util.Timer;
 
@@ -64,6 +69,11 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask> implements U
     private static final String DEFAULT_HOST = "udc.neo4j.org";
 
     /**
+     * Registration unavailable.
+     */
+    private static final String DEFAULT_REGISTRATION = "unreg";
+
+    /**
      * No-arg constructor, sets the extension key to "kernel udc".
      */
     public UdcExtensionImpl()
@@ -91,7 +101,7 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask> implements U
         int interval = DEFAULT_INTERVAL;
         String hostAddress = DEFAULT_HOST;
         String source = null;
-        String registration = null;
+        String registration = DEFAULT_REGISTRATION;
         try
         {
             firstDelay = configuration.getInt( FIRST_DELAY_CONFIG_KEY, Integer.toString( firstDelay ) );
@@ -138,7 +148,7 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask> implements U
         String storeId = Long.toHexString( ds.getRandomIdentifier() );
         String version = kernel.version().getRevision();
         if ( version.equals( "" ) ) version = kernel.version().getVersion();
-        UdcTimerTask task = new UdcTimerTask( hostAddress, version, storeId, source, crashPing, registration );
+        UdcTimerTask task = new UdcTimerTask( hostAddress, version, storeId, source, crashPing, registration, formattedMacAddy() );
         timer.scheduleAtFixedRate( task, firstDelay, interval );
         return task;
     }
@@ -199,5 +209,33 @@ public class UdcExtensionImpl extends KernelExtension<UdcTimerTask> implements U
             System.err.println( "failed to load udc.properties, because: " + e );
         }
         return sysProps;
+    }
+
+    private String formattedMacAddy() {
+        String formattedMac = "0";
+        try {
+            InetAddress address = InetAddress.getLocalHost();
+            NetworkInterface ni = NetworkInterface.getByInetAddress(address);
+            if (ni != null) {
+                byte[] mac = ni.getHardwareAddress();
+                if (mac != null) {
+                    StringBuilder sb = new StringBuilder(mac.length * 2);
+                    Formatter formatter = new Formatter(sb);
+                    for (byte b : mac) {
+                        formatter.format("%02x", b);
+                    }
+                    formattedMac = sb.toString();
+                } else {
+                    System.out.println("Address doesn't exist or is not accessible.");
+                }
+            } else {
+                System.out.println("Network Interface for the specified address is not found.");
+            }
+        } catch (UnknownHostException e) {
+            ;
+        } catch (SocketException e) {
+            ;
+        }
+        return formattedMac;
     }
 }
