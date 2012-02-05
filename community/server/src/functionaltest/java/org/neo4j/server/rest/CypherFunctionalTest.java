@@ -19,17 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.matchers.JUnitMatchers.containsString;
-
-import java.io.UnsupportedEncodingException;
-import java.util.Map;
-
-import javax.ws.rs.core.Response.Status;
-
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.helpers.Pair;
@@ -41,7 +30,14 @@ import org.neo4j.test.GraphDescription.NODE;
 import org.neo4j.test.GraphDescription.PROP;
 import org.neo4j.test.GraphDescription.REL;
 import org.neo4j.test.TestData.Title;
-import org.neo4j.visualization.asciidoc.AsciidocHelper;
+
+import javax.ws.rs.core.Response.Status;
+import java.io.UnsupportedEncodingException;
+import java.util.Map;
+
+import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.*;
+import static org.junit.matchers.JUnitMatchers.containsString;
 
 public class CypherFunctionalTest extends AbstractRestFunctionalTestBase {
 

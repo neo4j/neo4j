@@ -54,8 +54,7 @@ public class LogExtractor
      */
     private static final int CACHE_FIND_THRESHOLD = 100;
 
-    private final ByteBuffer localBuffer =
-            ByteBuffer.allocate( 9 + Xid.MAXGTRIDSIZE + Xid.MAXBQUALSIZE * 10 );
+    private final ByteBuffer localBuffer = newLogReaderBuffer();
     private ReadableByteChannel source;
     private final LogEntryCollector collector;
     private long version;
@@ -113,6 +112,11 @@ public class LogExtractor
         ReadableByteChannel getLogicalLogOrMyselfCommitted( long version, long position ) throws IOException;
         
         long getHighestLogVersion();
+    }
+    
+    static ByteBuffer newLogReaderBuffer()
+    {
+        return ByteBuffer.allocate( 9 + Xid.MAXGTRIDSIZE + Xid.MAXBQUALSIZE * 10 );
     }
 
     public LogExtractor( LogPositionCache cache, LogLoader logLoader,

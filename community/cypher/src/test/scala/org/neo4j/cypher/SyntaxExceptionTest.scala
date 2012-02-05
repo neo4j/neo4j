@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.scalatest.junit.JUnitSuite
 import org.junit.Assert._
-import org.junit.{Ignore, Test}
+import org.junit.Test
 
 class SyntaxExceptionTest extends JUnitSuite {
   def expectError(query: String, expectedError: String) {
@@ -40,6 +40,12 @@ class SyntaxExceptionTest extends JUnitSuite {
     expectError(
       "start s = node:index(key=) return s",
       "string literal or parameter expected")
+  }
+
+  @Test def shouldGiveNiceErrorWhenMissingEqualsSign() {
+    expectError(
+      "start n=node:customer(id : {id}) return n",
+      "`=` expected")
   }
 
   @Test def shouldRaiseErrorWhenMissingIndexKey() {

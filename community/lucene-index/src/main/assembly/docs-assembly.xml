@@ -27,8 +27,9 @@
   </formats>
   <fileSets>
     <fileSet>
+      <filtered>true</filtered>
       <directory>target/docs</directory>
-      <outputDirectory>/</outputDirectory>
+      <outputDirectory>/dev</outputDirectory>
     </fileSet>
     <fileSet>
       <directory>src/docs</directory>

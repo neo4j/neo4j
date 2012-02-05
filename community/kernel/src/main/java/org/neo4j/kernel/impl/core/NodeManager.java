@@ -494,10 +494,11 @@ public class NodeManager
         }
     }
 
-    NodeImpl getNodeForProxy( long nodeId )
+    NodeImpl getNodeForProxy( NodeProxy proxy, LockType lock )
     {
-        NodeImpl node = getLightNode( nodeId );
-        if ( node == null ) throw new NotFoundException( "Node[" + nodeId + "] not found." );
+        if ( lock != null ) acquireTxBoundLock( proxy, lock );
+        NodeImpl node = getLightNode( proxy.getId() );
+        if ( node == null ) throw new NotFoundException( proxy + " not found." );
         return node;
     }
 
@@ -600,13 +601,12 @@ public class NodeManager
         return relTypeHolder.getRelationshipType( id );
     }
 
-    RelationshipImpl getRelForProxy( long relId )
+    RelationshipImpl getRelForProxy( RelationshipProxy proxy, LockType lock )
     {
+        if ( lock != null ) acquireTxBoundLock( proxy, lock );
+        long relId = proxy.getId();
         RelationshipImpl relationship = relCache.get( relId );
-        if ( relationship != null )
-        {
-            return relationship;
-        }
+        if ( relationship != null ) return relationship;
         ReentrantLock loadLock = lockId( relId );
         try
         {
@@ -618,8 +618,7 @@ public class NodeManager
             RelationshipRecord data = persistenceManager.loadLightRelationship( relId );
             if ( data == null )
             {
-                throw new NotFoundException( "Relationship[" + relId
-                    + "] not found." );
+                throw new NotFoundException( proxy + " not found." );
             }
             int typeId = data.getType();
             RelationshipType type = getRelationshipTypeById( typeId );
@@ -808,6 +807,12 @@ public class NodeManager
     void acquireLock( PropertyContainer resource, LockType lockType )
     {
         lockType.acquire( resource, lockManager );
+    }
+
+    void acquireTxBoundLock( PropertyContainer resource, LockType lockType )
+    {
+        lockType.acquire( resource, lockManager );
+        lockType.unacquire( resource, lockManager, lockReleaser );
     }
 
     void acquireIndexLock( String index, String key, LockType lockType )

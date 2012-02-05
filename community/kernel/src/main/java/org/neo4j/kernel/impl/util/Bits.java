@@ -199,19 +199,51 @@ public class Bits
         {
             long value = longs[longIndex];
             if ( builder.length() > 0 ) builder.append( "\n" );
-            builder.append( longIndex + ":[" );
-            for ( int i = 63; i >= 0; i-- )
-            {
-                boolean isSet = (value & (1L << i)) != 0;
-                builder.append( isSet ? "1" : "0" );
-                if ( i%8 == 0 && i > 0 )
-                {
-                    builder.append( "," );
-                }
-            }
-            builder.append( "]" );
+            builder.append( longIndex + ":" );
+            numberToString( builder, value, 8 );
             if ( longIndex == 0 ) builder.append( " <-- START" );
         }
+        return builder.toString();
+    }
+    
+    public static StringBuilder numberToString( StringBuilder builder, long value, int numberOfBytes )
+    {
+        builder.append( "[" );
+        for ( int i = 8*numberOfBytes-1; i >= 0; i-- )
+        {
+            if ( i > 0 && i % 8 == 0 ) builder.append( "," );
+            boolean isSet = (value & (1L << i)) != 0;
+            builder.append( isSet ? "1" : "0" );
+        }
+        builder.append( "]" );
+        return builder;
+    }
+    
+    public static String numbersToBitString( byte[] values )
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( byte value : values ) numberToString( builder, value, 1 );
+        return builder.toString();
+    }
+    
+    public static String numbersToBitString( short[] values )
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( short value : values ) numberToString( builder, value, 2 );
+        return builder.toString();
+    }
+    
+    public static String numbersToBitString( int[] values )
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( int value : values ) numberToString( builder, value, 4 );
+        return builder.toString();
+    }
+    
+    public static String numbersToBitString( long[] values )
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( long value : values ) numberToString( builder, value, 8 );
         return builder.toString();
     }
     

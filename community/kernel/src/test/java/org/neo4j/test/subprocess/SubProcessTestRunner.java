@@ -44,7 +44,6 @@ import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.MultipleFailureException;
 import org.junit.runners.model.Statement;
 import org.neo4j.helpers.Exceptions;
-//import org.neo4j.test.SequencingManager;
 import org.neo4j.test.subprocess.ForeignBreakpoints.BreakpointDef;
 
 public class SubProcessTestRunner extends BlockJUnit4ClassRunner
@@ -79,7 +78,7 @@ public class SubProcessTestRunner extends BlockJUnit4ClassRunner
             }.start();
         }
     };
-    
+
     @Override
     protected void collectInitializationErrors( java.util.List<Throwable> errors )
     {
@@ -220,7 +219,7 @@ public class SubProcessTestRunner extends BlockJUnit4ClassRunner
         }
         return breakpoints.values().toArray( new BreakPoint[breakpoints.size()] );
     }
-    
+
     Iterable<BreakpointDispatcher> createForeignBreakpoints( BreakpointDef def, FrameworkMethod handler ) throws Exception
     {
         Class<?> type = Class.forName( def.type() );
@@ -232,7 +231,7 @@ public class SubProcessTestRunner extends BlockJUnit4ClassRunner
         if ( result.isEmpty() ) throw new Exception( "No such method: " + def );
         return result;
     }
-    
+
     private class BreakpointDispatcher extends BreakPoint
     {
         private final FrameworkMethod handler;
@@ -315,7 +314,7 @@ public class SubProcessTestRunner extends BlockJUnit4ClassRunner
         }
         for ( Map.Entry<String, BreakPoint> bp : this.breakpoints.entrySet() )
         {
-            if ( enabled.contains( bp.getKey() ) )
+            if ( enabled.remove( bp.getKey() ) )
             {
                 bp.getValue().enable();
             }
@@ -324,6 +323,7 @@ public class SubProcessTestRunner extends BlockJUnit4ClassRunner
                 bp.getValue().disable();
             }
         }
+        if ( !enabled.isEmpty() ) throw new IllegalArgumentException( "Unknown breakpoints: " + enabled );
     }
 
     private void verifyBreakpointState() throws SuspendedThreadsException
@@ -394,7 +394,7 @@ public class SubProcessTestRunner extends BlockJUnit4ClassRunner
             remote.failure( failure.getException() );
         }
     }
-    
+
     public static class RunTerminatedException extends RuntimeException
     {
         private static final long serialVersionUID = 1L;
@@ -404,7 +404,7 @@ public class SubProcessTestRunner extends BlockJUnit4ClassRunner
             // all instances are created here
         }
     }
-    
+
     private static final Object TERMINATED = new Object();
 
     private static class TestProcess extends SubProcess<TestRunnerDispatcher, RemoteRunNotifier> implements
@@ -434,7 +434,7 @@ public class SubProcessTestRunner extends BlockJUnit4ClassRunner
                 throw failure;
             }
         }
-        
+
         @Override
         public String toString()
         {
@@ -544,7 +544,7 @@ public class SubProcessTestRunner extends BlockJUnit4ClassRunner
                 }
             };
         }
-        
+
         @Override
         protected Statement methodBlock( FrameworkMethod method )
         {
@@ -569,7 +569,7 @@ public class SubProcessTestRunner extends BlockJUnit4ClassRunner
         }
 
         private Map<String, FrameworkMethod> methods;
-        
+
         void run( String methodName ) throws Throwable
         {
             if ( methods == null )

@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.lang.reflect.Array;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
 public class PropertyBlock
 {
+    private static final int MAX_ARRAY_TOSTRING_SIZE = 4;
     private final List<DynamicRecord> valueRecords = new LinkedList<DynamicRecord>();
     private long[] valueBlocks;
     // private boolean inUse;
@@ -173,7 +175,20 @@ public class PropertyBlock
             result.append( ",firstDynamic=" ).append( getSingleValueBlock() );
             break;
         default:
-            result.append( ",value=" ).append( type.getValue( this, null ) );
+            Object value = type.getValue( this, null );
+            if ( value != null && value.getClass().isArray() )
+            {
+                int length = Array.getLength( value );
+                StringBuilder buf = new StringBuilder( value.getClass().getComponentType().getSimpleName() ).append( "[" );
+                for ( int i = 0; i < length && i <= MAX_ARRAY_TOSTRING_SIZE; i++ )
+                {
+                    if ( i != 0 ) buf.append( "," );
+                    buf.append( Array.get( value, i ) );
+                }
+                if ( length > MAX_ARRAY_TOSTRING_SIZE ) buf.append( ",..." );
+                value = buf.append( "]" );
+            }
+            result.append( ",value=" ).append( value );
             break;
         }
         if ( !isLight() )

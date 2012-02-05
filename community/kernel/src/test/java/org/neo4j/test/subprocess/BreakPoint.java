@@ -23,6 +23,7 @@ import java.io.PrintStream;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class BreakPoint implements DebuggerDeadlockCallback
 {
@@ -62,6 +63,22 @@ public abstract class BreakPoint implements DebuggerDeadlockCallback
         return result.append( ")]" ).toString();
     }
 
+    public final int invocationCount()
+    {
+        return count.get();
+    }
+
+    public final int resetInvocationCount()
+    {
+        return count.getAndSet( 0 );
+    }
+
+    final void invoke( DebugInterface debug ) throws KillSubProcess
+    {
+        count.incrementAndGet();
+        callback( debug );
+    }
+
     protected abstract void callback( DebugInterface debug ) throws KillSubProcess;
 
     @Override
@@ -74,6 +91,7 @@ public abstract class BreakPoint implements DebuggerDeadlockCallback
     final String type;
     private final String method;
     private final String[] args;
+    private final AtomicInteger count = new AtomicInteger();
     volatile boolean enabled = false;
     private @SuppressWarnings( "restriction" )
     com.sun.jdi.request.EventRequest request = null;

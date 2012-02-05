@@ -39,8 +39,8 @@ public class PropertyIndexRecord extends AbstractNameRecord
     }
 
     @Override
-    protected String additionalToString()
+    protected void additionalToString( StringBuilder buf )
     {
-        return "propCount=" + propCount;
+        buf.append( ",propCount=" ).append( propCount );
     }
 }

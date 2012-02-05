@@ -44,7 +44,7 @@ public class TestLockReleaser extends AbstractNeo4jTestCase
         // Retrieve the primitive, necessary for getting its cow property map
         // below
         NodeImpl primitive = getEmbeddedGraphDb().getConfig().getGraphDbModule().getNodeManager().getNodeForProxy(
-                n.getId() );
+                (NodeProxy)n, null );
         /*
          *  The cow property remove map should be null (i.e. not created in the first place )
          *  since the property did not exist
