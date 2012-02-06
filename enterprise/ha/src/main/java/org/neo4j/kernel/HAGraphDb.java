@@ -695,8 +695,8 @@ public class HAGraphDb extends AbstractGraphDatabase
                 // Assign the db last so that no references leak
                 this.localGraph = newDb;
                 // Now ok to pull updates
-                pullUpdates = true;
             }
+            pullUpdates = true;
         }
         catch ( Throwable t )
         {
