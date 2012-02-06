@@ -70,6 +70,12 @@ include::cypher-multirelationalsocialnetwork-graph.txt[]
 
 include::who-follows-or-loves-me-back.txt[]
 
+:leveloffset: 2
+
+include::cypher-hyperedgecommongroups-graph.txt[]
+
+include::find-common-groups-based-on-shared-roles.txt[]
+
 //:leveloffset: 1
 
 //== Activity Streams ==
