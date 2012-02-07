@@ -52,7 +52,7 @@ public class LogExtractor
      * If tx range is smaller than this threshold ask the position cache for the
      * start position farthest back. Otherwise jump to right log and scan.
      */
-    private static final int CACHE_FIND_THRESHOLD = 100;
+    private static final int CACHE_FIND_THRESHOLD = 10000;
 
     private final ByteBuffer localBuffer = newLogReaderBuffer();
     private ReadableByteChannel source;
