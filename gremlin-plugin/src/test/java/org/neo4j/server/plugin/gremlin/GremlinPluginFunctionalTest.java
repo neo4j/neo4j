@@ -19,9 +19,8 @@
  */
 package org.neo4j.server.plugin.gremlin;
 
-import static javax.ws.rs.core.Response.Status.*;
+import static javax.ws.rs.core.Response.Status.OK;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.UnsupportedEncodingException;
@@ -277,26 +276,36 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
      */
     @Test
     @Documented
-    @Graph( value = { "I know Joe", "I like cats", "Joe like cats",
-            "Joe like dogs" } )
+    @Graph( value = {  } )
     public void sendArbtiraryGroovy()
     {
         String script = ""
+
+                        + "'******** Custom imports *********';"
                         + "import org.neo4j.graphdb.index.*;"
                         + "import org.neo4j.index.lucene.*;"
                         + "import org.apache.lucene.search.*;"
-                        + "neo4j = g.getRawGraph();"
-                        + "tx = neo4j.beginTx();"
+                        + ";"
+                        + "'**** Blueprints API methods on the injected Neo4jGraph at variable g ****';"
                         + "meVertex = g.addVertex([name:'me']);"
                         + "meNode = meVertex.getRawVertex();"
-                        + "youNode = neo4j.createNode();"
-                        + "youNode.setProperty('name','you');"
-                        + "idxManager = neo4j.index();"
-                        + "personIndex = idxManager.forNodes('persons');"
-                        + "personIndex.add(meNode,'name',meVertex.name);"
-                        + "personIndex.add(youNode,'name',youNode.getProperty('name'));"
+                        + "'*** get the Neo4j raw instance ***';"
+                        + "neo4j = g.getRawGraph();"
+                        + ";"
+                        + ";"
+                        + "'******** Neo4j API methods: *********';"
+                        + "tx = neo4j.beginTx();"
+                        + " youNode = neo4j.createNode();"
+                        + " youNode.setProperty('name','you');"
+                        + " idxManager = neo4j.index();"
+                        + " personIndex = idxManager.forNodes('persons');"
+                        + " personIndex.add(meNode,'name',meVertex.name);"
+                        + " personIndex.add(youNode,'name',youNode.getProperty('name'));"
                         + "tx.success();"
                         + "tx.finish();"
+                        + ";"
+                        + ";"
+                        + "'*** Prepare a custom Lucene query context ***';"
                         + "query = new QueryContext( 'name:*' ).sort( new Sort(new SortField( 'name',SortField.STRING, true ) ) );"
                         + "results = personIndex.query( query );";
         String response = doRestCall( script, OK );
