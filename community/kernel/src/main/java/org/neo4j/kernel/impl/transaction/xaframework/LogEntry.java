@@ -106,7 +106,7 @@ public abstract class LogEntry
             // [4 bits combined masterId/myId][4 bits xid hashcode, which combines time/randomness]
             long lowBits = xid.hashCode();
             long highBits = masterId*37 + myId;
-            return (highBits << 32) | lowBits;
+            return (highBits << 32) | (lowBits & 0xFFFFFFFFL);
         }
 
         @Override
@@ -115,7 +115,7 @@ public abstract class LogEntry
             return "Start[" + getIdentifier() + ",xid=" + xid + ",master=" + masterId + ",me=" + myId + ",time=" + timestamp( timeWritten ) + "]";
         }
     }
-
+    
     static class Prepare extends LogEntry
     {
         private final long timeWritten;
