@@ -1,5 +1,6 @@
 [[cypher-compatibility]]
-== Compatibility ==
+Compatibility
+=============
 
 Cypher is still changing rather rapidly. Parts of the changes are internal - we add new pattern matchers,
 aggregators and other optimizations, which hopefully makes your queries run faster.

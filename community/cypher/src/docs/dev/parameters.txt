@@ -1,5 +1,6 @@
 [[cypher-parameters]]
-== Parameters ==
+Parameters
+==========
 
 Cypher supports querying with parameters. This allows developers to not to have to do string building
 to create a query, and it also makes caching of execution plans much easier for Cypher.
