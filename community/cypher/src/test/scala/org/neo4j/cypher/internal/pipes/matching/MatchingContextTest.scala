@@ -417,17 +417,6 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     assert(matchingContext.getMatches(Map("a" -> a)).toSeq.length === 0)
   }
 
-<<<<<<< HEAD
-=======
-  @Test def predicateInPatternRelationship() {
-    relate(a, b, "rel", Map("foo" -> "notBar"))
-
-    val patterns = Seq(RelatedTo("a", "b", "r", Some("rel"), Direction.OUTGOING, true, Equals(Property("r", "foo"), Literal("bar"))))
-    val matchingContext = new MatchingContext(patterns, bind("a"))
-
-    assertMatches(matchingContext.getMatches(Map("a" -> a)), 1, Map("a" -> a, "b" -> null, "r" -> null))
-  }
-
   @Test def solveDoubleOptionalProblem() {
     val e = createNode()
     
@@ -437,26 +426,14 @@ class MatchingContextTest extends GraphDatabaseTestBase with Assertions {
     relate(d,e)
     
     val patterns = Seq(
-      RelatedTo("a", "x", "r1", None, Direction.OUTGOING, true, True()),
-      RelatedTo("x", "b", "r2", None, Direction.INCOMING, true, True())
+      RelatedTo("a", "x", "r1", None, Direction.OUTGOING, true),
+      RelatedTo("x", "b", "r2", None, Direction.INCOMING, true)
     )
 
     val matchingContext = new MatchingContext(patterns, bind("a", "b"))
 
     assertMatches(matchingContext.getMatches(Map("a" -> a, "b"->d)), 3)
   }
-
-  @Test def predicateInPatternRelationshipAlsoForVarLength() {
-    relate(a, b, "rel", Map("foo" -> "bar"))
-    relate(b, c, "rel", Map("foo" -> "notBar"))
-
-    val pred = AllInIterable(RelationshipFunction(Entity("p")), "r", Equals(Property("r", "foo"), Literal("bar")))
-    val patterns = Seq(VarLengthRelatedTo("p", "a", "b", Some(2), Some(2), None, Direction.OUTGOING, None, true, pred))
-    val matchingContext = new MatchingContext(patterns, bind("a"))
-
-    assertMatches(matchingContext.getMatches(Map("a" -> a)), 1, Map("a" -> a, "p" -> null, "b" -> null))
-  }
->>>>>>> 887bfce... Fixes #164
 
   def bind(boundSymbols: String*): SymbolTable = {
     val identifiersToCreate = boundSymbols.map(x => Identifier(x, NodeType()))

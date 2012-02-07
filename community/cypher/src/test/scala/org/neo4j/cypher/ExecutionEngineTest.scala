@@ -1604,17 +1604,6 @@ RETURN x0.name?
     assert(List() === result.toList)
   }
 
-<<<<<<< HEAD
-=======
-  @Test def shouldGetAllNodes() {
-    val a = createNode()
-    val b = createNode()
-
-    val result = parseAndExecute("start n=node(*) return n")
-    assert(List(refNode, a, b) === result.columnAs[Node]("n").toList)
-  }
-
->>>>>>> ac783c6... Fixes #193
   @Test def shouldAllowComparisonsOfNodes() {
     val a = createNode()
 
@@ -1622,27 +1611,6 @@ RETURN x0.name?
     assert(List(Map("a" -> refNode, "b" -> a), Map("b" -> refNode, "a" -> a)) === result.toList)
   }
 
-<<<<<<< HEAD
-  @Ignore("Exposes #193")
-=======
-  @Test def arithmeticsPrecedenceTest() {
-    val result = parseAndExecute("start a = NODE(0) return 12/4*3-2*4")
-    assert(List(Map("12/4*3-2*4" -> 1)) === result.toList)
-  }
-
-  @Test def arithmeticsPrecedenceWithParenthesisTest() {
-    val result = parseAndExecute("start a = NODE(0) return 12/4*(3-2*4)")
-    assert(List(Map("12/4*(3-2*4)" -> -15)) === result.toList)
-  }
-
-  @Test def shouldAllowAddition() {
-    createNode("age" -> 36)
-
-    val result = parseAndExecute("start a=node(1) return a.age + 5 as newAge")
-    assert(List(Map("newAge" -> 41)) === result.toList)
-  }
-
->>>>>>> ac783c6... Fixes #193
   @Test def shouldAggregateOnArrayValues() {
     createNode("color" -> Array("red"))
     createNode("color" -> Array("blue"))
@@ -1657,13 +1625,6 @@ RETURN x0.name?
         assertEquals(x("count(*)"), 1)
       else fail("wut?")
     })
-
-
-    //    println(f().dumpToString())
-
-//    val result = f()
-
-//    assert(Set(Map("a.color" -> Array("red"), "count(*)" -> 2), Map("a.color" -> Array("blue"), "count(*)" -> 1)) === result.toSet)
   }
 
   @Test def createEngineWithSpecifiedParserVersion() {

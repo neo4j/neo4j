@@ -35,19 +35,16 @@ class PatternRelationship(key: String,
   def getOtherNode(node: PatternNode) = if (startNode == node) endNode else startNode
 
   def getGraphRelationships(node: PatternNode, realNode: Node): Seq[GraphRelationship] = {
-    (relType match {
+    val result = (relType match {
       case Some(typeName) => realNode.getRelationships(getDirection(node), DynamicRelationshipType.withName(typeName))
       case None => realNode.getRelationships(getDirection(node))
     }).asScala.map(new SingleGraphRelationship(_)).toSeq
-<<<<<<< HEAD
-=======
 
 
     if (startNode == endNode)
       result.filter(r => r.getOtherNode(realNode) == realNode)
     else
       result
->>>>>>> 887bfce... Fixes #164
   }
 
   protected def getDirection(node: PatternNode): Direction = {
