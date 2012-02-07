@@ -22,52 +22,43 @@ package org.neo4j.cypher.internal.pipes.aggregation
 import org.junit.Assert._
 import org.junit.Test
 import org.neo4j.cypher.SyntaxException
-import org.scalatest.junit.JUnitSuite
-import org.neo4j.cypher.internal.commands.Entity
+import org.neo4j.cypher.internal.commands.Expression
 
-class MinFunctionTest extends JUnitSuite {
+class MinFunctionTest extends AggregateTest {
   @Test def singleValueReturnsThatNumber() {
-    val result = minOn(1)
+    val result = aggregateOn(1)
 
     assertEquals(1, result)
     assertTrue(result.isInstanceOf[Int])
   }
 
   @Test def singleValueOfDecimalReturnsDecimal() {
-    val result = minOn(1.0d)
+    val result = aggregateOn(1.0d)
 
     assertEquals(1.0, result)
   }
 
   @Test def mixesOfTypesIsOK() {
-    val result = minOn(1, 2.0d)
+    val result = aggregateOn(1, 2.0d)
 
     assertEquals(1, result)
   }
 
   @Test def longListOfMixedStuff() {
-    val result = minOn(100, 230.0d, 56, 237, 23)
+    val result = aggregateOn(100, 230.0d, 56, 237, 23)
 
     assertEquals(23, result)
   }
 
   @Test def nullDoesNotChangeTheSum() {
-    val result = minOn(1, null, 10)
+    val result = aggregateOn(1, null, 10)
 
     assertEquals(1, result)
   }
 
   @Test(expected = classOf[SyntaxException]) def noNumberValuesThrowAnException() {
-    minOn(1, "wut")
+    aggregateOn(1, "wut")
   }
 
-  def minOn(values: Any*): Any = {
-    val func = new MinFunction(Entity("x"))
-
-    values.foreach(value => {
-      func(Map("x" -> value))
-    })
-
-    func.result
-  }
+  def createAggregator(inner: Expression) = new MinFunction(inner)
 }

@@ -22,49 +22,40 @@ package org.neo4j.cypher.internal.pipes.aggregation
 import org.junit.Assert._
 import org.junit.Test
 import org.neo4j.cypher.SyntaxException
-import org.scalatest.junit.JUnitSuite
-import org.neo4j.cypher.internal.commands.Entity
+import org.neo4j.cypher.internal.commands.Expression
 
-class MaxFunctionTest extends JUnitSuite {
+class MaxFunctionTest extends AggregateTest {
+  def createAggregator(inner: Expression) = new MaxFunction(inner)
+
   @Test def singleValueReturnsThatNumber() {
-    val result = maxOn(1)
+    val result = aggregateOn(1)
 
     assertEquals(1, result)
     assertTrue(result.isInstanceOf[Int])
   }
 
   @Test def singleValueOfDecimalReturnsDecimal() {
-    val result = maxOn(1.0d)
+    val result = aggregateOn(1.0d)
 
     assertEquals(1.0, result)
     assertTrue(result.isInstanceOf[Double])
   }
 
   @Test def mixOfIntAndDoubleYieldsDouble() {
-    val result = maxOn(1, 2.0d)
+    val result = aggregateOn(1, 2.0d)
 
     assertEquals(2.0, result)
     assertTrue(result.isInstanceOf[Double])
   }
 
   @Test def nullDoesNotChangeTheSum() {
-    val result = maxOn(1, null)
+    val result = aggregateOn(1, null)
 
     assertEquals(1, result)
     assertTrue(result.isInstanceOf[Int])
   }
 
   @Test(expected = classOf[SyntaxException]) def noNumberValuesThrowAnException() {
-    maxOn(1, "wut")
-  }
-
-  def maxOn(values: Any*): Any = {
-    val func = new MaxFunction(Entity("x"))
-
-    values.foreach(value => {
-      func(Map("x" -> value))
-    })
-
-    func.result
+    aggregateOn(1, "wut")
   }
 }

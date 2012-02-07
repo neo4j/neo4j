@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.pipes.aggregation
 
 class CountStarFunction extends AggregationFunction {
-  var count = 0
+  var count:Long = 0
 
   def apply(data: Map[String, Any]) {
-    count = count + 1
+    count += 1
   }
 
-  def result: Int = count
+  def result: Long = count
 }
 
