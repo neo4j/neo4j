@@ -108,7 +108,7 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
 
         public boolean isMaster()
         {
-            return db.getMasterServerIfMaster() != null;
+            return db.isMaster();
         }
 
         public SlaveInfo[] getConnectedSlaves()
