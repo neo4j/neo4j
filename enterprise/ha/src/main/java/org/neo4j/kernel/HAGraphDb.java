@@ -821,23 +821,8 @@ public class HAGraphDb extends AbstractGraphDatabase
             throw new BranchedDataException( "Maybe not branched data, but it could solve it", e );
         }
 
-        long endTime = System.currentTimeMillis()+readTimeout*1000;
-        Pair<Integer, Long> mastersMaster = null;
-        RuntimeException failure = null;
-        while ( mastersMaster == null && System.currentTimeMillis() < endTime )
-        {
-            try
-            {
-                mastersMaster = master.first().getMasterIdForCommittedTx(
-                        myLastCommittedTx, getStoreId( newDb ) ).response();
-            }
-            catch ( ComException e )
-            {   // Maybe new master isn't up yet... let's wait a little and retry
-                failure = e;
-                sleepWithoutInterruption( 500, "Failed waiting for next attempt to contact master" );
-            }
-        }
-        if ( mastersMaster == null ) throw failure;
+        Pair<Integer, Long> mastersMaster = master.first().getMasterIdForCommittedTx(
+                myLastCommittedTx, getStoreId( newDb ) ).response();
 
         if ( myMaster.first() != XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER
              && !myMaster.equals( mastersMaster ) )
@@ -1115,6 +1100,7 @@ public class HAGraphDb extends AbstractGraphDatabase
 
         Throwable cause = null;
         int i = 0;
+        boolean unexpectedException = false;
         while ( i++ < NEW_MASTER_STARTUP_RETRIES )
         {
             try
@@ -1154,10 +1140,11 @@ public class HAGraphDb extends AbstractGraphDatabase
             catch ( Throwable t )
             {
                 cause = t;
+                unexpectedException = true;
                 break;
             }
         }
-        if ( cause != null && i == NEW_MASTER_STARTUP_RETRIES )
+        if ( cause != null && unexpectedException )
         {
             msgLog.logMessage(
                     "Reevaluation ended in unknown exception " + cause
@@ -1179,7 +1166,7 @@ public class HAGraphDb extends AbstractGraphDatabase
 
     public boolean isMaster()
     {
-        return broker.iAmMaster();
+        return getMasterServerIfMaster() != null;
     }
 
     @Override
