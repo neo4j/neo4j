@@ -19,12 +19,6 @@
  */
 package org.neo4j.backup;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.NoSuchElementException;
-
 import org.neo4j.com.ComException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Args;
@@ -32,6 +26,12 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.storemigration.StoreFiles;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.NoSuchElementException;
 
 public class BackupTool
 {
@@ -140,8 +140,7 @@ public class BackupTool
         }
         catch ( ComException e )
         {
-            exitAbnormally( "Couldn't connect to '" + from + "', "
-                            + e.getMessage() );
+            exitAbnormally( "Couldn't connect to '" + from + "'", e );
         }
     }
 
@@ -162,14 +161,12 @@ public class BackupTool
             }
             else
             {
-                exitAbnormally( "TransactionFailureException from existing backup at '"
-                                + from + "': , " + e.getMessage() );
+                exitAbnormally( "TransactionFailureException from existing backup at '" + from + "'.", e);
             }
         }
         catch ( ComException e )
         {
-            exitAbnormally( "Couldn't connect to '" + from + "', "
-                            + e.getMessage() );
+            exitAbnormally( "Couldn't connect to '" + from + "' ", e );
         }
         if ( failedBecauseOfStoreVersionMismatch )
         {
@@ -182,8 +179,7 @@ public class BackupTool
             }
             catch ( IOException e )
             {
-                exitAbnormally( "There was a problem moving the old database out of the way - cannot continue, aborting: "
-                                + e.getMessage() );
+                exitAbnormally( "There was a problem moving the old database out of the way - cannot continue, aborting.", e );
             }
             doBackupFull( from, to, verify );
         }
@@ -200,6 +196,13 @@ public class BackupTool
         }
         StoreFiles.move( toDir, backupDir );
         LogFiles.move( toDir, backupDir );
+    }
+
+    private static void exitAbnormally( String message, Exception ex )
+    {
+        System.out.println( message );
+        ex.printStackTrace( System.out );
+        System.exit( 1 );
     }
 
     private static void exitAbnormally( String message )

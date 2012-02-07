@@ -19,27 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import static org.neo4j.com.SlaveContext.lastAppliedTx;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-
-import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-
 import org.neo4j.com.ComException;
 import org.neo4j.com.MasterUtil;
 import org.neo4j.com.Response;
@@ -72,6 +51,7 @@ import org.neo4j.kernel.ha.SlaveTxHook;
 import org.neo4j.kernel.ha.SlaveTxIdGenerator.SlaveTxIdGeneratorFactory;
 import org.neo4j.kernel.ha.ZooKeeperLastCommittedTxIdSetter;
 import org.neo4j.kernel.ha.zookeeper.Machine;
+import org.neo4j.kernel.ha.zookeeper.NoMasterException;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperBroker;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperClusterClient;
 import org.neo4j.kernel.ha.zookeeper.ZooKeeperException;
@@ -87,6 +67,27 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+import static org.neo4j.com.SlaveContext.lastAppliedTx;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
 
 public class HAGraphDb extends AbstractGraphDatabase
         implements GraphDatabaseService, ResponseReceiver
@@ -104,7 +105,10 @@ public class HAGraphDb extends AbstractGraphDatabase
     private volatile ScheduledExecutorService updatePuller;
     private volatile long updateTime = 0;
     private volatile Throwable causeOfShutdown;
-    private final long startupTime;
+    
+    // Is used as a session id and is updated on each internal restart
+    private long startupTime;
+    
     private final BranchedDataPolicy branchedDataPolicy;
     private final HaConfig.SlaveUpdateMode slaveUpdateMode;
     private final int readTimeout;
@@ -149,7 +153,6 @@ public class HAGraphDb extends AbstractGraphDatabase
         {
             throw new IllegalArgumentException( "null config, proper configuration required" );
         }
-        this.startupTime = System.currentTimeMillis();
         this.config = config;
         initializeTxManagerKernelPanicEventHandler();
         this.readTimeout = HaConfig.getClientReadTimeoutFromConfig( config );
@@ -568,6 +571,11 @@ public class HAGraphDb extends AbstractGraphDatabase
             newMaster( e );
             throw e;
         }
+        catch ( NoMasterException e )
+        {
+            newMaster( e );
+            throw e;
+        }
         catch ( ComException e )
         {
             /*
@@ -739,6 +747,7 @@ public class HAGraphDb extends AbstractGraphDatabase
         // instantiateAutoUpdatePullerIfConfigSaysSo() moved to
         // reevaluateMyself(), after the local db has been assigned
         logHaInfo( "Started as slave" );
+        this.startupTime = System.currentTimeMillis();
         return result;
     }
 
@@ -755,6 +764,7 @@ public class HAGraphDb extends AbstractGraphDatabase
                 CommonFactories.defaultFileSystemAbstraction() );
         this.masterServer = (MasterServer) broker.instantiateMasterServer( this );
         logHaInfo( "Started as master" );
+        this.startupTime = System.currentTimeMillis();
         return result;
     }
 
