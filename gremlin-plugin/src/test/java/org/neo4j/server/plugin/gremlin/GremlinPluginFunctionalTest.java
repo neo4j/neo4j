@@ -283,6 +283,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
 
                         + "'******** Custom imports *********';"
                         + "import org.neo4j.graphdb.index.*;"
+                        + "import org.neo4j.graphdb.*;"
                         + "import org.neo4j.index.lucene.*;"
                         + "import org.apache.lucene.search.*;"
                         + ";"
@@ -297,6 +298,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
                         + "tx = neo4j.beginTx();"
                         + " youNode = neo4j.createNode();"
                         + " youNode.setProperty('name','you');"
+                        + " youNode.createRelationshipTo(meVertex.getRawVertex(),DynamicRelationshipType.withName('knows'));"
                         + " idxManager = neo4j.index();"
                         + " personIndex = idxManager.forNodes('persons');"
                         + " personIndex.add(meNode,'name',meVertex.name);"
