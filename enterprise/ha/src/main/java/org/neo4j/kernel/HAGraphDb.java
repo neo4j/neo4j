@@ -966,7 +966,11 @@ public class HAGraphDb extends AbstractGraphDatabase
         }
         if ( this.localGraph != null )
         {
-            ((AbstractTransactionManager)localGraph.getConfig().getTxModule().getTxManager()).attemptWaitForTxCompletionAndBlockFutureTransactions( 7000 );
+            /*
+             * Commented out until this is verified that it works as expected or a better solution comes along.
+             * 
+             * ((AbstractTransactionManager)localGraph.getConfig().getTxModule().getTxManager()).attemptWaitForTxCompletionAndBlockFutureTransactions( 7000 );
+             */
             if ( rotateLogs )
             {
                 for ( XaDataSource dataSource : getConfig().getTxModule().getXaDataSourceManager().getAllRegisteredDataSources() )
