@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.parser.v1_6
 
 import scala.util.parsing.combinator._
 import org.neo4j.cypher.internal.commands.{Literal, Parameter, Expression}
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 abstract class Base extends JavaTokenParsers {
   val keywords = List("start", "where", "return", "limit", "skip", "order", "by")
@@ -42,6 +43,7 @@ abstract class Base extends JavaTokenParsers {
   def ignoreCases(strings: List[String]): Parser[String] = strings match {
     case List(x) => ignoreCase(x)
     case first :: rest => ignoreCase(first) | ignoreCases(rest)
+    case _ => throw new ThisShouldNotHappenError("Andres", "Something went wrong if we get here.")
   }
 
   def comaList[T](inner: Parser[T]): Parser[List[T]] =
