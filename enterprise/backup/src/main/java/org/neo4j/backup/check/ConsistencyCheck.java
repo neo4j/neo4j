@@ -28,6 +28,7 @@ import java.util.List;
 import org.neo4j.backup.check.InconsistencyType.ReferenceInconsistency;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.ProgressIndicator;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -118,6 +119,7 @@ public abstract class ConsistencyCheck extends RecordStore.Processor implements 
         }
         Args params = new Args( args );
         boolean propowner = params.getBoolean( "propowner", false, true );
+        boolean recovery = params.getBoolean( "recovery", false, true );
         args = params.orphans().toArray( new String[0] );
         if ( args.length != 1 )
         {
@@ -125,6 +127,11 @@ public abstract class ConsistencyCheck extends RecordStore.Processor implements 
             System.exit( -1 );
             return;
         }
+        // TODO: check for the existence of active logical logs and report:
+        // * that this might be a source of inconsistencies
+        // * you can run recovery before starting by using the --recovery flag
+        // This should probably be reported both before and after the tool runs
+        if ( recovery ) new EmbeddedGraphDatabase( args[0] ).shutdown();
         StoreAccess stores = new StoreAccess( args[0] );
         try
         {
@@ -142,6 +149,7 @@ public abstract class ConsistencyCheck extends RecordStore.Processor implements 
         System.err.println( Args.jarUsage( ConsistencyCheck.class, "[-propowner] <storedir>" ) );
         System.err.println( "WHERE:   <storedir>  is the path to the store to check" );
         System.err.println( "         -propowner  --  to verify that properties are owned only once" );
+        System.err.println( "         -recovery   --  to perform recovery on the store before checking" );
     }
 
     public static void run( StoreAccess stores, boolean propowner )
@@ -151,7 +159,8 @@ public abstract class ConsistencyCheck extends RecordStore.Processor implements 
             @Override
             ProgressIndicator.MultiProgress progressInit()
             {
-                System.err.println( "Checking consistency on:" );
+                System.err.println( "Checking consistency"
+                                    + ( propowners() ? " (with property owner verification)" : "" ) + " on:" );
                 long total = 0;
                 for ( RecordStore<?> store : this )
                 {
@@ -231,6 +240,11 @@ public abstract class ConsistencyCheck extends RecordStore.Processor implements 
         this.propKeys = stores.getPropertyKeyStore();
         this.typeNames = stores.getTypeNameStore();
         this.propertyOwners = checkPropertyOwners ? new HashMap<Long, PropertyOwner>() : null;
+    }
+
+    boolean propowners()
+    {
+        return propertyOwners != null;
     }
 
     private static abstract class PropertyOwner
