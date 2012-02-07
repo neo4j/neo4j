@@ -1,3 +1,7 @@
+1.6.5
+----------------
+o Fixes bug #214: COUNT(distinct x) on null x causes an exception
+
 1.6 (2012-01-19)
 ----------------
 o Lots of changes to the parsers error reporting

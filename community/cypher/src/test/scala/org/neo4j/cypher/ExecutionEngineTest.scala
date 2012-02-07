@@ -1611,6 +1611,13 @@ RETURN x0.name?
     assert(List(Map("a" -> refNode, "b" -> a), Map("b" -> refNode, "a" -> a)) === result.toList)
   }
 
+  @Test def shouldBeAbleToDoDistinctOnNull() {
+    val a = createNode()
+
+    val result = parseAndExecute("start a=node(1) match a-[?]->b return count(distinct b)")
+    assert(List(Map("count(distinct b)" -> 0)) === result.toList)
+  }
+
   @Test def shouldAggregateOnArrayValues() {
     createNode("color" -> Array("red"))
     createNode("color" -> Array("blue"))

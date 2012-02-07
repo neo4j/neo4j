@@ -21,12 +21,17 @@ package org.neo4j.cypher.internal.pipes.aggregation
 
 import org.neo4j.cypher.commands.Expression
 
-class DistinctFunction(value:Expression, inner:AggregationFunction) extends AggregationFunction {
+class DistinctFunction(value: Expression, inner: AggregationFunction) extends AggregationFunction {
   val seen = scala.collection.mutable.Set[Any]()
+  var seenNull = false
 
   def apply(m: Map[String, Any]) {
     val data = value(m)
-    if(!seen.contains(data)) {
+
+    if (data == null && !seenNull) {
+      seenNull = true
+      inner(m)
+    } else if (!seen.contains(data)) {
       seen += data
       inner(m)
     }
