@@ -21,6 +21,8 @@ include::cypher-hyperedge-graph.txt[]
 include::find-groups.txt[]
 
 include::find-all-groups-and-roles-for-a-user.txt[]
+       
+include::find-common-groups-based-on-shared-roles.txt[]
 
 :leveloffset: 1
 
@@ -70,23 +72,13 @@ include::cypher-multirelationalsocialnetwork-graph.txt[]
 
 include::who-follows-or-loves-me-back.txt[]
 
-:leveloffset: 2
-
-include::cypher-hyperedgecommongroups-graph.txt[]
-
-include::find-common-groups-based-on-shared-roles.txt[]
 
 //:leveloffset: 1
 
 //== Activity Streams ==
 
-//:leveloffset: 2
+//:leveloffset: 1
 
 //include::cypher-graphity-graph.txt[]
 
 //include::find-activity-streams-in-a-network-without-scaling-penalty.txt[]
-
-//== People Similarity based on Favorites ==
-
-//include::cypher-collabfiltering-graph.txt[]
-

@@ -20,14 +20,28 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
+import java.util.Random;
+
+import javax.transaction.xa.Xid;
 
 import org.junit.Test;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.impl.transaction.XidImpl;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.TargetDirectory;
 
 public class TestTxEntries
 {
+    private final Random random = new Random();
+    private final long refTime = System.currentTimeMillis();
+    private final int refId = 1;
+    private final int refMaster = 1;
+    private final int refMe = 1;
+    private final long startPosition = 1000;
+
     @Test
     /*
      * Starts a JVM, executes a tx that fails on prepare and rollbacks,
@@ -49,5 +63,56 @@ public class TestTxEntries
         assertEquals( 0, exit );
         // The bug tested by this case throws exception during recovery, below
         new EmbeddedGraphDatabase( storeDir ).shutdown();
+    }
+    
+    @Test
+    public void startEntryShouldBeUniqueIfEitherValueChanges() throws Exception
+    {
+        // Positive Xid hashcode
+        assertorrectChecksumEquality( randomXid( Boolean.TRUE ) );
+        
+        // Negative Xid hashcode
+        assertorrectChecksumEquality( randomXid( Boolean.FALSE ) );
+    }
+
+    private void assertorrectChecksumEquality( Xid refXid )
+    {
+        Start ref = new Start( refXid, refId, refMaster, refMe, startPosition, refTime ); 
+        assertChecksumsEquals( ref, new Start( refXid, refId, refMaster, refMe, startPosition, refTime ) );
+        
+        // Different Xids
+        assertChecksumsNotEqual( ref, new Start( randomXid( null ), refId, refMaster, refMe, startPosition, refTime ) );
+
+        // Different master
+        assertChecksumsNotEqual( ref, new Start( refXid, refId, refMaster+1, refMe, startPosition, refTime ) );
+
+        // Different me
+        assertChecksumsNotEqual( ref, new Start( refXid, refId, refMaster, refMe+1, startPosition, refTime ) );
+    }
+
+    private void assertChecksumsNotEqual( Start ref, Start other )
+    {
+        assertFalse( ref.getChecksum() == other.getChecksum() );
+    }
+
+    private void assertChecksumsEquals( Start ref, Start other )
+    {
+        assertEquals( ref.getChecksum(), other.getChecksum() );
+    }
+
+    private Xid randomXid( Boolean trueForPositive )
+    {
+        while ( true )
+        {
+            Xid xid = new XidImpl( randomBytes(), randomBytes() );
+            if ( trueForPositive == null || xid.hashCode() > 0 == trueForPositive.booleanValue() ) return xid;
+        }
+    }
+
+    private byte[] randomBytes()
+    {
+        byte[] bytes = new byte[random.nextInt( 10 )+5];
+        for ( int i = 0; i < bytes.length; i++ ) bytes[i] = (byte) random.nextInt( 255 );
+        return bytes;
     }
 }

@@ -56,7 +56,7 @@ class HyperedgeCommonGroupsTest extends DocumentingTestBase {
   @Test def findCommonGroups() {
     testQuery(
       title = "Find common groups based on shared roles",
-      text = """Assume you have:
+      text = """Assume you have a more complicated graph:
 
 1. 2 user nodes User1, User2
 2. User1 is in Group1, Group2, Group3.
@@ -64,8 +64,12 @@ class HyperedgeCommonGroupsTest extends DocumentingTestBase {
 4. User2 is in Group1, Group2, Group3
 5. User2 has Role2, Role5 in Group1; Role3, Role4 in Group2; Role5, Role6 in Group3 (hyper edges)
 
-I want to return Group1 and Group2 as User1 and User2 share at least one common role in those 2 groups.
-        """,
+The graph for this looks like the following (nodes like +U1G2R23+ representing the HyperEdges):
+
+include::cypher-hyperedgecommongroups-graph.txt[]
+
+To return Group1 and Group2 as User1 and User2 share at least one common role in those 2 groups, the cypher query looks like:
+""",
       queryText = "" +
       		"start " +
       		"u1=node:node_auto_index(name = \"User1\")," +
