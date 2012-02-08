@@ -52,11 +52,13 @@ public class HaConfig
     public static final String CONFIG_KEY_LOCK_READ_TIMEOUT = "ha.lock_read_timeout";
     public static final String CONFIG_KEY_COORDINATOR_FETCH_INFO_TIMEOUT = "ha.coordinator_fetch_info_timeout";
     public static final String CONFIG_KEY_MAX_CONCURRENT_TRANSACTIONS_ON_MASTER = "ha.max_concurrent_transactions_on_master";
+    public static final String CONFIG_KEY_ZK_SESSION_TIMEOUT = "ha.zk_session_timeout";
 
     public static final String CONFIG_DEFAULT_HA_CLUSTER_NAME = "neo4j.ha";
     public static final int CONFIG_DEFAULT_PORT = 6361;
     public static final long CONFIG_DEFAULT_PULL_INTERVAL = -1;
     public static final int CONFIG_DEFAULT_COORDINATOR_FETCH_INFO_TIMEOUT = 500;
+    public static final long CONFIG_DEFAULT_ZK_SESSION_TIMEOUT = 5000;
 
     public static String getConfigValue( Map<String, String> config, String... oneKeyOutOf/*prioritized in descending order*/ )
     {
@@ -127,6 +129,13 @@ public class HaConfig
     {
         String value = config.get( HaConfig.CONFIG_KEY_PULL_INTERVAL );
         return value != null ? TimeUtil.parseTimeMillis( value ) : HaConfig.CONFIG_DEFAULT_PULL_INTERVAL;
+    }
+
+    public static long getZKSessionTimeoutFromConfig( Map<String, String> config )
+    {
+        String value = config.get( HaConfig.CONFIG_KEY_ZK_SESSION_TIMEOUT );
+        return value != null ? TimeUtil.parseTimeMillis( value )
+                : HaConfig.CONFIG_DEFAULT_ZK_SESSION_TIMEOUT;
     }
 
     public static String getHaServerFromConfig( Map<String, String> config )
