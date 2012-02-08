@@ -46,27 +46,31 @@ public class ZooKeeperClusterClient extends AbstractZooKeeperManager implements 
 
     public ZooKeeperClusterClient( String zooKeeperServers )
     {
-        this( zooKeeperServers, HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME, null );
+        this( zooKeeperServers, HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME, null,
+                HaConfig.CONFIG_DEFAULT_ZK_SESSION_TIMEOUT );
     }
 
     public ZooKeeperClusterClient( String zooKeeperServers,
             AbstractGraphDatabase db )
     {
-        this( zooKeeperServers, HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME, db );
+        this( zooKeeperServers, HaConfig.CONFIG_DEFAULT_HA_CLUSTER_NAME, db,
+                HaConfig.CONFIG_DEFAULT_ZK_SESSION_TIMEOUT );
     }
 
     public ZooKeeperClusterClient( String zooKeeperServers, String clusterName )
     {
-        this( zooKeeperServers, clusterName, null );
+        this( zooKeeperServers, clusterName, null,
+                HaConfig.CONFIG_DEFAULT_ZK_SESSION_TIMEOUT );
     }
 
     public ZooKeeperClusterClient( String zooKeeperServers, String clusterName,
-            AbstractGraphDatabase db )
+            AbstractGraphDatabase db, long sessionTimeout )
     {
         super( zooKeeperServers, db,
                 Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
                 Client.DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS,
-                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT );
+                Client.DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT,
+                sessionTimeout );
         this.clusterName = clusterName;
         this.zooKeeper = instantiateZooKeeper();
     }
@@ -81,7 +85,7 @@ public class ZooKeeperClusterClient extends AbstractZooKeeperManager implements 
     public void waitForSyncConnected()
     {
         long startTime = System.currentTimeMillis();
-        while ( System.currentTimeMillis()-startTime < SESSION_TIME_OUT )
+        while ( System.currentTimeMillis() - startTime < getSessionTimeout() )
         {
             if ( state == KeeperState.SyncConnected )
             {

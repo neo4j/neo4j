@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.ha.zookeeper;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
@@ -38,14 +46,6 @@ import org.neo4j.kernel.ha.MasterClient;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
  * Contains basic functionality for a ZooKeeper manager, f.ex. how to get
  * the current master in the cluster.
@@ -53,13 +53,6 @@ import java.util.Map;
 public abstract class AbstractZooKeeperManager implements Watcher
 {
     protected static final String HA_SERVERS_CHILD = "ha-servers";
-    /*
-     * The timeout our client and the ZK cluster will negotiate. Round trip
-     * from Tokyo to Oregon on AWS with a cold ZK install (hence lots of writes
-     * on disk on session establishment) takes about 8 secs. HBase
-     * uses 60s default. For us 80 seems to be good enough.
-     */
-    protected static final int SESSION_TIME_OUT = 80000;
 
     private final String servers;
     private final Map<Integer, String> haServersCache = Collections.synchronizedMap(
@@ -71,15 +64,19 @@ public abstract class AbstractZooKeeperManager implements Watcher
     private final int maxConcurrentChannelsPerSlave;
     private final int clientReadTimeout;
     private final int clientLockReadTimeout;
+    private final long sessionTimeout;
 
-    public AbstractZooKeeperManager( String servers, AbstractGraphDatabase graphDb,
-            int clientReadTimeout, int clientLockReadTimeout, int maxConcurrentChannelsPerSlave )
+    public AbstractZooKeeperManager( String servers,
+            AbstractGraphDatabase graphDb, int clientReadTimeout,
+            int clientLockReadTimeout, int maxConcurrentChannelsPerSlave,
+            long sessionTimeout )
     {
         this.servers = servers;
         this.graphDb = graphDb;
         this.clientLockReadTimeout = clientLockReadTimeout;
         this.maxConcurrentChannelsPerSlave = maxConcurrentChannelsPerSlave;
         this.clientReadTimeout = clientReadTimeout;
+        this.sessionTimeout = sessionTimeout;
         this.msgLog = graphDb != null ? graphDb.getMessageLog() : StringLogger.DEV_NULL;
     }
 
@@ -87,13 +84,22 @@ public abstract class AbstractZooKeeperManager implements Watcher
     {
         try
         {
-            return new ZooKeeper( getServers(), SESSION_TIME_OUT, this );
+            return new ZooKeeper( getServers(), getSessionTimeout(), this );
         }
         catch ( IOException e )
         {
             throw new ZooKeeperException(
                 "Unable to create zoo keeper client", e );
         }
+    }
+
+    /*
+     * Returns int because the ZooKeeper constructor expects an integer,
+     * but we are sane and manipulate time as longs.
+     */
+    protected int getSessionTimeout()
+    {
+        return (int) sessionTimeout;
     }
 
     public abstract ZooKeeper getZooKeeper( boolean sync );

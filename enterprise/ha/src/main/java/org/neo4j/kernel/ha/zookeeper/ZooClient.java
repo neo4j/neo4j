@@ -85,11 +85,11 @@ public class ZooClient extends AbstractZooKeeperManager
 
     public ZooClient( AbstractGraphDatabase graphDb, Map<String, String> config, ResponseReceiver receiver )
     {
-        super( HaConfig.getCoordinatorsFromConfig( config ),
-            graphDb,
-            HaConfig.getClientReadTimeoutFromConfig( config ),
-            HaConfig.getClientLockReadTimeoutFromConfig( config ),
-            HaConfig.getMaxConcurrentChannelsPerSlaveFromConfig( config ) );
+        super( HaConfig.getCoordinatorsFromConfig( config ), graphDb,
+                HaConfig.getClientReadTimeoutFromConfig( config ),
+                HaConfig.getClientLockReadTimeoutFromConfig( config ),
+                HaConfig.getMaxConcurrentChannelsPerSlaveFromConfig( config ),
+                HaConfig.getZKSessionTimeoutFromConfig( config ) );
         this.receiver = receiver;
         machineId = HaConfig.getMachineIdFromConfig( config );
         backupPort = HaConfig.getBackupPortFromConfig( config );
@@ -264,7 +264,7 @@ public class ZooClient extends AbstractZooKeeperManager
                 }
                 currentTime = System.currentTimeMillis();
             }
-            while ( (currentTime - startTime) < SESSION_TIME_OUT );
+            while ( ( currentTime - startTime ) < getSessionTimeout() );
 
             if ( keeperState != KeeperState.SyncConnected )
             {
