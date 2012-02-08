@@ -84,17 +84,17 @@ public final class HaBackupProvider extends BackupExtensionService
 
     private static String getMasterServerInCluster( String from, String clusterName )
     {
-        ZooKeeperClusterClient clusterManager = new ZooKeeperClusterClient(
+        ZooKeeperClusterClient clusterClient = new ZooKeeperClusterClient(
                 from, clusterName );
         Pair<String, Integer> masterServer = null;
         try
         {
-            clusterManager.waitForSyncConnected();
-            Machine master = clusterManager.getMaster();
+            clusterClient.waitForSyncConnected();
+            Machine master = clusterClient.getMaster();
             masterServer = master.getServer();
             if ( masterServer != null )
             {
-                int backupPort = clusterManager.getBackupPort( master.getMachineId() );
+                int backupPort = clusterClient.getBackupPort( master.getMachineId() );
                 return String.format( ServerAddressFormat,
                         masterServer.first(), backupPort );
             }
@@ -103,7 +103,7 @@ public final class HaBackupProvider extends BackupExtensionService
         }
         finally
         {
-            clusterManager.shutdown();
+            clusterClient.shutdown();
         }
     }
 }
