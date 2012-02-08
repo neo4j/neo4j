@@ -19,6 +19,27 @@
  */
 package org.neo4j.kernel;
 
+import static org.neo4j.com.SlaveContext.lastAppliedTx;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.com.ComException;
 import org.neo4j.com.MasterUtil;
 import org.neo4j.com.Response;
@@ -69,27 +90,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-
-import static org.neo4j.com.SlaveContext.lastAppliedTx;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.Config.KEEP_LOGICAL_LOGS;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-
 public class HAGraphDb extends AbstractGraphDatabase
         implements GraphDatabaseService, ResponseReceiver
 {
@@ -107,10 +107,10 @@ public class HAGraphDb extends AbstractGraphDatabase
     private volatile ScheduledExecutorService updatePuller;
     private volatile long updateTime = 0;
     private volatile Throwable causeOfShutdown;
-    
+
     // Is used as a session id and is updated on each internal restart
     private long startupTime;
-    
+
     private final BranchedDataPolicy branchedDataPolicy;
     private final HaConfig.SlaveUpdateMode slaveUpdateMode;
     private final int readTimeout;
@@ -150,7 +150,7 @@ public class HAGraphDb extends AbstractGraphDatabase
      * ONLY FOR TESTING
      */
     public HAGraphDb( String storeDir, Map<String, String> config,
-            BrokerFactory brokerFactory, ClusterClient clusterManager )
+            BrokerFactory brokerFactory, ClusterClient clusterClient )
     {
         if ( config == null )
         {
@@ -167,8 +167,8 @@ public class HAGraphDb extends AbstractGraphDatabase
         this.brokerFactory = brokerFactory != null ? brokerFactory : defaultBrokerFactory();
         this.broker = this.brokerFactory.create( this, config );
         this.msgLog = StringLogger.getLogger( storeDir );
-        this.clusterClient = clusterManager != null ? clusterManager
-                : defaultClusterManager();
+        this.clusterClient = clusterClient != null ? clusterClient
+                : defaultClusterClient();
         this.pullUpdates = false;
         startUp( HaConfig.getAllowInitFromConfig( config ) );
     }
@@ -525,11 +525,12 @@ public class HAGraphDb extends AbstractGraphDatabase
         };
     }
 
-    private ClusterClient defaultClusterManager()
+    private ClusterClient defaultClusterClient()
     {
         return new ZooKeeperClusterClient(
                 HaConfig.getCoordinatorsFromConfig( config ),
-                HaConfig.getClusterNameFromConfig( config ), this );
+                HaConfig.getClusterNameFromConfig( config ), this,
+                HaConfig.getZKSessionTimeoutFromConfig( config ) );
     }
 
     public Broker getBroker()
@@ -975,7 +976,7 @@ public class HAGraphDb extends AbstractGraphDatabase
         {
             /*
              * Commented out until this is verified that it works as expected or a better solution comes along.
-             * 
+             *
              * ((AbstractTransactionManager)localGraph.getConfig().getTxModule().getTxManager()).attemptWaitForTxCompletionAndBlockFutureTransactions( 7000 );
              */
             if ( rotateLogs )
