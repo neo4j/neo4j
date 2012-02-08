@@ -3,6 +3,7 @@
 [options="header"]
 |===============================================================================
 | name | language / framework | URL
+| Java-Rest-Binding | Java | https://github.com/neo4j/java-rest-binding/
 | Neo4jClient | .NET | http://hg.readify.net/neo4jclient/
 | Neo4jRestNet | .NET | https://github.com/SepiaGroup/Neo4jRestNet
 | py2neo | Python |  http://py2neo.org/
