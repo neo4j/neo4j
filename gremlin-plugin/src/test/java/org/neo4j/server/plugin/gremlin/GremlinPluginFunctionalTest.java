@@ -281,7 +281,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
     {
         String script = ""
 
-                        + "'******** Custom imports *********';"
+                        + "'******** Additional imports *********';"
                         + "import org.neo4j.graphdb.index.*;"
                         + "import org.neo4j.graphdb.*;"
                         + "import org.neo4j.index.lucene.*;"
@@ -290,6 +290,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
                         + "'**** Blueprints API methods on the injected Neo4jGraph at variable g ****';"
                         + "meVertex = g.addVertex([name:'me']);"
                         + "meNode = meVertex.getRawVertex();"
+                        + ";"
                         + "'*** get the Neo4j raw instance ***';"
                         + "neo4j = g.getRawGraph();"
                         + ";"
@@ -298,16 +299,18 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
                         + "tx = neo4j.beginTx();"
                         + " youNode = neo4j.createNode();"
                         + " youNode.setProperty('name','you');"
-                        + " youNode.createRelationshipTo(meVertex.getRawVertex(),DynamicRelationshipType.withName('knows'));"
+                        + " youNode.createRelationshipTo(meNode,DynamicRelationshipType.withName('knows'));"
+                        + ";"
+                        + "'*** index using Neo4j APIs ***';"
                         + " idxManager = neo4j.index();"
                         + " personIndex = idxManager.forNodes('persons');"
-                        + " personIndex.add(meNode,'name',meVertex.name);"
+                        + " personIndex.add(meNode,'name',meNode.getProperty('name'));"
                         + " personIndex.add(youNode,'name',youNode.getProperty('name'));"
                         + "tx.success();"
                         + "tx.finish();"
                         + ";"
                         + ";"
-                        + "'*** Prepare a custom Lucene query context ***';"
+                        + "'*** Prepare a custom Lucene query context with Neo4j API ***';"
                         + "query = new QueryContext( 'name:*' ).sort( new Sort(new SortField( 'name',SortField.STRING, true ) ) );"
                         + "results = personIndex.query( query );";
         String response = doRestCall( script, OK );
