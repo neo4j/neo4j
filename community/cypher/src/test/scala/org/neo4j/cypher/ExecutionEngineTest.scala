@@ -1671,6 +1671,13 @@ RETURN x0.name?
     assert(List(Map("a" -> a)) === result.toList)
   }
 
+  @Test def shouldBeAbleToDoDistinctOnNull() {
+    val a = createNode()
+
+    val result = parseAndExecute("start a=node(1) match a-[?]->b return count(distinct b)")
+    assert(List(Map("count(distinct b)" -> 0)) === result.toList)
+  }
+
   @Test def shouldAggregateOnArrayValues() {
     createNode("color" -> Array("red"))
     createNode("color" -> Array("blue"))
@@ -1680,9 +1687,9 @@ RETURN x0.name?
     result.foreach(x => {
       val c = x("a.color").asInstanceOf[Array[_]]
       if (c.deep == Array("red").deep)
-        assertEquals(x("count(*)"), 2)
+        assertEquals(2L, x("count(*)"))
       else if (c.deep == Array("blue").deep)
-        assertEquals(x("count(*)"), 1)
+        assertEquals(1L, x("count(*)"))
       else fail("wut?")
     })
   }

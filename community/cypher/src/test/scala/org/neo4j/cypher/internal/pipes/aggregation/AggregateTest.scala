@@ -19,15 +19,19 @@
  */
 package org.neo4j.cypher.internal.pipes.aggregation
 
-import org.junit.Test
-import org.junit.Assert._
-import org.neo4j.cypher.internal.commands.Expression
+import org.neo4j.cypher.internal.commands.{Entity, Expression}
 
-class CollectFunctionTest extends AggregateTest {
 
-  def createAggregator(inner: Expression) = new CollectFunction(inner)
+abstract class AggregateTest {
+  def createAggregator(inner: Expression): AggregationFunction
 
-  @Test def singleOne() {
-    assertEquals(Seq(1), aggregateOn(1))
+  def aggregateOn(values: Any*): Any = {
+    val func = createAggregator(Entity("x"))
+
+    values.foreach(value => {
+      func(Map("x" -> value))
+    })
+
+    func.result
   }
 }

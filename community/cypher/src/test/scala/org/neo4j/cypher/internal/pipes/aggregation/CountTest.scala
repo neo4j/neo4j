@@ -19,15 +19,17 @@
  */
 package org.neo4j.cypher.internal.pipes.aggregation
 
+import org.neo4j.cypher.internal.commands.Expression
 import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.cypher.internal.commands.Expression
 
-class CollectFunctionTest extends AggregateTest {
+class CountTest extends AggregateTest {
+  def createAggregator(inner: Expression) = new CountFunction(inner)
 
-  def createAggregator(inner: Expression) = new CollectFunction(inner)
+  @Test def testCounts() {
+    val result = aggregateOn(1, null, "foo")
 
-  @Test def singleOne() {
-    assertEquals(Seq(1), aggregateOn(1))
+    assertEquals(2L, result)
+    assertTrue(result.isInstanceOf[Long])
   }
 }

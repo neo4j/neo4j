@@ -35,7 +35,7 @@ class AvgFunction(val value: Expression)
 
   def apply(data: Map[String, Any]) {
     actOnNumber(value(data), (number) => {
-      count = count + 1
+      count += 1
       sofar = plus(sofar, number)
     })
   }
