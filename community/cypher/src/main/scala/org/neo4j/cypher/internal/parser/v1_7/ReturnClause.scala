@@ -34,12 +34,12 @@ trait ReturnClause extends Base with ReturnItems {
   def alias: Parser[Option[String]] = opt(ignoreCase("as") ~> identity)
 
   def aggregationColumn = aggregate ~ alias ^^ {
-    case agg ~ Some(newName) => AliasAggregationItem(agg, newName)
+    case agg ~ Some(newName) => agg.rename(newName)
     case agg ~ None => agg
   }
 
   def expressionColumn = returnItem ~ alias ^^ {
-    case col ~ Some(newName) => AliasReturnItem(col, newName)
+    case col ~ Some(newName) => col.rename(newName)
     case col ~ None => col
   }
 
