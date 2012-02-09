@@ -24,7 +24,6 @@ import collection.Seq
 import scala.collection.JavaConverters._
 import org.neo4j.graphdb.{DynamicRelationshipType, Node, Direction, PropertyContainer}
 import org.neo4j.cypher.internal.pipes.Dependant
-import java.util.regex.{Pattern=>RegexPattern}
 import org.neo4j.cypher.internal.symbols._
 
 abstract class Predicate extends Dependant {
@@ -38,6 +37,23 @@ abstract class Predicate extends Dependant {
 
   def containsIsNull: Boolean
 }
+
+case class NullablePredicate(inner: Predicate, exp: Seq[Expression]) extends Predicate {
+  def isMatch(m: Map[String, Any]) = if (exp.exists(e => e(m) == null)) {
+    true
+  } else {
+    inner.isMatch(m)
+  }
+
+  def atoms = Seq(this)
+
+  def containsIsNull = inner.containsIsNull
+
+  def dependencies = inner.dependencies
+
+  override def toString = inner.toString
+}
+
 
 case class And(a: Predicate, b: Predicate) extends Predicate {
   def isMatch(m: Map[String, Any]): Boolean = a.isMatch(m) && b.isMatch(m)
@@ -149,21 +165,24 @@ case class Has(property: Property) extends Predicate {
   def containsIsNull: Boolean = false
 }
 
+case class  LiteralRegularExpression(a: Expression, regex: Literal) extends Predicate {
+  lazy val pattern = regex(Map()).asInstanceOf[String].r.pattern
+  
+  def isMatch(m: Map[String, Any]) = pattern.matcher(a(m).asInstanceOf[String]).matches()
+
+  def atoms = Seq(this)
+
+  def containsIsNull = false
+
+  def dependencies = a.dependencies(AnyType())
+}
+
 case class RegularExpression(a: Expression, regex: Expression) extends Predicate {
-
-  val pat: (Map[String, Any]) => RegexPattern = getPattern
-
-  private def getPattern: (Map[String, Any]) => RegexPattern = regex match {
-    case Literal(x) => {
-      val pattern = x.toString.r.pattern
-      (x: Map[String, Any]) => pattern
-    }
-    case _ =>  (x: Map[String, Any]) => regex(x).toString.r.pattern
-  }
-
   def isMatch(m: Map[String, Any]): Boolean = {
-    val value = a.apply(m).asInstanceOf[String]
-    getPattern(m).matcher(value).matches()
+    val value = a(m).asInstanceOf[String]
+    val regularExp = regex(m).asInstanceOf[String]
+
+    regularExp.r.pattern.matcher(value).matches()
   }
 
   def dependencies: Seq[Identifier] = a.dependencies(StringType()) ++ regex.dependencies(StringType())
