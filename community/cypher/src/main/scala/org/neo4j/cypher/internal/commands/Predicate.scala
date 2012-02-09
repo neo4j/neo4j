@@ -38,11 +38,16 @@ abstract class Predicate extends Dependant {
   def containsIsNull: Boolean
 }
 
-case class NullablePredicate(inner: Predicate, exp: Seq[Expression]) extends Predicate {
-  def isMatch(m: Map[String, Any]) = if (exp.exists(e => e(m) == null)) {
-    true
-  } else {
-    inner.isMatch(m)
+case class NullablePredicate(inner: Predicate, exp: Seq[(Expression, Boolean)]) extends Predicate {
+  def isMatch(m: Map[String, Any]) = {
+    val nullValue = exp.find {
+      case (e, res) => e(m) == null
+    }
+
+    nullValue match {
+      case Some((_, res)) => res
+      case _ => inner.isMatch(m)
+    }
   }
 
   def atoms = Seq(this)
