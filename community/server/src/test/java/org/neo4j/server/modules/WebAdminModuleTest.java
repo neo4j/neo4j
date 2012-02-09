@@ -19,6 +19,13 @@
  */
 package org.neo4j.server.modules;
 
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.test.ReflectionUtil.setStaticFinalField;
+
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
@@ -39,13 +46,6 @@ import org.neo4j.server.NeoServerWithEmbeddedWebServer;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.web.WebServer;
 import org.rrd4j.core.RrdDb;
-
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.neo4j.test.ReflectionUtil.setStaticFinalField;
 
 public class WebAdminModuleTest
 {

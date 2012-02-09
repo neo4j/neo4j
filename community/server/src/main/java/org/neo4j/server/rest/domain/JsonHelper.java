@@ -26,8 +26,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.SerializableString;
-import org.codehaus.jackson.io.CharacterEscapes;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.neo4j.server.rest.web.PropertyValueException;
 

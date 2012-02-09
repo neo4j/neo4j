@@ -267,4 +267,11 @@ public class TestApps extends AbstractShellTest
         executeCommand( server, client, "ls", "Test" );
         newDb.shutdown();
     }
+    
+    @Test
+    public void getDbinfo() throws Exception
+    {
+        // It's JSON coming back from dbinfo command
+        executeCommand( "dbinfo -g Kernel", "\\{", "\\}", "StoreId" );
+    }
 }
