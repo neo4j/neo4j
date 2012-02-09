@@ -1677,6 +1677,12 @@ RETURN x0.name?
     assert(List(Map("count(distinct b)" -> 0)) === result.toList)
   }
 
+  @Test def exposesIssue198() {
+    createNode()
+
+    parseAndExecute("start a=node(*) return a, count(*) order by COUNT(*)").toList
+  }
+
   @Test def shouldAggregateOnArrayValues() {
     createNode("color" -> Array("red"))
     createNode("color" -> Array("blue"))

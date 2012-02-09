@@ -440,6 +440,17 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ExpressionReturnItem(Entity("a")), ExpressionReturnItem(Entity("b"))))
   }
 
+  @Test def countStar() {
+    testQuery(
+      "start a = NODE(1) return count(*) order by count(*)",
+      Query.
+        start(NodeById("a", 1)).
+        aggregation(CountStar()).
+        columns("count(*)").
+        orderBy(SortItem(CountStar(), true)).
+        returns())
+  }
+
   @Test def distinct() {
     testQuery(
       "start a = NODE(1) match a --> b return distinct a, b",

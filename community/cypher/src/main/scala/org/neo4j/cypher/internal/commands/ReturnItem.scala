@@ -32,6 +32,13 @@ abstract sealed class ReturnItem(val identifier: Identifier) extends (Map[String
   override def toString() = identifier.name
 
   def rename(newName:String):ReturnItem
+  
+  def equalsWithoutName(other:ReturnItem):Boolean = if(!(this.getClass == other.getClass))
+    false
+  else
+    compareWith(other)
+
+  protected def compareWith: ReturnItem => Boolean
 }
 
 object ExpressionReturnItem {
@@ -43,6 +50,8 @@ case class ExpressionReturnItem(value: Expression, name: String) extends ReturnI
     case None => value(m)
     case Some(x) => x
   }
+
+  protected def compareWith = { case other:ExpressionReturnItem => this.value == other.value }
 
   def rename(newName: String) = ExpressionReturnItem(value, newName)
 
@@ -67,6 +76,8 @@ case class ValueAggregationItem(value: AggregationExpression, name:String) exten
   def dependencies: Seq[Identifier] = value.dependencies(AnyType())
 
   def createAggregationFunction = value.createAggregationFunction
+
+  protected def compareWith = { case other:ValueAggregationItem => this.value == other.value }
 }
 
 object CountStar {
@@ -79,4 +90,6 @@ case class CountStar(name:String) extends AggregationItem(IntegerType(), name) {
   def createAggregationFunction = new CountStarFunction
 
   def dependencies: Seq[Identifier] = Seq()
+
+  protected def compareWith = { case other:CountStar => true }
 }
