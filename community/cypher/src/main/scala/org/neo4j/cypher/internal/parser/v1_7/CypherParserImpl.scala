@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.parser.v1_7
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.parser.ActualParser
 import org.neo4j.cypher.internal.commands._
+import org.neo4j.cypher.internal.OrderByRewriter
 
 class CypherParserImpl extends Base
 with StartClause
@@ -59,7 +60,7 @@ with ActualParser {
 
   @throws(classOf[SyntaxException])
   def parse(queryText: String): Query = parseAll(query, queryText) match {
-    case Success(r, q) => r(queryText)
+    case Success(r, q) => OrderByRewriter(r(queryText))
     case NoSuccess(message, input) => {
       if(message.startsWith("INNER"))
         throw new SyntaxException(message.substring(5), queryText, input.offset)

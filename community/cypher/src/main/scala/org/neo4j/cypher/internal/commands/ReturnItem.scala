@@ -30,12 +30,20 @@ abstract sealed class ReturnItem(val identifier: Identifier) extends (Map[String
   def concreteReturnItem = this
 
   override def toString() = identifier.name
+
+  def rename(newName:String):ReturnItem
+  
+  def equalsWithoutName(other:ReturnItem):Boolean = if(!compareWith.isDefinedAt(other))
+    false
+  else
+    compareWith(other)
+
+  protected def compareWith:PartialFunction[ReturnItem, Boolean]
 }
 
 object ExpressionReturnItem {
   def apply(value: Expression) = new ExpressionReturnItem(value, value.identifier.name)
 }
-
 
 case class ExpressionReturnItem(value: Expression, name: String) extends ReturnItem(Identifier(name, value.identifier.typ)  ) {
   def apply(m: Map[String, Any]): Any = m.get(value.identifier.name) match {
@@ -43,15 +51,11 @@ case class ExpressionReturnItem(value: Expression, name: String) extends ReturnI
     case Some(x) => x
   }
 
+  protected def compareWith = { case other:ExpressionReturnItem => this.value == other.value }
+
+  def rename(newName: String) = ExpressionReturnItem(value, newName)
+
   def dependencies: Seq[Identifier] = value.dependencies(AnyType())
-}
-
-case class AliasReturnItem(inner: ReturnItem, newName: String) extends ReturnItem(Identifier(newName, inner.identifier.typ)) {
-  def apply(m: Map[String, Any]): Any = inner.apply(m)
-
-  def dependencies: Seq[Identifier] = inner.dependencies
-
-  override def toString() = inner.toString() + " AS " + newName
 }
 
 abstract sealed class AggregationItem(typ: AnyType, name: String) extends ReturnItem(Identifier(name, typ)) {
@@ -67,15 +71,13 @@ object ValueAggregationItem {
 }
 
 case class ValueAggregationItem(value: AggregationExpression, name:String) extends AggregationItem(value.identifier.typ, name) {
+  def rename(newName: String) = ValueAggregationItem(value, newName)
+
   def dependencies: Seq[Identifier] = value.dependencies(AnyType())
 
   def createAggregationFunction = value.createAggregationFunction
-}
 
-case class AliasAggregationItem(inner: AggregationItem, newName: String) extends AggregationItem(inner.identifier.typ, newName) {
-  def createAggregationFunction = inner.createAggregationFunction
-
-  def dependencies: Seq[Identifier] = inner.dependencies
+  protected def compareWith = { case other:ValueAggregationItem => this.value == other.value }
 }
 
 object CountStar {
@@ -83,7 +85,11 @@ object CountStar {
 }
 
 case class CountStar(name:String) extends AggregationItem(IntegerType(), name) {
+  def rename(newName: String) = CountStar(newName)
+
   def createAggregationFunction = new CountStarFunction
 
   def dependencies: Seq[Identifier] = Seq()
+
+  protected def compareWith = { case other:CountStar => true }
 }

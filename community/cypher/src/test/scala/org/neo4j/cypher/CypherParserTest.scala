@@ -54,7 +54,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
     testQuery("start s = NODE(1) return s as somethingElse",
       Query.
         start(NodeById("s", 1)).
-        returns(AliasReturnItem(ExpressionReturnItem(Entity("s")), "somethingElse")))
+        returns(ExpressionReturnItem(Entity("s"), "somethingElse")))
   }
 
   @Test def sourceIsAnIndex() {
@@ -438,6 +438,17 @@ class CypherParserTest extends JUnitSuite with Assertions {
         aggregation(CountStar()).
         columns("a", "b", "count(*)").
         returns(ExpressionReturnItem(Entity("a")), ExpressionReturnItem(Entity("b"))))
+  }
+
+  @Test def countStar() {
+    testQuery(
+      "start a = NODE(1) return count(*) order by count(*)",
+      Query.
+        start(NodeById("a", 1)).
+        aggregation(CountStar()).
+        columns("count(*)").
+        orderBy(SortItem(CountStar(), true)).
+        returns())
   }
 
   @Test def distinct() {
