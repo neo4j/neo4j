@@ -27,11 +27,8 @@ trait Predicates extends Base with Expressions with ReturnItems {
   def predicate: Parser[Predicate] = (
     expressionOrEntity <~ ignoreCase("is null") ^^ (x => IsNull(x))
       | expressionOrEntity <~ ignoreCase("is not null") ^^ (x => Not(IsNull(x)))
-      | orderedComparison 
+      | operators
       | ignoreCase("not") ~> predicate ^^ ( inner => Not(inner) )
-      | notEquals 
-      | equals 
-      | regexp 
       | ignoreCase("has") ~> parens(property) ^^ ( prop => Has(prop.asInstanceOf[Property]))
       | parens(predicate)
       | sequencePredicate 
@@ -48,10 +45,6 @@ trait Predicates extends Base with Expressions with ReturnItems {
       }
     )
 
-  def regexp: Parser[Predicate] = expression ~ "=~" ~ (regularLiteral | expression) ^^ {
-    case a ~ "=~" ~ b => RegularExpression(a, b)
-  }
-
   def sequencePredicate: Parser[Predicate] = allInSeq | anyInSeq | noneInSeq | singleInSeq
 
   def symbolIterablePredicate: Parser[(Expression, String, Predicate)] =
@@ -67,19 +60,21 @@ trait Predicates extends Base with Expressions with ReturnItems {
 
   def singleInSeq: Parser[Predicate] = ignoreCase("single") ~> parens(symbolIterablePredicate) ^^ (x => SingleInIterable(x._1, x._2, x._3))
 
-  def equals: Parser[Predicate] = expression ~ "=" ~ expression ^^ { case l ~ "=" ~ r => Equals(l, r)  }
+  def operators:Parser[Predicate] =
+    (expression ~ "=" ~ expression ^^ { case l ~ "=" ~ r => nullable(Equals(l, r),l,r)  } |
+      expression ~ ("!=" | "<>") ~ expression ^^ { case l ~ wut ~ r => nullable(Not(Equals(l, r)),l,r) } |
+      expression ~ "<" ~ expression ^^ { case l ~ "<" ~ r => nullable(LessThan(l, r),l,r) } |
+      expression ~ ">" ~ expression ^^ { case l ~ ">" ~ r => nullable(GreaterThan(l, r),l,r) } |
+      expression ~ "<=" ~ expression ^^ { case l ~ "<=" ~ r => nullable(LessThanOrEqual(l, r),l,r) } |
+      expression ~ ">=" ~ expression ^^ { case l ~ ">=" ~ r => nullable(GreaterThanOrEqual(l, r),l,r) } |
+      expression ~ "=~" ~ regularLiteral ^^ { case a ~ "=~" ~ b => nullable(LiteralRegularExpression(a, b),a,b) } |
+      expression ~ "=~" ~ expression ^^ { case a ~ "=~" ~ b => nullable(RegularExpression(a, b),a,b) })
 
-  def notEquals: Parser[Predicate] = expression ~ ("!=" | "<>") ~ expression ^^ { case l ~ wut ~ r => Not(Equals(l, r)) }
+  private def nullable(pred:Predicate, e:Expression*):Predicate = if(!e.exists(_.isInstanceOf[Nullable]))
+    pred
+  else
+    NullablePredicate(pred, e.filter(_.isInstanceOf[Nullable]))
 
-  def orderedComparison: Parser[Predicate] = (lessThanOrEqual | greaterThanOrEqual | lessThan | greaterThan)
-
-  def lessThan: Parser[Predicate] = expression ~ "<" ~ expression ^^ { case l ~ "<" ~ r => LessThan(l, r) }
-
-  def greaterThan: Parser[Predicate] = expression ~ ">" ~ expression ^^ { case l ~ ">" ~ r => GreaterThan(l, r) }
-
-  def lessThanOrEqual: Parser[Predicate] = expression ~ "<=" ~ expression ^^ { case l ~ "<=" ~ r => LessThanOrEqual(l, r) }
-
-  def greaterThanOrEqual: Parser[Predicate] = expression ~ ">=" ~ expression ^^ { case l ~ ">=" ~ r => GreaterThanOrEqual(l, r) }
 
   def expressionOrEntity = expression | entity
 

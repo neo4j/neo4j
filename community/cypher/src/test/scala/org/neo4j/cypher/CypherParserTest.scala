@@ -249,7 +249,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a = node(1) where \"Andres\" =~ /And.*/ return a",
       Query.
         start(NodeById("a", 1)).
-        where(RegularExpression(Literal("Andres"), Literal("And.*"))).
+        where(LiteralRegularExpression(Literal("Andres"), Literal("And.*"))).
         returns(ExpressionReturnItem(Entity("a")))
     )
   }
@@ -259,7 +259,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       """start a = node(1) where a.name =~ /And.*/ AND a.name =~ /And.*/ return a""",
       Query.
         start(NodeById("a", 1)).
-        where(And(RegularExpression(Property("a", "name"), Literal("And.*")), RegularExpression(Property("a", "name"), Literal("And.*")))).
+        where(And(LiteralRegularExpression(Property("a", "name"), Literal("And.*")), LiteralRegularExpression(Property("a", "name"), Literal("And.*")))).
         returns(ExpressionReturnItem(Entity("a")))
     )
   }
@@ -269,7 +269,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       """start a = node(1) where a.name =~ /And\/.*/ return a""",
       Query.
         start(NodeById("a", 1)).
-        where(RegularExpression(Property("a", "name"), Literal("And\\/.*"))).
+        where(LiteralRegularExpression(Property("a", "name"), Literal("And\\/.*"))).
         returns(ExpressionReturnItem(Entity("a")))
     )
   }

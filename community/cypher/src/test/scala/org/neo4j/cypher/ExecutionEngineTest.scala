@@ -1663,11 +1663,10 @@ RETURN x0.name?
     assert(List(Map("abs(-1)" -> 1)) === result.toList)
   }
 
-  @Ignore("Exposes #201")
-  @Test def shouldHandleRegexpOnMissingProperty() {
+  @Test def shouldHandleAllOperatorsWithNull() {
     val a = createNode()
 
-    val result = parseAndExecute("start a=node(1) where a.foo? =~ /.*?blah.*?/ return a")
+    val result = parseAndExecute("start a=node(1) where a.x? =~ /.*?blah.*?/ and a.x? = 13 and a.x? != 13 and a.x? > 13 return a")
     assert(List(Map("a" -> a)) === result.toList)
   }
 
