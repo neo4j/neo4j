@@ -341,6 +341,13 @@ public class TestApps extends AbstractShellTest
         executeCommand( "ls", "name", "test", "-", "KNOWS" );
     }
     
+    @Test
+    public void getDbinfo() throws Exception
+    {
+        // It's JSON coming back from dbinfo command
+        executeCommand( "dbinfo -g Kernel", "\\{", "\\}", "StoreId" );
+    }
+    
     @Ignore( "Setting a new reference node isn't persistent" )
     @Test
     public void setNewReferenceNode() throws Exception
