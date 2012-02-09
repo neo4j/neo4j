@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal
 
 import commands._
 
-
 object OrderByRewriter {
   def apply(q: Query): Query = {
     if (q.sort.isEmpty)
@@ -32,10 +31,7 @@ object OrderByRewriter {
         case None => Seq()
       }
 
-      val s = q.sort match {
-        case Some(sort) => sort.sortItems
-      }
-
+      val s = q.sort.get.sortItems
       val r = q.returns.returnItems
 
       val newSort = s.map(si => {

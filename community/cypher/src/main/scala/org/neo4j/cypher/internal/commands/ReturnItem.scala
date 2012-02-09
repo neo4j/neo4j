@@ -33,12 +33,12 @@ abstract sealed class ReturnItem(val identifier: Identifier) extends (Map[String
 
   def rename(newName:String):ReturnItem
   
-  def equalsWithoutName(other:ReturnItem):Boolean = if(!(this.getClass == other.getClass))
+  def equalsWithoutName(other:ReturnItem):Boolean = if(!compareWith.isDefinedAt(other))
     false
   else
     compareWith(other)
 
-  protected def compareWith: ReturnItem => Boolean
+  protected def compareWith:PartialFunction[ReturnItem, Boolean]
 }
 
 object ExpressionReturnItem {
