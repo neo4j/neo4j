@@ -73,7 +73,12 @@ trait Predicates extends Base with Expressions with ReturnItems {
   private def nullable(pred:Predicate, e:Expression*):Predicate = if(!e.exists(_.isInstanceOf[Nullable]))
     pred
   else
-    NullablePredicate(pred, e.filter(_.isInstanceOf[Nullable]))
+  {
+    val map = e.filter(x => x.isInstanceOf[Nullable]).
+      map( x => (x, x.isInstanceOf[DefaultTrue]))
+
+    NullablePredicate(pred, map  )
+  }
 
 
   def expressionOrEntity = expression | entity

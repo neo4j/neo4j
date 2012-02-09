@@ -805,6 +805,24 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ExpressionReturnItem(Entity("b"))))
   }
 
+  @Test def questionMarkOperator() {
+    testQuery(
+      "start a = node(1) where a.prop? = 42 return a",
+      Query.
+        start(NodeById("a", 1)).
+        where(NullablePredicate(Equals(Nullable(Property("a", "prop")), Literal(42)), Seq((Nullable(Property("a", "prop")), true)))).
+        returns(ExpressionReturnItem(Entity("a"))))
+  }
+
+  @Test def exclamationMarkOperator() {
+    testQuery(
+      "start a = node(1) where a.prop! = 42 return a",
+      Query.
+        start(NodeById("a", 1)).
+        where(NullablePredicate(Equals(Nullable(Property("a", "prop")), Literal(42)), Seq((Nullable(Property("a", "prop")), false)))).
+        returns(ExpressionReturnItem(Entity("a"))))
+  }
+
   @Test def optionalTypedRelationship() {
     testQuery(
       "start a = node(1) match a -[?:KNOWS]-> (b) return b",

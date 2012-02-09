@@ -75,7 +75,12 @@ trait Expressions extends Base {
   
   def createProperty(entity:String, propName:String):Expression
 
-  def nullableProperty: Parser[Expression] = property <~ "?" ^^ (p => Nullable(p))
+  trait DefaultTrue
+  trait DefaultFalse
+
+  def nullableProperty: Parser[Expression] = (
+    property <~ "?" ^^ (p => new Nullable(p) with DefaultTrue) |
+    property <~ "!" ^^ (p => new Nullable(p) with DefaultFalse))
 
   def extract: Parser[Expression] = ignoreCase("extract") ~> parens(identity ~ ignoreCase("in") ~ expression ~ ":" ~ expression) ^^ {
     case (id ~ in ~ iter ~ ":" ~ expression) => ExtractFunction(iter, id, expression)
