@@ -129,8 +129,11 @@ except: # this isn't jython (and doesn't have the java module)
                 raise IOError("Unable to find a java runtime to use. Please set JAVA_HOME to point to the folder that contains your jre or jdk.")
         return jvm
         
+    jvm_path = get_jvm_path()
+    jvm_args = get_jvm_args()
+
     try:
-      jpype.startJVM(get_jvm_path(), *get_jvm_args())
+      jpype.startJVM(jvm_path, *jvm_args)
     except Exception, e:
       raise Exception("Unable to start JVM, even though I found the JVM path. If you are using windows, this may be due to missing system DLL files, please see the windows installation instructions in the neo4j documentation.",e)
       
