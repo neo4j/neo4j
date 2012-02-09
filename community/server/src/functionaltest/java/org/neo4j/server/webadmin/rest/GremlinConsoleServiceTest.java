@@ -39,7 +39,7 @@ import org.neo4j.server.webadmin.console.GremlinSession;
 import org.neo4j.server.webadmin.console.ScriptSession;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
-public class ConsoleServiceTest implements SessionFactory
+public class GremlinConsoleServiceTest implements SessionFactory
 {
     private ConsoleService consoleService;
     private Database database;
@@ -55,9 +55,9 @@ public class ConsoleServiceTest implements SessionFactory
         assertThat( response, containsString( "v[1]" ) );
     }
 
-    private String decode( final Response evaluatedGremlinResponse ) throws UnsupportedEncodingException
+    private String decode( final Response response ) throws UnsupportedEncodingException
     {
-        return new String( (byte[]) evaluatedGremlinResponse.getEntity(), "UTF-8" );
+        return new String( (byte[]) response.getEntity(), "UTF-8" );
     }
 
     @Test
@@ -86,7 +86,7 @@ public class ConsoleServiceTest implements SessionFactory
         assertThat( response, containsString( "resources" ) );
         assertThat( response, containsString( uri.toString() ) );
     }
-
+    
     @Before
     public void setUp() throws Exception
     {
