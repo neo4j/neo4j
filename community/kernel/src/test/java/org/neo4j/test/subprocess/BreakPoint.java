@@ -177,7 +177,13 @@ public abstract class BreakPoint implements DebuggerDeadlockCallback
     public static BreakPoint thatCrashesTheProcess( final CountDownLatch crashNotification,
             final int letNumberOfCallsPass, Class<?> type, String method, Class<?>... args )
     {
-        return new BreakPoint( type, method, args )
+        return thatCrashesTheProcess( Event.ENTRY, crashNotification, letNumberOfCallsPass, type, method, args );
+    }
+    
+    public static BreakPoint thatCrashesTheProcess( Event event, final CountDownLatch crashNotification,
+            final int letNumberOfCallsPass, Class<?> type, String method, Class<?>... args )
+    {
+        return new BreakPoint( event, type, method, args )
         {
             private volatile int numberOfCalls;
 
