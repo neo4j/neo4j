@@ -317,7 +317,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
 
   @Test def shouldCreateNotEqualsQuery() {
     testQuery(
-      "start a = NODE(1) where 35 != a.age return a",
+      "start a = NODE(1) where 35 <> a.age return a",
       Query.
         start(NodeById("a", 1)).
         where(Not(Equals(Literal(35), Property("a", "age")))).

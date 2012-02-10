@@ -1614,7 +1614,7 @@ RETURN x0.name?
   @Test def shouldAllowComparisonsOfNodes() {
     val a = createNode()
 
-    val result = parseAndExecute("start a=node(0,1),b=node(1,0) where a != b return a,b")
+    val result = parseAndExecute("start a=node(0,1),b=node(1,0) where a <> b return a,b")
     assert(List(Map("a" -> refNode, "b" -> a), Map("b" -> refNode, "a" -> a)) === result.toList)
   }
 
@@ -1666,7 +1666,7 @@ RETURN x0.name?
   @Test def shouldHandleAllOperatorsWithNull() {
     val a = createNode()
 
-    val result = parseAndExecute("start a=node(1) where a.x? =~ /.*?blah.*?/ and a.x? = 13 and a.x? != 13 and a.x? > 13 return a")
+    val result = parseAndExecute("start a=node(1) where a.x? =~ /.*?blah.*?/ and a.x? = 13 and a.x? <> 13 and a.x? > 13 return a")
     assert(List(Map("a" -> a)) === result.toList)
   }
 

@@ -31,11 +31,11 @@ trait Predicates extends Base with Expressions with ReturnItems {
       | ignoreCase("not") ~> predicate ^^ ( inner => Not(inner) )
       | ignoreCase("has") ~> parens(property) ^^ ( prop => Has(prop.asInstanceOf[Property]))
       | parens(predicate)
-      | sequencePredicate 
-      | hasRelationshipTo 
+      | sequencePredicate
+      | hasRelationshipTo
       | hasRelationship
       | aggregateFunctionNames ~> parens(expression) ~> failure("aggregate functions can not be used in the WHERE clause")
-    
+
     ) * (
     ignoreCase("and") ^^^ {
       (a: Predicate, b: Predicate) => And(a, b)
@@ -62,13 +62,14 @@ trait Predicates extends Base with Expressions with ReturnItems {
 
   def operators:Parser[Predicate] =
     (expression ~ "=" ~ expression ^^ { case l ~ "=" ~ r => nullable(Equals(l, r),l,r)  } |
-      expression ~ ("!=" | "<>") ~ expression ^^ { case l ~ wut ~ r => nullable(Not(Equals(l, r)),l,r) } |
+      expression ~ ("<"~">") ~ expression ^^ { case l ~ wut ~ r => nullable(Not(Equals(l, r)),l,r) } |
       expression ~ "<" ~ expression ^^ { case l ~ "<" ~ r => nullable(LessThan(l, r),l,r) } |
       expression ~ ">" ~ expression ^^ { case l ~ ">" ~ r => nullable(GreaterThan(l, r),l,r) } |
       expression ~ "<=" ~ expression ^^ { case l ~ "<=" ~ r => nullable(LessThanOrEqual(l, r),l,r) } |
       expression ~ ">=" ~ expression ^^ { case l ~ ">=" ~ r => nullable(GreaterThanOrEqual(l, r),l,r) } |
       expression ~ "=~" ~ regularLiteral ^^ { case a ~ "=~" ~ b => nullable(LiteralRegularExpression(a, b),a,b) } |
-      expression ~ "=~" ~ expression ^^ { case a ~ "=~" ~ b => nullable(RegularExpression(a, b),a,b) })
+      expression ~ "=~" ~ expression ^^ { case a ~ "=~" ~ b => nullable(RegularExpression(a, b),a,b) } |
+      expression ~> "!" ~> failure("The exclamation symbol is used as a nullable property operator in Cypher. The 'not equal to' operator is <>"))
 
   private def nullable(pred:Predicate, e:Expression*):Predicate = if(!e.exists(_.isInstanceOf[Nullable]))
     pred
