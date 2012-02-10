@@ -20,8 +20,8 @@
 package org.neo4j.ha;
 
 import static java.lang.System.currentTimeMillis;
-import static java.lang.Thread.sleep;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.TargetDirectory.forTest;
 import static org.neo4j.test.ha.LocalhostZooKeeperCluster.standardZoo;
@@ -29,6 +29,7 @@ import static org.neo4j.test.ha.LocalhostZooKeeperCluster.standardZoo;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.com.ComException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.HaConfig;
 import org.neo4j.kernel.HighlyAvailableGraphDatabase;
@@ -71,18 +72,23 @@ public class TestPullUpdates
     {
         int master = getCurrentMaster();
         setProperty( master, 1 );
-        waitForPropagation( 1 );
+        awaitPropagation( 1 );
         kill( master );
         setProperty( awaitNewMaster( master ), 2 );
         start( master );
-        waitForPropagation( 2 );
+        awaitPropagation( 2 );
     }
 
     private int awaitNewMaster( int master ) throws Exception
     {
         int newMaster = getCurrentMaster();
-        while ( (newMaster = getCurrentMaster()) == master ) sleep( 50 );
+        while ( (newMaster = getCurrentMaster()) == master ) powerNap();
         return newMaster;
+    }
+
+    private void powerNap() throws InterruptedException
+    {
+        Thread.sleep( 50 );
     }
 
     private void start( int master )
@@ -96,11 +102,11 @@ public class TestPullUpdates
         dbs[master] = null;
     }
 
-    private void waitForPropagation( int i ) throws Exception
+    private void awaitPropagation( int i ) throws Exception
     {
-        long maxTime = currentTimeMillis() + PULL_INTERVAL*10;
+        long endTime = currentTimeMillis() + 10000;
         boolean ok = false;
-        while ( !ok && System.currentTimeMillis() < maxTime )
+        while ( !ok && currentTimeMillis() < endTime )
         {
             ok = true;
             for ( HighlyAvailableGraphDatabase db : dbs )
@@ -108,13 +114,14 @@ public class TestPullUpdates
                 Object value = db.getReferenceNode().getProperty( "i", null );
                 if ( value == null || ((Integer)value).intValue() != i ) ok = false;
             }
-            if ( !ok ) sleep( 50 );
+            if ( !ok ) powerNap();
         }
         assertTrue( "Change wasn't propagated by pulling updates", ok );
     }
-
-    private void setProperty( int dbId, int i )
+    
+    private void setProperty( int dbId, int i ) throws Exception
     {
+        awaitHasMaster( dbId );
         HighlyAvailableGraphDatabase db = dbs[dbId];
         Transaction tx = db.beginTx();
         try
@@ -128,16 +135,45 @@ public class TestPullUpdates
         }
     }
 
-    private int getCurrentMaster()
+    private void awaitHasMaster( int dbId ) throws Exception
+    {
+        HighlyAvailableGraphDatabase db = dbs[dbId];
+        long endTime = currentTimeMillis() + 10000;
+        while ( currentTimeMillis() < endTime )
+        {
+            try
+            {
+                db.pullUpdates();
+                return;
+            }
+            catch ( ComException e )
+            {   // OK
+                powerNap();
+            }
+        }
+        fail( "Master didn't come up" );
+    }
+
+    private int getCurrentMaster() throws Exception
     {
         ZooKeeperClusterClient client = new ZooKeeperClusterClient( zoo.getConnectionString() );
         try
         {
-            return client.getMaster().getMachineId();
+            int dbId = client.getMaster().getMachineId();
+            awaitBecomeMaster( dbId );
+            return dbId;
         }
         finally
         {
             client.shutdown();
         }
+    }
+
+    private void awaitBecomeMaster( int dbId ) throws Exception
+    {
+        HighlyAvailableGraphDatabase db = dbs[dbId];
+        long endTime = currentTimeMillis() + 10000;
+        while ( !db.isMaster() && currentTimeMillis() < endTime ) powerNap();
+        assertTrue( db.isMaster() );
     }
 }
