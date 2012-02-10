@@ -142,7 +142,14 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
         assertTrue( response.contains( "you" ) );
         assertTrue( response.contains( "him" ) );
     }
-
+    
+    @Test
+    public void return_map() throws UnsupportedEncodingException
+    {
+        String script = "m = [name:'John',age:24, address:[number:34]];";
+        String response = doRestCall( script, OK );
+        assertTrue( response.contains( "\"number\" : 34" ) );
+    }
     /**
      * Exporting a graph can be done by simple emitting the appropriate String.
      */
@@ -366,7 +373,7 @@ public class GremlinPluginFunctionalTest extends AbstractRestFunctionalTestBase
         String script = "m = [:];"
                         + "g.v(%Peter%).bothE().label.groupCount(m).iterate();m";
         String response = doRestCall( script, OK );
-        assertTrue( response.contains( "knows=2" ) );
+        assertTrue( response.contains( "\"knows\" : 2" ) );
     }
 
     /**

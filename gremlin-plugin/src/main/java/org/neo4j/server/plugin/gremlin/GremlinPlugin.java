@@ -34,6 +34,7 @@ import org.neo4j.server.plugins.Parameter;
 import org.neo4j.server.plugins.PluginTarget;
 import org.neo4j.server.plugins.ServerPlugin;
 import org.neo4j.server.plugins.Source;
+import org.neo4j.server.rest.repr.ObjectToRepresentationConverter;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.ValueRepresentation;
 
@@ -59,7 +60,6 @@ public class GremlinPlugin extends ServerPlugin
     private volatile ScriptEngine engine;
     private final EngineReplacementDecision engineReplacementDecision = new CountingEngineReplacementDecision(
             500 );
-    private final GremlinToRepresentationConverter gremlinToRepresentationConverter = new GremlinToRepresentationConverter();
 
     private ScriptEngine createQueryEngine()
     {
@@ -82,7 +82,7 @@ public class GremlinPlugin extends ServerPlugin
             final Bindings bindings = createBindings( neo4j, params );
 
             final Object result = engine().eval( script, bindings );
-            return gremlinToRepresentationConverter.convert( result );
+            return ObjectToRepresentationConverter.convert( result );
         }
         catch ( final ScriptException e )
         {
@@ -124,7 +124,7 @@ public class GremlinPlugin extends ServerPlugin
 
     public Representation getRepresentation( final Object data )
     {
-        return gremlinToRepresentationConverter.convert( data );
+        return ObjectToRepresentationConverter.convert( data );
     }
 
 }
