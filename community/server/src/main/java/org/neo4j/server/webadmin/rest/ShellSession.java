@@ -49,9 +49,7 @@ public class ShellSession implements ScriptSession
         if ( shell == null ) throw new UnsupportedOperationException( "Shell server not found" );
         try
         {
-//        ShellServer server = shell.getShellServer( graph.getKernelData() );
             ShellServer server = new GraphDatabaseShellServer( graph, false );
-            if ( server == null ) throw new IllegalStateException( "Shell server null" );
             output = new CollectingOutput();
             client = new SameJvmClient( server, output );
             output.asString();
