@@ -10,7 +10,7 @@
 
   <groupId>org.neo4j</groupId>
   <artifactId>installer-windows</artifactId>
-  <version>1.6-SNAPSHOT</version>
+  <version>1.7-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Neo4j Windows Installer</name>
