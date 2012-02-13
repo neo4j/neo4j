@@ -742,6 +742,11 @@ public class ZooClient extends AbstractZooKeeperManager
         super.shutdown();
     }
 
+    public boolean isShutdown()
+    {
+        return shutdown;
+    }
+
     @Override
     public ZooKeeper getZooKeeper( boolean sync )
     {
