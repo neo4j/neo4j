@@ -62,10 +62,13 @@ Note that while the +HighlyAvailableGraphDatabase+ supports the same API as the 
 | ha.server_id          | integer >= 0                              | 1              | yes
 | ha.server             | (auto-discovered) host & port to bind when acting as master | my-domain.com:6001 | no
 | ha.coordinators       | comma delimited coordinator connections   | localhost:2181,localhost:2182,localhost:2183 | yes
+| ha.cluster_name       | name of the cluster to participate in     | neo4j.ha        | no
 | ha.pull_interval      | interval for polling master from a slave, in seconds | 30 | no
 | ha.slave_coordinator_update_mode | creates a slave-only instance that will never become a master  | none | no
 | ha.read_timeout       | how long a slave will wait for response from master before giving up (default 20) | 20 | no
 | ha.lock_read_timeout  | how long a slave lock acquisition request will wait for response from master before giving up (defaults to what ha.read_timeout is, or its default if absent) | 40 | no
+| ha.max_concurrent_channels_per_slave | max number of concurrent communication channels each slave has to its master. Increase if there's high contention on few nodes  | 100 | no
+| ha.branched_data_policy | what to do with the db that is considered branched and will be replaced with a fresh copy from the master {keep_all(default),keep_none,keep_none,shutdown} | no
 | ha.zk_session_timeout | how long before a non reachable instance has its session expired from the ZooKeeper cluster and its ephemeral nodes removed, probably leading to a master election | 30 | no
 |========================================================================================
 
