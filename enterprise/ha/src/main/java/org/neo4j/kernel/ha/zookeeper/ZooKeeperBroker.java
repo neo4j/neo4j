@@ -62,12 +62,7 @@ public class ZooKeeperBroker extends AbstractBroker
         haServer = HaConfig.getHaServerFromConfig( config );
         clientLockReadTimeout = HaConfig.getClientLockReadTimeoutFromConfig( config );
         this.receiver = receiver;
-        startZooClient();
-    }
-
-    private void startZooClient()
-    {
-        this.zooClient = new ZooClient( getGraphDb(), config, receiver );
+        start();
     }
 
     @Override
@@ -223,16 +218,32 @@ public class ZooKeeperBroker extends AbstractBroker
     }
 
     @Override
-    public void shutdown()
+    public synchronized void start()
     {
-        zooClient.shutdown();
+        if ( zooClient != null )
+        {
+            throw new IllegalStateException(
+                    "Broker already started, ZooClient is " + zooClient );
+        }
+        this.zooClient = new ZooClient( getGraphDb(), config, receiver );
     }
 
     @Override
-    public void restart()
+    public synchronized void shutdown()
+    {
+        if (zooClient == null)
+        {
+            throw new IllegalStateException( "Broker already shutdown" );
+        }
+        zooClient.shutdown();
+        zooClient = null;
+    }
+
+    @Override
+    public synchronized void restart()
     {
         shutdown();
-        startZooClient();
+        start();
     }
 
     @Override
