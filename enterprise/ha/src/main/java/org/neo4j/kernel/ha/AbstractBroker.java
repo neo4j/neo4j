@@ -74,6 +74,11 @@ public abstract class AbstractBroker implements Broker
         // Do nothing
     }
 
+    public void start()
+    {
+        // Do nothing
+    }
+
     public Machine getMasterExceptMyself()
     {
         throw new UnsupportedOperationException();
