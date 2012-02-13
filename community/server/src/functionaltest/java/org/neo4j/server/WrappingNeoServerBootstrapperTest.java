@@ -85,7 +85,7 @@ public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldAllowModifyingProperties()
+    public void shouldAllownModifyingProperties()
     {
 
         // START SNIPPET: customConfiguredWrappingNeoServerBootstrapper
@@ -101,7 +101,8 @@ public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
         // END SNIPPET: customConfiguredWrappingNeoServerBootstrapper
 
         assertEquals( srv.getServer().baseUri().getPort(), 7575 );
-
+        String response = gen.get().payload( "{\"command\" : \"ls\",\"engine\":\"shell\"}" ).expectedStatus( Status.OK.getStatusCode() ).post(
+                "http://127.0.0.1:7575/db/manage/server/console/" ).entity();
         srv.stop();
     }
 

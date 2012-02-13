@@ -32,6 +32,7 @@ import org.neo4j.shell.impl.AbstractClient;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.impl.ShellServerExtension;
+import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 import java.rmi.RemoteException;
 
@@ -46,10 +47,11 @@ public class ShellSession implements ScriptSession
     {
         ShellServerExtension shell = (ShellServerExtension) Service.load( KernelExtension.class, "shell" );
         if ( shell == null ) throw new UnsupportedOperationException( "Shell server not found" );
-        ShellServer server = shell.getShellServer( graph.getKernelData() );
-        if ( server == null ) throw new IllegalStateException( "Shell server null" );
         try
         {
+//        ShellServer server = shell.getShellServer( graph.getKernelData() );
+            ShellServer server = new GraphDatabaseShellServer( graph, false );
+            if ( server == null ) throw new IllegalStateException( "Shell server null" );
             output = new CollectingOutput();
             client = new SameJvmClient( server, output );
             output.asString();
