@@ -23,7 +23,7 @@ Given /^set Neo4j Home to "([^"]*)"$/ do |home|
   Dir.mkdir(neo4j.home) unless File.exists?(neo4j.home)
 end
 
-Given /^a web site at host "([^"]*)" or system property "([^"]*)"$/ do |host, env_location|
+Given /^a web site at host "([^"]*)" or environment variable "([^"]*)"$/ do |host, env_location|
   puts "host = #{host}"
   puts "env_location = #{env_location}"
   puts "env = #{ENV[env_location]}"
