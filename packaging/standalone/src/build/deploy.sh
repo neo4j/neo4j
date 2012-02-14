@@ -1,7 +1,6 @@
 #!/bin/bash -ex
 # depends libxml-simple-perl
 
-jenkins_repo='http://ci-01.neo4j.org/job/packaging/lastSuccessfulBuild/artifact'
 rootpathdist=dist
 
 function work {
@@ -22,7 +21,7 @@ function run_command {
 function fetch_artifact {
     artifact=$1
     filename=$2
-    run_command "curl -u ${AUTH} -f -O $jenkins_repo/$artifact/$filename"
+    echo run_command "cp ${WORKSPACE}/standalone/target/$filename"
 }
 
 function upload_file {
@@ -44,8 +43,7 @@ function upload_package {
 
 # uses the global $artifact as input
 function get_version {
-    fetch_artifact $artifact pom.xml
-    version=$( ./xmlgrep pom.xml )
+    version=$( ./xmlgrep ${WORKSPACE}/pom.xml )
     echo "**************************************************************"
     echo "artifact:$artifact  version:$version"
 }
@@ -59,7 +57,7 @@ function upload_packages {
 }
 
 ## prepare working dir
-[ -e target/upload ] && rm -rf target/upload
+rm -rf target/upload
 mkdir -p target/upload
 cd target/upload
 
