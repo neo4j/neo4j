@@ -20,7 +20,10 @@ module NetworkHelpers
     false
   end
 
-  def download_artifact(location, server, server_time, target)
+  def download_artifact(location, target)
+      server = Net::HTTP.new(location.host, 80)
+      head = server.head(location.path)
+      server_time = Time.httpdate(head['last-modified'])
     if (!File.exists?(target) || server_time != File.mtime(target))
       puts target+" missing or newer version as on #{location} - downloading"
       server.request_get(location.path) do |res|
@@ -47,13 +50,8 @@ module NetworkHelpers
   end
 
   def transfer_if_newer(location, target)
-    puts "DEBUG: transfer_if_newer(#{location},#{target})"
-
     if (location.scheme == "http") then
-      server = Net::HTTP.new(location.host, 80)
-      head = server.head(location.path)
-      server_time = Time.httpdate(head['last-modified'])
-      download_artifact(location, server, server_time, target)
+      download_artifact(location, target)
     elsif (location.scheme == "file") then
       copy_file(location, target)
     else
