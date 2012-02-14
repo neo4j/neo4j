@@ -1461,7 +1461,8 @@ public class XaLogicalLog implements LogLoader
         positionCache.putHeader( logVersion, lastTx );
         instantiateCorrectWriteBuffer();
         msgLog.logMessage( "Log rotated, newLog @ pos=" +
-                writeBuffer.getFileChannelPosition() + " and version " + logVersion, true );
+                writeBuffer.getFileChannelPosition() + ", version " + logVersion +
+                " and last tx " + previousLogLastCommittedTx, true );
         return lastTx;
     }
 
