@@ -19,9 +19,13 @@
  */
 package org.neo4j.backup;
 
+import static org.neo4j.com.SlaveContext.lastAppliedTx;
+
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,8 +40,12 @@ import org.neo4j.com.MasterUtil.TxHandler;
 import org.neo4j.com.Response;
 import org.neo4j.com.SlaveContext;
 import org.neo4j.com.SlaveContext.Tx;
+import org.neo4j.com.StoreWriter;
 import org.neo4j.com.ToFileStoreWriter;
+import org.neo4j.com.TxExtractor;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.helpers.ProgressIndicator;
+import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.ConfigParam;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -46,8 +54,6 @@ import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.neo4j.com.SlaveContext.lastAppliedTx;
 
 public class OnlineBackup
 {
@@ -87,8 +93,8 @@ public class OnlineBackup
         long timestamp = System.currentTimeMillis();
         try
         {
-            Response<Void> response = client.fullBackup( new ToFileStoreWriter(
-                    targetDirectory ) );
+            Response<Void> response = client.fullBackup( decorateWithProgressIndicator(
+                    new ToFileStoreWriter( targetDirectory ) ) );
             GraphDatabaseService targetDb = startTemporaryDb( targetDirectory,
                     VerificationLevel.NONE /* run full check instead */ );
             try
@@ -118,6 +124,31 @@ public class OnlineBackup
             client.shutdown();
         }
         return this;
+    }
+
+    private StoreWriter decorateWithProgressIndicator( final StoreWriter actual )
+    {
+        return new StoreWriter()
+        {
+            private final ProgressIndicator progress = new ProgressIndicator.UnknownEndProgress( 1, "Files copied" );
+            private int totalFiles;
+            
+            @Override
+            public void write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer,
+                    boolean hasData ) throws IOException
+            {
+                actual.write( path, data, temporaryBuffer, hasData );
+                progress.update( true, 1 );
+                totalFiles++;
+            }
+            
+            @Override
+            public void done()
+            {
+                actual.done();
+                progress.done( totalFiles );
+            }
+        };
     }
 
     static boolean directoryContainsDb( String targetDirectory )
@@ -194,7 +225,8 @@ public class OnlineBackup
                 Client.storeIdGetterForDb( targetDb ) );
         try
         {
-            unpackResponse( client.incrementalBackup( slaveContextOf( targetDb ) ), targetDb, MasterUtil.NO_ACTION );
+            unpackResponse( client.incrementalBackup( slaveContextOf( targetDb ) ), targetDb,
+                    new ProgressTxHandler() );
         }
         finally
         {
@@ -265,5 +297,24 @@ public class OnlineBackup
         File to = new File( previous.getParentFile(), StringLogger.DEFAULT_NAME
                                                       + "." + toTimestamp );
         return previous.renameTo( to );
+    }
+    
+    private static class ProgressTxHandler implements TxHandler
+    {
+        private final ProgressIndicator progress = new ProgressIndicator.UnknownEndProgress( 1000, "Transactions applied" );
+        private long count;
+        
+        @Override
+        public void accept( Triplet<String, Long, TxExtractor> tx, XaDataSource dataSource )
+        {
+            progress.update( true, 1 );
+            count++;
+        }
+        
+        @Override
+        public void done()
+        {
+            progress.done( count );
+        }
     }
 }

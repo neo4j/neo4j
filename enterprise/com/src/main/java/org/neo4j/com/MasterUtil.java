@@ -407,19 +407,25 @@ public class MasterUtil
                 txStream.close();
             }
         }
+        txHandler.done();
     }
 
     public interface TxHandler
     {
         void accept( Triplet<String, Long, TxExtractor> tx, XaDataSource dataSource );
+        
+        void done();
     }
 
     public static final TxHandler NO_ACTION = new TxHandler()
     {
         @Override
         public void accept( Triplet<String, Long, TxExtractor> tx, XaDataSource dataSource )
-        {
-            // Do nothing
+        {   // Do nothing
+        }
+        
+        public void done()
+        {   // Do nothing
         }
     };
 
@@ -436,6 +442,11 @@ public class MasterUtil
                 {
                     dataSource.setLastCommittedTxId( tx.second()-1 );
                 }
+            }
+            
+            @Override
+            public void done()
+            {   // Do nothing
             }
         };
     }
