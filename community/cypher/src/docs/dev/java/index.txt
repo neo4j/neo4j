@@ -2,7 +2,7 @@
 Cypher Queries
 ==============
 
-In Java, you can use the <<cypher-query-lang,Cypher>> like this:
+In Java, you can use the <<cypher-query-lang,Cypher query language>> like this:
 
 [snippet,java]
 ----
