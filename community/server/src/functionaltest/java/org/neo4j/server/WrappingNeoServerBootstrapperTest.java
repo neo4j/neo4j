@@ -92,11 +92,13 @@ public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
     {
 
         // START SNIPPET: customConfiguredWrappingNeoServerBootstrapper
+        // let the database accept neo4j-shell connections
         AbstractGraphDatabase graphdb = new EmbeddedGraphDatabase(
                 "target/configDb", MapUtil.stringMap(
                         Config.ENABLE_REMOTE_SHELL, "true" ) );
         EmbeddedServerConfigurator config;
         config = new EmbeddedServerConfigurator( graphdb );
+        // let the server endpoint be on a custom port
         config.configuration().setProperty(
                 Configurator.WEBSERVER_PORT_PROPERTY_KEY, 7575 );
 
