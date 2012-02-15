@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.webadmin.rest;
 
+import java.rmi.RemoteException;
+
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.AbstractGraphDatabase;
@@ -32,9 +34,6 @@ import org.neo4j.shell.impl.AbstractClient;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.impl.ShellServerExtension;
-import org.neo4j.shell.kernel.GraphDatabaseShellServer;
-
-import java.rmi.RemoteException;
 
 public class ShellSession implements ScriptSession
 {
@@ -49,7 +48,9 @@ public class ShellSession implements ScriptSession
         if ( shell == null ) throw new UnsupportedOperationException( "Shell server not found" );
         try
         {
-            ShellServer server = new GraphDatabaseShellServer( graph, false );
+            ShellServer server = shell.getShellServer( graph.getKernelData() );
+            if ( server == null ) throw new IllegalStateException( "Shell server null" );
+//            ShellServer server = new GraphDatabaseShellServer( graph, false );
             output = new CollectingOutput();
             client = new SameJvmClient( server, output );
             output.asString();
