@@ -41,10 +41,12 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public class MasterServer extends Server<Master, Void>
 {
-    static final byte PROTOCOL_VERSION = 2;
+    /* Version 1 first version
+     * Version 2 since 2012-01-24
+     * Version 3 since 2012-02-16 */
+    static final byte PROTOCOL_VERSION = 3;
 
     static final int FRAME_LENGTH = Protocol.DEFAULT_FRAME_LENGTH;
-    private final TxChecksumVerifier txVerifier;
 
     public MasterServer( Master realMaster, final int port, StringLogger logger, int maxConcurrentTransactions,
             int oldChannelThreshold, TxChecksumVerifier txVerifier )
