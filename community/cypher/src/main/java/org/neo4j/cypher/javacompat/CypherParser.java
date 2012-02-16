@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.commands.Query;
 
 /**
  * This class is deprecated. You should not parse queries manually -
- * end the string directly to the execution engine
+ * send the string directly to the execution engine
  */
 @Deprecated
 public class CypherParser

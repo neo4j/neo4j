@@ -1,5 +1,6 @@
 <NOT YET RELEASED>
 ------------------
+o Added comments
 o Added HAVING - Cypher can now filter on aggregated data
 o Added ! so that missing property can evaluate to false
 o The column names are now exactly as written in the RETURN expression

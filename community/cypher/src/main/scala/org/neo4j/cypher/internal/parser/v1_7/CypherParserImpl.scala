@@ -74,4 +74,31 @@ puppies and get better error messages in our next release.
 Thank you, the Neo4j Team.""")
     }
   }
+
+  override def handleWhiteSpace(source: CharSequence, offset: Int): Int = {
+    if (offset >= source.length())
+      return offset
+
+    val a = source.charAt(offset)
+
+    if ((a == ' ') || (a == '\r') || (a == '\t') || (a == '\n'))
+      handleWhiteSpace(source, offset + 1)
+    else if ((offset+1) >= source.length())
+      offset
+    else {
+      val b = source.charAt(offset + 1)
+
+      if ((a == '/') && (b == '/')) {
+
+        var loop = 0
+        while ((offset + loop) < source.length() && !(source.charAt(offset + loop) == '\n')) {
+          loop = loop + 1
+        }
+
+        handleWhiteSpace(source, loop + offset)
+      } else {
+        offset
+      }
+    }
+  }
 }

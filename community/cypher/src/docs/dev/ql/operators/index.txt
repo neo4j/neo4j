@@ -29,7 +29,5 @@ Warning: Mixing the two in the same comparison will lead to unpredictable result
 This is really syntatic sugar that expands to this:
 
 +WHERE n.prop? = "foo"+  => +WHERE (not(has(n.prop)) OR n.prop = "foo")+
+
 +WHERE n.prop! = "foo"+  => +WHERE (has(n.prop) AND n.prop = "foo")+
-
-
-has(n.prop) OR (has(n.prop) AND n.prop = "foo")

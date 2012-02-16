@@ -1220,6 +1220,37 @@ class CypherParserTest extends JUnitSuite with Assertions {
     )
   }
 
+  @Test def shouldAllowCommentAtEnd() {
+    testFrom_1_7("start s = NODE(1) return s // COMMENT",
+      Query.
+        start(NodeById("s", 1)).
+        returns(ReturnItem(Entity("s"), "s")))
+  }
+
+  @Test def shouldAllowCommentAlone() {
+    testFrom_1_7("""start s = NODE(1) return s
+    // COMMENT""",
+      Query.
+        start(NodeById("s", 1)).
+        returns(ReturnItem(Entity("s"), "s")))
+  }
+
+  @Test def shouldAllowCommentsInsideStrings() {
+    testFrom_1_7("start s = NODE(1) where s.apa = '//NOT A COMMENT' return s",
+      Query.
+        start(NodeById("s", 1)).
+        where(Equals(Property("s","apa"), Literal("//NOT A COMMENT")))
+        returns(ReturnItem(Entity("s"), "s")))
+  }
+
+  @Test def shouldHandleCommentsFollowedByWhiteSpace() {
+    testFrom_1_7("""start s = NODE(1)
+    //I can haz more comment?
+    return s""",
+      Query.
+        start(NodeById("s", 1)).
+        returns(ReturnItem(Entity("s"), "s")))
+  }
 
   def test_1_5(query: String, expectedQuery: Query) {
     testQuery(Some("1.5 "), query, expectedQuery)
