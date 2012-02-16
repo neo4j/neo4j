@@ -507,6 +507,7 @@ public class HAGraphDb extends AbstractGraphDatabase
         finally
         {
             copiedDb.shutdown();
+            response.close();
         }
         getMessageLog().logMessage( "Done copying store from master" );
     }
@@ -887,8 +888,10 @@ public class HAGraphDb extends AbstractGraphDatabase
             throw new BranchedDataException( "Maybe not branched data, but it could solve it", e );
         }
 
-        Pair<Integer, Long> mastersMaster = master.first().getMasterIdForCommittedTx(
-                myLastCommittedTx, getStoreId( newDb ) ).response();
+        Response<Pair<Integer, Long>> response = master.first().getMasterIdForCommittedTx(
+                myLastCommittedTx, getStoreId( newDb ) );
+        Pair<Integer, Long> mastersMaster = response.response();
+        response.close();
 
         if ( myMaster.first() != XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER
             && !myMaster.equals( mastersMaster ) )
@@ -1121,6 +1124,10 @@ public class HAGraphDb extends AbstractGraphDatabase
         {
             newMaster( e );
             throw new RuntimeException( e );
+        }
+        finally
+        {
+            response.close();
         }
     }
 
