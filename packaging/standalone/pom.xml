@@ -30,8 +30,8 @@
 
     <!-- other filter properties -->
     <wrapper.conf>conf/neo4j-wrapper.conf</wrapper.conf>
-    <neo4j.version>1.6.1</neo4j.version>
-    <windows-wrapper.version>4</windows-wrapper.version>
+    <neo4j.version>1.6.2-SNAPSHOT</neo4j.version>
+    <windows-wrapper.version>5-SNAPSHOT</windows-wrapper.version>
     <windows-wrapper.filename>windows-service-wrapper-${windows-wrapper.version}.jar</windows-wrapper.filename>
     
     <!-- conf/neo4j-server.properties filter properties -->
