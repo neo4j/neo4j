@@ -42,7 +42,7 @@ public class TestFormat
         // Time
         String timeAsString = Format.time( timeWithDate );
         assertEquals( timeWithDate, translateToDate( timeWithDate,
-                new SimpleDateFormat( Format.TIME_FORMAT ).parse( timeAsString ).getTime() ) );
+                new SimpleDateFormat( Format.TIME_FORMAT ).parse( timeAsString ).getTime(), Format.DEFAULT_TIME_ZONE ) );
     }
     
     @Test
@@ -51,6 +51,7 @@ public class TestFormat
         String zoneOffset = "+03:00";
         TimeZone zone = TimeZone.getTimeZone( "GMT" + zoneOffset );
         
+        // Date
         String asString = Format.date( zone );
         assertTrue( asString.endsWith( withoutColon( zoneOffset ) ) );
         long timeWithDate = new SimpleDateFormat( Format.DATE_FORMAT ).parse( asString ).getTime();
@@ -62,9 +63,18 @@ public class TestFormat
         asString = Format.date( new Date( timeWithDate ), zone );
         assertTrue( asString.endsWith( withoutColon( zoneOffset ) ) );
         assertEquals( timeWithDate, new SimpleDateFormat( Format.DATE_FORMAT ).parse( asString ).getTime() );
+        
+        // Time
+        asString = Format.time( timeWithDate, zone );
+        assertEquals( timeWithDate, translateToDate( timeWithDate,
+                new SimpleDateFormat( Format.TIME_FORMAT ).parse( asString ).getTime(), zone ) );
+
+        asString = Format.time( new Date( timeWithDate ), zone );
+        assertEquals( timeWithDate, translateToDate( timeWithDate,
+                new SimpleDateFormat( Format.TIME_FORMAT ).parse( asString ).getTime(), zone ) );
     }
 
-    private long translateToDate( long timeWithDate, long time )
+    private long translateToDate( long timeWithDate, long time, TimeZone timeIsGivenInThisTimeZone )
     {
         Calendar calendar = Calendar.getInstance();
         calendar.setTimeInMillis( timeWithDate );
@@ -74,7 +84,8 @@ public class TestFormat
         timeCalendar.set( Calendar.YEAR, calendar.get( Calendar.YEAR ) ); 
         timeCalendar.set( Calendar.MONTH, calendar.get( Calendar.MONTH ) ); 
         timeCalendar.set( Calendar.DAY_OF_MONTH, calendar.get( Calendar.DAY_OF_MONTH ) );
-        return timeCalendar.getTimeInMillis();
+        int timeZoneOffset = TimeZone.getDefault().getOffset( timeWithDate )-timeIsGivenInThisTimeZone.getOffset( timeWithDate );
+        return timeCalendar.getTimeInMillis()+timeZoneOffset;
     }
     
     private String withoutColon( String zoneOffset )
