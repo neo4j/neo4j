@@ -53,7 +53,6 @@ public class MasterServer extends Server<Master, Void>
     {
         super( realMaster, port, logger, FRAME_LENGTH, PROTOCOL_VERSION, maxConcurrentTransactions,
                 oldChannelThreshold, txVerifier );
-        this.txVerifier = txVerifier;
     }
 
     @Override
