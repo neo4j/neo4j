@@ -54,7 +54,13 @@ public class Response<T>
 
     public void close()
     {
-        transactions.close();
-        releaser.release();
+        try
+        {
+            transactions.close();
+        }
+        finally
+        {
+            releaser.release();
+        }
     }
 }

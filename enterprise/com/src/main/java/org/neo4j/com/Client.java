@@ -154,6 +154,13 @@ public abstract class Client<M> implements ChannelPipelineFactory
         executor = Executors.newCachedThreadPool();
         bootstrap = new ClientBootstrap( new NioClientSocketChannelFactory( executor, executor ) );
         bootstrap.setPipelineFactory( this );
+        /*
+         * This is here to couple the channel releasing to Response.close() itself and not
+         * to TransactionStream.close() as it is implemented here. The reason is that a Response
+         * that is returned without a TransactionStream will still hold the channel and should
+         * release it eventually. Also, logically, closing the channel is not dependent on the
+         * TransactionStream.
+         */
         resourcePoolReleaser = new ResourceReleaser()
         {
             public void release()
@@ -181,7 +188,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
     protected <R> Response<R> sendRequest( RequestType<M> type, SlaveContext context,
             Serializer serializer, Deserializer<R> deserializer, StoreId specificStoreId )
     {
-        boolean success = false;
+        boolean success = true;
         Triplet<Channel, ChannelBuffer, ByteBuffer> channelContext = null;
         try
         {
@@ -213,12 +220,12 @@ public abstract class Client<M> implements ChannelPipelineFactory
             }
             TransactionStream txStreams = readTransactionStreams(
                     dechunkingBuffer, channelPool );
-            success = true;
             return new Response<R>( response, storeId, txStreams,
                     resourcePoolReleaser );
         }
         catch ( Throwable e )
         {
+            success = false;
             if ( channelContext != null )
             {
                 closeChannel( channelContext );
