@@ -306,7 +306,9 @@ public class MasterUtil
                 logExtractors.add( logExtractor );
             }
             StoreId storeId = ((NeoStoreXaDataSource) dsManager.getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME )).getStoreId();
-            return new Response<T>( response, storeId, createTransactionStream( resourceNames, stream, logExtractors ) );
+            return new Response<T>( response, storeId, createTransactionStream(
+                    resourceNames, stream, logExtractors ),
+                    ResourceReleaser.NO_OP );
         }
         catch ( Throwable t )
         {   // If there's an error in here then close the log extractors, otherwise if we're
@@ -340,13 +342,14 @@ public class MasterUtil
             throw new RuntimeException( "No data source '" + dataSourceName
                                         + "' found" );
         }
-        
-        List<LogExtractor> extractors = startTx < endTx ? Collections.singletonList( 
+
+        List<LogExtractor> extractors = startTx < endTx ? Collections.singletonList(
                 getTransactionStreamForDatasource( dataSource, startTx, endTx, stream, MasterUtil.ALL ) ) :
                 Collections.<LogExtractor>emptyList();
         StoreId storeId = ( (NeoStoreXaDataSource) dsManager.getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME ) ).getStoreId();
         return new Response<Void>( null, storeId, createTransactionStream(
-                Collections.singletonList( dataSourceName ), stream, extractors ) );
+                        Collections.singletonList( dataSourceName ), stream,
+                        extractors ), ResourceReleaser.NO_OP );
 
     }
 
@@ -377,7 +380,8 @@ public class MasterUtil
         XaDataSource ds = ((AbstractGraphDatabase) graphDb).getConfig().getTxModule()
                 .getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME );
         StoreId storeId = ((NeoStoreXaDataSource) ds).getStoreId();
-        return new Response<T>( response, storeId, TransactionStream.EMPTY );
+        return new Response<T>( response, storeId, TransactionStream.EMPTY,
+                ResourceReleaser.NO_OP );
     }
 
     public static final Predicate<Long> ALL = new Predicate<Long>()
@@ -392,28 +396,35 @@ public class MasterUtil
     public static <T> void applyReceivedTransactions( Response<T> response, GraphDatabaseService graphDb, TxHandler txHandler ) throws IOException
     {
         XaDataSourceManager dataSourceManager = ((AbstractGraphDatabase) graphDb).getConfig().getTxModule().getXaDataSourceManager();
-        for ( Triplet<String, Long, TxExtractor> tx : IteratorUtil.asIterable( response.transactions() ) )
+        try
         {
-            String resourceName = tx.first();
-            XaDataSource dataSource = dataSourceManager.getXaDataSource( resourceName );
-            txHandler.accept( tx, dataSource );
-            ReadableByteChannel txStream = tx.third().extract();
-            try
+            for ( Triplet<String, Long, TxExtractor> tx : IteratorUtil.asIterable( response.transactions() ) )
             {
-                dataSource.applyCommittedTransaction( tx.second(), txStream );
+                String resourceName = tx.first();
+                XaDataSource dataSource = dataSourceManager.getXaDataSource( resourceName );
+                txHandler.accept( tx, dataSource );
+                ReadableByteChannel txStream = tx.third().extract();
+                try
+                {
+                    dataSource.applyCommittedTransaction( tx.second(), txStream );
+                }
+                finally
+                {
+                    txStream.close();
+                }
             }
-            finally
-            {
-                txStream.close();
-            }
+            txHandler.done();
         }
-        txHandler.done();
+        finally
+        {
+            response.close();
+        }
     }
 
     public interface TxHandler
     {
         void accept( Triplet<String, Long, TxExtractor> tx, XaDataSource dataSource );
-        
+
         void done();
     }
 
@@ -423,7 +434,7 @@ public class MasterUtil
         public void accept( Triplet<String, Long, TxExtractor> tx, XaDataSource dataSource )
         {   // Do nothing
         }
-        
+
         public void done()
         {   // Do nothing
         }
@@ -443,7 +454,7 @@ public class MasterUtil
                     dataSource.setLastCommittedTxId( tx.second()-1 );
                 }
             }
-            
+
             @Override
             public void done()
             {   // Do nothing
