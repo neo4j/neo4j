@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.webadmin.rest;
 
+import java.rmi.RemoteException;
+
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.AbstractGraphDatabase;
@@ -32,8 +34,7 @@ import org.neo4j.shell.impl.AbstractClient;
 import org.neo4j.shell.impl.CollectingOutput;
 import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.impl.ShellServerExtension;
-
-import java.rmi.RemoteException;
+import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 public class ShellSession implements ScriptSession
 {
@@ -41,15 +42,20 @@ public class ShellSession implements ScriptSession
 
     private final ShellClient client;
     private final CollectingOutput output;
+
+    private static volatile ShellServer fallbackServer = null;
     
     public ShellSession( AbstractGraphDatabase graph )
     {
         ShellServerExtension shell = (ShellServerExtension) Service.load( KernelExtension.class, "shell" );
         if ( shell == null ) throw new UnsupportedOperationException( "Shell server not found" );
-        ShellServer server = shell.getShellServer( graph.getKernelData() );
-        if ( server == null ) throw new IllegalStateException( "Shell server null" );
         try
         {
+            ShellServer server = shell.getShellServer( graph.getKernelData() );
+            if ( server == null )
+            {
+                server = getFallbackServer(graph);
+            }
             output = new CollectingOutput();
             client = new SameJvmClient( server, output );
             output.asString();
@@ -58,6 +64,23 @@ public class ShellSession implements ScriptSession
         {
             throw new RuntimeException( "Unable to start shell client", e );
         }
+    }
+
+    private ShellServer getFallbackServer( AbstractGraphDatabase graph )
+    {
+        if(fallbackServer  == null)
+        {
+            try
+            {
+                fallbackServer = new GraphDatabaseShellServer( graph, false );
+            }
+            catch ( RemoteException e )
+            {
+                throw new RuntimeException( "Unable to start the fallback shellserver", e );
+            }
+            
+        }
+        return fallbackServer;
     }
 
     @Override
