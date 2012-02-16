@@ -19,6 +19,26 @@
  */
 package slavetest;
 
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.HaConfig.CONFIG_KEY_LOCK_READ_TIMEOUT;
+import static org.neo4j.kernel.HaConfig.CONFIG_KEY_READ_TIMEOUT;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.rmi.RemoteException;
+import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
+
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -49,36 +69,16 @@ import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.rmi.RemoteException;
-import java.util.Collection;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
-
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.HaConfig.CONFIG_KEY_LOCK_READ_TIMEOUT;
-import static org.neo4j.kernel.HaConfig.CONFIG_KEY_READ_TIMEOUT;
-
 public class SingleJvmWithNettyTest extends SingleJvmTest
 {
     private volatile Pair<Master, Machine> cachedMasterOverride;
 
     @Before
-    public void setUp() 
+    public void setUp()
     {
         cachedMasterOverride = null;
     }
-    
+
     @Test
     public void assertThatNettyIsUsed() throws Exception
     {
@@ -182,7 +182,14 @@ public class SingleJvmWithNettyTest extends SingleJvmTest
         t1.join();
         t2.join();
 
-        assertEquals( 2, countOccurences( "Opened a new channel", new File( dbPath( 1 ), StringLogger.DEFAULT_NAME ) ) );
+        /*
+         * We might get 2, we might get 3 new channels, depending on the race between one thread releasing
+         * and the other acquiring (if the first wins we get 2, if the second 3). Anyways, it must be more than 1.
+         */
+        assertTrue(
+                "Did not get enough \"Opened a new channel\" log statements, something went missing",
+                countOccurences( "Opened a new channel", new File(
+                dbPath( 1 ), StringLogger.DEFAULT_NAME ) ) > 1 );
     }
 
     private int countOccurences( String string, File file ) throws Exception
