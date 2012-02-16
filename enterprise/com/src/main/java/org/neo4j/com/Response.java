@@ -26,12 +26,15 @@ public class Response<T>
     private final T response;
     private final StoreId storeId;
     private final TransactionStream transactions;
+    private final ResourceReleaser releaser;
 
-    public Response( T response, StoreId storeId, TransactionStream transactions )
+    public Response( T response, StoreId storeId,
+            TransactionStream transactions, ResourceReleaser releaser )
     {
         this.storeId = storeId;
         this.response = response;
         this.transactions = transactions;
+        this.releaser = releaser;
     }
 
     public T response() throws MasterFailureException
@@ -43,14 +46,15 @@ public class Response<T>
     {
         return storeId;
     }
-    
+
     public TransactionStream transactions()
     {
         return transactions;
     }
-    
+
     public void close()
     {
         transactions.close();
+        releaser.release();
     }
 }

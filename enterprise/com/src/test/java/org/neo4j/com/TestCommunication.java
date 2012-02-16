@@ -73,7 +73,7 @@ public class TestCommunication
     {
         return madeUpServer( serverImplementation, INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION );
     }
-    
+
     private MadeUpServer madeUpServer( MadeUpImplementation serverImplementation, byte internalVersion, byte applicationVersion )
     {
         return new MadeUpServer( serverImplementation, PORT, internalVersion, applicationVersion,
@@ -161,7 +161,8 @@ public class TestCommunication
             public Response<Void> streamSomeData( MadeUpWriter writer, int dataSize )
             {
                 writer.write( new FailingByteChannel( dataSize, failureMessage ) );
-                return new Response<Void>( null, storeIdToUse, TransactionStream.EMPTY );
+                return new Response<Void>( null, storeIdToUse,
+                        TransactionStream.EMPTY, ResourceReleaser.NO_OP );
             }
         };
         MadeUpServer server = madeUpServer( serverImplementation );
@@ -317,7 +318,7 @@ public class TestCommunication
         {   // Expected
         }
         assertTrue( writer.getSizeRead() >= failAtSize );
-        
+
         long maxWaitUntil = System.currentTimeMillis()+2*1000;
         while ( !server.responseFailureEncountered() && System.currentTimeMillis() < maxWaitUntil ) Thread.currentThread().yield();
         assertTrue( "Failure writing the response should have been encountered", server.responseFailureEncountered() );
@@ -325,7 +326,7 @@ public class TestCommunication
 
         server.shutdown();
     }
-    
+
     @Test
     public void serverContextVerificationCanThrowException() throws Exception
     {
@@ -349,10 +350,10 @@ public class TestCommunication
         catch ( FailingException e )
         {   // Good
         }
-        
+
         server.shutdown();
     }
-    
+
     private <E extends Exception> void assertCause( ComException comException,
             Class<E> expectedCause, String expectedCauseMessagee )
     {

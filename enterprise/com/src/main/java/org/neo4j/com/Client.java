@@ -78,6 +78,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
     private final int frameLength;
     private final int readTimeout;
     private final byte applicationProtocolVersion;
+    private final ResourceReleaser resourcePoolReleaser;
 
     public Client( String hostNameOrIp, int port, GraphDatabaseService graphDb,
             int frameLength, byte applicationProtocolVersion, int readTimeout,
@@ -109,8 +110,8 @@ public abstract class Client<M> implements ChannelPipelineFactory
                 if ( channelFuture.isSuccess() )
                 {
                     channel = Triplet.of( channelFuture.getChannel(),
-                                          ChannelBuffers.dynamicBuffer(),
-                                          ByteBuffer.allocateDirect( 1024 * 1024 ) );
+                            ChannelBuffers.dynamicBuffer(),
+                            ByteBuffer.allocateDirect( 1024 * 1024 ) );
                     msgLog.logMessage( "Opened a new channel to " + address, true );
                     return channel;
                 }
@@ -131,13 +132,15 @@ public abstract class Client<M> implements ChannelPipelineFactory
             }
 
             @Override
-            protected boolean isAlive( Triplet<Channel, ChannelBuffer, ByteBuffer> resource )
+            protected boolean isAlive(
+                    Triplet<Channel, ChannelBuffer, ByteBuffer> resource )
             {
                 return resource.first().isConnected();
             }
 
             @Override
-            protected void dispose( Triplet<Channel, ChannelBuffer, ByteBuffer> resource )
+            protected void dispose(
+                    Triplet<Channel, ChannelBuffer, ByteBuffer> resource )
             {
                 Channel channel = resource.first();
                 if ( channel.isConnected() ) channel.close();
@@ -150,6 +153,13 @@ public abstract class Client<M> implements ChannelPipelineFactory
         bootstrap.setPipelineFactory( this );
         String storeDir = ((AbstractGraphDatabase) graphDb).getStoreDir();
         msgLog = StringLogger.getLogger( storeDir );
+        resourcePoolReleaser = new ResourceReleaser()
+        {
+            public void release()
+            {
+                channelPool.release();
+            }
+        };
         msgLog.logMessage( getClass().getSimpleName() + " communication started and bound to " + hostNameOrIp + ":" + port, true );
     }
 
@@ -170,6 +180,7 @@ public abstract class Client<M> implements ChannelPipelineFactory
     protected <R> Response<R> sendRequest( RequestType<M> type, SlaveContext context,
             Serializer serializer, Deserializer<R> deserializer, StoreId specificStoreId )
     {
+        boolean success = false;
         Triplet<Channel, ChannelBuffer, ByteBuffer> channelContext = null;
         try
         {
@@ -177,7 +188,6 @@ public abstract class Client<M> implements ChannelPipelineFactory
             channelContext = getChannel( type );
             Channel channel = channelContext.first();
             channelContext.second().clear();
-
             ChunkingChannelBuffer chunkingBuffer = new ChunkingChannelBuffer( channelContext.second(),
                     channel, frameLength, getInternalProtocolVersion(), applicationProtocolVersion );
             chunkingBuffer.writeByte( type.id() );
@@ -200,8 +210,11 @@ public abstract class Client<M> implements ChannelPipelineFactory
                 if ( specificStoreId != null ) assertCorrectStoreId( storeId, specificStoreId );
                 else assertCorrectStoreId( storeId, getMyStoreId() );
             }
-            TransactionStream txStreams = readTransactionStreams( dechunkingBuffer );
-            return new Response<R>( response, storeId, txStreams );
+            TransactionStream txStreams = readTransactionStreams(
+                    dechunkingBuffer, channelPool );
+            success = true;
+            return new Response<R>( response, storeId, txStreams,
+                    resourcePoolReleaser );
         }
         catch ( Throwable e )
         {
@@ -213,7 +226,13 @@ public abstract class Client<M> implements ChannelPipelineFactory
         }
         finally
         {
-            releaseChannel( type, channelContext );
+            /*
+             * Otherwise the user must call response.close() to prevent resource leaks.
+             */
+            if ( !success )
+            {
+                releaseChannel( type, channelContext );
+            }
         }
     }
 
@@ -318,9 +337,12 @@ public abstract class Client<M> implements ChannelPipelineFactory
         return getClass().getSimpleName() + "[" + address + "]";
     }
 
-    protected static TransactionStream readTransactionStreams( final ChannelBuffer buffer )
+    protected static TransactionStream readTransactionStreams(
+            final ChannelBuffer buffer,
+            final ResourcePool<Triplet<Channel, ChannelBuffer, ByteBuffer>> resourcePool )
     {
         final String[] datasources = readTransactionStreamHeader( buffer );
+
         if ( datasources.length == 1 )
         {
             return TransactionStream.EMPTY;
