@@ -92,7 +92,7 @@ public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
     {
 
         // START SNIPPET: customConfiguredWrappingNeoServerBootstrapper
-        // let the database accept neo4j-shell connections
+        // let the database accept remote neo4j-shell connections
         AbstractGraphDatabase graphdb = new EmbeddedGraphDatabase(
                 "target/configDb", MapUtil.stringMap(
                         Config.ENABLE_REMOTE_SHELL, "true" ) );
@@ -116,6 +116,19 @@ public class WrappingNeoServerBootstrapperTest extends ExclusiveServerTestBase
         srv.stop();
     }
 
+    @Test
+    public void shouldAllowShellConsoleWithoutCustomConfig()
+    {
+        WrappingNeoServerBootstrapper srv;
+        srv = new WrappingNeoServerBootstrapper( getGraphDb() );
+        srv.start();
+        String response = gen.get().payload(
+                "{\"command\" : \"ls\",\"engine\":\"shell\"}" ).expectedStatus(
+                Status.OK.getStatusCode() ).post(
+                "http://127.0.0.1:7474/db/manage/server/console/" ).entity();
+        assertTrue( response.contains( "neo4j-sh (0)$" ) );
+        srv.stop();
+    }
     @Test
     public void shouldAllowModifyingListenPorts() throws UnknownHostException
     {
