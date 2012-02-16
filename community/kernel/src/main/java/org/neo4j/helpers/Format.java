@@ -22,39 +22,70 @@ package org.neo4j.helpers;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.TimeZone;
 
 public class Format
 {
     public static String date()
     {
-        return date( new Date() );
+        return date( DEFAULT_TIME_ZONE );
     }
 
+    public static String date( TimeZone timeZone )
+    {
+        return date( new Date(), timeZone );
+    }
+    
     public static String date( long millis )
     {
-        return date( new Date( millis ) );
+        return date( millis, DEFAULT_TIME_ZONE );
     }
 
+    public static String date( long millis, TimeZone timeZone )
+    {
+        return date( new Date( millis ), timeZone );
+    }
+    
     public static String date( Date date )
     {
-        return DATE.format( date );
+        return date( date, DEFAULT_TIME_ZONE );
     }
 
+    public static String date( Date date, TimeZone timeZone )
+    {
+        return DATE.format( date, timeZone );
+    }
+    
     public static String time()
+    {
+        return time( DEFAULT_TIME_ZONE );
+    }
+
+    public static String time( TimeZone timeZone )
     {
         return time( new Date() );
     }
-
+    
     public static String time( long millis )
     {
-        return time( new Date( millis ) );
+        return time( millis, DEFAULT_TIME_ZONE );
     }
 
+    public static String time( long millis, TimeZone timeZone )
+    {
+        return time( new Date( millis ), timeZone );
+    }
+    
     public static String time( Date date )
     {
-        return TIME.format( date );
+        return time( date, DEFAULT_TIME_ZONE );
     }
 
+    public static String time( Date date, TimeZone timeZone )
+    {
+        return TIME.format( date, timeZone );
+    }
+    
     public static String bytes( long bytes )
     {
         double size = bytes;
@@ -73,8 +104,17 @@ public class Format
 
     private static final String[] BYTE_SIZES = { "B", "kB", "MB", "GB" };
 
-    private static final ThreadLocalFormat DATE = new ThreadLocalFormat( "yyyy-MM-dd HH:mm:ss.SSSZ" ),
-            TIME = new ThreadLocalFormat( "HH:mm:ss.SSS" );
+    public static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss.SSSZ";
+    public static final String TIME_FORMAT = "HH:mm:ss.SSS";
+    
+    /**
+     * Default time zone is UTC (+00:00) so that comparing timestamped logs from different
+     * sources is an easier task.
+     */
+    public static final TimeZone DEFAULT_TIME_ZONE = TimeZone.getTimeZone( "UTC" );
+    
+    private static final ThreadLocalFormat DATE = new ThreadLocalFormat( DATE_FORMAT ),
+            TIME = new ThreadLocalFormat( TIME_FORMAT );
 
     private static class ThreadLocalFormat extends ThreadLocal<DateFormat>
     {
@@ -85,9 +125,11 @@ public class Format
             this.format = format;
         }
 
-        String format( Date date )
+        String format( Date date, TimeZone timeZone )
         {
-            return get().format( date );
+            DateFormat dateFormat = get();
+            dateFormat.setTimeZone( timeZone );
+            return dateFormat.format( date );
         }
 
         @Override
