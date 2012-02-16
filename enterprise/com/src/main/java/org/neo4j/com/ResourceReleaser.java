@@ -19,6 +19,9 @@
  */
 package org.neo4j.com;
 
+/**
+ * Abstraction over a release-able resource.
+ */
 public interface ResourceReleaser
 {
     public void release();
