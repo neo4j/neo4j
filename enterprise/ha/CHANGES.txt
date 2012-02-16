@@ -1,3 +1,8 @@
+1.6.1 (2012-02-16)
+------------------
+o Added config option for ha.zk_session_timeout, defaulting to 5 seconds
+o Fixes that lead to faster and more stable master election
+
 1.6.1.RC2 (2012-02-01)
 ---------------------
 o Added config option for ha.max_concurrent_transactions_on_master
