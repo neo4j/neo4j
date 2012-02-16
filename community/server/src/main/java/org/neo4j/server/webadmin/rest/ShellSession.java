@@ -43,7 +43,7 @@ public class ShellSession implements ScriptSession
     private final ShellClient client;
     private final CollectingOutput output;
 
-    private ShellServer fallbackServer = null;
+    private static volatile ShellServer fallbackServer = null;
     
     public ShellSession( AbstractGraphDatabase graph )
     {
