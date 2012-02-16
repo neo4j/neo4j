@@ -1,3 +1,5 @@
+package org.neo4j.cypher.internal.parser.v1_7
+
 /**
  * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -17,23 +19,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.pipes
 
-import java.lang.String
-import collection.Seq
-import org.neo4j.cypher.internal.commands.ReturnItem
-
-class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
-  extends PipeWithSource(source) {
-  val returnItemNames = returnItems.map(_.columnName)
-  val symbols = source.symbols.filter(returnItemNames: _*)
+import org.neo4j.cypher.internal.commands.Predicate
 
 
-  def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] =
-    source.createResults(params).map(_.filterKeys(returnItemNames.contains))
-
-  override def executionPlan(): String =
-    "%s\r\nColumnFilter([%s] => [%s])".format(source.executionPlan(),source.symbols.keys, returnItemNames.mkString(","))
-
-  def dependencies = Seq()
+trait HavingClause extends Base with Predicates {
+  def having: Parser[Predicate] = ignoreCase("having") ~> predicate
 }
+
+
+
+
+
+
+
+
+
+
+

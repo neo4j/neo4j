@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.pipes
 
 import aggregation.AggregationFunction
 import collection.Seq
-import org.neo4j.cypher.internal.commands.{AggregationItem, ReturnItem}
+import org.neo4j.cypher.internal.commands.ReturnItem
 import java.lang.String
 import org.neo4j.cypher.internal.symbols.{Identifier, SymbolTable}
 import org.neo4j.helpers.ThisShouldNotHappenError
 
 // This class can be used to aggregate if the values sub graphs come in the order that they are keyed on
-class OrderedAggregationPipe(source: Pipe, val returnItems: Seq[ReturnItem], aggregations: Seq[AggregationItem]) extends PipeWithSource(source) {
+class OrderedAggregationPipe(source: Pipe, val returnItems: Seq[ReturnItem], aggregations: Seq[ReturnItem]) extends PipeWithSource(source) {
 
   if (returnItems.isEmpty)
     throw new ThisShouldNotHappenError("Andres Taylor", "The ordered aggregation pipe should never be used without aggregation keys")
@@ -50,7 +50,7 @@ class OrderedAggregationPipe(source: Pipe, val returnItems: Seq[ReturnItem], agg
 
 private class OrderedAggregator(source: Traversable[Map[String, Any]],
                                 returnItems: Seq[ReturnItem],
-                                aggregations: Seq[AggregationItem]) extends Traversable[Map[String, Any]] {
+                                aggregations: Seq[ReturnItem]) extends Traversable[Map[String, Any]] {
   var currentKey: Option[Seq[Any]] = None
   var aggregationSpool: Seq[AggregationFunction] = null
   val keyColumns = returnItems.map(_.columnName)

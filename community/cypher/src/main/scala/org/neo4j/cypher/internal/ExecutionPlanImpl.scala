@@ -39,7 +39,7 @@ class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends Execu
 
   private def prepareExecutionPlan(): ((Map[String, Any]) => PipeExecutionResult, String) = {
     query match {
-      case Query(returns, start, matching, where, aggregation, sort, slice, namedPaths, queryText) => {
+      case Query(returns, start, matching, where, aggregation, sort, slice, namedPaths, having, queryText) => {
         var sorted = false
         var aggregated = false
         val predicates = where match {
@@ -102,6 +102,8 @@ class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends Execu
             }
           }
         }
+        
+        context = addHavingFilter(context, having)
 
         if (!sorted) {
           createSortPipe(sort, allReturnItems, context)
@@ -127,6 +129,14 @@ class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends Execu
 
         (func, executionPlan)
       }
+    }
+  }
+  
+  private def addHavingFilter(current:CurrentContext, having:Option[Predicate]):CurrentContext = having match {
+    case None => current
+    case Some(pred) => {
+      val p = new FilterPipe(current.pipe, pred)
+      new CurrentContext(p, current.predicates)
     }
   }
 

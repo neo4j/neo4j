@@ -17,24 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.pipes
+package org.neo4j.cypher.internal.commands
 
-import org.junit.Assert
+import org.scalatest.Assertions
 import org.junit.Test
-import org.scalatest.junit.JUnitSuite
-import org.neo4j.cypher.internal.commands.{Entity, ReturnItem}
-import org.neo4j.cypher.internal.symbols.{Identifier, NodeType, SymbolTable}
 
-class ColumnFilterPipeTest extends JUnitSuite {
-  @Test def shouldReturnColumnsFromReturnItems() {
-    val col = "extractReturnItems"
-    val returnItems = List(ReturnItem(Entity(col), col))
-    val colIdentifier = Identifier(col, NodeType())
-    val source = new FakePipe(List(Map("x" -> "x", col -> "bar")), new SymbolTable(colIdentifier))
-
-    val columnPipe = new ColumnFilterPipe(source, returnItems)
-
-    Assert.assertEquals(Seq(colIdentifier), columnPipe.symbols.identifiers)
-    Assert.assertEquals(List(Map(col -> "bar")), columnPipe.createResults(Map()).toList)
+class DistinctTest extends Assertions {
+  @Test def apa() {
+    val d = Distinct(Count(Literal("a")), Literal("a"))
+    assert(d.identifier.name === "count(distinct a)")
   }
 }

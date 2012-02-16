@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.symbols.{AnyType, Identifier, NumberType}
 import java.lang.Math
 import org.neo4j.cypher.CypherTypeException
 
-abstract class MathFunction(arguments: Expression*) extends Expression {
+abstract class MathFunction(arg: Expression) extends Expression {
   protected def asDouble(a: Any) = try {
     a.asInstanceOf[Number].doubleValue()
   }
@@ -37,13 +37,15 @@ abstract class MathFunction(arguments: Expression*) extends Expression {
 
   def identifier = Identifier(toString(), NumberType())
 
-  def declareDependencies(extectedType: AnyType): Seq[Identifier] = arguments.flatMap(_.dependencies(AnyType()))
+  def declareDependencies(extectedType: AnyType): Seq[Identifier] = arg.dependencies(AnyType())
 
   protected def name: String
 
-  private def argumentsString: String = arguments.map(_.toString()).mkString(",")
+  private def argumentsString: String = arg.identifier.name
 
   override def toString() = name + "(" + argumentsString + ")"
+
+  def exists(f: (Expression) => Boolean) = f(this)||arg.exists(f)
 }
 
 case class AbsFunction(argument: Expression) extends MathFunction(argument) {

@@ -23,7 +23,7 @@ import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.cypher.internal.commands._
 
-trait Predicates extends Base with Expressions with ReturnItems {
+trait Predicates extends Base with Expressions {
   def predicate: Parser[Predicate] = (
     expressionOrEntity <~ ignoreCase("is null") ^^ (x => IsNull(x))
       | expressionOrEntity <~ ignoreCase("is not null") ^^ (x => Not(IsNull(x)))

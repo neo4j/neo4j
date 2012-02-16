@@ -39,6 +39,8 @@ abstract class Expression extends (Map[String, Any] => Any) {
   }
 
   def rewrite(f: Expression => Expression): Expression
+
+  def exists(f: Expression => Boolean): Boolean
 }
 
 case class Add(a: Expression, b: Expression) extends Expression {
@@ -59,25 +61,20 @@ case class Add(a: Expression, b: Expression) extends Expression {
   def declareDependencies(extectedType: AnyType) = a.declareDependencies(extectedType) ++ b.declareDependencies(extectedType)
 
   def rewrite(f: (Expression) => Expression) = f(Add(a.rewrite(f), b.rewrite(f)))
+
+  def exists(f: (Expression) => Boolean) = f(this) || a.exists(f) || b.exists(f)
 }
 
-case class Subtract(a: Expression, b: Expression) extends Expression {
-  def identifier = Identifier(a.identifier.name + " + " + b.identifier.name, NumberType())
+case class Subtract(a: Expression, b: Expression) extends Arithmetics(a, b) {
+  def operand = "-"
 
-  def apply(m: Map[String, Any]) = {
-    val aVal = a(m)
-    val bVal = b(m)
+  def verb = "subtract"
 
-    (aVal, bVal) match {
-      case (x: Number, y: Number) => x.doubleValue() - y.doubleValue()
-      case _ => throw new CypherTypeException("Don't know how to subtract `" + bVal.toString + "` from `" + aVal.toString + "`")
-    }
+  def stringWithString(a: String, b: String) = throwTypeError(a, b)
 
-  }
+  def numberWithNumber(a: Number, b: Number) = a.doubleValue() - b.doubleValue()
 
-  def declareDependencies(extectedType: AnyType) = a.declareDependencies(extectedType) ++ b.declareDependencies(extectedType)
-
-  def rewrite(f: (Expression) => Expression) = f(Subtract(a.rewrite(f), b.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) = f(Modulo(a.rewrite(f), b.rewrite(f)))
 }
 
 case class Modulo(a: Expression, b: Expression) extends Arithmetics(a, b) {
@@ -128,8 +125,8 @@ case class Divide(a: Expression, b: Expression) extends Arithmetics(a, b) {
   def rewrite(f: (Expression) => Expression) = f(Divide(a.rewrite(f), b.rewrite(f)))
 }
 
-abstract class Arithmetics(a: Expression, b: Expression) extends Expression {
-  def identifier = Identifier("%s %s %s".format(a.identifier.name, operand, b.identifier.name), ScalarType())
+abstract class Arithmetics(left: Expression, right: Expression) extends Expression {
+  def identifier = Identifier("%s %s %s".format(left.identifier.name, operand, right.identifier.name), ScalarType())
 
   def operand: String
 
@@ -138,8 +135,8 @@ abstract class Arithmetics(a: Expression, b: Expression) extends Expression {
   }
 
   def apply(m: Map[String, Any]) = {
-    val aVal = a(m)
-    val bVal = b(m)
+    val aVal = left(m)
+    val bVal = right(m)
 
     (aVal, bVal) match {
       case (x: Number, y: Number) => numberWithNumber(x, y)
@@ -155,7 +152,9 @@ abstract class Arithmetics(a: Expression, b: Expression) extends Expression {
 
   def numberWithNumber(a: Number, b: Number): Number
 
-  def declareDependencies(extectedType: AnyType) = a.declareDependencies(extectedType) ++ b.declareDependencies(extectedType)
+  def declareDependencies(extectedType: AnyType) = left.declareDependencies(extectedType) ++ right.declareDependencies(extectedType)
+
+  def exists(f: (Expression) => Boolean) = f(this) || left.exists(f) || right.exists(f)
 }
 
 case class Literal(v: Any) extends Expression {
@@ -168,6 +167,8 @@ case class Literal(v: Any) extends Expression {
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = Seq()
 
   def rewrite(f: (Expression) => Expression) = f(this)
+
+  def exists(f: (Expression) => Boolean) = f(this)
 }
 
 abstract class CastableExpression extends Expression {
@@ -188,6 +189,10 @@ case class Nullable(expression: Expression) extends Expression {
   override def dependencies(extectedType: AnyType) = expression.dependencies(extectedType)
 
   def rewrite(f: (Expression) => Expression) = f(Nullable(expression.rewrite(f)))
+
+  def exists(f: (Expression) => Boolean) = f(this) || expression.exists(f)
+
+  override def toString() = expression.toString() + "?"
 }
 
 case class Property(entity: String, property: String) extends CastableExpression {
@@ -209,6 +214,8 @@ case class Property(entity: String, property: String) extends CastableExpression
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = Seq(Identifier(entity, MapType()))
 
   def rewrite(f: (Expression) => Expression) = f(this)
+
+  def exists(f: (Expression) => Boolean) = f(this)
 }
 
 case class RelationshipTypeFunction(relationship: Expression) extends Expression {
@@ -221,6 +228,8 @@ case class RelationshipTypeFunction(relationship: Expression) extends Expression
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = relationship.dependencies(RelationshipType())
 
   def rewrite(f: (Expression) => Expression) = f(RelationshipTypeFunction(relationship.rewrite(f)))
+
+  def exists(f: (Expression) => Boolean) = f(this) || relationship.exists(f)
 }
 
 case class CoalesceFunction(expressions: Expression*) extends Expression {
@@ -241,6 +250,8 @@ case class CoalesceFunction(expressions: Expression*) extends Expression {
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = expressions.flatMap(_.dependencies(AnyType()))
 
   def rewrite(f: (Expression) => Expression) = f(CoalesceFunction(expressions.map(e => e.rewrite(f)): _*))
+
+  def exists(f: (Expression) => Boolean) = f(this) || expressions.exists(_.exists(f))
 }
 
 case class LengthFunction(inner: Expression) extends Expression {
@@ -259,6 +270,8 @@ case class LengthFunction(inner: Expression) extends Expression {
   }
 
   def rewrite(f: (Expression) => Expression) = f(LengthFunction(inner.rewrite(f)))
+
+  def exists(f: (Expression) => Boolean) = f(this) || inner.exists(f)
 }
 
 case class IdFunction(inner: Expression) extends Expression {
@@ -272,6 +285,8 @@ case class IdFunction(inner: Expression) extends Expression {
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = inner.dependencies(MapType())
 
   def rewrite(f: (Expression) => Expression) = f(IdFunction(inner.rewrite(f)))
+
+  def exists(f: (Expression) => Boolean) = f(this) || inner.exists(f)
 }
 
 case class NodesFunction(path: Expression) extends Expression {
@@ -285,6 +300,8 @@ case class NodesFunction(path: Expression) extends Expression {
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = path.dependencies(PathType())
 
   def rewrite(f: (Expression) => Expression) = f(NodesFunction(path.rewrite(f)))
+
+  def exists(f: (Expression) => Boolean) = f(path) || path.exists(f)
 }
 
 case class ExtractFunction(iterable: Expression, id: String, expression: Expression) extends Expression {
@@ -304,6 +321,8 @@ case class ExtractFunction(iterable: Expression, id: String, expression: Express
     iterable.dependencies(AnyIterableType()) ++ expression.dependencies(AnyType()).filterNot(_.name == id)
 
   def rewrite(f: (Expression) => Expression) = f(ExtractFunction(iterable.rewrite(f), id, expression.rewrite(f)))
+
+  def exists(f: (Expression) => Boolean) = f(this) || iterable.exists(f) || expression.exists(f)
 }
 
 case class RelationshipFunction(path: Expression) extends Expression {
@@ -317,6 +336,8 @@ case class RelationshipFunction(path: Expression) extends Expression {
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = path.dependencies(PathType())
 
   def rewrite(f: (Expression) => Expression) = f(RelationshipFunction(path.rewrite(f)))
+
+  def exists(f: (Expression) => Boolean) = f(this) || path.exists(f)
 }
 
 case class Entity(entityName: String) extends CastableExpression {
@@ -329,6 +350,8 @@ case class Entity(entityName: String) extends CastableExpression {
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = Seq(Identifier(entityName, extectedType))
 
   def rewrite(f: (Expression) => Expression) = f(this)
+
+  def exists(f: (Expression) => Boolean) = f(this)
 }
 
 case class Parameter(parameterName: String) extends CastableExpression {
@@ -344,6 +367,8 @@ case class Parameter(parameterName: String) extends CastableExpression {
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = Seq()
 
   def rewrite(f: (Expression) => Expression) = f(this)
+
+  def exists(f: (Expression) => Boolean) = f(this)
 }
 
 case class ParameterValue(value: Any)

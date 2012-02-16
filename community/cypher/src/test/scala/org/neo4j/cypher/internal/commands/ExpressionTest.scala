@@ -24,13 +24,13 @@ import org.scalatest.Assertions
 
 class ExpressionTest extends Assertions {
   @Test def replacePropWithCache() {
-    val a = Collect(Nullable(Property("r", "age")), "wut")
+    val a = Collect(Nullable(Property("r", "age")))
     
     val b = a.rewrite {
         case Property(n, p) => Literal(n + "." + p)
         case x => x
       }
 
-    assert(b === Collect(Nullable(Literal("r.age")), "wut"))
+    assert(b === Collect(Nullable(Literal("r.age"))))
   }
 }

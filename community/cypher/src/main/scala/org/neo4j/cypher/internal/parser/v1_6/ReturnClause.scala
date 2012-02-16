@@ -43,9 +43,10 @@ trait ReturnClause extends Base with ReturnItems {
     case col ~ None => col
   }
 
-  def returnsClause: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> opt("distinct") ~ comaList(column) ^^ {
+  def returnsClause: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> opt(ignoreCase("distinct")) ~ comaList(column) ^^ {
     case distinct ~ items => {
-      val aggregationItems = items.filter(_.isInstanceOf[AggregationItem]).map(_.asInstanceOf[AggregationItem])
+      val (aggregationItems, returnItems) = items.partition(_.expression.exists(_.isInstanceOf[AggregationExpression]))
+      val columnName = items.map(_.columnName).toList
 
       val none: Option[Aggregation] = distinct match {
         case Some(x) => Some(Aggregation())
@@ -54,12 +55,11 @@ trait ReturnClause extends Base with ReturnItems {
 
       val aggregation = aggregationItems match {
         case List() => none
-        case _ => Some(Aggregation(aggregationItems: _*))
+        case _ => Some(Aggregation(aggregationItems.map(_.asInstanceOf[ReturnItem]): _*))
       }
 
-      val returnItems = Return(items.map(_.columnName).toList, items.filter(!_.isInstanceOf[AggregationItem]): _*)
 
-      (returnItems, aggregation)
+      (Return(columnName, returnItems:_*), aggregation)
     }
   }
 }

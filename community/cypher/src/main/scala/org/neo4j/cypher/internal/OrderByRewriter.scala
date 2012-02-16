@@ -41,11 +41,11 @@ object OrderByRewriter {
         cleanUpSortItem((si, agg, ret))
       })
 
-      Query(q.returns, q.start, q.matching, q.where, q.aggregation, Some(Sort(newSort:_*)), q.slice, q.namedPaths, q.queryString)
+      Query(q.returns, q.start, q.matching, q.where, q.aggregation, Some(Sort(newSort:_*)), q.slice, q.namedPaths, q.having, q.queryString)
     }
   }
 
-  private def cleanUpSortItem(x: (SortItem, Option[AggregationItem], Option[ReturnItem])): SortItem = x match {
+  private def cleanUpSortItem(x: (SortItem, Option[ReturnItem], Option[ReturnItem])): SortItem = x match {
     case (si, Some(a), _) => SortItem(a, si.ascending)
     case (si, _, Some(r)) => SortItem(r, si.ascending)
     case (si, _, _) => si

@@ -55,6 +55,7 @@ trait Expressions extends Base {
       | ignoreCase("false") ^^ (x => Literal(false))
       | extract
       | function
+      | aggregateExpression
       | identity~>parens(expression | entity)~>failure("unknown function")
       | coalesceFunc
       | nullableProperty
@@ -90,6 +91,7 @@ trait Expressions extends Base {
     case expressions => CoalesceFunction(expressions: _*)
   }
 
+  def functionNames = ignoreCases("type", "id", "length", "nodes", "rels", "relationships", "abs", "round", "sqrt", "sign")
   def function: Parser[Expression] = functionNames ~ parens(expression | entity) ^^ {
     case functionName ~ inner => functionName.toLowerCase match {
       case "type" => RelationshipTypeFunction(inner)
@@ -105,7 +107,31 @@ trait Expressions extends Base {
     }
   }
 
-  def functionNames = ignoreCases("type", "id", "length", "nodes", "rels", "relationships", "abs", "round", "sqrt", "sign")
+  def aggregateExpression: Parser[Expression] = countStar | aggregationFunction
+
+  def aggregateFunctionNames = ignoreCases("count", "sum", "min", "max", "avg", "collect")
+  def aggregationFunction: Parser[Expression] = aggregateFunctionNames ~ parens(opt(ignoreCase("distinct")) ~ expression) ^^ {
+    case function ~ (distinct ~ inner) => {
+
+      val aggregateExpression = function match {
+        case "count" => Count(inner)
+        case "sum" => Sum(inner)
+        case "min" => Min(inner)
+        case "max" => Max(inner)
+        case "avg" => Avg(inner)
+        case "collect" => Collect(inner)
+      }
+
+      if (distinct.isEmpty) {
+        aggregateExpression
+      }
+      else {
+        Distinct(aggregateExpression, inner)
+      }
+    }
+  }
+
+  def countStar: Parser[Expression] = ignoreCase("count") ~> parens("*") ^^^ CountStar()
 }
 
 
