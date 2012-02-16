@@ -1720,6 +1720,14 @@ RETURN x0.name?
       else fail("wut?")
     })
   }
+  
+  @Test def functions_should_return_null_if_they_get_null_in() {
+    createNode()
+
+    val result = parseAndExecute("start a=node(1) match p=a-[r?]->() return length(p), id(r), type(r), nodes(p), rels(p)").toList
+    
+    assert(List(Map("length(p)"->null, "id(r)"->null, "type(r)"->null, "nodes(p)"->null, "rels(p)"->null)) === result)
+  }
 
   @Test def createEngineWithSpecifiedParserVersion() {
     val db = new ImpermanentGraphDatabase(Map[String, String]("cypher_parser_version" -> "1.5").asJava)
