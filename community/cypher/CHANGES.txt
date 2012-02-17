@@ -1,5 +1,6 @@
 <NOT YET RELEASED>
 ------------------
+o Added HEAD, TAIL, LAST and FILTER
 o Added comments
 o Added HAVING - Cypher can now filter on aggregated data
 o Added ! so that missing property can evaluate to false
