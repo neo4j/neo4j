@@ -25,29 +25,29 @@ import org.junit.matchers.JUnitMatchers._
 import scala.collection.JavaConverters._
 import org.neo4j.cypher.internal.commands._
 import org.scalatest.junit.JUnitSuite
-import org.neo4j.cypher.internal.symbols.{IntegerType, SymbolTable, Identifier, NodeType}
 import org.scalatest.Assertions
 import org.neo4j.cypher.SyntaxException
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.symbols._
 
 class OrderedAggregationPipeTest extends JUnitSuite with Assertions {
   @Test def shouldReturnColumnsFromReturnItems() {
     val source = new FakePipe(List(), createSymbolTableFor("name"))
 
-    val returnItems = List(ExpressionReturnItem(Entity("name")))
-    val grouping = List(CountStar())
+    val returnItems = List(ReturnItem(Entity("name"), "name"))
+    val grouping = List(ReturnItem(CountStar(), "count(*)"))
     val aggregationPipe = new OrderedAggregationPipe(source, returnItems, grouping)
 
     assertEquals(
-      Seq(Identifier("name", NodeType()), Identifier("count(*)", IntegerType())),
+      Seq(Identifier("name", NodeType()), Identifier("count(*)", LongType())),
       aggregationPipe.symbols.identifiers)
   }
 
   @Test def shouldThrowSemanticException() {
     val source = new FakePipe(List(), createSymbolTableFor("extractReturnItems"))
 
-    val returnItems = List(ExpressionReturnItem(Entity("name")))
-    val grouping = List(ValueAggregationItem(Count(Entity("none-existing-identifier"), "x")))
+    val returnItems = List(ReturnItem(Entity("name"), "name"))
+    val grouping = List(ReturnItem(Count(Entity("none-existing-identifier")), "x"))
     intercept[SyntaxException](new OrderedAggregationPipe(source, returnItems, grouping))
   }
 
@@ -59,8 +59,8 @@ class OrderedAggregationPipeTest extends JUnitSuite with Assertions {
       Map("name" -> "Peter", "age" -> 38)
     ), createSymbolTableFor("name"))
 
-    val returnItems = List(ExpressionReturnItem(Entity("name")))
-    val grouping = List(CountStar())
+    val returnItems = List(ReturnItem(Entity("name"), "name"))
+    val grouping = List(ReturnItem(CountStar(), "count(*)"))
     val aggregationPipe = new OrderedAggregationPipe(source, returnItems, grouping)
 
     assertThat(aggregationPipe.createResults(Map()).toIterable.asJava, hasItems(
@@ -75,23 +75,24 @@ class OrderedAggregationPipeTest extends JUnitSuite with Assertions {
       Map("name" -> "Michael", "age" -> null),
       Map("name" -> "Peter", "age" -> 38)), createSymbolTableFor("name", "age"))
 
-    val returnItems = List(ExpressionReturnItem(Entity("name")))
-    val grouping = List(ValueAggregationItem(Count((Entity("age")), "count(age)")))
+    val returnItems = List(ReturnItem(Entity("name"), "name"))
+    val grouping = List(ReturnItem(Count((Entity("age"))), "count(age)"))
     val aggregationPipe = new OrderedAggregationPipe(source, returnItems, grouping)
 
     assertThat(aggregationPipe.createResults(Map()).toIterable.asJava, hasItems(
       Map("name" -> "Andres", "count(age)" -> 1),
       Map("name" -> "Michael", "count(age)" -> 0),
-      Map("name" -> "Peter", "count(age)" -> 1)))  }
+      Map("name" -> "Peter", "count(age)" -> 1)))
+  }
 
   @Test def shouldThrowOnEmptyKeyList() {
     val source = new FakePipe(List(), createSymbolTableFor("name"))
 
     val returnItems = List()
-    val grouping = List(ValueAggregationItem(Count((Entity("name")), "x")))
+    val grouping = List(ReturnItem(Count((Entity("name"))), "x"))
     intercept[ThisShouldNotHappenError](new OrderedAggregationPipe(source, returnItems, grouping))
   }
 
-  private def createSymbolTableFor(names: String*) = new SymbolTable( names.map( Identifier(_, NodeType()) ):_*   )
+  private def createSymbolTableFor(names: String*) = new SymbolTable(names.map(Identifier(_, NodeType())): _*)
 
 }

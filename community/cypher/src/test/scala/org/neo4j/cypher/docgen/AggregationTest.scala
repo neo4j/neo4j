@@ -41,7 +41,7 @@ class AggregationTest extends DocumentingTestBase {
       text = "To count the number of nodes, for example the number of nodes connected to one node, you can use +count(*)+.",
       queryText = "start n=node(%A%) match (n)-->(x) return n, count(*)",
       returns = "The start node and the count of related nodes.",
-      p => assertEquals(Map("n" -> node("A"), "count(*)" -> 3), p.toList.head))
+      assertions = p => assertEquals(Map("n" -> node("A"), "count(*)" -> 3), p.toList.head))
   }
 
   @Test def countRelationshipsByType() {
@@ -50,7 +50,7 @@ class AggregationTest extends DocumentingTestBase {
       text = "To count the groups of relationship types, return the types and count them with +count(*)+.",
       queryText = "start n=node(%A%) match (n)-[r]->() return type(r), count(*)",
       returns = "The relationship types and their group count.",
-      p => assertEquals(Map("type(r)" -> "KNOWS", "count(*)" -> 3), p.toList.head))
+      assertions = p => assertEquals(Map("type(r)" -> "KNOWS", "count(*)" -> 3), p.toList.head))
   }
 
   @Test def countEntities() {
@@ -60,7 +60,7 @@ class AggregationTest extends DocumentingTestBase {
         "the name of the identifier you care about.",
       queryText = "start n=node(%A%) match (n)-->(x) return count(x)",
       returns = "The number of connected nodes from the start node.",
-      p => assertEquals(Map("count(x)" -> 3), p.toList.head))
+      assertions = p => assertEquals(Map("count(x)" -> 3), p.toList.head))
   }
 
   @Test def countNonNullValues() {
@@ -69,7 +69,7 @@ class AggregationTest extends DocumentingTestBase {
       text = "You can count the non-null values by using +count(<identifier>)+.",
       queryText = "start n=node(%A%,%B%,%C%,%D%) return count(n.property?)",
       returns = "The count of related nodes.",
-      p => assertEquals(Map("count(n.property?)" -> 3), p.toList.head))
+      assertions = p => assertEquals(Map("count(n.property?)" -> 3), p.toList.head))
   }
 
   @Test def sumProperty() {
@@ -79,7 +79,7 @@ class AggregationTest extends DocumentingTestBase {
         "Null values are silently dropped. This is an example of how you can use +SUM+.",
       queryText = "start n=node(%A%,%B%,%C%) return sum(n.property)",
       returns = "The sum of all the values in the property 'property'.",
-      p => assertEquals(Map("sum(n.property)" -> (13 + 33 + 44)), p.toList.head))
+      assertions = p => assertEquals(Map("sum(n.property)" -> (13 + 33 + 44)), p.toList.head))
   }
 
   @Test def avg() {
@@ -88,7 +88,7 @@ class AggregationTest extends DocumentingTestBase {
       text = "+AVG+ calculates the average of a numeric column.",
       queryText = "start n=node(%A%,%B%,%C%) return avg(n.property)",
       returns = "The average of all the values in the property 'property'.",
-      p => assertEquals(Map("avg(n.property)" -> 30), p.toList.head))
+      assertions = p => assertEquals(Map("avg(n.property)" -> 30), p.toList.head))
   }
 
   @Test def min() {
@@ -97,7 +97,7 @@ class AggregationTest extends DocumentingTestBase {
       text = "+MIN+ takes a numeric property as input, and returns the smallest value in that column.",
       queryText = "start n=node(%A%,%B%,%C%) return min(n.property)",
       returns = "The smallest of all the values in the property 'property'.",
-      p => assertEquals(Map("min(n.property)" -> 13), p.toList.head))
+      assertions = p => assertEquals(Map("min(n.property)" -> 13), p.toList.head))
   }
 
   @Test def max() {
@@ -106,7 +106,7 @@ class AggregationTest extends DocumentingTestBase {
       text = "+MAX+ find the largets value in a numeric column.",
       queryText = "start n=node(%A%,%B%,%C%) return max(n.property)",
       returns = "The largest of all the values in the property 'property'.",
-      p => assertEquals(Map("max(n.property)" -> 44), p.toList.head))
+      assertions = p => assertEquals(Map("max(n.property)" -> 44), p.toList.head))
   }
 
   @Test def collect() {
@@ -115,7 +115,7 @@ class AggregationTest extends DocumentingTestBase {
       text = "+COLLECT+ collects all the values into a list.",
       queryText = "start n=node(%A%,%B%,%C%) return collect(n.property)",
       returns = "Returns a single row, with all the values collected.",
-      p => assertEquals(Map("collect(n.property)" -> Seq(13, 33, 44)), p.toList.head))
+      assertions = p => assertEquals(Map("collect(n.property)" -> Seq(13, 33, 44)), p.toList.head))
   }
 
   @Test def count_distinct() {
@@ -125,6 +125,6 @@ class AggregationTest extends DocumentingTestBase {
 So, to count the number of unique eye colours from nodes related to a, this query can be used: """,
       queryText = "start a=node(%A%) match a-->b return count(distinct b.eyes)",
       returns = "Returns the number of eye colours.",
-      p => assertEquals(Map("count(distinct b.eyes)" -> 2), p.toList.head))
+      assertions = p => assertEquals(Map("count(distinct b.eyes)" -> 2), p.toList.head))
   }
 }

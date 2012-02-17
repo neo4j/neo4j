@@ -21,14 +21,14 @@ package org.neo4j.cypher.internal.pipes
 
 import aggregation.AggregationFunction
 import collection.Seq
-import org.neo4j.cypher.internal.commands.{AggregationItem, ReturnItem}
+import org.neo4j.cypher.internal.commands.ReturnItem
 import java.lang.String
 import org.neo4j.cypher.internal.symbols.{Identifier, SymbolTable}
 
 // Eager aggregation means that this pipe will eagerly load the whole resulting subgraphs before starting
 // to emit aggregated results.
 // Cypher is lazy until it has to - this pipe makes stops the lazyness
-class EagerAggregationPipe(source: Pipe, val returnItems: Seq[ReturnItem], aggregations: Seq[AggregationItem]) extends PipeWithSource(source) {
+class EagerAggregationPipe(source: Pipe, val returnItems: Seq[ReturnItem], aggregations: Seq[ReturnItem]) extends PipeWithSource(source) {
   val symbols: SymbolTable = createSymbols()
 
   def dependencies: Seq[Identifier] = returnItems.flatMap(_.dependencies) ++ aggregations.flatMap(_.dependencies)

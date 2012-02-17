@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.parser.v1_7
 import org.neo4j.cypher.internal.commands.{Sort, SortItem}
 
 
-trait OrderByClause extends Base with ReturnItems  {
+trait OrderByClause extends Base with ReturnClause  {
   def desc:Parser[String] = ignoreCases("descending", "desc")
 
   def asc:Parser[String] = ignoreCases("ascending", "asc")
@@ -32,7 +32,7 @@ trait OrderByClause extends Base with ReturnItems  {
     case Some(txt) => txt.toLowerCase.startsWith("a")
   }
 
-  def sortItem :Parser[SortItem] = (aggregate | returnItem) ~ ascOrDesc ^^ { case returnItem ~ reverse => SortItem(returnItem, reverse)  }
+  def sortItem :Parser[SortItem] = returnItem ~ ascOrDesc ^^ { case returnItem ~ reverse => SortItem(returnItem, reverse)  }
 
   def order: Parser[Sort] = 
     (ignoreCase("order by") ~> comaList(sortItem) ^^ { case items => Sort(items:_*) }

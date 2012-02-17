@@ -17,22 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v1_7
+package org.neo4j.cypher.internal.commands
 
-import org.neo4j.cypher.internal.commands.Predicate
+import org.scalatest.Assertions
+import org.junit.Test
 
-
-trait WhereClause extends Base with Expressions {
-  def where: Parser[Predicate] = ignoreCase("where") ~> predicate
+class DistinctTest extends Assertions {
+  @Test def apa() {
+    val d = Distinct(Count(Literal("a")), Literal("a"))
+    assert(d.identifier.name === "count(distinct a)")
+  }
 }
-
-
-
-
-
-
-
-
-
-
-

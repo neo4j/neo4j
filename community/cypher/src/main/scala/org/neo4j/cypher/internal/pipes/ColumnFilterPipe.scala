@@ -32,9 +32,8 @@ class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
   def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] =
     source.createResults(params).map(_.filterKeys(returnItemNames.contains))
 
-  override def executionPlan(): String = {
-    source.executionPlan() + "\r\n" + "ColumnFilter([" + source.symbols.keys + "] => [" + returnItemNames.mkString(",") + "])"
-  }
+  override def executionPlan(): String =
+    "%s\r\nColumnFilter([%s] => [%s])".format(source.executionPlan(),source.symbols.keys, returnItemNames.mkString(","))
 
   def dependencies = Seq()
 }

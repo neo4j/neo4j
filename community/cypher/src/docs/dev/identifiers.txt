@@ -6,7 +6,8 @@ When you reference parts of the pattern, you do so by naming them. The names you
 calles identifiers.
 
 In this example:
-+START n=node(1) MATCH n-->b RETURN b+
+
++START n=node(1) MATCH n`-->`b RETURN b+
 
 The identifiers are +n+ and +b+.
 

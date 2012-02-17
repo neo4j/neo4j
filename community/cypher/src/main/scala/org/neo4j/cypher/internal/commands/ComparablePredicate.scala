@@ -44,19 +44,28 @@ abstract sealed class ComparablePredicate(a: Expression, b: Expression) extends 
 
   override def toString = a.toString() + " " + sign + " " + b.toString()
 
-  def containsIsNull: Boolean = false
+  def exists(f: (Expression) => Boolean) = a.exists(f) || b.exists(f)
+
+  def containsIsNull = false
 }
 
 case class Equals(a: Expression, b: Expression) extends Predicate with Comparer {
-  def isMatch(m: Map[String, Any]): Boolean = a(m) == b(m)
+  def isMatch(m: Map[String, Any]): Boolean = {
+    val x = a(m)
+    val z = b(m)
+    val r = x == z
+    r
+  }
 
   def atoms = Seq(this)
 
-  def containsIsNull = false
+  def exists(f: (Expression) => Boolean) = a.exists(f) || b.exists(f)
 
   def dependencies = a.dependencies(AnyType()) ++ b.dependencies(AnyType())
 
   override def toString = a.toString() + " == " + b.toString()
+
+  def containsIsNull = false
 }
 
 case class LessThan(a: Expression, b: Expression) extends ComparablePredicate(a, b) {

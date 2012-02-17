@@ -23,6 +23,7 @@ import org.junit.Test
 import org.junit.Assert._
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.ExecutionResult
+import collection.mutable.WrappedArray
 
 class FunctionsTest extends DocumentingTestBase {
   def graphDescription = List("A KNOWS B", "A KNOWS C", "B KNOWS D", "C KNOWS D", "B MARRIED E")
@@ -125,6 +126,62 @@ class FunctionsTest extends DocumentingTestBase {
       queryText = """start a=node(%A%), b=node(%B%), c=node(%D%) match p=a-->b-->c return extract(n in nodes(p) : n.age)""",
       returns = """The age property of all nodes in the path.""",
       assertions = (p) => assertEquals(List(Map("extract(n in nodes(p) : n.age)" -> List(38, 25, 54))), p.toList))
+  }
+
+  @Test def head() {
+    testThis(
+      title = "HEAD",
+      syntax = "HEAD( expression )",
+      arguments = List(
+        "expression" -> "This expression should return a collection of some sort."
+      ),
+      text = "HEAD returns the first element in a collection.",
+      queryText = """start a=node(%E%) return a.array, head(a.array)""",
+      returns = "The first node in the path",
+      assertions = (p) => assertEquals(List("one"), p.columnAs[List[_]]("head(a.array)").toList))
+  }
+
+  @Test def last() {
+    testThis(
+      title = "LAST",
+      syntax = "LAST( expression )",
+      arguments = List(
+        "expression" -> "This expression should return a collection of some sort."
+      ),
+      text = "LAST returns the last element in a collection.",
+      queryText = """start a=node(%E%) return a.array, last(a.array)""",
+      returns = "The first node in the path",
+      assertions = (p) => assertEquals(List("three"), p.columnAs[List[_]]("last(a.array)").toList))
+  }
+
+  @Test def tail() {
+    testThis(
+      title = "TAIL",
+      syntax = "TAIL( expression )",
+      arguments = List(
+        "expression" -> "This expression should return a collection of some sort."
+      ),
+      text = "TAIL returns all but the first element in a collection.",
+      queryText = """start a=node(%E%) return a.array, tail(a.array)""",
+      returns = "The first node in the path",
+      assertions = (p) => {
+        val toList = p.columnAs[Array[_]]("tail(a.array)").toList.head
+        assert(toList === Array("two","three"))
+      })
+  }
+
+  @Test def filter() {
+    testThis(
+      title = "FILTER",
+      syntax = "FILTER(identifier in iterable : predicate)",
+      arguments = common_arguments,
+      text = "FILTER returns all the elements in an iterable that comply to a predicate.",
+      queryText = """start a=node(%E%) return a.array, filter(x in a.array : length(x) = 3)""",
+      returns = "The first node in the path",
+      assertions = (p) => {
+        val array = p.columnAs[WrappedArray[_]]("filter(x in a.array : length(x) = 3)").toList.head
+        assert(List("one","two") === array.toList)
+      })
   }
 
   @Test def nodes_in_path() {

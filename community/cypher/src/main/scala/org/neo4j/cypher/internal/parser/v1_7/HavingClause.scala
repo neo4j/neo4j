@@ -1,3 +1,5 @@
+package org.neo4j.cypher.internal.parser.v1_7
+
 /**
  * Copyright (c) 2002-2012 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -17,13 +19,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.v1_7
 
 import org.neo4j.cypher.internal.commands.Predicate
 
 
-trait WhereClause extends Base with Expressions {
-  def where: Parser[Predicate] = ignoreCase("where") ~> predicate
+trait HavingClause extends Base with Expressions {
+  def having: Parser[Predicate] = ignoreCase("having") ~> predicate
 }
 
 

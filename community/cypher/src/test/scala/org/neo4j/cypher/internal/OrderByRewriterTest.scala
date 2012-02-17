@@ -31,16 +31,16 @@ class OrderByRewriterTest extends Assertions {
 
     val q = Query.
       start(NodeById("a", 1)).
-      aggregation(CountStar()).
+      aggregation(ReturnItem(CountStar(), "count(*)")).
       columns("count(*)").
-      orderBy(SortItem(CountStar("apa"), true)).
+      orderBy(SortItem(ReturnItem(CountStar(), "apa"), true)).
       returns()
 
     val expected = Query.
       start(NodeById("a", 1)).
-      aggregation(CountStar()).
+      aggregation(ReturnItem(CountStar(), "count(*)")).
       columns("count(*)").
-      orderBy(SortItem(CountStar(), true)).
+      orderBy(SortItem(ReturnItem(CountStar(), "count(*)"), true)).
       returns()
 
     assert(OrderByRewriter(q) === expected)

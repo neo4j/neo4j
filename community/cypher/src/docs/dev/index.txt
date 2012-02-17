@@ -12,6 +12,8 @@ include::parameters.txt[]
 
 include::identifiers.txt[]
 
+include::comments.txt[]
+
 :leveloffset: 2
 
 include::ql/start/index.txt[]
