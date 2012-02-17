@@ -266,6 +266,15 @@ source=examples/ImdbExampleTest.java
 tag=fulltext
 ----
 
+Here's an example of how to create an exact index which is case-insensitive:
+
+[snippet,java]
+----
+component=neo4j-lucene-index
+source=org/neo4j/index/impl/lucene/TestLuceneIndex.java
+tag=exact-case-insensitive
+----
+
 TIP: In order to search for tokenized words, the +query+ method has to be used.
   The +get+ method will only match the full string value, not the tokens.
 
