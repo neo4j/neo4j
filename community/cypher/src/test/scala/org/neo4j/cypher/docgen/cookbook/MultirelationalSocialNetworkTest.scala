@@ -44,10 +44,8 @@ class MultirelationalSocialNetworkTest extends DocumentingTestBase {
   @Test def followBack() {
     testQuery(
       title = "Who FOLLOWS or LOVES me back",
-      text = """This example shows a multi-relational
-     * network between persons and things they like.
-     * A multi-relational graph is a graph with more than
-     * one kind of relationship between nodes.""",
+      text = """This example shows a multi-relational network between persons and things they like. 
+        A multi-relational graph is a graph with more than one kind of relationship between nodes.""",
       queryText = "START me=node:node_auto_index(name = 'Joe') " +
                 "MATCH me-[r1]->other-[r2]->me WHERE type(r1)=type(r2) AND type(r1) =~ /FOLLOWS|LOVES/ RETURN other.name, type(r1)",
       returns = "People that +FOLLOWS+ or +LOVES+ +Joe+ back.",
