@@ -31,6 +31,8 @@ include::length.txt[]
 include::type.txt[]
 include::id.txt[]
 include::coalesce.txt[]
+include::head.txt[]
+include::last.txt[]
 
 :leveloffset: 2
 
@@ -42,6 +44,8 @@ Iterable functions return an iterable of things - nodes in a path, and so on.
 include::nodes.txt[]
 include::relationships.txt[]
 include::extract.txt[]
+include::filter.txt[]
+include::tail.txt[]
 
 :leveloffset: 2
 

@@ -45,7 +45,10 @@ abstract class MathFunction(arg: Expression) extends Expression {
 
   override def toString() = name + "(" + argumentsString + ")"
 
-  def exists(f: (Expression) => Boolean) = f(this)||arg.exists(f)
+  def filter(f: (Expression) => Boolean) = if(f(this))
+    Seq(this) ++ arg.filter(f)
+  else
+    arg.filter(f)
 }
 
 case class AbsFunction(argument: Expression) extends MathFunction(argument) {

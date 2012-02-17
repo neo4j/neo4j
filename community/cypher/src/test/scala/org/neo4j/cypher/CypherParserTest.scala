@@ -1252,6 +1252,28 @@ class CypherParserTest extends JUnitSuite with Assertions {
         returns(ReturnItem(Entity("s"), "s")))
   }
 
+  @Test def first_last_and_rest() {
+    testFrom_1_7("start x = NODE(1) match p=x-->z return head(nodes(p)), last(nodes(p)), tail(nodes(p))",
+      Query.
+        start(NodeById("x", 1)).
+        namedPaths(NamedPath("p", RelatedTo("x", "z", "  UNNAMED1", None, Direction.OUTGOING, false, True()))).
+        returns(
+        ReturnItem(HeadFunction(NodesFunction(Entity("p"))), "head(nodes(p))"),
+        ReturnItem(LastFunction(NodesFunction(Entity("p"))), "last(nodes(p))"),
+        ReturnItem(TailFunction(NodesFunction(Entity("p"))), "tail(nodes(p))")
+      ))
+  }
+
+  @Test def filter() {
+    testFrom_1_7("start x = NODE(1) match p=x-->z return filter(x in p : x.prop = 123)",
+      Query.
+        start(NodeById("x", 1)).
+        namedPaths(NamedPath("p", RelatedTo("x", "z", "  UNNAMED1", None, Direction.OUTGOING, false, True()))).
+        returns(
+        ReturnItem(FilterFunction(Entity("p"), "x", Equals(Property("x", "prop"), Literal(123))) , "filter(x in p : x.prop = 123)")
+      ))
+  }
+
   def test_1_5(query: String, expectedQuery: Query) {
     testQuery(Some("1.5 "), query, expectedQuery)
   }

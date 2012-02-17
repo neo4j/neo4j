@@ -1694,14 +1694,14 @@ RETURN x0.name?
     val a = createNode()
     val b = createNode()
     val c = createNode()
-    
-    relate(b,a)
-    relate(c,a)
-    
-    relate(a,b)
+
+    relate(b, a)
+    relate(c, a)
+
+    relate(a, b)
 
     val result = parseAndExecute("start a=node(*) match a<--() return a, count(*) having count(*) > 1")
-    
+
     assert(List(a) === result.columnAs[Node]("a").toList)
   }
 
@@ -1720,13 +1720,39 @@ RETURN x0.name?
       else fail("wut?")
     })
   }
-  
+
   @Test def functions_should_return_null_if_they_get_null_in() {
     createNode()
 
     val result = parseAndExecute("start a=node(1) match p=a-[r?]->() return length(p), id(r), type(r), nodes(p), rels(p)").toList
-    
-    assert(List(Map("length(p)"->null, "id(r)"->null, "type(r)"->null, "nodes(p)"->null, "rels(p)"->null)) === result)
+
+    assert(List(Map("length(p)" -> null, "id(r)" -> null, "type(r)" -> null, "nodes(p)" -> null, "rels(p)" -> null)) === result)
+  }
+
+  @Test def aggregates_in_aggregates_should_fail() {
+    createNode()
+
+    intercept[SyntaxException](parseAndExecute("start a=node(1) return count(count(*))").toList)
+  }
+
+  @Ignore("Exposes #254")
+  @Test def aggregates_inside_normal_functions_should_work() {
+    createNode()
+
+    val result = parseAndExecute("start a=node(1) return length(collect(a))").toList
+    assert(List(Map("length(collect(a))"->1)) === result)
+  }
+
+  @Test def tests_that_filterfunction_works_as_expected() {
+    val a = createNode("foo" -> 1)
+    val b = createNode("foo" -> 3)
+    val r = relate(a, b, "rel", Map("foo" -> 2))
+
+    val result = parseAndExecute("start a=node(1) match p=a-->() return filter(x in p : x.foo = 2)").toList
+
+    val resultingCollection = result.head("filter(x in p : x.foo = 2)").asInstanceOf[Seq[_]].toList
+
+    assert(List(r) == resultingCollection)
   }
 
   @Test def createEngineWithSpecifiedParserVersion() {

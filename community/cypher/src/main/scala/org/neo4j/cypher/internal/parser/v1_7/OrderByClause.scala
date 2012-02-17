@@ -32,7 +32,7 @@ trait OrderByClause extends Base with ReturnClause  {
     case Some(txt) => txt.toLowerCase.startsWith("a")
   }
 
-  def sortItem :Parser[SortItem] = /*(aggregate | */returnItem ~ ascOrDesc ^^ { case returnItem ~ reverse => SortItem(returnItem, reverse)  }
+  def sortItem :Parser[SortItem] = returnItem ~ ascOrDesc ^^ { case returnItem ~ reverse => SortItem(returnItem, reverse)  }
 
   def order: Parser[Sort] = 
     (ignoreCase("order by") ~> comaList(sortItem) ^^ { case items => Sort(items:_*) }

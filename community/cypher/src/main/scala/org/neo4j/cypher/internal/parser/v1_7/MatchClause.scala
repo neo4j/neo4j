@@ -23,7 +23,7 @@ import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commands._
 
-trait MatchClause extends Base with Predicates {
+trait MatchClause extends Base with Expressions {
   val namer = new NodeNamer
 
   def matching: Parser[(Match, NamedPaths)] = 

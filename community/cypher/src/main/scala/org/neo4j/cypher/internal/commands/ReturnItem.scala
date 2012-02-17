@@ -43,5 +43,8 @@ case class ReturnItem(expression: Expression, name: String) extends (Map[String,
 
   def equalsWithoutName(other: ReturnItem): Boolean = this.expression == other.expression
 
-  def createAggregationFunction: AggregationFunction = expression.asInstanceOf[AggregationExpression].createAggregationFunction
+  def createAggregationFunction: AggregationFunction = {
+    val aggregation = expression.filter(_.isInstanceOf[AggregationExpression]).head
+    aggregation.asInstanceOf[AggregationExpression].createAggregationFunction
+  }
 }

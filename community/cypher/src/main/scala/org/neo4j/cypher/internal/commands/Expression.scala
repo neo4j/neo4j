@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.commands
 
-import scala.collection.JavaConverters._
 import java.lang.String
 import org.neo4j.cypher._
 import internal.symbols._
-import org.neo4j.graphdb.{Path, Relationship, NotFoundException, PropertyContainer, Node}
+import org.neo4j.graphdb.{NotFoundException, PropertyContainer}
 import collection.Seq
 
 abstract class Expression extends (Map[String, Any] => Any) {
@@ -40,7 +39,11 @@ abstract class Expression extends (Map[String, Any] => Any) {
 
   def rewrite(f: Expression => Expression): Expression
 
-  def exists(f: Expression => Boolean): Boolean
+  def exists(f: Expression => Boolean) = filter(f).nonEmpty
+
+  def filter(f: Expression => Boolean): Seq[Expression]
+
+  def containsAggregate = exists(_.isInstanceOf[AggregationExpression])
 }
 
 case class Add(a: Expression, b: Expression) extends Expression {
@@ -62,7 +65,10 @@ case class Add(a: Expression, b: Expression) extends Expression {
 
   def rewrite(f: (Expression) => Expression) = f(Add(a.rewrite(f), b.rewrite(f)))
 
-  def exists(f: (Expression) => Boolean) = f(this) || a.exists(f) || b.exists(f)
+  def filter(f: (Expression) => Boolean) = if(f(this))
+    Seq(this) ++ a.filter(f) ++ b.filter(f)
+  else
+    a.filter(f) ++ b.filter(f)
 }
 
 case class Subtract(a: Expression, b: Expression) extends Arithmetics(a, b) {
@@ -75,6 +81,8 @@ case class Subtract(a: Expression, b: Expression) extends Arithmetics(a, b) {
   def numberWithNumber(a: Number, b: Number) = a.doubleValue() - b.doubleValue()
 
   def rewrite(f: (Expression) => Expression) = f(Modulo(a.rewrite(f), b.rewrite(f)))
+  
+  
 }
 
 case class Modulo(a: Expression, b: Expression) extends Arithmetics(a, b) {
@@ -154,7 +162,10 @@ abstract class Arithmetics(left: Expression, right: Expression) extends Expressi
 
   def declareDependencies(extectedType: AnyType) = left.declareDependencies(extectedType) ++ right.declareDependencies(extectedType)
 
-  def exists(f: (Expression) => Boolean) = f(this) || left.exists(f) || right.exists(f)
+  def filter(f: (Expression) => Boolean) = if(f(this))
+    Seq(this) ++ left.filter(f) ++ right.filter(f)
+  else
+    left.filter(f) ++ right.filter(f)
 }
 
 case class Literal(v: Any) extends Expression {
@@ -168,7 +179,10 @@ case class Literal(v: Any) extends Expression {
 
   def rewrite(f: (Expression) => Expression) = f(this)
 
-  def exists(f: (Expression) => Boolean) = f(this)
+  def filter(f: (Expression) => Boolean) = if(f(this))
+    Seq(this)
+  else
+    Seq()
 }
 
 abstract class CastableExpression extends Expression {
@@ -190,7 +204,11 @@ case class Nullable(expression: Expression) extends Expression {
 
   def rewrite(f: (Expression) => Expression) = f(Nullable(expression.rewrite(f)))
 
-  def exists(f: (Expression) => Boolean) = f(this) || expression.exists(f)
+  def filter(f: (Expression) => Boolean) = if(f(this))
+    Seq(this) ++ expression.filter(f)
+  else
+    expression.filter(f)
+
 
   override def toString() = expression.toString() + "?"
 }
@@ -215,10 +233,11 @@ case class Property(entity: String, property: String) extends CastableExpression
 
   def rewrite(f: (Expression) => Expression) = f(this)
 
-  def exists(f: (Expression) => Boolean) = f(this)
+  def filter(f: (Expression) => Boolean) = if(f(this))
+    Seq(this)
+  else
+    Seq()
 }
-
-
 
 case class Entity(entityName: String) extends CastableExpression {
   def apply(m: Map[String, Any]): Any = m.getOrElse(entityName, throw new NotFoundException)
@@ -231,7 +250,10 @@ case class Entity(entityName: String) extends CastableExpression {
 
   def rewrite(f: (Expression) => Expression) = f(this)
 
-  def exists(f: (Expression) => Boolean) = f(this)
+  def filter(f: (Expression) => Boolean) = if(f(this))
+    Seq(this)
+  else
+    Seq()
 }
 
 case class Parameter(parameterName: String) extends CastableExpression {
@@ -248,7 +270,10 @@ case class Parameter(parameterName: String) extends CastableExpression {
 
   def rewrite(f: (Expression) => Expression) = f(this)
 
-  def exists(f: (Expression) => Boolean) = f(this)
+  def filter(f: (Expression) => Boolean) = if(f(this))
+    Seq(this)
+  else
+    Seq()
 }
 
 case class ParameterValue(value: Any)

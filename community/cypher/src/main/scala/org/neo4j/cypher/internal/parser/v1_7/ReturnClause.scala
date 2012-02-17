@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.commands._
 
 
 trait ReturnClause extends Base with Expressions {
-  def column = /*aggregationColumn | */expressionColumn
+  def column = expressionColumn
 
   def returnItem: Parser[ReturnItem] = trap(expression) ^^ {
     case (expression, name) => ReturnItem(expression, name.replace("`", ""))
@@ -37,11 +37,6 @@ trait ReturnClause extends Base with Expressions {
 
   def alias: Parser[Option[String]] = opt(ignoreCase("as") ~> identity)
 
-//  def aggregationColumn: Parser[ReturnItem] = aggregate ~ alias ^^ {
-//    case agg ~ Some(newName) => agg.rename(newName)
-//    case agg ~ None => agg
-//  }
-
   def expressionColumn: Parser[ReturnItem] = returnItem ~ alias ^^ {
     case col ~ Some(newName) => col.rename(newName)
     case col ~ None => col
@@ -49,7 +44,7 @@ trait ReturnClause extends Base with Expressions {
 
   def returnsClause: Parser[(Return, Option[Aggregation])] = ignoreCase("return") ~> opt(ignoreCase("distinct")) ~ comaList(column) ^^ {
     case distinct ~ items => {
-      val (aggregationItems, returnItems) = items.partition(_.expression.exists(_.isInstanceOf[AggregationExpression]))
+      val (aggregationItems, returnItems) = items.partition(_.expression.containsAggregate)
       val columnName = items.map(_.columnName).toList
 
       val none: Option[Aggregation] = distinct match {

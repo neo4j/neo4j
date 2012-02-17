@@ -23,7 +23,7 @@ package org.neo4j.cypher.internal.parser.v1_7
 import org.neo4j.cypher.internal.commands.Predicate
 
 
-trait HavingClause extends Base with Predicates {
+trait HavingClause extends Base with Expressions {
   def having: Parser[Predicate] = ignoreCase("having") ~> predicate
 }
 

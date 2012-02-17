@@ -23,6 +23,7 @@ import collection.Seq
 import org.neo4j.cypher.internal.pipes.aggregation._
 import org.neo4j.cypher.internal.symbols._
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.SyntaxException
 
 abstract class AggregationExpression extends Expression {
   def apply(m: Map[String, Any]) = if(m.contains(name)) m(name) else null
@@ -47,18 +48,27 @@ case class CountStar() extends AggregationExpression {
 
   def createAggregationFunction = new CountStarFunction
 
-  def exists(f: (Expression) => Boolean) = f(this)
+  def filter(f: (Expression) => Boolean) = if (f(this))
+    Seq(this) 
+  else
+    Seq()
 
   override def toString() = "count(*)"
 }
 
 abstract class AggregationWithInnerExpression(inner:Expression) extends AggregationExpression {
+  if(inner.containsAggregate)
+    throw new SyntaxException("Can't use aggregate functions inside of aggregate functions.")
+  
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = inner.dependencies(expectedInnerType)
   def expectedInnerType: AnyType
   
   override def identifier = Identifier("%s(%s)".format(name, inner.identifier.name), typ)
 
-  def exists(f: (Expression) => Boolean) = f(this)||inner.exists(f)
+  def filter(f: (Expression) => Boolean) = if (f(this))
+    Seq(this) ++ inner.filter(f)
+  else
+    inner.filter(f)
 }
 
 case class Distinct(innerAggregator: AggregationExpression, expression: Expression) extends AggregationWithInnerExpression(expression) {

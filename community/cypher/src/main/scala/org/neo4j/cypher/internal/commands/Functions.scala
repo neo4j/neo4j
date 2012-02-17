@@ -53,7 +53,10 @@ case class ExtractFunction(iterable: Expression, id: String, expression: Express
 
   def rewrite(f: (Expression) => Expression) = f(ExtractFunction(iterable.rewrite(f), id, expression.rewrite(f)))
 
-  def exists(f: (Expression) => Boolean) = f(this) || iterable.exists(f) || expression.exists(f)
+  def filter(f: (Expression) => Boolean) = if (f(this))
+    Seq(this) ++ iterable.filter(f) ++ expression.filter(f)
+  else
+    iterable.filter(f) ++ expression.filter(f)
 }
 
 case class RelationshipFunction(path: Expression) extends NullInNullOutExpression(path) {
@@ -68,7 +71,10 @@ case class RelationshipFunction(path: Expression) extends NullInNullOutExpressio
 
   def rewrite(f: (Expression) => Expression) = f(RelationshipFunction(path.rewrite(f)))
 
-  def exists(f: (Expression) => Boolean) = f(this) || path.exists(f)
+  def filter(f: (Expression) => Boolean) = if (f(this))
+    Seq(this) ++ path.filter(f)
+  else
+    path.filter(f)
 }
 
 case class CoalesceFunction(expressions: Expression*) extends Expression {
@@ -77,7 +83,7 @@ case class CoalesceFunction(expressions: Expression*) extends Expression {
     case Some(x) => x
   }
 
-  def innerExpectedType: Option[AnyType] = null
+  def innerExpectedType: Option[AnyType] = None
 
   def argumentsString: String = expressions.map(_.identifier.name).mkString(",")
 
@@ -90,7 +96,10 @@ case class CoalesceFunction(expressions: Expression*) extends Expression {
 
   def rewrite(f: (Expression) => Expression) = f(CoalesceFunction(expressions.map(e => e.rewrite(f)): _*))
 
-  def exists(f: (Expression) => Boolean) = f(this) || expressions.exists(_.exists(f))
+  def filter(f: (Expression) => Boolean) = if (f(this))
+    Seq(this) ++ expressions.flatMap(_.filter(f))
+  else
+    expressions.flatMap(_.filter(f))
 }
 
 case class RelationshipTypeFunction(relationship: Expression) extends NullInNullOutExpression(relationship) {
@@ -104,7 +113,10 @@ case class RelationshipTypeFunction(relationship: Expression) extends NullInNull
 
   def rewrite(f: (Expression) => Expression) = f(RelationshipTypeFunction(relationship.rewrite(f)))
 
-  def exists(f: (Expression) => Boolean) = f(this) || relationship.exists(f)
+  def filter(f: (Expression) => Boolean) = if (f(this))
+    Seq(this) ++ relationship.filter(f)
+  else
+    relationship.filter(f)
 }
 
 case class LengthFunction(inner: Expression) extends NullInNullOutExpression(inner) {
@@ -124,7 +136,10 @@ case class LengthFunction(inner: Expression) extends NullInNullOutExpression(inn
 
   def rewrite(f: (Expression) => Expression) = f(LengthFunction(inner.rewrite(f)))
 
-  def exists(f: (Expression) => Boolean) = f(this) || inner.exists(f)
+  def filter(f: (Expression) => Boolean) = if (f(this))
+    Seq(this) ++ inner.filter(f)
+  else
+    inner.filter(f)
 }
 
 case class IdFunction(inner: Expression) extends NullInNullOutExpression(inner) {
@@ -140,7 +155,75 @@ case class IdFunction(inner: Expression) extends NullInNullOutExpression(inner) 
 
   def rewrite(f: (Expression) => Expression) = f(IdFunction(inner.rewrite(f)))
 
-  def exists(f: (Expression) => Boolean) = f(this) || inner.exists(f)
+  def filter(f: (Expression) => Boolean) = if (f(this))
+    Seq(this) ++ inner.filter(f)
+  else
+    inner.filter(f)
+}
+
+case class HeadFunction(collection: Expression) extends NullInNullOutExpression(collection) {
+  def inner_apply(value: Any, m: Map[String, Any]) = value match {
+    case path: Path => path.startNode()
+    case iter: Traversable[_] => iter.head
+    case array: Array[_] => array.head
+    case x => throw new IterableRequiredException(collection)
+  }
+
+  private def myType = collection.identifier.typ match {
+    case x: IterableType => x.iteratedType
+    case _ => ScalarType()
+  }
+
+  def identifier = Identifier("head(" + collection.identifier.name + ")", myType)
+
+  def declareDependencies(extectedType: AnyType): Seq[Identifier] = collection.dependencies(AnyIterableType())
+
+  def rewrite(f: (Expression) => Expression) = f(HeadFunction(collection.rewrite(f)))
+
+  def filter(f: (Expression) => Boolean) = if (f(this))
+    Seq(this) ++ collection.filter(f)
+  else
+    collection.filter(f)
+}
+
+case class LastFunction(collection: Expression) extends NullInNullOutExpression(collection) {
+  def inner_apply(value: Any, m: Map[String, Any]) = value match {
+    case path: Path => path.endNode()
+    case iter: Traversable[_] => iter.last
+    case array: Array[_] => array.last
+    case x => throw new IterableRequiredException(collection)
+  }
+
+  def identifier = Identifier("last(" + collection.identifier.name + ")", ScalarType())
+
+  def declareDependencies(extectedType: AnyType): Seq[Identifier] = collection.dependencies(AnyIterableType())
+
+  def rewrite(f: (Expression) => Expression) = f(HeadFunction(collection.rewrite(f)))
+
+  def filter(f: (Expression) => Boolean) = if (f(this))
+    Seq(this) ++ collection.filter(f)
+  else
+    collection.filter(f)
+}
+
+case class TailFunction(collection: Expression) extends NullInNullOutExpression(collection) {
+  def inner_apply(value: Any, m: Map[String, Any]) = value match {
+    case path: Path => path.iterator().asScala.toSeq.tail
+    case iter: Traversable[_] => iter.tail
+    case array: Array[_] => array.tail
+    case x => throw new IterableRequiredException(collection)
+  }
+
+  def identifier = Identifier("tail(" + collection.identifier.name + ")", collection.identifier.typ)
+
+  def declareDependencies(extectedType: AnyType): Seq[Identifier] = collection.dependencies(AnyIterableType())
+
+  def rewrite(f: (Expression) => Expression) = f(HeadFunction(collection.rewrite(f)))
+
+  def filter(f: (Expression) => Boolean) = if (f(this))
+    Seq(this) ++ collection.filter(f)
+  else
+    collection.filter(f)
 }
 
 case class NodesFunction(path: Expression) extends NullInNullOutExpression(path) {
@@ -155,5 +238,38 @@ case class NodesFunction(path: Expression) extends NullInNullOutExpression(path)
 
   def rewrite(f: (Expression) => Expression) = f(NodesFunction(path.rewrite(f)))
 
-  def exists(f: (Expression) => Boolean) = f(path) || path.exists(f)
+  def filter(f: (Expression) => Boolean) = if (f(this))
+    Seq(this) ++ path.filter(f)
+  else
+    path.filter(f)
+}
+
+case class FilterFunction(collection: Expression, symbol: String, predicate: Predicate) extends NullInNullOutExpression(collection) {
+  def inner_apply(value: Any, m: Map[String, Any]) = {
+    val seq = value match {
+      case path: Path => path.iterator().asScala.toSeq
+      case iter: Traversable[_] => iter.toSeq
+      case array: Array[_] => array.toSeq
+      case x => throw new IterableRequiredException(collection)
+    }
+
+    val result = seq.filter {
+      case element => predicate.isMatch(m + (symbol -> element))
+    }
+
+    result
+
+  }
+
+  def identifier = Identifier("filter(%s in %s : %s)".format(symbol, collection, predicate), collection.identifier.typ)
+
+  def declareDependencies(extectedType: AnyType): Seq[Identifier] = (collection.dependencies(PathType()) ++ predicate.dependencies).filterNot(_.name == symbol)
+
+  //TODO: Uh oh. Predicates don't do rewriting. Revisit while making predicates full on expressions
+  def rewrite(f: (Expression) => Expression) = f(FilterFunction(collection.rewrite(f), symbol, predicate))
+
+  def filter(f: (Expression) => Boolean) = if (f(this))
+    Seq(this) ++ collection.filter(f)
+  else
+    collection.filter(f)
 }

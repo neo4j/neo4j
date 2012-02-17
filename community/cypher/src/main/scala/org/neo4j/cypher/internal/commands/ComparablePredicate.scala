@@ -50,7 +50,12 @@ abstract sealed class ComparablePredicate(a: Expression, b: Expression) extends 
 }
 
 case class Equals(a: Expression, b: Expression) extends Predicate with Comparer {
-  def isMatch(m: Map[String, Any]): Boolean = a(m) == b(m)
+  def isMatch(m: Map[String, Any]): Boolean = {
+    val x = a(m)
+    val z = b(m)
+    val r = x == z
+    r
+  }
 
   def atoms = Seq(this)
 
