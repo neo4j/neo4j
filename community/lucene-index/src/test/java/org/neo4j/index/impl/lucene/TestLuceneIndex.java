@@ -1393,7 +1393,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         index.add( node, "name", "Thomas Anderson" );
         assertContains( index.query( "name", "\"Thomas Anderson\"" ), node );
         assertContains( index.query( "name", "\"thoMas ANDerson\"" ), node );
-        // START SNIPPET: exact-case-insensitive
+        // END SNIPPET: exact-case-insensitive
         restartTx();
         assertContains( index.query( "name", "\"Thomas Anderson\"" ), node );
         assertContains( index.query( "name", "\"thoMas ANDerson\"" ), node );
