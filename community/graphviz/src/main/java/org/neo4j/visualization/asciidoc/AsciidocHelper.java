@@ -94,7 +94,8 @@ public class AsciidocHelper
         {
             String upperKeyword = keyword.toUpperCase();
             result = result.
-                    replace(keyword, upperKeyword).
+                    replace(keyword+" ", upperKeyword+" ").
+                    replace(keyword+" ", upperKeyword+" ").
                     replace(" " + upperKeyword + " ", "\n" + upperKeyword + " ");
         }
 

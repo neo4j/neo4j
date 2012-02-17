@@ -88,9 +88,11 @@ The structure follows a couple of rules:
 - The querying is done in a path-range fashion. That is, the start- and end path from the indexing root to the start and end leafs in the tree are calculated
 - Using Cypher, the queries following different strategies can be expressed as path sections and put together using one single query.
 
+The graph below depicts a structure with 3 Events being attached to an index structure at different leafs.
+
 :leveloffset: 2
 
-include::cypher-pathtree-graph.txt[]
+include::path-tree-layout.txt[]
 
 include::return-zero-range.txt[]
 

@@ -28,19 +28,19 @@ class PathTreeTest extends DocumentingTestBase {
   def graphDescription = List(
             "Root 2010 Y10", 
             "Root 2011 Y11", 
-            "Y10 NEXT Y11",
             "Y10 12 Y10M12", 
-            "Y11 12 Y11M12", 
-            "Y10M12 NEXT Y11M12",
-            "Y10M12 25 Y10M12D25", 
-            "Y11M12 25 Y11M12D25", 
-            "Y11M12 30 Y11M12D30", 
-            "Y10M12D25 NEXT Y11M12D25",
-            "Y11M12D25 NEXT Y11M12D30",
-            "Y10M12D25 VALUE Event1",
-            "Y10M12D25 VALUE Event2", 
-            "Y11M12D25 VALUE Event2", 
-            "Y11M12D30 VALUE Event3")
+            "Y11 01 Y11M01", 
+            "Y10M12 31 Y10M12D31", 
+            "Y11M01 01 Y11M01D01", 
+            "Y11M01 02 Y11M11D02", 
+            "Y11M01 03 Y11M12D03", 
+            "Y10M12D31 NEXT Y11M01D01",
+            "Y11M01D01 NEXT Y11M11D02",
+            "Y11M11D02 NEXT Y11M12D03",
+            "Y10M12D31 VALUE Event1",
+            "Y10M12D31 VALUE Event2", 
+            "Y11M01D01 VALUE Event2", 
+            "Y11M12D03 VALUE Event3")
 
   def section = "cookbook"
 
@@ -48,17 +48,21 @@ class PathTreeTest extends DocumentingTestBase {
     testQuery(
       title = "Return the full range",
       text = """In this case, the range goes from the first to the last leaf of the index tree. Here, 
-        +startPath+ and +endPath+ span up the range, +valuePath+ is then connecting the leafs, and the values can
-         be read from teh +middle+ node.""",
+      +startPath+ (color +Greenyellow+) and +endPath+  (color +Green+) span up the range, +valuePath+  (color +Blue+) is then connecting the leafs, and the values canan
+         be read from the +middle+ node, hanging off the +values+ (color +Red+) path.
+        
+include::path-tree-layout-full-range.txt[]
+
+        """,
       queryText = "START root=node:node_auto_index(name = 'Root') " +
                 "MATCH " +
-                "startPath=root-[:`2010`]->()-[:`12`]->()-[:`25`]->startLeaf, " +
-                "endPath=root-[`:2011`]->()-[:`12`]->()-[:`30`]->endLeaf, " +
+                "startPath=root-[:`2010`]->()-[:`12`]->()-[:`31`]->startLeaf, " +
+                "endPath=root-[`:2011`]->()-[:`01`]->()-[:`03`]->endLeaf, " +
                 "valuePath=startLeaf-[:NEXT*0..]->middle-[:NEXT*0..]->endLeaf, " +
-                "middle-[:VALUE]->event " +
+                "values=middle-[:VALUE]->event " +
                 "RETURN event.name " +
                 "ORDER BY event.name ASC",
-      returns = "Returning all events between 2010-12-25 and 2011-12-30, in this case all events.",
+      returns = "Returning all events between 2010-12-31 and 2011-01-03, in this case all events.",
       (p) => assertEquals(List(Map("event.name" -> "Event1"),
           Map("event.name" -> "Event2"),
           Map("event.name" -> "Event2"),
@@ -68,15 +72,19 @@ class PathTreeTest extends DocumentingTestBase {
   @Test def singleDate() {
     testQuery(
       title = "Return zero range",
-      text = """Here, only the events indexed with on the same leaf (2010-12-25) are returned.
-        The query only needs one path segment (+rootPath+) through the index.""",
+      text = """Here, only the events indexed under one leaf (2010-12-31) are returned.
+        The query only needs one path segment +rootPath+  (color +Green+) through the index.
+                
+include::path-tree-layout-zero-range.txt[]
+
+        """,
       queryText = "START root=node:node_auto_index(name = 'Root') " +
                 "MATCH " +
-                "rootPath=root-[:`2010`]->()-[:`12`]->()-[:`25`]->leaf, " +
+                "rootPath=root-[:`2010`]->()-[:`12`]->()-[:`31`]->leaf, " +
                 "leaf-[:VALUE]->event " +
                 "RETURN event.name " +
                 "ORDER BY event.name ASC",
-      returns = "Returning all events on the date 2010-12-25, in this case +Event1+ and +Event2+",
+      returns = "Returning all events on the date 2010-12-31, in this case +Event1+ and +Event2+",
       (p) => assertEquals(List(Map("event.name" -> "Event1"),
           Map("event.name" -> "Event2")
           ),p.toList))
@@ -86,18 +94,22 @@ class PathTreeTest extends DocumentingTestBase {
     testQuery(
       title = "Return partly shared path ranges",
       text = """Here, the query range results in partly shared paths when querying the index,
-        making the introduction of and common path segment +commonPath+ necessary, before spanning up +startPath+ and 
-        +endPath+. After that, +valuePath+ connects the leafs and the indexed values are returned off +middle+.""",
+making the introduction of and common path segment +commonPath+ (color +Black+) necessary, before spanning up +startPath+ (color +Greenyellow+) and 
++endPath+ (color +Darkgreen+) . After that, +valuePath+ (color +Blue+) connects the leafs and the indexed values are returned off +values+ (color +Red+)  path.
+        
+include::path-tree-layout-shared-root-path.txt[]
+        
+        """,
       queryText = "START root=node:node_auto_index(name = 'Root') " +
                 "MATCH " +
-                "commonPath=root-[:`2011`]->()-[:`12`]->commonRootEnd, " +
-                "startPath=commonRootEnd-[:`25`]->startLeaf, " +
-                "endPath=commonRootEnd-[:`30`]->endLeaf, " +
+                "commonPath=root-[:`2011`]->()-[:`01`]->commonRootEnd, " +
+                "startPath=commonRootEnd-[:`01`]->startLeaf, " +
+                "endPath=commonRootEnd-[:`03`]->endLeaf, " +
                 "valuePath=startLeaf-[:NEXT*0..]->middle-[:NEXT*0..]->endLeaf, " +
-                "middle-[:VALUE]->event " +
+                "values=middle-[:VALUE]->event " +
                 "RETURN event.name " +
                 "ORDER BY event.name ASC",
-      returns = "Returning all events between 2011-12-25 and 2011-12-30, in this case +Event2+ and +Event3+.",
+      returns = "Returning all events between 2011-01-01 and 2011-01-03, in this case +Event2+ and +Event3+.",
       (p) => assertEquals(List(
           Map("event.name" -> "Event2"),
           Map("event.name" -> "Event3")
