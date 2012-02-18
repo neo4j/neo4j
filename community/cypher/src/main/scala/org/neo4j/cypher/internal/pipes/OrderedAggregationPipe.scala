@@ -37,7 +37,7 @@ class OrderedAggregationPipe(source: Pipe, val returnItems: Seq[ReturnItem], agg
   def dependencies: Seq[Identifier] = returnItems.flatMap(_.dependencies) ++ aggregations.flatMap(_.dependencies(AnyType()))
 
   def createSymbols() = {
-    val keySymbols = source.symbols.filter(returnItems.map(_.columnName): _*)
+    val keySymbols = source.symbols.filter(returnItems.map(_.expressionName): _*)
     val aggregateIdentifiers = aggregations.map(_.identifier)
 
     keySymbols.add(aggregateIdentifiers: _*)

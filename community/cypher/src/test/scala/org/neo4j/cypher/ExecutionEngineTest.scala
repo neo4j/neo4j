@@ -1738,6 +1738,11 @@ RETURN x0.name?
 
     assert(List(r) == resultingCollection)
   }
+  
+  @Test def expose_problem_with_aliasing() {
+    createNode("nisse")
+    parseAndExecute("start n=node(1) return n.name, count(*) as foo order by n.name")
+  } 
 
   @Test def createEngineWithSpecifiedParserVersion() {
     val db = new ImpermanentGraphDatabase(Map[String, String]("cypher_parser_version" -> "1.5").asJava)

@@ -23,32 +23,32 @@ import commands._
 
 
 /*
-This rewriter rewrites so that ordering
+This rewriter rewrites expressions that come after the RETURN clause,
+so the user can either use the raw expression, or the alias
+
+These clauses are HAVING and ORDER BY right now.
  */
 object ReattachAliasedExpressions {
   def apply(q: Query): Query = {
-    if (q.sort.isEmpty)
-      q
-    else {
-      val newSort = Some(Sort(q.sort.get.sortItems.map(rewrite(q.returns.returnItems)):_*))
-      Query(q.returns, q.start, q.matching, q.where, q.aggregation, newSort, q.slice, q.namedPaths, q.having, q.queryString)
+      val newSort = q.sort.map( oldSort => Sort(oldSort.sortItems.map(rewrite(q.returns.returnItems)):_*) )
+      val newHaving = q.having.map(_.rewrite(expressionRewriter(q.returns.returnItems)))
+
+      Query(q.returns, q.start, q.matching, q.where, q.aggregation, newSort, q.slice, q.namedPaths, newHaving, q.queryString)
     }
-  }
 
   private def rewrite(returnItems: Seq[ReturnItem])(in: SortItem): SortItem = {
-    val expression = in.expression.rewrite {
-      case e:Entity => {
-        val found = returnItems.find(_.columnName == e.entityName)
-        
-        found match {
-          case None => e
-          case Some(returnItem) => returnItem.expression
-        }
+    SortItem(in.expression.rewrite(expressionRewriter(returnItems)), in.ascending)
+  }
 
+  private def expressionRewriter(returnItems: Seq[ReturnItem])(expression:Expression):Expression = expression match {
+    case e:Entity => {
+      val found = returnItems.find(_.columnName == e.entityName)
+
+      found match {
+        case None => e
+        case Some(returnItem) => returnItem.expression
       }
-      case somethingElse => somethingElse
     }
-
-    SortItem(expression, in.ascending)
+    case somethingElse => somethingElse
   }
 }

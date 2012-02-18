@@ -48,7 +48,8 @@ case class Query(returns: Return,
         aggregation == other.aggregation &&
         sort == other.sort &&
         slice == other.slice &&
-        namedPaths == other.namedPaths
+        namedPaths == other.namedPaths &&
+        having == other.having
     }
 }
 

@@ -43,7 +43,7 @@ class ReattachAliasedExpressionsTest extends Assertions {
 
   @Test
   def rewriteHavingAfterAliasedColumn() {
-    // start a=node(1) return 'bar' as foo having foo = 'foo'
+    // start a=node(1) return count(*) as foo having foo = 'foo'
 
     val q = Query.
       start(NodeById("a", 1)).
@@ -55,7 +55,8 @@ class ReattachAliasedExpressionsTest extends Assertions {
       having(Equals(Literal("bar"), Literal("foo"))).
       returns(ReturnItem(Literal("bar"), "foo"))
 
-    assert(ReattachAliasedExpressions(q) === expected)
+    val result = ReattachAliasedExpressions(q)
+    assert(result === expected)
   }
 
   @Test

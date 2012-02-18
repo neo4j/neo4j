@@ -25,6 +25,7 @@ import scala.collection.JavaConverters._
 import org.neo4j.graphdb.{DynamicRelationshipType, Node, Direction, PropertyContainer}
 import org.neo4j.cypher.internal.pipes.Dependant
 import org.neo4j.cypher.internal.symbols._
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 abstract class Predicate extends Dependant {
   def ++(other: Predicate): Predicate = And(this, other)
@@ -36,6 +37,8 @@ abstract class Predicate extends Dependant {
   def atoms: Seq[Predicate]
 
   def exists(f:Expression=>Boolean):Boolean
+  
+  def rewrite(f:Expression=>Expression):Predicate
 
   def containsIsNull:Boolean
 }
@@ -61,6 +64,8 @@ case class NullablePredicate(inner: Predicate, exp: Seq[(Expression, Boolean)]) 
   def exists(f: (Expression) => Boolean) = inner.exists(f)
 
   def containsIsNull = inner.containsIsNull
+
+  def rewrite(f: (Expression) => Expression) = NullablePredicate(inner.rewrite(f), exp.map { case (e, ascDesc) => (e.rewrite(f), ascDesc)}  )
 }
 
 
@@ -76,6 +81,8 @@ case class And(a: Predicate, b: Predicate) extends Predicate {
   def exists(f: (Expression) => Boolean) = a.exists(f) || b.exists(f)
 
   def containsIsNull = a.containsIsNull||b.containsIsNull
+
+  def rewrite(f: (Expression) => Expression) = And(a.rewrite(f), b.rewrite(f))
 }
 
 case class Or(a: Predicate, b: Predicate) extends Predicate {
@@ -89,6 +96,8 @@ case class Or(a: Predicate, b: Predicate) extends Predicate {
 
   def exists(f: (Expression) => Boolean) = a.exists(f) || b.exists(f)
   def containsIsNull = a.containsIsNull||b.containsIsNull
+
+  def rewrite(f: (Expression) => Expression) = Or(a.rewrite(f), b.rewrite(f))
 }
 
 case class Not(a: Predicate) extends Predicate {
@@ -102,6 +111,8 @@ case class Not(a: Predicate) extends Predicate {
 
   def exists(f: (Expression) => Boolean) = a.exists(f)
   def containsIsNull = a.containsIsNull
+
+  def rewrite(f: (Expression) => Expression) = Not(a.rewrite(f))
 }
 
 case class HasRelationshipTo(from: Expression, to: Expression, dir: Direction, relType: Option[String]) extends Predicate {
@@ -121,6 +132,8 @@ case class HasRelationshipTo(from: Expression, to: Expression, dir: Direction, r
   def dependencies: Seq[Identifier] = from.dependencies(NodeType()) ++ to.dependencies(NodeType())
 
   def containsIsNull = false
+
+  def rewrite(f: (Expression) => Expression) = HasRelationshipTo(from.rewrite(f), to.rewrite(f), dir, relType)
 }
 
 case class HasRelationship(from: Expression, dir: Direction, relType: Option[String]) extends Predicate {
@@ -139,6 +152,8 @@ case class HasRelationship(from: Expression, dir: Direction, relType: Option[Str
   def dependencies: Seq[Identifier] = from.dependencies(NodeType())
 
   def containsIsNull = false
+
+  def rewrite(f: (Expression) => Expression) = HasRelationship(from.rewrite(f), dir, relType)
 }
 
 case class IsNull(expression: Expression) extends Predicate {
@@ -153,6 +168,8 @@ case class IsNull(expression: Expression) extends Predicate {
   def exists(f: (Expression) => Boolean) = expression.exists(f)
 
   def containsIsNull = true
+
+  def rewrite(f: (Expression) => Expression) = IsNull(expression.rewrite(f))
 }
 
 case class True() extends Predicate {
@@ -167,6 +184,8 @@ case class True() extends Predicate {
   def exists(f: (Expression) => Boolean) = false
 
   def containsIsNull = false
+
+  def rewrite(f: (Expression) => Expression) = True()
 }
 
 case class Has(property: Property) extends Predicate {
@@ -186,6 +205,11 @@ case class Has(property: Property) extends Predicate {
   def containsIsNull = false
 
   def exists(f: (Expression) => Boolean) = false
+
+  def rewrite(f: (Expression) => Expression) = property.rewrite(f) match {
+    case prop:Property => Has(prop)
+    case _ => throw new ThisShouldNotHappenError("Andres", "Something went wrong rewriting a Has(Property)")
+  } 
 }
 
 case class  LiteralRegularExpression(a: Expression, regex: Literal) extends Predicate {
@@ -200,6 +224,11 @@ case class  LiteralRegularExpression(a: Expression, regex: Literal) extends Pred
   def dependencies = a.dependencies(AnyType())
 
   def containsIsNull = false
+
+  def rewrite(f: (Expression) => Expression) = regex.rewrite(f) match {
+    case lit:Literal => LiteralRegularExpression(a.rewrite(f), lit)
+    case other => RegularExpression(a.rewrite(f), other)
+  }
 }
 
 case class RegularExpression(a: Expression, regex: Expression) extends Predicate {
@@ -219,4 +248,9 @@ case class RegularExpression(a: Expression, regex: Expression) extends Predicate
   def exists(f: (Expression) => Boolean) = a.exists(f)||regex.exists(f)
 
   def containsIsNull = false
+
+  def rewrite(f: (Expression) => Expression) = regex.rewrite(f) match {
+    case lit:Literal => LiteralRegularExpression(a.rewrite(f), lit)
+    case other => RegularExpression(a.rewrite(f), other)
+  }
 }
