@@ -33,7 +33,7 @@ class EagerAggregationPipeTest extends JUnitSuite {
     val source = new FakePipe(List(), createSymbolTableFor("name"))
 
     val returnItems = List(ReturnItem(Entity("name"), "name"))
-    val grouping = List(ReturnItem(CountStar(), "count(*)"))
+    val grouping = List(CountStar())
     val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)
 
     assertEquals(
@@ -45,7 +45,7 @@ class EagerAggregationPipeTest extends JUnitSuite {
     val source = new FakePipe(List(), createSymbolTableFor("extractReturnItems"))
 
     val returnItems = List(ReturnItem(Entity("name"), "name"))
-    val grouping = List(ReturnItem(Count(Entity("none-existing-identifier")), "x"))
+    val grouping = List(Count(Entity("none-existing-identifier")))
     new EagerAggregationPipe(source, returnItems, grouping)
   }
 
@@ -57,7 +57,7 @@ class EagerAggregationPipeTest extends JUnitSuite {
       Map("name" -> "Michael", "age" -> 31)), createSymbolTableFor("name"))
 
     val returnItems = List(ReturnItem(Entity("name"), "name"))
-    val grouping = List(ReturnItem(CountStar(), "count(*)"))
+    val grouping = List(CountStar())
     val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)
 
     assertThat(aggregationPipe.createResults(Map()).toIterable.asJava, hasItems(
@@ -74,7 +74,7 @@ class EagerAggregationPipeTest extends JUnitSuite {
       Map("name" -> "Michael", "age" -> 31)), createSymbolTableFor("name"))
 
     val returnItems = List()
-    val grouping = List(ReturnItem(Count((Entity("name"))), "count(name)"))
+    val grouping = List(Count(Entity("name")))
     val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)
 
     assertEquals(List(Map("count(name)" -> 3)), aggregationPipe.createResults(Map()).toList)

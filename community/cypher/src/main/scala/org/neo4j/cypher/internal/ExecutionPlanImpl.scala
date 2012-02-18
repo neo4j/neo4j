@@ -67,25 +67,23 @@ class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends Execu
           context.pipe = new FilterPipe(context.pipe, context.predicates.reduceLeft(_ ++ _))
         }
 
-        val allReturnItems = extractReturnItems(returns, aggregation)
-
-        context.pipe = new ExtractPipe(context.pipe, allReturnItems)
+        context.pipe = new ExtractPipe(context.pipe, returns.returnItems.map(_.expression))
 
         (aggregation, sort) match {
           case (Some(agg), Some(sorting)) => {
-            val sortColumns = sorting.sortItems.map(_.returnItem.columnName)
-            val keyColumns = returns.returnItems.map(_.columnName)
+            val sortColumns = sorting.sortItems.map(_.expression)
+            val keyColumns = returns.returnItems.map(_.expression)
 
             if (canUseOrderedAggregation(sortColumns, keyColumns)) {
 
               val keyColumnsNotAlreadySorted = returns.
                 returnItems.
                 filterNot(ri => sortColumns.contains(ri.columnName))
-                .map(x => SortItem(x, true))
+                .map(x => SortItem(x.expression, true))
 
               val newSort = Some(Sort(sorting.sortItems ++ keyColumnsNotAlreadySorted: _*))
 
-              createSortPipe(newSort, allReturnItems, context)
+              createSortPipe(newSort, returns.returnItems, context)
               context.pipe = new OrderedAggregationPipe(context.pipe, returns.returnItems, agg.aggregationItems)
               sorted = true
               aggregated = true
@@ -106,7 +104,7 @@ class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends Execu
         context = addHavingFilter(context, having)
 
         if (!sorted) {
-          createSortPipe(sort, allReturnItems, context)
+          createSortPipe(sort, returns.returnItems, context)
         }
 
         slice match {
@@ -114,9 +112,7 @@ class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends Execu
           case Some(x) => context.pipe = new SlicePipe(context.pipe, x.from, x.limit)
         }
 
-        val returnItems = returns.returnItems ++ aggregation.getOrElse(new Aggregation()).aggregationItems
-
-        val result = new ColumnFilterPipe(context.pipe, returnItems)
+        val result = new ColumnFilterPipe(context.pipe, returns.returnItems)
 
         val func = (params: Map[String, Any]) => {
           val start = System.currentTimeMillis()
@@ -145,21 +141,13 @@ class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends Execu
       case None =>
       case Some(s) => {
 
-        val sortItems = s.sortItems.map(_.returnItem.concreteReturnItem).filterNot(allReturnItems contains)
+        val sortItems = s.sortItems.map(_.expression).filterNot(allReturnItems.map(_.expression) contains)
         if (sortItems.nonEmpty) {
           context.pipe = new ExtractPipe(context.pipe, sortItems)
         }
         context.pipe = new SortPipe(context.pipe, s.sortItems.toList)
       }
     }
-  }
-
-  private def extractReturnItems(returns: Return, aggregation: Option[Aggregation]): Seq[ReturnItem] = {
-    val aggregation1 = aggregation.getOrElse(new Aggregation())
-
-    val aggregationItems = aggregation1.aggregationItems.map(_.concreteReturnItem)
-
-    returns.returnItems ++ aggregationItems
   }
 
   private def addFilters(context: CurrentContext): CurrentContext = {
@@ -272,7 +260,7 @@ class ExecutionPlanImpl(query: Query, graph: GraphDatabaseService) extends Execu
     case RelationshipById(varName, id) => new RelationshipStartPipe(lastPipe, varName, m => makeNodes[Relationship](id(m), varName, graph.getRelationshipById))
   }
 
-  private def canUseOrderedAggregation(sortColumns: Seq[String], keyColumns: Seq[String]): Boolean = keyColumns.take(sortColumns.size) == sortColumns
+  private def canUseOrderedAggregation(sortColumns: Seq[Expression], keyColumns: Seq[Expression]): Boolean = keyColumns.take(sortColumns.size) == sortColumns
 
   private def makeNodes[T](data: Any, name: String, getElement: Long => T): Seq[T] = {
     def castElement(x: Any): T = x match {

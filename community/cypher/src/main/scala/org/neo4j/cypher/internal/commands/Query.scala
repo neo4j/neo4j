@@ -60,7 +60,7 @@ case class Match(patterns: Pattern*)
 
 case class NamedPaths(paths: NamedPath*)
 
-case class Aggregation(aggregationItems: ReturnItem*)
+case class Aggregation(aggregationItems: AggregationExpression*)
 
 case class Sort(sortItems: SortItem*)
 

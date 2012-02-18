@@ -36,7 +36,7 @@ class QueryBuilder(startItems: Seq[StartItem]) {
 
   def having(predicate: Predicate): QueryBuilder = store(() => having = Some(predicate))
 
-  def aggregation(aggregationItems: ReturnItem*): QueryBuilder =
+  def aggregation(aggregationItems: AggregationExpression*): QueryBuilder =
     store(() => aggregation = Some(Aggregation(aggregationItems: _*)))
 
   def orderBy(sortItems: SortItem*): QueryBuilder = store(() => orderBy = Some(Sort(sortItems: _*)))

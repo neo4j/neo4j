@@ -20,30 +20,35 @@
 package org.neo4j.cypher.internal
 
 import commands._
-import org.scalatest.Assertions
-import org.junit.Test
 
-class OrderByRewriterTest extends Assertions {
 
-  @Test
-  def rewriteOrderBy() {
-    // start a=node(0) return a, count(*) order by COUNT(*)
+/*
+This rewriter rewrites so that ordering
+ */
+object ReattachAliasedExpressions {
+  def apply(q: Query): Query = {
+    if (q.sort.isEmpty)
+      q
+    else {
+      val newSort = Some(Sort(q.sort.get.sortItems.map(rewrite(q.returns.returnItems)):_*))
+      Query(q.returns, q.start, q.matching, q.where, q.aggregation, newSort, q.slice, q.namedPaths, q.having, q.queryString)
+    }
+  }
 
-    val q = Query.
-      start(NodeById("a", 1)).
-      aggregation(ReturnItem(CountStar(), "count(*)")).
-      columns("count(*)").
-      orderBy(SortItem(ReturnItem(CountStar(), "apa"), true)).
-      returns()
+  private def rewrite(returnItems: Seq[ReturnItem])(in: SortItem): SortItem = {
+    val expression = in.expression.rewrite {
+      case e:Entity => {
+        val found = returnItems.find(_.columnName == e.entityName)
+        
+        found match {
+          case None => e
+          case Some(returnItem) => returnItem.expression
+        }
 
-    val expected = Query.
-      start(NodeById("a", 1)).
-      aggregation(ReturnItem(CountStar(), "count(*)")).
-      columns("count(*)").
-      orderBy(SortItem(ReturnItem(CountStar(), "count(*)"), true)).
-      returns()
+      }
+      case somethingElse => somethingElse
+    }
 
-    assert(OrderByRewriter(q) === expected)
-
+    SortItem(expression, in.ascending)
   }
 }

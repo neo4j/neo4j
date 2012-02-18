@@ -35,7 +35,7 @@ class OrderedAggregationPipeTest extends JUnitSuite with Assertions {
     val source = new FakePipe(List(), createSymbolTableFor("name"))
 
     val returnItems = List(ReturnItem(Entity("name"), "name"))
-    val grouping = List(ReturnItem(CountStar(), "count(*)"))
+    val grouping = List(CountStar())
     val aggregationPipe = new OrderedAggregationPipe(source, returnItems, grouping)
 
     assertEquals(
@@ -47,7 +47,7 @@ class OrderedAggregationPipeTest extends JUnitSuite with Assertions {
     val source = new FakePipe(List(), createSymbolTableFor("extractReturnItems"))
 
     val returnItems = List(ReturnItem(Entity("name"), "name"))
-    val grouping = List(ReturnItem(Count(Entity("none-existing-identifier")), "x"))
+    val grouping = List(Count(Entity("none-existing-identifier")))
     intercept[SyntaxException](new OrderedAggregationPipe(source, returnItems, grouping))
   }
 
@@ -60,7 +60,7 @@ class OrderedAggregationPipeTest extends JUnitSuite with Assertions {
     ), createSymbolTableFor("name"))
 
     val returnItems = List(ReturnItem(Entity("name"), "name"))
-    val grouping = List(ReturnItem(CountStar(), "count(*)"))
+    val grouping = List(CountStar())
     val aggregationPipe = new OrderedAggregationPipe(source, returnItems, grouping)
 
     assertThat(aggregationPipe.createResults(Map()).toIterable.asJava, hasItems(
@@ -76,7 +76,7 @@ class OrderedAggregationPipeTest extends JUnitSuite with Assertions {
       Map("name" -> "Peter", "age" -> 38)), createSymbolTableFor("name", "age"))
 
     val returnItems = List(ReturnItem(Entity("name"), "name"))
-    val grouping = List(ReturnItem(Count((Entity("age"))), "count(age)"))
+    val grouping = List(Count(Entity("age")))
     val aggregationPipe = new OrderedAggregationPipe(source, returnItems, grouping)
 
     assertThat(aggregationPipe.createResults(Map()).toIterable.asJava, hasItems(
@@ -89,7 +89,7 @@ class OrderedAggregationPipeTest extends JUnitSuite with Assertions {
     val source = new FakePipe(List(), createSymbolTableFor("name"))
 
     val returnItems = List()
-    val grouping = List(ReturnItem(Count((Entity("name"))), "x"))
+    val grouping = List(Count(Entity("name")))
     intercept[ThisShouldNotHappenError](new OrderedAggregationPipe(source, returnItems, grouping))
   }
 

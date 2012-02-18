@@ -24,11 +24,12 @@ import org.neo4j.cypher.internal.symbols.{AnyType, Identifier}
 import org.neo4j.cypher.internal.pipes.aggregation.AggregationFunction
 
 case class ReturnItem(expression: Expression, name: String) extends (Map[String, Any] => Any) with Dependant {
-  def apply(m: Map[String, Any]): Any = m.get(expression.identifier.name) match {
-    case None => expression(m)
-    case Some(x) => x
-  }
-  
+  def apply(m: Map[String, Any]): Any =
+    m.get(expression.identifier.name) match {
+      case None => expression(m)
+      case Some(x) => x
+    }
+
   def dependencies = expression.dependencies(AnyType())
 
   def identifier = Identifier(name, expression.identifier.typ)
@@ -47,4 +48,6 @@ case class ReturnItem(expression: Expression, name: String) extends (Map[String,
     val aggregation = expression.filter(_.isInstanceOf[AggregationExpression]).head
     aggregation.asInstanceOf[AggregationExpression].createAggregationFunction
   }
+
+  def expressionName: String = expression.identifier.name
 }
