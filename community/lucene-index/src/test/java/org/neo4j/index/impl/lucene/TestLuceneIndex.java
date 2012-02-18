@@ -1385,12 +1385,18 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     @Test
     public void exactIndexWithCaseInsensitive() throws Exception
     {
-        Index<Node> index = nodeIndex( "exlc", stringMap( "analyzer", LowerCaseKeywordAnalyzer.class.getName() ) );
+        // START SNIPPET: exact-case-insensitive
+        Index<Node> index = graphDb.index().forNodes( "my-case-insensitive-index",
+                stringMap( "analyzer", LowerCaseKeywordAnalyzer.class.getName() ) );
+        
         Node node = graphDb.createNode();
-        index.add( node, "name", "Mattias Persson" );
-        assertContains( index.query( "name", "\"maTTias perSson\"" ), node );
+        index.add( node, "name", "Thomas Anderson" );
+        assertContains( index.query( "name", "\"Thomas Anderson\"" ), node );
+        assertContains( index.query( "name", "\"thoMas ANDerson\"" ), node );
+        // END SNIPPET: exact-case-insensitive
         restartTx();
-        assertContains( index.query( "name", "\"maTTias perSson\"" ), node );
+        assertContains( index.query( "name", "\"Thomas Anderson\"" ), node );
+        assertContains( index.query( "name", "\"thoMas ANDerson\"" ), node );
     }
 
     @Test
