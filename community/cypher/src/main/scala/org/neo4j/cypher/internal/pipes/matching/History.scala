@@ -44,10 +44,7 @@ class History(source:Map[String,Any], seen: Set[MatchingPair]=Set()) {
       case MatchingPair(pe: VariableLengthPatternRelationship, entity: VariableLengthGraphRelationship) => Seq(pe.key -> entity.path) ++ relationshipIterable(pe, entity)
   }).toMap
 
-  private def relationshipIterable(pe: VariableLengthPatternRelationship, entity: VariableLengthGraphRelationship):Option[(String, Any)] = pe.relIterable match {
-    case None => None
-    case Some(relIterable) => Some(relIterable -> entity.relationships)
-  }
+  private def relationshipIterable(pe: VariableLengthPatternRelationship, entity: VariableLengthGraphRelationship):Option[(String, Any)] = pe.relIterable.map(_->entity.relationships)
 
   override def toString: String = "History(%s)".format(seen.mkString("[", "], [", "]"))
 }
