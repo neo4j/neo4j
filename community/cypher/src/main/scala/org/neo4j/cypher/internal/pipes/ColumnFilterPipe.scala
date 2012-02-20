@@ -36,13 +36,12 @@ class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
     
   def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = {
     val intermediate = source.createResults(params)
-    val sdfsdf = intermediate.map(m => {
+    intermediate.map(m => {
       val onlyRelevantValuesBeforeRenaming = m.filterKeys(key => returnItems.exists(ri => ri.expression.identifier.name == key))
       onlyRelevantValuesBeforeRenaming.map {
         case (key, value) => (returnItems.find(ri => ri.expression.identifier.name == key).get.columnName -> value)
       }
     })
-    sdfsdf
   }
 
   override def executionPlan(): String =
