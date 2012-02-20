@@ -21,21 +21,21 @@ package org.neo4j.cypher.internal.pipes
 
 import aggregation.AggregationFunction
 import collection.Seq
-import org.neo4j.cypher.internal.commands.ReturnItem
 import java.lang.String
-import org.neo4j.cypher.internal.symbols.{Identifier, SymbolTable}
+import org.neo4j.cypher.internal.commands.{AggregationExpression, ReturnItem}
+import org.neo4j.cypher.internal.symbols.{AnyType, Identifier, SymbolTable}
 
 // Eager aggregation means that this pipe will eagerly load the whole resulting subgraphs before starting
 // to emit aggregated results.
 // Cypher is lazy until it has to - this pipe makes stops the lazyness
-class EagerAggregationPipe(source: Pipe, val returnItems: Seq[ReturnItem], aggregations: Seq[ReturnItem]) extends PipeWithSource(source) {
+class EagerAggregationPipe(source: Pipe, val returnItems: Seq[ReturnItem], aggregations: Seq[AggregationExpression]) extends PipeWithSource(source) {
   val symbols: SymbolTable = createSymbols()
 
-  def dependencies: Seq[Identifier] = returnItems.flatMap(_.dependencies) ++ aggregations.flatMap(_.dependencies)
+  def dependencies: Seq[Identifier] = returnItems.flatMap(_.dependencies) ++ aggregations.flatMap(_.dependencies(AnyType()))
 
   def createSymbols() = {
-    val keySymbols = source.symbols.filter(returnItems.map(_.columnName): _*)
-    val aggregatedColumns = aggregations.map(_.concreteReturnItem.identifier)
+    val keySymbols = source.symbols.filter(returnItems.map(_.expressionName): _*)
+    val aggregatedColumns = aggregations.map(_.identifier)
 
     keySymbols.add(aggregatedColumns: _*)
   }
@@ -43,7 +43,7 @@ class EagerAggregationPipe(source: Pipe, val returnItems: Seq[ReturnItem], aggre
   def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] = {
     // This is the temporary storage used while the aggregation is going on
     val result = collection.mutable.Map[NiceHasher, Seq[AggregationFunction]]()
-    val keyNames = returnItems.map(_.columnName)
+    val keyNames = returnItems.filterNot(_.expression.containsAggregate).map(_.expressionName)
     val aggregationNames = aggregations.map(_.identifier.name)
 
     source.createResults(params).foreach(m => {

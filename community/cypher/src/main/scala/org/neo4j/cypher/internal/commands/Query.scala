@@ -48,7 +48,8 @@ case class Query(returns: Return,
         aggregation == other.aggregation &&
         sort == other.sort &&
         slice == other.slice &&
-        namedPaths == other.namedPaths
+        namedPaths == other.namedPaths &&
+        having == other.having
     }
 }
 
@@ -60,7 +61,7 @@ case class Match(patterns: Pattern*)
 
 case class NamedPaths(paths: NamedPath*)
 
-case class Aggregation(aggregationItems: ReturnItem*)
+case class Aggregation(aggregationItems: AggregationExpression*)
 
 case class Sort(sortItems: SortItem*)
 

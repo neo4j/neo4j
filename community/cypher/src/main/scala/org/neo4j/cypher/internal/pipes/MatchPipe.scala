@@ -34,18 +34,13 @@ class MatchPipe(source: Pipe, patterns: Seq[Pattern], predicates: Seq[Predicate]
       Identifier(path.start, NodeType()),
       Identifier(path.end, NodeType()),
       Identifier(path.pathName, PathType())
-    ) ++ iterableOfRelationships(path.relIterator)
+    ) ++ path.relIterator.map(Identifier(_, new IterableType(RelationshipType())))
     case _ => Seq()
   })
 
 
   def createResults[U](params: Map[String, Any]): Traversable[Map[String, Any]] =
     source.createResults(params).flatMap(sourcePipeRow => matchingContext.getMatches(sourcePipeRow))
-
-  private def iterableOfRelationships(iterableRel: Option[String]): Option[Identifier] = iterableRel match {
-    case None => None
-    case Some(r) => Some(Identifier(r, new IterableType(RelationshipType())))
-  }
 
   override def executionPlan(): String = source.executionPlan() + "\r\nPatternMatch(" + patterns.mkString(",") + ")"
 }

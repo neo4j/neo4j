@@ -105,9 +105,7 @@ case class CoalesceFunction(expressions: Expression*) extends Expression {
 case class RelationshipTypeFunction(relationship: Expression) extends NullInNullOutExpression(relationship) {
   def inner_apply(value: Any, m: Map[String, Any]) = value.asInstanceOf[Relationship].getType.name()
 
-  def identifier = Identifier("TYPE(" + relationship.identifier.name + ")", StringType())
-
-  override def toString() = "type(" + relationship + ")"
+  lazy val identifier = Identifier("TYPE(" + relationship.identifier.name + ")", StringType())
 
   def declareDependencies(extectedType: AnyType): Seq[Identifier] = relationship.dependencies(RelationshipType())
 
@@ -258,7 +256,6 @@ case class FilterFunction(collection: Expression, symbol: String, predicate: Pre
     }
 
     result
-
   }
 
   def identifier = Identifier("filter(%s in %s : %s)".format(symbol, collection, predicate), collection.identifier.typ)

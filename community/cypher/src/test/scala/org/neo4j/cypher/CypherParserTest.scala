@@ -473,9 +473,9 @@ class CypherParserTest extends JUnitSuite with Assertions {
       Query.
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING, false, True())).
-        aggregation(ReturnItem(CountStar(), "count(*)")).
+        aggregation(CountStar()).
         columns("a", "b", "count(*)").
-        returns(ReturnItem(Entity("a"), "a"), ReturnItem(Entity("b"), "b")))
+        returns(ReturnItem(Entity("a"), "a"), ReturnItem(Entity("b"), "b"), ReturnItem(CountStar(), "count(*)")))
   }
 
   @Test def countStar() {
@@ -483,10 +483,10 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a = NODE(1) return count(*) order by count(*)",
       Query.
         start(NodeById("a", 1)).
-        aggregation(ReturnItem(CountStar(), "count(*)")).
+        aggregation(CountStar()).
         columns("count(*)").
-        orderBy(SortItem(ReturnItem(CountStar(), "count(*)"), true)).
-        returns())
+        orderBy(SortItem(CountStar(), true)).
+        returns(ReturnItem(CountStar(), "count(*)")))
   }
 
   @Test def distinct() {
@@ -505,9 +505,9 @@ class CypherParserTest extends JUnitSuite with Assertions {
       Query.
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING, false, True())).
-        aggregation(ReturnItem(Sum(Property("a", "age")), "sum(a.age)")).
+        aggregation(Sum(Property("a", "age"))).
         columns("a", "b", "sum(a.age)").
-        returns(ReturnItem(Entity("a"), "a"), ReturnItem(Entity("b"), "b")))
+        returns(ReturnItem(Entity("a"), "a"), ReturnItem(Entity("b"), "b"), ReturnItem(Sum(Property("a", "age")), "sum(a.age)")))
   }
 
   @Test def avgTheAgesOfPeople() {
@@ -516,9 +516,9 @@ class CypherParserTest extends JUnitSuite with Assertions {
       Query.
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING, false, True())).
-        aggregation(ReturnItem(Avg(Property("a", "age")), "avg(a.age)")).
+        aggregation(Avg(Property("a", "age"))).
         columns("a", "b", "avg(a.age)").
-        returns(ReturnItem(Entity("a"), "a"), ReturnItem(Entity("b"), "b")))
+        returns(ReturnItem(Entity("a"), "a"), ReturnItem(Entity("b"), "b"), ReturnItem(Avg(Property("a", "age")), "avg(a.age)")))
   }
 
   @Test def minTheAgesOfPeople() {
@@ -527,9 +527,9 @@ class CypherParserTest extends JUnitSuite with Assertions {
       Query.
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING, false, True())).
-        aggregation(ReturnItem(Min(Property("a", "age")), "min(a.age)")).
+        aggregation(Min(Property("a", "age"))).
         columns("a", "b", "min(a.age)").
-        returns(ReturnItem(Entity("a"), "a"), ReturnItem(Entity("b"), "b")))
+        returns(ReturnItem(Entity("a"), "a"), ReturnItem(Entity("b"), "b"), ReturnItem(Min(Property("a", "age")), "min(a.age)")))
   }
 
   @Test def maxTheAgesOfPeople() {
@@ -538,9 +538,13 @@ class CypherParserTest extends JUnitSuite with Assertions {
       Query.
         start(NodeById("a", 1)).
         matches(RelatedTo("a", "b", "  UNNAMED1", None, Direction.OUTGOING, false, True())).
-        aggregation(ReturnItem(Max((Property("a", "age"))), "max(a.age)")).
+        aggregation(Max((Property("a", "age")))).
         columns("a", "b", "max(a.age)").
-        returns(ReturnItem(Entity("a"), "a"), ReturnItem(Entity("b"), "b")))
+        returns(
+        ReturnItem(Entity("a"), "a"),
+        ReturnItem(Entity("b"), "b"),
+        ReturnItem(Max((Property("a", "age"))), "max(a.age)")
+      ))
   }
 
   @Test def singleColumnSorting() {
@@ -548,7 +552,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a = NODE(1) return a order by a.name",
       Query.
         start(NodeById("a", 1)).
-        orderBy(SortItem(ReturnItem(Property("a", "name"), "a.name"), true)).
+        orderBy(SortItem(Property("a", "name"), true)).
         returns(ReturnItem(Entity("a"), "a")))
   }
 
@@ -557,7 +561,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a = NODE(1) return a order by avg(a.name)",
       Query.
         start(NodeById("a", 1)).
-        orderBy(SortItem(ReturnItem(Avg(Property("a", "name")), "avg(a.name)"), true)).
+        orderBy(SortItem(Avg(Property("a", "name")), true)).
         returns(ReturnItem(Entity("a"), "a")))
   }
 
@@ -567,8 +571,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
       Query.
         start(NodeById("a", 1)).
         orderBy(
-        SortItem(ReturnItem(Property("a", "name"), "a.name"), true),
-        SortItem(ReturnItem(Property("a", "age"), "a.age"), true)).
+        SortItem(Property("a", "name"), true),
+        SortItem(Property("a", "age"), true)).
         returns(ReturnItem(Entity("a"), "a")))
   }
 
@@ -578,8 +582,8 @@ class CypherParserTest extends JUnitSuite with Assertions {
       Query.
         start(NodeById("a", 1)).
         orderBy(
-        SortItem(ReturnItem(Property("a", "name"), "a.name"), true),
-        SortItem(ReturnItem(Property("a", "age"), "a.age"), true)).
+        SortItem(Property("a", "name"), true),
+        SortItem(Property("a", "age"), true)).
         returns(ReturnItem(Entity("a"), "a")))
 
   }
@@ -589,7 +593,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a = NODE(1) return a order by a.name DESCENDING",
       Query.
         start(NodeById("a", 1)).
-        orderBy(SortItem(ReturnItem(Property("a", "name"), "a.name"), false)).
+        orderBy(SortItem(Property("a", "name"), false)).
         returns(ReturnItem(Entity("a"), "a")))
 
   }
@@ -599,7 +603,7 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a = NODE(1) return a order by a.name desc",
       Query.
         start(NodeById("a", 1)).
-        orderBy(SortItem(ReturnItem(Property("a", "name"), "a.name"), false)).
+        orderBy(SortItem(Property("a", "name"), false)).
         returns(ReturnItem(Entity("a"), "a")))
   }
 
@@ -721,9 +725,9 @@ class CypherParserTest extends JUnitSuite with Assertions {
       "start a = NODE(1) return a, count(a)",
       Query.
         start(NodeById("a", 1)).
-        aggregation(ReturnItem(Count(Entity("a")), "count(a)")).
+        aggregation(Count(Entity("a"))).
         columns("a", "count(a)").
-        returns(ReturnItem(Entity("a"), "a")))
+        returns(ReturnItem(Entity("a"), "a"), ReturnItem(Count(Entity("a")), "count(a)")))
   }
 
   @Test def shouldHandleIdBothInReturnAndWhere() {
@@ -1115,9 +1119,9 @@ class CypherParserTest extends JUnitSuite with Assertions {
       """start a=node(0) return count(distinct a)""",
       Query.
         start(NodeById("a", 0)).
-        aggregation(ReturnItem(Distinct(Count(Entity("a")), Entity("a")), "count(distinct a)")).
+        aggregation(Distinct(Count(Entity("a")), Entity("a"))).
         columns("count(distinct a)")
-        returns())
+        returns(ReturnItem(Distinct(Count(Entity("a")), Entity("a")), "count(distinct a)")))
   }
 
   @Test def consoleModeParserShouldOutputNullableProperties() {
@@ -1199,10 +1203,10 @@ class CypherParserTest extends JUnitSuite with Assertions {
     testFrom_1_7("start s = NODE(1) return s, count(*) having count(*) = 1",
       Query.
         start(NodeById("s", 1)).
-        aggregation(ReturnItem(CountStar(), "count(*)")).
+        aggregation(CountStar()).
         having(Equals(CountStar(), Literal(1.0))).
         columns("s", "count(*)").
-        returns(ReturnItem(Entity("s"), "s")))
+        returns(ReturnItem(Entity("s"), "s"), ReturnItem(CountStar(), "count(*)")))
   }
 
   @Test def shouldParseMathFunctions() {

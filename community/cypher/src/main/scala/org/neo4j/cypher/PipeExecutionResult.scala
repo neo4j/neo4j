@@ -30,6 +30,7 @@ import internal.symbols.SymbolTable
 class PipeExecutionResult(result: Traversable[Map[String, Any]], val symbols: SymbolTable, val columns: List[String], val timeTaken: Long)
   extends ExecutionResult
   with StringExtras {
+  
   def javaColumns: java.util.List[String] = columns.asJava
 
   def javaColumnAs[T](column: String): java.util.Iterator[T] = columnAs[T](column).map(x => makeValueJavaCompatible(x).asInstanceOf[T]).asJava
