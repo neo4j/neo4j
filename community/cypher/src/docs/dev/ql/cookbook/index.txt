@@ -3,7 +3,7 @@ Cypher Cookbook
 ===============
 
 The following cookbook aims to provide a few snippets, examples and use-cases and their query-solutions in Cypher.
-FOr the Cypher reference documentation, see <<cypher-query-lang>>.
+For the Cypher reference documentation, see <<cypher-query-lang>>.
 
 [[cypher-cookbook-hyperedges]]
 == Hyperedges and Cypher ==
