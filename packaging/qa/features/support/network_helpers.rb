@@ -20,34 +20,40 @@ module NetworkHelpers
     false
   end
 
-  def transfer_if_newer(location, target)
-    puts "transfer_if_newer(#{location},#{target})"
-
-    if (location.scheme == "http") then
+  def download_artifact(location, target)
       server = Net::HTTP.new(location.host, 80)
       head = server.head(location.path)
       server_time = Time.httpdate(head['last-modified'])
-      if (!File.exists?(target) || server_time != File.mtime(target))
-        puts target+" missing or newer version as on #{location} - downloading"
-        server.request_get(location.path) do |res|
-          open(target, "wb") do |file|
-            res.read_body do |segment|
-              file.write(segment)
-            end
-          end
-        end
-        File.utime(0, server_time, target)
-      else
-        puts target+" not modified - download skipped"
-      end
-    elsif (location.scheme == "file") then
-      File.open(location.path, "r") do |src|
+    if (!File.exists?(target) || server_time != File.mtime(target))
+      puts target+" missing or newer version as on #{location} - downloading"
+      server.request_get(location.path) do |res|
         open(target, "wb") do |file|
-          while buf = src.read(2048)
-            file.write(buf)
+          res.read_body do |segment|
+            file.write(segment)
           end
         end
       end
+      File.utime(0, server_time, target)
+    else
+      puts target+" not modified - download skipped"
+    end
+  end
+
+  def copy_file(location, target)
+    File.open(location.path, "r") do |src|
+      open(target, "wb") do |file|
+        while buf = src.read(2048)
+          file.write(buf)
+        end
+      end
+    end
+  end
+
+  def transfer_if_newer(location, target)
+    if (location.scheme == "http") then
+      download_artifact(location, target)
+    elsif (location.scheme == "file") then
+      copy_file(location, target)
     else
       raise 'unsupported schema ' + location
     end

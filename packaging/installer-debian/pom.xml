@@ -1,297 +1,248 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<parent>
-        <groupId>org.neo4j.build</groupId>
-        <artifactId>parent-pom</artifactId>
-        <version>25</version>
-        <relativePath/>
-    </parent>
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.neo4j.build</groupId>
+    <artifactId>parent-pom</artifactId>
+    <version>25</version>
+    <relativePath />
+  </parent>
 
-	<groupId>org.neo4j</groupId>
-	<artifactId>installer-debian</artifactId>
-	<version>1.6-SNAPSHOT</version>
-	<packaging>pom</packaging>
+  <groupId>org.neo4j</groupId>
+  <artifactId>installer-debian</artifactId>
+  <version>1.7-SNAPSHOT</version>
+  <packaging>pom</packaging>
 
-	<name>Neo4j Debian Installer</name>
-	<description>Debian installers for the Neo4j Server</description>
+  <name>Neo4j Debian Installer</name>
+  <description>Debian installers for the Neo4j Server</description>
 
-	<url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
-	<scm>
-		<connection>scm:git:git://github.com/neo4j/packaging.git</connection>
-		<developerConnection>scm:git:git@github.com:neo4j/packaging.git</developerConnection>
-		<url>https://github.com/neo4j/packaging</url>
-	</scm>
+  <scm>
+    <connection>scm:git:git://github.com/neo4j/packaging.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/packaging.git</developerConnection>
+    <url>https://github.com/neo4j/packaging</url>
+  </scm>
 
-	<properties>
-		<short-name>installer-debian</short-name>
-		<neo4j.version>1.7-SNAPSHOT</neo4j.version>
-        <license-text.header>GPL-3-header.txt</license-text.header>
+  <properties>
+    <short-name>installer-debian</short-name>
+    <neo4j.version>1.7-SNAPSHOT</neo4j.version>
+    <license-text.header>GPL-3-header.txt</license-text.header>
 
-		<buildnumber>0</buildnumber>
+    <buildnumber>0</buildnumber>
+    
+    <neo4j.debian.maintainer>Anders Nawroth &lt;anders@neotechnology.com&gt;</neo4j.debian.maintainer>
+  </properties>
 
-		<neo4j.debian.maintainer>Anders Nawroth &lt;anders@neotechnology.com&gt;</neo4j.debian.maintainer>
-	</properties>
+  <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
 
-	<dependencies>
-		<dependency>
-			<groupId>org.neo4j.assembly</groupId>
-			<artifactId>neo4j-standalone</artifactId>
-			<classifier>unix-community</classifier>
-            <type>tar.gz</type>
-			<version>${neo4j.version}</version>
-			<exclusions>
-				<exclusion>
-					<groupId>org.codehaus.groovy</groupId>
-					<artifactId>groovy</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-	</dependencies>
+    <plugins>
 
-	<build>
-		<resources>
-			<resource>
-				<directory>src/main/resources</directory>
-				<filtering>true</filtering>
-			</resource>
-		</resources>
+      <plugin>
+        <artifactId>maven-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>resources</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
 
-		<plugins>
+      <plugin>
+        <groupId>org.codehaus.gmaven</groupId>
+        <artifactId>gmaven-plugin</artifactId>
+        <version>1.3</version>
+        <executions>
+          <execution>
+            <id>generate-debian-compliant-version</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>execute</goal>
+            </goals>
+            <configuration>
+              <source>
+                def version = project.properties['neo4j.version']
 
-			<plugin>
-				<artifactId>maven-resources-plugin</artifactId>
-				<executions>
-					<execution>
-						<phase>process-resources</phase>
-						<goals>
-							<goal>resources</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
+                // If version does not match "X.Y[.Z]"
+                if( !( version =~ /^\d+\.\d+(\.\d+)?$/) ) {
+                    project.properties['neo4j.version.stability'] = "unstable"
+                } else {
+                    project.properties['neo4j.version.stability'] = "stable"
+                }
 
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-dependency-plugin</artifactId>
-				<version>2.2</version>
-				<executions>
-					<execution>
-						<id>unpack</id>
-						<phase>process-resources</phase>
-						<goals>
-							<goal>copy</goal>
-						</goals>
-						<configuration>
-							<artifactItems>
-								<artifactItem>
-									<groupId>org.neo4j.assembly</groupId>
-									<artifactId>neo4j-standalone</artifactId>
-									<classifier>unix-community</classifier>
-									<type>tar.gz</type>
-									<outputDirectory>${project.build.outputDirectory}</outputDirectory>
-									<includes>**/*</includes>
-								</artifactItem>
-								<artifactItem>
-									<groupId>org.neo4j.assembly</groupId>
-									<artifactId>neo4j-standalone</artifactId>
-									<classifier>unix-advanced</classifier>
-									<type>tar.gz</type>
-									<outputDirectory>${project.build.outputDirectory}</outputDirectory>
-									<includes>**/*</includes>
-								</artifactItem>
-								<artifactItem>
-									<groupId>org.neo4j.assembly</groupId>
-									<artifactId>neo4j-standalone</artifactId>
-									<classifier>unix-enterprise</classifier>
-									<type>tar.gz</type>
-									<outputDirectory>${project.build.outputDirectory}</outputDirectory>
-									<includes>**/*</includes>
-								</artifactItem>
-							</artifactItems>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
 
-			<plugin>
-				<groupId>org.codehaus.gmaven</groupId>
-				<artifactId>gmaven-plugin</artifactId>
-				<version>1.3</version>
-				<executions>
-					<execution>
-						<id>generate-windows-compliant-version</id>
-						<phase>generate-resources</phase>
-						<goals>
-							<goal>execute</goal>
-						</goals>
-						<configuration>
-							<source>
-								def version = project.properties['neo4j.version']
+                // Debian does not allow hyphens
+                project.properties['neo4j.version.debian_compliant'] = version.replace("-",".")
 
-								// If version does not match "X.Y[.Z]"
-								if( !( version =~ /^\d+\.\d+(\.\d+)?$/) ) {
-                                    project.properties['neo4j.version.stability'] = "unstable"
-								} else {
-                                    project.properties['neo4j.version.stability'] = "stable"
-                                }
+                import java.util.Date
+                import java.text.MessageFormat
+                project.properties["neo4j.debian.buildDate"] = MessageFormat.format("{0,date,EEE, dd MMM yyyy HH:mm:ss Z}", new Date())
+              </source>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
 
-                                
-                              	// Debian does not allow hyphens
-								project.properties['neo4j.version.debian_compliant'] = version.replace("-",".")
-                              	
-                              	import java.util.Date 
-                                import java.text.MessageFormat 
-                                project.properties["neo4j.debian.buildDate"] = MessageFormat.format("{0,date,EEE, dd MMM yyyy HH:mm:ss Z}", new Date())
-							</source>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>build-installers</id>
+            <phase>package</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <!-- Unzip the standalone distributions -->
+                <untar
+                  src="${project.build.directory}/neo4j-community-${neo4j.version}-unix.tar.gz"
+                  dest="${project.build.outputDirectory}" compression="gzip" />
+                <untar
+                  src="${project.build.directory}/neo4j-advanced-${neo4j.version}-unix.tar.gz"
+                  dest="${project.build.outputDirectory}" compression="gzip" />
+                <untar
+                  src="${project.build.directory}/neo4j-enterprise-${neo4j.version}-unix.tar.gz"
+                  dest="${project.build.outputDirectory}" compression="gzip" />
 
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-antrun-plugin</artifactId>
-				<version>1.7</version>
-				<executions>
-					<execution>
-						<id>build-installers</id>
-						<phase>package</phase>
-						<goals>
-							<goal>run</goal>
-						</goals>
-						<configuration>
-							<target>
-								<!-- Unzip the standalone distributions -->
-								<untar
-									src="${project.build.outputDirectory}/neo4j-standalone-${neo4j.version}-unix-community.tar.gz"
-									dest="${project.build.outputDirectory}"
-                                    compression="gzip" />
-								<untar
-									src="${project.build.outputDirectory}/neo4j-standalone-${neo4j.version}-unix-advanced.tar.gz"
-									dest="${project.build.outputDirectory}"
-                                    compression="gzip" />
-								<untar
-									src="${project.build.outputDirectory}/neo4j-standalone-${neo4j.version}-unix-enterprise.tar.gz"
-									dest="${project.build.outputDirectory}"
-                                    compression="gzip" />
+                <!-- Move distributions into build folders -->
+                <move
+                  toDir="${project.build.outputDirectory}/community/server">
+                  <fileset
+                    dir="${project.build.outputDirectory}/neo4j-community-${neo4j.version}"
+                    includes="**" />
+                </move>
+                <move toDir="${project.build.outputDirectory}/advanced/server">
+                  <fileset
+                    dir="${project.build.outputDirectory}/neo4j-advanced-${neo4j.version}"
+                    includes="**" />
+                </move>
+                <move
+                  toDir="${project.build.outputDirectory}/enterprise/server">
+                  <fileset
+                    dir="${project.build.outputDirectory}/neo4j-enterprise-${neo4j.version}"
+                    includes="**" />
+                </move>
+                <copy
+                  toDir="${project.build.outputDirectory}/coordinator/server">
+                  <fileset
+                    dir="${project.build.outputDirectory}/enterprise/server"
+                    includes="**" />
+                </copy>
 
-								<!-- Move distributions into build folders -->
-								<move toDir="${project.build.outputDirectory}/community/server">
-									<fileset
-										dir="${project.build.outputDirectory}/neo4j-community-${neo4j.version}"
-										includes="**" />
-								</move>
-								<move toDir="${project.build.outputDirectory}/advanced/server">
-									<fileset
-										dir="${project.build.outputDirectory}/neo4j-advanced-${neo4j.version}"
-										includes="**" />
-								</move>
-								<move toDir="${project.build.outputDirectory}/enterprise/server">
-									<fileset
-										dir="${project.build.outputDirectory}/neo4j-enterprise-${neo4j.version}"
-										includes="**" />
-								</move>
-								<copy toDir="${project.build.outputDirectory}/coordinator/server">
-									<fileset
-										dir="${project.build.outputDirectory}/enterprise/server"
-										includes="**" />
-								</copy>
+                <!-- Run installer projects -->
+                <exec executable="debuild"
+                  dir="${project.build.outputDirectory}/community"
+                  failonerror="true">
+                  <arg line="-us" />
+                  <arg line="-uc" />
+                  <arg line="-B" />
+                </exec>
+                <exec executable="debuild"
+                  dir="${project.build.outputDirectory}/advanced"
+                  failonerror="true">
+                  <arg line="-us" />
+                  <arg line="-uc" />
+                  <arg line="-B" />
+                </exec>
+                <exec executable="debuild"
+                  dir="${project.build.outputDirectory}/enterprise"
+                  failonerror="true">
+                  <arg line="-us" />
+                  <arg line="-uc" />
+                  <arg line="-B" />
+                </exec>
+                <exec executable="debuild"
+                  dir="${project.build.outputDirectory}/coordinator">
+                  <arg line="-us" />
+                  <arg line="-uc" />
+                  <arg line="-B" />
+                </exec>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+  
+  <profiles>
+    <profile>
+      <!-- This project expects standalone neo4j
+      artifacts to be available under /target. You can
+      either place them there manually, or activate this
+      profile to pull them in from ../standalone/target -->
+      <id>pull-standalone-artifacts</id>
+      <activation>
+        <property>
+          <name>!pullArtifacts</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>pull-artifacts</id>
+                <phase>generate-resources</phase>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <configuration>
+                  <target>
+                    <copy
+                      toDir="${project.build.directory}"
+                      file="${project.baseDir}/../../standalone/target/neo4j-community-${neo4j.version}-unix.tar.gz" />
+                    <copy
+                      toDir="${project.build.directory}"
+                      file="${project.baseDir}/../../standalone/target/neo4j-advanced-${neo4j.version}-unix.tar.gz" />
+                    <copy
+                      toDir="${project.build.directory}"
+                      file="${project.baseDir}/../../standalone/target/neo4j-enterprise-${neo4j.version}-unix.tar.gz" />
+                  </target>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
-								<!-- Run installer projects -->
-								<exec executable="debuild" dir="${project.build.outputDirectory}/community">
-									<arg line="-us" />
-									<arg line="-uc" />
-									<arg line="-B" />
-                                </exec>
-								<exec executable="debuild" dir="${project.build.outputDirectory}/advanced">
-									<arg line="-us" />
-									<arg line="-uc" />
-									<arg line="-B" />
-                                </exec>
-								<exec executable="debuild" dir="${project.build.outputDirectory}/enterprise">
-									<arg line="-us" />
-									<arg line="-uc" />
-									<arg line="-B" />
-                                </exec>
-								<exec executable="debuild" dir="${project.build.outputDirectory}/coordinator">
-									<arg line="-us" />
-									<arg line="-uc" />
-									<arg line="-B" />
-                                </exec>
-							</target>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			
-			
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>build-helper-maven-plugin</artifactId>
-				<version>1.5</version>
-				<executions>
-				  <execution>
-					<id>attach-artifacts</id>
-					<phase>package</phase>
-					<goals>
-					  <goal>attach-artifact</goal>
-					</goals>
-					<configuration>
-					  <artifacts>
-						<artifact>
-						  <file>${project.build.outputDirectory}/neo4j_${neo4j.version.debian_compliant}_all.deb</file>
-						  <type>deb</type>
-						  <classifier>debian-community</classifier>
-						</artifact>
-						<artifact>
-						  <file>${project.build.outputDirectory}/neo4j-advanced_${neo4j.version.debian_compliant}_all.deb</file>
-						  <type>deb</type>
-						  <classifier>debian-advanced</classifier>
-						</artifact>
-						<artifact>
-						  <file>${project.build.outputDirectory}/neo4j-enterprise_${neo4j.version.debian_compliant}_all.deb</file>
-						  <type>deb</type>
-						  <classifier>debian-enterprise</classifier>
-						</artifact>
-						<artifact>
-						  <file>${project.build.outputDirectory}/neo4j-coordinator_${neo4j.version.debian_compliant}_all.deb</file>
-						  <type>deb</type>
-						  <classifier>debian-coordinator</classifier>
-						</artifact>
-					  </artifacts>
-					</configuration>
-				  </execution>
-				</executions>
-			  </plugin>
-			
-		</plugins>
-	</build>
-
-	<repositories>
-		<repository>
-			<id>neo4j-snapshot-repository</id>
-			<name>Publically available Maven 2 repository for Neo4j</name>
-			<url>http://m2.neo4j.org/content/repositories/snapshots</url>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-			<releases>
-				<enabled>false</enabled>
-			</releases>
-		</repository>
-		<repository>
-			<id>neo4j-release-repository</id>
-			<name>Publically available Maven 2 repository for Neo4j</name>
-			<url>http://m2.neo4j.org/content/repositories/releases</url>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
-			<releases>
-				<enabled>true</enabled>
-			</releases>
-		</repository>
-	</repositories>
+  <repositories>
+    <repository>
+      <id>neo4j-snapshot-repository</id>
+      <name>Publically available Maven 2 repository for Neo4j</name>
+      <url>http://m2.neo4j.org/content/repositories/snapshots</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+    </repository>
+    <repository>
+      <id>neo4j-release-repository</id>
+      <name>Publically available Maven 2 repository for Neo4j</name>
+      <url>http://m2.neo4j.org/content/repositories/releases</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+    </repository>
+  </repositories>
 
 </project>

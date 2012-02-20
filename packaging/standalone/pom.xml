@@ -298,55 +298,6 @@ terms of the relevant Commercial Agreement.
         </executions>
       </plugin>
 	  
-	  <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>build-helper-maven-plugin</artifactId>
-        <version>1.5</version>
-        <executions>
-          <execution>
-            <id>attach-artifacts</id>
-            <phase>package</phase>
-            <goals>
-              <goal>attach-artifact</goal>
-            </goals>
-            <configuration>
-              <artifacts>
-                <artifact>
-                  <file>target/${server.shortname}-community-${project.version}-windows.zip</file>
-                  <type>zip</type>
-                  <classifier>windows-community</classifier>
-                </artifact>
-                <artifact>
-                  <file>target/${server.shortname}-advanced-${project.version}-windows.zip</file>
-                  <type>zip</type>
-                  <classifier>windows-advanced</classifier>
-                </artifact>
-                <artifact>
-                  <file>target/${server.shortname}-enterprise-${project.version}-windows.zip</file>
-                  <type>zip</type>
-                  <classifier>windows-enterprise</classifier>
-                </artifact>
-                <artifact>
-                  <file>target/${server.shortname}-community-${project.version}-unix.tar.gz</file>
-                  <type>tar.gz</type>
-                  <classifier>unix-community</classifier>
-                </artifact>
-                <artifact>
-                  <file>target/${server.shortname}-advanced-${project.version}-unix.tar.gz</file>
-                  <type>tar.gz</type>
-                  <classifier>unix-advanced</classifier>
-                </artifact>
-                <artifact>
-                  <file>target/${server.shortname}-enterprise-${project.version}-unix.tar.gz</file>
-                  <type>tar.gz</type>
-                  <classifier>unix-enterprise</classifier>
-                </artifact>
-              </artifacts>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-	  
     </plugins>
   </build>
 
