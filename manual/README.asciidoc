@@ -25,6 +25,7 @@ Note that this profile can't be used together with the `package` goal.
 === With brew on OSX ===
 
   brew install docbook asciidoc w3m fop graphviz
+
   sudo docbook-register
 
 === With apt-get on Ubuntu ===
