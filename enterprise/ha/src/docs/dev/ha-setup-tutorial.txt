@@ -106,7 +106,7 @@ ha.coordinators = localhost:2181,localhost:2182,localhost:2183
 ha.server_id = 2
 
 #ip and port for this instance to bind to
-ha.server = localhost:6001
+ha.server = localhost:6002
 
 #connection information to the coordinator cluster client ports
 ha.coordinators = localhost:2181,localhost:2182,localhost:2183
@@ -120,7 +120,7 @@ ha.coordinators = localhost:2181,localhost:2182,localhost:2183
 ha.server_id = 3
 
 #ip and port for this instance to bind to
-ha.server = localhost:6001
+ha.server = localhost:6003
 
 #connection information to the coordinator cluster client ports
 ha.coordinators = localhost:2181,localhost:2182,localhost:2183
