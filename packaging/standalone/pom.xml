@@ -32,7 +32,7 @@
     <wrapper.conf>conf/neo4j-wrapper.conf</wrapper.conf>
     <neo4j.version>1.7-SNAPSHOT</neo4j.version>
     <windows-wrapper.version>5-SNAPSHOT</windows-wrapper.version>
-    <windows-wrapper.filename>windows-service-wrapper-${windows-wrapper.version}.jar</windows-wrapper.filename>
+    <windows-wrapper.filename>windows-service-wrapper-*.jar</windows-wrapper.filename>
     
     <!-- conf/neo4j-server.properties filter properties -->
     <org.neo4j.database.location>data/graph.db</org.neo4j.database.location>
