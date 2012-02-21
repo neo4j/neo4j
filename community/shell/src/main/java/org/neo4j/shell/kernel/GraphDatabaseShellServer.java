@@ -160,7 +160,7 @@ public class GraphDatabaseShellServer extends SimpleAppServer
     }
 
     @Override
-    public void shutdown()
+    public void shutdown() throws RemoteException
     {
         if ( graphDbCreatedHere )
         {

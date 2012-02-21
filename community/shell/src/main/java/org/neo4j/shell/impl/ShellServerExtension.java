@@ -78,7 +78,14 @@ public final class ShellServerExtension extends KernelExtension<GraphDatabaseShe
     @Override
     protected void unload( GraphDatabaseShellServer server )
     {
-        server.shutdown();
+        try
+        {
+            server.shutdown();
+        }
+        catch ( RemoteException e )
+        {
+            // OK?
+        }
     }
 
     public void enableRemoteShell( KernelData kernel, Map<String, Serializable> config )
