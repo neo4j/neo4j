@@ -19,46 +19,17 @@
  */
 package org.neo4j.kernel;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
-
-import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
-import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
-import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
-import org.neo4j.kernel.impl.nioneo.store.FileLock;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.transaction.LockManager;
-import org.neo4j.kernel.impl.transaction.TxHook;
-import org.neo4j.kernel.impl.transaction.TxModule;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultLogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdGeneratorFactory;
-import org.neo4j.kernel.impl.util.FileUtils;
 
 public class CommonFactories
 {
-    public static LockManagerFactory defaultLockManagerFactory()
-    {
-        return new LockManagerFactory()
-        {
-            public LockManager create( TxModule txModule )
-            {
-                return new LockManager( txModule.getTxManager() );
-            }
-        };
-    }
-    
     public static class DefaultIdGeneratorFactory implements IdGeneratorFactory
     {
         private final Map<IdType, IdGenerator> generators = new HashMap<IdType, IdGenerator>();
@@ -80,11 +51,6 @@ public class CommonFactories
         {
             IdGeneratorImpl.createGenerator( fileName );
         }
-        
-        public void updateIdGenerators( NeoStore neoStore )
-        {
-            neoStore.updateIdGenerators();
-        }
     }
     
     public static IdGeneratorFactory defaultIdGeneratorFactory()
@@ -92,112 +58,9 @@ public class CommonFactories
         return new DefaultIdGeneratorFactory();
     }
     
-    public static RelationshipTypeCreator defaultRelationshipTypeCreator()
-    {
-        return new DefaultRelationshipTypeCreator();
-    }
-    
-    public static TxIdGeneratorFactory defaultTxIdGeneratorFactory()
-    {
-        return new TxIdGeneratorFactory()
-        {
-            public TxIdGenerator create( final TransactionManager txManager )
-            {
-                return TxIdGenerator.DEFAULT;
-            }
-        }; 
-    }
-    
-    public static TxHook defaultTxHook()
-    {
-        return new TxHook()
-        {
-            @Override
-            public void initializeTransaction( int eventIdentifier )
-            {
-                // Do nothing from the ordinary here
-            }
-            
-            public boolean hasAnyLocks( Transaction tx )
-            {
-                return false;
-            }
-            
-            public void finishTransaction( int eventIdentifier, boolean success )
-            {
-                // Do nothing from the ordinary here
-            }
-            
-            @Override
-            public boolean freeIdsDuringRollback()
-            {
-                return true;
-            }
-        };
-    }
-    
-    public static LastCommittedTxIdSetter defaultLastCommittedTxIdSetter()
-    {
-        return new LastCommittedTxIdSetter()
-        {
-            public void setLastCommittedTxId( long txId )
-            {
-                // Do nothing
-            }
-            
-            @Override
-            public void close()
-            {
-            }
-        };
-    }
-    
     public static FileSystemAbstraction defaultFileSystemAbstraction()
     {
-        return new FileSystemAbstraction()
-        {
-            @Override
-            public FileChannel open( String fileName, String mode ) throws IOException
-            {
-                return new RandomAccessFile( fileName, mode ).getChannel();
-            }
-            
-            @Override
-            public FileLock tryLock( String fileName, FileChannel channel ) throws IOException
-            {
-                return FileLock.getOsSpecificFileLock( fileName, channel );
-            }
-            
-            @Override
-            public FileChannel create( String fileName ) throws IOException
-            {
-                return open( fileName, "rw" );
-            }
-            
-            @Override
-            public boolean fileExists( String fileName )
-            {
-                return new File( fileName ).exists();
-            }
-            
-            @Override
-            public long getFileSize( String fileName )
-            {
-                return new File( fileName ).length();
-            }
-            
-            @Override
-            public boolean deleteFile( String fileName )
-            {
-                return FileUtils.deleteFile( new File( fileName ) );
-            }
-            
-            @Override
-            public boolean renameFile( String from, String to ) throws IOException
-            {
-                return FileUtils.renameFile( new File( from ), new File( to ) );
-            }
-        };
+        return new DefaultFileSystemAbstraction();
     }
     
     public static LogBufferFactory defaultLogBufferFactory()

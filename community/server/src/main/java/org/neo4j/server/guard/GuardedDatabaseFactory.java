@@ -19,16 +19,11 @@
  */
 package org.neo4j.server.guard;
 
+import java.util.Map;
+
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.server.database.GraphDatabaseFactory;
-import org.neo4j.tooling.wrap.WrappedGraphDatabase;
-import org.neo4j.tooling.wrap.WrappedNode;
-import org.neo4j.tooling.wrap.WrappedRelationship;
-
-import java.util.Map;
 
 public class GuardedDatabaseFactory implements GraphDatabaseFactory {
 
@@ -44,35 +39,36 @@ public class GuardedDatabaseFactory implements GraphDatabaseFactory {
     public AbstractGraphDatabase createDatabase(String databaseStoreDirectory, Map<String, String> databaseProperties) {
         final GraphDatabaseService db = dbFactory.createDatabase(databaseStoreDirectory, databaseProperties);
 
-        return new WrappedGraphDatabase(db) {
-            // private int cnt = 0;
-
-            @Override protected WrappedNode<WrappedGraphDatabase> node(final Node node, boolean created) {
-                // if (cnt++ % 1000 == 0)
-                guard.check();
-                if (node == null) {
-                    return null;
-                }
-                return new WrappedNode<WrappedGraphDatabase>(this) {
-                    @Override protected Node actual() {
-                        return node;
-                    }
-                };
-            }
-
-            @Override
-            protected WrappedRelationship<WrappedGraphDatabase> relationship(final Relationship relationship, boolean created) {
-                // if (cnt++ % 1000 == 0)
-                guard.check();
-                if (relationship == null) {
-                    return null;
-                }
-                return new WrappedRelationship<WrappedGraphDatabase>(this) {
-                    @Override protected Relationship actual() {
-                        return relationship;
-                    }
-                };
-            }
-        };
+//        return new WrappedGraphDatabase(db) {
+//            // private int cnt = 0;
+//
+//            @Override protected WrappedNode<WrappedGraphDatabase> node(final Node node, boolean created) {
+//                // if (cnt++ % 1000 == 0)
+//                guard.check();
+//                if (node == null) {
+//                    return null;
+//                }
+//                return new WrappedNode<WrappedGraphDatabase>(this) {
+//                    @Override protected Node actual() {
+//                        return node;
+//                    }
+//                };
+//            }
+//
+//            @Override
+//            protected WrappedRelationship<WrappedGraphDatabase> relationship(final Relationship relationship, boolean created) {
+//                // if (cnt++ % 1000 == 0)
+//                guard.check();
+//                if (relationship == null) {
+//                    return null;
+//                }
+//                return new WrappedRelationship<WrappedGraphDatabase>(this) {
+//                    @Override protected Relationship actual() {
+//                        return relationship;
+//                    }
+//                };
+//            }
+//        };
+        throw new RuntimeException( "Need to be implemented" );
     }
 }

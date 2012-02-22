@@ -34,7 +34,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
 import org.neo4j.test.DbRepresentation;
@@ -92,7 +91,7 @@ public class TestReadOnlyNeo4j
     @Test
     public void testReadOnlyOperationsAndNoTransaction()
     {
-        GraphDatabaseService db = new EmbeddedGraphDatabase( PATH );
+        EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( PATH );
 
         Transaction tx = db.beginTx();
         Node node1 = db.createNode();
@@ -139,14 +138,12 @@ public class TestReadOnlyNeo4j
         }
         
         // clear caches and try reads
-        ((AbstractGraphDatabase)db).getConfig().getGraphDbModule().
-            getNodeManager().clearCache();
+        db.getNodeManager().clearCache();
         
         assertEquals( node1, db.getNodeById( node1.getId() ) );
         assertEquals( node2, db.getNodeById( node2.getId() ) );
         assertEquals( rel, db.getRelationshipById( rel.getId() ) );
-        ((AbstractGraphDatabase)db).getConfig().getGraphDbModule().
-            getNodeManager().clearCache();
+        db.getNodeManager().clearCache();
         
         assertEquals( "value1", node1.getProperty( "key1" ) );
         Relationship loadedRel = node1.getSingleRelationship( 

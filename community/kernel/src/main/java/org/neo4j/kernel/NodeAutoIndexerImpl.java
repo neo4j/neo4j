@@ -21,6 +21,7 @@ package org.neo4j.kernel;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.kernel.impl.core.NodeManager;
 
 /**
  * Implementation of an AutoIndexer for Node primitives. It
@@ -30,36 +31,57 @@ import org.neo4j.graphdb.index.Index;
  */
 class NodeAutoIndexerImpl extends AbstractAutoIndexerImpl<Node>
 {
+    public interface Configuration
+    {
+        boolean node_auto_indexing(boolean def);
+
+        String node_keys_indexable(String def);
+    }
+
     static final String NODE_AUTO_INDEX = "node_auto_index";
+    private Configuration config;
+    private IndexManagerImpl indexManager;
+    private NodeManager nodeManager;
 
-    public NodeAutoIndexerImpl( EmbeddedGraphDbImpl gdb )
+    public NodeAutoIndexerImpl( Configuration config, IndexManagerImpl indexManager, NodeManager nodeManager)
     {
-        super( gdb );
+        super( );
+
+        this.config = config;
+        this.indexManager = indexManager;
+        this.nodeManager = nodeManager;
     }
 
     @Override
-    protected String getAutoIndexConfigListName()
+    public void init()
+        throws Throwable
     {
-        return Config.NODE_KEYS_INDEXABLE;
     }
 
     @Override
-    protected String getAutoIndexName()
+    public void start()
     {
-        return NODE_AUTO_INDEX;
+        setEnabled(config.node_auto_indexing(false));
+        propertyKeysToInclude.addAll( parseConfigList( config.node_keys_indexable(null)) );
     }
 
     @Override
-    protected String getEnableConfigName()
+    public void stop()
+        throws Throwable
     {
-        return Config.NODE_AUTO_INDEXING;
+    }
+
+    @Override
+    public void shutdown()
+        throws Throwable
+    {
     }
 
     @Override
     protected Index<Node> getIndexInternal()
     {
-        return ( (IndexManagerImpl) getGraphDbImpl().index() ).getOrCreateNodeIndex(
-                NODE_AUTO_INDEX, null );
+        return indexManager.getOrCreateNodeIndex(
+                NODE_AUTO_INDEX, null);
     }
 
     @Override
@@ -68,12 +90,12 @@ class NodeAutoIndexerImpl extends AbstractAutoIndexerImpl<Node>
         super.setEnabled( enabled );
         if ( enabled )
         {
-            getGraphDbImpl().getConfig().getGraphDbModule().getNodeManager().addNodePropertyTracker(
+            nodeManager.addNodePropertyTracker(
                 this );
         }
         else
         {
-            getGraphDbImpl().getConfig().getGraphDbModule().getNodeManager().removeNodePropertyTracker(
+            nodeManager.removeNodePropertyTracker(
                     this );
         }
     }

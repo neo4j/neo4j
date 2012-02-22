@@ -26,6 +26,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Service;
 import org.neo4j.jmx.Primitives;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 
@@ -48,7 +49,7 @@ public final class PrimitivesBean extends ManagementBeanProvider
         PrimitivesImpl( ManagementData management ) throws NotCompliantMBeanException
         {
             super( management );
-            this.nodeManager = management.getKernelData().getConfig().getGraphDbModule().getNodeManager();
+            this.nodeManager = ((GraphDatabaseSPI)management.getKernelData().graphDatabase()).getNodeManager();
         }
 
         private final NodeManager nodeManager;

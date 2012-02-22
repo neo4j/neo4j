@@ -22,6 +22,10 @@ package org.neo4j.kernel;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -39,6 +43,8 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.index.IndexXaConnection;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 class IndexManagerImpl implements IndexManager
@@ -46,22 +52,21 @@ class IndexManagerImpl implements IndexManager
     private final IndexStore indexStore;
     private final Map<String, IndexImplementation> indexProviders = new HashMap<String, IndexImplementation>();
 
-    private final EmbeddedGraphDbImpl graphDbImpl;
-    private final NodeAutoIndexerImpl nodeAutoIndexer;
-    private final RelationshipAutoIndexerImpl relAutoIndexer;
+    private NodeAutoIndexerImpl nodeAutoIndexer;
+    private RelationshipAutoIndexerImpl relAutoIndexer;
+    private Config config;
+    private XaDataSourceManager xaDataSourceManager;
+    private AbstractTransactionManager txManager;
+    private GraphDatabaseSPI graphDatabaseSPI;
 
-    IndexManagerImpl( EmbeddedGraphDbImpl graphDbImpl, IndexStore indexStore )
+    IndexManagerImpl( Config config,IndexStore indexStore,
+                      XaDataSourceManager xaDataSourceManager, AbstractTransactionManager txManager, GraphDatabaseSPI graphDatabaseSPI)
     {
-        this.graphDbImpl = graphDbImpl;
+        this.graphDatabaseSPI = graphDatabaseSPI;
+        this.config = config;
+        this.xaDataSourceManager = xaDataSourceManager;
+        this.txManager = txManager;
         this.indexStore = indexStore;
-        this.nodeAutoIndexer = new NodeAutoIndexerImpl( graphDbImpl );
-        this.relAutoIndexer = new RelationshipAutoIndexerImpl( graphDbImpl );
-    }
-
-    void start()
-    {
-        nodeAutoIndexer.start();
-        relAutoIndexer.start();
     }
 
     private IndexImplementation getIndexProvider( String provider )
@@ -183,36 +188,37 @@ class IndexManagerImpl implements IndexManager
             String indexName, Map<String, String> suppliedConfig )
     {
         Pair<Map<String, String>, Boolean> result = findIndexConfig( cls,
-                indexName, suppliedConfig, graphDbImpl.getConfig().getParams() );
+                indexName, suppliedConfig, config.getParams() );
         if ( result.other() )
         {
-            IndexCreatorThread creator = new IndexCreatorThread( cls, indexName, result.first() );
-            creator.start();
+            ExecutorService executorService = Executors.newSingleThreadExecutor();
+
             try
             {
-                creator.join();
-                if ( creator.exception != null )
-                {
-                    throw new TransactionFailureException( "Index creation failed for " + indexName +
-                            ", " + result.first(), creator.exception );
-                }
-            }
-            catch ( InterruptedException e )
+                executorService.submit( new IndexCreatorJob(cls, indexName, result.first()) ).get();
+            } catch (ExecutionException ex)
+            {
+                throw new TransactionFailureException( "Index creation failed for " + indexName +
+                        ", " + result.first(), ex.getCause() );
+            } catch (InterruptedException ex)
             {
                 Thread.interrupted();
+            }
+            finally
+            {
+                executorService.shutdownNow();
             }
         }
         return result.first();
     }
 
-    private class IndexCreatorThread extends Thread
+    private class IndexCreatorJob implements Callable
     {
         private final String indexName;
         private final Map<String, String> config;
-        private volatile Exception exception;
         private final Class<? extends PropertyContainer> cls;
 
-        IndexCreatorThread( Class<? extends PropertyContainer> cls, String indexName,
+        IndexCreatorJob( Class<? extends PropertyContainer> cls, String indexName,
                 Map<String, String> config )
         {
             this.cls = cls;
@@ -221,35 +227,26 @@ class IndexManagerImpl implements IndexManager
         }
 
         @Override
-        public void run()
+        public Object call()
+            throws Exception
         {
             String provider = config.get( PROVIDER );
             String dataSourceName = getIndexProvider( provider ).getDataSourceName();
-            XaDataSource dataSource = graphDbImpl.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource( dataSourceName );
+            XaDataSource dataSource = xaDataSourceManager.getXaDataSource(dataSourceName);
             IndexXaConnection connection = (IndexXaConnection) dataSource.getXaConnection();
-            Transaction tx = graphDbImpl.tx().begin();
+            Transaction tx = graphDatabaseSPI.tx().begin();
             try
             {
-                javax.transaction.Transaction javaxTx = graphDbImpl.getConfig().getTxModule().getTxManager().getTransaction();
-                javaxTx.enlistResource( connection.getXaResource() );
+                javax.transaction.Transaction javaxTx = txManager.getTransaction();
+                connection.enlistResource(javaxTx);
                 connection.createIndex( cls, indexName, config );
                 tx.success();
             }
-            catch ( Exception e )
-            {
-                this.exception = e;
-            }
             finally
             {
-                try
-                {
-                    tx.finish();
-                }
-                catch ( Exception e )
-                {
-                    this.exception = e;
-                }
+                tx.finish();
             }
+            return null;
         }
     }
 
@@ -369,6 +366,17 @@ class IndexManagerImpl implements IndexManager
             indexStore.set( index.getEntityType(), index.getName(), config );
         }
         return value;
+    }
+
+    // TODO These setters/getters stick. Why are these indexers exposed!?
+    public void setNodeAutoIndexer(NodeAutoIndexerImpl nodeAutoIndexer)
+    {
+        this.nodeAutoIndexer = nodeAutoIndexer;
+    }
+
+    public void setRelAutoIndexer(RelationshipAutoIndexerImpl relAutoIndexer)
+    {
+        this.relAutoIndexer = relAutoIndexer;
     }
 
     public AutoIndexer<Node> getNodeAutoIndexer()

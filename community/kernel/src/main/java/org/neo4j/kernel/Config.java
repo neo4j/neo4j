@@ -21,35 +21,15 @@ package org.neo4j.kernel;
 
 import static java.util.regex.Pattern.quote;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import javax.transaction.TransactionManager;
-
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.kernel.impl.cache.AdaptiveCacheManager;
-import org.neo4j.kernel.impl.core.GraphDbModule;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
-import org.neo4j.kernel.impl.core.LastCommittedTxIdSetter;
-import org.neo4j.kernel.impl.core.LockReleaser;
-import org.neo4j.kernel.impl.core.RelationshipTypeCreator;
-import org.neo4j.kernel.impl.core.RelationshipTypeHolder;
-import org.neo4j.kernel.impl.core.TxEventSyncHookFactory;
-import org.neo4j.kernel.impl.index.IndexStore;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.persistence.IdGenerator;
-import org.neo4j.kernel.impl.persistence.IdGeneratorModule;
-import org.neo4j.kernel.impl.persistence.PersistenceModule;
-import org.neo4j.kernel.impl.transaction.LockManager;
-import org.neo4j.kernel.impl.transaction.TxHook;
-import org.neo4j.kernel.impl.transaction.TxModule;
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
 
@@ -227,81 +207,33 @@ public class Config implements DiagnosticsProvider
 
     static final String LOAD_EXTENSIONS = "load_kernel_extensions";
 
-    private final AdaptiveCacheManager cacheManager;
-    private final TxModule txModule;
-    private final LockManager lockManager;
-    private final LockReleaser lockReleaser;
-    private final PersistenceModule persistenceModule;
-    private boolean create = false;
-    private String persistenceSourceName;
-    private final IdGeneratorModule idGeneratorModule;
-    private final GraphDbModule graphDbModule;
-    private final String storeDir;
-    private final IndexStore indexStore;
-    private final Map<Object, Object> params;
-    private final Map inputParams;
-    private final TxEventSyncHookFactory syncHookFactory;
-    private final RelationshipTypeCreator relTypeCreator;
+    private Map<String, String> params;
 
-    private final boolean readOnly;
-    private final boolean ephemeral;
-    private final boolean backupSlave;
-    private final IdGeneratorFactory idGeneratorFactory;
-    private final TxIdGenerator txIdGenerator;
-    private final DiagnosticsManager diagnostics;
-    private final KernelPanicEventGenerator kpe;
+    private final AutoConfigurator autoConfigurator;
 
-    Config( AbstractGraphDatabase graphDb, StoreId storeId,
-            Map<String, String> inputParams, KernelPanicEventGenerator kpe,
-            TxModule txModule, LockManager lockManager,
-            LockReleaser lockReleaser, IdGeneratorFactory idGeneratorFactory,
-            TxEventSyncHookFactory txSyncHookFactory,
-            RelationshipTypeCreator relTypeCreator, TxIdGenerator txIdGenerator,
-            LastCommittedTxIdSetter lastCommittedTxIdSetter,
-            FileSystemAbstraction fileSystem )
+    Config(String storeDir, Map<String, String> inputParams)
     {
-        this.kpe = kpe;
-        this.storeDir = graphDb.getStoreDir();
-        this.inputParams = inputParams;
-        this.ephemeral = graphDb.isEphemeral();
         // Get the default params and override with the user supplied values
         this.params = getDefaultParams();
-        this.params.putAll( inputParams );
 
-        this.idGeneratorFactory = idGeneratorFactory;
-        this.relTypeCreator = relTypeCreator;
-        this.txIdGenerator = txIdGenerator;
-        this.txModule = txModule;
-        this.lockManager = lockManager;
-        this.lockReleaser = lockReleaser;
-        this.idGeneratorModule = new IdGeneratorModule( new IdGenerator() );
-        this.readOnly = Boolean.parseBoolean( (String) params.get( READ_ONLY ) );
-        this.backupSlave = Boolean.parseBoolean( (String) params.get( BACKUP_SLAVE ) );
-        this.syncHookFactory = txSyncHookFactory;
-        this.persistenceModule = new PersistenceModule();
-        this.cacheManager = new AdaptiveCacheManager();
-        this.params.put( FileSystemAbstraction.class, fileSystem );
-        graphDbModule = new GraphDbModule( graphDb, cacheManager, lockManager,
-                txModule.getTxManager(), idGeneratorModule.getIdGenerator(),
-                readOnly );
-        indexStore = new IndexStore( storeDir, fileSystem );
-        params.put( IndexStore.class, indexStore );
+        // Try auto-configuring some of the numbers
+        boolean useMemoryMapped = Boolean.parseBoolean( (String) inputParams.get(
+                Config.USE_MEMORY_MAPPED_BUFFERS) );
+        boolean dumpToConsole = Boolean.parseBoolean( (String) inputParams.get(
+                Config.DUMP_CONFIGURATION) );
+        autoConfigurator = new AutoConfigurator( storeDir, useMemoryMapped, dumpToConsole );
+        autoConfigurator.configure(params);
 
-        if ( storeId != null ) params.put( StoreId.class, storeId );
-        params.put( IdGeneratorFactory.class, idGeneratorFactory );
-        params.put( TxIdGenerator.class, txIdGenerator );
-        params.put( TransactionManager.class, txModule.getTxManager() );
-        params.put( LastCommittedTxIdSetter.class, lastCommittedTxIdSetter );
-        params.put( GraphDbModule.class, graphDbModule );
-        params.put( TxHook.class, txModule.getTxHook() );
-        params.put( StringLogger.class, graphDb.getMessageLog() );
-        params.put( DiagnosticsManager.class, this.diagnostics = new DiagnosticsManager( graphDb.getMessageLog() ) );
-        diagnostics.appendProvider( this );
+        this.params.putAll(inputParams);
+
+        // Configuration may not be changed at runtime
+        this.params = Collections.unmodifiableMap(this.params);
+
     }
 
-    public static Map<Object, Object> getDefaultParams()
+    public static Map<String, String> getDefaultParams()
     {
-        Map<Object, Object> params = new HashMap<Object, Object>();
+        Map<String, String> params = new HashMap<String, String>();
         params.put( "neostore.nodestore.db.mapped_memory", "20M" );
         params.put( "neostore.propertystore.db.mapped_memory", "90M" );
         params.put( "neostore.propertystore.db.index.mapped_memory", "1M" );
@@ -319,15 +251,21 @@ public class Config implements DiagnosticsProvider
             // If not on win, default use memory mapping
             params.put( Config.USE_MEMORY_MAPPED_BUFFERS, "true" );
         }
+        
         params.put( NODE_AUTO_INDEXING, "false" );
         params.put( RELATIONSHIP_AUTO_INDEXING, "false" );
         return params;
     }
 
+    public AutoConfigurator getAutoConfigurator()
+    {
+        return autoConfigurator;
+    }
+
     public static boolean osIsWindows()
     {
         String nameOs = System.getProperty( "os.name" );
-        return nameOs.startsWith( "Windows" );
+        return nameOs.startsWith("Windows");
     }
 
     public static boolean osIsMacOS()
@@ -336,115 +274,9 @@ public class Config implements DiagnosticsProvider
         return nameOs.equalsIgnoreCase( "Mac OS X" );
     }
 
-    void setPersistenceSource( String name, boolean create )
-    {
-        persistenceSourceName = name;
-        this.create = create;
-    }
-
-    String getPersistenceSource()
-    {
-        return persistenceSourceName;
-    }
-
-    boolean getCreatePersistenceSource()
-    {
-        return create;
-    }
-
-    public TxModule getTxModule()
-    {
-        return txModule;
-    }
-
-    public GraphDbModule getGraphDbModule()
-    {
-        return graphDbModule;
-    }
-
-    public PersistenceModule getPersistenceModule()
-    {
-        return persistenceModule;
-    }
-
-    public IdGeneratorModule getIdGeneratorModule()
-    {
-        return idGeneratorModule;
-    }
-
-    public LockManager getLockManager()
-    {
-        return lockManager;
-    }
-
-    public IndexStore getIndexStore()
-    {
-        return indexStore;
-    }
-
-    public LockReleaser getLockReleaser()
-    {
-        return lockReleaser;
-    }
-
-    public Map<Object, Object> getParams()
+    public Map<String, String> getParams()
     {
         return this.params;
-    }
-
-    public boolean isReadOnly()
-    {
-        return readOnly;
-    }
-    
-    public boolean isEphemeral()
-    {
-        return ephemeral;
-    }
-
-    boolean isBackupSlave()
-    {
-        return backupSlave;
-    }
-
-    Map<Object, Object> getInputParams()
-    {
-        return inputParams;
-    }
-
-    TxEventSyncHookFactory getSyncHookFactory()
-    {
-        return syncHookFactory;
-    }
-
-    public RelationshipTypeCreator getRelationshipTypeCreator()
-    {
-        return relTypeCreator;
-    }
-
-    public IdGeneratorFactory getIdGeneratorFactory()
-    {
-        return idGeneratorFactory;
-    }
-
-    public RelationshipTypeHolder getRelationshipTypeHolder()
-    {
-        return graphDbModule.getNodeManager().getRelationshipTypeHolder();
-    }
-
-    public static void dumpConfiguration( Map<?, ?> config )
-    {
-        for ( Object key : config.keySet() )
-        {
-            if ( key instanceof String )
-            {
-                Object value = config.get( key );
-                if ( value instanceof String )
-                {
-                    System.out.println( key + "=" + value );
-                }
-            }
-        }
     }
 
     public static boolean configValueContainsMultipleParameters( String configValue )
@@ -475,11 +307,6 @@ public class Config implements DiagnosticsProvider
         return result != null ? result : defaultValue;
     }
 
-    public DiagnosticsManager getDiagnosticsManager()
-    {
-        return diagnostics;
-    }
-    
     @Override
     public String getDiagnosticsIdentifier()
     {
@@ -499,7 +326,7 @@ public class Config implements DiagnosticsProvider
         {
             log.logLongMessage( "Neo4j Kernel properties:", new PrefetchingIterator<String>()
             {
-                final Iterator<Object> keys = params.keySet().iterator();
+                final Iterator<String> keys = params.keySet().iterator();
 
                 @Override
                 protected String fetchNextOrNull()
@@ -517,10 +344,5 @@ public class Config implements DiagnosticsProvider
                 }
             }, true );
         }
-    }
-
-    public KernelPanicEventGenerator getKernelPanicGenerator()
-    {
-        return kpe;
     }
 }

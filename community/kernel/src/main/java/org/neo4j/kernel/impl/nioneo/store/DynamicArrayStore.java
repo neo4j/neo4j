@@ -24,24 +24,30 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.util.Bits;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Dynamic store that stores strings.
  */
 public class DynamicArrayStore extends AbstractDynamicStore
 {
+    public interface Configuration
+        extends AbstractDynamicStore.Configuration
+    {
+        
+    }
+    
     // store version, each store ends with this string (byte encoded)
-    static final String VERSION = "ArrayPropertyStore v0.A.0";
+    public static final String VERSION = "ArrayPropertyStore v0.A.0";
     public static final String TYPE_DESCRIPTOR = "ArrayPropertyStore";
 
-    public DynamicArrayStore( String fileName, Map<?,?> config, IdType idType )
+    public DynamicArrayStore(String fileName, Configuration configuration, IdType idType, IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
     {
-        super( fileName, config, idType );
+        super( fileName, configuration, idType, idGeneratorFactory, fileSystemAbstraction, stringLogger);
     }
     
     @Override
@@ -54,12 +60,6 @@ public class DynamicArrayStore extends AbstractDynamicStore
     public String getTypeDescriptor()
     {
         return TYPE_DESCRIPTOR;
-    }
-
-    public static void createStore( String fileName, int blockSize,
-            IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystem )
-    {
-        createEmptyStore( fileName, blockSize, VERSION, idGeneratorFactory, fileSystem, IdType.ARRAY_BLOCK );
     }
 
     private Collection<DynamicRecord> allocateFromNumbers( long startBlock, Object array )

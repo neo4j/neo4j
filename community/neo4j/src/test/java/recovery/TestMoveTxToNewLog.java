@@ -33,6 +33,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.Config;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager;
@@ -114,7 +115,7 @@ public class TestMoveTxToNewLog extends AbstractSubProcessTestBase
     private static class SetPropertyTask implements Task
     {
         @Override
-        public void run( AbstractGraphDatabase graphdb )
+        public void run( EmbeddedGraphDatabase graphdb )
         {
             Transaction tx = graphdb.beginTx();
             try
@@ -134,7 +135,7 @@ public class TestMoveTxToNewLog extends AbstractSubProcessTestBase
     private static class RemovePropertyAndFailTask implements Task
     {
         @Override
-        public void run( AbstractGraphDatabase graphdb )
+        public void run( EmbeddedGraphDatabase graphdb )
         {
             Transaction tx = graphdb.beginTx();
             try
@@ -162,7 +163,7 @@ public class TestMoveTxToNewLog extends AbstractSubProcessTestBase
     private static class CreateNamedNodeTask implements Task
     {
         @Override
-        public void run( AbstractGraphDatabase graphdb )
+        public void run( EmbeddedGraphDatabase graphdb )
         {
             Transaction tx = graphdb.beginTx();
             try
@@ -183,11 +184,11 @@ public class TestMoveTxToNewLog extends AbstractSubProcessTestBase
     private static class RotateTask implements Task
     {
         @Override
-        public void run( AbstractGraphDatabase graphdb )
+        public void run( EmbeddedGraphDatabase graphdb )
         {
             try
             {
-                graphdb.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME ).rotateLogicalLog();
+                graphdb.getXaDataSourceManager().getXaDataSource( Config.DEFAULT_DATA_SOURCE_NAME ).rotateLogicalLog();
             }
             catch ( IOException e )
             {
@@ -208,11 +209,11 @@ public class TestMoveTxToNewLog extends AbstractSubProcessTestBase
 
         @SuppressWarnings( "rawtypes" )
         @Override
-        public void run( AbstractGraphDatabase graphdb )
+        public void run( EmbeddedGraphDatabase graphdb )
         {
             try
             {
-                XaLogicalLog log = graphdb.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource(
+                XaLogicalLog log = graphdb.getXaDataSourceManager().getXaDataSource(
                         Config.DEFAULT_DATA_SOURCE_NAME ).getXaContainer().getLogicalLog();
                 ArrayMap activeXids = (ArrayMap) inaccessibleField( log, "xidIdentMap" ).get( log );
                 assertEquals( count, activeXids.size() );
@@ -229,7 +230,7 @@ public class TestMoveTxToNewLog extends AbstractSubProcessTestBase
     private static class VerifyTask implements Task
     {
         @Override
-        public void run( AbstractGraphDatabase graphdb )
+        public void run( EmbeddedGraphDatabase graphdb )
         {
             assertFalse( graphdb.getReferenceNode().hasProperty( NAME ) );
             assertEquals( LONG_STRING_2, graphdb.getNodeById( 1 ).getProperty( NAME ) );
@@ -249,7 +250,7 @@ public class TestMoveTxToNewLog extends AbstractSubProcessTestBase
          * after all commands have been applied and before NeoStore#setLastCommittedTx() */
         try
         {
-            XaResourceManager resourceManager = graphdb.getConfig().getTxModule().getXaDataSourceManager().getXaDataSource(
+            XaResourceManager resourceManager = graphdb.getXaDataSourceManager().getXaDataSource(
                     Config.DEFAULT_DATA_SOURCE_NAME ).getXaContainer().getResourceManager();
             ArrayMap<Xid, ?> xidMap = (ArrayMap<Xid, ?>) inaccessibleField( resourceManager, "xidMap" ).get( resourceManager );
             Object xidStatus = xidMap.values().iterator().next();

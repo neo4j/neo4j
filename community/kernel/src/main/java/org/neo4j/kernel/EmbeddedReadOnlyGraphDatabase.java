@@ -19,31 +19,24 @@
  */
 package org.neo4j.kernel;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.graphdb.index.IndexManager;
 
 /**
  * A read-only version of {@link EmbeddedGraphDatabase}.
  */
 public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
-        implements GraphDatabaseService
 {
     private static Map<String, String> readOnlyParams = new HashMap<String, String>();
 
     static
     {
         readOnlyParams.put( Config.READ_ONLY, "true" );
-    };
-
-    private final EmbeddedGraphDbImpl graphDbImpl;
+    }
 
     /**
      * Creates an embedded {@link GraphDatabaseService} with a store located in
@@ -55,6 +48,8 @@ public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
     public EmbeddedReadOnlyGraphDatabase( String storeDir )
     {
         this( storeDir, readOnlyParams );
+        
+        run();
     }
 
     /**
@@ -72,90 +67,13 @@ public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
     public EmbeddedReadOnlyGraphDatabase( String storeDir,
             Map<String, String> params )
     {
-        super( storeDir );
-        params.put( Config.READ_ONLY, "true" );
-        this.graphDbImpl = new EmbeddedGraphDbImpl( getStoreDir(), null, params, this,
-                CommonFactories.defaultLockManagerFactory(),
-                CommonFactories.defaultIdGeneratorFactory(),
-                CommonFactories.defaultRelationshipTypeCreator(),
-                CommonFactories.defaultTxIdGeneratorFactory(),
-                CommonFactories.defaultTxHook(),
-                CommonFactories.defaultLastCommittedTxIdSetter(),
-                CommonFactories.defaultFileSystemAbstraction() );
+        super( storeDir, addReadOnly(params) );
     }
 
-    /**
-     * A non-standard convenience method that loads a standard property file and
-     * converts it into a generic <Code>Map<String,String></CODE>. Will most
-     * likely be removed in future releases.
-     *
-     * @param file the property file to load
-     * @return a map containing the properties from the file
-     */
-    public static Map<String, String> loadConfigurations( String file )
+    private static Map<String, String> addReadOnly( Map<String, String> params )
     {
-        return EmbeddedGraphDbImpl.loadConfigurations( file );
-    }
-
-    public Node createNode()
-    {
-        return graphDbImpl.createNode();
-    }
-
-    public Node getNodeById( long id )
-    {
-        return graphDbImpl.getNodeById( id );
-    }
-
-    public Relationship getRelationshipById( long id )
-    {
-        return graphDbImpl.getRelationshipById( id );
-    }
-
-    public Node getReferenceNode()
-    {
-        return graphDbImpl.getReferenceNode();
-    }
-
-    @Override protected void close()
-    {
-        graphDbImpl.shutdown();
-    }
-    
-    @Override
-    public TransactionBuilder tx()
-    {
-        return graphDbImpl.tx();
-    }
-
-    /**
-     * Returns a non-standard configuration object. Will most likely be removed
-     * in future releases.
-     *
-     * @return a configuration object
-     */
-    @Override
-    public Config getConfig()
-    {
-        return graphDbImpl.getConfig();
-    }
-
-    @Override
-    public <T> Collection<T> getManagementBeans( Class<T> type )
-    {
-        return graphDbImpl.getManagementBeans( type );
-    }
-    
-    @Override
-    public KernelData getKernelData()
-    {
-        return graphDbImpl.getKernelData();
-    }
-
-    @Override
-    public String toString()
-    {
-        return super.toString() + " [" + graphDbImpl.getStoreDir() + "]";
+        params.putAll( readOnlyParams );
+        return params;
     }
 
     public KernelEventHandler registerKernelEventHandler(
@@ -180,10 +98,5 @@ public final class EmbeddedReadOnlyGraphDatabase extends AbstractGraphDatabase
             TransactionEventHandler<T> handler )
     {
         throw new UnsupportedOperationException();
-    }
-
-    public IndexManager index()
-    {
-        return graphDbImpl.index();
     }
 }

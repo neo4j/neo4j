@@ -21,19 +21,30 @@ package org.neo4j.kernel.impl.core;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.impl.transaction.LockType;
 
-class RelationshipProxy implements Relationship
+public class RelationshipProxy implements Relationship
 {
+    public interface RelationshipLookups
+    {
+        Node lookupNode(long nodeId);
+        Node newNodeProxy( long nodeId );
+        RelationshipImpl lookupRelationship(long relationshipId);
+        GraphDatabaseService getGraphDatabaseService();
+        NodeManager getNodeManager();
+        RelationshipImpl lookupRelationship( long relId, LockType lock );
+    }
+    
     private final long relId;
-    private final NodeManager nm;
+    private final RelationshipLookups relationshipLookups;
 
-    RelationshipProxy( long relId, NodeManager nodeManager )
+    RelationshipProxy( long relId, RelationshipLookups relationshipLookups )
     {
         this.relId = relId;
-        this.nm = nodeManager;
+        this.relationshipLookups = relationshipLookups;
     }
 
     public long getId()
@@ -43,77 +54,89 @@ class RelationshipProxy implements Relationship
 
     public GraphDatabaseService getGraphDatabase()
     {
-        return nm.getGraphDbService();
+        return relationshipLookups.getGraphDatabaseService();
     }
 
     public void delete()
     {
-        nm.getRelForProxy( this, LockType.WRITE ).delete( nm, this );
+        relationshipLookups.lookupRelationship( relId, LockType.WRITE ).delete( relationshipLookups.getNodeManager(), this );
     }
 
     public Node[] getNodes()
     {
-        return nm.getRelForProxy( this, null ).getNodes( nm );
+        RelationshipImpl relationship = relationshipLookups.lookupRelationship( relId );
+        return new Node[]{ relationshipLookups.newNodeProxy( relationship.getStartNodeId() ), relationshipLookups.newNodeProxy( relationship.getEndNodeId() )};
     }
 
     public Node getOtherNode( Node node )
     {
-        return nm.getRelForProxy( this, null ).getOtherNode( nm, node );
+        RelationshipImpl relationship = relationshipLookups.lookupRelationship( relId );
+        if ( relationship.getStartNodeId() == node.getId() )
+        {
+            return relationshipLookups.newNodeProxy( relationship.getEndNodeId() );
+        }
+        if ( relationship.getEndNodeId() == node.getId() )
+        {
+            return relationshipLookups.newNodeProxy( relationship.getStartNodeId() );
+        }
+        throw new NotFoundException( "Node[" + node.getId()
+            + "] not connected to this relationship[" + getId() + "]" );
     }
 
     public Node getStartNode()
     {
-        return nm.getRelForProxy( this, null ).getStartNode( nm );
+        return relationshipLookups.newNodeProxy( relationshipLookups.lookupRelationship( relId ).getStartNodeId() );
     }
 
     public Node getEndNode()
     {
-        return nm.getRelForProxy( this, null ).getEndNode( nm );
+        return relationshipLookups.newNodeProxy( relationshipLookups.lookupRelationship( relId ).getEndNodeId() );
     }
 
     public RelationshipType getType()
     {
-        return nm.getRelForProxy( this, null ).getType( nm );
+        return relationshipLookups.getNodeManager().getRelationshipTypeById( relationshipLookups.lookupRelationship( relId )
+                                                                                 .getTypeId() );
     }
 
     public Iterable<String> getPropertyKeys()
     {
-        return nm.getRelForProxy( this, null ).getPropertyKeys( nm );
+        return relationshipLookups.lookupRelationship( relId ).getPropertyKeys( relationshipLookups.getNodeManager() );
     }
 
     public Iterable<Object> getPropertyValues()
     {
-        return nm.getRelForProxy( this, null ).getPropertyValues( nm );
+        return relationshipLookups.lookupRelationship( relId ).getPropertyValues( relationshipLookups.getNodeManager() );
     }
 
     public Object getProperty( String key )
     {
-        return nm.getRelForProxy( this, null ).getProperty( nm, key );
+        return relationshipLookups.lookupRelationship( relId ).getProperty( relationshipLookups.getNodeManager(), key );
     }
 
     public Object getProperty( String key, Object defaultValue )
     {
-        return nm.getRelForProxy( this, null ).getProperty( nm, key, defaultValue );
+        return relationshipLookups.lookupRelationship( relId ).getProperty( relationshipLookups.getNodeManager(), key, defaultValue );
     }
 
     public boolean hasProperty( String key )
     {
-        return nm.getRelForProxy( this, null ).hasProperty( nm, key );
+        return relationshipLookups.lookupRelationship( relId ).hasProperty( relationshipLookups.getNodeManager(), key );
     }
 
     public void setProperty( String key, Object property )
     {
-        nm.getRelForProxy( this, LockType.WRITE ).setProperty( nm, this, key, property );
+        relationshipLookups.lookupRelationship( relId, LockType.WRITE ).setProperty( relationshipLookups.getNodeManager(), this, key, property );
     }
 
     public Object removeProperty( String key )
     {
-        return nm.getRelForProxy( this, LockType.WRITE ).removeProperty( nm, this, key );
+        return relationshipLookups.lookupRelationship( relId, LockType.WRITE ).removeProperty( relationshipLookups.getNodeManager(), this, key );
     }
 
     public boolean isType( RelationshipType type )
     {
-        return nm.getRelForProxy( this, null ).isType( nm, type );
+        return relationshipLookups.getNodeManager().getRelationshipTypeById( relationshipLookups.lookupRelationship( relId ).getTypeId() ).name().equals( type.name() );
     }
 
     public int compareTo( Object rel )

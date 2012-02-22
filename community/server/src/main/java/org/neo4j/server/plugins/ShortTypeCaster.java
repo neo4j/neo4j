@@ -19,19 +19,19 @@
  */
 package org.neo4j.server.plugins;
 
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.server.rest.repr.BadInputException;
 
 class ShortTypeCaster extends TypeCaster
 {
     @Override
-    Object get( AbstractGraphDatabase graphDb, ParameterList parameters, String name ) throws BadInputException
+    Object get( GraphDatabaseSPI graphDb, ParameterList parameters, String name ) throws BadInputException
     {
         return parameters.getShort( name );
     }
 
     @Override
-    Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters, String name ) throws BadInputException
+    Object[] getList( GraphDatabaseSPI graphDb, ParameterList parameters, String name ) throws BadInputException
     {
         return parameters.getShortList( name );
     }

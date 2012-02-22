@@ -27,7 +27,7 @@ import org.neo4j.kernel.DeadlockDetectedException;
 
 public class TestRWLock
 {
-    private LockManager lm = new LockManager( new PlaceboTm() );
+    private LockManager lm = new LockManager( new RagManager(new PlaceboTm()) );
 
     @Test
     public void testSingleThread() throws Exception

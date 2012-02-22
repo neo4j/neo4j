@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.nioneo.store;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.map;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,7 +38,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.junit.Test;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.CommonFactories;
+import org.neo4j.kernel.ConfigProxy;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
@@ -113,14 +114,12 @@ public class TestDynamicStore
 
     private void createEmptyStore( String fileName, int blockSize )
     {
-        DynamicArrayStore.createEmptyStore( fileName, blockSize,
-                DynamicArrayStore.VERSION, ID_GENERATOR_FACTORY, FILE_SYSTEM,
-                IdType.ARRAY_BLOCK );
+        new StoreFactory(config(), ID_GENERATOR_FACTORY, FILE_SYSTEM, null, StringLogger.SYSTEM, null).createDynamicArrayStore(fileName, blockSize);
     }
 
     private DynamicArrayStore newStore()
     {
-        return new DynamicArrayStore( dynamicStoreFile(), config(), IdType.ARRAY_BLOCK );
+        return new DynamicArrayStore( dynamicStoreFile(), ConfigProxy.config(config(), DynamicArrayStore.Configuration.class), IdType.ARRAY_BLOCK, ID_GENERATOR_FACTORY, FILE_SYSTEM, StringLogger.SYSTEM);
     }
 
     private void deleteBothFiles()
@@ -160,14 +159,11 @@ public class TestDynamicStore
         }
     }
 
-    private Map<?, ?> config()
+    private Map<String,String> config()
     {
-        return map(
+        return MapUtil.stringMap(
                 "neo_store", dynamicStoreFile(),
-                IdGeneratorFactory.class, ID_GENERATOR_FACTORY,
-                StringLogger.class, StringLogger.DEV_NULL,
-                "store_dir", path(),
-                FileSystemAbstraction.class, CommonFactories.defaultFileSystemAbstraction() );
+                "store_dir", path());
     }
 
     @Test

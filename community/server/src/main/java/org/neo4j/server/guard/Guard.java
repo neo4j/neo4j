@@ -19,14 +19,14 @@
  */
 package org.neo4j.server.guard;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import static java.lang.System.currentTimeMillis;
+import static java.lang.Thread.currentThread;
 
 import java.util.Timer;
 import java.util.TimerTask;
 
-import static java.lang.System.currentTimeMillis;
-import static java.lang.Thread.currentThread;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 public class Guard {
 

@@ -24,7 +24,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,7 +31,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
@@ -45,7 +43,7 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 
 public class TestAutoIndexing
 {
-    private GraphDatabaseService graphDb;
+    private ImpermanentGraphDatabase graphDb;
     private Transaction tx;
     private Map<String, String> config;
 
@@ -63,7 +61,7 @@ public class TestAutoIndexing
     {
         if ( config == null )
         {
-            return Collections.emptyMap();
+            config = new HashMap<String, String>();
         }
         return config;
     }
@@ -651,7 +649,7 @@ public class TestAutoIndexing
                 1 } );
 
         newTransaction();
-        ( (ImpermanentGraphDatabase) graphDb ).getConfig().getGraphDbModule().getNodeManager().clearCache();
+        graphDb.getNodeManager().clearCache();
         node1.removeProperty( "nodeProp" );
         newTransaction();
         assertFalse( node1.hasProperty( "nodeProp" ) );

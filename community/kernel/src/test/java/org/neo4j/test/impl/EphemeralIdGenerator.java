@@ -30,7 +30,6 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 
 public class EphemeralIdGenerator implements IdGenerator
 {
@@ -59,12 +58,6 @@ public class EphemeralIdGenerator implements IdGenerator
         public IdGenerator get( IdType idType )
         {
             return generators.get( idType );
-        }
-
-        @Override
-        public void updateIdGenerators( NeoStore store )
-        {
-            store.updateIdGenerators();
         }
     }
     

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.neo4j.kernel.impl.util.RelIdArray.empty;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
@@ -32,26 +34,19 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.ReturnableEvaluator;
-import org.neo4j.graphdb.StopEvaluator;
-import org.neo4j.graphdb.Traverser;
-import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.core.LockReleaser.CowEntityElement;
 import org.neo4j.kernel.impl.core.LockReleaser.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.PropertyData;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.transaction.LockType;
-import org.neo4j.kernel.impl.traversal.OldTraverserWrapper;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.CombinedRelIdIterator;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdIterator;
 
-import static org.neo4j.kernel.impl.util.RelIdArray.empty;
-
-class NodeImpl extends ArrayBasedPrimitive
+public class NodeImpl extends ArrayBasedPrimitive
 {
     private static final RelIdArray[] NO_RELATIONSHIPS = new RelIdArray[0];
 
@@ -528,35 +523,6 @@ class NodeImpl extends ArrayBasedPrimitive
     }
     */
 
-    public Traverser traverse( NodeManager nodeManager, Order traversalOrder,
-        StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
-        RelationshipType relationshipType, Direction direction )
-    {
-        return OldTraverserWrapper.traverse( new NodeProxy( getId(), nodeManager ),
-                traversalOrder, stopEvaluator,
-                returnableEvaluator, relationshipType, direction );
-    }
-
-    public Traverser traverse( NodeManager nodeManager, Order traversalOrder,
-        StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
-        RelationshipType firstRelationshipType, Direction firstDirection,
-        RelationshipType secondRelationshipType, Direction secondDirection )
-    {
-        return OldTraverserWrapper.traverse( new NodeProxy( getId(), nodeManager ),
-                traversalOrder, stopEvaluator,
-                returnableEvaluator, firstRelationshipType, firstDirection,
-                secondRelationshipType, secondDirection );
-    }
-
-    public Traverser traverse( NodeManager nodeManager, Order traversalOrder,
-        StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
-        Object... relationshipTypesAndDirections )
-    {
-        return OldTraverserWrapper.traverse( new NodeProxy( getId(), nodeManager ),
-                traversalOrder, stopEvaluator,
-                returnableEvaluator, relationshipTypesAndDirections );
-    }
-
     public boolean hasRelationship( NodeManager nodeManager )
     {
         return getRelationships( nodeManager ).iterator().hasNext();
@@ -668,6 +634,6 @@ class NodeImpl extends ArrayBasedPrimitive
     @Override
     PropertyContainer asProxy( NodeManager nm )
     {
-        return new NodeProxy( getId(), nm );
+        return nm.newNodeProxyById(getId());
     }
 }

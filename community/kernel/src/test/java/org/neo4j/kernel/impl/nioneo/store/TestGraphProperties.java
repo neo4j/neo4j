@@ -25,7 +25,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.kernel.CommonFactories.defaultFileSystemAbstraction;
 import static org.neo4j.kernel.CommonFactories.defaultIdGeneratorFactory;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.arrayAsCollection;
@@ -37,6 +36,7 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Future;
@@ -47,17 +47,16 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.impl.core.GraphProperties;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.TargetDirectory;
 
 public class TestGraphProperties
 {
-    private AbstractGraphDatabase db;
+    private EmbeddedGraphDatabase db;
     private Transaction tx;
 
     @Before
@@ -117,7 +116,7 @@ public class TestGraphProperties
         finishTx( true );
         
         for ( int i = 0; i < count; i++ ) assertPropertyEquals( values[i%values.length], properties().getProperty( "key" + i ) ); 
-        db.getConfig().getGraphDbModule().getNodeManager().clearCache();
+        db.getNodeManager().clearCache();
         for ( int i = 0; i < count; i++ ) assertPropertyEquals( values[i%values.length], properties().getProperty( "key" + i ) ); 
     }
     
@@ -138,7 +137,7 @@ public class TestGraphProperties
         assertPropertyEquals( array, properties().getProperty( key ) );
         finishTx( true );
         assertPropertyEquals( array, properties().getProperty( key ) );
-        db.getConfig().getGraphDbModule().getNodeManager().clearCache();
+        db.getNodeManager().clearCache();
         assertPropertyEquals( array, properties().getProperty( key ) );
     }
 
@@ -165,7 +164,7 @@ public class TestGraphProperties
 
     private PropertyContainer properties()
     {
-        return db.getConfig().getGraphDbModule().getNodeManager().getGraphProperties();
+        return db.getNodeManager().getGraphProperties();
     }
     
     @Test
@@ -182,15 +181,13 @@ public class TestGraphProperties
         
         db = new EmbeddedGraphDatabase( forTest( getClass() ).directory( "zero", false ).getAbsolutePath() );
         tx = db.beginTx();
-        db.getConfig().getGraphDbModule().getNodeManager().getGraphProperties().setProperty( "test", "something" );
+        db.getNodeManager().getGraphProperties().setProperty( "test", "something" );
         tx.success();
         tx.finish();
         db.shutdown();
         
-        NeoStore neoStore = new NeoStore( genericMap(
-                FileSystemAbstraction.class, defaultFileSystemAbstraction(),
-                "neo_store", new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsolutePath(),
-                IdGeneratorFactory.class, defaultIdGeneratorFactory() ) );
+
+        NeoStore neoStore = new StoreFactory(Collections.<String,String>emptyMap(), defaultIdGeneratorFactory(), defaultFileSystemAbstraction(), null, StringLogger.DEV_NULL, null).newNeoStore(new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsolutePath());
         long prop = neoStore.getGraphNextProp();
         assertTrue( prop != 0 );
         neoStore.close();
@@ -258,18 +255,18 @@ public class TestGraphProperties
         removeLastNeoStoreRecord( storeDir );
         
         db = new EmbeddedGraphDatabase( storeDir );
-        PropertyContainer properties = db.getConfig().getGraphDbModule().getNodeManager().getGraphProperties();
+        PropertyContainer properties = db.getNodeManager().getGraphProperties();
         assertFalse( properties.getPropertyKeys().iterator().hasNext() );
         tx = db.beginTx();
         properties.setProperty( "a property", "a value" );
         tx.success();
         tx.finish();
-        db.getConfig().getGraphDbModule().getNodeManager().clearCache();
+        db.getNodeManager().clearCache();
         assertEquals( "a value", properties.getProperty( "a property" ) );
         db.shutdown();
         
         db = new EmbeddedGraphDatabase( storeDir );
-        properties = db.getConfig().getGraphDbModule().getNodeManager().getGraphProperties();
+        properties = db.getNodeManager().getGraphProperties();
         assertEquals( "a value", properties.getProperty( "a property" ) );
         db.shutdown();
     }
@@ -303,13 +300,13 @@ public class TestGraphProperties
                 ProduceUncleanStore.class.getName(), storeDir } ).waitFor() );
         removeLastNeoStoreRecord( storeDir );
         EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( storeDir );
-        PropertyContainer properties = db.getConfig().getGraphDbModule().getNodeManager().getGraphProperties();
+        PropertyContainer properties = db.getNodeManager().getGraphProperties();
         assertFalse( properties.getPropertyKeys().iterator().hasNext() ); 
         Transaction tx = db.beginTx();
         properties.setProperty( "a property", "a value" );
         tx.success();
         tx.finish();
-        db.getConfig().getGraphDbModule().getNodeManager().clearCache();
+        db.getNodeManager().clearCache();
         assertEquals( "a value", properties.getProperty( "a property" ) );
         db.shutdown();
     }
@@ -325,14 +322,14 @@ public class TestGraphProperties
         assertEquals( 0, Runtime.getRuntime().exec( new String[] { "java", "-cp", System.getProperty( "java.class.path" ),
                 ProduceUncleanStore.class.getName(), storeDir, "true" } ).waitFor() );
         EmbeddedGraphDatabase db = new EmbeddedGraphDatabase( storeDir );
-        assertEquals( "Some value", db.getConfig().getGraphDbModule().getNodeManager().getGraphProperties().getProperty( "prop" ) );
+        assertEquals( "Some value", db.getNodeManager().getGraphProperties().getProperty( "prop" ) );
         db.shutdown();
     }
     
     @Test
     public void testEquals()
     {
-        GraphProperties graphProperties = db.getConfig().getGraphDbModule().getNodeManager().getGraphProperties();
+        GraphProperties graphProperties = db.getNodeManager().getGraphProperties();
         tx = db.beginTx();
         try
         {
@@ -344,27 +341,27 @@ public class TestGraphProperties
             tx.finish();
         }
         
-        assertEquals( graphProperties, db.getConfig().getGraphDbModule().getNodeManager().getGraphProperties() );
+        assertEquals( graphProperties, db.getNodeManager().getGraphProperties() );
         restartDb();
-        assertFalse( graphProperties.equals( db.getConfig().getGraphDbModule().getNodeManager().getGraphProperties() ) );
+        assertFalse( graphProperties.equals( db.getNodeManager().getGraphProperties() ) );
     }
     
     private static class State
     {
-        private final AbstractGraphDatabase db;
+        private final EmbeddedGraphDatabase db;
         private final PropertyContainer properties;
         private Transaction tx;
 
-        State( AbstractGraphDatabase db )
+        State( EmbeddedGraphDatabase db )
         {
             this.db = db;
             this.properties = getGraphProperties( db );
         }
     }
     
-    private static GraphProperties getGraphProperties( AbstractGraphDatabase db )
+    private static GraphProperties getGraphProperties( EmbeddedGraphDatabase db )
     {
-        return db.getConfig().getGraphDbModule().getNodeManager().getGraphProperties();
+        return db.getNodeManager().getGraphProperties();
     }
     
     private static class Worker extends OtherThreadExecutor<State>

@@ -19,11 +19,11 @@
  */
 package org.neo4j.test;
 
-import sun.reflect.FieldAccessor;
-import sun.reflect.ReflectionFactory;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+
+import sun.reflect.FieldAccessor;
+import sun.reflect.ReflectionFactory;
 
 public class ReflectionUtil
 {

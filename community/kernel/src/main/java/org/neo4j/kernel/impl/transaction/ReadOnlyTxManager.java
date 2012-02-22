@@ -33,11 +33,13 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.kernel.Lifecycle;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
-class ReadOnlyTxManager extends AbstractTransactionManager
+public class ReadOnlyTxManager extends AbstractTransactionManager
+    implements Lifecycle
 {
     private static Logger log = Logger.getLogger( ReadOnlyTxManager.class.getName() );
 
@@ -47,8 +49,9 @@ class ReadOnlyTxManager extends AbstractTransactionManager
 
     private XaDataSourceManager xaDsManager = null;
 
-    ReadOnlyTxManager()
+    public ReadOnlyTxManager(XaDataSourceManager xaDsManagerToUse)
     {
+        xaDsManager = xaDsManagerToUse;
     }
 
     synchronized int getNextEventIdentifier()
@@ -57,16 +60,28 @@ class ReadOnlyTxManager extends AbstractTransactionManager
     }
 
     @Override
+    public void init( )
+    {
+        txThreadMap = new ArrayMap<Thread,ReadOnlyTransactionImpl>( 5, true, true );
+    }
+
+    @Override
+    public void start()
+        throws Throwable
+    {
+    }
+
+    @Override
     public void stop()
     {
     }
 
     @Override
-    public void init( XaDataSourceManager xaDsManagerToUse )
+    public void shutdown()
+        throws Throwable
     {
-        this.xaDsManager = xaDsManagerToUse;
-        txThreadMap = new ArrayMap<Thread,ReadOnlyTransactionImpl>( 5, true, true );
     }
+
 
     public void begin() throws NotSupportedException
     {
@@ -259,11 +274,6 @@ class ReadOnlyTxManager extends AbstractTransactionManager
             }
         }
         return xaDsManager.getBranchId( xaRes );
-    }
-
-    XAResource getXaResource( byte branchId[] )
-    {
-        return xaDsManager.getXaResource( branchId );
     }
 
     String getTxStatusAsString( int status )

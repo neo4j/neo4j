@@ -19,37 +19,34 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import java.util.Map;
-
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Implementation of the property store.
  */
 public class PropertyIndexStore extends AbstractNameStore<PropertyIndexRecord>
 {
+    public interface Configuration
+        extends AbstractNameStore.Configuration
+    {
+
+    }
+
     public static final String TYPE_DESCRIPTOR = "PropertyIndexStore";
     private static final int RECORD_SIZE = 1/*inUse*/ + 4/*prop count*/ + 4/*nameId*/;
 
-    public PropertyIndexStore( String fileName, Map<?,?> config )
+    public PropertyIndexStore(String fileName, Configuration config,
+                              IdGeneratorFactory idGeneratorFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger, DynamicStringStore nameStore)
     {
-        super( fileName, config, IdType.PROPERTY_INDEX );
+        super(fileName, config, IdType.PROPERTY_INDEX, idGeneratorFactory, fileSystemAbstraction, stringLogger, nameStore);
     }
 
     @Override
     public void accept( RecordStore.Processor processor, PropertyIndexRecord record )
     {
-        processor.processPropertyIndex( this, record );
-    }
-
-    public static void createStore( String fileName, IdGeneratorFactory idGeneratorFactory,
-            FileSystemAbstraction fileSystem )
-    {
-        createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ), idGeneratorFactory,
-                fileSystem );
-        DynamicStringStore.createStore( fileName + ".keys",
-                NAME_STORE_BLOCK_SIZE, idGeneratorFactory, fileSystem, IdType.PROPERTY_INDEX_BLOCK );
+        processor.processPropertyIndex(this, record);
     }
 
     @Override
@@ -70,18 +67,6 @@ public class PropertyIndexStore extends AbstractNameStore<PropertyIndexRecord>
     {
         buffer.putInt( record.getPropertyCount() );
         buffer.putInt( record.getNameId() );
-    }
-
-    @Override
-    protected IdType getNameIdType()
-    {
-        return IdType.PROPERTY_INDEX_BLOCK;
-    }
-
-    @Override
-    protected String getNameStorePostfix()
-    {
-        return ".keys";
     }
 
     @Override

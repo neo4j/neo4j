@@ -17,41 +17,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.tooling.wrap;
 
-abstract class WrappedObject<W>
+package org.neo4j.kernel;
+
+/**
+ * Adapter for Lifecycle interface. Subclass and override methods as needed
+ */
+public class LifecycleAdapter
+    implements Lifecycle
 {
-    final WrappedGraphDatabase graphdb;
-    final W wrapped;
-
-    WrappedObject( WrappedGraphDatabase graphdb, W wrapped )
+    @Override
+    public void init()
+        throws Throwable
     {
-        this.graphdb = graphdb;
-        this.wrapped = wrapped;
     }
 
     @Override
-    public final int hashCode()
+    public void start()
+        throws Throwable
     {
-        return wrapped.hashCode();
     }
 
     @Override
-    public final boolean equals( Object obj )
+    public void stop()
+        throws Throwable
     {
-        if ( this == obj ) return true;
-        if ( getClass().isInstance( obj ) )
-        {
-            WrappedObject<?> other = (WrappedObject<?>) obj;
-            if ( wrapped == null ? other.wrapped == null : wrapped.equals( other.wrapped ) )
-                return graphdb.equals( other.graphdb );
-        }
-        return false;
     }
 
     @Override
-    public String toString()
+    public void shutdown()
+        throws Throwable
     {
-        return wrapped.toString();
     }
 }

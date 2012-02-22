@@ -23,6 +23,7 @@ import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
+import org.neo4j.kernel.Lifecycle;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 
 /**
@@ -35,25 +36,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
  *
  * @author Chris Gioran
  */
-public abstract class AbstractTransactionManager implements TransactionManager
+public abstract class AbstractTransactionManager implements TransactionManager, Lifecycle
 {
-    /**
-     * Begins the transaction manager, possibly triggering a recovery. The
-     * passed xaDsManager, given the startup sequence of the neo kernel, is
-     * assured to already have registered all xa resource adapters available for
-     * this run, so they can be used for registration for recovery purposes.
-     *
-     * @param xaDsManager The XaDataSourceManager that has registered the Xa
-     *            resources.
-     */
-    public abstract void init( XaDataSourceManager xaDsManager );
-
-    /**
-     * Stops the transaction manager, performing all implementation specific
-     * cleanup.
-     */
-    public abstract void stop();
-    
     public void begin( ForceMode forceMode ) throws NotSupportedException, SystemException
     {
         begin();

@@ -19,12 +19,19 @@
  */
 package org.neo4j.jmx;
 
-import org.neo4j.kernel.AbstractGraphDatabase;
+import static java.lang.String.format;
 
-import javax.management.*;
 import java.lang.management.ManagementFactory;
 
-import static java.lang.String.format;
+import javax.management.AttributeNotFoundException;
+import javax.management.InstanceNotFoundException;
+import javax.management.MBeanException;
+import javax.management.MBeanServer;
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectName;
+import javax.management.ReflectionException;
+
+import org.neo4j.kernel.AbstractGraphDatabase;
 
 public class JmxUtils {
 

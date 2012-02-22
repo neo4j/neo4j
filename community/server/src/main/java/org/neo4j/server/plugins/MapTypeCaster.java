@@ -19,21 +19,21 @@
  */
 package org.neo4j.server.plugins;
 
-import org.neo4j.kernel.AbstractGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.server.rest.repr.BadInputException;
 
 public class MapTypeCaster extends TypeCaster
 {
 
     @Override
-    Object get( AbstractGraphDatabase graphDb, ParameterList parameters,
+    Object get( GraphDatabaseSPI graphDb, ParameterList parameters,
             String name ) throws BadInputException
     {
         return parameters.getMap(name);
     }
 
     @Override
-    Object[] getList( AbstractGraphDatabase graphDb, ParameterList parameters,
+    Object[] getList( GraphDatabaseSPI graphDb, ParameterList parameters,
             String name ) throws BadInputException
     {
         // TODO Not done yet!

@@ -127,7 +127,7 @@ public class ServerBuilder
                 new Jetty6WebServer(), serverModules );
     }
 
-    private Bootstrapper createBootstrapper()
+    protected Bootstrapper createBootstrapper()
     {
         return persistent ? new NeoServerBootstrapper() : new EphemeralNeoServerBootstrapper();
     }
@@ -232,7 +232,7 @@ public class ServerBuilder
         return f;
     }
 
-    private ServerBuilder()
+    protected ServerBuilder()
     {
     }
 

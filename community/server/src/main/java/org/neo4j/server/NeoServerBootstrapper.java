@@ -23,8 +23,8 @@ import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.commons.configuration.Configuration;
-import org.neo4j.kernel.AbstractGraphDatabase;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.kernel.GraphDatabaseSPI;
 import org.neo4j.server.database.GraphDatabaseFactory;
 import org.neo4j.server.modules.DiscoveryModule;
 import org.neo4j.server.modules.ManagementApiModule;
@@ -59,7 +59,7 @@ public class NeoServerBootstrapper extends Bootstrapper
         return new GraphDatabaseFactory()
         {
             @Override
-            public AbstractGraphDatabase createDatabase( String databaseStoreDirectory,
+            public GraphDatabaseSPI createDatabase( String databaseStoreDirectory,
                     Map<String, String> databaseProperties )
             {
                 return new EmbeddedGraphDatabase( databaseStoreDirectory, databaseProperties );

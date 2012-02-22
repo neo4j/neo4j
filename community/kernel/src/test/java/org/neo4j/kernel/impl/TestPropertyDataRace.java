@@ -147,7 +147,7 @@ public class TestPropertyDataRace
     @BreakpointTrigger( "enable breakpoints" )
     private void clearCaches()
     {
-        graphdb.getConfig().getGraphDbModule().getNodeManager().clearCache();
+        graphdb.getNodeManager().clearCache();
     }
 
     @BreakpointTrigger( "done" )

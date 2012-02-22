@@ -24,10 +24,10 @@ import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 
 class TransactionBuilderImpl implements TransactionBuilder
 {
-    private final EmbeddedGraphDbImpl db;
+    private final AbstractGraphDatabase db;
     private final ForceMode forceMode;
 
-    TransactionBuilderImpl( EmbeddedGraphDbImpl db, ForceMode forceMode )
+    TransactionBuilderImpl( AbstractGraphDatabase db, ForceMode forceMode )
     {
         this.db = db;
         this.forceMode = forceMode;

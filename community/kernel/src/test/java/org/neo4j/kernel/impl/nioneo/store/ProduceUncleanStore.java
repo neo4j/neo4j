@@ -33,7 +33,7 @@ public class ProduceUncleanStore
         Transaction tx = db.beginTx();
         Node node = db.createNode();
         node.setProperty( "name", "Something" );
-        if ( setGraphProperty ) db.getConfig().getGraphDbModule().getNodeManager().getGraphProperties().setProperty( "prop", "Some value" );
+        if ( setGraphProperty ) db.getNodeManager().getGraphProperties().setProperty( "prop", "Some value" );
         tx.success();
         tx.finish();
         System.exit( 0 );

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -31,20 +29,27 @@ import org.neo4j.kernel.impl.transaction.LockException;
 import org.neo4j.kernel.impl.transaction.LockType;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
-abstract class RelationshipImpl extends ArrayBasedPrimitive
+public class RelationshipImpl extends ArrayBasedPrimitive
 {
-    RelationshipImpl( long startNodeId, long endNodeId, boolean newRel )
-    {
-        super( newRel );
-    }
+    /*
+     * The id long is used to store the relationship id (which is at most 35 bits).
+     * But also the high order bits for the start node (s) and end node (e) as well
+     * as the relationship type. This allows for a more compressed memory
+     * representation.
+     * 
+     *    2 bytes type      start/end high                   5 bytes of id
+     * [tttt,tttt][tttt,tttt][ssss,eeee][iiii,iiii][iiii,iiii][iiii,iiii][iiii,iiii][iiii,iiii]
+     */
+    private final long idAndMore;
+    private final int startNodeId;
+    private final int endNodeId;
 
-    protected RelationshipType assertTypeNotNull( RelationshipType type )
+    RelationshipImpl( long id, long startNodeId, long endNodeId, int typeId, boolean newRel )
     {
-        if ( type == null )
-        {
-            throw new IllegalArgumentException( "Null type" );
-        }
-        return type;
+        super(  newRel );
+        this.startNodeId = (int) startNodeId;
+        this.endNodeId = (int) endNodeId;
+        this.idAndMore = (((long)typeId) << 48) | ((startNodeId&0xF00000000L)<<12) | ((endNodeId&0xF00000000L)<<8) | id;
     }
 
     @Override
@@ -81,48 +86,27 @@ abstract class RelationshipImpl extends ArrayBasedPrimitive
         return nodeManager.loadProperties( this, light );
     }
 
-    public Node[] getNodes( NodeManager nodeManager )
+    @Override
+    public long getId()
     {
-        return new Node[] { new NodeProxy( getStartNodeId(), nodeManager ),
-            new NodeProxy( getEndNodeId(), nodeManager ) };
+        return idAndMore&0xFFFFFFFFFFL;
+    }
+    
+    long getStartNodeId()
+    {
+        return (long)(((long)startNodeId&0xFFFFFFFFL) | ((idAndMore&0xF00000000000L)>>12));
     }
 
-    public Node getOtherNode( NodeManager nodeManager, Node node )
+    long getEndNodeId()
     {
-        if ( getStartNodeId() == node.getId() )
-        {
-            return new NodeProxy( getEndNodeId(), nodeManager );
-        }
-        if ( getEndNodeId() == node.getId() )
-        {
-            return new NodeProxy( getStartNodeId(), nodeManager );
-        }
-        throw new NotFoundException( "Node[" + node.getId()
-            + "] not connected to this relationship[" + getId() + "]" );
+        return (long)(((long)endNodeId&0xFFFFFFFFL) | ((idAndMore&0xF0000000000L)>>8));
     }
-
-    public Node getStartNode( NodeManager nodeManager )
+    
+    int getTypeId()
     {
-        return new NodeProxy( getStartNodeId(), nodeManager );
+        return (int)((idAndMore&0xFFFF000000000000L)>>48);
     }
-
-    abstract long getStartNodeId();
-
-    public Node getEndNode( NodeManager nodeManager )
-    {
-        return new NodeProxy( getEndNodeId(), nodeManager );
-    }
-
-    abstract long getEndNodeId();
-
-    public abstract RelationshipType getType( NodeManager nodeManager );
-
-    public boolean isType( NodeManager nodeManager, RelationshipType otherType )
-    {
-        return otherType != null
-            && otherType.name().equals( this.getType( nodeManager ).name() );
-    }
-
+    
     public void delete( NodeManager nodeManager, Relationship proxy )
     {
         NodeImpl startNode = null;
@@ -162,7 +146,7 @@ abstract class RelationshipImpl extends ArrayBasedPrimitive
                 }
             }
             success = true;
-            RelationshipType type = getType( nodeManager );
+            RelationshipType type = nodeManager.getRelationshipTypeById( getTypeId() );
             long id = getId();
             if ( startNode != null )
             {
@@ -229,7 +213,7 @@ abstract class RelationshipImpl extends ArrayBasedPrimitive
     @Override
     public String toString()
     {
-        return "RelationshipImpl #" + this.getId() + " of type " + getType( null )
+        return "RelationshipImpl #" + this.getId() + " of type " + getTypeId()
             + " between Node[" + getStartNodeId() + "] and Node[" + getEndNodeId() + "]";
     }
     
@@ -242,6 +226,6 @@ abstract class RelationshipImpl extends ArrayBasedPrimitive
     @Override
     PropertyContainer asProxy( NodeManager nm )
     {
-        return new RelationshipProxy( getId(), nm );
+        return nm.newRelationshipProxyById( getId() );
     }
 }

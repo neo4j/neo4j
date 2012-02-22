@@ -21,22 +21,22 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.nio.channels.ReadableByteChannel;
 import java.util.List;
-import java.util.Map;
 
-import org.neo4j.helpers.Pair;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.Command;
+import org.neo4j.kernel.impl.util.StringLogger;
 
 public class InterceptingXaLogicalLog extends XaLogicalLog
 {
-    private final List<Pair<TransactionInterceptorProvider, Object>> providers;
     private final XaDataSource ds;
+    private TransactionInterceptor interceptor;
 
-    InterceptingXaLogicalLog( String fileName, XaResourceManager xaRm,
+    public InterceptingXaLogicalLog( String fileName, XaResourceManager xaRm,
             XaCommandFactory cf, XaTransactionFactory xaTf,
-            Map<Object, Object> config, List<Pair<TransactionInterceptorProvider, Object>> providers )
+            TransactionInterceptor interceptor, LogBufferFactory logBufferFactory, FileSystemAbstraction fileSystem, StringLogger stringLogger)
     {
-        super( fileName, xaRm, cf, xaTf, config );
-        this.providers = providers;
+        super( fileName, xaRm, cf, xaTf, logBufferFactory, fileSystem, stringLogger );
+        this.interceptor = interceptor;
         this.ds = xaRm.getDataSource();
     }
 
@@ -44,9 +44,6 @@ public class InterceptingXaLogicalLog extends XaLogicalLog
     protected LogDeserializer getLogDeserializer(
             ReadableByteChannel byteChannel )
     {
-        final TransactionInterceptor first = TransactionInterceptorProvider.resolveChain(
-                providers, ds );
-
         LogDeserializer toReturn = new LogDeserializer( byteChannel )
         {
             @Override
@@ -59,19 +56,19 @@ public class InterceptingXaLogicalLog extends XaLogicalLog
                         LogEntry.Command commandEntry = (LogEntry.Command) entry;
                         if ( commandEntry.getXaCommand() instanceof Command )
                         {
-                            ( (Command) commandEntry.getXaCommand() ).accept( first );
+                            ( (Command) commandEntry.getXaCommand() ).accept( interceptor );
                         }
                     }
                     else if ( entry instanceof LogEntry.Start )
                     {
-                        first.setStartEntry( (LogEntry.Start) entry );
+                        interceptor.setStartEntry( (LogEntry.Start) entry );
                     }
                     else if ( entry instanceof LogEntry.Commit )
                     {
-                        first.setCommitEntry( (LogEntry.Commit) entry );
+                        interceptor.setCommitEntry( (LogEntry.Commit) entry );
                     }
                 }
-                first.complete();
+                interceptor.complete();
             }
         };
         return toReturn;

@@ -19,17 +19,17 @@
 
 package org.neo4j.examples.socnet;
 
+import static org.neo4j.examples.socnet.RelTypes.NEXT;
+import static org.neo4j.examples.socnet.RelTypes.STATUS;
+
+import java.util.Date;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.Traversal;
-
-import java.util.Date;
-
-import static org.neo4j.examples.socnet.RelTypes.NEXT;
-import static org.neo4j.examples.socnet.RelTypes.STATUS;
 
 public class StatusUpdate
 {

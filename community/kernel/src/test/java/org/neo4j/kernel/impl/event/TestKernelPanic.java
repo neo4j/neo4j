@@ -19,6 +19,16 @@
  */
 package org.neo4j.kernel.impl.event;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.Scanner;
+
+import javax.transaction.Transaction;
+import javax.transaction.TransactionManager;
+
 import org.junit.Test;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
@@ -29,15 +39,6 @@ import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.util.Scanner;
-
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 public class TestKernelPanic
 {
     @Test
@@ -47,20 +48,20 @@ public class TestKernelPanic
         AbstractNeo4jTestCase.deleteFileOrDirectory( new File( path ) );
         EmbeddedGraphDatabase graphDb = new EmbeddedGraphDatabase( path );
         XaDataSourceManager xaDs =
-            graphDb.getConfig().getTxModule().getXaDataSourceManager();
+            graphDb.getXaDataSourceManager();
         
-        IllBehavingXaDataSource noob = new IllBehavingXaDataSource();
-        xaDs.registerDataSource( "noob", noob, UTF8.encode( "554342" ) );
+        IllBehavingXaDataSource noob = new IllBehavingXaDataSource(UTF8.encode( "554342" ), "noob");
+        xaDs.registerDataSource( noob );
         
         Panic panic = new Panic();
         graphDb.registerKernelEventHandler( panic );
      
         org.neo4j.graphdb.Transaction gdbTx = graphDb.beginTx();
-        TransactionManager txMgr = graphDb.getConfig().getTxModule().getTxManager();
+        TransactionManager txMgr = graphDb.getTxManager();
         Transaction tx = txMgr.getTransaction();
         
         graphDb.createNode();
-        tx.enlistResource( noob.getXaConnection().getXaResource() );
+        noob.getXaConnection().enlistResource( tx );
         try
         {
             gdbTx.success();

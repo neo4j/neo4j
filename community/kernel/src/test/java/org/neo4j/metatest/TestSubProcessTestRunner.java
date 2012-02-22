@@ -19,7 +19,8 @@
  */
 package org.neo4j.metatest;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,7 +33,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.model.MultipleFailureException;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.BreakPoint.Event;
-import org.neo4j.test.subprocess.SuspendedThreadsException;
 import org.neo4j.test.subprocess.BreakpointHandler;
 import org.neo4j.test.subprocess.BreakpointTrigger;
 import org.neo4j.test.subprocess.DebugInterface;
@@ -40,6 +40,7 @@ import org.neo4j.test.subprocess.DebuggedThread;
 import org.neo4j.test.subprocess.EnabledBreakpoints;
 import org.neo4j.test.subprocess.SubProcess;
 import org.neo4j.test.subprocess.SubProcessTestRunner;
+import org.neo4j.test.subprocess.SuspendedThreadsException;
 import org.neo4j.test.subprocess.Task;
 
 @Ignore( "not stable enough" )

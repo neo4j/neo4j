@@ -75,7 +75,7 @@ class IntArrayIterator extends PrefetchingIterator<Relationship> implements Iter
                 long nextId = currentTypeIterator.next();
                 try
                 {
-                    return new RelationshipProxy( nextId, nodeManager );
+                    return nodeManager.newRelationshipProxyById( nextId );
                 }
                 catch ( NotFoundException e )
                 { // ok deleted 

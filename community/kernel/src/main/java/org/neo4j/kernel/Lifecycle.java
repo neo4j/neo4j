@@ -17,20 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest;
 
-import static org.junit.Assert.assertFalse;
+package org.neo4j.kernel;
 
-import org.junit.Test;
-
-public class JSONPrettifierTest
+/**
+ * Lifecycle interface for kernel components. Init is called first, 
+ * followed by start, 
+ * and then any number of stop-start sequences,
+ * and finally stop and shutdown.
+ * 
+ * As a stop-start cycle could be due to change of configuration, please perform anything that depends on config
+ * in start().
+ *
+ * Implementations can throw any exception. Caller must handle this properly.
+ */
+public interface Lifecycle
 {
-
-    @Test
-    public void testEscapes()
-    {
-        String string = JSONPrettifier.parse( "{\"test\":\"{\\\"test\\\"}\"}" );
-        assertFalse(string.contains( "\n}\"" ));
-    }
-
+    void init()
+        throws Throwable;
+    
+    void start()
+        throws Throwable;
+    
+    void stop()
+        throws Throwable;
+    
+    void shutdown()
+        throws Throwable;
 }
