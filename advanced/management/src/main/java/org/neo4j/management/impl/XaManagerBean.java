@@ -60,13 +60,13 @@ public final class XaManagerBean extends ManagementBeanProvider
         XaManagerImpl( ManagementData management ) throws NotCompliantMBeanException
         {
             super( management );
-            this.datasourceMananger = management.getKernelData().getConfig().getTxModule().getXaDataSourceManager();
+            this.datasourceMananger = management.getKernelData().graphDatabase().getXaDataSourceManager();
         }
 
         XaManagerImpl( ManagementData management, boolean isMxBean )
         {
             super( management, isMxBean );
-            this.datasourceMananger = management.getKernelData().getConfig().getTxModule().getXaDataSourceManager();
+            this.datasourceMananger = management.getKernelData().graphDatabase().getXaDataSourceManager();
         }
 
         public XaResourceInfo[] getXaResources()

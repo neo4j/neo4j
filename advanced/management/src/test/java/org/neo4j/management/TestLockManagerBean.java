@@ -19,6 +19,10 @@
  */
 package org.neo4j.management;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.lang.Thread.State;
 import java.util.Collection;
@@ -38,10 +42,6 @@ import org.neo4j.kernel.info.LockInfo;
 import org.neo4j.kernel.info.LockingTransaction;
 import org.neo4j.kernel.info.ResourceType;
 import org.neo4j.kernel.info.WaitingThread;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
 
 public class TestLockManagerBean
 {

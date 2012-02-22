@@ -43,7 +43,6 @@ import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
 
-
 import org.junit.Test;
 import org.neo4j.server.Bootstrapper;
 import org.neo4j.server.advanced.jmx.ServerManagement;
@@ -60,14 +59,14 @@ public class BootstrapperTest
                 .createPropertiesFiles().getAbsolutePath() );
         bs.start( null );
         assertNotNull( bs.getServer().getDatabase().graph );
-        assertEquals( dbDir1, bs.getServer().getDatabase().graph.getConfig().getParams().get( "store_dir" ) );
+        assertEquals( dbDir1, bs.getServer().getDatabase().graph.getStoreDir() );
 
         String dbDir2 = new File("target/db2").getAbsolutePath();
         System.setProperty( "org.neo4j.server.properties",  ServerBuilder.server().usingDatabaseDir( dbDir2 )
                 .createPropertiesFiles().getAbsolutePath() );
         ServerManagement bean = new ServerManagement( bs );
         bean.restartServer();
-        assertEquals( dbDir2, bs.getServer().getDatabase().graph.getConfig().getParams().get( "store_dir" ) );
+        assertEquals( dbDir2, bs.getServer().getDatabase().graph.getStoreDir() );
  
     }
 }

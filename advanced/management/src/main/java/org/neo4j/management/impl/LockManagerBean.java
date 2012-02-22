@@ -57,13 +57,13 @@ public final class LockManagerBean extends ManagementBeanProvider
         LockManagerImpl( ManagementData management ) throws NotCompliantMBeanException
         {
             super( management );
-            this.lockManager = management.getKernelData().getConfig().getLockManager();
+            this.lockManager = management.getKernelData().graphDatabase().getLockManager();
         }
 
         LockManagerImpl( ManagementData management, boolean mxBean )
         {
             super( management, mxBean );
-            this.lockManager = management.getKernelData().getConfig().getLockManager();
+            this.lockManager = management.getKernelData().graphDatabase().getLockManager();
         }
 
         public long getNumberOfAdvertedDeadlocks()

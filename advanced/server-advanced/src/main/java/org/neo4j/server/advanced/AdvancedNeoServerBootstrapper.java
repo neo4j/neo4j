@@ -25,7 +25,6 @@ import javax.management.InstanceAlreadyExistsException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
-
 import org.neo4j.server.NeoServerBootstrapper;
 import org.neo4j.server.advanced.jmx.ServerManagement;
 
