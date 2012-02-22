@@ -580,9 +580,9 @@
               </execution>
             </executions>
             <configuration>
-              <jsTestSrcDir>src/test/coffeescript</jsTestSrcDir>
-              <customRunnerTemplate>src/test/coffeescript/SpecRunner.htmlTemplate</customRunnerTemplate>
-              <specDirectoryName>target/jasmine/spec</specDirectoryName>
+              <jsTestSrcDir>${project.build.outputDirectory}/webadmin-html/js/test</jsTestSrcDir>
+              <customRunnerTemplate>src/test/resources/SpecRunner.htmlTemplate</customRunnerTemplate>
+              <specRunnerTemplate>REQUIRE_JS</specRunnerTemplate>
             </configuration>
           </plugin>
 
