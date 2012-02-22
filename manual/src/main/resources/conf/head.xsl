@@ -29,6 +29,7 @@
 <script type="text/javascript" src="js/shBrushGroovy.js"></script>
 <script type="text/javascript" src="js/shBrushCypher.js"></script>
 <script type="text/javascript" src="js/shBrushScala.js"></script>
+<script type="text/javascript" src="js/shBrushSql.js"></script>
 <script type="text/javascript" src="js/shBrushPython.js"></script>
 
 <!-- activate when needed
