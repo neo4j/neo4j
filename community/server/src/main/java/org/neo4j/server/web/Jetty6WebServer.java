@@ -332,7 +332,7 @@ public class Jetty6WebServer implements WebServer
     @Override
     public void addSecurityRules( final SecurityRule... rules )
     {
-        jetty.addLifeCycleListener( new JettyLifeCylcleListenerAdapter()
+        jetty.addLifeCycleListener( new JettyLifecycleListenerAdapter()
         {
             @Override
             public void lifeCycleStarted( LifeCycle arg0 )
@@ -361,7 +361,7 @@ public class Jetty6WebServer implements WebServer
     @Override
     public void addExecutionLimitFilter( final Guard guard )
     {
-        jetty.addLifeCycleListener( new JettyLifeCylcleListenerAdapter()
+        jetty.addLifeCycleListener( new JettyLifecycleListenerAdapter()
         {
             @Override
             public void lifeCycleStarted( LifeCycle arg0 )
