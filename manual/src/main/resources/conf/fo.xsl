@@ -328,8 +328,8 @@
  <xsl:call-template name="page.sequence">
   <xsl:with-param name="master-reference">titlepage</xsl:with-param>
   <xsl:with-param name="content">
-    <fo:block text-align="center" margin-top="5.0cm">
-      <fo:external-graphic src="url(images/neo4j-green.png)" content-width="12cm" content-height="2.94cm" scaling="uniform" />
+    <fo:block text-align="center" margin-top="0cm">
+      <fo:external-graphic src="url(images/front-cover.svg)" content-width="21.0cm" content-height="29.7cm" scaling="uniform" />
     </fo:block>
   </xsl:with-param>
  </xsl:call-template>
