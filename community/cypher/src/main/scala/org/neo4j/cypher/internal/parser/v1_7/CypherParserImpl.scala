@@ -31,12 +31,11 @@ with WhereClause
 with ReturnClause
 with SkipLimitClause
 with OrderByClause
-with HavingClause
 with ActualParser {
 
-  def query: Parser[String => Query] = start ~ opt(matching) ~ opt(where) ~ returns ~ opt(having) ~ opt(order) ~ opt(skip) ~ opt(limit) ^^ {
+  def query: Parser[String => Query] = start ~ opt(matching) ~ opt(where) ~ returns ~ opt(order) ~ opt(skip) ~ opt(limit) ^^ {
 
-    case start ~ matching ~ where ~ returns ~ having ~ order ~ skip ~ limit => {
+    case start ~ matching ~ where ~ returns ~ order ~ skip ~ limit => {
       val slice = (skip, limit) match {
         case (None, None) => None
         case (s, l) => Some(Slice(s, l))
@@ -53,7 +52,7 @@ with ActualParser {
         case Some(w) => if(w.exists(_.isInstanceOf[AggregationExpression])) throw new SyntaxException("Can't use aggregate functions in the WHERE clause. Move it to the HAVING clause.")
         case _ =>
       }
-      (queryText: String) => Query(returns._1, start, pattern, where, returns._2, order, slice, namedPaths, having, queryText)
+      (queryText: String) => Query(returns._1, start, pattern, where, returns._2, order, slice, namedPaths, queryText)
     }
   }
 

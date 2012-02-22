@@ -1674,21 +1674,6 @@ RETURN x0.name?
     parseAndExecute("start a=node(*) return a, count(*) order by COUNT(*)").toList
   }
 
-  @Test def shouldExcludeWithHaving() {
-    val a = createNode()
-    val b = createNode()
-    val c = createNode()
-
-    relate(b, a)
-    relate(c, a)
-
-    relate(a, b)
-
-    val result = parseAndExecute("start a=node(*) match a<--() return a, count(*) having count(*) > 1")
-
-    assert(List(a) === result.columnAs[Node]("a").toList)
-  }
-
   @Test def shouldAggregateOnArrayValues() {
     createNode("color" -> Array("red"))
     createNode("color" -> Array("blue"))
